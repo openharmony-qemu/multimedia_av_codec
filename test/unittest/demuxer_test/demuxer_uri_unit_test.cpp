@@ -96,8 +96,10 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CreateDemuxer_2010, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
-    demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
-    ASSERT_NE(demuxer_, nullptr);
+    shared_ptr<DemuxerMock> demuxer2 = AVDemuxerMockFactory::CreateDemuxer(source_);
+    ASSERT_NE(demuxer2, nullptr);
+    ASSERT_EQ(demuxer2->Destroy(), AV_ERR_OK);
+    demuxer2 = nullptr;
 }
 
 /**

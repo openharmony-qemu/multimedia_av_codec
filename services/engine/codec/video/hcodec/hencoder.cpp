@@ -53,14 +53,8 @@ int32_t HEncoder::OnConfigure(const Format &format)
     }
     ConfigureProtocol(format, frameRate);
 
-    ret = ConfigureOutputBitrate(format);
-    if (ret != AVCS_ERR_OK) {
-        HLOGW("ConfigureOutputBitrate failed");
-    }
-    ret = SetColorAspects(format);
-    if (ret != AVCS_ERR_OK) {
-        HLOGW("set color aspect failed");
-    }
+    (void)ConfigureOutputBitrate(format);
+    (void)SetColorAspects(format);
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
     CheckIfEnableCb(format);
@@ -445,6 +439,7 @@ int32_t HEncoder::SetupPort(const Format &format, std::optional<double> &frameRa
         frameRate = 60.0; // default frame rate 60.0
     }
 
+    codecRate_ = frameRate.value();
     PortInfo inputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height),
                               OMX_VIDEO_CodingUnused, configuredFmt_, frameRate.value()};
     CalcInputBufSize(inputPortInfo, configuredFmt_.innerFmt);
@@ -546,7 +541,7 @@ std::optional<uint32_t> HEncoder::GetBitRateFromUser(const Format &format)
 std::optional<uint32_t> HEncoder::GetSQRFactorFromUser(const Format &format)
 {
     int32_t sqrFactor;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor) && sqrFactor > 0) {
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor) && sqrFactor >= 0) {
         LOGI("user set SQR factor is  %d", sqrFactor);
         return static_cast<uint32_t>(sqrFactor);
     }
@@ -1444,6 +1439,11 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
     WrapSurfaceBufferToSlot(*bufferInfo, bufferInfo->surfaceBuffer, bufferInfo->avBuffer->pts_,
         UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_)));
+
+    if (!inputSurface_ && bufferInfo->avBuffer->memory_ && bufferInfo->avBuffer->memory_->GetSize() == 0) {
+        bufferInfo->omxBuffer->bufferhandle = nullptr;
+        bufferInfo->omxBuffer->filledLen = 0;
+    }
     WrapPerFrameParamIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->avBuffer->meta_);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
     int32_t err = HCodec::OnQueueInputBuffer(mode, bufferInfo);

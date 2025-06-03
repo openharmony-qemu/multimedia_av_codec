@@ -147,10 +147,11 @@ public:
         return nullptr;
     }
 
-    virtual void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed)
+    virtual void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus)
     {
         (void)isTriggeredByOutPort;
         (void)isFlushed;
+        (void)bufferStatus;
     }
 };
 } // namespace MediaAVCodec

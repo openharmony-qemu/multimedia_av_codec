@@ -448,7 +448,8 @@ HWTEST_F(AVCodecAudioCodecUnitTest, ProcessInputBufferInner_001, TestSize.Level1
     implConsumer = innerBufferQueue->GetConsumer();
     bool isTriggeredByOutport = true;
     bool isFlushed = true;
-    dec->ProcessInputBufferInner(isTriggeredByOutport, isFlushed);
+    uint32_t bufferStatus = 0;
+    dec->ProcessInputBufferInner(isTriggeredByOutport, isFlushed, bufferStatus);
 }
 
 HWTEST_F(AVCodecAudioCodecUnitTest, AudioDecode_001, TestSize.Level1)

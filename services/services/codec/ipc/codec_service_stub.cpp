@@ -33,6 +33,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServiceStub"};
+constexpr int32_t UID_MEDIA_SERVICE = 1013;
 const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::SET_LISTENER_OBJ),
      "CodecServiceStub SetListenerObject"},
@@ -219,6 +220,9 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
         case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_CUSTOM_BUFFER):
             ret = SetCustomBuffer(data, reply);
             break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_MEMORY_EXCHANGE):
+            ret = NotifyMemoryExchange(data, reply);
+            break;
         case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_FREEZE):
             ret = NotifyFreeze();
             break;
@@ -299,6 +303,11 @@ int32_t CodecServiceStub::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->SetCustomBuffer(buffer);
+}
+
+int32_t CodecServiceStub::NotifyMemoryExchange(const bool exchangeFlag)
+{
+    return (exchangeFlag ? NotifyMemoryRecycle() : NotifyMemoryWriteBack()), AVCS_ERR_OK;
 }
 
 int32_t CodecServiceStub::NotifyFreeze()
@@ -724,6 +733,18 @@ int32_t CodecServiceStub::SetCustomBuffer(MessageParcel &data, MessageParcel &re
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Read From MessageParcel failed");
     ret = reply.WriteInt32(SetCustomBuffer(buffer));
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecServiceStub::NotifyMemoryExchange(MessageParcel &data, MessageParcel &reply)
+{
+    AVCODEC_SYNC_TRACE_WITH_TAG;
+    auto uid = IPCSkeleton::GetCallingUid();
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(
+        uid == UID_MEDIA_SERVICE, AVCS_ERR_OK, "Permission denied %{public}d, only supported for media_service", uid);
+
+    bool ret = reply.WriteInt32(NotifyMemoryExchange(data.ReadBool()));
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 

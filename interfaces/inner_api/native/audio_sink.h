@@ -36,6 +36,7 @@ using namespace OHOS::Media::Plugins;
 class AudioSink : public std::enable_shared_from_this<AudioSink>, public Pipeline::MediaSynchronousSink {
 public:
     AudioSink();
+    AudioSink(bool isRenderCallbackMode);
     ~AudioSink();
     Status Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     sptr<AVBufferQueueProducer> GetBufferQueueProducer();
@@ -257,7 +258,7 @@ private:
     bool isPerfRecEnabled_ { false };
     bool isCalledBySystemApp_ { false };
     bool isLoop_ { false };
-    bool isCallbackMode_ {true};
+    bool isRenderCallbackMode_ {true};
     std::shared_ptr<AudioSinkDataCallback> audioSinkDataCallback_ {nullptr};
     std::mutex availBufferMutex_;
     std::atomic<size_t> availDataSize_ {0};

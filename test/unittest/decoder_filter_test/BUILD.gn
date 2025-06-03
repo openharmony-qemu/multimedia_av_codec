@@ -93,7 +93,6 @@ ohos_unittest("decoder_filter_unit_test") {
     "$av_codec_root_dir/interfaces/kits/c:native_media_codecbase",
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
-    "//third_party/googletest:gmock_main",
   ]
 
   external_deps = [
@@ -101,6 +100,7 @@ ohos_unittest("decoder_filter_unit_test") {
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "eventhandler:libeventhandler",
+    "googletest:gmock",
     "graphic_surface:surface_static",
     "graphic_surface:sync_fence_static",
     "hilog:libhilog",

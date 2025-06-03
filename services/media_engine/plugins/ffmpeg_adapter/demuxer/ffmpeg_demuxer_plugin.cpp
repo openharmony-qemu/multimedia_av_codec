@@ -125,24 +125,6 @@ static const std::vector<AVCodecID> g_streamContainedXPS = {
     AV_CODEC_ID_VVC
 };
 
-static std::vector<AVCodecID> g_imageCodecID = {
-    AV_CODEC_ID_MJPEG,
-    AV_CODEC_ID_PNG,
-    AV_CODEC_ID_PAM,
-    AV_CODEC_ID_BMP,
-    AV_CODEC_ID_JPEG2000,
-    AV_CODEC_ID_TARGA,
-    AV_CODEC_ID_TIFF,
-    AV_CODEC_ID_GIF,
-    AV_CODEC_ID_PCX,
-    AV_CODEC_ID_XWD,
-    AV_CODEC_ID_XBM,
-    AV_CODEC_ID_WEBP,
-    AV_CODEC_ID_APNG,
-    AV_CODEC_ID_XPM,
-    AV_CODEC_ID_SVG,
-};
-
 bool HaveValidParser(const AVCodecID codecId)
 {
     return g_streamParserMap.count(codecId) != 0;
@@ -284,7 +266,7 @@ bool IsSupportedTrack(const AVStream& avStream)
             MEDIA_LOG_E("Unsupport raw video track");
             return false;
         }
-        if (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0) {
+        if (FFmpegFormatHelper::IsImageTrack(avStream)) {
             MEDIA_LOG_E("Unsupport image track");
             return false;
         }
@@ -642,8 +624,14 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     // convert
     AVPacket *tempPkt = CombinePackets(samplePacket);
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "Temp packet is empty");
+    if (cacheQueue_.ResetInfo(samplePacket) == false) {
+        MEDIA_LOG_D("Reset info failed");
+    }
     Status ret = ConvertPacketToAnnexb(sample, tempPkt, samplePacket);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert annexb failed");
+    if (cacheQueue_.SetInfo(samplePacket) == false) {
+        MEDIA_LOG_D("Set info failed");
+    }
 
     // flag\copy
     int32_t remainSize = tempPkt->size - static_cast<int32_t>(samplePacket->offset);
@@ -1800,7 +1788,7 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
     const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
-
+    FALSE_RETURN_V_MSG_E(index < UINT32_MAX, Status::ERROR_INVALID_DATA, "Index is out of range");
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
         Status::ERROR_MISMATCHED_TYPE, "FileType is not MP4");
 

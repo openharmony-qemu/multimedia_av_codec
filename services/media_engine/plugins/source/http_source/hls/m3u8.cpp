@@ -93,7 +93,7 @@ M3U8::~M3U8()
     if (downloaderHeader_) {
         downloaderHeader_ = nullptr;
     }
-    delete fmp4Header_;
+    delete[] fmp4Header_;
     fmp4Header_ = nullptr;
 }
 

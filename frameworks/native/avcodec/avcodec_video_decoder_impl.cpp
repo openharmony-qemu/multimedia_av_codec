@@ -245,5 +245,13 @@ int32_t AVCodecVideoDecoderImpl::SetDecryptConfig(const sptr<DrmStandard::IMedia
     return codecClient_->SetDecryptConfig(keySessionProxy, svpFlag);
 }
 #endif
+
+int32_t AVCodecVideoDecoderImpl::NotifyMemoryExchange(const bool exchangeFlag)
+{
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+
+    AVCODEC_SYNC_TRACE_WITH_TAG;
+    return codecClient_->NotifyMemoryExchange(exchangeFlag);
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

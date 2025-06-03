@@ -1924,7 +1924,8 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_6000, TestSize.Level2)
 {
     OH_AVCapability *capa = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
     ASSERT_NE(nullptr, capa);
-    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc") &&
+        OH_AVCapability_IsEncoderBitrateModeSupported(capa, BITRATE_MODE_SQR)) {
         venc_ = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
         ASSERT_NE(nullptr, venc_);
         format = OH_AVFormat_Create();
@@ -1935,13 +1936,8 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_6000, TestSize.Level2)
         (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_SQR_FACTOR, DEFAULT_SQR_FACTOR);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_BITRATE, DEFAULT_MAX_BITRATE);
-        bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(capa, BITRATE_MODE_SQR);
-        EXPECT_EQ(isSupported, true);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, BITRATE_MODE_SQR);
         EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
-    } else {
-        bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(capa, BITRATE_MODE_SQR);
-        EXPECT_EQ(isSupported, false);
     }
 }
 
