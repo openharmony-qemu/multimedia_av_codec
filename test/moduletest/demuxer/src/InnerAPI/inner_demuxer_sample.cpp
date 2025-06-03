@@ -52,11 +52,15 @@ InnerDemuxerSample::~InnerDemuxerSample()
     }
 }
 
-void InnerDemuxerSample::CreateBuffer()
+bool InnerDemuxerSample::CreateBuffer()
 {
     uint32_t buffersize = 1024 * 1024;
     std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     avBuffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, buffersize);
+    if (!avBuffer) {
+        return false;
+    }
+    return true;
 }
 int32_t InnerDemuxerSample::InitWithFile(const std::string &path, bool local)
 {
@@ -537,6 +541,69 @@ bool InnerDemuxerSample::CheckCache(std::vector<std::vector<int32_t>> &cacheChec
         demuxer_->GetCurrentCacheSize(step[0], memoryUsage);
         if (memoryUsage != step[times]) {
             return false;
+        }
+    }
+    return true;
+}
+bool InnerDemuxerSample::ReadVideo(std::vector<std::vector<int32_t>> &cacheCheckSteps)
+{
+    int32_t readCount = 0;
+    int32_t ret = 0;
+    while (true)
+    {
+        if (readCount >= readPos)
+        {
+            if (!CheckCache(cacheCheckSteps, 1)) {
+                return false;
+            }
+            ret = demuxer_->ReadSampleBuffer(indexAud, avBuffer);
+            if (ret != 0) {
+                cout << "ReadSampleBuffer fail ret:" << ret << endl;
+                return false;
+            }
+            if (!CheckCache(cacheCheckSteps, 2)) {
+                return false;
+            }
+            break;
+        } else {
+            readCount++;
+            ret = demuxer_->ReadSampleBuffer(indexVid, avBuffer);
+            if (ret != 0) {
+                cout << "ReadSampleBuffer fail ret:" << ret << endl;
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool InnerDemuxerSample::ReadAudio(std::vector<std::vector<int32_t>> &cacheCheckSteps)
+{
+    int32_t readCount = 0;
+    int32_t ret = 0;
+    while (true)
+    {
+        if (readCount >= readPos)
+        {
+            if (!CheckCache(cacheCheckSteps, 1)) {
+                return false;
+            }
+            ret = demuxer_->ReadSampleBuffer(indexVid, avBuffer);
+            if (ret != 0) {
+                cout << "ReadSampleBuffer fail ret:" << ret << endl;
+                return false;
+            }
+            if (!CheckCache(cacheCheckSteps, 2)) {
+                return false;
+            }
+            break;
+        } else {
+            readCount++;
+            ret = demuxer_->ReadSampleBuffer(indexAud, avBuffer);
+            if (ret != 0) {
+                cout << "ReadSampleBuffer fail ret:" << ret << endl;
+                return false;
+            }
         }
     }
     return true;

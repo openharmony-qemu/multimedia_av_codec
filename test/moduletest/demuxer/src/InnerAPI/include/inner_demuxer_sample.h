@@ -59,6 +59,8 @@ private:
     bool CheckDemuxer(int32_t &readMax);
     bool CheckCache(std::vector<std::vector<int32_t>> &cacheCheckSteps, int32_t times);
     bool CreateBuffer();
+    bool ReadAudio(std::vector<std::vector<int32_t>> &cacheCheckSteps);
+    bool ReadVideo(std::vector<std::vector<int32_t>> &cacheCheckSteps);
     std::list<int64_t> videoIndexPtsList;
     std::list<int64_t> audioIndexPtsList;
     std::shared_ptr<AVSource> avsource_ = nullptr;

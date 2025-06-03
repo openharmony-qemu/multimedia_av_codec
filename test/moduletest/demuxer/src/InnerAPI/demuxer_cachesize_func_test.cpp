@@ -782,22 +782,9 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0210, TestSize.Le
         {8, 630, 630},
         {9, 630, 630},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/video_9audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 
 /**
@@ -823,22 +810,9 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0220, TestSize.Le
         {8, 78437, 78437},
         {9, 78437, 78437},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/video_9audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 
 /**
@@ -864,22 +838,9 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0230, TestSize.Le
         {8, 161568, 161568},
         {9, 161568, 161568},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/video_9audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 
 /**
@@ -905,22 +866,9 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0240, TestSize.Le
         {8, 315, 315},
         {9, 315, 315},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/video_9audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 
 /**
@@ -946,22 +894,9 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0250, TestSize.Le
         {8, 72283, 72283},
         {9, 72283, 72283},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/video_9audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 
 /**
@@ -987,22 +922,9 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0260, TestSize.Le
         {8, 162497, 162497},
         {9, 162497, 162497},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/video_9audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 
 /**
@@ -1028,22 +950,9 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0270, TestSize.Le
         {7, 315, 315},
         {9, 315, 315},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/video_9audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 
 /**
@@ -1069,22 +978,9 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0280, TestSize.Le
         {7, 72283, 72283},
         {9, 72283, 72283},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/video_9audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 
 /**
@@ -1110,22 +1006,9 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0290, TestSize.Le
         {7, 162497, 162497},
         {9, 162497, 162497},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/video_9audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 
 /**
@@ -1143,22 +1026,9 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0300, TestSize.Le
         {0, 0, 0},
         {1, 3, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/opus_h264.mkv", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 
 /**
@@ -1176,22 +1046,9 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0310, TestSize.Le
         {0, 0, 0},
         {1, 54019, 54016},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/opus_h264.mkv", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 
 /**
@@ -1209,22 +1066,9 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0320, TestSize.Le
         {0, 0, 0},
         {1, 116656, 116653},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/opus_h264.mkv", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 
 /**
@@ -1232,7 +1076,7 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0320, TestSize.Le
  * @tc.name      : mkv(1video+1audio),Read the audio track at the beginning stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0330, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0330, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 2;
@@ -1242,29 +1086,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0330, TestSize.le
         {0, 69641, 19550},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/opus_h264.mkv", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0340
  * @tc.name      : mkv(1video+1audio),Read the audio track at the middle stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0340, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0340, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 300;
@@ -1274,29 +1105,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0340, TestSize.le
         {0, 3227617, 3177526},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/opus_h264.mkv", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0350
  * @tc.name      : mkv(1video+1audio),Read the audio track at the final stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0350, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0350, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 610;
@@ -1306,29 +1124,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0350, TestSize.le
         {0, 6585274, 6535183},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/opus_h264.mkv", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0360
  * @tc.name      : ts(1video+1audio),Read the video track at the beginning stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0360, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0360, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 10;
@@ -1338,29 +1143,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0360, TestSize.le
         {0, 0, 0},
         {1, 2742, 2712},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/aac_mpeg4.ts", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0370
  * @tc.name      : ts(1video+1audio),Read the video track at the middle stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0370, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0370, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 180;
@@ -1370,29 +1162,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0370, TestSize.le
         {0, 0, 0},
         {1, 78573, 78543},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/aac_mpeg4.ts", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0380
  * @tc.name      : ts(1video+1audio),Read the video track at the final stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0380, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0380, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 372;
@@ -1402,29 +1181,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0380, TestSize.le
         {0, 0, 0},
         {1, 163470, 163440},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/aac_mpeg4.ts", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0390
  * @tc.name      : ts(1video+1audio),Read the audio track at the beginning stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0390, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0390, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 10;
@@ -1434,29 +1200,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0390, TestSize.le
         {0, 534706, 453412},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/aac_mpeg4.ts", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0400
  * @tc.name      : ts(1video+1audio),Read the audio track at the middle stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0400, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0400, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 300;
@@ -1466,29 +1219,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0400, TestSize.le
         {0, 4933778, 4852484},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/aac_mpeg4.ts", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0410
  * @tc.name      : ts(1video+1audio),Read the audio track at the final stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0410, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0410, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 528;
@@ -1498,29 +1238,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0410, TestSize.le
         {0, 8598818, 8517524},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/aac_mpeg4.ts", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0420
  * @tc.name      : fmp4(1video+1audio),Read the video track at the beginning stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0420, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0420, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 4;
@@ -1530,29 +1257,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0420, TestSize.le
         {0, 0, 0},
         {1, 1671, 1254},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/mp3_h265_fmp4.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0430
  * @tc.name      : fmp4(1video+1audio),Read the video track at the middle stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0430, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0430, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 180;
@@ -1562,29 +1276,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0430, TestSize.le
         {0, 0, 0},
         {1, 93622, 93205},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/mp3_h265_fmp4.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0440
  * @tc.name      : fmp4(1video+1audio),Read the video track at the final stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0440, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0440, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 372;
@@ -1594,29 +1295,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0440, TestSize.le
         {0, 0, 0},
         {1, 194769, 194352},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/mp3_h265_fmp4.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0450
  * @tc.name      : fmp4(1video+1audio),Read the audio track at the beginning stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0450, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0450, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 4;
@@ -1626,29 +1314,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0450, TestSize.le
         {0, 33263, 248},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/mp3_h265_fmp4.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0460
  * @tc.name      : fmp4(1video+1audio),Read the audio track at the middle stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0460, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0460, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 300;
@@ -1658,29 +1333,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0460, TestSize.le
         {0, 1553199, 1520184},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/mp3_h265_fmp4.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0470
  * @tc.name      : fmp4(1video+1audio),Read the audio track at the final stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0470, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0470, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 468;
@@ -1690,29 +1352,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0470, TestSize.le
         {0, 2419189, 2386174},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/mp3_h265_fmp4.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0480
  * @tc.name      : flv(1video+1audio),Read the video track at the beginning stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0480, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0480, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 4;
@@ -1722,29 +1371,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0480, TestSize.le
         {0, 0, 0},
         {1, 1260, 478},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/hevc_aac_first.flv", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0490
  * @tc.name      : flv(1video+1audio),Read the video track at the middle stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0490, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0490, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 300;
@@ -1754,29 +1390,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0490, TestSize.le
         {0, 0, 0},
         {1, 78538, 77756},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/hevc_aac_first.flv", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0500
  * @tc.name      : flv(1video+1audio),Read the video track at the final stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0500, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0500, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 602;
@@ -1786,29 +1409,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0500, TestSize.le
         {0, 0, 0},
         {1, 165632, 164850},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/hevc_aac_first.flv", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0510
  * @tc.name      : flv(1video+1audio),Read the audio track at the beginning stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0510, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0510, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 4;
@@ -1818,29 +1428,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0510, TestSize.le
         {0, 110977, 17555},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/hevc_aac_first.flv", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0520
  * @tc.name      : flv(1video+1audio),Read the audio track at the middle stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0520, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0520, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 100;
@@ -1850,29 +1447,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0520, TestSize.le
         {0, 2157637, 2064215},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/hevc_aac_first.flv", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0530
  * @tc.name      : flv(1video+1audio),Read the audio track at the final stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0530, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0530, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 210;
@@ -1882,29 +1466,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0530, TestSize.le
         {0, 5435273, 5341851},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/hevc_aac_first.flv", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0540
  * @tc.name      : mov(1video+1audio),Read the video track at the beginning stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0540, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0540, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 4;
@@ -1914,29 +1485,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0540, TestSize.le
         {0, 0, 0},
         {1, 6912, 5184},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG4_SP@6_1280_720_30_MP2_32K_2.mov", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0550
  * @tc.name      : mov(1video+1audio),Read the video track at the middle stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0550, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0550, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 30;
@@ -1946,29 +1504,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0550, TestSize.le
         {0, 0, 0},
         {1, 48384, 46656},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG4_SP@6_1280_720_30_MP2_32K_2.mov", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0560
  * @tc.name      : mov(1video+1audio),Read the video track at the final stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0560, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0560, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 60;
@@ -1978,29 +1523,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0560, TestSize.le
         {0, 0, 0},
         {1, 96768, 95040},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG4_SP@6_1280_720_30_MP2_32K_2.mov", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0570
  * @tc.name      : mov(1video+1audio),Read the audio track at the beginning stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0570, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0570, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 4;
@@ -2010,29 +1542,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0570, TestSize.le
         {0, 68577, 5564},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG4_SP@6_1280_720_30_MP2_32K_2.mov", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0580
  * @tc.name      : mov(1video+1audio),Read the audio track at the middle stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0580, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0580, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 30;
@@ -2042,29 +1561,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0580, TestSize.le
         {0, 206841, 143828},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG4_SP@6_1280_720_30_MP2_32K_2.mov", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0590
  * @tc.name      : mov(1video+1audio),Read the audio track at the final stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0590, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0590, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 56;
@@ -2074,29 +1580,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0590, TestSize.le
         {0, 354199, 291186},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG4_SP@6_1280_720_30_MP2_32K_2.mov", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0600
  * @tc.name      : avi(1video+1audio),Read the video track at the beginning stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0600, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0600, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 4;
@@ -2106,30 +1599,17 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0600, TestSize.le
         {0, 0, 0},
         {1, 24576, 20480},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile(
         "/data/test/media/AVI_MPEG4_main@level5_720_576_PCM_s32_1.avi", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0610
  * @tc.name      : avi(1video+1audio),Read the video track at the middle stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0610, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0610, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 15;
@@ -2139,30 +1619,17 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0610, TestSize.le
         {0, 0, 0},
         {1, 86016, 81920},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile(
         "/data/test/media/AVI_MPEG4_main@level5_720_576_PCM_s32_1.avi", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0620
  * @tc.name      : avi(1video+1audio),Read the video track at the final stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0620, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0620, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 30;
@@ -2172,30 +1639,17 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0620, TestSize.le
         {0, 0, 0},
         {1, 176128, 172032},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile(
         "/data/test/media/AVI_MPEG4_main@level5_720_576_PCM_s32_1.avi", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0630
  * @tc.name      : avi(1video+1audio),Read the audio track at the beginning stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0630, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0630, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 4;
@@ -2205,30 +1659,17 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0630, TestSize.le
         {0, 70742, 30302},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile(
         "/data/test/media/AVI_MPEG4_main@level5_720_576_PCM_s32_1.avi", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0640
  * @tc.name      : avi(1video+1audio),Read the audio track at the middle stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0640, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0640, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 20;
@@ -2238,30 +1679,17 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0640, TestSize.le
         {0, 207760, 167320},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile(
         "/data/test/media/AVI_MPEG4_main@level5_720_576_PCM_s32_1.avi", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0650
  * @tc.name      : avi(1video+1audio),Read the audio track at the final stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0650, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0650, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 44;
@@ -2271,30 +1699,17 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0650, TestSize.le
         {0, 305390, 264950},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile(
         "/data/test/media/AVI_MPEG4_main@level5_720_576_PCM_s32_1.avi", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0660
  * @tc.name      : mpg(1video+1audio),Read the video track at the beginning stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0660, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0660, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 4;
@@ -2304,29 +1719,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0660, TestSize.le
         {0, 0, 0},
         {1, 1944, 1728},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0670
  * @tc.name      : mpg(1video+1audio),Read the video track at the middle stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0670, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0670, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 60;
@@ -2336,29 +1738,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0670, TestSize.le
         {0, 0, 0},
         {1, 3888, 3672},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0680
  * @tc.name      : mpg(1video+1audio),Read the video track at the final stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0680, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0680, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 119;
@@ -2368,29 +1757,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0680, TestSize.le
         {0, 0, 0},
         {1, 12312, 12096},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0690
  * @tc.name      : mpg(1video+1audio),Read the audio track at the beginning stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0690, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0690, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 10;
@@ -2400,29 +1776,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0690, TestSize.le
         {0, 94517, 63753},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0700
  * @tc.name      : mpg(1video+1audio),Read the audio track at the middle stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0700, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0700, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 30;
@@ -2432,29 +1795,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0700, TestSize.le
         {0, 421101, 390337},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0710
  * @tc.name      : mpg(1video+1audio),Read the audio track at the final stage
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0710, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0710, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 57;
@@ -2464,29 +1814,16 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0710, TestSize.le
         {0, 652380, 621616},
         {1, 0, 0},
     };
-    int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
-    while (true)
-    {
-        if (readCount >= demuxerSample->readPos)
-        {
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 1));
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexVid, demuxerSample->avBuffer);
-            ASSERT_EQ(true, demuxerSample->CheckCache(cacheCheckSteps, 2));
-            break;
-        } else {
-            readCount++;
-            demuxerSample->demuxer_->ReadSampleBuffer(demuxerSample->indexAud, demuxerSample->avBuffer);
-        }
-    }
+    ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
 }
 /**
  * @tc.number    : DEMUXER_CACHESIZE_INNER_FUNC_0720
  * @tc.name      : mp3(1audio),Read the audio,get audio ,size = 0
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0720, TestSize.level3)
+HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0720, TestSize.Level3)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     demuxerSample->readPos = 10;
