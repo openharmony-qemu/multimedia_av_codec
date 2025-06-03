@@ -138,6 +138,98 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, Configure, TestSize.Level1)
     EXPECT_NE(ret, Status::OK);
 }
 
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_Configure_0100, TestSize.Level1)
+{
+    EXPECT_NE(surfaceDecoderFilter_, nullptr);
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    parameter->Set<Tag::VIDEO_IS_HDR_VIVID>(true);
+    surfaceDecoderFilter_->mediaCodec_ = mediaCodec_;
+    auto ret = surfaceDecoderFilter_->Configure(parameter);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+ 
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_Configure_0200, TestSize.Level1)
+{
+    EXPECT_NE(surfaceDecoderFilter_, nullptr);
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    parameter->Set<Tag::VIDEO_IS_HDR_VIVID>(true);
+    parameter->Set<Tag::AV_TRANSCODER_DST_COLOR_SPACE>(8);
+    surfaceDecoderFilter_->mediaCodec_ = mediaCodec_;
+    auto ret = surfaceDecoderFilter_->Configure(parameter);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+ 
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_Configure_0300, TestSize.Level1)
+{
+    EXPECT_NE(surfaceDecoderFilter_, nullptr);
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    parameter->Set<Tag::VIDEO_IS_HDR_VIVID>(false);
+    parameter->Set<Tag::AV_TRANSCODER_DST_COLOR_SPACE>(8);
+    surfaceDecoderFilter_->mediaCodec_ = mediaCodec_;
+    auto ret = surfaceDecoderFilter_->Configure(parameter);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+ 
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_Configure_0400, TestSize.Level1)
+{
+    EXPECT_NE(surfaceDecoderFilter_, nullptr);
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    parameter->Set<Tag::VIDEO_IS_HDR_VIVID>(true);
+    parameter->Set<Tag::AV_TRANSCODER_DST_COLOR_SPACE>(0);
+    surfaceDecoderFilter_->mediaCodec_ = mediaCodec_;
+    auto ret = surfaceDecoderFilter_->Configure(parameter);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+ 
+/**
+ * @tc.name: ConfigureMediaCodecByMimeType
+ * @tc.desc: ConfigureMediaCodecByMimeType
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, ConfigureMediaCodecByMimeType_0100, TestSize.Level1)
+{
+    std::string codecMimeType = Plugins::MimeType::VIDEO_AVC;
+    bool isHdrVivid = true;
+    surfaceDecoderFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    Status ret = surfaceDecoderFilter_->ConfigureMediaCodecByMimeType(codecMimeType, isHdrVivid);
+    surfaceDecoderFilter_->eventReceiver_ = nullptr;
+    ret = surfaceDecoderFilter_->ConfigureMediaCodecByMimeType(codecMimeType, isHdrVivid);
+    EXPECT_EQ(ret, Status::OK);
+}
+ 
+HWTEST_F(SurfaceDecoderFilterUnitTest, ConfigureMediaCodecByMimeType_0200, TestSize.Level1)
+{
+    std::string codecMimeType = Plugins::MimeType::VIDEO_AVC;
+    bool isHdrVivid = false;
+    surfaceDecoderFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    Status ret = surfaceDecoderFilter_->ConfigureMediaCodecByMimeType(codecMimeType, isHdrVivid);
+    surfaceDecoderFilter_->eventReceiver_ = nullptr;
+    ret = surfaceDecoderFilter_->ConfigureMediaCodecByMimeType(codecMimeType, isHdrVivid);
+    EXPECT_EQ(ret, Status::OK);
+}
+ 
+HWTEST_F(SurfaceDecoderFilterUnitTest, ConfigureMediaCodecByMimeType_0300, TestSize.Level1)
+{
+    std::string codecMimeType = "test";
+    bool isHdrVivid = true;
+    surfaceDecoderFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    Status ret = surfaceDecoderFilter_->ConfigureMediaCodecByMimeType(codecMimeType, isHdrVivid);
+    surfaceDecoderFilter_->eventReceiver_ = nullptr;
+    ret = surfaceDecoderFilter_->ConfigureMediaCodecByMimeType(codecMimeType, isHdrVivid);
+    EXPECT_NE(ret, Status::OK);
+}
+ 
+HWTEST_F(SurfaceDecoderFilterUnitTest, ConfigureMediaCodecByMimeType_0400, TestSize.Level1)
+{
+    std::string codecMimeType = "test";
+    bool isHdrVivid = false;
+    surfaceDecoderFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    Status ret = surfaceDecoderFilter_->ConfigureMediaCodecByMimeType(codecMimeType, isHdrVivid);
+    surfaceDecoderFilter_->eventReceiver_ = nullptr;
+    ret = surfaceDecoderFilter_->ConfigureMediaCodecByMimeType(codecMimeType, isHdrVivid);
+    EXPECT_NE(ret, Status::OK);
+}
+
 /**
  * @tc.name: SetOutputSurface
  * @tc.desc: SetOutputSurface
@@ -264,16 +356,6 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, OnLinkedResult, TestSize.Level1)
     EXPECT_EQ(surfaceDecoderFilter_->nextFilter_, nullptr);
 }
 
-HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_Configure_0100, TestSize.Level1)
-{
-    EXPECT_NE(surfaceDecoderFilter_, nullptr);
-    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
-    parameter->Set<Tag::VIDEO_IS_HDR_VIVID>(true);
-    surfaceDecoderFilter_->mediaCodec_ = mediaCodec_;
-    auto ret = surfaceDecoderFilter_->Configure(parameter);
-    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
-}
-
 HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_SetOutputSurface_0100, TestSize.Level1)
 {
     EXPECT_NE(surfaceDecoderFilter_, nullptr);
@@ -302,6 +384,51 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_SetOutputSurface_010
         Status::OK);
     EXPECT_EQ(
         surfaceDecoderFilter_->OnUnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, filterLinkCallback), Status::OK);
+}
+
+/**
+ * @tc.name: SetCodecFormat
+ * @tc.desc: SetCodecFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_SetCodecFormat_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    meta->Set<Tag::VIDEO_IS_HDR_VIVID>(false);
+    meta->Set<Tag::AV_TRANSCODER_DST_COLOR_SPACE>(8);
+    surfaceDecoderFilter_->SetCodecFormat(meta);
+    EXPECT_EQ(surfaceDecoderFilter_->transcoderIsHdrVivid_, false);
+    EXPECT_EQ(surfaceDecoderFilter_->colorSpace_, 8);
+}
+ 
+/**
+ * @tc.name: SetCodecFormat
+ * @tc.desc: SetCodecFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_SetCodecFormat_0200, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    meta->Set<Tag::VIDEO_IS_HDR_VIVID>(true);
+    meta->Set<Tag::AV_TRANSCODER_DST_COLOR_SPACE>(12);
+    surfaceDecoderFilter_->SetCodecFormat(meta);
+    EXPECT_EQ(surfaceDecoderFilter_->transcoderIsHdrVivid_, true);
+    EXPECT_EQ(surfaceDecoderFilter_->colorSpace_, 12);
+}
+ 
+/**
+ * @tc.name: SetCodecFormat
+ * @tc.desc: SetCodecFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_SetCodecFormat_0300, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    meta->Set<Tag::VIDEO_IS_HDR_VIVID>(true);
+    meta->Set<Tag::AV_TRANSCODER_DST_COLOR_SPACE>(0);
+    surfaceDecoderFilter_->SetCodecFormat(meta);
+    EXPECT_EQ(surfaceDecoderFilter_->transcoderIsHdrVivid_, true);
+    EXPECT_EQ(surfaceDecoderFilter_->colorSpace_, 0);
 }
 }  // namespace Pipeline
 }  // namespace Media
