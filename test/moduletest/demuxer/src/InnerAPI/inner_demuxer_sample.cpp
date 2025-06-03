@@ -549,11 +549,14 @@ bool InnerDemuxerSample::ReadVideo(std::vector<std::vector<int32_t>> &cacheCheck
 {
     int32_t readCount = 0;
     int32_t ret = 0;
-    while (true)
+    int32_t checkVector1 = 1;
+    int32_t checkVector2 = 2;
+    bool isEnd = true;
+    while (isEnd)
     {
-        if (readCount >= readPos)
-        {
-            if (!CheckCache(cacheCheckSteps, 1)) {
+        if (readCount >= readPos) {
+            isEnd = false;
+            if (!CheckCache(cacheCheckSteps, checkVector1)) {
                 return false;
             }
             ret = demuxer_->ReadSampleBuffer(indexAud, avBuffer);
@@ -561,7 +564,7 @@ bool InnerDemuxerSample::ReadVideo(std::vector<std::vector<int32_t>> &cacheCheck
                 cout << "ReadSampleBuffer fail ret:" << ret << endl;
                 return false;
             }
-            if (!CheckCache(cacheCheckSteps, 2)) {
+            if (!CheckCache(cacheCheckSteps, checkVector2)) {
                 return false;
             }
             break;
@@ -570,6 +573,7 @@ bool InnerDemuxerSample::ReadVideo(std::vector<std::vector<int32_t>> &cacheCheck
             ret = demuxer_->ReadSampleBuffer(indexVid, avBuffer);
             if (ret != 0) {
                 cout << "ReadSampleBuffer fail ret:" << ret << endl;
+                isEnd = false;
                 return false;
             }
         }
@@ -581,11 +585,14 @@ bool InnerDemuxerSample::ReadAudio(std::vector<std::vector<int32_t>> &cacheCheck
 {
     int32_t readCount = 0;
     int32_t ret = 0;
-    while (true)
+    int32_t checkVector1 = 1;
+    int32_t checkVector2 = 2;
+    bool isEnd = true;
+    while (isEnd)
     {
-        if (readCount >= readPos)
-        {
-            if (!CheckCache(cacheCheckSteps, 1)) {
+        if (readCount >= readPos) {
+            isEnd = false;
+            if (!CheckCache(cacheCheckSteps, checkVector1)) {
                 return false;
             }
             ret = demuxer_->ReadSampleBuffer(indexVid, avBuffer);
@@ -593,7 +600,7 @@ bool InnerDemuxerSample::ReadAudio(std::vector<std::vector<int32_t>> &cacheCheck
                 cout << "ReadSampleBuffer fail ret:" << ret << endl;
                 return false;
             }
-            if (!CheckCache(cacheCheckSteps, 2)) {
+            if (!CheckCache(cacheCheckSteps, checkVector2)) {
                 return false;
             }
             break;
@@ -602,6 +609,7 @@ bool InnerDemuxerSample::ReadAudio(std::vector<std::vector<int32_t>> &cacheCheck
             ret = demuxer_->ReadSampleBuffer(indexAud, avBuffer);
             if (ret != 0) {
                 cout << "ReadSampleBuffer fail ret:" << ret << endl;
+                isEnd = false;
                 return false;
             }
         }
