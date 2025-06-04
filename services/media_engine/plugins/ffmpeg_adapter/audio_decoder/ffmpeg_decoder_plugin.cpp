@@ -83,7 +83,7 @@ void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap)
                 AVCodecCodecName::AUDIO_DECODER_APE_NAME, definition, cap);
             break;
         case 7: // 7:ac3
-            InitDefinition<FFmpegAC3DecoderPlugin>(MimeType::AUDIO_APE,
+            InitDefinition<FFmpegAC3DecoderPlugin>(MimeType::AUDIO_AC3,
                 AVCodecCodecName::AUDIO_DECODER_AC3_NAME, definition, cap);
             break;
         default:
