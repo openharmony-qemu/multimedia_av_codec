@@ -20,6 +20,7 @@
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
 #include "aac/ffmpeg_aac_decoder_plugin.h"
+#include "ac3/ffmpeg_ac3_decoder_plugin.h"
 #include "flac/ffmpeg_flac_decoder_plugin.h"
 #include "mp3/ffmpeg_mp3_decoder_plugin.h"
 #include "vorbis/ffmpeg_vorbis_decoder_plugin.h"

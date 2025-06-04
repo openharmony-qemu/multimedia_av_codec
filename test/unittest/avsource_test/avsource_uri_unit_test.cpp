@@ -141,8 +141,10 @@ HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithURI_1070, TestSize.Level1)
     printf("---- %s ------\n", g_mp4Uri.data());
     source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4Uri.data()));
     ASSERT_NE(source_, nullptr);
-    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4Uri.data()));
-    ASSERT_NE(source_, nullptr);
+    shared_ptr<AVSourceMock> source2 = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4Uri.data()));
+    ASSERT_NE(source2, nullptr);
+    ASSERT_EQ(source2->Destroy(), AV_ERR_OK);
+    source2 = nullptr;
 }
 
 /**

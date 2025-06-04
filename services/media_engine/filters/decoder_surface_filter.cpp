@@ -1497,6 +1497,13 @@ void DecoderSurfaceFilter::NotifyPause()
     auto ret = postProcessor_->Pause();
     FALSE_RETURN_MSG(ret == Status::OK, "postProcessor pause error");
 }
+
+void DecoderSurfaceFilter::NotifyMemoryExchange(bool exchangeFlag)
+{
+    MEDIA_LOG_D("NotifyMemoryExchange enter.");
+    FALSE_RETURN_NOLOG(videoDecoder_ != nullptr);
+    videoDecoder_->NotifyMemoryExchange(exchangeFlag);
+}
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS

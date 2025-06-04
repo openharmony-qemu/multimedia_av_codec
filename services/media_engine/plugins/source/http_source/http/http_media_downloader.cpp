@@ -170,7 +170,7 @@ std::string HttpMediaDownloader::GetContentType()
 
 bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
-    MEDIA_LOG_I("HTTP Open download");
+    MEDIA_LOG_I("HTTP Open download in");
     isDownloadFinish_ = false;
     openTime_ = steadyClock_.ElapsedMilliseconds();
     auto saveData = [this] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) {
@@ -1334,24 +1334,25 @@ void HttpMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 
 bool HttpMediaDownloader::HandleBreak()
 {
+    MEDIA_LOG_D("HTTP HandleBreak");
     if (downloadErrorState_) {
-        MEDIA_LOG_I("HTTP HandleBreak, downloadErrorState true.");
+        MEDIA_LOG_I("downloadErrorState true.");
         return true;
     }
     if (downloadRequest_ == nullptr) {
-        MEDIA_LOG_I("HTTP HandleBreak, downloadRequest is nullptr.");
+        MEDIA_LOG_I("downloadRequest is nullptr.");
         return true;
     }
     if (downloadRequest_->IsEos()) {
-        MEDIA_LOG_I("HTTP HandleBreak, isEos");
+        MEDIA_LOG_I("isEos true");
         return true;
     }
     if (downloadRequest_->IsClosed()) {
-        MEDIA_LOG_I("HTTP HandleBreak, IsClosed");
+        MEDIA_LOG_I("IsClosed true");
         return true;
     }
     if (downloadRequest_->IsChunkedVod()) {
-        MEDIA_LOG_I("HTTP HandleBreak, IsChunkedVod");
+        MEDIA_LOG_I("IsChunkedVod true");
         return true;
     }
     return false;
@@ -1645,6 +1646,7 @@ bool HttpMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
         return false;
     }
     if (downloadRequest_->IsChunkedVod()) {
+        MEDIA_LOG_I("ChunkedVod, fail to SetInitBufferSize.");
         return false;
     }
     MEDIA_LOG_I("HTTP SetInitialBufferSize initCacheSize " PUBLIC_LOG_U32, size);
@@ -1956,7 +1958,7 @@ bool HttpMediaDownloader::IsAutoSelectConditionOk()
 
 void HttpMediaDownloader::ClearBuffer()
 {
-    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr.");
+    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr, fail to ClearBuffer");
     FALSE_RETURN_MSG(ringBuffer_ != nullptr || cacheMediaBuffer_ != nullptr, "buffer is nullptr.");
     if (isRingBuffer_) {
         size_t sizeBefore = ringBuffer_->GetFreeSize();

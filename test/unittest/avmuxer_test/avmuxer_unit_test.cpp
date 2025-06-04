@@ -160,7 +160,7 @@ int32_t AVMuxerUnitTest::WriteSample(sptr<AVBufferQueueProducer> bqProducer,
 
 void AVMuxerUnitTest::AuxiliaryWriteSample(int32_t trackId)
 {
-    inputFile_ = std::make_shared<std::ifstream>(LOGINFO_INPUT_FILE_PATH, std::ios::binary);
+    inputFile_ = std::make_shared<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
 
     int32_t extSize = 0;
     inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
@@ -2047,14 +2047,14 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_Auxiliary_001, TestSize.Level0) {
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, TEST_WIDTH, TEST_HEIGHT);
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
 
     int32_t ret = avmuxer_->AddTrack(trackId, videoParams);
     ASSERT_EQ(ret, 0);
     ASSERT_GE(trackId, 0);
 
     std::shared_ptr<FormatMock> metadataParamsDepth = FormatMockFactory::CreateFormat();
-    metadataParamsDepth->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    metadataParamsDepth->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     metadataParamsDepth->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
     metadataParamsDepth->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
     metadataParamsDepth->PutIntValue(OH_MD_KEY_TRACK_TYPE, static_cast<int32_t>(OH_MediaType::MEDIA_TYPE_AUXILIARY));
@@ -2086,14 +2086,14 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_Auxiliary_002, TestSize.Level0) {
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, TEST_WIDTH, TEST_HEIGHT);
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
 
     int32_t ret = avmuxer_->AddTrack(trackId, videoParams);
     ASSERT_EQ(ret, 0);
     ASSERT_GE(trackId, 0);
 
     std::shared_ptr<FormatMock> metadataParamsDepth = FormatMockFactory::CreateFormat();
-    metadataParamsDepth->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    metadataParamsDepth->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     metadataParamsDepth->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
     metadataParamsDepth->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
 
@@ -2117,10 +2117,13 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_Auxiliary_002, TestSize.Level0) {
 
 /**
  * @tc.name: Muxer_AddTrack_Auxiliary_003
- * @tc.desc: Muxer AddTrack video Auxiliary track(H264 video).
+ * @tc.desc: Muxer AddTrack video Auxiliary track(H265 video).
  * @tc.type: FUNC
  */
 HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_Auxiliary_003, TestSize.Level0) {
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
     int32_t trackId = -1;
     int32_t trackIdDepth = -1;
     std::vector<int32_t> vDepth = {0};
@@ -2133,14 +2136,14 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_Auxiliary_003, TestSize.Level0) {
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, TEST_WIDTH, TEST_HEIGHT);
 
     int32_t ret = avmuxer_->AddTrack(trackId, videoParams);
     ASSERT_EQ(ret, 0);
     ASSERT_GE(trackId, 0);
 
     std::shared_ptr<FormatMock> metadataParamsDepth = FormatMockFactory::CreateFormat();
-    metadataParamsDepth->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    metadataParamsDepth->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
     metadataParamsDepth->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
     metadataParamsDepth->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
     metadataParamsDepth->PutIntValue(OH_MD_KEY_TRACK_TYPE, static_cast<int32_t>(OH_MediaType::MEDIA_TYPE_AUXILIARY));
@@ -2175,7 +2178,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Video_Auxiliary, TestSize.Level0) {
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, TEST_WIDTH, TEST_HEIGHT);
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
 
     int32_t ret = avmuxer_->AddTrack(trackId, videoParams);
     ASSERT_EQ(ret, 0);
@@ -2183,7 +2186,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Video_Auxiliary, TestSize.Level0) {
 
     // create auxiliary format depth track
     std::shared_ptr<FormatMock> metadataParamsDepth = FormatMockFactory::CreateFormat();
-    metadataParamsDepth->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    metadataParamsDepth->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     metadataParamsDepth->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
     metadataParamsDepth->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
     metadataParamsDepth->PutIntValue(OH_MD_KEY_TRACK_TYPE, static_cast<int32_t>(OH_MediaType::MEDIA_TYPE_AUXILIARY));
@@ -2198,7 +2201,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Video_Auxiliary, TestSize.Level0) {
 
     // create auxiliary format prey track
     std::shared_ptr<FormatMock> metadataParamsPrey = FormatMockFactory::CreateFormat();
-    metadataParamsPrey->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    metadataParamsPrey->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     metadataParamsPrey->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
     metadataParamsPrey->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
     metadataParamsPrey->PutIntValue(OH_MD_KEY_TRACK_TYPE, static_cast<int32_t>(OH_MediaType::MEDIA_TYPE_AUXILIARY));

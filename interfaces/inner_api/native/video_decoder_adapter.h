@@ -68,6 +68,7 @@ public:
     void SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName, uint64_t instanceId);
     void ResetRenderTime();
     Status SetPerfRecEnabled(bool isPerfRecEnabled);
+    void NotifyMemoryExchange(bool exchangeFlag);
 
 private:
     void PerfRecord(const std::shared_ptr<AVBuffer> buffer);

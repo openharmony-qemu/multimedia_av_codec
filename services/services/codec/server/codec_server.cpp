@@ -290,6 +290,11 @@ int32_t CodecServer::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
     return codecBase_->SetCustomBuffer(buffer);
 }
 
+int32_t CodecServer::NotifyMemoryExchange(const bool /* exchangeFlag */)
+{
+    return AVCS_ERR_OK;
+}
+
 int32_t CodecServer::CodecScenarioInit(Format &config)
 {
     switch (scenario_) {
@@ -1221,11 +1226,11 @@ sptr<Media::AVBufferQueueProducer> CodecServer::GetOutputBufferQueueProducer()
     return codecBase_ != nullptr ? codecBase_->GetOutputBufferQueueProducer() : nullptr;
 }
 
-void CodecServer::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed)
+void CodecServer::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_LOG(codecBase_ != nullptr, "ProcessInputBufferInner codecBase is nullptr");
-    return codecBase_->ProcessInputBufferInner(isTriggeredByOutPort, isFlushed);
+    return codecBase_->ProcessInputBufferInner(isTriggeredByOutPort, isFlushed, bufferStatus);
 }
 
 void CodecServer::ProcessInputBuffer()

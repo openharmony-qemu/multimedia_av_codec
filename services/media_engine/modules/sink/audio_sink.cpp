@@ -59,7 +59,17 @@ int64_t GetAudioLatencyFixDelay()
 
 AudioSink::AudioSink()
 {
-    MEDIA_LOG_I("Tips AudioSink ctor");
+    bool isRenderCallbackMode = system::GetParameter("debug.media_service.audio.audiosink_callback", "1") == "1";
+    MEDIA_LOG_I("AudioSink ctor isRenderCallbackMode:" PUBLIC_LOG_D32, isRenderCallbackMode);
+    isRenderCallbackMode_ = isRenderCallbackMode;
+    syncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
+    fixDelay_ = GetAudioLatencyFixDelay();
+    plugin_ = CreatePlugin();
+}
+
+AudioSink::AudioSink(bool isRenderCallbackMode) : isRenderCallbackMode_(isRenderCallbackMode)
+{
+    MEDIA_LOG_I("AudioSink ctor isRenderCallbackMode:" PUBLIC_LOG_D32, isRenderCallbackMode);
     syncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
     fixDelay_ = GetAudioLatencyFixDelay();
     plugin_ = CreatePlugin();
@@ -176,10 +186,10 @@ Status AudioSink::InitAudioSinkPlugin(std::shared_ptr<Meta>& meta,
         ScopedTimer timer("InitAudioSinkPlugin", INIT_PLUGIN_WARNING_MS);
         plugin_->Init();
     }
-    if (isCallbackMode_) {
+    if (isRenderCallbackMode_) {
         audioSinkDataCallback_ = std::make_shared<AudioSinkDataCallbackImpl>(shared_from_this());
         Status ret = plugin_->SetRequestDataCallback(audioSinkDataCallback_);
-        isCallbackMode_ = ret == Status::OK ? true : false;
+        isRenderCallbackMode_ = ret == Status::OK ? true : false;
     }
     plugin_->Prepare();
     plugin_->SetMuted(isMuted_);
@@ -1113,7 +1123,7 @@ void AudioSink::DrainOutputBuffer(bool flushed)
         MEDIA_LOG_I("DrainOutputBuffer ignore for PAUSE/READY, state = " PUBLIC_LOG_D32, state_.load());
         return;
     }
-    if (isCallbackMode_) {
+    if (isRenderCallbackMode_) {
         GetAvailableOutputBuffers();
     } else {
         std::shared_ptr<AVBuffer> filledOutputBuffer = nullptr;

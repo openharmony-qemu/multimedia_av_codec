@@ -397,7 +397,7 @@ OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
         }
         return signal_->inIdxQueue_.size() > 0;
     });
-    if (g_fuzzError || condMet)
+    if (g_fuzzError || !condMet)
         return AV_ERR_TIMEOUT;
     index = signal_->inIdxQueue_.front();
     auto buffer = signal_->inBufferQueue_.front();

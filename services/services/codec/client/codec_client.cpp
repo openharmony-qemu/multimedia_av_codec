@@ -155,6 +155,16 @@ int32_t CodecClient::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
     return ret;
 }
 
+int32_t CodecClient::NotifyMemoryExchange(const bool exchangeFlag)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+
+    int32_t ret = codecProxy_->NotifyMemoryExchange(exchangeFlag);
+    AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
+    return ret;
+}
+
 int32_t CodecClient::Start()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);

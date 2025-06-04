@@ -140,6 +140,48 @@ void BlockQueuePool::ResetQueue(uint32_t queueIndex)
     return;
 }
 
+bool BlockQueuePool::ResetInfo(std::shared_ptr<SamplePacket> block)
+{
+    FALSE_RETURN_V_MSG_E(block != nullptr, false, "Block is nullptr");
+    MEDIA_LOG_D("Reset for block " PUBLIC_LOG_U32, block->queueIndex);
+    uint32_t queIndex = block->queueIndex;
+    FALSE_RETURN_V_MSG_E(quePool_.count(queIndex) > 0, false, "Index is invalid");
+    for (auto pkt : block->pkts) {
+        if (pkt == nullptr) {
+            MEDIA_LOG_D("Pkt is nullptr, will find next");
+            continue;
+        }
+        uint32_t pktSize = static_cast<uint32_t>(pkt->size);
+        if (quePool_[queIndex].dataSize >= pktSize) {
+            quePool_[queIndex].dataSize -= pktSize;
+        } else {
+            quePool_[queIndex].dataSize = 0;
+        }
+    }
+    return true;
+}
+
+bool BlockQueuePool::SetInfo(std::shared_ptr<SamplePacket> block)
+{
+    FALSE_RETURN_V_MSG_E(block != nullptr, false, "Block is nullptr");
+    MEDIA_LOG_D("Set for block " PUBLIC_LOG_U32, block->queueIndex);
+    uint32_t queIndex = block->queueIndex;
+    FALSE_RETURN_V_MSG_E(quePool_.count(queIndex) > 0, false, "Index is invalid");
+    for (auto pkt : block->pkts) {
+        if (pkt == nullptr) {
+            MEDIA_LOG_D("Pkt is nullptr, will find next");
+            continue;
+        }
+        uint32_t pktSize = static_cast<uint32_t>(pkt->size);
+        if (quePool_[queIndex].dataSize <= UINT32_MAX - pktSize) {
+            quePool_[queIndex].dataSize += pktSize;
+        } else {
+            quePool_[queIndex].dataSize = UINT32_MAX;
+        }
+    }
+    return true;
+}
+
 void BlockQueuePool::FreeQueue(uint32_t queueIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
@@ -177,6 +219,7 @@ bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> blo
     for (auto pkt : block->pkts) {
         quePool_[pushIndex].dataSize += static_cast<uint32_t>(pkt->size);
     }
+    block->queueIndex = pushIndex;
     return quePool_[pushIndex].blockQue->Push(block);
 }
 

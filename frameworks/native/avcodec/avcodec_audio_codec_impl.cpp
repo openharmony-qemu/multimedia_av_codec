@@ -182,11 +182,8 @@ int32_t AVCodecAudioCodecImpl::Release()
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGI("Instances:0x%{public}06" PRIXPTR " Release", FAKE_POINTER(this));
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
-    StopTaskAsync();
+    Stop();
     int32_t ret = codecService_->Release();
-    StopTask();
-    ClearCache();
-    ClearInputBuffer();
     inputBufferSize_ = 0;
     return ret;
 }
@@ -371,13 +368,16 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
         return;
     }
 
-    while (isRunning_ && (!inputIndexQueue.empty())) {
-        std::shared_ptr<AVBuffer> buffer;
-        {
-            std::unique_lock lock2(outputMutex_2);
-            buffer = inputIndexQueue.front();
-            inputIndexQueue.pop();
+    while (isRunning_) {
+        std::unique_lock lock2(outputMutex_2);
+        if (inputIndexQueue.empty()) {
+            break;
         }
+        std::shared_ptr<AVBuffer> buffer;
+        buffer = inputIndexQueue.front();
+        inputIndexQueue.pop();
+        lock2.unlock();
+
         Media::Status ret = mediaCodecProducer_->PushBuffer(buffer, true);
         if (ret != Media::Status::OK) {
             AVCODEC_LOGW("ConsumerOutputBuffer PushBuffer fail, ret=%{public}d", ret);
@@ -411,14 +411,14 @@ void AVCodecAudioCodecImpl::ReturnInputBuffer()
         }
         inputBufferObjMap_.clear();
     }
+    std::unique_lock lock(outputMutex_2);
     while (!inputIndexQueue.empty()) {
         std::shared_ptr<AVBuffer> buffer;
-        {
-            std::unique_lock lock(outputMutex_2);
-            buffer = inputIndexQueue.front();
-            inputIndexQueue.pop();
-        }
+        buffer = inputIndexQueue.front();
+        inputIndexQueue.pop();
+        lock.unlock();
         mediaCodecProducer_->PushBuffer(buffer, false);
+        lock.lock();
     }
 }
 
@@ -428,8 +428,8 @@ void AVCodecAudioCodecImpl::ClearInputBuffer()
         std::unique_lock lock(inputMutex_);
         inputBufferObjMap_.clear();
     }
+    std::unique_lock lock(outputMutex_2);
     while (!inputIndexQueue.empty()) {
-        std::unique_lock lock(outputMutex_2);
         inputIndexQueue.pop();
     }
 }

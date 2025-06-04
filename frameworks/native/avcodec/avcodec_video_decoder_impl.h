@@ -47,6 +47,7 @@ public:
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
         const bool svpFlag) override;
 #endif
+    int32_t NotifyMemoryExchange(const bool exchangeFlag) override;
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Format &format);
 
 private:

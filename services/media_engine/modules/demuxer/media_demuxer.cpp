@@ -80,6 +80,8 @@ constexpr int64_t UPDATE_SOURCE_CACHE_MS = 100;
 constexpr uint32_t BUFFERING_WAVELINE_FOR_SAMPLE_QUEUE = 1000000;
 constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
+constexpr uint32_t SAMPLE_LOOP_ACQUIRE_FAILED_LOG_FREQUENCY = 5;
+constexpr uint32_t SAMPLE_LOOP_REQUEST_FAILED_LOG_FREQUENCY = 50;
 constexpr int32_t US_TO_S = 1000000;
 constexpr int32_t US_TO_MS = 1000;
 constexpr int32_t SAMPLE_BUFFER_SIZE_EXTRA = 128;
@@ -3267,7 +3269,8 @@ int64_t MediaDemuxer::SampleConsumerLoop(uint32_t trackId)
     do {
         size_t size = 0;
         status = sampleQueue->QuerySizeForNextAcquireBuffer(size);
-        CHECK_AND_BREAK_LOG(status == Status::OK, "QuerySizeForNextAcquireBuffer failed " PUBLIC_LOG_U32, trackId);
+        CHECK_AND_BREAK_LOG_LIMIT(status == Status::OK, SAMPLE_LOOP_ACQUIRE_FAILED_LOG_FREQUENCY,
+            "QuerySizeForNextAcquireBuffer failed " PUBLIC_LOG_U32, trackId);
         UpdateSampleQueueCache();
 
         SetTrackNotifySampleConsumerFlag(trackId, true);
@@ -3275,7 +3278,8 @@ int64_t MediaDemuxer::SampleConsumerLoop(uint32_t trackId)
         std::shared_ptr<AVBuffer> dstBuffer;
         avBufferConfig.capacity = static_cast<int32_t>(size);
         status = bufferQueue->RequestBuffer(dstBuffer, avBufferConfig, REQUEST_BUFFER_TIMEOUT);
-        CHECK_AND_BREAK_LOG(status == Status::OK, "RequestBuffer from bufferQueue failed " PUBLIC_LOG_U32, trackId);
+        CHECK_AND_BREAK_LOG_LIMIT(status == Status::OK, SAMPLE_LOOP_REQUEST_FAILED_LOG_FREQUENCY,
+            "RequestBuffer from bufferQueue failed " PUBLIC_LOG_U32, trackId);
         SetTrackNotifySampleConsumerFlag(trackId, false);
 
         status = sampleQueue->AcquireCopyToDstBuffer(dstBuffer);

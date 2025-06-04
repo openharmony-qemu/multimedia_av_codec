@@ -682,9 +682,7 @@ void VideoEncSample::InputParamLoopFunc()
             format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, 1);
         }
 
-        if (roiRects_ != ""){
-            format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
-        }
+        format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
 
         InputLtrParam(format, frameInputCount_, nullptr);
 
@@ -965,12 +963,10 @@ int32_t VideoEncSample::InputLoopInnerExt()
         format->Destroy();
     }
 
-    if (roiRects_ != "") {
-        std::shared_ptr<FormatMock> format = buffer->GetParameter();
-        format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
-        buffer->SetParameter(format);
-        format->Destroy();
-    }
+    std::shared_ptr<FormatMock> formatRoi = buffer->GetParameter();
+    formatRoi->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
+    buffer->SetParameter(formatRoi);
+    formatRoi->Destroy();
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (inFile_->eof()) {
