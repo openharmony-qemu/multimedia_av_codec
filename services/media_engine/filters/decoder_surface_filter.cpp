@@ -47,7 +47,6 @@ static const uint32_t TASK_DELAY_TOLERANCE = 5 * 1000 * 1000; // task delay tole
 static const int64_t MAX_DEBUG_LOG = 10;
 static const int32_t MAX_ADVANCE_US = 80000; // max advance us at render time
 static const double DEFAULT_FRAME_RATE = 30.0; // 30.0 is the hisi default frame rate.
-static const float HIGH_SPEED_LIMIT = 4.0;
 
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
@@ -1355,8 +1354,6 @@ Status DecoderSurfaceFilter::SetVideoWindowSize(int32_t width, int32_t height)
 Status DecoderSurfaceFilter::SetSpeed(float speed)
 {
     FALSE_RETURN_V(videoDecoder_ != nullptr, Status::ERROR_INVALID_OPERATION);
-    FALSE_RETURN_V(hasSetHighSpeed_ || speed >= HIGH_SPEED_LIMIT, Status::OK);
-    hasSetHighSpeed_ = true;
     MEDIA_LOG_D("SetSpeed in");
     double frameRate = 0.0;
     configFormat_.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate);
