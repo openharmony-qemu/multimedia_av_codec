@@ -18,18 +18,14 @@
 #include "meta/meta_key.h"
 #include "avcodec_log.h"
 #include "avcodec_suspend.h"
-#include "unittest_utils.h"
 #include "codeclist_mock.h"
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
-#include "venc_async_sample.h"
-#else
-#include "venc_sync_sample.h"
-#endif
+#include "unittest_utils.h"
 
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videoenc_capi_mock.h"
 #endif
+#include "videoenc_func_test_suit.h"
 
 using namespace std;
 using namespace OHOS;
@@ -49,11 +45,7 @@ void MultiThreadCreateVEnc()
     std::shared_ptr<VEncCallbackTest> vencCallback = std::make_shared<VEncCallbackTest>(vencSignal);
     ASSERT_NE(nullptr, vencCallback);
 
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
-    std::shared_ptr<VideoEncAsyncSample> videoEnc = std::make_shared<VideoEncAsyncSample>(vencSignal);
-#else
-    std::shared_ptr<VideoEncSyncSample> videoEnc = std::make_shared<VideoEncSyncSample>(vencSignal);
-#endif
+    std::shared_ptr<VideoEncSample> videoEnc = std::make_shared<VideoEncSample>(vencSignal);
     ASSERT_NE(nullptr, videoEnc);
 
     EXPECT_LE(g_vencCount.load(), 64); // 64: max instances supported
@@ -69,174 +61,12 @@ void MultiThreadCreateVEnc()
     g_vencCount--;
 }
 
-#ifdef VIDEOENC_CAPI_UNIT_TEST
-struct OH_AVCodecCallback GetVoidCallback()
-{
-    struct OH_AVCodecCallback cb;
-    cb.onError = [](OH_AVCodec *codec, int32_t errorCode, void *userData) {
-        (void)codec;
-        (void)errorCode;
-        (void)userData;
-    };
-    cb.onStreamChanged = [](OH_AVCodec *codec, OH_AVFormat *format, void *userData) {
-        (void)codec;
-        (void)format;
-        (void)userData;
-    };
-    cb.onNeedInputBuffer = [](OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData) {
-        (void)codec;
-        (void)index;
-        (void)buffer;
-        (void)userData;
-    };
-    cb.onNewOutputBuffer = [](OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData) {
-        (void)codec;
-        (void)index;
-        (void)buffer;
-        (void)userData;
-    };
-    return cb;
-}
-struct OH_AVCodecAsyncCallback GetVoidAsyncCallback()
-{
-    struct OH_AVCodecAsyncCallback cb;
-    cb.onError = [](OH_AVCodec *codec, int32_t errorCode, void *userData) {
-        (void)codec;
-        (void)errorCode;
-        (void)userData;
-    };
-    cb.onStreamChanged = [](OH_AVCodec *codec, OH_AVFormat *format, void *userData) {
-        (void)codec;
-        (void)format;
-        (void)userData;
-    };
-    cb.onNeedInputData = [](OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData) {
-        (void)codec;
-        (void)index;
-        (void)data;
-        (void)userData;
-    };
-    cb.onNeedOutputData = [](OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
-                             void *userData) {
-        (void)codec;
-        (void)index;
-        (void)data;
-        (void)attr;
-        (void)userData;
-    };
-    return cb;
-}
-#endif
-
-class TEST_SUIT : public testing::TestWithParam<int32_t> {
-public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp(void);
-    void TearDown(void);
-
-    bool CreateVideoCodecByName(const std::string &decName);
-    bool CreateVideoCodecByMime(const std::string &decMime);
-    void CreateByNameWithParam(int32_t param);
-    void SetFormatWithParam(int32_t param);
-    void PrepareSource(int32_t param);
-    bool ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer);
-    bool GetWaterMarkCapability(int32_t param);
-    bool GetTemporalScalabilityCapability(int32_t param);
-    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(TEST_SUIT)};
-
-protected:
-    std::shared_ptr<CodecListMock> capability_ = nullptr;
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
-    std::shared_ptr<VideoEncAsyncSample> videoEnc_ = nullptr;
-#else
-    std::shared_ptr<VideoEncSyncSample> videoEnc_ = nullptr;
-#endif
-    std::shared_ptr<FormatMock> format_ = nullptr;
-    std::shared_ptr<VEncCallbackTest> vencCallback_ = nullptr;
-    std::shared_ptr<VEncCallbackTestExt> vencCallbackExt_ = nullptr;
-    std::shared_ptr<VEncParamCallbackTest> vencParamCallback_ = nullptr;
-    std::shared_ptr<VEncParamWithAttrCallbackTest> vencParamWithAttrCallback_ = nullptr;
-#ifdef VIDEOENC_CAPI_UNIT_TEST
-    OH_AVCodec *codec_ = nullptr;
-#endif
-};
-
 void TEST_SUIT::SetUpTestCase(void)
 {
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
     g_vencName = capability->GetName();
-}
-
-void TEST_SUIT::TearDownTestCase(void) {}
-
-void TEST_SUIT::SetUp(void)
-{
-    std::shared_ptr<VEncSignal> vencSignal = std::make_shared<VEncSignal>();
-    vencCallback_ = std::make_shared<VEncCallbackTest>(vencSignal);
-    ASSERT_NE(nullptr, vencCallback_);
-
-    vencCallbackExt_ = std::make_shared<VEncCallbackTestExt>(vencSignal);
-    ASSERT_NE(nullptr, vencCallbackExt_);
-
-    vencParamCallback_ = std::make_shared<VEncParamCallbackTest>(vencSignal);
-    ASSERT_NE(nullptr, vencParamCallback_);
-
-    vencParamWithAttrCallback_ = std::make_shared<VEncParamWithAttrCallbackTest>(vencSignal);
-    ASSERT_NE(nullptr, vencParamWithAttrCallback_);
-
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
-    videoEnc_ = std::make_shared<VideoEncAsyncSample>(vencSignal);
-#else
-    videoEnc_ = std::make_shared<VideoEncSyncSample>(vencSignal);
-#endif
-    ASSERT_NE(nullptr, videoEnc_);
-
-    format_ = FormatMockFactory::CreateFormat();
-    ASSERT_NE(nullptr, format_);
-
-    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
-    std::string testCaseName = testInfo_->name();
-    AVCODEC_LOGI("%{public}s", testCaseName.c_str());
-}
-
-void TEST_SUIT::TearDown(void)
-{
-    if (format_ != nullptr) {
-        format_->Destroy();
-    }
-    videoEnc_ = nullptr;
-#ifdef VIDEOENC_CAPI_UNIT_TEST
-    if (codec_ != nullptr) {
-        EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(codec_));
-        codec_ = nullptr;
-    }
-#endif
-}
-
-bool TEST_SUIT::CreateVideoCodecByMime(const std::string &encMime)
-{
-    if (videoEnc_->CreateVideoEncMockByMime(encMime) == false || videoEnc_->SetCallback(vencCallback_) != AV_ERR_OK) {
-        return false;
-    }
-    return true;
-}
-
-bool TEST_SUIT::CreateVideoCodecByName(const std::string &name)
-{
-    if (videoEnc_->isAVBufferMode_) {
-        if (videoEnc_->CreateVideoEncMockByName(name) == false ||
-            videoEnc_->SetCallback(vencCallbackExt_) != AV_ERR_OK) {
-            return false;
-        }
-    } else {
-        if (videoEnc_->CreateVideoEncMockByName(name) == false || videoEnc_->SetCallback(vencCallback_) != AV_ERR_OK) {
-            return false;
-        }
-    }
-    return true;
 }
 
 void TEST_SUIT::CreateByNameWithParam(int32_t param)
@@ -382,59 +212,7 @@ bool TEST_SUIT::GetTemporalScalabilityCapability(int32_t param)
 
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC));
 
-/**
- * @tc.name: VideoEncoder_Multithread_Create_001
- * @tc.desc: try create 100 instances
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoEncoder_Multithread_Create_001, TestSize.Level1)
-{
-    SET_THREAD_NUM(100);
-    g_vencCount = 0;
-    GTEST_RUN_TASK(MultiThreadCreateVEnc);
-    cout << "remaining num: " << g_vencCount.load() << endl;
-}
-
-/**
- * @tc.name: VideoEncoder_CreateWithNull_001
- * @tc.desc: video create
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoEncoder_CreateWithNull_001, TestSize.Level1)
-{
-    ASSERT_FALSE(CreateVideoCodecByName(""));
-}
-
-/**
- * @tc.name: VideoEncoder_CreateWithNull_002
- * @tc.desc: video create
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoEncoder_CreateWithNull_002, TestSize.Level1)
-{
-    ASSERT_FALSE(CreateVideoCodecByMime(""));
-}
-
-/**
- * @tc.name: VideoEncoder_Create_001
- * @tc.desc: video create
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoEncoder_Create_001, TestSize.Level1)
-{
-    ASSERT_TRUE(CreateVideoCodecByName(g_vencName));
-}
-
-/**
- * @tc.name: VideoEncoder_Create_002
- * @tc.desc: video create
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoEncoder_Create_002, TestSize.Level1)
-{
-    ASSERT_TRUE(CreateVideoCodecByMime((CodecMimeType::VIDEO_AVC).data()));
-}
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
+#if defined(VIDEOENC_ASYNC_UNIT_TEST)
 /**
  * @tc.name: VideoEncoder_Setcallback_001
  * @tc.desc: video setcallback
@@ -497,9 +275,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Invalid_SetParameterCallback_001, TestSize.Leve
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
-#endif
 }
 
 /**
@@ -535,8 +311,64 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Invalid_SetParameterCallback_003, TestSize.Leve
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->Start());
 }
-#endif
-#ifdef VIDEOENC_CAPI_UNIT_TEST
+#elif defined(VIDEOENC_ASYNC_UNIT_TEST) && defined(VIDEOENC_CAPI_UNIT_TEST)
+struct OH_AVCodecCallback GetVoidCallback()
+{
+    struct OH_AVCodecCallback cb;
+    cb.onError = [](OH_AVCodec *codec, int32_t errorCode, void *userData) {
+        (void)codec;
+        (void)errorCode;
+        (void)userData;
+    };
+    cb.onStreamChanged = [](OH_AVCodec *codec, OH_AVFormat *format, void *userData) {
+        (void)codec;
+        (void)format;
+        (void)userData;
+    };
+    cb.onNeedInputBuffer = [](OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData) {
+        (void)codec;
+        (void)index;
+        (void)buffer;
+        (void)userData;
+    };
+    cb.onNewOutputBuffer = [](OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData) {
+        (void)codec;
+        (void)index;
+        (void)buffer;
+        (void)userData;
+    };
+    return cb;
+}
+struct OH_AVCodecAsyncCallback GetVoidAsyncCallback()
+{
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = [](OH_AVCodec *codec, int32_t errorCode, void *userData) {
+        (void)codec;
+        (void)errorCode;
+        (void)userData;
+    };
+    cb.onStreamChanged = [](OH_AVCodec *codec, OH_AVFormat *format, void *userData) {
+        (void)codec;
+        (void)format;
+        (void)userData;
+    };
+    cb.onNeedInputData = [](OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData) {
+        (void)codec;
+        (void)index;
+        (void)data;
+        (void)userData;
+    };
+    cb.onNeedOutputData = [](OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
+                             void *userData) {
+        (void)codec;
+        (void)index;
+        (void)data;
+        (void)attr;
+        (void)userData;
+    };
+    return cb;
+}
+
 /**
  * @tc.name: VideoEncoder_Setcallback_Invalid_001
  * @tc.desc: video setcallback
@@ -609,32 +441,6 @@ HWTEST_F(TEST_SUIT, VideoEncoder_PushInputBuffer_Invalid_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_PushInputBuffer_Invalid_003
- * @tc.desc: video push input buffer
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoEncoder_PushInputBuffer_Invalid_003, TestSize.Level1)
-{
-    codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
-    ASSERT_NE(nullptr, codec_);
-    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_PushInputBuffer(nullptr, 0));
-}
-
-/**
- * @tc.name: VideoEncoder_PushInputBuffer_Invalid_004
- * @tc.desc: video push input buffer
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoEncoder_PushInputBuffer_Invalid_004, TestSize.Level1)
-{
-    codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
-    ASSERT_NE(nullptr, codec_);
-    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
-    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_PushInputBuffer(codec_, 0));
-    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
-}
-
-/**
  * @tc.name: VideoEncoder_Free_Buffer_Invalid_001
  * @tc.desc: video free buffer
  * @tc.type: FUNC
@@ -661,35 +467,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Free_Buffer_Invalid_002, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_SetCallback(codec_, cb, nullptr));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_FreeOutputBuffer(codec_, 0));
 }
-
-/**
- * @tc.name: VideoEncoder_Free_Buffer_Invalid_003
- * @tc.desc: video free buffer
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoEncoder_Free_Buffer_Invalid_003, TestSize.Level1)
-{
-    codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
-    ASSERT_NE(nullptr, codec_);
-    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_FreeOutputBuffer(nullptr, 0));
-}
-
-/**
- * @tc.name: VideoEncoder_Free_Buffer_Invalid_004
- * @tc.desc: video free buffer
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoEncoder_Free_Buffer_Invalid_004, TestSize.Level1)
-{
-    codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
-    ASSERT_NE(nullptr, codec_);
-    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
-    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_FreeOutputBuffer(codec_, 0));
-    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
-}
-#else
-
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
+#elif defined(VIDEOENC_ASYNC_UNIT_TEST) && defined(VIDEOENC_INNER_UNIT_TEST)
 /**
  * @tc.name: VideoEncoder_SetParameterWithAttrCallback_001
  * @tc.desc: SetParameterWithAttrCallback and check if meta has pts key-value
@@ -770,7 +548,113 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Invalid_SetParameterWithAttrCallback_004, TestS
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamWithAttrCallback_));
     EXPECT_NE(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
 }
-#endif
+#endif // VIDEOENC_ASYNC_UNIT_TEST
+/**
+ * @tc.name: VideoEncoder_Multithread_Create_001
+ * @tc.desc: try create 100 instances
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_Multithread_Create_001, TestSize.Level1)
+{
+    SET_THREAD_NUM(100);
+    g_vencCount = 0;
+    GTEST_RUN_TASK(MultiThreadCreateVEnc);
+    cout << "remaining num: " << g_vencCount.load() << endl;
+}
+
+/**
+ * @tc.name: VideoEncoder_CreateWithNull_001
+ * @tc.desc: video create
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_CreateWithNull_001, TestSize.Level1)
+{
+    ASSERT_FALSE(CreateVideoCodecByName(""));
+}
+
+/**
+ * @tc.name: VideoEncoder_CreateWithNull_002
+ * @tc.desc: video create
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_CreateWithNull_002, TestSize.Level1)
+{
+    ASSERT_FALSE(CreateVideoCodecByMime(""));
+}
+
+/**
+ * @tc.name: VideoEncoder_Create_001
+ * @tc.desc: video create
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_Create_001, TestSize.Level1)
+{
+    ASSERT_TRUE(CreateVideoCodecByName(g_vencName));
+}
+
+/**
+ * @tc.name: VideoEncoder_Create_002
+ * @tc.desc: video create
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_Create_002, TestSize.Level1)
+{
+    ASSERT_TRUE(CreateVideoCodecByMime((CodecMimeType::VIDEO_AVC).data()));
+}
+#ifdef VIDEOENC_CAPI_UNIT_TEST
+/**
+ * @tc.name: VideoEncoder_PushInputBuffer_Invalid_003
+ * @tc.desc: video push input buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_PushInputBuffer_Invalid_003, TestSize.Level1)
+{
+    codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_PushInputBuffer(nullptr, 0));
+}
+
+/**
+ * @tc.name: VideoEncoder_PushInputBuffer_Invalid_004
+ * @tc.desc: video push input buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_PushInputBuffer_Invalid_004, TestSize.Level1)
+{
+    codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
+    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_PushInputBuffer(codec_, 0));
+    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
+}
+
+/**
+ * @tc.name: VideoEncoder_Free_Buffer_Invalid_003
+ * @tc.desc: video free buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_Free_Buffer_Invalid_003, TestSize.Level1)
+{
+    codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_FreeOutputBuffer(nullptr, 0));
+}
+
+/**
+ * @tc.name: VideoEncoder_Free_Buffer_Invalid_004
+ * @tc.desc: video free buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_Free_Buffer_Invalid_004, TestSize.Level1)
+{
+    codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
+    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_FreeOutputBuffer(codec_, 0));
+    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
+}
+#endif // VIDEOENC_CAPI_UNIT_TEST
+#ifdef VIDEOENC_INNER_UNIT_TEST
 /**
  * @tc.name: VideoEncoder_SetROIParameter_001
  * @tc.desc: SetROIParameter and check if meta has roi key-value
@@ -1088,9 +972,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_009, TestSize.Level1)
     };
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
-#ifdef VIDEOENC_SYNC_UNIT_TEST
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_INPUT_PARAMETER_SYNC_MODE, 1);
-#endif
     PrepareSource(GetParam());
     BufferRequestConfig bufferConfig = {
         .width = 400,
@@ -1130,9 +1011,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_0010, TestSize.Level1)
     };
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
-#ifdef VIDEOENC_SYNC_UNIT_TEST
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_INPUT_PARAMETER_SYNC_MODE, 1);
-#endif
     PrepareSource(GetParam());
     BufferRequestConfig bufferConfig = {
         .width = 400,
@@ -1160,8 +1038,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_0010, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
-#endif // VIDEOENC_CAPI_UNIT_TEST
-
+#endif // VIDEOENC_INNER_UNIT_TEST
 /**
  * @tc.name: VideoEncoder_Start_001
  * @tc.desc: correct flow 1
@@ -1406,11 +1283,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < argc; ++i) {
         cout << argv[i] << endl;
         if (strcmp(argv[i], "--need_dump") == 0) {
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
-            VideoEncAsyncSample::needDump_ = true;
-#else
-            VideoEncSyncSample::needDump_ = true;
-#endif
+            VideoEncSample::needDump_ = true;
             DecArgv(i, argc, argv);
         }
     }

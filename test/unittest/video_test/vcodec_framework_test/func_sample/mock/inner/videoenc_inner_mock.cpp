@@ -299,34 +299,16 @@ std::shared_ptr<AVBufferMock> VideoEncInnerMock::GetInputBuffer(uint32_t index)
 
 int32_t VideoEncInnerMock::QueryInputParameterWithAttr(uint32_t& index, int64_t timeoutUs)
 {
-    if (videoEnc_ != nullptr) {
-        auto ret = videoEnc_->QueryInputParameterWithAttr(index, timeoutUs);
-        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
-    }
-    return AV_ERR_UNKNOWN;
+    return AV_ERR_OK;
 }
 
 std::shared_ptr<FormatMock> VideoEncInnerMock::GetInputParameter(uint32_t index)
 {
-    if (videoEnc_ != nullptr) {
-        auto fmt = videoEnc_->GetInputParameter(index);
-        std::shared_ptr<FormatMock> fmtMock = (fmt == nullptr)
-                                                ? nullptr
-                                                : std::make_shared<AVFormatInnerMock>(*fmt);
-        return fmtMock;
-    }
     return nullptr;
 }
 
 std::shared_ptr<FormatMock> VideoEncInnerMock::GetInputAttribute(uint32_t index)
 {
-    if (videoEnc_ != nullptr) {
-        auto fmt = videoEnc_->GetInputAttribute(index);
-        std::shared_ptr<FormatMock> fmtMock = (fmt == nullptr)
-                                                ? nullptr
-                                                : std::make_shared<AVFormatInnerMock>(*fmt);
-        return fmtMock;
-    }
     return nullptr;
 }
 

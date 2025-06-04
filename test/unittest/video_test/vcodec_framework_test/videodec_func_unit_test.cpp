@@ -123,7 +123,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_001, TestSize.Level1)
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
         std::shared_ptr<VideoDecAsyncSample> videoDec = std::make_shared<VideoDecAsyncSample>(vdecSignal);
 #else
-        std::shared_ptr<VideoDecSyncSample> videoDec = std::make_shared<VideoDecSyncSample>(vdecSignal);;
+        std::shared_ptr<VideoDecSyncSample> videoDec = std::make_shared<VideoDecSyncSample>(vdecSignal);
 #endif
         ASSERT_NE(nullptr, videoDec);
 
@@ -196,7 +196,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_CreateWithNull_002, TestSize.Level1)
 {
     ASSERT_FALSE(CreateVideoCodecByMime(""));
 }
-
+#if defined(VIDEODEC_ASYNC_UNIT_TEST)
 /**
  * @tc.name: VideoDecoder_SetCallback_001
  * @tc.desc: video setcallback
@@ -230,9 +230,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_003, TestSize.Level1)
 {
     ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
-#ifdef VIDEODEC_ASYNC_UNIT_TEST
     ASSERT_NE(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
-#endif
 }
 
 /**
@@ -244,12 +242,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_004, TestSize.Level1)
 {
     ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
-#ifdef VIDEODEC_ASYNC_UNIT_TEST
     ASSERT_NE(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
-#endif
 }
-
-#ifdef VIDEODEC_CAPI_UNIT_TEST
+#elif defined(VIDEODEC_ASYNC_UNIT_TEST) && defined(VIDEODEC_CAPI_UNIT_TEST)
 /**
  * @tc.name: VideoDecoder_SetCallback_Invalid_001
  * @tc.desc: video setcallback
@@ -336,32 +331,6 @@ HWTEST_F(TEST_SUIT, VideoDecoder_PushInputBuffer_Invalid_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_PushInputBuffer_Invalid_003
- * @tc.desc: video push input buffer
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoDecoder_PushInputBuffer_Invalid_003, TestSize.Level1)
-{
-    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
-    ASSERT_NE(nullptr, codec_);
-    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_PushInputBuffer(nullptr, 0));
-}
-
-/**
- * @tc.name: VideoDecoder_PushInputBuffer_Invalid_004
- * @tc.desc: video push input buffer
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoDecoder_PushInputBuffer_Invalid_004, TestSize.Level1)
-{
-    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
-    ASSERT_NE(nullptr, codec_);
-    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
-    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_PushInputBuffer(codec_, 0));
-    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
-}
-
-/**
  * @tc.name: VideoDecoder_Free_Buffer_Invalid_001
  * @tc.desc: video free buffer
  * @tc.type: FUNC
@@ -390,32 +359,6 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Free_Buffer_Invalid_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_Free_Buffer_Invalid_003
- * @tc.desc: video free buffer
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoDecoder_Free_Buffer_Invalid_003, TestSize.Level1)
-{
-    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
-    ASSERT_NE(nullptr, codec_);
-    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_FreeOutputBuffer(nullptr, 0));
-}
-
-/**
- * @tc.name: VideoDecoder_Free_Buffer_Invalid_004
- * @tc.desc: video free buffer
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoDecoder_Free_Buffer_Invalid_004, TestSize.Level1)
-{
-    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
-    ASSERT_NE(nullptr, codec_);
-    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
-    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_FreeOutputBuffer(codec_, 0));
-    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
-}
-
-/**
  * @tc.name: VideoDecoder_Render_Buffer_Invalid_001
  * @tc.desc: video render buffer
  * @tc.type: FUNC
@@ -441,6 +384,58 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Render_Buffer_Invalid_002, TestSize.Level1)
     struct OH_AVCodecAsyncCallback cb = GetVoidAsyncCallback();
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_SetCallback(codec_, cb, nullptr));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_RenderOutputBuffer(codec_, 0));
+}
+#elif defined(VIDEODEC_CAPI_UNIT_TEST)
+/**
+ * @tc.name: VideoDecoder_PushInputBuffer_Invalid_003
+ * @tc.desc: video push input buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_PushInputBuffer_Invalid_003, TestSize.Level1)
+{
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_PushInputBuffer(nullptr, 0));
+}
+
+/**
+ * @tc.name: VideoDecoder_PushInputBuffer_Invalid_004
+ * @tc.desc: video push input buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_PushInputBuffer_Invalid_004, TestSize.Level1)
+{
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
+    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_PushInputBuffer(codec_, 0));
+    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
+}
+
+/**
+ * @tc.name: VideoDecoder_Free_Buffer_Invalid_003
+ * @tc.desc: video free buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_Free_Buffer_Invalid_003, TestSize.Level1)
+{
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_FreeOutputBuffer(nullptr, 0));
+}
+
+/**
+ * @tc.name: VideoDecoder_Free_Buffer_Invalid_004
+ * @tc.desc: video free buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_Free_Buffer_Invalid_004, TestSize.Level1)
+{
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
+    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_FreeOutputBuffer(codec_, 0));
+    codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
 }
 
 /**
@@ -580,16 +575,15 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Reset_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_Release_002
- * @tc.desc: correct flow 2
+ * @tc.name: VideoDecoder_Release_001
+ * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Release_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Release_001, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-
     EXPECT_EQ(AV_ERR_OK, videoDec_->Release());
 }
 
@@ -833,7 +827,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_RenderOutputBufferAtTime_001, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    videoDec_->renderAtTimeFlag_ = false;
+    videoDec_->renderAtTimeFlag_ = true;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());

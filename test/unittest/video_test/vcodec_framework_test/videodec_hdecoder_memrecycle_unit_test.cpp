@@ -896,11 +896,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_All_002, TestSize.
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Memory_Recycle_007
+ * @tc.name: VideoDecoder_Hardware_Memory_Recycle_001
  * @tc.desc: unordered memory recycle function invocation
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_007, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_001, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -925,11 +925,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_007, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Memory_Recycle_008
+ * @tc.name: VideoDecoder_Hardware_Memory_Recycle_002
  * @tc.desc: unordered memory recycle function invocation
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_008, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_002, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());

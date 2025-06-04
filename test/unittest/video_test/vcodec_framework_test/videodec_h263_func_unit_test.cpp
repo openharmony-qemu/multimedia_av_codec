@@ -181,7 +181,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_CreateWithNull_002, TestSize.Level1)
 {
     ASSERT_FALSE(CreateVideoCodecByMime(""));
 }
-
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
 /**
  * @tc.name: VideoDecoder_SetCallback_001
  * @tc.desc: video setcallback
@@ -215,9 +215,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_003, TestSize.Level1)
 {
     ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
-#ifdef VIDEODEC_ASYNC_UNIT_TEST
     ASSERT_NE(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
-#endif
 }
 
 /**
@@ -229,11 +227,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_004, TestSize.Level1)
 {
     ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
-#ifdef VIDEODEC_ASYNC_UNIT_TEST
     ASSERT_NE(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
-#endif
 }
-
+#endif // VIDEODEC_ASYNC_UNIT_TEST
 #ifdef VIDEODEC_CAPI_UNIT_TEST
 /**
  * @tc.name: VideoDecoder_SetCallback_Invalid_001

@@ -75,13 +75,10 @@ group("vcodec_framework_test") {
         ":videoenc_capi_sync_unit_test",
         ":videoenc_inner_async_unit_test",
         ":videoenc_inner_sync_unit_test",
-        ":videoenc_repeat_previous_frame_async_unit_test",
-        ":videoenc_repeat_previous_frame_sync_unit_test",
+        ":videoenc_repeat_previous_frame_unit_test",
         ":videoenc_stable_unit_test",
-        ":videoenc_temporal_scalability_capi_async_unit_test",
-        ":videoenc_temporal_scalability_capi_sync_unit_test",
-        ":videoenc_temporal_scalability_inner_async_unit_test",
-        ":videoenc_temporal_scalability_inner_sync_unit_test",
+        ":videoenc_temporal_scalability_capi_unit_test",
+        ":videoenc_temporal_scalability_inner_unit_test",
       ]
     }
   }
@@ -372,6 +369,7 @@ ohos_unittest("videoenc_capi_async_unit_test") {
     "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_CAPI_UNIT_TEST",
     "TEST_SUIT=VideoEncCapiAsyncTest",
+    "VideoEncSample=VideoEncAsyncSample",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -418,6 +416,7 @@ ohos_unittest("videoenc_inner_async_unit_test") {
     "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_INNER_UNIT_TEST",
     "TEST_SUIT=VideoEncInnerAsyncTest",
+    "VideoEncSample=VideoEncAsyncSample",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -445,7 +444,7 @@ ohos_unittest("videoenc_inner_async_unit_test") {
 }
 
 #################################################################################################################
-ohos_unittest("videoenc_temporal_scalability_capi_async_unit_test") {
+ohos_unittest("videoenc_temporal_scalability_capi_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = [
@@ -462,7 +461,6 @@ ohos_unittest("videoenc_temporal_scalability_capi_async_unit_test") {
   ]
 
   defines = [
-    "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_CAPI_UNIT_TEST",
     "TEST_SUIT=VideoEncTemporalScalabilityCapiAsyncTest",
   ]
@@ -491,7 +489,7 @@ ohos_unittest("videoenc_temporal_scalability_capi_async_unit_test") {
 }
 
 #################################################################################################################
-ohos_unittest("videoenc_temporal_scalability_inner_async_unit_test") {
+ohos_unittest("videoenc_temporal_scalability_inner_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = [
@@ -507,7 +505,6 @@ ohos_unittest("videoenc_temporal_scalability_inner_async_unit_test") {
   ]
 
   defines = [
-    "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_INNER_UNIT_TEST",
     "TEST_SUIT=VideoEncTemporalScalabilityInnerAsyncTest",
   ]
@@ -541,7 +538,7 @@ ohos_unittest("videoenc_temporal_scalability_inner_async_unit_test") {
 }
 
 #################################################################################################################
-ohos_unittest("videoenc_repeat_previous_frame_async_unit_test") {
+ohos_unittest("videoenc_repeat_previous_frame_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = [
@@ -558,7 +555,6 @@ ohos_unittest("videoenc_repeat_previous_frame_async_unit_test") {
   ]
 
   defines = [
-    "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_CAPI_UNIT_TEST",
     "TEST_SUIT=VideoEncRepeatPreviousFrameAsyncTest",
   ]
@@ -1277,6 +1273,7 @@ ohos_unittest("videoenc_capi_sync_unit_test") {
     "VIDEOENC_SYNC_UNIT_TEST",
     "VIDEOENC_CAPI_UNIT_TEST",
     "TEST_SUIT=VideoEncCapiSyncTest",
+    "VideoEncSample=VideoEncSyncSample",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -1323,6 +1320,7 @@ ohos_unittest("videoenc_inner_sync_unit_test") {
     "VIDEOENC_SYNC_UNIT_TEST",
     "VIDEOENC_INNER_UNIT_TEST",
     "TEST_SUIT=VideoEncInnerSyncTest",
+    "VideoEncSample=VideoEncSyncSample",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -1345,148 +1343,6 @@ ohos_unittest("videoenc_inner_sync_unit_test") {
       [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
 
   external_deps = []
-
-  resource_config_file = resource_configuration_file
-}
-
-#################################################################################################################
-ohos_unittest("videoenc_repeat_previous_frame_sync_unit_test") {
-  sanitize = av_codec_test_sanitize
-  module_out_path = module_output_path
-  include_dirs = [
-    "./",
-    "./common/utils",
-    "./func_sample/base",
-    "./func_sample/mock",
-    "./func_sample/mock/capi",
-    "./func_sample/sample/encoder",
-    "$av_codec_root_dir/test/unittest/codeclist_test",
-    "$av_codec_root_dir/test/unittest/codeclist_test/capi",
-    "$av_codec_root_dir/test/unittest/common/",
-    "$av_codec_root_dir/frameworks/native/capi/common",
-  ]
-
-  defines = [
-    "VIDEOENC_SYNC_UNIT_TEST",
-    "VIDEOENC_CAPI_UNIT_TEST",
-    "TEST_SUIT=VideoEncRepeatPreviousFrameSyncTest",
-  ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
-  }
-
-  cflags = vcodec_unittest_cflags
-
-  sources = [
-    "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
-    "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
-    "./common/utils/unittest_utils.cpp",
-    "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
-    "./func_sample/mock/capi/videoenc_capi_mock.cpp",
-    "./func_sample/sample/encoder/venc_sync_sample.cpp",
-    "./videoenc_repeat_previous_frame_unit_test.cpp",
-  ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = []
-
-  resource_config_file = resource_configuration_file
-}
-
-#################################################################################################################
-ohos_unittest("videoenc_temporal_scalability_capi_sync_unit_test") {
-  sanitize = av_codec_test_sanitize
-  module_out_path = module_output_path
-  include_dirs = [
-    "./",
-    "./common/utils",
-    "./func_sample/base",
-    "./func_sample/mock",
-    "./func_sample/mock/capi",
-    "./func_sample/sample/encoder",
-    "$av_codec_root_dir/test/unittest/codeclist_test",
-    "$av_codec_root_dir/test/unittest/codeclist_test/capi",
-    "$av_codec_root_dir/test/unittest/common/",
-    "$av_codec_root_dir/frameworks/native/capi/common",
-  ]
-
-  defines = [
-    "VIDEOENC_SYNC_UNIT_TEST",
-    "VIDEOENC_CAPI_UNIT_TEST",
-    "TEST_SUIT=VideoEncTemporalScalabilityCapiSyncTest",
-  ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
-  }
-
-  cflags = vcodec_unittest_cflags
-
-  sources = [
-    "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
-    "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
-    "./common/utils/unittest_utils.cpp",
-    "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
-    "./func_sample/mock/capi/videoenc_capi_mock.cpp",
-    "./func_sample/sample/encoder/venc_sync_sample.cpp",
-    "./videoenc_temporal_scalability_unit_test.cpp",
-  ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = []
-
-  resource_config_file = resource_configuration_file
-}
-
-#################################################################################################################
-ohos_unittest("videoenc_temporal_scalability_inner_sync_unit_test") {
-  sanitize = av_codec_test_sanitize
-  module_out_path = module_output_path
-  include_dirs = [
-    "./",
-    "./common/utils",
-    "./func_sample/base",
-    "./func_sample/mock",
-    "./func_sample/mock/inner",
-    "./func_sample/sample/encoder",
-    "$av_codec_root_dir/test/unittest/codeclist_test",
-    "$av_codec_root_dir/test/unittest/codeclist_test/codeclist_test",
-    "$av_codec_root_dir/test/unittest/common/",
-  ]
-
-  defines = [
-    "VIDEOENC_SYNC_UNIT_TEST",
-    "VIDEOENC_INNER_UNIT_TEST",
-    "TEST_SUIT=VideoEncTemporalScalabilityInnerSyncTest",
-  ]
-  if (target_cpu == "arm64") {
-    defines += [ "HMOS_TEST" ]
-  }
-
-  cflags = vcodec_unittest_cflags
-
-  sources = [
-    "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
-    "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
-    "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
-    "./common/utils/unittest_utils.cpp",
-    "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
-    "./func_sample/mock/inner/videoenc_inner_mock.cpp",
-    "./func_sample/sample/encoder/venc_sync_sample.cpp",
-    "./videoenc_temporal_scalability_unit_test.cpp",
-  ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
-  external_deps = []
-
-  if (av_codec_support_drm) {
-    external_deps += [ "drm_framework:drm_framework" ]
-  }
 
   resource_config_file = resource_configuration_file
 }

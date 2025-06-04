@@ -19,11 +19,7 @@
 #include "native_avmagic.h"
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
 #include "venc_async_sample.h"
-#else
-#include "venc_sync_sample.h"
-#endif
 
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
@@ -58,11 +54,7 @@ public:
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
     std::shared_ptr<VideoEncAsyncSample> videoEnc_ = nullptr;
-#else
-    std::shared_ptr<VideoEncSyncSample> videoEnc_ = nullptr;
-#endif
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VEncCallbackTest> vencCallback_ = nullptr;
     std::shared_ptr<VEncCallbackTestExt> vencCallbackExt_ = nullptr;
@@ -94,11 +86,7 @@ void TEST_SUIT::SetUp(void)
     vencParamWithAttrCallback_ = std::make_shared<VEncParamWithAttrCallbackTest>(vencSignal);
     ASSERT_NE(nullptr, vencParamWithAttrCallback_);
 
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
     videoEnc_ = std::make_shared<VideoEncAsyncSample>(vencSignal);
-#else
-    videoEnc_ = std::make_shared<VideoEncSyncSample>(vencSignal);
-#endif
     ASSERT_NE(nullptr, videoEnc_);
 
     format_ = FormatMockFactory::CreateFormat();
@@ -178,9 +166,6 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-#ifdef VIDEOENC_SYNC_UNIT_TEST
-    format_->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
-#endif
 }
 
 bool TEST_SUIT::GetTemporalScalabilityCapability(int32_t param, bool isTemporalScalability)
@@ -737,11 +722,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < argc; ++i) {
         cout << argv[i] << endl;
         if (strcmp(argv[i], "--need_dump") == 0) {
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
             VideoEncAsyncSample::needDump_ = true;
-#else
-            VideoEncSyncSample::needDump_ = true;
-#endif
             DecArgv(i, argc, argv);
         }
     }
