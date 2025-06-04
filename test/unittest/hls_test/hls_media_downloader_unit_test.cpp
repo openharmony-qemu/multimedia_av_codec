@@ -1892,4 +1892,22 @@ HWTEST_F(HlsMediaDownloaderUnitTest, PLAYLIST_DOWNLOADER_004, TestSize.Level1)
     EXPECT_EQ(downloader->playlistDownloader_->IsLive(), true);
     EXPECT_NE(downloader->playlistDownloader_->updateTask_, nullptr);
 }
+
+HWTEST_F(HlsMediaDownloaderUnitTest, STOP_BUFFERING_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    OSAL::SleepFor(2 * 1000);
+    downloader->StopBufferring(true);
+    EXPECT_EQ(downloader->isInterrupt_, true);
+    downloader->StopBufferring(false);
+    downloader->StopBufferring(false);
+    EXPECT_EQ(downloader->isInterrupt_, false);
+}
 }

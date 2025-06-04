@@ -504,6 +504,13 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
         "not Retry, client null or isDestructor or isInterruptNeeded");
     if (isAppBackground_) {
         Pause(true);
+        {
+            AutoLock lk(deinitMutex_);
+            if (client_ != nullptr) {
+                client_->Deinit();
+                client_ = nullptr;
+            }
+        }
         MEDIA_LOG_I("Retry avoid, forground to background.");
         return true;
     }
@@ -1201,25 +1208,33 @@ void Downloader::SetAppState(bool isAppBackground)
 void Downloader::StopBufferring()
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::StopBufferring");
-    if (task_ == nullptr || currentRequest_ == nullptr) {
-        MEDIA_LOG_E("Downloader StopBufferring error.");
-        return;
-    }
+    FALSE_RETURN_MSG(task_ != nullptr && currentRequest_ != nullptr, "task or request is null");
     if (isAppBackground_) {
-        if (!task_->IsTaskRunning() && client_ != nullptr) {
+        {
+            AutoLock lk(deinitMutex_);
+            FALSE_RETURN_NOLOG(!task_->IsTaskRunning() && client_ != nullptr);
             MEDIA_LOG_I("StopBufferring: is task not running.");
+            isClientClose_ = true;
             client_->Close(false);
+            client_->Deinit();
+            client_ = nullptr;
         }
     } else {
-        if (currentRequest_ != nullptr && !shouldStartNextRequest) {
-            int64_t lastStartPos = currentRequest_->startPos_; // downlaod from last pos
-            BeginDownload();
-            currentRequest_->startPos_ = lastStartPos;
-            if (currentRequest_->startPos_ > 0) {
-                currentRequest_->retryOnGoing_ = true;
-                currentRequest_->dropedDataLen_ = 0;
+        {
+            AutoLock lk(deinitMutex_);
+            if (isClientClose_ && client_ == nullptr) {
+                MEDIA_LOG_I("StopBufferring: restart task.");
+                isClientClose_ = false;
+                client_ = NetworkClient::GetInstance(&RxHeaderData, &RxBodyData, this);
+                client_->Init();
+                client_->Open(currentRequest_->url_, currentRequest_->httpHeader_,
+                    currentRequest_->requestInfo_.timeoutMs);
+                if (currentRequest_->startPos_ > 0) {
+                    currentRequest_->retryOnGoing_ = true;
+                    currentRequest_->dropedDataLen_ = 0;
+                }
+                MEDIA_LOG_I("StopBufferring: begin pos " PUBLIC_LOG_U64, currentRequest_->startPos_);
             }
-            MEDIA_LOG_I("StopBufferring: begin pos " PUBLIC_LOG_U64, currentRequest_->startPos_);
         }
         Start();
     }

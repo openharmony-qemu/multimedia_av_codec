@@ -96,7 +96,6 @@ public:
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate, bool isAutoSelect = false);
-    Status StopBufferring(bool flag);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
@@ -176,6 +175,7 @@ public:
     void SetIsCreatedByFilter(bool isCreatedByFilter);
 
     Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size);
+    Status StopBufferring(bool isAppBackground);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;

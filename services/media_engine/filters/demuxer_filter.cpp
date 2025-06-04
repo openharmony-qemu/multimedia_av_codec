@@ -697,13 +697,6 @@ Status DemuxerFilter::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     return demuxer_->GetPlaybackInfo(playbackInfo);
 }
 
-Status DemuxerFilter::StopBufferring(bool flag)
-{
-    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION,
-        "StopBufferring failed, demuxer_ = nullptr.");
-    return demuxer_->StopBufferring(flag);
-}
-
 Status DemuxerFilter::SelectBitRate(uint32_t bitRate, bool isAutoSelect)
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION,
@@ -999,6 +992,12 @@ bool DemuxerFilter::IsFlvLive()
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
     return demuxer_->IsFlvLive();
+}
+
+Status DemuxerFilter::StopBufferring(bool isAppBackground)
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_NULL_POINTER, "demuxer_ is nullptr");
+    return demuxer_->StopBufferring(isAppBackground);
 }
 } // namespace Pipeline
 } // namespace Media

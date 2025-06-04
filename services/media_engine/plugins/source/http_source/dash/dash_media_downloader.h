@@ -73,6 +73,7 @@ public:
     void NotifyInitSuccess() override;
     uint64_t GetMemorySize() override;
     std::string GetContentType() override;
+    Status StopBufferring(bool isAppBackground) override;
 
 private:
     void ReceiveMpdStreamInitEvent();

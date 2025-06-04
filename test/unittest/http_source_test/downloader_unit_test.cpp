@@ -783,7 +783,7 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_2, TestSize.Level1)
     downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->isAppBackground_ = true;
     downloader->StopBufferring();
-    EXPECT_NE(downloader->client_, nullptr);
+    EXPECT_EQ(downloader->client_, nullptr);
 }
 
 HWTEST_F(DownloaderUnitTest, StopBufferring_3, TestSize.Level1)
