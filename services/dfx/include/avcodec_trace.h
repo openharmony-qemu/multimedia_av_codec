@@ -31,6 +31,15 @@ public:
     static void CounterTrace(const std::string& varName, int32_t val);
     ~AVCodecTrace();
 };
+
+#ifdef MEDIA_TRACE_DEBUG_ENABLE
+#define MEDIA_TRACE_DEBUG(name) MediaAVCodec::AVCodecTrace trace(name)
+#define MEDIA_TRACE_DEBUG_POSTFIX(name, postfix) MediaAVCodec::AVCodecTrace trace##postfix(name)
+#else
+#define MEDIA_TRACE_DEBUG(name) ((void)0)
+#define MEDIA_TRACE_DEBUG_POSTFIX(name, postfix) ((void)0)
+#endif
+
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // AVCODEC_TRACE_H

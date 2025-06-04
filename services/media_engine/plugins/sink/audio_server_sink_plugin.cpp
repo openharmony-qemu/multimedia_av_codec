@@ -997,7 +997,7 @@ size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t buff
         }
         destBuffer += ret;
         destLength -= static_cast<size_t>(ret);
-        MEDIA_LOG_D("Written data size " PUBLIC_LOG_D32 ", bufferSize " PUBLIC_LOG_U64, ret, bufferSize);
+        MEDIA_LOG_DD("Written data size " PUBLIC_LOG_D32 ", bufferSize " PUBLIC_LOG_U64, ret, bufferSize);
     }
     return destLength;
 }
@@ -1202,7 +1202,7 @@ int64_t AudioServerSinkPlugin::GetWriteDurationMs()
 
 void AudioServerSinkPlugin::SetInterruptState(bool isInterruptNeeded)
 {
-    MEDIA_LOG_D("onInterrupted %{public}d", isInterruptNeeded);
+    MEDIA_LOG_I("onInterrupted %{public}d", isInterruptNeeded);
     std::unique_lock<std::mutex> lock(mutex_);
     isInterruptNeeded_ = isInterruptNeeded;
     writeCond_.notify_all();
@@ -1258,7 +1258,7 @@ Status AudioServerSinkPlugin::EnqueueBufferDesc(const AudioStandard::BufferDesc 
         enqueueNumber_ = 0;
     }
     ret = audioRenderer_->Enqueue(bufferDesc);
-    MEDIA_LOG_D("EnqueueBufferDesc out");
+    MEDIA_LOG_DD("EnqueueBufferDesc out");
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
         "Enqueue BufferDesc failed, ret=" PUBLIC_LOG_D32, ret);
     return Status::OK;
