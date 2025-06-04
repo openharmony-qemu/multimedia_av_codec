@@ -86,6 +86,7 @@ void CodecBufferCircular::SetIsRunning(bool isRunning)
     std::scoped_lock lock(inMutex_, outMutex_);
     if (isRunning) {
         flag_ |= FLAG_IS_RUNNING;
+        flag_ &= ~FLAG_IS_FLUSHED;
     } else {
         flag_ &= ~FLAG_IS_RUNNING;
     }
@@ -121,6 +122,7 @@ void CodecBufferCircular::ResetFlag()
     flag_ &= ~FLAG_STREAM_CHANGED;
     flag_ &= ~FLAG_ERROR;
     flag_ &= ~FLAG_IS_SYNC;
+    flag_ &= ~FLAG_IS_FLUSHED;
 }
 
 void CodecBufferCircular::ClearCaches()
@@ -161,6 +163,7 @@ void CodecBufferCircular::FlushCaches()
         std::queue<uint32_t> emptyQueue;
         std::swap(outQueue_, emptyQueue);
     }
+    flag_ |= FLAG_IS_FLUSHED;
 }
 
 /******************************** Common ********************************/
@@ -569,7 +572,7 @@ bool CodecBufferCircular::WaitForBuffer(std::unique_lock<std::mutex> &lock, std:
         return (isOutput ? outQueue_ : inQueue_).size() > 0 || // get new buffer
                (flag_ & FLAG_ERROR) ||                         // on error
                ((flag_ & FLAG_STREAM_CHANGED) && isOutput) ||  // on output format changed
-               !(flag_ & FLAG_IS_RUNNING);                     // stop running
+               !(flag_ & (FLAG_IS_RUNNING | FLAG_IS_FLUSHED)); // not in RUNING or FLUSHED
     };
     if (timeoutUs < 0) {
         cond.wait(lock, func);
