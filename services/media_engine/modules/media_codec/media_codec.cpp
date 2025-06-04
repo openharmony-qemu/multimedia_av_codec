@@ -763,7 +763,7 @@ void MediaCodec::ProcessInputBuffer()
 
 void MediaCodec::HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingNeeded, Status &ret)
 {
-   MEDIA_TRACE_DEBUG_POSTFIX("MediaCodec::HandleInputBufferInner", "1");
+    MEDIA_TRACE_DEBUG_POSTFIX("MediaCodec::HandleInputBufferInner", "1");
 
     std::shared_ptr<AVBuffer> filledInputBuffer;
     if (state_ != CodecState::RUNNING) {
