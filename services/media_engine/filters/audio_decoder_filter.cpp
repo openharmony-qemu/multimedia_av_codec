@@ -555,6 +555,8 @@ Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
     bool isOutPort = recvArg == static_cast<int>(BufferQueueBufferAVailable::BUFFER_AVAILABLE_OUT_PORT);
     uint32_t lastBufferStatus = BUFFER_STATUS_INIT_PROCESS_ALWAYS; // DO ProcessInput by default
+    MEDIA_TRACE_DEBUG_POSTFIX(std::string("AudioDecoderFilter::DoProcessInputBuffer-In:") +
+        std::to_string(isOutPort) + "," + std::to_string(dropFrame) + "," + std::to_string(bufferStatusMutex_), "1");
     {
         std::unique_lock<std::mutex> lock(bufferStatusMutex_, std::try_to_lock);
         if (lock.owns_lock()) {
@@ -563,8 +565,8 @@ Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
             lastBufferStatus = bufferStatus_;
         }
     }
-    MEDIA_TRACE_DEBUG(std::string("AudioDecoderFilter::DoProcessInputBuffer:") +
-        std::to_string(isOutPort) + "," + std::to_string(dropFrame) + "," + std::to_string(lastBufferStatus));
+    MEDIA_TRACE_DEBUG_POSTFIX(std::string("AudioDecoderFilter::DoProcessInputBuffer-Process:") +
+        std::to_string(isOutPort) + "," + std::to_string(dropFrame) + "," + std::to_string(lastBufferStatus), "2");
 
     uint32_t bufferStatus = BUFFER_STATUS_INIT_IGNORE_RET;
     decoder_->ProcessInputBufferInner(isOutPort, dropFrame, bufferStatus);
