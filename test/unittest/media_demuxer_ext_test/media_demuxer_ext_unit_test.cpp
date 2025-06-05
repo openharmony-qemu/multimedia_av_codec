@@ -365,9 +365,9 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_AddDemuxerCopyTask_003, TestSi
  */
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetTargetVideoTrackId_001, TestSize.Level1)
 {
-    mediaDemuxer_->targetVideoTrackId_ = MediaDemuxer::TRACK_ID_DUMMY;
+    mediaDemuxer_->targetVideoTrackId_ = MediaDemuxer::TRACK_ID_INVALID;
     std::vector<std::shared_ptr<Meta>> vector;
-    EXPECT_EQ(mediaDemuxer_->GetTargetVideoTrackId(vector), MediaDemuxer::TRACK_ID_DUMMY);
+    EXPECT_EQ(mediaDemuxer_->GetTargetVideoTrackId(vector), MediaDemuxer::TRACK_ID_INVALID);
 }
 
 /**
@@ -377,10 +377,10 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetTargetVideoTrackId_001, Tes
  */
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetTargetVideoTrackId_002, TestSize.Level1)
 {
-    mediaDemuxer_->targetVideoTrackId_ = MediaDemuxer::TRACK_ID_DUMMY;
+    mediaDemuxer_->targetVideoTrackId_ = MediaDemuxer::TRACK_ID_INVALID;
     std::vector<std::shared_ptr<Meta>> vector;
     vector.push_back(nullptr);
-    EXPECT_EQ(mediaDemuxer_->GetTargetVideoTrackId(vector), MediaDemuxer::TRACK_ID_DUMMY);
+    EXPECT_EQ(mediaDemuxer_->GetTargetVideoTrackId(vector), MediaDemuxer::TRACK_ID_INVALID);
 }
 
 /**

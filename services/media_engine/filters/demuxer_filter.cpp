@@ -619,7 +619,7 @@ void DemuxerFilter::SetDumpFlag(bool isDump)
     }
 }
 
-std::map<uint32_t, sptr<AVBufferQueueProducer>> DemuxerFilter::GetBufferQueueProducerMap()
+std::map<int32_t, sptr<AVBufferQueueProducer>> DemuxerFilter::GetBufferQueueProducerMap()
 {
     return demuxer_->GetBufferQueueProducerMap();
 }
@@ -686,7 +686,8 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     nextFilter_ = nextFilter;
     nextFiltersMap_[outType].push_back(nextFilter_);
     MEDIA_LOG_I_SHORT("LinkNext NextFilter FilterType " PUBLIC_LOG_D32, nextFilter_->GetFilterType());
-    meta->SetData(Tag::REGULAR_TRACK_ID, trackId);
+    uint32_t trackIdMeta = static_cast<uint32_t>(trackId);
+    meta->SetData(Tag::REGULAR_TRACK_ID, trackIdMeta);
     if (fileType == FileType::AVI) {
         MEDIA_LOG_I("File type is AVI " PUBLIC_LOG_D32, static_cast<int32_t>(FileType::AVI));
         meta->SetData(Tag::MEDIA_FILE_TYPE, FileType::AVI);
@@ -845,23 +846,21 @@ void DemuxerFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBuff
         MEDIA_LOG_E_SHORT("meta is invalid.");
         return;
     }
-    int32_t trackId;
-    if (!meta->GetData(Tag::REGULAR_TRACK_ID, trackId)) {
+    uint32_t trackIdMeta;
+    if (!meta->GetData(Tag::REGULAR_TRACK_ID, trackIdMeta)) {
         MEDIA_LOG_E_SHORT("trackId not found");
         return;
     }
+    int32_t trackId = static_cast<uint32_t>(trackIdMeta);
     demuxer_->SetOutputBufferQueue(trackId, outputBufferQueue);
-    if (trackId < 0) {
-        return;
-    }
-    uint32_t trackIdU32 = static_cast<uint32_t>(trackId);
+    FALSE_RETURN_NOLOG(trackId >= 0);
     int32_t decoderFramerateUpperLimit = 0;
     if (meta->GetData(Tag::VIDEO_DECODER_RATE_UPPER_LIMIT, decoderFramerateUpperLimit)) {
-        demuxer_->SetDecoderFramerateUpperLimit(decoderFramerateUpperLimit, trackIdU32);
+        demuxer_->SetDecoderFramerateUpperLimit(decoderFramerateUpperLimit, trackId);
     }
     double framerate;
     if (meta->GetData(Tag::VIDEO_FRAME_RATE, framerate)) {
-        demuxer_->SetFrameRate(framerate, trackIdU32);
+        demuxer_->SetFrameRate(framerate, trackId);
     }
 }
 
