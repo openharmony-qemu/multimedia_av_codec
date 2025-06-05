@@ -46,6 +46,10 @@ public:
 
     Status DoResume() override;
 
+    Status FreezeAudioSink();
+
+    Status UnFreezeAudioSink();
+
     Status DoFlush() override;
 
     Status DoStop() override;
@@ -121,7 +125,6 @@ private:
     std::shared_ptr<AudioSink> audioSink_;
     std::string name_;
     FilterType filterType_;
-    FilterState state_ = FilterState::CREATED;
     std::shared_ptr<Meta> trackMeta_;
     std::shared_ptr<Meta> globalMeta_;
 

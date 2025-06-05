@@ -447,6 +447,20 @@ Status AudioSink::SetIsTransitent(bool isTransitent)
     return Status::OK;
 }
 
+Status AudioSink::Freeze()
+{
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    plugin_->Freeze();
+    return Status::OK;
+}
+
+Status AudioSink::UnFreeze()
+{
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    plugin_->UnFreeze();
+    return Status::OK;
+}
+
 Status AudioSink::PrepareInputBufferQueue()
 {
     if (inputBufferQueue_ != nullptr && inputBufferQueue_-> GetQueueSize() > 0) {
