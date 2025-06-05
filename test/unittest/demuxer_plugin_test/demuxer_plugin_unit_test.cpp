@@ -91,7 +91,7 @@ void DemuxerPluginUnitTest::InitResource(const std::string &filePath, std::strin
 }
 
 void DemuxerPluginUnitTest::InitWeakNetworkDemuxerPlugin(
-    const std::string& filePath,std::string pluginName, int64_t failOffset, size_t maxFailCount)
+    const std::string& filePath, std::string pluginName, int64_t failOffset, size_t maxFailCount)
 {
     struct stat fileStatus {};
     if (stat(filePath.c_str(), &fileStatus) != 0) {

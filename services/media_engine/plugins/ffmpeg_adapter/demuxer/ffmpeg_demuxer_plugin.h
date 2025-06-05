@@ -319,7 +319,6 @@ private:
     std::mutex seekWaitMutex_;
     std::condition_variable seekWaitCv_;
     std::atomic<bool> threadReady_ {false};
-    
 };
 
 typedef struct DtsFinder {
