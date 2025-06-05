@@ -1439,11 +1439,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_010, TestSize.Level1)
         CheckFormatKey(videoDec_, format_);
         EXPECT_EQ(AVCS_ERR_OK, videoDec_->Stop());
     } else if (testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
-        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AVCS_ERR_OK, videoDec_->Start());
-        CheckFormatKeyForP3Full(videoDec_, format);
+        CheckFormatKeyForP3Full(videoDec_, format_);
         EXPECT_EQ(AVCS_ERR_OK, videoDec_->Stop());
     } else if (testCode == VCodecTestCode::HW_AVC || testCode == VCodecTestCode::SW_AVC) {
         ASSERT_EQ(AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
