@@ -136,7 +136,7 @@ struct DemuxerPlugin : public PluginBase {
      * @brief Get next sample size (synchronous version).
      *
      * This function uses a synchronous implementation mechanism. It is valid only after the RUNNING state.
-     * 
+     *
      * @note This synchronous interface must be used together with the synchronous version of ReadSample.
      *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
