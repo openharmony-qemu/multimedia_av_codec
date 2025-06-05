@@ -281,6 +281,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/swdecoderserver_fuzzer:SwdecoderServerFuzzTest",
       "fuzztest/swdecodersetparameter_fuzzer:SwdecoderSetParameterFuzzTest",
       "fuzztest/demuxersetdatasourcewithprobsize_fuzzer:DemuxerSetDataSourceWithProbSizeFuzzTest",
+      "fuzztest/demuxergetcommentdata_fuzzer:DemuxerGetCommentDataFuzzTest",
     ]
   }
 }

@@ -53,7 +53,7 @@ void DemuxerSetDataSourceWithProbSizeFuzzTest(const uint8_t *data, size_t size)
     int probSize = provider.ConsumeIntegral<int32_t>();
     DemuxerPluginTest test;
     test.Run(typeName, TEST_FILE_PATH, probSize);
-    remove(TEST_FILE_PATH);
+    (void)remove(TEST_FILE_PATH);
     return;
 }
 }
