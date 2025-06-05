@@ -73,7 +73,7 @@ public:
     {
         return mapStatus_[name_];
     }
-    Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source, 
+    Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
         const int32_t probSize) override
     {
         return mapStatus_[name_];
