@@ -139,7 +139,7 @@ enum VCodecTestCode : int32_t { HW_AVC, HW_HEVC, HW_HDR, HW_HDR_HLG_FULL, SW_AVC
 const std::map<int32_t, std::string> decSourcePathMap_ = {{HW_AVC, "/data/test/media/720_1280_25_avcc.h264"},
                                                           {HW_HEVC, "/data/test/media/720_1280_25_avcc.h265"},
                                                           {HW_HDR, "/data/test/media/720_1280_25_avcc.hdr.h265"},
-                                                          {HW_HDR_HLG_FULL, "/data/test/media/720_1280_25_avcc_hlg_full.h265"},
+                                                          {HW_HDR_HLG_FULL, "/data/test/media/1920_1440_30_avcc.h265"},
                                                           {SW_AVC, "/data/test/media/720_1280_25_avcc.h264"},
                                                           {SW_MPEG2, "/data/test/media/mpeg2.m2v"},
                                                           {SW_MPEG4, "/data/test/media/mpeg4.m4v"},
@@ -149,6 +149,10 @@ constexpr uint32_t DEFAULT_BITRATE = 12000;
 
 constexpr uint32_t DEFAULT_WIDTH = 720;
 constexpr uint32_t DEFAULT_HEIGHT = 1280;
+
+constexpr uint32_t DEFAULT_WIDTH_HLG_FULL = 1920;
+constexpr uint32_t DEFAULT_HEIGHT_HLG_FULL = 1440;
+
 constexpr uint32_t MPEG_HEIGHT = 480;
 constexpr uint32_t DEFAULT_FRAME_RATE = 20;
 
