@@ -624,7 +624,7 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         parameter->Get<Tag::VIDEO_SCALE_TYPE>(scaleType);
         preScaleType_ = scaleType;
         OHOS::ScalingMode scalingMode = ConvertMediaScaleType(static_cast<VideoScaleType>(scaleType));
-        if(videoSurface_) {
+        if (videoSurface_) {
             GSError err = videoSurface_->SetScalingMode(scalingMode);
             if (err != GSERROR_OK) {
                 MEDIA_LOG_W("set ScalingMode %{public}d to surface failed", static_cast<int>(scalingMode));
