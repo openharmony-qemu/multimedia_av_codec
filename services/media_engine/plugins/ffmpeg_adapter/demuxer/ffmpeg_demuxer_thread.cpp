@@ -76,7 +76,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
                 ret = HandleReadOK(ioContext, dataSize);
                 break;
             case Status::ERROR_AGAIN:
-                ret = HandleReadAgain(ioContext, dataSize, tryCount);            
+                ret = HandleReadAgain(ioContext, dataSize, tryCount);
                 break;
             case Status::END_OF_STREAM:
                 ret = HandleReadEOS(ioContext);
