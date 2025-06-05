@@ -24,7 +24,6 @@
 #include <gtest/gtest.h>
 #include "media_description.h"
 
-#define DEFAULT_BUFFSIZE (3840 * 2160 * 3)
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;

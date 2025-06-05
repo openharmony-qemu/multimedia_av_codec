@@ -116,7 +116,7 @@ struct DemuxerPlugin : public PluginBase {
      * @brief Reads data frames within @param timeout milliseconds (asynchronous version).
      *
      * This function uses an asynchronous implementation mechanism. It is valid only after the RUNNING state.
-     * 
+     *
      * @note This asynchronous interface must be used together with the asynchronous version of GetNextSampleSize.
      *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *

@@ -16,6 +16,7 @@
 #ifndef DEMUXER_PLUGIN_UNIT_TEST_H
 #define DEMUXER_PLUGIN_UNIT_TEST_H
 
+#define DEFAULT_BUFFSIZE (3840 * 2160 * 3)
 #include <gtest/gtest.h>
 #include <memory>
 #include <string>
