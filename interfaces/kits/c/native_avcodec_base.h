@@ -789,7 +789,7 @@ extern const char *OH_MD_KEY_CREATION_TIME;
  * can be omitted, like "Top1,Left1-Bottom1,Right1;Top2,Left2-Bottom2,Right2=Offset2;", the encoder
  * will use the default quantization parameter to perform the ROI encoding on the first ROI and
  * use Offset2 on the second ROI.
- * 
+ *
  * This is an optional key that applies only to video encoder.
  * It is used in running process and is set with each frame.
  * In surface mode, it is used in {@link OH_VideoEncoder_OnNeedInputParameter}.
