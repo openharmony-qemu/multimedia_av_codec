@@ -133,7 +133,7 @@ private:
         std::atomic<bool> initErrorAgain {false};
         std::mutex invokerTypeMutex;
         std::atomic<InvokerType> invokerType {INVOKER_NONE};
-        bool readCbReady_ {false};
+        bool readCbReady {false};
     };
     
     bool SelectedVideo();

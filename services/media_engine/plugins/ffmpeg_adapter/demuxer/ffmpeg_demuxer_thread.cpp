@@ -113,8 +113,8 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
     tryCount++;
     if (tryCount >= AV_READ_PACKET_RETRY_UPPER_LIMIT) {
         std::unique_lock<std::mutex> readLock(readPacketMutex_);
-        readCbCv_.wait(readLock, [ioContext]() {return ioContext->readCbReady_;}); // Wait to be notified
-        ioContext->readCbReady_ = false; // Reset the flag
+        readCbCv_.wait(readLock, [ioContext]() {return ioContext->readCbReady;}); // Wait to be notified
+        ioContext->readCbReady = false; // Reset the flag
         tryCount = 0;
     } else {
         MEDIA_LOG_I("Read again, retry count: " PUBLIC_LOG_D32, tryCount);
@@ -202,7 +202,7 @@ Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t t
     if (!cacheQueue_.HasCache(trackId)) {
         if (threadState_ == READING) {
             std::lock_guard<std::mutex> readLock(readPacketMutex_);
-            ioContext_.readCbReady_ = true;
+            ioContext_.readCbReady = true;
             readCbCv_.notify_one();
         }
         if (threadState_ == WAITING) {

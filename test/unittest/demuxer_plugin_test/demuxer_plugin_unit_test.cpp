@@ -25,7 +25,7 @@
 #include "media_description.h"
 
 // #define LOCAL true
-#define DEFAULT_BUFFSIZE 3840 * 2160 * 3
+#define DEFAULT_BUFFSIZE (3840 * 2160 * 3)
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
@@ -335,7 +335,6 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorReadSample_0001, TestSize.Level1)
     ASSERT_NE(demuxerPlugin_, nullptr); // 检查插件是否初始化成功
     ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
-    //OHOS::Media::AVBufferWrapper buffer(0);
     std::shared_ptr<MediaAVBuffer> mediaAVBuffer = nullptr;
     ASSERT_NE(demuxerPlugin_->ReadSample(0, mediaAVBuffer, 100), Status::OK);
 }
