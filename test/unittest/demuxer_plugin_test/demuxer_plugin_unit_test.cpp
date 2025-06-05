@@ -195,7 +195,7 @@ void DemuxerPluginUnitTest::CountFrames(uint32_t index)
 void DemuxerPluginUnitTest::ReadData()
 {
     SetInitValue();
-    AVBufferWrapper buffer(videoHeight_ * videoWidth_ * 3);
+    AVBufferWrapper buffer(videoHeight_ * videoWidth_ * 3); // 3 is use for buffer allocate
     while (!isEOS(eosFlag_)) {
         for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);

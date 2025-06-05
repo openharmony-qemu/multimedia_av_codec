@@ -40,7 +40,7 @@ public:
     void TearDown() override;
     void InitResource(const std::string &filePath, std::string pluginName);
     void InitWeakNetworkDemuxerPlugin(
-        const std::string& filePath,std::string pluginName, int64_t failOffset, size_t maxFailCount);
+        const std::string& filePath, std::string pluginName, int64_t failOffset, size_t maxFailCount);
     void SetInitValue();
     bool isEOS(std::map<uint32_t, bool>& countFlag);
     bool CheckKeyFrameIndex(std::vector<uint32_t> keyFrameIndexList, const uint32_t frameIndex, const bool isKeyFrame);
@@ -67,12 +67,15 @@ struct AVBufferWrapper {
     std::shared_ptr<MediaAVBuffer> mediaAVBuffer;
     explicit AVBufferWrapper(uint32_t size)
     {
-        ptr = std::shared_ptr<uint8_t>(new uint8_t[size], std::default_delete<uint8_t[]>());
+        if (size == 0) {
+            size = DEFAULT_BUFFSIZE;
+        }
+        ptr = std::make_unique<uint8_t []>(size);
         mediaAVBuffer = MediaAVBuffer::CreateAVBuffer(ptr.get(), size, 0);
     }
 private:
     AVBufferWrapper() = delete;
-    std::shared_ptr<uint8_t> ptr;
+    std::unique_ptr<uint8_t []> ptr;
 };
 
 class SourceCallback : public Plugins::Callback {
