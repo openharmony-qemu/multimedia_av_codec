@@ -86,7 +86,6 @@ public:
     Status UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate, bool isAutoSelect = false);
-    Status StopBufferring(bool flag);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
 
@@ -127,6 +126,7 @@ public:
     uint64_t GetCachedDuration();
     void RestartAndClearBuffer();
     bool IsFlvLive();
+    Status StopBufferring(bool isAppBackground);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;

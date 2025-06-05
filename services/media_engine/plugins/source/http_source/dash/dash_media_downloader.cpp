@@ -1250,6 +1250,16 @@ uint64_t DashMediaDownloader::GetMemorySize()
     }
     return memorySize;
 }
+
+Status DashMediaDownloader::StopBufferring(bool isAppBackground)
+{
+    MEDIA_LOG_I("DashMediaDownloader:StopBufferring enter");
+    for (size_t index = 0; index < segmentDownloaders_.size(); index++) {
+        FALSE_RETURN_V(segmentDownloaders_[index] != nullptr, Status::ERROR_NULL_POINTER);
+        segmentDownloaders_[index]->StopBufferring(isAppBackground);
+    }
+    return Status::OK;
+}
 }
 }
 }

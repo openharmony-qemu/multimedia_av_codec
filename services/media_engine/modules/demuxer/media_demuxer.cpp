@@ -1575,19 +1575,6 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate, bool isAutoSelect)
     return ret;
 }
 
-Status MediaDemuxer::StopBufferring(bool flag)
-{
-    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_INVALID_PARAMETER, "Source is nullptr");
-    MEDIA_LOG_I("In");
-    Status ret = source_->StopBufferring(flag);
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("Stop buffering failed");
-        return ret;
-    }
-    MEDIA_LOG_I("Out");
-    return ret;
-}
-
 std::vector<std::shared_ptr<Meta>> MediaDemuxer::GetStreamMetaInfo() const
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
@@ -3628,6 +3615,12 @@ Status MediaDemuxer::GetCurrentCacheSize(uint32_t trackId, uint32_t& size)
         FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER, "Plugin is nullptr");
     }
     return pluginTemp->GetCurrentCacheSize(trackId, size);
+}
+
+Status MediaDemuxer::StopBufferring(bool isAppBackground)
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER, "source_ is nullptr");
+    return source_->StopBufferring(isAppBackground);
 }
 } // namespace Media
 } // namespace OHOS

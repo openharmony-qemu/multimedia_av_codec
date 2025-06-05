@@ -176,7 +176,8 @@ public:
     void SetDurationForPlaying(double duration);
     void NotifyInitSuccess();
     size_t GetRingBufferInitSize(MediaAVCodec::MediaType streamType) const;
-
+    void SetAppState(bool isAppBackground);
+    Status StopBufferring(bool isAppBackground);
 private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
     void PutRequestIntoDownloader(unsigned int duration, int64_t startPos, int64_t endPos, const std::string &url);
