@@ -376,7 +376,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0002, TestSize.Level1)
     ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
     printf("DemuxerPluginUnitTest::Demuxer_SelectTrack_0001 read\n");
     int32_t size = 0;
-    demuxerPlugin_->GetNextSampleSize(0,size, 100);
+    demuxerPlugin_->GetNextSampleSize(0, size, 100);
     AVBufferWrapper buffer(size);
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
 }
