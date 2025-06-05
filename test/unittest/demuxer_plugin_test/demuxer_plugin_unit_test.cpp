@@ -45,7 +45,8 @@ void DemuxerPluginUnitTest::TearDownTestCase(void) {}
 
 void DemuxerPluginUnitTest::SetUp(void) {}
 
-void DemuxerPluginUnitTest::TearDown(void) {
+void DemuxerPluginUnitTest::TearDown(void)
+{
     if (fd_ > 0) {
         close(fd_);
         fd_ = -1;
