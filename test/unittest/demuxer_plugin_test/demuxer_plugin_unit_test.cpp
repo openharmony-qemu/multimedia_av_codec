@@ -202,10 +202,6 @@ void DemuxerPluginUnitTest::ReadData()
     while (!isEOS(eosFlag_)) {
         for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
-            // if ((ret != Status::OK && ret != Status::END_OF_STREAM && ret != Status::NO_ERROR)){
-            //     printf("ReadSample failed, ret = %d\n", ret);
-            //     break;
-            // }
             ASSERT_TRUE(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR);
             flag_ = buffer.mediaAVBuffer->flag_;
             CountFrames(i);
