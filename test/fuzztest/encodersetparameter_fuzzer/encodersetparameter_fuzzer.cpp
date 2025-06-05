@@ -28,25 +28,8 @@ constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 namespace OHOS {
-bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
+void SetRandomValue(const uint8_t *data, size_t size)
 {
-    if (size < sizeof(int64_t)) {
-        return false;
-    }
-    if (!vEncSample) {
-        vEncSample = new VEncFuzzSample();
-        vEncSample->defaultWidth = DEFAULT_WIDTH;
-        vEncSample->defaultHeight = DEFAULT_HEIGHT;
-        vEncSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-        vEncSample->fuzzMode = true;
-        OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
-        string tmpCodecName = OH_AVCapability_GetName(cap);
-        vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
-        vEncSample->SetVideoEncoderCallback();
-        vEncSample->ConfigureVideoEncoder();
-        vEncSample->Start();
-    }
-
     OH_AVFormat *format = OH_AVFormat_CreateVideoFormat("video/avc", DEFAULT_WIDTH, DEFAULT_HEIGHT);
     FuzzedDataProvider fdp(data, size);
     int intData0 = fdp.ConsumeIntegral<int32_t>();
@@ -86,6 +69,26 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 
     vEncSample->SetParameter(format);
     OH_AVFormat_Destroy(format);
+}
+bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
+{
+    if (size < sizeof(int64_t)) {
+        return false;
+    }
+    if (!vEncSample) {
+        vEncSample = new VEncFuzzSample();
+        vEncSample->defaultWidth = DEFAULT_WIDTH;
+        vEncSample->defaultHeight = DEFAULT_HEIGHT;
+        vEncSample->defaultFrameRate = DEFAULT_FRAME_RATE;
+        vEncSample->fuzzMode = true;
+        OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
+        string tmpCodecName = OH_AVCapability_GetName(cap);
+        vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
+        vEncSample->SetVideoEncoderCallback();
+        vEncSample->ConfigureVideoEncoder();
+        vEncSample->Start();
+    }
+    SetRandomValue(data, size);
     return true;
 }
 } // namespace OHOS
