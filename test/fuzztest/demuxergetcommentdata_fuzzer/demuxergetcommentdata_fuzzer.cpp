@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include <unistd.h> 
+#include <unistd.h>
 #include <fcntl.h>
 #include "native_avsource.h"
 #include "native_avformat.h"
@@ -23,7 +23,7 @@
 using namespace std;
 namespace OHOS {
 const int64_t EXPECT_SIZE = 64;
-char TEST_FILE_PATH[] = "/data/test/demuxergetcommentdatafuzztest.mp4";
+const char* TEST_FILE_PATH = "/data/test/demuxergetcommentdatafuzztest.mp4";
 
 bool CheckDataValidity(const uint8_t *data, size_t size)
 {
@@ -49,7 +49,7 @@ void DemuxerGetCommentDataFuzzTest(const uint8_t *data, size_t size)
         return;
     }
     const char* metaStringValue = nullptr;
-    auto source = OH_AVSource_CreateWithURI(TEST_FILE_PATH);
+    auto source = OH_AVSource_CreateWithURI(const_cast<char*>(TEST_FILE_PATH));
     if (source == nullptr) {
         return;
     }
