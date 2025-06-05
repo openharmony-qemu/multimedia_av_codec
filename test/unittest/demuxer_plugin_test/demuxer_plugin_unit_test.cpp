@@ -200,7 +200,7 @@ void DemuxerPluginUnitTest::ReadData()
     SetInitValue();
     AVBufferWrapper buffer(videoHeight_ * videoWidth_ * 3);
     while (!isEOS(eosFlag_)) {
-        for(uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
             // if ((ret != Status::OK && ret != Status::END_OF_STREAM && ret != Status::NO_ERROR)){
             //     printf("ReadSample failed, ret = %d\n", ret);
@@ -397,7 +397,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0003, TestSize.Level1)
     OHOS::Media::AVBufferWrapper buffer(videoHeight_ * videoWidth_ * 3);
     std::vector<uint32_t> keyFrameIndex = {0};
     while (!isEOS(eosFlag_)) {
-        for(uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
             ASSERT_TRUE(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR);
             flag_ = buffer.mediaAVBuffer->flag_;
@@ -432,7 +432,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0004, TestSize.Level1)
     OHOS::Media::AVBufferWrapper buffer(videoHeight_ * videoWidth_ * 3);
     std::vector<uint32_t> keyFrameIndex = {0};
     while (!isEOS(eosFlag_)) {
-        for(uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer);
             ASSERT_TRUE(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR);
             flag_ = buffer.mediaAVBuffer->flag_;
@@ -496,8 +496,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekToTime_0001, TestSize.Level1)
     InitResource(g_flvPath, pluginName);
     ASSERT_TRUE(initStatus_);
     SetInitValue();
-    for(uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx)
-    {
+    for (uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx) {
         ASSERT_EQ(demuxerPlugin_->SelectTrack(idx), Status::OK);
     }
     int64_t seekTime_ = 0;
@@ -538,8 +537,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorSeekToTime_0001, TestSize.Level1)
     ASSERT_EQ(demuxerPlugin_->GetMediaInfo(mediaInfo_), Status::OK);
     SetInitValue();
     int64_t seekTime_ = 0;
-    for(uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx)
-    {
+    for (uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx) {
         ASSERT_EQ(demuxerPlugin_->SelectTrack(idx), Status::OK);
     }
     
@@ -565,7 +563,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_001, TestSize.Level1)
     std::vector<uint32_t> keyFrameIndex = {0};
     int32_t readCount = 0;
     while (!isEOS(eosFlag_)) {
-        for(uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        for ediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
             ASSERT_TRUE(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR);
             if (ret == Status::OK) {
@@ -600,13 +598,12 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_002, TestSize.Level1)
     ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
     ASSERT_EQ(demuxerPlugin_->GetMediaInfo(mediaInfo_), Status::OK);
-    
     SetInitValue();
     OHOS::Media::AVBufferWrapper buffer(videoHeight_ * videoWidth_ * 3);
     std::vector<uint32_t> keyFrameIndex = {0};
     int32_t readCount = 0;
     while (!isEOS(eosFlag_)) {
-        for(uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
             ASSERT_TRUE(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR);
             if (ret == Status::OK) {
@@ -646,7 +643,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_003, TestSize.Level1)
     std::vector<uint32_t> keyFrameIndex = {0};
     int32_t readCount = 0;
     while (!isEOS(eosFlag_)) {
-        for(uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
             while (ret == Status::ERROR_WAIT_TIMEOUT) {
                 ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
@@ -689,7 +686,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_004, TestSize.Level1)
     std::vector<uint32_t> keyFrameIndex = {0};
     int32_t readCount = 0;
     while (!isEOS(eosFlag_)) {
-        for(uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
             int64_t lastPts = -1;
             demuxerPlugin_->GetLastPTSByTrackId(i, lastPts);
@@ -734,7 +731,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_005, TestSize.Level1)
     std::vector<uint32_t> keyFrameIndex = {0};
     int32_t readCount = 0;
     while (!isEOS(eosFlag_)) {
-        for(uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
             while (ret == Status::ERROR_WAIT_TIMEOUT) {
                 ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
