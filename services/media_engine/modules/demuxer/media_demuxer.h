@@ -164,7 +164,6 @@ public:
     bool IsLocalFd();
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
-    bool IsFlvLiveStream();
     Status RebootPlugin();
     uint64_t GetCachedDuration();
     void RestartAndClearBuffer();
@@ -271,7 +270,7 @@ private:
     bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
     Status InnerSelectTrack(int32_t trackId);
-    Status HandleRead(uint32_t trackId);
+    Status HandleReadSample(uint32_t trackId);
     int64_t ParserRefInfo();
     void TryReclaimParserTask();
 
