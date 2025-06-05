@@ -260,7 +260,7 @@ void TEST_SUIT::ConfigureHdrVivid2Sdr(int32_t testCode, bool isInner)
     } else if (!isInner && testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
         format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
             OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
-    } else if (isInner && testCode != VCodecTestCode::HW_HDR_HLG_FULL)
+    } else if (isInner && testCode != VCodecTestCode::HW_HDR_HLG_FULL) {
         format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
             OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     } else {
