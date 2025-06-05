@@ -314,7 +314,7 @@ private:
     uint32_t trackId_;
     ThreadState threadState_ {ThreadState::NOT_STARTED};
     Status readLoopStatus_ = {Status::OK};
-    bool isPauseReadPacket_ = true;
+    bool isPauseReadPacket_ = false;
     std::unordered_map<int, int> readModeMap_; // 0 mean sync read, 1 mean async read
     std::mutex seekWaitMutex_;
     std::condition_variable seekWaitCv_;

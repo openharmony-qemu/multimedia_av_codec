@@ -160,7 +160,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(readModeMap_.find(0) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
     readModeMap_[1] = 1;
-    isPauseReadPacket_ = true;
+    isPauseReadPacket_ = false;
     if (ioContext_.invokerType != InvokerType::READ) {
         std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::READ;
@@ -257,7 +257,7 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
 
 bool FFmpegDemuxerPlugin::NeedWaitForRead()
 {
-    return (cacheQueue_.HasCache(trackId_) || !isPauseReadPacket_) && ioContext_.invokerType != InvokerType::DESTORY;
+    return (cacheQueue_.HasCache(trackId_) || isPauseReadPacket_) && ioContext_.invokerType != InvokerType::DESTORY;
 }
 
 void FFmpegDemuxerPlugin::HandleReadWait()
@@ -267,7 +267,7 @@ void FFmpegDemuxerPlugin::HandleReadWait()
     seekWaitCv_.notify_one();
     readLoopCv_.wait(readLock, [this]() {
         return (threadReady_) || (ioContext_.invokerType == InvokerType::DESTORY) ||
-               (!cacheQueue_.HasCache(trackId_) && isPauseReadPacket_);
+               (!cacheQueue_.HasCache(trackId_) && !isPauseReadPacket_);
     });
     threadState_ = READING;
     threadReady_ = false;
@@ -368,6 +368,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
     FALSE_RETURN_V_MSG_E(readModeMap_.find(0) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
     readModeMap_[1] = 1;
+    isPauseReadPacket_ = false;
     if (ioContext_.invokerType != InvokerType::READ) {
         std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::READ;
@@ -408,7 +409,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
 Status FFmpegDemuxerPlugin::Pause()
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    isPauseReadPacket_ = false;
+    isPauseReadPacket_ = true;
     return Status::OK;
 }
 
