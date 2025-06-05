@@ -65,7 +65,8 @@ protected:
 
 struct AVBufferWrapper {
     std::shared_ptr<MediaAVBuffer> mediaAVBuffer;
-    explicit AVBufferWrapper(uint32_t size) {
+    explicit AVBufferWrapper(uint32_t size)
+    {
         ptr = std::shared_ptr<uint8_t>(new uint8_t[size], std::default_delete<uint8_t[]>());
         mediaAVBuffer = MediaAVBuffer::CreateAVBuffer(ptr.get(), size, 0);
     }
@@ -94,8 +95,8 @@ public:
 
 class StreamDemuxerPullDataFailMock : public StreamDemuxer {
 public:
-    StreamDemuxerPullDataFailMock(size_t failOffset, size_t maxFailCount) :
-        StreamDemuxer(), failOffset_(failOffset), maxFailCount_(maxFailCount) {}
+    StreamDemuxerPullDataFailMock(size_t failOffset, size_t maxFailCount)
+        : StreamDemuxer(), failOffset_(failOffset), maxFailCount_(maxFailCount) {}
 private:
     Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
         size_t expectedLen) override
