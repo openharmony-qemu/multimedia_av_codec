@@ -316,13 +316,6 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(AVPacket* pkt)
         }
     }
     auto trackId = pkt->stream_index;
-    // if (trackId >= formatContext_->nb_streams) {
-    //     MEDIA_LOG_E("TrackId " PUBLIC_LOG_D32 " is out of range, nb_streams: " PUBLIC_LOG_D32,
-    //         trackId, formatContext_->nb_streams);
-    //     av_packet_unref(pkt);
-    //     readLoopStatus_ = Status::ERROR_INVALID_PARAMETER;
-    //     return false;
-    // }
     if (!TrackIsSelected(trackId)) {
         av_packet_unref(pkt);
         return true;
