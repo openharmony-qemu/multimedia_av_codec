@@ -37,6 +37,7 @@ group("av_codec_unit_test") {
         "unittest/audio_test:audio_encoder_plugin_unit_test",
         "unittest/audio_test:audio_ffmpeg_base_codec_unit_test",
         "unittest/audio_test:audio_g711mu_encoder_plugin_unit_test",
+        "unittest/audio_test:audio_g711a_decoder_unit_test",
         "unittest/audio_test:audio_hdi_codec_inner_unit_test",
         "unittest/audio_test:audio_lbvc_plugin_unit_test",
         "unittest/audio_test:audio_resample_unit_test",
