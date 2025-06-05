@@ -461,7 +461,6 @@ Status AudioSink::UnFreeze()
     return Status::OK;
 }
 
-
 Status AudioSink::PrepareInputBufferQueue()
 {
     if (inputBufferQueue_ != nullptr && inputBufferQueue_-> GetQueueSize() > 0) {
