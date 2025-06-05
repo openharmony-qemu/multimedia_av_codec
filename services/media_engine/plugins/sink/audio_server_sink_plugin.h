@@ -135,6 +135,10 @@ public:
  
     bool GetAudioPosition(timespec &time, uint32_t &framePosition) override;
 
+    void Freeze() override;
+
+    void UnFreeze() override;
+
     Status MuteAudioBuffer(uint8_t *addr, size_t offset, size_t length) override;
 
     Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc) override;
@@ -175,8 +179,15 @@ private:
     public:
         explicit AudioRendererWriteCallbackImpl(const std::weak_ptr<AudioServerSinkPlugin> &plugin);
         void OnWriteData(size_t length) override;
+        void NotifyFreeze();
+        void NotifyUnFreeze();
+        void NotifyInterrupt(bool isInterruptNeeded);
     private:
         std::weak_ptr<AudioServerSinkPlugin> plugin_;
+        std::mutex freezeMutex_;
+        bool isFrozen_ {false};
+        std::condition_variable freezeCond_;
+        std::atomic<bool> isInterruptNeeded_ {false};
     };
     void ReleaseRender();
     __attribute__((no_sanitize("cfi"))) void ReleaseFile();
@@ -259,7 +270,7 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     std::mutex mutex_;
     std::condition_variable writeCond_;
-    std::shared_ptr<AudioStandard::AudioRendererWriteCallback> audioRenderWriteCallback_ {nullptr};
+    std::shared_ptr<AudioRendererWriteCallbackImpl> audioRenderWriteCallback_ {nullptr};
     std::mutex releaseRenderMutex_;
     bool isReleasingRender_ {false};
     std::weak_ptr<AudioSinkDataCallback> audioSinkDataCallback_;

@@ -46,6 +46,10 @@ public:
 
     Status DoResume() override;
 
+    Status DoFreeze() override;
+
+    Status DoUnFreeze() override;
+
     Status DoFlush() override;
 
     Status DoStop() override;
@@ -87,7 +91,6 @@ private:
     std::shared_ptr<SubtitleSink> subtitleSink_;
     std::string name_;
     FilterType filterType_ = FilterType::FILTERTYPE_SSINK;
-    FilterState state_ = FilterState::CREATED;
     std::shared_ptr<Meta> trackMeta_;
     std::shared_ptr<Meta> globalMeta_;
 

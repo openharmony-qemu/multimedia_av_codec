@@ -48,6 +48,10 @@ public:
 
     Status DoPause() override;
 
+    Status DoFreeze() override;
+
+    Status DoUnFreeze() override;
+
     Status DoPauseAudioAlign() override;
 
     Status DoResume() override;

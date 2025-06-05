@@ -1203,9 +1203,28 @@ int64_t AudioServerSinkPlugin::GetWriteDurationMs()
 void AudioServerSinkPlugin::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("onInterrupted %{public}d", isInterruptNeeded);
-    std::unique_lock<std::mutex> lock(mutex_);
-    isInterruptNeeded_ = isInterruptNeeded;
-    writeCond_.notify_all();
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        isInterruptNeeded_ = isInterruptNeeded;
+        writeCond_.notify_all();
+    }
+    FALSE_RETURN_NOLOG(audioRenderWriteCallback_ != nullptr);
+    MEDIA_LOG_I("NotifyInterrupt");
+    audioRenderWriteCallback_->NotifyInterrupt(isInterruptNeeded);
+}
+
+void AudioServerSinkPlugin::Freeze()
+{
+    FALSE_RETURN_NOLOG(audioRenderWriteCallback_ != nullptr);
+    MEDIA_LOG_I("NotifyFreeze");
+    audioRenderWriteCallback_->NotifyFreeze();
+}
+
+void AudioServerSinkPlugin::UnFreeze()
+{
+    FALSE_RETURN_NOLOG(audioRenderWriteCallback_ != nullptr);
+    MEDIA_LOG_I("NotifyUnFreeze");
+    audioRenderWriteCallback_->NotifyUnFreeze();
 }
 
 void AudioServerSinkPlugin::OnWriteData(size_t length)
@@ -1230,9 +1249,39 @@ AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::AudioRendererWriteCallbac
 
 void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::OnWriteData(size_t length)
 {
+    {
+        std::unique_lock<std::mutex> lock(freezeMutex_);
+        if (isFrozen_) {
+            freezeCond_.wait(lock, [this] {
+                return !isFrozen_ || isInterruptNeeded_;
+            });
+        }
+    }
     auto plugin = plugin_.lock();
     FALSE_RETURN_MSG(plugin != nullptr, "AudioServerSinkPlugin OnWriteData plugin_ is nullptr");
     plugin->OnWriteData(length);
+}
+
+void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::NotifyFreeze()
+{
+    std::unique_lock<std::mutex> lock(freezeMutex_);
+    isFrozen_ = true;
+}
+
+void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::NotifyUnFreeze()
+{
+    std::unique_lock<std::mutex> lock(freezeMutex_);
+    MEDIA_LOG_I("NotifyUnFreeze");
+    isFrozen_ = false;
+    freezeCond_.notify_all();
+}
+
+void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::NotifyInterrupt(bool isInterruptNeeded)
+{
+    std::unique_lock<std::mutex> lock(freezeMutex_);
+    MEDIA_LOG_I("NotifyInterrupt");
+    isInterruptNeeded_ = isInterruptNeeded;
+    freezeCond_.notify_all();
 }
 
 Status AudioServerSinkPlugin::MuteAudioBuffer(uint8_t *addr, size_t offset, size_t length)

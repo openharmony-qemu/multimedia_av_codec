@@ -210,6 +210,7 @@ Status AudioDecoderFilter::DoPrepare()
         default:
             break;
     }
+    state_ = FilterState::READY;
     return ret;
 }
 
@@ -233,6 +234,7 @@ Status AudioDecoderFilter::DoStart()
         audioCodecFaultInfo.errMsg = "AudioDecoder start failed";
         FaultAudioCodecEventWrite(audioCodecFaultInfo);
     }
+    state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
     return ret;
 }
 
@@ -240,6 +242,17 @@ Status AudioDecoderFilter::DoPause()
 {
     MEDIA_LOG_I("AudioDecoderFilter::Pause.");
     latestPausedTime_ = latestBufferTime_;
+
+    state_ = FilterState::PAUSED;
+    return Status::OK;
+}
+
+Status AudioDecoderFilter::DoFreeze()
+{
+    MEDIA_LOG_E("AudioDecoderFilter::Freeze.");
+    FALSE_RETURN_V_MSG(state_ == FilterState::RUNNING, Status::OK, "current state is %{public}d", state_);
+    latestPausedTime_ = latestBufferTime_;
+    state_ = FilterState::FROZEN;
     return Status::OK;
 }
 
@@ -256,7 +269,20 @@ Status AudioDecoderFilter::DoResume()
     bufferStatus_ = BUFFER_STATUS_INIT_PROCESS_ALWAYS;
     refreshTotalPauseTime_ = true;
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
-    return decoder_->Start();
+    auto ret = decoder_->Start();
+    state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
+    return ret;
+}
+
+Status AudioDecoderFilter::DoUnFreeze()
+{
+    MEDIA_LOG_E("AudioDecoderFilter::UnFreeze.");
+    FALSE_RETURN_V_MSG(state_ == FilterState::FROZEN, Status::OK, "current state is %{public}d", state_);
+    refreshTotalPauseTime_ = true;
+    FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
+    auto ret = decoder_->Start();
+    state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
+    return ret;
 }
 
 Status AudioDecoderFilter::DoResumeAudioAlign()
@@ -272,7 +298,9 @@ Status AudioDecoderFilter::DoStop()
     totalPausedTime_ = 0;
     refreshTotalPauseTime_ = false;
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
-    return decoder_->Stop();
+    auto ret = decoder_->Stop();
+    state_ = ret == Status::OK ? FilterState::STOPPED : FilterState::ERROR;
+    return ret;
 }
 
 Status AudioDecoderFilter::DoFlush()
