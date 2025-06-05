@@ -28,7 +28,7 @@ constexpr auto CODEC_STUB_INTERFACE_DESCRIPTOR = u"IStandardCodecService";
 
 namespace OHOS {
 namespace MediaAVCodec {
-std::vector<CodecInstance> GetDirectInvocationCodecInstanceListByPidList(std::vector<pid_t> pidList)
+std::vector<CodecInstance> GetDirectlyInvokedCodecInstanceListByPidList(std::vector<pid_t> pidList)
 {
     std::vector<CodecInstance> instanceList;
     for (auto pid : pidList) {
@@ -150,7 +150,7 @@ void BackGroundEventHandler::NotifyFreeze(InstanceId instanceId)
 void BackGroundEventHandler::NotifyFreeze(const std::vector<pid_t> &pidList)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    for (auto &codecInstance : GetDirectInvocationCodecInstanceListByPidList(pidList)) {
+    for (auto &codecInstance : GetDirectlyInvokedCodecInstanceListByPidList(pidList)) {
         auto &callerPid = codecInstance.second.caller.pid;
         auto &forwardPid = codecInstance.second.forwardCaller.pid;
         auto &actualPid = forwardPid == MediaAVCodec::INVALID_PID ? callerPid : forwardPid;
@@ -176,7 +176,7 @@ void BackGroundEventHandler::NotifyActive(InstanceId instanceId)
 void BackGroundEventHandler::NotifyActive(const std::vector<pid_t> &pidList)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    for (auto &codecInstance : GetDirectInvocationCodecInstanceListByPidList(pidList)) {
+    for (auto &codecInstance : GetDirectlyInvokedCodecInstanceListByPidList(pidList)) {
         auto &callerPid = codecInstance.second.caller.pid;
         auto &forwardPid = codecInstance.second.forwardCaller.pid;
         auto &actualPid = forwardPid == MediaAVCodec::INVALID_PID ? callerPid : forwardPid;
