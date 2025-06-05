@@ -1104,7 +1104,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     MEDIA_LOG_I("Out");
     cachelimitSize_ = DEFAULT_CACHE_LIMIT;
     fileType_ = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
-    if (ioContext_.initErrorAgain == true && formatContext_->pb->error == -1) {
+    if (ioContext_.initErrorAgain == true && formatContext_->pb->error == -1) { // -1 means error_again during init
         MEDIA_LOG_E("Initialization error_again occurred");
         ResetContext();
         ioContext_.initErrorAgain = false;

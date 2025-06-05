@@ -556,7 +556,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_001, TestSize.Level1)
     std::vector<uint32_t> keyFrameIndex = {0};
     int32_t readCount = 0;
     while (!isEOS(eosFlag_)) {
-        for ediaInfo_.tracks.size(); ++i) {
+        for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
             auto ret = demuxerPlugin_->ReadSample(i, buffer.mediaAVBuffer, 100);
             ASSERT_TRUE(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR);
             if (ret == Status::OK) {
