@@ -70,7 +70,7 @@ void SetRandomValue(const uint8_t *data, size_t size)
     vEncSample->SetParameter(format);
     OH_AVFormat_Destroy(format);
 }
-bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
+bool EncoderSetparameterFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < sizeof(int64_t)) {
         return false;
@@ -97,6 +97,6 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::DoSomethingInterestingWithMyAPI(data, size);
+    OHOS::EncoderSetparameterFuzzTest(data, size);
     return 0;
 }
