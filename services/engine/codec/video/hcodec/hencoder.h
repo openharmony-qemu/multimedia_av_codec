@@ -25,13 +25,14 @@
 constexpr int32_t PREVIOUS_PTS_RECORDED_COUNT = 4;
 constexpr int64_t TIME_RATIO_NS_TO_US = 1000;
 constexpr int64_t TIME_RATIO_US_TO_S = 1000000;
-constexpr double DURATION_SCALE_FACTOR = 7.0f;
+constexpr double DURATION_SCALE_FACTOR = 7.0;
 constexpr int32_t DEFAULT_FRAME_RATE = 15;
-constexpr double SMOOTH_FACTOR_CLIP_MIN = 0.3f;
+constexpr double SMOOTH_FACTOR_CLIP_MIN = 0.3;
 constexpr int32_t SMOOTH_FACTOR_CLIP_RANGE_MIN = 10;
-constexpr double SMOOTH_FACTOR_CLIP_MAX = 0.9f;
+constexpr double SMOOTH_FACTOR_CLIP_MAX = 0.9;
 constexpr int32_t SMOOTH_FACTOR_CLIP_RANGE_MAX = 70;
-constexpr double AVERAGE_DURATION_ERROR_COUNT = 3.0f;
+constexpr double AVERAGE_DURATION_ERROR_COUNT = 3.0;
+constexpr double AVERAGE_DURATION_ERROR_FRAMERATE_RANGE = 0.5;
 
 namespace OHOS::MediaAVCodec {
 class HEncoder : public HCodec {
