@@ -27,18 +27,6 @@ inline const char *ErrorToCStr(int32_t ret)
 {
     return AVCSErrorToString(static_cast<OHOS::MediaAVCodec::AVCodecServiceErrCode>((ret))).c_str();
 }
-
-inline void RemoveUnusedKeys(Format &format)
-{
-    static std::vector<const char *> keys = {
-        Tag::MEDIA_CODEC_CONFIG,
-        Tag::AV_CODEC_ENABLE_SYNC_MODE,
-        Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK,
-    };
-    for (auto &key : keys) {
-        format.RemoveKey(key);
-    }
-}
 } // namespace
 namespace OHOS {
 namespace MediaAVCodec {
@@ -127,10 +115,10 @@ int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &
     int32_t ret = codecProxy->Init(type, isMimeType, name, callerInfo);
     const std::string tag = CreateVideoLogTag(callerInfo);
     this->SetTag(tag);
-    circular_.SetTag(tag);
     converter_->SetTag(tag);
     codecProxy->SetTag(tag);
     listenerStub_->SetTag(tag);
+    circular_.SetTag(tag);
     circular_.SetConverter(converter_);
 
     converter_->Init(type);
@@ -147,23 +135,22 @@ int32_t CodecClient::Configure(const Format &format)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(!isConfigured_, AVCS_ERR_INVALID_STATE, "Is configured");
     // check sync mode
     int32_t enableSyncMode = 0;
-    Format &formatRef = const_cast<Format &>(format);
-    (void)formatRef.GetIntValue(Tag::AV_CODEC_ENABLE_SYNC_MODE, enableSyncMode);
-    RemoveUnusedKeys(formatRef);
-
-    // video encoder set parameter
-    if ((codecMode_ & CODEC_ENABLE_PARAMETER) && !enableSyncMode) {
-        formatRef.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, 1);
-    }
-    int32_t ret = codecProxy_->Configure(formatRef);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s", ErrorToCStr(ret));
-    // update client flag
+    (void)format.GetIntValue(Tag::AV_CODEC_ENABLE_SYNC_MODE, enableSyncMode);
     if (enableSyncMode) {
-        circular_.EnableSyncMode();
+        CHECK_AND_RETURN_RET_LOG_WITH_TAG(circular_.CanEnableSyncMode(), AVCS_ERR_INVALID_OPERATION,
+                                          "Can not enable sync mode");
         codecMode_ &= ~CODEC_ENABLE_PARAMETER;
     }
+    if (codecMode_ & CODEC_ENABLE_PARAMETER) {
+        const_cast<Format &>(format).PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, 1);
+    }
+    // notify service to configure
+    int32_t ret = codecProxy_->Configure(format);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s", ErrorToCStr(ret));
+    // update client flag
+    enableSyncMode ? circular_.EnableSyncMode() : circular_.EnableAsyncMode();
     isConfigured_ = true;
-    AVCODEC_LOGI_WITH_TAG("%{public}s", formatRef.Stringify().c_str());
+    AVCODEC_LOGI_WITH_TAG("%{public}s", format.Stringify().c_str());
     AVCODEC_LOGI_WITH_TAG("success. %{public}s mode", enableSyncMode ? "Sync" : "Async");
     return AVCS_ERR_OK;
 }

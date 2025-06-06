@@ -48,17 +48,17 @@ void CodecBufferCircular::SetConverter(std::shared_ptr<BufferConverter> &convert
 
 int32_t CodecBufferCircular::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
 {
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!IsSyncMode(), AVCS_ERR_INVALID_OPERATION,
-                                      "Sync mode enabled, unable to set callback");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!CanEnableSyncMode(), AVCS_ERR_INVALID_OPERATION, "Can not enable async mode");
     callback_ = callback;
+    EnableAsyncMode();
     return AVCS_ERR_OK;
 }
 
 int32_t CodecBufferCircular::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 {
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!IsSyncMode(), AVCS_ERR_INVALID_OPERATION,
-                                      "Sync mode enabled, unable to set callback");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!CanEnableSyncMode(), AVCS_ERR_INVALID_OPERATION, "Can not enable async mode");
     mediaCb_ = callback;
+    EnableAsyncMode();
     return AVCS_ERR_OK;
 }
 
@@ -66,18 +66,18 @@ int32_t CodecBufferCircular::SetCallback(const std::shared_ptr<MediaCodecParamet
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(attrCb_ == nullptr, AVCS_ERR_INVALID_STATE,
                                       "Already set parameter with atrribute callback");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!IsSyncMode(), AVCS_ERR_INVALID_OPERATION,
-                                      "Sync mode enabled, unable to set callback");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!CanEnableSyncMode(), AVCS_ERR_INVALID_OPERATION, "Can not enable async mode");
     paramCb_ = callback;
+    EnableAsyncMode();
     return AVCS_ERR_OK;
 }
 
 int32_t CodecBufferCircular::SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback)
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(paramCb_ == nullptr, AVCS_ERR_INVALID_STATE, "Already set parameter callback");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!IsSyncMode(), AVCS_ERR_INVALID_OPERATION,
-                                      "Sync mode enabled, unable to set callback");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!CanEnableSyncMode(), AVCS_ERR_INVALID_OPERATION, "Can not enable async mode");
     attrCb_ = callback;
+    EnableAsyncMode();
     return AVCS_ERR_OK;
 }
 
@@ -94,35 +94,35 @@ void CodecBufferCircular::SetIsRunning(bool isRunning)
     outCond_.notify_all();
 }
 
+bool CodecBufferCircular::CanEnableSyncMode()
+{
+    if (!(flag_ & FLAG_SYNC_ASYNC_CONFIGURED)) {
+        return true;
+    }
+    return (flag_ & FLAG_IS_SYNC);
+}
+
 void CodecBufferCircular::EnableSyncMode()
 {
-    if (callback_) {
-        AVCODEC_LOGW_WITH_TAG("Async->Sync. Ingnore the callback of AVSharedMemory");
-    }
-    if (mediaCb_) {
-        AVCODEC_LOGW_WITH_TAG("Async->Sync. Ingnore the callback of AVBuffer");
-    }
-    if (paramCb_) {
-        AVCODEC_LOGW_WITH_TAG("Async->Sync. Ingnore the callback of Parameter");
-    }
-    if (attrCb_) {
-        AVCODEC_LOGW_WITH_TAG("Async->Sync. Ingnore the callback of Attribute");
-    }
+    CHECK_AND_RETURN_LOG_WITH_TAG(CanEnableSyncMode(), "Can not enable sync mode");
     flag_ |= FLAG_IS_SYNC;
+    flag_ |= FLAG_SYNC_ASYNC_CONFIGURED;
+}
+
+void CodecBufferCircular::EnableAsyncMode()
+{
+    CHECK_AND_RETURN_LOG_WITH_TAG(!CanEnableSyncMode(), "Can not enable async mode");
+    flag_ |= FLAG_SYNC_ASYNC_CONFIGURED;
 }
 
 bool CodecBufferCircular::IsSyncMode()
 {
-    return flag_ & FLAG_IS_SYNC;
+    return (flag_ & FLAG_IS_SYNC) && (flag_ & FLAG_SYNC_ASYNC_CONFIGURED);
 }
 
 void CodecBufferCircular::ResetFlag()
 {
-    flag_ &= ~FLAG_IS_RUNNING;
-    flag_ &= ~FLAG_STREAM_CHANGED;
-    flag_ &= ~FLAG_ERROR;
-    flag_ &= ~FLAG_IS_SYNC;
-    flag_ &= ~FLAG_IS_FLUSHED;
+    flag_ = FLAG_NONE;
 }
 
 void CodecBufferCircular::ClearCaches()

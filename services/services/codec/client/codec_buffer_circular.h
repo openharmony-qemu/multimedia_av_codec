@@ -38,7 +38,9 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback);
 
     void SetIsRunning(bool isRunning);
+    bool CanEnableSyncMode();
     void EnableSyncMode();
+    void EnableAsyncMode();
     bool IsSyncMode();
     void ResetFlag();
 
@@ -69,8 +71,9 @@ private:
         FLAG_IS_RUNNING = 1 << 0,
         FLAG_IS_FLUSHED = 1 << 1,
         FLAG_IS_SYNC = 1 << 2,
-        FLAG_STREAM_CHANGED = 1 << 3,
-        FLAG_ERROR = 1 << 4,
+        FLAG_SYNC_ASYNC_CONFIGURED = 1 << 3,
+        FLAG_STREAM_CHANGED = 1 << 4,
+        FLAG_ERROR = 1 << 5,
     } CodecCircularFlag;
     typedef enum : uint8_t {
         OWNED_BY_SERVER = 0,

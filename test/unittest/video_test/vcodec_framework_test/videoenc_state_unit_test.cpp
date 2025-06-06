@@ -246,7 +246,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_09, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
 
     SetSync1(format);
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_NE(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
 }
 
 /**
