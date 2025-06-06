@@ -234,6 +234,8 @@ public:
     MOCK_METHOD(int32_t, SetCustomBuffer, (std::shared_ptr<AVBuffer> buffer));
     MOCK_METHOD(int32_t, NotifyMemoryRecycle, ());
     MOCK_METHOD(int32_t, NotifyMemoryWriteBack, ());
+    MOCK_METHOD(int32_t, NotifySuspend, ());
+    MOCK_METHOD(int32_t, NotifyResume, ());
     std::weak_ptr<AVCodecCallback> codecCb_;
     std::weak_ptr<MediaCodecCallback> videoCb_;
 };
@@ -271,6 +273,8 @@ public:
     virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer);
     virtual int32_t NotifyMemoryRecycle();
     virtual int32_t NotifyMemoryWriteBack();
+    virtual int32_t NotifySuspend();
+    virtual int32_t NotifyResume();
 
     /* API11 audio codec interface */
     virtual int32_t CreateCodecByName(const std::string &name);

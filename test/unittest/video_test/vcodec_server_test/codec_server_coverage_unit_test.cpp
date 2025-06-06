@@ -1196,9 +1196,7 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_001, TestSize.Level1)
 
     for (auto &val : testList) {
         server_->status_ = val;
-        server_->isFreezedFlag_ = false;
-        server_->NotifyBackGround();
-        EXPECT_TRUE(server_->isFreezedFlag_);
+        EXPECT_TRUE(server_->NotifyMemoryRecycle());
     }
 }
 
@@ -1219,9 +1217,7 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Invalid_Test_001, TestSize.Level1
 
     for (auto &val : testList) {
         server_->status_ = val;
-        server_->isFreezedFlag_ = false;
-        server_->NotifyBackGround();
-        EXPECT_FALSE(server_->isFreezedFlag_);
+        EXPECT_TRUE(server_->NotifyMemoryRecycle());
     }
 }
 
@@ -1232,10 +1228,8 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Invalid_Test_001, TestSize.Level1
 HWTEST_F(CodecServerUnitTest, NotifyForeGround_Valid_Test_001, TestSize.Level1)
 {
     CreateHCodecByMime();
-    server_->isModeConfirmed_ = true;
-    server_->isFreezedFlag_ = true;
-    server_->NotifyForeGround();
-    EXPECT_FALSE(server_->isFreezedFlag_);
+    server_->isModeConfirmed_ = true;    
+    EXPECT_TRUE(server_->NotifyMemoryWriteBack());
 }
 
 /**

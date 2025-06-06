@@ -449,5 +449,23 @@ int32_t CodecBase::NotifyMemoryWriteBack()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
     return mock->NotifyMemoryWriteBack();
 }
+
+int32_t CodecBase::NotifySuspend()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->NotifySuspend();
+}
+
+int32_t CodecBase::NotifyResume()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->NotifyResume();
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

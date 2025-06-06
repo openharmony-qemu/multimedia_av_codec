@@ -53,6 +53,7 @@ ohos_unittest("sa_avcodec_unit_test") {
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/services/sa_avcodec/server/include",
     "$av_codec_root_dir/services/services/sa_avcodec",
+    "$av_codec_root_dir/services/services/sa_avcodec/ipc",
     "$av_codec_root_dir/services/services/common",
     "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler/",
   ]
