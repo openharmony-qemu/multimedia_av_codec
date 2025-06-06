@@ -34,12 +34,12 @@ public:
         switchPtsVec_.push_back(startPts);
         return Status::OK;
     }
-    virtual Status OnSampleQueueBufferAvailable(uint32_t queueId)
+    virtual Status OnSampleQueueBufferAvailable(int32_t queueId)
     {
         OnAvailableSum_++;
         return Status::OK;
     }
-    virtual Status OnSampleQueueBufferConsume(uint32_t queueId)
+    virtual Status OnSampleQueueBufferConsume(int32_t queueId)
     {
         OnConsumeSum_++;
         return Status::OK;

@@ -350,7 +350,7 @@ void SurfaceDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_p
     FALSE_RETURN_MSG(buffer != nullptr && buffer->meta_ != nullptr, "meta_ is nullptr.");
     MEDIA_LOG_D("OnInputBufferAvailable enter. index: %{public}u, bufferid: %{public}" PRIu64", pts: %{public}" PRIu64
         ", flag: %{public}u", index, buffer->GetUniqueId(), buffer->pts_, buffer->flag_);
-    buffer->meta_->SetData(Tag::REGULAR_TRACK_ID, index);
+    buffer->meta_->SetData(Tag::REGULAR_TRACK_ID, static_cast<int32_t>(index));
     if (inputBufferQueueConsumer_ == nullptr) {
         MEDIA_LOG_E("inputBufferQueueConsumer_ is null");
         return;
@@ -405,8 +405,9 @@ void SurfaceDecoderAdapter::AcquireAvailableInputBuffer()
         return;
     }
     FALSE_RETURN_MSG(filledInputBuffer->meta_ != nullptr, "filledInputBuffer meta is nullptr.");
-    uint32_t index;
-    FALSE_RETURN_MSG(filledInputBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, index), "get index failed.");
+    int32_t metaIndex;
+    FALSE_RETURN_MSG(filledInputBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, metaIndex), "get index failed.");
+    uint32_t index = static_cast<uint32_t>(metaIndex);
     FALSE_RETURN_MSG(codecServer_ != nullptr, "codecServer_ is nullptr.");
     if (codecServer_->QueueInputBuffer(index) != ERR_OK) {
         MEDIA_LOG_E("QueueInputBuffer failed, index: %{public}u,  bufferid: %{public}" PRIu64

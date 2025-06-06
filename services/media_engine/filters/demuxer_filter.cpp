@@ -619,7 +619,7 @@ void DemuxerFilter::SetDumpFlag(bool isDump)
     }
 }
 
-std::map<uint32_t, sptr<AVBufferQueueProducer>> DemuxerFilter::GetBufferQueueProducerMap()
+std::map<int32_t, sptr<AVBufferQueueProducer>> DemuxerFilter::GetBufferQueueProducerMap()
 {
     return demuxer_->GetBufferQueueProducerMap();
 }
@@ -851,17 +851,14 @@ void DemuxerFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBuff
         return;
     }
     demuxer_->SetOutputBufferQueue(trackId, outputBufferQueue);
-    if (trackId < 0) {
-        return;
-    }
-    uint32_t trackIdU32 = static_cast<uint32_t>(trackId);
+    FALSE_RETURN_NOLOG(trackId >= 0);
     int32_t decoderFramerateUpperLimit = 0;
     if (meta->GetData(Tag::VIDEO_DECODER_RATE_UPPER_LIMIT, decoderFramerateUpperLimit)) {
-        demuxer_->SetDecoderFramerateUpperLimit(decoderFramerateUpperLimit, trackIdU32);
+        demuxer_->SetDecoderFramerateUpperLimit(decoderFramerateUpperLimit, trackId);
     }
     double framerate;
     if (meta->GetData(Tag::VIDEO_FRAME_RATE, framerate)) {
-        demuxer_->SetFrameRate(framerate, trackIdU32);
+        demuxer_->SetFrameRate(framerate, trackId);
     }
 }
 

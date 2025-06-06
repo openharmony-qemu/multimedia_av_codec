@@ -317,8 +317,9 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
             GetInputBufferDts(tmpBuffer);
         }
         FALSE_RETURN_MSG(tmpBuffer->meta_ != nullptr, "tmpBuffer is nullptr.");
-        uint32_t index;
-        FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, index), "get index failed.");
+        int32_t metaIndex;
+        FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, metaIndex), "get index failed.");
+        uint32_t index = static_cast<uint32_t>(metaIndex);
         if (tmpBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
             tmpBuffer->memory_->SetSize(0);
         }
@@ -376,7 +377,7 @@ void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr
 {
     AVCodecTrace trace("VideoDecoderAdapter::OnInputBufferAvailable");
     FALSE_RETURN_MSG(buffer != nullptr && buffer->meta_ != nullptr, "meta_ is nullptr.");
-    buffer->meta_->SetData(Tag::REGULAR_TRACK_ID, index);
+    buffer->meta_->SetData(Tag::REGULAR_TRACK_ID, static_cast<int32_t>(index));
     if (inputBufferQueueConsumer_ == nullptr) {
         MEDIA_LOG_E_SHORT("inputBufferQueueConsumer_ is null");
         return;

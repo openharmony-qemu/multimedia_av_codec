@@ -23,7 +23,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "SampleQueue" };
-constexpr uint32_t INVALID_TRACK_ID = -1;
+constexpr int32_t INVALID_TRACK_ID = -1;
 }
 
 namespace OHOS {
@@ -106,7 +106,7 @@ Status SampleQueue::AttachBuffer()
         FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "CreateAVBuffer failed");
         Status status = sampleBufferQueueProducer_->AttachBuffer(buffer, false);
         FALSE_RETURN_V_MSG_E(
-            status == Status::OK, status, "AttachBuffer failed status=" PUBLIC_LOG_D32, (int32_t)status);
+            status == Status::OK, status, "AttachBuffer failed status=" PUBLIC_LOG_D32, static_cast<int32_t>(status));
     }
     return Status::OK;
 }
@@ -252,7 +252,7 @@ void SampleQueue::CopyMeta(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr
         return;
     }
 
-    uint32_t trackId = INVALID_TRACK_ID;
+    int32_t trackId = INVALID_TRACK_ID;
     if (!dstBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, trackId)) {
         MEDIA_LOG_DD("trackId not found");
     }
@@ -546,9 +546,9 @@ void SampleQueue::OnBufferConsumer()
     }
 }
 
-void SampleQueue::UpdateQueueId(uint32_t queueId)
+void SampleQueue::UpdateQueueId(int32_t queueId)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S " change queueId to " PUBLIC_LOG_U32, config_.queueName_.c_str(), queueId);
+    MEDIA_LOG_I(PUBLIC_LOG_S " change queueId to " PUBLIC_LOG_D32, config_.queueName_.c_str(), queueId);
     config_.queueId_ = queueId;
 }
 
