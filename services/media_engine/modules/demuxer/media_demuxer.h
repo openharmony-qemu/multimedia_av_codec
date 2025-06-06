@@ -91,9 +91,9 @@ public:
     Status PausePreroll();
 
     Status StartTask(int32_t trackId);
-    Status SelectTrack(uint32_t trackIdU32); // Interface for AVDemuxer
-    Status UnselectTrack(uint32_t trackIdU32); // Interface for AVDemuxer
-    Status ReadSample(uint32_t trackIdU32, std::shared_ptr<AVBuffer> sample); // Interface for AVDemuxer
+    Status SelectTrack(uint32_t trackIndex); // Interface for AVDemuxer
+    Status UnselectTrack(uint32_t trackIndex); // Interface for AVDemuxer
+    Status ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample); // Interface for AVDemuxer
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate, bool isAutoSelect = false);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
@@ -146,9 +146,9 @@ public:
     void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
     void DeregisterVideoStreamReadyCallback();
 
-    Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIdU32,
+    Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
         const uint64_t relativePresentationTimeUs, uint32_t &index); // Interface for AVDemuxer
-    Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIdU32,
+    Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
         const uint32_t index, uint64_t &relativePresentationTimeUs); // Interface for AVDemuxer
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
@@ -173,7 +173,7 @@ public:
 
     void SetIsCreatedByFilter(bool isCreatedByFilter);
 
-    Status GetCurrentCacheSize(uint32_t trackIdU32, uint32_t& size); // Interface for AVDemuxer
+    Status GetCurrentCacheSize(uint32_t trackIndex, uint32_t& size); // Interface for AVDemuxer
     Status StopBufferring(bool isAppBackground);
 private:
     class AVBufferQueueProducerListener;

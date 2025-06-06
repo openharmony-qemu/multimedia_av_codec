@@ -1310,13 +1310,13 @@ Status MediaDemuxer::HandleSelectTrack(int32_t trackId)
     return ret;
 }
 
-Status MediaDemuxer::SelectTrack(uint32_t trackIdU32)
+Status MediaDemuxer::SelectTrack(uint32_t trackIndex)
 {
-    int32_t trackId = static_cast<int32_t>(trackIdU32);
+    int32_t trackId = static_cast<int32_t>(trackIndex);
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     MEDIA_LOG_D("Select " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(IsValid(trackId) &&
-        static_cast<size_t>(trackIdU32) < mediaMetaData_.trackMetas.size(),
+        static_cast<size_t>(trackIndex) < mediaMetaData_.trackMetas.size(),
         Status::ERROR_INVALID_PARAMETER, "Select track failed");
     if (!useBufferQueue_) {
         return InnerSelectTrack(trackId);
@@ -1331,9 +1331,9 @@ Status MediaDemuxer::SelectTrack(uint32_t trackIdU32)
     return HandleSelectTrack(trackId);
 }
 
-Status MediaDemuxer::UnselectTrack(uint32_t trackIdU32)
+Status MediaDemuxer::UnselectTrack(uint32_t trackIndex)
 {
-    int32_t trackId = static_cast<int32_t>(trackIdU32);
+    int32_t trackId = static_cast<int32_t>(trackIndex);
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     MEDIA_LOG_D("Unselect " PUBLIC_LOG_D32, trackId);
 
@@ -2660,24 +2660,24 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
     }
 }
 
-Status MediaDemuxer::ReadSample(uint32_t trackIdU32, std::shared_ptr<AVBuffer> sample)
+Status MediaDemuxer::ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE, "Not buffer queue mode");
     MEDIA_LOG_DD("ReadSample In");
-    FALSE_RETURN_V_MSG_E(eosMap_.count(trackIdU32) > 0, Status::ERROR_INVALID_OPERATION, "Track has not been selected");
+    FALSE_RETURN_V_MSG_E(eosMap_.count(trackIndex) > 0, Status::ERROR_INVALID_OPERATION, "Track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
         "AVBuffer is nullptr");
-    if (eosMap_[trackIdU32]) {
-        MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " has reached eos", trackIdU32);
+    if (eosMap_[trackIndex]) {
+        MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " has reached eos", trackIndex);
         sample->flag_ = static_cast<uint32_t>(AVBufferFlag::EOS);
         sample->memory_->SetSize(0);
         return Status::END_OF_STREAM;
     }
-    Status ret = InnerReadSample(static_cast<int32_t>(trackIdU32), sample);
+    Status ret = InnerReadSample(static_cast<int32_t>(trackIndex), sample);
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) {
-            eosMap_[trackIdU32] = true;
+            eosMap_[trackIndex] = true;
             sample->memory_->SetSize(0);
         }
         if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::PARTIAL_FRAME)) {
@@ -3060,7 +3060,7 @@ bool MediaDemuxer::IsRenderNextVideoFrameSupported()
         !isDataSrcLiveStream && !isFlvLiveStream_;
 }
 
-Status MediaDemuxer::GetIndexByRelativePresentationTimeUs(const uint32_t trackIdU32,
+Status MediaDemuxer::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
     const uint64_t relativePresentationTimeUs, uint32_t &index)
 {
     MEDIA_LOG_D("In");
@@ -3068,14 +3068,14 @@ Status MediaDemuxer::GetIndexByRelativePresentationTimeUs(const uint32_t trackId
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_NULL_POINTER, "Demuxer plugin is nullptr");
 
-    Status ret = pluginTemp->GetIndexByRelativePresentationTimeUs(trackIdU32, relativePresentationTimeUs, index);
+    Status ret = pluginTemp->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     if (ret != Status::OK) {
         MEDIA_LOG_E("Get index failed");
     }
     return ret;
 }
 
-Status MediaDemuxer::GetRelativePresentationTimeUsByIndex(const uint32_t trackIdU32,
+Status MediaDemuxer::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
     const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
     MEDIA_LOG_D("In");
@@ -3083,7 +3083,7 @@ Status MediaDemuxer::GetRelativePresentationTimeUsByIndex(const uint32_t trackId
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_NULL_POINTER, "Demuxer plugin is nullptr");
 
-    Status ret = pluginTemp->GetRelativePresentationTimeUsByIndex(trackIdU32, index, relativePresentationTimeUs);
+    Status ret = pluginTemp->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     if (ret != Status::OK) {
         MEDIA_LOG_E("Get pts failed");
     }
@@ -3598,9 +3598,9 @@ bool MediaDemuxer::IsSeekToTimeSupported()
     return source_ != nullptr && source_->IsSeekToTimeSupported();
 }
 
-Status MediaDemuxer::GetCurrentCacheSize(uint32_t trackIdU32, uint32_t& size)
+Status MediaDemuxer::GetCurrentCacheSize(uint32_t trackIndex, uint32_t& size)
 {
-    int32_t trackId = static_cast<int32_t>(trackIdU32);
+    int32_t trackId = static_cast<int32_t>(trackIndex);
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
@@ -3617,7 +3617,7 @@ Status MediaDemuxer::GetCurrentCacheSize(uint32_t trackIdU32, uint32_t& size)
         pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamId);
         FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER, "Plugin is nullptr");
     }
-    return pluginTemp->GetCurrentCacheSize(trackIdU32, size);
+    return pluginTemp->GetCurrentCacheSize(trackIndex, size);
 }
 
 Status MediaDemuxer::StopBufferring(bool isAppBackground)
