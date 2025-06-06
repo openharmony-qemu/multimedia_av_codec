@@ -28,11 +28,7 @@ public:
 
 protected:
     std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
-    std::shared_ptr<OHOS::MediaAVCodec::VideoEncAsyncSample> videoEnc_ = nullptr;
-#else
-    std::shared_ptr<OHOS::MediaAVCodec::VideoEncSyncSample> videoEnc_ = nullptr;
-#endif
+    std::shared_ptr<OHOS::MediaAVCodec::VideoEncSample> videoEnc_ = nullptr;
     std::shared_ptr<OHOS::MediaAVCodec::FormatMock> format_ = nullptr;
     std::shared_ptr<OHOS::MediaAVCodec::VEncCallbackTest> vencCallback_ = nullptr;
     std::shared_ptr<OHOS::MediaAVCodec::VEncCallbackTestExt> vencCallbackExt_ = nullptr;
@@ -60,11 +56,7 @@ void TEST_SUIT::SetUp(void)
     vencParamWithAttrCallback_ = std::make_shared<OHOS::MediaAVCodec::VEncParamWithAttrCallbackTest>(vencSignal);
     ASSERT_NE(nullptr, vencParamWithAttrCallback_);
 
-#ifdef VIDEOENC_ASYNC_UNIT_TEST
-    videoEnc_ = std::make_shared<OHOS::MediaAVCodec::VideoEncAsyncSample>(vencSignal);
-#else
-    videoEnc_ = std::make_shared<OHOS::MediaAVCodec::VideoEncSyncSample>(vencSignal);
-#endif
+    videoEnc_ = std::make_shared<OHOS::MediaAVCodec::VideoEncSample>(vencSignal);
     ASSERT_NE(nullptr, videoEnc_);
 
     format_ = OHOS::MediaAVCodec::FormatMockFactory::CreateFormat();

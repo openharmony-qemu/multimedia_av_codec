@@ -103,9 +103,10 @@ ohos_unittest("videodec_capi_async_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoDecCapiAsyncTest",
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_CAPI_UNIT_TEST",
-    "TEST_SUIT=VideoDecCapiAsyncTest",
+    "VideoDecSample=VideoDecAsyncSample",
   ]
   defines += av_codec_defines
 
@@ -159,9 +160,10 @@ ohos_unittest("videodec_h263_capi_async_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoH263DecCapiAsyncTest",
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_CAPI_UNIT_TEST",
-    "TEST_SUIT=VideoH263DecCapiAsyncTest",
+    "VideoDecSample=VideoDecAsyncSample",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -215,9 +217,10 @@ ohos_unittest("videodec_inner_async_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoDecInnerAsyncTest",
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_INNER_UNIT_TEST",
-    "TEST_SUIT=VideoDecInnerAsyncTest",
+    "VideoDecSample=VideoDecAsyncSample",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -265,9 +268,10 @@ ohos_unittest("videodec_h263_inner_async_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoH263DecInnerAsyncTest",
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_INNER_UNIT_TEST",
-    "TEST_SUIT=VideoH263DecInnerAsyncTest",
+    "VideoDecSample=VideoDecAsyncSample",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -316,9 +320,10 @@ ohos_unittest("videodec_mpeg_func_async_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoMPEGDecInnerAsyncTest",
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_MPEG_FUNC_UNIT_TEST",
-    "TEST_SUIT=VideoMPEGDecInnerAsyncTest",
+    "VideoDecSample=VideoDecAsyncSample",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -366,9 +371,9 @@ ohos_unittest("videoenc_capi_async_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoEncCapiAsyncTest",
     "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_CAPI_UNIT_TEST",
-    "TEST_SUIT=VideoEncCapiAsyncTest",
     "VideoEncSample=VideoEncAsyncSample",
   ]
   if (target_cpu == "arm64") {
@@ -413,9 +418,9 @@ ohos_unittest("videoenc_inner_async_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoEncInnerAsyncTest",
     "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_INNER_UNIT_TEST",
-    "TEST_SUIT=VideoEncInnerAsyncTest",
     "VideoEncSample=VideoEncAsyncSample",
   ]
   if (target_cpu == "arm64") {
@@ -555,8 +560,8 @@ ohos_unittest("videoenc_repeat_previous_frame_unit_test") {
   ]
 
   defines = [
-    "VIDEOENC_CAPI_UNIT_TEST",
     "TEST_SUIT=VideoEncRepeatPreviousFrameAsyncTest",
+    "VIDEOENC_CAPI_UNIT_TEST",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -678,8 +683,9 @@ ohos_unittest("videodec_hdrvivid2sdr_async_unit_test") {
   ]
 
   defines = [
-    "VIDEODEC_ASYNC_UNIT_TEST",
     "TEST_SUIT=VideoDecHDRVivid2SDRAsyncTest",
+    "VIDEODEC_ASYNC_UNIT_TEST",
+    "VideoDecSample=VideoDecAsyncSample",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -748,9 +754,10 @@ ohos_unittest("videodec_hdecoder_memrecycle_async_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoHDecMemoryRecyleAsyncTest",
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_HARDWARE_MEMRECYCLE_UNIT_TEST",
-    "TEST_SUIT=VideoHDecMemoryRecyleAsyncTest",
+    "VideoDecSample=VideoDecAsyncSample",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -883,9 +890,10 @@ ohos_unittest("videodec_capi_sync_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoDecCapiSyncTest",
     "VIDEODEC_SYNC_UNIT_TEST",
     "VIDEODEC_CAPI_UNIT_TEST",
-    "TEST_SUIT=VideoDecCapiSyncTest",
+    "VideoDecSample=VideoDecAsyncSample",
   ]
   defines += av_codec_defines
 
@@ -939,9 +947,10 @@ ohos_unittest("videodec_h263_capi_sync_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoH263DecCapiSyncTest",
     "VIDEODEC_SYNC_UNIT_TEST",
     "VIDEODEC_CAPI_UNIT_TEST",
-    "TEST_SUIT=VideoH263DecCapiSyncTest",
+    "VideoDecSample=VideoDecSyncSample",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -994,9 +1003,10 @@ ohos_unittest("videodec_inner_sync_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoDecInnerSyncTest",
     "VIDEODEC_SYNC_UNIT_TEST",
     "VIDEODEC_INNER_UNIT_TEST",
-    "TEST_SUIT=VideoDecInnerSyncTest",
+    "VideoDecSample=VideoDecSyncSample",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -1044,9 +1054,10 @@ ohos_unittest("videodec_h263_inner_sync_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoH263DecInnerSyncTest",
     "VIDEODEC_SYNC_UNIT_TEST",
     "VIDEODEC_INNER_UNIT_TEST",
-    "TEST_SUIT=VideoH263DecInnerSyncTest",
+    "VideoDecSample=VideoDecSyncSample",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -1094,9 +1105,10 @@ ohos_unittest("videodec_mpeg_func_sync_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoMPEGDecInnerSyncTest",
     "VIDEODEC_SYNC_UNIT_TEST",
     "VIDEODEC_MPEG_FUNC_UNIT_TEST",
-    "TEST_SUIT=VideoMPEGDecInnerSyncTest",
+    "VideoDecSample=VideoDecSyncSample",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -1145,8 +1157,9 @@ ohos_unittest("videodec_hdrvivid2sdr_sync_unit_test") {
   ]
 
   defines = [
-    "VIDEODEC_SYNC_UNIT_TEST",
     "TEST_SUIT=VideoDecHDRVivid2SDRSyncTest",
+    "VIDEODEC_SYNC_UNIT_TEST",
+    "VideoDecSample=VideoDecSyncSample",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -1215,9 +1228,10 @@ ohos_unittest("videodec_hdecoder_memrecycle_sync_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoHDecMemoryRecyleSyncTest",
     "VIDEODEC_SYNC_UNIT_TEST",
     "VIDEODEC_HARDWARE_MEMRECYCLE_UNIT_TEST",
-    "TEST_SUIT=VideoHDecMemoryRecyleSyncTest",
+    "VideoDecSample=VideoDecSyncSample",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -1270,9 +1284,9 @@ ohos_unittest("videoenc_capi_sync_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoEncCapiSyncTest",
     "VIDEOENC_SYNC_UNIT_TEST",
     "VIDEOENC_CAPI_UNIT_TEST",
-    "TEST_SUIT=VideoEncCapiSyncTest",
     "VideoEncSample=VideoEncSyncSample",
   ]
   if (target_cpu == "arm64") {
@@ -1317,9 +1331,9 @@ ohos_unittest("videoenc_inner_sync_unit_test") {
   ]
 
   defines = [
+    "TEST_SUIT=VideoEncInnerSyncTest",
     "VIDEOENC_SYNC_UNIT_TEST",
     "VIDEOENC_INNER_UNIT_TEST",
-    "TEST_SUIT=VideoEncInnerSyncTest",
     "VideoEncSample=VideoEncSyncSample",
   ]
   if (target_cpu == "arm64") {

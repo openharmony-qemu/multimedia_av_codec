@@ -107,9 +107,6 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-#ifdef VIDEOENC_SYNC_UNIT_TEST
-    format_->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
-#endif
 }
 
 bool TEST_SUIT::ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer)

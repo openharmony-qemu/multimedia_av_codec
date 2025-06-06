@@ -56,11 +56,7 @@ public:
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
-#ifdef VIDEODEC_ASYNC_UNIT_TEST
-    std::shared_ptr<VideoDecAsyncSample> videoDec_ = nullptr;
-#else
-    std::shared_ptr<VideoDecSyncSample> videoDec_ = nullptr;
-#endif
+    std::shared_ptr<VideoDecSample> videoDec_ = nullptr;
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VDecCallbackTest> vdecCallback_ = nullptr;
     std::shared_ptr<VDecCallbackTestExt> vdecCallbackExt_ = nullptr;
@@ -85,11 +81,7 @@ void TEST_SUIT::SetUp(void)
     vdecCallbackExt_ = std::make_shared<VDecCallbackTestExt>(vdecSignal);
     ASSERT_NE(nullptr, vdecCallbackExt_);
 
-#ifdef VIDEODEC_ASYNC_UNIT_TEST
-    videoDec_ = std::make_shared<VideoDecAsyncSample>(vdecSignal);
-#else
-    videoDec_ = std::make_shared<VideoDecSyncSample>(vdecSignal);
-#endif
+    videoDec_ = std::make_shared<VideoDecSample>(vdecSignal);
     ASSERT_NE(nullptr, videoDec_);
 
     format_ = FormatMockFactory::CreateFormat();
@@ -185,9 +177,6 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-#ifdef VIDEODEC_SYNC_UNIT_TEST
-    format_->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
-#endif
 }
 
 void TEST_SUIT::SetHDRFormat()
@@ -195,9 +184,6 @@ void TEST_SUIT::SetHDRFormat()
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV21));
-#ifdef VIDEODEC_SYNC_UNIT_TEST
-    format_->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
-#endif
 }
 
 void TEST_SUIT::SetAVCFormat()
@@ -205,9 +191,6 @@ void TEST_SUIT::SetAVCFormat()
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::RGBA));
-#ifdef VIDEODEC_SYNC_UNIT_TEST
-    format_->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
-#endif
 }
 
 #ifdef HMOS_TEST
@@ -300,9 +283,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_003, TestSize.Level1)
     PrepareSource(testCode);
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-#ifdef VIDEODEC_SYNC_UNIT_TEST
-    format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
-#endif
 
     if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
@@ -351,9 +331,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_005, TestSize.Level1)
     PrepareSource(testCode);
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-#ifdef VIDEODEC_SYNC_UNIT_TEST
-    format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
-#endif
 
     if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
@@ -405,9 +382,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_007, TestSize.Level1)
     PrepareSource(testCode);
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-#ifdef VIDEODEC_SYNC_UNIT_TEST
-    format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
-#endif
 
     if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
@@ -456,9 +430,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_009, TestSize.Level1)
     PrepareSource(testCode);
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-#ifdef VIDEODEC_SYNC_UNIT_TEST
-    format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
-#endif
 
     if (testCode == VCodecTestCode::HW_HDR) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
@@ -788,9 +759,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_019, TestSize.Level1)
     PrepareSource(GetParam());
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-#ifdef VIDEODEC_SYNC_UNIT_TEST
-    format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
-#endif
 
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format));
 }
@@ -844,9 +812,6 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_022, TestSize.Level1)
     PrepareSource(GetParam());
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
-#ifdef VIDEODEC_SYNC_UNIT_TEST
-    format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
-#endif
 
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format));
 }
@@ -876,11 +841,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < argc; ++i) {
         cout << argv[i] << endl;
         if (strcmp(argv[i], "--need_dump") == 0) {
-#ifdef VIDEODEC_ASYNC_UNIT_TEST
-            VideoDecAsyncSample::needDump_ = true;
-#else
-            VideoDecSyncSample::needDump_ = true;
-#endif
+            VideoDecSample::needDump_ = true;
             DecArgv(i, argc, argv);
         }
     }

@@ -150,6 +150,7 @@ int32_t VideoDecSyncSample::Configure(std::shared_ptr<FormatMock> format)
     if (videoDec_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
+    format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
     return videoDec_->Configure(format);
 }
 
