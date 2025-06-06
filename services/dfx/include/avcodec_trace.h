@@ -80,7 +80,7 @@ private:
 };
 
 #ifdef MEDIA_TRACE_DEBUG_ENABLE
-#define MEDIA_TRACE_DEBUG(name) MediaAVCodec::AVCodecTrace trace(name,)
+#define MEDIA_TRACE_DEBUG(name) MediaAVCodec::AVCodecTrace trace(name)
 #define MEDIA_TRACE_DEBUG_POSTFIX(name, postfix) MediaAVCodec::AVCodecTrace trace##postfix(name)
 #else
 #define MEDIA_TRACE_DEBUG(name) ((void)0)
