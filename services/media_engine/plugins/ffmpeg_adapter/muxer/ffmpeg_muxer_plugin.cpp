@@ -713,7 +713,7 @@ bool FFmpegMuxerPlugin::CheckTrackReferenceType(const std::shared_ptr<Meta> &tra
     if (trackDesc->Find(Tag::TRACK_REFERENCE_TYPE) != trackDesc->end()) {
         trackDesc->Get<Tag::TRACK_REFERENCE_TYPE>(trackRefType);
         if (SUPPORTED_TRACK_REF_TYPE.count(trackRefType) == 0) {
-            MEDIA_LOG_E(" track reference type is not supported.");
+            MEDIA_LOG_E("track reference type is not supported.");
             return false;
         }
     } else {
@@ -748,6 +748,8 @@ bool FFmpegMuxerPlugin::CheckReferenceTrackIDS(const std::shared_ptr<Meta> &trac
             if (i > 0) {
                 toStringTrackId += ',';
             }
+            FALSE_RETURN_V_MSG_E(trackIDs[i] >= 0 && static_cast<uint32_t>(trackIDs[i]) < formatContext_->nb_streams,
+                false, "reference track id %{public}d is invalid.", trackIDs[i]);
             toStringTrackId += std::to_string(trackIDs[i]);
         }
     } else {
@@ -938,7 +940,8 @@ Status FFmpegMuxerPlugin::AddVideoAuxiliaryTrack(
         st->codecpar->video_delay = videoDelay;
     }
 
-    SetAuxiliaryMeta(trackDesc, st);
+    auto retAuxlMeta = SetAuxiliaryMeta(trackDesc, st);
+    FALSE_RETURN_V_MSG_E(retAuxlMeta == Status::NO_ERROR, retAuxlMeta, "set auxiliary meta failed!");
 
     trackIndex = st->index;
     if (isCover) {
