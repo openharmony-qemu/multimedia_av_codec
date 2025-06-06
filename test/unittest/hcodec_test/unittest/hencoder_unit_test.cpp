@@ -1299,6 +1299,7 @@ static void ConfigureGopModeForBFrameTest(const std::string &targetType, const s
     ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
+#ifdef HMOS_TEST
     format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
                        Media::Plugins::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE);
     ret = testObj->Configure(format);
@@ -1312,6 +1313,7 @@ static void ConfigureGopModeForBFrameTest(const std::string &targetType, const s
     format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, 1000);
     ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_UNSUPPORT, ret);
+#endif
 }
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_avc_gop_mode_for_b_frame, TestSize.Level1)
