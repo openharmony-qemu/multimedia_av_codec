@@ -317,9 +317,9 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
             GetInputBufferDts(tmpBuffer);
         }
         FALSE_RETURN_MSG(tmpBuffer->meta_ != nullptr, "tmpBuffer is nullptr.");
-        int32_t indexD32;
-        FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, indexD32), "get index failed.");
-        uint32_t index = static_cast<uint32_t>(indexD32);
+        int32_t metaIndex;
+        FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, metaIndex), "get index failed.");
+        uint32_t index = static_cast<uint32_t>(metaIndex);
         if (tmpBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
             tmpBuffer->memory_->SetSize(0);
         }

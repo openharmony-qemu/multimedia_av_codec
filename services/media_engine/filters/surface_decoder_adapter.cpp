@@ -405,9 +405,9 @@ void SurfaceDecoderAdapter::AcquireAvailableInputBuffer()
         return;
     }
     FALSE_RETURN_MSG(filledInputBuffer->meta_ != nullptr, "filledInputBuffer meta is nullptr.");
-    int32_t indexD32;
-    FALSE_RETURN_MSG(filledInputBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, indexD32), "get index failed.");
-    uint32_t index = static_cast<uint32_t>(indexD32);
+    int32_t metaIndex;
+    FALSE_RETURN_MSG(filledInputBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, metaIndex), "get index failed.");
+    uint32_t index = static_cast<uint32_t>(metaIndex);
     FALSE_RETURN_MSG(codecServer_ != nullptr, "codecServer_ is nullptr.");
     if (codecServer_->QueueInputBuffer(index) != ERR_OK) {
         MEDIA_LOG_E("QueueInputBuffer failed, index: %{public}u,  bufferid: %{public}" PRIu64
