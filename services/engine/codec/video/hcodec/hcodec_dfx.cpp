@@ -104,8 +104,8 @@ std::string HCodec::OnGetHidumperInfo()
         int fd = info.surfaceBuffer == nullptr ? -1 : info.surfaceBuffer->GetFileDescriptor();
         int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
         s << "        " << "outBufId = " << info.bufferId << ", fd = " << fd << ", owner = " << ToString(info.owner);
-        if(info.hasSwapedOut){
-          s << ", hasSwapedOut = " << info.hasSwapedOut << ", nextOwner = " << ToString(info.nextStepOwner);
+        if (info.hasSwapedOut) {
+            s << ", hasSwapedOut = " << info.hasSwapedOut << ", nextOwner = " << ToString(info.nextStepOwner);
         }
         s << ", holdMs = " << holdMs << endl;
     }

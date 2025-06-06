@@ -127,14 +127,14 @@ int32_t HCodec::NotifySuspend()
 {
     SCOPED_TRACE();
     FUNC_TRACKER();
-    return DoSyncCall(MsgWhat::Suspend, nullptr);
+    return DoSyncCall(MsgWhat::SUSPEND, nullptr);
 }
 
 int32_t HCodec::NotifyResume()
 {
     SCOPED_TRACE();
     FUNC_TRACKER();
-    return DoSyncCall(MsgWhat::Resume, nullptr);
+    return DoSyncCall(MsgWhat::RESUME, nullptr);
 }
 
 void HCodec::RecordBufferStatus(OMX_DIRTYPE portIndex, uint32_t bufferId, BufferOwner nextOwner)
