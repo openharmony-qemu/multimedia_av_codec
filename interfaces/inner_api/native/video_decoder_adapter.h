@@ -69,6 +69,7 @@ public:
     void ResetRenderTime();
     Status SetPerfRecEnabled(bool isPerfRecEnabled);
     void NotifyMemoryExchange(bool exchangeFlag);
+    void InitDefaultSurface();
 
 private:
     void PerfRecord(const std::shared_ptr<AVBuffer> buffer);
@@ -99,6 +100,8 @@ private:
     int32_t fileType_{0};
     std::deque<int64_t> inputBufferDtsQue_;
     std::atomic<bool> isRenderStarted_{false};
+    sptr<Surface> producerSurface_{nullptr};
+    sptr<Surface> consumerSurface_{nullptr};
 };
 
 class VideoDecoderCallback : public OHOS::MediaAVCodec::MediaCodecCallback {
