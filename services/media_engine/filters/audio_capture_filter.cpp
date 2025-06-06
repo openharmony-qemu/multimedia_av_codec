@@ -453,9 +453,9 @@ void AudioCaptureFilter::FillLostFrame(int32_t lostCount)
     uint64_t bufferSize = 0;
     audioCaptureModule_->GetSize(bufferSize);
     while (lostCount > 0) {
-        auto cachedAudioData = std::shared_ptr<uint8_t>(new uint8_t[bufferSize]{0},
+        auto cachedAudioData = std::shared_ptr<uint8_t>(new (std::nothrow) uint8_t[bufferSize]{0},
             std::default_delete<uint8_t[]>());
-        if (cachedAudioData == nullptr) {
+        if (cachedAudioData.get() == nullptr) {
             MEDIA_LOG_W("create cachedAudioData fail");
             continue;
         }
