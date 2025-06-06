@@ -295,21 +295,6 @@ std::shared_ptr<AVBufferMock> VideoEncCapiMock::GetInputBuffer(uint32_t index)
     return bufMock;
 }
 
-int32_t VideoEncCapiMock::QueryInputParameterWithAttr(uint32_t& index, int64_t timeoutUs)
-{
-    return AV_ERR_OK;
-}
-
-std::shared_ptr<FormatMock> VideoEncCapiMock::GetInputParameter(uint32_t index)
-{
-    return nullptr;
-}
-
-std::shared_ptr<FormatMock> VideoEncCapiMock::GetInputAttribute(uint32_t index)
-{
-    return nullptr;
-}
-
 int32_t VideoEncCapiMock::QueryOutputBuffer(uint32_t& index, int64_t timeoutUs)
 {
     return OH_VideoEncoder_QueryOutputBuffer(codec_, &index, timeoutUs);

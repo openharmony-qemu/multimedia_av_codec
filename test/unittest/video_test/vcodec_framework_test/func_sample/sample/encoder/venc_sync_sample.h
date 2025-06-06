@@ -70,14 +70,6 @@ private:
 
     int32_t ReadOneFrame();
 
-    void RunInner();
-    void InputParamLoopFunc();
-
-    void OutputLoopFunc();
-    void InputLoopFunc();
-    int32_t OutputLoopInner();
-    int32_t InputLoopInner();
-
     void RunInnerExt();
     void OutputLoopFuncExt();
     void InputLoopFuncExt();
@@ -102,7 +94,6 @@ private:
     int32_t frameOutputCount_ = 0;
     bool isFirstFrame_ = true;
     bool isSurfaceMode_ = false;
-    bool isSetParamCallback_ = false;
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;

@@ -138,7 +138,6 @@ int32_t VideoEncSyncSample::SetCallback(std::shared_ptr<MediaCodecParameterCallb
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
-    isSetParamCallback_ = true;
     return AV_ERR_OK;
 }
 
@@ -147,7 +146,6 @@ int32_t VideoEncSyncSample::SetCallback(std::shared_ptr<MediaCodecParameterWithA
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
-    isSetParamCallback_ = true;
     return AV_ERR_OK;
 }
 
@@ -265,14 +263,6 @@ int32_t VideoEncSyncSample::PushInputBuffer(uint32_t index)
     return videoEnc_->PushInputBuffer(index);
 }
 
-int32_t VideoEncSyncSample::PushInputParameter(uint32_t index)
-{
-    if (videoEnc_ == nullptr) {
-        return AV_ERR_UNKNOWN;
-    }
-    return videoEnc_->PushInputParameter(index);
-}
-
 int32_t VideoEncSyncSample::FreeOutputBuffer(uint32_t index)
 {
     if (videoEnc_ == nullptr) {
@@ -383,8 +373,6 @@ void VideoEncSyncSample::RunInnerExt()
     signal_->isRunning_.store(true);
     if (isSurfaceMode_) {
         inputSurfaceLoop_ = make_unique<thread>(&VideoEncSyncSample::InputFuncSurface, this);
-        inputLoop_ = isSetParamCallback_ ? make_unique<thread>(&VideoEncSyncSample::InputParamLoopFunc, this) : nullptr;
-        ASSERT_NE(inputSurfaceLoop_, nullptr);
     } else {
         inputLoop_ = make_unique<thread>(&VideoEncSyncSample::InputLoopFuncExt, this);
         ASSERT_NE(inputLoop_, nullptr);
@@ -453,56 +441,6 @@ void VideoEncSyncSample::InputLtrParam(std::shared_ptr<FormatMock> format, int32
     }
     if (buffer) {
         buffer->SetParameter(format);
-    }
-}
-
-void VideoEncSyncSample::InputParamLoopFunc()
-{
-    ASSERT_NE(signal_, nullptr);
-    ASSERT_NE(videoEnc_, nullptr);
-    frameInputCount_ = 0;
-    isFirstFrame_ = true;
-    while (signal_->isRunning_.load()) {
-        shared_lock<shared_mutex> lock(signal_->syncMutex_);
-        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputParamLoopFunc stop running");
-
-        uint32_t index = DEFAULT_INDEX;
-        auto ret = videoEnc_->QueryInputParameterWithAttr(index, 0);
-        if (ret == AV_ERR_COMMON_TRY_AGAIN_LATER) {
-            continue;
-        }
-        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: QueryInputParameterWithAttr fail");
-
-        auto format = videoEnc_->GetInputParameter(index);
-        UNITTEST_CHECK_AND_BREAK_LOG(format != nullptr, "Fatal: GetInputParameter fail, index: %d", index);
-
-#if VIDEOENC_INNER_UNIT_TEST
-        auto attr = videoEnc_->GetInputAttribute(index);
-        UNITTEST_CHECK_AND_BREAK_LOG(attr != nullptr, "Fatal: GetInputAttribute fail, index: %d", index);
-
-        if (attr != nullptr) {
-            int64_t pts = 0;
-            EXPECT_EQ(true, attr->GetLongValue(Media::Tag::MEDIA_TIME_STAMP, pts));
-            UNITTEST_INFO_LOG("attribute: %s", attr->DumpInfo());
-        }
-#endif
-        if (isTemporalScalabilitySyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
-            format->PutIntValue(Media::Tag::VIDEO_REQUEST_I_FRAME, REQUEST_I_FRAME);
-        }
-
-        if (isDiscardFrame_ && (frameInputCount_ % 2) == 0) { // 2: encode half frames
-            format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, 1);
-        }
-
-        if (roiRects_ != ""){
-            format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
-        }
-
-        InputLtrParam(format, frameInputCount_, nullptr);
-
-        UNITTEST_INFO_LOG("parameter: %s", format->DumpInfo());
-        ret = PushInputParameter(index);
-        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
     }
 }
 
