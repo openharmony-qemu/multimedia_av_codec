@@ -23,7 +23,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "SampleQueue" };
-constexpr uint32_t INVALID_TRACK_ID = std::numeric_limits<uint32_t>::max();
+constexpr int32_t INVALID_TRACK_ID = -1;
 }
 
 namespace OHOS {
@@ -252,8 +252,8 @@ void SampleQueue::CopyMeta(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr
         return;
     }
 
-    uint32_t trackIdMeta = INVALID_TRACK_ID;
-    if (!dstBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, trackIdMeta)) {
+    int32_t trackId = INVALID_TRACK_ID;
+    if (!dstBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, trackId)) {
         MEDIA_LOG_DD("trackId not found");
     }
 
@@ -262,8 +262,8 @@ void SampleQueue::CopyMeta(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr
         return;
     }
 
-    if (trackIdMeta != INVALID_TRACK_ID) {
-        dstBuffer->meta_->SetData(Tag::REGULAR_TRACK_ID, trackIdMeta);
+    if (trackId != INVALID_TRACK_ID) {
+        dstBuffer->meta_->SetData(Tag::REGULAR_TRACK_ID, trackId);
     }
 }
 

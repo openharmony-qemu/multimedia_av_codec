@@ -665,7 +665,7 @@ Status MediaDemuxer::AddDemuxerCopyTask(int32_t trackId, TaskType type)
             break;
         }
         default: {
-            MEDIA_LOG_E("Add demuxer task failed, unknow task type:" PUBLIC_LOG_D32, static_cast<int>(type));
+            MEDIA_LOG_E("Add demuxer task failed, unknow task type:" PUBLIC_LOG_D32, static_cast<int32_t>(type));
             return Status::ERROR_UNKNOWN;
         }
     }
@@ -673,7 +673,7 @@ Status MediaDemuxer::AddDemuxerCopyTask(int32_t trackId, TaskType type)
     std::unique_ptr<Task> task = std::make_unique<Task>(taskName, playerId_, type);
     FALSE_RETURN_V_MSG_W(task != nullptr, Status::OK,
         "Create task failed, track:" PUBLIC_LOG_D32 ", type:" PUBLIC_LOG_D32,
-        trackId, static_cast<int>(type));
+        trackId, static_cast<int32_t>(type));
 
     taskMap_[trackId] = std::move(task);
     UpdateThreadPriority(trackId);
@@ -684,13 +684,13 @@ Status MediaDemuxer::AddDemuxerCopyTask(int32_t trackId, TaskType type)
         std::make_unique<Task>(taskName + "N", playerId_, type, TaskPriority::NORMAL, false);
     FALSE_RETURN_V_MSG_W(notifyTask != nullptr, Status::OK,
         "Create notify task failed, track:" PUBLIC_LOG_D32 ", type:" PUBLIC_LOG_D32,
-        trackId, static_cast<int>(type));
+        trackId, static_cast<int32_t>(type));
 
     sptr<IProducerListener> listener =
         OHOS::sptr<AVBufferQueueProducerListener>::MakeSptr(trackId, shared_from_this(), notifyTask);
     FALSE_RETURN_V_MSG_W(listener != nullptr, Status::OK,
         "Create listener failed, track:" PUBLIC_LOG_D32 ", type:" PUBLIC_LOG_D32,
-        trackId, static_cast<int>(type));
+        trackId, static_cast<int32_t>(type));
 
     trackMap_.emplace(trackId, std::make_shared<TrackWrapper>(trackId, listener, shared_from_this()));
     return Status::OK;
