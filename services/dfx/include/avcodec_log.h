@@ -61,6 +61,20 @@ namespace MediaAVCodec {
 #define AVCODEC_LOGI_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGI, frequency, fmt, ##__VA_ARGS__)
 #define AVCODEC_LOGD_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGD, frequency, fmt, ##__VA_ARGS__)
 
+#define AVCODEC_LOG_LIMIT_POW2(logger, pow2, fmt, ...)                      \
+    do {                                                                    \
+        static uint32_t currentTimes = 0;                                   \
+        if (((currentTimes++) & ((1 << (uint32_t)(pow2)) - 1)) != 0) {      \
+            break;                                                          \
+        }                                                                   \
+        logger("[R: %{public}u] " fmt, currentTimes, ##__VA_ARGS__);        \
+    } while (0)
+
+#define AVCODEC_LOGE_LIMIT_POW2(pow2, fmt, ...) AVCODEC_LOG_LIMIT_POW2(AVCODEC_LOGE, pow2, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGW_LIMIT_POW2(pow2, fmt, ...) AVCODEC_LOG_LIMIT_POW2(AVCODEC_LOGW, pow2, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGI_LIMIT_POW2(pow2, fmt, ...) AVCODEC_LOG_LIMIT_POW2(AVCODEC_LOGI, pow2, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGD_LIMIT_POW2(pow2, fmt, ...) AVCODEC_LOG_LIMIT_POW2(AVCODEC_LOGD, pow2, fmt, ##__VA_ARGS__)
+
 #define CHECK_AND_RETURN_RET_LOG(cond, ret, fmt, ...)                       \
     do {                                                                    \
         if (!(cond)) {                                                      \
@@ -153,12 +167,10 @@ namespace MediaAVCodec {
         }                                                                   \
     } else void (0)
 
-#define CHECK_AND_BREAK_LOG_LIMIT(cond, frequency, fmt, ...)                \
-    if (1) {                                                                \
-        if (!(cond)) {                                                      \
-            AVCODEC_LOGE_LIMIT(frequency, fmt, ##__VA_ARGS__);              \
-            break;                                                          \
-        }                                                                   \
+#define CHECK_AND_BREAK_LOG_LIMIT_POW2(cond, pow2, fmt, ...)                \
+    if (!(cond)) {                                                          \
+        AVCODEC_LOGI_LIMIT_POW2(pow2, fmt, ##__VA_ARGS__);                  \
+        break;                                                              \
     } else void (0)
 
 #define CHECK_AND_CONTINUE_LOG(cond, fmt, ...)                              \

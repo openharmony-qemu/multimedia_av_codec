@@ -80,8 +80,8 @@ constexpr int64_t UPDATE_SOURCE_CACHE_MS = 100;
 constexpr uint32_t BUFFERING_WAVELINE_FOR_SAMPLE_QUEUE = 1000000;
 constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
-constexpr uint32_t SAMPLE_LOOP_ACQUIRE_FAILED_LOG_FREQUENCY = 5;
-constexpr uint32_t SAMPLE_LOOP_REQUEST_FAILED_LOG_FREQUENCY = 50;
+constexpr uint32_t SAMPLE_LOOP_ACQUIRE_FAILED_LOG_POW2 = 3;
+constexpr uint32_t SAMPLE_LOOP_REQUEST_FAILED_LOG_POW2 = 8;
 constexpr int32_t US_TO_S = 1000000;
 constexpr int32_t US_TO_MS = 1000;
 constexpr int32_t SAMPLE_BUFFER_SIZE_EXTRA = 128;
@@ -2772,18 +2772,12 @@ void MediaDemuxer::OnEventBuffer(const Plugins::PluginEvent &event,
     switch (event.type) {
         case PluginEventType::BUFFERING_END: {
             MEDIA_LOG_D("OnEvent pause");
-            if (!IsIgonreBuffering()) {
-                MEDIA_LOG_D("OnEvent BUFFERING_END");
-                eventReceiver->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
-            }
+            eventReceiver->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
             break;
         }
         case PluginEventType::BUFFERING_START: {
             MEDIA_LOG_D("OnEvent start");
-            if (!IsIgonreBuffering()) {
-                MEDIA_LOG_D("OnEvent BUFFERING_START");
-                eventReceiver->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
-            }
+            eventReceiver->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
             break;
         }
         case PluginEventType::EVENT_BUFFER_PROGRESS: {
@@ -3281,7 +3275,7 @@ int64_t MediaDemuxer::SampleConsumerLoop(int32_t trackId)
     do {
         size_t size = 0;
         status = sampleQueue->QuerySizeForNextAcquireBuffer(size);
-        CHECK_AND_BREAK_LOG_LIMIT(status == Status::OK, SAMPLE_LOOP_ACQUIRE_FAILED_LOG_FREQUENCY,
+        CHECK_AND_BREAK_LOG_LIMIT_POW2(status == Status::OK, SAMPLE_LOOP_ACQUIRE_FAILED_LOG_POW2,
             "QuerySizeForNextAcquireBuffer failed " PUBLIC_LOG_D32, trackId);
         UpdateSampleQueueCache();
 
@@ -3290,7 +3284,7 @@ int64_t MediaDemuxer::SampleConsumerLoop(int32_t trackId)
         std::shared_ptr<AVBuffer> dstBuffer;
         avBufferConfig.capacity = static_cast<int32_t>(size);
         status = bufferQueue->RequestBuffer(dstBuffer, avBufferConfig, REQUEST_BUFFER_TIMEOUT);
-        CHECK_AND_BREAK_LOG_LIMIT(status == Status::OK, SAMPLE_LOOP_REQUEST_FAILED_LOG_FREQUENCY,
+        CHECK_AND_BREAK_LOG_LIMIT_POW2(status == Status::OK, SAMPLE_LOOP_REQUEST_FAILED_LOG_POW2,
             "RequestBuffer from bufferQueue failed " PUBLIC_LOG_D32, trackId);
         SetTrackNotifySampleConsumerFlag(trackId, false);
 
@@ -3474,8 +3468,7 @@ Status MediaDemuxer::HandleSelectBitrateForFlvLive(int64_t startPts, uint32_t bi
 
     InnerSelectTrack(static_cast<int32_t>(videoTrackId_));
     InnerSelectTrack(static_cast<int32_t>(audioTrackId_));
-    MEDIA_LOG_I("Out bitrate=" PUBLIC_LOG_U32 " startPts=" PUBLIC_LOG_D64, bitrate, startPts);
-    return Status::OK;
+    return ret;
 }
 
 uint64_t MediaDemuxer::GetCachedDuration()
