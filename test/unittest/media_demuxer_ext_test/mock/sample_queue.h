@@ -30,8 +30,8 @@ class SampleQueueCallback {
 public:
     virtual ~SampleQueueCallback() = default;
     virtual Status OnSelectBitrateOk(int64_t startPts, uint32_t bitRate) = 0;
-    virtual Status OnSampleQueueBufferAvailable(uint32_t queueId) = 0;
-    virtual Status OnSampleQueueBufferConsume(uint32_t queueId) = 0;
+    virtual Status OnSampleQueueBufferAvailable(int32_t queueId) = 0;
+    virtual Status OnSampleQueueBufferConsume(int32_t queueId) = 0;
 };
 
 enum class SelectBitrateStatus : uint32_t {
@@ -50,7 +50,7 @@ public:
     static constexpr int64_t MIN_SWITCH_BITRATE_TIME_US = 3000000;
     static constexpr size_t MAX_BITRATE_SWITCH_WAIT_NUMBER = 1;
     struct Config {
-        uint32_t queueId_{0};
+        int32_t queueId_{0};
         std::string queueName_{""};
         uint32_t queueSize_{DEFAULT_SAMPLE_QUEUE_SIZE};
         uint32_t bufferCap_{DEFAULT_SAMPLE_BUFFER_CAP};
@@ -80,7 +80,7 @@ public:
     MOCK_METHOD(void, OnBufferAvailable, (), ());
     MOCK_METHOD(void, OnBufferConsumer, (), ());
     MOCK_METHOD(uint64_t, GetCacheDuration, (), ());
-    MOCK_METHOD(void, UpdateQueueId, (uint32_t queueId), ());
+    MOCK_METHOD(void, UpdateQueueId, (int32_t queueId), ());
     MOCK_METHOD(uint32_t, GetMemoryUsage, (), ());
 
     Config config_{};
