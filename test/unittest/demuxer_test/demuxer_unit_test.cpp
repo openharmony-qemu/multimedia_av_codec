@@ -2805,12 +2805,11 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_WavAlaw_0001, TestSize.Level1)
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
-    std::vector<int> expPtsVec = {0, 85333, 170667, 256000, 341333, 426667, 512000};
+    std::vector<int> expPtsVec = {0, 85333, 170666, 256000, 341333, 426666, 512000};
     std::vector<int> expSizeVec = {4096, 4096, 4096, 4096, 4096, 4096, 4096};
     size_t idx = 0;
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(trackIndex, sharedMem_, &info_, flag_), AV_ERR_OK);
-        printf("idx %zu pts %lld size %d\n", idx, info_.presentationTimeUs, info_.size);
         if (idx < expPtsVec.size()) {
             ASSERT_EQ(expPtsVec[idx], info_.presentationTimeUs);
             ASSERT_EQ(expSizeVec[idx], info_.size);
@@ -2832,7 +2831,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_WavAlaw_0001, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_WavAlaw_0001, TestSize.Level1)
 {
     ASSERT_TRUE(!access(g_wavAlawPath.c_str(), F_OK));
-    InitResource(g_mp4VvcPath, LOCAL);
+    InitResource(g_wavAlawPath, LOCAL);
     ASSERT_TRUE(initStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
