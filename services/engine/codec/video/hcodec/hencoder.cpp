@@ -1235,7 +1235,7 @@ int32_t HEncoder::CalculateSmoothFpsBasedPts(int64_t curPts, int64_t curDuration
 int32_t HEncoder::UpdateTimeStampWindow(int64_t curPts, int32_t &frameRate)
 {
     int32_t previousPtsWindowSize = static_cast<int32_t>(previousPtsWindow_.size());
-    if (previousPtsWindowSize == 0 || previousPtsWindow_.empty()) {
+    if (previousPtsWindow_.empty()) {
         previousPtsWindow_.push_back(curPts);
         frameRate = defaultFrameRate_.value_or(DEFAULT_FRAME_RATE);
         HLOGD("pts: %ld, smoothFrameRate: %d, windowSize: %d", curPts, frameRate, previousPtsWindowSize);
