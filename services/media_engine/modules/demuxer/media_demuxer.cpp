@@ -227,7 +227,7 @@ MediaDemuxer::~MediaDemuxer()
 
 std::shared_ptr<Plugins::DemuxerPlugin> MediaDemuxer::GetCurFFmpegPlugin()
 {
-    int32_t tempTrackId = (IsValid(videoTrackId_) ? videoTrackId_ : audioTrackId_);
+    int32_t tempTrackId = (IsValidTrackId(videoTrackId_) ? videoTrackId_ : audioTrackId_);
     int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(tempTrackId);
     return demuxerPluginManager_->GetPluginByStreamID(streamID);
 }
@@ -250,7 +250,7 @@ static void ReportSceneCodeForDemuxer(SceneCode scene)
 
 bool MediaDemuxer::IsRefParserSupported()
 {
-    FALSE_RETURN_V_MSG_E(IsValid(videoTrackId_), false, "Video track is nullptr");
+    FALSE_RETURN_V_MSG_E(IsValidTrackId(videoTrackId_), false, "Video track is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, false, "Demuxer plugin is nullptr");
     return videoPlugin->IsRefParserSupported();
@@ -261,7 +261,7 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
     FALSE_RETURN_V_MSG_E(startTimeMs >= 0, Status::ERROR_UNKNOWN,
                          "Start failed, startTimeMs: " PUBLIC_LOG_D64, startTimeMs);
     FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER, "Source is nullptr");
-    FALSE_RETURN_V_MSG_E(IsValid(videoTrackId_), Status::ERROR_UNKNOWN, "Video track is nullptr");
+    FALSE_RETURN_V_MSG_E(IsValidTrackId(videoTrackId_), Status::ERROR_UNKNOWN, "Video track is nullptr");
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> plugin = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(plugin != nullptr, Status::ERROR_NULL_POINTER, "Demuxer plugin is nullptr");
@@ -804,7 +804,7 @@ Status MediaDemuxer::InnerPrepare()
 
 void MediaDemuxer::InitVideoTrack()
 {
-    FALSE_RETURN_MSG(IsValid(videoTrackId_), "videoTrackId_ invalid");
+    FALSE_RETURN_MSG(IsValidTrackId(videoTrackId_), "videoTrackId_ invalid");
     GetEnableSampleQueueFlag() ? AddDemuxerCopyTaskByTrackIfFilter(videoTrackId_, DemuxerTrackType::VIDEO)
                             : AddDemuxerCopyTaskIfFilter(videoTrackId_, TaskType::VIDEO);
     if (isFlvLiveStream_) {
@@ -823,7 +823,7 @@ void MediaDemuxer::InitVideoTrack()
 
 void MediaDemuxer::InitAudioTrack()
 {
-    FALSE_RETURN_MSG(IsValid(audioTrackId_), "audioTrackId_ invalid");
+    FALSE_RETURN_MSG(IsValidTrackId(audioTrackId_), "audioTrackId_ invalid");
     GetEnableSampleQueueFlag() ? AddDemuxerCopyTaskByTrackIfFilter(audioTrackId_, DemuxerTrackType::AUDIO)
                             : AddDemuxerCopyTaskIfFilter(audioTrackId_, TaskType::AUDIO);
     demuxerPluginManager_->UpdateTempTrackMapInfo(audioTrackId_, audioTrackId_, -1);
@@ -841,7 +841,7 @@ void MediaDemuxer::InitAudioTrack()
 
 void MediaDemuxer::InitSubtitleTrack()
 {
-    FALSE_RETURN_MSG(IsValid(subtitleTrackId_), "subtitleTrackId_ invalid");
+    FALSE_RETURN_MSG(IsValidTrackId(subtitleTrackId_), "subtitleTrackId_ invalid");
     GetEnableSampleQueueFlag() ? AddDemuxerCopyTaskByTrackIfFilter(subtitleTrackId_, DemuxerTrackType::SUBTITLE)
                             : AddDemuxerCopyTaskIfFilter(subtitleTrackId_, TaskType::SUBTITLE);
     demuxerPluginManager_->UpdateTempTrackMapInfo(subtitleTrackId_, subtitleTrackId_, -1);
@@ -853,7 +853,7 @@ void MediaDemuxer::InitSubtitleTrack()
 
 int32_t MediaDemuxer::GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> trackInfos)
 {
-    FALSE_RETURN_V(!IsValid(targetVideoTrackId_), targetVideoTrackId_);
+    FALSE_RETURN_V(!IsValidTrackId(targetVideoTrackId_), targetVideoTrackId_);
     MEDIA_LOG_I_SHORT("GetTargetVideoTrackId enter");
     int32_t trackInfoSize = static_cast<int32_t>(trackInfos.size());
     for (int32_t index = 0; index < trackInfoSize; index++) {
@@ -978,7 +978,7 @@ bool MediaDemuxer::IsSubtitleMime(const std::string& mime)
 Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSource)
 {
     MEDIA_LOG_I("In");
-    if (IsValid(subtitleTrackId_)) {
+    if (IsValidTrackId(subtitleTrackId_)) {
         MEDIA_LOG_W("Found subtitle track, not support ext");
         return Status::OK;
     }
@@ -1013,7 +1013,7 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
         }
     }
 
-    if (IsValid(subtitleTrackId_)) {
+    if (IsValidTrackId(subtitleTrackId_)) {
         GetEnableSampleQueueFlag() ? AddDemuxerCopyTaskByTrack(subtitleTrackId_, DemuxerTrackType::SUBTITLE)
                                    : AddDemuxerCopyTask(subtitleTrackId_, TaskType::SUBTITLE);
         demuxerPluginManager_->UpdateTempTrackMapInfo(subtitleTrackId_, subtitleTrackId_, -1);
@@ -1060,7 +1060,7 @@ void MediaDemuxer::SetBundleName(const std::string& bundleName)
 Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer)
 {
     AutoLock lock(mapMutex_);
-    FALSE_RETURN_V_MSG_E(IsValid(trackId) &&
+    FALSE_RETURN_V_MSG_E(IsValidTrackId(trackId) &&
         static_cast<size_t>(trackId) < mediaMetaData_.trackMetas.size(),
         Status::ERROR_INVALID_PARAMETER, "Invalid track");
     useBufferQueue_ = true;
@@ -1249,7 +1249,7 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
 
 Status MediaDemuxer::DoSelectTrack(int32_t trackId, int32_t curTrackId)
 {
-    if (IsValid(curTrackId)) {
+    if (IsValidTrackId(curTrackId)) {
         if (taskMap_.find(curTrackId) != taskMap_.end() && taskMap_[curTrackId] != nullptr) {
             taskMap_[curTrackId]->Stop();
         }
@@ -1315,7 +1315,7 @@ Status MediaDemuxer::SelectTrack(uint32_t trackIndex)
     int32_t trackId = static_cast<int32_t>(trackIndex);
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     MEDIA_LOG_D("Select " PUBLIC_LOG_D32, trackId);
-    FALSE_RETURN_V_MSG_E(IsValid(trackId) &&
+    FALSE_RETURN_V_MSG_E(IsValidTrackId(trackId) &&
         static_cast<size_t>(trackIndex) < mediaMetaData_.trackMetas.size(),
         Status::ERROR_INVALID_PARAMETER, "Select track failed");
     if (!useBufferQueue_) {
@@ -1362,11 +1362,11 @@ Status MediaDemuxer::HandleHlsRebootPlugin()
 {
     MEDIA_LOG_I("HandleHlsRebootPlugin In");
     StreamType streamType = StreamType::MIXED;
-    TrackType trackType = IsValid(videoTrackId_) ? TrackType::TRACK_VIDEO : TrackType::TRACK_AUDIO;
-    int32_t trackId = IsValid(videoTrackId_) ? videoTrackId_ : audioTrackId_;
+    TrackType trackType = IsValidTrackId(videoTrackId_) ? TrackType::TRACK_VIDEO : TrackType::TRACK_AUDIO;
+    int32_t trackId = IsValidTrackId(videoTrackId_) ? videoTrackId_ : audioTrackId_;
     FALSE_RETURN_V(!subStreamDemuxer_ || trackId != subtitleTrackId_, Status::OK);
     Status ret = Status::OK;
-    if (IsValid(trackId)) {
+    if (IsValidTrackId(trackId)) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         FALSE_RETURN_V_MSG_E(streamID != INVALID_STREAM_OR_TRACK_ID, Status::ERROR_INVALID_PARAMETER,
             "Invalid streamId");
@@ -1394,8 +1394,8 @@ Status MediaDemuxer::HandleHlsRebootPlugin()
         ret = demuxerPluginManager_->RebootPlugin(streamID, trackType, streamDemuxer_, isRebooted);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reboot demuxer plugin failed");
     }
-    Status audioRet = IsValid(audioTrackId_) ? InnerSelectTrack(audioTrackId_) : Status::OK;
-    Status videoRet = IsValid(videoTrackId_) ? InnerSelectTrack(videoTrackId_) : Status::OK;
+    Status audioRet = IsValidTrackId(audioTrackId_) ? InnerSelectTrack(audioTrackId_) : Status::OK;
+    Status videoRet = IsValidTrackId(videoTrackId_) ? InnerSelectTrack(videoTrackId_) : Status::OK;
     ret = audioRet == Status::OK ? videoRet : audioRet;
     {
         std::unique_lock<std::mutex> lock(rebootPluginMutex_);
@@ -1420,7 +1420,7 @@ Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
 {
     FALSE_RETURN_V(!subStreamDemuxer_ || trackId != static_cast<int32_t>(subtitleTrackId_), Status::OK);
     Status ret = Status::OK;
-    if (IsValid(trackId)) {
+    if (IsValidTrackId(trackId)) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         FALSE_RETURN_V_MSG_E(streamID != INVALID_STREAM_OR_TRACK_ID, Status::ERROR_INVALID_PARAMETER,
             "Invalid streamId");
@@ -1798,7 +1798,7 @@ Status MediaDemuxer::PauseAudioAlign()
 Status MediaDemuxer::PauseTaskByTrackId(int32_t trackId)
 {
     MEDIA_LOG_I("In, track %{public}d", trackId);
-    FALSE_RETURN_V_MSG_E(IsValid(trackId), Status::ERROR_INVALID_PARAMETER, "Invalid track");
+    FALSE_RETURN_V_MSG_E(IsValidTrackId(trackId), Status::ERROR_INVALID_PARAMETER, "Invalid track");
 
     // To accelerate DemuxerLoop thread to run into PAUSED state
     if (CheckTrackEnabledById(trackId)) {
@@ -2036,12 +2036,12 @@ Status MediaDemuxer::Stop()
 
 bool MediaDemuxer::HasVideo()
 {
-    return IsValid(videoTrackId_);
+    return IsValidTrackId(videoTrackId_);
 }
 
 bool MediaDemuxer::HasAudio()
 {
-    return IsValid(audioTrackId_);
+    return IsValidTrackId(audioTrackId_);
 }
 
 void MediaDemuxer::SetIsCreatedByFilter(bool isCreatedByFilter)
@@ -2086,7 +2086,7 @@ void MediaDemuxer::InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, int32_t
             dafaultTrack += "/V:";
             dafaultTrack += std::to_string(index);
             videoMime = mimeType;
-            if (!IsValid(videoTrackId)) {
+            if (!IsValidTrackId(videoTrackId)) {
                 videoTrackId = index;
             }
             if (!trackMeta.GetData(Tag::MEDIA_START_TIME, videoStartTime_)) {
@@ -2096,14 +2096,14 @@ void MediaDemuxer::InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, int32_t
             !IsTrackDisabled(Plugins::MediaType::AUDIO)) {
             dafaultTrack += "/A:";
             dafaultTrack += std::to_string(index);
-            if (!IsValid(audioTrackId)) {
+            if (!IsValidTrackId(audioTrackId)) {
                 audioTrackId = index;
             }
         } else if (ret && IsSubtitleMime(mimeType) &&
             !IsTrackDisabled(Plugins::MediaType::SUBTITLE)) {
             dafaultTrack += "/S:";
             dafaultTrack += std::to_string(index);
-            if (!IsValid(subtitleTrackId)) {
+            if (!IsValidTrackId(subtitleTrackId)) {
                 subtitleTrackId = index;
             }
         } else {}
@@ -2292,7 +2292,7 @@ bool MediaDemuxer::SelectTrackChangeStream(int32_t trackId)
 bool MediaDemuxer::SelectBitRateChangeStream(int32_t trackId)
 {
     (void) trackId;
-    FALSE_RETURN_V(IsValid(videoTrackId_), false);
+    FALSE_RETURN_V(IsValidTrackId(videoTrackId_), false);
     int32_t currentStreamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackId_);
     int32_t newStreamID = streamDemuxer_->GetNewVideoStreamID();
     if (newStreamID >= 0 && currentStreamID != newStreamID) {
@@ -2313,7 +2313,7 @@ bool MediaDemuxer::SelectBitRateChangeStream(int32_t trackId)
             demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, newTrackId, newInnerTrackId);
             newInnerTrackId = -1;
             newTrackId = -1;
-            if (IsValid(audioTrackId_)) {
+            if (IsValidTrackId(audioTrackId_)) {
                 demuxerPluginManager_->GetTrackInfoByStreamID(newStreamID, newTrackId, newInnerTrackId, TRACK_AUDIO);
                 demuxerPluginManager_->UpdateTempTrackMapInfo(audioTrackId_, newTrackId, newInnerTrackId);
             }
@@ -2324,7 +2324,7 @@ bool MediaDemuxer::SelectBitRateChangeStream(int32_t trackId)
 
         MEDIA_LOG_I("Updata info");
         InnerSelectTrack(videoTrackId_);
-        if (isHlsFmp4_ && IsValid(audioTrackId_)) {
+        if (isHlsFmp4_ && IsValidTrackId(audioTrackId_)) {
             InnerSelectTrack(audioTrackId_);
         }
         MEDIA_LOG_I("Out");
@@ -3012,7 +3012,7 @@ bool MediaDemuxer::IsTrackDisabled(Plugins::MediaType mediaType)
 
 bool MediaDemuxer::CheckTrackEnabledById(int32_t trackId)
 {
-    bool hasTrack = IsValid(trackId);
+    bool hasTrack = IsValidTrackId(trackId);
     if (!hasTrack) {
         return false;
     }
@@ -3056,7 +3056,7 @@ bool MediaDemuxer::IsRenderNextVideoFrameSupported()
 {
     bool isDataSrcLiveStream = source_ != nullptr && source_->IsNeedPreDownload() &&
         source_->GetSeekable() == Plugins::Seekable::UNSEEKABLE;
-    return IsValid(videoTrackId_) && !IsTrackDisabled(Plugins::MediaType::VIDEO) &&
+    return IsValidTrackId(videoTrackId_) && !IsTrackDisabled(Plugins::MediaType::VIDEO) &&
         !isDataSrcLiveStream && !isFlvLiveStream_;
 }
 
@@ -3136,7 +3136,7 @@ void MediaDemuxer::SetCacheLimit(uint32_t limitSize)
 
 bool MediaDemuxer::IsVideoEos()
 {
-    if (!IsValid(videoTrackId_)) {
+    if (!IsValidTrackId(videoTrackId_)) {
         return true;
     }
     return eosMap_[videoTrackId_];
@@ -3310,7 +3310,7 @@ void MediaDemuxer::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter)
 
 bool MediaDemuxer::IsRightMediaTrack(int32_t trackId, DemuxerTrackType type) const
 {
-    FALSE_RETURN_V(IsValid(trackId), false);
+    FALSE_RETURN_V(IsValidTrackId(trackId), false);
     switch (type) {
         case DemuxerTrackType::VIDEO:
             return trackId == videoTrackId_;
