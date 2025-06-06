@@ -379,6 +379,7 @@ Status DecoderSurfaceFilter::DoPrepare()
         }
     }
     isRenderStarted_ = false;
+    state_ = FilterState::READY;
     return Status::OK;
 }
 
@@ -402,16 +403,23 @@ Status DecoderSurfaceFilter::DoStart()
         pthread_setname_np(readThread_->native_handle(), "RenderLoop");
     }
     auto ret = videoDecoder_->Start();
+    state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
     FALSE_RETURN_V(ret == Status::OK, ret);
     if (postProcessor_) {
         ret = postProcessor_->Start();
     }
+    state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
     return ret;
 }
 
 Status DecoderSurfaceFilter::DoPause()
 {
     MEDIA_LOG_I("Pause");
+    if (state_ == FilterState::FROZEN) {
+        MEDIA_LOG_I("current state is frozen");
+        state_ = FilterState::PAUSED;
+        return Status::OK;
+    }
     isPaused_ = true;
     isFirstFrameAfterResume_ = false;
     if (!IS_FILTER_ASYNC) {
@@ -419,6 +427,25 @@ Status DecoderSurfaceFilter::DoPause()
     }
     videoSink_->ResetSyncInfo();
     latestPausedTime_ = latestBufferTime_;
+    state_ = FilterState::PAUSED;
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::DoFreeze()
+{
+    MEDIA_LOG_I("Freeze enter.");
+    FALSE_RETURN_V_MSG(state_ == FilterState::RUNNING, Status::OK, "current state is %{public}d", state_);
+    isPaused_ = true;
+    isFirstFrameAfterResume_ = false;
+    if (!IS_FILTER_ASYNC) {
+        condBufferAvailable_.notify_all();
+    }
+    videoSink_->ResetSyncInfo();
+    latestPausedTime_ = latestBufferTime_;
+    if (videoDecoder_ != nullptr) {
+        videoDecoder_->ResetRenderTime();
+    }
+    state_ = FilterState::FROZEN;
     return Status::OK;
 }
 
@@ -475,6 +502,25 @@ Status DecoderSurfaceFilter::DoResumeDragging()
     if (postProcessor_) {
         postProcessor_->Start();
     }
+    state_ = FilterState::RUNNING;
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::DoUnFreeze()
+{
+    MEDIA_LOG_I("UnFreeze enter.");
+    FALSE_RETURN_V_MSG(state_ == FilterState::FROZEN, Status::OK, "current state is %{public}d", state_);
+    refreshTotalPauseTime_ = true;
+    isPaused_ = false;
+    isFirstFrameAfterResume_ = true;
+    if (!IS_FILTER_ASYNC) {
+        condBufferAvailable_.notify_all();
+    }
+    videoDecoder_->Start();
+    if (postProcessor_) {
+        postProcessor_->Start();
+    }
+    state_ = FilterState::RUNNING;
     return Status::OK;
 }
 
@@ -506,7 +552,9 @@ Status DecoderSurfaceFilter::DoStop()
         readThread_->join();
         readThread_ = nullptr;
     }
+    state_ = ret == Status::OK ? FilterState::STOPPED : FilterState::ERROR;
     FALSE_RETURN_V(ret == Status::OK, ret);
+    state_ = ret2 == Status::OK ? FilterState::STOPPED : FilterState::ERROR;
     return ret2;
 }
 
@@ -634,7 +682,7 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         parameter->Get<Tag::VIDEO_SCALE_TYPE>(scaleType);
         preScaleType_ = scaleType;
         OHOS::ScalingMode scalingMode = ConvertMediaScaleType(static_cast<VideoScaleType>(scaleType));
-        if(videoSurface_) {
+        if (videoSurface_) {
             GSError err = videoSurface_->SetScalingMode(scalingMode);
             if (err != GSERROR_OK) {
                 MEDIA_LOG_W("set ScalingMode %{public}d to surface failed", static_cast<int>(scalingMode));

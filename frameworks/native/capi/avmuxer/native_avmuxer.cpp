@@ -154,6 +154,19 @@ static OH_AVErrCode SetCommentMeta(std::shared_ptr<Meta> definedMeta, std::share
     return AV_ERR_OK;
 }
 
+static OH_AVErrCode SetMoovFrontMeta(std::shared_ptr<Meta> definedMeta, std::shared_ptr<Meta> &param)
+{
+    if (definedMeta->Find(Tag::MEDIA_ENABLE_MOOV_FRONT) == definedMeta->end()) {
+        return AV_ERR_OK;
+    }
+
+    AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_ENABLE_MOOV_FRONT);
+    int32_t isFront;
+    definedMeta->Get<Tag::MEDIA_ENABLE_MOOV_FRONT>(isFront);
+    param->Set<Tag::MEDIA_ENABLE_MOOV_FRONT>(isFront);
+    return AV_ERR_OK;
+}
+
 static OH_AVErrCode SetDefinedMetaParam(std::shared_ptr<Meta> definedMeta, AVMuxerObject* object)
 {
     std::shared_ptr<Meta> param = std::make_shared<Meta>();
@@ -161,6 +174,8 @@ static OH_AVErrCode SetDefinedMetaParam(std::shared_ptr<Meta> definedMeta, AVMux
     OH_AVErrCode metaRet = SetCreationTimeMeta(definedMeta, param);
     CHECK_AND_RETURN_RET_LOG(metaRet == AV_ERR_OK, AV_ERR_INVALID_VAL, "input format is invalid");
     metaRet = SetCommentMeta(definedMeta, param);
+    CHECK_AND_RETURN_RET_LOG(metaRet == AV_ERR_OK, AV_ERR_INVALID_VAL, "input format is invalid");
+    metaRet = SetMoovFrontMeta(definedMeta, param);
     CHECK_AND_RETURN_RET_LOG(metaRet == AV_ERR_OK, AV_ERR_INVALID_VAL, "input format is invalid");
 
     if (param->Empty()) {

@@ -38,6 +38,7 @@ namespace {
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
 static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
+static const std::string_view OH_MD_KEY_COMMENT = "comment";
 int32_t g_width = 3840;
 int32_t g_height = 2160;
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
@@ -83,6 +84,10 @@ string g_trpPath = TEST_FILE_PATH + string("mpeg2_ac3.trp");
 string g_lrcPath = TEST_FILE_PATH + string("lrc_test.lrc");
 string g_samiPath = TEST_FILE_PATH + string("sami_test.smi");
 string g_assPath = TEST_FILE_PATH + string("ass_test.ssa");
+string g_commentTest1000Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Comment_1000.mp4");
+string g_commentTest1100Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Comment_1100.mp4");
+string g_commentTest1200Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Comment_1200.mp4");
+string g_commentTest1300Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Comment_1300.mp4");
 } // namespace
 
 void DemuxerUnitTest::SetUpTestCase(void)
@@ -2725,6 +2730,65 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1601, TestSize.Level1)
     ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
 }
 
+/**
+ * @tc.number    : Demuxer_GetCommentData_1000
+ * @tc.name      : demux MP4 muxed by avmuxer,check track format,OH_MD_KEY_COMMENT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_GetCommentData_1000, TestSize.Level0)
+{
+    InitResource(g_commentTest1000Path, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    std::string stringVal = "";
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_COMMENT, stringVal));
+    ASSERT_EQ(stringVal, "comment_test_str");
+}
+
+/**
+ * @tc.number    : Demuxer_GetCommentData_1100
+ * @tc.name      : demux MP4 muxed by avmuxer,check track format,OH_MD_KEY_COMMENT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_GetCommentData_1100, TestSize.Level0)
+{
+    InitResource(g_commentTest1100Path, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    std::string stringVal = "";
+    ASSERT_FALSE(format_->GetStringValue(OH_MD_KEY_COMMENT, stringVal));
+    ASSERT_EQ(stringVal, "");
+}
+
+/**
+ * @tc.number    : Demuxer_GetCommentData_1200
+ * @tc.name      : demux MP4 muxed by avmuxer,check track format,OH_MD_KEY_COMMENT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_GetCommentData_1200, TestSize.Level0)
+{
+    InitResource(g_commentTest1200Path, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    std::string stringVal = "";
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_COMMENT, stringVal));
+    ASSERT_EQ(stringVal, "中文测试字符串");
+}
+
+/**
+ * @tc.number    : Demuxer_GetCommentData_1300
+ * @tc.name      : demux MP4 muxed by avmuxer,check track format,OH_MD_KEY_COMMENT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_GetCommentData_1300, TestSize.Level0)
+{
+    InitResource(g_commentTest1300Path, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    std::string stringVal = "";
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_COMMENT, stringVal));
+    ASSERT_EQ(stringVal, "comment_test_strcomment_test_strcomment_test_str"
+        "comment_test_strcomment_test_strcomment_test_strcomment_test_strcomment_test_str"
+        "comment_test_strcomment_test_strcomment_test_strcomment_test_strcomment_test_str"
+        "comment_test_strcomment_test_strcomment_test_str");
+}
+
 #ifdef SUPPORT_CODEC_RM
 /**
  * @tc.name: Demuxer_ReadSample_1800
@@ -2803,7 +2867,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1800, TestSize.Level1)
 }
 #endif
 
-#ifdef SUPPORT_CODEC_AC3
 /**
  * @tc.name: Demuxer_ReadSample_1801
  * @tc.desc: copy current sample to buffer(ac3)
@@ -2845,7 +2908,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1801, TestSize.Level1)
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
     list<int64_t> toPtsList = {0, 4500, 7000, 2000, 10000, 8000}; // ms
-    vector<int32_t> audioVals = {317, 317, 317, 188, 188, 188, 116, 116, 116, 260, 260, 260, 30, 30, 30, 88, 88, 88};
+    vector<int32_t> audioVals = {317, 317, 317, 187, 188, 188, 115, 116, 116, 259, 260, 260, 29, 30, 30, 87, 88, 88};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -3246,5 +3309,4 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1806, TestSize.Level1)
     ASSERT_NE(demuxer_->SeekToTime(12000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
 }
-#endif
 } // namespace

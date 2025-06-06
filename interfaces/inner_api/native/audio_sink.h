@@ -47,6 +47,8 @@ public:
     Status Start();
     Status Stop();
     Status Pause();
+    Status Freeze();
+    Status UnFreeze();
     Status Resume();
     Status Flush();
     Status Release();

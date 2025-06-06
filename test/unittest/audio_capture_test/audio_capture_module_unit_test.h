@@ -36,7 +36,7 @@ protected:
     std::shared_ptr<AudioCaptureModule::AudioCaptureModule> audioCaptureModule_{nullptr};
     std::shared_ptr<Meta> audioCaptureParameter_{nullptr};
     int32_t appTokenId_{0};
-    int32_t appUid_{100};
+    int32_t appUid_{0};
     int32_t appPid_{0};
     int64_t appFullTokenId_{0};
     int32_t sampleRate_{48000};

@@ -161,6 +161,7 @@ Status AudioSinkFilter::DoPause()
         return Status::ERROR_INVALID_OPERATION;
     }
     state_ = FilterState::PAUSED;
+    UnFreezeAudioSink();
     auto err = audioSink_->Pause();
     MEDIA_LOG_D("audio sink filter pause end");
     return err;
@@ -184,6 +185,20 @@ Status AudioSinkFilter::DoResume()
     return Status::OK;
 }
 
+Status AudioSinkFilter::FreezeAudioSink()
+{
+    MEDIA_LOG_I("AudioSinkFilter FreezeAudioSink");
+    FALSE_RETURN_V_MSG(audioSink_ != nullptr, Status::OK, "audioSink_ is nullptr");
+    return audioSink_->Freeze();
+}
+
+Status AudioSinkFilter::UnFreezeAudioSink()
+{
+    MEDIA_LOG_I("AudioSinkFilter UnFreezeAudioSink");
+    FALSE_RETURN_V_MSG(audioSink_ != nullptr, Status::OK, "audioSink_ is nullptr");
+    return audioSink_->UnFreeze();
+}
+
 Status AudioSinkFilter::DoFlush()
 {
     MEDIA_LOG_I("audio sink flush start");
@@ -201,6 +216,7 @@ Status AudioSinkFilter::DoStop()
     }
     MEDIA_LOG_I("audio sink stop start");
     if (audioSink_ != nullptr) {
+        UnFreezeAudioSink();
         audioSink_->Stop();
     }
     state_ = FilterState::STOPPED;

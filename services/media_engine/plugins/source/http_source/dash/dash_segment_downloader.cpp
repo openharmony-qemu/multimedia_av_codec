@@ -1215,6 +1215,20 @@ bool DashSegmentDownloader::GetBufferingTimeOut()
         return now >= bufferingTime_ ? now - bufferingTime_ >= MAX_BUFFERING_TIME_OUT : false;
     }
 }
+
+Status DashSegmentDownloader::StopBufferring(bool isAppBackground)
+{
+    MEDIA_LOG_I("DashSegmentDownloader:StopBufferring enter");
+    FALSE_RETURN_V(buffer_ != nullptr && downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    downloader_->SetAppState(isAppBackground);
+    if (isAppBackground) {
+        buffer_->SetActive(false, false);
+    } else {
+        buffer_->SetActive(true, false);
+    }
+    downloader_->StopBufferring();
+    return Status::OK;
+}
 }
 }
 }

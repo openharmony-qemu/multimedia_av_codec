@@ -35,6 +35,7 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_AMRWB = "audio/amr-wb";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_VIVID = "audio/av3a";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_G711MU = "audio/g711mu";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_G711A = "audio/g711a";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_L2HC = "audio/l2hc";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_LBVC = "audio/lbvc";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_APE = "audio/x-ape";

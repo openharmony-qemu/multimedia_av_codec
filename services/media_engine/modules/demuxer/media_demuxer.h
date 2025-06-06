@@ -96,7 +96,6 @@ public:
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate, bool isAutoSelect = false);
-    Status StopBufferring(bool flag);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
@@ -164,7 +163,6 @@ public:
     bool IsLocalFd();
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
-    bool IsFlvLiveStream();
     Status RebootPlugin();
     uint64_t GetCachedDuration();
     void RestartAndClearBuffer();
@@ -176,6 +174,7 @@ public:
     void SetIsCreatedByFilter(bool isCreatedByFilter);
 
     Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size);
+    Status StopBufferring(bool isAppBackground);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -271,7 +270,7 @@ private:
     bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
     Status InnerSelectTrack(int32_t trackId);
-    Status HandleRead(uint32_t trackId);
+    Status HandleReadSample(uint32_t trackId);
     int64_t ParserRefInfo();
     void TryReclaimParserTask();
 

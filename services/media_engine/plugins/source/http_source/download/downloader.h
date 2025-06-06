@@ -272,6 +272,7 @@ private:
     std::shared_ptr<IMediaSourceLoadingRequest> loadingReques_;
     bool isNotBlock_ {false};
     std::string appPreviousRequestUrl_ {};
+    FairMutex deinitMutex_ {};
 };
 }
 }

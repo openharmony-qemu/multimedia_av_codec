@@ -32,33 +32,6 @@ constexpr int32_t MAX_BYTES_PER_SAMPLE = 4;
 constexpr int32_t SAMPLES = 1536;
 
 static const int32_t AC3_DECODER_SAMPLE_RATE_TABLE[] = {32000, 44100, 48000};
-Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register>& reg)
-{
-    CodecPluginDef definition;
-    definition.name = std::string(OHOS::MediaAVCodec::AVCodecCodecName::AUDIO_DECODER_AC3_NAME);
-    definition.pluginType = PluginType::AUDIO_DECODER;
-    definition.rank = 100;  // 100
-    definition.SetCreator([](const std::string& name) -> std::shared_ptr<CodecPlugin> {
-        return std::make_shared<FFmpegAC3DecoderPlugin>(name);
-    });
-
-    Capability cap;
-    cap.SetMime(MimeType::AUDIO_AC3);
-    cap.AppendFixedKey<CodecMode>(Tag::MEDIA_CODEC_MODE, CodecMode::SOFTWARE);
-
-    definition.AddInCaps(cap);
-    // do not delete the codec in the deleter
-    if (reg->AddPlugin(definition) != Status::OK) {
-        AVCODEC_LOGE("AudioAC3DecoderPlugin Register Failure");
-        return Status::ERROR_UNKNOWN;
-    }
-
-    return Status::OK;
-}
-
-void UnRegisterAudioDecoderPlugin() {}
-
-PLUGIN_DEFINITION(Ac3AudioDecoder, LicenseType::LGPL, RegisterAudioDecoderPlugins, UnRegisterAudioDecoderPlugin);
 } // namespace
 
 namespace OHOS {

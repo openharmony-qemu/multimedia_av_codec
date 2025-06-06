@@ -114,6 +114,7 @@ static int RunAudioAVBufferDecoder()
     cout << "5: AMR-WB" << endl;
     cout << "6: G711MU" << endl;
     cout << "7: APE" << endl;
+    cout << "8: G711A" << endl;
 
     string mode;
     AudioBufferFormatType audioFormatType = AudioBufferFormatType::TYPE_AAC;
@@ -134,6 +135,8 @@ static int RunAudioAVBufferDecoder()
         audioFormatType = AudioBufferFormatType::TYPE_G711MU;
     } else if (mode == "7") {
         audioFormatType = AudioBufferFormatType::TYPE_APE;
+    } else if (mode == "8") {
+        audioFormatType = AudioBufferFormatType::TYPE_G711A;
     } else {
         cout << "no that selection" << endl;
         return 0;

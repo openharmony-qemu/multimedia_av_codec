@@ -2699,6 +2699,72 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_Comment_003, TestSize.Level0)
     int32_t ret = avmuxer_->SetFormat(audioParams);
     ASSERT_NE(ret, 0);
 }
+
+/**
+ * @tc.name: Muxer_SetFormat_IsMoovFront_001
+ * @tc.desc: do not set moov in front
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_IsMoovFront_001, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat_IsMoovFront_001.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutIntValue(Tag::MEDIA_ENABLE_MOOV_FRONT, 0);
+    int32_t ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 0);
+    audioParams->InitAudioTrackFormat(Plugins::MimeType::AUDIO_MPEG, 48000, 2);
+    ret = avmuxer_->AddTrack(trackId, audioParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    OH_AVCodecBufferAttr info;
+    info.pts = 0;
+    info.offset = 0;
+    info.size = sizeof(buffer_);
+    ret = avmuxer_->WriteSample(trackId, buffer_, info);
+    ASSERT_EQ(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_IsMoovFront_002
+ * @tc.desc: set moov in front
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_IsMoovFront_002, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat_IsMoovFront_001.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutIntValue(Tag::MEDIA_ENABLE_MOOV_FRONT, 1);
+    int32_t ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 0);
+    audioParams->InitAudioTrackFormat(Plugins::MimeType::AUDIO_MPEG, 48000, 2);
+    ret = avmuxer_->AddTrack(trackId, audioParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    OH_AVCodecBufferAttr info;
+    info.pts = 0;
+    info.offset = 0;
+    info.size = sizeof(buffer_);
+    ret = avmuxer_->WriteSample(trackId, buffer_, info);
+    ASSERT_EQ(ret, 0);
+}
 #endif // AVMUXER_UNITTEST_CAPI
 
 #ifdef AVMUXER_UNITTEST_INNER_API

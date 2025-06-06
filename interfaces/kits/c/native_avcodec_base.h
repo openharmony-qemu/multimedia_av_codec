@@ -330,6 +330,14 @@ extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_RAW;
 
 /**
+ * @brief Enumerates the mime types of audio G711 A-law codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_G711A;
+
+/**
  * @brief Key for timeStamp in surfacebuffer, value type is int64_t.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
@@ -798,6 +806,13 @@ extern const char *OH_MD_KEY_CREATION_TIME;
  * @since 20
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS;
+/**
+ * @brief Key for the decision of setting moov in front or not, value type is int32_t.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+extern const char *OH_MD_KEY_ENABLE_MOOV_FRONT;
 
 extern const char *OH_MD_KEY_TRACK_REFERENCE_TYPE;
 extern const char *OH_MD_KEY_TRACK_DESCRIPTION;

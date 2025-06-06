@@ -210,6 +210,7 @@ Status AudioDecoderFilter::DoPrepare()
         default:
             break;
     }
+    state_ = FilterState::READY;
     return ret;
 }
 
@@ -233,6 +234,7 @@ Status AudioDecoderFilter::DoStart()
         audioCodecFaultInfo.errMsg = "AudioDecoder start failed";
         FaultAudioCodecEventWrite(audioCodecFaultInfo);
     }
+    state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
     return ret;
 }
 
@@ -240,6 +242,17 @@ Status AudioDecoderFilter::DoPause()
 {
     MEDIA_LOG_I("AudioDecoderFilter::Pause.");
     latestPausedTime_ = latestBufferTime_;
+
+    state_ = FilterState::PAUSED;
+    return Status::OK;
+}
+
+Status AudioDecoderFilter::DoFreeze()
+{
+    MEDIA_LOG_E("AudioDecoderFilter::Freeze.");
+    FALSE_RETURN_V_MSG(state_ == FilterState::RUNNING, Status::OK, "current state is %{public}d", state_);
+    latestPausedTime_ = latestBufferTime_;
+    state_ = FilterState::FROZEN;
     return Status::OK;
 }
 
@@ -256,7 +269,20 @@ Status AudioDecoderFilter::DoResume()
     bufferStatus_ = BUFFER_STATUS_INIT_PROCESS_ALWAYS;
     refreshTotalPauseTime_ = true;
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
-    return decoder_->Start();
+    auto ret = decoder_->Start();
+    state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
+    return ret;
+}
+
+Status AudioDecoderFilter::DoUnFreeze()
+{
+    MEDIA_LOG_E("AudioDecoderFilter::UnFreeze.");
+    FALSE_RETURN_V_MSG(state_ == FilterState::FROZEN, Status::OK, "current state is %{public}d", state_);
+    refreshTotalPauseTime_ = true;
+    FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
+    auto ret = decoder_->Start();
+    state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
+    return ret;
 }
 
 Status AudioDecoderFilter::DoResumeAudioAlign()
@@ -272,7 +298,9 @@ Status AudioDecoderFilter::DoStop()
     totalPausedTime_ = 0;
     refreshTotalPauseTime_ = false;
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
-    return decoder_->Stop();
+    auto ret = decoder_->Stop();
+    state_ = ret == Status::OK ? FilterState::STOPPED : FilterState::ERROR;
+    return ret;
 }
 
 Status AudioDecoderFilter::DoFlush()
@@ -527,12 +555,13 @@ bool AudioDecoderFilter::IsNeedProcessInput(bool isOutPort)
 {
     MEDIA_LOG_D("AudioDecoderFilter::IsNeedProcessInput bufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
         bufferStatus_, isOutPort);
-    FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_IN), isOutPort, "IN avail, need process outport");
-    FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_OUT), !isOutPort, "OUT avail, need process inport");
-    FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_IN_OUT), true, "IN and OUT avail, need process");
-    FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_INIT), !isOutPort, "initial stage:" PUBLIC_LOG_D32, isOutPort);
-    FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_OUT_EOS_START), isOutPort, "EOS START, need process outport");
-    FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_AVAIL_OUT_OUT_EOS_START_DONE), false,
+    FALSE_RETURN_V_MSG_DD((bufferStatus_ != BUFFER_STATUS_AVAIL_IN), isOutPort, "IN avail, need process outport");
+    FALSE_RETURN_V_MSG_DD((bufferStatus_ != BUFFER_STATUS_AVAIL_OUT), !isOutPort, "OUT avail, need process inport");
+    FALSE_RETURN_V_MSG_DD((bufferStatus_ != BUFFER_STATUS_AVAIL_IN_OUT), true, "IN and OUT avail, need process");
+    FALSE_RETURN_V_MSG_DD(
+        (bufferStatus_ != BUFFER_STATUS_INIT), !isOutPort, "initial stage:" PUBLIC_LOG_D32, isOutPort);
+    FALSE_RETURN_V_MSG_DD((bufferStatus_ != BUFFER_STATUS_OUT_EOS_START), isOutPort, "EOS START, need process outport");
+    FALSE_RETURN_V_MSG_DD((bufferStatus_ != BUFFER_STATUS_AVAIL_OUT_OUT_EOS_START_DONE), false,
         "OUT avail, EOS START and DONE, no need process");
     FALSE_RETURN_V_MSG_I((bufferStatus_ != BUFFER_STATUS_AVAIL_OUT_OUT_EOS_START), false,
         "OUT avail and EOS START, should not happen, no need process");
@@ -554,16 +583,18 @@ Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
     bool isOutPort = recvArg == static_cast<int>(BufferQueueBufferAVailable::BUFFER_AVAILABLE_OUT_PORT);
     uint32_t lastBufferStatus = BUFFER_STATUS_INIT_PROCESS_ALWAYS; // DO ProcessInput by default
+    MEDIA_TRACE_DEBUG_POSTFIX(std::string("AudioDecoderFilter::DoProcessInputBuffer-In:") +
+        std::to_string(isOutPort) + "," + std::to_string(dropFrame) + "," + std::to_string(bufferStatusMutex_), "1");
     {
         std::unique_lock<std::mutex> lock(bufferStatusMutex_, std::try_to_lock);
         if (lock.owns_lock()) {
-            OHOS::MediaAVCodec::AVCodecTrace trace(std::string("AudioDecoderFilter::DoProcessInputBuffer:") +
-                std::to_string(isOutPort) + "," + std::to_string(dropFrame) + "," + std::to_string(bufferStatus_));
             FALSE_RETURN_V_MSG_W(!dropFrame, Status::OK, "task created before flush, ignore obsolete process request");
             FALSE_RETURN_V_NOLOG(IsNeedProcessInput(isOutPort), Status::OK);
             lastBufferStatus = bufferStatus_;
         }
     }
+    MEDIA_TRACE_DEBUG_POSTFIX(std::string("AudioDecoderFilter::DoProcessInputBuffer-Process:") +
+        std::to_string(isOutPort) + "," + std::to_string(dropFrame) + "," + std::to_string(lastBufferStatus), "2");
 
     uint32_t bufferStatus = BUFFER_STATUS_INIT_IGNORE_RET;
     decoder_->ProcessInputBufferInner(isOutPort, dropFrame, bufferStatus);
@@ -574,7 +605,7 @@ Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
     if (lock.owns_lock()) {
         // If bufferStatus_ changed, the return bufferStatus is obsolete, should discard
         if (bufferStatus_ == lastBufferStatus || bufferStatus_ != BUFFER_STATUS_INIT_PROCESS_ALWAYS) {
-            MEDIA_LOG_D("bufferStatus:" PUBLIC_LOG_U32X ", lastBufferStatus:" PUBLIC_LOG_U32X
+            MEDIA_LOG_DD("bufferStatus:" PUBLIC_LOG_U32X ", lastBufferStatus:" PUBLIC_LOG_U32X
                 ", curBufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
                 bufferStatus, lastBufferStatus, bufferStatus_, isOutPort);
             bufferStatus_ = bufferStatus;

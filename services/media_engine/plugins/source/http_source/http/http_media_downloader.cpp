@@ -1559,22 +1559,25 @@ Status HttpMediaDownloader::StopBufferring(bool isAppBackground)
         MEDIA_LOG_E("StopBufferring error.");
         return Status::ERROR_NULL_POINTER;
     }
+    isAppBackground_ = isAppBackground;
     downloader_->SetAppState(isAppBackground);
     if (isAppBackground) {
         if (ringBuffer_ != nullptr) {
-            ringBuffer_->SetActive(false, false);
+            //flv will relink, unactive buffer to interupt download and clean data.
+            ringBuffer_->SetActive(false, true);
         }
         if (cacheMediaBuffer_ != nullptr) {
             isInterrupt_ = true;
         }
     } else {
         if (ringBuffer_ != nullptr) {
-            ringBuffer_->SetActive(true, false);
+            ringBuffer_->SetActive(true, true);
         }
         if (cacheMediaBuffer_ != nullptr) {
             isInterrupt_ = false;
         }
     }
+    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     downloader_->StopBufferring();
     MEDIA_LOG_I("HttpMediaDownloader:StopBufferring out");
     return Status::OK;
