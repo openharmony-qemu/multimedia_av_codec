@@ -91,28 +91,25 @@ int32_t AVCodecClient::CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCo
 int32_t AVCodecClient::SuspendFreeze(const std::vector<pid_t> &pidList)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto ret = IsAlived();
-    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
-
-    return avCodecProxy_->SuspendFreeze(pidList);
+    auto avCodecProxy = GetTemporaryAVCodecProxy();
+    CHECK_AND_RETURN_RET_LOG(avCodecProxy != nullptr, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
+    return avCodecProxy->SuspendFreeze(pidList);
 }
 
 int32_t AVCodecClient::SuspendActive(const std::vector<pid_t> &pidList)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto ret = IsAlived();
-    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
-
-    return avCodecProxy_->SuspendActive(pidList);
+    auto avCodecProxy = GetTemporaryAVCodecProxy();
+    CHECK_AND_RETURN_RET_LOG(avCodecProxy != nullptr, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
+    return avCodecProxy->SuspendActive(pidList);
 }
 
 int32_t AVCodecClient::SuspendActiveAll()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto ret = IsAlived();
-    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
-
-    return avCodecProxy_->SuspendActiveAll();
+    auto avCodecProxy = GetTemporaryAVCodecProxy();
+    CHECK_AND_RETURN_RET_LOG(avCodecProxy != nullptr, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
+    return avCodecProxy->SuspendActiveAll();
 }
 
 #ifdef SUPPORT_CODEC
@@ -202,6 +199,24 @@ sptr<IStandardAVCodecService> AVCodecClient::GetAVCodecProxy()
     listenerStub_ = new (std::nothrow) AVCodecListenerStub();
     CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, nullptr, "Failed to create AVCodecListenerStub");
     return avCodecProxy_;
+}
+
+sptr<IStandardAVCodecService> AVCodecClient::GetTemporaryAVCodecProxy()
+{
+    AVCODEC_LOGI("In");
+    sptr<ISystemAbilityManager> samgr = nullptr;
+    CLIENT_COLLIE_LISTEN(samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager(),
+                         "AVCodecClient GetTemporaryAVCodecProxy");
+    CHECK_AND_RETURN_RET_LOG(samgr != nullptr, nullptr, "system ability manager is nullptr.");
+
+    sptr<IRemoteObject> object = nullptr;
+    CLIENT_COLLIE_LISTEN(object = samgr->CheckSystemAbility(OHOS::AV_CODEC_SERVICE_ID),
+                         "AVCodec object is nullptr, maybe avcodec service does not exist");
+
+    sptr<IStandardAVCodecService> avCodecProxy = iface_cast<IStandardAVCodecService>(object);
+    CHECK_AND_RETURN_RET_LOG(avCodecProxy != nullptr, nullptr, "AVCodec proxy is nullptr");
+
+    return avCodecProxy;
 }
 
 void AVCodecClient::AVCodecServerDied(pid_t pid)
