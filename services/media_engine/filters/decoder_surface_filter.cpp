@@ -486,6 +486,7 @@ Status DecoderSurfaceFilter::DoResume()
     if (postProcessor_) {
         postProcessor_->Start();
     }
+    state_ = FilterState::RUNNING;
     return Status::OK;
 }
 
@@ -502,7 +503,6 @@ Status DecoderSurfaceFilter::DoResumeDragging()
     if (postProcessor_) {
         postProcessor_->Start();
     }
-    state_ = FilterState::RUNNING;
     return Status::OK;
 }
 
