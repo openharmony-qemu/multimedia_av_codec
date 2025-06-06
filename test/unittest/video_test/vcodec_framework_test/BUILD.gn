@@ -466,6 +466,7 @@ ohos_unittest("videoenc_temporal_scalability_capi_unit_test") {
   ]
 
   defines = [
+    "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_CAPI_UNIT_TEST",
     "TEST_SUIT=VideoEncTemporalScalabilityCapiAsyncTest",
   ]
@@ -510,6 +511,7 @@ ohos_unittest("videoenc_temporal_scalability_inner_unit_test") {
   ]
 
   defines = [
+    "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_INNER_UNIT_TEST",
     "TEST_SUIT=VideoEncTemporalScalabilityInnerAsyncTest",
   ]
@@ -561,6 +563,7 @@ ohos_unittest("videoenc_repeat_previous_frame_unit_test") {
 
   defines = [
     "TEST_SUIT=VideoEncRepeatPreviousFrameAsyncTest",
+    "VIDEOENC_ASYNC_UNIT_TEST",
     "VIDEOENC_CAPI_UNIT_TEST",
   ]
   if (target_cpu == "arm64") {

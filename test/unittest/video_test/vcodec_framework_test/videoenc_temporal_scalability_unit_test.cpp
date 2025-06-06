@@ -37,72 +37,12 @@ namespace {
 constexpr int32_t DEFAULT_LTR_COUNT = 4;
 constexpr int32_t DEFAULT_INVALID_LTR_COUNT = 1000;
 constexpr int32_t DEFAULT_LTR_INTERVAL = 4;
-class TEST_SUIT : public testing::TestWithParam<int32_t> {
-public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp(void);
-    void TearDown(void);
-
-    bool CreateVideoCodecByName(const std::string &decName);
-    bool CreateVideoCodecByMime(const std::string &decMime);
-    void CreateByNameWithParam(int32_t param);
-    void SetFormatWithParam(int32_t param);
-    void PrepareSource(int32_t param);
-    bool GetTemporalScalabilityCapability(int32_t param, bool isTemporalScalability);
-    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(TEST_SUIT)};
-
-protected:
-    std::shared_ptr<CodecListMock> capability_ = nullptr;
-    std::shared_ptr<VideoEncAsyncSample> videoEnc_ = nullptr;
-    std::shared_ptr<FormatMock> format_ = nullptr;
-    std::shared_ptr<VEncCallbackTest> vencCallback_ = nullptr;
-    std::shared_ptr<VEncCallbackTestExt> vencCallbackExt_ = nullptr;
-    std::shared_ptr<VEncParamCallbackTest> vencParamCallback_ = nullptr;
-    std::shared_ptr<VEncParamWithAttrCallbackTest> vencParamWithAttrCallback_ = nullptr;
-};
 
 void TEST_SUIT::SetUpTestCase(void)
 {
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
-}
-
-void TEST_SUIT::TearDownTestCase(void) {}
-
-void TEST_SUIT::SetUp(void)
-{
-    std::shared_ptr<VEncSignal> vencSignal = std::make_shared<VEncSignal>();
-    vencCallback_ = std::make_shared<VEncCallbackTest>(vencSignal);
-    ASSERT_NE(nullptr, vencCallback_);
-
-    vencCallbackExt_ = std::make_shared<VEncCallbackTestExt>(vencSignal);
-    ASSERT_NE(nullptr, vencCallbackExt_);
-
-    vencParamCallback_ = std::make_shared<VEncParamCallbackTest>(vencSignal);
-    ASSERT_NE(nullptr, vencParamCallback_);
-
-    vencParamWithAttrCallback_ = std::make_shared<VEncParamWithAttrCallbackTest>(vencSignal);
-    ASSERT_NE(nullptr, vencParamWithAttrCallback_);
-
-    videoEnc_ = std::make_shared<VideoEncAsyncSample>(vencSignal);
-    ASSERT_NE(nullptr, videoEnc_);
-
-    format_ = FormatMockFactory::CreateFormat();
-    ASSERT_NE(nullptr, format_);
-
-    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
-    std::string testCaseName = testInfo_->name();
-    AVCODEC_LOGI("%{public}s", testCaseName.c_str());
-}
-
-void TEST_SUIT::TearDown(void)
-{
-    if (format_ != nullptr) {
-        format_->Destroy();
-    }
-    videoEnc_ = nullptr;
 }
 
 bool TEST_SUIT::CreateVideoCodecByMime(const std::string &encMime)
