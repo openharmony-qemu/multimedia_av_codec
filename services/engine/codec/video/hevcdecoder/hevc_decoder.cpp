@@ -1827,18 +1827,12 @@ bool HevcDecoder::CanSwapOut(bool isOutputBuffer, std::shared_ptr<HBuffer> &hBuf
         AVCODEC_LOGE("Current buffers unsupport.");
         return false;
     }
-    Owner ownerValue = hBuffer->owner_.load();
-    AVCODEC_LOGD("Buffer type: [%{public}u], hBuffer->owner_: [%{public}d], hBuffer->hasSwapedOut: [%{public}d].",
-                 isOutputBuffer, ownerValue, hBuffer->hasSwapedOut);
     std::shared_ptr<FSurfaceMemory> surfaceMemory = hBuffer->sMemory;
     CHECK_AND_RETURN_RET_LOGD(surfaceMemory != nullptr, false, "Current buffer->sMemory error!");
-    sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
-    if (surfaceBuffer) {
-        return !(ownerValue == Owner::OWNED_BY_SURFACE || hBuffer->hasSwapedOut || surfaceBuffer == nullptr);
-    } else {
-        return !(ownerValue == Owner::OWNED_BY_SURFACE || ownerValue == Owner::OWNED_BY_USER ||
-                 hBuffer->hasSwapedOut || surfaceBuffer == nullptr);
-    }
+    Owner ownerValue = surfaceMemory->owner;
+    AVCODEC_LOGD("Buffer type: [%{public}u], hBuffer->owner_: [%{public}d], hBuffer->hasSwapedOut: [%{public}d].",
+                 isOutputBuffer, ownerValue, hBuffer->hasSwapedOut);
+    return !(ownerValue == Owner::OWNED_BY_SURFACE || hBuffer->hasSwapedOut);
 }
 
 int32_t HevcDecoder::SwapInBuffers(bool isOutputBuffer)

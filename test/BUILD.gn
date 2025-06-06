@@ -33,11 +33,13 @@ group("av_codec_unit_test") {
         "unittest/audio_encoder_filter_test:audio_encoder_filter_optimize_unitest",
         "unittest/audio_encoder_filter_test:audio_encoder_filter_unitest",
         "unittest/audio_sampleformat_unittest:audio_sampleformat_unittest",
+        "unittest/audio_sink_unit_test:av_audio_sink_test",
         "unittest/audio_test:audio_codec_inner_avbuffer_unit_test",
         "unittest/audio_test:audio_decoder_plugin_unit_test",
         "unittest/audio_test:audio_encoder_plugin_unit_test",
         "unittest/audio_test:audio_ffmpeg_base_codec_unit_test",
         "unittest/audio_test:audio_g711mu_encoder_plugin_unit_test",
+        "unittest/audio_test:audio_g711a_decoder_unit_test",
         "unittest/audio_test:audio_hdi_codec_inner_unit_test",
         "unittest/audio_test:audio_lbvc_plugin_unit_test",
         "unittest/audio_test:audio_resample_unit_test",
@@ -66,6 +68,7 @@ group("av_codec_unit_test") {
         "unittest/dash_test:dash_segment_downloader_unit_test",
         "unittest/dash_test:dash_xml_unit_test",
         "unittest/decoder_filter_test:decoder_filter_unit_test",
+        "unittest/demuxer_plugin_test:demuxer_plugin_unit_test",
         "unittest/demuxer_test:demuxer_capi_buffer_unit_test",
         "unittest/demuxer_test:demuxer_capi_unit_test",
         "unittest/demuxer_test:demuxer_inner_buffer_unit_test",
@@ -199,6 +202,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/avcodecsuspend_fuzzer:AvcodecSuspendFuzzTest",
       "fuzztest/avsourcefunc_fuzzer:AvSourceFuncFuzzTest",
       "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
+      "fuzztest/demuxerinnerfunc_fuzzer:DemuxerInnerFuncFuzzTest",
       "fuzztest/demuxeraac_fuzzer:DemuxerAacFuzzTest",
       "fuzztest/demuxeraacapi11_fuzzer:DemuxerAacAPI11FuzzTest",
       "fuzztest/demuxeramr_fuzzer:DemuxerAmrFuzzTest",
@@ -285,6 +289,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/swdecoderserver_fuzzer:SwdecoderServerFuzzTest",
       "fuzztest/swdecodersetparameter_fuzzer:SwdecoderSetParameterFuzzTest",
       "fuzztest/demuxersetdatasourcewithprobsize_fuzzer:DemuxerSetDataSourceWithProbSizeFuzzTest",
+      "fuzztest/demuxergetcommentdata_fuzzer:DemuxerGetCommentDataFuzzTest",
     ]
   }
 }

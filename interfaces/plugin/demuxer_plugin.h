@@ -97,9 +97,12 @@ struct DemuxerPlugin : public PluginBase {
     virtual Status UnselectTrack(uint32_t trackId) = 0;
 
     /**
-     * @brief Reads data frames.
+     * @brief Reads data frames (synchronous version).
      *
-     * The function is valid only after RUNNING state.
+     * This function uses a synchronous implementation mechanism. It is valid only after the RUNNING state.
+     *
+     * @note This synchronous interface must be used together with the synchronous version of GetNextSampleSize.
+     *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
      * @param trackId Identifies the media track. ignore the invalid value is passed.
      * @param sample Buffer where store data frames.
@@ -110,14 +113,69 @@ struct DemuxerPlugin : public PluginBase {
     virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) = 0;
 
     /**
-     * @brief Get next sample size.
+     * @brief Reads data frames within @param timeout milliseconds (asynchronous version).
      *
-     * The function is valid only after RUNNING state.
+     * This function uses an asynchronous implementation mechanism. It is valid only after the RUNNING state.
+     *
+     * @note This asynchronous interface must be used together with the asynchronous version of GetNextSampleSize.
+     *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
      * @param trackId Identifies the media track. ignore the invalid value is passed.
+     * @param sample Buffer where store data frames.
+     * @param timeout If no result is available after @param timeout milliseconds, the function returns.
+     * @return  Execution Status return
+     *  @retval OK: Plugin ReadFrame succeeded.
+     *  @retval ERROR_WAIT_TIMEOUT: Operation timeout.
+     *  @retval END_OF_STREAM: Read end (EOS).
+     *  @retval ERROR_UNKNOWN: Call av_read_frame failed.
+     *  @retval ERROR_NULL_POINTER: Call av_packet_alloc failed.
+     */
+    virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) = 0;
+
+    /**
+     * @brief Get next sample size (synchronous version).
+     *
+     * This function uses a synchronous implementation mechanism. It is valid only after the RUNNING state.
+     *
+     * @note This synchronous interface must be used together with the synchronous version of ReadSample.
+     *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
+     *
+     * @param trackId Identifies the media track. ignore the invalid value is passed.
+     * @param size Output parameter for the next sample size.
      * @return Execution Status
      */
     virtual Status GetNextSampleSize(uint32_t trackId, int32_t& size) = 0;
+
+    /**
+     * @brief Get next sample size within @param timeout milliseconds (asynchronous version).
+     *
+     * This function uses an asynchronous implementation mechanism. It is valid only after the RUNNING state.
+     *
+     * @note This asynchronous interface must be used together with the asynchronous version of ReadSample.
+     *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
+     *
+     * @param trackId Identifies the media track. ignore the invalid value is passed.
+     * @param size Output parameter for the next sample size.
+     * @param timeout If no result is available after @param timeout milliseconds, the function returns.
+     * @return Execution Status
+     */
+    virtual Status GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout) = 0;
+
+    /**
+     * @brief Pause reading data from ffmpeg in another thread.
+     *
+     * @return Execution Status
+     */
+    virtual Status Pause() = 0;
+
+    /**
+     * @brief Get the latest PTS by trackId.
+     *
+     * @param trackId Identifies the media track. ignore the invalid value is passed.
+     * @param lastPTS the latest PTS.
+     * @return Execution Status
+     */
+    virtual Status GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPTS) = 0;
 
     /**
      * @brief Seeks for a specified position for the demuxer.

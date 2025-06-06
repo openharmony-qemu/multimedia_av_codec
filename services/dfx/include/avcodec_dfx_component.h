@@ -23,7 +23,6 @@
 #include <set>
 #include <string>
 #include "avcodec_log.h"
-#include "avcodec_trace.h"
 
 namespace OHOS {
 namespace Media {
@@ -44,7 +43,6 @@ private:
 
 std::string CreateVideoLogTag(const OHOS::Media::Meta &meta);
 
-#define AVCODEC_SYNC_TRACE_WITH_TAG AVCodecTrace trace(std::string(tag_) + std::string(__FUNCTION__))
 #define AVCODEC_LOG_WITH_TAG(level, fmt, args...)                                                                      \
     do {                                                                                                               \
         (void)HILOG_IMPL(LABEL.type, level, LABEL.domain, LABEL.tag,                                                   \

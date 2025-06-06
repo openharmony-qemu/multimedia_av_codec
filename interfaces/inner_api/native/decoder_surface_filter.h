@@ -56,6 +56,8 @@ public:
     Status DoPrepare() override;
     Status DoStart() override;
     Status DoPause() override;
+    Status DoFreeze() override;
+    Status DoUnFreeze() override;
     Status DoPauseDragging() override;
     Status DoResume() override;
     Status DoResumeDragging() override;

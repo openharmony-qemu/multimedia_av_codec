@@ -36,6 +36,7 @@ public:
     CapabilityData GetFlacEncoderCapability();
     CapabilityData GetG711muEncoderCapability();
     CapabilityData GetG711muDecoderCapability();
+    CapabilityData GetG711aDecoderCapability();
     CapabilityData GetAPEDecoderCapability();
     CapabilityData GetMP3EncoderCapability();
     CapabilityData GetLbvcDecoderCapability();

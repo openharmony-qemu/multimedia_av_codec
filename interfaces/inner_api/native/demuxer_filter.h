@@ -42,6 +42,8 @@ public:
     Status DoStart() override;
     Status DoStop() override;
     Status DoPause() override;
+    Status DoFreeze() override;
+    Status DoUnFreeze() override;
     Status DoPauseDragging() override;
     Status DoPauseAudioAlign() override;
     Status DoResume() override;
