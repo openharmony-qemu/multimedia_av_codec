@@ -78,8 +78,10 @@ M3U8Fragment::M3U8Fragment(std::string uri, double duration, int sequence, bool 
 {
 }
 
-M3U8::M3U8(std::string uri, std::string name) : uri_(std::move(uri)), name_(std::move(name))
+M3U8::M3U8(std::string uri, std::string name, StatusCallbackFunc statusCallback)
+    : uri_(std::move(uri)), name_(std::move(name))
 {
+    monitorStatusCallback_ = statusCallback;
     InitTagUpdatersMap();
 }
 
@@ -91,7 +93,7 @@ M3U8::~M3U8()
     if (downloaderHeader_) {
         downloaderHeader_ = nullptr;
     }
-    delete fmp4Header_;
+    delete[] fmp4Header_;
     fmp4Header_ = nullptr;
 }
 
@@ -210,11 +212,10 @@ void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
         fmp4Header_ = new uint8_t[length + 1]; // 1
     }
     DownloadMap(uri, offset, length);
-    uint32_t downloadTime = 0;
-    while (!isHeaderReady_.load() && downloadTime < MAX_DOWNLOAD_TIME && !isInterruptNeeded_.load()) {
-        Task::SleepInTask(WAIT_KEY_SLEEP_TIME);
-        downloadTime++;
-    }
+    AutoLock lock(sleepMutex_);
+    sleepCond_.WaitFor(lock, WAIT_KEY_SLEEP_TIME * MAX_DOWNLOAD_TIME, [this]() {
+        return isInterruptNeeded_.load() || isHeaderReady_.load();
+    });
     if (isHeaderReady_.load()) {
         MEDIA_LOG_I("x-map ready download " PUBLIC_LOG_U32, downloadHeaderLen_);
     }
@@ -239,6 +240,7 @@ void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
     };
     auto realStatusCallback = [this](DownloadStatus &&status, std::shared_ptr<Downloader> &downloader,
         std::shared_ptr<DownloadRequest> &request) {
+        monitorStatusCallback_(status, downloaderHeader_, std::forward<decltype(request)>(request));
         statusCallback_(status, downloaderHeader_, std::forward<decltype(request)>(request));
     };
     RequestInfo requestInfo;
@@ -258,6 +260,7 @@ void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
 void M3U8::UpdateDownloadFinished(const std::string& url, const std::string& location)
 {
     isHeaderReady_.store(true);
+    sleepCond_.NotifyOne();
 }
 
 uint32_t M3U8::SaveMapData(uint8_t* data, uint32_t len, bool notBlock)
@@ -407,6 +410,7 @@ void M3U8::DownloadKey()
     };
     auto realStatusCallback = [this](DownloadStatus &&status, std::shared_ptr<Downloader> &downloader,
         std::shared_ptr<DownloadRequest> &request) {
+        monitorStatusCallback_(status, downloader_, std::forward<decltype(request)>(request));
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
     std::string realKeyUrl = UriJoin(uri_, *keyUri_);
@@ -532,12 +536,17 @@ M3U8VariantStream::M3U8VariantStream(std::string name, std::string uri, std::sha
 }
 
 M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::string& uri, uint32_t initResolution,
-    const std::map<std::string, std::string>& httpHeader)
+    const std::map<std::string, std::string>& httpHeader, StatusCallbackFunc statusCallback)
 {
     playList_ = playList;
     uri_ = uri;
     httpHeader_ = httpHeader;
     initResolution_ = initResolution;
+    monitorStatusCallback_ = statusCallback;
+}
+
+void M3U8MasterPlaylist::StartParsing()
+{
     if (!StrHasPrefix(playList_, "#EXTM3U")) {
         MEDIA_LOG_I("playlist doesn't start with #EXTM3U ");
         isParseSuccess_ = false;
@@ -552,8 +561,10 @@ M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::s
 void M3U8MasterPlaylist::UpdateMediaPlaylist()
 {
     MEDIA_LOG_I("This is a simple media playlist, not a master playlist ");
-    auto m3u8 = std::make_shared<M3U8>(uri_, "");
+    auto m3u8 = std::make_shared<M3U8>(uri_, "", monitorStatusCallback_);
+    FALSE_RETURN_NOLOG(m3u8 != nullptr);
     auto stream = std::make_shared<M3U8VariantStream>(uri_, uri_, m3u8);
+    FALSE_RETURN_NOLOG(stream != nullptr);
     stream->streamId_ = ++defaultStreamId_;
     variants_.emplace_back(stream);
     defaultVariant_ = stream;
@@ -578,7 +589,8 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
 
 void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
 {
-    auto m3u8 = std::make_shared<M3U8>(uri_, "");
+    auto m3u8 = std::make_shared<M3U8>(uri_, "", monitorStatusCallback_);
+    FALSE_RETURN_NOLOG(m3u8 != nullptr);
     m3u8->isDecryptAble_ = true;
     m3u8->isDecryptKeyReady_ = false;
     m3u8->ParseKey(std::static_pointer_cast<AttributesTag>(tag));
@@ -610,7 +622,8 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
                 if (uriAttribute) {
                     auto name = uriAttribute->QuotedString();
                     auto uri = UriJoin(uri_, name);
-                    auto stream = std::make_shared<M3U8VariantStream>(name, uri, std::make_shared<M3U8>(uri, name));
+                    auto stream = std::make_shared<M3U8VariantStream>(name, uri, std::make_shared<M3U8>(uri, name,
+                                                                      monitorStatusCallback_));
                     FALSE_RETURN_MSG(stream != nullptr, "UpdateMasterPlaylist memory not enough");
                     stream->streamId_ = ++defaultStreamId_;
                     if (tag->GetType() == HlsTag::EXTXIFRAMESTREAMINF) {
@@ -687,6 +700,10 @@ uint32_t M3U8MasterPlaylist::GetResolutionDelta(uint32_t width, uint32_t height)
 void M3U8MasterPlaylist::SetInterruptState(bool isInterruptNeeded)
 {
     isInterruptNeeded_ = isInterruptNeeded;
+    if (defaultVariant_ && defaultVariant_->m3u8_) {
+        defaultVariant_->m3u8_->isInterruptNeeded_ = isInterruptNeeded;
+        defaultVariant_->m3u8_->sleepCond_.NotifyOne();
+    }
     MEDIA_LOG_I("M3U8MasterPlaylist SetInterruptState %{public}d.", isInterruptNeeded);
 }
 

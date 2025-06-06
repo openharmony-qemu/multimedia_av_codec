@@ -338,30 +338,35 @@ HWTEST_F(M3u8UnitTest, SET_DRM_INFOS, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, TestPlaylistStartWithEXTM3U, TestSize.Level1)
 {
     M3U8MasterPlaylist playlist("#EXTM3U", "uri");
+    playlist.StartParsing();
     EXPECT_EQ(playlist.playList_, "#EXTM3U");
 }
 
 HWTEST_F(M3u8UnitTest, TestPlaylistNotStartWithEXTM3U, TestSize.Level1)
 {
     M3U8MasterPlaylist playlist("playlist", "uri");
+    playlist.StartParsing();
     EXPECT_EQ(playlist.playList_, "playlist");
 }
 
 HWTEST_F(M3u8UnitTest, TestPlaylistContainsEXTINF, TestSize.Level1)
 {
     M3U8MasterPlaylist playlist("\n#EXTM3U:", "uri");
+    playlist.StartParsing();
     EXPECT_EQ(playlist.playList_, "\n#EXTM3U:");
 }
 
 HWTEST_F(M3u8UnitTest, TestPlaylistNotContainsEXTINF, TestSize.Level1)
 {
     M3U8MasterPlaylist playlist("playlist", "uri");
+    playlist.StartParsing();
     EXPECT_EQ(playlist.playList_, "playlist");
 }
 
 HWTEST_F(M3u8UnitTest, UpdateMediaPlaylistTest, TestSize.Level1)
 {
     M3U8MasterPlaylist playlist("playlist", "uri");
+    playlist.StartParsing();
     playlist.UpdateMediaPlaylist();
 
     // test variants contains new stream
@@ -383,6 +388,7 @@ HWTEST_F(M3u8UnitTest, UpdateMediaPlaylistTest, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, UpdateMasterPlaylist_default, TestSize.Level1)
 {
     M3U8MasterPlaylist playlist("test", "http://test.com/test");
+    playlist.StartParsing();
     playlist.UpdateMediaPlaylist();
     EXPECT_EQ(playlist.defaultVariant_, playlist.variants_.front());
 }
