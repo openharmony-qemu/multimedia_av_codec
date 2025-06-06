@@ -200,7 +200,6 @@ private:
     bool isHttpSource_ = false;
     std::string videoMime_{};
 
-    static constexpr uint32_t TRACK_ID_DUMMY = std::numeric_limits<uint32_t>::max(); // Deprecated
     static constexpr int32_t TRACK_ID_INVALID = -1;
     static constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
     static constexpr bool IsValid(const int32_t trackId) { return trackId >= 0; }

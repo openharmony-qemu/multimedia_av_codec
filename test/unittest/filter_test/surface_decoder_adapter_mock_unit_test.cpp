@@ -101,8 +101,8 @@ HWTEST_F(SurfaceDecoderMockUnitTest, FailBranchsCover_0100, TestSize.Level1)
  */
 HWTEST_F(SurfaceDecoderMockUnitTest, FailBranchsCover_0200, TestSize.Level1)
 {
-    int32_t indexD32 = 1;
-    uint32_t index = static_cast<uint32_t>(indexD32);
+    int32_t metaIndex = 1;
+    uint32_t index = static_cast<uint32_t>(metaIndex);
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
     buffer->meta_ = std::make_shared<Meta>();
     EXPECT_CALL(*(mockInputBufferQueueConsumer_), IsBufferInQueue(_)).WillRepeatedly(testing::Return(true));
@@ -115,20 +115,20 @@ HWTEST_F(SurfaceDecoderMockUnitTest, FailBranchsCover_0200, TestSize.Level1)
     int32_t ret = 0;
     std::string metaKey = Tag::REGULAR_TRACK_ID;
     EXPECT_TRUE(buffer->meta_->GetData(metaKey, ret));
-    EXPECT_EQ(ret, indexD32);
+    EXPECT_EQ(ret, metaIndex);
 
     EXPECT_CALL(*(mockInputBufferQueueConsumer_), ReleaseBuffer(_)).WillRepeatedly(
         testing::Return(Status::ERROR_UNKNOWN));
     surfaceDecoderAdapter_->OnInputBufferAvailable(index, buffer);
     ret = 0;
     EXPECT_TRUE(buffer->meta_->GetData(metaKey, ret));
-    EXPECT_EQ(ret, indexD32);
+    EXPECT_EQ(ret, metaIndex);
 
     EXPECT_CALL(*(mockInputBufferQueueConsumer_), IsBufferInQueue(_)).WillRepeatedly(testing::Return(false));
     surfaceDecoderAdapter_->OnInputBufferAvailable(index, buffer);
     ret = 0;
     EXPECT_TRUE(buffer->meta_->GetData(metaKey, ret));
-    EXPECT_EQ(ret, indexD32);
+    EXPECT_EQ(ret, metaIndex);
 }
 
 /**
