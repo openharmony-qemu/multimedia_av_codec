@@ -379,11 +379,11 @@ void HCodec::FrozenState::OnMsgReceived(const MsgInfo &info)
             OnBufferWriteback(info);
             return;
         }
-        case MsgWhat::Suspend:{
+        case MsgWhat::SUSPEND:{
             OnSuspend(info);
             break;
         }
-        case MsgWhat::Resume:{
+        case MsgWhat::RESUME:{
             OnResume(info);
             return;
         }

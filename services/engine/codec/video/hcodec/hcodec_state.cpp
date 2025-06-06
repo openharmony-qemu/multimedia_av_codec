@@ -549,11 +549,11 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             OnBufferRecycle(info);
             break;
         }
-        case MsgWhat::Suspend:{
+        case MsgWhat::SUSPEND:{
             OnSuspend(info);
             break;
         }
-        case MsgWhat::Resume:{
+        case MsgWhat::RESUME:{
             OnResume(info);
             return;
         }
