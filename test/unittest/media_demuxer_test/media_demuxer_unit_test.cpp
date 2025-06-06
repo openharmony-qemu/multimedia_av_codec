@@ -2170,22 +2170,15 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetDumpInfo_001, TestSize.Level1)
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     demuxer->isDump_ = false;
     demuxer->dumpPrefix_ = "1";
+    std::string currentTidStr = std::to_string(gettid());
 
     demuxer->SetDumpInfo(true, 0);
-    EXPECT_EQ(demuxer->isDump_, false);
-    EXPECT_EQ(demuxer->dumpPrefix_, "1");
-
-    demuxer->SetDumpInfo(true, 1);
     EXPECT_EQ(demuxer->isDump_, true);
-    EXPECT_EQ(demuxer->dumpPrefix_, "1");
+    EXPECT_EQ(demuxer->dumpPrefix_, currentTidStr);
 
     demuxer->SetDumpInfo(false, 0);
     EXPECT_EQ(demuxer->isDump_, false);
-    EXPECT_EQ(demuxer->dumpPrefix_, "0");
-
-    demuxer->SetDumpInfo(true, 1);
-    EXPECT_EQ(demuxer->isDump_, true);
-    EXPECT_EQ(demuxer->dumpPrefix_, "1");
+    EXPECT_EQ(demuxer->dumpPrefix_, currentTidStr);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HasEosTrack_001, TestSize.Level1)
