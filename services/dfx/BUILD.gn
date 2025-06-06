@@ -28,13 +28,13 @@ ohos_shared_library("av_codec_service_dfx") {
 
   public_external_deps = [
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "media_foundation:media_foundation",
   ]
 
   sources = [
     "avcodec_dump_utils.cpp",
     "avcodec_sysevent.cpp",
-    "avcodec_trace.cpp",
     "avcodec_xcollie.cpp",
   ]
 
@@ -74,7 +74,6 @@ ohos_shared_library("av_codec_service_dfx") {
     "c_utils:utils",
     "hicollie:libhicollie",
     "hisysevent:libhisysevent",
-    "hitrace:hitrace_meter",
     "init:libbegetutil",
   ]
 
