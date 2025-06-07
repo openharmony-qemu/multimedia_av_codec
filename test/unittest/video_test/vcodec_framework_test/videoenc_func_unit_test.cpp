@@ -1855,29 +1855,10 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_All_001, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_SetPTSParameter_001
- * @tc.desc: SetPTSParameter, surface mode
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, VideoEncoder_SetPTSParameter_001, TestSize.Level1)
-{
-    videoEnc_->enableVariableFrameRate_ = true;
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL, 1);
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
-}
-
-/**
- * @tc.name: VideoEncoder_SetPTSParameter_002
  * @tc.desc: SetPTSParameter, avbuffer mode
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_SetPTSParameter_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_SetPTSParameter_001, TestSize.Level1)
 {
     videoEnc_->enableVariableFrameRate_ = true;
     videoEnc_->isAVBufferMode_ = true;
