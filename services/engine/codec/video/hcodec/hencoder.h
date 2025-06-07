@@ -16,8 +16,8 @@
 #ifndef HCODEC_HENCODER_H
 #define HCODEC_HENCODER_H
 
-#include "hcodec.h"
 #include <deque>
+#include "hcodec.h"
 #include "codec_omx_ext.h"
 #include "sync_fence.h"
 #include "hcodec_utils.h"
