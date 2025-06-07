@@ -1196,7 +1196,7 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Valid_Test_001, TestSize.Level1)
 
     for (auto &val : testList) {
         server_->status_ = val;
-        EXPECT_TRUE(server_->NotifyMemoryRecycle());
+        EXPECT_EQ(AVCS_ERR_OK, server_->NotifyMemoryRecycle());
     }
 }
 
@@ -1217,7 +1217,7 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Invalid_Test_001, TestSize.Level1
 
     for (auto &val : testList) {
         server_->status_ = val;
-        EXPECT_TRUE(server_->NotifyMemoryRecycle());
+        EXPECT_NE(AVCS_ERR_OK, server_->NotifyMemoryRecycle());
     }
 }
 
@@ -1229,7 +1229,7 @@ HWTEST_F(CodecServerUnitTest, NotifyForeGround_Valid_Test_001, TestSize.Level1)
 {
     CreateHCodecByMime();
     server_->isModeConfirmed_ = true;   
-    EXPECT_TRUE(server_->NotifyMemoryWriteBack());
+    EXPECT_EQ(AVCS_ERR_OK, server_->NotifyMemoryWriteBack());
 }
 
 /**
