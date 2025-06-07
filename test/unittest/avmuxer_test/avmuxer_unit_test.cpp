@@ -2284,9 +2284,9 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Audio_Auxiliary, TestSize.Level0) {
     audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
     audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
     audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
-    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_U8);
-    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 705600);
-    audioParams->PutIntValue("audio_samples_per_frame", 2048); // 2048 frame size
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 199000); // 199000 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 1024); // 1024 frame size
     audioParams->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
     audioParams->PutIntValue(OH_MD_KEY_AAC_IS_ADTS, 0);
 
@@ -2298,9 +2298,9 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Audio_Auxiliary, TestSize.Level0) {
     audioAuxiliaryParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
     audioAuxiliaryParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
     audioAuxiliaryParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
-    audioAuxiliaryParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_U8);
-    audioAuxiliaryParams->PutLongValue(OH_MD_KEY_BITRATE, 705600);
-    audioAuxiliaryParams->PutIntValue("audio_samples_per_frame", 2048); // 2048 frame size
+    audioAuxiliaryParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    audioAuxiliaryParams->PutLongValue(OH_MD_KEY_BITRATE, 199000); // 199000 bit rate
+    audioAuxiliaryParams->PutIntValue("audio_samples_per_frame", 1024); // 1024 frame size
     audioAuxiliaryParams->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
     audioAuxiliaryParams->PutIntValue(OH_MD_KEY_AAC_IS_ADTS, 0);
     audioAuxiliaryParams->PutIntValue(OH_MD_KEY_TRACK_TYPE, static_cast<int32_t>(OH_MediaType::MEDIA_TYPE_AUXILIARY));
@@ -2315,7 +2315,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Audio_Auxiliary, TestSize.Level0) {
 
     ASSERT_EQ(avmuxer_->Start(), 0);
 
-    std::string inputFilePath = "/data/test/media/aac_44100_2.dat";
+    std::string inputFilePath = "/data/test/media/aac_2c_44100hz_199k.dat";
     AuxiliaryWriteSample(inputFilePath, trackId);
     AuxiliaryWriteSample(inputFilePath, trackIdAudio);
 
