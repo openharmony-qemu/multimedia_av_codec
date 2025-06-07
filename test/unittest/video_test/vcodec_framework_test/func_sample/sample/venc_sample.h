@@ -148,7 +148,7 @@ public:
     bool isDiscardFrame_ = false;
     std::string roiRects_ = "";
     bool enableVariableFrameRate_ = false;
-    int32_t frameIndex = 0;
+    int32_t frameIndex_ = 0;
 
 private:
     void FlushInner();
