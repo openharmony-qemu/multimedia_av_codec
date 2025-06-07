@@ -47,6 +47,7 @@ constexpr uint8_t SHA_HEVC[SHA512_DIGEST_LENGTH] = {
     0xb2, 0x8c, 0xc3, 0x99, 0xd4, 0xdc, 0xdf, 0xee, 0xb4, 0xd9, 0x0c, 0xd0, 0xee, 0x39, 0x94, 0x3c};
 constexpr int32_t TIMESTAMP_BASE = 1000000;
 constexpr int32_t DURATION_BASE = 46000;
+constexpr int32_t RATIO_US_TO_NS = 1000;
 
 uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
 std::atomic<uint32_t> g_shaBufferCount = 0;
@@ -1076,7 +1077,7 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
     region.rects = rect;
     int64_t systemTimeUs = time_point_cast<microseconds>(system_clock::now()).time_since_epoch().count();
     if (enableVariableFrameRate_) {
-        systemTimeUs = (TIMESTAMP_BASE + DURATION_BASE * frameIndex) * 1000;
+        systemTimeUs = (TIMESTAMP_BASE + DURATION_BASE * frameIndex) * RATIO_US_TO_NS;
         frameIndex++;
     }
     OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
