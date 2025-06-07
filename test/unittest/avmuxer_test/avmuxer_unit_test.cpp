@@ -2158,6 +2158,44 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_Auxiliary_003, TestSize.Level0) {
 }
 
 /**
+ * @tc.name: Muxer_AddTrack_Auxiliary_004
+ * @tc.desc: Muxer AddTrack video Auxiliary track(invalid reference track id).
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_Auxiliary_004, TestSize.Level0) {
+    int32_t trackId = -1;
+    int32_t trackIdDepth = -1;
+    std::vector<int32_t> vDepth = {10};    // invalid reference track id
+    int32_t *trackIdsDepth = vDepth.data();
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack_Auxiliary.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+
+    int32_t ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+
+    std::shared_ptr<FormatMock> metadataParamsDepth = FormatMockFactory::CreateFormat();
+    metadataParamsDepth->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    metadataParamsDepth->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
+    metadataParamsDepth->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
+    metadataParamsDepth->PutIntValue(OH_MD_KEY_TRACK_TYPE, static_cast<int32_t>(OH_MediaType::MEDIA_TYPE_AUXILIARY));
+    metadataParamsDepth->PutStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, TRACK_REF_TYPE_DEPTH);
+    metadataParamsDepth->PutStringValue(OH_MD_KEY_TRACK_DESCRIPTION, AUXILIARY_DEPTH_TRACK_KEY);
+    metadataParamsDepth->PutBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, reinterpret_cast<uint8_t*>(trackIdsDepth),
+        sizeof(int32_t) * vDepth.size());
+
+    ret = avmuxer_->AddTrack(trackIdDepth, metadataParamsDepth);
+    ASSERT_NE(ret, AV_ERR_OK);
+}
+
+/**
  * @tc.name: Muxer_Add_Video_Auxiliary
  * @tc.desc: Muxer add video Auxiliary.
  * @tc.type: FUNC
