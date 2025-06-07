@@ -161,12 +161,12 @@ public:
     void SetIsEnableReselectVideoTrack(bool isEnable);
     void SetApiVersion(int32_t apiVersion);
     bool IsLocalFd();
-
-    void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     Status RebootPlugin();
     uint64_t GetCachedDuration();
     void RestartAndClearBuffer();
     bool IsFlvLive();
+
+    void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     bool HasVideo();
     bool HasAudio();
     bool IsSeekToTimeSupported();

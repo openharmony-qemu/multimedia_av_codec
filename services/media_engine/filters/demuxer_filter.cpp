@@ -904,18 +904,18 @@ Status DemuxerFilter::SetSpeed(float speed)
     return demuxer_->SetSpeed(speed);
 }
 
+Status DemuxerFilter::DisableMediaTrack(Plugins::MediaType mediaType)
+{
+    disabledMediaTracks_.emplace(mediaType);
+    return demuxer_->DisableMediaTrack(mediaType);
+}
+
 void DemuxerFilter::OnDumpInfo(int32_t fd)
 {
     MEDIA_LOG_D_SHORT("DemuxerFilter::OnDumpInfo called.");
     if (demuxer_ != nullptr) {
         demuxer_->OnDumpInfo(fd);
     }
-}
-
-Status DemuxerFilter::DisableMediaTrack(Plugins::MediaType mediaType)
-{
-    disabledMediaTracks_.emplace(mediaType);
-    return demuxer_->DisableMediaTrack(mediaType);
 }
 
 bool DemuxerFilter::IsRenderNextVideoFrameSupported()
@@ -988,12 +988,6 @@ bool DemuxerFilter::IsLocalFd()
     return demuxer_->IsLocalFd();
 }
 
-void DemuxerFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter)
-{
-    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
-    demuxer_->SetSyncCenter(syncCenter);
-}
-
 Status DemuxerFilter::RebootPlugin()
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
@@ -1016,6 +1010,12 @@ bool DemuxerFilter::IsFlvLive()
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
     return demuxer_->IsFlvLive();
+}
+
+void DemuxerFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter)
+{
+    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
+    demuxer_->SetSyncCenter(syncCenter);
 }
 
 Status DemuxerFilter::StopBufferring(bool isAppBackground)
