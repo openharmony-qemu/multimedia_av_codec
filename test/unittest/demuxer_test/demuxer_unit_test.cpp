@@ -2858,8 +2858,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_WavAlaw_0001, TestSize.Level1)
     }
 }
 
-
-
 #ifdef SUPPORT_CODEC_RM
 /**
  * @tc.name: Demuxer_ReadSample_1800
