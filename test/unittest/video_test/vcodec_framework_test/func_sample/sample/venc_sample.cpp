@@ -45,6 +45,8 @@ constexpr uint8_t SHA_HEVC[SHA512_DIGEST_LENGTH] = {
     0x8f, 0xe2, 0xf9, 0x58, 0xc5, 0x00, 0x02, 0x7c, 0xa9, 0x05, 0xe0, 0x69, 0x09, 0xa7, 0x2e, 0xb2,
     0xdf, 0x5d, 0xf4, 0x05, 0xea, 0xde, 0xe9, 0x9b, 0x1e, 0x5b, 0x37, 0x04, 0x2f, 0x3d, 0xe9, 0x2c,
     0xb2, 0x8c, 0xc3, 0x99, 0xd4, 0xdc, 0xdf, 0xee, 0xb4, 0xd9, 0x0c, 0xd0, 0xee, 0x39, 0x94, 0x3c};
+constexpr int32_t TIMESTAMP_BASE = 1000000;
+constexpr int32_t DURATION_BASE = 46000;
 
 uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
 std::atomic<uint32_t> g_shaBufferCount = 0;
@@ -948,6 +950,14 @@ void VideoEncSample::InputLoopFuncExt()
     }
 }
 
+void VideoEncSample::InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr)
+{
+    if (enableVariableFrameRate_) {
+        attr.pts = TIMESTAMP_BASE + DURATION_BASE * frameIndex;
+        frameIndex++;
+    }
+}
+
 int32_t VideoEncSample::InputLoopInnerExt()
 {
     uint32_t index = signal_->inIndexQueue_.front();
@@ -998,10 +1008,7 @@ int32_t VideoEncSample::InputLoopInnerExt()
     } else {
         attr.flags = AVCODEC_BUFFER_FLAG_NONE;
     }
-    if (enableVariableFrameRate_) {
-        attr.pts = 1000000 + 46000 * frameIndex;
-        frameIndex++;
-    }
+    InputLoopInnerFeatureExt(attr);
     buffer->SetBufferAttr(attr);
     return PushInputBuffer(index);
 }
@@ -1069,7 +1076,7 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
     region.rects = rect;
     int64_t systemTimeUs = time_point_cast<microseconds>(system_clock::now()).time_since_epoch().count();
     if (enableVariableFrameRate_) {
-        systemTimeUs = (1000000 + 46000 * frameIndex) * 1000;
+        systemTimeUs = (TIMESTAMP_BASE + DURATION_BASE * frameIndex) * 1000;
         frameIndex++;
     }
     OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
