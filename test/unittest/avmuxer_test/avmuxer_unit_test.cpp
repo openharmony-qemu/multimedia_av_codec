@@ -45,8 +45,10 @@ const std::string TIMED_METADATA_TRACK_MIMETYPE = "meta/timed-metadata";
 const std::string TIMED_METADATA_KEY = "com.openharmony.timed_metadata.test";
 const std::string TRACK_REF_TYPE_DEPTH = "vdep";
 const std::string TRACK_REF_TYPE_PREY = "auxl";
+const std::string TRACK_REF_TYPE_AUDIO = "auxl";
 const std::string AUXILIARY_DEPTH_TRACK_KEY = "com.openharmony.moviemode.depth";
 const std::string AUXILIARY_PREY_TRACK_KEY = "com.openharmony.moviemode.prey";
+const std::string AUXILIARY_AUDIO_TRACK_KEY = "com.openharmony.audiomode.auxiliary";
 } // namespace
 
 void AVMuxerUnitTest::SetUpTestCase() {}
@@ -158,9 +160,9 @@ int32_t AVMuxerUnitTest::WriteSample(sptr<AVBufferQueueProducer> bqProducer,
     return -1;
 }
 
-void AVMuxerUnitTest::AuxiliaryWriteSample(int32_t trackId)
+void AVMuxerUnitTest::AuxiliaryWriteSample(std::string inputFilePath, int32_t trackId)
 {
-    inputFile_ = std::make_shared<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
+    inputFile_ = std::make_shared<std::ifstream>(inputFilePath, std::ios::binary);
 
     int32_t extSize = 0;
     inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
@@ -2254,9 +2256,68 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Video_Auxiliary, TestSize.Level0) {
 
     ASSERT_EQ(avmuxer_->Start(), 0);
 
-    AuxiliaryWriteSample(trackId);
-    AuxiliaryWriteSample(trackIdDepth);
-    AuxiliaryWriteSample(trackIdPrey);
+    AuxiliaryWriteSample(INPUT_FILE_PATH, trackId);
+    AuxiliaryWriteSample(INPUT_FILE_PATH, trackIdDepth);
+    AuxiliaryWriteSample(INPUT_FILE_PATH, trackIdPrey);
+
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+}
+
+/**
+ * @tc.name: Muxer_Add_Audio_Auxiliary
+ * @tc.desc: Muxer add audio Auxiliary.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_Add_Audio_Auxiliary, TestSize.Level0) {
+    int32_t trackId = -1;
+    int32_t trackIdAudio = -1;
+    std::vector<int32_t> vAudio = {0};
+    int32_t *trackIdsAudio = vAudio.data();
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Add_Audio_Auxiliary.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 199000); // 199000 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 1024); // 1024 frame size
+    audioParams->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
+    audioParams->PutIntValue(OH_MD_KEY_AAC_IS_ADTS, 0);
+
+    int32_t ret = avmuxer_->AddTrack(trackId, audioParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+
+    std::shared_ptr<FormatMock> audioAuxiliaryParams = FormatMockFactory::CreateFormat();
+    audioAuxiliaryParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioAuxiliaryParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioAuxiliaryParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioAuxiliaryParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    audioAuxiliaryParams->PutLongValue(OH_MD_KEY_BITRATE, 199000); // 199000 bit rate
+    audioAuxiliaryParams->PutIntValue("audio_samples_per_frame", 1024); // 1024 frame size
+    audioAuxiliaryParams->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
+    audioAuxiliaryParams->PutIntValue(OH_MD_KEY_AAC_IS_ADTS, 0);
+    audioAuxiliaryParams->PutIntValue(OH_MD_KEY_TRACK_TYPE, static_cast<int32_t>(OH_MediaType::MEDIA_TYPE_AUXILIARY));
+    audioAuxiliaryParams->PutStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, TRACK_REF_TYPE_DEPTH);
+    audioAuxiliaryParams->PutStringValue(OH_MD_KEY_TRACK_DESCRIPTION, AUXILIARY_DEPTH_TRACK_KEY);
+    audioAuxiliaryParams->PutBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, reinterpret_cast<uint8_t*>(trackIdsAudio),
+        sizeof(int32_t) * vAudio.size());
+
+    ret = avmuxer_->AddTrack(trackIdAudio, audioAuxiliaryParams);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    ASSERT_GE(trackIdAudio, 1);
+
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    std::string inputFilePath = "/data/test/media/aac_2c_44100hz_199k.dat";
+    AuxiliaryWriteSample(inputFilePath, trackId);
+    AuxiliaryWriteSample(inputFilePath, trackIdAudio);
 
     ASSERT_EQ(avmuxer_->Stop(), 0);
 }

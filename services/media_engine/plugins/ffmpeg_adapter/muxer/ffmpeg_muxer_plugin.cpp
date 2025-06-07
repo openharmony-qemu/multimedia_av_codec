@@ -910,6 +910,59 @@ Status FFmpegMuxerPlugin::AddTimedMetaTrack(
     return Status::NO_ERROR;
 }
 
+Status FFmpegMuxerPlugin::AddAudioAuxiliaryTrack(
+    int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID)
+{
+    int32_t sampleRate = 0;
+    int32_t channels = 0;
+    bool ret = trackDesc->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+    FALSE_RETURN_V_MSG_E(ret && sampleRate > 0, Status::ERROR_MISMATCHED_TYPE,
+        "get audio sample_rate failed! sampleRate:%{public}d", sampleRate);
+    ret = trackDesc->Get<Tag::AUDIO_CHANNEL_COUNT>(channels);
+    FALSE_RETURN_V_MSG_E(ret && channels > 0, Status::ERROR_MISMATCHED_TYPE,
+        "get audio channels failed! channels:%{public}d", channels);
+    if (codeID == AV_CODEC_ID_PCM_U8) {
+        AudioSampleFormat sampleFormat = INVALID_WIDTH;
+        ret = trackDesc->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat);
+        FALSE_RETURN_V_MSG_E(ret, Status::ERROR_MISMATCHED_TYPE, "get audio sample format failed!");
+        ret = Raw2CodecId(sampleFormat, codeID);
+        FALSE_RETURN_V_MSG_E(ret, Status::ERROR_INVALID_DATA,
+            "this mimeType do not support! mimeType:%{public}s, sampleFormat:%{public}d",
+            MimeType::AUDIO_RAW, sampleFormat);
+    }
+
+    auto st = avformat_new_stream(formatContext_.get(), nullptr);
+    FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NO_MEMORY, "avformat_new_stream failed!");
+    ResetCodecParameter(st->codecpar);
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id = codeID;
+    st->codecpar->sample_rate = sampleRate;
+    st->codecpar->channels = channels;
+
+    auto retAuxlMeta = SetAuxiliaryMeta(trackDesc, st);
+    FALSE_RETURN_V_MSG_E(retAuxlMeta == Status::NO_ERROR, retAuxlMeta, "set auxiliary meta failed!");
+
+    if (trackDesc->Find(Tag::AUDIO_SAMPLE_PER_FRAME) != trackDesc->end()) {
+        int32_t frameSize = 0;
+        trackDesc->Get<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize);
+        FALSE_RETURN_V_MSG_E(frameSize > 0, Status::ERROR_MISMATCHED_TYPE,
+            "get audio sample per frame failed! audio sample per frame:%{public}d", frameSize);
+        st->codecpar->frame_size = frameSize;
+    }
+    if (trackDesc->Find(Tag::AUDIO_CHANNEL_LAYOUT) != trackDesc->end()) {
+        AudioChannelLayout channelLayout = UNKNOWN;
+        trackDesc->Get<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
+        auto ffChannelLayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);
+        MEDIA_LOG_D("channelLayout:" PUBLIC_LOG_D64 ", ffChannelLayout:" PUBLIC_LOG_U64,
+            channelLayout, ffChannelLayout);
+        FALSE_RETURN_V_MSG_E(ffChannelLayout != AV_CH_LAYOUT_NATIVE, Status::ERROR_INVALID_DATA,
+            "the value of channelLayout is not supported, " PUBLIC_LOG_D64, channelLayout);
+        st->codecpar->channel_layout = ffChannelLayout;
+    }
+    trackIndex = st->index;
+    return SetCodecParameterOfAudioTrack(st, trackDesc);
+}
+
 Status FFmpegMuxerPlugin::AddVideoAuxiliaryTrack(
     int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID, bool isCover)
 {
@@ -975,7 +1028,6 @@ Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const std::shared_ptr<Me
     AVCodecID codeID = AV_CODEC_ID_NONE;
     FALSE_RETURN_V_MSG_E(trackDesc->Get<Tag::MIME_TYPE>(mimeType), Status::ERROR_INVALID_PARAMETER,
         "get mimeType failed!"); // mime
-    MEDIA_LOG_D("mimeType is %{public}s", mimeType.c_str());
     FALSE_RETURN_V_MSG_E(Mime2CodecId(mimeType, codeID), Status::ERROR_INVALID_DATA,
         "this mimeType do not support! mimeType:%{public}s", mimeType.c_str());
 
@@ -987,14 +1039,16 @@ Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const std::shared_ptr<Me
 
     Plugins::MediaType mediaType = Plugins::MediaType::UNKNOWN;
     if (trackDesc->Find(Tag::MEDIA_TYPE) != trackDesc->end()) {
-        FALSE_RETURN_V_MSG_E(trackDesc->Get<Tag::MEDIA_TYPE>(mediaType), Status::ERROR_INVALID_DATA,
-            "get mediaType failed.");
-    } else {
-        MEDIA_LOG_E("missing mediaType");
+        trackDesc->Get<Tag::MEDIA_TYPE>(mediaType);
     }
     if (!mimeType.compare(0, mimeTypeLen, "audio")) {
-        ret = AddAudioTrack(trackIndex, trackDesc, codeID);
-        FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddAudioTrack failed!");
+        if (mediaType == Plugins::MediaType::AUXILIARY) {
+            ret = AddAudioAuxiliaryTrack(trackIndex, trackDesc, codeID);
+            FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddAudioAuxiliaryTrack failed!");
+        } else {
+            ret = AddAudioTrack(trackIndex, trackDesc, codeID);
+            FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddAudioTrack failed!");
+        }
     } else if (!mimeType.compare(0, mimeTypeLen, "video")) {
         if (mediaType == Plugins::MediaType::AUXILIARY) {
             ret = AddVideoAuxiliaryTrack(trackIndex, trackDesc, codeID, false);
