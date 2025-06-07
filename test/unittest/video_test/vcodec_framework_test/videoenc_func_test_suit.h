@@ -24,6 +24,7 @@ public:
     bool ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer);
     bool GetWaterMarkCapability(int32_t param);
     bool GetTemporalScalabilityCapability(int32_t param);
+    bool GetTemporalScalabilityCapability(int32_t param, bool isTemporalScalability);
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(TEST_SUIT)};
 
 protected:

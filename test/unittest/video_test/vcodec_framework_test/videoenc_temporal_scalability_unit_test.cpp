@@ -19,12 +19,12 @@
 #include "native_avmagic.h"
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
-#include "venc_async_sample.h"
 
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videoenc_capi_mock.h"
 #endif
+#include "videoenc_func_test_suit.h"
 
 using namespace std;
 using namespace OHOS;
@@ -43,29 +43,6 @@ void TEST_SUIT::SetUpTestCase(void)
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
-}
-
-bool TEST_SUIT::CreateVideoCodecByMime(const std::string &encMime)
-{
-    if (videoEnc_->CreateVideoEncMockByMime(encMime) == false || videoEnc_->SetCallback(vencCallback_) != AV_ERR_OK) {
-        return false;
-    }
-    return true;
-}
-
-bool TEST_SUIT::CreateVideoCodecByName(const std::string &name)
-{
-    if (videoEnc_->isAVBufferMode_) {
-        if (videoEnc_->CreateVideoEncMockByName(name) == false ||
-            videoEnc_->SetCallback(vencCallbackExt_) != AV_ERR_OK) {
-            return false;
-        }
-    } else {
-        if (videoEnc_->CreateVideoEncMockByName(name) == false || videoEnc_->SetCallback(vencCallback_) != AV_ERR_OK) {
-            return false;
-        }
-    }
-    return true;
 }
 
 void TEST_SUIT::CreateByNameWithParam(int32_t param)
