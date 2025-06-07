@@ -154,7 +154,7 @@ private:
     void ExtractPerFrameLayerParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
     void DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight);
 
-    void CalculateSmoothFactorBasedPts(int64_t curPts, double &smoothFactor, int64_t curDuration);
+    double CalculateSmoothFactorBasedPts(int64_t curPts, int64_t curDuration);
     int32_t CalculateSmoothFpsBasedPts(int64_t curPts, int64_t curDuration);
     int32_t UpdateTimeStampWindow(int64_t curPts, int32_t &frameRate);
     int32_t CalculateFrameRateParamIntoOmxBuffer(int64_t curPts);

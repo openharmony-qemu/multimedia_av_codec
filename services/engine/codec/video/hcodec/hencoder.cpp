@@ -1204,8 +1204,9 @@ void HEncoder::WrapIsSkipFrameIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer>
     AppendToVector(omxBuffer->alongParam, isSkip);
 }
 
-void HEncoder::CalculateSmoothFactorBasedPts(int64_t curPts, double &smoothFactor, int64_t curDuration)
+double HEncoder::CalculateSmoothFactorBasedPts(int64_t curPts, int64_t curDuration)
 {
+    double smoothFactor = 0.0;
     int32_t instantFrameRate = round((1.0 / curDuration) * TIME_RATIO_US_TO_S);
     if (instantFrameRate > SMOOTH_FACTOR_CLIP_RANGE_MIN && instantFrameRate < SMOOTH_FACTOR_CLIP_RANGE_MAX) {
         smoothFactor = 1 - DURATION_SCALE_FACTOR / instantFrameRate;
@@ -1214,16 +1215,15 @@ void HEncoder::CalculateSmoothFactorBasedPts(int64_t curPts, double &smoothFacto
     } else {
         smoothFactor = SMOOTH_FACTOR_CLIP_MAX;
     }
+    return smoothFactor;
 }
 
 int32_t HEncoder::CalculateSmoothFpsBasedPts(int64_t curPts, int64_t curDuration)
 {
     int64_t previousDuration1st = previousPtsWindow_.back() - previousPtsWindow_[2];
     int64_t previousDuration2nd = previousPtsWindow_[2] - previousPtsWindow_[1];
-    double smoothFactor = 0.0;
-    double previousSmoothFactor = 0.0;
-    CalculateSmoothFactorBasedPts(curPts, smoothFactor, curDuration);
-    CalculateSmoothFactorBasedPts(previousPtsWindow_.back(), previousSmoothFactor, previousDuration1st);
+    double smoothFactor = CalculateSmoothFactorBasedPts(curPts, curDuration);
+    double previousSmoothFactor = CalculateSmoothFactorBasedPts(previousPtsWindow_.back(), previousDuration1st);
     double smoothDuration = curDuration * (1 - smoothFactor) + (previousDuration1st * (1 - previousSmoothFactor) +
         previousDuration2nd * previousSmoothFactor) * smoothFactor;
     int32_t smoothFrameRate = round((1.0 / smoothDuration) * TIME_RATIO_US_TO_S);
@@ -1252,13 +1252,13 @@ int32_t HEncoder::UpdateTimeStampWindow(int64_t curPts, int32_t &frameRate)
         previousSmoothFrameRate_ = frameRate;
     } else if (previousPtsWindowSize == PREVIOUS_PTS_RECORDED_COUNT) {
         int32_t instantFrameRate = round((1.0 / curDuration) * TIME_RATIO_US_TO_S);
-        int32_t smoothFrameRate = CalculateSmoothFpsBasedPts(curPts, curDuration);
-        double averageThreeFrameDurationError = (curDuration - (previousPtsWindow_[1] - previousPtsWindow_[0])) /
-            AVERAGE_DURATION_ERROR_COUNT;
         if (instantFrameRate == 0) {
             HLOGE("instantFrameRate is 0 !");
             return -1;
         }
+        int32_t smoothFrameRate = CalculateSmoothFpsBasedPts(curPts, curDuration);
+        double averageThreeFrameDurationError = (curDuration - (previousPtsWindow_[1] - previousPtsWindow_[0])) /
+            AVERAGE_DURATION_ERROR_COUNT;
         double frameDurationErrorMin = (1.0 / instantFrameRate - 1.0 / (instantFrameRate -
             AVERAGE_DURATION_ERROR_FRAMERATE_RANGE)) * TIME_RATIO_US_TO_S;
         double frameDurationErrorMax = (1.0 / instantFrameRate - 1.0 / (instantFrameRate +
