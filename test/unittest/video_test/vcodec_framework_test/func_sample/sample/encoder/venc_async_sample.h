@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef VENC_SYNC_SAMPLE_H
-#define VENC_SYNC_SAMPLE_H
+#ifndef VENC_ASYNC_SAMPLE_H
+#define VENC_ASYNC_SAMPLE_H
 #include "func_sample_encoder_base.h"
 
 namespace OHOS {
@@ -111,4 +111,4 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // VENC_SYNC_SAMPLE_H
+#endif // VENC_ASYNC_SAMPLE_H

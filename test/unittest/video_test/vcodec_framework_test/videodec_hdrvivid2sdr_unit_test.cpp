@@ -51,7 +51,7 @@ public:
     void SetHDRFormat();
     void SetAVCFormat();
     void PrepareSource(int32_t param);
-    void ConfigureHdrVivid2Sdr(int32_t testCode, bool isInner);
+    void ConfigureHdrVivid2Sdr(int32_t testCode);
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(TEST_SUIT)};
 
 protected:
@@ -377,8 +377,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_007, TestSize.Level1)
     CreateByNameWithParam(testCode);
     std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
     format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 
-    );
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     PrepareSource(testCode);
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
@@ -436,7 +435,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_009, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-        std::shared_ptr<OH_AVFormat> curFormat = videoDec->GetOutputDescription();
+        std::shared_ptr<FormatMock> curFormat = videoDec_->GetOutputDescription();
         CheckFormatKey(curFormat);
         EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     } else if (testCode == VCodecTestCode::HW_AVC || testCode == VCodecTestCode::SW_AVC) {
@@ -462,7 +461,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_010, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-        std::shared_ptr<OH_AVFormat> curFormat = videoDec->GetOutputDescription();
+        std::shared_ptr<FormatMock> curFormat = videoDec_->GetOutputDescription();
         CheckFormatKey(curFormat);
         EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     } else if (testCode == VCodecTestCode::HW_AVC || testCode == VCodecTestCode::SW_AVC) {
@@ -596,7 +595,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_016, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    std::shared_ptr<OH_AVFormat> curFormat = videoDec->GetOutputDescription();
+    std::shared_ptr<FormatMock> curFormat = videoDec_->GetOutputDescription();
     CheckFormatKey(curFormat);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
