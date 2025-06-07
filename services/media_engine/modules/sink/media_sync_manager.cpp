@@ -472,13 +472,13 @@ void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
 }
 void MediaSyncManager::SetLastVideoBufferAbsPts(int64_t lastVideoBufferAbsPts)
 {
-    MEDIA_LOG_I("SetLastVideoBufferAbsPts " PUBLIC_LOG_D64, lastVideoBufferAbsPts);
+    MEDIA_LOG_D("SetLastVideoBufferAbsPts " PUBLIC_LOG_D64, lastVideoBufferAbsPts);
     lastVideoBufferAbsPts_ = lastVideoBufferAbsPts;
 }
  
 int64_t MediaSyncManager::GetLastVideoBufferAbsPts() const
 {
-    MEDIA_LOG_I("GetLastVideoBufferAbsPts" PUBLIC_LOG_D64, lastVideoBufferAbsPts_);
+    MEDIA_LOG_D("GetLastVideoBufferAbsPts" PUBLIC_LOG_D64, lastVideoBufferAbsPts_);
     return lastVideoBufferAbsPts_;
 }
 } // namespace Pipeline
