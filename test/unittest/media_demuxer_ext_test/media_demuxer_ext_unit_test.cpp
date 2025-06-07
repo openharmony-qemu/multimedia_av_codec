@@ -26,12 +26,7 @@ using namespace OHOS;
 using namespace OHOS::Media;
 
 namespace OHOS::Media {
-// namespace {
-// constexpr uint32_t RETRY_DELAY_TIME_US = 100000; // 100ms, Delay time for RETRY if no buffer in avbufferqueue producer.
-// constexpr uint32_t NEXT_DELAY_TIME_US = 10; // 10us is ok
-// constexpr uint32_t SAMPLE_FLOW_CONTROL_MIN_SAMPLE_DURATION_US = 200000;
-// constexpr uint32_t SAMPLE_FLOW_CONTROL_RATE_POW = 6; // 2^6
-// }
+
 #undef HiSysEventWrite
 #define HiSysEventWrite(domain, eventName, type, ...) (mockRetInt32_;)
 
@@ -370,9 +365,9 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_AddDemuxerCopyTask_003, TestSi
  */
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetTargetVideoTrackId_001, TestSize.Level1)
 {
-    mediaDemuxer_->targetVideoTrackId_ = MediaDemuxer::TRACK_ID_DUMMY;
+    mediaDemuxer_->targetVideoTrackId_ = MediaDemuxer::TRACK_ID_INVALID;
     std::vector<std::shared_ptr<Meta>> vector;
-    EXPECT_EQ(mediaDemuxer_->GetTargetVideoTrackId(vector), MediaDemuxer::TRACK_ID_DUMMY);
+    EXPECT_EQ(mediaDemuxer_->GetTargetVideoTrackId(vector), MediaDemuxer::TRACK_ID_INVALID);
 }
 
 /**
@@ -382,10 +377,10 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetTargetVideoTrackId_001, Tes
  */
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetTargetVideoTrackId_002, TestSize.Level1)
 {
-    mediaDemuxer_->targetVideoTrackId_ = MediaDemuxer::TRACK_ID_DUMMY;
+    mediaDemuxer_->targetVideoTrackId_ = MediaDemuxer::TRACK_ID_INVALID;
     std::vector<std::shared_ptr<Meta>> vector;
     vector.push_back(nullptr);
-    EXPECT_EQ(mediaDemuxer_->GetTargetVideoTrackId(vector), MediaDemuxer::TRACK_ID_DUMMY);
+    EXPECT_EQ(mediaDemuxer_->GetTargetVideoTrackId(vector), MediaDemuxer::TRACK_ID_INVALID);
 }
 
 /**
@@ -589,12 +584,12 @@ HWTEST_F(MediaDemuxerExtUnitTest, HandleSelectTrackStreamSeek_004, TestSize.Leve
 /**
  * @tc.name  : Test HandleHlsRebootPlugin
  * @tc.number: HandleHlsRebootPlugin_001
- * @tc.desc  : Test static_cast<uint32_t>(trackId) == TRACK_ID_DUMMY
+ * @tc.desc  : Test trackId == TRACK_ID_INVALID
  */
 HWTEST_F(MediaDemuxerExtUnitTest, HandleHlsRebootPlugin_001, TestSize.Level1)
 {
-    mediaDemuxer_->videoTrackId_ = mediaDemuxer_->TRACK_ID_DUMMY;
-    mediaDemuxer_->audioTrackId_ = mediaDemuxer_->TRACK_ID_DUMMY;
+    mediaDemuxer_->videoTrackId_ = mediaDemuxer_->TRACK_ID_INVALID;
+    mediaDemuxer_->audioTrackId_ = mediaDemuxer_->TRACK_ID_INVALID;
     mediaDemuxer_->subStreamDemuxer_ = nullptr;
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), RebootPlugin(_, _, _, _)).Times(0);
 
@@ -605,7 +600,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, HandleHlsRebootPlugin_001, TestSize.Level1)
 /**
  * @tc.name  : Test HandleHlsRebootPlugin
  * @tc.number: HandleHlsRebootPlugin_002
- * @tc.desc  : Test static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY
+ * @tc.desc  : Test trackId != TRACK_ID_INVALID
  *             Test seekReadyInfo.second != SEEK_TO_EOS
  *             Test seekReadyInfo.first >= 0 && seekReadyInfo.first == streamID
  */
@@ -627,7 +622,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, HandleHlsRebootPlugin_002, TestSize.Level1)
 /**
  * @tc.name  : Test HandleHlsRebootPlugin
  * @tc.number: HandleHlsRebootPlugin_003
- * @tc.desc  : Test static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY
+ * @tc.desc  : Test trackId != TRACK_ID_INVALID
  *             Test seekReadyInfo.second == SEEK_TO_EOS
  */
 HWTEST_F(MediaDemuxerExtUnitTest, HandleHlsRebootPlugin_003, TestSize.Level1)
@@ -652,7 +647,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, HandleHlsRebootPlugin_003, TestSize.Level1)
 /**
  * @tc.name  : Test HandleHlsRebootPlugin
  * @tc.number: HandleHlsRebootPlugin_004
- * @tc.desc  : Test static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY
+ * @tc.desc  : Test trackId != TRACK_ID_INVALID
  *             Test seekReadyInfo.second != SEEK_TO_EOS
  *             Test seekReadyInfo.first < 0 && seekReadyInfo.first != streamID
  */
@@ -673,7 +668,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, HandleHlsRebootPlugin_004, TestSize.Level1)
 /**
  * @tc.name  : Test HandleHlsRebootPlugin
  * @tc.number: HandleHlsRebootPlugin_005
- * @tc.desc  : Test static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY
+ * @tc.desc  : Test trackId != TRACK_ID_INVALID
  *             Test seekReadyInfo.second != SEEK_TO_EOS
  *             Test seekReadyInfo.first >= 0 && seekReadyInfo.first != streamID
  */
@@ -1092,7 +1087,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_Pause_001, TestSize.Level1)
     mediaDemuxer_->streamDemuxer_ = nullptr;
     mediaDemuxer_->source_ = nullptr;
     mediaDemuxer_->inPreroll_ = true;
-    mediaDemuxer_->videoTrackId_ = MediaDemuxer::TRACK_ID_DUMMY;
+    mediaDemuxer_->videoTrackId_ = MediaDemuxer::TRACK_ID_INVALID;
     mediaDemuxer_->enableSampleQueue_ = false;
     auto ret = mediaDemuxer_->Pause();
     EXPECT_EQ(ret, Status::OK);
@@ -1156,7 +1151,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_Preroll_001, TestSize.Level1)
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_Preroll_002, TestSize.Level1)
 {
     mediaDemuxer_->inPreroll_ = false;
-    mediaDemuxer_->videoTrackId_ = MediaDemuxer::TRACK_ID_DUMMY;
+    mediaDemuxer_->videoTrackId_ = MediaDemuxer::TRACK_ID_INVALID;
     auto ret = mediaDemuxer_->Preroll();
     EXPECT_EQ(ret, Status::OK);
 }
