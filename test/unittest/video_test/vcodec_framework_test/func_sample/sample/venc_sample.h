@@ -147,6 +147,8 @@ public:
     bool isTemporalScalabilitySyncIdr_ = false;
     bool isDiscardFrame_ = false;
     std::string roiRects_ = "";
+    bool enableVariableFrameRate_ = false;
+    int32_t frameIndex = 0;
 
 private:
     void FlushInner();

@@ -998,6 +998,10 @@ int32_t VideoEncSample::InputLoopInnerExt()
     } else {
         attr.flags = AVCODEC_BUFFER_FLAG_NONE;
     }
+    if (enableVariableFrameRate_) {
+        attr.pts = 1000000 + 46000 * frameIndex;
+        frameIndex++;
+    }
     buffer->SetBufferAttr(attr);
     return PushInputBuffer(index);
 }
@@ -1064,6 +1068,10 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
     rect->h = DEFAULT_HEIGHT_VENC;
     region.rects = rect;
     int64_t systemTimeUs = time_point_cast<microseconds>(system_clock::now()).time_since_epoch().count();
+    if (enableVariableFrameRate_) {
+        systemTimeUs = (1000000 + 46000 * frameIndex) * 1000;
+        frameIndex++;
+    }
     OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
     ret = OH_NativeBuffer_Unmap(nativeBuffer);
     if (ret != 0) {
