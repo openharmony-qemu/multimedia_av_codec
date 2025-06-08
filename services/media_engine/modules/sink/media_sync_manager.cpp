@@ -352,7 +352,7 @@ int64_t MediaSyncManager::GetMediaTimeNow()
     OHOS::Media::AutoLock lock(clockMutex_);
     int64_t currentMediaTime = HST_TIME_NONE;
     for (const auto &func : setMediaTimeFuncs) {
-        FALSE_RETURN_V(func(this, currentMediaTime), currentMediaTime);
+        FALSE_RETURN_V_NOLOG(func(this, currentMediaTime), currentMediaTime);
     }
     currentMediaTime = BoundMediaProgress(currentMediaTime);
     lastReportMediaTime_ = currentMediaTime;
