@@ -1807,8 +1807,8 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectBitRateChangeStream_005,
     mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_)).WillRepeatedly(Return(0));
     EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), GetNewVideoStreamID()).WillRepeatedly(Return(1));
-    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), StopPlugin(_,_)).WillRepeatedly(Return(Status::OK));
-    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), StartPlugin(_,_)).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), StopPlugin(_, _)).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), StartPlugin(_, _)).WillRepeatedly(Return(Status::OK));
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), UpdateDefaultStreamID(_, _, _))
         .WillRepeatedly(Return(Status::OK));
 
@@ -1825,11 +1825,11 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectBitRateChangeStream_005,
     mediaDemuxer_->audioTrackId_ = 1;
     mediaDemuxer_->isHlsFmp4_ = true;
 
-    // audioTrackId_ != TRACK_ID_DUMMY
+    // audioTrackId_ != TRACK_ID_INVALID
     EXPECT_TRUE(mediaDemuxer_->SelectBitRateChangeStream(0));
 
     // audioTrackId_ == TRACK_ID_DUMMY
-    mediaDemuxer_->audioTrackId_ = mediaDemuxer_->TRACK_ID_DUMMY;
+    mediaDemuxer_->audioTrackId_ = mediaDemuxer_->TRACK_ID_INVALID;
     EXPECT_TRUE(mediaDemuxer_->SelectBitRateChangeStream(0));
 }
 }  // namespace OHOS::Media
