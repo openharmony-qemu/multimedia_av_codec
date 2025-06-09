@@ -311,7 +311,7 @@ private:
     std::mutex getNextSampleMutex_;
     std::mutex readSampleMutex_;
     std::mutex fFmpegReadLoopMutex_;
-    uint32_t trackId_;
+    uint32_t trackId_ = 0;
     ThreadState threadState_ {ThreadState::NOT_STARTED};
     Status readLoopStatus_ = {Status::OK};
     bool isPauseReadPacket_ = false;

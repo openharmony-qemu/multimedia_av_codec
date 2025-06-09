@@ -218,11 +218,12 @@ bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> blo
     }
     sizeMap_[trackIndex] += 1;
     for (auto pkt : block->pkts) {
+        if (pkt == nullptr) {
+            continue;
+        }
         quePool_[pushIndex].dataSize += static_cast<uint32_t>(pkt->size);
-        if (pkt && pkt->pts != AV_NOPTS_VALUE) {
-            if (pkt->pts > quePool_[pushIndex].maxPts) {
-                quePool_[pushIndex].maxPts = pkt->pts;
-            }
+        if (pkt->pts != AV_NOPTS_VALUE && pkt->pts > quePool_[pushIndex].maxPts) {
+            quePool_[pushIndex].maxPts = pkt->pts;
         }
     }
     block->queueIndex = pushIndex;
