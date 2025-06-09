@@ -184,7 +184,6 @@ constexpr OH_AVRange DEFAULT_WIDTH_RANGE_OF_HEIGHT_VVC = {128, 4096};
 constexpr OH_AVRange DEFAULT_FRAMERATE_RANGE_VVC = {1, 240};
 
 const std::vector<int32_t> DEFAULT_VIDEO_VVC_PIXFORMATS = {
-    static_cast<int32_t>(VideoPixelFormat::NV12), static_cast<int32_t>(VideoPixelFormat::NV12),
     static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::NV21)};
 const std::vector<int32_t> DEFAULT_VIDEO_VVC_PROFILES = {
     VVC_PROFILE_MAIN_10, VVC_PROFILE_MAIN_10_STILL};
