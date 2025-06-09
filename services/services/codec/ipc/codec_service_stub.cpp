@@ -761,7 +761,7 @@ int32_t CodecServiceStub::InnerRelease()
 void CodecServiceStub::NotifyMemoryRecycle([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
     auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryRecycle();
     isMemoryRecycleFlag_ = ret == AVCS_ERR_OK ? true : false;
@@ -771,7 +771,7 @@ void CodecServiceStub::NotifyMemoryRecycle([[maybe_unused]]MessageParcel &data, 
 void CodecServiceStub::NotifyMemoryWriteBack([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
     auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryWriteBack();
     isMemoryRecycleFlag_ = ret == AVCS_ERR_OK ? false : true;
@@ -781,7 +781,7 @@ void CodecServiceStub::NotifyMemoryWriteBack([[maybe_unused]]MessageParcel &data
 void CodecServiceStub::NotifySuspend([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
     auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifySuspend();
     suspended_ = ret == AVCS_ERR_OK ? true : false;
@@ -791,7 +791,7 @@ void CodecServiceStub::NotifySuspend([[maybe_unused]]MessageParcel &data, Messag
 void CodecServiceStub::NotifyResume([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
     auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyResume();
     suspended_ = ret == AVCS_ERR_OK ? false : true;
@@ -801,7 +801,7 @@ void CodecServiceStub::NotifyResume([[maybe_unused]]MessageParcel &data, Message
 void CodecServiceStub::OnActive()
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     auto needClear = isMemoryRecycleFlag_ || suspended_;
     if (isMemoryRecycleFlag_) {
         auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryWriteBack();
