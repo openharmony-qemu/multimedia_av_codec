@@ -100,7 +100,7 @@ private:
 const std::unordered_map<VideoScaleType, OHOS::ScalingMode> SCALEMODE_MAP = {
     { VideoScaleType::VIDEO_SCALE_TYPE_FIT, OHOS::SCALING_MODE_SCALE_TO_WINDOW },
     { VideoScaleType::VIDEO_SCALE_TYPE_FIT_CROP, OHOS::SCALING_MODE_SCALE_CROP},
-    { VideoScaleType::VIDEO_SCALE_TYPE_FIT_ASPECT, OHOS::SCALING_MODE_SCALE_FIT},
+    { VideoScaleType::VIDEO_SCALE_TYPE_SCALED_ASPECT, OHOS::SCALING_MODE_SCALE_FIT},
 };
 
 class FilterVideoPostProcessorCallback : public PostProcessorCallback {
