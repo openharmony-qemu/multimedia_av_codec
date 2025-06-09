@@ -253,7 +253,8 @@ void AudioDataSourceFilter::ReadLoop()
     AudioDataSourceReadAtActionState readAtRet = audioDataSource_->ReadAt(buffer, bufferSize);
     if (readAtRet != AudioDataSourceReadAtActionState::OK) {
         if (readAtRet != AudioDataSourceReadAtActionState::SKIP_WITHOUT_LOG) { // log after Started
-            MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "AudioDataSourceFilter ReadAt fail");
+            MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "AudioDataSourceFilter ReadAt fail ret: %{public}d",
+                static_cast<int32_t>(readAtRet));
         }
         outputBufferQueue_->PushBuffer(buffer, false);
         if (readAtRet == AudioDataSourceReadAtActionState::RETRY_IN_INTERVAL) { // retry after 20ms

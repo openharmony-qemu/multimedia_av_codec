@@ -128,7 +128,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetDataSource_002, TestSize.Level1)
 	AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
-    std::map<uint32_t, sptr<AVBufferQueueProducer>> curBufferQueueProducerMap = demuxer->GetBufferQueueProducerMap();
+    std::map<int32_t, sptr<AVBufferQueueProducer>> curBufferQueueProducerMap = demuxer->GetBufferQueueProducerMap();
     EXPECT_EQ(curBufferQueueProducerMap.size(), 1);
 }
 
@@ -502,7 +502,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetOutputBufferQueue_001, TestSize.L
     EXPECT_EQ(Status::OK, demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer));
     EXPECT_EQ(Status::ERROR_UNKNOWN, demuxer->AddDemuxerCopyTask(invalidTrackId, TaskType::GLOBAL));
     demuxer->bufferQueueMap_.insert(
-        std::pair<uint32_t, sptr<AVBufferQueueProducer>>(invalidTrackId, inputBufferQueueProducer));
+        std::pair<int32_t, sptr<AVBufferQueueProducer>>(invalidTrackId, inputBufferQueueProducer));
     EXPECT_EQ(Status::OK, demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer));
 }
 
@@ -621,7 +621,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsRightMediaTrack, TestSize.Level1)
     demuxer->videoTrackId_ = 0;
     demuxer->audioTrackId_ = 1;
     demuxer->subtitleTrackId_ = 2;
-    EXPECT_FALSE(demuxer->IsRightMediaTrack(MediaDemuxer::TRACK_ID_DUMMY, DemuxerTrackType::VIDEO));
+    EXPECT_FALSE(demuxer->IsRightMediaTrack(MediaDemuxer::TRACK_ID_INVALID, DemuxerTrackType::VIDEO));
     EXPECT_TRUE(demuxer->IsRightMediaTrack(0, DemuxerTrackType::VIDEO));
     EXPECT_TRUE(demuxer->IsRightMediaTrack(1, DemuxerTrackType::AUDIO));
     EXPECT_TRUE(demuxer->IsRightMediaTrack(2, DemuxerTrackType::SUBTITLE));
@@ -649,7 +649,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Flush_002, TestSize.Level1)
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
     demuxer->bufferQueueMap_.insert(
-        std::pair<uint32_t, sptr<AVBufferQueueProducer>>(invalidTrackId, inputBufferQueueProducer));
+        std::pair<int32_t, sptr<AVBufferQueueProducer>>(invalidTrackId, inputBufferQueueProducer));
     EXPECT_EQ(Status::OK, demuxer->Flush());
 }
 
@@ -1347,7 +1347,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ProcessVideoStartTime_016, TestSize.
 
     std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
     sample->pts_ = 100;
-    EXPECT_EQ(demuxer->DoSelectTrack(0, MediaDemuxer::TRACK_ID_DUMMY), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(demuxer->DoSelectTrack(0, MediaDemuxer::TRACK_ID_INVALID), Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleDashSelectTrack_016, TestSize.Level1)
@@ -1511,7 +1511,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartReferenceParser_001, TestSize.L
     EXPECT_EQ(demuxer->StartReferenceParser(1, false), Status::ERROR_NULL_POINTER);
     demuxer->demuxerPluginManager_ = nullptr;
     EXPECT_EQ(demuxer->StartReferenceParser(1, false), Status::ERROR_NULL_POINTER);
-    demuxer->videoTrackId_ = MediaDemuxer::TRACK_ID_DUMMY;
+    demuxer->videoTrackId_ = MediaDemuxer::TRACK_ID_INVALID;
     EXPECT_EQ(demuxer->StartReferenceParser(1, false), Status::ERROR_UNKNOWN);
     demuxer->source_ = nullptr;
     EXPECT_EQ(demuxer->StartReferenceParser(1, false), Status::ERROR_NULL_POINTER);
@@ -1793,8 +1793,8 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ResumeDragging_0100, TestSize.Level1
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
     demuxer->source_ = std::shared_ptr<Source>();
-    demuxer->taskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
-    demuxer->sampleConsumerTaskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
+    demuxer->taskMap_ = std::map<int32_t, std::unique_ptr<Task>>();
+    demuxer->sampleConsumerTaskMap_ = std::map<int32_t, std::unique_ptr<Task>>();
     EXPECT_EQ(demuxer->ResumeDragging(), Status::OK);
 }
 
@@ -1984,8 +1984,8 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_PauseDragging_0100, TestSize.Level1)
 
     demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
     demuxer->source_ = std::shared_ptr<Source>();
-    demuxer->taskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
-    demuxer->sampleConsumerTaskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
+    demuxer->taskMap_ = std::map<int32_t, std::unique_ptr<Task>>();
+    demuxer->sampleConsumerTaskMap_ = std::map<int32_t, std::unique_ptr<Task>>();
     EXPECT_EQ(demuxer->PauseDragging(), Status::OK);
 }
 
@@ -2011,8 +2011,8 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_PauseAudioAlign_0100, TestSize.Level
 
     demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
     demuxer->source_ = std::shared_ptr<Source>();
-    demuxer->taskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
-    demuxer->sampleConsumerTaskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
+    demuxer->taskMap_ = std::map<int32_t, std::unique_ptr<Task>>();
+    demuxer->sampleConsumerTaskMap_ = std::map<int32_t, std::unique_ptr<Task>>();
     EXPECT_EQ(demuxer->PauseAudioAlign(), Status::OK);
 }
 
@@ -2023,7 +2023,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_PauseAudioAlign_0100, TestSize.Level
  */
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckTrackEnabledById_0100, TestSize.Level1)
 {
-    uint32_t trackId = MediaDemuxer::TRACK_ID_DUMMY;
+    int32_t trackId = MediaDemuxer::TRACK_ID_INVALID;
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     bool result = demuxer->CheckTrackEnabledById(trackId);
     EXPECT_EQ(result, false);
@@ -2036,7 +2036,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckTrackEnabledById_0100, TestSize
  */
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckTrackEnabledById_0200, TestSize.Level1)
 {
-    uint32_t trackId = 1;
+    int32_t trackId = 1;
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     demuxer->taskMap_[trackId] = nullptr;
     demuxer->sampleConsumerTaskMap_[trackId] = nullptr;
@@ -2051,11 +2051,11 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckTrackEnabledById_0200, TestSize
  */
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckTrackEnabledById_300, TestSize.Level1)
 {
-    uint32_t trackId = 1;
+    int32_t trackId = 1;
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    demuxer->taskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
+    demuxer->taskMap_ = std::map<int32_t, std::unique_ptr<Task>>();
     demuxer->taskMap_[trackId] = std::make_unique<Task>("dem", "0", TaskType::DEMUXER);
-    demuxer->sampleConsumerTaskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
+    demuxer->sampleConsumerTaskMap_ = std::map<int32_t, std::unique_ptr<Task>>();
     demuxer->sampleConsumerTaskMap_[trackId] = std::make_unique<Task>("sqConsumer", "0", TaskType::DECODER);
     bool result = demuxer->CheckTrackEnabledById(trackId);
     EXPECT_EQ(result, false);
@@ -2138,7 +2138,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Flush_001, TestSize.Level1)
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
     demuxer->bufferQueueMap_.insert(
-        std::pair<uint32_t, sptr<AVBufferQueueProducer>>(invalidTrackId, inputBufferQueueProducer));
+        std::pair<int32_t, sptr<AVBufferQueueProducer>>(invalidTrackId, inputBufferQueueProducer));
     EXPECT_EQ(Status::OK, demuxer->Flush());
 }
 

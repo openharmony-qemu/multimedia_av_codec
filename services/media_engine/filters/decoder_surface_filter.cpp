@@ -486,6 +486,7 @@ Status DecoderSurfaceFilter::DoResume()
     if (postProcessor_) {
         postProcessor_->Start();
     }
+    state_ = FilterState::RUNNING;
     return Status::OK;
 }
 
@@ -502,7 +503,6 @@ Status DecoderSurfaceFilter::DoResumeDragging()
     if (postProcessor_) {
         postProcessor_->Start();
     }
-    state_ = FilterState::RUNNING;
     return Status::OK;
 }
 
@@ -1152,8 +1152,8 @@ bool DecoderSurfaceFilter::DrainSeekClosest(uint32_t index, std::shared_ptr<AVBu
 Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
 {
     if (!videoSurface) {
-        MEDIA_LOG_W("videoSurface is null");
-        return Status::ERROR_INVALID_PARAMETER;
+        videoDecoder_->SetOutputSurface(nullptr);
+        return Status::OK;
     }
     videoSurface_ = videoSurface;
     OHOS::ScalingMode scalingMode = ConvertMediaScaleType(static_cast<VideoScaleType>(preScaleType_));

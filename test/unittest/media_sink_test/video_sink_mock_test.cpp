@@ -183,7 +183,7 @@ HWTEST_F(TestVideoSinkMock, Test_SetParameter_WithSyncCenter_Case1, TestSize.Lev
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     ASSERT_TRUE(meta != nullptr);
     int64_t trackStartTime = 100; // 100
-    uint32_t trackId = 1; // 1
+    int32_t trackId = 1; // 1
     int64_t trackDuration = 1100; // 1000
     meta->Set<Tag::MEDIA_START_TIME>(trackStartTime);
     meta->Set<Tag::REGULAR_TRACK_ID>(trackId);
@@ -202,7 +202,7 @@ HWTEST_F(TestVideoSinkMock, Test_SetParameter_WithSyncCenter_Case2, TestSize.Lev
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     ASSERT_TRUE(meta != nullptr);
     int64_t trackStartTime = 100; // 100
-    uint32_t trackId = 1; // 1
+    int32_t trackId = 1; // 1
     meta->Set<Tag::MEDIA_START_TIME>(trackStartTime);
     meta->Set<Tag::REGULAR_TRACK_ID>(trackId);
     EXPECT_EQ(videoSink_->SetParameter(meta), Status::OK);
@@ -219,7 +219,7 @@ HWTEST_F(TestVideoSinkMock, Test_SetParameter_NoSyncCenter_Case1, TestSize.Level
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     ASSERT_TRUE(meta != nullptr);
     int64_t trackStartTime = 100; // 100
-    uint32_t trackId = 1; // 1
+    int32_t trackId = 1; // 1
     int64_t trackDuration = 1100; // 1000
     meta->Set<Tag::MEDIA_START_TIME>(trackStartTime);
     meta->Set<Tag::REGULAR_TRACK_ID>(trackId);
@@ -238,7 +238,7 @@ HWTEST_F(TestVideoSinkMock, Test_SetParameter_NoSyncCenter_Case2, TestSize.Level
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     ASSERT_TRUE(meta != nullptr);
     int64_t trackStartTime = 101; // 101
-    uint32_t trackId = 2; // 2
+    int32_t trackId = 2; // 2
     meta->Set<Tag::MEDIA_START_TIME>(trackStartTime);
     meta->Set<Tag::REGULAR_TRACK_ID>(trackId);
     EXPECT_EQ(videoSink_->SetParameter(meta), Status::OK);

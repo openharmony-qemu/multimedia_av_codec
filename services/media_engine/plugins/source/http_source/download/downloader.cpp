@@ -1229,7 +1229,7 @@ void Downloader::StopBufferring()
                 client_->Init();
                 client_->Open(currentRequest_->url_, currentRequest_->httpHeader_,
                     currentRequest_->requestInfo_.timeoutMs);
-                if (currentRequest_->startPos_ > 0) {
+                if (currentRequest_->startPos_ > 0 && currentRequest_->protocolType_ != RequestProtocolType::HTTP) {
                     currentRequest_->retryOnGoing_ = true;
                     currentRequest_->dropedDataLen_ = 0;
                 }

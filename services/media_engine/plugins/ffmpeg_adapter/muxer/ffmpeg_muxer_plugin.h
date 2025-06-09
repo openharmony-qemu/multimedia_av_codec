@@ -69,13 +69,14 @@ private:
     void SetSeiLogInfo();
     Status SetDisplayMatrix(AVStream* stream);
     Status SetCodecParameterTimedMeta(AVStream* stream, const std::shared_ptr<Meta> &trackDesc);
-    static bool CheckTrackReferenceType(const std::shared_ptr<Meta> &trackDesc, std::string &trackRefType);
-    static bool CheckTrackDescription(const std::shared_ptr<Meta> &trackDesc, std::string &trackDescription);
-    static bool CheckReferenceTrackIDS(const std::shared_ptr<Meta> &trackDesc, std::string &toStringTrackId);
+    bool CheckTrackReferenceType(const std::shared_ptr<Meta> &trackDesc, std::string &trackRefType);
+    bool CheckTrackDescription(const std::shared_ptr<Meta> &trackDesc, std::string &trackDescription);
+    bool CheckReferenceTrackIDS(const std::shared_ptr<Meta> &trackDesc, std::string &toStringTrackId);
     Status SetAuxiliaryMeta(const std::shared_ptr<Meta> &trackDesc, AVStream* st);
     Status AddAudioTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID);
     Status AddVideoTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID, bool isCover);
     Status AddTimedMetaTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID);
+    Status AddAudioAuxiliaryTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID);
     Status AddVideoAuxiliaryTrack(
         int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID, bool isCover);
     Status WriteNormal(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample);

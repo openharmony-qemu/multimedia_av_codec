@@ -18,6 +18,7 @@
 #include "avcodec_errors.h"
 #include "codec_service_proxy.h"
 #include "meta/meta_key.h"
+#include "avcodec_trace.h"
 
 using namespace OHOS::Media;
 namespace {
@@ -526,6 +527,7 @@ void CodecClient::OnOutputFormatChanged(const Format &format)
 void CodecClient::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     AVCODEC_LOGD_WITH_TAG("index:%{public}u", index);
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     callback_->OnInputBufferAvailable(index, buffer);
 }
 
@@ -533,24 +535,28 @@ void CodecClient::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info
                                           std::shared_ptr<AVSharedMemory> buffer)
 {
     AVCODEC_LOGD_WITH_TAG("index:%{public}u", index);
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     callback_->OnOutputBufferAvailable(index, info, flag, buffer);
 }
 
 void CodecClient::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     AVCODEC_LOGD_WITH_TAG("index:%{public}u", index);
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     videoCallback_->OnInputBufferAvailable(index, buffer);
 }
 
 void CodecClient::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     AVCODEC_LOGD_WITH_TAG("index:%{public}u", index);
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     videoCallback_->OnOutputBufferAvailable(index, buffer);
 }
 
 void CodecClient::OnInputParameterAvailable(uint32_t index, std::shared_ptr<Format> parameter)
 {
     AVCODEC_LOGD_WITH_TAG("index:%{public}u", index);
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     paramCallback_->OnInputParameterAvailable(index, parameter);
 }
 
@@ -558,6 +564,7 @@ void CodecClient::OnInputParameterWithAttrAvailable(uint32_t index, std::shared_
                                                     std::shared_ptr<Format> parameter)
 {
     AVCODEC_LOGD_WITH_TAG("index:%{public}u", index);
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     paramWithAttrCallback_->OnInputParameterWithAttrAvailable(index, attribute, parameter);
 }
 } // namespace MediaAVCodec

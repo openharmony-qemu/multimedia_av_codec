@@ -42,7 +42,9 @@ int32_t HEncoder::OnConfigure(const Format &format)
         return ret;
     }
 
+    EnableVariableFrameRate(format);
     optional<double> frameRate = GetFrameRateFromUser(format);
+    defaultFrameRate_ = frameRate;
     ret = ConfigBEncodeMode(format);
     if (ret != AVCS_ERR_OK) {
         return ret;
@@ -84,6 +86,20 @@ int32_t HEncoder::OnConfigure(const Format &format)
     }
     (void)EnableEncoderParamsFeedback(format);
     return AVCS_ERR_OK;
+}
+
+void HEncoder::EnableVariableFrameRate(const Format &format)
+{
+    int32_t enableVariableFrameRate = 0;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL, enableVariableFrameRate)) {
+        HLOGE("fail to get video_encoder_enable_pts_based_ratecontrol");
+        return;
+    }
+    HLOGI("video_encoder_enable_pts_based_ratecontrol flag is %d", enableVariableFrameRate);
+    if (enableVariableFrameRate) {
+        enableVariableFrameRate_ = true;
+    }
+    return;
 }
 
 int32_t HEncoder::ConfigureBufferType()
@@ -1188,6 +1204,110 @@ void HEncoder::WrapIsSkipFrameIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer>
     AppendToVector(omxBuffer->alongParam, isSkip);
 }
 
+double HEncoder::CalculateSmoothFactorBasedPts(int64_t curPts, int64_t curDuration)
+{
+    double smoothFactor = 0.0;
+    int32_t instantFrameRate = round((1.0 / curDuration) * TIME_RATIO_US_TO_S);
+    if (instantFrameRate > SMOOTH_FACTOR_CLIP_RANGE_MIN && instantFrameRate < SMOOTH_FACTOR_CLIP_RANGE_MAX) {
+        smoothFactor = 1 - DURATION_SCALE_FACTOR / instantFrameRate;
+    } else if (instantFrameRate <= SMOOTH_FACTOR_CLIP_RANGE_MIN) {
+        smoothFactor = SMOOTH_FACTOR_CLIP_MIN;
+    } else {
+        smoothFactor = SMOOTH_FACTOR_CLIP_MAX;
+    }
+    return smoothFactor;
+}
+
+int32_t HEncoder::CalculateSmoothFpsBasedPts(int64_t curPts, int64_t curDuration)
+{
+    int64_t previousDuration1st = previousPtsWindow_.back() - previousPtsWindow_[2];
+    int64_t previousDuration2nd = previousPtsWindow_[2] - previousPtsWindow_[1];
+    double smoothFactor = CalculateSmoothFactorBasedPts(curPts, curDuration);
+    double previousSmoothFactor = CalculateSmoothFactorBasedPts(previousPtsWindow_.back(), previousDuration1st);
+    double smoothDuration = curDuration * (1 - smoothFactor) + (previousDuration1st * (1 - previousSmoothFactor) +
+        previousDuration2nd * previousSmoothFactor) * smoothFactor;
+    int32_t smoothFrameRate = round((1.0 / smoothDuration) * TIME_RATIO_US_TO_S);
+    HLOGD("pts: %ld, smoothFactor: %f, previousSmoothFactor: %f, smoothDuration: %f", curPts, smoothFactor,
+        previousSmoothFactor, smoothDuration);
+    return smoothFrameRate;
+}
+
+int32_t HEncoder::UpdateTimeStampWindow(int64_t curPts, int32_t &frameRate)
+{
+    int32_t previousPtsWindowSize = static_cast<int32_t>(previousPtsWindow_.size());
+    if (previousPtsWindow_.empty()) {
+        previousPtsWindow_.push_back(curPts);
+        frameRate = defaultFrameRate_.value_or(DEFAULT_FRAME_RATE);
+        HLOGD("pts: %ld, smoothFrameRate: %d, windowSize: %d", curPts, frameRate, previousPtsWindowSize);
+        return 0;
+    }
+    if (curPts <= previousPtsWindow_.back()) {
+        HLOGE("curPts less than last pts !");
+        return -1;
+    }
+    int64_t curDuration = curPts - previousPtsWindow_.back();
+    if (previousPtsWindowSize < PREVIOUS_PTS_RECORDED_COUNT) {
+        frameRate = round((1.0 / curDuration) * TIME_RATIO_US_TO_S);
+        previousPtsWindow_.push_back(curPts);
+        previousSmoothFrameRate_ = frameRate;
+    } else if (previousPtsWindowSize == PREVIOUS_PTS_RECORDED_COUNT) {
+        int32_t instantFrameRate = round((1.0 / curDuration) * TIME_RATIO_US_TO_S);
+        if (instantFrameRate == 0) {
+            HLOGE("instantFrameRate is 0 !");
+            return -1;
+        }
+        int32_t smoothFrameRate = CalculateSmoothFpsBasedPts(curPts, curDuration);
+        double averageThreeFrameDurationError = (curDuration - (previousPtsWindow_[1] - previousPtsWindow_[0])) /
+            AVERAGE_DURATION_ERROR_COUNT;
+        double frameDurationErrorMin = (1.0 / instantFrameRate - 1.0 / (instantFrameRate -
+            AVERAGE_DURATION_ERROR_FRAMERATE_RANGE)) * TIME_RATIO_US_TO_S;
+        double frameDurationErrorMax = (1.0 / instantFrameRate - 1.0 / (instantFrameRate +
+            AVERAGE_DURATION_ERROR_FRAMERATE_RANGE)) * TIME_RATIO_US_TO_S;
+        if (averageThreeFrameDurationError > frameDurationErrorMin &&
+            averageThreeFrameDurationError < frameDurationErrorMax) {
+            frameRate = smoothFrameRate;
+        } else {
+            frameRate = previousSmoothFrameRate_;
+        }
+        previousPtsWindow_.push_back(curPts);
+        previousPtsWindow_.pop_front();
+        previousSmoothFrameRate_ = frameRate;
+    } else {
+        HLOGE("previousPtsWindow_ size:%d error !", previousPtsWindowSize);
+        return -1;
+    }
+    HLOGD("pts: %ld, smoothFrameRate: %d, windowSize: %d", curPts, frameRate, previousPtsWindowSize);
+    return 0;
+}
+int32_t HEncoder::CalculateFrameRateParamIntoOmxBuffer(int64_t curPts)
+{
+    if (curPts <= 0) {
+        HLOGE("curPts less than 0 !");
+        return -1;
+    }
+    int32_t frameRate = 0;
+    if (inputSurface_) {
+        curPts /= TIME_RATIO_NS_TO_US;
+    }
+    if (UpdateTimeStampWindow(curPts, frameRate) != 0) {
+        return -1;
+    }
+    if (frameRate < caps_.port.video.frameRate.min || frameRate > caps_.port.video.frameRate.max) {
+        HLOGE("frameRate: %d over range, min: %d, max: %d", frameRate, caps_.port.video.frameRate.min,
+            caps_.port.video.frameRate.max);
+        return -1;
+    }
+    OMX_CONFIG_FRAMERATETYPE framerateCfgType;
+    InitOMXParam(framerateCfgType);
+    framerateCfgType.nPortIndex = OMX_DirInput;
+    framerateCfgType.xEncodeFramerate = frameRate * FRAME_RATE_COEFFICIENT;
+    if (!SetParameter(OMX_IndexConfigVideoFramerate, framerateCfgType, true)) {
+        HLOGE("failed to config OMX_IndexConfigVideoFramerate");
+        return -1;
+    }
+    return 0;
+}
+
 void HEncoder::ParseRoiStringValid(const std::string &roiValue, shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer)
 {
     AppendToVector(omxBuffer->alongParam, OMX_IndexParamRoi);
@@ -1443,6 +1563,11 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     if (!inputSurface_ && bufferInfo->avBuffer->memory_ && bufferInfo->avBuffer->memory_->GetSize() == 0) {
         bufferInfo->omxBuffer->bufferhandle = nullptr;
         bufferInfo->omxBuffer->filledLen = 0;
+    }
+    if (enableVariableFrameRate_) {
+        if (CalculateFrameRateParamIntoOmxBuffer(bufferInfo->omxBuffer->pts) != 0) {
+            ReplyErrorCode(msg.id, AVCS_ERR_INPUT_DATA_ERROR);
+        }
     }
     WrapPerFrameParamIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->avBuffer->meta_);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);

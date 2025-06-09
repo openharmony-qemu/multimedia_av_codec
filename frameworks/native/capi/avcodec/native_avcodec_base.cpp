@@ -143,6 +143,7 @@ const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT = "video_encoder_r
 const char *OH_MD_KEY_CREATION_TIME = "creation_time";
 const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS = "video_encoder_roi_params";
 const char *OH_MD_KEY_ENABLE_MOOV_FRONT = "fast_start";
+const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL = "video_encoder_enable_pts_based_ratecontrol";
 #ifdef __cplusplus
 }
 #endif

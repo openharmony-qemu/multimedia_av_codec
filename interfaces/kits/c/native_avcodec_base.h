@@ -814,6 +814,19 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS;
  */
 extern const char *OH_MD_KEY_ENABLE_MOOV_FRONT;
 
+/**
+ * @brief Key to enable Bitrate Control Based on Presentation Time Stamp(PTS),
+ * value type is int32_t (0 or 1):1 is enabled, 0 otherwise.
+ *
+ * This is an optional key that applies only to video encoder, default is 0.
+ * If enabled, the PTS information must be carried in each video frame and sent to the encoder.
+ * It is used in configure.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
+extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL;
+
 extern const char *OH_MD_KEY_TRACK_REFERENCE_TYPE;
 extern const char *OH_MD_KEY_TRACK_DESCRIPTION;
 extern const char *OH_MD_KEY_REFERENCE_TRACK_IDS;

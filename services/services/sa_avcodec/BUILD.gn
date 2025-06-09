@@ -23,8 +23,6 @@ ohos_source_set("sa_manager") {
   sanitize = av_codec_sanitize
   public_configs = [ ":sa_manager_public_config" ]
 
-  configs = [ "../../dfx:av_codec_service_log_dfx_public_config" ]
-
   include_dirs = [
     "./ipc/",
     "./server/include/",
@@ -37,6 +35,8 @@ ohos_source_set("sa_manager") {
   ]
 
   defines = av_codec_defines
+
+  deps = [ "../../dfx:av_codec_service_dfx" ]
 
   sources = [
     "ipc/avcodec_listener_proxy.cpp",

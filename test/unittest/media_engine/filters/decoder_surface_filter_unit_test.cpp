@@ -452,9 +452,6 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetVideoSurface, Tes
     sptr<Surface> surface = Surface::CreateSurfaceAsConsumer("TestSurface");
     Status ret = Status::OK;
 
-    ret = decoderSurfaceFilter_->SetVideoSurface(nullptr);
-    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
-
     ret = decoderSurfaceFilter_->SetVideoSurface(surface);
     EXPECT_EQ(ret, Status::OK);
 
