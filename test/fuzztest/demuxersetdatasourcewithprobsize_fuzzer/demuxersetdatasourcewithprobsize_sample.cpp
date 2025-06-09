@@ -19,6 +19,7 @@ using namespace OHOS::Media;
 using namespace std;
 
 const int BUFFER_PADDING_SIZE = 1024;
+const std::string prefix = "avdemux";
 
 bool DemuxerPluginTest::CreateDataSource(const std::string& filePath)
 {
@@ -41,6 +42,10 @@ bool DemuxerPluginTest::CreateDataSource(const std::string& filePath)
 bool DemuxerPluginTest::CreateDemuxerPluginByName(
     const std::string& typeName, const std::string& filePath, int probSize)
 {
+    if (typeName.compare(0, prefix.size(), prefix) != 0) {
+        return false;
+    }
+
     if (!CreateDataSource(filePath)) {
         return false;
     }
