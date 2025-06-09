@@ -1228,7 +1228,7 @@ HWTEST_F(CodecServerUnitTest, NotifyBackGround_Invalid_Test_001, TestSize.Level1
 HWTEST_F(CodecServerUnitTest, NotifyForeGround_Valid_Test_001, TestSize.Level1)
 {
     CreateHCodecByMime();
-    server_->isModeConfirmed_ = true;   
+    server_->isModeConfirmed_ = true;
     EXPECT_EQ(AVCS_ERR_OK, server_->NotifyMemoryWriteBack());
 }
 
