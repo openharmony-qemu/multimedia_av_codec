@@ -50,7 +50,7 @@ constexpr int64_t MAX_PTS_DIFFER_THRESHOLD_US = 10000000; // The maximum differe
 constexpr int64_t INVALID_PTS_DATA = -1; // The invalid pts data -1.
 constexpr int64_t PTS_MICRO_ADJUSTMENT_US = 1000;
 
-void MediaDemuxer::HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
+void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
     if (!isAutoMaintainPts_) {
         return;
@@ -58,7 +58,7 @@ void MediaDemuxer::HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVBuf
     int64_t curPacketPts = sample->pts_;
     std::shared_ptr<MaintainBaseInfo> baseInfo = maintainBaseInfos_[trackId];
     if (baseInfo == nullptr) {
-        MEDIA_LOG_E("BaseInfo is nullptr, track " PUBLIC_LOG_U32, trackId);
+        MEDIA_LOG_E("BaseInfo is nullptr, track " PUBLIC_LOG_D32, trackId);
         return;
     }
     int64_t diff = 0;
@@ -97,7 +97,7 @@ void MediaDemuxer::HandleAutoMaintainPts(uint32_t trackId, std::shared_ptr<AVBuf
     }
     baseInfo->lastPtsModifyedMax = std::max(sample->pts_, baseInfo->lastPtsModifyedMax);
     
-    MEDIA_LOG_I("Success, track:" PUBLIC_LOG_U32 ", orgPts:"
+    MEDIA_LOG_I("Success, track:" PUBLIC_LOG_D32 ", orgPts:"
         PUBLIC_LOG_D64 ", pts:" PUBLIC_LOG_D64 ", basePts: " PUBLIC_LOG_D64, trackId,
         curPacketPts, sample->pts_, baseInfo->basePts);
 }
@@ -111,7 +111,7 @@ void MediaDemuxer::InitPtsInfo()
     isAutoMaintainPts_ = true;
     AutoLock lock(mapMutex_);
     for (auto it = bufferQueueMap_.begin(); it != bufferQueueMap_.end(); it++) {
-        uint32_t trackId = it->first;
+        int32_t trackId = it->first;
         if (maintainBaseInfos_[trackId] == nullptr) {
             maintainBaseInfos_[trackId] = std::make_shared<MaintainBaseInfo>();
         }

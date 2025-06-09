@@ -95,7 +95,8 @@ public:
     MOCK_METHOD(bool, IsNeedPreDownload, (), ());
     MOCK_METHOD(void, SetDemuxerState, (int32_t streamId), ());
     MOCK_METHOD(Status, GetStreamInfo, (std::vector<StreamInfo>& streams), ());
-    MOCK_METHOD(Status, Read, (int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen), ());
+    MOCK_METHOD(Status, Read, (int32_t streamID, std::shared_ptr<Buffer>& buffer,
+        uint64_t offset, size_t expectedLen), ());
     MOCK_METHOD(Status, SeekTo, (uint64_t offset), ());
     MOCK_METHOD(void, SetInterruptState, (bool isInterruptNeeded), ());
     MOCK_METHOD(Status, GetDownloadInfo, (DownloadInfo& downloadInfo), ());
@@ -125,7 +126,8 @@ public:
     MOCK_METHOD(bool, ParseProtocol, (const std::shared_ptr<MediaSource>& source), ());
     MOCK_METHOD(Status, FindPlugin, (const std::shared_ptr<MediaSource>& source), ());
     MOCK_METHOD(void, ClearData, (), ());
-    MOCK_METHOD(Status, ReadWithPerfRecord, (int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen), ());
+    MOCK_METHOD(Status, ReadWithPerfRecord, (int32_t streamID, std::shared_ptr<Buffer>& buffer,
+        uint64_t offset, size_t expectedLen), ());
 
     std::string protocol_;
     bool seekToTimeFlag_{false};

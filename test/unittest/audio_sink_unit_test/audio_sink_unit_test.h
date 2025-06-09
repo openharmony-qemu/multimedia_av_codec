@@ -29,15 +29,11 @@
 #include "buffer/avsharedmemorybase.h"
 #include "buffer/avbuffer_queue_consumer.h"
 
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioSinkUnitTest" };
-constexpr const int32_t SLEEP_TIME = 60;
-}
-
 namespace OHOS {
 namespace Media {
 namespace Test {
-
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioSinkUnitTest" };
+constexpr const int32_t SLEEP_TIME = 60;
 class TestEventReceiver : public Pipeline::EventReceiver {
 public:
     explicit TestEventReceiver()

@@ -25,7 +25,7 @@ namespace OHOS {
 namespace Media {
 namespace Pipeline {
 
-class MediaSynchronousSinkUnitTest: public testing::Test {
+class MediaSynchronousSinkUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);

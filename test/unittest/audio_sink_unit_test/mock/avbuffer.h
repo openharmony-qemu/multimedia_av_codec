@@ -34,17 +34,21 @@ public:
     MOCK_METHOD(uint64_t, GetUniqueId, (), ());
     MOCK_METHOD(bool, WriteToMessageParcel, (MessageParcel& parcel), ());
     MOCK_METHOD(bool, ReadFromMessageParcel, (MessageParcel& parcel, bool isSurfaceBuffer), ());
-    static std::shared_ptr<AVBuffer> CreateAVBuffer(const AVBufferConfig &config){
+    static std::shared_ptr<AVBuffer> CreateAVBuffer(const AVBufferConfig &config)
+    {
         return std::make_shared<AVBuffer>();
     }
     static std::shared_ptr<AVBuffer> CreateAVBuffer(std::shared_ptr<AVAllocator> allocator, int32_t capacity = 0,
-                                                    int32_t align = 0){
+                                                    int32_t align = 0)
+    {
         return std::make_shared<AVBuffer>();
     }
-    static std::shared_ptr<AVBuffer> CreateAVBuffer(uint8_t *ptr, int32_t capacity, int32_t size = 0){
+    static std::shared_ptr<AVBuffer> CreateAVBuffer(uint8_t *ptr, int32_t capacity, int32_t size = 0)
+    {
         return std::make_shared<AVBuffer>();
     }
-    static std::shared_ptr<AVBuffer> CreateAVBuffer(sptr<SurfaceBuffer> surfaceBuffer){
+    static std::shared_ptr<AVBuffer> CreateAVBuffer(sptr<SurfaceBuffer> surfaceBuffer)
+    {
         return std::make_shared<AVBuffer>();
     }
 protected:
@@ -97,16 +101,20 @@ protected:
     uint64_t uid_;
     std::shared_ptr<AVAllocator> allocator_;
     static std::shared_ptr<AVMemory> CreateAVMemory(std::shared_ptr<AVAllocator> allocator,
-                                                    int32_t capacity = 0, int32_t align = 0){
+                                                    int32_t capacity = 0, int32_t align = 0)
+    {
         return std::make_shared<AVMemory>();
     }
-    static std::shared_ptr<AVMemory> CreateAVMemory(uint8_t *ptr, int32_t capacity, int32_t size){
+    static std::shared_ptr<AVMemory> CreateAVMemory(uint8_t *ptr, int32_t capacity, int32_t size)
+    {
         return std::make_shared<AVMemory>();
     }
-    static std::shared_ptr<AVMemory> CreateAVMemory(MessageParcel &parcel, bool isSurfaceBuffer = false){
+    static std::shared_ptr<AVMemory> CreateAVMemory(MessageParcel &parcel, bool isSurfaceBuffer = false)
+    {
         return std::make_shared<AVMemory>();
     }
-    static std::shared_ptr<AVMemory> CreateAVMemory(sptr<SurfaceBuffer> surfaceBuffer){
+    static std::shared_ptr<AVMemory> CreateAVMemory(sptr<SurfaceBuffer> surfaceBuffer)
+    {
         return std::make_shared<AVMemory>();
     }
 };

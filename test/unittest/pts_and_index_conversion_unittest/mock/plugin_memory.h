@@ -24,12 +24,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 constexpr size_t INVALID_POSITION = -1;
-const static uint8_t INVALID_TEST = 1;
-// enum struct MemoryType : uint8_t {
-//     VIRTUAL_ADDR = 0,  ///< Virtual address
-//     SURFACE_BUFFER,    ///< Surface
-//     SHARE_MEMORY,   ///< Share Memory fd
-// };
+constexpr uint8_t INVALID_TEST = 1;
 struct Allocator {
     explicit Allocator(MemoryType type = MemoryType::SHARED_MEMORY) : memoryType(type) {}
     virtual ~Allocator() = default;
@@ -78,7 +73,6 @@ public:
     void UpdateDataSize(size_t realWriteSize, size_t position = 0)
     {
     }
-    // MOCK_METHOD(void, UpdateDataSize, (size_t realWriteSize, size_t position = 0), ());
     size_t Write(const uint8_t* in, size_t writeSize, size_t position = 0)
     {
         return 0;

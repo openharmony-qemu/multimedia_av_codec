@@ -71,8 +71,6 @@ HWTEST_F(CodecCapabilityAdapterUnitTest, IsWatermarkSupported_001, TestSize.Leve
  */
 HWTEST_F(CodecCapabilityAdapterUnitTest, IsWatermarkSupported_002, TestSize.Level1)
 {
-    // Test (capabilityData->featuresMap.count(
-    // static_cast<int32_t>(MediaAVCodec::AVCapabilityFeature::VIDEO_WATERMARK))) == false
     EXPECT_CALL(*(mockAvcodecList_), GetCapability(_, _, _))
         .Times(TEST_TIMES_FOUR)
         .WillOnce(Return(nullptr))
@@ -85,8 +83,6 @@ HWTEST_F(CodecCapabilityAdapterUnitTest, IsWatermarkSupported_002, TestSize.Leve
     codecCapabilityAdapter_->IsWatermarkSupported(codecMimeType, isWatermarkSupported);
     EXPECT_TRUE(!isWatermarkSupported);
 
-    // Test (capabilityData->featuresMap.count(
-    // static_cast<int32_t>(MediaAVCodec::AVCapabilityFeature::VIDEO_WATERMARK))) == true
     capabilityData_.featuresMap.insert(std::pair<int32_t, Format>(TEST_VIDEO_WATERMARK, Format()));
     codecCapabilityAdapter_->IsWatermarkSupported(codecMimeType, isWatermarkSupported);
     EXPECT_TRUE(isWatermarkSupported);
@@ -147,7 +143,6 @@ HWTEST_F(CodecCapabilityAdapterUnitTest, GetVideoEncoder_001, TestSize.Level1)
  */
 HWTEST_F(CodecCapabilityAdapterUnitTest, GetVideoEncoder_002, TestSize.Level1)
 {
-    // Test GetAudioEncoder capabilityDataAVCSoft != nullptr
     EXPECT_CALL(*(mockAvcodecList_), GetCapability(_, _, _))
         .Times(TEST_TIMES_THREE)
         .WillOnce(Return(nullptr))
@@ -158,7 +153,6 @@ HWTEST_F(CodecCapabilityAdapterUnitTest, GetVideoEncoder_002, TestSize.Level1)
     codecCapabilityAdapter_->GetVideoEncoder(dataVector);
     EXPECT_EQ(dataVector.size(), 1);
 
-    // Test ~CodecCapabilityAdapter codeclist_ == nullptr
     codecCapabilityAdapter_->codeclist_ = nullptr;
 }
 } // namespace Pipeline

@@ -25,7 +25,7 @@ using namespace testing;
 using namespace testing::ext;
 
 static const int32_t INT_1 = 1;
-static const float Float_1 = 1.0f;
+static const float FLOAT_1 = 1.0f;
 
 void CalcMaxAmplitudeUnitTest::SetUpTestCase(void)
 {
@@ -52,7 +52,7 @@ HWTEST_F(CalcMaxAmplitudeUnitTest, CalculateMaxAmplitudeForPCM8Bit_001, TestSize
 {
     int8_t data[1] = {INT8_MIN};
     float result = CalculateMaxAmplitudeForPCM8Bit(data, INT_1);
-    EXPECT_FLOAT_EQ(result, Float_1);
+    EXPECT_FLOAT_EQ(result, FLOAT_1);
 }
 
 /**
@@ -65,10 +65,10 @@ HWTEST_F(CalcMaxAmplitudeUnitTest, CalculateMaxAmplitudeForPCM24Bit_001, TestSiz
     char frame[3];
     frame[0] = 0x00;
     frame[1] = 0x00;
-    frame[2] = static_cast<char>(0x80); 
+    frame[2] = static_cast<char>(0x80);
 
     float result = CalculateMaxAmplitudeForPCM24Bit(frame, INT_1);
-    EXPECT_FLOAT_EQ(result, Float_1);
+    EXPECT_FLOAT_EQ(result, FLOAT_1);
 }
 
 /**
@@ -80,7 +80,7 @@ HWTEST_F(CalcMaxAmplitudeUnitTest, CalculateMaxAmplitudeForPCM32Bit_001, TestSiz
 {
     int32_t data[1] = {INT32_MIN};
     float result = CalculateMaxAmplitudeForPCM32Bit(data, INT_1);
-    EXPECT_FLOAT_EQ(result, Float_1);
+    EXPECT_FLOAT_EQ(result, FLOAT_1);
 }
 
 } // namespace CalcMaxAmplitude

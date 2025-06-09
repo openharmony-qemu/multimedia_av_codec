@@ -87,7 +87,7 @@ HWTEST(TestAudioSink, WriteDataToRender_001, TestSize.Level1)
     config.capacity = VALUE1_NUM;
     config.memoryType = MemoryType::VIRTUAL_MEMORY;
     std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(config);
-    audioSink->isApe_ = false; 
+    audioSink->isApe_ = false;
     avBuffer->flag_ = BUFFER_FLAG_EOS;
 
     audioSink->WriteDataToRender(avBuffer);
@@ -109,7 +109,7 @@ HWTEST(TestAudioSink, WriteDataToRender_002, TestSize.Level1)
     config.capacity = VALUE1_NUM;
     config.memoryType = MemoryType::VIRTUAL_MEMORY;
     std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(config);
-    audioSink->isApe_ = false; 
+    audioSink->isApe_ = false;
     avBuffer->flag_ = 2;
     audioSink->playRangeEndTime_ = INVALID_NUM;
 
