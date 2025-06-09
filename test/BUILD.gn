@@ -43,8 +43,8 @@ group("av_codec_unit_test") {
         "unittest/audio_test:audio_g711a_decoder_unit_test",
         "unittest/audio_test:audio_hdi_codec_inner_unit_test",
         "unittest/audio_test:audio_lbvc_plugin_unit_test",
-        "unittest/audio_test:audio_raw_decoder_plugin_unit_test",
         "unittest/audio_test:audio_resample_unit_test",
+        "unittest/audio_test:audio_raw_decoder_plugin_unit_test",
         "unittest/audio_test:av_audio_capi_unit_test",
         "unittest/audio_test:av_audio_codecbase_unit_test",
         "unittest/audio_test:av_audio_decode_ability_unit_test",
@@ -105,11 +105,11 @@ group("av_codec_unit_test") {
         "unittest/subtitle_sink_unittest:subtitle_sink_unittest",
         "unittest/surface_encoder_adapter_unittest:surface_encoder_adapter_unittest",
         "unittest/video_sink_unittest:video_sink_unittest",
-        "unittest/video_test/avcencoder_test:avc_codec_coverage_unit_test",
         "unittest/video_test/drm_decryptor_test:drm_decryptor_coverage_unit_test",
         "unittest/video_test/fcodec_test:av_video_capi_unit_test",
         "unittest/video_test/vcodec_framework_test:vcodec_framework_test",
         "unittest/video_test/vcodec_server_test:codec_server_test",
+        "unittest/video_test/avcencoder_test:avc_codec_coverage_unit_test",
       ]
       if (av_codec_support_hcodec) {
         deps += [ "unittest/hcodec_test:hcodec_unit_test" ]
