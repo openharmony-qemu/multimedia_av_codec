@@ -530,7 +530,7 @@ bool DemuxerPluginManagerUnitTest::PluginSelectTracks()
     MediaInfo mediaInfo;
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     if (demuxerPlugin->GetMediaInfo(mediaInfo) != Status::OK) {
-        printf("GetMediaInfo failed for plugin: %s\n", demuxerPlugin->GetPluginName().c_str());
+        printf("GetMediaInfo failed for plugin\n");
         return false;
     }
 
