@@ -944,14 +944,14 @@ uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len, bo
     if ((bufferSize >= WATER_LINE ||
         bufferSize >= downloadRequest_->GetFileContentLength() / 2) && !aboveWaterline_) { // 2
         aboveWaterline_ = true;
-        MEDIA_LOG_I("HTTP Send http aboveWaterline event, ringbuffer ratio " PUBLIC_LOG_F, ratio);
+        MEDIA_LOG_D("HTTP Send http aboveWaterline event, ringbuffer ratio " PUBLIC_LOG_F, ratio);
         if (callback_ != nullptr) {
             callback_->OnEvent({PluginEventType::ABOVE_LOW_WATERLINE, {ratio}, "http"});
         }
         startedPlayStatus_ = true;
     } else if (bufferSize < WATER_LINE && aboveWaterline_) {
         aboveWaterline_ = false;
-        MEDIA_LOG_I("HTTP Send http belowWaterline event, ringbuffer ratio " PUBLIC_LOG_F, ratio);
+        MEDIA_LOG_D("HTTP Send http belowWaterline event, ringbuffer ratio " PUBLIC_LOG_F, ratio);
         if (callback_ != nullptr) {
             callback_->OnEvent({PluginEventType::BELOW_LOW_WATERLINE, {ratio}, "http"});
         }
