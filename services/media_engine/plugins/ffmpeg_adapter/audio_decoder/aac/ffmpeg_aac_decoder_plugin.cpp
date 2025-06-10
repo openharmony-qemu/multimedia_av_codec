@@ -29,7 +29,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCo
 constexpr int MIN_CHANNELS = 1;
 constexpr int MAX_CHANNELS = 8;
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
-constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
+constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 2048 * 8; // cover HE-AAC v1 decode 8ch and 32bit format output
 static std::vector<int32_t> supportedSampleRates = {7350,  8000,  11025, 12000, 16000, 22050, 24000,
                                                     32000, 44100, 48000, 64000, 88200, 96000};
 } // namespace
