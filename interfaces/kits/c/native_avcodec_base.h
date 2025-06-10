@@ -861,14 +861,13 @@ extern const char *OH_MD_KEY_TRACK_REFERENCE_TYPE;
 extern const char *OH_MD_KEY_TRACK_DESCRIPTION;
 extern const char *OH_MD_KEY_REFERENCE_TRACK_IDS;
 /**
- * @brief Key to enable synchronous mode, value type is (0 or 1):1 is enabled, 0 otherwise.
+ * @brief Key to enable synchronous mode, value type is (0 or 1): 1 is enabled, 0 otherwise.
  *
  * This is an optional key, default is 0.\n
- * If enabled, the caller should not set callbacks for the decoder or encoder but should query buffers instead.\n
- * It is used in configure.\n
- * This is an optional key that applies only to video encoder, default is 0.
- * If enabled, the PTS information must be carried in each video frame and sent to the encoder.
- * It is used in configure.
+ * When enabled:
+ *       - Callbacks should NOT be set for codecs
+ *       - Buffer query APIs must be used instead
+ *       - Only used in configuration phase
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 20
