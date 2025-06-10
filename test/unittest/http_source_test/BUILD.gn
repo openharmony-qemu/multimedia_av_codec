@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-module_output_path = "av_codec/av_codec/unittest"
+module_output_path = "av_codec/AVCodec_Video/unittest"
 hls_test_sources = [
   "$av_codec_root_dir/services/media_engine/modules/source/source.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/base64/base64_utils.cpp",
