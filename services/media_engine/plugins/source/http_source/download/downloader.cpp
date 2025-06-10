@@ -342,14 +342,12 @@ bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32
 
 std::string Downloader::GetContentType()
 {
-    FALSE_RETURN_V_NOLOG(contentType_.empty(), contentType_);
+    FALSE_RETURN_V_NOLOG(!isContentTypeUpdated_, contentType_);
     AutoLock lock(sleepMutex_);
-    if (contentType_.empty()) {
-        MEDIA_LOG_I("GetContentType wait begin ");
-        sleepCond_.WaitFor(lock, SLEEP_TIME * RETRY_TIMES, [this]() {
-            return isInterruptNeeded_.load() || !contentType_.empty();
-        });
-    }
+    MEDIA_LOG_I("GetContentType wait begin ");
+    sleepCond_.WaitFor(lock, SLEEP_TIME * RETRY_TIMES, [this]() {
+        return isInterruptNeeded_.load() || isContentTypeUpdated_;
+    });
     MEDIA_LOG_I("ContentType: %{public}s", contentType_.c_str());
     return contentType_;
 }
@@ -807,9 +805,10 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
         info->isChunked = false;
     }
     mediaDownloader->currentRequest_->SaveHeader(info);
-    if (mediaDownloader->contentType_.empty()) {
+    if (!mediaDownloader->isContentTypeUpdated_) {
         {
             AutoLock lock(mediaDownloader->sleepMutex_);
+            mediaDownloader->isContentTypeUpdated_ = true;
             mediaDownloader->contentType_ = info->contentType;
         }
         mediaDownloader->sleepCond_.NotifyOne();
@@ -1166,7 +1165,11 @@ void Downloader::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " Downloader SetInterruptState %{public}d",
         FAKE_POINTER(this), isInterruptNeeded);
-    isInterruptNeeded_ = isInterruptNeeded;
+    {
+        AutoLock lk(loopPauseMutex_);
+        AutoLock lock(sleepMutex_);
+        isInterruptNeeded_ = isInterruptNeeded;
+    }
     if (isInterruptNeeded) {
         MEDIA_LOG_I("SetInterruptState, Notify.");
         sleepCond_.NotifyOne();
