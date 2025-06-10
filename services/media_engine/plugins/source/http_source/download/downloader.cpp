@@ -105,15 +105,6 @@ size_t DownloadRequest::GetFileContentLength() const
     return headerInfo_.GetFileContentLength();
 }
 
-std::string DownloadRequest::GetFileContentType()
-{
-    FALSE_RETURN_V_NOLOG(contentType_.empty(), contentType_);
-    WaitHeaderUpdated();
-    std::string contentType(headerInfo_.contentType, sizeof(headerInfo_.contentType));
-    contentType_ = contentType;
-    return contentType_;
-}
-
 size_t DownloadRequest::GetFileContentLengthNoWait() const
 {
     return headerInfo_.fileContentLen;
@@ -351,10 +342,16 @@ bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32
 
 std::string Downloader::GetContentType()
 {
-    FALSE_RETURN_V(currentRequest_ != nullptr, "");
-    std::string ret = currentRequest_->GetFileContentType();
-    MEDIA_LOG_I("ContentType: %{public}s", ret.c_str());
-    return ret;
+    FALSE_RETURN_V_NOLOG(contentType_.empty(), contentType_);
+    AutoLock lock(sleepMutex_);
+    if (contentType_.empty()) {
+        MEDIA_LOG_I("GetContentType wait begin ");
+        sleepCond_.WaitFor(lock, SLEEP_TIME * RETRY_TIMES, [this]() {
+            return isInterruptNeeded_.load() || !contentType_.empty();
+        });
+    }
+    MEDIA_LOG_I("ContentType: %{public}s", contentType_.c_str());
+    return contentType_;
 }
 
 void Downloader::Start()
@@ -810,6 +807,13 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
         info->isChunked = false;
     }
     mediaDownloader->currentRequest_->SaveHeader(info);
+    if (mediaDownloader->contentType_.empty()) {
+        {
+            AutoLock lock(mediaDownloader->sleepMutex_);
+            mediaDownloader->contentType_ = info->contentType;
+        }
+        mediaDownloader->sleepCond_.NotifyOne();
+    }
 }
 
 bool Downloader::IsDropDataRetryRequest(Downloader* mediaDownloader)
@@ -1163,6 +1167,10 @@ void Downloader::SetInterruptState(bool isInterruptNeeded)
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " Downloader SetInterruptState %{public}d",
         FAKE_POINTER(this), isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
+    if (isInterruptNeeded) {
+        MEDIA_LOG_I("SetInterruptState, Notify.");
+        sleepCond_.NotifyOne();
+    }
     if (currentRequest_ != nullptr) {
         currentRequest_->isInterruptNeeded_ = isInterruptNeeded;
     }
