@@ -98,8 +98,6 @@ public:
 
     void SetIsCancelStart(bool isCancelStart);
 
-    bool NeedImmediateRender();
-
     Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
 
     Status SetLooping(bool loop);
@@ -122,6 +120,12 @@ protected:
     };
 
 private:
+    inline bool NeedImmediateRender() const
+    {
+        return needImmediateRender_;
+    }
+
+private:
     std::shared_ptr<AudioSink> audioSink_;
     std::string name_;
     FilterType filterType_;
@@ -141,6 +145,7 @@ private:
     bool forceUpdateTimeAnchorNextTime_ {false};
     bool isCancelStart_ {false};
     bool isRenderCallbackMode_ {true};
+    bool isProcessInputMerged_ {true};
     bool needImmediateRender_ {false};
 };
 } // namespace Pipeline

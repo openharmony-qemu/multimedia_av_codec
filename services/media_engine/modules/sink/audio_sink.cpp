@@ -59,17 +59,24 @@ int64_t GetAudioLatencyFixDelay()
 
 AudioSink::AudioSink()
 {
-    bool isRenderCallbackMode = system::GetParameter("debug.media_service.audio.audiosink_callback", "1") == "1";
-    MEDIA_LOG_I("AudioSink ctor isRenderCallbackMode:" PUBLIC_LOG_D32, isRenderCallbackMode);
+    bool isRenderCallbackMode =
+        OHOS::system::GetParameter("debug.media_service.audio.audiosink_callback", "1") == "1";
+    bool isProcessInputMerged =
+        OHOS::system::GetParameter("debug.media_service.audio.audiosink_processinput_merged", "1") == "1";
+    MEDIA_LOG_I("AudioSink ctor isRenderCallbackMode: " PUBLIC_LOG_D32 ", isProcessInputMerged: " PUBLIC_LOG_D32,
+        isRenderCallbackMode, isProcessInputMerged);
     isRenderCallbackMode_ = isRenderCallbackMode;
+    isProcessInputMerged_ = isProcessInputMerged;
     syncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
     fixDelay_ = GetAudioLatencyFixDelay();
     plugin_ = CreatePlugin();
 }
 
-AudioSink::AudioSink(bool isRenderCallbackMode) : isRenderCallbackMode_(isRenderCallbackMode)
+AudioSink::AudioSink(bool isRenderCallbackMode, bool isProcessInputMerged)
+    : isRenderCallbackMode_(isRenderCallbackMode), isProcessInputMerged_(isProcessInputMerged)
 {
-    MEDIA_LOG_I("AudioSink ctor isRenderCallbackMode:" PUBLIC_LOG_D32, isRenderCallbackMode);
+    MEDIA_LOG_I("AudioSink ctor default isRenderCallbackMode: " PUBLIC_LOG_D32
+        ", isProcessInputMerged: " PUBLIC_LOG_D32, isRenderCallbackMode, isProcessInputMerged);
     syncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
     fixDelay_ = GetAudioLatencyFixDelay();
     plugin_ = CreatePlugin();
@@ -218,11 +225,6 @@ Status AudioSink::InitAudioSinkInfo(std::shared_ptr<Meta>& meta)
     }
 
     return Status::OK;
-}
-
-bool AudioSink::NeedImmediateRender()
-{
-    return isApe_ || isFlac_;
 }
 
 sptr<AVBufferQueueProducer> AudioSink::GetBufferQueueProducer()
