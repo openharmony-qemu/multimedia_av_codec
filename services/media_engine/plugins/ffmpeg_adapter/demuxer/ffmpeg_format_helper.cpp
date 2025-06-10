@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -69,7 +69,8 @@ static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
     {AVMEDIA_TYPE_AUDIO, MediaType::AUDIO},
     {AVMEDIA_TYPE_SUBTITLE, MediaType::SUBTITLE},
-    {AVMEDIA_TYPE_TIMEDMETA, MediaType::TIMEDMETA}
+    {AVMEDIA_TYPE_TIMEDMETA, MediaType::TIMEDMETA},
+    {AVMEDIA_TYPE_AUXILIARY, MediaType::AUXILIARY}
 };
 
 static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
@@ -469,10 +470,11 @@ static uint64_t FfAv3aGetChannelLayoutMask(AVChannelLayout *channelLayout)
 void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, Meta& format)
 {
     format.Set<Tag::MEDIA_TRACK_COUNT>(static_cast<int32_t>(avFormatContext.nb_streams));
-    bool hasVideo = false;
-    bool hasAudio = false;
-    bool hasSubtitle = false;
-    bool hasTimedMeta = false;
+    format.Set<Tag::MEDIA_HAS_VIDEO>(false);
+    format.Set<Tag::MEDIA_HAS_AUDIO>(false);
+    format.Set<Tag::MEDIA_HAS_SUBTITLE>(false);
+    format.Set<Tag::MEDIA_HAS_TIMEDMETA>(false);
+    format.Set<Tag::MEDIA_HAS_AUXILIARY>(false);
     for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
         if (avFormatContext.streams[i] == nullptr || avFormatContext.streams[i]->codecpar == nullptr) {
             MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " is invalid", i);
@@ -480,20 +482,18 @@ void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, 
         }
         if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (!IsImageTrack(*(avFormatContext.streams[i]))) {
-                hasVideo = true;
+                format.Set<Tag::MEDIA_HAS_VIDEO>(true);
             }
         } else if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            hasAudio = true;
+            format.Set<Tag::MEDIA_HAS_AUDIO>(true);
         } else if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-            hasSubtitle = true;
+            format.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
         } else if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_TIMEDMETA) {
-            hasTimedMeta = true;
+            format.Set<Tag::MEDIA_HAS_TIMEDMETA>(true);
+        } else if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUXILIARY) {
+            format.Set<Tag::MEDIA_HAS_AUXILIARY>(true);
         }
     }
-    format.Set<Tag::MEDIA_HAS_VIDEO>(hasVideo);
-    format.Set<Tag::MEDIA_HAS_AUDIO>(hasAudio);
-    format.Set<Tag::MEDIA_HAS_SUBTITLE>(hasSubtitle);
-    format.Set<Tag::MEDIA_HAS_TIMEDMETA>(hasTimedMeta);
 }
 
 void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, Meta& format)
@@ -596,6 +596,15 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format, 
     } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_TIMEDMETA) {
         ParseAVTrackInfo(avStream, format);
         ParseTimedMetaTrackInfo(avStream, format);
+        ParseAuxiliaryTrackInfo(avStream, format);
+    } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUXILIARY) {
+        ParseAVTrackInfo(avStream, format);
+        ParseAuxiliaryTrackInfo(avStream, format);
+        if (IsVideoType(avStream)) {
+            ParseVideoTrackInfo(avStream, format, avFormatContext);
+        } else if (IsAudioType(avStream)) {
+            ParseAudioTrackInfo(avStream, format, avFormatContext);
+        }
     }
 }
 
@@ -622,7 +631,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
         format.SetData(Tag::MEDIA_START_TIME,
             AvTime2Us(ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base)));
     } else {
-        if (mediaType == AVMEDIA_TYPE_AUDIO) {
+        if (mediaType == AVMEDIA_TYPE_AUDIO || mediaType == AVMEDIA_TYPE_AUXILIARY) {
             format.SetData(Tag::MEDIA_START_TIME, GetDefaultTrackStartTime(avFormatContext));
         }
         MEDIA_LOG_W("Parse track start time failed");
@@ -965,6 +974,45 @@ void FFmpegFormatHelper::ParseTimedMetaTrackInfo(const AVStream& avStream, Meta 
     }
 }
 
+void FFmpegFormatHelper::ParseAuxiliaryTrackInfo(const AVStream& avStream, Meta &format)
+{
+    AVDictionaryEntry *valPtr = nullptr;
+    valPtr = av_dict_get(avStream.metadata, "handler_name", nullptr, AV_DICT_IGNORE_SUFFIX);
+    if (valPtr == nullptr) {
+        MEDIA_LOG_W("Get ref desc failed");
+    } else {
+        format.Set<Tag::TRACK_DESCRIPTION>(std::string(valPtr->value));
+    }
+
+    valPtr = av_dict_get(avStream.metadata, "track_reference_type", nullptr, AV_DICT_IGNORE_SUFFIX);
+    if (valPtr == nullptr) {
+        MEDIA_LOG_W("Get ref type failed");
+    } else {
+        format.Set<Tag::TRACK_REFERENCE_TYPE>(std::string(valPtr->value));
+    }
+
+    valPtr = av_dict_get(avStream.metadata, "reference_track_ids", nullptr, AV_DICT_MATCH_CASE);
+    if (valPtr == nullptr) {
+        MEDIA_LOG_W("Get src track id failed");
+    } else {
+        std::vector<int32_t> referenceIds;
+        std::vector<std::string> referenceIdsString;
+        std::string values = std::string(valPtr->value);
+        if (values.find(",") != std::string::npos) {
+            referenceIdsString = SplitByChar(values.c_str(), ",");
+        }
+        if (referenceIdsString.size() > 0) {
+            for (std::string subStr : referenceIdsString) {
+                // Ffmpeg ensures that the value is definitely Int type
+                referenceIds.push_back(std::stoi(subStr));
+            }
+            format.Set<Tag::REFERENCE_TRACK_IDS>(referenceIds);
+        } else {
+            MEDIA_LOG_W("Auxl track without ref track");
+        }
+    }
+}
+
 void FFmpegFormatHelper::ParseHvccBoxInfo(const AVStream& avStream, Meta &format)
 {
     HEVCProfile profile = FFMpegConverter::ConvertFFMpegToOHHEVCProfile(avStream.codecpar->profile);
@@ -1090,10 +1138,28 @@ bool FFmpegFormatHelper::IsVideoCodecId(const AVCodecID &codecId)
 
 bool FFmpegFormatHelper::IsImageTrack(const AVStream &avStream)
 {
+    FALSE_RETURN_V_MSG_E(avStream.codecpar != nullptr, false, "AVStream is nullptr");
+    AVCodecID codecId = avStream.codecpar->codec_id;
     return (
         (static_cast<uint32_t>(avStream.disposition) & static_cast<uint32_t>(AV_DISPOSITION_ATTACHED_PIC)) ||
-        (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0)
+        (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), codecId) > 0)
     );
+}
+
+bool FFmpegFormatHelper::IsVideoType(const AVStream &avStream)
+{
+    FALSE_RETURN_V_MSG_E(avStream.codecpar != nullptr, false, "AVStream is nullptr");
+    AVCodecID codecId = avStream.codecpar->codec_id;
+    return (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO && !IsImageTrack(avStream)) ||
+        (g_codecIdToMime.count(codecId) > 0 && g_codecIdToMime[codecId].find("video") != std::string::npos);
+}
+
+bool FFmpegFormatHelper::IsAudioType(const AVStream &avStream)
+{
+    FALSE_RETURN_V_MSG_E(avStream.codecpar != nullptr, false, "AVStream is nullptr");
+    AVCodecID codecId = avStream.codecpar->codec_id;
+    return avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO ||
+        (g_codecIdToMime.count(codecId) > 0 && g_codecIdToMime[codecId].find("audio") != std::string::npos);
 }
 } // namespace Ffmpeg
 } // namespace Plugins
