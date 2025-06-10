@@ -71,7 +71,7 @@ const std::map<AVCodecServiceErrCode, std::string> AVCS_ERRCODE_INFOS = {
     {AVCS_ERR_EXTEND_START,                          "extend start error code"},
     {AVCS_ERR_INPUT_DATA_ERROR,                      "there is somthing wrong for input data"},
     {AVCS_ERR_TRY_AGAIN,                             "try again later"},
-    {AVCS_ERR_VIDEO_STREAM_CHANGED,                  "video stream changed"},
+    {AVCS_ERR_STREAM_CHANGED,                        "video stream changed"},
     {AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, "video unsupported color space conversion"}};
 
 const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRCODE = {
@@ -124,8 +124,8 @@ const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRC
     {AVCS_ERR_DECRYPT_FAILED,                      AV_ERR_DRM_DECRYPT_FAILED},
     {AVCS_ERR_CODEC_PARAM_INCORRECT,               AV_ERR_INVALID_VAL},
     {AVCS_ERR_INPUT_DATA_ERROR,                    AV_ERR_INPUT_DATA_ERROR},
-    {AVCS_ERR_TRY_AGAIN,                           AV_ERR_COMMON_TRY_AGAIN_LATER},
-    {AVCS_ERR_VIDEO_STREAM_CHANGED,                AV_ERR_VIDEO_STREAM_CHANGED},
+    {AVCS_ERR_TRY_AGAIN,                           AV_ERR_TRY_AGAIN_LATER},
+    {AVCS_ERR_STREAM_CHANGED,                      AV_ERR_STREAM_CHANGED},
     {AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION},
     };
 
@@ -146,8 +146,8 @@ const std::map<OH_AVErrCode, std::string> OHAVCODECERRCODE_INFOS = {
     {AV_ERR_DRM_DECRYPT_FAILED,                       "decrypt failed"},
     {AV_ERR_VIDEO_BASE,                               "video error base"},
     {AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, "video unsupported color space conversion"},
-    {AV_ERR_COMMON_TRY_AGAIN_LATER,                   "try again later"},
-    {AV_ERR_VIDEO_STREAM_CHANGED,                     "video stream changed"},
+    {AV_ERR_TRY_AGAIN_LATER,                          "try again later"},
+    {AV_ERR_STREAM_CHANGED,                           "video stream changed"},
 };
 
 const std::map<Status, AVCodecServiceErrCode> STATUS_TO_AVCSERRCODE = {

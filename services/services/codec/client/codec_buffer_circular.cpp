@@ -86,7 +86,6 @@ void CodecBufferCircular::SetIsRunning(bool isRunning)
     std::scoped_lock lock(inMutex_, outMutex_);
     if (isRunning) {
         flag_ |= FLAG_IS_RUNNING;
-        flag_ &= ~FLAG_IS_FLUSHED;
     } else {
         flag_ &= ~FLAG_IS_RUNNING;
     }
@@ -163,7 +162,6 @@ void CodecBufferCircular::FlushCaches()
         std::queue<uint32_t> emptyQueue;
         std::swap(outQueue_, emptyQueue);
     }
-    flag_ |= FLAG_IS_FLUSHED;
 }
 
 /******************************** Common ********************************/
@@ -550,7 +548,7 @@ int32_t CodecBufferCircular::QueryOutputIndex(uint32_t &index, int64_t timeoutUs
     if (flag_ & FLAG_STREAM_CHANGED) {
         AVCODEC_LOGI_WITH_TAG("Output format changed");
         flag_ &= ~FLAG_STREAM_CHANGED;
-        return AVCS_ERR_VIDEO_STREAM_CHANGED;
+        return AVCS_ERR_STREAM_CHANGED;
     }
     if (!isNotTimeout) {
         return AVCS_ERR_TRY_AGAIN;
@@ -572,7 +570,7 @@ bool CodecBufferCircular::WaitForBuffer(std::unique_lock<std::mutex> &lock, std:
         return (isOutput ? outQueue_ : inQueue_).size() > 0 || // get new buffer
                (flag_ & FLAG_ERROR) ||                         // on error
                ((flag_ & FLAG_STREAM_CHANGED) && isOutput) ||  // on output format changed
-               !(flag_ & (FLAG_IS_RUNNING | FLAG_IS_FLUSHED)); // not in RUNING or FLUSHED
+               !(flag_ & FLAG_IS_RUNNING); // not running
     };
     if (timeoutUs < 0) {
         cond.wait(lock, func);

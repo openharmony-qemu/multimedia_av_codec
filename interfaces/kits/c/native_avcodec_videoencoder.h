@@ -454,7 +454,7 @@ OH_AVErrCode OH_VideoEncoder_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index)
  * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permitted in asynchronous mode.
- * {@link AV_ERR_VIDEO_STREAM_CHANGED}, the stream is changed, call {@link OH_VideoEncoder_GetOutputDescription} to
+ * {@link AV_ERR_STREAM_CHANGED}, the stream is changed, call {@link OH_VideoEncoder_GetOutputDescription} to
 
  * retrieve steam information.
  * {@link AV_ERR_VIDEO_TRY_AGAIN_LATER}, query failed，recommended to wait for a while and try the query again.
@@ -502,7 +502,7 @@ OH_AVBuffer *OH_VideoEncoder_GetInputBuffer(struct OH_AVCodec *codec, uint32_t i
  * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permitted in asynchronous mode.
- * {@link AV_ERR_VIDEO_STREAM_CHANGED}, the stream is changed, call {@link OH_VideoEncoder_GetOutputDescription} to
+ * {@link AV_ERR_STREAM_CHANGED}, the stream is changed, call {@link OH_VideoEncoder_GetOutputDescription} to
  * retrieve steam information.
  * {@link AV_ERR_VIDEO_TRY_AGAIN_LATER}, query failed，recommended to wait for a while and try the query again.
  * @since 20

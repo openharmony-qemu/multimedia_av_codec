@@ -69,11 +69,10 @@ private:
     typedef enum : uint8_t {
         FLAG_NONE = 0,
         FLAG_IS_RUNNING = 1 << 0,
-        FLAG_IS_FLUSHED = 1 << 1,
-        FLAG_IS_SYNC = 1 << 2,
-        FLAG_SYNC_ASYNC_CONFIGURED = 1 << 3,
-        FLAG_STREAM_CHANGED = 1 << 4,
-        FLAG_ERROR = 1 << 5,
+        FLAG_IS_SYNC = 1 << 1,
+        FLAG_SYNC_ASYNC_CONFIGURED = 1 << 2,
+        FLAG_STREAM_CHANGED = 1 << 3,
+        FLAG_ERROR = 1 << 4,
     } CodecCircularFlag;
     typedef enum : uint8_t {
         OWNED_BY_SERVER = 0,
