@@ -475,18 +475,18 @@ uint32_t SoftwareEncoderH264YUV420(uint32_t blockSize)
 {
     auto linearSlope = 0.0;
     auto linearIntercept = 0U;
-    if (blockSize <= 5106) {        // 5106:   SoftwareEncoderH264YUV420 L1 max block size
-        linearSlope = 3.962;        // 3.962:  SoftwareEncoderH264YUV420 L1 slope
-        linearIntercept = 9454;     // 9454:   SoftwareEncoderH264YUV420 L1 intercept
-    } else if (blockSize <= 8686) { // 8686:   SoftwareEncoderH264YUV420 L2 max block size
-        linearSlope = 2.705;        // 2.705:  SoftwareEncoderH264YUV420 L2 slope
-        linearIntercept = 18553;    // 18553:  SoftwareEncoderH264YUV420 L2 intercept
-    } else if (blockSize <= 22046) {// 22046:  SoftwareEncoderH264YUV420 L3 max block size
-        linearSlope = 2.602;        // 2.602:  SoftwareEncoderH264YUV420 L3 slope
-        linearIntercept = 36226;    // 36226:  SoftwareEncoderH264YUV420 L3 intercept
-    } else {                        //         SoftwareEncoderH264YUV420 L4 max block size
-        linearSlope = 2.595;        // 2.595:  SoftwareEncoderH264YUV420 L4 slope
-        linearIntercept = 53933;    // 53933:  SoftwareEncoderH264YUV420 L4 intercept
+    if (blockSize <= 5106) {         // 5106:   SoftwareEncoderH264YUV420 L1 max block size
+        linearSlope = 3.962;         // 3.962:  SoftwareEncoderH264YUV420 L1 slope
+        linearIntercept = 9454;      // 9454:   SoftwareEncoderH264YUV420 L1 intercept
+    } else if (blockSize <= 8686) {  // 8686:   SoftwareEncoderH264YUV420 L2 max block size
+        linearSlope = 2.705;         // 2.705:  SoftwareEncoderH264YUV420 L2 slope
+        linearIntercept = 18553;     // 18553:  SoftwareEncoderH264YUV420 L2 intercept
+    } else if (blockSize <= 22046) { // 22046:  SoftwareEncoderH264YUV420 L3 max block size
+        linearSlope = 2.602;         // 2.602:  SoftwareEncoderH264YUV420 L3 slope
+        linearIntercept = 36226;     // 36226:  SoftwareEncoderH264YUV420 L3 intercept
+    } else {                         //         SoftwareEncoderH264YUV420 L4 max block size
+        linearSlope = 2.595;         // 2.595:  SoftwareEncoderH264YUV420 L4 slope
+        linearIntercept = 53933;     // 53933:  SoftwareEncoderH264YUV420 L4 intercept
     }
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
@@ -495,18 +495,18 @@ uint32_t SoftwareEncoderH264RGBA(uint32_t blockSize)
 {
     auto linearSlope = 0.0;
     auto linearIntercept = 0U;
-    if (blockSize <= 5106) {        // 5106:   SoftwareEncoderH264RGBA L1 max block size
-        linearSlope = 5.173;        // 5.173:  SoftwareEncoderH264RGBA L1 slope
-        linearIntercept = 9828;     // 9828:   SoftwareEncoderH264RGBA L1 intercept
-    } else if (blockSize <= 8686) { // 8686:   SoftwareEncoderH264RGBA L2 max block size
-        linearSlope = 3.897;        // 3.897:  SoftwareEncoderH264RGBA L2 slope
-        linearIntercept = 19249;    // 19249:  SoftwareEncoderH264RGBA L2 intercept
-    } else if (blockSize <= 22046) {// 22046:  SoftwareEncoderH264RGBA L3 max block size
-        linearSlope = 3.747;        // 3.747:  SoftwareEncoderH264RGBA L3 slope
-        linearIntercept = 37762;    // 37762:  SoftwareEncoderH264RGBA L3 intercept
-    } else {                        //         SoftwareEncoderH264RGBA L4 max block size
-        linearSlope = 3.722;        // 3.722:  SoftwareEncoderH264RGBA L4 slope
-        linearIntercept = 56644;    // 56644:  SoftwareEncoderH264RGBA L4 intercept
+    if (blockSize <= 5106) {         // 5106:   SoftwareEncoderH264RGBA L1 max block size
+        linearSlope = 5.173;         // 5.173:  SoftwareEncoderH264RGBA L1 slope
+        linearIntercept = 9828;      // 9828:   SoftwareEncoderH264RGBA L1 intercept
+    } else if (blockSize <= 8686) {  // 8686:   SoftwareEncoderH264RGBA L2 max block size
+        linearSlope = 3.897;         // 3.897:  SoftwareEncoderH264RGBA L2 slope
+        linearIntercept = 19249;     // 19249:  SoftwareEncoderH264RGBA L2 intercept
+    } else if (blockSize <= 22046) { // 22046:  SoftwareEncoderH264RGBA L3 max block size
+        linearSlope = 3.747;         // 3.747:  SoftwareEncoderH264RGBA L3 slope
+        linearIntercept = 37762;     // 37762:  SoftwareEncoderH264RGBA L3 intercept
+    } else {                         //         SoftwareEncoderH264RGBA L4 max block size
+        linearSlope = 3.722;         // 3.722:  SoftwareEncoderH264RGBA L4 slope
+        linearIntercept = 56644;     // 56644:  SoftwareEncoderH264RGBA L4 intercept
     }
     return static_cast<uint32_t>(linearSlope * blockSize + linearIntercept);
 }
