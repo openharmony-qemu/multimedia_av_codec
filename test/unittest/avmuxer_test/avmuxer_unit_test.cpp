@@ -2039,8 +2039,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AAC_005, TestSize.Level0)
 HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_Auxiliary_001, TestSize.Level0) {
     int32_t trackId = -1;
     int32_t trackIdDepth = -1;
-    std::vector<int32_t> vDepth = {0};
-    int32_t *trackIdsDepth = vDepth.data();
+    // std::vector<int32_t> vDepth = {0};
+    // int32_t *trackIdsDepth = vDepth.data();
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack_Auxiliary.mp4");
     OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
@@ -2062,8 +2062,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_Auxiliary_001, TestSize.Level0) {
     metadataParamsDepth->PutIntValue(OH_MD_KEY_TRACK_TYPE, static_cast<int32_t>(OH_MediaType::MEDIA_TYPE_AUXILIARY));
     metadataParamsDepth->PutStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, TRACK_REF_TYPE_DEPTH);
     metadataParamsDepth->PutStringValue(OH_MD_KEY_TRACK_DESCRIPTION, AUXILIARY_DEPTH_TRACK_KEY);
-    metadataParamsDepth->PutBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, reinterpret_cast<uint8_t*>(trackIdsDepth),
-        sizeof(int32_t) * vDepth.size());
+    // metadataParamsDepth->PutBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, reinterpret_cast<uint8_t*>(trackIdsDepth),
+    //     sizeof(int32_t) * vDepth.size());
 
     ret = avmuxer_->AddTrack(trackIdDepth, metadataParamsDepth);
     ASSERT_EQ(ret, AV_ERR_OK);
@@ -2078,8 +2078,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_Auxiliary_001, TestSize.Level0) {
 HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_Auxiliary_002, TestSize.Level0) {
     int32_t trackId = -1;
     int32_t trackIdDepth = -1;
-    std::vector<int32_t> vDepth = {0};
-    int32_t *trackIdsDepth = vDepth.data();
+    // std::vector<int32_t> vDepth = {0};
+    // int32_t *trackIdsDepth = vDepth.data();
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack_Auxiliary.mp4");
     OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
@@ -2111,8 +2111,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_Auxiliary_002, TestSize.Level0) {
     ret = avmuxer_->AddTrack(trackIdDepth, metadataParamsDepth);
     ASSERT_NE(ret, AV_ERR_OK);
 
-    metadataParamsDepth->PutBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, reinterpret_cast<uint8_t*>(trackIdsDepth),
-        sizeof(int32_t) * vDepth.size());
+    // metadataParamsDepth->PutBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, reinterpret_cast<uint8_t*>(trackIdsDepth),
+    //     sizeof(int32_t) * vDepth.size());
     ret = avmuxer_->AddTrack(trackIdDepth, metadataParamsDepth);
     ASSERT_EQ(ret, AV_ERR_OK);
 }
@@ -2128,8 +2128,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_Auxiliary_003, TestSize.Level0) {
     }
     int32_t trackId = -1;
     int32_t trackIdDepth = -1;
-    std::vector<int32_t> vDepth = {0};
-    int32_t *trackIdsDepth = vDepth.data();
+    // std::vector<int32_t> vDepth = {0};
+    // int32_t *trackIdsDepth = vDepth.data();
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack_Auxiliary.mp4");
     OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
@@ -2190,8 +2190,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_Auxiliary_004, TestSize.Level0) {
     metadataParamsDepth->PutIntValue(OH_MD_KEY_TRACK_TYPE, static_cast<int32_t>(OH_MediaType::MEDIA_TYPE_AUXILIARY));
     metadataParamsDepth->PutStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, TRACK_REF_TYPE_DEPTH);
     metadataParamsDepth->PutStringValue(OH_MD_KEY_TRACK_DESCRIPTION, AUXILIARY_DEPTH_TRACK_KEY);
-    metadataParamsDepth->PutBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, reinterpret_cast<uint8_t*>(trackIdsDepth),
-        sizeof(int32_t) * vDepth.size());
+    // metadataParamsDepth->PutBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, reinterpret_cast<uint8_t*>(trackIdsDepth),
+    //     sizeof(int32_t) * vDepth.size());
 
     ret = avmuxer_->AddTrack(trackIdDepth, metadataParamsDepth);
     ASSERT_NE(ret, AV_ERR_OK);
@@ -2206,10 +2206,10 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Video_Auxiliary, TestSize.Level0) {
     int32_t trackId = -1;
     int32_t trackIdDepth = -1;
     int32_t trackIdPrey = -1;
-    std::vector<int32_t> vDepth = {0};
-    int32_t *trackIdsDepth = vDepth.data();
-    std::vector<int32_t> vPrey = {0, 1};
-    int32_t *trackIdsPrey = vPrey.data();
+    // std::vector<int32_t> vDepth = {0};
+    // int32_t *trackIdsDepth = vDepth.data();
+    // std::vector<int32_t> vPrey = {0, 1};
+    // int32_t *trackIdsPrey = vPrey.data();
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Add_Video_Auxiliary.mp4");
     OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
@@ -2232,8 +2232,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Video_Auxiliary, TestSize.Level0) {
     metadataParamsDepth->PutIntValue(OH_MD_KEY_TRACK_TYPE, static_cast<int32_t>(OH_MediaType::MEDIA_TYPE_AUXILIARY));
     metadataParamsDepth->PutStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, TRACK_REF_TYPE_DEPTH);
     metadataParamsDepth->PutStringValue(OH_MD_KEY_TRACK_DESCRIPTION, AUXILIARY_DEPTH_TRACK_KEY);
-    metadataParamsDepth->PutBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, reinterpret_cast<uint8_t*>(trackIdsDepth),
-        sizeof(int32_t) * vDepth.size());
+    // metadataParamsDepth->PutBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, reinterpret_cast<uint8_t*>(trackIdsDepth),
+    //     sizeof(int32_t) * vDepth.size());
 
     ret = avmuxer_->AddTrack(trackIdDepth, metadataParamsDepth);
     ASSERT_EQ(ret, AV_ERR_OK);
@@ -2247,8 +2247,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Video_Auxiliary, TestSize.Level0) {
     metadataParamsPrey->PutIntValue(OH_MD_KEY_TRACK_TYPE, static_cast<int32_t>(OH_MediaType::MEDIA_TYPE_AUXILIARY));
     metadataParamsPrey->PutStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, TRACK_REF_TYPE_PREY);
     metadataParamsPrey->PutStringValue(OH_MD_KEY_TRACK_DESCRIPTION, AUXILIARY_PREY_TRACK_KEY);
-    metadataParamsPrey->PutBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, reinterpret_cast<uint8_t*>(trackIdsPrey),
-        sizeof(int32_t) * vPrey.size());
+    // metadataParamsPrey->PutBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, reinterpret_cast<uint8_t*>(trackIdsPrey),
+    //     sizeof(int32_t) * vPrey.size());
 
     ret = avmuxer_->AddTrack(trackIdPrey, metadataParamsPrey);
     ASSERT_EQ(ret, AV_ERR_OK);

@@ -740,10 +740,10 @@ bool FFmpegMuxerPlugin::CheckTrackDescription(const std::shared_ptr<Meta> &track
 
 bool FFmpegMuxerPlugin::CheckReferenceTrackIDS(const std::shared_ptr<Meta> &trackDesc, std::string &toStringTrackId)
 {
-    std::vector<uint8_t> vTrackIDs;
+    std::vector<int32_t> vTrackIDs;
     if (trackDesc->Find(Tag::REFERENCE_TRACK_IDS) != trackDesc->end()) {
         trackDesc->Get<Tag::REFERENCE_TRACK_IDS>(vTrackIDs);
-        int32_t *trackIDs = reinterpret_cast<int32_t*>(vTrackIDs.data());
+        int32_t *trackIDs = vTrackIDs.data();
         for (int32_t i = 0; i < vTrackIDs.size() / sizeof(int32_t); i++) {
             if (i > 0) {
                 toStringTrackId += ',';

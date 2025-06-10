@@ -26,7 +26,7 @@
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
 #include "block_queue_pool.h"
-#include "stream_parser_manager.h"
+#include "multi_stream_parser_manager.h"
 #include "reference_parser_manager.h"
 #include "meta/meta.h"
 
@@ -183,7 +183,6 @@ private:
     AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
-    Status GetSeiInfo();
     bool HasCodecParameters();
     Status GetMediaInfo();
     void ResetParam();
@@ -234,11 +233,19 @@ private:
 
     std::shared_ptr<AVInputFormat> pluginImpl_ {nullptr};
     std::shared_ptr<AVFormatContext> formatContext_ {nullptr};
-    std::shared_ptr<AVBSFContext> avbsfContext_ {nullptr};
-    std::shared_ptr<StreamParserManager> streamParser_ {nullptr};
-    bool streamParserInited_ {false};
+    std::map<uint32_t, std::shared_ptr<AVBSFContext>> avbsfContexts_ {};
+    
+    void UpdateReferencedIds();
+    std::map<int32_t, std::vector<int32_t>> referenceIdsMap_ {};
+    
+    Status ParseVideoFirstFrame();
+    bool FirstFrameValid(uint32_t trackIndex);
+    std::map<int32_t, AVPacket *> firstFrameMap_ {};
+    bool TrackIsChecked(const uint32_t trackId);
+    std::vector<uint32_t> checkedTrackIds_ {};
 
-    Status GetVideoFirstKeyFrame(uint32_t trackIndex);
+    std::shared_ptr<MultiStreamParserManager> streamParsers_ {nullptr};
+
     void ParseHEVCMetadataInfo(const AVStream& avStream, Meta &format);
     AVPacket *firstFrame_ = nullptr;
 
