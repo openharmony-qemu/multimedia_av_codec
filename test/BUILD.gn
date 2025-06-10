@@ -30,8 +30,10 @@ group("av_codec_unit_test") {
     if (av_codec_support_test) {
       deps += [
         "unittest/audio_capture_test:audio_capture_module_unit_test",
+        "unittest/audio_decoder_filter_callback_unittest:audio_decoder_filter_callback_unittest",
         "unittest/audio_encoder_filter_test:audio_encoder_filter_optimize_unitest",
         "unittest/audio_encoder_filter_test:audio_encoder_filter_unitest",
+        "unittest/audio_encoder_filter_unittest:audio_encoder_filter_unittest",
         "unittest/audio_sampleformat_unittest:audio_sampleformat_unittest",
         "unittest/audio_sink_unit_test:av_audio_sink_test",
         "unittest/audio_test:audio_codec_inner_avbuffer_unit_test",
@@ -97,8 +99,11 @@ group("av_codec_unit_test") {
         "unittest/sample_queue_test:sample_queue_unit_test",
         "unittest/sample_queue_unit_test:sample_queue_test",
         "unittest/source_test:source_unit_test",
+        "unittest/source_unit_test:source_test",
+        "unittest/stream_demuxer_unittest:stream_demuxer_unittest",
         "unittest/subtitle_sink_unittest:subtitle_sink_unittest",
         "unittest/surface_encoder_adapter_unittest:surface_encoder_adapter_unittest",
+        "unittest/video_capture_filter_unittest:video_capture_filter_unittest",
         "unittest/video_sink_unittest:video_sink_unittest",
         "unittest/video_test/drm_decryptor_test:drm_decryptor_coverage_unit_test",
         "unittest/video_test/fcodec_test:av_video_capi_unit_test",
