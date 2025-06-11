@@ -146,6 +146,8 @@ public:
     Status GetBufferDesc(AudioStandard::BufferDesc &bufferDesc) override;
 
     bool IsFormatSupported(const std::shared_ptr<Meta>& meta) override;
+
+    Status SetAudioHapticSyncId(int32_t syncId) override;
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {

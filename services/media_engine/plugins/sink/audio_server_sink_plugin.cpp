@@ -1371,6 +1371,13 @@ bool AudioServerSinkPlugin::IsOffloading()
     FALSE_RETURN_V(audioRenderer_ != nullptr, false);
     return audioRenderer_->IsOffloadEnable();
 }
+
+Status AudioServerSinkPlugin::SetAudioHapticSyncId(int32_t syncId)
+{
+    FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
+    // audioRenderer_->SetAudioHapticsSyncId(syncId);
+    return Status::OK;
+}
 } // namespace Plugin
 } // namespace Media
 } // namespace OHOS
