@@ -272,6 +272,7 @@ private:
     std::string appPreviousRequestUrl_ {};
     FairMutex deinitMutex_ {};
     std::string contentType_;
+    bool isContentTypeUpdated_{false};
     ConditionVariable sleepCond_;
     FairMutex sleepMutex_;
 };
