@@ -235,7 +235,7 @@ private:
     std::shared_ptr<AVFormatContext> formatContext_ {nullptr};
     std::map<uint32_t, std::shared_ptr<AVBSFContext>> avbsfContexts_ {};
     
-    void UpdateReferencedIds();
+    void UpdateReferenceIds();
     std::map<int32_t, std::vector<int32_t>> referenceIdsMap_ {};
     
     Status ParseVideoFirstFrame();

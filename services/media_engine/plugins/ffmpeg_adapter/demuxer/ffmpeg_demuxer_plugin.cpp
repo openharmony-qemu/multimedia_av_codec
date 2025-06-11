@@ -1258,7 +1258,7 @@ Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
     return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::UpdateReferencedIds()
+void FFmpegDemuxerPlugin::UpdateReferenceIds()
 {
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         if (trackIndex >= mediaInfo_.tracks.size()) {
@@ -1332,7 +1332,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo()
         mediaInfo_.tracks.push_back(meta);
         DemuxerLogCompressor::StringifyMeta(meta, trackId);
     }
-    UpdateReferencedIds();
+    UpdateReferenceIds();
     return Status::OK;
 }
 
