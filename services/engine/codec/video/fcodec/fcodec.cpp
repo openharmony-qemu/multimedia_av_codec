@@ -96,7 +96,8 @@ FCodec::~FCodec()
     mallopt(M_FLUSH_THREAD_CACHE, 0);
 }
 
-int32_t FCodec::Init(Meta &callerInfo) {
+int32_t FCodec::Init(Meta &callerInfo)
+{
     callerInfo.GetData("av_codec_event_info_instance_id", instanceId_);
     decName_ = "fdecoder_[" + std::to_string(instanceId_) + "]";
     AVCODEC_LOGI("current codec name: %{public}s", decName_.c_str());
