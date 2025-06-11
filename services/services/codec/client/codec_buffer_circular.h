@@ -39,6 +39,7 @@ public:
 
     void SetIsRunning(bool isRunning);
     bool CanEnableSyncMode();
+    bool CanEnableAsyncMode();
     void EnableSyncMode();
     void EnableAsyncMode();
     bool IsSyncMode();
