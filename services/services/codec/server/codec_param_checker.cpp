@@ -749,12 +749,12 @@ int32_t BFrameGopModeChecker(CapabilityData &capData, Format &format, CodecScena
         return AVCS_ERR_OK;
     }
     PrintParam(condExist, Tag::VIDEO_ENCODER_ENABLE_B_FRAME, cond);
-    bool modeExist = format.GetIntValue(Tag::VIDEO_ENCODER_B_FRAME_GOP_MODE, mode);
+    bool modeExist = format.GetIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
     if (!modeExist) {
         format.PutIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
             static_cast<int32_t>(Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE));
     }
-    PrintParam(modeExist, Tag::VIDEO_ENCODER_B_FRAME_GOP_MODE, mode);
+    PrintParam(modeExist, Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
     format.PutIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
     bool maxBFrameExist = format.GetIntValue(Tag::VIDEO_ENCODER_MAX_B_FRAME, maxBFrameCount);
     if (maxBFrameExist) {
