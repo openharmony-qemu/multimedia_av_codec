@@ -727,6 +727,7 @@ int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenari
         return AVCS_ERR_INVALID_VAL;
     }
     return AVCS_ERR_OK;
+}
 
 int32_t BFrameGopModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
