@@ -108,7 +108,8 @@ HevcDecoder::HevcDecoder(const std::string &name) : codecName_(name), state_(Sta
     InitHevcParams();
 }
 
-int32_t HevcDecoder::Init(Meta &callerInfo) {
+int32_t HevcDecoder::Init(Meta &callerInfo)
+{
     callerInfo.GetData("av_codec_event_info_instance_id", instanceId_);
     decName_ = "hevcdecoder_[" + std::to_string(instanceId_) + "]";
     AVCODEC_LOGI("HevcDecoder codec name: %{public}s", decName_.c_str());
