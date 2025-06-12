@@ -1379,9 +1379,9 @@ Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
     if (bitRate <= 0) {
         videoBitrate_ = DEFAULT_BIT_RATE;
     } else {
-        videoBitrate_ = std::max(currentBitRate_, bitRate);
+        videoBitrate_ = std::max(videoBitrate_, static_cast<uint32_t>(bitRate));
     }
-    currentBitRate_ =  static_cast<int32_t>(videoBitrate_);
+    currentBitRate_ = static_cast<int32_t>(videoBitrate_);
     return Status::OK;
 }
 

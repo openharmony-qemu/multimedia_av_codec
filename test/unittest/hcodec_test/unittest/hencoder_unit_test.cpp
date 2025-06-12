@@ -1293,10 +1293,6 @@ static void ConfigureGopModeForBFrameTest(const std::string &targetType, const s
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 1080);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0);
-
-    format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
-                       Media::Plugins::VIDEO_ENCODE_GOP_DEFAULT_P_MODE);
-    ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
 #ifdef HMOS_TEST

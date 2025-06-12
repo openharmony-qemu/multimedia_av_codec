@@ -59,17 +59,24 @@ int64_t GetAudioLatencyFixDelay()
 
 AudioSink::AudioSink()
 {
-    bool isRenderCallbackMode = system::GetParameter("debug.media_service.audio.audiosink_callback", "1") == "1";
-    MEDIA_LOG_I("AudioSink ctor isRenderCallbackMode:" PUBLIC_LOG_D32, isRenderCallbackMode);
+    bool isRenderCallbackMode =
+        OHOS::system::GetParameter("debug.media_service.audio.audiosink_callback", "1") == "1";
+    bool isProcessInputMerged =
+        OHOS::system::GetParameter("debug.media_service.audio.audiosink_processinput_merged", "1") == "1";
+    MEDIA_LOG_I("AudioSink ctor isRenderCallbackMode: " PUBLIC_LOG_D32 ", isProcessInputMerged: " PUBLIC_LOG_D32,
+        isRenderCallbackMode, isProcessInputMerged);
     isRenderCallbackMode_ = isRenderCallbackMode;
+    isProcessInputMerged_ = isProcessInputMerged;
     syncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
     fixDelay_ = GetAudioLatencyFixDelay();
     plugin_ = CreatePlugin();
 }
 
-AudioSink::AudioSink(bool isRenderCallbackMode) : isRenderCallbackMode_(isRenderCallbackMode)
+AudioSink::AudioSink(bool isRenderCallbackMode, bool isProcessInputMerged)
+    : isRenderCallbackMode_(isRenderCallbackMode), isProcessInputMerged_(isProcessInputMerged)
 {
-    MEDIA_LOG_I("AudioSink ctor isRenderCallbackMode:" PUBLIC_LOG_D32, isRenderCallbackMode);
+    MEDIA_LOG_I("AudioSink ctor default isRenderCallbackMode: " PUBLIC_LOG_D32
+        ", isProcessInputMerged: " PUBLIC_LOG_D32, isRenderCallbackMode, isProcessInputMerged);
     syncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
     fixDelay_ = GetAudioLatencyFixDelay();
     plugin_ = CreatePlugin();
@@ -218,11 +225,6 @@ Status AudioSink::InitAudioSinkInfo(std::shared_ptr<Meta>& meta)
     }
 
     return Status::OK;
-}
-
-bool AudioSink::NeedImmediateRender()
-{
-    return isApe_ || isFlac_;
 }
 
 sptr<AVBufferQueueProducer> AudioSink::GetBufferQueueProducer()
@@ -1132,19 +1134,42 @@ void AudioSink::DrainOutputBuffer(bool flushed)
 {
     std::lock_guard<std::mutex> lock(pluginMutex_);
     FALSE_RETURN(plugin_ != nullptr && inputBufferQueueConsumer_ != nullptr);
-    if (state_ == Pipeline::FilterState::PAUSED || state_ == Pipeline::FilterState::READY ||
-            state_ == Pipeline::FilterState::STOPPED) {
-        MEDIA_LOG_I("DrainOutputBuffer ignore for PAUSE/READY, state = " PUBLIC_LOG_D32, state_.load());
-        return;
-    }
+
     if (isRenderCallbackMode_) {
+        if (state_ != Pipeline::FilterState::RUNNING) {
+            MEDIA_LOG_W("DrainOutputBuffer ignore temporarily for not RUNNINT state: " PUBLIC_LOG_D32
+                ", isProcessInputMerged: " PUBLIC_LOG_D32, state_.load(), isProcessInputMerged_);
+
+            /*
+            * As the AudioRender START and PAUSE procedure may consume a long time about 200 ms,
+            * if the consumption of inputbuffer queue is not excuted in AudioSinkFilter's task working thread,
+            * this RETURN ACTION will cause the filled buffers not been consumed,
+            * which cause the upstream filter RequesetBuffer failed and audio track playback stuck.
+            */
+            if (!isProcessInputMerged_) {
+                return;
+            }
+        }
         GetAvailableOutputBuffers();
     } else {
         std::shared_ptr<AVBuffer> filledOutputBuffer = nullptr;
         Status ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer);
         FALSE_RETURN(ret == Status::OK && filledOutputBuffer != nullptr);
         if (state_ != Pipeline::FilterState::RUNNING || flushed) {
-            MEDIA_LOG_E("Drop buffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
+            MEDIA_LOG_W("DrainOutputBuffer, drop audio buffer pts = " PUBLIC_LOG_D64 ", state: " PUBLIC_LOG_D32
+                ", flushed: " PUBLIC_LOG_D32, filledOutputBuffer->pts_, state_.load(), flushed);
+
+            /*
+             * As START and PAUSE procedure of AudioDecoderFilter and AudioSinkFilter run concurrently
+             * in different working thread, AudioSinkFilter may change to RUNNING state after AudioDecoderFilter
+             * or AudioSinkFilter may change to PAUSED state before AudioDecoderFilter.
+             * This ReleaseBuffer ACTION will cause audio buffer droped, which may cause audio discontinuity.
+             *
+             * So, How to deal with this case?
+             * 1. Try to cache buffers in non RUNNING state, prioritize consuming the cached buffers in RUNNING state?
+             * 2. There may be some buffers that cannot be processed, i.e. do Pause/Resume repeatedly around the ending
+             * and cause the EOS buffer being cached which may cause that the Audio Track can't end.
+             */
             inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
             return;
         }

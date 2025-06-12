@@ -65,7 +65,7 @@ void HlsMediaDownloaderUnitTest ::TearDown(void)
     hlsMediaDownloader = nullptr;
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, GetPlayable_1, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, GetPlayable_1, TestSize.Level0)
 {
     hlsMediaDownloader->isBuffering_ = true;
     EXPECT_FALSE(hlsMediaDownloader->GetPlayable());
@@ -75,7 +75,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GetPlayable_1, TestSize.Level1)
     hlsMediaDownloader->GetReadTimeOut(false);
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, GetPlayable_2, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, GetPlayable_2, TestSize.Level0)
 {
     hlsMediaDownloader->isBuffering_ = false;
     hlsMediaDownloader->isFirstFrameArrived_ = true;

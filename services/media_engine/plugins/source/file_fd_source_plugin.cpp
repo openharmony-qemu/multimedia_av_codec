@@ -575,7 +575,8 @@ void FileFdSourcePlugin::NotifyReadFail()
     MEDIA_LOG_I("NotifyReadFail in.");
     if (callback_ != nullptr && !isInterrupted_) {
         MEDIA_LOG_I("Read OnEvent read fail");
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, NetworkClientErrorCode::ERROR_TIME_OUT, "read"});
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR,
+            static_cast<int32_t>(NetworkClientErrorCode::ERROR_TIME_OUT), "read"});
     } else {
         MEDIA_LOG_E("CLIENT_ERROR callback_ is nullptr or isInterrupted_ is true");
     }
