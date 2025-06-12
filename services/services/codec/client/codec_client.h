@@ -19,26 +19,24 @@
 #include <shared_mutex>
 #include "avcodec_log.h"
 #include "buffer_converter.h"
+#include "codec_buffer_circular.h"
 #include "codec_listener_stub.h"
 #include "i_codec_service.h"
 #include "i_standard_codec_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 class CodecClientCallback;
-class CodecClient : public MediaCodecCallback,
-                    public AVCodecCallback,
-                    public MediaCodecParameterCallback,
-                    public MediaCodecParameterWithAttrCallback,
-                    public ICodecService,
-                    public std::enable_shared_from_this<CodecClient> {
+class CodecBufferCircular;
+class CodecClient : public MediaCodecCallback, public ICodecService, public std::enable_shared_from_this<CodecClient> {
 public:
     static int32_t Create(const sptr<IStandardCodecService> &ipcProxy, std::shared_ptr<ICodecService> &codec);
     explicit CodecClient(const sptr<IStandardCodecService> &ipcProxy);
     ~CodecClient();
     // 业务
-    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name,
-                 Media::Meta &callerInfo, API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
+    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Media::Meta &callerInfo,
+                 API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
     int32_t Configure(const Format &format) override;
     int32_t Prepare() override;
     int32_t Start() override;
@@ -55,6 +53,10 @@ public:
     int32_t GetOutputFormat(Format &format) override;
     int32_t ReleaseOutputBuffer(uint32_t index, bool render) override;
     int32_t RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs) override;
+    int32_t QueryInputBuffer(uint32_t &index, int64_t timeoutUs) override;
+    int32_t QueryOutputBuffer(uint32_t &index, int64_t timeoutUs) override;
+    std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index) override;
+    std::shared_ptr<AVBuffer> GetOutputBuffer(uint32_t index) override;
     int32_t SetParameter(const Format &format) override;
     int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
@@ -71,44 +73,36 @@ public:
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                 std::shared_ptr<AVSharedMemory> buffer) override;
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
-    void OnInputParameterAvailable(uint32_t index, std::shared_ptr<Format> parameter) override;
-    void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<Format> attribute,
-                                           std::shared_ptr<Format> parameter) override;
 
 private:
     int32_t CreateListenerObject();
     void UpdateGeneration();
     void UpdateFormat(Format &format);
     void SetNeedListen(const bool needListen);
-    typedef enum : uint32_t {
+    typedef enum : uint8_t {
         MEMORY_CALLBACK = 1,
         BUFFER_CALLBACK,
         INVALID_CALLBACK,
     } CallbackMode;
 
-    typedef enum : uint32_t {
-        CODEC_BUFFER_MODE = 0,
-        CODEC_SURFACE_MODE = 1,
-        CODEC_SET_PARAMETER_CALLBACK = 1 << 1,
-        CODEC_SURFACE_MODE_WITH_SETPARAMETER = CODEC_SURFACE_MODE | CODEC_SET_PARAMETER_CALLBACK,
+    typedef enum : uint8_t {
+        CODEC_DEFAULT_MODE = 0,
+        CODEC_SURFACE_INPUT = 1 << 0,
+        CODEC_SURFACE_OUTPUT = 1 << 1,
+        CODEC_ENABLE_PARAMETER = 1 << 2,
+        CODEC_SURFACE_MODE_WITH_PARAMETER = CODEC_SURFACE_INPUT | CODEC_ENABLE_PARAMETER,
     } CodecMode;
 
-    bool hasOnceConfigured_ = false;
-    uint32_t callbackMode_ = INVALID_CALLBACK;
-    uint32_t codecMode_ = CODEC_BUFFER_MODE;
+    bool isConfigured_ = false;
+    uint8_t callbackMode_ = INVALID_CALLBACK;
+    uint8_t codecMode_ = CODEC_DEFAULT_MODE;
     AVCodecType type_ = AVCODEC_TYPE_NONE;
     sptr<IStandardCodecService> codecProxy_ = nullptr;
     sptr<CodecListenerStub> listenerStub_ = nullptr;
-    std::shared_ptr<AVCodecCallback> callback_ = nullptr;
-    std::shared_ptr<MediaCodecCallback> videoCallback_ = nullptr;
-    std::shared_ptr<MediaCodecParameterCallback> paramCallback_ = nullptr;
-    std::shared_ptr<MediaCodecParameterWithAttrCallback> paramWithAttrCallback_ = nullptr;
     std::shared_ptr<BufferConverter> converter_ = nullptr;
+    CodecBufferCircular circular_;
 
     std::shared_mutex mutex_;
     std::shared_ptr<std::recursive_mutex> syncMutex_ = nullptr;

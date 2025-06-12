@@ -205,6 +205,38 @@ int32_t AVCodecVideoDecoderImpl::RenderOutputBufferAtTime(uint32_t index, int64_
     return codecClient_->RenderOutputBufferAtTime(index, renderTimestampNs);
 }
 
+int32_t AVCodecVideoDecoderImpl::QueryInputBuffer(uint32_t &index, int64_t timeoutUs)
+{
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
+    return codecClient_->QueryInputBuffer(index, timeoutUs);
+}
+
+int32_t AVCodecVideoDecoderImpl::QueryOutputBuffer(uint32_t &index, int64_t timeoutUs)
+{
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
+    return codecClient_->QueryOutputBuffer(index, timeoutUs);
+}
+
+std::shared_ptr<AVBuffer> AVCodecVideoDecoderImpl::GetInputBuffer(uint32_t index)
+{
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, nullptr, "Codec service is nullptr");
+
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
+    return codecClient_->GetInputBuffer(index);
+}
+
+std::shared_ptr<AVBuffer> AVCodecVideoDecoderImpl::GetOutputBuffer(uint32_t index)
+{
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, nullptr, "Codec service is nullptr");
+
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
+    return codecClient_->GetOutputBuffer(index);
+}
+
 int32_t AVCodecVideoDecoderImpl::SetParameter(const Format &format)
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");

@@ -925,6 +925,10 @@ inline void CodecServer::StatusChanged(CodecStatus newStatus)
     if (status_ == newStatus) {
         return;
     }
+    if (status_ == ERROR && videoCb_ != nullptr &&
+        (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) {
+        videoCb_->OnError(AVCODEC_ERROR_FRAMEAORK_FAILED, AVCS_ERR_INVALID_STATE);
+    }
     AVCODEC_LOGI_WITH_TAG("Status %{public}s -> %{public}s", GetStatusDescription(status_).data(),
                           GetStatusDescription(newStatus).data());
     status_ = newStatus;
