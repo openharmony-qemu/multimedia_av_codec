@@ -52,6 +52,9 @@ std::string UriJoin(std::string& baseUrl, const std::string& uri)
         return baseUrl.substr(0, pos) + uri;
     } else {
         std::string::size_type pos = baseUrl.rfind('/');
+        if (pos == std::string::npos) {
+            return uri;
+        }
         return baseUrl.substr(0, pos + 1) + uri;
     }
 }
