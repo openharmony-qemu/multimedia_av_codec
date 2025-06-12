@@ -102,6 +102,13 @@ Status RegisterPlugins(const std::shared_ptr<Register>& reg);
 
 void ReplaceDelimiter(const std::string &delmiters, char newDelimiter, std::string &str);
 
+void FreeAVPacket(AVPacket* pkt)
+{
+    av_packet_free(&pkt);
+    av_free(pkt);
+    pkt = nullptr;
+}
+
 static const std::map<SeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
     { SeekMode::SEEK_PREVIOUS_SYNC, AVSEEK_FLAG_BACKWARD },
     { SeekMode::SEEK_NEXT_SYNC, AVSEEK_FLAG_FRAME },
@@ -1296,7 +1303,7 @@ void FFmpegDemuxerPlugin::UpdateReferenceIds()
 Status FFmpegDemuxerPlugin::GetMediaInfo()
 {
     MediaAVCodec::AVCodecTrace trace("FFmpegDemuxerPlugin::GetMediaInfo");
-    Status ret = ParseVideoFirstFrame();
+    Status ret = ParseVideoFirstFrames();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse video info failed");
 
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo_.general);
@@ -1437,14 +1444,54 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
     return ret;
 }
 
-Status FFmpegDemuxerPlugin::ParseVideoFirstFrame()
+Status FFmpegDemuxerPlugin::SetFirstFrame(AVPacket * pkt)
+{
+    auto firstFrame = av_packet_alloc();
+    FALSE_RETURN_V_MSG_E(firstFrame != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");
+    int32_t avRet = av_new_packet(firstFrame, pkt->size);
+    if (avRet < 0) {
+        MEDIA_LOG_E("Call av_new_packet failed");
+        FreeAVPacket(firstFrame);
+        return Status::ERROR_INVALID_DATA;
+    }
+    avRet = av_packet_copy_props(firstFrame, pkt);
+    if (avRet < 0) {
+        MEDIA_LOG_E("Call av_packet_copy_props failed");
+        FreeAVPacket(firstFrame);
+        return Status::ERROR_INVALID_DATA;
+    }
+    auto ret = memcpy_s(firstFrame->data, pkt->size, pkt->data, pkt->size);
+    if (ret != EOK) {
+        MEDIA_LOG_E("Memcpy failed, ret:" PUBLIC_LOG_D32, ret);
+        FreeAVPacket(firstFrame);
+        return Status::ERROR_INVALID_DATA;
+    }
+    if (firstFrame->data == nullptr) {
+        MEDIA_LOG_E("Get first frame failed");
+        FreeAVPacket(firstFrame);
+        return Status::ERROR_WRONG_STATE;
+    }
+    bool convertRet = streamParsers_->ConvertExtraDataToAnnexb(
+        pkt->stream_index,
+        formatContext_->streams[pkt->stream_index]->codecpar->extradata,
+        formatContext_->streams[pkt->stream_index]->codecpar->extradata_size);
+    if (!convertRet) {
+        MEDIA_LOG_E("ConvertExtraDataToAnnexb failed:" PUBLIC_LOG_D32, pkt->stream_index);
+        FreeAVPacket(firstFrame);
+        return Status::ERROR_INVALID_DATA;
+    }
+    firstFrameMap_[pkt->stream_index] = firstFrame;
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(streamParsers_ != nullptr, Status::ERROR_NULL_POINTER, "StreamParser is nullptr");
     AVPacket *pkt = nullptr;
     Status ret = Status::OK;
     while (checkedTrackIds_.size() < formatContext_->nb_streams && !streamParsers_->AllParserInited()) {
-        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, "ParseVideoFirstFrame interrupt");
+        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, "ParseVideoFirstFrames interrupt");
         if (pkt == nullptr) {
             pkt = av_packet_alloc();
             FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");
@@ -1470,19 +1517,12 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrame()
         FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_NULL_POINTER,
             "Stream " PUBLIC_LOG_D32 " is invalid", pkt->stream_index);
         if (streamParsers_->ParserIsCreated(trackId) && !streamParsers_->ParserIsInited(trackId)) {
-            auto firstFrame = av_packet_alloc();
-            FALSE_RETURN_V_MSG_E(firstFrame != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");
-            int avRet = av_new_packet(firstFrame, pkt->size);
-            FALSE_RETURN_V_MSG_E(avRet >= 0, Status::ERROR_INVALID_DATA, "Call av_new_packet failed");
-            av_packet_copy_props(firstFrame, pkt);
-            memcpy_s(firstFrame->data, pkt->size, pkt->data, pkt->size);
-            FALSE_RETURN_V_MSG_E(firstFrame->data != nullptr, Status::ERROR_WRONG_STATE, "Get first frame failed");
-            
-            bool convertRet = streamParsers_->ConvertExtraDataToAnnexb(
-                pkt->stream_index, stream->codecpar->extradata, stream->codecpar->extradata_size);
-            FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_INVALID_DATA,
-                "ConvertExtraDataToAnnexb failed:" PUBLIC_LOG_D32, stream->index);
-            firstFrameMap_[stream->index] = firstFrame;
+            ret = SetFirstFrame(pkt);
+            if (ret != Status::OK) {
+                av_packet_free(&pkt);
+                MEDIA_LOG_E("Set first frame failed, track " PUBLIC_LOG_D32, pkt->stream_index);
+                return ret;
+            }
         }
         pkt = nullptr;
     }

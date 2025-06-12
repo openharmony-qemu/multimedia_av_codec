@@ -12,9 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#define HST_LOG_TAG "MultiStreamParserManager"
-
 #include "multi_stream_parser_manager.h"
 #include <dlfcn.h>
 #include "common/log.h"
@@ -37,9 +34,9 @@ MultiStreamParserManager::~MultiStreamParserManager()
 {
     for (auto streamInfo : streamMap_) {
         VideoStreamType streamType = (streamInfo.second).type;
-        StreamParser* streamParser = (streamInfo.second).parser;
+        std::shared_ptr<StreamParser> streamParser = (streamInfo.second).parser;
         if (streamParser && destroyFuncMap_.count(streamType) > 0) {
-            destroyFuncMap_[streamType](streamParser);
+            destroyFuncMap_[streamType](streamParser.get());
             (streamInfo.second).parser = nullptr;
         }
     }
@@ -62,7 +59,7 @@ Status MultiStreamParserManager::Create(uint32_t trackId, VideoStreamType stream
         streamMap_[trackId].parser = nullptr;
     }
     streamMap_[trackId].type = streamType;
-    streamMap_[trackId].parser = streamParser;
+    streamMap_[trackId].parser = std::shared_ptr<StreamParser>(streamParser);
     streamMap_[trackId].inited = false;
     return Status::OK;
 }
