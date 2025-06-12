@@ -152,6 +152,7 @@ private:
     uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
     bool CheckAutoSelectBitrate();
     bool IsAutoSelectConditionOk();
+    void WaitCacheBufferInit();
 
 private:
     std::shared_ptr<RingBuffer> ringBuffer_;
