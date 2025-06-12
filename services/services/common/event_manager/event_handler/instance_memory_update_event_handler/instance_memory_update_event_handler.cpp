@@ -24,6 +24,7 @@
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "meta/meta_key.h"
+#include "config_policy_utils.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceMemoryUpdateEventHandler"};
@@ -224,12 +225,13 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryExceedThresholdAndReport
 
 uint32_t InstanceMemoryUpdateEventHandler::ThresholdParser::GetThreshold()
 {
-    std::ifstream thresholdConfigFile("etc/reliability/leak_detector_config.json");
-    CHECK_AND_RETURN_RET_LOG(thresholdConfigFile.is_open(), UINT32_MAX, "Can not open threshold config json file");
+    char configFilePathBuf[UINT8_MAX];
+    std::ifstream configFile(GetOneCfgFile("etc/reliability/leak_detector_config.json", configFilePathBuf, UINT8_MAX));
+    CHECK_AND_RETURN_RET_LOG(configFile.is_open(), UINT32_MAX, "Can not open threshold config json file");
 
     std::string line;
     std::string configJson;
-    while (thresholdConfigFile >> line && configJson.size() < THRESHOLD_CONFIG_FILE_SIZE_MAX) {
+    while (configFile >> line && configJson.size() < THRESHOLD_CONFIG_FILE_SIZE_MAX) {
         configJson += line;
     }
 
