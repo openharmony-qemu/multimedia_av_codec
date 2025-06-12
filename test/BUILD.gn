@@ -258,6 +258,8 @@ group("av_codec_fuzz_test") {
       "fuzztest/encoderinner_fuzzer:EncoderInnerFuzzTest",
       "fuzztest/encodersetparameter_fuzzer:EncoderSetParameterFuzzTest",
       "fuzztest/fcodecserver_fuzzer:FCodecServerFuzzTest",
+      "fuzztest/fcodecservermemrecycle_fuzzer:FCodecServerMemrecycleFuzzTest",
+      "fuzztest/fcodecsurfaceconfigure_fuzzer:FCodecSurfaceConfigureFuzzTest",
       "fuzztest/h263swdecoderconfigure_fuzzer:H263SwdecoderConfigureFuzzTest",
       "fuzztest/h263swdecoderresource_fuzzer:H263SwdecoderResourceFuzzTest",
       "fuzztest/h263swdecoderserver_fuzzer:H263SwdecoderServerFuzzTest",
