@@ -225,8 +225,9 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryExceedThresholdAndReport
 
 uint32_t InstanceMemoryUpdateEventHandler::ThresholdParser::GetThreshold()
 {
-    char configFilePathBuf[UINT8_MAX];
-    std::ifstream configFile(GetOneCfgFile("etc/reliability/leak_detector_config.json", configFilePathBuf, UINT8_MAX));
+    char configFilePathBuf[MAX_PATH_LEN];
+    GetOneCfgFile("etc/reliability/leak_detector_config.json", configFilePathBuf, MAX_PATH_LEN);
+    std::ifstream configFile(configFilePathBuf);
     CHECK_AND_RETURN_RET_LOG(configFile.is_open(), UINT32_MAX, "Can not open threshold config json file");
 
     std::string line;
