@@ -52,6 +52,12 @@ struct EBRParam {
     int32_t isSkip;
 };
 
+struct SQRParam {
+    std::optional<int32_t> bitrate;
+    std::optional<int32_t> maxBitrate;
+    std::optional<int32_t> sqrFactor;
+};
+
 enum ParamType {
     SET_PARAM,
     PER_FRAME_PARAM,
@@ -66,6 +72,7 @@ struct SetParameterParams {
     std::optional<VideoRotation> rotate;
     std::optional<OH_ScalingMode> scaleMode;
     std::optional<uint32_t> targetQp;
+    std::optional<SQRParam> sqrParam;
 };
 
 struct PerFrameParams {

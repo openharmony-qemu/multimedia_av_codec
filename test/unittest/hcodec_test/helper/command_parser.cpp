@@ -391,6 +391,18 @@ void CommandOpt::ParseSetParameter(uint32_t frameNo, const string &s)
         value >> targetQp;
         setParameterParamsMap[frameNo].targetQp = targetQp;
     }
+    if (key == "sqr") { // sqr,bitrate(optional),maxBitrate(optional),sqrFactor(optional)
+        SQRParam sqrParam;
+        std::string token;
+        std::vector<std::optional<int>> sqrUserSet;
+        while (std::getline(value, token, ',')) {
+            sqrUserSet.push_back(token.empty() ? std::nullopt : std::optional<int32_t>(std::stoi(token)));
+        }
+        if (sqrUserSet.size() > 0) sqrParam.bitrate = sqrUserSet[0];
+        if (sqrUserSet.size() > 1) sqrParam.maxBitrate = sqrUserSet[1];
+        if (sqrUserSet.size() > 2) sqrParam.sqrFactor = sqrUserSet[2];
+        setParameterParamsMap[frameNo].sqrParam = sqrParam;
+    }
 }
 
 void CommandOpt::ParsePerFrameParam(uint32_t frameNo, const string &s)
@@ -558,6 +570,16 @@ void CommandOpt::Print() const
         }
         if (setparam.frameRate.has_value()) {
             TLOGI("    frameRate %f", setparam.frameRate.value());
+        }
+        if (setparam.sqrParam.has_value()) {
+            TLOGI("    sqrParam: %s %s %s",
+                setparam.sqrParam->bitrate.has_value() ?
+                    ("bitrate="+std::to_string(setparam.sqrParam->bitrate.value())).c_str() : "",
+                setparam.sqrParam->maxBitrate.has_value() ?
+                    ("maxBitrate="+std::to_string(setparam.sqrParam->maxBitrate.value())).c_str() : "",
+                setparam.sqrParam->sqrFactor.has_value() ?
+                    ("sqrFactor="+std::to_string(setparam.sqrParam->sqrFactor.value())).c_str() : ""
+            );
         }
     }
     for (const auto &[frameNo, perFrame] : perFrameParamsMap) {
