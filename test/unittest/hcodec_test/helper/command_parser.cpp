@@ -400,7 +400,7 @@ void CommandOpt::ParseSetParameter(uint32_t frameNo, const string &s)
         }
         if (sqrUserSet.size() > 0) sqrParam.bitrate = sqrUserSet[0];
         if (sqrUserSet.size() > 1) sqrParam.maxBitrate = sqrUserSet[1];
-        if (sqrUserSet.size() > 2) sqrParam.sqrFactor = sqrUserSet[2];
+        if (sqrUserSet.size() > 2) sqrParam.sqrFactor = sqrUserSet[2]; // sqrFactor index:2
         setParameterParamsMap[frameNo].sqrParam = sqrParam;
     }
 }
