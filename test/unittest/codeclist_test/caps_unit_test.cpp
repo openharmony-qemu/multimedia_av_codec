@@ -1147,6 +1147,20 @@ HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_003, TestSize.Level1)
 }
 
 /**
+ * @tc.name: AVCaps_FeatureProperties_004
+ * @tc.desc: AVCaps query unspported feature properties
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_004, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_B_FRAME);
+    EXPECT_EQ(property, nullptr);
+}
+
+/**
  * @tc.name: AVCaps_Levels_001
  * @tc.desc: AVCaps query H264 hw decoder supported levels for baseline\main\high profile
  * @tc.type: FUNC

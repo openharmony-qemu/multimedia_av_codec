@@ -35,7 +35,7 @@ public:
 
 class MockAudioDataSource : public IAudioDataSource {
 public:
-    MOCK_METHOD(AudioDataSourceReadAtActionState, ReadAt, 
+    MOCK_METHOD(AudioDataSourceReadAtActionState, ReadAt,
                 (std::shared_ptr<AVBuffer> buffer, uint32_t length), (override));
     MOCK_METHOD(int32_t, GetSize, (int64_t& size), (override));
     MOCK_METHOD(void, SetVideoFirstFramePts, (int64_t firstFramePts), (override));

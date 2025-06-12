@@ -46,7 +46,7 @@ class TaskInner;
 
 class Task {
 public:
-    Task(const std::string& name) {};
+    explicit Task(const std::string& name) {};
     virtual ~Task() = default;
     MOCK_METHOD(void, Start, (), ());
     MOCK_METHOD(void, Stop, (), ());

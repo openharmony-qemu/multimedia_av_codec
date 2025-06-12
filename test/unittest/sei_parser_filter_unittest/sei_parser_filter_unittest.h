@@ -99,17 +99,19 @@ public:
     MOCK_METHOD(Status, Reset, (), (override));
     MOCK_METHOD(void, AddSynchronizer, (IMediaSynchronizer* syncer), (override));
     MOCK_METHOD(void, RemoveSynchronizer, (IMediaSynchronizer* syncer), (override));
-    bool UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, IMediaTime iMediaTime, 
+    bool UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, IMediaTime iMediaTime,
         IMediaSynchronizer* supplier) override { return true; }
-    MOCK_METHOD(bool, UpdateTimeAnchor_Forward, 
+    MOCK_METHOD(bool, UpdateTimeAnchor_Forward,
                 (int64_t clockTime, int64_t delayTime, IMediaTime iMediaTime, IMediaSynchronizer* supplier));
     MOCK_METHOD(int64_t, GetMediaTimeNow, (), (override));
     MOCK_METHOD(int64_t, GetClockTimeNow, (), (override));
     MOCK_METHOD(int64_t, GetAnchoredClockTime, (int64_t mediaTime), (override));
     MOCK_METHOD(void, ReportPrerolled, (IMediaSynchronizer* supplier), (override));
     MOCK_METHOD(void, ReportEos, (IMediaSynchronizer* supplier), (override));
-    MOCK_METHOD(void, SetMediaTimeRangeStart, (int64_t startMediaTime, int32_t trackId, IMediaSynchronizer* supplier), (override));
-    MOCK_METHOD(void, SetMediaTimeRangeEnd, (int64_t endMediaTime, int32_t trackId, IMediaSynchronizer* supplier), (override));
+    MOCK_METHOD(void, SetMediaTimeRangeStart, (int64_t startMediaTime, int32_t trackId,
+        IMediaSynchronizer* supplier), (override));
+    MOCK_METHOD(void, SetMediaTimeRangeEnd, (int64_t endMediaTime, int32_t trackId,
+        IMediaSynchronizer* supplier), (override));
     MOCK_METHOD(int64_t, GetSeekTime, (), (override));
     MOCK_METHOD(Status, SetPlaybackRate, (float rate), (override));
     MOCK_METHOD(float, GetPlaybackRate, (), (override));

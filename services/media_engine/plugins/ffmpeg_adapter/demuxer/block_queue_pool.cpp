@@ -368,7 +368,7 @@ Status BlockQueuePool::GetLastPTSByTrackId(uint32_t trackIndex, int64_t& maxPts)
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     maxPts = INT64_MIN;
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
-    if (!HasQueue(trackIndex)) {
+    if (!HasCache(trackIndex)) {
         MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
         return Status::ERROR_NOT_EXISTED;
     }

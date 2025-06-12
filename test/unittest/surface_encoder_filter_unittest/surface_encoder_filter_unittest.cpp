@@ -52,40 +52,25 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, SurfaceEncoderFilter_OnLinkedResult_001, 
     std::shared_ptr<Meta> meta = nullptr;
     filter->mediaCodec_ = std::make_shared<SurfaceEncoderAdapter>();
 
-    // Test SurfaceEncoderFilterLinkCallback_OnUnlinkedResult surfaceEncoderFilter != nullptr
     auto linkCallback = std::make_shared<SurfaceEncoderFilterLinkCallback>(filter);
     linkCallback->OnUnlinkedResult(meta);
-    
-    // Test SurfaceEncoderFilterLinkCallback_OnUpdatedResult surfaceEncoderFilter != nullptr
     linkCallback->OnUpdatedResult(meta);
-
     linkCallback->OnLinkedResult(outputBufferQueue, meta);
     EXPECT_NE(filter->mediaCodec_->outputBufferQueueProducer_, nullptr);
 
-    // Test SurfaceEncoderFilterLinkCallback_OnLinkedResult surfaceEncoderFilter == nullptr
     filter = nullptr;
     linkCallback = std::make_shared<SurfaceEncoderFilterLinkCallback>(filter);
     linkCallback->OnLinkedResult(outputBufferQueue, meta);
-
-    // Test SurfaceEncoderFilterLinkCallback_OnUnlinkedResult surfaceEncoderFilter == nullptr
     linkCallback->OnUnlinkedResult(meta);
-
-    // Test SurfaceEncoderFilterLinkCallback_OnUpdatedResult surfaceEncoderFilter == nullptr
     linkCallback->OnUpdatedResult(meta);
-
-    // Test SurfaceEncoderAdapterCallback_OnError surfaceEncoderFilter == nullptr
     auto adapterCallback = std::make_shared<SurfaceEncoderAdapterCallback>(filter);
     adapterCallback->OnError(MediaAVCodec::AVCodecErrorType::AVCODEC_ERROR_INTERNAL, NUM_0);
-
-    // Test SurfaceEncoderAdapterKeyFramePtsCallback_OnReportKeyFramePts surfaceEncoderFilter == nullptr
     auto ptsCallback = std::make_shared<SurfaceEncoderAdapterKeyFramePtsCallback>(filter);
     ptsCallback->OnReportKeyFramePts("test");
-
-    // Test SurfaceEncoderAdapterKeyFramePtsCallback_OnReportFirstFramePts surfaceEncoderFilter == nullptr
     ptsCallback->OnReportFirstFramePts(NUM_0);
-    
+    auto ret = ptsCallback->surfaceEncoderFilter_.lock();
+    EXPECT_EQ(ret, nullptr);
 }
-
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

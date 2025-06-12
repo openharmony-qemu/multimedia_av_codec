@@ -77,7 +77,6 @@ ohos_unittest("audio_data_source_filter_unittest") {
   if (av_codec_support_test) {
     sources = [
       "$av_codec_root_dir/services/media_engine/filters/audio_capture_filter.cpp",
-      #"$av_codec_root_dir/services/media_engine/filters/audio_data_source_filter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/audio_decoder_adapter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/audio_sink_filter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/codec_capability_adapter.cpp",

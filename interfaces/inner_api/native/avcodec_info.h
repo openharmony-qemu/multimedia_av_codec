@@ -70,6 +70,17 @@ enum class AVCapabilityFeature : int32_t {
 };
 
 /**
+ * @brief The enum of optional features that can be used in specific codec seenarios.
+ *
+ * @since 5.0
+ * @version 5.0
+ */
+enum class VideoSceneType : int32_t {
+    VIDEO_SCENE_UNKNOWN = 0,
+    VIDEO_SCENE_CAMERA_RECODER = 1,
+};
+
+/**
  * @brief Range contain min and max value
  *
  * @since 3.1
