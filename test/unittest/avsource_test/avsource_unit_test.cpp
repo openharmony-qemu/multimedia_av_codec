@@ -291,13 +291,13 @@ void AVSourceUnitTest::CheckAuxlAvc()
     ASSERT_EQ(formatVal_.width, 720);
     ASSERT_EQ(formatVal_.height, 480);
     ASSERT_EQ(formatVal_.frameRate, 60.100000);
-    ASSERT_EQ(codecConfigSize, 112);
-    ASSERT_EQ(trackIds[0], 1);
-    ASSERT_EQ(trackIds[1], 2);
+    ASSERT_EQ(codecConfigSize, 23);
+    ASSERT_EQ(trackIds[0], 3);
+    ASSERT_EQ(trackIds[1], 4);
     ASSERT_EQ(trackIdsSize, 2);
     format_->Destroy();
 
-    trackIndex_ = 1;
+    trackIndex_ = 3;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -315,14 +315,15 @@ void AVSourceUnitTest::CheckAuxlAvc()
     ASSERT_EQ(formatVal_.width, 720);
     ASSERT_EQ(formatVal_.height, 480);
     ASSERT_EQ(formatVal_.frameRate, 60.100000);
-    ASSERT_EQ(codecConfigSize, 112);
-    ASSERT_EQ(trackIds[0], 0);
-    ASSERT_EQ(trackIdsSize, 1);
+    ASSERT_EQ(codecConfigSize, 38);
+    ASSERT_EQ(trackIds[0], 1);
+    ASSERT_EQ(trackIds[1], 4);
+    ASSERT_EQ(trackIdsSize, 2);
     ASSERT_EQ(referenceType, "vdep");
     ASSERT_EQ(trackDesc, "com.openharmony.moviemode.depth");
     format_->Destroy();
 
-    trackIndex_ = 2;
+    trackIndex_ = 4;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -340,9 +341,10 @@ void AVSourceUnitTest::CheckAuxlAvc()
     ASSERT_EQ(formatVal_.width, 720);
     ASSERT_EQ(formatVal_.height, 480);
     ASSERT_EQ(formatVal_.frameRate, 60.100000);
-    ASSERT_EQ(codecConfigSize, 112);
-    ASSERT_EQ(trackIds[0], 0);
-    ASSERT_EQ(trackIdsSize, 1);
+    ASSERT_EQ(codecConfigSize, 38);
+    ASSERT_EQ(trackIds[0], 1);
+    ASSERT_EQ(trackIds[1], 3);
+    ASSERT_EQ(trackIdsSize, 2);
     ASSERT_EQ(referenceType, "auxl");
     ASSERT_EQ(trackDesc, "com.openharmony.moviemode.prey");
     format_->Destroy();
@@ -353,7 +355,7 @@ void AVSourceUnitTest::CheckAuxlAac()
 {
     checkPass_ = false;
     
-    trackIndex_ = 3;
+    trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -382,12 +384,12 @@ void AVSourceUnitTest::CheckAuxlAac()
     ASSERT_EQ(formatVal_.aacIsAdts, 1);
     ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    ASSERT_EQ(trackIds[0], 4);
+    ASSERT_EQ(trackIds[0], 2);
     ASSERT_EQ(trackIdsSize, 1);
     ASSERT_EQ(codecConfigSize, 5);
     format_->Destroy();
 
-    trackIndex_ = 4;
+    trackIndex_ = 2;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -411,7 +413,7 @@ void AVSourceUnitTest::CheckAuxlAac()
     ASSERT_EQ(formatVal_.aacIsAdts, 1);
     ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    ASSERT_EQ(trackIds[0], 3);
+    ASSERT_EQ(trackIds[0], 0);
     ASSERT_EQ(trackIdsSize, 1);
     ASSERT_EQ(codecConfigSize, 5);
     ASSERT_EQ(referenceType, "auxl");
