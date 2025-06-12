@@ -30,6 +30,7 @@ public:
     int32_t CreateWithURI(char *uri);
     int32_t CreateWithFD(int32_t fd, int64_t offset, int64_t size);
     int32_t CreateWithDataSource(OH_AVDataSource *dataSource);
+    int32_t CreateWithDataSourceExt(OH_AVDataSourceExt *dataSource, void *userData);
     int32_t Destroy();
     OH_AVFormat* GetSourceFormat();
     OH_AVFormat* GetTrackFormat(uint32_t trackIndex);

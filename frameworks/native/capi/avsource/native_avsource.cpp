@@ -32,9 +32,15 @@ using namespace OHOS::MediaAVCodec;
 class NativeAVDataSource : public OHOS::Media::IMediaDataSource {
 public:
     explicit NativeAVDataSource(OH_AVDataSource *dataSource)
-        : dataSource_(dataSource)
+        : isExt_(false), dataSource_(dataSource), dataSourceExt_(nullptr), userData_(nullptr)
     {
     }
+
+    NativeAVDataSource(OH_AVDataSourceExt* dataSourceExt, void* userData)
+        : isExt_(true), dataSource_(nullptr), dataSourceExt_(dataSourceExt), userData_(userData)
+    {
+    }
+
     virtual ~NativeAVDataSource() = default;
 
     int32_t ReadAt(const std::shared_ptr<AVSharedMemory> &mem, uint32_t length, int64_t pos = -1)
@@ -43,12 +49,21 @@ public:
             mem->GetBase(), mem->GetSize(), mem->GetSize()
         );
         OH_AVBuffer avBuffer(buffer);
-        return dataSource_->readAt(&avBuffer, length, pos);
+
+        if (isExt_) {
+            return dataSourceExt_->readAt(&avBuffer, length, pos, userData_);
+        } else {
+            return dataSource_->readAt(&avBuffer, length, pos);
+        }
     }
 
     int32_t GetSize(int64_t &size)
     {
-        size = dataSource_->size;
+        if (isExt_) {
+            size = dataSourceExt_->size;
+        } else {
+            size = dataSource_->size;
+        }
         return 0;
     }
 
@@ -63,7 +78,10 @@ public:
     }
 
 private:
+    bool isExt_ = false;
     OH_AVDataSource* dataSource_;
+    OH_AVDataSourceExt* dataSourceExt_ = nullptr;
+    void* userData_ = nullptr;
 };
 
 struct OH_AVSource *OH_AVSource_CreateWithURI(char *uri)
@@ -176,4 +194,22 @@ OH_AVFormat *OH_AVSource_GetCustomMetadataFormat(OH_AVSource *source)
     avFormat->format_ = format;
     
     return avFormat;
+}
+
+struct OH_AVSource *OH_AVSource_CreateWithDataSourceExt(OH_AVDataSourceExt *dataSource, void *userData)
+{
+    CHECK_AND_RETURN_RET_LOG(dataSource != nullptr, nullptr, "Input dataSourceExt is nullptr");
+    CHECK_AND_RETURN_RET_LOG(dataSource->size != 0, nullptr, "DatasourceExt size must be greater than zero");
+    CHECK_AND_RETURN_RET_LOG(dataSource->readAt != nullptr, nullptr, "DatasourceExt readAt is nullptr");
+
+    std::shared_ptr<NativeAVDataSource> nativeAVDataSource = std::make_shared<NativeAVDataSource>(dataSource, userData);
+    CHECK_AND_RETURN_RET_LOG(nativeAVDataSource != nullptr, nullptr, "New nativeAVDataSourceExt failed");
+
+    std::shared_ptr<AVSource> source = AVSourceFactory::CreateWithDataSource(nativeAVDataSource);
+    CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "New avsource failed");
+
+    struct AVSourceObject *object = new(std::nothrow) AVSourceObject(source);
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "New sourceObject failed");
+
+    return object;
 }

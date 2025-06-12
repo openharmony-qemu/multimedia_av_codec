@@ -74,6 +74,16 @@ int32_t AVSourceDemo::CreateWithDataSource(OH_AVDataSource *dataSource)
     return 0;
 }
 
+int32_t AVSourceDemo::CreateWithDataSourceExt(OH_AVDataSourceExt *dataSource, void *userData)
+{
+    this->avsource_ = OH_AVSource_CreateWithDataSourceExt(dataSource, userData);
+    if (!avsource_) {
+        printf("CreateWithDataSourceExt is failed\n");
+        return -1;
+    }
+    return 0;
+}
+
 OH_AVSource* AVSourceDemo::GetAVSource()
 {
     return this->avsource_;

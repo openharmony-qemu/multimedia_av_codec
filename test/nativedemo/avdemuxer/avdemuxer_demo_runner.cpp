@@ -101,6 +101,49 @@ static int32_t AVSourceReadAt(OH_AVBuffer *data, int32_t length, int64_t pos)
     return length;
 }
 
+static int32_t AVSourceReadAtExt(OH_AVBuffer *data, int32_t length, int64_t pos, void* userData)
+{
+    if (data == nullptr || userData == nullptr) {
+        printf("AVSourceReadAtExt : data or userData is nullptr!\n");
+        return MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    std::ifstream* infile = reinterpret_cast<std::ifstream*>(userData);
+    if (!infile->is_open()) {
+        printf("AVSourceReadAtExt: file not open!\n");
+        return MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    infile->seekg(0, std::ios::end);
+    int64_t fileSize = infile->tellg();
+    if (pos >= fileSize) {
+        printf("AVSourceReadAtExt: pos over file size\n");
+        return MediaDataSourceError::SOURCE_ERROR_EOF;
+    }
+
+    if (pos + length > fileSize) {
+        length = fileSize - pos;
+    }
+
+    infile->seekg(pos, std::ios::beg);
+    if (length <= 0) {
+        printf("AVSourceReadAt : raed length less than zero!\n");
+        return MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+    char* buffer = new char[length];
+    infile->read(buffer, length);
+
+    errno_t result = memcpy_s(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)),
+        OH_AVBuffer_GetCapacity(data), buffer, length);
+    delete[] buffer;
+    if (result != 0) {
+        printf("memcpy_s failed!");
+        return MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    return length;
+}
+
 static void TestNativeSeek(OH_AVMemory *sampleMem, int32_t trackCount, std::shared_ptr<AVDemuxerDemo> avDemuxerDemo)
 {
     printf("seek to 1s,mode:SEEK_MODE_NEXT_SYNC\n");
@@ -150,6 +193,7 @@ static void RunNativeDemuxer(const std::string &filePath, const std::string &fil
 {
     auto avSourceDemo = std::make_shared<AVSourceDemo>();
     int32_t fd = -1;
+    std::ifstream* fileStream = nullptr;
     if (fileMode == "1") {
         avSourceDemo->CreateWithURI((char *)(filePath.c_str()));
     } else if (fileMode == "0" || fileMode == "2") {
@@ -165,6 +209,21 @@ static void RunNativeDemuxer(const std::string &filePath, const std::string &fil
             OH_AVDataSource dataSource = {fileSize, AVSourceReadAt};
             avSourceDemo->CreateWithDataSource(&dataSource);
         }
+    } else if (fileMode == "3") {
+        fileStream = new std::ifstream((char *)(filePath.c_str()), std::ios::binary);
+        if(!fileStream->is_open()) {
+            printf("dataSoureceExt open file fail\n");
+            return;
+        }
+
+        fileStream->seekg(0, std::ios::end);
+        int64_t fileSize = fileStream->tellg();
+        fileStream->seekg(0, std::ios::beg);
+
+        g_filePath = filePath;
+        OH_AVDataSourceExt dataSourceExt = {fileSize, AVSourceReadAtExt};
+
+        avSourceDemo->CreateWithDataSourceExt(&dataSourceExt, reinterpret_cast<void*>(fileStream));
     }
 
     auto avDemuxerDemo = std::make_shared<AVDemuxerDemo>();
@@ -191,6 +250,10 @@ static void RunNativeDemuxer(const std::string &filePath, const std::string &fil
     avSourceDemo->Destroy();
     if (fileMode == "0" && fd > 0) {
         close(fd);
+    }
+    if (fileMode == "3" && fileStream != nullptr) {
+        fileStream->close();
+        delete fileStream;
     }
 }
 
@@ -492,7 +555,7 @@ void AVSourceDemuxerDemoCase(void)
     string filePath;
     std::unique_ptr<FileServerDemo> server = nullptr;
     (void)getline(cin, mode);
-    cout << "Please select file path (0) or uri (1) or dataSource (2)" << endl;
+    cout << "Please select file path (0) or uri (1) or dataSource (2) or dataSourceExt (3)" << endl;
     (void)getline(cin, fileMode);
     if (fileMode == "1") {
         server = std::make_unique<FileServerDemo>();
