@@ -222,10 +222,6 @@ int32_t HEncoder::ConfigBEncodeMode(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, *reinterpret_cast<int *>(&gopMode))) {
         return AVCS_ERR_OK;
     }
-    if (gopMode == Media::Plugins::VIDEO_ENCODE_GOP_DEFAULT_P_MODE) {
-        HLOGI("encoder use default p mode");
-        return AVCS_ERR_OK;
-    }
 
     CodecEncGopMode param {};
     InitOMXParamExt(param);
