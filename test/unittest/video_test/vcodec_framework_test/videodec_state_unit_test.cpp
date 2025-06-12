@@ -375,9 +375,9 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_007, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(videoDec, format));
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoDec));
 
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     SetSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Flush(videoDec));
 }
 
@@ -448,9 +448,9 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_012, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(videoDec, format));
 
     SetSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     SetSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Flush(videoDec));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoDec));
 }
@@ -507,9 +507,9 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_016, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(videoDec, format));
     EXPECT_EQ(AV_ERR_OK, SetOutputSurface(videoDec));
 
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     SetSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Flush(videoDec));
 }
 
@@ -582,9 +582,9 @@ HWTEST_F(VideoStateTest, VideoDecoder_Configured_Verify_021, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetOutputSurface(videoDec));
 
     SetSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     SetSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Flush(videoDec));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoDec));
 }
@@ -630,9 +630,9 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(videoDec));
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Start(videoDec));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     SetSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetOutputSurface(videoDec));
 }
 
@@ -695,9 +695,9 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_005, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Start(videoDec));
     SetSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     SetSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoDec));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetOutputSurface(videoDec));
 }
@@ -746,9 +746,9 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_008, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(videoDec));
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Start(videoDec));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     SetSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
 }
 
 /**
@@ -830,9 +830,9 @@ HWTEST_F(VideoStateTest, VideoDecoder_Running_Verify_013, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Start(videoDec));
     SetSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     SetSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoDec));
 }
 
@@ -913,9 +913,9 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_002, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(videoDec));
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Flush(videoDec));
 
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     SetSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Flush(videoDec));
     EXPECT_EQ(AV_ERR_OK, SetCallback(videoDec));
 }
@@ -982,9 +982,9 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_006, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Flush(videoDec));
 
     SetSync0(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     SetSync1(format);
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format)); 
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_Configure(videoDec, format));
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Flush(videoDec));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetCallback(videoDec));
     EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, SetOutputSurface(videoDec));

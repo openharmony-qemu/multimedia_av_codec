@@ -263,7 +263,7 @@ std::shared_ptr<Format> CodecBufferCircular::GetAttribute(BufferCacheIter &iter)
 void CodecBufferCircular::PrintCaches(bool isOutput)
 {
     BufferCache &cache = isOutput ? outCache_ : inCache_;
-    std::array<std::vector<uint32_t>, 3> ownerArrays; // [SERVER = 0, CLIENT = 1, USER = 2]
+    std::array<std::vector<uint32_t>, 3> ownerArrays; // 3: [SERVER = 0, CLIENT = 1, USER = 2]
     for (const auto &[key, item] : cache) {
         ownerArrays[item.owner].emplace_back(key);
     }

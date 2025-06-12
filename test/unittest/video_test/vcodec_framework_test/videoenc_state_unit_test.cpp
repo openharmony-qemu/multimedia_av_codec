@@ -109,8 +109,8 @@ void OnNeedInputParameter(OH_AVCodec *codec, uint32_t index, OH_AVFormat *parame
     (void)codec;
     (void)index;
     (void)userData;
-    OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_QP_MAX, 30);
-    OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_QP_MIN, 20);
+    OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_QP_MAX, 30); // 30: qp max
+    OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_QP_MIN, 20); // 20: qp mix
 }
 
 int32_t SetParameterCallback(OH_AVCodec *videoEnc)
@@ -246,7 +246,7 @@ HWTEST_F(VideoStateTest, VideoEncoder_Initialized_Verify_09, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
 
     SetSync1(format);
-    EXPECT_NE(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
+    EXPECT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_VideoEncoder_Configure(videoEnc, format));
 }
 
 /**
