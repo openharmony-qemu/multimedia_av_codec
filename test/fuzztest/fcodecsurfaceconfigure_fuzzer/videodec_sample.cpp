@@ -22,6 +22,7 @@ using namespace std;
 namespace {
 constexpr int32_t DEFAULT_W = 1920;
 constexpr int32_t DEFAULT_H = 1080;
+constexpr uint32_t SURFACE_SWITCH_FRAME = 9;
 const uint32_t FC_H264[] = {139107, 1114, 474, 253, 282,    146,  197, 90,  108, 3214, 301, 77, 51, 43,
                             234,    210,  143, 108, 139107, 1114, 474, 253, 282, 146,  197, 90, 108};
 constexpr uint32_t FC_LENGTH_H264 = sizeof(FC_H264) / sizeof(uint32_t);
@@ -300,7 +301,7 @@ int32_t VDecFuzzSample::SwitchSurface()
     if (surface_ == nullptr) {
         return AV_ERR_OK;
     }
-    if (frameCount_ != 9) {
+    if (frameCount_ != SURFACE_SWITCH_FRAME) {
         return AV_ERR_OK;
     }
     cout << "create new surface" << endl;
