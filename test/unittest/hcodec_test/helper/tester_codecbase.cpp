@@ -280,6 +280,17 @@ bool TesterCodecBase::SetEncoderParameter(const SetParameterParams& param)
     if (opt_.scaleMode.has_value()) {
         fmt.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, static_cast<int32_t>(opt_.scaleMode.value()));
     }
+    if (param.sqrParam.has_value()) {
+        if (param.sqrParam->bitrate.has_value()) {
+            fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, param.sqrParam->bitrate.value());
+        }
+        if (param.sqrParam->maxBitrate.has_value()) {
+            fmt.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, param.sqrParam->maxBitrate.value());
+        }
+        if (param.sqrParam->sqrFactor.has_value()) {
+            fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, param.sqrParam->sqrFactor.value());
+        }
+    }
     int32_t err = codec_->SetParameter(fmt);
     if (err != AVCS_ERR_OK) {
         TLOGE("SetParameter failed");
