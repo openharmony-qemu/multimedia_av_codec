@@ -15,7 +15,7 @@ import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
-module_output_path = "av_codec/av_codec/moduletest"
+module_output_path = "av_codec/AVCodec_Audio/moduletest"
 
 ohos_unittest("audio_decoder_module_test") {
   sanitize = av_codec_test_sanitize
