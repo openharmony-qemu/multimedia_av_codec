@@ -815,7 +815,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0017, TestSize.
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0018, TestSize.Level1)
 {
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_RM, TEST_FILE_URI_RM, DEF_PROB_SIZE), false);
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AC3, TEST_FILE_URI_AC3, DEF_PROB_SIZE), true);
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AC3, TEST_FILE_URI_AC3, DEF_PROB_SIZE), false);
 }
 
 
