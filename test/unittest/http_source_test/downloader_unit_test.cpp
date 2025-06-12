@@ -261,7 +261,7 @@ HWTEST_F(DownloaderUnitTest, LargeOffsetSpan, TestSize.Level1)
     size_t writeLen = ONE_KILO * 50;
     uint32_t buffer[ONE_KILO * 30] = {0};
     size_t readSize = ONE_KILO * 20;
-    for(int i = 0; i < 20; ++i) {
+    for (int i = 0; i < 20; ++i) {
         ASSERT_EQ(writeLen, cachedMediaBuffer.Write(mp4Data.get() + offset, offset, writeLen));
         EXPECT_EQ(true, cachedMediaBuffer.Check());
         ASSERT_EQ(readSize, cachedMediaBuffer.Read(buffer, offset, readSize));
@@ -296,14 +296,14 @@ HWTEST_F(DownloaderUnitTest, HLSReadSplitChunk, TestSize.Level1)
     size_t writeLen = CHUNK_SIZE * 8;
     uint32_t buffer[CHUNK_SIZE * 2] = {0};
     size_t readSize = CHUNK_SIZE * 3;
-    for(int i = 0; i < 20; ++i) {
+    for (int i = 0; i < 20; ++i) {
         ASSERT_EQ(writeLen, cachedMediaBuffer->Write(mp4Data.get() + offset, offset, writeLen));
         ASSERT_EQ(readSize, cachedMediaBuffer->Read(buffer, offset, readSize));
         ASSERT_EQ(readSize, cachedMediaBuffer->Read(buffer, offset + CHUNK_SIZE * 5, readSize));
         offset += CHUNK_SIZE * 10;
     }
     size_t readSize1 = CHUNK_SIZE * 2;
-    for(int i = 0; i < 20; ++i) {
+    for (int i = 0; i < 20; ++i) {
         ASSERT_EQ(writeLen, cachedMediaBuffer->Write(mp4Data.get() + offset, offset, writeLen));
         ASSERT_EQ(readSize1, cachedMediaBuffer->Read(buffer, offset, readSize1));
         ASSERT_EQ(readSize1, cachedMediaBuffer->Read(buffer, offset + CHUNK_SIZE * 5 + 1, readSize1));
@@ -329,7 +329,7 @@ HWTEST_F(DownloaderUnitTest, HLSFreeChunk, TestSize.Level1)
 
     size_t offset = 0;
     size_t writeLen = chunkSize * 10;
-    for(int i = 0; i < 20; ++i) {
+    for (int i = 0; i < 20; ++i) {
         ASSERT_EQ(writeLen, cachedMediaBuffer->Write(mp4Data.get() + offset, offset, writeLen));
         offset += chunkSize * 11;
     }
@@ -353,7 +353,7 @@ HWTEST_F(DownloaderUnitTest, HTTPFreeChunk0, TestSize.Level1)
 
     size_t offset = 0;
     size_t writeLen = chunkSize * 10;
-    for(int i = 0; i < 20; ++i) {
+    for (int i = 0; i < 20; ++i) {
         ASSERT_EQ(writeLen, cachedMediaBuffer->Write(mp4Data.get() + offset, offset, writeLen));
         offset += chunkSize * 11;
     }
@@ -378,7 +378,7 @@ HWTEST_F(DownloaderUnitTest, HTTPFreeChunk1, TestSize.Level1)
 
     size_t offset = 0;
     size_t writeLen = chunkSize * 45;
-    for(int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 3; ++i) {
         ASSERT_EQ(writeLen, cachedMediaBuffer->Write(mp4Data.get() + offset, offset, writeLen));
         offset += chunkSize * 60;
     }
@@ -401,7 +401,7 @@ HWTEST_F(DownloaderUnitTest, HTTPFreeChunk2, TestSize.Level1)
     size_t writeLen = chunkSize * 40;
     uint32_t buffer[ONE_KILO * 30] = {0};
     size_t readSize = chunkSize * 10;
-    for(int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 4; ++i) {
         ASSERT_EQ(writeLen, cachedMediaBuffer->Write(mp4Data.get() + offset, offset, writeLen));
         ASSERT_EQ(readSize, cachedMediaBuffer->Read(buffer, offset, readSize));
         readSize += chunkSize * 10;
