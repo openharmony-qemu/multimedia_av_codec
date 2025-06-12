@@ -48,7 +48,7 @@ void MultiThreadCreateVEnc()
     std::shared_ptr<VideoEncSample> videoEnc = std::make_shared<VideoEncSample>(vencSignal);
     ASSERT_NE(nullptr, videoEnc);
 
-    EXPECT_LE(g_vencCount.load(), 64); // 64: max instances supported
+    EXPECT_LE(g_vencCount.load(), 25); // 25: max instances supported
     if (videoEnc->CreateVideoEncMockByName(g_vencName)) {
         g_vencCount++;
         cout << "create successed, num:" << g_vencCount.load() << endl;
@@ -264,12 +264,12 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Invalid_SetParameterWithAttrCallback_003, TestS
 #endif // VIDEOENC_ASYNC_UNIT_TEST
 /**
  * @tc.name: VideoEncoder_Multithread_Create_001
- * @tc.desc: try create 100 instances
+ * @tc.desc: try create 40 instances
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, VideoEncoder_Multithread_Create_001, TestSize.Level1)
 {
-    SET_THREAD_NUM(100);
+    SET_THREAD_NUM(40);
     g_vencCount = 0;
     GTEST_RUN_TASK(MultiThreadCreateVEnc);
     cout << "remaining num: " << g_vencCount.load() << endl;

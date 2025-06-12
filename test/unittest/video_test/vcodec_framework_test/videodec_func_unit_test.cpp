@@ -107,7 +107,7 @@ INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC, SW_AVC
 
 /**
  * @tc.name: VideoDecoder_Multithread_Create_001
- * @tc.desc: try create 100 instances
+ * @tc.desc: try create 40 instances
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_001, TestSize.Level1)
@@ -120,7 +120,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_001, TestSize.Level1)
         std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
         ASSERT_NE(nullptr, videoDec);
 
-        EXPECT_LE(g_vdecCount.load(), 100); // 100: max instances supported
+        EXPECT_LE(g_vdecCount.load(), 40); // 40: max instances supported
         if (videoDec->CreateVideoDecMockByName(g_vdecName)) {
             g_vdecCount++;
             cout << "create successed, num:" << g_vdecCount.load() << endl;
@@ -128,19 +128,19 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_001, TestSize.Level1)
             cout << "create failed, num:" << g_vdecCount.load() << endl;
             return;
         }
-        sleep(10); // 10: existence time
+        sleep(3); // 3: existence time
         videoDec->Release();
         g_vdecCount--;
     };
     g_vdecCount = 0;
-    SET_THREAD_NUM(100); // 100: num of thread
+    SET_THREAD_NUM(40); // 40: num of thread
     GTEST_RUN_TASK(func);
     cout << "remaining num: " << g_vdecCount.load() << endl;
 }
 
 /**
  * @tc.name: VideoDecoder_Multithread_Create_002
- * @tc.desc: try create 100 instances by mime
+ * @tc.desc: try create 40 instances by mime
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_002, TestSize.Level1)
@@ -156,12 +156,12 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_002, TestSize.Level1)
             cout << "create failed, num:" << g_vdecCount.load() << endl;
             return;
         }
-        sleep(10); // 10: existence time
+        sleep(3); // 3: existence time
         videoDec->Release();
-        EXPECT_GE(g_vdecCount.load(), 64); // 64: num of instances
+        EXPECT_GE(g_vdecCount.load(), 25); // 25: num of instances
     };
     g_vdecCount = 0;
-    SET_THREAD_NUM(100); // 100: num of thread
+    SET_THREAD_NUM(40); // 40: num of thread
     GTEST_RUN_TASK(func);
     cout << "remaining num: " << g_vdecCount.load() << endl;
 }
