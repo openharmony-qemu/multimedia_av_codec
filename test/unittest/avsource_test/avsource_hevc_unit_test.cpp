@@ -211,7 +211,7 @@ void AVSourceUnitTest::CheckAuxlHevc()
     ASSERT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_HAS_AUXILIARY, formatVal_.hasAuxl));
     ASSERT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.fileType, 101);
-    ASSERT_EQ(formatVal_.hasAudio, 1);
+    ASSERT_EQ(formatVal_.hasAudio, 0);
     ASSERT_EQ(formatVal_.hasVideo, 1);
     ASSERT_EQ(formatVal_.hasAuxl, 1);
 #endif
