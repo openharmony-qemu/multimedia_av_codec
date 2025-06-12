@@ -246,6 +246,180 @@ static int32_t AVSourceReadAt(OH_AVBuffer *data, int32_t length, int64_t pos)
     return length;
 }
 
+void AVSourceUnitTest::CheckAuxlAvc()
+{
+    checkPass_ = false;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_HAS_AUXILIARY, formatVal_.hasAuxl));
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_FILE_TYPE, formatVal_.fileType));
+    ASSERT_EQ(formatVal_.fileType, 101);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+    ASSERT_EQ(formatVal_.hasVideo, 1);
+    ASSERT_EQ(formatVal_.hasAuxl, 1);
+#endif
+    ASSERT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 10000000);
+    ASSERT_EQ(formatVal_.trackCount, 5);
+    format_->Destroy();
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    uint8_t *codecConfig = nullptr;
+    size_t codecConfigSize;
+    int32_t *trackIds = nullptr;
+    size_t trackIdsSize;
+    string trackDesc;
+    string referenceType;
+
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
+    ASSERT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
+    ASSERT_TRUE(format_->GetBuffer(OH_MD_KEY_CODEC_CONFIG, &codecConfig, codecConfigSize));
+    ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, trackIdsSize));
+    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_VID);
+    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_EQ(formatVal_.width, 720);
+    ASSERT_EQ(formatVal_.height, 480);
+    ASSERT_EQ(formatVal_.frameRate, 60.100000);
+    ASSERT_EQ(codecConfigSize, 112);
+    ASSERT_EQ(trackIds[0], 1);
+    ASSERT_EQ(trackIds[1], 2);
+    ASSERT_EQ(trackIdsSize, 2);
+    format_->Destroy();
+
+    trackIndex_ = 1;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
+    ASSERT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
+    ASSERT_TRUE(format_->GetBuffer(OH_MD_KEY_CODEC_CONFIG, &codecConfig, codecConfigSize));
+    ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, trackIdsSize));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, referenceType));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_DESCRIPTION, trackDesc));
+    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_VID);
+    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_EQ(formatVal_.width, 720);
+    ASSERT_EQ(formatVal_.height, 480);
+    ASSERT_EQ(formatVal_.frameRate, 60.100000);
+    ASSERT_EQ(codecConfigSize, 112);
+    ASSERT_EQ(trackIds[0], 0);
+    ASSERT_EQ(trackIdsSize, 1);
+    ASSERT_EQ(referenceType, "vdep");
+    ASSERT_EQ(trackDesc, "com.openharmony.moviemode.depth");
+    format_->Destroy();
+
+    trackIndex_ = 2;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
+    ASSERT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
+    ASSERT_TRUE(format_->GetBuffer(OH_MD_KEY_CODEC_CONFIG, &codecConfig, codecConfigSize));
+    ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, trackIdsSize));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, referenceType));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_DESCRIPTION, trackDesc));
+    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_VID);
+    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_EQ(formatVal_.width, 720);
+    ASSERT_EQ(formatVal_.height, 480);
+    ASSERT_EQ(formatVal_.frameRate, 60.100000);
+    ASSERT_EQ(codecConfigSize, 112);
+    ASSERT_EQ(trackIds[0], 0);
+    ASSERT_EQ(trackIdsSize, 1);
+    ASSERT_EQ(referenceType, "auxl");
+    ASSERT_EQ(trackDesc, "com.openharmony.moviemode.prey");
+    format_->Destroy();
+    checkPass_ = true;
+}
+
+void AVSourceUnitTest::CheckAuxlAac()
+{
+    checkPass_ = false;
+    
+    trackIndex_ = 3;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    uint8_t *codecConfig = nullptr;
+    size_t codecConfigSize;
+    int32_t *trackIds = nullptr;
+    size_t trackIdsSize;
+    string trackDesc;
+    string referenceType;
+
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AAC_IS_ADTS, formatVal_.aacIsAdts));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_TRUE(format_->GetBuffer(OH_MD_KEY_CODEC_CONFIG, &codecConfig, codecConfigSize));
+    ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, trackIdsSize));
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.bitRate, 129312);
+    ASSERT_EQ(formatVal_.aacIsAdts, 1);
+    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
+    ASSERT_EQ(trackIds[0], 4);
+    ASSERT_EQ(trackIdsSize, 1);
+    ASSERT_EQ(codecConfigSize, 5);
+    format_->Destroy();
+
+    trackIndex_ = 4;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AAC_IS_ADTS, formatVal_.aacIsAdts));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_TRUE(format_->GetBuffer(OH_MD_KEY_CODEC_CONFIG, &codecConfig, codecConfigSize));
+    ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, trackIdsSize));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, referenceType));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_DESCRIPTION, trackDesc));
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.bitRate, 129312);
+    ASSERT_EQ(formatVal_.aacIsAdts, 1);
+    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
+    ASSERT_EQ(trackIds[0], 3);
+    ASSERT_EQ(trackIdsSize, 1);
+    ASSERT_EQ(codecConfigSize, 5);
+    ASSERT_EQ(referenceType, "auxl");
+    ASSERT_EQ(trackDesc, "com.openharmony.audiomode.auxiliary");
+    format_->Destroy();
+    checkPass_ = true;
+}
+
 /**********************************source FD**************************************/
 namespace {
 /**
@@ -2742,180 +2916,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1808, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, "audio/ac3");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
-}
-
-void AVSourceUnitTest::CheckAuxlAvc()
-{
-    checkPass_ = false;
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-#ifdef AVSOURCE_INNER_UNIT_TEST
-    ASSERT_TRUE(format_->GetIntValue(Tag::MEDIA_HAS_VIDEO, formatVal_.hasVideo));
-    ASSERT_TRUE(format_->GetIntValue(Tag::MEDIA_HAS_AUDIO, formatVal_.hasAudio));
-    ASSERT_TRUE(format_->GetIntValue(Tag::MEDIA_HAS_AUXILIARY, formatVal_.hasAuxl));
-    ASSERT_TRUE(format_->GetIntValue(Tag::MEDIA_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 101);
-    ASSERT_EQ(formatVal_.hasAudio, 1);
-    ASSERT_EQ(formatVal_.hasVideo, 1);
-    ASSERT_EQ(formatVal_.hasAuxl, 1);
-#endif
-    ASSERT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.duration, 10000000);
-    ASSERT_EQ(formatVal_.trackCount, 5);
-    format_->Destroy();
-
-    trackIndex_ = 0;
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    uint8_t *codecConfig = nullptr;
-    size_t codecConfigSize;
-    int32_t *trackIds = nullptr;
-    size_t trackIdsSize;
-    string trackDesc;
-    string referenceType;
-
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    ASSERT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    ASSERT_TRUE(format_->GetBuffer(OH_MD_KEY_CODEC_CONFIG, &codecConfig, &codecConfigSize));
-    ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, &trackIdsSize));
-    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_EQ(formatVal_.width, 720);
-    ASSERT_EQ(formatVal_.height, 480);
-    ASSERT_EQ(formatVal_.frameRate, 60.100000);
-    ASSERT_EQ(codecConfigSize, 112);
-    ASSERT_EQ(trackIds[0], 1);
-    ASSERT_EQ(trackIds[1], 2);
-    ASSERT_EQ(trackIdsSize, 2);
-    format_->Destroy();
-
-    trackIndex_ = 1;
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    ASSERT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    ASSERT_TRUE(format_->GetBuffer(OH_MD_KEY_CODEC_CONFIG, &codecConfig, &codecConfigSize));
-    ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, &trackIdsSize));
-    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, referenceType));
-    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_DESCRIPTION, trackDesc));
-    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_EQ(formatVal_.width, 720);
-    ASSERT_EQ(formatVal_.height, 480);
-    ASSERT_EQ(formatVal_.frameRate, 60.100000);
-    ASSERT_EQ(codecConfigSize, 112);
-    ASSERT_EQ(trackIds[0], 0);
-    ASSERT_EQ(trackIdsSize, 1);
-    ASSERT_EQ(referenceType, "vdep");
-    ASSERT_EQ(trackDesc, "com.openharmony.moviemode.depth");
-    format_->Destroy();
-
-    trackIndex_ = 2;
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    ASSERT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    ASSERT_TRUE(format_->GetBuffer(OH_MD_KEY_CODEC_CONFIG, &codecConfig, &codecConfigSize));
-    ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, &trackIdsSize));
-    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, referenceType));
-    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_DESCRIPTION, trackDesc));
-    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_EQ(formatVal_.width, 720);
-    ASSERT_EQ(formatVal_.height, 480);
-    ASSERT_EQ(formatVal_.frameRate, 60.100000);
-    ASSERT_EQ(codecConfigSize, 112);
-    ASSERT_EQ(trackIds[0], 0);
-    ASSERT_EQ(trackIdsSize, 1);
-    ASSERT_EQ(referenceType, "auxl");
-    ASSERT_EQ(trackDesc, "com.openharmony.moviemode.prey");
-    format_->Destroy();
-    checkPass_ = true;
-}
-
-void AVSourceUnitTest::CheckAuxlAac()
-{
-    checkPass_ = false;
-    
-    trackIndex_ = 3;
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    uint8_t *codecConfig = nullptr;
-    size_t codecConfigSize;
-    int32_t *trackIds = nullptr;
-    size_t trackIdsSize;
-    string trackDesc;
-    string referenceType;
-
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    ASSERT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AAC_IS_ADTS, formatVal_.aacIsAdts));
-    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
-    ASSERT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_CODEC_CONFIG, &codecConfig, &codecConfigSize));
-    ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, &trackIdsSize));
-    ASSERT_EQ(formatVal_.channelLayout, 3);
-    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.sampleRate, 44100);
-    ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 129312);
-    ASSERT_EQ(formatVal_.aacIsAdts, 1);
-    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    ASSERT_EQ(trackIds[0], 4);
-    ASSERT_EQ(trackIdsSize, 1);
-    ASSERT_EQ(codecConfigSize, 5);
-    format_->Destroy();
-
-    trackIndex_ = 4;
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    ASSERT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AAC_IS_ADTS, formatVal_.aacIsAdts));
-    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
-    ASSERT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_CODEC_CONFIG, &codecConfig, &codecConfigSize));
-    ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, &trackIdsSize));
-    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, referenceType));
-    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_DESCRIPTION, trackDesc));
-    ASSERT_EQ(formatVal_.channelLayout, 3);
-    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.sampleRate, 44100);
-    ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 129312);
-    ASSERT_EQ(formatVal_.aacIsAdts, 1);
-    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    ASSERT_EQ(trackIds[0], 3);
-    ASSERT_EQ(trackIdsSize, 1);
-    ASSERT_EQ(codecConfigSize, 5);
-    ASSERT_EQ(referenceType, "auxl");
-    ASSERT_EQ(trackDesc, "com.openharmony.audiomode.auxiliary");
-    format_->Destroy();
-    checkPass_ = true;
 }
 
 /**
