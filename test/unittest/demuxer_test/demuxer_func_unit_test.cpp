@@ -1626,7 +1626,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0003, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0004, TestSize.Level1)
 {
-    InitResource(g_mp4AvcAacAuxlUri, LOCAL);
+    InitResource(g_mp4AvcAacAuxlUri, URI);
     ASSERT_TRUE(initStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {

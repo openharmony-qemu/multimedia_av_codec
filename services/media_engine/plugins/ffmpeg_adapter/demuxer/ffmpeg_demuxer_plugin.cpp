@@ -1296,6 +1296,9 @@ void FFmpegDemuxerPlugin::UpdateReferenceIds()
         if (item.second.size() == 0 || item.first >= mediaInfo_.tracks.size()) {
             continue;
         }
+        for (auto id : item.second) {
+            MEDIA_LOG_D("Track %{publi}d ref %{public}d", item.first, id);
+        }
         mediaInfo_.tracks[item.first].Set<Tag::REFERENCE_TRACK_IDS>(item.second);
     }
 }

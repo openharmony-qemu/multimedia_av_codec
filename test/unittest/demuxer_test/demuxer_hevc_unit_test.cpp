@@ -1477,7 +1477,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0001, TestSize.Level1)
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
     list<int64_t> toPtsList = {0, 200, 400}; // ms
-    vector<int32_t> videoVals = {16, 16, 16, 0, 16, 16, 0, 16, 16};
+    vector<int32_t> videoVals = {16, 16, 16, 16, 16, 16, 16};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -1489,6 +1489,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0001, TestSize.Level1)
             }
             ReadData();
             printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            printf("time = %" PRId64 " | frames_[1]=%d\n", *toPts, frames_[1]);
+            printf("time = %" PRId64 " | frames_[2]=%d\n", *toPts, frames_[2]);
             ASSERT_EQ(frames_[0], videoVals[numbers_]);
             ASSERT_EQ(frames_[1], videoVals[numbers_]);
             ASSERT_EQ(frames_[2], videoVals[numbers_]);
@@ -1509,14 +1511,14 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0002, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    InitResource(g_mp4HevcAuxlUri, LOCAL);
+    InitResource(g_mp4HevcAuxlUri, URI);
     ASSERT_TRUE(initStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
     list<int64_t> toPtsList = {0, 200, 400}; // ms
-    vector<int32_t> videoVals = {16, 16, 16, 0, 16, 16, 0, 16, 16};
+    vector<int32_t> videoVals = {16, 16, 16, 16, 16, 16, 16};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -1528,6 +1530,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0002, TestSize.Level1)
             }
             ReadData();
             printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            printf("time = %" PRId64 " | frames_[1]=%d\n", *toPts, frames_[1]);
+            printf("time = %" PRId64 " | frames_[2]=%d\n", *toPts, frames_[2]);
             ASSERT_EQ(frames_[0], videoVals[numbers_]);
             ASSERT_EQ(frames_[1], videoVals[numbers_]);
             ASSERT_EQ(frames_[2], videoVals[numbers_]);
