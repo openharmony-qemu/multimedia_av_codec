@@ -524,7 +524,9 @@ void AudioCaptureFilter::RecordAudioFrame()
     {
         int64_t audioDataTime = 0;
         audioCaptureModule_->GetAudioTime(audioDataTime, false);
-        if (audioDataTime > currentTime_ && (audioDataTime - currentTime_) > static_cast<int64_t>(AUDIO_UNREGULAR_DELTA_TIME) && withVideo_) {
+        if (audioDataTime > currentTime_
+            && (audioDataTime - currentTime_) > static_cast<int64_t>(AUDIO_UNREGULAR_DELTA_TIME)
+            && withVideo_) {
             int32_t lostCount = (audioDataTime - AUDIO_CAPTURE_READ_FRAME_TIME - currentTime_)
                 / AUDIO_CAPTURE_READ_FRAME_TIME;
             if (lostCount > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
@@ -670,7 +672,8 @@ int32_t AudioCaptureFilter::RelativeSleep(int64_t nanoTime)
     }
     struct timespec time;
     time.tv_sec = nanoTime / static_cast<int64_t>(AUDIO_NS_PER_SECOND);
-    time.tv_nsec = nanoTime - (static_cast<int64_t>(time.tv_sec) * static_cast<int64_t>(AUDIO_NS_PER_SECOND)); // Avoids % operation.
+    // Avoids % operation.
+    time.tv_nsec = nanoTime - (static_cast<int64_t>(time.tv_sec) * static_cast<int64_t>(AUDIO_NS_PER_SECOND));
     clockid_t clockId = CLOCK_MONOTONIC;
     const int relativeFlag = 0; // flag of relative sleep.
     ret = clock_nanosleep(clockId, relativeFlag, &time, nullptr);
