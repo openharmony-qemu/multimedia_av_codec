@@ -849,11 +849,11 @@ typedef enum OH_MediaType {
     /** track is timed meta.
      * @since 20
      */
-    MEDIA_TYPE_TIMED_METADATA=5,
+    MEDIA_TYPE_TIMED_METADATA = 5,
     /** track is auxiliary.
      * @since 20
      */
-    MEDIA_TYPE_AUXILIARY=6,
+    MEDIA_TYPE_AUXILIARY = 6,
 } OH_MediaType;
 
 /**
