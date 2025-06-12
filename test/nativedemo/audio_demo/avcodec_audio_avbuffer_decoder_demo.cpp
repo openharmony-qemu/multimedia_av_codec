@@ -59,6 +59,8 @@ constexpr string_view INPUT_G711MU_FILE_PATH = "/data/test/media/g711mu_8kHz.dat
 constexpr string_view OUTPUT_G711MU_PCM_FILE_PATH = "/data/test/media/g711mu_8kHz_decode.pcm";
 constexpr string_view INPUT_APE_FILE_PATH = "/data/test/media/ape.dat";
 constexpr string_view OUTPUT_APE_PCM_FILE_PATH = "/data/test/media/ape_decode.pcm";
+constexpr string_view INPUT_G711A_FILE_PATH = "/data/test/media/g711a_1c_8000.dat";
+constexpr string_view OUTPUT_G711A_PCM_FILE_PATH = "/data/test/media/g711a_1c_8000_decode.pcm";
 } // namespace
 
 static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
@@ -123,6 +125,9 @@ bool ADecBufferDemo::InitFile(AudioBufferFormatType audioType)
     } else if (audioType == AudioBufferFormatType::TYPE_APE) {
         inputFile_.open(INPUT_APE_FILE_PATH, std::ios::binary);
         pcmOutputFile_.open(OUTPUT_APE_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
+    } else if (audioType == AudioBufferFormatType::TYPE_G711A) {
+        inputFile_.open(INPUT_G711A_FILE_PATH, std::ios::binary);
+        pcmOutputFile_.open(OUTPUT_G711A_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
     } else {
         std::cout << "audio format type not support\n";
         return false;
@@ -144,7 +149,8 @@ void ADecBufferDemo::RunCase(AudioBufferFormatType audioType)
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(), DEFAULT_AAC_TYPE);
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
-    } else if (audioType == AudioBufferFormatType::TYPE_AMRNB || audioType == AudioBufferFormatType::TYPE_G711MU) {
+    } else if (audioType == AudioBufferFormatType::TYPE_AMRNB || audioType == AudioBufferFormatType::TYPE_G711MU ||
+        audioType == AudioBufferFormatType::TYPE_G711A) {
         channelCount = 1;
         sampleRate = AMRNB_SAMPLE_RATE;
     } else if (audioType == AudioBufferFormatType::TYPE_AMRWB || audioType == AudioBufferFormatType::TYPE_APE) {
@@ -245,6 +251,8 @@ int32_t ADecBufferDemo::CreateDec()
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_G711MU_NAME).data());
     } else if (audioType_ == AudioBufferFormatType::TYPE_APE) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_APE_NAME).data());
+    } else if (audioType_ == AudioBufferFormatType::TYPE_G711A) {
+        audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_G711A_NAME).data());
     } else {
         return AVCS_ERR_INVALID_VAL;
     }
@@ -400,7 +408,7 @@ void ADecBufferDemo::InputFunc()
         buffer->buffer_->memory_->SetSize(size);
         DEMO_CHECK_AND_BREAK_LOG(inputFile_.gcount() == size, "Fatal: read buffer fail");
 
-        cout << "SetSize" << size << endl;
+        cout << "SetSize: " << size << endl;
         int32_t ret;
         if (isFirstFrame_) {
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_CODEC_DATA;

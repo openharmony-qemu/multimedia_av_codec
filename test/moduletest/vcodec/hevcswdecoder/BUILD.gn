@@ -15,13 +15,12 @@ import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
-module_output_path = "av_codec/av_codec/moduletest"
+module_output_path = "av_codec/AVCodec_Video/moduletest"
 
 hevcswdecoder_moduletest_native_include_dirs = [
   "./include",
   "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
   "$MEDIA_ROOT_DIR/interfaces/kits/c",
-  "$MEDIA_ROOT_DIR/../../../third_party/json/include",
 ]
 
 hevcswdecoder_moduletest_cflags = [

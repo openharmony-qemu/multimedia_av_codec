@@ -59,7 +59,24 @@ int64_t GetAudioLatencyFixDelay()
 
 AudioSink::AudioSink()
 {
-    MEDIA_LOG_I("Tips AudioSink ctor");
+    bool isRenderCallbackMode =
+        OHOS::system::GetParameter("debug.media_service.audio.audiosink_callback", "1") == "1";
+    bool isProcessInputMerged =
+        OHOS::system::GetParameter("debug.media_service.audio.audiosink_processinput_merged", "1") == "1";
+    MEDIA_LOG_I("AudioSink ctor isRenderCallbackMode: " PUBLIC_LOG_D32 ", isProcessInputMerged: " PUBLIC_LOG_D32,
+        isRenderCallbackMode, isProcessInputMerged);
+    isRenderCallbackMode_ = isRenderCallbackMode;
+    isProcessInputMerged_ = isProcessInputMerged;
+    syncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
+    fixDelay_ = GetAudioLatencyFixDelay();
+    plugin_ = CreatePlugin();
+}
+
+AudioSink::AudioSink(bool isRenderCallbackMode, bool isProcessInputMerged)
+    : isRenderCallbackMode_(isRenderCallbackMode), isProcessInputMerged_(isProcessInputMerged)
+{
+    MEDIA_LOG_I("AudioSink ctor default isRenderCallbackMode: " PUBLIC_LOG_D32
+        ", isProcessInputMerged: " PUBLIC_LOG_D32, isRenderCallbackMode, isProcessInputMerged);
     syncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
     fixDelay_ = GetAudioLatencyFixDelay();
     plugin_ = CreatePlugin();
@@ -78,7 +95,7 @@ void AudioSink::AudioSinkDataCallbackImpl::OnWriteData(int32_t size, bool isAudi
     FALSE_RETURN_MSG(sink != nullptr, "audioSink_ is nullptr");
     AudioStandard::BufferDesc bufferDesc;
     MediaAVCodec::AVCodecTrace trace("AudioSink::OnWriteData");
-    MEDIA_LOG_D("GetBufferDesc in");
+    MEDIA_LOG_DD("GetBufferDesc in");
     Status ret = sink->GetBufferDesc(bufferDesc);
     FALSE_RETURN_MSG(ret == Status::OK, "GetBufferDesc fail, ret=" PUBLIC_LOG_D32, ret);
     bufferDesc.dataLength = 0;
@@ -125,14 +142,14 @@ void AudioSink::HandleAudioRenderRequestPost()
 Status AudioSink::GetBufferDesc(AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V_MSG(plugin_ != nullptr, Status::ERROR_UNKNOWN, "GetBufferDesc audioSinkPlugin is nullptr");
-    MediaAVCodec::AVCodecTrace trace("AudioSink::GetBufferDesc");
+    MEDIA_TRACE_DEBUG("AudioSink::GetBufferDesc");
     return plugin_->GetBufferDesc(bufferDesc);
 }
 
 Status AudioSink::EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V_MSG(plugin_ != nullptr, Status::ERROR_UNKNOWN, "Enqueue audioSinkPlugin is nullptr");
-    MediaAVCodec::AVCodecTrace trace("AudioSink::EnqueueBufferDesc");
+    MEDIA_TRACE_DEBUG("AudioSink::EnqueueBufferDesc");
     return plugin_->EnqueueBufferDesc(bufferDesc);
 }
 
@@ -176,10 +193,10 @@ Status AudioSink::InitAudioSinkPlugin(std::shared_ptr<Meta>& meta,
         ScopedTimer timer("InitAudioSinkPlugin", INIT_PLUGIN_WARNING_MS);
         plugin_->Init();
     }
-    if (isCallbackMode_) {
+    if (isRenderCallbackMode_) {
         audioSinkDataCallback_ = std::make_shared<AudioSinkDataCallbackImpl>(shared_from_this());
         Status ret = plugin_->SetRequestDataCallback(audioSinkDataCallback_);
-        isCallbackMode_ = ret == Status::OK ? true : false;
+        isRenderCallbackMode_ = ret == Status::OK ? true : false;
     }
     plugin_->Prepare();
     plugin_->SetMuted(isMuted_);
@@ -208,11 +225,6 @@ Status AudioSink::InitAudioSinkInfo(std::shared_ptr<Meta>& meta)
     }
 
     return Status::OK;
-}
-
-bool AudioSink::NeedImmediateRender()
-{
-    return isApe_ || isFlac_;
 }
 
 sptr<AVBufferQueueProducer> AudioSink::GetBufferQueueProducer()
@@ -434,6 +446,20 @@ Status AudioSink::SetIsTransitent(bool isTransitent)
 {
     MEDIA_LOG_I("SetIsTransitent");
     isTransitent_ = isTransitent;
+    return Status::OK;
+}
+
+Status AudioSink::Freeze()
+{
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    plugin_->Freeze();
+    return Status::OK;
+}
+
+Status AudioSink::UnFreeze()
+{
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    plugin_->UnFreeze();
     return Status::OK;
 }
 
@@ -701,7 +727,7 @@ bool AudioSink::IsBufferDataDrained(AudioStandard::BufferDesc &bufferDesc, std::
     size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts)
 {
     FALSE_RETURN_V_MSG(cacheBufferSize <= size || !isAudioVivid, false, "copy from cache buffer may fail.");
-    MediaAVCodec::AVCodecTrace trace("AudioSink::CopyBuffer");
+    MEDIA_TRACE_DEBUG("AudioSink::CopyBuffer");
     bool ret = isAudioVivid ? CopyAudioVividBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts) :
         CopyBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts);
     return ret;
@@ -712,7 +738,7 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
     FALSE_RETURN_V_MSG(size != 0 && size == bufferDesc.bufLength, false,
         "bufferDesc or request size is unavailable");
     std::lock_guard<std::mutex> lock(availBufferMutex_);
-    MediaAVCodec::AVCodecTrace trace("AudioSink::CopyDataToBufferDesc");
+    MEDIA_TRACE_DEBUG("AudioSink::CopyDataToBufferDesc");
     int64_t bufferPts = HST_TIME_NONE;
     do {
         bool isSwapBuffer = false;
@@ -775,7 +801,7 @@ void AudioSink::AudioDataSynchroizer::UpdateCurrentBufferInfo(int64_t bufferPts,
 
 void AudioSink::AudioDataSynchroizer::UpdateLastBufferPTS(int64_t bufferOffset, float speed)
 {
-    MEDIA_LOG_D("lastBuffer Info: lastBufferPTS_ is " PUBLIC_LOG_D64 " lastBufferOffset_ is " PUBLIC_LOG_D64
+    MEDIA_LOG_DD("lastBuffer Info: lastBufferPTS_ is " PUBLIC_LOG_D64 " lastBufferOffset_ is " PUBLIC_LOG_D64
         " and compensateDuration_ is " PUBLIC_LOG_D64, lastBufferPTS_, lastBufferOffset_, compensateDuration_);
     curBufferPTS_ = curBufferPTS_ == HST_TIME_NONE ? 0 : curBufferPTS_;
     int64_t tempPTS = curBufferPTS_ + lastBufferOffset_ + bufferDuration_;
@@ -794,13 +820,13 @@ void AudioSink::UpdateRenderInfo()
 {
     timespec time;
     uint32_t position;
-    MediaAVCodec::AVCodecTrace trace("AudioSink::UpdateRenderInfo");
+    MEDIA_TRACE_DEBUG("AudioSink::UpdateRenderInfo");
     FALSE_RETURN(plugin_ != nullptr);
     FALSE_RETURN_MSG(plugin_->GetAudioPosition(time, position), "GetAudioPosition from audioRender failed");
     int64_t currentRenderClockTime = time.tv_sec * SEC_TO_US + time.tv_nsec / US_TO_MS; // convert to us
     FALSE_RETURN(sampleRate_ > 0);
     int64_t currentRenderPTS = static_cast<int64_t>(position) * SEC_TO_US / sampleRate_;
-    MEDIA_LOG_D("currentRenderPTS is " PUBLIC_LOG_D64 " and currentRenderClockTime is " PUBLIC_LOG_D64,
+    MEDIA_LOG_DD("currentRenderPTS is " PUBLIC_LOG_D64 " and currentRenderClockTime is " PUBLIC_LOG_D64,
         currentRenderPTS, currentRenderClockTime);
     innerSynchroizer_->OnRenderPositionUpdated(currentRenderPTS, currentRenderClockTime);
 }
@@ -818,7 +844,7 @@ int64_t AudioSink::AudioDataSynchroizer::CalculateAudioLatency()
         return latency;
     }
     int64_t nowClockTime = Plugins::HstTime2Us(SteadyClock::GetCurrentTimeNanoSec());
-    MEDIA_LOG_D("PTS diff is " PUBLIC_LOG_D64, ((sumDuration_ - compensateDuration_) -
+    MEDIA_LOG_DD("PTS diff is " PUBLIC_LOG_D64, ((sumDuration_ - compensateDuration_) -
         currentRenderPTS_));
     latency = ((sumDuration_ - compensateDuration_) - currentRenderPTS_) -
         (nowClockTime - currentRenderClockTime_);
@@ -872,7 +898,7 @@ bool AudioSink::IsTimeAnchorNeedUpdate()
     FALSE_RETURN_V_MSG_D(needUpdate, false, "No need to update time anchor this time.");
     UpdateRenderInfo();
     int64_t latency = innerSynchroizer_->CalculateAudioLatency();
-    MEDIA_LOG_D("Calculate latency = " PUBLIC_LOG_U64, latency);
+    MEDIA_LOG_DD("Calculate latency = " PUBLIC_LOG_U64, latency);
     int64_t lastBufferPTS = innerSynchroizer_->GetLastBufferPTS();
     int64_t lastBufferDuration = innerSynchroizer_->GetBufferDuration();
     Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {lastBufferPTS - firstPts_, lastBufferPTS,
@@ -927,7 +953,7 @@ void AudioSink::ReleaseCacheBuffer(bool isSwapBuffer)
     auto buffer = availOutputBuffers_.front();
     availOutputBuffers_.pop();
     FALSE_RETURN_MSG(buffer != nullptr, "release buffer, but buffer is null");
-    MEDIA_LOG_D("the pts is " PUBLIC_LOG_D64 " buffer is release", buffer->pts_);
+    MEDIA_LOG_DD("the pts is " PUBLIC_LOG_D64 " buffer is release", buffer->pts_);
     Status ret = inputBufferQueueConsumer_->ReleaseBuffer(buffer);
     FALSE_RETURN_MSG(ret == Status::OK, "release avbuffer failed");
     std::unique_lock<std::mutex> formatLock(formatChangeMutex_);
@@ -976,7 +1002,7 @@ void AudioSink::GetAvailableOutputBuffers()
     std::lock_guard<std::mutex> lock(availBufferMutex_);
     std::shared_ptr<AVBuffer> filledInputBuffer;
     Status ret = Status::OK;
-    MediaAVCodec::AVCodecTrace trace("AudioSink::GetBufferFromUpstream");
+    MEDIA_TRACE_DEBUG("AudioSink::GetBufferFromUpstream");
     while (ret == Status::OK) {
         ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
         if (ret != Status::OK || filledInputBuffer == nullptr) {
@@ -994,7 +1020,7 @@ void AudioSink::GetAvailableOutputBuffers()
             isEosBuffer_ = true;
         }
         availOutputBuffers_.push(filledInputBuffer);
-        MEDIA_LOG_D("the pts is " PUBLIC_LOG_D64 " buffer is push", filledInputBuffer->pts_);
+        MEDIA_LOG_DD("the pts is " PUBLIC_LOG_D64 " buffer is push", filledInputBuffer->pts_);
         availDataSize_.fetch_add(filledInputBuffer->memory_->GetSize());
     }
     DriveBufferCircle();
@@ -1071,7 +1097,7 @@ void AudioSink::WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer)
         { lastAnchorClockTime_, bufferDurationSinceLastAnchor_, audioWriteMs, nowClockTime });
     PerfRecord(audioWriteMs);
     lagDetector_.CalcLag(filledOutputBuffer);
-    MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
+    MEDIA_LOG_DD("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;
     FALSE_RETURN(inputBufferQueueConsumer_ != nullptr);
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
@@ -1108,19 +1134,42 @@ void AudioSink::DrainOutputBuffer(bool flushed)
 {
     std::lock_guard<std::mutex> lock(pluginMutex_);
     FALSE_RETURN(plugin_ != nullptr && inputBufferQueueConsumer_ != nullptr);
-    if (state_ == Pipeline::FilterState::PAUSED || state_ == Pipeline::FilterState::READY ||
-            state_ == Pipeline::FilterState::STOPPED) {
-        MEDIA_LOG_I("DrainOutputBuffer ignore for PAUSE/READY, state = " PUBLIC_LOG_D32, state_.load());
-        return;
-    }
-    if (isCallbackMode_) {
+
+    if (isRenderCallbackMode_) {
+        if (state_ != Pipeline::FilterState::RUNNING) {
+            MEDIA_LOG_W("DrainOutputBuffer ignore temporarily for not RUNNINT state: " PUBLIC_LOG_D32
+                ", isProcessInputMerged: " PUBLIC_LOG_D32, state_.load(), isProcessInputMerged_);
+
+            /*
+            * As the AudioRender START and PAUSE procedure may consume a long time about 200 ms,
+            * if the consumption of inputbuffer queue is not excuted in AudioSinkFilter's task working thread,
+            * this RETURN ACTION will cause the filled buffers not been consumed,
+            * which cause the upstream filter RequesetBuffer failed and audio track playback stuck.
+            */
+            if (!isProcessInputMerged_) {
+                return;
+            }
+        }
         GetAvailableOutputBuffers();
     } else {
         std::shared_ptr<AVBuffer> filledOutputBuffer = nullptr;
         Status ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer);
         FALSE_RETURN(ret == Status::OK && filledOutputBuffer != nullptr);
         if (state_ != Pipeline::FilterState::RUNNING || flushed) {
-            MEDIA_LOG_E("Drop buffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
+            MEDIA_LOG_W("DrainOutputBuffer, drop audio buffer pts = " PUBLIC_LOG_D64 ", state: " PUBLIC_LOG_D32
+                ", flushed: " PUBLIC_LOG_D32, filledOutputBuffer->pts_, state_.load(), flushed);
+
+            /*
+             * As START and PAUSE procedure of AudioDecoderFilter and AudioSinkFilter run concurrently
+             * in different working thread, AudioSinkFilter may change to RUNNING state after AudioDecoderFilter
+             * or AudioSinkFilter may change to PAUSED state before AudioDecoderFilter.
+             * This ReleaseBuffer ACTION will cause audio buffer droped, which may cause audio discontinuity.
+             *
+             * So, How to deal with this case?
+             * 1. Try to cache buffers in non RUNNING state, prioritize consuming the cached buffers in RUNNING state?
+             * 2. There may be some buffers that cannot be processed, i.e. do Pause/Resume repeatedly around the ending
+             * and cause the EOS buffer being cached which may cause that the Audio Track can't end.
+             */
             inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
             return;
         }
@@ -1204,7 +1253,7 @@ bool AudioSink::AudioLagDetector::CalcLag(std::shared_ptr<AVBuffer> buffer)
     auto currentMediaTime = lastDrainTimeGroup_.nowClockTime;
     auto writeTimeMs = lastDrainTimeGroup_.writeDuration;
 
-    MEDIA_LOG_D("maxMediaTime " PUBLIC_LOG_D64 " currentMediaTime " PUBLIC_LOG_D64 " latency_ " PUBLIC_LOG_D64,
+    MEDIA_LOG_DD("maxMediaTime " PUBLIC_LOG_D64 " currentMediaTime " PUBLIC_LOG_D64 " latency_ " PUBLIC_LOG_D64,
         maxMediaTime, currentMediaTime, latency_);
 
     if (maxMediaTime < currentMediaTime) {
@@ -1221,7 +1270,7 @@ bool AudioSink::AudioLagDetector::CalcLag(std::shared_ptr<AVBuffer> buffer)
     } else if (drainTimeDiff > DRAIN_TIME_DIFF_INFO_MS) {
         MEDIA_LOG_I("Audio drain cost " PUBLIC_LOG_D64, drainTimeDiff);
     } else {
-        MEDIA_LOG_D("Audio drain cost " PUBLIC_LOG_D64, drainTimeDiff);
+        MEDIA_LOG_DD("Audio drain cost " PUBLIC_LOG_D64, drainTimeDiff);
     }
 
     return maxMediaTime < currentMediaTime;
@@ -1262,7 +1311,7 @@ bool AudioSink::UpdateTimeAnchorIfNeeded(const std::shared_ptr<OHOS::Media::AVBu
         (lastAnchorClockTime_ == HST_TIME_NONE) ||
         (nowCt - lastAnchorClockTime_ >= ANCHOR_UPDATE_PERIOD_US);
     if (!needUpdate) {
-        MEDIA_LOG_D("No need to update time anchor this time.");
+        MEDIA_LOG_DD("No need to update time anchor this time.");
         return false;
     }
     uint64_t latency = 0;
@@ -1374,7 +1423,7 @@ int64_t AudioSink::getPendingAudioPlayoutDurationUs(int64_t nowUs)
     const int64_t numFramesPlayed = plugin_->GetPlayedOutDurationUs(nowUs);
     FALSE_RETURN_V(sampleRate_ > 0, 0);
     int64_t pendingUs = (writtenSamples - numFramesPlayed) * HST_MSECOND / sampleRate_;
-    MEDIA_LOG_D("pendingUs: " PUBLIC_LOG_D64, pendingUs);
+    MEDIA_LOG_DD("pendingUs: " PUBLIC_LOG_D64, pendingUs);
     if (pendingUs < 0) {
         pendingUs = 0;
     }

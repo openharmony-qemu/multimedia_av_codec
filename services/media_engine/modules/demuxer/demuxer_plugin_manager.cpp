@@ -599,11 +599,6 @@ void DemuxerPluginManager::WaitForInitialBufferingEnd(std::shared_ptr<BaseStream
     MEDIA_LOG_I("initial buffering success");
 }
 
-bool DemuxerPluginManager::IsDash() const
-{
-    return isDash_;
-}
-
 void DemuxerPluginManager::SetResetEosStatus(bool flag)
 {
     needResetEosStatus_ = flag;

@@ -101,10 +101,10 @@ public:
         return mediaCodec_ != nullptr ? mediaCodec_->GetOutputBufferQueueProducer() : nullptr;
     }
 
-    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed) override
+    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus) override
     {
         if (mediaCodec_ != nullptr) {
-            mediaCodec_->ProcessInputBufferInner(isTriggeredByOutPort, isFlushed);
+            mediaCodec_->ProcessInputBufferInner(isTriggeredByOutPort, isFlushed, bufferStatus);
         }
     }
 

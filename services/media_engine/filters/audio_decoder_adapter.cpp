@@ -175,10 +175,10 @@ sptr<Media::AVBufferQueueProducer> AudioDecoderAdapter::GetOutputBufferQueueProd
     return audiocodec_ != nullptr ? audiocodec_->GetOutputBufferQueueProducer() : nullptr;
 }
 
-void AudioDecoderAdapter::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed)
+void AudioDecoderAdapter::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus)
 {
     FALSE_RETURN_MSG(audiocodec_ != nullptr, "ProcessInputBufferInner audiocodec_ is nullptr");
-    audiocodec_->ProcessInputBufferInner(isTriggeredByOutPort, isFlushed);
+    audiocodec_->ProcessInputBufferInner(isTriggeredByOutPort, isFlushed, bufferStatus);
 }
 
 int32_t AudioDecoderAdapter::GetOutputFormat(std::shared_ptr<Meta> &parameter)

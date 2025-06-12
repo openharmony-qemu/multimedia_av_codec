@@ -20,6 +20,9 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SCREENCAPTURE, "AudioDataSourceFilter" };
 static constexpr uint8_t LOG_LIMIT_HUNDRED = 100;
+static constexpr uint64_t AUDIO_NS_PER_SECOND = 1000000000; // ns 1s
+static constexpr int64_t AUDIO_DATASOURCE_FILTER_READ_FAILED_WAIT_TIME = 21333333; // 20000000 us 20ms
+static constexpr int64_t AUDIO_DATASOURCE_FILTER_READ_SUCCESS_WAIT_TIME = 4000000; // us 4ms
 }
  
 namespace OHOS {
@@ -195,6 +198,14 @@ void AudioDataSourceFilter::SetAudioDataSource(const std::shared_ptr<IAudioDataS
     audioDataSource_ = audioSource;
 }
 
+void AudioDataSourceFilter::SetVideoFirstFramePts(int64_t firstFramePts)
+{
+    if (audioDataSource_) {
+        MEDIA_LOG_I("set firstVideoFramePts: " PUBLIC_LOG_D64, firstFramePts);
+        audioDataSource_->SetVideoFirstFramePts(firstFramePts);
+    }
+}
+
 Status AudioDataSourceFilter::SendEos()
 {
     MEDIA_LOG_I("AudioDataSourceFilter SendEos");
@@ -217,7 +228,7 @@ Status AudioDataSourceFilter::SendEos()
 void AudioDataSourceFilter::ReadLoop()
 {
     MEDIA_LOG_D("AudioDataSourceFilter ReadLoop In");
-    if (eos_.load()) {
+    if (eos_.load() || audioDataSource_ == nullptr) {
         return;
     }
     int64_t bufferSize = 0;
@@ -239,9 +250,16 @@ void AudioDataSourceFilter::ReadLoop()
         MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "AudioDataSourceFilter RequestBuffer fail");
         return;
     }
-    if (audioDataSource_->ReadAt(buffer, bufferSize) != 0) {
-        MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "AudioDataSourceFilter ReadAt fail");
+    AudioDataSourceReadAtActionState readAtRet = audioDataSource_->ReadAt(buffer, bufferSize);
+    if (readAtRet != AudioDataSourceReadAtActionState::OK) {
+        if (readAtRet != AudioDataSourceReadAtActionState::SKIP_WITHOUT_LOG) { // log after Started
+            MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "AudioDataSourceFilter ReadAt fail ret: %{public}d",
+                static_cast<int32_t>(readAtRet));
+        }
         outputBufferQueue_->PushBuffer(buffer, false);
+        if (readAtRet == AudioDataSourceReadAtActionState::RETRY_IN_INTERVAL) { // retry after 20ms
+            RelativeSleep(AUDIO_DATASOURCE_FILTER_READ_FAILED_WAIT_TIME);
+        }
         return;
     }
     buffer->memory_->SetSize(bufferSize);
@@ -249,6 +267,7 @@ void AudioDataSourceFilter::ReadLoop()
     if (status != Status::OK) {
         MEDIA_LOG_E("AudioDataSourceFilter PushBuffer fail");
     }
+    RelativeSleep(AUDIO_DATASOURCE_FILTER_READ_SUCCESS_WAIT_TIME);
 }
  
 void AudioDataSourceFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta)
@@ -300,7 +319,25 @@ void AudioDataSourceFilter::OnUpdatedResult(const std::shared_ptr<Meta> &meta)
     MEDIA_LOG_I("AudioDataSourceFilter OnUpdatedResult");
     (void) meta;
 }
- 
+
+int32_t AudioDataSourceFilter::RelativeSleep(int64_t nanoTime)
+{
+    int32_t ret = -1; // -1 for bad result.
+    if (nanoTime <= 0) {
+        MEDIA_LOG_E("RelativeSleep nanoTime <= 0");
+        return ret;
+    }
+    struct timespec time;
+    time.tv_sec = nanoTime / AUDIO_NS_PER_SECOND;
+    time.tv_nsec = nanoTime - (time.tv_sec * AUDIO_NS_PER_SECOND); // Avoids % operation.
+    clockid_t clockId = CLOCK_MONOTONIC;
+    const int relativeFlag = 0; // flag of relative sleep.
+    ret = clock_nanosleep(clockId, relativeFlag, &time, nullptr);
+    if (ret != 0) {
+        MEDIA_LOG_I("RelativeSleep may failed, ret is :%{public}d", ret);
+    }
+    return ret;
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

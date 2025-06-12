@@ -55,6 +55,7 @@ private:
                                         sptr<IRemoteObject> &object,
                                         uint32_t tryTimes = 3);
     sptr<IStandardAVCodecService> GetAVCodecProxy();
+    sptr<IStandardAVCodecService> GetTemporaryAVCodecProxy();
     bool IsAlived();
     static void AVCodecServerDied(pid_t pid);
     void DoAVCodecServerDied();

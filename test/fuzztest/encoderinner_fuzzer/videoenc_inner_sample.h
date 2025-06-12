@@ -114,7 +114,7 @@ public:
     int32_t SetCallback();
     int32_t SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallback> cb);
     int32_t GetInputFormat(Format &format);
-
+    int32_t StartEncoder();
     int32_t StartVideoEncoder();
     int32_t TestApi();
     int32_t PushData(std::shared_ptr<AVSharedMemory> buffer, uint32_t index, int32_t &result);
@@ -148,9 +148,9 @@ public:
     void PushRandomDiscardIndex(uint32_t count, uint32_t min, uint32_t max);
     bool IsFrameDiscard(uint32_t index);
     bool CheckOutputFrameCount();
-    void ReadMultiFilesFunc();
-    int32_t SetCustomBuffer(BufferRequestConfig bufferRequestConfig, uint8_t *data);
-    bool ReadCustomDataToAVBuffer(uint8_t *data, std::shared_ptr<AVBuffer> buffer);
+    int32_t ReadMultiFilesFunc();
+    int32_t SetCustomBuffer(BufferRequestConfig bufferRequestConfig, uint8_t *data, size_t size);
+    bool ReadCustomDataToAVBuffer(uint8_t *data, std::shared_ptr<AVBuffer> buffer, size_t size);
     bool GetWaterMarkCapability(std::string codecMimeType);
     int32_t InitBuffer(OHNativeWindowBuffer *&ohNativeWindowBuffer, OH_NativeBuffer *&nativeBuffer, uint8_t *&dst);
 

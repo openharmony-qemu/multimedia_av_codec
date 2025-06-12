@@ -358,6 +358,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
         ASSERT_NE(nullptr, vdec_);
 
         Format format;
+        int32_t ret = AVCS_ERR_OK;
         format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
@@ -367,18 +368,25 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
         std::shared_ptr<VDecInnerCallback> cb_ = make_shared<VDecInnerCallback>(signal_);
         ASSERT_EQ(AVCS_ERR_OK, vdec_->SetCallback(cb_));
         ASSERT_EQ(AVCS_ERR_OK, vdec_->Start());
+        int kTestFrameCount = 2;
+        for (int i = 0; i < kTestFrameCount; i++) {
+        {
+            std::unique_lock<std::mutex> lock(signal_->inMutex_);
+            bool hasData = signal_->inCond_.wait_for(lock, std::chrono::seconds(5),
+                [&]() { return !signal_->inIdxQueue_.empty(); });
+            ASSERT_TRUE(hasData);
 
-        for (int i = 0; i < 2; i++) {
-            unique_lock<mutex> lock(signal_->inMutex_);
-            signal_->inCond_.wait(lock, []() { return signal_->inIdxQueue_.size() > 0; });
-            uint32_t index = signal_->inIdxQueue_.front();
-            cout << "QueueInputBuffer  index:" << index << endl;
-            ASSERT_EQ(AVCS_ERR_OK, vdec_->QueueInputBuffer(index));
+            uint32_t bufferIndex = signal_->inIdxQueue_.front();
+            signal_->inIdxQueue_.pop();
+
+            std::cout << "Processing buffer slot: " << bufferIndex << std::endl;
+            ret = vdec_->QueueInputBuffer(bufferIndex);
+            if (ret != AVCS_ERR_OK) {
+                signal_->inIdxQueue_.push(bufferIndex);
+                ASSERT_EQ(AVCS_ERR_OK, ret);
+            }
         }
-
-        vdec_->Release();
-        vdec_ = nullptr;
-        signal_->inIdxQueue_.pop();
+        }
     }
 }
 

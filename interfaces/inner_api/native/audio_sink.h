@@ -36,6 +36,7 @@ using namespace OHOS::Media::Plugins;
 class AudioSink : public std::enable_shared_from_this<AudioSink>, public Pipeline::MediaSynchronousSink {
 public:
     AudioSink();
+    AudioSink(bool isRenderCallbackMode, bool isProcessInputMerged);
     ~AudioSink();
     Status Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     sptr<AVBufferQueueProducer> GetBufferQueueProducer();
@@ -46,6 +47,8 @@ public:
     Status Start();
     Status Stop();
     Status Pause();
+    Status Freeze();
+    Status UnFreeze();
     Status Resume();
     Status Flush();
     Status Release();
@@ -87,7 +90,10 @@ public:
         return state_ == Pipeline::FilterState::INITIALIZED;
     }
     Status SetSeekTime(int64_t seekTime);
-    bool NeedImmediateRender();
+    inline bool NeedImmediateRender() const
+    {
+        return isApe_ || isFlac_;
+    }
     bool GetSyncCenterClockTime(int64_t &clockTime);
     Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
     Status SetLooping(bool loop);
@@ -257,7 +263,8 @@ private:
     bool isPerfRecEnabled_ { false };
     bool isCalledBySystemApp_ { false };
     bool isLoop_ { false };
-    bool isCallbackMode_ {true};
+    bool isRenderCallbackMode_ {true};
+    bool isProcessInputMerged_ {true};
     std::shared_ptr<AudioSinkDataCallback> audioSinkDataCallback_ {nullptr};
     std::mutex availBufferMutex_;
     std::atomic<size_t> availDataSize_ {0};

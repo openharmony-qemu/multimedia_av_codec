@@ -31,6 +31,7 @@
 #include "avcodec_sysevent.h"
 #include "media_core.h"
 #include "scoped_timer.h"
+#include "sync_fence.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "VideoDecoderAdapter" };
@@ -41,6 +42,8 @@ namespace Media {
 using namespace MediaAVCodec;
 using FileType = OHOS::Media::Plugins::FileType;
 const std::string VIDEO_INPUT_BUFFER_QUEUE_NAME = "VideoDecoderInputBufferQueue";
+constexpr uint64_t DECODER_USAGE =
+    BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
 static const int64_t CODEC_START_WARNING_MS = 50;
 
 VideoDecoderCallback::VideoDecoderCallback(std::shared_ptr<VideoDecoderAdapter> videoDecoder)
@@ -89,6 +92,30 @@ void VideoDecoderCallback::OnOutputBufferAvailable(uint32_t index, std::shared_p
         MEDIA_LOG_I_SHORT("invalid videoDecoderAdapter");
     }
 }
+
+class VideoConsumerListener : public IBufferConsumerListener {
+public:
+    explicit VideoConsumerListener(sptr<Surface> consumerSurface) : consumerSurface_(consumerSurface) {};
+
+    ~VideoConsumerListener() override = default;
+ 
+    void OnBufferAvailable() override
+    {
+        sptr<Surface> consumerSurface = consumerSurface_.promote();
+        FALSE_RETURN_MSG(consumerSurface != nullptr, "consumerSurface_ is nullptr");
+        sptr<SurfaceBuffer> surfaceBuffer = nullptr;
+        sptr<SyncFence> fence = nullptr;
+        int64_t timestamp = 0;
+        OHOS::Rect damage = {};
+        GSError err = consumerSurface->AcquireBuffer(surfaceBuffer, fence, timestamp, damage);
+        FALSE_RETURN_MSG(err == GSERROR_OK, "AcquireBuffer failed, err:%{public}d", err);
+        err = consumerSurface->ReleaseBuffer(surfaceBuffer, -1);
+        FALSE_RETURN_MSG(err == GSERROR_OK, "ReleaseBuffer failed, err:%{public}d", err);
+    }
+
+private:
+    wptr<Surface> consumerSurface_{nullptr};
+};
 
 VideoDecoderAdapter::VideoDecoderAdapter()
 {
@@ -290,8 +317,9 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
             GetInputBufferDts(tmpBuffer);
         }
         FALSE_RETURN_MSG(tmpBuffer->meta_ != nullptr, "tmpBuffer is nullptr.");
-        uint32_t index;
-        FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, index), "get index failed.");
+        int32_t metaIndex;
+        FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, metaIndex), "get index failed.");
+        uint32_t index = static_cast<uint32_t>(metaIndex);
         if (tmpBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
             tmpBuffer->memory_->SetSize(0);
         }
@@ -349,7 +377,7 @@ void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr
 {
     AVCodecTrace trace("VideoDecoderAdapter::OnInputBufferAvailable");
     FALSE_RETURN_MSG(buffer != nullptr && buffer->meta_ != nullptr, "meta_ is nullptr.");
-    buffer->meta_->SetData(Tag::REGULAR_TRACK_ID, index);
+    buffer->meta_->SetData(Tag::REGULAR_TRACK_ID, static_cast<int32_t>(index));
     if (inputBufferQueueConsumer_ == nullptr) {
         MEDIA_LOG_E_SHORT("inputBufferQueueConsumer_ is null");
         return;
@@ -451,7 +479,34 @@ int32_t VideoDecoderAdapter::SetOutputSurface(sptr<Surface> videoSurface)
 {
     MEDIA_LOG_I_SHORT("VideoDecoderAdapter::SetOutputSurface");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
-    return mediaCodec_->SetOutputSurface(videoSurface);
+    
+    if (videoSurface == nullptr) {
+        InitDefaultSurface();
+        return mediaCodec_->SetOutputSurface(producerSurface_);
+    }
+
+    auto status = mediaCodec_->SetOutputSurface(videoSurface);
+    FALSE_RETURN_V_NOLOG(status != MSERR_OK, status);
+    producerSurface_ = nullptr;
+    consumerSurface_ = nullptr;
+    return MSERR_OK;
+}
+
+void VideoDecoderAdapter::InitDefaultSurface()
+{
+    MEDIA_LOG_D("InitDefaultSurface enter");
+    consumerSurface_ = Surface::CreateSurfaceAsConsumer("VirtualVideoSurface");
+    FALSE_RETURN_MSG(consumerSurface_ != nullptr, "InitSurface create consumer surface failed.");
+ 
+    GSError err = consumerSurface_->SetDefaultUsage(DECODER_USAGE);
+    FALSE_RETURN_MSG(err == GSERROR_OK, "InitSurface SetDefaultUsage failed.");
+    sptr<IBufferConsumerListener> listener = new VideoConsumerListener(consumerSurface_);
+    err = consumerSurface_->RegisterConsumerListener(listener);
+    FALSE_RETURN_MSG(err == GSERROR_OK, "InitSurface RegisterConsumerListener failed.");
+ 
+    sptr<IBufferProducer> producer = consumerSurface_->GetProducer();
+    producerSurface_ = Surface::CreateSurfaceAsProducer(producer);
+    FALSE_RETURN_MSG(producerSurface_ != nullptr, "InitSurface create producer surface failed.");
 }
 
 int32_t VideoDecoderAdapter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
@@ -502,6 +557,12 @@ void VideoDecoderAdapter::OnDumpInfo(int32_t fd)
         MEDIA_LOG_E_SHORT("VideoDecoderAdapter::OnDumpInfo write failed.");
         return;
     }
+}
+
+void VideoDecoderAdapter::NotifyMemoryExchange(bool exchangeFlag)
+{
+    FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr");
+    mediaCodec_->NotifyMemoryExchange(exchangeFlag);
 }
 } // namespace Media
 } // namespace OHOS

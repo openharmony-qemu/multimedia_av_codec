@@ -227,13 +227,15 @@ public:
     MOCK_METHOD(sptr<Media::AVBufferQueueProducer>, GetInputBufferQueue, ());
     MOCK_METHOD(sptr<Media::AVBufferQueueConsumer>, GetInputBufferQueueConsumer, ());
     MOCK_METHOD(sptr<Media::AVBufferQueueProducer>, GetOutputBufferQueueProducer, ());
-    MOCK_METHOD(void, ProcessInputBufferInner, (int32_t triggerSource, bool isFlushed));
+    MOCK_METHOD(void, ProcessInputBufferInner, (int32_t triggerSource, bool isFlushed, uint32_t &bufferStatus));
     MOCK_METHOD(void, ProcessInputBuffer, ());
     MOCK_METHOD(int32_t, SetAudioDecryptionConfig,
                 (const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag));
     MOCK_METHOD(int32_t, SetCustomBuffer, (std::shared_ptr<AVBuffer> buffer));
     MOCK_METHOD(int32_t, NotifyMemoryRecycle, ());
     MOCK_METHOD(int32_t, NotifyMemoryWriteBack, ());
+    MOCK_METHOD(int32_t, NotifySuspend, ());
+    MOCK_METHOD(int32_t, NotifyResume, ());
     std::weak_ptr<AVCodecCallback> codecCb_;
     std::weak_ptr<MediaCodecCallback> videoCb_;
 };
@@ -271,6 +273,8 @@ public:
     virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer);
     virtual int32_t NotifyMemoryRecycle();
     virtual int32_t NotifyMemoryWriteBack();
+    virtual int32_t NotifySuspend();
+    virtual int32_t NotifyResume();
 
     /* API11 audio codec interface */
     virtual int32_t CreateCodecByName(const std::string &name);
@@ -309,10 +313,11 @@ public:
         return nullptr;
     }
 
-    virtual void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed)
+    virtual void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus)
     {
         (void)isTriggeredByOutPort;
         (void)isFlushed;
+        (void)bufferStatus;
     }
 };
 } // namespace MediaAVCodec

@@ -58,6 +58,7 @@ public:
         size_t sideDataSize, bool isExtradata);
     void ParseAnnexbExtraData(const uint8_t *sample, int32_t size);
     std::vector<uint8_t> GetLogInfo();
+    uint32_t GetMaxReorderPic();
     
 private:
     StreamParser *streamParser_ {nullptr};

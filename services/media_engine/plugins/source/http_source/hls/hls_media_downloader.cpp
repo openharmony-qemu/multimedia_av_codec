@@ -2052,6 +2052,7 @@ Status HlsMediaDownloader::StopBufferring(bool isAppBackground)
     } else {
         isInterrupt_ = false;
     }
+    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     downloader_->StopBufferring();
     playlistDownloader_->StopBufferring(isAppBackground);
     MEDIA_LOG_I("HlsMediaDownloader:StopBufferring out");

@@ -54,8 +54,10 @@ public:
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
     void OnUnlinkedResult(const std::shared_ptr<Meta>& meta);
     void OnUpdatedResult(const std::shared_ptr<Meta>& meta);
+    void SetVideoFirstFramePts(int64_t firstFramePts);
 private:
     void ReadLoop();
+    int32_t RelativeSleep(int64_t nanoTime);
     std::shared_ptr<Task> taskPtr_{ nullptr };
     sptr<AVBufferQueueProducer> outputBufferQueue_;
     std::shared_ptr<IAudioDataSource> audioDataSource_{ nullptr };

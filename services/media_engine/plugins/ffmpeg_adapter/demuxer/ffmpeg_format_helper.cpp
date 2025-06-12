@@ -102,12 +102,11 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
     {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
+    {AV_CODEC_ID_PCM_ALAW, MimeType::AUDIO_G711A},
 #ifdef SUPPORT_CODEC_COOK
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
 #endif
-#ifdef SUPPORT_CODEC_AC3
     {AV_CODEC_ID_AC3, MimeType::AUDIO_AC3},
-#endif
     {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
     {AV_CODEC_ID_WEBVTT, MimeType::TEXT_WEBVTT},
 #ifdef SUPPORT_DEMUXER_LRC
@@ -147,7 +146,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
 #ifdef SUPPORT_DEMUXER_SAMI
     {"sami", FileType::SAMI},
 #endif
-#ifdef SUPPORT_DEMUXER_ASS 
+#ifdef SUPPORT_DEMUXER_ASS
     {"ass", FileType::ASS},
 #endif
 };
@@ -204,7 +203,7 @@ std::vector<std::string> SplitByChar(const char* str, const char* pattern)
 
 void DumpFileInfo(const AVFormatContext& avFormatContext)
 {
-    FALSE_LOG_MSG_W(avFormatContext.iformat != nullptr, "Iformat is nullptr");
+    FALSE_RETURN_MSG(avFormatContext.iformat != nullptr, "Iformat is nullptr");
     MEDIA_LOG_D("File name [" PUBLIC_LOG_S "]", avFormatContext.iformat->name);
     if (StartWith(avFormatContext.iformat->name, "mov,mp4,m4a")) {
         const AVDictionaryEntry *type = av_dict_get(avFormatContext.metadata, "major_brand", NULL, 0);

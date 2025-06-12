@@ -78,6 +78,9 @@ public:
     void SetIsReportedErrorCode() override;
     bool IsNotRetry(const std::shared_ptr<DownloadRequest>& request) override
     {
+        if (isAppBackground_) {
+            return false;
+        }
         if (isRingBuffer_ && isSelectingBitrate_.load()) {
             return false;
         }
@@ -257,6 +260,7 @@ private:
     std::atomic<bool> isAutoSelectBitrate_ {true};
     std::deque<uint32_t> downloadSpeeds_;
     uint32_t videoBitrate_ {0};
+    bool isAppBackground_ {false};
 };
 }
 }

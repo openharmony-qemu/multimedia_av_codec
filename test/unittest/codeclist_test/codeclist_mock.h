@@ -118,8 +118,9 @@ const std::vector<int32_t> DEFAULT_VIDEO_AVC_PIXFORMATS = {
     static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_PROFILES = {AVC_PROFILE_BASELINE, AVC_PROFILE_HIGH, AVC_PROFILE_MAIN};
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_LEVELS = {
-    AVC_LEVEL_1, AVC_LEVEL_1b, AVC_LEVEL_11, AVC_LEVEL_12, AVC_LEVEL_13, AVC_LEVEL_2,  AVC_LEVEL_21, AVC_LEVEL_22,
-    AVC_LEVEL_3, AVC_LEVEL_31, AVC_LEVEL_32, AVC_LEVEL_4,  AVC_LEVEL_41, AVC_LEVEL_42, AVC_LEVEL_5,  AVC_LEVEL_51};
+    AVC_LEVEL_1,  AVC_LEVEL_1b, AVC_LEVEL_11, AVC_LEVEL_12, AVC_LEVEL_13, AVC_LEVEL_2,  AVC_LEVEL_21,
+    AVC_LEVEL_22, AVC_LEVEL_3,  AVC_LEVEL_31, AVC_LEVEL_32, AVC_LEVEL_4,  AVC_LEVEL_41, AVC_LEVEL_42,
+    AVC_LEVEL_5,  AVC_LEVEL_51, AVC_LEVEL_52, AVC_LEVEL_6,  AVC_LEVEL_61, AVC_LEVEL_62};
 
 constexpr int32_t DEFAULT_WIDTH_ALIGNMENT = 2;
 constexpr int32_t DEFAULT_HEIGHT_ALIGNMENT = 2;
@@ -184,8 +185,7 @@ constexpr OH_AVRange DEFAULT_WIDTH_RANGE_OF_HEIGHT_VVC = {128, 4096};
 constexpr OH_AVRange DEFAULT_FRAMERATE_RANGE_VVC = {1, 240};
 
 const std::vector<int32_t> DEFAULT_VIDEO_VVC_PIXFORMATS = {
-    static_cast<int32_t>(VideoPixelFormat::NV12), static_cast<int32_t>(VideoPixelFormat::NV12),
-    static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::NV21)};
+    static_cast<int32_t>(VideoPixelFormat::NV12), static_cast<int32_t>(VideoPixelFormat::NV21)};
 const std::vector<int32_t> DEFAULT_VIDEO_VVC_PROFILES = {
     VVC_PROFILE_MAIN_10, VVC_PROFILE_MAIN_10_STILL};
 const std::vector<int32_t> DEFAULT_VIDEO_VVC_LEVELS = {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,7 +19,6 @@
 #include "filter/filter.h"
 #include "surface.h"
 #include "meta/meta.h"
-#include "meta/format.h"
 #include "buffer/avbuffer.h"
 #include "buffer/avallocator.h"
 #include "buffer/avbuffer_queue.h"
@@ -38,6 +37,7 @@ public:
     explicit SurfaceDecoderFilter(const std::string& name, FilterType type);
     ~SurfaceDecoderFilter() override;
 
+    void SetCodecFormat(const std::shared_ptr<Meta> &format);
     void Init(const std::shared_ptr<EventReceiver> &receiver,
         const std::shared_ptr<FilterCallback> &callback) override;
     Status Configure(const std::shared_ptr<Meta> &parameter);
@@ -70,6 +70,7 @@ protected:
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
 
 private:
+    Status ConfigureMediaCodecByMimeType(std::string codecMimeType, bool isHdrVivid);
     std::string name_;
     FilterType filterType_ = FilterType::FILTERTYPE_MAX;
 
@@ -78,9 +79,10 @@ private:
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_{nullptr};
     std::shared_ptr<SurfaceDecoderAdapter> mediaCodec_{nullptr};
 
-    std::string codecMimeType_;
+    std::string codecMimeType_{};
+    int32_t colorSpace_;
+    bool transcoderIsHdrVivid_{false};
     std::shared_ptr<Meta> configureParameter_{nullptr};
-    Format configFormat_{};
 
     std::shared_ptr<Filter> nextFilter_{nullptr};
 

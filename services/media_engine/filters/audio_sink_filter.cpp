@@ -48,21 +48,43 @@ void AudioSinkFilter::AVBufferAvailableListener::OnBufferAvailable()
 {
     auto sink = audioSinkFilter_.lock();
     FALSE_RETURN_MSG(sink != nullptr, "invalid audioSink");
-    sink->ProcessInputBuffer();
+    sink->OnBufferAvailable();
 }
 
 AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)
     : Filter(name, FilterType::FILTERTYPE_ASINK, IS_FILTER_ASYNC)
 {
+    bool isRenderCallbackMode =
+        OHOS::system::GetParameter("debug.media_service.audio.audiosink_callback", "1") == "1";
+    bool isProcessInputMerged =
+        OHOS::system::GetParameter("debug.media_service.audio.audiosink_processinput_merged", "1") == "1";
+    MEDIA_LOG_I("AudioSinkFilter ctor called, isRenderCallbackMode:" PUBLIC_LOG_D32
+        ", isProcessInputMerged:" PUBLIC_LOG_D32, isRenderCallbackMode, isProcessInputMerged);
+    isRenderCallbackMode_ = isRenderCallbackMode;
+    isProcessInputMerged_ = isProcessInputMerged;
     filterType_ = filterType;
-    audioSink_ = std::make_shared<AudioSink>();
-    MEDIA_LOG_I("audio sink ctor called");
+    audioSink_ = std::make_shared<AudioSink>(isRenderCallbackMode, isProcessInputMerged);
 }
 
 AudioSinkFilter::~AudioSinkFilter()
 {
-    MEDIA_LOG_I("dtor called");
+    MEDIA_LOG_I("AudioSinkFilter dtor called");
     Filter::StopFilterTask();
+}
+
+void AudioSinkFilter::OnBufferAvailable()
+{
+    if (isRenderCallbackMode_) {
+        if (isProcessInputMerged_) {
+            DoProcessInputBuffer(0, 0);
+        } else {
+            ProcessInputBuffer();
+        }
+    } else if (NeedImmediateRender()) {
+        DoProcessInputBuffer(0, 0);
+    } else {
+        ProcessInputBuffer();
+    }
 }
 
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -92,11 +114,6 @@ Status AudioSinkFilter::DoInitAfterLink()
     audioSink_->SetEventReceiver(eventReceiver_);
     audioSink_->SetThreadGroupId(groupId_);
     return ret;
-}
-
-bool AudioSinkFilter::NeedImmediateRender()
-{
-    return needImmediateRender_;
 }
 
 Status AudioSinkFilter::DoPrepare()
@@ -148,6 +165,7 @@ Status AudioSinkFilter::DoPause()
         return Status::ERROR_INVALID_OPERATION;
     }
     state_ = FilterState::PAUSED;
+    UnFreezeAudioSink();
     auto err = audioSink_->Pause();
     MEDIA_LOG_D("audio sink filter pause end");
     return err;
@@ -171,6 +189,20 @@ Status AudioSinkFilter::DoResume()
     return Status::OK;
 }
 
+Status AudioSinkFilter::FreezeAudioSink()
+{
+    MEDIA_LOG_I("AudioSinkFilter FreezeAudioSink");
+    FALSE_RETURN_V_MSG(audioSink_ != nullptr, Status::OK, "audioSink_ is nullptr");
+    return audioSink_->Freeze();
+}
+
+Status AudioSinkFilter::UnFreezeAudioSink()
+{
+    MEDIA_LOG_I("AudioSinkFilter UnFreezeAudioSink");
+    FALSE_RETURN_V_MSG(audioSink_ != nullptr, Status::OK, "audioSink_ is nullptr");
+    return audioSink_->UnFreeze();
+}
+
 Status AudioSinkFilter::DoFlush()
 {
     MEDIA_LOG_I("audio sink flush start");
@@ -188,6 +220,7 @@ Status AudioSinkFilter::DoStop()
     }
     MEDIA_LOG_I("audio sink stop start");
     if (audioSink_ != nullptr) {
+        UnFreezeAudioSink();
         audioSink_->Stop();
     }
     state_ = FilterState::STOPPED;

@@ -18,19 +18,8 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
 
-namespace {
-#ifndef FALSE_RETURN
-#define FALSE_RETURN(exec)                     \
-    do {                                       \
-        bool returnValue = (exec);             \
-        if (!returnValue) {                    \
-            return returnValue;                \
-        }                                      \
-    } while (0);
-#endif
-}
-
 const int BUFFER_PADDING_SIZE = 1024;
+const std::string prefix = "avdemux";
 
 bool DemuxerPluginTest::CreateDataSource(const std::string& filePath)
 {
@@ -50,14 +39,25 @@ bool DemuxerPluginTest::CreateDataSource(const std::string& filePath)
     return true;
 }
 
-bool DemuxerPluginTest::CreateDemuxerPluginByName(const std::string& typeName, const std::string& filePath, int probSize)
+bool DemuxerPluginTest::CreateDemuxerPluginByName(
+    const std::string& typeName, const std::string& filePath, int probSize)
 {
-    FALSE_RETURN(CreateDataSource(filePath));
+    if (typeName.compare(0, prefix.size(), prefix) != 0) {
+        return false;
+    }
+
+    if (!CreateDataSource(filePath)) {
+        return false;
+    }
     pluginBase_ = Plugins::PluginManagerV2::Instance().CreatePluginByName(typeName);
-    FALSE_RETURN(pluginBase_ != nullptr);
+    if (pluginBase_ == nullptr) {
+        return false;
+    }
 
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    FALSE_RETURN(demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_, probSize) == Status::OK);
+    if (demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_, probSize) != Status::OK) {
+        return false;
+    }
 
     realStreamDemuxer_->SetDemuxerState(streamId_, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
 
@@ -68,7 +68,9 @@ bool DemuxerPluginTest::PluginSelectTracks()
 {
     MediaInfo mediaInfo;
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    FALSE_RETURN(demuxerPlugin->GetMediaInfo(mediaInfo) == Status::OK);
+    if (demuxerPlugin->GetMediaInfo(mediaInfo) != Status::OK) {
+        return false;
+    }
 
     for (size_t i = 0; i < mediaInfo.tracks.size(); i++) {
         demuxerPlugin->SelectTrack(static_cast<uint32_t>(i));
@@ -88,7 +90,9 @@ bool DemuxerPluginTest::PluginReadSample(uint32_t idx, uint32_t& flag)
     }
 
     auto avBuf = AVBuffer::CreateAVBuffer(buffer_.data(), bufSize, bufSize);
-    FALSE_RETURN(avBuf != nullptr);
+    if (avBuf == nullptr) {
+        return false;
+    }
     
     demuxerPlugin->ReadSample(idx, avBuf);
     flag = avBuf->flag_;
@@ -102,7 +106,9 @@ bool DemuxerPluginTest::PluginReadAllSample()
     while (!end) {
         for (auto idx : selectedTrackIds_) {
             uint32_t flag = 0;
-            FALSE_RETURN(PluginReadSample(idx, flag));
+            if (!PluginReadSample(idx, flag)) {
+                return false;
+            }
             if (flag & static_cast<uint32_t>(AVBufferFlag::EOS)) {
                 end = true;
                 break;
@@ -115,8 +121,14 @@ bool DemuxerPluginTest::PluginReadAllSample()
 
 bool DemuxerPluginTest::Run(const std::string& typeName, const std::string& filePath, int probSize)
 {
-    FALSE_RETURN(CreateDemuxerPluginByName(typeName, filePath, probSize));
-    FALSE_RETURN(PluginSelectTracks());
-    FALSE_RETURN(PluginReadAllSample());
+    if (!CreateDemuxerPluginByName(typeName, filePath, probSize)) {
+        return false;
+    }
+    if (!PluginSelectTracks()) {
+        return false;
+    }
+    if (!PluginReadAllSample()) {
+        return false;
+    }
     return true;
 }

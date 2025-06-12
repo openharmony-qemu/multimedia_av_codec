@@ -46,6 +46,10 @@ public:
 
     Status DoResume() override;
 
+    Status FreezeAudioSink();
+
+    Status UnFreezeAudioSink();
+
     Status DoFlush() override;
 
     Status DoStop() override;
@@ -94,11 +98,11 @@ public:
 
     void SetIsCancelStart(bool isCancelStart);
 
-    bool NeedImmediateRender();
-
     Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
 
     Status SetLooping(bool loop);
+
+    void OnBufferAvailable();
 
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
@@ -116,10 +120,15 @@ protected:
     };
 
 private:
+    inline bool NeedImmediateRender() const
+    {
+        return needImmediateRender_;
+    }
+
+private:
     std::shared_ptr<AudioSink> audioSink_;
     std::string name_;
     FilterType filterType_;
-    FilterState state_ = FilterState::CREATED;
     std::shared_ptr<Meta> trackMeta_;
     std::shared_ptr<Meta> globalMeta_;
 
@@ -135,7 +144,8 @@ private:
 
     bool forceUpdateTimeAnchorNextTime_ {false};
     bool isCancelStart_ {false};
-
+    bool isRenderCallbackMode_ {true};
+    bool isProcessInputMerged_ {true};
     bool needImmediateRender_ {false};
 };
 } // namespace Pipeline

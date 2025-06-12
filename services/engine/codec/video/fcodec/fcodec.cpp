@@ -54,7 +54,7 @@ constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 300000000;
 constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
 constexpr int32_t VIDEO_FRAMERATE_DEFAULT_SIZE = 60;
-constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
+constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 139264;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
 constexpr int32_t DEFAULT_THREAD_COUNT = 2;
 #ifdef BUILD_ENG_VERSION
@@ -1652,18 +1652,12 @@ bool FCodec::CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer)
         AVCODEC_LOGD("Current buffers unsupport.");
         return false;
     }
-    Owner ownerValue = fBuffer->owner_.load();
-    AVCODEC_LOGD("Buffer type: [%{public}u], fBuffer->owner_: [%{public}d], fBuffer->hasSwapedOut_: [%{public}d].",
-                 isOutputBuffer, ownerValue, fBuffer->hasSwapedOut_);
     std::shared_ptr<FSurfaceMemory> surfaceMemory = fBuffer->sMemory_;
     CHECK_AND_RETURN_RET_LOGD(surfaceMemory != nullptr, false, "Current buffer->sMemory error!");
-    sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
-    if (surfaceBuffer) {
-        return !(ownerValue == Owner::OWNED_BY_SURFACE || fBuffer->hasSwapedOut_ || surfaceBuffer == nullptr);
-    } else {
-        return !(ownerValue == Owner::OWNED_BY_SURFACE || ownerValue == Owner::OWNED_BY_USER ||
-                 fBuffer->hasSwapedOut_ || surfaceBuffer == nullptr);
-    }
+    Owner ownerValue = surfaceMemory->owner;
+    AVCODEC_LOGD("Buffer type: [%{public}u], fBuffer->owner_: [%{public}d], fBuffer->hasSwapedOut_: [%{public}d].",
+                 isOutputBuffer, ownerValue, fBuffer->hasSwapedOut_);
+    return !(ownerValue == Owner::OWNED_BY_SURFACE || fBuffer->hasSwapedOut_);
 }
 
 int32_t FCodec::SwapOutBuffers(bool isOutputBuffer, State curState)
@@ -1923,7 +1917,7 @@ void FCodec::GetAvcCapProf(std::vector<CapabilityData> &capaArray)
         capsData.profiles = {static_cast<int32_t>(AVC_PROFILE_BASELINE), static_cast<int32_t>(AVC_PROFILE_MAIN),
                                     static_cast<int32_t>(AVC_PROFILE_HIGH)};
         std::vector<int32_t> levels;
-        for (int32_t j = 0; j <= static_cast<int32_t>(AVCLevel::AVC_LEVEL_51); ++j) {
+        for (int32_t j = 0; j <= static_cast<int32_t>(AVCLevel::AVC_LEVEL_62); ++j) {
             levels.emplace_back(j);
         }
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_MAIN), levels));

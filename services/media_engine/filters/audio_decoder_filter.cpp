@@ -15,6 +15,7 @@
 #define MEDIA_PIPELINE
 
 #include "audio_decoder_filter.h"
+#include "avcodec_trace.h"
 #include "parameters.h"
 #include "filter/filter_factory.h"
 #include "common/log.h"
@@ -35,6 +36,27 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAY
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+namespace {
+constexpr uint32_t BUFFER_STATUS_INIT_PROCESS_ALWAYS =
+    static_cast<uint32_t>(InOutPortBufferStatus::INIT_PROCESS_ALWAYS);
+constexpr uint32_t BUFFER_STATUS_INIT_IGNORE_RET = static_cast<uint32_t>(InOutPortBufferStatus::INIT_IGNORE_RET);
+constexpr uint32_t BUFFER_STATUS_INIT = static_cast<uint32_t>(InOutPortBufferStatus::INIT);
+constexpr uint32_t BUFFER_STATUS_AVAIL_IN_OUT = static_cast<uint32_t>(InOutPortBufferStatus::INPORT_AVAIL) |
+    static_cast<uint32_t>(InOutPortBufferStatus::OUTPORT_AVAIL);
+constexpr uint32_t BUFFER_STATUS_AVAIL_IN = static_cast<uint32_t>(InOutPortBufferStatus::INPORT_AVAIL);
+constexpr uint32_t BUFFER_STATUS_AVAIL_OUT = static_cast<uint32_t>(InOutPortBufferStatus::OUTPORT_AVAIL);
+constexpr uint32_t BUFFER_STATUS_AVAIL_NONE = 0;
+constexpr uint32_t BUFFER_STATUS_OUT_EOS_START = static_cast<uint32_t>(InOutPortBufferStatus::OUT_EOS_START);
+constexpr uint32_t BUFFER_STATUS_AVAIL_OUT_OUT_EOS_START_DONE =
+    static_cast<uint32_t>(InOutPortBufferStatus::OUTPORT_AVAIL) |
+    static_cast<uint32_t>(InOutPortBufferStatus::OUT_EOS_START) |
+    static_cast<uint32_t>(InOutPortBufferStatus::OUT_EOS_DONE);
+constexpr uint32_t BUFFER_STATUS_AVAIL_OUT_OUT_EOS_START = static_cast<uint32_t>(InOutPortBufferStatus::OUTPORT_AVAIL) |
+    static_cast<uint32_t>(InOutPortBufferStatus::OUT_EOS_START);
+constexpr uint32_t BUFFER_STATUS_OUT_EOS_START_DONE = static_cast<uint32_t>(InOutPortBufferStatus::OUT_EOS_START) |
+    static_cast<uint32_t>(InOutPortBufferStatus::OUT_EOS_DONE);
+}
+
 using namespace MediaAVCodec;
 using namespace OHOS::Media::Plugins;
 constexpr int32_t SAMPLE_RATE_48K = 48000;
@@ -42,7 +64,8 @@ constexpr int32_t SAMPLE_FORMAT_BIT_DEPTH_16 = 16;
 constexpr int64_t DECODER_INIT_WARNING_MS = 50;
 static AutoRegisterFilter<AudioDecoderFilter> g_registerAudioDecoderFilter("builtin.player.audiodecoder",
     FilterType::FILTERTYPE_ADEC, [](const std::string& name, const FilterType type) {
-        return std::make_shared<AudioDecoderFilter>(name, FilterType::FILTERTYPE_ADEC);
+        bool isAsyncMode = system::GetParameter("debug.media_service.audio.audiodecoder_async", "1") == "1";
+        return std::make_shared<AudioDecoderFilter>(name, FilterType::FILTERTYPE_ADEC, isAsyncMode);
     });
 
 static const bool IS_FILTER_ASYNC = system::GetParameter("persist.media_service.async_filter", "1") == "1";
@@ -139,6 +162,13 @@ AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filte
     MEDIA_LOG_I_SHORT("audio decoder filter create");
 }
 
+AudioDecoderFilter::AudioDecoderFilter(
+    std::string name, FilterType type, bool isAsyncMode): Filter(name, type, isAsyncMode)
+{
+    filterType_ = type;
+    MEDIA_LOG_I_SHORT("audio decoder filter create, isAsyncMode:" PUBLIC_LOG_D32, isAsyncMode);
+}
+
 AudioDecoderFilter::~AudioDecoderFilter()
 {
     Filter::StopFilterTask();
@@ -180,13 +210,17 @@ Status AudioDecoderFilter::DoPrepare()
         default:
             break;
     }
+    state_ = FilterState::READY;
     return ret;
 }
 
 Status AudioDecoderFilter::DoStart()
 {
-    MEDIA_LOG_E("AudioDecoderFilter::Start.");
+    MEDIA_LOG_I("AudioDecoderFilter::Start.");
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
+
+    std::unique_lock<std::mutex> lock(bufferStatusMutex_);
+    bufferStatus_ = BUFFER_STATUS_INIT_PROCESS_ALWAYS;
     auto ret = decoder_->Start();
     if (ret != Status::OK) {
         std::string mime;
@@ -200,13 +234,25 @@ Status AudioDecoderFilter::DoStart()
         audioCodecFaultInfo.errMsg = "AudioDecoder start failed";
         FaultAudioCodecEventWrite(audioCodecFaultInfo);
     }
+    state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
     return ret;
 }
 
 Status AudioDecoderFilter::DoPause()
 {
-    MEDIA_LOG_E("AudioDecoderFilter::Pause.");
+    MEDIA_LOG_I("AudioDecoderFilter::Pause.");
     latestPausedTime_ = latestBufferTime_;
+
+    state_ = FilterState::PAUSED;
+    return Status::OK;
+}
+
+Status AudioDecoderFilter::DoFreeze()
+{
+    MEDIA_LOG_E("AudioDecoderFilter::Freeze.");
+    FALSE_RETURN_V_MSG(state_ == FilterState::RUNNING, Status::OK, "current state is %{public}d", state_);
+    latestPausedTime_ = latestBufferTime_;
+    state_ = FilterState::FROZEN;
     return Status::OK;
 }
 
@@ -217,10 +263,26 @@ Status AudioDecoderFilter::DoPauseAudioAlign()
 
 Status AudioDecoderFilter::DoResume()
 {
-    MEDIA_LOG_E("AudioDecoderFilter::Resume.");
+    MEDIA_LOG_I("AudioDecoderFilter::Resume.");
+
+    std::unique_lock<std::mutex> lock(bufferStatusMutex_);
+    bufferStatus_ = BUFFER_STATUS_INIT_PROCESS_ALWAYS;
     refreshTotalPauseTime_ = true;
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
-    return decoder_->Start();
+    auto ret = decoder_->Start();
+    state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
+    return ret;
+}
+
+Status AudioDecoderFilter::DoUnFreeze()
+{
+    MEDIA_LOG_E("AudioDecoderFilter::UnFreeze.");
+    FALSE_RETURN_V_MSG(state_ == FilterState::FROZEN, Status::OK, "current state is %{public}d", state_);
+    refreshTotalPauseTime_ = true;
+    FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
+    auto ret = decoder_->Start();
+    state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
+    return ret;
 }
 
 Status AudioDecoderFilter::DoResumeAudioAlign()
@@ -230,18 +292,23 @@ Status AudioDecoderFilter::DoResumeAudioAlign()
 
 Status AudioDecoderFilter::DoStop()
 {
-    MEDIA_LOG_E("AudioDecoderFilter::Stop.");
+    MEDIA_LOG_I("AudioDecoderFilter::Stop.");
     latestBufferTime_ = HST_TIME_NONE;
     latestPausedTime_ = HST_TIME_NONE;
     totalPausedTime_ = 0;
     refreshTotalPauseTime_ = false;
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
-    return decoder_->Stop();
+    auto ret = decoder_->Stop();
+    state_ = ret == Status::OK ? FilterState::STOPPED : FilterState::ERROR;
+    return ret;
 }
 
 Status AudioDecoderFilter::DoFlush()
 {
-    MEDIA_LOG_E("AudioDecoderFilter::Flush.");
+    MEDIA_LOG_I("AudioDecoderFilter::Flush.");
+
+    std::unique_lock<std::mutex> lock(bufferStatusMutex_);
+    bufferStatus_ = BUFFER_STATUS_INIT_PROCESS_ALWAYS;
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     return decoder_->Flush();
 }
@@ -484,10 +551,74 @@ Status AudioDecoderFilter::HandleInputBuffer(bool isTriggeredByOutPort)
     return Status::OK;
 }
 
+bool AudioDecoderFilter::IsNeedProcessInput(bool isOutPort)
+{
+    MEDIA_LOG_D("AudioDecoderFilter::IsNeedProcessInput bufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
+        bufferStatus_, isOutPort);
+    FALSE_RETURN_V_MSG_DD((bufferStatus_ != BUFFER_STATUS_AVAIL_IN), isOutPort, "IN avail, need process outport");
+    FALSE_RETURN_V_MSG_DD((bufferStatus_ != BUFFER_STATUS_AVAIL_OUT), !isOutPort, "OUT avail, need process inport");
+    FALSE_RETURN_V_MSG_DD((bufferStatus_ != BUFFER_STATUS_AVAIL_IN_OUT), true, "IN and OUT avail, need process");
+    FALSE_RETURN_V_MSG_DD(
+        (bufferStatus_ != BUFFER_STATUS_INIT), !isOutPort, "initial stage:" PUBLIC_LOG_D32, isOutPort);
+    FALSE_RETURN_V_MSG_DD((bufferStatus_ != BUFFER_STATUS_OUT_EOS_START), isOutPort, "EOS START, need process outport");
+    FALSE_RETURN_V_MSG_DD((bufferStatus_ != BUFFER_STATUS_AVAIL_OUT_OUT_EOS_START_DONE), false,
+        "OUT avail, EOS START and DONE, no need process");
+    FALSE_RETURN_V_MSG_I((bufferStatus_ != BUFFER_STATUS_AVAIL_OUT_OUT_EOS_START), false,
+        "OUT avail and EOS START, should not happen, no need process");
+    FALSE_RETURN_V_MSG_I((bufferStatus_ != BUFFER_STATUS_OUT_EOS_START_DONE), false,
+        "EOS START and DONE, should not happen, no need process");
+    FALSE_RETURN_V_MSG_D((bufferStatus_ != BUFFER_STATUS_INIT_PROCESS_ALWAYS), true, "state change, need process");
+    if (bufferStatus_ == BUFFER_STATUS_AVAIL_NONE) {
+        bufferStatus_ = isOutPort ? bufferStatus_ : static_cast<uint32_t>(InOutPortBufferStatus::INPORT_AVAIL);
+        MEDIA_LOG_D("neither IN nor OUT avail, need process outport");
+        return isOutPort;
+    }
+
+    MEDIA_LOG_I("AudioDecoderFilter::IsNeedProcessInput, should not happen, bufferStatus:" PUBLIC_LOG_U32X
+        ", isOutPort:" PUBLIC_LOG_D32, bufferStatus_, isOutPort);
+    return true; // DO ProcessInput by default
+}
+
 Status AudioDecoderFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
-    decoder_->ProcessInputBufferInner(
-        recvArg == static_cast<int>(BufferQueueBufferAVailable::BUFFER_AVAILABLE_OUT_PORT), dropFrame);
+    bool isOutPort = recvArg == static_cast<int>(BufferQueueBufferAVailable::BUFFER_AVAILABLE_OUT_PORT);
+    uint32_t lastBufferStatus = BUFFER_STATUS_INIT_PROCESS_ALWAYS; // DO ProcessInput by default
+    MEDIA_TRACE_DEBUG_POSTFIX(std::string("AudioDecoderFilter::DoProcessInputBuffer-In:") +
+        std::to_string(isOutPort) + "," + std::to_string(dropFrame) + "," + std::to_string(bufferStatusMutex_), "1");
+    {
+        std::unique_lock<std::mutex> lock(bufferStatusMutex_, std::try_to_lock);
+        if (lock.owns_lock()) {
+            FALSE_RETURN_V_MSG_W(!dropFrame, Status::OK, "task created before flush, ignore obsolete process request");
+            FALSE_RETURN_V_NOLOG(IsNeedProcessInput(isOutPort), Status::OK);
+            lastBufferStatus = bufferStatus_;
+        }
+    }
+    MEDIA_TRACE_DEBUG_POSTFIX(std::string("AudioDecoderFilter::DoProcessInputBuffer-Process:") +
+        std::to_string(isOutPort) + "," + std::to_string(dropFrame) + "," + std::to_string(lastBufferStatus), "2");
+
+    uint32_t bufferStatus = BUFFER_STATUS_INIT_IGNORE_RET;
+    decoder_->ProcessInputBufferInner(isOutPort, dropFrame, bufferStatus);
+    FALSE_RETURN_V_MSG_W((bufferStatus != BUFFER_STATUS_INIT_IGNORE_RET), Status::OK,
+        "bufferStatus not updated, should not happen");
+
+    std::unique_lock<std::mutex> lock(bufferStatusMutex_, std::try_to_lock);
+    if (lock.owns_lock()) {
+        // If bufferStatus_ changed, the return bufferStatus is obsolete, should discard
+        if (bufferStatus_ == lastBufferStatus || bufferStatus_ != BUFFER_STATUS_INIT_PROCESS_ALWAYS) {
+            MEDIA_LOG_DD("bufferStatus:" PUBLIC_LOG_U32X ", lastBufferStatus:" PUBLIC_LOG_U32X
+                ", curBufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
+                bufferStatus, lastBufferStatus, bufferStatus_, isOutPort);
+            bufferStatus_ = bufferStatus;
+        } else {
+            MEDIA_LOG_W("bufferStatus_ change, ignore returned bufferStatus:" PUBLIC_LOG_U32X
+                ", lastBufferStatus:" PUBLIC_LOG_U32X ", curBufferStatus:" PUBLIC_LOG_U32X
+                ", isOutPort:" PUBLIC_LOG_D32, bufferStatus, lastBufferStatus, bufferStatus_, isOutPort);
+        }
+    } else {
+        MEDIA_LOG_W("bufferStatus_ change may occur, ignore returned bufferStatus:" PUBLIC_LOG_U32X
+            ", lastBufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
+        bufferStatus, lastBufferStatus, isOutPort);
+    }
     return Status::OK;
 }
 

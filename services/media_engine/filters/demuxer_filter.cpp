@@ -371,7 +371,9 @@ Status DemuxerFilter::DoStart()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
     ScopedTimer timer("Demuxer Start", DEMUXER_START_WARNING_MS);
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
-    return demuxer_->Start();
+    auto ret = demuxer_->Start();
+    state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
+    return ret;
 }
 
 Status DemuxerFilter::DoStop()
@@ -379,7 +381,9 @@ Status DemuxerFilter::DoStop()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Stop");
     MEDIA_LOG_I_SHORT("Stop in");
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
-    return demuxer_->Stop();
+    auto ret = demuxer_->Stop();
+    state_ = ret == Status::OK ? FilterState::STOPPED : FilterState::ERROR;
+    return ret;
 }
 
 Status DemuxerFilter::DoPause()
@@ -387,7 +391,24 @@ Status DemuxerFilter::DoPause()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Pause");
     MEDIA_LOG_I_SHORT("Pause in");
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
-    return demuxer_->Pause();
+    if (state_ == FilterState::FROZEN) {
+        MEDIA_LOG_I("current state is frozen");
+        state_ = FilterState::PAUSED;
+        return Status::OK;
+    }
+    auto ret = demuxer_->Pause();
+    state_ = ret == Status::OK ? FilterState::PAUSED : FilterState::ERROR;
+    return ret;
+}
+
+Status DemuxerFilter::DoFreeze()
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Freeze");
+    MEDIA_LOG_I("Freeze in");
+    FALSE_RETURN_V_MSG(state_ == FilterState::RUNNING, Status::OK, "current state is %{public}d", state_);
+    auto ret = demuxer_->Pause();
+    state_ = ret == Status::OK ? FilterState::FROZEN : FilterState::ERROR;
+    return ret;
 }
 
 Status DemuxerFilter::DoPauseDragging()
@@ -427,7 +448,19 @@ Status DemuxerFilter::DoResume()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Resume");
     MEDIA_LOG_I_SHORT("Resume in");
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
-    return demuxer_->Resume();
+    auto ret = demuxer_->Resume();
+    state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
+    return ret;
+}
+
+Status DemuxerFilter::DoUnFreeze()
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::UnFreeze");
+    MEDIA_LOG_I("UnFreeze in");
+    FALSE_RETURN_V_MSG(state_ == FilterState::FROZEN, Status::OK, "current state is %{public}d", state_);
+    auto ret = demuxer_->Resume();
+    state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
+    return ret;
 }
 
 Status DemuxerFilter::DoResumeDragging()
@@ -586,7 +619,7 @@ void DemuxerFilter::SetDumpFlag(bool isDump)
     }
 }
 
-std::map<uint32_t, sptr<AVBufferQueueProducer>> DemuxerFilter::GetBufferQueueProducerMap()
+std::map<int32_t, sptr<AVBufferQueueProducer>> DemuxerFilter::GetBufferQueueProducerMap()
 {
     return demuxer_->GetBufferQueueProducerMap();
 }
@@ -695,13 +728,6 @@ Status DemuxerFilter::GetPlaybackInfo(PlaybackInfo& playbackInfo)
         return Status::ERROR_INVALID_OPERATION;
     }
     return demuxer_->GetPlaybackInfo(playbackInfo);
-}
-
-Status DemuxerFilter::StopBufferring(bool flag)
-{
-    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION,
-        "StopBufferring failed, demuxer_ = nullptr.");
-    return demuxer_->StopBufferring(flag);
 }
 
 Status DemuxerFilter::SelectBitRate(uint32_t bitRate, bool isAutoSelect)
@@ -825,17 +851,14 @@ void DemuxerFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBuff
         return;
     }
     demuxer_->SetOutputBufferQueue(trackId, outputBufferQueue);
-    if (trackId < 0) {
-        return;
-    }
-    uint32_t trackIdU32 = static_cast<uint32_t>(trackId);
+    FALSE_RETURN_NOLOG(trackId >= 0);
     int32_t decoderFramerateUpperLimit = 0;
     if (meta->GetData(Tag::VIDEO_DECODER_RATE_UPPER_LIMIT, decoderFramerateUpperLimit)) {
-        demuxer_->SetDecoderFramerateUpperLimit(decoderFramerateUpperLimit, trackIdU32);
+        demuxer_->SetDecoderFramerateUpperLimit(decoderFramerateUpperLimit, trackId);
     }
     double framerate;
     if (meta->GetData(Tag::VIDEO_FRAME_RATE, framerate)) {
-        demuxer_->SetFrameRate(framerate, trackIdU32);
+        demuxer_->SetFrameRate(framerate, trackId);
     }
 }
 
@@ -881,18 +904,18 @@ Status DemuxerFilter::SetSpeed(float speed)
     return demuxer_->SetSpeed(speed);
 }
 
+Status DemuxerFilter::DisableMediaTrack(Plugins::MediaType mediaType)
+{
+    disabledMediaTracks_.emplace(mediaType);
+    return demuxer_->DisableMediaTrack(mediaType);
+}
+
 void DemuxerFilter::OnDumpInfo(int32_t fd)
 {
     MEDIA_LOG_D_SHORT("DemuxerFilter::OnDumpInfo called.");
     if (demuxer_ != nullptr) {
         demuxer_->OnDumpInfo(fd);
     }
-}
-
-Status DemuxerFilter::DisableMediaTrack(Plugins::MediaType mediaType)
-{
-    disabledMediaTracks_.emplace(mediaType);
-    return demuxer_->DisableMediaTrack(mediaType);
 }
 
 bool DemuxerFilter::IsRenderNextVideoFrameSupported()
@@ -965,18 +988,6 @@ bool DemuxerFilter::IsLocalFd()
     return demuxer_->IsLocalFd();
 }
 
-void DemuxerFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter)
-{
-    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
-    demuxer_->SetSyncCenter(syncCenter);
-}
-
-bool DemuxerFilter::IsFlvLiveStream()
-{
-    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
-    return demuxer_->IsFlvLiveStream();
-}
-
 Status DemuxerFilter::RebootPlugin()
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
@@ -999,6 +1010,18 @@ bool DemuxerFilter::IsFlvLive()
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
     return demuxer_->IsFlvLive();
+}
+
+void DemuxerFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter)
+{
+    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
+    demuxer_->SetSyncCenter(syncCenter);
+}
+
+Status DemuxerFilter::StopBufferring(bool isAppBackground)
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_NULL_POINTER, "demuxer_ is nullptr");
+    return demuxer_->StopBufferring(isAppBackground);
 }
 } // namespace Pipeline
 } // namespace Media

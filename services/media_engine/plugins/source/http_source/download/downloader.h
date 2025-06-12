@@ -98,7 +98,6 @@ public:
     size_t GetFileContentLength() const;
     size_t GetFileContentLengthNoWait() const;
     void SaveHeader(const HeaderInfo* header);
-    std::string GetFileContentType();
     Seekable IsChunked(bool isInterruptNeeded);
     bool IsEos() const;
     int GetRetryTimes() const;
@@ -187,7 +186,6 @@ private:
     bool isM3u8Request_ {false};
     bool isIndexM3u8Request_ {false};
     bool isAuthRequest_ {false};
-    std::string contentType_;
     RequestProtocolType protocolType_ {RequestProtocolType::HTTP};
 };
 
@@ -272,6 +270,11 @@ private:
     std::shared_ptr<IMediaSourceLoadingRequest> loadingReques_;
     bool isNotBlock_ {false};
     std::string appPreviousRequestUrl_ {};
+    FairMutex deinitMutex_ {};
+    std::string contentType_;
+    bool isContentTypeUpdated_{false};
+    ConditionVariable sleepCond_;
+    FairMutex sleepMutex_;
 };
 }
 }

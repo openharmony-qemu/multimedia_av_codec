@@ -137,7 +137,50 @@ void BlockQueuePool::ResetQueue(uint32_t queueIndex)
     blockQue->Clear();
     quePool_[queueIndex].dataSize = 0;
     quePool_[queueIndex].isValid = true;
+    quePool_[queueIndex].maxPts = INT64_MIN;
     return;
+}
+
+bool BlockQueuePool::ResetInfo(std::shared_ptr<SamplePacket> block)
+{
+    FALSE_RETURN_V_MSG_E(block != nullptr, false, "Block is nullptr");
+    MEDIA_LOG_D("Reset for block " PUBLIC_LOG_U32, block->queueIndex);
+    uint32_t queIndex = block->queueIndex;
+    FALSE_RETURN_V_MSG_E(quePool_.count(queIndex) > 0, false, "Index is invalid");
+    for (auto pkt : block->pkts) {
+        if (pkt == nullptr) {
+            MEDIA_LOG_D("Pkt is nullptr, will find next");
+            continue;
+        }
+        uint32_t pktSize = static_cast<uint32_t>(pkt->size);
+        if (quePool_[queIndex].dataSize >= pktSize) {
+            quePool_[queIndex].dataSize -= pktSize;
+        } else {
+            quePool_[queIndex].dataSize = 0;
+        }
+    }
+    return true;
+}
+
+bool BlockQueuePool::SetInfo(std::shared_ptr<SamplePacket> block)
+{
+    FALSE_RETURN_V_MSG_E(block != nullptr, false, "Block is nullptr");
+    MEDIA_LOG_D("Set for block " PUBLIC_LOG_U32, block->queueIndex);
+    uint32_t queIndex = block->queueIndex;
+    FALSE_RETURN_V_MSG_E(quePool_.count(queIndex) > 0, false, "Index is invalid");
+    for (auto pkt : block->pkts) {
+        if (pkt == nullptr) {
+            MEDIA_LOG_D("Pkt is nullptr, will find next");
+            continue;
+        }
+        uint32_t pktSize = static_cast<uint32_t>(pkt->size);
+        if (quePool_[queIndex].dataSize <= UINT32_MAX - pktSize) {
+            quePool_[queIndex].dataSize += pktSize;
+        } else {
+            quePool_[queIndex].dataSize = UINT32_MAX;
+        }
+    }
+    return true;
 }
 
 void BlockQueuePool::FreeQueue(uint32_t queueIndex)
@@ -175,8 +218,15 @@ bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> blo
     }
     sizeMap_[trackIndex] += 1;
     for (auto pkt : block->pkts) {
+        if (pkt == nullptr) {
+            continue;
+        }
         quePool_[pushIndex].dataSize += static_cast<uint32_t>(pkt->size);
+        if (pkt->pts != AV_NOPTS_VALUE && pkt->pts > quePool_[pushIndex].maxPts) {
+            quePool_[pushIndex].maxPts = pkt->pts;
+        }
     }
+    block->queueIndex = pushIndex;
     return quePool_[pushIndex].blockQue->Push(block);
 }
 
@@ -214,6 +264,7 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
         }
         if (quePool_[queIndex].blockQue->Empty()) {
             ResetQueue(queIndex);
+            quePool_[queIndex].maxPts = INT64_MIN;
             MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " queue " PUBLIC_LOG_D32 " is empty, will return to pool",
                 trackIndex, queIndex);
             queVector.erase(queVector.begin() + index);
@@ -310,6 +361,28 @@ bool BlockQueuePool::HasQueue(uint32_t trackIndex)
 {
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     return queMap_.count(trackIndex) > 0;
+}
+
+Status BlockQueuePool::GetLastPTSByTrackId(uint32_t trackIndex, int64_t& maxPts)
+{
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
+    maxPts = INT64_MIN;
+    MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
+    if (!HasCache(trackIndex)) {
+        MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
+        return Status::ERROR_NOT_EXISTED;
+    }
+    auto queVector = queMap_[trackIndex];
+    for (auto queIndex : queVector) {
+        if (quePool_[queIndex].blockQue == nullptr) {
+            MEDIA_LOG_D("Block queue " PUBLIC_LOG_U32 " is nullptr, will find next", queIndex);
+            continue;
+        }
+        maxPts = quePool_[queIndex].maxPts;
+        return Status::OK;
+    }
+    MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache data", trackIndex);
+    return Status::ERROR_NOT_EXISTED;
 }
 } // namespace Media
 } // namespace OHOS

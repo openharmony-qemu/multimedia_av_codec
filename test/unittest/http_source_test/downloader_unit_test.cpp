@@ -60,7 +60,7 @@ void DownloaderUnitTest::TearDown(void)
     downloader.reset();
 }
 
-HWTEST_F(DownloaderUnitTest, ClearMiddleReadFragment, TestSize.Level1)
+HWTEST_F(DownloaderUnitTest, ClearMiddleReadFragment, TestSize.Level0)
 {
     CacheMediaChunkBuffer cachedMediaBuffer;
     ASSERT_EQ(true, cachedMediaBuffer.Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE));
@@ -68,7 +68,7 @@ HWTEST_F(DownloaderUnitTest, ClearMiddleReadFragment, TestSize.Level1)
     cachedMediaBuffer.IsReadSplit(100);
 }
 
-HWTEST_F(DownloaderUnitTest, Downloader_Construct_nullptr, TestSize.Level1)
+HWTEST_F(DownloaderUnitTest, Downloader_Construct_nullptr, TestSize.Level0)
 {
     EXPECT_NE(downloader->client_, nullptr);
 }
@@ -783,7 +783,7 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_2, TestSize.Level1)
     downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->isAppBackground_ = true;
     downloader->StopBufferring();
-    EXPECT_NE(downloader->client_, nullptr);
+    EXPECT_EQ(downloader->client_, nullptr);
 }
 
 HWTEST_F(DownloaderUnitTest, StopBufferring_3, TestSize.Level1)

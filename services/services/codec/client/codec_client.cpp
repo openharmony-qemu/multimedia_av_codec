@@ -18,6 +18,7 @@
 #include "avcodec_errors.h"
 #include "codec_service_proxy.h"
 #include "meta/meta_key.h"
+#include "avcodec_trace.h"
 
 using namespace OHOS::Media;
 namespace {
@@ -151,6 +152,16 @@ int32_t CodecClient::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_VAL, "buffer is nullptr");
 
     int32_t ret = codecProxy_->SetCustomBuffer(buffer);
+    AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
+    return ret;
+}
+
+int32_t CodecClient::NotifyMemoryExchange(const bool exchangeFlag)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+
+    int32_t ret = codecProxy_->NotifyMemoryExchange(exchangeFlag);
     AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
     return ret;
 }
@@ -516,6 +527,7 @@ void CodecClient::OnOutputFormatChanged(const Format &format)
 void CodecClient::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     AVCODEC_LOGD_WITH_TAG("index:%{public}u", index);
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     callback_->OnInputBufferAvailable(index, buffer);
 }
 
@@ -523,24 +535,28 @@ void CodecClient::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info
                                           std::shared_ptr<AVSharedMemory> buffer)
 {
     AVCODEC_LOGD_WITH_TAG("index:%{public}u", index);
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     callback_->OnOutputBufferAvailable(index, info, flag, buffer);
 }
 
 void CodecClient::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     AVCODEC_LOGD_WITH_TAG("index:%{public}u", index);
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     videoCallback_->OnInputBufferAvailable(index, buffer);
 }
 
 void CodecClient::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     AVCODEC_LOGD_WITH_TAG("index:%{public}u", index);
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     videoCallback_->OnOutputBufferAvailable(index, buffer);
 }
 
 void CodecClient::OnInputParameterAvailable(uint32_t index, std::shared_ptr<Format> parameter)
 {
     AVCODEC_LOGD_WITH_TAG("index:%{public}u", index);
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     paramCallback_->OnInputParameterAvailable(index, parameter);
 }
 
@@ -548,6 +564,7 @@ void CodecClient::OnInputParameterWithAttrAvailable(uint32_t index, std::shared_
                                                     std::shared_ptr<Format> parameter)
 {
     AVCODEC_LOGD_WITH_TAG("index:%{public}u", index);
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     paramWithAttrCallback_->OnInputParameterWithAttrAvailable(index, attribute, parameter);
 }
 } // namespace MediaAVCodec

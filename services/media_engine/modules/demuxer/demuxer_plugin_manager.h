@@ -121,7 +121,10 @@ public:
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
     int32_t GetStreamID(int32_t trackId);
     int32_t GetInnerTrackID(int32_t trackId);
-    bool IsDash() const;
+    inline bool IsDash() const
+    {
+        return isDash_;
+    }
     bool IsSubtitle() const;
     Status StopPlugin(int32_t streamId, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status StartPlugin(int32_t streamId, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);

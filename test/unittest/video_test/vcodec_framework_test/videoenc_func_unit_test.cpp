@@ -753,6 +753,74 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetROIParameter_004, TestSize.Level1)
 }
 
 /**
+ * @tc.name: VideoEncoder_SetROIParameter_005
+ * @tc.desc: SetROIParameter and check if meta has roi key-value
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetROIParameter_005, TestSize.Level1)
+{
+    videoEnc_->isAVBufferMode_ = true;
+    videoEnc_->roiRects_ = "";
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VideoEncodeBitrateMode::CBR);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
+ * @tc.name: VideoEncoder_SetROIParameter_006
+ * @tc.desc: SetROIParameter and check if meta has roi key-value
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetROIParameter_006, TestSize.Level1)
+{
+    videoEnc_->isAVBufferMode_ = true;
+    videoEnc_->roiRects_ = "100,100-200,200";
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VideoEncodeBitrateMode::CBR);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
+ * @tc.name: VideoEncoder_SetROIParameter_007
+ * @tc.desc: SetROIParameter and check if meta has roi key-value
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetROIParameter_007, TestSize.Level1)
+{
+    videoEnc_->isAVBufferMode_ = true;
+    videoEnc_->roiRects_ = "1,2,3,4,5-6,1=-4";
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VideoEncodeBitrateMode::CBR);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
+ * @tc.name: VideoEncoder_SetROIParameter_008
+ * @tc.desc: SetROIParameter and check if meta has roi key-value
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetROIParameter_008, TestSize.Level1)
+{
+    videoEnc_->isAVBufferMode_ = true;
+    videoEnc_->roiRects_ = "100,100-200,200=-4;300,300-400,400=5";
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VideoEncodeBitrateMode::VBR);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
  * @tc.name: VideoEncoder_Invalid_SetParameterWithAttrCallback_001
  * @tc.desc: repeat SetParameterWithAttrCallback and test the compatibility of API9 and API10
  * @tc.type: FUNC
@@ -1783,6 +1851,24 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_All_001, TestSize.Level1)
     ASSERT_EQ(AVCS_ERR_OK, ret);
     ret = AVCodecSuspend::SuspendActiveAll();
     ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+/**
+ * @tc.name: VideoEncoder_SetPTSParameter_001
+ * @tc.desc: SetPTSParameter, avbuffer mode
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetPTSParameter_001, TestSize.Level1)
+{
+    videoEnc_->enableVariableFrameRate_ = true;
+    videoEnc_->isAVBufferMode_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL, 1);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 } // namespace
 

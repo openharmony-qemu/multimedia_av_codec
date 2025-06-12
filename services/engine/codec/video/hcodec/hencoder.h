@@ -16,10 +16,23 @@
 #ifndef HCODEC_HENCODER_H
 #define HCODEC_HENCODER_H
 
+#include <deque>
 #include "hcodec.h"
 #include "codec_omx_ext.h"
 #include "sync_fence.h"
 #include "hcodec_utils.h"
+
+constexpr int32_t PREVIOUS_PTS_RECORDED_COUNT = 4;
+constexpr int64_t TIME_RATIO_NS_TO_US = 1000;
+constexpr int64_t TIME_RATIO_US_TO_S = 1000000;
+constexpr double DURATION_SCALE_FACTOR = 7.0;
+constexpr int32_t DEFAULT_FRAME_RATE = 15;
+constexpr double SMOOTH_FACTOR_CLIP_MIN = 0.3;
+constexpr int32_t SMOOTH_FACTOR_CLIP_RANGE_MIN = 10;
+constexpr double SMOOTH_FACTOR_CLIP_MAX = 0.9;
+constexpr int32_t SMOOTH_FACTOR_CLIP_RANGE_MAX = 70;
+constexpr double AVERAGE_DURATION_ERROR_COUNT = 3.0;
+constexpr double AVERAGE_DURATION_ERROR_FRAMERATE_RANGE = 0.5;
 
 namespace OHOS::MediaAVCodec {
 class HEncoder : public HCodec {
@@ -88,6 +101,7 @@ private:
     int32_t EnableFrameQPMap(const Format &format);
     int32_t ConfigBEncodeMode(const Format &format);
     int32_t SetCRFMode(int32_t targetQp);
+    void EnableVariableFrameRate(const Format &format);
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
@@ -140,6 +154,11 @@ private:
     void ExtractPerFrameLayerParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
     void DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight);
 
+    double CalculateSmoothFactorBasedPts(int64_t curPts, int64_t curDuration);
+    int32_t CalculateSmoothFpsBasedPts(int64_t curPts, int64_t curDuration);
+    int32_t UpdateTimeStampWindow(int64_t curPts, int32_t &frameRate);
+    int32_t CalculateFrameRateParamIntoOmxBuffer(int64_t curPts);
+
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
     void OnEnterUninitializedState() override;
@@ -160,6 +179,10 @@ private:
     bool enableLTR_ = false;
     bool enableTSVC_ = false;
     bool enableQPMap_ = false;
+    bool enableVariableFrameRate_ = false;
+    std::deque<int64_t> previousPtsWindow_;
+    int32_t previousSmoothFrameRate_ = 0;
+    std::optional<double> defaultFrameRate_;
     sptr<Surface> inputSurface_;
     uint32_t inBufferCnt_ = 0;
     static constexpr size_t MAX_LIST_SIZE = 256;

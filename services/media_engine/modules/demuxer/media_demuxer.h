@@ -50,10 +50,10 @@ class Source;
 using MediaSource = OHOS::Media::Plugins::MediaSource;
 using MediaSyncManager = OHOS::Media::Pipeline::MediaSyncManager;
 using FileType = OHOS::Media::Plugins::FileType;
-using funcPreReadSample = std::function<int64_t(uint32_t trackId)>;
+using funcPreReadSample = std::function<int64_t(int32_t trackId)>;
 
 class AVBufferQueueProducer;
-enum class DemuxerTrackType : uint32_t {
+enum class DemuxerTrackType : int32_t {
     VIDEO = 0,
     AUDIO,
     SUBTITLE,
@@ -91,12 +91,11 @@ public:
     Status PausePreroll();
 
     Status StartTask(int32_t trackId);
-    Status SelectTrack(int32_t trackId);
-    Status UnselectTrack(int32_t trackId);
-    Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
+    Status SelectTrack(uint32_t trackIndex); // Interface for AVDemuxer
+    Status UnselectTrack(uint32_t trackIndex); // Interface for AVDemuxer
+    Status ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample); // Interface for AVDemuxer
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate, bool isAutoSelect = false);
-    Status StopBufferring(bool flag);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
@@ -111,7 +110,7 @@ public:
 
     Status SetPerfRecEnabled(bool isPerfRecEnabled);
 
-    std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
+    std::map<int32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
     bool IsRenderNextVideoFrameSupported();
 
@@ -121,14 +120,14 @@ public:
     void SetDumpInfo(bool isDump, uint64_t instanceId);
 
     Status OptimizeDecodeSlow(bool isDecodeOptimizationEnabled);
-    Status SetDecoderFramerateUpperLimit(int32_t decoderFramerateUpperLimit, uint32_t trackId);
+    Status SetDecoderFramerateUpperLimit(int32_t decoderFramerateUpperLimit, int32_t trackId);
     Status SetSpeed(float speed);
-    Status SetFrameRate(double framerate, uint32_t trackId);
+    Status SetFrameRate(double framerate, int32_t trackId);
     void OnInterrupted(bool isInterruptNeeded) override;
     void OnDumpInfo(int32_t fd);
     bool IsLocalDrmInfosExisted();
     Status DisableMediaTrack(Plugins::MediaType mediaType);
-    void OnBufferAvailable(uint32_t trackId);
+    void OnBufferAvailable(int32_t trackId);
 
     void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override;
     bool CanAutoSelectBitRate() override;
@@ -148,9 +147,9 @@ public:
     void DeregisterVideoStreamReadyCallback();
 
     Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
-        const uint64_t relativePresentationTimeUs, uint32_t &index);
+        const uint64_t relativePresentationTimeUs, uint32_t &index); // Interface for AVDemuxer
     Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
-        const uint32_t index, uint64_t &relativePresentationTimeUs);
+        const uint32_t index, uint64_t &relativePresentationTimeUs); // Interface for AVDemuxer
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
     Status SetTranscoderMode();
@@ -158,24 +157,24 @@ public:
     void SetEnableOnlineFdCache(bool isEnableFdCache);
     void WaitForBufferingEnd();
     int32_t GetCurrentVideoTrackId();
-    uint32_t GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> trackInfos);
+    int32_t GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> trackInfos);
     void SetIsEnableReselectVideoTrack(bool isEnable);
     void SetApiVersion(int32_t apiVersion);
     bool IsLocalFd();
-
-    void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
-    bool IsFlvLiveStream();
     Status RebootPlugin();
     uint64_t GetCachedDuration();
     void RestartAndClearBuffer();
     bool IsFlvLive();
+
+    void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     bool HasVideo();
     bool HasAudio();
     bool IsSeekToTimeSupported();
 
     void SetIsCreatedByFilter(bool isCreatedByFilter);
 
-    Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size);
+    Status GetCurrentCacheSize(uint32_t trackIndex, uint32_t& size); // Interface for AVDemuxer
+    Status StopBufferring(bool isAppBackground);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -201,28 +200,29 @@ private:
     bool isHttpSource_ = false;
     std::string videoMime_{};
 
-    static constexpr uint32_t TRACK_ID_DUMMY = std::numeric_limits<uint32_t>::max();
+    static constexpr int32_t TRACK_ID_INVALID = -1;
     static constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
+    static inline bool IsValidTrackId(const int32_t trackId) { return trackId >= 0; }
 
     Status InnerPrepare();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
-    void InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId,
-        uint32_t& audioTrackId, uint32_t& subtitleTrackId, std::string& videoMime);
+    void InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, int32_t& videoTrackId,
+        int32_t& audioTrackId, int32_t& subtitleTrackId, std::string& videoMime);
     bool IsOffsetValid(int64_t offset) const;
-    std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);
-    Status AddDemuxerCopyTask(uint32_t trackId, TaskType type);
-    Status AddDemuxerCopyTaskByTrack(uint32_t trackId, DemuxerTrackType type);
-    void AddDemuxerCopyTaskByTrackIfFilter(uint32_t trackId, DemuxerTrackType type);
-    void AddDemuxerCopyTaskIfFilter(uint32_t trackId, TaskType type);
+    std::shared_ptr<Meta> GetTrackMeta(int32_t trackId);
+    Status AddDemuxerCopyTask(int32_t trackId, TaskType type);
+    Status AddDemuxerCopyTaskByTrack(int32_t trackId, DemuxerTrackType type);
+    void AddDemuxerCopyTaskByTrackIfFilter(int32_t trackId, DemuxerTrackType type);
+    void AddDemuxerCopyTaskIfFilter(int32_t trackId, TaskType type);
     void AddHandleFlvSelectBitrateTask();
 
     Status StopAllTask();
     Status PauseAllTask();
     Status PauseAllTaskAsync();
     Status ResumeAllTask();
-    void AccelerateTrackTask(uint32_t trackId);
-    void SetTrackNotifyFlag(uint32_t trackId, bool isNotifyNeeded);
-    void AccelerateSampleConsumerTask(uint32_t trackId);
+    void AccelerateTrackTask(int32_t trackId);
+    void SetTrackNotifyFlag(int32_t trackId, bool isNotifyNeeded);
+    void AccelerateSampleConsumerTask(int32_t trackId);
     void ResetInner();
 
     bool GetDrmInfosUpdated(const std::multimap<std::string, std::vector<uint8_t>> &newInfos,
@@ -231,24 +231,24 @@ private:
     void HandleSourceDrmInfoEvent(const std::multimap<std::string, std::vector<uint8_t>> &info);
     Status ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info);
 
-    void DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> buffer);
-    bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
-    bool CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
+    void DumpBufferToFile(int32_t trackId, std::shared_ptr<AVBuffer> buffer);
+    bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, int32_t trackId);
+    bool CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, int32_t trackId);
     bool IsTrackDisabled(Plugins::MediaType mediaType);
-    bool CheckTrackEnabledById(uint32_t trackId);
-    bool HandleDashChangeStream(uint32_t trackId);
+    bool CheckTrackEnabledById(int32_t trackId);
+    bool HandleDashChangeStream(int32_t trackId);
 
-    void GetMemoryUsage(uint32_t trackId, std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp);
-    void ReportMemoryUsage(uint32_t trackId, std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp);
+    void GetMemoryUsage(int32_t trackId, std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp);
+    void ReportMemoryUsage(int32_t trackId, std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp);
     Status SeekToTimeAfter();
-    bool SelectBitRateChangeStream(uint32_t trackId);
-    bool SelectTrackChangeStream(uint32_t trackId);
+    bool SelectBitRateChangeStream(int32_t trackId);
+    bool SelectTrackChangeStream(int32_t trackId);
     bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId);
     void HandleSelectTrackStreamSeek(int32_t streamID, int32_t& trackId);
     std::shared_ptr<Plugins::DemuxerPlugin> GetCurFFmpegPlugin();
-    void UpdateThreadPriority(uint32_t trackId);
+    void UpdateThreadPriority(int32_t trackId);
     bool IsNeedMapToInnerTrackID();
-    int64_t GetReadLoopRetryUs(uint32_t trackId);
+    int64_t GetReadLoopRetryUs(int32_t trackId);
     uint64_t GetSampleQueueDuration();
     void UpdateSampleQueueCache();
 
@@ -264,14 +264,14 @@ private:
     std::shared_ptr<Source> subtitleSource_;
     MediaMetaData mediaMetaData_;
 
-    int64_t DoBeforeEachLoop(uint32_t trackId);
-    int64_t DoBeforeSubtitleTrackReadLoop(uint32_t trackId);
-    int64_t ReadLoop(uint32_t trackId);
-    Status CopyFrameToUserQueue(uint32_t trackId);
-    bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
-    Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
+    int64_t DoBeforeEachLoop(int32_t trackId);
+    int64_t DoBeforeSubtitleTrackReadLoop(int32_t trackId);
+    int64_t ReadLoop(int32_t trackId);
+    Status CopyFrameToUserQueue(int32_t trackId);
+    bool GetBufferFromUserQueue(int32_t queueIndex, int32_t size = 0);
+    Status InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer>);
     Status InnerSelectTrack(int32_t trackId);
-    Status HandleRead(uint32_t trackId);
+    Status HandleReadSample(int32_t trackId);
     int64_t ParserRefInfo();
     void TryReclaimParserTask();
 
@@ -282,41 +282,41 @@ private:
     Status HandleHlsRebootPlugin();
     Status HandleSeekChangeStream(int32_t currentStreamId, int32_t newStreamId, int32_t trackId);
     bool IsSubtitleMime(const std::string& mime);
-    void HandleAutoMaintainPts(uint32_t trackeId, std::shared_ptr<AVBuffer> sample);
+    void HandleAutoMaintainPts(int32_t trackeId, std::shared_ptr<AVBuffer> sample);
     void InitPtsInfo();
     void InitMediaStartPts();
     void TranscoderInitMediaStartPts();
     void UpdateBufferQueueListener(int32_t trackId);
-    bool IsOpenGopBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
-    void UpdateSyncFrameInfo(std::shared_ptr<AVBuffer> sample, uint32_t trackId, bool isDiscardable = false);
+    bool IsOpenGopBufferDroppable(std::shared_ptr<AVBuffer> sample, int32_t trackId);
+    void UpdateSyncFrameInfo(std::shared_ptr<AVBuffer> sample, int32_t trackId, bool isDiscardable = false);
     void EnterDraggingOpenGopCnt();
     void ResetDraggingOpenGopCnt();
     Status ReadSampleWithPerfRecord(const std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp,
         const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample);
-    Status HandleTrackEos(uint32_t trackId);
+    Status HandleTrackEos(int32_t trackId);
     void SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer);
-    void TranscoderUpdateOutputBufferPts(uint32_t trackId, std::shared_ptr<AVBuffer> &outputBuffer);
+    void TranscoderUpdateOutputBufferPts(int32_t trackId, std::shared_ptr<AVBuffer> &outputBuffer);
 
-    Status AddSampleBufferQueue(uint32_t trackId);
-    int64_t SampleConsumerLoop(uint32_t trackId);
-    void SetTrackNotifySampleConsumerFlag(uint32_t trackId, bool isNotifySampleConsumerNeeded);
-    bool IsRightMediaTrack(uint32_t trackId, DemuxerTrackType type) const;
-    int64_t GetLastVideoBufferAbsPts(uint32_t trackId) const;
-    void UpdateLastVideoBufferAbsPts(uint32_t trackId);
+    Status AddSampleBufferQueue(int32_t trackId);
+    int64_t SampleConsumerLoop(int32_t trackId);
+    void SetTrackNotifySampleConsumerFlag(int32_t trackId, bool isNotifySampleConsumerNeeded);
+    bool IsRightMediaTrack(int32_t trackId, DemuxerTrackType type) const;
+    int64_t GetLastVideoBufferAbsPts(int32_t trackId) const;
+    void UpdateLastVideoBufferAbsPts(int32_t trackId);
     std::string InferDemuxerPluginNameByContentType();
     bool IsHitPlugin(std::string& plugin, std::string& contentType);
     Status OnSelectBitrateOk(int64_t startPts, uint32_t bitRate) override;
     Status SelectBitrateForNonSQ(int64_t startPts, uint32_t bitRate);
-    Status OnSampleQueueBufferAvailable(uint32_t queueId) override;
-    Status OnSampleQueueBufferConsume(uint32_t queueId) override;
-    Status NotifySampleQueueBufferConsume(uint32_t queueId);
+    Status OnSampleQueueBufferAvailable(int32_t queueId) override;
+    Status OnSampleQueueBufferConsume(int32_t queueId) override;
+    Status NotifySampleQueueBufferConsume(int32_t queueId);
     Status HandleSelectBitrateForFlvLive(int64_t startPts, uint32_t bitrate);
     bool IsIgonreBuffering();
     void InitEnableSampleQueueFlag();
     inline bool GetEnableSampleQueueFlag() const;
     Status StartTaskWithSampleQueue(int32_t trackId);
-    Status PushBufferToQueue(uint32_t trackId, std::shared_ptr<AVBuffer>& buffer, bool available);
-    void StartTaskInner(uint32_t trackId);
+    Status PushBufferToQueue(int32_t trackId, std::shared_ptr<AVBuffer>& buffer, bool available);
+    void StartTaskInner(int32_t trackId);
     void InitAudioTrack();
     void InitVideoTrack();
     void InitSubtitleTrack();
@@ -327,18 +327,18 @@ private:
     bool enableSampleQueue_ = true;
 
     Mutex mapMutex_{};
-    std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
-    std::map<uint32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
-    std::map<uint32_t, std::shared_ptr<AVBuffer>> bufferMap_;
+    std::map<int32_t, std::shared_ptr<TrackWrapper>> trackMap_;
+    std::map<int32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
+    std::map<int32_t, std::shared_ptr<AVBuffer>> bufferMap_;
 
     // memoryUsage
-    std::unordered_map<uint32_t, uint32_t> trackMemoryUsages_;
-    std::unordered_map<uint32_t, uint32_t> memoryReportLimitCount_;
+    std::unordered_map<uint32_t, uint32_t> trackMemoryUsages_; // Event parameter
+    std::unordered_map<int32_t, uint32_t> memoryReportLimitCount_;
     std::unordered_map<uint32_t, funcPreReadSample> funcBeforeReadSampleMap_;
 
-    std::map<uint32_t, std::shared_ptr<SampleQueue>> sampleQueueMap_;
-    std::map<uint32_t, bool> eosMap_;
-    std::map<uint32_t, uint32_t> requestBufferErrorCountMap_;
+    std::map<int32_t, std::shared_ptr<SampleQueue>> sampleQueueMap_;
+    std::map<int32_t, bool> eosMap_;
+    std::map<int32_t, uint32_t> requestBufferErrorCountMap_;
     std::atomic<bool> isThreadExit_ = true;
     bool useBufferQueue_ = false;
     bool isAccurateSeekForHLS_ = false;
@@ -350,8 +350,8 @@ private:
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback_;
 
-    std::map<uint32_t, std::unique_ptr<Task>> taskMap_;
-    std::map<uint32_t, std::unique_ptr<Task>> sampleConsumerTaskMap_;
+    std::map<int32_t, std::unique_ptr<Task>> taskMap_;
+    std::map<int32_t, std::unique_ptr<Task>> sampleConsumerTaskMap_;
     std::shared_ptr<MediaSyncManager> syncCenter_;
     bool isFlvLiveStream_ = false;
     std::unique_ptr<Task> handleFlvSelectBitrateTask_;
@@ -361,9 +361,9 @@ private:
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_;
     int64_t lastSeekTime_{Plugins::HST_TIME_NONE};
     bool isSeeked_{false};
-    uint32_t videoTrackId_{TRACK_ID_DUMMY};
-    uint32_t audioTrackId_{TRACK_ID_DUMMY};
-    uint32_t subtitleTrackId_{TRACK_ID_DUMMY};
+    int32_t videoTrackId_ {TRACK_ID_INVALID};
+    int32_t audioTrackId_ {TRACK_ID_INVALID};
+    int32_t subtitleTrackId_ {TRACK_ID_INVALID};
     bool firstAudio_{true};
     std::mutex stopMutex_ {};
 
@@ -416,11 +416,11 @@ private:
     std::atomic<bool> isFirstFrameAfterSeek_ {false};
     std::atomic<bool> isInterruptNeeded_ {false};
     bool isAutoMaintainPts_ = false;
-    std::map<uint32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
+    std::map<int32_t, std::shared_ptr<MaintainBaseInfo>> maintainBaseInfos_;
     int64_t mediaStartPts_ {HST_TIME_NONE};
     int64_t transcoderStartPts_ {HST_TIME_NONE};
     bool isEnableReselectVideoTrack_ {false};
-    uint32_t targetVideoTrackId_ {TRACK_ID_DUMMY};
+    int32_t targetVideoTrackId_ {TRACK_ID_INVALID};
     SyncFrameInfo syncFrameInfo_ {};
     std::mutex syncFrameInfoMutex_ {};
     bool isTranscoderMode_ {false};

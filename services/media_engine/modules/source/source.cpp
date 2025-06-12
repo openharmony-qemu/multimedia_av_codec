@@ -227,14 +227,6 @@ Status Source::AutoSelectBitRate(uint32_t bitRate)
     return plugin_->AutoSelectBitRate(bitRate);
 }
 
-Status Source::StopBufferring(bool flag)
-{
-    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION,
-        "StopBufferring failed, plugin_ is nullptr!");
-    MEDIA_LOG_I("StopBufferring begin, flag = " PUBLIC_LOG_D32, flag);
-    return plugin_->StopBufferring(flag);
-}
-
 Status Source::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("SetCurrentBitRate");
@@ -642,6 +634,12 @@ bool Source::IsHlsFmp4()
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");
     return plugin_->IsHlsFmp4();
+}
+
+Status Source::StopBufferring(bool isAppBackground)
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_NULL_POINTER, "plugin_ is nullptr");
+    return plugin_->StopBufferring(isAppBackground);
 }
 } // namespace Media
 } // namespace OHOS

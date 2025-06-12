@@ -330,6 +330,14 @@ extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_RAW;
 
 /**
+ * @brief Enumerates the mime types of audio G711 A-law codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_G711A;
+
+/**
  * @brief Key for timeStamp in surfacebuffer, value type is int64_t.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
@@ -474,12 +482,12 @@ extern const char *OH_MD_KEY_IDENTIFICATION_HEADER;
 extern const char *OH_MD_KEY_SETUP_HEADER;
 /**
  * @brief Key for video scale type, value type is int32_t, see @OH_ScalingMode.
- * It is recommended to directly call the @OH_NativeIndow_NativeIndowSettcalingModeV2 interface for setting.
+ * It is recommended to directly call the @OH_NativeWindow_NativeWindowSetScalingModeV2 interface for setting.
  * This key is optional and only used for video decoding in Surface mode.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  * @deprecated 14
- * @useinstead OH_NativeIndow_NativeIndowSettcalingModeV2
+ * @useinstead OH_NativeWindow_NativeWindowSetScalingModeV2
  */
 extern const char *OH_MD_KEY_SCALING_MODE;
 /* Key for max input buffer count, value type is int32_t. */
@@ -789,7 +797,7 @@ extern const char *OH_MD_KEY_CREATION_TIME;
  * can be omitted, like "Top1,Left1-Bottom1,Right1;Top2,Left2-Bottom2,Right2=Offset2;", the encoder
  * will use the default quantization parameter to perform the ROI encoding on the first ROI and
  * use Offset2 on the second ROI.
- * 
+ *
  * This is an optional key that applies only to video encoder.
  * It is used in running process and is set with each frame.
  * In surface mode, it is used in {@link OH_VideoEncoder_OnNeedInputParameter}.
@@ -798,6 +806,26 @@ extern const char *OH_MD_KEY_CREATION_TIME;
  * @since 20
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS;
+/**
+ * @brief Key for the decision of setting moov in front or not, value type is int32_t.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+extern const char *OH_MD_KEY_ENABLE_MOOV_FRONT;
+
+/**
+ * @brief Key to enable Bitrate Control Based on Presentation Time Stamp(PTS),
+ * value type is int32_t (0 or 1):1 is enabled, 0 otherwise.
+ *
+ * This is an optional key that applies only to video encoder, default is 0.
+ * If enabled, the PTS information must be carried in each video frame and sent to the encoder.
+ * It is used in configure.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
+extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL;
 
 extern const char *OH_MD_KEY_TRACK_REFERENCE_TYPE;
 extern const char *OH_MD_KEY_TRACK_DESCRIPTION;
@@ -1354,7 +1382,9 @@ typedef enum OH_BitrateMode {
     BITRATE_MODE_VBR = 1,
     /* Constant Quality mode. */
     BITRATE_MODE_CQ = 2,
-    /* Stable Quality Rate Control Mode. */
+    /** Stable Quality Rate Control mode.
+     * @since 20
+     */
     BITRATE_MODE_SQR = 3
 } OH_BitrateMode;
 

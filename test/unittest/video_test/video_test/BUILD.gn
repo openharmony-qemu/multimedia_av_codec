@@ -40,7 +40,6 @@ config("video_sample_config") {
 
 ohos_source_set("video_sample") {
   sources = [
-    "$av_codec_root_dir/services/dfx/avcodec_trace.cpp",
     "./capbilities/capbility_node/data_producer/bitstream_reader/bitstream_reader.cpp",
     "./capbilities/capbility_node/data_producer/data_producer_base/data_producer_base.cpp",
     "./capbilities/capbility_node/data_producer/demuxer/demuxer.cpp",

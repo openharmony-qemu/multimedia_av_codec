@@ -42,6 +42,8 @@ public:
     Status DoStart() override;
     Status DoStop() override;
     Status DoPause() override;
+    Status DoFreeze() override;
+    Status DoUnFreeze() override;
     Status DoPauseDragging() override;
     Status DoPauseAudioAlign() override;
     Status DoResume() override;
@@ -86,7 +88,6 @@ public:
     Status UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate, bool isAutoSelect = false);
-    Status StopBufferring(bool flag);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
 
@@ -95,7 +96,7 @@ public:
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue, std::shared_ptr<Meta> &meta);
     void OnUpdatedResult(std::shared_ptr<Meta> &meta);
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
-    std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
+    std::map<int32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
     bool IsRenderNextVideoFrameSupported();
 
@@ -123,11 +124,11 @@ public:
     void SetIsEnableReselectVideoTrack(bool isEnable);
     void SetApiVersion(int32_t apiVersion);
     bool IsLocalFd();
-    bool IsFlvLiveStream();
     Status RebootPlugin();
     uint64_t GetCachedDuration();
     void RestartAndClearBuffer();
     bool IsFlvLive();
+    Status StopBufferring(bool isAppBackground);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;

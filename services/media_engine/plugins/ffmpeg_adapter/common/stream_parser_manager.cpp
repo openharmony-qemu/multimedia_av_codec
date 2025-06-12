@@ -221,6 +221,13 @@ std::vector<uint8_t> StreamParserManager::GetLogInfo()
     FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, {}, "Stream parser is nullptr");
     return streamParser_->GetLogInfo();
 }
+
+uint32_t StreamParserManager::GetMaxReorderPic()
+{
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, {}, "Stream parser is nullptr");
+    MEDIA_LOG_D("GetMaxReorderPic is %{public}u", streamParser_->GetMaxReorderPic());
+    return streamParser_->GetMaxReorderPic();
+}
 } // namespace Plugins
 } // namespace Media
 } // namespace OHOS

@@ -105,15 +105,6 @@ size_t DownloadRequest::GetFileContentLength() const
     return headerInfo_.GetFileContentLength();
 }
 
-std::string DownloadRequest::GetFileContentType()
-{
-    FALSE_RETURN_V_NOLOG(contentType_.empty(), contentType_);
-    WaitHeaderUpdated();
-    std::string contentType(headerInfo_.contentType, sizeof(headerInfo_.contentType));
-    contentType_ = contentType;
-    return contentType_;
-}
-
 size_t DownloadRequest::GetFileContentLengthNoWait() const
 {
     return headerInfo_.fileContentLen;
@@ -351,10 +342,14 @@ bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32
 
 std::string Downloader::GetContentType()
 {
-    FALSE_RETURN_V(currentRequest_ != nullptr, "");
-    std::string ret = currentRequest_->GetFileContentType();
-    MEDIA_LOG_I("ContentType: %{public}s", ret.c_str());
-    return ret;
+    FALSE_RETURN_V_NOLOG(!isContentTypeUpdated_, contentType_);
+    AutoLock lock(sleepMutex_);
+    MEDIA_LOG_I("GetContentType wait begin ");
+    sleepCond_.WaitFor(lock, SLEEP_TIME * RETRY_TIMES, [this]() {
+        return isInterruptNeeded_.load() || isContentTypeUpdated_;
+    });
+    MEDIA_LOG_I("ContentType: %{public}s", contentType_.c_str());
+    return contentType_;
 }
 
 void Downloader::Start()
@@ -504,6 +499,13 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
         "not Retry, client null or isDestructor or isInterruptNeeded");
     if (isAppBackground_) {
         Pause(true);
+        {
+            AutoLock lk(deinitMutex_);
+            if (client_ != nullptr) {
+                client_->Deinit();
+                client_ = nullptr;
+            }
+        }
         MEDIA_LOG_I("Retry avoid, forground to background.");
         return true;
     }
@@ -803,6 +805,14 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
         info->isChunked = false;
     }
     mediaDownloader->currentRequest_->SaveHeader(info);
+    if (!mediaDownloader->isContentTypeUpdated_) {
+        {
+            AutoLock lock(mediaDownloader->sleepMutex_);
+            mediaDownloader->isContentTypeUpdated_ = true;
+            mediaDownloader->contentType_ = info->contentType;
+        }
+        mediaDownloader->sleepCond_.NotifyOne();
+    }
 }
 
 bool Downloader::IsDropDataRetryRequest(Downloader* mediaDownloader)
@@ -1155,7 +1165,15 @@ void Downloader::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " Downloader SetInterruptState %{public}d",
         FAKE_POINTER(this), isInterruptNeeded);
-    isInterruptNeeded_ = isInterruptNeeded;
+    {
+        AutoLock lk(loopPauseMutex_);
+        AutoLock lock(sleepMutex_);
+        isInterruptNeeded_ = isInterruptNeeded;
+    }
+    if (isInterruptNeeded) {
+        MEDIA_LOG_I("SetInterruptState, Notify.");
+        sleepCond_.NotifyOne();
+    }
     if (currentRequest_ != nullptr) {
         currentRequest_->isInterruptNeeded_ = isInterruptNeeded;
     }
@@ -1201,25 +1219,33 @@ void Downloader::SetAppState(bool isAppBackground)
 void Downloader::StopBufferring()
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::StopBufferring");
-    if (task_ == nullptr || currentRequest_ == nullptr) {
-        MEDIA_LOG_E("Downloader StopBufferring error.");
-        return;
-    }
+    FALSE_RETURN_MSG(task_ != nullptr && currentRequest_ != nullptr, "task or request is null");
     if (isAppBackground_) {
-        if (!task_->IsTaskRunning() && client_ != nullptr) {
+        {
+            AutoLock lk(deinitMutex_);
+            FALSE_RETURN_NOLOG(!task_->IsTaskRunning() && client_ != nullptr);
             MEDIA_LOG_I("StopBufferring: is task not running.");
+            isClientClose_ = true;
             client_->Close(false);
+            client_->Deinit();
+            client_ = nullptr;
         }
     } else {
-        if (currentRequest_ != nullptr && !shouldStartNextRequest) {
-            int64_t lastStartPos = currentRequest_->startPos_; // downlaod from last pos
-            BeginDownload();
-            currentRequest_->startPos_ = lastStartPos;
-            if (currentRequest_->startPos_ > 0) {
-                currentRequest_->retryOnGoing_ = true;
-                currentRequest_->dropedDataLen_ = 0;
+        {
+            AutoLock lk(deinitMutex_);
+            if (isClientClose_ && client_ == nullptr) {
+                MEDIA_LOG_I("StopBufferring: restart task.");
+                isClientClose_ = false;
+                client_ = NetworkClient::GetInstance(&RxHeaderData, &RxBodyData, this);
+                client_->Init();
+                client_->Open(currentRequest_->url_, currentRequest_->httpHeader_,
+                    currentRequest_->requestInfo_.timeoutMs);
+                if (currentRequest_->startPos_ > 0 && currentRequest_->protocolType_ != RequestProtocolType::HTTP) {
+                    currentRequest_->retryOnGoing_ = true;
+                    currentRequest_->dropedDataLen_ = 0;
+                }
+                MEDIA_LOG_I("StopBufferring: begin pos " PUBLIC_LOG_U64, currentRequest_->startPos_);
             }
-            MEDIA_LOG_I("StopBufferring: begin pos " PUBLIC_LOG_U64, currentRequest_->startPos_);
         }
         Start();
     }

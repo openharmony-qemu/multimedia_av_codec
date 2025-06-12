@@ -43,6 +43,7 @@ const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT = "application/x-subrip";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_LBVC = "audio/lbvc";
 const char *OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT = "text/vtt";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_RAW = "audio/raw";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_G711A = "audio/g711a";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";
@@ -141,6 +142,8 @@ const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER = "video_encoder
 const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT = "video_encoder_repeat_previous_max_count";
 const char *OH_MD_KEY_CREATION_TIME = "creation_time";
 const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS = "video_encoder_roi_params";
+const char *OH_MD_KEY_ENABLE_MOOV_FRONT = "fast_start";
+const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL = "video_encoder_enable_pts_based_ratecontrol";
 #ifdef __cplusplus
 }
 #endif

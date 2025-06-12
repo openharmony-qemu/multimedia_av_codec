@@ -726,7 +726,7 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, SetVideoSurface_001, TestSize.Level1)
 {
     sptr<Surface> videoSurface = nullptr;
     Status ret = decoderSurfaceFilter_->SetVideoSurface(videoSurface);
-    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(ret, Status::OK);
 }
 
 /**

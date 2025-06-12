@@ -56,6 +56,8 @@ public:
     Status DoPrepare() override;
     Status DoStart() override;
     Status DoPause() override;
+    Status DoFreeze() override;
+    Status DoUnFreeze() override;
     Status DoPauseDragging() override;
     Status DoResume() override;
     Status DoResumeDragging() override;
@@ -121,6 +123,7 @@ public:
     Status SetPostProcessorFd(int32_t postProcessorFd);
     Status SetCameraPostprocessing(bool enable);
     void NotifyPause();
+    void NotifyMemoryExchange(bool exchangeFlag);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,

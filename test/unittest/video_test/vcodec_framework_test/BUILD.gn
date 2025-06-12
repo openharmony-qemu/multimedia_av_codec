@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-module_output_path = "av_codec/av_codec/unittest"
+module_output_path = "av_codec/AVCodec_Video/unittest"
 
 vcodec_unittest_cflags = [
   "-std=c++17",

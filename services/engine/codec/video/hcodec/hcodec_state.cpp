@@ -155,6 +155,26 @@ void HCodec::BaseState::OnForceShutDown(const MsgInfo &info)
     (void)info.param->GetValue("isNeedNotifyCaller", isNeedNotifyCaller);
     codec_->ForceShutdown(generation, isNeedNotifyCaller);
 }
+
+void HCodec::BaseState::OnSuspend(const MsgInfo &info)
+{
+    SLOGI("begin to Suspend this codec");
+    int32_t errCode = codec_->DecreaseFreq();
+    if (errCode != AVCS_ERR_OK) {
+        SLOGE("Decrease Freq fail!");
+    }
+    ReplyErrorCode(info.id, errCode);
+}
+
+void HCodec::BaseState::OnResume(const MsgInfo &info)
+{
+    SLOGI("begin to Resume this codec");
+    int32_t errCode = codec_->RecoverFreq();
+    if (errCode != AVCS_ERR_OK) {
+        SLOGE("Recover Freq Fail!");
+    }
+    ReplyErrorCode(info.id, errCode);
+}
 /**************************** BaseState End ******************************/
 
 
@@ -525,9 +545,17 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             return;
         case MsgWhat::CHECK_IF_STUCK:
             return;
-        case MsgWhat::FREEZE: {
-            OnFreeze(info);
+        case MsgWhat::BUFFER_RECYCLE: {
+            OnBufferRecycle(info);
             break;
+        }
+        case MsgWhat::SUSPEND:{
+            OnSuspend(info);
+            break;
+        }
+        case MsgWhat::RESUME:{
+            OnResume(info);
+            return;
         }
         default:
             BaseState::OnMsgReceived(info);

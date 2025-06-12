@@ -69,7 +69,12 @@ bool AvcodecSuspend002FuzzTest(const uint8_t *data, size_t size)
     pid.push_back(pid0);
 
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
-    vDecSample->CreateVideoDecoder();
+    int32_t ret = vDecSample->CreateVideoDecoder();
+    if (ret != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;
+    }
     vDecSample->ConfigureVideoDecoder();
     MediaAVCodec::AVCodecSuspend::SuspendFreeze(pidFuzz);
     MediaAVCodec::AVCodecSuspend::SuspendActive(pidFuzz);
@@ -101,7 +106,12 @@ bool AvcodecSuspend003FuzzTest(const uint8_t *data, size_t size)
     pid.push_back(pid0);
     
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
-    vDecSample->CreateVideoDecoder();
+    int32_t ret = vDecSample->CreateVideoDecoder();
+    if (ret != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;
+    }
     vDecSample->ConfigureVideoDecoder();
     vDecSample->SetVideoDecoderCallback();
     vDecSample->Start();

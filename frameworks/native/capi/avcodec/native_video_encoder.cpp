@@ -157,9 +157,6 @@ public:
         // The bufferInfo lifecycle is controlled by the current function stack
         OH_AVMemory *data = GetTransData(codec_, index, buffer, true);
 
-        if (!((flag == AVCODEC_BUFFER_FLAG_CODEC_DATA) || (flag == AVCODEC_BUFFER_FLAG_EOS))) {
-            AVCodecTrace::TraceEnd("OH::Frame", info.presentationTimeUs);
-        }
         asyncCallback_.onNeedOutputData(codec_, index, data, &bufferAttr, userData_);
     }
 
@@ -194,9 +191,6 @@ public:
 
         OH_AVBuffer *data = GetTransData(codec_, index, buffer, true);
 
-        if (!((buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA) || (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS))) {
-            AVCodecTrace::TraceEnd("OH::Frame", buffer->pts_);
-        }
         callback_.onNewOutputBuffer(codec_, index, data, userData_);
     }
 
@@ -786,10 +780,6 @@ OH_AVErrCode OH_VideoEncoder_PushInputData(struct OH_AVCodec *codec, uint32_t in
     CHECK_AND_RETURN_RET_LOG(videoEncObj->callback_ != nullptr, AV_ERR_INVALID_STATE,
                              "The callback of OH_AVMemory is nullptr!");
 
-    if (!((attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) || (attr.flags == AVCODEC_BUFFER_FLAG_EOS))) {
-        AVCodecTrace::TraceBegin("OH::Frame", attr.pts);
-    }
-
     struct AVCodecBufferInfo bufferInfo;
     bufferInfo.presentationTimeUs = attr.pts;
     bufferInfo.size = attr.size;
@@ -825,9 +815,6 @@ OH_AVErrCode OH_VideoEncoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t 
         if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
             videoEncObj->isEOS_.store(true);
             AVCODEC_LOGD("Set eos status to true");
-        }
-        if (!((buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA) || (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS))) {
-            AVCodecTrace::TraceBegin("OH::Frame", buffer->pts_);
         }
     }
 

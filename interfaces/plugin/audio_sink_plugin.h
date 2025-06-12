@@ -263,6 +263,16 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
 
     virtual bool GetAudioPosition(timespec &time, uint32_t &framePosition) = 0;
 
+    virtual void Freeze()
+    {
+        return;
+    }
+
+    virtual void UnFreeze()
+    {
+        return;
+    }
+
     virtual Status MuteAudioBuffer(uint8_t *addr, size_t offset, size_t length)
     {
         (void)addr;

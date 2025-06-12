@@ -488,7 +488,9 @@ int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScen
                              "colorspace conversion is not available for the codec.");
 
     constexpr int32_t colorSpaceBt709Limited = 8; // see OH_COLORSPACE_BT709_LIMITED in native_buffer.h;
-    CHECK_AND_RETURN_RET_LOG(colorSpace == colorSpaceBt709Limited, AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION,
+    constexpr int32_t colorSpaceP3Full = 12;      // see OH_COLORSPACE_P3_FULL in native_buffer.h;
+    CHECK_AND_RETURN_RET_LOG(colorSpace == colorSpaceBt709Limited || colorSpace == colorSpaceP3Full,
+                             AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION,
                              "The output color space %{public}d is not supported", colorSpace);
     PrintParam(true, MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
 

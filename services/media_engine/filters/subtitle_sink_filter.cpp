@@ -123,10 +123,40 @@ Status SubtitleSinkFilter::DoStart()
     return err;
 }
 
+
+Status SubtitleSinkFilter::DoFreeze()
+{
+    MEDIA_LOG_I("subtitle sink filter freeze start");
+    FALSE_RETURN_V_MSG(state_ == FilterState::RUNNING, Status::OK, "current state is %{public}d", state_);
+    auto ret = subtitleSink_->Pause();
+    state_ = ret == Status::OK ? FilterState::FROZEN : FilterState::ERROR;
+    return ret;
+}
+
+Status SubtitleSinkFilter::DoUnFreeze()
+{
+    MEDIA_LOG_I("subtitle sink filter unFreeze");
+    // only worked when state is frozen
+    if (state_ == FilterState::FROZEN) {
+        if (frameCnt_ > 0) {
+            frameCnt_ = 0;
+        }
+        auto ret = subtitleSink_->Resume();
+        state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
+        return ret;
+    }
+    return Status::OK;
+}
+
 Status SubtitleSinkFilter::DoPause()
 {
     MEDIA_LOG_I("subtitle sink filter pause start");
     if (state_ == FilterState::PAUSED || state_ == FilterState::STOPPED) {
+        return Status::OK;
+    }
+    if (state_ == FilterState::FROZEN) {
+        MEDIA_LOG_I("current state is frozen");
+        state_ = FilterState::PAUSED;
         return Status::OK;
     }
     // only worked when state is working
