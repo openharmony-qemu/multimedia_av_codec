@@ -20,6 +20,7 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "fcodecservermemrecycle_fuzzer"
+const uint32_t SURFACE_BOUND = 2;
 const size_t EXPECT_SIZE = 6;
 const size_t PIXELFORMAT_SIZE = 5;
 
@@ -34,7 +35,7 @@ bool FCodecServerMemrecycle(const uint8_t *data, size_t size)
     }
     VDecServerSample *vDecSample = new VDecServerSample();
     vDecSample->defaultPixelFormat = data[size - PIXELFORMAT_SIZE];
-    if (vDecSample->defaultPixelFormat % 2 == 0) {
+    if (vDecSample->defaultPixelFormat % SURFACE_BOUND == 0) {
         vDecSample->isSurfMode = true;
     } else {
         vDecSample->isSurfMode = false;

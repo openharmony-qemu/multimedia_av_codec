@@ -46,6 +46,7 @@ public:
     VDecServerSample() = default;
     ~VDecServerSample();
 
+    void PrepareDecoder();
     void RunVideoServerDecoder();
     const char *inpDir = "/data/test/media/1920_1080_10_30Mb.h264";
     const char *outDir = "/data/test/media/VDecTest.yuv";
@@ -91,6 +92,7 @@ protected:
     private:
         VDecServerSample *tester;
     };
+    bool isEnd_ = false;
 
 private:
     int64_t GetSystemTimeUs();

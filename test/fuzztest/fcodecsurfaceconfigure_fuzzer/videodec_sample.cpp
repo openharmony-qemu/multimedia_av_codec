@@ -20,6 +20,8 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
 namespace {
+constexpr int32_t DEFAULT_W = 1920;
+constexpr int32_t DEFAULT_H = 1080;
 const uint32_t FC_H264[] = {139107, 1114, 474, 253, 282,    146,  197, 90,  108, 3214, 301, 77, 51, 43,
                             234,    210,  143, 108, 139107, 1114, 474, 253, 282, 146,  197, 90, 108};
 constexpr uint32_t FC_LENGTH_H264 = sizeof(FC_H264) / sizeof(uint32_t);
@@ -151,8 +153,8 @@ int32_t VDecFuzzSample::ProceFunc()
         return AV_ERR_UNKNOWN;
     }
     format_ = OH_AVFormat_Create();
-    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_WIDTH, 1920);
-    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_HEIGHT, 1080);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_WIDTH, DEFAULT_W);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_HEIGHT, DEFAULT_H);
     ret = OH_VideoDecoder_Configure(videoDec_, format_);
     if (ret != AV_ERR_OK) {
         cout << "configure codec failed" << endl;
@@ -182,7 +184,7 @@ int32_t VDecFuzzSample::ProceFunc()
     return AV_ERR_OK;
 }
 
-void VDecFuzzSample::FormatChangeInputFunc()
+void VDecFuzzSample::PrepareResource()
 {
     testFile_ = std::make_unique<std::ifstream>();
     testFile_->open(formatChangeInputFilePath, std::ios::in | std::ios::binary);
@@ -195,7 +197,12 @@ void VDecFuzzSample::FormatChangeInputFunc()
         testFile_ = nullptr;
         return;
     }
-    while (true) {
+}
+
+void VDecFuzzSample::FormatChangeInputFunc()
+{
+    PrepareResource();
+    while (!inEnd_) {
         if (!isRunning_.load()) {
             return;
         }
@@ -211,15 +218,13 @@ void VDecFuzzSample::FormatChangeInputFunc()
             info.size = FC_H264[frameCount_];
             char *fileBuffer = static_cast<char *>(malloc(sizeof(char) * info.size + 1));
             if (fileBuffer == nullptr) {
-                cout << "Fatal: malloc fail." << endl;
                 return;
             }
             (void)testFile_->read(fileBuffer, info.size);
             if (memcpy_s(OH_AVMemory_GetAddr(buffer), OH_AVMemory_GetSize(buffer), fileBuffer, info.size) != EOK) {
-                cout << "Fatal: memcpy fail" << endl;
                 free(fileBuffer);
                 isRunning_.store(false);
-                break;
+                inEnd_ = true;
             }
             free(fileBuffer);
             info.flags = AVCODEC_BUFFER_FLAGS_NONE;
@@ -227,21 +232,16 @@ void VDecFuzzSample::FormatChangeInputFunc()
                 info.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
                 isFirstFrame_ = false;
             }
-            int32_t ret = OH_VideoDecoder_PushInputData(videoDec_, index, info);
-            if (ret != AV_ERR_OK) {
-                cout << "push input data failed, error:" << ret << endl;
-            }
-            ret = SwitchSurface();
+            OH_VideoDecoder_PushInputData(videoDec_, index, info);
+            int32_t ret = SwitchSurface();
             if (ret != AV_ERR_OK) {
                 isRunning_.store(false);
-                break;
+                inEnd_ = true;
             }
-            cout << "current input frame: " << frameCount_ << endl;
             frameCount_++;
         } else {
             OH_VideoDecoder_PushInputData(videoDec_, index, info);
-            std::cout << "input end buffer" << std::endl;
-            break;
+            inEnd_ = true;
         }
         signal_->inQueue_.pop();
         signal_->inBufferQueue_.pop();
@@ -253,16 +253,16 @@ void VDecFuzzSample::FormatChangeInputFunc()
 
 void VDecFuzzSample::OutputFunc()
 {
-    while (true) {
+    while (!outEnd_) {
         if (!isRunning_.load()) {
             cout << "stop, exit" << endl;
-            break;
+            outEnd_ = true;
         }
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
         if (!isRunning_.load()) {
             cout << "wait to stop, exit" << endl;
-            break;
+            outEnd_ = true;
         }
         uint32_t index = signal_->outQueue_.front();
         OH_AVCodecBufferAttr attr = signal_->attrQueue_.front();

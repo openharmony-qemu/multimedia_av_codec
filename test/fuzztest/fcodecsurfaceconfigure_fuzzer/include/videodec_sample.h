@@ -70,6 +70,7 @@ public:
     ~VDecFuzzSample();
     int32_t SetParameter();
     int32_t ProceFunc();
+    void PrepareResource();
     void RunVideoDec();
     void FormatChangeInputFunc();
     void OutputFunc();
@@ -91,6 +92,8 @@ protected:
     bool isFirstFrame_ = true;
     uint32_t frameCount_ = 0;
     sptr<Surface> surface_ = nullptr;
+    bool inEnd_ = false;
+    bool outEnd_ = false;
 };
 } // namespace Media
 } // namespace OHOS

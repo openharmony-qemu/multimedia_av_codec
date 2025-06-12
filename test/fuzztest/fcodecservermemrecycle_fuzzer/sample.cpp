@@ -136,7 +136,7 @@ int32_t VDecServerSample::SetOutputSurface()
     return codec_->SetOutputSurface(ps);
 }
 
-void VDecServerSample::RunVideoServerDecoder()
+void VDecServerSample::PrepareDecoder()
 {
     codec_ = sptr<FCodec>(new FCodec("OH.Media.Codec.Decoder.Video.AVC"));
     if (codec_ == nullptr) {
@@ -170,6 +170,11 @@ void VDecServerSample::RunVideoServerDecoder()
         return;
     }
     isRunning_.store(true);
+}
+
+void VDecServerSample::RunVideoServerDecoder()
+{
+    PrepareDecoder();
     inFile_ = make_unique<ifstream>();
     if (inFile_ == nullptr) {
         Stop();
@@ -193,7 +198,7 @@ void VDecServerSample::RunVideoServerDecoder()
         return;
     }
     if (isSurfMode) {
-        err = SetOutputSurface();
+        int32_t err = SetOutputSurface();
         if (err != AVCS_ERR_OK) {
             cout << "SetOutputSurface failed" << endl;
         }
@@ -345,9 +350,9 @@ void VDecServerSample::InputFunc()
 {
     frameCount_ = 1;
     errCount = 0;
-    while (true) {
+    while (!isEnd_) {
         if (!isRunning_.load()) {
-            break;
+            isEnd_ = true;
         }
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() {
@@ -358,7 +363,7 @@ void VDecServerSample::InputFunc()
             return signal_->inIdxQueue_.size() > 0;
         });
         if (!isRunning_.load()) {
-            break;
+            isEnd_ = true;
         }
         uint32_t index = signal_->inIdxQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
@@ -368,7 +373,7 @@ void VDecServerSample::InputFunc()
         if (!inFile_->eof()) {
             int ret = ReadData(index, buffer);
             if (ret == 1) {
-                break;
+                isEnd_ = true;
             }
         }
     }
