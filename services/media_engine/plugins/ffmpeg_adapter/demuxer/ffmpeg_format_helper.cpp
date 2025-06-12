@@ -146,7 +146,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
 #ifdef SUPPORT_DEMUXER_SAMI
     {"sami", FileType::SAMI},
 #endif
-#ifdef SUPPORT_DEMUXER_ASS 
+#ifdef SUPPORT_DEMUXER_ASS
     {"ass", FileType::ASS},
 #endif
 };
@@ -203,7 +203,7 @@ std::vector<std::string> SplitByChar(const char* str, const char* pattern)
 
 void DumpFileInfo(const AVFormatContext& avFormatContext)
 {
-    FALSE_LOG_MSG_W(avFormatContext.iformat != nullptr, "Iformat is nullptr");
+    FALSE_RETURN_MSG(avFormatContext.iformat != nullptr, "Iformat is nullptr");
     MEDIA_LOG_D("File name [" PUBLIC_LOG_S "]", avFormatContext.iformat->name);
     if (StartWith(avFormatContext.iformat->name, "mov,mp4,m4a")) {
         const AVDictionaryEntry *type = av_dict_get(avFormatContext.metadata, "major_brand", NULL, 0);
