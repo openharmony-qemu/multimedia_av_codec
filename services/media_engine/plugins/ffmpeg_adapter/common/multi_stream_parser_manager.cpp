@@ -34,9 +34,9 @@ MultiStreamParserManager::~MultiStreamParserManager()
 {
     for (auto streamInfo : streamMap_) {
         VideoStreamType streamType = (streamInfo.second).type;
-        std::shared_ptr<StreamParser> streamParser = (streamInfo.second).parser;
+        StreamParser* streamParser = (streamInfo.second).parser;
         if (streamParser && destroyFuncMap_.count(streamType) > 0) {
-            destroyFuncMap_[streamType](streamParser.get());
+            destroyFuncMap_[streamType](streamParser);
             (streamInfo.second).parser = nullptr;
         }
     }
@@ -59,7 +59,7 @@ Status MultiStreamParserManager::Create(uint32_t trackId, VideoStreamType stream
         streamMap_[trackId].parser = nullptr;
     }
     streamMap_[trackId].type = streamType;
-    streamMap_[trackId].parser = std::shared_ptr<StreamParser>(streamParser);
+    streamMap_[trackId].parser = streamParser;
     streamMap_[trackId].inited = false;
     return Status::OK;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -70,6 +70,8 @@ string g_hls = TEST_URI_PATH2 + string("index_265.m3u8");
 string g_mp4265InfoParsePath = TEST_FILE_PATH + string("test_265_B_Gop25_4sec.mp4");
 string g_265pcmPath = TEST_FILE_PATH + string("265_pcm_s16le.mov");
 string g_265pcmUri = TEST_URI_PATH + string("265_pcm_s16le.mov");
+string g_mp4HevcAuxlPath = TEST_FILE_PATH + string("muxer_265.mp4");
+string g_mp4HevcAuxlUri = TEST_URI_PATH + string("muxer_265.mp4");
 
 std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"hdrVivid",   {{"frames", {76,   125}}, {"kFrames", {3, 125}}}},
@@ -82,6 +84,7 @@ std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"fmp4Hevc",  {{"frames", {604,  433}}, {"kFrames", {3, 433}}}},
     {"doubleVivid",  {{"frames", {76,  116}}, {"kFrames", {3, 116}}}},
     {"mp4265InfoParse",  {{"frames", {103,  174}}, {"kFrames", {5, 174}}}},
+    {"tsHevcAuxl",  {{"frames", {16, 16, 16}}, {"kFrames", {1, 1, 1}}}},
 };
 
 std::map<std::string, std::vector<int32_t>> discardFrameIndexMap = {
@@ -1417,5 +1420,121 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1700, TestSize.Level1)
     }
     RemoveValue();
     selectedTrackIds_.clear();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_Auxl_0001
+ * @tc.desc: copy current sample to buffer, local(mp4 265 auxl local)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0001, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    ReadSample(g_mp4HevcAuxlPath, LOCAL);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["tsHevcAuxl"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["tsHevcAuxl"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_Auxl_0002
+ * @tc.desc: copy current sample to buffer, uri(mp4 265 auxl uri)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0002, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    ReadSample(g_mp4HevcAuxlUri, URI);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["tsHevcAuxl"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["tsHevcAuxl"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_Auxl_0001
+ * @tc.desc: seek to the specified time(mp4 265 auxl local)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0001, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_mp4HevcAuxlPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    SetInitValue();
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 400}; // ms
+    vector<int32_t> videoVals = {16, 16, 16, 0, 16, 16, 0, 16, 16};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            ASSERT_EQ(frames_[1], videoVals[numbers_]);
+            ASSERT_EQ(frames_[2], videoVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_Auxl_0002
+ * @tc.desc: seek to the specified time(mp4 265 auxl uri)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0002, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_mp4HevcAuxlUri, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    SetInitValue();
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 200, 400}; // ms
+    vector<int32_t> videoVals = {16, 16, 16, 0, 16, 16, 0, 16, 16};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            ASSERT_EQ(frames_[1], videoVals[numbers_]);
+            ASSERT_EQ(frames_[2], videoVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
 }
 } // namespace

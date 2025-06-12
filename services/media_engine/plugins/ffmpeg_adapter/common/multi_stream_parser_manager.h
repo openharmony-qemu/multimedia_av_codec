@@ -72,7 +72,7 @@ private:
     // stream manage
     struct StreamInfo {
         VideoStreamType type;
-        std::shared_ptr<StreamParser> parser;
+        StreamParser *parser;
         bool inited;
         ~StreamInfo() {
             if (parser != nullptr) {
