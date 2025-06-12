@@ -91,6 +91,7 @@ constexpr int64_t SEEK_LOCAL_WARNING_MS = 78;
 constexpr int64_t SEEKCLOSEST_LOCAL_WARNING_MS = 309;
 constexpr int64_t READSAMPLE_AUIDO_WARNING_MS = 50;
 constexpr int64_t READSAMPLE_WARNING_MS = 100;
+constexpr int32_t CONVERT_PACKET_ERROR_MAX_COUNT = 30;
 const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
     { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
 };
@@ -1527,6 +1528,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
         isSeekError_.store(true);
     }
     isFirstFrameAfterSeek_.store(true);
+    convertErrorTime_.store(0);
     MEDIA_LOG_D("Out");
     return ret;
 }
@@ -2642,6 +2644,7 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
                 MEDIA_LOG_D("EventReceiver is nullptr");
             }
         }
+        FALSE_GOON_NOEXEC(ret == Status::ERROR_PACKET_CONVERT_FAILED, HandlePacketConvertError());
         bool isNeedRetry = ret == Status::OK || ret == Status::ERROR_AGAIN;
         if (isNeedRetry) {
             return GetReadLoopRetryUs(trackId);
@@ -2658,6 +2661,16 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
             return RETRY_DELAY_TIME_US; // delay to retry if no frame
         }
     }
+}
+
+void MediaDemuxer::HandlePacketConvertError()
+{
+    ++convertErrorTime_;
+    TRUE_LOG(convertErrorTime_.load() == 1, MEDIA_LOG_W, "PacketConvert error once");
+    FALSE_RETURN_NOLOG(convertErrorTime_ >= CONVERT_PACKET_ERROR_MAX_COUNT);
+    MEDIA_LOG_E("PacketConvertError happened %{public}d times, stream is unsupported!", convertErrorTime_.load());
+    FALSE_RETURN_MSG(eventReceiver_ != nullptr, "eventReceiver_ is nullptr");
+    eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN});
 }
 
 Status MediaDemuxer::ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)

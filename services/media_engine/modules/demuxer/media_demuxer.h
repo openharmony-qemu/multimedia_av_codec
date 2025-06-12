@@ -320,6 +320,7 @@ private:
     void InitAudioTrack();
     void InitVideoTrack();
     void InitSubtitleTrack();
+    void HandlePacketConvertError();
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
@@ -433,6 +434,7 @@ private:
 
     int64_t videoSeekTime_ {0};
     bool isInSeekDropAudio_ {false};
+    std::atomic<int32_t> convertErrorTime_ {0};
 };
 } // namespace Media
 } // namespace OHOS
