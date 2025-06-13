@@ -246,7 +246,16 @@ std::shared_ptr<FormatMock> VideoDecSyncSample::GetOutputDescription()
     if (videoDec_ == nullptr) {
         return nullptr;
     }
-    return videoDec_->GetOutputDescription();
+    std::shared_ptr<FormatMock> format = videoDec_->GetOutputDescription();
+    if (format == nullptr) {
+        return nullptr;
+    }
+    cout << "info: " << format->DumpInfo() << endl;
+    format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, signal_->width_);
+    format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, signal_->height_);
+    format->GetIntValue(Media::Tag::VIDEO_STRIDE, signal_->wStride_);
+    format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, signal_->hStride_);
+    return format;
 }
 
 int32_t VideoDecSyncSample::SetParameter(std::shared_ptr<FormatMock> format)
@@ -507,6 +516,9 @@ void VideoDecSyncSample::OutputLoopFuncExt()
     while (signal_->isRunning_.load()) {
         shared_lock<shared_mutex> lock(signal_->syncMutex_);
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFuncExt stop running");
+        if (frameOutputCount_ == 0) {
+            GetOutputDescription();
+        }
 
         int32_t ret = OutputLoopInnerExt();
         if (ret == AV_ERR_COMMON_TRY_AGAIN_LATER || ret == AV_ERR_VIDEO_STREAM_CHANGED) {

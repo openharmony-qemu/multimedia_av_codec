@@ -136,6 +136,7 @@ void TEST_SUIT::CreateByNameWithParam(int32_t param)
             capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
                                                                         AVCodecCategory::AVCODEC_HARDWARE);
             break;
+        case VCodecTestCode::HW_HDR_HLG_FULL:
         case VCodecTestCode::HW_HEVC:
             capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), false,
                                                                         AVCodecCategory::AVCODEC_HARDWARE);
@@ -157,7 +158,7 @@ void TEST_SUIT::CreateByNameWithParam(int32_t param)
 void TEST_SUIT::PrepareSource(int32_t param)
 {
     std::string sourcePath = decSourcePathMap_.at(param);
-    if (param == VCodecTestCode::HW_HEVC) {
+    if (param == VCodecTestCode::HW_HEVC || param == VCodecTestCode::HW_HDR_HLG_FULL) {
         videoDec_->SetSourceType(false);
     }
     videoDec_->testParam_ = param;
@@ -223,17 +224,52 @@ void CheckFormatKey(std::shared_ptr<FormatMock> format)
     EXPECT_EQ(colorSpace, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 }
 
+void CheckFormatKeyForP3Full(std::shared_ptr<VideoDecSample> videoDec, std::shared_ptr<FormatMock> format)
+{
+    format = videoDec->GetOutputDescription();
+    constexpr int32_t originalVideoWidth = 1920;
+    constexpr int32_t originalVideoHeight = 1440;
+    int32_t width = 0;
+    int32_t height = 0;
+    int32_t pictureWidth = 0;
+    int32_t pictureHeight = 0;
+    int32_t stride = 0;
+    int32_t sliceHeight = 0;
+    int32_t colorSpace = 0;
+
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
+    EXPECT_TRUE(format->GetIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace));
+
+    EXPECT_EQ(width, originalVideoWidth);
+    EXPECT_EQ(height, originalVideoHeight);
+    EXPECT_GE(pictureWidth, originalVideoWidth - 1);
+    EXPECT_GE(pictureHeight, originalVideoHeight - 1);
+    EXPECT_GE(stride, originalVideoWidth);
+    EXPECT_GE(sliceHeight, originalVideoHeight);
+    EXPECT_EQ(colorSpace, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+}
+
 void TEST_SUIT::ConfigureHdrVivid2Sdr(int32_t testCode)
 {
     CreateByNameWithParam(testCode);
     SetFormatWithParam(testCode);
     PrepareSource(testCode);
-    format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+    if (testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
+        format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+            OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+    } else {
+        format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+            OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+    }
 }
 #endif
 
-INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, SW_AVC, HW_HEVC, HW_HDR));
+INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, SW_AVC, HW_HEVC, HW_HDR, HW_HDR_HLG_FULL));
 
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_001
@@ -266,14 +302,14 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_002, TestSize.Level1)
 }
 #ifdef HMOS_TEST
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_003
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0031
  * @tc.desc: 1. key pixel format unset;
  *           2. decoder mode is buffer;
  *           3. prepare function is not called;
  *           4. key color space is BT709_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0031, TestSize.Level1)
 {
     auto testCode = GetParam();
     CreateByNameWithParam(testCode);
@@ -284,7 +320,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_003, TestSize.Level1)
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC ||
+        testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
         ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Start());
     } else {
@@ -293,19 +330,48 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_004
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0032
+ * @tc.desc: 1. key pixel format unset;
+ *           2. decoder mode is buffer;
+ *           3. prepare function is not called;
+ *           4. key color space is OH_COLORSPACE_P3_FULL
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0032, TestSize.Level1)
+{
+    auto testCode = GetParam();
+    CreateByNameWithParam(testCode);
+    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    PrepareSource(testCode);
+    format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC ||
+        testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
+        ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Start());
+    } else {
+        ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format));
+    }
+}
+
+/**
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0041
  * @tc.desc: 1. key pixel format is NV12;
  *           2. decoder mode is buffer;
  *           3. prepare function is not called;
  *           4. key color space is BT709_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0041, TestSize.Level1)
 {
     auto testCode = GetParam();
     ConfigureHdrVivid2Sdr(testCode);
 
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC ||
+        testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Start());
     } else {
@@ -314,14 +380,14 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_004, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_005
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0051
  * @tc.desc: 1. key pixel format unset;
  *           2. decoder mode is surface;
  *           3. prepare function is not called;
  *           4. key color space is BT709_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_005, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0051, TestSize.Level1)
 {
     auto testCode = GetParam();
     CreateByNameWithParam(testCode);
@@ -332,7 +398,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_005, TestSize.Level1)
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC ||
+        testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Start());
@@ -342,19 +409,49 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_005, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_006
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0052
+ * @tc.desc: 1. key pixel format unset;
+ *           2. decoder mode is surface;
+ *           3. prepare function is not called;
+ *           4. key color space is OH_COLORSPACE_P3_FULL
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0052, TestSize.Level1)
+{
+    auto testCode = GetParam();
+    CreateByNameWithParam(testCode);
+    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    PrepareSource(testCode);
+    format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC ||
+        testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
+        ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Start());
+    } else {
+        ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format));
+    }
+}
+
+/**
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0061
  * @tc.desc: 1. key pixel format is NV12;
  *           2. decoder mode is surface;
  *           3. prepare function is not called;
  *           4. key color space is BT709_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_006, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0061, TestSize.Level1)
 {
     auto testCode = GetParam();
     ConfigureHdrVivid2Sdr(testCode);
 
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC ||
+        testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Start());
@@ -364,14 +461,14 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_006, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_007
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0071
  * @tc.desc: 1. key pixel format unset;
  *           2. decoder mode is buffer;
  *           3. prepare function is called before start function;
  *           4. key color space is BT709_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_007, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0071, TestSize.Level1)
 {
     auto testCode = GetParam();
     CreateByNameWithParam(testCode);
@@ -382,7 +479,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_007, TestSize.Level1)
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC ||
+        testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
         ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Prepare());
     } else {
@@ -391,19 +489,48 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_007, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_008
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0072
+ * @tc.desc: 1. key pixel format unset;
+ *           2. decoder mode is buffer;
+ *           3. prepare function is called before start function;
+ *           4. key color space is OH_COLORSPACE_P3_FULL
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0072, TestSize.Level1)
+{
+    auto testCode = GetParam();
+    CreateByNameWithParam(testCode);
+    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    PrepareSource(testCode);
+    format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC ||
+        testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
+        ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Prepare());
+    } else {
+        ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format));
+    }
+}
+
+/**
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0081
  * @tc.desc: 1. key pixel format is NV12;
  *           2. decoder mode is buffer;
  *           3. prepare function is called before start function;
  *           4. key color space is BT709_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_008, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0081, TestSize.Level1)
 {
     auto testCode = GetParam();
     ConfigureHdrVivid2Sdr(testCode);
 
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC ||
+        testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Prepare());
     } else {
@@ -412,14 +539,36 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_008, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_009
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0082
+ * @tc.desc: 1. key pixel format is NV12;
+ *           2. decoder mode is buffer;
+ *           3. prepare function is called before start function;
+ *           4. key color space is OH_COLORSPACE_P3_FULL
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0082, TestSize.Level1)
+{
+    auto testCode = GetParam();
+    ConfigureHdrVivid2Sdr(testCode);
+
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC ||
+        testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+        ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Prepare());
+    } else {
+        ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
+    }
+}
+
+/**
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0091
  * @tc.desc: 1. key pixel format unset;
  *           2. decoder mode is surface;
  *           3. prepare function is called before start function;
  *           4. key color space is BT709_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_009, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0091, TestSize.Level1)
 {
     auto testCode = GetParam();
     CreateByNameWithParam(testCode);
@@ -444,14 +593,45 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_009, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_010
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0092
+ * @tc.desc: 1. key pixel format unset;
+ *           2. decoder mode is surface;
+ *           3. prepare function is called before start function;
+ *           4. key color space is OH_COLORSPACE_P3_FULL
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0092, TestSize.Level1)
+{
+    auto testCode = GetParam();
+    CreateByNameWithParam(testCode);
+    std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_HLG_FULL);
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_HLG_FULL);
+    PrepareSource(testCode);
+    format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+
+    if (testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
+        ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+        CheckFormatKeyForP3Full(videoDec_, format);
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    } else if (testCode == VCodecTestCode::HW_AVC || testCode == VCodecTestCode::SW_AVC) {
+        ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format));
+    }
+}
+
+/**
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0101
  * @tc.desc: 1. key pixel format is NV12;
  *           2. decoder mode is surface;
  *           3. prepare function is called before start function;
  *           4. key color space is BT709_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_010, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0101, TestSize.Level1)
 {
     auto testCode = GetParam();
     ConfigureHdrVivid2Sdr(testCode);
@@ -464,18 +644,26 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_010, TestSize.Level1)
         std::shared_ptr<FormatMock> curFormat = videoDec_->GetOutputDescription();
         CheckFormatKey(curFormat);
         EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    } else if (testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+        ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+        std::shared_ptr<FormatMock> curFormat = videoDec_->GetOutputDescription();
+        CheckFormatKeyForP3Full(curFormat);
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     } else if (testCode == VCodecTestCode::HW_AVC || testCode == VCodecTestCode::SW_AVC) {
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
     }
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_011
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0111
  * @tc.desc: 1. key pixel format is NV12;
  *           2. key color space is BT2020_HLG_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_011, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0111, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -487,12 +675,12 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_011, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_012
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0121
  * @tc.desc: 1. key pixel format unset;
  *           2. key color space is BT2020_HLG_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_012, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0121, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
@@ -506,17 +694,18 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_012, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_013
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0131
  * @tc.desc: 1. key pixel format is NV21;
  *           2. decoder mode is buffer;
  *           3. prepare function is not called;
  *           4. key color space is BT709_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_013, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0131, TestSize.Level1)
 {
     auto testCode = GetParam();
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC ||
+        testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
         CreateByNameWithParam(testCode);
         SetHDRFormat();
         PrepareSource(testCode);
@@ -529,17 +718,18 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_013, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_014
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0141
  * @tc.desc: 1. key pixel format is NV21;
  *           2. decoder mode is surface;
  *           3. prepare function is not called;
  *           4. key color space is BT709_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_014, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0141, TestSize.Level1)
 {
     auto testCode = GetParam();
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC ||
+        testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
         CreateByNameWithParam(testCode);
         SetHDRFormat();
         PrepareSource(testCode);
@@ -553,17 +743,18 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_014, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_015
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0151
  * @tc.desc: 1. key pixel format is NV21;
  *           2. decoder mode is buffer;
  *           3. prepare function is called before start function;
  *           4. key color space is BT709_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_015, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0151, TestSize.Level1)
 {
     auto testCode = GetParam();
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC ||
+        testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
         CreateByNameWithParam(testCode);
         SetHDRFormat();
         PrepareSource(testCode);
@@ -576,14 +767,14 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_015, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_016
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0161
  * @tc.desc: 1. key pixel format is NV21;
  *           2. decoder mode is surface;
  *           3. prepare function is called before start function;
  *           4. key color space is BT709_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_016, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0161, TestSize.Level1)
 {
     CreateByNameWithParam(VCodecTestCode::HW_HDR);
     SetHDRFormat();
@@ -601,15 +792,16 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_016, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_017
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0171
  * @tc.desc: 1. key pixel format is NV21;
  *           2. key color space is BT2020_HLG_LIMIT
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_017, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0171, TestSize.Level1)
 {
     auto testCode = GetParam();
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC ||
+        testCode == VCodecTestCode::HW_HDR_HLG_FULL) {
         CreateByNameWithParam(testCode);
         SetHDRFormat();
         PrepareSource(testCode);
@@ -621,7 +813,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_017, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_024
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0241
  * @tc.desc: 1. key pixel format is NV12;
  *           2. key color space is BT709_LIMIT
  *           3. decoder mode is surface;
@@ -629,7 +821,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_017, TestSize.Level1)
  *           5. start -> flush -> stop
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_024, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0241, TestSize.Level1)
 {
     ConfigureHdrVivid2Sdr(VCodecTestCode::HW_HDR);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
@@ -641,11 +833,31 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_024, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_025
+ * @tc.name: VideoDecoder_HRDVivid2SDR_Capi_0242
+ * @tc.desc: 1. key pixel format is NV12;
+ *           2. key color space is OH_COLORSPACE_P3_FULL
+ *           3. decoder mode is surface;
+ *           4. prepare function is called before start function;
+ *           5. start -> flush -> stop
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_0242, TestSize.Level1)
+{
+    ConfigureHdrVivid2Sdr(VCodecTestCode::HW_HDR_HLG_FULL);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0251
  * @tc.desc: unordered post processing function invocation
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_025, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0251, TestSize.Level1)
 {
     ConfigureHdrVivid2Sdr(VCodecTestCode::HW_HDR);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
@@ -665,11 +877,35 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_025, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_026
+ * @tc.name: VideoDecoder_HRDVivid2SDR_Capi_0252
  * @tc.desc: unordered post processing function invocation
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_026, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_0252, TestSize.Level1)
+{
+    ConfigureHdrVivid2Sdr(VCodecTestCode::HW_HDR_HLG_FULL);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_INVALID_STATE, videoDec_->Prepare());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
+    EXPECT_EQ(AV_ERR_INVALID_STATE, videoDec_->Prepare());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0261
+ * @tc.desc: unordered post processing function invocation
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0261, TestSize.Level1)
 {
     ConfigureHdrVivid2Sdr(VCodecTestCode::HW_HDR);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
@@ -689,11 +925,35 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_026, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_027
+ * @tc.name: VideoDecoder_HRDVivid2SDR_Capi_0262
  * @tc.desc: unordered post processing function invocation
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_027, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_0262, TestSize.Level1)
+{
+    ConfigureHdrVivid2Sdr(VCodecTestCode::HW_HDR_HLG_FULL);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_INVALID_STATE, videoDec_->Prepare());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
+    EXPECT_EQ(AV_ERR_INVALID_STATE, videoDec_->Prepare());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0271
+ * @tc.desc: unordered post processing function invocation
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0271, TestSize.Level1)
 {
     ConfigureHdrVivid2Sdr(VCodecTestCode::HW_HDR);
     for (int i = 0; i < 3 ; i++) {
@@ -709,13 +969,51 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_027, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_HRDVivid2SDR_028
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0272
  * @tc.desc: unordered post processing function invocation
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_028, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0272, TestSize.Level1)
+{
+    ConfigureHdrVivid2Sdr(VCodecTestCode::HW_HDR_HLG_FULL);
+    for (int i = 0; i < 3 ; i++) {
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+        ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+        EXPECT_EQ(AV_ERR_INVALID_STATE, videoDec_->Prepare());
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
+        EXPECT_EQ(AV_ERR_INVALID_STATE, videoDec_->Prepare());
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
+    }
+}
+
+/**
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0281
+ * @tc.desc: unordered post processing function invocation
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0281, TestSize.Level1)
 {
     ConfigureHdrVivid2Sdr(VCodecTestCode::HW_HDR);
+    for (int i = 0; i < 3 ; i++) {
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+        ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
+    }
+}
+
+/**
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0282
+ * @tc.desc: unordered post processing function invocation
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0282, TestSize.Level1)
+{
+    ConfigureHdrVivid2Sdr(VCodecTestCode::HW_HDR_HLG_FULL);
     for (int i = 0; i < 3 ; i++) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());

@@ -568,6 +568,14 @@ void VideoEncSyncSample::InputLoopFuncExt()
     }
 }
 
+void VideoEncSample::InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr)
+{
+    if (enableVariableFrameRate_) {
+        attr.pts = TIMESTAMP_BASE + DURATION_BASE * frameIndex_;
+        frameIndex_++;
+    }
+}
+
 int32_t VideoEncSyncSample::InputLoopInnerExt()
 {
     uint32_t index = DEFAULT_INDEX;
@@ -589,12 +597,10 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
         format->Destroy();
     }
 
-    if (roiRects_ != "") {
-        std::shared_ptr<FormatMock> format = buffer->GetParameter();
-        format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
-        buffer->SetParameter(format);
-        format->Destroy();
-    }
+    std::shared_ptr<FormatMock> format = buffer->GetParameter();
+    format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
+    buffer->SetParameter(format);
+    format->Destroy();
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (inFile_->eof()) {
@@ -626,6 +632,7 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
     } else {
         attr.flags = AVCODEC_BUFFER_FLAG_NONE;
     }
+    InputLoopInnerFeatureExt(attr);
     buffer->SetBufferAttr(attr);
     return PushInputBuffer(index);
 }
@@ -692,6 +699,10 @@ int32_t VideoEncSyncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNative
     rect->h = DEFAULT_HEIGHT_VENC;
     region.rects = rect;
     int64_t systemTimeUs = time_point_cast<microseconds>(system_clock::now()).time_since_epoch().count();
+    if (enableVariableFrameRate_) {
+        systemTimeUs = (TIMESTAMP_BASE + DURATION_BASE * frameIndex_) * RATIO_US_TO_NS;
+        frameIndex_++;
+    }
     OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
     ret = OH_NativeBuffer_Unmap(nativeBuffer);
     if (ret != 0) {
