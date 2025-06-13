@@ -218,9 +218,6 @@ void VDecFuzzSample::FormatChangeInputFunc()
         if (frameCount_ < FC_LENGTH_H264) {
             info.size = FC_H264[frameCount_];
             char *fileBuffer = static_cast<char *>(malloc(sizeof(char) * info.size + 1));
-            if (fileBuffer == nullptr) {
-                return;
-            }
             (void)testFile_->read(fileBuffer, info.size);
             if (memcpy_s(OH_AVMemory_GetAddr(buffer), OH_AVMemory_GetSize(buffer), fileBuffer, info.size) != EOK) {
                 free(fileBuffer);
