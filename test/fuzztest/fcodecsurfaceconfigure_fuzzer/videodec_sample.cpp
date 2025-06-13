@@ -125,7 +125,7 @@ int32_t VDecFuzzSample::SetParameter()
     }
     OH_AVFormat *format = OH_AVFormat_Create();
     if (format == nullptr) {
-        cout << "set parameter failed" << endl;
+        cout << "create format failed" << endl;
         return AV_ERR_UNKNOWN;
     }
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, 1);
@@ -208,7 +208,7 @@ void VDecFuzzSample::FormatChangeInputFunc()
             return;
         }
         unique_lock<mutex> lock(signal_->inMutex_);
-        signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || isRunning_.load()); });
+        signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
         if (!isRunning_.load()) {
             return;
         }
@@ -218,9 +218,6 @@ void VDecFuzzSample::FormatChangeInputFunc()
         if (frameCount_ < FC_LENGTH_H264) {
             info.size = FC_H264[frameCount_];
             char *fileBuffer = static_cast<char *>(malloc(sizeof(char) * info.size + 1));
-            if (fileBuffer == nullptr) {
-                return;
-            }
             (void)testFile_->read(fileBuffer, info.size);
             if (memcpy_s(OH_AVMemory_GetAddr(buffer), OH_AVMemory_GetSize(buffer), fileBuffer, info.size) != EOK) {
                 free(fileBuffer);

@@ -760,16 +760,16 @@
     </target>
     <target name="FCodecServerMemrecycleFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test"/>
+            <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_decoder/1920_1080_10_30Mb.h264 -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test"/>
+            <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
     <target name="FCodecSurfaceConfigureFuzzTest">
         <preparer>
-            <option name="shell" value="mkdir -p /data/test"/>
+            <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_decoder/format_change_testseq.h264 -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test"/>
+            <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
     <target name="DemuxerSetDataSourceWithProbSizeFuzzTest">
