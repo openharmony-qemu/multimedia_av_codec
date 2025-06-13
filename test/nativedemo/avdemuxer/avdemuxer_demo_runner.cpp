@@ -228,7 +228,7 @@ static void RunNativeDemuxer(const std::string &filePath, const std::string &fil
 {
     int32_t fd = -1;
     std::ifstream* fileStream = nullptr;
-    auto avDemuxerDemo = CreateAVSource(filePath, fileMode, fileStream, fd);
+    auto avSourceDemo = CreateAVSource(filePath, fileMode, fileStream, fd);
     if (avSourceDemo == nullptr) {
         return;
     }
