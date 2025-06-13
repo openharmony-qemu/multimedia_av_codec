@@ -745,14 +745,14 @@ int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenari
     bool condExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, cond);
     if (!condExist || cond <= 0) {
         format.RemoveKey(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE);
-        AVCODEC_LOGE("Encoder B-frame key VIDEO_ENCODER_ENABLE_B_FRAME not exist!");
+        AVCODEC_LOGE("Encoder B-frame key VIDEO_ENCODER_ENABLE_B_FRAME not exist or param illegal!");
         return AVCS_ERR_OK;
     }
     PrintParam(condExist, Tag::VIDEO_ENCODER_ENABLE_B_FRAME, cond);
     bool modeExist = format.GetIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
     if (!modeExist) {
-        format.PutIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
-            static_cast<int32_t>(Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE));
+        AVCODEC_LOGW("undefine VIDEO_ENCODE_B_FRAME_GOP_MODE, default to ADAPTIVE_B_MODE");
+        mode = static_cast<int32_t>(Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE);
     }
     PrintParam(modeExist, Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
     format.PutIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
