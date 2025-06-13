@@ -16,11 +16,11 @@
 #ifndef HCODEC_CODECHDI_H
 #define HCODEC_CODECHDI_H
 
-#include "v3_0/codec_types.h"
-#include "v3_0/icodec_callback.h"
-#include "v3_0/icodec_component.h"
-#include "v3_0/icodec_component_manager.h"
+#include "v4_0/codec_types.h"
+#include "v4_0/icodec_callback.h"
+#include "v4_0/icodec_component.h"
+#include "v4_0/icodec_component_manager.h"
 
-namespace CodecHDI = OHOS::HDI::Codec::V3_0;
+namespace CodecHDI = OHOS::HDI::Codec::V4_0;
 
 #endif
