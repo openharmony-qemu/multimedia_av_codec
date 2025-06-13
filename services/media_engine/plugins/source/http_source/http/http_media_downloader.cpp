@@ -18,6 +18,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <regex>
+#include <limits.h>
 #include "network/network_typs.h"
 #include "common/media_core.h"
 #include "avcodec_trace.h"
@@ -1679,7 +1680,8 @@ void HttpMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& p
             static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
         MEDIA_LOG_I("HTTP buffer duration for playing : " PUBLIC_LOG ".3f", bufferDurationForPlaying_);
     }
-    if (playStrategy->width > 0 && playStrategy->height > 0) {
+    if (playStrategy->width > 0 && playStrategy->width < USHRT_MAX
+        && playStrategy->height > 0 && playStrategy->height < USHRT_MAX) {
         initResolution_ = playStrategy->width * playStrategy->height;
         ChooseStreamByResolution();
     }
@@ -1836,6 +1838,10 @@ bool HttpMediaDownloader::IsNearToInitResolution(const std::shared_ptr<PlayMedia
 
 uint32_t HttpMediaDownloader::GetResolutionDelta(uint32_t width, uint32_t height)
 {
+    if (width >= USHRT_MAX || height >= USHRT_MAX) {
+        return 0;
+    }
+    
     uint32_t resolution = width * height;
     if (resolution > initResolution_) {
         return resolution - initResolution_;
