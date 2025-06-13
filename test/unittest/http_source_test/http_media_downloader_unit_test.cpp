@@ -796,8 +796,15 @@ HWTEST_F(HttpMediaDownloaderUnitTest, GetReadTimeOut, TestSize.Level1)
 
 HWTEST_F(HttpMediaDownloaderUnitTest, StopBufferring, TestSize.Level1)
 {
-    MP4httpMediaDownloader->StopBufferring(false);
-    EXPECT_GE(MP4httpMediaDownloader->StopBufferring(true), Status::OK);
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
+    std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 4, nullptr);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {};
+    httpMediaDownloader->SetStatusCallback(statusCallback);
+    std::map<std::string, std::string> httpHeader;
+    httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
+    httpMediaDownloader->StopBufferring(false);
+    EXPECT_GE(httpMediaDownloader->StopBufferring(true), Status::OK);
 }
 
 
@@ -810,9 +817,24 @@ HWTEST_F(HttpMediaDownloaderUnitTest, ClearHasReadBuffer, TestSize.Level1)
 
 HWTEST_F(HttpMediaDownloaderUnitTest, RestartAndClearBuffer, TestSize.Level1)
 {
-    FLVhttpMediaDownloader->RestartAndClearBuffer();
-    MP4httpMediaDownloader->RestartAndClearBuffer();
-    EXPECT_TRUE(FLVhttpMediaDownloader->isRingBuffer_);
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader1 =
+    std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE, 4, nullptr);
+    auto statusCallback1 = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {};
+    httpMediaDownloader1->SetStatusCallback(statusCallback1);
+    std::map<std::string, std::string> httpHeader1;
+    httpMediaDownloader1->Open(FLV_SEGMENT_BASE, httpHeader1);
+    httpMediaDownloader1->RestartAndClearBuffer();
+    
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader2 =
+    std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 4, nullptr);
+    auto statusCallback2 = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {};
+    httpMediaDownloader2->SetStatusCallback(statusCallback2);
+    std::map<std::string, std::string> httpHeader2;
+    httpMediaDownloader2->Open(MP4_SEGMENT_BASE, httpHeader2);
+    httpMediaDownloader2->RestartAndClearBuffer();
+    EXPECT_TRUE(httpMediaDownloader1->isRingBuffer_);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, ClearCacheBuffer, TestSize.Level1)
