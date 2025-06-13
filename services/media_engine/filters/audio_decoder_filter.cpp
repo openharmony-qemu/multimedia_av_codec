@@ -685,7 +685,7 @@ void AudioDecoderFilter::OnOutputFormatChanged(const Format& format)
 {
     FALSE_RETURN_NOLOG(meta_ && nextFilter_);
     std::string mime;
-    FALSE_RETURN_MSG(meta->GetData(Tag::MIME_TYPE, mime) && mime != CodecMimeType::AUDIO_VIVID,
+    FALSE_RETURN_MSG(meta_->GetData(Tag::MIME_TYPE, mime) && mime != CodecMimeType::AUDIO_VIVID,
         "Audio mimeType %{public}s unsupport format change", mime.c_str());
     int32_t sampleRate = 0;
     int32_t channels = 0;
