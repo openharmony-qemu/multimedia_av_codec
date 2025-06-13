@@ -764,7 +764,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_019, TestSize.Level1)
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     
     if (testCode == VCodecTestCode::HW_HEVC || testCode == VCodecTestCode::HW_HDR) {
-        ASSERT_EQ(AV_ERR_INVALID_VAL, videoDec_->Configure(format));
+        ASSERT_EQ(AV_ERR_UNSUPPORT, videoDec_->Configure(format));
     } else {
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format));
     }
