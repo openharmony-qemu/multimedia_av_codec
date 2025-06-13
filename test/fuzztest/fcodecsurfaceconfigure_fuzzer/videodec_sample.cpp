@@ -125,7 +125,7 @@ int32_t VDecFuzzSample::SetParameter()
     }
     OH_AVFormat *format = OH_AVFormat_Create();
     if (format == nullptr) {
-        cout << "set parameter failed" << endl;
+        cout << "create format failed" << endl;
         return AV_ERR_UNKNOWN;
     }
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, 1);
