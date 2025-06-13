@@ -208,7 +208,7 @@ void VDecFuzzSample::FormatChangeInputFunc()
             return;
         }
         unique_lock<mutex> lock(signal_->inMutex_);
-        signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || isRunning_.load()); });
+        signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
         if (!isRunning_.load()) {
             return;
         }

@@ -59,9 +59,9 @@ public:
     std::condition_variable outCond_;
     std::queue<uint32_t> inQueue_;
     std::queue<uint32_t> outQueue_;
+    std::queue<OH_AVCodecBufferAttr> attrQueue_;
     std::queue<OH_AVMemory *> inBufferQueue_;
     std::queue<OH_AVMemory *> outBufferQueue_;
-    std::queue<OH_AVCodecBufferAttr> attrQueue_;
 };
 
 class VDecFuzzSample : public NoCopyable {
