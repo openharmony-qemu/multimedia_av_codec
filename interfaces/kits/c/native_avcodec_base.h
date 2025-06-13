@@ -815,6 +815,36 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS;
 extern const char *OH_MD_KEY_ENABLE_MOOV_FRONT;
 
 /**
+ * @brief Key to enable B-frame encoding, value type is int32_t (0 or 1): 1 is enabled, 0 otherwise.
+ *
+ * This is an optional key that applies only to video encoder, default is 0.\n
+ * If enabled, the video encoder will use B-frame, the decode order will be different from the display order.\n
+ * For unsupported platforms, Configuring this key will have no effect.\n
+ * Platform capability can be checked via {@link OH_AVCapability_IsFeatureSupported} with
+ * {@link OH_AVCapabilityFeature::VIDEO_ENCODER_B_FRAME}.\n
+ * It's only used in configuration phase.\n
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
+extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME;
+
+/**
+ * @brief Key for describing the maximum B-frame count of video encoder, value type is int32_t.
+ *
+ * Note: This key is only for querying the capability of the codec currently.
+ * Usage specifications:
+ * 1. Check feature support via {@link OH_AVCapability_IsFeatureSupported} with
+ * {@link OH_AVCapabilityFeature::VIDEO_ENCODER_B_FRAME}.\n
+ * 2. Obtain OH_AVFormat handle via {@link OH_AVCapability_GetFeatureProperties} with
+ * {@link OH_AVCapabilityFeature::VIDEO_ENCODER_B_FRAME}.\n
+ * 3. Get maximum B-frame count via {@link OH_AVFormat_GetIntValue} with this key.\n
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
+extern const char *OH_MD_KEY_VIDEO_ENCODER_MAX_B_FRAMES;
+/**
  * @brief Key to enable Bitrate Control Based on Presentation Time Stamp(PTS),
  * value type is int32_t (0 or 1):1 is enabled, 0 otherwise.
  *
@@ -830,6 +860,19 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL;
 extern const char *OH_MD_KEY_TRACK_REFERENCE_TYPE;
 extern const char *OH_MD_KEY_TRACK_DESCRIPTION;
 extern const char *OH_MD_KEY_REFERENCE_TRACK_IDS;
+/**
+ * @brief Key to enable synchronous mode, value type is (0 or 1): 1 is enabled, 0 otherwise.
+ *
+ * This is an optional key, default is 0.\n
+ * When enabled:
+ *       - Callbacks should NOT be set for codecs
+ *       - Buffer query APIs must be used instead
+ *       - Only used in configuration phase
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+extern const char *OH_MD_KEY_ENABLE_SYNC_MODE;
 
 /**
  * @brief Media type.

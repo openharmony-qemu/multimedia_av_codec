@@ -95,9 +95,19 @@ bool HwdecoderFuzzTest(const uint8_t *data, size_t size)
             g_vDecSample = nullptr;
             return true;
         }
-        g_vDecSample->ConfigureVideoDecoder();
+        ret = g_vDecSample->ConfigureVideoDecoder();
+        if (ret != 0) {
+            delete g_vDecSample;
+            g_vDecSample = nullptr;
+            return true;
+        }
         g_vDecSample->SetVideoDecoderCallback();
-        g_vDecSample->Start();
+        ret = g_vDecSample->Start();
+        if (ret != 0) {
+            delete g_vDecSample;
+            g_vDecSample = nullptr;
+            return true;
+        }
         g_vDecSample->InputFuncFUZZ(SPS, SPS_SIZE + START_CODE_SIZE);
         g_vDecSample->InputFuncFUZZ(PPS, PPS_SIZE + START_CODE_SIZE);
     }

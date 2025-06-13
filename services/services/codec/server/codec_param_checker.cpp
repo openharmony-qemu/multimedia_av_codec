@@ -101,6 +101,8 @@ int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, Codec
 int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t VideoSceneTypeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 
 // Checkers list define
 using ScenarioCheckerType =
@@ -120,6 +122,8 @@ const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     TransferCharacteristicsChecker,
     MatrixCoefficientsChecker,
     LTRFrameCountChecker,
+    BFrameParamChecker,
+    VideoSceneTypeChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST = {
@@ -721,6 +725,60 @@ int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenari
         scalingMode > static_cast<int32_t>(OHOS::ScalingMode::SCALING_MODE_SCALE_CROP)) {
         AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_SCALE_TYPE, scalingMode);
         return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)scenario;
+    int32_t mode;
+    int32_t cond = -1;
+    int32_t maxBFrameCount = -1;
+    auto bFrameCap =
+        capData.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_B_FRAME));
+    if (bFrameCap == capData.featuresMap.end()) {
+        AVCODEC_LOGW("Not support AVCapabilityFeature::VIDEO_ENCODER_B_FRAME");
+        format.RemoveKey(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE);
+        return AVCS_ERR_OK;
+    }
+    bool condExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, cond);
+    if (!condExist || cond <= 0) {
+        format.RemoveKey(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE);
+        AVCODEC_LOGE("Encoder B-frame key VIDEO_ENCODER_ENABLE_B_FRAME not exist or param illegal!");
+        return AVCS_ERR_OK;
+    }
+    PrintParam(condExist, Tag::VIDEO_ENCODER_ENABLE_B_FRAME, cond);
+    bool modeExist = format.GetIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
+    if (!modeExist) {
+        AVCODEC_LOGW("undefine VIDEO_ENCODE_B_FRAME_GOP_MODE, default to ADAPTIVE_B_MODE");
+        mode = static_cast<int32_t>(Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE);
+    }
+    PrintParam(modeExist, Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
+    format.PutIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
+    bool maxBFrameExist = format.GetIntValue(Tag::VIDEO_ENCODER_MAX_B_FRAME, maxBFrameCount);
+    if (maxBFrameExist) {
+        AVCODEC_LOGE("UnSupported config VIDEO_ENCODER_MAX_B_FRAME!");
+        format.RemoveKey(Tag::VIDEO_ENCODER_MAX_B_FRAME);
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t VideoSceneTypeChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)capData;
+    (void)scenario;
+    int32_t sceneType;
+    bool sceneTypeExist = format.GetIntValue(Tag::VIDEO_SCENE_TYPE, sceneType);
+    if (!sceneTypeExist) {
+        return AVCS_ERR_OK;
+    }
+    PrintParam(sceneTypeExist, Tag::VIDEO_SCENE_TYPE, sceneType);
+
+    if (sceneType < static_cast<int32_t>(VideoSceneType::VIDEO_SCENE_UNKNOWN) ||
+        sceneType > static_cast<int32_t>(VideoSceneType::VIDEO_SCENE_CAMERA_RECODER)) {
+        format.PutIntValue(Tag::VIDEO_SCENE_TYPE, static_cast<int32_t>(VideoSceneType::VIDEO_SCENE_UNKNOWN));
+        AVCODEC_LOGE("VideoSceneType Param invalid, %{public}s: %{public}d", Tag::VIDEO_SCENE_TYPE, sceneType);
     }
     return AVCS_ERR_OK;
 }

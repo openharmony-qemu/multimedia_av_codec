@@ -113,14 +113,28 @@ int32_t HCodec::NotifyMemoryRecycle()
 {
     SCOPED_TRACE();
     FUNC_TRACKER();
-    return DoSyncCall(MsgWhat::FREEZE, nullptr);
+    return DoSyncCall(MsgWhat::BUFFER_RECYCLE, nullptr);
 }
 
 int32_t HCodec::NotifyMemoryWriteBack()
 {
     SCOPED_TRACE();
     FUNC_TRACKER();
-    return DoSyncCall(MsgWhat::ACTIVE, nullptr);
+    return DoSyncCall(MsgWhat::BUFFER_WRITEBACK, nullptr);
+}
+
+int32_t HCodec::NotifySuspend()
+{
+    SCOPED_TRACE();
+    FUNC_TRACKER();
+    return DoSyncCall(MsgWhat::SUSPEND, nullptr);
+}
+
+int32_t HCodec::NotifyResume()
+{
+    SCOPED_TRACE();
+    FUNC_TRACKER();
+    return DoSyncCall(MsgWhat::RESUME, nullptr);
 }
 
 void HCodec::RecordBufferStatus(OMX_DIRTYPE portIndex, uint32_t bufferId, BufferOwner nextOwner)
@@ -197,8 +211,8 @@ int32_t HDecoder::FreezeBuffers()
     OMX_CONFIG_BOOLEANTYPE param {};
     InitOMXParam(param);
     param.bEnabled = OMX_TRUE;
-    if (!SetParameter(OMX_IndexParamSwitchGround, param)) {
-        HLOGE("failed to set decoder to background");
+    if (!SetParameter(OMX_IndexParamBufferRecycle, param)) {
+        HLOGE("failed to set decoder to background to freeze buffers");
         return AVCS_ERR_UNKNOWN;
     }
     if (SwapOutBufferByPortIndex(OMX_DirInput) != AVCS_ERR_OK) {
@@ -208,6 +222,19 @@ int32_t HDecoder::FreezeBuffers()
         return AVCS_ERR_UNKNOWN;
     }
     HLOGI("freeze buffers success");
+    return AVCS_ERR_OK;
+}
+
+int32_t HDecoder::DecreaseFreq()
+{
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = OMX_TRUE;
+    if (!SetParameter(OMX_IndexParamFreqUpdate, param)) {
+        HLOGE("failed to set decoder to background to decrease freq");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("Decrease Freq success");
     return AVCS_ERR_OK;
 }
 
@@ -222,11 +249,24 @@ int32_t HDecoder::ActiveBuffers()
     OMX_CONFIG_BOOLEANTYPE param {};
     InitOMXParam(param);
     param.bEnabled = OMX_FALSE;
-    if (!SetParameter(OMX_IndexParamSwitchGround, param)) {
-        HLOGE("failed to set OMX_IndexParamSwitchGround");
+    if (!SetParameter(OMX_IndexParamBufferRecycle, param)) {
+        HLOGE("failed to set OMX_IndexParamBufferRecycle");
         return AVCS_ERR_UNKNOWN;
     }
     HLOGI("buffers active success");
+    return AVCS_ERR_OK;
+}
+
+int32_t HDecoder::RecoverFreq()
+{
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = OMX_FALSE;
+    if (!SetParameter(OMX_IndexParamFreqUpdate, param)) {
+        HLOGE("failed to set OMX_IndexParamFreqUpdate");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("Recover Freq success");
     return AVCS_ERR_OK;
 }
 
@@ -273,14 +313,14 @@ void HDecoder::SubmitBuffersToNextOwner()
     }
 }
 
-void HCodec::RunningState::OnFreeze(const MsgInfo &info)
+void HCodec::RunningState::OnBufferRecycle(const MsgInfo &info)
 {
     if (codec_->disableDmaSwap_) {
         SLOGI("hcodec dma swap has been disabled!");
         ReplyErrorCode(info.id, AVCS_ERR_OK);
         return;
     }
-    SLOGI("begin to freeze this codec");
+    SLOGI("begin to buffer recycle");
     int32_t errCode = codec_->FreezeBuffers();
     if (errCode == AVCS_ERR_OK) {
         codec_->ChangeStateTo(codec_->frozenState_);
@@ -335,8 +375,16 @@ void HCodec::FrozenState::OnMsgReceived(const MsgInfo &info)
             codec_->RecordBufferStatus(OMX_DirOutput, omxBuffer.bufferId, OWNED_BY_OMX);
             return;
         }
-        case MsgWhat::ACTIVE: {
-            OnActive(info);
+        case MsgWhat::BUFFER_WRITEBACK: {
+            OnBufferWriteback(info);
+            return;
+        }
+        case MsgWhat::SUSPEND:{
+            OnSuspend(info);
+            break;
+        }
+        case MsgWhat::RESUME:{
+            OnResume(info);
             return;
         }
         case MsgWhat::GET_BUFFER_FROM_SURFACE: {
@@ -355,9 +403,9 @@ void HCodec::FrozenState::OnMsgReceived(const MsgInfo &info)
     }
 }
 
-void HCodec::FrozenState::OnActive(const MsgInfo &info)
+void HCodec::FrozenState::OnBufferWriteback(const MsgInfo &info)
 {
-    SLOGI("begin to active this codec");
+    SLOGI("begin to write back buffers");
     int32_t errCode = codec_->ActiveBuffers();
     if (errCode == AVCS_ERR_OK) {
         codec_->SubmitBuffersToNextOwner();

@@ -56,6 +56,8 @@ public:
     virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer);
     virtual int32_t NotifyMemoryRecycle();
     virtual int32_t NotifyMemoryWriteBack();
+    virtual int32_t NotifySuspend();
+    virtual int32_t NotifyResume();
     virtual int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta)
     {
         (void)mime;

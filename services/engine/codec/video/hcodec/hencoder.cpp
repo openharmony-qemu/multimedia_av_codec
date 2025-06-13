@@ -222,10 +222,6 @@ int32_t HEncoder::ConfigBEncodeMode(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, *reinterpret_cast<int *>(&gopMode))) {
         return AVCS_ERR_OK;
     }
-    if (gopMode == Media::Plugins::VIDEO_ENCODE_GOP_DEFAULT_P_MODE) {
-        HLOGI("encoder use default p mode");
-        return AVCS_ERR_OK;
-    }
 
     CodecEncGopMode param {};
     InitOMXParamExt(param);
@@ -653,6 +649,7 @@ int32_t HEncoder::SetSQRMode(const Format &format)
     }
     if (bitRate.has_value() && !maxBitrate.has_value()) {
         bitrateType.sTargetBitrate = bitRate.value();
+        bitrateType.bitrateEnabled = true;
         LOGI("set target bitrate %u bps", bitrateType.sTargetBitrate);
     }
     if (!SetParameter(OMX_IndexParamControlRateSQR, bitrateType)) {
@@ -662,10 +659,13 @@ int32_t HEncoder::SetSQRMode(const Format &format)
     HLOGI("set SQR mode succ");
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, bitrateType.sqrFactor);
-    outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
-        static_cast<int64_t>(bitrateType.sMaxBitrate));
-    outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE,
-        static_cast<int64_t>(bitrateType.sTargetBitrate));
+    if (bitrateType.bitrateEnabled) {
+        outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE,
+            static_cast<int64_t>(bitrateType.sTargetBitrate));
+    } else {
+        outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            static_cast<int64_t>(bitrateType.sMaxBitrate));
+    }
     return AVCS_ERR_OK;
 }
 
@@ -874,20 +874,53 @@ int32_t HEncoder::RequestIDRFrame()
     return AVCS_ERR_OK;
 }
 
+void HEncoder::SetSqrParam(const Format &format)
+{
+    StableControlRate bitrateType;
+    InitOMXParamExt(bitrateType);
+    bitrateType.portIndex = OMX_DirOutput;
+    if (!GetParameter(OMX_IndexParamControlRateSQR, bitrateType)) {
+        HLOGE("get OMX_IndexParamControlRateSQR failed");
+        return;
+    }
+    optional<uint32_t> sqrFactor = GetSQRFactorFromUser(format);
+    optional<uint32_t> maxBitrate = GetSQRMaxBitrateFromUser(format);
+    optional<uint32_t> bitRate = GetBitRateFromUser(format);
+    if (sqrFactor.has_value()) {
+        bitrateType.sqrFactor = sqrFactor.value();
+        LOGI("set dynamic sqr factor %u", bitrateType.sqrFactor);
+    }
+    if (maxBitrate.has_value() && !bitrateType.bitrateEnabled) {
+        bitrateType.sMaxBitrate = maxBitrate.value();
+        LOGI("set dynamic max bitrate %u bps", bitrateType.sMaxBitrate);
+    }
+    if (bitRate.has_value() && bitrateType.bitrateEnabled) {
+        bitrateType.sTargetBitrate = bitRate.value();
+        LOGI("set dynamic target bitrate %u bps", bitrateType.sTargetBitrate);
+    }
+    if (!SetParameter(OMX_IndexParamControlRateSQR, bitrateType, true)) {
+        HLOGW("failed to set OMX_IndexParamControlRateSQR");
+    }
+}
+
 int32_t HEncoder::OnSetParameters(const Format &format)
 {
-    optional<uint32_t> bitRate = GetBitRateFromUser(format);
-    if (bitRate.has_value()) {
-        OMX_VIDEO_CONFIG_BITRATETYPE bitrateCfgType;
-        InitOMXParam(bitrateCfgType);
-        bitrateCfgType.nPortIndex = OMX_DirOutput;
-        bitrateCfgType.nEncodeBitrate = bitRate.value();
-        if (!SetParameter(OMX_IndexConfigVideoBitrate, bitrateCfgType, true)) {
-            HLOGW("failed to config OMX_IndexConfigVideoBitrate");
+    optional<VideoEncodeBitrateMode> bitRateMode = GetBitRateModeFromUser(*outputFormat_);
+    if (bitRateMode.has_value() && bitRateMode.value() == SQR) {
+        SetSqrParam(format);
+    } else {
+        optional<uint32_t> bitRate = GetBitRateFromUser(format);
+        if (bitRate.has_value()) {
+            OMX_VIDEO_CONFIG_BITRATETYPE bitrateCfgType;
+            InitOMXParam(bitrateCfgType);
+            bitrateCfgType.nPortIndex = OMX_DirOutput;
+            bitrateCfgType.nEncodeBitrate = bitRate.value();
+            if (!SetParameter(OMX_IndexConfigVideoBitrate, bitrateCfgType, true)) {
+                HLOGW("failed to config OMX_IndexConfigVideoBitrate");
+            }
         }
     }
 
-    optional<VideoEncodeBitrateMode> bitRateMode = GetBitRateModeFromUser(*outputFormat_);
     optional<uint32_t> targetQp = GetCRFtagetQpFromUser(format);
     if (targetQp.has_value() && bitRateMode.has_value() && bitRateMode.value() == CRF) {
         ControlQualitytargetQp bitrateType;

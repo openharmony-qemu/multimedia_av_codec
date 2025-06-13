@@ -61,6 +61,33 @@ public:
     virtual int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) = 0;
     virtual int32_t SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback) = 0;
     virtual int32_t SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback) = 0;
+
+    virtual int32_t QueryInputBuffer(uint32_t &index, int64_t timeoutUs)
+    {
+        (void)index;
+        (void)timeoutUs;
+        return AVCODEC_ERROR_EXTEND_START;
+    }
+
+    virtual int32_t QueryOutputBuffer(uint32_t &index, int64_t timeoutUs)
+    {
+        (void)index;
+        (void)timeoutUs;
+        return AVCODEC_ERROR_EXTEND_START;
+    }
+
+    virtual std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index)
+    {
+        (void)index;
+        return nullptr;
+    }
+
+    virtual std::shared_ptr<AVBuffer> GetOutputBuffer(uint32_t index)
+    {
+        (void)index;
+        return nullptr;
+    }
+
     virtual int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta)
     {
         (void)mime;

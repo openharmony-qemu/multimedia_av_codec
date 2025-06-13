@@ -34,6 +34,8 @@ static const uint32_t UNUM_0 = 0;
 static const int32_t NUM_0 = 0;
 static const int32_t NUM_1 = 1;
 static const int32_t NUM_2 = 2;
+static const int32_t NEG_1 = -1;
+static const int32_t NEG_2 = -2;
 static const int32_t NUM_10 = 100;
 static const int32_t NUM_100 = 100;
 static const int64_t NUM_1000 = 1000;
@@ -1252,6 +1254,715 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_Stop_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name  : Test MediaDemuxerExtUnitTest SelectTrack API
+ * @tc.number: MediaDemuxerExt_SelectTrack_001
+ * @tc.desc  : Test demuxerPluginManager_->IsDash() && changeStreamFlag_ == true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectTrack_001, TestSize.Level1)
+{
+    mediaDemuxer_->useBufferQueue_ = true;
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    std::string audioMimeType = "audio/mp3";
+    int64_t startTime = NUM_1000;
+    std::shared_ptr<Meta> trackMeta1 = std::make_shared<Meta>();
+    std::shared_ptr<Meta> trackMeta2 = std::make_shared<Meta>();
+    trackMeta1->SetData(Tag::MIME_TYPE, audioMimeType);
+    trackMeta2->SetData(Tag::MEDIA_START_TIME, startTime);
+    mediaDemuxer_->mediaMetaData_.trackMetas.push_back(trackMeta1);
+    mediaDemuxer_->mediaMetaData_.trackMetas.push_back(trackMeta2);
+    EXPECT_EQ(mediaDemuxer_->mediaMetaData_.trackMetas.size(), 2);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillRepeatedly(Return(true));
+    auto ret = mediaDemuxer_->SelectTrack(NUM_0);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest SelectTrack API
+ * @tc.number: MediaDemuxerExt_SelectTrack_002
+ * @tc.desc  : Test demuxerPluginManager_->IsDash() && changeStreamFlag_ == false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectTrack_002, TestSize.Level1)
+{
+    mediaDemuxer_->useBufferQueue_ = true;
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    std::string audioMimeType = "audio/mp3";
+    int64_t startTime = NUM_1000;
+    std::shared_ptr<Meta> trackMeta = std::make_shared<Meta>();
+    trackMeta->SetData(Tag::MIME_TYPE, audioMimeType);
+    trackMeta->SetData(Tag::MEDIA_START_TIME, startTime);
+    mediaDemuxer_->mediaMetaData_.trackMetas.push_back(trackMeta);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), CanDoChangeStream()).WillRepeatedly(Return(false));
+    auto ret = mediaDemuxer_->SelectTrack(NUM_0);
+    EXPECT_EQ(ret, Status::ERROR_WRONG_STATE);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest UnselectTrack API
+ * @tc.number: MediaDemuxerExt_UnselectTrack_001
+ * @tc.desc  : Test IsNeedMapToInnerTrackID()
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_UnselectTrack_001, TestSize.Level1)
+{
+    mediaDemuxer_->isFlvLiveStream_ = true;
+    std::string audioMimeType = "audio/mp3";
+    int64_t startTime = NUM_1000;
+    std::shared_ptr<Meta> trackMeta = std::make_shared<Meta>();
+    trackMeta->SetData(Tag::MIME_TYPE, audioMimeType);
+    trackMeta->SetData(Tag::MEDIA_START_TIME, startTime);
+    mediaDemuxer_->mediaMetaData_.trackMetas.push_back(trackMeta);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_)).Times(NUM_1);
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).Times(NUM_1);
+    auto ret = mediaDemuxer_->UnselectTrack(NUM_0);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest OnInterrupted API
+ * @tc.number: MediaDemuxerExt_OnInterrupted_001
+ * @tc.desc  : Test demuxerPluginManager_ != nullptr && demuxerPluginManager_->IsDash()
+ *             Test source_ == nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_OnInterrupted_001, TestSize.Level1)
+{
+    bool isInterruptNeeded = true;
+    mediaDemuxer_->source_ = nullptr;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+    mediaDemuxer_->OnInterrupted(isInterruptNeeded);
+    EXPECT_EQ(mediaDemuxer_->isInterruptNeeded_, true);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest OnInterrupted API
+ * @tc.number: MediaDemuxerExt_OnInterrupted_002
+ * @tc.desc  : Test demuxerPluginManager_ == nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_OnInterrupted_002, TestSize.Level1)
+{
+    bool isInterruptNeeded = true;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), NotifyInitialBufferingEnd(_)).Times(NUM_0);
+    mediaDemuxer_->demuxerPluginManager_ = nullptr;
+    // Test OnBufferAvailable !GetEnableSampleQueueFlag()
+    mediaDemuxer_->enableSampleQueue_ = false;
+    mediaDemuxer_->OnBufferAvailable(NUM_0);
+    mediaDemuxer_->OnInterrupted(isInterruptNeeded);
+    EXPECT_EQ(mediaDemuxer_->isInterruptNeeded_, true);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest GetTargetVideoTrackId API
+ * @tc.number: MediaDemuxerExt_GetTargetVideoTrackId_003
+ * @tc.desc  : Test meta != nullptr && !meta->GetData(Tag::MEDIA_TYPE, mediaType)
+ *             Test mediaType != Plugins::MediaType::VIDEO
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetTargetVideoTrackId_003, TestSize.Level1)
+{
+    mediaDemuxer_->targetVideoTrackId_ = NUM_0;
+    std::vector<std::shared_ptr<Meta>> vector;
+    std::shared_ptr<Meta> trackMeta = std::make_shared<Meta>();
+    trackMeta->SetData(Tag::MEDIA_TYPE, Plugins::MediaType::AUDIO);
+    vector.push_back(trackMeta);
+    vector.push_back(std::make_shared<Meta>());
+    EXPECT_EQ(mediaDemuxer_->GetTargetVideoTrackId(vector), NUM_0);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest GetTargetVideoTrackId API
+ * @tc.number: MediaDemuxerExt_GetTargetVideoTrackId_004
+ * @tc.desc  : Test meta->GetData(Tag::MEDIA_TYPE, mediaType) && mediaType == Plugins::MediaType::VIDEO
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetTargetVideoTrackId_004, TestSize.Level1)
+{
+    mediaDemuxer_->targetVideoTrackId_ = NUM_0;
+    std::vector<std::shared_ptr<Meta>> vector;
+    auto videoMeta = std::make_shared<Meta>();
+    videoMeta->SetData(Tag::MEDIA_TYPE, Plugins::MediaType::VIDEO);
+    vector.push_back(videoMeta);
+    auto audioMeta = std::make_shared<Meta>();
+    audioMeta->SetData(Tag::MEDIA_TYPE, Plugins::MediaType::AUDIO);
+    vector.push_back(audioMeta);
+    uint32_t result = mediaDemuxer_->GetTargetVideoTrackId(vector);
+    EXPECT_EQ(result, NUM_0);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleDashSelectTrack API
+ * @tc.number: MediaDemuxerExt_HandleDashSelectTrack_001
+ * @tc.desc  : Test trackId != curTrackId &&
+ *             targetStreamID == demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_001, TestSize.Level1)
+{
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_1));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTrackTypeByTrackID(_)).WillRepeatedly(Return(TrackType::TRACK_AUDIO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTmpStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_1));
+    mediaDemuxer_->audioTrackId_ = NUM_0;
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    auto result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    EXPECT_EQ(result, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleDashSelectTrack API
+ * @tc.number: MediaDemuxerExt_HandleDashSelectTrack_002
+ * @tc.desc  : Test trackId == curTrackId &&
+ *             targetStreamID == demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_002, TestSize.Level1)
+{
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_1));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTrackTypeByTrackID(_)).WillRepeatedly(Return(TrackType::TRACK_AUDIO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTmpStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_1));
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    auto result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    EXPECT_EQ(result, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleDashSelectTrack API
+ * @tc.number: MediaDemuxerExt_HandleDashSelectTrack_003
+ * @tc.desc  : Test trackId == curTrackId &&
+ *             targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_003, TestSize.Level1)
+{
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_1));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTrackTypeByTrackID(_)).WillRepeatedly(Return(TrackType::TRACK_AUDIO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTmpStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_2));
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    auto result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    EXPECT_EQ(result, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleDashSelectTrack API
+ * @tc.number: MediaDemuxerExt_HandleDashSelectTrack_004
+ * @tc.desc  : Test trackId != curTrackId &&
+ *             targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleDashSelectTrack_004, TestSize.Level1)
+{
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_1));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTrackTypeByTrackID(_)).WillRepeatedly(Return(TrackType::TRACK_AUDIO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_),
+        GetTmpStreamIDByTrackID(_)).WillRepeatedly(Return(NUM_2));
+    mediaDemuxer_->audioTrackId_ = NUM_2;
+    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
+    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
+    auto result = mediaDemuxer_->HandleDashSelectTrack(NUM_1);
+    EXPECT_EQ(result, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleRebootPlugin_001
+ * @tc.desc  : Test isInterruptNeeded_.load() &&
+ *             seekReadyStreamInfo_.find(static_cast<int32_t>(streamType)) == seekReadyStreamInfo_.end()
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleRebootPlugin_001, TestSize.Level1)
+{
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    mediaDemuxer_->subtitleTrackId_ = NUM_0;
+    int32_t trackId = NUM_0;
+    bool isRebooted = false;
+    EXPECT_EQ(trackId, static_cast<int32_t>(mediaDemuxer_->subtitleTrackId_));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(1));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTrackTypeByTrackID(_))
+        .WillRepeatedly(Return(TrackType::TRACK_VIDEO));
+    mediaDemuxer_->isInterruptNeeded_.store(true);
+    
+    Status ret = mediaDemuxer_->HandleRebootPlugin(trackId, isRebooted);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleRebootPlugin_002
+ * @tc.desc  : Test !isInterruptNeeded_.load() &&
+ *             seekReadyStreamInfo_.find(static_cast<int32_t>(streamType)) == seekReadyStreamInfo_.end()
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleRebootPlugin_002, TestSize.Level1)
+{
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(1));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTrackTypeByTrackID(_))
+        .WillRepeatedly(Return(TrackType::TRACK_VIDEO));
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    mediaDemuxer_->subtitleTrackId_ = NUM_0;
+    int32_t trackId = NUM_0;
+    bool isRebooted = false;
+    EXPECT_EQ(trackId, static_cast<int32_t>(mediaDemuxer_->subtitleTrackId_));
+    mediaDemuxer_->isInterruptNeeded_.store(false);
+    StreamType streamType = TRACK_TO_STREAM_MAP[TrackType::TRACK_VIDEO];
+    std::thread notifyThread([this, streamType]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::unique_lock<std::mutex> lock(mediaDemuxer_->rebootPluginMutex_);
+        mediaDemuxer_->isInterruptNeeded_.store(true);
+        mediaDemuxer_->rebootPluginCondition_.notify_one();
+    });
+    Status ret = mediaDemuxer_->HandleRebootPlugin(trackId, isRebooted);
+    notifyThread.join();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleRebootPlugin_003
+ * @tc.desc  : Test !isInterruptNeeded_.load() &&
+ *             seekReadyStreamInfo_.find(static_cast<int32_t>(streamType)) != seekReadyStreamInfo_.end()
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleRebootPlugin_003, TestSize.Level1)
+{
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    mediaDemuxer_->subtitleTrackId_ = NUM_0;
+    int32_t trackId = NUM_0;
+    bool isRebooted = false;
+    EXPECT_EQ(trackId, static_cast<int32_t>(mediaDemuxer_->subtitleTrackId_));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(1));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTrackTypeByTrackID(_))
+        .WillRepeatedly(Return(TrackType::TRACK_VIDEO));
+    mediaDemuxer_->isInterruptNeeded_.store(false);
+    mediaDemuxer_->seekReadyStreamInfo_ = {{StreamType::VIDEO, {NUM_1, NUM_2}}};
+    
+    Status ret = mediaDemuxer_->HandleRebootPlugin(trackId, isRebooted);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleRebootPlugin_004
+ * @tc.desc  : Test isInterruptNeeded_.load() &&
+ *             seekReadyStreamInfo_.find(static_cast<int32_t>(streamType)) != seekReadyStreamInfo_.end()
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleRebootPlugin_004, TestSize.Level1)
+{
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    mediaDemuxer_->subtitleTrackId_ = NUM_0;
+    int32_t trackId = NUM_0;
+    bool isRebooted = false;
+    EXPECT_EQ(trackId, static_cast<int32_t>(mediaDemuxer_->subtitleTrackId_));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(1));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTrackTypeByTrackID(_))
+        .WillRepeatedly(Return(TrackType::TRACK_VIDEO));
+    mediaDemuxer_->isInterruptNeeded_.store(true);
+    mediaDemuxer_->seekReadyStreamInfo_ = {{StreamType::VIDEO, {NUM_1, NUM_2}}};
+    
+    Status ret = mediaDemuxer_->HandleRebootPlugin(trackId, isRebooted);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleRebootPlugin_005
+ * @tc.desc  : Test static_cast<uint32_t>(trackId) == TRACK_ID_DUMMY
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleRebootPlugin_005, TestSize.Level1)
+{
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    mediaDemuxer_->subtitleTrackId_ = MediaDemuxer::TRACK_ID_INVALID;
+    int32_t trackId = MediaDemuxer::TRACK_ID_INVALID;
+    bool isRebooted = false;
+    EXPECT_EQ(trackId, static_cast<int32_t>(mediaDemuxer_->subtitleTrackId_));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .Times(NUM_0);
+    
+    Status ret = mediaDemuxer_->HandleRebootPlugin(trackId, isRebooted);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleRebootPlugin_006
+ * @tc.desc  : Test seekReadyInfo.second == SEEK_TO_EOS &&
+ *             seekReadyInfo.first >= 0 && seekReadyInfo.first != streamID
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleRebootPlugin_006, TestSize.Level1)
+{
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    mediaDemuxer_->subtitleTrackId_ = NUM_0;
+    int32_t trackId = NUM_0;
+    bool isRebooted = false;
+    EXPECT_EQ(trackId, static_cast<int32_t>(mediaDemuxer_->subtitleTrackId_));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NUM_1));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTrackTypeByTrackID(_))
+        .WillRepeatedly(Return(TrackType::TRACK_VIDEO));
+    mediaDemuxer_->isInterruptNeeded_.store(true);
+    mediaDemuxer_->seekReadyStreamInfo_ = {
+        {NUM_0, {NUM_0, NUM_1}},
+        {NUM_1, {NUM_0, NUM_1}}
+    };
+    EXPECT_EQ(mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)].second, NUM_1);
+    Status ret = mediaDemuxer_->HandleRebootPlugin(trackId, isRebooted);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleRebootPlugin_007
+ * @tc.desc  : Test seekReadyInfo.second == SEEK_TO_EOS &&
+ *             seekReadyInfo.first < 0 && seekReadyInfo.first != streamID
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleRebootPlugin_007, TestSize.Level1)
+{
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    mediaDemuxer_->subtitleTrackId_ = NUM_0;
+    int32_t trackId = NUM_0;
+    bool isRebooted = false;
+    EXPECT_EQ(trackId, static_cast<int32_t>(mediaDemuxer_->subtitleTrackId_));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NUM_1));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTrackTypeByTrackID(_))
+        .WillRepeatedly(Return(TrackType::TRACK_VIDEO));
+    mediaDemuxer_->isInterruptNeeded_.store(true);
+    mediaDemuxer_->seekReadyStreamInfo_ = {
+        {NUM_0, {NUM_0, NUM_1}},
+        {NUM_1, {NEG_1, NUM_1}}
+    };
+    EXPECT_EQ(mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)].second, NUM_1);
+    Status ret = mediaDemuxer_->HandleRebootPlugin(trackId, isRebooted);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleRebootPlugin_008
+ * @tc.desc  : Test seekReadyInfo.second == SEEK_TO_EOS &&
+ *             seekReadyInfo.first < 0 && seekReadyInfo.first == streamID
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleRebootPlugin_008, TestSize.Level1)
+{
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    mediaDemuxer_->subtitleTrackId_ = NUM_0;
+    int32_t trackId = NUM_0;
+    bool isRebooted = false;
+    EXPECT_EQ(trackId, static_cast<int32_t>(mediaDemuxer_->subtitleTrackId_));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NEG_2));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTrackTypeByTrackID(_))
+        .WillRepeatedly(Return(TrackType::TRACK_VIDEO));
+    mediaDemuxer_->isInterruptNeeded_.store(true);
+    mediaDemuxer_->seekReadyStreamInfo_ = {
+        {NUM_0, {NUM_0, NUM_1}},
+        {NUM_1, {NEG_2, NUM_1}}
+    };
+    EXPECT_EQ(mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)].second, NUM_1);
+    Status ret = mediaDemuxer_->HandleRebootPlugin(trackId, isRebooted);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleRebootPlugin_009
+ * @tc.desc  : Test seekReadyInfo.second == SEEK_TO_EOS &&
+ *             seekReadyInfo.first >= 0 && seekReadyInfo.first == streamID
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleRebootPlugin_009, TestSize.Level1)
+{
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    mediaDemuxer_->subtitleTrackId_ = 0;
+    int32_t trackId = 0;
+    bool isRebooted = false;
+    EXPECT_EQ(trackId, static_cast<int32_t>(mediaDemuxer_->subtitleTrackId_));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(2));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTrackTypeByTrackID(_))
+        .WillRepeatedly(Return(TrackType::TRACK_VIDEO));
+    mediaDemuxer_->isInterruptNeeded_.store(true);
+    mediaDemuxer_->seekReadyStreamInfo_ = {
+        {NUM_0, {NUM_0, NUM_1}},
+        {NUM_1, {NUM_2, NUM_1}}
+    };
+    EXPECT_EQ(mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)].second, NUM_1);
+    Status ret = mediaDemuxer_->HandleRebootPlugin(trackId, isRebooted);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleRebootPlugin_010
+ * @tc.desc  : Test seekReadyInfo.second != SEEK_TO_EOS &&
+ *             seekReadyInfo.first < 0 && seekReadyInfo.first != streamID
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleRebootPlugin_010, TestSize.Level1)
+{
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    mediaDemuxer_->subtitleTrackId_ = 0;
+    int32_t trackId = 0;
+    bool isRebooted = false;
+    EXPECT_EQ(trackId, static_cast<int32_t>(mediaDemuxer_->subtitleTrackId_));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(1));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTrackTypeByTrackID(_))
+        .WillRepeatedly(Return(TrackType::TRACK_VIDEO));
+    mediaDemuxer_->isInterruptNeeded_.store(true);
+    mediaDemuxer_->seekReadyStreamInfo_ = {
+        {NUM_0, {NUM_0, NUM_1}},
+        {NUM_1, {NEG_1, NUM_0}}
+    };
+    EXPECT_EQ(mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)].second, NUM_0);
+    Status ret = mediaDemuxer_->HandleRebootPlugin(trackId, isRebooted);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleRebootPlugin_011
+ * @tc.desc  : Test seekReadyInfo.second != SEEK_TO_EOS &&
+ *             seekReadyInfo.first >= 0 && seekReadyInfo.first != streamID
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleRebootPlugin_011, TestSize.Level1)
+{
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    mediaDemuxer_->subtitleTrackId_ = NUM_0;
+    int32_t trackId = NUM_0;
+    bool isRebooted = false;
+    EXPECT_EQ(trackId, static_cast<int32_t>(mediaDemuxer_->subtitleTrackId_));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NUM_1));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTrackTypeByTrackID(_))
+        .WillRepeatedly(Return(TrackType::TRACK_VIDEO));
+    mediaDemuxer_->isInterruptNeeded_.store(true);
+    mediaDemuxer_->seekReadyStreamInfo_ = {
+        {NUM_0, {NUM_0, NUM_1}},
+        {NUM_1, {NUM_2, NUM_0}}
+    };
+    EXPECT_EQ(mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)].second, NUM_0);
+    Status ret = mediaDemuxer_->HandleRebootPlugin(trackId, isRebooted);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleRebootPlugin_012
+ * @tc.desc  : Test seekReadyInfo.second != SEEK_TO_EOS &&
+ *             seekReadyInfo.first >= 0 && seekReadyInfo.first == streamID
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleRebootPlugin_012, TestSize.Level1)
+{
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    mediaDemuxer_->subtitleTrackId_ = NUM_0;
+    int32_t trackId = NUM_0;
+    bool isRebooted = false;
+    EXPECT_EQ(trackId, static_cast<int32_t>(mediaDemuxer_->subtitleTrackId_));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NUM_2));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTrackTypeByTrackID(_))
+        .WillRepeatedly(Return(TrackType::TRACK_VIDEO));
+    mediaDemuxer_->isInterruptNeeded_.store(true);
+    mediaDemuxer_->seekReadyStreamInfo_ = {
+        {NUM_0, {NUM_0, NUM_1}},
+        {NUM_1, {NUM_2, NUM_0}}
+    };
+    EXPECT_EQ(mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)].second, NUM_0);
+    Status ret = mediaDemuxer_->HandleRebootPlugin(trackId, isRebooted);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleRebootPlugin API
+ * @tc.number: MediaDemuxerExt_HandleRebootPlugin_013
+ * @tc.desc  : Test seekReadyInfo.second != SEEK_TO_EOS &&
+ *             seekReadyInfo.first < 0 && seekReadyInfo.first == streamID
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleRebootPlugin_013, TestSize.Level1)
+{
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    mediaDemuxer_->subtitleTrackId_ = NUM_0;
+    int32_t trackId = NUM_0;
+    bool isRebooted = false;
+    EXPECT_EQ(trackId, static_cast<int32_t>(mediaDemuxer_->subtitleTrackId_));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NEG_2));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTrackTypeByTrackID(_))
+        .WillRepeatedly(Return(TrackType::TRACK_VIDEO));
+    mediaDemuxer_->isInterruptNeeded_.store(true);
+    mediaDemuxer_->seekReadyStreamInfo_ = {
+        {NUM_0, {NUM_0, NUM_1}},
+        {NUM_1, {NEG_2, NUM_0}}
+    };
+    EXPECT_EQ(mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)].second, NUM_0);
+    Status ret = mediaDemuxer_->HandleRebootPlugin(trackId, isRebooted);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest IsIgonreBuffering API
+ * @tc.number: MediaDemuxerExt_IsIgonreBuffering_001
+ * @tc.desc  : Test IsRightMediaTrack(videoTrackId_, DemuxerTrackType::VIDEO)
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsIgonreBuffering_001, TestSize.Level1)
+{
+    bool ret = mediaDemuxer_->IsIgonreBuffering();
+    EXPECT_EQ(ret, false);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest UpdateSampleQueueCache API
+ * @tc.number: MediaDemuxerExt_UpdateSampleQueueCache_002
+ * @tc.desc  : Test lastClockTimeMs_ != 0 && currentClockTimeMs - lastClockTimeMs_ > UPDATE_SOURCE_CACHE_MS
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_UpdateSampleQueueCache_002, TestSize.Level1)
+{
+    mediaDemuxer_->isFlvLiveStream_ = true;
+    mediaDemuxer_->lastClockTimeMs_ = NUM_1;
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    EXPECT_CALL(*(mediaDemuxer_->source_), SetExtraCache(_)).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->source_), GetCachedDuration()).WillRepeatedly(Return(NUM_1000));
+    mediaDemuxer_->UpdateSampleQueueCache();
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest UpdateSampleQueueCache API
+ * @tc.number: MediaDemuxerExt_UpdateSampleQueueCache_003
+ * @tc.desc  : Test lastClockTimeMs_ == 0 && currentClockTimeMs - lastClockTimeMs_ > UPDATE_SOURCE_CACHE_MS
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_UpdateSampleQueueCache_003, TestSize.Level1)
+{
+    mediaDemuxer_->isFlvLiveStream_ = true;
+    mediaDemuxer_->lastClockTimeMs_ = NUM_0;
+    mediaDemuxer_->source_ = nullptr;
+    mediaDemuxer_->UpdateSampleQueueCache();
+    EXPECT_EQ(mediaDemuxer_->lastClockTimeMs_, SteadyClock::GetCurrentTimeMs());
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest NotifySampleQueueBufferConsume API
+ * @tc.number: MediaDemuxerExt_NotifySampleQueueBufferConsume_001
+ * @tc.desc  : Test isStopped_ && isThreadExit_
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_NotifySampleQueueBufferConsume_001, TestSize.Level1)
+{
+    uint32_t queueId = NUM_0;
+    mediaDemuxer_->isStopped_ = true;
+    mediaDemuxer_->isThreadExit_ = true;
+    auto result = mediaDemuxer_->NotifySampleQueueBufferConsume(queueId);
+    EXPECT_EQ(result, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest NotifySampleQueueBufferConsume API
+ * @tc.number: MediaDemuxerExt_NotifySampleQueueBufferConsume_002
+ * @tc.desc  : Test !isStopped_ && isThreadExit_
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_NotifySampleQueueBufferConsume_002, TestSize.Level1)
+{
+    uint32_t queueId = NUM_0;
+    mediaDemuxer_->isStopped_ = false;
+    mediaDemuxer_->isThreadExit_ = true;
+    auto result = mediaDemuxer_->NotifySampleQueueBufferConsume(queueId);
+    EXPECT_EQ(result, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest NotifySampleQueueBufferConsume API
+ * @tc.number: MediaDemuxerExt_NotifySampleQueueBufferConsume_003
+ * @tc.desc  : Test isStopped_ && !isThreadExit_
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_NotifySampleQueueBufferConsume_003, TestSize.Level1)
+{
+    uint32_t queueId = NUM_0;
+    mediaDemuxer_->isStopped_ = true;
+    mediaDemuxer_->isThreadExit_ = false;
+    auto result = mediaDemuxer_->NotifySampleQueueBufferConsume(queueId);
+    EXPECT_EQ(result, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest NotifySampleQueueBufferConsume API
+ * @tc.number: MediaDemuxerExt_NotifySampleQueueBufferConsume_004
+ * @tc.desc  : Test track == trackMap_.end()
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_NotifySampleQueueBufferConsume_004, TestSize.Level1)
+{
+    uint32_t queueId = NUM_0;
+    mediaDemuxer_->isStopped_ = false;
+    mediaDemuxer_->isThreadExit_ = false;
+    auto result = mediaDemuxer_->NotifySampleQueueBufferConsume(queueId);
+    EXPECT_EQ(result, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest NotifySampleQueueBufferConsume API
+ * @tc.number: MediaDemuxerExt_NotifySampleQueueBufferConsume_005
+ * @tc.desc  : Test track->second == nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_NotifySampleQueueBufferConsume_005, TestSize.Level1)
+{
+    uint32_t queueId = NUM_0;
+    mediaDemuxer_->isStopped_ = false;
+    mediaDemuxer_->isThreadExit_ = false;
+    mediaDemuxer_->trackMap_[queueId] = nullptr;
+    auto result = mediaDemuxer_->NotifySampleQueueBufferConsume(queueId);
+    EXPECT_EQ(result, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest NotifySampleQueueBufferConsume API
+ * @tc.number: MediaDemuxerExt_NotifySampleQueueBufferConsume_006
+ * @tc.desc  : Test track->second == nullptr
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_NotifySampleQueueBufferConsume_006, TestSize.Level1)
+{
+    uint32_t queueId = NUM_0;
+    uint32_t trackId = NUM_0;
+    mediaDemuxer_->isStopped_ = false;
+    mediaDemuxer_->isThreadExit_ = false;
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    std::string taskName = "Demux";
+    std::unique_ptr<Task> notifyTask =
+        std::make_unique<MockTask>(taskName + "N", mediaDemuxer_->playerId_);
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    sptr<IProducerListener> listener =
+        OHOS::sptr<MediaDemuxer::AVBufferQueueProducerListener>::MakeSptr(trackId, demuxer, notifyTask);
+    auto trackWrapper = std::make_shared<MediaDemuxer::TrackWrapper>(trackId, listener, demuxer);
+    mediaDemuxer_->trackMap_[queueId] = trackWrapper;
+    mediaDemuxer_->sampleConsumerTaskMap_.clear();
+    auto result = mediaDemuxer_->NotifySampleQueueBufferConsume(queueId);
+    EXPECT_EQ(result, Status::OK);
+}
+
+/**
+ * @tc.name  : Test MediaDemuxerExtUnitTest HandleSelectBitrateForFlvLive API
+ * @tc.number: MediaDemuxerExt_HandleSelectBitrateForFlvLive_006
+ * @tc.desc  : Test isManualBitRateSetting_.load()
+ *             Test GetEnableSampleQueueFlag()
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSelectBitrateForFlvLive_006, TestSize.Level1)
+{
+    mediaDemuxer_->source_ = std::make_shared<Source>();
+    mediaDemuxer_->demuxerPluginManager_ = std::make_shared<DemuxerPluginManager>();
+    mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    int64_t startPts = 0;
+    uint32_t bitrate = 0;
+    mediaDemuxer_->isManualBitRateSetting_ = true;
+    mediaDemuxer_->enableSampleQueue_ = true;
+    EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).WillRepeatedly(Return(Status::OK));
+    auto result = mediaDemuxer_->HandleSelectBitrateForFlvLive(startPts, bitrate);
+    EXPECT_EQ(result, Status::OK);
+}
+
+/*
  * @tc.name  : MediaDemuxerExt_GetReadLoopRetryUs_001
  * @tc.number: MediaDemuxerExt_GetReadLoopRetryUs_001
  * @tc.desc  : Test when GetEnableSampleQueueFlag returns false, GetReadLoopRetryUs returns 0

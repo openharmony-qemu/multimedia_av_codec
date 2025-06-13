@@ -90,6 +90,7 @@ private:
     sptr<Surface> OnCreateInputSurface() override;
     int32_t OnSetInputSurface(sptr<Surface> &inputSurface) override;
     int32_t RequestIDRFrame() override;
+    void SetSqrParam(const Format &format);
     void CheckIfEnableCb(const Format &format);
     int32_t SetLTRParam(const Format &format);
     int32_t EnableEncoderParamsFeedback(const Format &format);

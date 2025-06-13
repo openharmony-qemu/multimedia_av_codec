@@ -54,11 +54,16 @@ void AudioSinkFilter::AVBufferAvailableListener::OnBufferAvailable()
 AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)
     : Filter(name, FilterType::FILTERTYPE_ASINK, IS_FILTER_ASYNC)
 {
-    bool isRenderCallbackMode = system::GetParameter("debug.media_service.audio.audiosink_callback", "1") == "1";
-    MEDIA_LOG_I("AudioSinkFilter ctor called, isRenderCallbackMode:" PUBLIC_LOG_D32, isRenderCallbackMode);
+    bool isRenderCallbackMode =
+        OHOS::system::GetParameter("debug.media_service.audio.audiosink_callback", "1") == "1";
+    bool isProcessInputMerged =
+        OHOS::system::GetParameter("debug.media_service.audio.audiosink_processinput_merged", "1") == "1";
+    MEDIA_LOG_I("AudioSinkFilter ctor called, isRenderCallbackMode:" PUBLIC_LOG_D32
+        ", isProcessInputMerged:" PUBLIC_LOG_D32, isRenderCallbackMode, isProcessInputMerged);
     isRenderCallbackMode_ = isRenderCallbackMode;
+    isProcessInputMerged_ = isProcessInputMerged;
     filterType_ = filterType;
-    audioSink_ = std::make_shared<AudioSink>(isRenderCallbackMode);
+    audioSink_ = std::make_shared<AudioSink>(isRenderCallbackMode, isProcessInputMerged);
 }
 
 AudioSinkFilter::~AudioSinkFilter()
@@ -70,7 +75,11 @@ AudioSinkFilter::~AudioSinkFilter()
 void AudioSinkFilter::OnBufferAvailable()
 {
     if (isRenderCallbackMode_) {
-        ProcessInputBuffer();
+        if (isProcessInputMerged_) {
+            DoProcessInputBuffer(0, 0);
+        } else {
+            ProcessInputBuffer();
+        }
     } else if (NeedImmediateRender()) {
         DoProcessInputBuffer(0, 0);
     } else {
@@ -105,11 +114,6 @@ Status AudioSinkFilter::DoInitAfterLink()
     audioSink_->SetEventReceiver(eventReceiver_);
     audioSink_->SetThreadGroupId(groupId_);
     return ret;
-}
-
-bool AudioSinkFilter::NeedImmediateRender()
-{
-    return needImmediateRender_;
 }
 
 Status AudioSinkFilter::DoPrepare()

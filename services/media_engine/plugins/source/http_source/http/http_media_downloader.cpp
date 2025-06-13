@@ -623,6 +623,20 @@ Status HttpMediaDownloader::HandleCacheBuffer(unsigned char* buff, ReadDataInfo&
     return res;
 }
 
+void HttpMediaDownloader::WaitCacheBufferInit()
+{
+    if (cacheMediaBuffer_ == nullptr || !isCacheBufferInited_) {
+        AutoLock lock(sleepMutex_);
+        if (cacheMediaBuffer_ == nullptr || !isCacheBufferInited_) {
+            MEDIA_LOG_I("HTTP wait for CacheBufferInit begin " PUBLIC_LOG_D32, isCacheBufferInited_);
+            sleepCond_.WaitFor(lock, MAX_BUFFERING_TIME_OUT, [this]() {
+                return isInterruptNeeded_.load() || isCacheBufferInited_;
+            });
+            MEDIA_LOG_I("HTTP wait for CacheBufferInit end " PUBLIC_LOG_D32, isCacheBufferInited_);
+        }
+    }
+}
+
 Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     if (isRingBuffer_) {
@@ -631,16 +645,7 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
         return HandleRingBuffer(buff, readDataInfo);
     } else {
-        if (cacheMediaBuffer_ == nullptr || !isCacheBufferInited_) {
-            AutoLock lock(sleepMutex_);
-            if (cacheMediaBuffer_ == nullptr || !isCacheBufferInited_) {
-                MEDIA_LOG_I("HTTP wait for CacheBufferInit begin " PUBLIC_LOG_D32, isCacheBufferInited_);
-                sleepCond_.WaitFor(lock, MAX_BUFFERING_TIME_OUT, [this]() {
-                    return isInterruptNeeded_.load() || isCacheBufferInited_;
-                });
-                MEDIA_LOG_I("HTTP wait for CacheBufferInit end " PUBLIC_LOG_D32, isCacheBufferInited_); 
-            }
-        }
+        WaitCacheBufferInit();
         FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
         FALSE_RETURN_V_MSG(isCacheBufferInited_, Status::END_OF_STREAM, "CacheBufferInit fail");
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
@@ -1379,9 +1384,9 @@ Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
     if (bitRate <= 0) {
         videoBitrate_ = DEFAULT_BIT_RATE;
     } else {
-        videoBitrate_ = std::max(currentBitRate_, bitRate);
+        videoBitrate_ = std::max(videoBitrate_, static_cast<uint32_t>(bitRate));
     }
-    currentBitRate_ =  static_cast<int32_t>(videoBitrate_);
+    currentBitRate_ = static_cast<int32_t>(videoBitrate_);
     return Status::OK;
 }
 

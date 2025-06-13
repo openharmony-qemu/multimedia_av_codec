@@ -164,6 +164,32 @@ public:
         return status_;
     }
 
+    virtual int32_t QueryInputBuffer(uint32_t &index, int64_t timeoutUs)
+    {
+        (void)index;
+        (void)timeoutUs;
+        return status_;
+    }
+
+    virtual int32_t QueryOutputBuffer(uint32_t &index, int64_t timeoutUs)
+    {
+        (void)index;
+        (void)timeoutUs;
+        return status_;
+    }
+
+    virtual std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index)
+    {
+        (void)index;
+        return nullptr;
+    }
+
+    virtual std::shared_ptr<AVBuffer> GetOutputBuffer(uint32_t index)
+    {
+        (void)index;
+        return nullptr;
+    }
+
     virtual int32_t SetParameter(const Format &format)
     {
         return status_;

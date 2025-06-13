@@ -69,7 +69,6 @@ constexpr int32_t HALF_DIVIDE = 2;
 constexpr uint64_t READ_BACK_SAVE_SIZE = 1 * 1024 * 1024;
 constexpr int32_t SAVE_DATA_LOG_FREQUENCY = 50;
 constexpr uint32_t KILO = 1024;
-constexpr int32_t ONE_HUNDRED_MILLIONSECOND = 100;
 constexpr uint64_t RESUME_FREE_SIZE_THRESHOLD = 2 * 1024 * 1024;
 constexpr size_t STORP_WRITE_BUFFER_REDUNDANCY = 1 * 1024 * 1024;
 constexpr int MAX_RETRY = 10;
@@ -1900,8 +1899,7 @@ bool HlsMediaDownloader::CheckBufferingOneSeconds()
     int32_t sleepTime = 0;
     // return error again 1 time 1s, avoid ffmpeg error
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
-    while (sleepTime < (isFirstFrameArrived_ ? ONE_SECONDS : ONE_HUNDRED_MILLIONSECOND) &&
-           !isInterruptNeeded_.load()) {
+    while (sleepTime < ONE_SECONDS && !isInterruptNeeded_.load()) {
         if (CheckLoopTimeout(loopStartTime)) {
             break;
         }

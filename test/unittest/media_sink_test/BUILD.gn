@@ -55,7 +55,6 @@ ohos_unittest("av_audio_sink_unit_test") {
   if (av_codec_support_test) {
     sources = [
       "./audio_server_sink_plugin_test.cpp",
-      "./audio_server_sink_plugin_unit_test.cpp",
       "./audio_sink_test.cpp",
       "./mock/src/media_sync_center_mock.cpp",
       "./subtitle_sink_test.cpp",

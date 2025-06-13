@@ -39,7 +39,6 @@ ohos_source_set("sa_manager") {
   deps = [ "../../dfx:av_codec_service_dfx" ]
 
   sources = [
-    "../common/event_manager/event_handler/background_event_handler/background_event_handler.cpp",
     "ipc/avcodec_listener_proxy.cpp",
     "ipc/avcodec_parcel.cpp",
     "ipc/avcodec_service_stub.cpp",

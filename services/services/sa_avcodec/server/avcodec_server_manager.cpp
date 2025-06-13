@@ -309,6 +309,17 @@ std::optional<InstanceInfo> AVCodecServerManager::GetInstanceInfoByInstanceId(in
     return std::nullopt;
 }
 
+std::optional<CodecInstance> AVCodecServerManager::GetCodecInstanceByInstanceId(int32_t instanceId)
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
+        if (iter->second.second.instanceId == instanceId) {
+            return iter->second;
+        }
+    }
+    return std::nullopt;
+}
+
 void AVCodecServerManager::SetInstanceInfoByInstanceId(int32_t instanceId, const InstanceInfo &info)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);

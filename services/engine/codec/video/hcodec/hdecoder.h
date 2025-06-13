@@ -133,6 +133,8 @@ private:
     // freeze
     int32_t FreezeBuffers() override;
     int32_t ActiveBuffers() override;
+    int32_t DecreaseFreq() override;
+    int32_t RecoverFreq() override;
 
 private:
     static constexpr uint64_t SURFACE_MODE_PRODUCER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;

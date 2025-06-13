@@ -74,11 +74,6 @@ void DemuxerProcNdkTest::SetUp()
 }
 void DemuxerProcNdkTest::TearDown()
 {
-    if (g_fd > 0) {
-        close(g_fd);
-        g_fd = -1;
-    }
-
     if (trackFormat != nullptr) {
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
@@ -108,6 +103,10 @@ void DemuxerProcNdkTest::TearDown()
     if (format != nullptr) {
         OH_AVFormat_Destroy(format);
         format = nullptr;
+    }
+    if (g_fd > 0) {
+        close(g_fd);
+        g_fd = -1;
     }
 }
 } // namespace Media

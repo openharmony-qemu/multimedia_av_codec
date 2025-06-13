@@ -213,6 +213,62 @@ HWTEST_F(HEncoderBufferUnitTest, encode_buffer_264_codecbase_setparam, TestSize.
     ASSERT_TRUE(ret);
 }
 
+HWTEST_F(HEncoderBufferUnitTest, encode_buffer_sqr_maxbitrate_setparam, TestSize.Level1)
+{
+    OHOS::system::SetParameter("hcodec.dump", "0100");
+    CommandOpt opt = {
+        .apiType = ApiType::TEST_CODEC_BASE,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H264,
+        .pixFmt = VideoPixelFormat::NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = true,
+        .rateMode = SQR,
+        .maxBitrate = 17000000,
+        .setParameterParamsMap = {{2, SetParameterParams{
+            .requestIdr = true,
+            .qpRange = QPRange{13, 42},
+            .bitRate = 15000000, // target bitrate : 15M
+            .frameRate = 60, // 60: target framerate
+            .sqrParam = SQRParam{16000000, 22000000, 8},
+        }}},
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+
+HWTEST_F(HEncoderBufferUnitTest, encode_buffer_sqr_bitrate_setparam, TestSize.Level1)
+{
+    OHOS::system::SetParameter("hcodec.dump", "0100");
+    CommandOpt opt = {
+        .apiType = ApiType::TEST_CODEC_BASE,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H264,
+        .pixFmt = VideoPixelFormat::NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = true,
+        .rateMode = SQR,
+        .bitRate = 12000000,
+        .setParameterParamsMap = {{2, SetParameterParams{
+            .requestIdr = true,
+            .qpRange = QPRange{13, 42},
+            .bitRate = 15000000, // target bitrate : 15M
+            .frameRate = 60, // 60: target framerate
+            .sqrParam = SQRParam{17000000, 23000000, 9},
+        }}},
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+
 HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_capi_new, TestSize.Level1)
 {
     OHOS::system::SetParameter("hcodec.dump", "0011");

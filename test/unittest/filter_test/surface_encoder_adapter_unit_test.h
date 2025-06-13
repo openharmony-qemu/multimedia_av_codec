@@ -126,6 +126,34 @@ public:
     {
         return 0;
     }
+    int32_t QueryInputParameterWithAttr(uint32_t &index, int64_t timeoutUs)
+    {
+        return 0;
+    }
+    int32_t QueryInputBuffer(uint32_t &index, int64_t timeoutUs)
+    {
+        return 0;
+    }
+    int32_t QueryOutputBuffer(uint32_t &index, int64_t timeoutUs)
+    {
+        return 0;
+    }
+    std::shared_ptr<Format> GetInputParameter(uint32_t index)
+    {
+        return nullptr;
+    }
+    std::shared_ptr<Format> GetInputAttribute(uint32_t index)
+    {
+        return nullptr;
+    }
+    std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index)
+    {
+        return nullptr;
+    }
+    std::shared_ptr<AVBuffer> GetOutputBuffer(uint32_t index)
+    {
+        return nullptr;
+    }
     int32_t SetParameter(const Format &format)
     {
         return 0;
