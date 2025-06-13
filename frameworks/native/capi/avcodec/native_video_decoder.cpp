@@ -683,12 +683,16 @@ OH_AVErrCode OH_VideoDecoder_QueryInputBuffer(struct OH_AVCodec *codec, uint32_t
 
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
-
     int32_t ret = videoDecObj->videoDecoder_->QueryInputBuffer(*index, timeoutUs);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "Video decoder query input data failed!");
-
-    return AV_ERR_OK;
+    switch (ret) {
+        case AVCS_ERR_OK:
+            return AV_ERR_OK;
+        case AVCS_ERR_TRY_AGAIN:
+            return AV_ERR_TRY_AGAIN_LATER;
+        default:
+            AVCODEC_LOGE("Video decoder query input data failed!");
+    }
+    return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
 }
 
 OH_AVErrCode OH_VideoDecoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_t *index, int64_t timeoutUs)
@@ -701,10 +705,17 @@ OH_AVErrCode OH_VideoDecoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
     int32_t ret = videoDecObj->videoDecoder_->QueryOutputBuffer(*index, timeoutUs);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "Video decoder query output data failed!");
-
-    return AV_ERR_OK;
+    switch (ret) {
+        case AVCS_ERR_OK:
+            return AV_ERR_OK;
+        case AVCS_ERR_TRY_AGAIN:
+            return AV_ERR_TRY_AGAIN_LATER;
+        case AVCS_ERR_STREAM_CHANGED:
+            return AV_ERR_STREAM_CHANGED;
+        default:
+            AVCODEC_LOGE("Video decoder query output data failed!");
+    }
+    return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
 }
 
 OH_AVBuffer *OH_VideoDecoder_GetInputBuffer(struct OH_AVCodec *codec, uint32_t index)
