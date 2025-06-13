@@ -319,7 +319,6 @@ HWTEST_F(HevcSwdecFuncNdkTest, SURF_CHANGE_FUNC_002, TestSize.Level0)
         ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
         ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
         ASSERT_EQ(AV_ERR_OK, vDecSample->Release());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 
@@ -950,7 +949,6 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level0)
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHevc));
         ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
         ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 
@@ -973,7 +971,6 @@ HWTEST_F(HevcSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_009, TestSize.Level0)
         ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
         ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
         ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 

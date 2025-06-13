@@ -74,6 +74,7 @@ constexpr uint64_t RESUME_FREE_SIZE_THRESHOLD = 2 * 1024 * 1024;
 constexpr size_t STORP_WRITE_BUFFER_REDUNDANCY = 1 * 1024 * 1024;
 constexpr int MAX_RETRY = 10;
 constexpr uint32_t MAX_LOOP_TIMES = 100;
+constexpr uint64_t MAX_EXPECT_DURATION = 19;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -82,6 +83,7 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, const std::map<
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
     expectDuration_ = static_cast<uint64_t>(expectBufferDuration);
+    expectDuration_ = std::min(expectDuration_, MAX_EXPECT_DURATION);
     userDefinedBufferDuration_ = true;
     totalBufferSize_ = expectDuration_ * CURRENT_BIT_RATE;
     httpHeader_ = httpHeader;
@@ -155,6 +157,13 @@ size_t SpliceOffset(uint32_t tsIndex, uint32_t offset32)
     offset64 = (offset64 << 32); // 32
     offset64 |= offset32;
     return static_cast<size_t>(offset64);
+}
+
+std::string HlsMediaDownloader::GetContentType()
+{
+    FALSE_RETURN_V(downloader_ != nullptr, "");
+    MEDIA_LOG_I("In");
+    return downloader_->GetContentType();
 }
 
 void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
@@ -692,7 +701,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLISECONDS;
         if (readDuration > ZERO_THRESHOLD) {
             double readSpeed = readTotalBytes_ * BYTES_TO_BIT / readDuration;    // bps
-            currentBitrate_ = static_cast<int32_t>(readSpeed);     // bps
+            readBitrate_ = static_cast<int32_t>(readSpeed);     // bps
             MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
             " KByte", static_cast<int32_t>(readSpeed / KILO), static_cast<uint64_t>(GetBufferSize() / KILO));
             MediaAVCodec::AVCodecTrace trace("HlsMediaDownloader::Read, read speed: " +
@@ -1191,8 +1200,8 @@ void HlsMediaDownloader::DownloadReport()
                 std::to_string(downloadRate) + " bit/s, bufferSize: " + std::to_string(remainingBuffer) + " Byte");
             // Remaining playable time: s
             uint64_t bufferDuration = 0;
-            if (currentBitrate_ > 0) {
-                bufferDuration = bufferedDuration_ / currentBitrate_;
+            if (readBitrate_ > 0) {
+                bufferDuration = bufferedDuration_ / readBitrate_;
             } else {
                 bufferDuration = bufferedDuration_ / CURRENT_BIT_RATE;
             }
@@ -1726,8 +1735,8 @@ void HlsMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
         playbackInfo.downloadRate = static_cast<int64_t>(recordData_->downloadRate);
         size_t remainingBuffer = GetBufferSize();
         uint64_t bufferDuration = 0;
-        if (currentBitrate_ > 0) {
-            bufferDuration = static_cast<uint64_t>(remainingBuffer) / currentBitrate_;
+        if (readBitrate_ > 0) {
+            bufferDuration = static_cast<uint64_t>(remainingBuffer) / readBitrate_;
         } else {
             bufferDuration = static_cast<uint64_t>(remainingBuffer) / CURRENT_BIT_RATE;
         }
@@ -1773,7 +1782,7 @@ std::pair<int32_t, int32_t> HlsMediaDownloader::GetDownloadRateAndSpeed()
 Status HlsMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("HLS SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
-    if (bitRate <= 0) {
+    if (bitRate <= 0 && currentBitRate_ == 0) {
         currentBitRate_ = -1; // -1
     } else {
         int32_t playlistBitrate = static_cast<int32_t>(playlistDownloader_->GetCurBitrate());
@@ -2043,6 +2052,7 @@ Status HlsMediaDownloader::StopBufferring(bool isAppBackground)
     } else {
         isInterrupt_ = false;
     }
+    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     downloader_->StopBufferring();
     playlistDownloader_->StopBufferring(isAppBackground);
     MEDIA_LOG_I("HlsMediaDownloader:StopBufferring out");
@@ -2081,7 +2091,7 @@ void HlsMediaDownloader::SetIsReportedErrorCode()
 bool HlsMediaDownloader::SetInitialBufferSize(int32_t offset, int32_t size)
 {
     AutoLock lock(initCacheMutex_);
-    bool isInitBufferSizeOk = IsCachedInitSizeReady(size) >= size || CheckBreakCondition();
+    bool isInitBufferSizeOk = IsCachedInitSizeReady(size) || CheckBreakCondition();
     if (isInitBufferSizeOk || !downloader_ || !downloadRequest_ || isTimeoutErrorNotified_.load()) {
         MEDIA_LOG_I("HLS SetInitialBufferSize initCacheSize ok.");
         return false;

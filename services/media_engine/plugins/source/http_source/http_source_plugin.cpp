@@ -71,6 +71,12 @@ HttpSourcePlugin::~HttpSourcePlugin()
     CloseUri();
 }
 
+std::string HttpSourcePlugin::GetContentType()
+{
+    FALSE_RETURN_V(downloader_ != nullptr, "");
+    return downloader_->GetContentType();
+}
+
 Status HttpSourcePlugin::Init()
 {
     MEDIA_LOG_D("Init enter.");
@@ -487,10 +493,7 @@ bool HttpSourcePlugin::SetSourceInitialBufferSize(int32_t offset, int32_t size)
 
 Status HttpSourcePlugin::StopBufferring(bool isAppBackground)
 {
-    if (downloader_ == nullptr) {
-        MEDIA_LOG_E("StopBufferring failed, downloader_ is nullptr");
-        return Status::ERROR_NULL_POINTER;
-    }
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, Status::ERROR_NULL_POINTER, "downloader_ is nullptr");
     return downloader_->StopBufferring(isAppBackground);
 }
 

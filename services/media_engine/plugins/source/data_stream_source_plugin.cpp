@@ -154,6 +154,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
             isBufferingStart = false;
             return Status::OK;
         }
+        FALSE_RETURN_V_MSG(dataSrc_ != nullptr, Status::ERROR_WRONG_STATE, "dataSrc_ is nullptr!");
         if (seekable_ == Plugins::Seekable::SEEKABLE) {
             FALSE_RETURN_V(static_cast<int64_t>(offset_) <= size_, Status::END_OF_STREAM);
             expectedLen = std::min(static_cast<size_t>(size_ - offset_), expectedLen);

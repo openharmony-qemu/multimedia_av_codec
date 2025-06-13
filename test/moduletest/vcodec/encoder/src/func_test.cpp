@@ -28,8 +28,10 @@ OH_AVCapability *cap = nullptr;
 OH_AVCapability *cap_hevc = nullptr;
 constexpr uint32_t CODEC_NAME_SIZE = 128;
 constexpr uint32_t DEFAULT_BITRATE = 1000000;
+constexpr uint32_t DEFAULT_MAX_BITRATE = 20000000;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 constexpr uint32_t DEFAULT_QUALITY = 30;
+constexpr uint32_t DEFAULT_SQR_FACTOR = 30;
 constexpr uint32_t MAX_PROFILE_NUM = 3;
 char g_codecName[CODEC_NAME_SIZE] = {};
 char g_codecNameHEVC[CODEC_NAME_SIZE] = {};
@@ -1910,6 +1912,32 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_5300, TestSize.Level2)
     } else {
         bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(capa, BITRATE_MODE_CQ);
         EXPECT_EQ(isSupported, false);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_HEVC_CAPABILITY_6000
+ * @tc.name      : OH_AVCapability_IsEncoderBitrateModeSupported param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_6000, TestSize.Level2)
+{
+    OH_AVCapability *capa = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    ASSERT_NE(nullptr, capa);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc") &&
+        OH_AVCapability_IsEncoderBitrateModeSupported(capa, BITRATE_MODE_SQR)) {
+        venc_ = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+        ASSERT_NE(nullptr, venc_);
+        format = OH_AVFormat_Create();
+        ASSERT_NE(nullptr, format);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+        (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_SQR_FACTOR, DEFAULT_SQR_FACTOR);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_BITRATE, DEFAULT_MAX_BITRATE);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, BITRATE_MODE_SQR);
+        EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
     }
 }
 

@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-module_output_path = "av_codec/unittest"
+module_output_path = "av_codec/av_codec/unittest"
 
 av_codec_unittest_cflags = [
   "-std=c++17",
@@ -59,6 +59,11 @@ ohos_unittest("avc_codec_coverage_unit_test") {
   cflags_cc = cflags
   include_dirs = avc_codec_coverage_unit_include_dirs
   defines = av_codec_defines
+
+  if (!is_emulator && target_cpu == "arm64") {
+    defines += [ "ARMV8" ]
+  }
+
   sources = [
     "$av_codec_root_dir/services/engine/codec/video/avcencoder/avc_encoder.cpp",
     "$av_codec_root_dir/services/engine/codec/video/avcencoder/avc_encoder_api.cpp",

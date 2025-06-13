@@ -15,7 +15,7 @@ import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
-module_output_path = "av_codec/av_codec/moduletest"
+module_output_path = "av_codec/AVCodec_Video/moduletest"
 
 demuxer_moduletest_native_include_dirs = [
   "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
@@ -78,6 +78,8 @@ ohos_unittest("demuxer_native_module_test") {
 
       #"./src/net_test.cpp",
       #"./src/net2_test.cpp",
+      "./src/InnerAPI/demuxer_cachesize_func_test.cpp",
+      "./src/InnerAPI/demuxer_plugin_func_test.cpp",
       "./src/format_test.cpp",
       "./src/proc_test.cpp",
     ]
@@ -107,6 +109,7 @@ ohos_unittest("demuxer_native_module_test") {
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avdemuxer",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avsource",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
+    "$MEDIA_ROOT_DIR/services/media_engine/modules:av_codec_media_engine_modules",
     "$MEDIA_ROOT_DIR/services/services:av_codec_service",
   ]
 

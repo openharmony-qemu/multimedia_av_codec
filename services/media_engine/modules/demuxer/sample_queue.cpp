@@ -23,7 +23,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "SampleQueue" };
-constexpr uint32_t INVALID_TRACK_ID = -1;
+constexpr int32_t INVALID_TRACK_ID = -1;
 }
 
 namespace OHOS {
@@ -106,7 +106,7 @@ Status SampleQueue::AttachBuffer()
         FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "CreateAVBuffer failed");
         Status status = sampleBufferQueueProducer_->AttachBuffer(buffer, false);
         FALSE_RETURN_V_MSG_E(
-            status == Status::OK, status, "AttachBuffer failed status=" PUBLIC_LOG_D32, (int32_t)status);
+            status == Status::OK, status, "AttachBuffer failed status=" PUBLIC_LOG_D32, static_cast<int32_t>(status));
     }
     return Status::OK;
 }
@@ -125,9 +125,9 @@ sptr<AVBufferQueueProducer> SampleQueue::GetBufferQueueProducer() const
 Status SampleQueue::RequestBuffer(
     std::shared_ptr<AVBuffer> &sampleBuffer, const AVBufferConfig &config, int32_t timeoutMs)
 {
-    MediaAVCodec::AVCodecTrace trace("SampleQueue::RequestBuffer");
+    MEDIA_TRACE_DEBUG("SampleQueue::RequestBuffer");
     FALSE_RETURN_V(sampleBufferQueueProducer_ != nullptr, Status::ERROR_NULL_POINT_BUFFER);
-    MEDIA_LOG_D(PUBLIC_LOG_S " sampleBufferQueueProducer_ size=" PUBLIC_LOG_U32,
+    MEDIA_LOG_DD(PUBLIC_LOG_S " sampleBufferQueueProducer_ size=" PUBLIC_LOG_U32,
         config_.queueName_.c_str(),
         sampleBufferQueueProducer_->GetQueueSize());
     return sampleBufferQueueProducer_->RequestBuffer(sampleBuffer, config, timeoutMs);
@@ -135,16 +135,16 @@ Status SampleQueue::RequestBuffer(
 
 Status SampleQueue::PushBuffer(std::shared_ptr<AVBuffer>& sampleBuffer, bool available)
 {
-    MediaAVCodec::AVCodecTrace trace("SampleQueue::PushBuffer");
+    MEDIA_TRACE_DEBUG("SampleQueue::PushBuffer");
     FALSE_RETURN_V(sampleBuffer != nullptr && sampleBufferQueueProducer_ != nullptr, Status::ERROR_NULL_POINT_BUFFER);
-    MEDIA_LOG_D(PUBLIC_LOG_S " sampleBufferQueueProducer_ size=" PUBLIC_LOG_U32,
+    MEDIA_LOG_DD(PUBLIC_LOG_S " sampleBufferQueueProducer_ size=" PUBLIC_LOG_U32,
         config_.queueName_.c_str(),
         sampleBufferQueueProducer_->GetQueueSize());
     Status status = sampleBufferQueueProducer_->PushBuffer(sampleBuffer, available);
     FALSE_RETURN_V(available && status == Status::OK, status);
 
     lastEnterSamplePts_ = sampleBuffer->pts_;
-    MEDIA_LOG_D(PUBLIC_LOG_S " PushBuffer pts=" PUBLIC_LOG_D64 " dts=" PUBLIC_LOG_D64 " duration=" PUBLIC_LOG_D64,
+    MEDIA_LOG_DD(PUBLIC_LOG_S " PushBuffer pts=" PUBLIC_LOG_D64 " dts=" PUBLIC_LOG_D64 " duration=" PUBLIC_LOG_D64,
         config_.queueName_.c_str(), sampleBuffer->pts_, sampleBuffer->dts_, sampleBuffer->duration_);
     if (!config_.isSupportBitrateSwitch_) {
         return Status::OK;
@@ -170,17 +170,17 @@ Status SampleQueue::PushBuffer(std::shared_ptr<AVBuffer>& sampleBuffer, bool ava
 
 Status SampleQueue::AcquireBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
 {
-    MediaAVCodec::AVCodecTrace trace("SampleQueue::AcquireBuffer");
+    MEDIA_TRACE_DEBUG("SampleQueue::AcquireBuffer");
     // return from rollbackBufferQueue_ first
     if (!rollbackBufferQueue_.empty()) {
         sampleBuffer = rollbackBufferQueue_.front();
         rollbackBufferQueue_.pop_front();
-        MEDIA_LOG_D(PUBLIC_LOG_S " AcquireBuffer from rollbackBufferQueue_", config_.queueName_.c_str());
+        MEDIA_LOG_DD(PUBLIC_LOG_S " AcquireBuffer from rollbackBufferQueue_", config_.queueName_.c_str());
     } else {
         FALSE_RETURN_V(sampleBufferQueueConsumer_ != nullptr, Status::ERROR_NULL_POINT_BUFFER);
         Status ret = sampleBufferQueueConsumer_->AcquireBuffer(sampleBuffer);
         FALSE_RETURN_V(ret == Status::OK, ret);
-        MEDIA_LOG_D(PUBLIC_LOG_S " bufferId: " PUBLIC_LOG_U64 ", pts: " PUBLIC_LOG_D64
+        MEDIA_LOG_DD(PUBLIC_LOG_S " bufferId: " PUBLIC_LOG_U64 ", pts: " PUBLIC_LOG_D64
                                  " GetCacheDuration= " PUBLIC_LOG_U64 " GetFilledBufferSize= " PUBLIC_LOG_U32,
             config_.queueName_.c_str(),
             sampleBuffer->GetUniqueId(),
@@ -190,7 +190,7 @@ Status SampleQueue::AcquireBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
     }
 
     if (!config_.isSupportBitrateSwitch_) {
-        MEDIA_LOG_D(PUBLIC_LOG_S " not SupportBitrateSwitch", config_.queueName_.c_str());
+        MEDIA_LOG_DD(PUBLIC_LOG_S " not SupportBitrateSwitch", config_.queueName_.c_str());
         return Status::OK;
     }
    
@@ -206,8 +206,8 @@ Status SampleQueue::AcquireBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
 
 Status SampleQueue::AcquireCopyToDstBuffer(std::shared_ptr<AVBuffer>& dstBuffer)
 {
-    MediaAVCodec::AVCodecTrace trace("SampleQueue::AcquireCopyToDstBuffer");
-    MEDIA_LOG_D(PUBLIC_LOG_S " AcquireCopyToDstBuffer in", config_.queueName_.c_str());
+    MEDIA_TRACE_DEBUG("SampleQueue::AcquireCopyToDstBuffer");
+    MEDIA_LOG_DD(PUBLIC_LOG_S " AcquireCopyToDstBuffer in", config_.queueName_.c_str());
     FALSE_RETURN_V(dstBuffer != nullptr, Status::ERROR_NULL_POINT_BUFFER);
 
     std::shared_ptr<AVBuffer> srcBuffer;
@@ -223,7 +223,7 @@ Status SampleQueue::AcquireCopyToDstBuffer(std::shared_ptr<AVBuffer>& dstBuffer)
     UpdateLastOutSamplePts(dstBuffer->pts_);
 
     ret = ReleaseBuffer(srcBuffer);
-    MEDIA_LOG_D(PUBLIC_LOG_S " AcquireCopyToDstBuffer out", config_.queueName_.c_str());
+    MEDIA_LOG_DD(PUBLIC_LOG_S " AcquireCopyToDstBuffer out", config_.queueName_.c_str());
     return ret;
 }
 
@@ -252,9 +252,9 @@ void SampleQueue::CopyMeta(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr
         return;
     }
 
-    uint32_t trackId = INVALID_TRACK_ID;
+    int32_t trackId = INVALID_TRACK_ID;
     if (!dstBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, trackId)) {
-        MEDIA_LOG_D("trackId not found");
+        MEDIA_LOG_DD("trackId not found");
     }
 
     dstBuffer->meta_ = std::make_shared<Meta>(*(srcBuffer->meta_));
@@ -298,12 +298,12 @@ Status SampleQueue::CopyAVMemory(std::shared_ptr<AVBuffer>& srcBuffer, std::shar
 
 Status SampleQueue::ReleaseBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
 {
-    MEDIA_LOG_D(PUBLIC_LOG_S " ReleaseBuffer", config_.queueName_.c_str());
+    MEDIA_LOG_DD(PUBLIC_LOG_S " ReleaseBuffer", config_.queueName_.c_str());
     FALSE_RETURN_V(sampleBufferQueueConsumer_ != nullptr, Status::ERROR_NULL_POINT_BUFFER);
     Status status = sampleBufferQueueConsumer_->ReleaseBuffer(sampleBuffer);
     FALSE_RETURN_V_MSG_E(
         status == Status::OK, status, PUBLIC_LOG_S "ReleaseBuffer failed ", config_.queueName_.c_str());
-    MEDIA_LOG_D(PUBLIC_LOG_S " bufferId: " PUBLIC_LOG_U64 ", pts: " PUBLIC_LOG_D64,
+    MEDIA_LOG_DD(PUBLIC_LOG_S " bufferId: " PUBLIC_LOG_U64 ", pts: " PUBLIC_LOG_D64,
         config_.queueName_.c_str(),
         sampleBuffer->GetUniqueId(),
         sampleBuffer->pts_);
@@ -312,7 +312,7 @@ Status SampleQueue::ReleaseBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
 
 Status SampleQueue::RollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
 {
-    MEDIA_LOG_D(PUBLIC_LOG_S " RollbackBuffer", config_.queueName_.c_str());
+    MEDIA_LOG_DD(PUBLIC_LOG_S " RollbackBuffer", config_.queueName_.c_str());
     rollbackBufferQueue_.push_back(sampleBuffer);
     return Status::OK;
 }
@@ -330,7 +330,7 @@ Status SampleQueue::QuerySizeForNextAcquireBuffer(size_t& size)
     }
     FALSE_RETURN_V(sampleBuffer != nullptr, Status::ERROR_NULL_POINT_BUFFER);
     size = sampleBuffer->GetConfig().capacity;
-    MEDIA_LOG_D(PUBLIC_LOG_S " QuerySizeForNextAcquireBuffer size=" PUBLIC_LOG_ZU, config_.queueName_.c_str(), size);
+    MEDIA_LOG_DD(PUBLIC_LOG_S " QuerySizeForNextAcquireBuffer size=" PUBLIC_LOG_ZU, config_.queueName_.c_str(), size);
     return Status::OK;
 }
 
@@ -344,8 +344,9 @@ Status SampleQueue::Clear()
         rollbackBufferQueue_.pop_front();
         ReleaseBuffer(sampleBuffer);
     }
-    sampleBufferQueueProducer_->Clear();
-
+    if (sampleBufferQueueProducer_ != nullptr) {
+        sampleBufferQueueProducer_->Clear();
+    }
     std::lock_guard<std::mutex> ptsLock(ptsMutex_);
     keyFramePtsSet_.clear();
     return Status::OK;
@@ -417,14 +418,14 @@ Status SampleQueue::NotifySwitchBitrateOK()
 
 Status SampleQueue::UpdateLastEndSamplePts(int64_t lastEndSamplePts)
 {
-    MEDIA_LOG_D("UpdateLastEndSamplePts lastEndSamplePts=" PUBLIC_LOG_D64, lastEndSamplePts);
+    MEDIA_LOG_DD("UpdateLastEndSamplePts lastEndSamplePts=" PUBLIC_LOG_D64, lastEndSamplePts);
     lastEndSamplePts_ = lastEndSamplePts;
     return Status::OK;
 }
 
 Status SampleQueue::UpdateLastOutSamplePts(int64_t lastOutSamplePts)
 {
-    MEDIA_LOG_D("UpdateLastOutSamplePts lastOutSamplePts=" PUBLIC_LOG_D64, lastOutSamplePts);
+    MEDIA_LOG_DD("UpdateLastOutSamplePts lastOutSamplePts=" PUBLIC_LOG_D64, lastOutSamplePts);
     lastOutSamplePts_ = lastOutSamplePts;
     return Status::OK;
 }
@@ -525,7 +526,7 @@ bool SampleQueue::IsEosFrame(std::shared_ptr<AVBuffer>& sampleBuffer) const
 
 void SampleQueue::OnBufferAvailable()
 {
-    MEDIA_LOG_D(PUBLIC_LOG_S " OnBufferAvailable sampleBufferQueueProducer_ size=" PUBLIC_LOG_U32,
+    MEDIA_LOG_DD(PUBLIC_LOG_S " OnBufferAvailable sampleBufferQueueProducer_ size=" PUBLIC_LOG_U32,
         config_.queueName_.c_str(),
         sampleBufferQueueProducer_->GetQueueSize());
     auto sampleQueueCb = sampleQueueCb_.lock();
@@ -537,17 +538,17 @@ void SampleQueue::OnBufferAvailable()
 
 void SampleQueue::OnBufferConsumer()
 {
-    MEDIA_LOG_D(PUBLIC_LOG_S " OnBufferConsumer ", config_.queueName_.c_str());
+    MEDIA_LOG_DD(PUBLIC_LOG_S " OnBufferConsumer ", config_.queueName_.c_str());
     auto sampleQueueCb = sampleQueueCb_.lock();
     if (sampleQueueCb != nullptr) {
-        MEDIA_LOG_D(PUBLIC_LOG_S " OnSampleQueueBufferConsume ", config_.queueName_.c_str());
+        MEDIA_LOG_DD(PUBLIC_LOG_S " OnSampleQueueBufferConsume ", config_.queueName_.c_str());
         sampleQueueCb->OnSampleQueueBufferConsume(config_.queueId_);
     }
 }
 
-void SampleQueue::UpdateQueueId(uint32_t queueId)
+void SampleQueue::UpdateQueueId(int32_t queueId)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S " change queueId to " PUBLIC_LOG_U32, config_.queueName_.c_str(), queueId);
+    MEDIA_LOG_I(PUBLIC_LOG_S " change queueId to " PUBLIC_LOG_D32, config_.queueName_.c_str(), queueId);
     config_.queueId_ = queueId;
 }
 
@@ -557,13 +558,14 @@ uint64_t SampleQueue::GetCacheDuration() const
         return 0;
     }
     int64_t diff = lastEnterSamplePts_ - lastOutSamplePts_;
-    MEDIA_LOG_D(PUBLIC_LOG_S " lastEnterSamplePts_=" PUBLIC_LOG_D64 " lastEndSamplePts_=" PUBLIC_LOG_D64
+    MEDIA_LOG_DD(PUBLIC_LOG_S " lastEnterSamplePts_=" PUBLIC_LOG_D64 " lastEndSamplePts_=" PUBLIC_LOG_D64
         " diff=" PUBLIC_LOG_D64, config_.queueName_.c_str(), lastEnterSamplePts_, lastOutSamplePts_, diff);
     return (diff > 0) ? static_cast<uint64_t>(diff) : 0;
 }
 
 uint32_t SampleQueue::GetMemoryUsage()
 {
+    FALSE_RETURN_V_MSG_E(sampleBufferQueue_ != nullptr, 0, "bufferQueue nullptr");
     return sampleBufferQueue_->GetMemoryUsage();
 }
 

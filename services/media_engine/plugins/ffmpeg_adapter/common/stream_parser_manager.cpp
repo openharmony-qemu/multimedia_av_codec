@@ -29,62 +29,63 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 std::mutex StreamParserManager::mtx_;
-std::map<StreamType, void *> StreamParserManager::handlerMap_ {};
-std::map<StreamType, CreateFunc> StreamParserManager::createFuncMap_ {};
-std::map<StreamType, DestroyFunc> StreamParserManager::destroyFuncMap_ {};
+std::map<VideoStreamType, void *> StreamParserManager::handlerMap_ {};
+std::map<VideoStreamType, CreateFunc> StreamParserManager::createFuncMap_ {};
+std::map<VideoStreamType, DestroyFunc> StreamParserManager::destroyFuncMap_ {};
 
 StreamParserManager::StreamParserManager()
 {
-    streamType_ = StreamType::HEVC;
+    videoStreamType_ = VideoStreamType::HEVC;
 }
 
 StreamParserManager::~StreamParserManager()
 {
     if (streamParser_) {
-        destroyFuncMap_[streamType_](streamParser_);
+        destroyFuncMap_[videoStreamType_](streamParser_);
         streamParser_ = nullptr;
     }
 }
 
-bool StreamParserManager::Init(StreamType streamType)
+bool StreamParserManager::Init(VideoStreamType videoStreamType)
 {
     std::lock_guard<std::mutex> lock(mtx_);
-    if (handlerMap_.count(streamType) && createFuncMap_.count(streamType) && destroyFuncMap_.count(streamType)) {
+    if (handlerMap_.count(videoStreamType) && createFuncMap_.count(videoStreamType) &&
+        destroyFuncMap_.count(videoStreamType)) {
         return true;
     }
 
     std::string streamParserPath;
-    if (streamType == StreamType::HEVC) {
+    if (videoStreamType == VideoStreamType::HEVC) {
         streamParserPath = HEVC_LIB_PATH;
-    } else if (streamType == StreamType::VVC) {
+    } else if (videoStreamType == VideoStreamType::VVC) {
         streamParserPath = VVC_LIB_PATH;
     } else {
         MEDIA_LOG_E("Unsupport stream parser type");
         return false;
     }
-    if (handlerMap_.count(streamType) == 0) {
-        handlerMap_[streamType] = LoadPluginFile(streamParserPath);
+    if (handlerMap_.count(videoStreamType) == 0) {
+        handlerMap_[videoStreamType] = LoadPluginFile(streamParserPath);
     }
-    if (!CheckSymbol(handlerMap_[streamType], streamType)) {
+    if (!CheckSymbol(handlerMap_[videoStreamType], videoStreamType)) {
         MEDIA_LOG_E("Load stream parser failed");
         return false;
     }
     return true;
 }
 
-std::shared_ptr<StreamParserManager> StreamParserManager::Create(StreamType streamType)
+std::shared_ptr<StreamParserManager> StreamParserManager::Create(VideoStreamType videoStreamType)
 {
-    MEDIA_LOG_D("Parser " PUBLIC_LOG_D32, streamType);
+    MEDIA_LOG_D("Parser " PUBLIC_LOG_D32, videoStreamType);
     std::shared_ptr<StreamParserManager> loader = std::make_shared<StreamParserManager>();
-    if (!loader->Init(streamType)) {
+    if (!loader->Init(videoStreamType)) {
         return nullptr;
     }
-    loader->streamParser_ = loader->createFuncMap_[streamType]();
+    loader->streamParser_ = loader->createFuncMap_[videoStreamType]();
     if (!loader->streamParser_) {
         MEDIA_LOG_E("CreateFunc_ failed");
         return nullptr;
     }
-    loader->streamType_ = streamType;
+    loader->videoStreamType_ = videoStreamType;
     return loader;
 }
 
@@ -195,7 +196,7 @@ void *StreamParserManager::LoadPluginFile(const std::string &path)
     return ptr;
 }
 
-bool StreamParserManager::CheckSymbol(void *handler, StreamType streamType)
+bool StreamParserManager::CheckSymbol(void *handler, VideoStreamType videoStreamType)
 {
     if (handler) {
         std::string createFuncName = "CreateStreamParser";
@@ -207,8 +208,8 @@ bool StreamParserManager::CheckSymbol(void *handler, StreamType streamType)
         if (createFunc && destroyFunc) {
             MEDIA_LOG_D("CreateFuncName %{public}s", createFuncName.c_str());
             MEDIA_LOG_D("DestroyFuncName %{public}s", destroyFuncName.c_str());
-            createFuncMap_[streamType] = createFunc;
-            destroyFuncMap_[streamType] = destroyFunc;
+            createFuncMap_[videoStreamType] = createFunc;
+            destroyFuncMap_[videoStreamType] = destroyFunc;
             return true;
         }
     }
@@ -219,6 +220,13 @@ std::vector<uint8_t> StreamParserManager::GetLogInfo()
 {
     FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, {}, "Stream parser is nullptr");
     return streamParser_->GetLogInfo();
+}
+
+uint32_t StreamParserManager::GetMaxReorderPic()
+{
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, {}, "Stream parser is nullptr");
+    MEDIA_LOG_D("GetMaxReorderPic is %{public}u", streamParser_->GetMaxReorderPic());
+    return streamParser_->GetMaxReorderPic();
 }
 } // namespace Plugins
 } // namespace Media

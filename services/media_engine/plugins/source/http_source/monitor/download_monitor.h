@@ -90,6 +90,7 @@ public:
     bool IsFlvLive() override;
     uint64_t GetMemorySize() override;
     bool IsHlsFmp4() override;
+    std::string GetContentType() override;
 
 private:
     int64_t HttpMonitorLoop();

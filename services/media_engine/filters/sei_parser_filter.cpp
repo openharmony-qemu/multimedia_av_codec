@@ -111,6 +111,7 @@ Status SeiParserFilter::PrepareInputBufferQueue()
         MEDIA_LOG_I("InputBufferQueue already create");
         return Status::ERROR_INVALID_OPERATION;
     }
+    FALSE_RETURN_V(trackMeta_ != nullptr, Status::ERROR_UNKNOWN);
     int32_t videoHeight = 0;
     int32_t videoWidth = 0;
     auto metaRes = trackMeta_->Get<Tag::VIDEO_HEIGHT>(videoHeight) && trackMeta_->Get<Tag::VIDEO_WIDTH>(videoWidth);

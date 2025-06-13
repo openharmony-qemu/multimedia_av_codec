@@ -121,7 +121,10 @@ public:
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
     int32_t GetStreamID(int32_t trackId);
     int32_t GetInnerTrackID(int32_t trackId);
-    bool IsDash() const;
+    inline bool IsDash() const
+    {
+        return isDash_;
+    }
     bool IsSubtitle() const;
     Status StopPlugin(int32_t streamId, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status StartPlugin(int32_t streamId, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
@@ -143,6 +146,7 @@ public:
     void NotifyInitialBufferingEnd(bool isInitialBufferingSucc);
     void SetApiVersion(int32_t apiVersion);
     void SetIsHlsFmp4(bool isHlsFmp4);
+    bool GetPluginName(std::string& pluginName);
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
@@ -175,6 +179,7 @@ private:
     ConditionVariable initialBufferingEndCond_;
     int32_t apiVersion_ {0};
     bool isHlsFmp4_ {false};
+    std::string pluginName_ {};
 };
 } // namespace Media
 } // namespace OHOS

@@ -69,7 +69,12 @@ bool AvcodecSuspend002FuzzTest(const uint8_t *data, size_t size)
     pid.push_back(pid0);
 
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
-    vDecSample->CreateVideoDecoder();
+    int32_t ret = vDecSample->CreateVideoDecoder();
+    if (ret != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;
+    }
     vDecSample->ConfigureVideoDecoder();
     MediaAVCodec::AVCodecSuspend::SuspendFreeze(pidFuzz);
     MediaAVCodec::AVCodecSuspend::SuspendActive(pidFuzz);
@@ -90,18 +95,23 @@ bool AvcodecSuspend002FuzzTest(const uint8_t *data, size_t size)
     MediaAVCodec::AVCodecSuspend::SuspendActiveAll();
     vDecSample->Release();
     delete vDecSample;
+    vDecSample = nullptr;
     return true;
 }
 
 bool AvcodecSuspend003FuzzTest(const uint8_t *data, size_t size)
 {
-    FuzzedDataProvider fdp(data, size);
     std::vector<pid_t> pid;
     pid_t pid0 = getpid();
     pid.push_back(pid0);
     
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
-    vDecSample->CreateVideoDecoder();
+    int32_t ret = vDecSample->CreateVideoDecoder();
+    if (ret != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;
+    }
     vDecSample->ConfigureVideoDecoder();
     vDecSample->SetVideoDecoderCallback();
     vDecSample->Start();
@@ -113,6 +123,7 @@ bool AvcodecSuspend003FuzzTest(const uint8_t *data, size_t size)
     vDecSample->Stop();
     vDecSample->Reset();
     delete vDecSample;
+    vDecSample = nullptr;
     return true;
 }
 }

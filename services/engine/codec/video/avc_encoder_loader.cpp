@@ -49,14 +49,6 @@ int32_t AvcEncoderLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
 AvcEncoderLoader::AvcEncoderLoader() : VideoCodecLoader(AVC_ENCODER_LIB_PATH,
     AVC_ENCODER_CREATE_FUNC_NAME, AVC_ENCODER_GETCAPS_FUNC_NAME) {}
 
-void AvcEncoderLoader::CloseLibrary()
-{
-    if (avcEncoderCount_ != 0) {
-        return;
-    }
-    Close();
-}
-
 AvcEncoderLoader &AvcEncoderLoader::GetInstance()
 {
     static AvcEncoderLoader loader;

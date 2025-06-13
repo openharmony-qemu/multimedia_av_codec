@@ -133,7 +133,7 @@ uint8_t AudioG711muEncoderPlugin::G711MuLawEncode(int16_t pcmValue)
     }
     pcmShort += (AVCODEC_G711MU_LINEAR_BIAS >> 2); // right shift 2 bits
 
-    for (int16_t i = 0; i < AVCODEC_G711MU_SEG_NUM; i++) {
+    for (uint16_t i = 0; i < AVCODEC_G711MU_SEG_NUM; i++) {
         if (pcmShort <= AVCODEC_G711MU_SEG_END[i]) {
             seg = i;
             break;

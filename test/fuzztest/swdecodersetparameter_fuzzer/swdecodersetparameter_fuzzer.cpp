@@ -45,28 +45,23 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     }
     OH_AVFormat *format = OH_AVFormat_CreateVideoFormat("video/avc", DEFAULT_WIDTH, DEFAULT_HEIGHT);
     FuzzedDataProvider fdp(data, size);
-    int intData0 = fdp.ConsumeIntegral<int32_t>();
-    int intData1 = fdp.ConsumeIntegral<int32_t>();
-    int intData2 = fdp.ConsumeIntegral<int32_t>();
-    int intData3 = fdp.ConsumeIntegral<int32_t>();
-    int intData4 = fdp.ConsumeIntegral<int32_t>();
-    int intData5 = fdp.ConsumeIntegral<int32_t>();
-    int intData6 = fdp.ConsumeIntegral<int32_t>();
-    int intData7 = fdp.ConsumeIntegral<int32_t>();
-    int intData8 = fdp.ConsumeIntegral<int32_t>();
-    int longData = fdp.ConsumeIntegral<int64_t>();
-    double doubleData = fdp.ConsumeFloatingPoint<double>();
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, intData0);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, intData1);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, intData2);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, intData3);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, intData4);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, intData5);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, intData6);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, intData7);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, intData8);
-    OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, longData);
-    OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, doubleData);
+    std::string formatKey1 = fdp.ConsumeRandomLengthString();
+    std::string formatKey2 = fdp.ConsumeRandomLengthString();
+    std::string formatKey3 = fdp.ConsumeRandomLengthString();
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, fdp.ConsumeIntegral<int64_t>());
+    OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, fdp.ConsumeFloatingPoint<double>());
+    OH_AVFormat_SetIntValue(format, formatKey1.c_str(), fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetLongValue(format, formatKey2.c_str(), fdp.ConsumeIntegral<int64_t>());
+    OH_AVFormat_SetDoubleValue(format, formatKey3.c_str(), fdp.ConsumeFloatingPoint<double>());
 
     vDecSample->SetParameter(format);
 

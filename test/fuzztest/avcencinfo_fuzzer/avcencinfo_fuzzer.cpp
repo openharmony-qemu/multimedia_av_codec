@@ -25,6 +25,9 @@
 using namespace std;
 using namespace OHOS::Media;
 
+const uint8_t *fuzzDate = nullptr;
+size_t fuzzSize = 0;
+
 #define AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(cond, ret)                   \
     do {                                                                    \
         if (!(cond)) {                                                      \
@@ -42,10 +45,8 @@ using namespace OHOS::Media;
 namespace OHOS {
 namespace AvCencInfoFuzzer {
 
-bool CencInfoCreateFuzzTest(const uint8_t *data, size_t size)
+bool CencInfoCreateFuzzTest()
 {
-    (void)data;
-    (void)size;
     OH_AVErrCode errNo = AV_ERR_OK;
     OH_AVCencInfo *cencInfo = OH_AVCencInfo_Create();
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(cencInfo != nullptr, false);
@@ -54,10 +55,8 @@ bool CencInfoCreateFuzzTest(const uint8_t *data, size_t size)
     return true;
 }
 
-bool CencInfoDestroyFuzzTest(const uint8_t *data, size_t size)
+bool CencInfoDestroyFuzzTest()
 {
-    (void)data;
-    (void)size;
     OH_AVErrCode errNo = AV_ERR_OK;
     OH_AVCencInfo *cencInfo = OH_AVCencInfo_Create();
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(cencInfo != nullptr, false);
@@ -98,11 +97,10 @@ _EXIT:
     return true;
 }
 
-bool CencInfoSetAlgorithmFuzzTest(const uint8_t *data, size_t size)
+bool CencInfoSetAlgorithmFuzzTest(FuzzedDataProvider *provider)
 {
-    (void)size;
     OH_AVErrCode errNo = AV_ERR_OK;
-    DrmCencAlgorithm algo = static_cast<enum DrmCencAlgorithm>(*data);
+    DrmCencAlgorithm algo = static_cast<enum DrmCencAlgorithm>(provider->ConsumeIntegral<uint32_t>());
     static uint8_t cencInfoSetAlgorithmFuzzTestFlag = 0;
     if (cencInfoSetAlgorithmFuzzTestFlag == 0) {
         CencInfoSetAlgorithm();
@@ -141,7 +139,7 @@ _EXIT:
     return true;
 }
 
-bool CencInfoSetKeyIdAndIvFuzzTest(const uint8_t *data, size_t size)
+bool CencInfoSetKeyIdAndIvFuzzTest()
 {
     OH_AVErrCode errNo = AV_ERR_OK;
     static uint8_t cencInfoSetKeyIdAndIvFuzzTestFlag = 0;
@@ -152,8 +150,8 @@ bool CencInfoSetKeyIdAndIvFuzzTest(const uint8_t *data, size_t size)
     OH_AVCencInfo *cencInfo = OH_AVCencInfo_Create();
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(cencInfo != nullptr, false);
 
-    errNo = OH_AVCencInfo_SetKeyIdAndIv(cencInfo, const_cast<uint8_t *>(data), static_cast<uint32_t>(size),
-        const_cast<uint8_t *>(data), static_cast<uint32_t>(size));
+    errNo = OH_AVCencInfo_SetKeyIdAndIv(cencInfo, const_cast<uint8_t *>(fuzzDate), static_cast<uint32_t>(fuzzSize),
+        const_cast<uint8_t *>(fuzzDate), static_cast<uint32_t>(fuzzSize));
     AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 _EXIT:
     errNo = OH_AVCencInfo_Destroy(cencInfo);
@@ -181,20 +179,18 @@ _EXIT:
     return true;
 }
 
-bool CencInfoSetSubsampleInfoFuzzTest(const uint8_t *data, size_t size)
+bool CencInfoSetSubsampleInfoFuzzTest(FuzzedDataProvider *provider)
 {
     OH_AVErrCode errNo = AV_ERR_OK;
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(size >= 6, false); // 6:sample info size
-    uint32_t encryptedBlockCount = static_cast<uint32_t>(data[0]);
-    uint32_t skippedBlockCount = static_cast<uint32_t>(data[1]); // 1:skipped block count index
-    uint32_t firstEncryptedOffset = static_cast<uint32_t>(data[2]); // 2:first encrypted offset index
-    uint32_t subsampleCount = static_cast<uint32_t>(data[3]); // 3:subsample count index
+    uint32_t encryptedBlockCount = provider->ConsumeIntegral<uint32_t>();
+    uint32_t skippedBlockCount = provider->ConsumeIntegral<uint32_t>(); // 1:skipped block count index
+    uint32_t firstEncryptedOffset = provider->ConsumeIntegral<uint32_t>(); // 2:first encrypted offset index
+    uint32_t subsampleCount = provider->ConsumeIntegral<uint32_t>(); // 3:subsample count index
     DrmSubsample subsamples[DRM_KEY_MAX_SUB_SAMPLE_NUM];
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(subsampleCount <= DRM_KEY_MAX_SUB_SAMPLE_NUM, false);
-    FuzzedDataProvider fdp(data, size);
     for (uint32_t i = 0; i < subsampleCount; i++) {
-        subsamples[i].clearHeaderLen = fdp.ConsumeIntegral<uint32_t>();
-        subsamples[i].payLoadLen = fdp.ConsumeIntegral<uint32_t>();
+        subsamples[i].clearHeaderLen = provider->ConsumeIntegral<uint32_t>();
+        subsamples[i].payLoadLen = provider->ConsumeIntegral<uint32_t>();
     }
     static uint8_t cencInfoSetSubsampleInfoFuzzTestFlag = 0;
     if (cencInfoSetSubsampleInfoFuzzTestFlag == 0) {
@@ -235,11 +231,10 @@ _EXIT:
     return true;
 }
 
-bool CencInfoSetModeFuzzTest(const uint8_t *data, size_t size)
+bool CencInfoSetModeFuzzTest(FuzzedDataProvider *provider)
 {
-    (void)size;
     OH_AVErrCode errNo = AV_ERR_OK;
-    DrmCencInfoMode mode = static_cast<enum DrmCencInfoMode>(*data);
+    DrmCencInfoMode mode = static_cast<enum DrmCencInfoMode>(provider->ConsumeIntegral<uint32_t>());
     static uint8_t cencInfoSetModeFuzzTestFlag = 0;
     if (cencInfoSetModeFuzzTestFlag == 0) {
         CencInfoSetMode();
@@ -310,22 +305,20 @@ _EXIT1:
     return true;
 }
 
-bool CencInfoSetAVBufferFuzzTest(const uint8_t *data, size_t size)
+bool CencInfoSetAVBufferFuzzTest(FuzzedDataProvider *provider)
 {
     OH_AVErrCode errNo = AV_ERR_OK;
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(size >= 8, false); // 8:cenc info size
-    DrmCencAlgorithm algo = static_cast<enum DrmCencAlgorithm>(data[0]);
-    DrmCencInfoMode mode = static_cast<enum DrmCencInfoMode>(data[1]); // 1:mode index
-    uint32_t encryptedBlockCount = static_cast<uint32_t>(data[2]); // 2:encrypted block count index
-    uint32_t skippedBlockCount = static_cast<uint32_t>(data[3]); // 3:skipped block count index
-    uint32_t firstEncryptedOffset = static_cast<uint32_t>(data[4]); // 4:first encrypted offset index
-    uint32_t subsampleCount = static_cast<uint32_t>(data[5]); // 5:subsample count index
+    DrmCencAlgorithm algo = static_cast<enum DrmCencAlgorithm>(provider->ConsumeIntegral<uint8_t>());
+    DrmCencInfoMode mode = static_cast<enum DrmCencInfoMode>(provider->ConsumeIntegral<uint8_t>()); // 1:mode index
+    uint32_t encryptedBlockCount = provider->ConsumeIntegral<uint32_t>(); // 2:encrypted block count index
+    uint32_t skippedBlockCount = provider->ConsumeIntegral<uint32_t>(); // 3:skipped block count index
+    uint32_t firstEncryptedOffset = provider->ConsumeIntegral<uint32_t>(); // 4:first encrypted offset index
+    uint32_t subsampleCount = provider->ConsumeIntegral<uint32_t>(); // 5:subsample count index
     DrmSubsample subsamples[DRM_KEY_MAX_SUB_SAMPLE_NUM];
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(subsampleCount <= DRM_KEY_MAX_SUB_SAMPLE_NUM, false);
-    FuzzedDataProvider fdp(data, size);
     for (uint32_t i = 0; i < subsampleCount; i++) {
-        subsamples[i].clearHeaderLen = fdp.ConsumeIntegral<uint32_t>();
-        subsamples[i].payLoadLen = fdp.ConsumeIntegral<uint32_t>();
+        subsamples[i].clearHeaderLen = provider->ConsumeIntegral<uint32_t>();
+        subsamples[i].payLoadLen = provider->ConsumeIntegral<uint32_t>();
     }
     static uint8_t cencInfoSetAVBufferFuzzTestFlag = 0;
     if (cencInfoSetAVBufferFuzzTestFlag == 0) {
@@ -350,8 +343,8 @@ bool CencInfoSetAVBufferFuzzTest(const uint8_t *data, size_t size)
     errNo = OH_AVCencInfo_SetAlgorithm(cencInfo, algo);
     AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
-    errNo = OH_AVCencInfo_SetKeyIdAndIv(cencInfo, const_cast<uint8_t *>(data), static_cast<uint32_t>(size),
-        const_cast<uint8_t *>(data), static_cast<uint32_t>(size));
+    errNo = OH_AVCencInfo_SetKeyIdAndIv(cencInfo, const_cast<uint8_t *>(fuzzDate), static_cast<uint32_t>(fuzzSize),
+        const_cast<uint8_t *>(fuzzDate), static_cast<uint32_t>(fuzzSize));
     AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetSubsampleInfo(cencInfo, encryptedBlockCount, skippedBlockCount, firstEncryptedOffset,
@@ -383,12 +376,15 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return 0;
     }
-    OHOS::AvCencInfoFuzzer::CencInfoCreateFuzzTest(data, size);
-    OHOS::AvCencInfoFuzzer::CencInfoDestroyFuzzTest(data, size);
-    OHOS::AvCencInfoFuzzer::CencInfoSetAlgorithmFuzzTest(data, size);
-    OHOS::AvCencInfoFuzzer::CencInfoSetKeyIdAndIvFuzzTest(data, size);
-    OHOS::AvCencInfoFuzzer::CencInfoSetSubsampleInfoFuzzTest(data, size);
-    OHOS::AvCencInfoFuzzer::CencInfoSetModeFuzzTest(data, size);
-    OHOS::AvCencInfoFuzzer::CencInfoSetAVBufferFuzzTest(data, size);
+    fuzzDate = data;
+    fuzzSize = size;
+    FuzzedDataProvider fdp(data, size);
+    OHOS::AvCencInfoFuzzer::CencInfoCreateFuzzTest();
+    OHOS::AvCencInfoFuzzer::CencInfoDestroyFuzzTest();
+    OHOS::AvCencInfoFuzzer::CencInfoSetKeyIdAndIvFuzzTest();
+    OHOS::AvCencInfoFuzzer::CencInfoSetAlgorithmFuzzTest(&fdp);
+    OHOS::AvCencInfoFuzzer::CencInfoSetSubsampleInfoFuzzTest(&fdp);
+    OHOS::AvCencInfoFuzzer::CencInfoSetModeFuzzTest(&fdp);
+    OHOS::AvCencInfoFuzzer::CencInfoSetAVBufferFuzzTest(&fdp);
     return 0;
 }

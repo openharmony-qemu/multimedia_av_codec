@@ -246,6 +246,10 @@ void AudioCodecWorker::ProduceInputBuffer()
             inBufAvaIndexQue_.pop();
         }
         auto inputBuffer = GetInputBufferInfo(index);
+        if (!inputBuffer) {
+            AVCODEC_LOGE("Failed to get input buffer at index %{public}u", index);
+            continue;
+        }
         inputBuffer->SetBufferOwned();
         callback_->OnInputBufferAvailable(index, inputBuffer->GetBuffer());
     }

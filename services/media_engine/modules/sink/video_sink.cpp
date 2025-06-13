@@ -222,8 +222,9 @@ int64_t VideoSink::CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& 
 
     auto diff = anchorDiff;
     if (discardFrameCnt_ + renderFrameCnt_ < VIDEO_SINK_START_FRAME) {
-        diff = (currentClockTime - firstFrameClockTime_) - (buffer->pts_ - firstFramePts_);
-        MEDIA_LOG_I("VideoSink first few times diff is " PUBLIC_LOG_D64 " us", diff);
+        float ptsDiffWithSpeed = static_cast<float>(buffer->pts_ - firstFramePts_) / AdjustPlaybackRate(playbackRate);
+        diff = (currentClockTime - firstFrameClockTime_) - static_cast<int64_t>(ptsDiffWithSpeed);
+        MEDIA_LOG_I("VideoSink first few times diff is " PUBLIC_LOG_D64 " us speed %{public}.3f", diff, playbackRate);
     } else if (diff < 0 && videoDiff < SINK_TIME_US_THRESHOLD && diff < thresholdAdjustedVideoDiff) {
         diff = thresholdAdjustedVideoDiff;
     }

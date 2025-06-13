@@ -1,0 +1,29 @@
+<SAMI>
+<HEAD>
+<TITLE>subtitle</TITLE>
+<SAMIParam>
+  Metrics {time:ms;}
+  Spec {MSFT:1.0;}
+</SAMIParam>
+<STYLE TYPE="text/css">
+<!--
+  P { font-family: Arial; font-weight: normal; color: white; background-color: black; text-align: center; }
+  .ENUSCC { name: English; lang: en-US ; SAMIType: CC ; }
+-->
+</STYLE>
+</HEAD>
+<BODY>
+<-- Open play menu, choose Captions and Subtitles, On if available -->
+<-- Open tools menu, Security, Show local captions when present -->
+<SYNC Start=160><P Class=ENUSCC>-旨在交流-
+<SYNC Start=2160><P Class=ENUSCC>&nbsp;
+<SYNC Start=2240><P Class=ENUSCC>字幕 1
+<SYNC Start=4160><P Class=ENUSCC>&nbsp;
+<SYNC Start=4240><P Class=ENUSCC>字幕 2
+<SYNC Start=6160><P Class=ENUSCC>&nbsp;
+<SYNC Start=6240><P Class=ENUSCC>字幕 3
+<SYNC Start=8160><P Class=ENUSCC>&nbsp;
+<SYNC Start=8240><P Class=ENUSCC>-交流结束-
+<SYNC Start=10160><P Class=ENUSCC>&nbsp;
+</BODY>
+</SAMI>

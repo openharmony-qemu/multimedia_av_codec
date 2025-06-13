@@ -16,7 +16,9 @@
 #ifndef FILTERS_CODEC_FILTER_H
 #define FILTERS_CODEC_FILTER_H
 
+#include <atomic>
 #include <cstring>
+#include <mutex>
 #include "media_codec/media_codec.h"
 #include "filter/filter.h"
 #include "plugin/plugin_time.h"
@@ -35,6 +37,7 @@ class AudioDecoderFilter : public Filter, public InterruptListener,
     public std::enable_shared_from_this<AudioDecoderFilter> {
 public:
     explicit AudioDecoderFilter(std::string name, FilterType type);
+    explicit AudioDecoderFilter(std::string name, FilterType type, bool isAsyncMode);
     ~AudioDecoderFilter() override;
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
@@ -44,6 +47,10 @@ public:
     Status DoStart() override;
 
     Status DoPause() override;
+
+    Status DoFreeze() override;
+
+    Status DoUnFreeze() override;
 
     Status DoPauseAudioAlign() override;
 
@@ -93,6 +100,8 @@ public:
     void SetCallerInfo(uint64_t instanceId, const std::string& appName);
 
     void OnError(CodecErrorType errorType, int32_t errorCode);
+
+    void OnOutputFormatChanged(const Format& format);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -105,6 +114,7 @@ protected:
 private:
     Status SetInputBufferQueueConsumerListener();
     Status SetOutputBufferQueueProducerListener();
+    bool IsNeedProcessInput(bool isOutPort);
     void UpdateTrackInfoSampleFormat(const std::string& mime, const std::shared_ptr<Meta> &meta);
 
     std::string name_;
@@ -133,6 +143,9 @@ private:
     std::string appName_;
     std::mutex releaseMutex_;
     std::atomic<bool> isReleased_ {false};
+
+    std::mutex bufferStatusMutex_;
+    uint32_t bufferStatus_{static_cast<uint32_t>(InOutPortBufferStatus::INIT)};
 };
 
 class AudioDecoderCallback : public MediaAVCodec::MediaCodecCallback {

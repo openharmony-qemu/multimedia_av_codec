@@ -444,6 +444,27 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="HevcSwdecoderServerMemrecycleFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="HevcSwdecoderServerNormalFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="HevcSwdecoderServerSurfaceFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="HevcSwdecoderSetParameterFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
@@ -711,6 +732,12 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="DemuxerInnerFuncFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
 	<target name="HdrMuxerFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
@@ -722,6 +749,24 @@
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="FCodecServerFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test"/>
+            <option name="shell" value="restorecon /data/test"/>
+        </preparer>
+    </target>
+    <target name="DemuxerSetDataSourceWithProbSizeFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="DemuxerGetCommentDataFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>

@@ -60,6 +60,8 @@ public:
     int32_t Release() override;
     int32_t NotifyMemoryRecycle() override;
     int32_t NotifyMemoryWriteBack() override;
+    int32_t NotifySuspend() override;
+    int32_t NotifyResume() override;
 
 protected:
     enum MsgWhat : MsgType {
@@ -82,8 +84,10 @@ protected:
         RENDER_OUTPUT_BUFFER,
         STOP,
         RELEASE,
-        FREEZE,
-        ACTIVE,
+        SUSPEND,
+        RESUME,
+        BUFFER_RECYCLE,
+        BUFFER_WRITEBACK,
         GET_HIDUMPER_INFO,
         PRINT_ALL_BUFFER_OWNER,
 
@@ -266,6 +270,8 @@ protected:
     // freeze
     virtual int32_t FreezeBuffers() { return AVCS_ERR_UNSUPPORT; }
     virtual int32_t ActiveBuffers() { return AVCS_ERR_UNSUPPORT; }
+    virtual int32_t DecreaseFreq() { return AVCS_ERR_UNSUPPORT; }
+    virtual int32_t RecoverFreq() { return AVCS_ERR_UNSUPPORT; }
 
     // template
     template <typename T>
@@ -371,6 +377,7 @@ protected:
     bool gotFirstOutput_ = false;
     bool outPortHasChanged_ = false;
     int pid_ = -1;
+    double codecRate_ = 0.0;
 
     // VRR
 #ifdef USE_VIDEO_PROCESSING_ENGINE
@@ -432,6 +439,8 @@ private:
         void OnForceShutDown(const MsgInfo &info);
         void OnStateExited() override { codec_->stateGeneration_++; }
         void OnSetParameters(const MsgInfo &info);
+        void OnSuspend(const MsgInfo &info);
+        void OnResume(const MsgInfo &info);
 
     protected:
         HCodec *codec_;
@@ -480,7 +489,7 @@ private:
         void OnCodecEvent(CodecHDI::CodecEventType event, uint32_t data1, uint32_t data2) override;
         void OnShutDown(const MsgInfo &info) override;
         void OnFlush(const MsgInfo &info);
-        void OnFreeze(const MsgInfo &info);
+        void OnBufferRecycle(const MsgInfo &info);
     };
 
     struct OutputPortChangedState : BaseState {
@@ -530,7 +539,7 @@ private:
     private:
         void OnMsgReceived(const MsgInfo &info) override;
         void OnShutDown(const MsgInfo &info) override;
-        void OnActive(const MsgInfo &info);
+        void OnBufferWriteback(const MsgInfo &info);
     };
 
     class HdiCallback : public CodecHDI::ICodecCallback {
@@ -571,6 +580,7 @@ private:
     static constexpr uint32_t THREE_SECONDS_IN_US = 3'000'000;
     static constexpr uint32_t ONE_SECONDS_IN_US = 1'000'000;
     static constexpr uint32_t FIVE_SECONDS_IN_MS = 5'000;
+    static constexpr double HIGH_FPS = 120.0;
 
     std::shared_ptr<UninitializedState> uninitializedState_;
     std::shared_ptr<InitializedState> initializedState_;

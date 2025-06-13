@@ -1190,6 +1190,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_configured_invali
  
 HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_invalid_002, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dmaswap.disable", "1");
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/hevc"));
     ASSERT_TRUE(testObj);
     Media::Meta meta{};
@@ -1205,7 +1206,6 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_invalid_0
  
     bool isSupportFreeze = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
     if (isSupportFreeze) {
-        OHOS::system::SetParameter("hcodec.dmaswap.disable", "1");
         ret = testObj->NotifyMemoryRecycle();
         EXPECT_EQ(AVCS_ERR_OK, ret);
     }
@@ -1214,8 +1214,9 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_invalid_0
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
 
-HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_valid_002, TestSize.Level1)
+HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_valid_001, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dmaswap.disable", "0");
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/hevc"));
     ASSERT_TRUE(testObj);
     Media::Meta meta{};
@@ -1231,7 +1232,6 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_valid_002
  
     bool isSupportFreeze = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
     if (isSupportFreeze) {
-        OHOS::system::SetParameter("hcodec.dmaswap.disable", "0");
         ret = testObj->NotifyMemoryRecycle();
         EXPECT_EQ(AVCS_ERR_OK, ret);
  
@@ -1243,8 +1243,9 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_valid_002
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
  
-HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_valid_003, TestSize.Level1)
+HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_valid_002, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dmaswap.disable", "0");
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/hevc"));
     ASSERT_TRUE(testObj);
     Media::Meta meta{};
@@ -1260,7 +1261,6 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_valid_003
  
     bool isSupportFreeze = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
     if (isSupportFreeze) {
-        OHOS::system::SetParameter("hcodec.dmaswap.disable", "0");
         ret = testObj->NotifyMemoryRecycle();
         EXPECT_EQ(AVCS_ERR_OK, ret);
  

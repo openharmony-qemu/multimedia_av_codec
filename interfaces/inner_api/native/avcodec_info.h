@@ -65,7 +65,19 @@ enum class AVCapabilityFeature : int32_t {
     VIDEO_RPR = 4,
     VIDEO_ENCODER_QP_MAP = 5,
     VIDEO_DECODER_SEEK_WITHOUT_FLUSH = 6,
+    VIDEO_ENCODER_B_FRAME = 7,
     MAX_VALUE
+};
+
+/**
+ * @brief The enum of optional features that can be used in specific codec seenarios.
+ *
+ * @since 5.0
+ * @version 5.0
+ */
+enum class VideoSceneType : int32_t {
+    VIDEO_SCENE_UNKNOWN = 0,
+    VIDEO_SCENE_CAMERA_RECODER = 1,
 };
 
 /**
@@ -180,6 +192,7 @@ struct CapabilityData {
     int32_t rank = 0;
     Range maxBitrate;
     Range sqrFactor;
+    int32_t maxVersion = 0;
 };
 
 struct LevelParams {
@@ -294,6 +307,12 @@ public:
      * @version 5.0
      */
     int32_t GetFeatureProperties(AVCapabilityFeature feature, Format &format);
+
+    /**
+     * @brief Get codec max supported version
+     * @return Returns codec max supported version.
+     */
+    int32_t GetMaxSupportedVersion();
 
 private:
     bool IsFeatureValid(AVCapabilityFeature feature);
@@ -595,6 +614,7 @@ public:
     static constexpr std::string_view VIDEO_RV30 = "video/rv30";
     static constexpr std::string_view VIDEO_RV40 = "video/rv40";
     static constexpr std::string_view VIDEO_VVC = "video/vvc";
+    static constexpr std::string_view AUDIO_MIMETYPE_L2HC = "audio/l2hc";
     static constexpr std::string_view AUDIO_AMR_NB = "audio/3gpp";
     static constexpr std::string_view AUDIO_AMR_WB = "audio/amr-wb";
     static constexpr std::string_view AUDIO_MPEG = "audio/mpeg";
@@ -604,6 +624,7 @@ public:
     static constexpr std::string_view AUDIO_FLAC = "audio/flac";
     static constexpr std::string_view AUDIO_RAW = "audio/raw";
     static constexpr std::string_view AUDIO_G711MU = "audio/g711mu";
+    static constexpr std::string_view AUDIO_G711A = "audio/g711a";
     static constexpr std::string_view AUDIO_COOK = "audio/cook";
     static constexpr std::string_view AUDIO_AC3 = "audio/ac3";
     static constexpr std::string_view AUDIO_VIVID = "audio/av3a";
@@ -895,17 +916,17 @@ enum VideoEncodeBitrateMode : int32_t {
      */
     CQ = 2,
     /**
-     * constant rate factor mode
-     */
-    CRF = 3,
-    /**
      * stable quality rate control mode.
      */
-    SQR = 4,
+    SQR = 3,
     /**
      * constant bit rate mode for video call or meeting scene
      */
     CBR_VIDEOCALL = 10,
+    /**
+     * constant rate factor mode
+     */
+    CRF = 11,
 };
 
 /**

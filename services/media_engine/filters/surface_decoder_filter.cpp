@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -109,6 +109,7 @@ private:
 SurfaceDecoderFilter::SurfaceDecoderFilter(const std::string& name, FilterType type): Filter(name, type)
 {
     MEDIA_LOG_I("surface decoder filter create");
+    colorSpace_ = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 }
 
 SurfaceDecoderFilter::~SurfaceDecoderFilter()
@@ -125,6 +126,13 @@ void SurfaceDecoderFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int
     }
 }
 
+void SurfaceDecoderFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
+{
+    FALSE_RETURN_MSG(format != nullptr, "meta is nullptr");
+    FALSE_LOG_MSG_W(format->Get<Tag::VIDEO_IS_HDR_VIVID>(transcoderIsHdrVivid_), "Get is_hdr_vivid failed");
+    FALSE_LOG_MSG_W(format->Get<Tag::AV_TRANSCODER_DST_COLOR_SPACE>(colorSpace_), "Get dst_color_space failed");
+}
+
 void SurfaceDecoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
@@ -133,28 +141,49 @@ void SurfaceDecoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     filterCallback_ = callback;
 }
 
+Status SurfaceDecoderFilter::ConfigureMediaCodecByMimeType(std::string codecMimeType, bool isHdrVivid)
+{
+    FALSE_LOG_MSG_W(transcoderIsHdrVivid_ == isHdrVivid,
+        "IsHdrVivid configured by AVTranscoder engine conflits with the parameter obtained from demuxer.");
+    MEDIA_LOG_I("CodecMimeType is %{public}s, isHdrVivid: %{public}d", codecMimeType.c_str(),
+        static_cast<int32_t>(isHdrVivid));
+    mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER, "mediaCodec is nullptr");
+    Status ret = mediaCodec_->Init(codecMimeType, isHdrVivid);
+    if (ret == Status::OK) {
+        std::shared_ptr<DecoderAdapterCallback> decoderSurfaceCallback =
+            std::make_shared<SurfaceDecoderAdapterCallback>(shared_from_this());
+        mediaCodec_->SetDecoderAdapterCallback(decoderSurfaceCallback);
+    } else {
+        MEDIA_LOG_E("Init mediaCodec fail");
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE});
+        }
+    }
+    return ret;
+}
+
 Status SurfaceDecoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
 {
+    FALSE_RETURN_V_MSG(parameter != nullptr, Status::ERROR_INVALID_PARAMETER, "meta is nullptr");
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER, "mediaCodec is nullptr");
     MEDIA_LOG_I("Configure");
-    if (mediaCodec_ == nullptr) {
-        MEDIA_LOG_E("mediaCodec is null");
-        return Status::ERROR_UNKNOWN;
+    Format configFormat;
+    configFormat.SetMeta(parameter);
+    bool isHdrVivid = false;
+    FALSE_LOG_MSG_W(parameter->GetData(Tag::VIDEO_IS_HDR_VIVID, isHdrVivid), "Get is_hdr_vivid failed");
+    if (isHdrVivid) {
+        MEDIA_LOG_I("Is hdrVivid,set colorspace format(%{public}d), pixel format(%{public}d)",
+            static_cast<int32_t>(colorSpace_), static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12));
+        configFormat.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+            colorSpace_);
+        configFormat.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+            static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12));
     }
+    configFormat.PutIntValue(Tag::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
+    Status ret = mediaCodec_->Configure(configFormat);
     configureParameter_ = parameter;
-    configFormat_.SetMeta(configureParameter_);
-    bool isHdr = false;
-    configureParameter_->GetData(Tag::VIDEO_IS_HDR_VIVID, isHdr);
-    if (isHdr) {
-        MEDIA_LOG_D("isHdr true,set video_decoder_output_colorspace, pixel_format");
-        configFormat_.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-            static_cast<int8_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT));
-        configFormat_.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
-            static_cast<int8_t>(MediaAVCodec::VideoPixelFormat::NV12));
-    } else {
-        MEDIA_LOG_D("isHdr false");
-    }
-    configFormat_.PutIntValue(Tag::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
-    Status ret = mediaCodec_->Configure(configFormat_);
+    configureParameter_->Set<Tag::AV_TRANSCODER_DST_COLOR_SPACE>(colorSpace_);
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Configure fail");
         if (eventReceiver_ != nullptr) {
@@ -347,22 +376,10 @@ Status SurfaceDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     FALSE_RETURN_V_MSG(meta != nullptr, Status::ERROR_INVALID_PARAMETER, "meta is nullptr.");
     FALSE_RETURN_V_MSG(meta->GetData(Tag::MIME_TYPE, codecMimeType_),
         Status::ERROR_INVALID_PARAMETER, "get mime failed.");
-    MEDIA_LOG_I("OnLinked enter the codecMimeType_ is %{public}s", codecMimeType_.c_str());
-    mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
-    FALSE_RETURN_V(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER);
-    bool isHdr = false;
-    meta->GetData(Tag::VIDEO_IS_HDR_VIVID, isHdr);
-    Status ret = mediaCodec_->Init(codecMimeType_, isHdr);
-    if (ret == Status::OK) {
-        std::shared_ptr<DecoderAdapterCallback> decoderSurfaceCallback =
-            std::make_shared<SurfaceDecoderAdapterCallback>(shared_from_this());
-        mediaCodec_->SetDecoderAdapterCallback(decoderSurfaceCallback);
-    } else {
-        MEDIA_LOG_E("Init mediaCodec fail");
-        if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE});
-        }
-    }
+    bool isHdrVivid = false;
+    meta->GetData(Tag::VIDEO_IS_HDR_VIVID, isHdrVivid);
+    Status ret = ConfigureMediaCodecByMimeType(codecMimeType_, isHdrVivid);
+    FALSE_RETURN_V(ret == Status::OK, ret);
     meta_ = meta;
     ret = Configure(meta);
     if (ret != Status::OK) {

@@ -25,7 +25,7 @@
 namespace OHOS {
 namespace Media {
 namespace Plugins {
-enum StreamType {
+enum VideoStreamType {
     HEVC = 0,
     VVC  = 1,
 };
@@ -33,12 +33,12 @@ using CreateFunc = StreamParser *(*)();
 using DestroyFunc = void (*)(StreamParser *);
 class StreamParserManager {
 public:
-    static std::shared_ptr<StreamParserManager> Create(StreamType streamType);
+    static std::shared_ptr<StreamParserManager> Create(VideoStreamType streamType);
     StreamParserManager();
     StreamParserManager(const StreamParserManager &) = delete;
     StreamParserManager operator=(const StreamParserManager &) = delete;
     ~StreamParserManager();
-    static bool Init(StreamType streamType);
+    static bool Init(VideoStreamType videoStreamType);
 
     void ParseExtraData(const uint8_t *sample, int32_t size, uint8_t **extraDataBuf, int32_t *extraDataSize);
     bool IsHdrVivid();
@@ -58,17 +58,18 @@ public:
         size_t sideDataSize, bool isExtradata);
     void ParseAnnexbExtraData(const uint8_t *sample, int32_t size);
     std::vector<uint8_t> GetLogInfo();
+    uint32_t GetMaxReorderPic();
     
 private:
     StreamParser *streamParser_ {nullptr};
     // .so initialize
     static void *LoadPluginFile(const std::string &path);
-    static bool CheckSymbol(void *handler, StreamType streamType);
-    StreamType streamType_;
+    static bool CheckSymbol(void *handler, VideoStreamType videoStreamType);
+    VideoStreamType videoStreamType_;
     static std::mutex mtx_;
-    static std::map<StreamType, void *> handlerMap_;
-    static std::map<StreamType, CreateFunc> createFuncMap_;
-    static std::map<StreamType, DestroyFunc> destroyFuncMap_;
+    static std::map<VideoStreamType, void *> handlerMap_;
+    static std::map<VideoStreamType, CreateFunc> createFuncMap_;
+    static std::map<VideoStreamType, DestroyFunc> destroyFuncMap_;
 };
 } // namespace Plugins
 } // namespace Media

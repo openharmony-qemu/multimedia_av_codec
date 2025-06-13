@@ -92,20 +92,22 @@ std::string HCodec::OnGetHidumperInfo()
       << ", bufferCapacity:" << getbufferCapacity(inputBufferPool_) << endl;
     for (const BufferInfo& info : inputBufferPool_) {
         int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
-        s << "        " << "inBufId = " << info.bufferId << ", owner = " << ToString(info.owner)
-          << ", hasSwapedOut = " << info.hasSwapedOut << ", nextOwner = " << ToString(info.nextStepOwner)
-          << ", holdMs = " << holdMs << endl;
+        s << "        " << "inBufId = " << info.bufferId << ", owner = " << ToString(info.owner);
+        if (info.hasSwapedOut) {
+            s << ", hasSwapedOut = " << info.hasSwapedOut << ", nextOwner = " << ToString(info.nextStepOwner);
+        }
+        s << ", holdMs = " << holdMs << endl;
     }
     s << "        " << "----------------------------" << endl;
     s << "        " << "------------OUTPUT----------" << endl;
-    s << "        " << "eos:" << outputPortEos_ << ", fbd:" << outRecord_.totalCnt
-      << ", bufferCapacity:" << getbufferCapacity(outputBufferPool_) << endl;
     for (const BufferInfo& info : outputBufferPool_) {
         int fd = info.surfaceBuffer == nullptr ? -1 : info.surfaceBuffer->GetFileDescriptor();
         int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
-        s << "        " << "outBufId = " << info.bufferId << ", fd = " << fd << ", owner = " << ToString(info.owner)
-          << ", hasSwapedOut = " << info.hasSwapedOut << ", nextOwner = " << ToString(info.nextStepOwner)
-          << ", holdMs = " << holdMs << endl;
+        s << "        " << "outBufId = " << info.bufferId << ", fd = " << fd << ", owner = " << ToString(info.owner);
+        if (info.hasSwapedOut) {
+            s << ", hasSwapedOut = " << info.hasSwapedOut << ", nextOwner = " << ToString(info.nextStepOwner);
+        }
+        s << ", holdMs = " << holdMs << endl;
     }
     s << "        " << "----------------------------" << endl << endl;
     return s.str();

@@ -239,6 +239,9 @@ bool TesterCodecBase::ConfigureEncoder()
     if (opt_.enableQPMap == 1) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, opt_.enableQPMap);
     }
+    if (opt_.gopBMode.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, opt_.gopBMode.value());
+    }
     auto begin = std::chrono::steady_clock::now();
     int32_t err = codec_->Configure(fmt);
     if (err != AVCS_ERR_OK) {
@@ -317,6 +320,9 @@ bool TesterCodecBase::SetEncoderPerFrameParam(BufInfo& buf, const PerFrameParams
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, static_cast<int32_t>(param.ebrParam->maxQp));
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_START, static_cast<int32_t>(param.ebrParam->startQp));
         meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_SKIP, static_cast<bool>(param.ebrParam->isSkip));
+    }
+    if (param.roiParams.has_value()) {
+        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_ROI_PARAMS, param.roiParams.value());
     }
     if (param.absQpMap.has_value() && param.qpMapValue.has_value()) {
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_ABS_QP_MAP, param.absQpMap.value());

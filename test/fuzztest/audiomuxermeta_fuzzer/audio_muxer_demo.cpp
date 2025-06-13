@@ -374,6 +374,7 @@ bool AVMuxerDemo::UpdateWriteBufferInfoAVBuffer(OH_AVBuffer **buffer, OH_AVCodec
     if (ret <= 0 || info->size < 0) {
         return false;
     }
+    info->size %= 10485760; // 10485760: 10MB
     // 3.【初始化buffer】initialization buffer
     *buffer = OH_AVBuffer_Create(info->size);
     if (*buffer == nullptr) {
@@ -390,5 +391,12 @@ bool AVMuxerDemo::UpdateWriteBufferInfoAVBuffer(OH_AVBuffer **buffer, OH_AVCodec
     DEMO_CHECK_AND_RETURN_RET_LOG(res == AV_ERR_OK, false, "Fatal: OH_AVBuffer_SetBufferAttr fail!!!");
     res = OH_AVMuxer_WriteSampleBuffer(avMuxer_, trackIndex, *buffer);
     DEMO_CHECK_AND_RETURN_RET_LOG(res == AV_ERR_OK, false, "Fatal: OH_AVMuxer_WriteSampleBuffer fail!!!");
+    OH_AVMemory *memBuf = OH_AVMemory_Create(info->size);
+    DEMO_CHECK_AND_RETURN_RET_LOG(memBuf != nullptr, false, "create AVMemory fail");
+    errno_t secRet = memcpy_s(OH_AVMemory_GetAddr(memBuf), info->size, OH_AVBuffer_GetAddr(*buffer), info->size);
+    DEMO_CHECK_AND_RETURN_RET_LOG(secRet == EOK, false, "memcpy_s fail");
+    res = OH_AVMuxer_WriteSample(avMuxer_, 0, memBuf, *info);
+    DEMO_CHECK_AND_RETURN_RET_LOG(res == AV_ERR_OK, false, "Fatal: OH_AVMuxer_WriteSample fail!!!");
+    OH_AVMemory_Destroy(memBuf);
     return true;
 }

@@ -20,6 +20,7 @@ group("av_codec_media_engine_plugins") {
     "ffmpeg_adapter:media_plugin_FFmpegMuxer",
     "ffmpeg_adapter/audio_decoder:media_plugin_FFmpegAudioDecoders",
     "ffmpeg_adapter/audio_decoder/g711mu:media_plugin_G711muAudioDecoder",
+    "ffmpeg_adapter/audio_decoder/g711a:media_plugin_G711aAudioDecoder",
     "ffmpeg_adapter/audio_decoder/lbvc:media_plugin_LbvcAudioDecoder",
     "ffmpeg_adapter/audio_decoder/raw:media_plugin_RawAudioDecoder",
     "ffmpeg_adapter/audio_encoder:media_plugin_FFmpegAudioEncoders",
@@ -38,8 +39,5 @@ group("av_codec_media_engine_plugins") {
   if (av_codec_enable_codec_cook) {
     deps +=
         [ "ffmpeg_adapter/audio_decoder/cook:media_plugin_CookAudioDecoder" ]
-  }
-  if (av_codec_enable_codec_ac3) {
-    deps += [ "ffmpeg_adapter/audio_decoder/ac3:media_plugin_Ac3AudioDecoder" ]
   }
 }

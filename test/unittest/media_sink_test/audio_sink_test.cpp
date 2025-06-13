@@ -202,6 +202,11 @@ public:
         (void)bufDesc;
         return Status::OK;
     }
+    bool IsFormatSupported(const std::shared_ptr<Meta> &meta)
+    {
+        (void)meta;
+        return true;
+    }
 };
 
 std::shared_ptr<AudioSink> AudioSinkCreate()

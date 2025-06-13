@@ -1170,7 +1170,7 @@ HWTEST_F(CodecListUnitTest, CodecList_GetVideoFrameRateRangeForSize_Vvc_001, Tes
             EXPECT_EQ(1, framerateRange.minVal);
             EXPECT_EQ(120, framerateRange.maxVal);
 
-            framerateRange = capability_->GetVideoFrameRateRangeForSize(DEFAULT_WIDTH_VVC, DEFAULT_HEIGHT_VVC);
+            framerateRange = capability_->GetVideoFrameRateRangeForSize(FRAME_RATE_WIDTH_VVC, FRAME_RATE_HEIGHT_VVC);
             EXPECT_EQ(1, framerateRange.minVal);
             EXPECT_EQ(30, framerateRange.maxVal);
         }

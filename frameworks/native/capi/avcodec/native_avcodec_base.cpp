@@ -43,6 +43,7 @@ const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT = "application/x-subrip";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_LBVC = "audio/lbvc";
 const char *OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT = "text/vtt";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_RAW = "audio/raw";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_G711A = "audio/g711a";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";
@@ -50,6 +51,7 @@ const char *OH_MD_KEY_TRACK_TYPE = "track_type";
 const char *OH_MD_KEY_CODEC_MIME = "codec_mime";
 const char *OH_MD_KEY_DURATION = "duration";
 const char *OH_MD_KEY_BITRATE = "bitrate";
+const char *OH_MD_KEY_MAX_BITRATE = "max_bitrate";
 const char *OH_MD_KEY_MAX_INPUT_SIZE = "max_input_size";
 const char *OH_MD_KEY_WIDTH = "width";
 const char *OH_MD_KEY_HEIGHT = "height";
@@ -69,6 +71,7 @@ const char *OH_MD_KEY_COLOR_PRIMARIES = "color_primaries";
 const char *OH_MD_KEY_TRANSFER_CHARACTERISTICS = "transfer_characteristics";
 const char *OH_MD_KEY_MATRIX_COEFFICIENTS = "matrix_coefficients";
 const char *OH_MD_KEY_QUALITY = "quality";
+const char *OH_MD_KEY_SQR_FACTOR = "sqr_factor";
 const char *OH_MD_KEY_CHANNEL_LAYOUT = "channel_layout";
 const char *OH_MD_KEY_BITS_PER_CODED_SAMPLE = "bits_per_coded_sample";
 const char *OH_MD_KEY_AAC_IS_ADTS = "aac_is_adts";
@@ -93,6 +96,9 @@ const char *OH_MD_KEY_LANGUAGE = "language";
 const char *OH_MD_KEY_DESCRIPTION = "description";
 const char *OH_MD_KEY_LYRICS = "lyrics";
 const char *OH_MD_KEY_TRACK_COUNT = "track_count";
+const char *OH_MD_KEY_REFERENCE_TRACK_IDS = "reference_track_ids";
+const char *OH_MD_KEY_TRACK_REFERENCE_TYPE = "track_reference_type";
+const char *OH_MD_KEY_TRACK_DESCRIPTION = "track_description";
 
 const char *OH_MD_KEY_AUDIO_COMPRESSION_LEVEL = "audio_compression_level";
 const char *OH_MD_KEY_AUDIO_OBJECT_NUMBER = "audio_object_number_key";
@@ -135,6 +141,11 @@ const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_ENABLE_VRR = "video_decoder_output_en
 const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER = "video_encoder_repeat_previous_frame_after";
 const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT = "video_encoder_repeat_previous_max_count";
 const char *OH_MD_KEY_CREATION_TIME = "creation_time";
+const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS = "video_encoder_roi_params";
+const char *OH_MD_KEY_ENABLE_MOOV_FRONT = "fast_start";
+const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL = "video_encoder_enable_pts_based_ratecontrol";
+const char *OH_MD_KEY_VIDEO_ENCODER_MAX_B_FRAME = "video_encoder_max_b_frame";
+const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME = "video_encoder_enable_b_frame";
 #ifdef __cplusplus
 }
 #endif

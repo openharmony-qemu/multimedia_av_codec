@@ -37,6 +37,7 @@ struct SamplePacket {
     std::vector<AVPacket*> pkts {};
     bool isEOS = false;
     bool isAnnexb = false;
+    uint32_t queueIndex = 0;
     ~SamplePacket()
     {
         for (auto pkt : pkts) {
@@ -60,17 +61,21 @@ public:
     bool HasCache(uint32_t trackIndex);
     size_t GetCacheSize(uint32_t trackIndex);
     uint32_t GetCacheDataSize(uint32_t trackIndex);
+    bool ResetInfo(std::shared_ptr<SamplePacket> block);
+    bool SetInfo(std::shared_ptr<SamplePacket> block);
     void FreeQueue(uint32_t queueIndex);
     bool Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> block);
     std::shared_ptr<SamplePacket> Pop(uint32_t trackIndex);
     std::shared_ptr<SamplePacket> Front(uint32_t trackIndex);
     std::shared_ptr<SamplePacket> Back(uint32_t trackIndex);
-    
+    Status GetLastPTSByTrackId(uint32_t trackIndex, int64_t& maxPts);
+
 private:
     struct InnerQueue {
         bool isValid {false};
         uint32_t dataSize {0};
         std::shared_ptr<BlockQueue<std::shared_ptr<SamplePacket>>> blockQue {nullptr};
+        int64_t maxPts {INT64_MIN};
     };
     static constexpr size_t SINGLE_QUEUE_SIZE = 100;
     std::string name_;

@@ -157,9 +157,6 @@ public:
         // The bufferInfo lifecycle is controlled by the current function stack
         OH_AVMemory *data = GetTransData(codec_, index, buffer, true);
 
-        if (!((flag == AVCODEC_BUFFER_FLAG_CODEC_DATA) || (flag == AVCODEC_BUFFER_FLAG_EOS))) {
-            AVCodecTrace::TraceEnd("OH::Frame", info.presentationTimeUs);
-        }
         asyncCallback_.onNeedOutputData(codec_, index, data, &bufferAttr, userData_);
     }
 
@@ -194,9 +191,6 @@ public:
 
         OH_AVBuffer *data = GetTransData(codec_, index, buffer, true);
 
-        if (!((buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA) || (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS))) {
-            AVCodecTrace::TraceEnd("OH::Frame", buffer->pts_);
-        }
         callback_.onNewOutputBuffer(codec_, index, data, userData_);
     }
 
@@ -487,6 +481,20 @@ OH_AVErrCode OH_VideoEncoder_Configure(struct OH_AVCodec *codec, struct OH_AVFor
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
 
+    int32_t bitrateMode = -1;
+    if (OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, &bitrateMode) &&
+        bitrateMode == SQR) {
+        int64_t bitrate;
+        int64_t maxBitrate;
+        bool bitrateExist = OH_AVFormat_GetLongValue(format, OH_MD_KEY_BITRATE, &bitrate);
+        bool maxBitrateExist = OH_AVFormat_GetLongValue(format, OH_MD_KEY_MAX_BITRATE, &maxBitrate);
+        if (bitrateExist && !maxBitrateExist) {
+            AVCODEC_LOGW("In SQR bitrate mode, param %{public}s is not set, param %{public}s will be used instead",
+                OH_MD_KEY_MAX_BITRATE, OH_MD_KEY_BITRATE);
+                OH_AVFormat_SetLongValue(format, OH_MD_KEY_MAX_BITRATE, bitrate);
+        }
+    }
+
     int32_t ret = videoEncObj->videoEncoder_->Configure(format->format_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder configure failed!");
@@ -772,10 +780,6 @@ OH_AVErrCode OH_VideoEncoder_PushInputData(struct OH_AVCodec *codec, uint32_t in
     CHECK_AND_RETURN_RET_LOG(videoEncObj->callback_ != nullptr, AV_ERR_INVALID_STATE,
                              "The callback of OH_AVMemory is nullptr!");
 
-    if (!((attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) || (attr.flags == AVCODEC_BUFFER_FLAG_EOS))) {
-        AVCodecTrace::TraceBegin("OH::Frame", attr.pts);
-    }
-
     struct AVCodecBufferInfo bufferInfo;
     bufferInfo.presentationTimeUs = attr.pts;
     bufferInfo.size = attr.size;
@@ -811,9 +815,6 @@ OH_AVErrCode OH_VideoEncoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t 
         if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
             videoEncObj->isEOS_.store(true);
             AVCODEC_LOGD("Set eos status to true");
-        }
-        if (!((buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA) || (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS))) {
-            AVCodecTrace::TraceBegin("OH::Frame", buffer->pts_);
         }
     }
 

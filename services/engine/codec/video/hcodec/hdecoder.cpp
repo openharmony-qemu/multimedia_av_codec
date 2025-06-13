@@ -731,6 +731,9 @@ uint64_t HDecoder::GetProducerUsage()
 void HDecoder::CombineConsumerUsage()
 {
     uint32_t consumerUsage = currSurface_.surface_->GetDefaultUsage();
+    if (currSurface_.surface_->GetName().find("SurfaceImage") != string::npos) {
+        consumerUsage |= BUFFER_USAGE_HW_COMPOSER;
+    }
     uint64_t finalUsage = requestCfg_.usage | consumerUsage | cfgedConsumerUsage;
     HLOGI("producer 0x%" PRIx64 " | consumer 0x%" PRIx64 " | cfg 0x%" PRIx64 " -> 0x%" PRIx64 "",
         requestCfg_.usage, consumerUsage, cfgedConsumerUsage, finalUsage);

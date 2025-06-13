@@ -941,6 +941,11 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
     buffer->SetParameter(format);
     format->Destroy();
 
+    std::shared_ptr<FormatMock> formatRoi = buffer->GetParameter();
+    formatRoi->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
+    buffer->SetParameter(formatRoi);
+    formatRoi->Destroy();
+
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;

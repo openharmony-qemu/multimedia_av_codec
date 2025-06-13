@@ -29,10 +29,11 @@
 #endif
 #include "event_manager.h"
 #include "ipc_skeleton.h"
+#include "background_event_handler.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServiceStub"};
-constexpr int64_t MEMORY_RECYCLE_TIMEOUT_THRESHOLD_MILLISECONDS = 200;
+constexpr int32_t UID_MEDIA_SERVICE = 1013;
 const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::SET_LISTENER_OBJ),
      "CodecServiceStub SetListenerObject"},
@@ -69,6 +70,20 @@ const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
      "CodecServiceStub SetDecryptConfig"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::RENDER_OUTPUT_BUFFER_AT_TIME),
      "CodecServiceStub RenderOutputBufferAtTime"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::SET_CUSTOM_BUFFER),
+     "CodecServiceStub SetCustomBuffer"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::NOTIFY_FREEZE),
+     "CodecServiceStub NotifyFreeze"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::NOTIFY_ACTIVE),
+     "CodecServiceStub NotifyActive"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::NOTIFY_MEMORY_RECYCLE),
+     "CodecServiceStub NotifyMemoryRecycle"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::NOTIFY_MEMORY_WRITE_BACK),
+     "CodecServiceStub NotifyMemoryWriteBack"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::NOTIFY_SUSPEND),
+     "CodecServiceStub NotifySuspend"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::NOTIFY_RESUME),
+     "CodecServiceStub NotifyResume"},
 };
 } // namespace
 
@@ -99,9 +114,10 @@ CodecServiceStub::~CodecServiceStub()
 int32_t CodecServiceStub::InitStub(int32_t instanceId)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     codecServer_ = CodecServer::Create(instanceId);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server create failed");
+    instanceId_ = instanceId;
     return AVCS_ERR_OK;
 }
 
@@ -134,7 +150,7 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
         AVCODEC_LOGE("Invalid descriptor");
         return AVCS_ERR_INVALID_OPERATION;
     }
-    int32_t ret = -1;
+    int32_t ret = AV_ERR_OK;
     auto itFuncName = CODEC_FUNC_NAME.find(code);
     std::string funcName =
         itFuncName != CODEC_FUNC_NAME.end() ? itFuncName->second : "CodecServiceStub OnRemoteRequest";
@@ -204,6 +220,27 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
         case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_CUSTOM_BUFFER):
             ret = SetCustomBuffer(data, reply);
             break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_MEMORY_EXCHANGE):
+            ret = NotifyMemoryExchange(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_FREEZE):
+            ret = NotifyFreeze();
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_ACTIVE):
+            ret = NotifyActive();
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_MEMORY_RECYCLE):
+            NotifyMemoryRecycle(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_MEMORY_WRITE_BACK):
+            NotifyMemoryWriteBack(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_SUSPEND):
+            NotifySuspend(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_RESUME):
+            NotifyResume(data, reply);
+            break;
         default:
             AVCODEC_LOGW_WITH_TAG("No member func supporting, applying default process, code:%{public}u", code);
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
@@ -268,6 +305,27 @@ int32_t CodecServiceStub::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
     return codecServer_->SetCustomBuffer(buffer);
 }
 
+int32_t CodecServiceStub::NotifyMemoryExchange(const bool exchangeFlag)
+{
+    return (exchangeFlag ? NotifyFreeze() : NotifyActive()), AVCS_ERR_OK;
+}
+
+int32_t CodecServiceStub::NotifyFreeze()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    BackGroundEventHandler::GetInstance().NotifyFreeze(instanceId_);
+    return AV_ERR_OK;
+}
+
+int32_t CodecServiceStub::NotifyActive()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    BackGroundEventHandler::GetInstance().NotifyActive(instanceId_);
+    return AV_ERR_OK;
+}
+
 int32_t CodecServiceStub::Start()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
@@ -288,9 +346,7 @@ int32_t CodecServiceStub::Stop()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
-    if (isFreezedFlag_ == true) {
-        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyForeGround();
-    }
+    OnActive();
     int32_t ret = codecServer_->Stop();
     if (ret == AVCS_ERR_OK) {
         (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
@@ -303,9 +359,7 @@ int32_t CodecServiceStub::Flush()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
-    if (isFreezedFlag_ == true) {
-        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyForeGround();
-    }
+    OnActive();
     int32_t ret = codecServer_->Flush();
     if (ret == AVCS_ERR_OK) {
         (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
@@ -318,9 +372,7 @@ int32_t CodecServiceStub::Reset()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
-    if (isFreezedFlag_ == true) {
-        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyForeGround();
-    }
+    OnActive();
     int32_t ret = codecServer_->Reset();
     if (ret == AVCS_ERR_OK) {
         (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
@@ -332,9 +384,7 @@ int32_t CodecServiceStub::Reset()
 int32_t CodecServiceStub::Release()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    if (isFreezedFlag_ == true) {
-        std::static_pointer_cast<CodecServer>(codecServer_)->NotifyForeGround();
-    }
+    OnActive();
     return InnerRelease();
 }
 
@@ -423,39 +473,9 @@ int32_t CodecServiceStub::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySess
 }
 #endif
 
-void CodecServiceStub::NotifyMemoryRecycle()
-{
-    std::lock_guard<std::shared_mutex> lock(mutex_);
-    isFreezedFlag_ = true;
-    CHECK_AND_RETURN_LOG(codecServer_ != nullptr, "Codec server is nullptr");
-    std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
-    std::static_pointer_cast<CodecServer>(codecServer_)->NotifyBackGround();
-    std::chrono::time_point<std::chrono::steady_clock> end = std::chrono::steady_clock::now();
-    int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
-    if (duration > MEMORY_RECYCLE_TIMEOUT_THRESHOLD_MILLISECONDS) {
-        AVCODEC_LOGW("NotifyMemoryRecycle duration: %{public}" PRId64 " ms", duration);
-    }
-    return;
-}
-
-void CodecServiceStub::NotifyMemoryWriteBack()
-{
-    std::lock_guard<std::shared_mutex> lock(mutex_);
-    isFreezedFlag_ = false;
-    CHECK_AND_RETURN_LOG(codecServer_ != nullptr, "Codec server is nullptr");
-    std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
-    std::static_pointer_cast<CodecServer>(codecServer_)->NotifyForeGround();
-    std::chrono::time_point<std::chrono::steady_clock> end = std::chrono::steady_clock::now();
-    int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
-    if (duration > MEMORY_RECYCLE_TIMEOUT_THRESHOLD_MILLISECONDS) {
-        AVCODEC_LOGW("NotifyMemoryWriteBack duration: %{public}" PRId64 " ms", duration);
-    }
-    return;
-}
-
 int32_t CodecServiceStub::DestroyStub(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     (void)data;
 
     bool ret = reply.WriteInt32(DestroyStub());
@@ -465,7 +485,7 @@ int32_t CodecServiceStub::DestroyStub(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::SetListenerObject(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     sptr<IRemoteObject> object = data.ReadRemoteObject();
 
     bool ret = reply.WriteInt32(SetListenerObject(object));
@@ -475,7 +495,7 @@ int32_t CodecServiceStub::SetListenerObject(MessageParcel &data, MessageParcel &
 
 int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     Meta callerInfo;
     callerInfo.FromParcel(data);
     AVCodecType type = static_cast<AVCodecType>(data.ReadInt32());
@@ -491,7 +511,7 @@ int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::Configure(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     Format format;
     (void)AVCodecParcel::Unmarshalling(data, format);
     bool ret = reply.WriteInt32(Configure(format));
@@ -501,7 +521,7 @@ int32_t CodecServiceStub::Configure(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::Prepare(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     (void)data;
 
     bool ret = reply.WriteInt32(Prepare());
@@ -511,7 +531,7 @@ int32_t CodecServiceStub::Prepare(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::Start(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     (void)data;
 
     bool ret = reply.WriteInt32(Start());
@@ -521,7 +541,7 @@ int32_t CodecServiceStub::Start(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::Stop(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     (void)data;
 
     bool ret = reply.WriteInt32(Stop());
@@ -531,7 +551,7 @@ int32_t CodecServiceStub::Stop(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::Flush(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     (void)data;
 
     bool ret = reply.WriteInt32(Flush());
@@ -541,7 +561,7 @@ int32_t CodecServiceStub::Flush(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::Reset(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     (void)data;
 
     bool ret = reply.WriteInt32(Reset());
@@ -551,7 +571,7 @@ int32_t CodecServiceStub::Reset(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::Release(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     (void)data;
 
     bool ret = reply.WriteInt32(Release());
@@ -561,7 +581,7 @@ int32_t CodecServiceStub::Release(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::NotifyEos(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     (void)data;
 
     bool ret = reply.WriteInt32(NotifyEos());
@@ -571,7 +591,7 @@ int32_t CodecServiceStub::NotifyEos(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::CreateInputSurface(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     (void)data;
     sptr<OHOS::Surface> surface = CreateInputSurface();
 
@@ -586,7 +606,7 @@ int32_t CodecServiceStub::CreateInputSurface(MessageParcel &data, MessageParcel 
 
 int32_t CodecServiceStub::SetOutputSurface(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
 
     sptr<IRemoteObject> object = data.ReadRemoteObject();
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(object != nullptr, AVCS_ERR_NO_MEMORY, "Object is nullptr");
@@ -609,15 +629,14 @@ int32_t CodecServiceStub::SetOutputSurface(MessageParcel &data, MessageParcel &r
 
 int32_t CodecServiceStub::QueueInputBuffer(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
-
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec listener is nullptr");
     uint32_t index = data.ReadUint32();
     AVCodecBufferInfo info;
     AVCodecBufferFlag flag;
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec listener is nullptr");
     bool ret =
         static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->InputBufferInfoFromParcel(index, info, flag, data);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Listener read meta data failed");
+    AVCODEC_SYNC_CUSTOM_TRACE_WITH_TAG(HITRACE_LEVEL_INFO, "", "%s:S, flag: %u", __FUNCTION__, flag);
 
     ret = reply.WriteInt32(QueueInputBuffer(index, info, flag));
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
@@ -626,7 +645,7 @@ int32_t CodecServiceStub::QueueInputBuffer(MessageParcel &data, MessageParcel &r
 
 int32_t CodecServiceStub::GetOutputFormat(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
 
     (void)data;
     Format format;
@@ -637,7 +656,7 @@ int32_t CodecServiceStub::GetOutputFormat(MessageParcel &data, MessageParcel &re
 
 int32_t CodecServiceStub::ReleaseOutputBuffer(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
 
     uint32_t index = data.ReadUint32();
     bool render = data.ReadBool();
@@ -649,7 +668,7 @@ int32_t CodecServiceStub::ReleaseOutputBuffer(MessageParcel &data, MessageParcel
 
 int32_t CodecServiceStub::RenderOutputBufferAtTime(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
 
     uint32_t index = data.ReadUint32();
     int64_t renderTimestampNs = data.ReadInt64();
@@ -665,7 +684,7 @@ int32_t CodecServiceStub::RenderOutputBufferAtTime(MessageParcel &data, MessageP
 
 int32_t CodecServiceStub::SetParameter(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     Format format;
     (void)AVCodecParcel::Unmarshalling(data, format);
 
@@ -676,7 +695,7 @@ int32_t CodecServiceStub::SetParameter(MessageParcel &data, MessageParcel &reply
 
 int32_t CodecServiceStub::GetInputFormat(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
 
     (void)data;
     Format format;
@@ -688,7 +707,7 @@ int32_t CodecServiceStub::GetInputFormat(MessageParcel &data, MessageParcel &rep
 #ifdef SUPPORT_DRM
 int32_t CodecServiceStub::SetDecryptConfig(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     sptr<IRemoteObject> object = data.ReadRemoteObject();
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(object != nullptr, AVCS_ERR_INVALID_OPERATION,
                                       "SetDecryptConfig read object is null");
@@ -706,13 +725,25 @@ int32_t CodecServiceStub::SetDecryptConfig(MessageParcel &data, MessageParcel &r
 
 int32_t CodecServiceStub::SetCustomBuffer(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_SYNC_TRACE_WITH_TAG;
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer != nullptr, AVCS_ERR_NO_MEMORY, "Create buffer failed");
     bool ret = buffer->ReadFromMessageParcel(data);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Read From MessageParcel failed");
     ret = reply.WriteInt32(SetCustomBuffer(buffer));
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecServiceStub::NotifyMemoryExchange(MessageParcel &data, MessageParcel &reply)
+{
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
+    auto uid = IPCSkeleton::GetCallingUid();
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(
+        uid == UID_MEDIA_SERVICE, AVCS_ERR_OK, "Permission denied %{public}d, only supported for media_service", uid);
+
+    bool ret = reply.WriteInt32(NotifyMemoryExchange(data.ReadBool()));
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
@@ -725,6 +756,67 @@ int32_t CodecServiceStub::InnerRelease()
     int32_t ret = codecServer_->Release();
     isServerReleased_ = (ret == AVCS_ERR_OK);
     return ret;
+}
+
+void CodecServiceStub::NotifyMemoryRecycle([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
+    CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
+    auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryRecycle();
+    isMemoryRecycleFlag_ = ret == AVCS_ERR_OK ? true : false;
+    reply.WriteInt32(ret);
+}
+
+void CodecServiceStub::NotifyMemoryWriteBack([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
+    CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
+    auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryWriteBack();
+    isMemoryRecycleFlag_ = ret == AVCS_ERR_OK ? false : true;
+    reply.WriteInt32(ret);
+}
+
+void CodecServiceStub::NotifySuspend([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
+    CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
+    auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifySuspend();
+    suspended_ = ret == AVCS_ERR_OK ? true : false;
+    reply.WriteInt32(ret);
+}
+
+void CodecServiceStub::NotifyResume([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
+    CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
+    auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyResume();
+    suspended_ = ret == AVCS_ERR_OK ? false : true;
+    reply.WriteInt32(ret);
+}
+
+void CodecServiceStub::OnActive()
+{
+    CHECK_AND_RETURN_LOG_WITH_TAG(codecServer_ != nullptr, "Codec server is nullptr");
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
+    auto needClear = isMemoryRecycleFlag_ || suspended_;
+    if (isMemoryRecycleFlag_) {
+        auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyMemoryWriteBack();
+        isMemoryRecycleFlag_ = ret == AVCS_ERR_OK ? false : true;
+        needClear = ret == AVCS_ERR_OK ? needClear : false;
+    }
+    if (suspended_) {
+        auto ret = std::static_pointer_cast<CodecServer>(codecServer_)->NotifyResume();
+        suspended_ = ret = AVCS_ERR_OK ? false : true;
+        needClear = ret == AVCS_ERR_OK ? needClear : false;
+    }
+    if (needClear) {
+        BackGroundEventHandler::GetInstance().EraseInstance(instanceId_);
+        AVCODEC_LOGI_WITH_TAG("Done");
+    }
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

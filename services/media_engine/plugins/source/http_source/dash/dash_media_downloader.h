@@ -72,6 +72,8 @@ public:
     bool GetBufferingTimeOut() override;
     void NotifyInitSuccess() override;
     uint64_t GetMemorySize() override;
+    std::string GetContentType() override;
+    Status StopBufferring(bool isAppBackground) override;
 
 private:
     void ReceiveMpdStreamInitEvent();
@@ -85,6 +87,7 @@ private:
     uint32_t GetNextBitrate(std::shared_ptr<DashSegmentDownloader> segmentDownloader);
     bool AutoSelectBitrateInternal(uint32_t bitrate);
     bool IsSeekingInSwitch();
+    int64_t GetVideoSeekTime(int64_t seekTimeMs);
     void SeekInternal(int64_t seekTimeMs);
     Status SelectAudio(const std::shared_ptr<DashStreamDescription> &streamDesc);
     Status SelectAudioInternal(const std::shared_ptr<DashStreamDescription> &streamDesc);
@@ -102,7 +105,7 @@ private:
     std::shared_ptr<DashSegmentDownloader> GetSegmentDownloaderByType(MediaAVCodec::MediaType type) const;
     void OpenInitSegment(const std::shared_ptr<DashStreamDescription> &streamDesc,
                          const std::shared_ptr<DashSegment> &seg);
-    void HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos);
+    void HandleSeekReady(int32_t streamType, int32_t streamId, int64_t seekTimeMs, int32_t isEos);
 
 private:
 

@@ -28,6 +28,7 @@ Status MockMediaSyncCenter::Reset()
 void MockMediaSyncCenter::AddSynchronizer(Pipeline::IMediaSynchronizer* syncer)
 {
     (void)syncer;
+     synchronizerAdded_ = true;
 }
 
 void MockMediaSyncCenter::RemoveSynchronizer(Pipeline::IMediaSynchronizer* syncer)
@@ -38,10 +39,11 @@ void MockMediaSyncCenter::RemoveSynchronizer(Pipeline::IMediaSynchronizer* synce
 bool MockMediaSyncCenter::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, IMediaTime iMediaTime,
     Pipeline::IMediaSynchronizer* supplier)
 {
-    (void)clockTime;
+    lastTimeAnchorClock_ = clockTime;
     (void)delayTime;
     (void)iMediaTime;
     (void)supplier;
+    updateTimeAnchorTimes_++;
     return returnBool_;
 }
 
@@ -83,14 +85,16 @@ void MockMediaSyncCenter::SetMediaTimeRangeStart(int64_t startMediaTime, int32_t
     (void)startMediaTime;
     (void)trackId;
     (void)supplier;
+    setMediaRangeStartTime_++;
 }
 
 void MockMediaSyncCenter::SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId,
     Pipeline::IMediaSynchronizer* supplier)
 {
-    (void)endMediaTime;
+    mediaRangeEndValue_ = endMediaTime;
     (void)trackId;
     (void)supplier;
+    setMediaRangeEndTime_++;
 }
 
 int64_t MockMediaSyncCenter::GetSeekTime()
@@ -116,6 +120,28 @@ float MockMediaSyncCenter::GetPlaybackRate()
 void MockMediaSyncCenter::SetMediaStartPts(int64_t startPts)
 {
     (void)startPts;
+}
+
+int64_t MockMediaSyncCenter::GetMediaStartPts()
+{
+    startPtsGetTime_++;
+    return GetRetInt64Value();
+}
+ 
+int64_t MockMediaSyncCenter::GetRetInt64Value()
+{
+    if (returnInt64Queue_.empty()) {
+        return 0;
+    }
+    auto result = returnInt64Queue_.front();
+    returnInt64Queue_.pop();
+    return result;
+}
+ 
+void MockMediaSyncCenter::SetLastVideoBufferPts(int64_t bufferPts)
+{
+    (void)bufferPts;
+    setLastVideoBufferPtsTimes_++;
 }
 }  // namespace Test
 }  // namespace Media

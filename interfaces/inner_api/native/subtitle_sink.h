@@ -61,6 +61,26 @@ private:
         std::string text_;
         int64_t pts_;
         int64_t duration_;
+        std::shared_ptr<AVBuffer> buffer_ {nullptr};
+
+        SubtitleInfo(std::string text, int64_t pts, int64_t duration) : text_(text), pts_(pts), duration_(duration) {}
+
+        SubtitleInfo(std::string text, int64_t pts, int64_t duration, std::shared_ptr<AVBuffer> buffer)
+            : text_(text), pts_(pts), duration_(duration), buffer_(buffer) {}
+
+        SubtitleInfo(const SubtitleInfo& other)
+            : text_(other.text_), pts_(other.pts_), duration_(other.duration_), buffer_(other.buffer_) {}
+
+        SubtitleInfo& operator=(const SubtitleInfo& other)
+        {
+            if (this != &other) {
+                text_ = other.text_;
+                pts_ = other.pts_;
+                duration_ = other.duration_;
+                buffer_ = other.buffer_;
+            }
+            return *this;
+        }
     };
     void NotifyRender(SubtitleInfo &subtitleInfo);
     void RenderLoop();

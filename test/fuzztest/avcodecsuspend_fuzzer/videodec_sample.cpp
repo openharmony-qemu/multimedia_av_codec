@@ -81,6 +81,7 @@ void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     cout << "Error errorCode=" << errorCode << endl;
     g_decSample->isRunning_.store(false);
+    g_fuzzError = true;
     g_decSample->signal_->inCond_.notify_all();
 }
 
@@ -390,13 +391,13 @@ OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
 {
     uint32_t index;
     unique_lock<mutex> lock(signal_->inMutex_);
-    signal_->inCond_.wait(lock, [this]() {
+    bool condMet = signal_->inCond_.wait_for(lock, std::chrono::seconds(10), [this]() {
         if (!isRunning_.load() && g_fuzzError) {
             return true;
         }
         return signal_->inIdxQueue_.size() > 0;
     });
-    if (g_fuzzError)
+    if (g_fuzzError || !condMet)
         return AV_ERR_TIMEOUT;
     index = signal_->inIdxQueue_.front();
     auto buffer = signal_->inBufferQueue_.front();

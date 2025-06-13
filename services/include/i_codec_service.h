@@ -154,11 +154,14 @@ public:
         return nullptr;
     }
 
-    virtual void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed)
+    virtual void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus)
     {
         (void)isTriggeredByOutPort;
         (void)isFlushed;
+        (void)bufferStatus;
     }
+
+    virtual int32_t NotifyMemoryExchange(const bool exchangeFlag) = 0;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

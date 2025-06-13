@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-module_output_path = "av_codec/av_codec/unittest"
+module_output_path = "av_codec/AVCodec_Video/unittest"
 
 av_codec_unittest_cflags = [
   "-std=c++17",
@@ -53,6 +53,7 @@ ohos_unittest("sa_avcodec_unit_test") {
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/services/sa_avcodec/server/include",
     "$av_codec_root_dir/services/services/sa_avcodec",
+    "$av_codec_root_dir/services/services/sa_avcodec/ipc",
     "$av_codec_root_dir/services/services/common",
     "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler/",
   ]

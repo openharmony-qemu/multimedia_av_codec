@@ -104,6 +104,9 @@ private:
 
     int32_t maxDuration_ {INT32_MAX};
     bool isReachMaxDuration_{false};
+
+    bool isAdts_{true};
+    bool mediaProfile_{0}; // default value: AAC_LC
 };
 } // namespace Pipeline
 } // namespace MEDIA

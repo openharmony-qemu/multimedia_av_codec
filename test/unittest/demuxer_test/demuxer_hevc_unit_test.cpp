@@ -1409,9 +1409,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1413, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1700, TestSize.Level1)
 {
-    if (access(g_mp4265InfoParsePath.c_str(), F_OK) != 0) {
-        return;
-    }
+    ASSERT_EQ(access(g_mp4265InfoParsePath.c_str(), F_OK), 0);
     ReadSample(g_mp4265InfoParsePath, LOCAL, true);
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(frames_[idx], infoMap["mp4265InfoParse"]["frames"][idx]);

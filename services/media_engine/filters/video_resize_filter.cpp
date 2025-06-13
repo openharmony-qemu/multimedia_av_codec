@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -364,6 +364,7 @@ void VideoResizeFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter");
     bool isEos = false;
+    FALSE_RETURN_MSG(parameter != nullptr, "parameter is nullptr");
     if (parameter->Find(Tag::MEDIA_END_OF_STREAM) != parameter->end() &&
         parameter->Get<Tag::MEDIA_END_OF_STREAM>(isEos) &&
         parameter->Get<Tag::USER_FRAME_PTS>(eosPts_) &&
@@ -402,6 +403,7 @@ void VideoResizeFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     }
 #else
     MEDIA_LOG_E("no VPE module");
+    FALSE_RETURN_MSG(eventReceiver_ != nullptr, "no eventReceiver");
     eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
 #endif
 }

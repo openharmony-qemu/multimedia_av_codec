@@ -96,7 +96,7 @@ private:
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey,
         int32_t minVal = 0, int32_t maxVal = INT_MAX);
     bool GetDiscardFlagFromAVBuffer(const std::shared_ptr<AVBuffer> &buffer);
-    bool GetPixelFmtFromUser(const Format &format);
+    void GetPixelFmtFromUser(const Format &format);
     void GetQpRangeFromUser(const Format &format);
     void GetBitRateFromUser(const Format &format);
     void GetFrameRateFromUser(const Format &format);
@@ -119,6 +119,7 @@ private:
     void WaitForInBuffer();
     void FillEncodedBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
 
+    void ReleaseSurfaceBufferByAVBuffer(std::shared_ptr<AVBuffer> &buffer);
     void NotifyUserToProcessBuffer(uint32_t index, std::shared_ptr<AVBuffer> &buffer);
     void NotifyUserToFillBuffer(uint32_t index, std::shared_ptr<AVBuffer> &buffer);
 

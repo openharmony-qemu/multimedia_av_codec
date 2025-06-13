@@ -1067,7 +1067,9 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
         HLOGI("got first output, pts = %" PRId64 ", len = %u, flags = 0x%x",
             info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag);
 #ifndef AV_CODEC_HCODEC_ENABLE_QOS_THE_WHOLE_TIME
-        OHOS::QOS::ResetThreadQos();
+        if (!isEncoder_ || codecRate_ < HIGH_FPS) {
+            OHOS::QOS::ResetThreadQos();
+        }
 #endif
         gotFirstOutput_ = true;
     }

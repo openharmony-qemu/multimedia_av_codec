@@ -610,28 +610,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         std::unique_lock<std::mutex> lock(stopMutex_);
         stopCondition_.notify_all();
     }
-
-    int64_t mappingTime = -1;
-    if (!(buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
-        std::lock_guard<std::mutex> mappingLock(mappingPtsMutex_);
-        if (mappingTimeQueue_.empty() || mappingTimeQueue_.front().first != buffer->pts_) {
-            MEDIA_LOG_D("buffer->pts fail");
-        } else {
-            mappingTime = mappingTimeQueue_.front().second;
-            mappingTimeQueue_.pop_front();
-        }
-        if (startBufferTime_ == -1) {
-            startBufferTime_ = buffer->pts_;
-        }
-        // cache recent 2 pts
-        preKeyFramePts_ = currentKeyFramePts_;
-        currentKeyFramePts_ = buffer->pts_;
-        AddStartPts(buffer->pts_);
-        AddPauseResumePts(buffer->pts_);
-    } else {
-        MEDIA_LOG_D("OnOutputBufferAvailable buffer->flag_" PUBLIC_LOG_U32, buffer->flag_);
-        mappingTime = startBufferTime_ + buffer->pts_;
-    }
+    int64_t mappingTime = GetMappingTime(buffer);
     FALSE_RETURN_MSG(buffer->memory_ != nullptr, "buffer->memory_ is nullptr, OnOutputBufferAvailable fail");
     int32_t size = buffer->memory_->GetSize();
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
@@ -653,6 +632,32 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         indexs_.push_back(index);
     }
     releaseBufferCondition_.notify_all();
+}
+
+int64_t SurfaceEncoderAdapter::GetMappingTime(std::shared_ptr<AVBuffer> buffer)
+{
+    int64_t mappingTime = -1;
+    if (!(buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
+        std::lock_guard<std::mutex> mappingLock(mappingPtsMutex_);
+        if (mappingTimeQueue_.empty() || mappingTimeQueue_.front().first != buffer->pts_) {
+            MEDIA_LOG_D("buffer->pts fail");
+        } else {
+            mappingTime = mappingTimeQueue_.front().second;
+            mappingTimeQueue_.pop_front();
+        }
+        if (startBufferTime_ == -1) {
+            startBufferTime_ = buffer->pts_;
+        }
+        // cache recent 2 pts
+        preKeyFramePts_ = currentKeyFramePts_;
+        currentKeyFramePts_ = buffer->pts_;
+        AddStartPts(buffer->pts_);
+        AddPauseResumePts(buffer->pts_);
+    } else {
+        MEDIA_LOG_D("OnOutputBufferAvailable buffer->flag_" PUBLIC_LOG_U32, buffer->flag_);
+        mappingTime = startBufferTime_ + buffer->pts_;
+    }
+    return mappingTime;
 }
 
 void SurfaceEncoderAdapter::ReleaseBuffer()

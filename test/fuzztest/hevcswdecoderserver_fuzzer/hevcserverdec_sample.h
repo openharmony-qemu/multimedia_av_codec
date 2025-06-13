@@ -46,7 +46,6 @@ public:
     ~VDecServerSample();
 
     void RunVideoServerDecoder();
-    void RunVideoServerSurfaceDecoder();
     int32_t ConfigServerDecoder();
     int32_t SetCallback();
     void GetOutputFormat();
@@ -55,14 +54,10 @@ public:
     void Reset();
     void InputFunc();
     void WaitForEos();
-    void CreateSurface();
-    VDecSignal *signal_;
+    std::shared_ptr<VDecSignal> signal_;
     const uint8_t *fuzzData;
     size_t fuzzSize;
     int32_t sendFrameIndex;
-    sptr<Surface> cs[2] = {};
-    sptr<Surface> ps[2] = {};
-    NativeWindow *nativeWindow[2] = {};
     const char *outDIR = "/data/test/media/VDecTest.yuv";
 protected:
     std::shared_ptr<CodecBase> codec_;

@@ -38,6 +38,7 @@
 #include "sei_parser_helper.h"
 #include "post_processor/base_video_post_processor.h"
 #include "post_processor/video_post_processor_factory.h"
+#include "common/fdsan_fd.h"
 
 namespace OHOS {
 namespace Media {
@@ -55,6 +56,8 @@ public:
     Status DoPrepare() override;
     Status DoStart() override;
     Status DoPause() override;
+    Status DoFreeze() override;
+    Status DoUnFreeze() override;
     Status DoPauseDragging() override;
     Status DoResume() override;
     Status DoResumeDragging() override;
@@ -92,7 +95,7 @@ public:
 
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
-    void SetSeekTime(int64_t seekTimeUs);
+    void SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode = PlayerSeekMode::SEEK_CLOSEST);
     void ResetSeekInfo();
     Status HandleInputBuffer();
     void OnDumpInfo(int32_t fd);
@@ -117,6 +120,10 @@ public:
     Status SetVideoWindowSize(int32_t width, int32_t height);
     void NotifyAudioComplete();
     Status SetSpeed(float speed);
+    Status SetPostProcessorFd(int32_t postProcessorFd);
+    Status SetCameraPostprocessing(bool enable);
+    void NotifyPause();
+    void NotifyMemoryExchange(bool exchangeFlag);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -146,6 +153,10 @@ private:
     int64_t GetSystimeTimeNs();
     bool IsPostProcessorSupported();
     std::shared_ptr<BaseVideoPostProcessor> CreatePostProcessor();
+    void InitPostProcessorType();
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
+    void LoadCameraPostProcessorLib();
+#endif
 
     std::string name_;
     FilterType filterType_;
@@ -233,6 +244,18 @@ private:
     bool isPostProcessorSupported_ {true};
     VideoPostProcessorType postProcessorType_ { VideoPostProcessorType::NONE };
     std::shared_ptr<BaseVideoPostProcessor> postProcessor_;
+    std::atomic<bool> enableCameraPostprocessing_ {false};
+    bool isCameraPostProcessorSupported_ {true};
+ 
+    int64_t eosPts_ {INT64_MAX};
+    int64_t prevDecoderPts_ {INT64_MAX};
+    std::mutex fdMutex_ {};
+    std::unique_ptr<FdsanFd> fdsanFd_ = nullptr;
+    int32_t preScaleType_ {0};
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
+    std::mutex loadLibMutex_ {};
+    static void *cameraPostProcessorLibHandle_;
+#endif
 };
 } // namespace Pipeline
 } // namespace Media

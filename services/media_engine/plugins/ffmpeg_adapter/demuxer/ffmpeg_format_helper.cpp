@@ -78,6 +78,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_MP3, MimeType::AUDIO_MPEG},
     {AV_CODEC_ID_FLAC, MimeType::AUDIO_FLAC},
     {AV_CODEC_ID_AAC, MimeType::AUDIO_AAC},
+    {AV_CODEC_ID_AAC_LATM, MimeType::AUDIO_AAC},
     {AV_CODEC_ID_VORBIS, MimeType::AUDIO_VORBIS},
     {AV_CODEC_ID_OPUS, MimeType::AUDIO_OPUS},
     {AV_CODEC_ID_AMR_NB, MimeType::AUDIO_AMR_NB},
@@ -101,14 +102,22 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
     {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
+    {AV_CODEC_ID_PCM_ALAW, MimeType::AUDIO_G711A},
 #ifdef SUPPORT_CODEC_COOK
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
 #endif
-#ifdef SUPPORT_CODEC_AC3
     {AV_CODEC_ID_AC3, MimeType::AUDIO_AC3},
-#endif
     {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
     {AV_CODEC_ID_WEBVTT, MimeType::TEXT_WEBVTT},
+#ifdef SUPPORT_DEMUXER_LRC
+    {AV_CODEC_ID_TEXT, MimeType::TEXT_LRC},
+#endif
+#ifdef SUPPORT_DEMUXER_SAMI
+    {AV_CODEC_ID_SAMI, MimeType::TEXT_SAMI},
+#endif
+#ifdef SUPPORT_DEMUXER_ASS
+    {AV_CODEC_ID_ASS, MimeType::TEXT_ASS},
+#endif
     {AV_CODEC_ID_FFMETADATA, MimeType::TIMED_METADATA}
 };
 
@@ -131,6 +140,15 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"ape", FileType::APE},
     {"srt", FileType::SRT},
     {"webvtt", FileType::VTT},
+#ifdef SUPPORT_DEMUXER_LRC
+    {"lrc", FileType::LRC},
+#endif
+#ifdef SUPPORT_DEMUXER_SAMI
+    {"sami", FileType::SAMI},
+#endif
+#ifdef SUPPORT_DEMUXER_ASS
+    {"ass", FileType::ASS},
+#endif
 };
 
 static std::map<std::string, TagType> g_formatToString = {
@@ -185,7 +203,7 @@ std::vector<std::string> SplitByChar(const char* str, const char* pattern)
 
 void DumpFileInfo(const AVFormatContext& avFormatContext)
 {
-    FALSE_LOG_MSG_W(avFormatContext.iformat != nullptr, "Iformat is nullptr");
+    FALSE_RETURN_MSG(avFormatContext.iformat != nullptr, "Iformat is nullptr");
     MEDIA_LOG_D("File name [" PUBLIC_LOG_S "]", avFormatContext.iformat->name);
     if (StartWith(avFormatContext.iformat->name, "mov,mp4,m4a")) {
         const AVDictionaryEntry *type = av_dict_get(avFormatContext.metadata, "major_brand", NULL, 0);
@@ -331,7 +349,6 @@ bool IsGBK(const char* data)
 }
 
 static std::vector<AVCodecID> g_imageCodecID = {
-    AV_CODEC_ID_MJPEG,
     AV_CODEC_ID_PNG,
     AV_CODEC_ID_PAM,
     AV_CODEC_ID_BMP,
@@ -461,8 +478,7 @@ void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, 
             continue;
         }
         if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-            AVCodecID codecID = avFormatContext.streams[i]->codecpar->codec_id;
-            if (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), codecID) <= 0) {
+            if (!IsImageTrack(*(avFormatContext.streams[i]))) {
                 hasVideo = true;
             }
         } else if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -567,8 +583,7 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format, 
     FALSE_RETURN_MSG(avStream.codecpar != nullptr, "Codecpar is nullptr");
     ParseBaseTrackInfo(avStream, format, avFormatContext);
     if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if ((static_cast<uint32_t>(avStream.disposition) & static_cast<uint32_t>(AV_DISPOSITION_ATTACHED_PIC)) ||
-            (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0)) {
+        if (IsImageTrack(avStream)) {
             ParseImageTrackInfo(avStream, format);
         } else {
             ParseAVTrackInfo(avStream, format);
@@ -592,7 +607,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::AUDIO_RAW));
     } else {
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::INVALID_TYPE));
-        MEDIA_LOG_W("Parse mime type failed: " PUBLIC_LOG_D32, static_cast<int32_t>(avStream.codecpar->codec_id));
+        MEDIA_LOG_W("Parse mime type failed: " PUBLIC_LOG_S, avcodec_get_name(avStream.codecpar->codec_id));
     }
 
     AVMediaType mediaType = avStream.codecpar->codec_type;
@@ -1070,6 +1085,14 @@ bool FFmpegFormatHelper::IsVideoCodecId(const AVCodecID &codecId)
         return false;
     }
     return StartWith(std::string(g_codecIdToMime[codecId]).c_str(), "video/");
+}
+
+bool FFmpegFormatHelper::IsImageTrack(const AVStream &avStream)
+{
+    return (
+        (static_cast<uint32_t>(avStream.disposition) & static_cast<uint32_t>(AV_DISPOSITION_ATTACHED_PIC)) ||
+        (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0)
+    );
 }
 } // namespace Ffmpeg
 } // namespace Plugins

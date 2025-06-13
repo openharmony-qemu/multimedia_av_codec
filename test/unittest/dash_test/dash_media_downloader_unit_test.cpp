@@ -449,6 +449,23 @@ HWTEST_F(DashMediaDownloaderUnitTest, GET_PLAYBACK_INFO_001, TestSize.Level1)
     mediaDownloader = nullptr;
 }
 
+HWTEST_F(DashMediaDownloaderUnitTest, STOP_BUFFERING_001, TestSize.Level1)
+{
+    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    std::string testUrl = MPD_SEGMENT_LIST;
+    std::map<std::string, std::string> httpHeader;
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    mediaDownloader->SetStatusCallback(statusCallback);
+    mediaDownloader->Open(testUrl, httpHeader);
+    mediaDownloader->GetSeekable();
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GT(streams.size(), 0);
+    EXPECT_EQ(mediaDownloader->StopBufferring(true), Status::OK);
+    EXPECT_EQ(mediaDownloader->StopBufferring(false), Status::OK);
+}
 }
 }
 }

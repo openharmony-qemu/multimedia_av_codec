@@ -236,6 +236,22 @@ public:
         (void)svpFlag;
         return 0;
     }
+
+    /*
+     * @brief Recycle dma memory when decoder user has been frozen
+     *
+     * This function must be called before {@link Configure}, only provided for {@link Player}
+     *
+     * @param exchangeFlag the flag whether memory should be displaced from RAM to ROM or from ROM to RAM
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 6.0
+     * @version 6.0
+     */
+    virtual int32_t NotifyMemoryExchange(const bool exchangeFlag)
+    {
+        (void)exchangeFlag;
+        return 0;
+    }
 };
 
 class __attribute__((visibility("default"))) VideoDecoderFactory {

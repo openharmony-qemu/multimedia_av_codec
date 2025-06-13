@@ -65,7 +65,7 @@ void HlsMediaDownloaderUnitTest ::TearDown(void)
     hlsMediaDownloader = nullptr;
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, GetPlayable_1, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, GetPlayable_1, TestSize.Level0)
 {
     hlsMediaDownloader->isBuffering_ = true;
     EXPECT_FALSE(hlsMediaDownloader->GetPlayable());
@@ -75,7 +75,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GetPlayable_1, TestSize.Level1)
     hlsMediaDownloader->GetReadTimeOut(false);
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, GetPlayable_2, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, GetPlayable_2, TestSize.Level0)
 {
     hlsMediaDownloader->isBuffering_ = false;
     hlsMediaDownloader->isFirstFrameArrived_ = true;
@@ -320,7 +320,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SAVE_HEADER_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_001, TestSize.Level1)
 {
     HlsMediaDownloader *downloader = new HlsMediaDownloader(1000, header_, nullptr);
-    EXPECT_EQ(downloader->expectDuration_, static_cast<uint64_t>(1000));
+    EXPECT_EQ(downloader->expectDuration_, static_cast<uint64_t>(19));
     delete downloader;
     downloader = nullptr;
 }
@@ -1128,7 +1128,10 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SET_INITIAL_BUFFERSIZE_001, TestSize.Level1
     PlayInfo playInfo;
     playInfo.url_ = testUrl;
     downloader->PutRequestIntoDownloader(playInfo);
-    EXPECT_EQ(downloader->SetInitialBufferSize(0, 0), false);
+    downloader->backPlayList_.push_back(playInfo);
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    EXPECT_EQ(downloader->SetInitialBufferSize(0, 50000), false);
+    downloader->cacheMediaBuffer_ = nullptr;
     downloader->isBuffering_ = false;
     EXPECT_EQ(downloader->SetInitialBufferSize(0, 20000000), true);
 }
@@ -1681,9 +1684,12 @@ HWTEST_F(HlsMediaDownloaderUnitTest, READ_DELEGATE_001, TestSize.Level1)
     downloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
     downloader->GetStreamInfo(streams);
+    OSAL::SleepFor(3 * 1000);
+    downloader->cacheMediaBuffer_->Clear();
+    downloader->writeTsIndex_ = 0;
     
     EXPECT_NE(downloader->GetDuration(), 0);
-    EXPECT_EQ(downloader->CheckReadStatus(), false);
+    EXPECT_EQ(downloader->CheckReadStatus(), true);
     EXPECT_EQ(downloader->GetBufferSize(), 0);
     unsigned char * buffer = new unsigned char[1 * 1024 * 1024];
     ReadDataInfo readDataInfo;
@@ -1885,5 +1891,23 @@ HWTEST_F(HlsMediaDownloaderUnitTest, PLAYLIST_DOWNLOADER_004, TestSize.Level1)
     downloader->playlistDownloader_->Pause(true);
     EXPECT_EQ(downloader->playlistDownloader_->IsLive(), true);
     EXPECT_NE(downloader->playlistDownloader_->updateTask_, nullptr);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, STOP_BUFFERING_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    OSAL::SleepFor(2 * 1000);
+    downloader->StopBufferring(true);
+    EXPECT_EQ(downloader->isInterrupt_, true);
+    downloader->StopBufferring(false);
+    downloader->StopBufferring(false);
+    EXPECT_EQ(downloader->isInterrupt_, false);
 }
 }

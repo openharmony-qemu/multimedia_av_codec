@@ -23,6 +23,7 @@
 #include "surface_buffer.h"
 #include "ui/rs_surface_node.h"
 #include "window_option.h"
+#include "syspara/parameters.h"
 
 #define PRINT_HILOG
 #define TEST_ID sampleId_
@@ -342,15 +343,70 @@ int32_t VideoDecSample::SetOutputSurface(const bool isNew)
     return ret;
 }
 
+OHNativeWindow *VideoDecSample::GetSurfaceWindow(const bool isNew)
+{
+    if (surafaceObj_ != nullptr) {
+        return surafaceObj_->GetNativeWindow(isNew);
+    }
+    return nullptr;
+}
+
+int32_t VideoDecSample::SetOutputSurface(OHNativeWindow *window)
+{
+    if (window != nullptr) {
+        return OH_VideoDecoder_SetSurface(codec_, window);
+    }
+    return AV_ERR_UNKNOWN;
+}
+
 int32_t VideoDecSample::Configure()
 {
     TITLE_LOG;
     OH_AVFormat *format = OH_AVFormat_Create();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_UNKNOWN, "create format failed");
     bool setFormatRet = OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, sampleWidth_) &&
-                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleHeight_) &&
-                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, samplePixel_);
+                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleHeight_);
+    if (setPixelFormat_) {
+        setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, samplePixel_);
+    }
+
+    if (setSurfaceParam_) {
+        setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_KEY_ROTATION, defaultRotation_) &&
+            OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_KEY_SCALING_MODE, OH_ScalingMode::SCALING_MODE_SCALE_CROP) &&
+            OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_MAX_OUTPUT_BUFFER_COUNT, defaultBufferCount_) &&
+            OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_MAX_INPUT_BUFFER_COUNT, defaultBufferCount_) &&
+            OH_AVFormat_SetLongValue(dyFormat_.get(), OH_MD_KEY_BITRATE, 1000000); // 1000000
+        if (setPixelFormat_) {
+            setFormatRet = setFormatRet &&
+                OH_AVFormat_SetIntValue(dyFormat_.get(), OH_MD_KEY_PIXEL_FORMAT, samplePixel_);
+        }
+    }
+
+    if (ohRotation_) {
+        setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, defaultRotation_);
+    }
+    if (maxOutputBufferCount_) {
+        setFormatRet = setFormatRet &&
+            OH_AVFormat_SetIntValue(format, OH_MD_MAX_OUTPUT_BUFFER_COUNT, defaultBufferCount_);
+    }
+    if (maxInputBufferCount_) {
+        setFormatRet = setFormatRet &&
+            OH_AVFormat_SetIntValue(format, OH_MD_MAX_INPUT_BUFFER_COUNT, defaultBufferCount_);
+    }
+    if (scaleMode_) {
+        setFormatRet = setFormatRet &&
+                       OH_AVFormat_SetIntValue(format, OH_MD_KEY_SCALING_MODE, OH_ScalingMode::SCALING_MODE_SCALE_CROP);
+    }
+    if (lowLatency_) {
+        setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, 1);
+        setFormatRet = setFormatRet && OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 1000000); // 1000000
+    }
     UNITTEST_CHECK_AND_RETURN_RET_LOG(setFormatRet, AV_ERR_UNKNOWN, "set format failed");
+
+    if (!dumpKey_.empty() && !dumpValue_.empty()) {
+        bool dumpRet = OHOS::system::SetParameter(dumpKey_, dumpValue_);
+        UNITTEST_INFO_LOG("SetParameter %s %s ret: %d", dumpKey_.c_str(), dumpValue_.c_str(), dumpRet);
+    }
 
     int32_t ret = OH_VideoDecoder_Configure(codec_, format);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_Configure failed");
@@ -443,8 +499,12 @@ int32_t VideoDecSample::Reset()
     }
     ret = Configure();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Configure failed");
-    ret = SetOutputSurface();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "SetOutputSurface failed");
+    if (isSurfaceMode_) {
+        isSurfaceMode_ = false;
+    } else {
+        ret = SetOutputSurface();
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "SetOutputSurface failed");
+    }
     return ret;
 }
 
@@ -464,6 +524,15 @@ std::shared_ptr<OH_AVFormat> VideoDecSample::GetOutputDescription()
     TITLE_LOG;
     auto avformat = std::shared_ptr<OH_AVFormat>(OH_VideoDecoder_GetOutputDescription(codec_),
                                                  [](OH_AVFormat *ptr) { OH_AVFormat_Destroy(ptr); });
+
+    OH_AVFormat_GetIntValue(avformat.get(), OH_MD_KEY_VIDEO_PIC_WIDTH, &signal_->width_);
+    OH_AVFormat_GetIntValue(avformat.get(), OH_MD_KEY_VIDEO_PIC_HEIGHT, &signal_->height_);
+    OH_AVFormat_GetIntValue(avformat.get(), OH_MD_KEY_VIDEO_STRIDE, &signal_->widthStride_);
+    OH_AVFormat_GetIntValue(avformat.get(), OH_MD_KEY_VIDEO_SLICE_HEIGHT, &signal_->heightStride_);
+    OH_AVFormat_GetIntValue(avformat.get(), OH_MD_KEY_VIDEO_CROP_TOP, &signal_->cropTop_);
+    OH_AVFormat_GetIntValue(avformat.get(), OH_MD_KEY_VIDEO_CROP_BOTTOM, &signal_->cropBottom_);
+    OH_AVFormat_GetIntValue(avformat.get(), OH_MD_KEY_VIDEO_CROP_LEFT, &signal_->cropLeft_);
+    OH_AVFormat_GetIntValue(avformat.get(), OH_MD_KEY_VIDEO_CROP_RIGHT, &signal_->cropRight_);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(avformat != nullptr, nullptr, "OH_VideoDecoder_GetOutputDescription failed");
     return avformat;
 }
@@ -507,9 +576,19 @@ int32_t VideoDecSample::ReleaseOutputData(std::shared_ptr<CodecBufferInfo> buffe
         ret = OH_VideoDecoder_RenderOutputBuffer(codec_, bufferInfo->GetIndex());
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_RenderOutputBuffer failed");
     } else if (!isAVBufferMode_ && !isSurfaceMode_) {
+        if (releaseOtherBuffer_ && bufferInfo->GetIndex() != 0) {
+            ret = OH_VideoDecoder_FreeOutputData(codec_, 0);
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret != AV_ERR_OK, AV_ERR_UNKNOWN,
+                "OH_VideoDecoder_FreeOutputData failed");
+        }
         ret = OH_VideoDecoder_FreeOutputData(codec_, bufferInfo->GetIndex());
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_FreeOutputData failed");
     } else if (!isAVBufferMode_ && isSurfaceMode_) {
+        if (releaseOtherBuffer_ && bufferInfo->GetIndex() != 0) {
+            ret = OH_VideoDecoder_RenderOutputData(codec_, 0);
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret != AV_ERR_OK, AV_ERR_UNKNOWN,
+                "OH_VideoDecoder_RenderOutputData failed");
+        }
         ret = OH_VideoDecoder_RenderOutputData(codec_, bufferInfo->GetIndex());
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_RenderOutputData failed");
     }
@@ -580,17 +659,21 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
         signal_->eosCond_.notify_all();
         return AV_ERR_OK;
     }
+    if (frameOutputCount_ == 0) {
+        GetOutputDescription();
+    }
+    char *temp = reinterpret_cast<char *>(addr);
     if (needDump_ && !isSurfaceMode_ && frameOutputCount_ < MAX_OUTPUT_FRMAENUM) {
         int32_t pixelbytes =
             signal_->width_ != 0 && signal_->widthStride_ != 0 ? (signal_->widthStride_ / signal_->width_) : 1;
-        for (int32_t i = 0; i < signal_->heightStride_; ++i) {
-            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * signal_->widthStride_,
-                                           signal_->width_ * pixelbytes);
+        for (int32_t i = 0; i < signal_->height_; ++i) {
+            (void)signal_->outFile_->write(temp, signal_->width_ * pixelbytes);
+            temp += signal_->widthStride_;
         }
+        temp += signal_->widthStride_ * (signal_->heightStride_ - signal_->height_);
         for (int32_t i = 0; i < (signal_->height_ >> 1); ++i) { // 2: denom
-            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) +
-                                               (signal_->heightStride_ + i) * signal_->widthStride_,
-                                           signal_->width_ * pixelbytes);
+            (void)signal_->outFile_->write(temp, signal_->width_ * pixelbytes);
+            temp += signal_->widthStride_;
         }
     }
     if (addr == nullptr) {

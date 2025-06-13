@@ -113,6 +113,7 @@ public:
     uint64_t GetMemorySize() override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
     bool IsHlsFmp4() override;
+    std::string GetContentType() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -213,7 +214,7 @@ private:
     bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
     uint64_t bufferedDuration_ {0};
-    uint64_t currentBitrate_ {1 * 1024 * 1024}; // bps
+    uint64_t readBitrate_ {1 * 1024 * 1024}; // bps
     bool userDefinedBufferDuration_ {false};
     uint64_t expectDuration_ {0};
     bool autoBufferSize_ {true}; // 默认为false

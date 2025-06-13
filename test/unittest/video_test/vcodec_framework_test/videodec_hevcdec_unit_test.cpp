@@ -81,7 +81,10 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Release_001, TestSize.Le
     vdec->inPath_ = "720_1280_25_avcc.h265";
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
+    vdec->releaseOtherBuffer_ = true;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "11";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -113,6 +116,8 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Release_AVBuffer_001, Te
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "10";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -144,6 +149,8 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_001, Tes
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "1";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -175,6 +182,8 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_002, Tes
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "01";
     vdec->samplePixel_ = AV_PIXEL_FORMAT_NV21;
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
@@ -206,7 +215,11 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_003, Tes
     vdec->inPath_ = "720_1280_25_avcc.h265";
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
+    vdec->setSurfaceParam_ = true;
+    vdec->releaseOtherBuffer_ = true;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "11";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -218,6 +231,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_003, Tes
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetParameter(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
@@ -240,6 +254,9 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_004, Tes
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
     vdec->samplePixel_ = AV_PIXEL_FORMAT_NV21;
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "11";
+    vdec->setSurfaceParam_ = true;
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -251,6 +268,8 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_004, Tes
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetParameter(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(true), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
@@ -271,8 +290,11 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "720_1280_25_avcc.hdr.h265";
     vdec->sampleWidth_ = 720;
-    vdec->sampleHeight_ = 1280;
+    vdec->sampleHeight_ = 1080;
+    vdec->releaseOtherBuffer_ = true;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "11";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -302,10 +324,13 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "720_1280_25_avcc.hdr.h265";
-    vdec->sampleWidth_ = 720;
+    vdec->sampleWidth_ = 768;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "11";
     vdec->samplePixel_ = AV_PIXEL_FORMAT_NV21;
+    vdec->setSurfaceParam_ = true;
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -316,6 +341,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetParameter(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
@@ -333,11 +359,18 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     auto signal = make_shared<VCodecSignal>(vdec);
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
+    vdec->maxOutputBufferCount_ = true;
+    vdec->maxInputBufferCount_ = true;
+    vdec->defaultBufferCount_ = 20;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "720_1280_25_avcc.hdr.h265";
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
+    vdec->setSurfaceParam_ = true;
+    vdec->releaseOtherBuffer_ = true;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "11";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -349,8 +382,11 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetParameter(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(true), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetParameter(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
@@ -368,10 +404,13 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "720_1280_25_avcc.hdr.h265";
-    vdec->sampleWidth_ = 720;
+    vdec->sampleWidth_ = 768;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "11";
     vdec->samplePixel_ = AV_PIXEL_FORMAT_NV21;
+    vdec->setSurfaceParam_ = true;
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -383,9 +422,117 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetParameter(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(true), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetParameter(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_005
+ * @tc.desc: 1. push buffer in callback;
+ *           2. operate in input callback;
+ *           3. render buffer in queue;
+ *           4. set rotation maxOut/InputBufferCount defaultmaxBufferCount scaleMode;
+ *           5. set surface;
+ */
+HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_005, TestSize.Level1,
+          VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec);
+    vdec->frameCount_ = 21; // 21: input frame num
+    vdec->skipOutFrameHalfCheck_ = true;
+    vdec->ohRotation_ = true;
+    vdec->maxOutputBufferCount_ = true;
+    vdec->maxInputBufferCount_ = true;
+    vdec->defaultBufferCount_ = 0;
+    vdec->scaleMode_ = true;
+    vdec->lowLatency_ = true;
+    vdec->setPixelFormat_ = false;
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec->inPath_ = "720_1280_25_avcc.hdr.h265";
+    vdec->sampleWidth_ = 1920;
+    vdec->sampleHeight_ = 1920;
+    vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "11";
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(true), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_006
+ * @tc.desc: 1. 2 codec use same surface;
+ */
+HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_006, TestSize.Level1,
+          VideoDecSample::threadNum_)
+{
+    auto vdec1 = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec1);
+    auto vdec2 = make_shared<VideoDecSample>();
+    vdec1->frameCount_ = 21; // 21: input frame num
+    vdec1->skipOutFrameHalfCheck_ = true;
+    vdec1->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec1->inPath_ = "720_1280_25_avcc.h265";
+    vdec1->sampleWidth_ = 720;
+    vdec1->sampleHeight_ = 1080;
+    vdec1->outPath_ = GetTestName();
+    vdec1->dumpKey_ = "hevcdecoder.dump";
+    vdec1->dumpValue_ = "0";
+
+    vdec2->frameCount_ = 21; // 21: input frame num
+    vdec2->skipOutFrameHalfCheck_ = true;
+    vdec2->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec2->inPath_ = "720_1280_25_avcc.h265";
+    vdec2->sampleWidth_ = 720;
+    vdec2->sampleHeight_ = 1280;
+    vdec2->outPath_ = GetTestName();
+    vdec2->dumpKey_ = "hevcdecoder.dump";
+    vdec2->dumpValue_ = "0";
+    EXPECT_EQ(vdec1->Create(), true);
+    EXPECT_EQ(vdec2->Create(), true);
+    struct OH_AVCodecCallback cb1;
+    struct OH_AVCodecCallback cb2;
+    cb1.onError = OnErrorVoid;
+    cb1.onStreamChanged = OnStreamChangedVoid;
+    cb1.onNeedInputBuffer = InBufferHandle;
+    cb1.onNewOutputBuffer = OutBufferHandle;
+    cb2.onError = OnErrorVoid;
+    cb2.onStreamChanged = OnStreamChangedVoid;
+    cb2.onNeedInputBuffer = InBufferHandle;
+    cb2.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec1->RegisterCallback(cb1, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec1->sampleId_;
+    EXPECT_EQ(vdec1->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec1->sampleId_;
+    EXPECT_EQ(vdec1->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec1->sampleId_;
+    EXPECT_EQ(vdec2->RegisterCallback(cb2, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec2->sampleId_;
+    EXPECT_EQ(vdec2->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec2->sampleId_;
+    EXPECT_EQ(vdec2->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec2->sampleId_;
+    EXPECT_EQ(vdec1->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec1->sampleId_;
+    EXPECT_TRUE(vdec1->WaitForEos()) << "[SAMPLE_ID]:" << vdec1->sampleId_;
+
+    EXPECT_EQ(vdec2->SetOutputSurface(vdec1->GetSurfaceWindow(false)), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec2->sampleId_;
+    EXPECT_EQ(vdec1->Release(), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec1->sampleId_;
+    EXPECT_EQ(vdec2->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec2->sampleId_;
+    EXPECT_EQ(vdec2->SetOutputSurface(true), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec2->sampleId_;
+    EXPECT_TRUE(vdec2->WaitForEos()) << "[SAMPLE_ID]:" << vdec2->sampleId_;
+    EXPECT_EQ(vdec2->SetOutputSurface(true), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec2->sampleId_;
+    EXPECT_EQ(vdec2->Release(), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec2->sampleId_;
 }
 
 INSTANTIATE_TEST_SUITE_P(, VideoDecHevcDecTest, testing::Values("Flush", "Stop", "Reset", "SetOutputSurface"));
@@ -406,6 +553,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_001, TestSize.Leve
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -438,6 +587,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_002, TestSize.Leve
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -469,6 +620,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_003, TestSize.Leve
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -501,6 +654,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_004, TestSize.Leve
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -535,6 +690,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_005, TestSize.Leve
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -568,6 +725,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_001, TestSi
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -601,6 +760,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_002, TestSi
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -633,6 +794,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_003, TestSi
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -666,6 +829,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_004, TestSi
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -701,6 +866,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_005, TestSi
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -734,6 +901,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_001, Te
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -769,6 +938,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_002, Te
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -803,6 +974,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_003, Te
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -838,6 +1011,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_004, Te
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -875,6 +1050,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_005, Te
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -910,6 +1087,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -946,6 +1125,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -981,6 +1162,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -1017,6 +1200,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -1055,6 +1240,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
@@ -1088,6 +1275,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_001, Test
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1120,6 +1309,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_002, Test
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1151,6 +1342,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_003, Test
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1183,6 +1376,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_004, Test
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1217,6 +1412,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_005, Test
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1251,6 +1448,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1285,6 +1484,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1318,6 +1519,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1352,6 +1555,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1388,6 +1593,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1421,6 +1628,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1456,6 +1665,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1490,6 +1701,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1525,6 +1738,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1562,6 +1777,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1597,6 +1814,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1633,6 +1852,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1668,6 +1889,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1704,6 +1927,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
@@ -1742,6 +1967,8 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;

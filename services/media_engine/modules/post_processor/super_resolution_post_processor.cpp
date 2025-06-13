@@ -192,7 +192,7 @@ Status SuperResolutionPostProcessor::Release()
     return Status::OK;
 }
 
-Status SuperResolutionPostProcessor::NotifyEos()
+Status SuperResolutionPostProcessor::NotifyEos(int64_t eosPts)
 {
     MEDIA_LOG_D("Notify eos");
     std::shared_lock<std::shared_mutex> lock(mutex_);

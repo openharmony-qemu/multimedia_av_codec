@@ -42,6 +42,7 @@ constexpr int32_t DEFAULT_BUFFER_NUM = 8;
 constexpr int32_t WRITE_WAIT_TIME = 5;
 constexpr int64_t ON_WRITE_WARNING_MS = 15; // Reference value, Modify as needed
 constexpr int64_t GET_AUDIO_POSITION_WARNING_MS = 10; // Reference value, Modify as needed
+constexpr int64_t RELEASE_RENDER_WARNING_MS = 10; // Reference value, Modify as needed
 constexpr int32_t LOG_PRINT_LIMIT = 8; // Reference value, Modify as needed
 constexpr int32_t ON_WRITE_ZERO_COUNT = 500; // Reference value, Modify as needed
 
@@ -323,11 +324,15 @@ AudioSampleFormat AudioServerSinkPlugin::GetSampleFormat()
 
 void AudioServerSinkPlugin::ReleaseRender()
 {
-    OHOS::Media::AutoLock lock(releaseRendererMutex_);
+    std::unique_lock<std::mutex> lock(releaseRenderMutex_);
+    ScopedTimer timer("ReleaseRender", RELEASE_RENDER_WARNING_MS);
     if (audioRenderer_ != nullptr && audioRenderer_->GetStatus() != AudioStandard::RendererState::RENDERER_RELEASED) {
-        MEDIA_LOG_I_SHORT("AudioRenderer::Release start");
+        MEDIA_LOG_I_T("AudioRenderer::Release start");
+        // ensure OnWriteData callback untied
+        isReleasingRender_ = true;
+        // Then release
         FALSE_RETURN_MSG(audioRenderer_->Release(), "AudioRenderer::Release failed");
-        MEDIA_LOG_I_SHORT("AudioRenderer::Release end");
+        MEDIA_LOG_I_T("AudioRenderer::Release end");
     }
     audioRenderer_.reset();
 }
@@ -547,6 +552,27 @@ bool AudioServerSinkPlugin::AssignSampleFmtIfSupported(Plugins::AudioSampleForma
         rendererParams_.sampleFormat = stdFmt;
     }
     return fmtSupported_;
+}
+
+bool AudioServerSinkPlugin::IsFormatSupported(const std::shared_ptr<Meta> &meta)
+{
+    FALSE_RETURN_V_MSG_E(meta != nullptr, false, "Audio format is nullptr");
+
+    int32_t sampleRate = 0;
+    FALSE_RETURN_V(meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate), false);
+    FALSE_RETURN_V_MSG_E(AssignSampleRateIfSupported(static_cast<uint32_t>(sampleRate)), false,
+        "UnSupported sampleRate %{public}d", sampleRate);
+
+    int32_t channels = 0;
+    FALSE_RETURN_V(meta->GetData(Tag::AUDIO_OUTPUT_CHANNELS, channels), false);
+    FALSE_RETURN_V_MSG_E(AssignChannelNumIfSupported(static_cast<uint32_t>(channels)), false,
+        "UnSupported channel count %{public}d", channels);
+
+    int32_t sampleFormat = 0;
+    FALSE_RETURN_V(meta->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat), false);
+    FALSE_RETURN_V_MSG_E(AssignSampleFmtIfSupported(static_cast<Plugins::AudioSampleFormat>(sampleFormat)), false,
+        "UnSupported sampleFormat %{public}d", sampleFormat);
+    return true;
 }
 
 void AudioServerSinkPlugin::SetInterruptMode(AudioStandard::InterruptMode interruptMode)
@@ -971,7 +997,7 @@ size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t buff
         }
         destBuffer += ret;
         destLength -= static_cast<size_t>(ret);
-        MEDIA_LOG_D("Written data size " PUBLIC_LOG_D32 ", bufferSize " PUBLIC_LOG_U64, ret, bufferSize);
+        MEDIA_LOG_DD("Written data size " PUBLIC_LOG_D32 ", bufferSize " PUBLIC_LOG_U64, ret, bufferSize);
     }
     return destLength;
 }
@@ -979,8 +1005,8 @@ size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t buff
 Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer> &inputBuffer)
 {
     MEDIA_LOG_D_SHORT("Write buffer to audio framework");
-    FALSE_RETURN_V_MSG_W(inputBuffer != nullptr && inputBuffer->memory_->GetSize() != 0, Status::OK,
-                         "Receive empty buffer."); // return ok
+    FALSE_RETURN_V_MSG_W(inputBuffer != nullptr && inputBuffer->memory_ != nullptr &&
+        inputBuffer->memory_->GetSize() != 0, Status::OK, "Receive empty buffer."); // return ok
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Write, bufferSize: "
         + std::to_string(inputBuffer->memory_->GetSize()));
     if (mimeType_ == MimeType::AUDIO_AVS3DA) {
@@ -1176,30 +1202,93 @@ int64_t AudioServerSinkPlugin::GetWriteDurationMs()
 
 void AudioServerSinkPlugin::SetInterruptState(bool isInterruptNeeded)
 {
-    MEDIA_LOG_D("onInterrupted %{public}d", isInterruptNeeded);
-    std::unique_lock<std::mutex> lock(mutex_);
-    isInterruptNeeded_ = isInterruptNeeded;
-    writeCond_.notify_all();
+    MEDIA_LOG_I("onInterrupted %{public}d", isInterruptNeeded);
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        isInterruptNeeded_ = isInterruptNeeded;
+        writeCond_.notify_all();
+    }
+    FALSE_RETURN_NOLOG(audioRenderWriteCallback_ != nullptr);
+    MEDIA_LOG_I("NotifyInterrupt");
+    audioRenderWriteCallback_->NotifyInterrupt(isInterruptNeeded);
+}
+
+void AudioServerSinkPlugin::Freeze()
+{
+    FALSE_RETURN_NOLOG(audioRenderWriteCallback_ != nullptr);
+    MEDIA_LOG_I("NotifyFreeze");
+    audioRenderWriteCallback_->NotifyFreeze();
+}
+
+void AudioServerSinkPlugin::UnFreeze()
+{
+    FALSE_RETURN_NOLOG(audioRenderWriteCallback_ != nullptr);
+    MEDIA_LOG_I("NotifyUnFreeze");
+    audioRenderWriteCallback_->NotifyUnFreeze();
+}
+
+void AudioServerSinkPlugin::OnWriteData(size_t length)
+{
+    // First check if can get lock
+    std::unique_lock<std::mutex> lock(releaseRenderMutex_, std::try_to_lock);
+    FALSE_RETURN_MSG(lock.owns_lock(), "AudioServerSinkPlugin OnWriteData try to get lock failed");
+
+    // Then check if callback untied
+    FALSE_RETURN_MSG(!isReleasingRender_, "AudioServerSinkPlugin OnWriteData is releasing ");
+    
+    ScopedTimer timer("OnWriteData", ON_WRITE_WARNING_MS);
+    auto cb = audioSinkDataCallback_.lock();
+    FALSE_RETURN_MSG(cb != nullptr, "AudioServerSinkPlugin OnWriteData callback is nullptr");
+    cb->OnWriteData(length, isAudioVivid_);
 }
 
 AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::AudioRendererWriteCallbackImpl(
-    const std::weak_ptr<AudioSinkDataCallback> &callback, bool isAudioVivid): callback_(callback),
-    isAudioVivid_(isAudioVivid)
+    const std::weak_ptr<AudioServerSinkPlugin> &plugin): plugin_(plugin)
 {
 }
 
 void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::OnWriteData(size_t length)
 {
-    ScopedTimer timer("OnWriteData", ON_WRITE_WARNING_MS);
-    auto cb = callback_.lock();
-    FALSE_RETURN_MSG(cb != nullptr, "AudioServerSinkPlugin OnWriteData callback is nullptr");
-    cb->OnWriteData(length, isAudioVivid_);
+    {
+        std::unique_lock<std::mutex> lock(freezeMutex_);
+        if (isFrozen_) {
+            freezeCond_.wait(lock, [this] {
+                return !isFrozen_ || isInterruptNeeded_;
+            });
+        }
+    }
+    auto plugin = plugin_.lock();
+    FALSE_RETURN_MSG(plugin != nullptr, "AudioServerSinkPlugin OnWriteData plugin_ is nullptr");
+    plugin->OnWriteData(length);
+}
+
+void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::NotifyFreeze()
+{
+    std::unique_lock<std::mutex> lock(freezeMutex_);
+    isFrozen_ = true;
+}
+
+void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::NotifyUnFreeze()
+{
+    std::unique_lock<std::mutex> lock(freezeMutex_);
+    MEDIA_LOG_I("NotifyUnFreeze");
+    isFrozen_ = false;
+    freezeCond_.notify_all();
+}
+
+void AudioServerSinkPlugin::AudioRendererWriteCallbackImpl::NotifyInterrupt(bool isInterruptNeeded)
+{
+    std::unique_lock<std::mutex> lock(freezeMutex_);
+    MEDIA_LOG_I("NotifyInterrupt");
+    isInterruptNeeded_ = isInterruptNeeded;
+    freezeCond_.notify_all();
 }
 
 Status AudioServerSinkPlugin::MuteAudioBuffer(uint8_t *addr, size_t offset, size_t length)
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audioRender_ is nullptr");
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::MuteAudioBuffer");
+    FALSE_RETURN_V_MSG(addr != nullptr, Status::ERROR_UNKNOWN, "addr is nullptr");
     int32_t ret = audioRenderer_->MuteAudioBuffer(addr, offset, length, rendererOptions_.streamInfo.format);
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
         "MuteAudioBuffer failed, ret=" PUBLIC_LOG_D32, ret);
@@ -1218,7 +1307,7 @@ Status AudioServerSinkPlugin::EnqueueBufferDesc(const AudioStandard::BufferDesc 
         enqueueNumber_ = 0;
     }
     ret = audioRenderer_->Enqueue(bufferDesc);
-    MEDIA_LOG_D("EnqueueBufferDesc out");
+    MEDIA_LOG_DD("EnqueueBufferDesc out");
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
         "Enqueue BufferDesc failed, ret=" PUBLIC_LOG_D32, ret);
     return Status::OK;
@@ -1247,8 +1336,9 @@ Status AudioServerSinkPlugin::SetRequestDataCallback(const std::shared_ptr<Audio
         "audiorender callback has been set.");
     FALSE_RETURN_V_MSG(callback != nullptr && audioRenderer_ != nullptr, Status::ERROR_UNKNOWN,
         "audiorender callback set failed");
-    bool isAudioVivid = mimeType_ == MimeType::AUDIO_AVS3DA;
-    audioRenderWriteCallback_ = std::make_shared<AudioRendererWriteCallbackImpl>(callback, isAudioVivid);
+    audioSinkDataCallback_ = callback;
+    isAudioVivid_ = mimeType_ == MimeType::AUDIO_AVS3DA;
+    audioRenderWriteCallback_ = std::make_shared<AudioRendererWriteCallbackImpl>(shared_from_this());
     int32_t ret = 0;
     ret = audioRenderer_->SetRenderMode(AudioStandard::RENDER_MODE_CALLBACK);
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN, "audioRender_->SetRenderMode fail.");

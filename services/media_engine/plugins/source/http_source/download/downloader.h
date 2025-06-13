@@ -41,7 +41,7 @@ enum struct DownloadStatus {
 };
 
 struct HeaderInfo {
-    char contentType[32]; // 32 chars
+    char contentType[32] = {}; // 32 chars
     size_t fileContentLen {0};
     mutable size_t retryTimes {0};
     const static size_t maxRetryTimes {100};
@@ -210,6 +210,7 @@ public:
     void SetInterruptState(bool isInterruptNeeded);
     void SetAppState(bool isAppBackground);
     void StopBufferring();
+    std::string GetContentType();
 
 private:
     bool BeginDownload();
@@ -269,6 +270,11 @@ private:
     std::shared_ptr<IMediaSourceLoadingRequest> loadingReques_;
     bool isNotBlock_ {false};
     std::string appPreviousRequestUrl_ {};
+    FairMutex deinitMutex_ {};
+    std::string contentType_;
+    bool isContentTypeUpdated_{false};
+    ConditionVariable sleepCond_;
+    FairMutex sleepMutex_;
 };
 }
 }

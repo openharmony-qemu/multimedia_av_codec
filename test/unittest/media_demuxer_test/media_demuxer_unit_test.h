@@ -73,6 +73,11 @@ public:
     {
         return mapStatus_[name_];
     }
+    Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
+        const int32_t probSize) override
+    {
+        return mapStatus_[name_];
+    }
     Status GetMediaInfo(MediaInfo& mediaInfo) override
     {
         return mapStatus_[name_];
@@ -98,7 +103,23 @@ public:
     {
         return mapStatus_[name_];
     }
+    Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override
+    {
+        return mapStatus_[name_];
+    }
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override
+    {
+        return mapStatus_[name_];
+    }
+    Status GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout) override
+    {
+        return mapStatus_[name_];
+    }
+    Status GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPTS) override
+    {
+        return mapStatus_[name_];
+    }
+    Status Pause() override
     {
         return mapStatus_[name_];
     }

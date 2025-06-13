@@ -110,9 +110,10 @@ public:
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
     sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer() override;
     sptr<Media::AVBufferQueueProducer> GetOutputBufferQueueProducer() override;
-    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed) override;
+    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus) override;
     void ProcessInputBuffer() override;
     bool CheckRunning() override;
+    int32_t NotifyMemoryExchange(const bool exchangeFlag) override;
 
     // post processing callback
     void PostProcessingOnError(int32_t errorCode);
@@ -124,9 +125,10 @@ public:
         const bool svpFlag) override;
 #endif
 
-    // PurgeableMemory
-    void NotifyBackGround();
-    void NotifyForeGround();
+    int32_t NotifyMemoryRecycle();
+    int32_t NotifyMemoryWriteBack();
+    int32_t NotifySuspend();
+    int32_t NotifyResume();
 
 private:
     int32_t InitByName(Meta &callerInfo, API_VERSION apiVersion);
@@ -208,7 +210,6 @@ private:
     std::atomic<bool> decoderIsEOS_{false};
     std::shared_ptr<AVCodecCallback> shareBufCallback_ = nullptr;
     std::shared_ptr<MediaCodecCallback> avBufCallback_ = nullptr;
-    bool isFreezedFlag_{false};
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

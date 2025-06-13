@@ -57,6 +57,7 @@ public:
         void, SetCallingInfo, (int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId), ());
     MOCK_METHOD(void, ResetRenderTime, (), ());
     MOCK_METHOD(Status, SetPerfRecEnabled, (bool perfRecEnabled), ());
+    MOCK_METHOD(void, NotifyMemoryExchange, (bool exchangeFlag), ());
 };
 }  // namespace Media
 }  // namespace OHOS

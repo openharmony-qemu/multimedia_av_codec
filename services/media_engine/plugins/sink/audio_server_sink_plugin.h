@@ -32,7 +32,8 @@
 namespace OHOS {
 namespace Media {
 namespace Plugins {
-class AudioServerSinkPlugin : public Plugins::AudioSinkPlugin {
+class AudioServerSinkPlugin : public Plugins::AudioSinkPlugin,
+    public std::enable_shared_from_this<AudioServerSinkPlugin> {
 public:
     explicit AudioServerSinkPlugin(std::string name);
 
@@ -128,15 +129,23 @@ public:
 
     void SetInterruptState(bool isInterruptNeeded) override;
 
+    void OnWriteData(size_t length);
+
     Status SetRequestDataCallback(const std::shared_ptr<AudioSinkDataCallback> &callback) override;
  
     bool GetAudioPosition(timespec &time, uint32_t &framePosition) override;
+
+    void Freeze() override;
+
+    void UnFreeze() override;
 
     Status MuteAudioBuffer(uint8_t *addr, size_t offset, size_t length) override;
 
     Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc) override;
  
     Status GetBufferDesc(AudioStandard::BufferDesc &bufferDesc) override;
+
+    bool IsFormatSupported(const std::shared_ptr<Meta>& meta) override;
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {
@@ -168,12 +177,17 @@ private:
     };
     class AudioRendererWriteCallbackImpl : public AudioStandard::AudioRendererWriteCallback {
     public:
-        explicit AudioRendererWriteCallbackImpl(const std::weak_ptr<AudioSinkDataCallback> &callback,
-            bool isAudioVivid);
+        explicit AudioRendererWriteCallbackImpl(const std::weak_ptr<AudioServerSinkPlugin> &plugin);
         void OnWriteData(size_t length) override;
+        void NotifyFreeze();
+        void NotifyUnFreeze();
+        void NotifyInterrupt(bool isInterruptNeeded);
     private:
-        std::weak_ptr<AudioSinkDataCallback> callback_;
-        bool isAudioVivid_ {false};
+        std::weak_ptr<AudioServerSinkPlugin> plugin_;
+        std::mutex freezeMutex_;
+        bool isFrozen_ {false};
+        std::condition_variable freezeCond_;
+        std::atomic<bool> isInterruptNeeded_ {false};
     };
     void ReleaseRender();
     __attribute__((no_sanitize("cfi"))) void ReleaseFile();
@@ -256,8 +270,11 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     std::mutex mutex_;
     std::condition_variable writeCond_;
-    std::shared_ptr<AudioStandard::AudioRendererWriteCallback> audioRenderWriteCallback_ {nullptr};
-    OHOS::Media::Mutex releaseRendererMutex_{};
+    std::shared_ptr<AudioRendererWriteCallbackImpl> audioRenderWriteCallback_ {nullptr};
+    std::mutex releaseRenderMutex_;
+    bool isReleasingRender_ {false};
+    std::weak_ptr<AudioSinkDataCallback> audioSinkDataCallback_;
+    bool isAudioVivid_ {false};
     uint64_t enqueueNumber_ {0};
 };
 } // namespace Plugin

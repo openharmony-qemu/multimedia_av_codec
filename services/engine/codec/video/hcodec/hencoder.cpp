@@ -23,6 +23,8 @@
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
 #include "v3_0/codec_ext_types.h"
+#include <algorithm>
+#include <regex>
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -40,21 +42,21 @@ int32_t HEncoder::OnConfigure(const Format &format)
         return ret;
     }
 
+    EnableVariableFrameRate(format);
     optional<double> frameRate = GetFrameRateFromUser(format);
+    defaultFrameRate_ = frameRate;
+    ret = ConfigBEncodeMode(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
     ret = SetupPort(format, frameRate);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
     ConfigureProtocol(format, frameRate);
 
-    ret = ConfigureOutputBitrate(format);
-    if (ret != AVCS_ERR_OK) {
-        HLOGW("ConfigureOutputBitrate failed");
-    }
-    ret = SetColorAspects(format);
-    if (ret != AVCS_ERR_OK) {
-        HLOGW("set color aspect failed");
-    }
+    (void)ConfigureOutputBitrate(format);
+    (void)SetColorAspects(format);
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
     CheckIfEnableCb(format);
@@ -84,6 +86,20 @@ int32_t HEncoder::OnConfigure(const Format &format)
     }
     (void)EnableEncoderParamsFeedback(format);
     return AVCS_ERR_OK;
+}
+
+void HEncoder::EnableVariableFrameRate(const Format &format)
+{
+    int32_t enableVariableFrameRate = 0;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL, enableVariableFrameRate)) {
+        HLOGE("fail to get video_encoder_enable_pts_based_ratecontrol");
+        return;
+    }
+    HLOGI("video_encoder_enable_pts_based_ratecontrol flag is %d", enableVariableFrameRate);
+    if (enableVariableFrameRate) {
+        enableVariableFrameRate_ = true;
+    }
+    return;
 }
 
 int32_t HEncoder::ConfigureBufferType()
@@ -197,6 +213,33 @@ int32_t HEncoder::EnableFrameQPMap(const Format &format)
     }
     HLOGI("enable encoder frame qp map[%d] success", enableQPMap);
     enableQPMap_ = true;
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::ConfigBEncodeMode(const Format &format)
+{
+    Media::Plugins::VideoEncodeBFrameGopMode gopMode;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, *reinterpret_cast<int *>(&gopMode))) {
+        return AVCS_ERR_OK;
+    }
+
+    CodecEncGopMode param {};
+    InitOMXParamExt(param);
+    if (gopMode == Media::Plugins::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE) {
+        HLOGI("encoder use adaptive-b");
+        param.gopMode = OMX_ENCODE_GOP_ADAPTIVE_B_MODE;
+    } else if (gopMode == Media::Plugins::VIDEO_ENCODE_GOP_H3B_MODE) {
+        HLOGI("encoder use h3b");
+        param.gopMode = OMX_ENCODE_GOP_H3B_MODE;
+    } else {
+        HLOGE("invalid gop mode");
+        return AVCS_ERR_UNSUPPORT;
+    }
+
+    if (!SetParameter(OMX_IndexParamEncBFrameMode, param)) {
+        HLOGE("config b gop mode [%d] failed", gopMode);
+        return AVCS_ERR_INVALID_VAL;
+    }
     return AVCS_ERR_OK;
 }
 
@@ -408,6 +451,7 @@ int32_t HEncoder::SetupPort(const Format &format, std::optional<double> &frameRa
         frameRate = 60.0; // default frame rate 60.0
     }
 
+    codecRate_ = frameRate.value();
     PortInfo inputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height),
                               OMX_VIDEO_CodingUnused, configuredFmt_, frameRate.value()};
     CalcInputBufSize(inputPortInfo, configuredFmt_.innerFmt);
@@ -509,7 +553,7 @@ std::optional<uint32_t> HEncoder::GetBitRateFromUser(const Format &format)
 std::optional<uint32_t> HEncoder::GetSQRFactorFromUser(const Format &format)
 {
     int32_t sqrFactor;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor) && sqrFactor > 0) {
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor) && sqrFactor >= 0) {
         LOGI("user set SQR factor is  %d", sqrFactor);
         return static_cast<uint32_t>(sqrFactor);
     }
@@ -632,23 +676,19 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
     }
     optional<VideoEncodeBitrateMode> bitRateMode = GetBitRateModeFromUser(format);
     if (bitRateMode.has_value()) {
-        int32_t quality;
-        if (bitRateMode.value() == CQ &&
-            format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) && quality >= 0) {
-            return SetConstantQualityMode(quality);
-        }
-        int32_t targetQp;
+        int32_t metaValue;
         if (bitRateMode.value() == CRF &&
-            format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TARGET_QP, targetQp) && targetQp >= 0) {
-            return SetCRFMode(targetQp);
+            format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TARGET_QP, metaValue) && metaValue >= 0) {
+            return SetCRFMode(metaValue);
         }
-        if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) &&
-            bitRateMode.value() == SQR) {
-            return SetSQRMode(format);
-        }
-        optional<uint32_t> bitRate = GetBitRateFromUser(format);
-        if (bitRate.has_value()) {
-            bitrateType.nTargetBitrate = bitRate.value();
+        if (format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, metaValue)) {
+            if (bitRateMode.value() == CQ && metaValue >= 0) {
+                return SetConstantQualityMode(metaValue);
+            }
+        } else {
+            if (bitRateMode.value() == SQR) {
+                return SetSQRMode(format);
+            }
         }
         if (bitRateMode.value() != SQR && bitRateMode.value() != CQ) {
             auto omxBitrateMode = TypeConverter::InnerModeToOmxBitrateMode(bitRateMode.value());
@@ -656,6 +696,10 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
                 bitrateType.eControlRate = omxBitrateMode.value();
             }
         }
+    }
+    optional<uint32_t> bitRate = GetBitRateFromUser(format);
+    if (bitRate.has_value()) {
+        bitrateType.nTargetBitrate = bitRate.value();
     }
     if (!SetParameter(OMX_IndexParamVideoBitrate, bitrateType)) {
         HLOGE("failed to set OMX_IndexParamVideoBitrate");
@@ -1052,6 +1096,7 @@ void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffe
     WrapQPRangeParamIntoOmxBuffer(omxBuffer, meta);
     WrapStartQPIntoOmxBuffer(omxBuffer, meta);
     WrapIsSkipFrameIntoOmxBuffer(omxBuffer, meta);
+    WrapRoiParamIntoOmxBuffer(omxBuffer, meta);
     WrapQPMapParamIntoOmxBuffer(omxBuffer, meta);
     meta->Clear();
 }
@@ -1153,6 +1198,167 @@ void HEncoder::WrapIsSkipFrameIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer>
     }
     AppendToVector(omxBuffer->alongParam, OMX_IndexParamSkipFrame);
     AppendToVector(omxBuffer->alongParam, isSkip);
+}
+
+double HEncoder::CalculateSmoothFactorBasedPts(int64_t curPts, int64_t curDuration)
+{
+    double smoothFactor = 0.0;
+    int32_t instantFrameRate = round((1.0 / curDuration) * TIME_RATIO_US_TO_S);
+    if (instantFrameRate > SMOOTH_FACTOR_CLIP_RANGE_MIN && instantFrameRate < SMOOTH_FACTOR_CLIP_RANGE_MAX) {
+        smoothFactor = 1 - DURATION_SCALE_FACTOR / instantFrameRate;
+    } else if (instantFrameRate <= SMOOTH_FACTOR_CLIP_RANGE_MIN) {
+        smoothFactor = SMOOTH_FACTOR_CLIP_MIN;
+    } else {
+        smoothFactor = SMOOTH_FACTOR_CLIP_MAX;
+    }
+    return smoothFactor;
+}
+
+int32_t HEncoder::CalculateSmoothFpsBasedPts(int64_t curPts, int64_t curDuration)
+{
+    int64_t previousDuration1st = previousPtsWindow_.back() - previousPtsWindow_[2];
+    int64_t previousDuration2nd = previousPtsWindow_[2] - previousPtsWindow_[1];
+    double smoothFactor = CalculateSmoothFactorBasedPts(curPts, curDuration);
+    double previousSmoothFactor = CalculateSmoothFactorBasedPts(previousPtsWindow_.back(), previousDuration1st);
+    double smoothDuration = curDuration * (1 - smoothFactor) + (previousDuration1st * (1 - previousSmoothFactor) +
+        previousDuration2nd * previousSmoothFactor) * smoothFactor;
+    int32_t smoothFrameRate = round((1.0 / smoothDuration) * TIME_RATIO_US_TO_S);
+    HLOGD("pts: %ld, smoothFactor: %f, previousSmoothFactor: %f, smoothDuration: %f", curPts, smoothFactor,
+        previousSmoothFactor, smoothDuration);
+    return smoothFrameRate;
+}
+
+int32_t HEncoder::UpdateTimeStampWindow(int64_t curPts, int32_t &frameRate)
+{
+    int32_t previousPtsWindowSize = static_cast<int32_t>(previousPtsWindow_.size());
+    if (previousPtsWindow_.empty()) {
+        previousPtsWindow_.push_back(curPts);
+        frameRate = defaultFrameRate_.value_or(DEFAULT_FRAME_RATE);
+        HLOGD("pts: %ld, smoothFrameRate: %d, windowSize: %d", curPts, frameRate, previousPtsWindowSize);
+        return 0;
+    }
+    if (curPts <= previousPtsWindow_.back()) {
+        HLOGE("curPts less than last pts !");
+        return -1;
+    }
+    int64_t curDuration = curPts - previousPtsWindow_.back();
+    if (previousPtsWindowSize < PREVIOUS_PTS_RECORDED_COUNT) {
+        frameRate = round((1.0 / curDuration) * TIME_RATIO_US_TO_S);
+        previousPtsWindow_.push_back(curPts);
+        previousSmoothFrameRate_ = frameRate;
+    } else if (previousPtsWindowSize == PREVIOUS_PTS_RECORDED_COUNT) {
+        int32_t instantFrameRate = round((1.0 / curDuration) * TIME_RATIO_US_TO_S);
+        if (instantFrameRate == 0) {
+            HLOGE("instantFrameRate is 0 !");
+            return -1;
+        }
+        int32_t smoothFrameRate = CalculateSmoothFpsBasedPts(curPts, curDuration);
+        double averageThreeFrameDurationError = (curDuration - (previousPtsWindow_[1] - previousPtsWindow_[0])) /
+            AVERAGE_DURATION_ERROR_COUNT;
+        double frameDurationErrorMin = (1.0 / instantFrameRate - 1.0 / (instantFrameRate -
+            AVERAGE_DURATION_ERROR_FRAMERATE_RANGE)) * TIME_RATIO_US_TO_S;
+        double frameDurationErrorMax = (1.0 / instantFrameRate - 1.0 / (instantFrameRate +
+            AVERAGE_DURATION_ERROR_FRAMERATE_RANGE)) * TIME_RATIO_US_TO_S;
+        if (averageThreeFrameDurationError > frameDurationErrorMin &&
+            averageThreeFrameDurationError < frameDurationErrorMax) {
+            frameRate = smoothFrameRate;
+        } else {
+            frameRate = previousSmoothFrameRate_;
+        }
+        previousPtsWindow_.push_back(curPts);
+        previousPtsWindow_.pop_front();
+        previousSmoothFrameRate_ = frameRate;
+    } else {
+        HLOGE("previousPtsWindow_ size:%d error !", previousPtsWindowSize);
+        return -1;
+    }
+    HLOGD("pts: %ld, smoothFrameRate: %d, windowSize: %d", curPts, frameRate, previousPtsWindowSize);
+    return 0;
+}
+int32_t HEncoder::CalculateFrameRateParamIntoOmxBuffer(int64_t curPts)
+{
+    if (curPts <= 0) {
+        HLOGE("curPts less than 0 !");
+        return -1;
+    }
+    int32_t frameRate = 0;
+    if (inputSurface_) {
+        curPts /= TIME_RATIO_NS_TO_US;
+    }
+    if (UpdateTimeStampWindow(curPts, frameRate) != 0) {
+        return -1;
+    }
+    if (frameRate < caps_.port.video.frameRate.min || frameRate > caps_.port.video.frameRate.max) {
+        HLOGE("frameRate: %d over range, min: %d, max: %d", frameRate, caps_.port.video.frameRate.min,
+            caps_.port.video.frameRate.max);
+        return -1;
+    }
+    OMX_CONFIG_FRAMERATETYPE framerateCfgType;
+    InitOMXParam(framerateCfgType);
+    framerateCfgType.nPortIndex = OMX_DirInput;
+    framerateCfgType.xEncodeFramerate = frameRate * FRAME_RATE_COEFFICIENT;
+    if (!SetParameter(OMX_IndexConfigVideoFramerate, framerateCfgType, true)) {
+        HLOGE("failed to config OMX_IndexConfigVideoFramerate");
+        return -1;
+    }
+    return 0;
+}
+
+void HEncoder::ParseRoiStringValid(const std::string &roiValue, shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer)
+{
+    AppendToVector(omxBuffer->alongParam, OMX_IndexParamRoi);
+    CodecRoiParam param;
+    InitOMXParamExt(param);
+    if (roiValue.empty()) { // roiValue string is empty, canceling historical roi configurations!
+        AppendToVector(omxBuffer->alongParam, param);
+        return;
+    }
+    // step1 parse the string
+    // method regex roi: Top1,Left1-Bottom1,Right1=Offset1(option);Top2,Left2-Bottom2,Right2=Offset2;...
+    std::regex pattern(R"((-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=(-?\d+))?(?:;|$))");
+    std::smatch match;
+    std::string temp = roiValue;
+    size_t vaildCount = 0;
+    constexpr int TOP_INDEX = 1;
+    constexpr int LEFT_INDEX = 2;
+    constexpr int BOTTOM_INDEX = 3;
+    constexpr int RIGHT_INDEX = 4;
+    constexpr int QPOFFSET_INDEX = 5;
+    constexpr int defaultOffset = -3; // default roi qp
+    while (std::regex_search(temp, match, pattern) && vaildCount < roiNum) {
+        int32_t qpOffset, left, top, right, bottom;
+        top = std::clamp(std::stoi(match[TOP_INDEX].str()), 0, static_cast<int>(height_));
+        left = std::clamp(std::stoi(match[LEFT_INDEX].str()), 0, static_cast<int>(width_));
+        bottom = std::clamp(std::stoi(match[BOTTOM_INDEX].str()), 0, static_cast<int>(height_));
+        right = std::clamp(std::stoi(match[RIGHT_INDEX].str()), 0, static_cast<int>(width_));
+        if (match[QPOFFSET_INDEX].matched) {
+            qpOffset = std::stoi(match[QPOFFSET_INDEX].str());
+        } else {
+            qpOffset = defaultOffset;
+        }
+        temp = match.suffix().str();
+        int32_t roiWidth = right - left;
+        int32_t roiHeight = bottom - top;
+        param.roiInfo[vaildCount].regionEnable = true;
+        param.roiInfo[vaildCount].absQp = 0;
+        param.roiInfo[vaildCount].roiQp = static_cast<int32_t>(qpOffset);
+        param.roiInfo[vaildCount].roiStartX = static_cast<uint32_t>(left);
+        param.roiInfo[vaildCount].roiStartY = static_cast<uint32_t>(top);
+        param.roiInfo[vaildCount].roiWidth = static_cast<int32_t>(roiWidth);
+        param.roiInfo[vaildCount].roiHeight = static_cast<int32_t>(roiHeight);
+        vaildCount++;
+    }
+    AppendToVector(omxBuffer->alongParam, param);
+}
+
+void HEncoder::WrapRoiParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                         const shared_ptr<Media::Meta> &meta)
+{
+    std::string roiValue;
+    if (!meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiValue)) { // historical configuration
+        return;
+    }
+    ParseRoiStringValid(roiValue, omxBuffer);
 }
 
 void HEncoder::DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight)
@@ -1349,6 +1555,16 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
     WrapSurfaceBufferToSlot(*bufferInfo, bufferInfo->surfaceBuffer, bufferInfo->avBuffer->pts_,
         UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_)));
+
+    if (!inputSurface_ && bufferInfo->avBuffer->memory_ && bufferInfo->avBuffer->memory_->GetSize() == 0) {
+        bufferInfo->omxBuffer->bufferhandle = nullptr;
+        bufferInfo->omxBuffer->filledLen = 0;
+    }
+    if (enableVariableFrameRate_) {
+        if (CalculateFrameRateParamIntoOmxBuffer(bufferInfo->omxBuffer->pts) != 0) {
+            ReplyErrorCode(msg.id, AVCS_ERR_INPUT_DATA_ERROR);
+        }
+    }
     WrapPerFrameParamIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->avBuffer->meta_);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
     int32_t err = HCodec::OnQueueInputBuffer(mode, bufferInfo);

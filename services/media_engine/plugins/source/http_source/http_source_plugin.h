@@ -74,6 +74,7 @@ public:
     bool IsFlvLive() override;
     uint64_t GetMemorySize() override;
     bool IsHlsFmp4() override;
+    std::string GetContentType() override;
 
 private:
     void CloseUri(bool isAsync = false);

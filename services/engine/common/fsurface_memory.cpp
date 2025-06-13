@@ -92,15 +92,6 @@ sptr<SyncFence> FSurfaceMemory::GetFence()
     return fence_;
 }
 
-void FSurfaceMemory::UpdateSurfaceBufferScaleMode()
-{
-    CHECK_AND_RETURN_LOG(surfaceBuffer_ != nullptr, "Surface buffer is nullptr!");
-    auto ret = sInfo_->surface->SetScalingMode(surfaceBuffer_->GetSeqNum(), sInfo_->scalingMode);
-    if (ret != OHOS::SurfaceError::SURFACE_ERROR_OK) {
-        AVCODEC_LOGE("Update surface buffer scaling mode failed, ret=%{public}" PRIu64, static_cast<uint64_t>(ret));
-    }
-}
-
 uint8_t *FSurfaceMemory::GetBase() const
 {
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, nullptr, "Surface buffer is nullptr!");

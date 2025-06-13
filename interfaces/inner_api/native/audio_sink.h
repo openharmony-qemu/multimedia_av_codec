@@ -36,6 +36,7 @@ using namespace OHOS::Media::Plugins;
 class AudioSink : public std::enable_shared_from_this<AudioSink>, public Pipeline::MediaSynchronousSink {
 public:
     AudioSink();
+    AudioSink(bool isRenderCallbackMode, bool isProcessInputMerged);
     ~AudioSink();
     Status Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     sptr<AVBufferQueueProducer> GetBufferQueueProducer();
@@ -46,6 +47,8 @@ public:
     Status Start();
     Status Stop();
     Status Pause();
+    Status Freeze();
+    Status UnFreeze();
     Status Resume();
     Status Flush();
     Status Release();
@@ -65,6 +68,7 @@ public:
     void SetThreadGroupId(const std::string& groupId);
     Status SetIsTransitent(bool isTransitent);
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+    Status HandleFormatChange(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status SetMuted(bool isMuted);
     virtual void OnInterrupted(bool isInterruptNeeded) override;
 
@@ -86,7 +90,10 @@ public:
         return state_ == Pipeline::FilterState::INITIALIZED;
     }
     Status SetSeekTime(int64_t seekTime);
-    bool NeedImmediateRender();
+    inline bool NeedImmediateRender() const
+    {
+        return isApe_ || isFlac_;
+    }
     bool GetSyncCenterClockTime(int64_t &clockTime);
     Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
     Status SetLooping(bool loop);
@@ -139,7 +146,9 @@ private:
     void GetAvailableOutputBuffers();
     void ClearAvailableOutputBuffers();
     void DriveBufferCircle();
+    void WaitForAllBufferConsumed();
     std::shared_ptr<AVBuffer> CopyBuffer(const std::shared_ptr<AVBuffer> buffer);
+    Status MuteAudioBuffer(size_t size, AudioStandard::BufferDesc &bufferDesc, bool isEos);
 
     class UnderrunDetector {
     public:
@@ -254,7 +263,8 @@ private:
     bool isPerfRecEnabled_ { false };
     bool isCalledBySystemApp_ { false };
     bool isLoop_ { false };
-    bool isCallbackMode_ {true};
+    bool isRenderCallbackMode_ {true};
+    bool isProcessInputMerged_ {true};
     std::shared_ptr<AudioSinkDataCallback> audioSinkDataCallback_ {nullptr};
     std::mutex availBufferMutex_;
     std::atomic<size_t> availDataSize_ {0};
@@ -265,6 +275,10 @@ private:
     std::mutex eosCbMutex_ {};
     bool hangeOnEosCb_ {false};
     std::condition_variable eosCbCond_ {};
+
+    std::atomic<bool> formatChange_ {false};
+    std::mutex formatChangeMutex_ {};
+    std::condition_variable formatChangeCond_ {};
     class AudioDataSynchroizer {
         public:
             void UpdateCurrentBufferInfo(int64_t bufferPts, int64_t bufferDuration);

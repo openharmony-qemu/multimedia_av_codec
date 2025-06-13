@@ -54,7 +54,7 @@ constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 300000000;
 constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
 constexpr int32_t VIDEO_FRAMERATE_DEFAULT_SIZE = 60;
-constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
+constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 139264;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
 constexpr int32_t DEFAULT_THREAD_COUNT = 2;
 #ifdef BUILD_ENG_VERSION
@@ -395,22 +395,9 @@ void FCodec::InitBuffers()
                      buffers_[INDEX_INPUT][i]->owner_.load());
     }
     CHECK_AND_RETURN_LOG(buffers_[INDEX_OUTPUT].size() > 0, "Output buffer is null!");
-    if (sInfo_.surface == nullptr) {
-        for (uint32_t i = 0u; i < buffers_[INDEX_OUTPUT].size(); i++) {
-            buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
-            codecAvailQue_->Push(i);
-        }
-        return;
-    }
     for (uint32_t i = 0u; i < buffers_[INDEX_OUTPUT].size(); i++) {
-        std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][i]->sMemory_;
-        if (surfaceMemory->isAttached && surfaceMemory->owner == Owner::OWNED_BY_SURFACE) {
-            buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_SURFACE;
-            renderAvailQue_->Push(i);
-        } else {
-            buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
-            codecAvailQue_->Push(i);
-        }
+        buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
+        codecAvailQue_->Push(i);
     }
 }
 
@@ -612,7 +599,8 @@ void FCodec::SetSurfaceParameter(const Format &format, const std::string_view &f
             format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val);
         }
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
-        sInfo_.scalingMode = scaleMode;
+        sInfo_.scalingMode = val;
+        sInfo_.surface->SetScalingMode(scaleMode);
     }
     AVCODEC_LOGI("Set parameter %{public}s success, val %{public}d", std::string(formatKey).c_str(), val);
 }
@@ -714,15 +702,19 @@ int32_t FCodec::SetSurfaceCfg()
     sInfo_.requestConfig.width = width_;
     sInfo_.requestConfig.height = height_;
     sInfo_.requestConfig.format = surfacePixelFmt;
-
-    CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32) && val32 >= 0 &&
-                             val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
-                             AVCS_ERR_INVALID_VAL, "Invalid scaling mode %{public}d", val32);
-    sInfo_.scalingMode = static_cast<ScalingMode>(val32);
-    CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
-                             val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270), AVCS_ERR_INVALID_VAL,
-                             "Invalid rotation angle %{public}d", val32);
-    sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
+    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
+        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32) && val32 >= 0 &&
+                                 val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
+                                 AVCS_ERR_INVALID_VAL, "Invalid scaling mode %{public}d", val32);
+        sInfo_.scalingMode = val32;
+        sInfo_.surface->SetScalingMode(static_cast<ScalingMode>(val32));
+    }
+    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
+        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
+                                 val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
+                                 AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
+        sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
+    }
     return AVCS_ERR_OK;
 }
 
@@ -745,6 +737,8 @@ void FCodec::RequestSurfaceBufferThread()
         sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         if (surfaceBuffer == nullptr) {
             AVCODEC_LOGE("Get surface buffer failed, index=%{public}u", index);
+        } else {
+            requestSucceed_ = true;
         }
         requestBufferFinished_ = true;
         requestBufferOnceDoneCV_.notify_one();
@@ -775,21 +769,15 @@ void FCodec::StopRequestSurfaceBufferThread()
 
 bool FCodec::RequestSurfaceBufferOnce(uint32_t index)
 {
-    if (!requestBufferThreadExit_.load()) {
-        std::unique_lock<std::mutex> lck(requestBufferMutex_);
-        requestBufferFinished_ = false;
-        requestSurfaceBufferQue_->Push(index);
-        requestBufferCV_.notify_one();
-        requestBufferOnceDoneCV_.wait(lck, [this]() { return requestBufferFinished_.load(); });
-        std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
-        std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
-        if (surfaceMemory == nullptr || surfaceMemory->GetBase() == nullptr) {
-            AVCODEC_LOGE("Output surface memory %{public}u allocate failed", index);
-            return false;
-        }
-        return true;
-    }
-    return false;
+    CHECK_AND_RETURN_RET_LOG(!requestBufferThreadExit_.load(), false, "request surfacebuffer thread exited!");
+    std::unique_lock<std::mutex> lck(requestBufferMutex_);
+    requestSucceed_ = false;
+    requestBufferFinished_ = false;
+    requestSurfaceBufferQue_->Push(index);
+    requestBufferCV_.notify_one();
+    requestBufferOnceDoneCV_.wait(lck, [this]() { return requestBufferFinished_.load(); });
+    CHECK_AND_RETURN_RET_LOG(requestSucceed_.load(), false, "Output surface memory %{public}u allocate failed", index);
+    return true;
 }
 
 int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
@@ -1342,6 +1330,7 @@ int32_t FCodec::Detach(sptr<SurfaceBuffer> surfaceBuffer)
 
 int32_t FCodec::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, uint32_t index)
 {
+    RequestSurfaceBufferOnce(index);
     sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get surface buffer failed!");
     if (!surfaceMemory->isAttached) {
@@ -1351,7 +1340,6 @@ int32_t FCodec::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemor
     }
     OHOS::BufferFlushConfig flushConfig = {{0, 0, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight()},
         outAVBuffer4Surface_[index]->pts_, -1};
-    surfaceMemory->UpdateSurfaceBufferScaleMode();
     if (outAVBuffer4Surface_[index]->meta_->Find(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP) !=
         outAVBuffer4Surface_[index]->meta_->end()) {
         outAVBuffer4Surface_[index]->meta_->Get<OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP>(
@@ -1479,18 +1467,13 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
             "GSError=%{public}d", newId, surfaceBuffer->GetSeqNum(), err);
         buffers_[INDEX_OUTPUT][index]->sMemory_->isAttached = true;
     }
-    int32_t videoRotation = 0;
-    CHECK_AND_RETURN_RET_LOG(
-        format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, videoRotation) && videoRotation >= 0 &&
-        videoRotation <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270), AVCS_ERR_INVALID_VAL,
-        "Invalid rotation angle %{public}d", videoRotation);
-    sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(videoRotation)));
-    int32_t scalingMode = 0;
-    CHECK_AND_RETURN_RET_LOG(
-        format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, scalingMode) && scalingMode >= 0 &&
-        scalingMode <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT), AVCS_ERR_INVALID_VAL,
-        "Invalid scaling mode %{public}d", scalingMode);
-    sInfo_.scalingMode = static_cast<ScalingMode>(scalingMode);
+    int32_t val32 = 0;
+    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
+        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
+                                 val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
+                                 AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
+        sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
+    }
     sInfo_.surface = newSurface;
     CombineConsumerUsage();
     for (uint32_t index: ownedBySurfaceBufferIndex) {
@@ -1508,7 +1491,9 @@ int32_t FCodec::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, u
     std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory_;
     sptr<SurfaceBuffer> surfaceBuffer = renderSurfaceBufferMap_[index].first;
     OHOS::BufferFlushConfig flushConfig = renderSurfaceBufferMap_[index].second;
-    newSurface->SetScalingMode(surfaceBuffer->GetSeqNum(), sInfo_.scalingMode);
+    if (sInfo_.scalingMode >= 0) {
+        newSurface->SetScalingMode(surfaceBuffer->GetSeqNum(), static_cast<ScalingMode>(sInfo_.scalingMode));
+    }
     auto res = newSurface->FlushBuffer(surfaceBuffer, -1, flushConfig);
     if (res != OHOS::SurfaceError::SURFACE_ERROR_OK) {
         AVCODEC_LOGE("Failed to update surface memory: %{public}d", res);
@@ -1520,10 +1505,7 @@ int32_t FCodec::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, u
 void FCodec::RequestBufferFromConsumer()
 {
     auto index = renderAvailQue_->Front();
-    if (!RequestSurfaceBufferOnce(index)) {
-        AVCODEC_LOGE("get buffer failed.");
-        return;
-    }
+    RequestSurfaceBufferOnce(index);
     std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
     std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
     auto queSize = renderAvailQue_->Size();
@@ -1651,16 +1633,6 @@ int32_t FCodec::SetOutputSurface(sptr<Surface> surface)
     CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, err,
                              "surface(%{public}" PRIu64 ") register listener to surface failed, GSError=%{public}d",
                              sInfo_.surface->GetUniqueId(), err);
-    if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
-        std::lock_guard<std::mutex> lock(formatMutex_);
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE,
-                            static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_TO_WINDOW));
-    }
-    if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
-        std::lock_guard<std::mutex> lock(formatMutex_);
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE,
-                            static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_0));
-    }
     AVCODEC_LOGI("Set surface(%{public}" PRIu64 ") success.", surfaceId);
     return AVCS_ERR_OK;
 }
@@ -1680,18 +1652,12 @@ bool FCodec::CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer)
         AVCODEC_LOGD("Current buffers unsupport.");
         return false;
     }
-    Owner ownerValue = fBuffer->owner_.load();
-    AVCODEC_LOGD("Buffer type: [%{public}u], fBuffer->owner_: [%{public}d], fBuffer->hasSwapedOut_: [%{public}d].",
-                 isOutputBuffer, ownerValue, fBuffer->hasSwapedOut_);
     std::shared_ptr<FSurfaceMemory> surfaceMemory = fBuffer->sMemory_;
     CHECK_AND_RETURN_RET_LOGD(surfaceMemory != nullptr, false, "Current buffer->sMemory error!");
-    sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
-    if (surfaceBuffer) {
-        return !(ownerValue == Owner::OWNED_BY_SURFACE || fBuffer->hasSwapedOut_ || surfaceBuffer == nullptr);
-    } else {
-        return !(ownerValue == Owner::OWNED_BY_SURFACE || ownerValue == Owner::OWNED_BY_USER ||
-                 fBuffer->hasSwapedOut_ || surfaceBuffer == nullptr);
-    }
+    Owner ownerValue = surfaceMemory->owner;
+    AVCODEC_LOGD("Buffer type: [%{public}u], fBuffer->owner_: [%{public}d], fBuffer->hasSwapedOut_: [%{public}d].",
+                 isOutputBuffer, ownerValue, fBuffer->hasSwapedOut_);
+    return !(ownerValue == Owner::OWNED_BY_SURFACE || fBuffer->hasSwapedOut_);
 }
 
 int32_t FCodec::SwapOutBuffers(bool isOutputBuffer, State curState)
@@ -1951,7 +1917,7 @@ void FCodec::GetAvcCapProf(std::vector<CapabilityData> &capaArray)
         capsData.profiles = {static_cast<int32_t>(AVC_PROFILE_BASELINE), static_cast<int32_t>(AVC_PROFILE_MAIN),
                                     static_cast<int32_t>(AVC_PROFILE_HIGH)};
         std::vector<int32_t> levels;
-        for (int32_t j = 0; j <= static_cast<int32_t>(AVCLevel::AVC_LEVEL_51); ++j) {
+        for (int32_t j = 0; j <= static_cast<int32_t>(AVCLevel::AVC_LEVEL_62); ++j) {
             levels.emplace_back(j);
         }
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_MAIN), levels));

@@ -60,6 +60,13 @@ bool DashMediaDownloader::Open(const std::string& url, const std::map<std::strin
     return true;
 }
 
+std::string DashMediaDownloader::GetContentType()
+{
+    FALSE_RETURN_V(mpdDownloader_ != nullptr, "");
+    MEDIA_LOG_I("In");
+    return mpdDownloader_->GetContentType();
+}
+
 void DashMediaDownloader::Close(bool isAsync)
 {
     mpdDownloader_->Close(isAsync);
@@ -789,24 +796,35 @@ bool DashMediaDownloader::IsSeekingInSwitch()
     return isSwitching;
 }
 
-void DashMediaDownloader::HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos)
+void DashMediaDownloader::HandleSeekReady(int32_t streamType, int32_t streamId, int64_t seekTimeMs, int32_t isEos)
 {
     Format seekReadyInfo {};
     seekReadyInfo.PutIntValue("currentStreamType", streamType);
     seekReadyInfo.PutIntValue("currentStreamId", streamId);
+    seekReadyInfo.PutLongValue("seekTime", seekTimeMs);
     seekReadyInfo.PutIntValue("isEOS", isEos);
-    MEDIA_LOG_D("StreamType: " PUBLIC_LOG_D32 " StreamId: " PUBLIC_LOG_D32 " isEOS: " PUBLIC_LOG_D32,
-        streamType, streamId, isEos);
+    MEDIA_LOG_D("StreamType: " PUBLIC_LOG_D32 " StreamId: " PUBLIC_LOG_D32
+        " seekTime: " PUBLIC_LOG_D64 " isEOS: " PUBLIC_LOG_D32, streamType, streamId, seekTimeMs, isEos);
     if (callback_ != nullptr) {
         MEDIA_LOG_D("Onevent dash seek ready");
         callback_->OnEvent({PluginEventType::DASH_SEEK_READY, seekReadyInfo, "dash_seek_ready"});
     }
 }
 
+int64_t DashMediaDownloader::GetVideoSeekTime(int64_t seekTimeMs)
+{
+    auto videoSegmentDownloader = GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+    FALSE_RETURN_V_NOLOG(videoSegmentDownloader != nullptr, seekTimeMs);
+
+    std::shared_ptr<DashSegment> segment;
+    return mpdDownloader_->SeekToTs(videoSegmentDownloader->GetStreamId(), seekTimeMs, segment);
+}
+
 void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
 {
     bool isSwitching = IsSeekingInSwitch();
 
+    seekTimeMs = GetVideoSeekTime(seekTimeMs);
     for (auto &segmentDownloader : segmentDownloaders_) {
         std::shared_ptr<DashSegment> segment;
         int32_t streamId = static_cast<int32_t>(segmentDownloader->GetStreamId());
@@ -817,7 +835,7 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
             int64_t remainLastNumberSeq = -1;
             segmentDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
             segmentDownloader->SetAllSegmentFinished();
-            HandleSeekReady(static_cast<int32_t>(segmentDownloader->GetStreamType()), streamId, 1);
+            HandleSeekReady(static_cast<int32_t>(segmentDownloader->GetStreamType()), streamId, seekTimeMs, 1);
             continue;
         }
 
@@ -840,7 +858,7 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
             segmentDownloader->SetInitSegment(initSeg, true);
             segmentDownloader->Open(segment);
         }
-        HandleSeekReady(static_cast<int32_t>(segmentDownloader->GetStreamType()), streamId, 0);
+        HandleSeekReady(static_cast<int32_t>(segmentDownloader->GetStreamType()), streamId, seekTimeMs, 0);
     }
 }
 
@@ -1231,6 +1249,16 @@ uint64_t DashMediaDownloader::GetMemorySize()
         }
     }
     return memorySize;
+}
+
+Status DashMediaDownloader::StopBufferring(bool isAppBackground)
+{
+    MEDIA_LOG_I("DashMediaDownloader:StopBufferring enter");
+    for (size_t index = 0; index < segmentDownloaders_.size(); index++) {
+        FALSE_RETURN_V(segmentDownloaders_[index] != nullptr, Status::ERROR_NULL_POINTER);
+        segmentDownloaders_[index]->StopBufferring(isAppBackground);
+    }
+    return Status::OK;
 }
 }
 }

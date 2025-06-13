@@ -45,7 +45,6 @@ public:
 
     sptr<Surface> CreateProducerSurface();
     sptr<Surface> CreateConsumerSurface();
-    int32_t GetEncoderCapabilityForMime(CapabilityData &cap, const std::string &targetMimeType);
 };
 
 class HEncoderUserCallingUnitTest : public testing::Test {

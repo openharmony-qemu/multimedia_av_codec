@@ -101,6 +101,8 @@ int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, Codec
 int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t VideoSceneTypeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 
 // Checkers list define
 using ScenarioCheckerType =
@@ -120,6 +122,8 @@ const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     TransferCharacteristicsChecker,
     MatrixCoefficientsChecker,
     LTRFrameCountChecker,
+    BFrameParamChecker,
+    VideoSceneTypeChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST = {
@@ -295,6 +299,18 @@ bool CheckBitrateAndQualityParamRange(CapabilityData &capData, Format &format)
     return true;
 }
 
+void ReplaceMaxBitrateWithBitrate(Format &format)
+{
+    int64_t bitrate;
+    bool bitrateExist = format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitrate);
+    if (bitrateExist) {
+        AVCODEC_LOGW("Param %{public}s invalid in SQR bitrate mode, param %{public}s will be used instead",
+            MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE.data(),
+            MediaDescriptionKey::MD_KEY_BITRATE.data());
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, bitrate);
+    }
+}
+
 /*
 return
 false: SQR is not set successfully. If the mode is SQR, convert to VBR and ignore sqrfactor、max_bitrate
@@ -336,6 +352,7 @@ bool CheckSqrMode(CapabilityData &capData, Format &format)
                     MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE.data(), static_cast<int32_t>(maxBitrate),
                     capData.maxBitrate.minVal, capData.maxBitrate.maxVal);
                 format.RemoveKey(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE);
+                ReplaceMaxBitrateWithBitrate(format);
             }
             if (qualityExist) {
                 AVCODEC_LOGW("Param invalid, in SQR mode but set quality!");
@@ -475,7 +492,9 @@ int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScen
                              "colorspace conversion is not available for the codec.");
 
     constexpr int32_t colorSpaceBt709Limited = 8; // see OH_COLORSPACE_BT709_LIMITED in native_buffer.h;
-    CHECK_AND_RETURN_RET_LOG(colorSpace == colorSpaceBt709Limited, AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION,
+    constexpr int32_t colorSpaceP3Full = 12;      // see OH_COLORSPACE_P3_FULL in native_buffer.h;
+    CHECK_AND_RETURN_RET_LOG(colorSpace == colorSpaceBt709Limited || colorSpace == colorSpaceP3Full,
+                             AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION,
                              "The output color space %{public}d is not supported", colorSpace);
     PrintParam(true, MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
 
@@ -706,6 +725,60 @@ int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenari
         scalingMode > static_cast<int32_t>(OHOS::ScalingMode::SCALING_MODE_SCALE_CROP)) {
         AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_SCALE_TYPE, scalingMode);
         return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)scenario;
+    int32_t mode;
+    int32_t cond = -1;
+    int32_t maxBFrameCount = -1;
+    auto bFrameCap =
+        capData.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_B_FRAME));
+    if (bFrameCap == capData.featuresMap.end()) {
+        AVCODEC_LOGW("Not support AVCapabilityFeature::VIDEO_ENCODER_B_FRAME");
+        format.RemoveKey(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE);
+        return AVCS_ERR_OK;
+    }
+    bool condExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, cond);
+    if (!condExist || cond <= 0) {
+        format.RemoveKey(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE);
+        AVCODEC_LOGE("Encoder B-frame key VIDEO_ENCODER_ENABLE_B_FRAME not exist!");
+        return AVCS_ERR_OK;
+    }
+    PrintParam(condExist, Tag::VIDEO_ENCODER_ENABLE_B_FRAME, cond);
+    bool modeExist = format.GetIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
+    if (!modeExist) {
+        format.PutIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+            static_cast<int32_t>(Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE));
+    }
+    PrintParam(modeExist, Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
+    format.PutIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
+    bool maxBFrameExist = format.GetIntValue(Tag::VIDEO_ENCODER_MAX_B_FRAME, maxBFrameCount);
+    if (maxBFrameExist) {
+        AVCODEC_LOGE("UnSupported config VIDEO_ENCODER_MAX_B_FRAME!");
+        format.RemoveKey(Tag::VIDEO_ENCODER_MAX_B_FRAME);
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t VideoSceneTypeChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)capData;
+    (void)scenario;
+    int32_t sceneType;
+    bool sceneTypeExist = format.GetIntValue(Tag::VIDEO_SCENE_TYPE, sceneType);
+    if (!sceneTypeExist) {
+        return AVCS_ERR_OK;
+    }
+    PrintParam(sceneTypeExist, Tag::VIDEO_SCENE_TYPE, sceneType);
+
+    if (sceneType < static_cast<int32_t>(VideoSceneType::VIDEO_SCENE_UNKNOWN) ||
+        sceneType > static_cast<int32_t>(VideoSceneType::VIDEO_SCENE_CAMERA_RECODER)) {
+        format.PutIntValue(Tag::VIDEO_SCENE_TYPE, static_cast<int32_t>(VideoSceneType::VIDEO_SCENE_UNKNOWN));
+        AVCODEC_LOGE("VideoSceneType Param invalid, %{public}s: %{public}d", Tag::VIDEO_SCENE_TYPE, sceneType);
     }
     return AVCS_ERR_OK;
 }

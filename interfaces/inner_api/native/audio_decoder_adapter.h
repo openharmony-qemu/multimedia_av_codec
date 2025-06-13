@@ -58,7 +58,7 @@ public:
 
     sptr<Media::AVBufferQueueProducer> GetOutputBufferQueueProducer();
 
-    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed);
+    void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus);
 
     void ProcessInputBuffer();
 

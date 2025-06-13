@@ -18,10 +18,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
-
+#include <fuzzer/FuzzedDataProvider.h>
 #include <iostream>
 #include "parser_sample.h"
-
 
 #define FUZZ_PROJECT_NAME "demuxer_fuzzer"
 using namespace std;
@@ -29,6 +28,8 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 namespace OHOS {
 const char *MP4_PATH = "/data/test/fuzz_create.mp4";
+const int64_t EXPECT_SIZE = 7;
+const int64_t STRIDE = 7;
 
 bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
 {
@@ -39,17 +40,18 @@ bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
     if (fd < 0) {
         return false;
     }
-    int len = write(fd, data, size - 7);
-    if (len <= 0) {
+    int len = write(fd, data, size);
+    if (len <= EXPECT_SIZE) {
         close(fd);
         return false;
     }
     close(fd);
-    int64_t pts = data[size - 5];
-    int64_t ptsForPtsIndex = data[size - 6];
-    int64_t frameIndex = data[size - 7];
+    FuzzedDataProvider fdp(data, size);
+    int64_t pts = fdp.ConsumeIntegral<int64_t>();
+    int64_t ptsForPtsIndex = fdp.ConsumeIntegral<int64_t>();
+    int64_t frameIndex = fdp.ConsumeIntegral<int64_t>();
     uint8_t *dataConver = const_cast<uint8_t *>(data);
-    uint32_t *createSize = reinterpret_cast<uint32_t *>(dataConver + size - 4);
+    uint32_t *createSize = reinterpret_cast<uint32_t *>(dataConver + size - STRIDE);
     shared_ptr<ParserSample> parserSample = make_shared<ParserSample>();
     parserSample->filePath = MP4_PATH;
     parserSample->RunReferenceParser(pts, ptsForPtsIndex, frameIndex, *createSize);

@@ -91,12 +91,14 @@ Status DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, s
 
 Status DataSourceImpl::GetSize(uint64_t& size)
 {
+    FALSE_RETURN_V(stream_ != nullptr, Status::ERROR_WRONG_STATE);
     size = stream_->mediaDataSize_;
     return (size > 0) ? Status::OK : Status::ERROR_WRONG_STATE;
 }
 
 Plugins::Seekable DataSourceImpl::GetSeekable()
 {
+    FALSE_RETURN_V(stream_ != nullptr, Plugins::Seekable::INVALID);
     return stream_->seekable_;
 }
 
@@ -135,6 +137,13 @@ DemuxerPluginManager::~DemuxerPluginManager()
 size_t DemuxerPluginManager::GetStreamCount() const
 {
     return streamInfoMap_.size();
+}
+
+bool DemuxerPluginManager::GetPluginName(std::string& pluginName)
+{
+    FALSE_RETURN_V_NOLOG(!pluginName_.empty(), false);
+    pluginName = pluginName_;
+    return true;
 }
 
 void DemuxerPluginManager::InitAudioTrack(const StreamInfo& info)
@@ -289,7 +298,12 @@ Status DemuxerPluginManager::LoadDemuxerPlugin(int32_t streamID, std::shared_ptr
     {
         ScopedTimer timer("SnifferMediaType", SNIFF_WARNING_MS);
         type = streamDemuxer->SnifferMediaType(streamID);
+        if (!type.empty() && pluginName_.empty()) {
+            MEDIA_LOG_I("PluginName: " PUBLIC_LOG_S, type.c_str());
+            pluginName_ = type;
+        }
     }
+    FALSE_RETURN_V_MSG(!type.empty(), Status::ERROR_INVALID_PARAMETER, "SnifferMediaType is failed.");
     MediaTypeFound(streamDemuxer, type, streamID);
 
     FALSE_RETURN_V_MSG_E(streamInfoMap_[streamID].plugin != nullptr, Status::ERROR_INVALID_PARAMETER,
@@ -538,7 +552,7 @@ bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamD
     if (streamInfoMap_[id].pluginName != pluginName) {
         FALSE_RETURN_V(CreatePlugin(pluginName, id), false);
     } else {
-        if (streamInfoMap_[id].plugin->Reset() != Status::OK) {
+        if (streamInfoMap_[id].plugin == nullptr || streamInfoMap_[id].plugin->Reset() != Status::OK) {
             FALSE_RETURN_V(CreatePlugin(pluginName, id), false);
         }
     }
@@ -583,11 +597,6 @@ void DemuxerPluginManager::WaitForInitialBufferingEnd(std::shared_ptr<BaseStream
         MEDIA_LOG_I("WaitForInitialBufferingEnd count " PUBLIC_LOG_D32, count);
     }
     MEDIA_LOG_I("initial buffering success");
-}
-
-bool DemuxerPluginManager::IsDash() const
-{
-    return isDash_;
 }
 
 void DemuxerPluginManager::SetResetEosStatus(bool flag)
@@ -640,28 +649,16 @@ Status DemuxerPluginManager::RebootPlugin(int32_t streamId, TrackType trackType,
     MEDIA_LOG_D("RebootPlugin begin. id = " PUBLIC_LOG_D32, streamId);
     streamDemuxer->ResetCache(streamId);
     streamDemuxer->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
-    std::string type = streamDemuxer->SnifferMediaType(streamId);
-    int32_t newStreamId = GetStreamDemuxerNewStreamID(trackType, streamDemuxer);
-    MEDIA_LOG_D("TrackType: " PUBLIC_LOG_D32 " oldstreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
-        static_cast<int32_t>(trackType), streamId, newStreamId);
-    if (newStreamId != INVALID_STREAM_OR_TRACK_ID && streamId != newStreamId) {
-        MEDIA_LOG_I("StreamID changed, oldstreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
-            streamId, newStreamId);
-        isRebooted = false;
-        return Status::OK;
-    }
-    if (type.empty()) {
-        MEDIA_LOG_W("RebootPlugin failed, sniff failed");
-    }
 
     // Start to reboot demuxer plugin while streamId is not changed
     streamInfoMap_[streamId].activated = true;
     if (streamInfoMap_[streamId].plugin != nullptr) {
         streamInfoMap_[streamId].plugin.reset();
-        type = type.empty()? streamInfoMap_[streamId].pluginName : type;
-        streamInfoMap_[streamId].pluginName = "";
     }
-    MediaTypeFound(streamDemuxer, type, streamId);
+    if (streamInfoMap_[streamId].pluginName.empty()) {
+        streamInfoMap_[streamId].pluginName = streamDemuxer->SnifferMediaType(streamId);
+    }
+    MediaTypeFound(streamDemuxer, streamInfoMap_[streamId].pluginName, streamId);
     FALSE_RETURN_V_MSG_E(streamInfoMap_[streamId].plugin != nullptr, Status::ERROR_INVALID_PARAMETER,
         "Set data source failed due to create video demuxer plugin failed");
     Plugins::MediaInfo mediaInfoTemp;
@@ -680,7 +677,7 @@ void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> str
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerPluginManager::MediaTypeFound");
     if (!InitPlugin(streamDemuxer, pluginName, id)) {
-        MEDIA_LOG_E("MediaTypeFound init plugin error.");
+        MEDIA_LOG_E("Init plugin error.");
     }
 }
 
@@ -931,6 +928,21 @@ bool DemuxerPluginManager::IsSubtitleMime(const std::string& mime)
     if (mime == "application/x-subrip" || mime == "text/vtt") {
         return true;
     }
+#ifdef SUPPORT_DEMUXER_LRC
+    if (mime == "text/plain") {
+        return true;
+    }
+#endif
+#ifdef SUPPORT_DEMUXER_SAMI
+    if (mime == "application/x-sami") {
+        return true;
+    }
+#endif
+#ifdef SUPPORT_DEMUXER_ASS
+    if (mime == "text/x-ass") {
+        return true;
+    }
+#endif
     return false;
 }
 

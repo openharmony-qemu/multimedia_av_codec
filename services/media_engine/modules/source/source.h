@@ -103,7 +103,6 @@ public:
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
     Status AutoSelectBitRate(uint32_t bitRate);
-    Status StopBufferring(bool flag);
     Status SetStartPts(int64_t startPts);
     Status SetExtraCache(uint64_t cacheDuration);
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID);
@@ -130,7 +129,9 @@ public:
     void RestartAndClearBuffer();
     bool IsFlvLive();
     uint64_t GetMemorySize();
+    std::string GetContentType();
     bool IsHlsFmp4();
+    Status StopBufferring(bool isAppBackground);
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);

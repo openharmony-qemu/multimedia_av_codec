@@ -355,7 +355,8 @@ int32_t VEncNdkInnerFuzzSample::GetInputFormat(Format &format)
     return venc_->GetInputFormat(format);
 }
 
-int32_t VEncNdkInnerFuzzSample::StartVideoEncoder()
+
+int32_t VEncNdkInnerFuzzSample::StartEncoder()
 {
     isRunning_.store(true);
     int32_t ret = 0;
@@ -372,14 +373,27 @@ int32_t VEncNdkInnerFuzzSample::StartVideoEncoder()
         signal_->outCond_.notify_all();
         return ret;
     }
-
     inFile_ = make_unique<ifstream>();
     if (inFile_ == nullptr) {
         isRunning_.store(false);
         venc_->Stop();
         return AVCS_ERR_UNKNOWN;
     }
-    ReadMultiFilesFunc();
+    ret = ReadMultiFilesFunc();
+    if (ret == AVCS_ERR_UNKNOWN) {
+        isRunning_.store(false);
+        venc_->Stop();
+        return AVCS_ERR_UNKNOWN;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t VEncNdkInnerFuzzSample::StartVideoEncoder()
+{
+    int32_t ret = StartEncoder();
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
     if (surfaceInput) {
         inputLoop_ = make_unique<thread>(&VEncNdkInnerFuzzSample::InputFuncSurface, this);
         inputParamLoop_ = isSetParamCallback_ ? make_unique<thread>(&VEncNdkInnerFuzzSample::InputParamLoopFunc,
@@ -394,7 +408,6 @@ int32_t VEncNdkInnerFuzzSample::StartVideoEncoder()
         ReleaseInFile();
         return AVCS_ERR_UNKNOWN;
     }
-    
     outputLoop_ = make_unique<thread>(&VEncNdkInnerFuzzSample::OutputFunc, this);
     if (outputLoop_ == nullptr) {
         isRunning_.store(false);
@@ -407,14 +420,15 @@ int32_t VEncNdkInnerFuzzSample::StartVideoEncoder()
     return AVCS_ERR_OK;
 }
 
-void VEncNdkInnerFuzzSample::ReadMultiFilesFunc()
+int32_t VEncNdkInnerFuzzSample::ReadMultiFilesFunc()
 {
     if (!readMultiFiles) {
         inFile_->open(inpDir, ios::in | ios::binary);
         if (!inFile_->is_open()) {
-            OpenFileFail();
+            return OpenFileFail();
         }
     }
+    return AVCS_ERR_OK;
 }
 
 int32_t VEncNdkInnerFuzzSample::TestApi()
@@ -1137,7 +1151,7 @@ int32_t VEncNdkInnerFuzzSample::PushInputParameter(uint32_t index)
     return venc_->QueueInputParameter(index);
 }
 
-int32_t VEncNdkInnerFuzzSample::SetCustomBuffer(BufferRequestConfig bufferConfig, uint8_t *data)
+int32_t VEncNdkInnerFuzzSample::SetCustomBuffer(BufferRequestConfig bufferConfig, uint8_t *data, size_t size)
 {
     int32_t waterMarkFlag = enableWaterMark ? 1 : 0;
     auto allocator = Media::AVAllocatorFactory::CreateSurfaceAllocator(bufferConfig);
@@ -1146,7 +1160,7 @@ int32_t VEncNdkInnerFuzzSample::SetCustomBuffer(BufferRequestConfig bufferConfig
         cout << "avbuffer is nullptr" << endl;
         return AVCS_ERR_INVALID_VAL;
     }
-    ReadCustomDataToAVBuffer(data, avbuffer);
+    ReadCustomDataToAVBuffer(data, avbuffer, size);
     Format format;
     format.SetMeta(avbuffer->meta_);
     format.PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_WATERMARK, waterMarkFlag);
@@ -1159,28 +1173,27 @@ int32_t VEncNdkInnerFuzzSample::SetCustomBuffer(BufferRequestConfig bufferConfig
     return ret;
 }
 
-bool VEncNdkInnerFuzzSample::ReadCustomDataToAVBuffer(uint8_t *data, std::shared_ptr<AVBuffer> buffer)
+bool VEncNdkInnerFuzzSample::ReadCustomDataToAVBuffer(uint8_t *data, std::shared_ptr<AVBuffer> buffer, size_t size)
 {
     sptr<SurfaceBuffer> surfaceBuffer = buffer->memory_->GetSurfaceBuffer();
     if (surfaceBuffer == nullptr) {
         cout << "in is nullptr" << endl;
         return false;
     }
-    int32_t width = surfaceBuffer->GetWidth();
-    int32_t height = surfaceBuffer->GetHeight();
-    int32_t dstWidthStride = surfaceBuffer->GetStride();
     uint8_t *dstAddr = (uint8_t *)surfaceBuffer->GetVirAddr();
+    int32_t dstSize = static_cast<int32_t>(surfaceBuffer->GetSize());
     if (dstAddr == nullptr) {
         cout << "dst is nullptr" << endl;
     }
-    const int32_t srcWidthStride = width << 2;
     uint8_t *inStream = data;
-    for (uint32_t i = 0; i < height; ++i) {
-        if (memcpy_s(dstAddr, dstWidthStride, inStream, srcWidthStride)) {
+    if (dstSize >= size) {
+        if (memcpy_s(dstAddr, dstSize, inStream, size)) {
             cout << "memcpy_s failed" <<endl;
-        };
-        dstAddr += dstWidthStride;
-        inStream += srcWidthStride;
+        }
+    } else {
+        if (memcpy_s(dstAddr, dstSize, inStream, dstSize)) {
+            cout << "memcpy_s failed" <<endl;
+        }
     }
     return true;
 }

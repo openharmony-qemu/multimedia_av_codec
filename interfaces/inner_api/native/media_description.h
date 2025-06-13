@@ -281,7 +281,7 @@ public:
 
     /**
      * Key for video color space of the video decoder output, value type is int32_t. See OH_NativeBuffer_ColorSpace for
-     * value, and only OH_COLORSPACE_BT709_LIMIT is valid.
+     * value, and only OH_COLORSPACE_BT709_LIMIT and OH_COLORSPACE_P3_FULL are valid.
      */
     static constexpr std::string_view MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE = "video_decoder_output_colorspace";
 
@@ -295,6 +295,16 @@ public:
      * are configured in stable quality rate control mode.
      */
     static constexpr std::string_view MD_KEY_VIDEO_ENCODER_SQR_FACTOR = "sqr_factor";
+
+    /**
+     * key for the decision of setting moov in front or not, the value type is int32_t
+     */
+    static constexpr std::string_view MD_KEY_ENABLE_MOOV_FRONT = "fast_start";
+    static constexpr std::string_view MD_KEY_REFERENCE_TRACK_IDS = "reference_track_ids";
+    static constexpr std::string_view MD_KEY_TRACK_REFERENCE_TYPE = "track_reference_type";
+    static constexpr std::string_view MD_KEY_TRACK_DESCRIPTION = "track_description";
+    static constexpr std::string_view MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL =
+        "video_encoder_enable_pts_based_ratecontrol";
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;

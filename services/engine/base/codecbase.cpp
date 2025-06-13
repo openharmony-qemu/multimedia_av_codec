@@ -116,5 +116,15 @@ int32_t CodecBase::NotifyMemoryWriteBack()
     AVCODEC_LOGW("Notify memory write back is not supported");
     return AVCS_ERR_OK;
 }
+
+int32_t CodecBase::NotifySuspend()
+{
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecBase::NotifyResume()
+{
+    return AVCS_ERR_OK;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

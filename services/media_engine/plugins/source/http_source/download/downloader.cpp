@@ -340,6 +340,18 @@ bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32
     return requestQue_->Push(request, static_cast<int>(waitMs));
 }
 
+std::string Downloader::GetContentType()
+{
+    FALSE_RETURN_V_NOLOG(!isContentTypeUpdated_, contentType_);
+    AutoLock lock(sleepMutex_);
+    MEDIA_LOG_I("GetContentType wait begin ");
+    sleepCond_.WaitFor(lock, SLEEP_TIME * RETRY_TIMES, [this]() {
+        return isInterruptNeeded_.load() || isContentTypeUpdated_;
+    });
+    MEDIA_LOG_I("ContentType: %{public}s", contentType_.c_str());
+    return contentType_;
+}
+
 void Downloader::Start()
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Start");
@@ -487,6 +499,13 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
         "not Retry, client null or isDestructor or isInterruptNeeded");
     if (isAppBackground_) {
         Pause(true);
+        {
+            AutoLock lk(deinitMutex_);
+            if (client_ != nullptr) {
+                client_->Deinit();
+                client_ = nullptr;
+            }
+        }
         MEDIA_LOG_I("Retry avoid, forground to background.");
         return true;
     }
@@ -608,7 +627,9 @@ void Downloader::OpenAppUri()
 {
     {
         AutoLock lock(closeMutex_);
-        appPreviousRequestUrl_ = currentRequest_->GetUrl();
+        if (currentRequest_ != nullptr) {
+            appPreviousRequestUrl_ = currentRequest_->GetUrl();
+        }
         if (sourceLoader_ != nullptr && currentRequest_ != nullptr) {
             if (uuid_ != 0) {
                 sourceLoader_->Close(uuid_);
@@ -784,6 +805,14 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
         info->isChunked = false;
     }
     mediaDownloader->currentRequest_->SaveHeader(info);
+    if (!mediaDownloader->isContentTypeUpdated_) {
+        {
+            AutoLock lock(mediaDownloader->sleepMutex_);
+            mediaDownloader->isContentTypeUpdated_ = true;
+            mediaDownloader->contentType_ = info->contentType;
+        }
+        mediaDownloader->sleepCond_.NotifyOne();
+    }
 }
 
 bool Downloader::IsDropDataRetryRequest(Downloader* mediaDownloader)
@@ -805,10 +834,10 @@ bool Downloader::IsDropDataRetryRequest(Downloader* mediaDownloader)
 size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader)
 {
     auto currentRequest_ = mediaDownloader->currentRequest_;
+    int64_t needDropLen = currentRequest_->startPos_ - currentRequest_->dropedDataLen_;
     int64_t writeOffSet = -1;
-    if (currentRequest_->startPos_ > 0) {
-        writeOffSet = currentRequest_->startPos_ >= static_cast<int64_t>(dataLen) ?
-            0 : currentRequest_->startPos_; // 0:drop all
+    if (needDropLen > 0) {
+        writeOffSet = needDropLen >= static_cast<int64_t>(dataLen) ? 0 : needDropLen; // 0:drop all
     }
     bool dropRet = false;
     uint32_t writeLen = 0;
@@ -1056,7 +1085,9 @@ void Downloader::ToLower(char* str)
         if (i > MAX_LOOP_TIMES) {
             break;
         }
-        str[i] = tolower(static_cast<unsigned char>(str[i]));
+        if (str[i] >= 'A' && str[i] <= 'Z') {
+            str[i] = tolower(static_cast<unsigned char>(str[i]));
+        }
     }
 }
 
@@ -1134,7 +1165,15 @@ void Downloader::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " Downloader SetInterruptState %{public}d",
         FAKE_POINTER(this), isInterruptNeeded);
-    isInterruptNeeded_ = isInterruptNeeded;
+    {
+        AutoLock lk(loopPauseMutex_);
+        AutoLock lock(sleepMutex_);
+        isInterruptNeeded_ = isInterruptNeeded;
+    }
+    if (isInterruptNeeded) {
+        MEDIA_LOG_I("SetInterruptState, Notify.");
+        sleepCond_.NotifyOne();
+    }
     if (currentRequest_ != nullptr) {
         currentRequest_->isInterruptNeeded_ = isInterruptNeeded;
     }
@@ -1180,25 +1219,33 @@ void Downloader::SetAppState(bool isAppBackground)
 void Downloader::StopBufferring()
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::StopBufferring");
-    if (task_ == nullptr || currentRequest_ == nullptr) {
-        MEDIA_LOG_E("Downloader StopBufferring error.");
-        return;
-    }
+    FALSE_RETURN_MSG(task_ != nullptr && currentRequest_ != nullptr, "task or request is null");
     if (isAppBackground_) {
-        if (!task_->IsTaskRunning() && client_ != nullptr) {
+        {
+            AutoLock lk(deinitMutex_);
+            FALSE_RETURN_NOLOG(!task_->IsTaskRunning() && client_ != nullptr);
             MEDIA_LOG_I("StopBufferring: is task not running.");
+            isClientClose_ = true;
             client_->Close(false);
+            client_->Deinit();
+            client_ = nullptr;
         }
     } else {
-        if (currentRequest_ != nullptr && !shouldStartNextRequest) {
-            int64_t lastStartPos = currentRequest_->startPos_; // downlaod from last pos
-            BeginDownload();
-            currentRequest_->startPos_ = lastStartPos;
-            if (currentRequest_->startPos_ > 0) {
-                currentRequest_->retryOnGoing_ = true;
-                currentRequest_->dropedDataLen_ = 0;
+        {
+            AutoLock lk(deinitMutex_);
+            if (isClientClose_ && client_ == nullptr) {
+                MEDIA_LOG_I("StopBufferring: restart task.");
+                isClientClose_ = false;
+                client_ = NetworkClient::GetInstance(&RxHeaderData, &RxBodyData, this);
+                client_->Init();
+                client_->Open(currentRequest_->url_, currentRequest_->httpHeader_,
+                    currentRequest_->requestInfo_.timeoutMs);
+                if (currentRequest_->startPos_ > 0 && currentRequest_->protocolType_ != RequestProtocolType::HTTP) {
+                    currentRequest_->retryOnGoing_ = true;
+                    currentRequest_->dropedDataLen_ = 0;
+                }
+                MEDIA_LOG_I("StopBufferring: begin pos " PUBLIC_LOG_U64, currentRequest_->startPos_);
             }
-            MEDIA_LOG_I("StopBufferring: begin pos " PUBLIC_LOG_U64, currentRequest_->startPos_);
         }
         Start();
     }

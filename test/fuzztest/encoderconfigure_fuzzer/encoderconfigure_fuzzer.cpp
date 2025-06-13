@@ -20,6 +20,7 @@
 #include "native_avcodec_base.h"
 #include "videoenc_sample.h"
 #include "native_avcapability.h"
+#include <fuzzer/FuzzedDataProvider.h>
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -53,8 +54,9 @@ bool EncoderConfigureFuzzTest(const uint8_t *data, size_t size)
         g_needRunNormalEncoder = false;
         RunNormalEncoder();
     }
+    FuzzedDataProvider fdp(data, size);
     bool result = false;
-    int32_t data_ = *reinterpret_cast<const int32_t *>(data);
+    int32_t intval = fdp.ConsumeIntegral<uint32_t>();
     VEncFuzzSample *vEncSample = new VEncFuzzSample();
     vEncSample->inpDir = "/data/test/media/1280_720_nv.yuv";
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
@@ -66,7 +68,7 @@ bool EncoderConfigureFuzzTest(const uint8_t *data, size_t size)
     }
     vEncSample->SetVideoEncoderCallback();
     vEncSample->fuzzMode = true;
-    vEncSample->ConfigureVideoEncoderFuzz(data_);
+    vEncSample->ConfigureVideoEncoderFuzz(intval);
     vEncSample->StartVideoEncoder();
     vEncSample->WaitForEOS();
     delete vEncSample;

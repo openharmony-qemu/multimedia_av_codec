@@ -239,7 +239,10 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     if (isReadFrame_ &&  ringBuffer_->GetSize() < expectedLen && !HasCacheData(expectedLen, offset) &&
         static_cast<size_t>(GetLastSize(position_)) > expectedLen) {
         MEDIA_LOG_I("ringBuffer.size() " PUBLIC_LOG_ZU " curReadTime_ " PUBLIC_LOG_D64
-            " lastReadTime_ " PUBLIC_LOG_D64, ringBuffer_->GetSize(), curReadTime_, lastReadTime_);
+            " lastReadTime_ " PUBLIC_LOG_D64 " pos_ " PUBLIC_LOG_U64 " cachePos_ " PUBLIC_LOG_U64
+            " expectedLen  " PUBLIC_LOG_ZU " offset_ " PUBLIC_LOG_D64 " offset " PUBLIC_LOG_U64,
+            ringBuffer_->GetSize(), curReadTime_, lastReadTime_, position_.load(), cachePosition_.load(),
+            expectedLen, offset_, offset);
         CheckReadTime();
         FALSE_RETURN_V_MSG_E(!isInterrupted_, Status::OK, "please not retry read, isInterrupted true");
         FALSE_RETURN_V_MSG_E(isReadBlocking_, Status::OK, "please not retry read, isReadBlocking false");
@@ -419,8 +422,8 @@ void FileFdSourcePlugin::CacheDataLoop()
 
     int64_t ct = steadyClock2_.ElapsedMilliseconds() - curTime;
     if (ct > READ_TIME) {
-        MEDIA_LOG_I("Cache fd: " PUBLIC_LOG_D32 " cachePos:" PUBLIC_LOG_U64 " ringBuffer.size() " PUBLIC_LOG_ZU
-        ", size " PUBLIC_LOG_U64 " cTime: " PUBLIC_LOG_U64, fd_, cachePosition_.load(), ringBuffer_->GetSize(),
+        MEDIA_LOG_I("Cache fd:" PUBLIC_LOG_D32 " pos:" PUBLIC_LOG_U64 " rb:" PUBLIC_LOG_ZU
+        " size:" PUBLIC_LOG_U64 " ct:" PUBLIC_LOG_U64, fd_, cachePosition_.load(), ringBuffer_->GetSize(),
         size_, ct);
     }
     
@@ -437,7 +440,7 @@ bool FileFdSourcePlugin::HasCacheData(size_t bufferSize, uint64_t offset)
     HmdfsHasCache ioctlData;
     ioctlData.offset = static_cast<int64_t>(offset);
     ioctlData.readSize = static_cast<int64_t>(bufferSize);
-    int32_t ioResult = ioctl(fd_, HMDFS_IOC_HAS_CACHE, &ioctlData); // 0在 -1不在
+    int32_t ioResult = ioctl(fd_, HMDFS_IOC_HAS_CACHE, &ioctlData); // 0 has, -1 hasnot
 
     ioctlData.offset = static_cast<int64_t>(cachePosition_);
     ioctlData.readSize = static_cast<int64_t>(PER_CACHE_SIZE);
@@ -446,7 +449,8 @@ bool FileFdSourcePlugin::HasCacheData(size_t bufferSize, uint64_t offset)
     if (ioResult == 0 && ioCacheResult == 0) {
         return true;
     } else {
-        MEDIA_LOG_I("ioctl has no cache with errno " PUBLIC_LOG_D32, errno);
+        MEDIA_LOG_I("ioctl has no cache with errno " PUBLIC_LOG_D32 " cachePosition_ " PUBLIC_LOG_U64
+            " offset " PUBLIC_LOG_U64 " bufferSize " PUBLIC_LOG_ZU, errno, cachePosition_.load(), offset, bufferSize);
     }
     return false;
 }
@@ -571,7 +575,8 @@ void FileFdSourcePlugin::NotifyReadFail()
     MEDIA_LOG_I("NotifyReadFail in.");
     if (callback_ != nullptr && !isInterrupted_) {
         MEDIA_LOG_I("Read OnEvent read fail");
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR,
+            static_cast<int32_t>(NetworkClientErrorCode::ERROR_TIME_OUT), "read"});
     } else {
         MEDIA_LOG_E("CLIENT_ERROR callback_ is nullptr or isInterrupted_ is true");
     }

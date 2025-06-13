@@ -663,7 +663,7 @@ bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& rema
     if (isCleanAll) {
         MEDIA_LOG_I("CleanAllSegmentBuffer clean all");
         isCleaningBuffer_.store(true);
-        Close(true, true);
+        Close(false, true);
         std::lock_guard<std::mutex> lock(segmentMutex_);
         isAllSegmentFinished_.store(false);
         for (const auto &it: segmentList_) {
@@ -720,7 +720,7 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
 
     if (clearTail > 0) {
         isCleaningBuffer_.store(true);
-        Close(true, false);
+        Close(false, false);
         std::lock_guard<std::mutex> lock(segmentMutex_);
         isAllSegmentFinished_.store(false);
         segmentList_.remove_if([&remainLastNumberSeq](std::shared_ptr<DashBufferSegment> bufferSegment) {
@@ -792,7 +792,7 @@ void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq, si
 
 bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool& isEnd)
 {
-    Close(true, false);
+    Close(false, false);
     std::lock_guard<std::mutex> lock(segmentMutex_);
     remainLastNumberSeq = -1;
     size_t clearTail = 0;
@@ -1214,6 +1214,20 @@ bool DashSegmentDownloader::GetBufferingTimeOut()
         size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
         return now >= bufferingTime_ ? now - bufferingTime_ >= MAX_BUFFERING_TIME_OUT : false;
     }
+}
+
+Status DashSegmentDownloader::StopBufferring(bool isAppBackground)
+{
+    MEDIA_LOG_I("DashSegmentDownloader:StopBufferring enter");
+    FALSE_RETURN_V(buffer_ != nullptr && downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    downloader_->SetAppState(isAppBackground);
+    if (isAppBackground) {
+        buffer_->SetActive(false, false);
+    } else {
+        buffer_->SetActive(true, false);
+    }
+    downloader_->StopBufferring();
+    return Status::OK;
 }
 }
 }

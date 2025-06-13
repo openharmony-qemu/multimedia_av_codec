@@ -92,8 +92,8 @@ sptr<Surface> HEncoderPreparingUnitTest::CreateConsumerSurface()
     return consumerSurface;
 }
 
-int32_t HEncoderPreparingUnitTest::GetEncoderCapabilityForMime(CapabilityData &cap,
-                                                               const std::string &targetMimeType)
+static int32_t GetEncoderCapabilityForMime(CapabilityData &cap,
+                                           const std::string &targetMimeType)
 {
     vector<CapabilityData> caps;
     int32_t ret = GetHCodecCapabilityList(caps);
@@ -1275,7 +1275,53 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_HEVC_enable_qp_map_ok, TestSize.Le
         ASSERT_EQ(AVCS_ERR_OK, ret);
     }
 }
- 
+
+static void ConfigureGopModeForBFrameTest(const std::string &targetType, const std::string_view &targetMimeType)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, targetType));
+    ASSERT_TRUE(testObj);
+    CapabilityData cap;
+    int32_t ret = GetEncoderCapabilityForMime(cap, targetType);
+    ASSERT_TRUE(ret == AVCS_ERR_OK);
+
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, targetMimeType);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1920);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 1080);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+#ifdef HMOS_TEST
+    format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+                       Media::Plugins::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE);
+    ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+                       Media::Plugins::VIDEO_ENCODE_GOP_H3B_MODE);
+    ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, 1000);
+    ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT, ret);
+#endif
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_avc_gop_mode_for_b_frame, TestSize.Level1)
+{
+    ConfigureGopModeForBFrameTest("video/avc", CodecMimeType::VIDEO_AVC);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_gop_mode_for_b_frame, TestSize.Level1)
+{
+    ConfigureGopModeForBFrameTest("video/hevc", CodecMimeType::VIDEO_HEVC);
+}
+
 /* ============== GET_OUTPUT_FORMAT ============== */
 HWTEST_F(HEncoderPreparingUnitTest, get_output_format_after_configure, TestSize.Level1)
 {

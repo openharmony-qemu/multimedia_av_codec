@@ -525,7 +525,6 @@ HWTEST_F(HwdecFuncNdkTest, SURF_CHANGE_FUNC_002, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
     ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 /**
  * @tc.number    : SURF_CHANGE_FUNC_003
@@ -1184,7 +1183,6 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0700, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
         ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 

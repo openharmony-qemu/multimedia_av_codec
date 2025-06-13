@@ -317,5 +317,6 @@ void HCodecList::GetSupportedFeatureParam(const CodecVideoPortCap& hdiVideoCap,
     if (hdiVideoCap.isSupportQPMap) {
         userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_QP_MAP)] = Format();
     }
+    userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_B_FRAME)] = Format();
 }
 } // namespace OHOS::MediaAVCodec

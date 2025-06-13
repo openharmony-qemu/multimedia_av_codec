@@ -28,7 +28,49 @@ constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 namespace OHOS {
-bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
+void SetRandomValue(const uint8_t *data, size_t size)
+{
+    OH_AVFormat *format = OH_AVFormat_CreateVideoFormat("video/avc", DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    FuzzedDataProvider fdp(data, size);
+    int intData0 = fdp.ConsumeIntegral<int32_t>();
+    int intData1 = fdp.ConsumeIntegral<int32_t>();
+    int intData2 = fdp.ConsumeIntegral<int32_t>();
+    int intData3 = fdp.ConsumeIntegral<int32_t>();
+    int intData4 = fdp.ConsumeIntegral<int32_t>();
+    int intData5 = fdp.ConsumeIntegral<int32_t>();
+    int intData6 = fdp.ConsumeIntegral<int32_t>();
+    int intData7 = fdp.ConsumeIntegral<int32_t>();
+    int intData8 = fdp.ConsumeIntegral<int32_t>();
+    int longData = fdp.ConsumeIntegral<int64_t>();
+    double doubleData = fdp.ConsumeFloatingPoint<double>();
+
+    int intData9 = fdp.ConsumeIntegral<int32_t>();
+    int longData1 = fdp.ConsumeIntegral<int64_t>();
+    double doubleData1 = fdp.ConsumeFloatingPoint<double>();
+    std::string randomIntKey = fdp.ConsumeRandomLengthString();
+    std::string randomLongKey = fdp.ConsumeRandomLengthString();
+    std::string randomDoubleKey = fdp.ConsumeRandomLengthString();
+
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, intData0);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, intData1);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, intData2);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, intData3);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, intData4);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, intData5);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, intData6);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, intData7);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, intData8);
+    OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, longData);
+    OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, doubleData);
+
+    OH_AVFormat_SetIntValue(format, randomIntKey.c_str(), intData9);
+    OH_AVFormat_SetLongValue(format, randomLongKey.c_str(), longData1);
+    OH_AVFormat_SetDoubleValue(format, randomDoubleKey.c_str(), doubleData1);
+
+    vEncSample->SetParameter(format);
+    OH_AVFormat_Destroy(format);
+}
+bool EncoderSetparameterFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < sizeof(int64_t)) {
         return false;
@@ -46,34 +88,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         vEncSample->ConfigureVideoEncoder();
         vEncSample->Start();
     }
-
-    OH_AVFormat *format = OH_AVFormat_CreateVideoFormat("video/avc", DEFAULT_WIDTH, DEFAULT_HEIGHT);
-    FuzzedDataProvider fdp(data, size);
-    int intData0 = fdp.ConsumeIntegral<int32_t>();
-    int intData1 = fdp.ConsumeIntegral<int32_t>();
-    int intData2 = fdp.ConsumeIntegral<int32_t>();
-    int intData3 = fdp.ConsumeIntegral<int32_t>();
-    int intData4 = fdp.ConsumeIntegral<int32_t>();
-    int intData5 = fdp.ConsumeIntegral<int32_t>();
-    int intData6 = fdp.ConsumeIntegral<int32_t>();
-    int intData7 = fdp.ConsumeIntegral<int32_t>();
-    int intData8 = fdp.ConsumeIntegral<int32_t>();
-    int longData = fdp.ConsumeIntegral<int64_t>();
-    double doubleData = fdp.ConsumeFloatingPoint<double>();
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, intData0);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, intData1);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, intData2);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, intData3);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, intData4);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, intData5);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, intData6);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, intData7);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, intData8);
-    OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, longData);
-    OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, doubleData);
-
-    vEncSample->SetParameter(format);
-    OH_AVFormat_Destroy(format);
+    SetRandomValue(data, size);
     return true;
 }
 } // namespace OHOS
@@ -82,6 +97,6 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::DoSomethingInterestingWithMyAPI(data, size);
+    OHOS::EncoderSetparameterFuzzTest(data, size);
     return 0;
 }

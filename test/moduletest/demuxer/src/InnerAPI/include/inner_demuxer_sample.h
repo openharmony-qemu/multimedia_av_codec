@@ -19,7 +19,8 @@
 #include <map>
 #include "avdemuxer.h"
 #include "avsource.h"
-
+#include "common/status.h"
+#include "plugin/demuxer_plugin.h"
 namespace OHOS {
 namespace MediaAVCodec {
 using AVBuffer = OHOS::Media::AVBuffer;
@@ -56,6 +57,10 @@ private:
     int32_t CheckIndex(uint32_t index);
     bool CheckApeSourceData(const std::string &path, int32_t version);
     bool CheckDemuxer(int32_t &readMax);
+    bool CheckCache(std::vector<std::vector<int32_t>> &cacheCheckSteps, int32_t times);
+    bool CreateBuffer();
+    bool ReadAudio(std::vector<std::vector<int32_t>> &cacheCheckSteps);
+    bool ReadVideo(std::vector<std::vector<int32_t>> &cacheCheckSteps);
     std::list<int64_t> videoIndexPtsList;
     std::list<int64_t> audioIndexPtsList;
     std::shared_ptr<AVSource> avsource_ = nullptr;
@@ -89,6 +94,12 @@ private:
     uint64_t previousValue = 0;
     uint32_t indexVideo = 0;
     uint32_t indexAudio = 0;
+    uint32_t indexVid = 0;
+    uint32_t indexAud = 0;
+    uint32_t indexSub = 0;
+    uint32_t indexData = 0;
+    int32_t readPos = 0;
+    int32_t unSelectTrack = -1;
 };
 }
 }

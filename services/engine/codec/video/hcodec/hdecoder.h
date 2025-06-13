@@ -133,6 +133,8 @@ private:
     // freeze
     int32_t FreezeBuffers() override;
     int32_t ActiveBuffers() override;
+    int32_t DecreaseFreq() override;
+    int32_t RecoverFreq() override;
 
 private:
     static constexpr uint64_t SURFACE_MODE_PRODUCER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
@@ -155,7 +157,6 @@ private:
     uint32_t outBufferCnt_ = 0;
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;
     std::optional<ScalingMode> scaleMode_;
-    double codecRate_ = 0.0;
     OHOS::HDI::Display::Graphic::Common::V1_0::BufferHandleMetaRegion crop_{0};
 };
 } // namespace OHOS::MediaAVCodec

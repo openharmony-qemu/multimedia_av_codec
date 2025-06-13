@@ -15,6 +15,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "codec_drm_decrypt.h"
 #include "securec.h"
 #ifdef SUPPORT_DRM
@@ -26,6 +27,9 @@
 using namespace std;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
+
+const uint8_t *fuzzData = nullptr;
+size_t fuzzSize = 0;
 
 #define DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(cond, ret)                  \
     do {                                                                    \
@@ -401,7 +405,7 @@ bool AudioCencDecrypt(std::shared_ptr<AVBuffer> drmInBuf, std::shared_ptr<AVBuff
     return true;
 }
 
-bool SetCodecNameFuzzTest(const uint8_t *data, size_t size)
+bool SetCodecNameFuzzTest(FuzzedDataProvider *provider)
 {
     std::shared_ptr<CodecDrmDecrypt> decryptor = std::make_shared<CodecDrmDecrypt>();
     DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(decryptor != nullptr, false);
@@ -413,26 +417,24 @@ bool SetCodecNameFuzzTest(const uint8_t *data, size_t size)
         decryptor->SetCodecName("OH.Media.Codec.Decoder.Audio.mp4a-latm");
         setCodecNameFuzzTestFlag = 1;
     }
-    std::string codecName;
-    codecName.copy(reinterpret_cast<char *>((const_cast<uint8_t *>(data))), size);
+    std::string codecName = provider->ConsumeRandomLengthString();
     decryptor->SetCodecName(codecName);
     return true;
 }
 
 #ifdef SUPPORT_DRM
-bool SetDecryptionConfigFuzzTest(const uint8_t *data, size_t size)
+bool SetDecryptionConfigFuzzTest(FuzzedDataProvider *provider)
 {
     std::shared_ptr<CodecDrmDecrypt> decryptor = std::make_shared<CodecDrmDecrypt>();
     DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(decryptor != nullptr, false);
     static uint8_t setDecryptionConfigFuzzTestFlag = 0;
     sptr<DrmStandard::IMediaKeySessionService> session = nullptr;
-    (void)size;
     if (setDecryptionConfigFuzzTestFlag == 0) {
         bool svpFlag = false;
         decryptor->SetDecryptionConfig(session, svpFlag);
         setDecryptionConfigFuzzTestFlag = 1;
     }
-    bool svpFlag = static_cast<bool>(*data);
+    bool svpFlag = provider->ConsumeBool();
     decryptor->SetDecryptionConfig(session, svpFlag);
     return true;
 }
@@ -476,9 +478,9 @@ bool DrmH264VideoCencDecrypt()
     return true;
 }
 
-bool DrmH264VideoCencDecryptFuzzTest(const uint8_t *data, size_t size)
+bool DrmH264VideoCencDecryptFuzzTest()
 {
-    uint32_t dataSize = static_cast<uint32_t>(size);
+    uint32_t dataSize = static_cast<uint32_t>(fuzzSize);
     static uint8_t drmH264VideoCencDecryptFuzzTestFlag = 0;
     if (drmH264VideoCencDecryptFuzzTestFlag == 0) {
         DrmH264VideoCencDecrypt();
@@ -501,7 +503,7 @@ bool DrmH264VideoCencDecryptFuzzTest(const uint8_t *data, size_t size)
     DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(drmInBuf->memory_ != nullptr, false);
     DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(drmInBuf->memory_->GetCapacity() == static_cast<int32_t>(dataSize),
         false);
-    int32_t drmRes = memcpy_s(drmInBuf->memory_->GetAddr(), dataSize, data, dataSize);
+    int32_t drmRes = memcpy_s(drmInBuf->memory_->GetAddr(), dataSize, fuzzData, dataSize);
     DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(drmRes == 0, false);
     drmInBuf->memory_->SetSize(dataSize);
 
@@ -563,9 +565,9 @@ bool DrmHevcVideoCencDecrypt()
     return true;
 }
 
-bool DrmHevcVideoCencDecryptFuzzTest(const uint8_t *data, size_t size)
+bool DrmHevcVideoCencDecryptFuzzTest()
 {
-    uint32_t dataSize = static_cast<uint32_t>(size);
+    uint32_t dataSize = static_cast<uint32_t>(fuzzSize);
     static uint8_t drmHevcVideoCencDecryptFuzzTestFlag = 0;
     if (drmHevcVideoCencDecryptFuzzTestFlag == 0) {
         DrmHevcVideoCencDecrypt();
@@ -588,7 +590,7 @@ bool DrmHevcVideoCencDecryptFuzzTest(const uint8_t *data, size_t size)
     DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(drmInBuf->memory_ != nullptr, false);
     DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(drmInBuf->memory_->GetCapacity() == static_cast<int32_t>(dataSize),
         false);
-    int32_t drmRes = memcpy_s(drmInBuf->memory_->GetAddr(), dataSize, data, dataSize);
+    int32_t drmRes = memcpy_s(drmInBuf->memory_->GetAddr(), dataSize, fuzzData, dataSize);
     DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(drmRes == 0, false);
     drmInBuf->memory_->SetSize(dataSize);
 
@@ -650,9 +652,9 @@ bool DrmAvsVideoCencDecrypt()
     return true;
 }
 
-bool DrmAvsVideoCencDecryptFuzzTest(const uint8_t *data, size_t size)
+bool DrmAvsVideoCencDecryptFuzzTest()
 {
-    uint32_t dataSize = static_cast<uint32_t>(size);
+    uint32_t dataSize = static_cast<uint32_t>(fuzzSize);
     static uint8_t drmAvsVideoCencDecryptFuzzTestFlag = 0;
     if (drmAvsVideoCencDecryptFuzzTestFlag == 0) {
         DrmAvsVideoCencDecrypt();
@@ -675,7 +677,7 @@ bool DrmAvsVideoCencDecryptFuzzTest(const uint8_t *data, size_t size)
     DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(drmInBuf->memory_ != nullptr, false);
     DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(drmInBuf->memory_->GetCapacity() == static_cast<int32_t>(dataSize),
         false);
-    int32_t drmRes = memcpy_s(drmInBuf->memory_->GetAddr(), dataSize, data, dataSize);
+    int32_t drmRes = memcpy_s(drmInBuf->memory_->GetAddr(), dataSize, fuzzData, dataSize);
     DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(drmRes == 0, false);
     drmInBuf->memory_->SetSize(dataSize);
 
@@ -731,9 +733,9 @@ bool DrmAudioCencDecryptTest()
     return true;
 }
 
-bool DrmAudioCencDecryptFuzzTest(const uint8_t *data, size_t size)
+bool DrmAudioCencDecryptFuzzTest()
 {
-    uint32_t dataSize = static_cast<uint32_t>(size);
+    uint32_t dataSize = static_cast<uint32_t>(fuzzSize);
     static uint8_t drmAudioCencDecryptFuzzTestFlag = 0;
     if (drmAudioCencDecryptFuzzTestFlag == 0) {
         DrmAudioCencDecryptTest();
@@ -753,7 +755,7 @@ bool DrmAudioCencDecryptFuzzTest(const uint8_t *data, size_t size)
     DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(drmInBuf->memory_ != nullptr, false);
     DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(drmInBuf->memory_->GetCapacity() == static_cast<int32_t>(dataSize),
         false);
-    int32_t drmRes = memcpy_s(drmInBuf->memory_->GetAddr(), dataSize, data, dataSize);
+    int32_t drmRes = memcpy_s(drmInBuf->memory_->GetAddr(), dataSize, fuzzData, dataSize);
     DRM_DECRYPTOR_FUZZ_CHECK_AND_RETURN_RET(drmRes == 0, false);
     drmInBuf->memory_->SetSize(dataSize);
 
@@ -787,13 +789,16 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return 0;
     }
-    OHOS::DrmDecryptorFuzzer::SetCodecNameFuzzTest(data, size);
+    fuzzData = data;
+    fuzzSize = size;
+    FuzzedDataProvider fdp(data, size);
+    OHOS::DrmDecryptorFuzzer::SetCodecNameFuzzTest(&fdp);
 #ifdef SUPPORT_DRM
-    OHOS::DrmDecryptorFuzzer::SetDecryptionConfigFuzzTest(data, size);
-    OHOS::DrmDecryptorFuzzer::DrmH264VideoCencDecryptFuzzTest(data, size);
-    OHOS::DrmDecryptorFuzzer::DrmHevcVideoCencDecryptFuzzTest(data, size);
-    OHOS::DrmDecryptorFuzzer::DrmAvsVideoCencDecryptFuzzTest(data, size);
-    OHOS::DrmDecryptorFuzzer::DrmAudioCencDecryptFuzzTest(data, size);
+    OHOS::DrmDecryptorFuzzer::SetDecryptionConfigFuzzTest(&fdp);
+    OHOS::DrmDecryptorFuzzer::DrmH264VideoCencDecryptFuzzTest();
+    OHOS::DrmDecryptorFuzzer::DrmHevcVideoCencDecryptFuzzTest();
+    OHOS::DrmDecryptorFuzzer::DrmAvsVideoCencDecryptFuzzTest();
+    OHOS::DrmDecryptorFuzzer::DrmAudioCencDecryptFuzzTest();
 #endif
     return 0;
 }

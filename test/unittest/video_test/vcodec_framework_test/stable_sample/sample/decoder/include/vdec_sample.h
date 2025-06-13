@@ -58,6 +58,8 @@ public:
     int32_t PushInputData(std::shared_ptr<CodecBufferInfo> bufferInfo);
     int32_t ReleaseOutputData(std::shared_ptr<CodecBufferInfo> bufferInfo);
     int32_t IsValid(bool &isValid);
+    int32_t SetOutputSurface(OHNativeWindow *window);
+    OHNativeWindow* GetSurfaceWindow(const bool isNew);
 
     int32_t HandleInputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo) override;
     int32_t HandleOutputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo) override;
@@ -83,7 +85,19 @@ public:
     static uint64_t sampleTimout_;
     static uint64_t threadNum_;
     int32_t sampleId_ = 0;
+    uint32_t defaultRotation_ = 0;
+    uint32_t defaultBufferCount_ = 4;
     bool skipOutFrameHalfCheck_ = false;
+    bool ohRotation_ = false;
+    bool maxOutputBufferCount_ = false;
+    bool maxInputBufferCount_ = false;
+    bool scaleMode_ = false;
+    bool lowLatency_ = false;
+    bool setSurfaceParam_ = false;
+    bool releaseOtherBuffer_ = false;
+    bool setPixelFormat_ = true;
+    std::string dumpKey_ = "";
+    std::string dumpValue_ = "";
 
 private:
     int32_t HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr);

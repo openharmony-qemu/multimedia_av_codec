@@ -41,11 +41,23 @@ public:
     Status SetPlaybackRate(float rate) override;
     float GetPlaybackRate() override;
     void SetMediaStartPts(int64_t startPts) override;
+    int64_t GetMediaStartPts() override;
+    void SetLastVideoBufferPts(int64_t bufferPts) override;
 public:
     bool returnBool_{false};
     std::queue<int64_t> returnInt64Queue_{};
     float returnFloat_{0.0f};
     std::queue<Status> returnStatusQueue_{};
+    bool synchronizerAdded_ {false};
+    int32_t startPtsGetTime_ {0};
+    int32_t setMediaRangeStartTime_ {0};
+    int32_t setMediaRangeEndTime_ {0};
+    int64_t mediaRangeEndValue_ {0};
+    int32_t setLastVideoBufferPtsTimes_ {0};
+    int32_t updateTimeAnchorTimes_ {0};
+    int64_t lastTimeAnchorClock_ {0};
+private:
+    int64_t GetRetInt64Value();
 };
 }  // namespace Test
 }  // namespace Media

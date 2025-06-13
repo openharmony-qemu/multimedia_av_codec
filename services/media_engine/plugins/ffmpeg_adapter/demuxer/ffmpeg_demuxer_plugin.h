@@ -47,6 +47,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
+extern const std::vector<AVCodecID> g_streamContainedXPS;
 class FFmpegDemuxerPlugin : public DemuxerPlugin {
 public:
     explicit FFmpegDemuxerPlugin(std::string name);
@@ -62,7 +63,11 @@ public:
     Status UnselectTrack(uint32_t trackId) override;
     Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime) override;
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override;
+    Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout) override;
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
+    Status GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout) override;
+    Status Pause() override;
+    Status GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPTS) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override;
     bool IsRefParserSupported() override;
@@ -83,7 +88,23 @@ public:
     Status GetCurrentCacheSize(uint32_t trackId, uint32_t& size) override;
     bool GetProbeSize(int32_t &offset, int32_t &size) override;
     void SetInterruptState(bool isInterruptNeeded) override;
+    Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
+        const int32_t probSize) override;
 private:
+    enum ThreadState : unsigned int {
+        NOT_STARTED,
+        WAITING,
+        READING,
+    };
+   
+    enum InvokerType : unsigned int {
+        INVOKER_NONE = 0,
+        INIT,
+        READ,
+        SEEK,
+        DESTORY,
+    };
+
     enum DumpMode : unsigned long {
         DUMP_NONE = 0,
         DUMP_READAT_INPUT = 0b001,
@@ -107,8 +128,12 @@ private:
         DumpMode dumpMode {DUMP_NONE};
         bool isLimit {false};
         bool isLimitType {false};
-        uint32_t sizeLimit {0};
+        int32_t sizeLimit {0};
         int32_t readSizeCnt {0};
+        std::atomic<bool> initErrorAgain {false};
+        std::mutex invokerTypeMutex;
+        std::atomic<InvokerType> invokerType {INVOKER_NONE};
+        bool readCbReady {false};
     };
     
     bool SelectedVideo();
@@ -119,7 +144,17 @@ private:
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);
     int64_t GetStreamDuration(const AVStream& avStream);
 
+    int SelectSeekTrack() const;
+    Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
+    void SyncSeekThread();
+    Status DoSeekInternal(int trackIndex, int64_t seekTime, SeekMode mode, int64_t& realSeekTime);
+
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
+    static int HandleReadOK(IOContext* ioContext, int dataSize);
+    static int HandleReadAgain(IOContext* ioContext, int dataSize, int& tryCount);
+    static int HandleReadEOS(IOContext* ioContext);
+    static int HandleReadError(int result);
+    static void UpdateInitDownloadData(IOContext* ioContext, int dataSize);
     static int AVWritePacket(void* opaque, uint8_t* buf, int bufSize);
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
     AVIOContext* AllocAVIOContext(int flags, IOContext *ioContext);
@@ -260,6 +295,30 @@ private:
     bool IsMultiVideoTrack();
     int AVReadFrameLimit(AVPacket *pkt);
     Status SetAVReadFrameLimit();
+
+    Status WaitForLoop(const uint32_t trackId, const uint32_t timeout);
+    void FFmpegReadLoop();
+    bool NeedWaitForRead();
+    void HandleReadWait();
+    bool EnsurePacketAllocated(AVPacket*& pkt);
+    bool ReadAndProcessFrame(AVPacket* pkt);
+    void ReleaseFFmpegReadLoop();
+    std::unique_ptr<std::thread> readThread_ {nullptr};
+    std::condition_variable readLoopCv_;
+    static std::condition_variable readCbCv_;
+    std::condition_variable readCacheCv_;
+    static std::mutex readPacketMutex_;
+    std::mutex getNextSampleMutex_;
+    std::mutex readSampleMutex_;
+    std::mutex fFmpegReadLoopMutex_;
+    uint32_t trackId_ = 0;
+    ThreadState threadState_ {ThreadState::NOT_STARTED};
+    Status readLoopStatus_ = {Status::OK};
+    bool isPauseReadPacket_ = false;
+    std::unordered_map<int, int> readModeMap_; // 0 mean sync read, 1 mean async read
+    std::mutex seekWaitMutex_;
+    std::condition_variable seekWaitCv_;
+    std::atomic<bool> threadReady_ {false};
 };
 
 typedef struct DtsFinder {

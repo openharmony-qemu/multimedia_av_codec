@@ -44,20 +44,17 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     }
     OH_AVFormat *format = OH_AVFormat_CreateVideoFormat("video/hevc", DEFAULT_WIDTH, DEFAULT_HEIGHT);
     FuzzedDataProvider fdp(data, size);
-    int32_t intData = fdp.ConsumeIntegral<int32_t>();
-    int64_t longData = fdp.ConsumeIntegral<int64_t>();
-    double doubleData = fdp.ConsumeFloatingPoint<double>();
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, intData);
-    OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, longData);
-    OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, doubleData);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, fdp.ConsumeIntegral<int32_t>());
+    OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, fdp.ConsumeIntegral<int64_t>());
+    OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, fdp.ConsumeFloatingPoint<double>());
 
     g_vDecSample->SetParameter(format);
 

@@ -50,7 +50,7 @@ public:
     Status SetParameter(const std::shared_ptr<Meta> &meta);
     Status Read(std::shared_ptr<AVBuffer> &buffer, size_t expectedLen);
     Status Read(uint8_t *cacheAudioData, size_t expectedLen);
-    void GetAudioTime(int64_t &audioDataTime);
+    void GetAudioTime(int64_t &audioDataTime, bool isFirstFrame);
     Status GetSize(uint64_t &size);
     Status SetAudioInterruptListener(const std::shared_ptr<AudioCaptureModuleCallback> &callback);
     Status SetAudioCapturerInfoChangeCallback(
@@ -61,6 +61,7 @@ public:
     void SetFaultEvent(const std::string &errMsg);
     void SetFaultEvent(const std::string &errMsg, int32_t ret);
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
+    Status SetWillMuteWhenInterrupted(bool muteWhenInterrupted);
 
 private:
     Status DoDeinit();
@@ -86,6 +87,7 @@ private:
     bool isTrackMaxAmplitude {false};
     std::string bundleName_;
     uint64_t instanceId_{0};
+    uint64_t lastReadPos_{0};
 };
 } // namespace AudioCaptureModule
 } // namespace Media

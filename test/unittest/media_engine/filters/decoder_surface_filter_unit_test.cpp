@@ -452,9 +452,6 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetVideoSurface, Tes
     sptr<Surface> surface = Surface::CreateSurfaceAsConsumer("TestSurface");
     Status ret = Status::OK;
 
-    ret = decoderSurfaceFilter_->SetVideoSurface(nullptr);
-    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
-
     ret = decoderSurfaceFilter_->SetVideoSurface(surface);
     EXPECT_EQ(ret, Status::OK);
 
@@ -479,6 +476,58 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetVideoSurface, Tes
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
 }
 
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetPostProcessorFd, TestSize.Level1)
+{
+    int32_t postProcessorFd = -1;
+    auto ret = decoderSurfaceFilter_->SetPostProcessorFd(postProcessorFd);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+
+    postProcessorFd = 999;
+    ret = decoderSurfaceFilter_->SetPostProcessorFd(postProcessorFd);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetSpeed, TestSize.Level1)
+{
+    float speed = 1.0;
+    decoderSurfaceFilter_->postProcessor_ = nullptr;
+    auto ret = decoderSurfaceFilter_->SetSpeed(speed);
+    EXPECT_EQ(ret, Status::OK);
+
+    std::shared_ptr<BaseVideoPostProcessor> postProcessor = std::make_shared<BaseVideoPostProcessor>();
+    decoderSurfaceFilter_->postProcessor_ = postProcessor;
+    EXPECT_CALL(*postProcessor, SetSpeed(_)).WillRepeatedly(Return(Status::OK));
+    ret = decoderSurfaceFilter_->SetSpeed(speed);
+    EXPECT_EQ(ret, Status::OK);
+    
+    EXPECT_CALL(*postProcessor, SetSpeed(_)).WillRepeatedly(Return(Status::ERROR_UNKNOWN));
+    ret = decoderSurfaceFilter_->SetSpeed(speed);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetCameraPostprocessing, TestSize.Level1)
+{
+    auto ret = decoderSurfaceFilter_->SetCameraPostprocessing(true);
+    EXPECT_EQ(ret, Status::OK);
+
+    ret = decoderSurfaceFilter_->SetCameraPostprocessing(false);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+#ifdef SUPPORT_CAMERA_POST_PROCESSOR
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_LoadCameraPostProcessorLib, TestSize.Level1)
+{
+    EXPECT_EQ(decoderSurfaceFilter->cameraPostProcessorLibHandle_, nullptr);
+    decoderSurfaceFilter->SetPostProcessorType(VideoPostProcessorType::CAMERA_INSERT_FRAME);
+    EXPECT_EQ(decoderSurfaceFilter->postProcessor_, nullptr);
+    decoderSurfaceFilter->CreatePostProcessor();
+    EXPECT_EQ(decoderSurfaceFilter->postProcessor_, nullptr);
+    decoderSurfaceFilter->LoadCameraPostProcessorLib();
+    decoderSurfaceFilter->CreatePostProcessor();
+    EXPECT_NE(decoderSurfaceFilter->cameraPostProcessorLibHandle_, nullptr);
+    EXPECT_NE(decoderSurfaceFilter->postProcessor_, nullptr);
+}
+#endif
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
