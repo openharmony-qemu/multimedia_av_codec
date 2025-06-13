@@ -641,7 +641,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr && samplePacket->pkts.size() > 0 &&
         samplePacket->pkts[0] != nullptr && samplePacket->pkts[0]->size >= 0,
         Status::ERROR_INVALID_OPERATION, "Input packet is nullptr or empty");
-    FALSE_RETURN_V_MSG_E(samplePacket->pkts[0]->stream_index < formatContext_->nb_streams,
+    FALSE_RETURN_V_MSG_E(static_cast<uint32_t>(samplePacket->pkts[0]->stream_index) < formatContext_->nb_streams,
         Status::ERROR_INVALID_OPERATION, "FormatContext state error");
     FALSE_RETURN_V_MSG_E(formatContext_->streams[samplePacket->pkts[0]->stream_index] != nullptr,
         Status::ERROR_INVALID_OPERATION, "Stream state error");
@@ -1279,7 +1279,7 @@ void FFmpegDemuxerPlugin::UpdateReferenceIds()
                 referenceIdsMap_[id] = std::vector<int32_t>();
             }
             if(!std::any_of(referenceIdsMap_[id].begin(), referenceIdsMap_[id].end(),
-                       [trackIndex](int32_t i) { return i == trackIndex; })) {
+                       [trackIndex](int32_t i) { return static_cast<uint32_t>(i) == trackIndex; })) {
                 referenceIdsMap_[id].push_back(trackIndex);
             }
 
@@ -1293,7 +1293,7 @@ void FFmpegDemuxerPlugin::UpdateReferenceIds()
         }
     }
     for (auto item : referenceIdsMap_) {
-        if (item.second.size() == 0 || item.first >= mediaInfo_.tracks.size()) {
+        if (item.second.size() == 0 || static_cast<size_t>(item.first) >= mediaInfo_.tracks.size()) {
             continue;
         }
         for (auto id : item.second) {
