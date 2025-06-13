@@ -189,17 +189,16 @@ static void ShowSourceDescription(OH_AVFormat *oh_trackformat)
         bitrate, width, height, audioSampleFormat, keyFrameRate, profile, audioChannelCount, audioSampleRate);
 }
 
-static void RunNativeDemuxer(const std::string &filePath, const std::string &fileMode)
+static std::shared_ptr<AVSourceDemo> CreateAVSource(
+    const std::string &filePath, const std::string &fileMode, std::ifstream *&fileStream, int32_t &fd)
 {
     auto avSourceDemo = std::make_shared<AVSourceDemo>();
-    int32_t fd = -1;
-    std::ifstream* fileStream = nullptr;
     if (fileMode == "1") {
         avSourceDemo->CreateWithURI((char *)(filePath.c_str()));
     } else if (fileMode == "0" || fileMode == "2") {
         if ((fd = open(filePath.c_str(), O_RDONLY)) < 0) {
             printf("open file failed\n");
-            return;
+            return nullptr;
         }
         int64_t fileSize = avSourceDemo->GetFileSize(filePath);
         if (fileMode == "0") {
@@ -210,20 +209,28 @@ static void RunNativeDemuxer(const std::string &filePath, const std::string &fil
             avSourceDemo->CreateWithDataSource(&dataSource);
         }
     } else if (fileMode == "3") {
-        fileStream = new std::ifstream((char *)(filePath.c_str()), std::ios::binary);
-        if(!fileStream->is_open()) {
+        fileStream = new std::ifstream(filePath, std::ios::binary);
+        if (!fileStream->is_open()) {
             printf("dataSoureceExt open file fail\n");
-            return;
+            return nullptr;
         }
-
         fileStream->seekg(0, std::ios::end);
         int64_t fileSize = fileStream->tellg();
         fileStream->seekg(0, std::ios::beg);
-
         g_filePath = filePath;
         OH_AVDataSourceExt dataSourceExt = {fileSize, AVSourceReadAtExt};
-
         avSourceDemo->CreateWithDataSourceExt(&dataSourceExt, reinterpret_cast<void*>(fileStream));
+    }
+    return avSourceDemo;
+}
+
+static void RunNativeDemuxer(const std::string &filePath, const std::string &fileMode)
+{
+    int32_t fd = -1;
+    std::ifstream* fileStream = nullptr;
+    auto avDemuxerDemo = CreateAVSource(filePath, fileMode, fileStream, fd);
+    if (avSourceDemo == nullptr) {
+        return;
     }
 
     auto avDemuxerDemo = std::make_shared<AVDemuxerDemo>();
