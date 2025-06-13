@@ -74,6 +74,8 @@ private:
         FLAG_SYNC_ASYNC_CONFIGURED = 1 << 2,
         FLAG_STREAM_CHANGED = 1 << 3,
         FLAG_ERROR = 1 << 4,
+        FLAG_INPUT_EOS = 1 << 5,
+        FLAG_OUTPUT_EOS = 1 << 6,
     } CodecCircularFlag;
     typedef enum : uint8_t {
         OWNED_BY_SERVER = 0,
@@ -123,8 +125,8 @@ private:
     void SyncOnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> &buffer);
     int32_t QueryInputIndex(uint32_t &index, int64_t timeoutUs);
     int32_t QueryOutputIndex(uint32_t &index, int64_t timeoutUs);
-    bool WaitForBuffer(std::unique_lock<std::mutex> &lock, std::condition_variable &cond, int64_t timeoutUs,
-                       bool isOutput = false);
+    bool WaitForInputBuffer(std::unique_lock<std::mutex> &lock, int64_t timeoutUs);
+    bool WaitForOutputBuffer(std::unique_lock<std::mutex> &lock, int64_t timeoutUs);
 
     std::condition_variable inCond_;
     std::condition_variable outCond_;

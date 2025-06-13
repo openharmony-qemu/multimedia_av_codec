@@ -830,8 +830,6 @@ OH_AVErrCode OH_VideoEncoder_PushInputParameter(OH_AVCodec *codec, uint32_t inde
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "videoEncoder_ is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(!videoEncObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
-                             "Not support the callback of OH_AVMemory!");
 
     int32_t ret = videoEncObj->videoEncoder_->QueueInputParameter(index);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
@@ -866,12 +864,16 @@ OH_AVErrCode OH_VideoEncoder_QueryInputBuffer(struct OH_AVCodec *codec, uint32_t
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
-
     int32_t ret = videoEncObj->videoEncoder_->QueryInputBuffer(*index, timeoutUs);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "Video encoder query input data failed!");
-
-    return AV_ERR_OK;
+    switch (ret) {
+        case AVCS_ERR_TRY_AGAIN:
+            return AV_ERR_TRY_AGAIN_LATER;
+        case AVCS_ERR_OK:
+            return AV_ERR_OK;
+        default:
+            AVCODEC_LOGE("Video encoder query input data failed!");
+    }
+    return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
 }
 
 OH_AVErrCode OH_VideoEncoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_t *index, int64_t timeoutUs)
@@ -882,12 +884,16 @@ OH_AVErrCode OH_VideoEncoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
-
     int32_t ret = videoEncObj->videoEncoder_->QueryOutputBuffer(*index, timeoutUs);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "Video encoder query output data failed!");
-
-    return AV_ERR_OK;
+    switch (ret) {
+        case AVCS_ERR_TRY_AGAIN:
+            return AV_ERR_TRY_AGAIN_LATER;
+        case AVCS_ERR_OK:
+            return AV_ERR_OK;
+        default:
+            AVCODEC_LOGE("Video encoder query output data failed!");
+    }
+    return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
 }
 
 OH_AVBuffer *OH_VideoEncoder_GetInputBuffer(struct OH_AVCodec *codec, uint32_t index)

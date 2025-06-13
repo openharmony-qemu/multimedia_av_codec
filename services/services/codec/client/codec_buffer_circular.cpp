@@ -88,6 +88,8 @@ void CodecBufferCircular::SetIsRunning(bool isRunning)
         flag_ |= FLAG_IS_RUNNING;
     } else {
         flag_ &= ~FLAG_IS_RUNNING;
+        flag_ &= ~FLAG_INPUT_EOS;
+        flag_ &= ~FLAG_OUTPUT_EOS;
     }
     inCond_.notify_all();
     outCond_.notify_all();
@@ -217,6 +219,10 @@ int32_t CodecBufferCircular::HandleInputBuffer(uint32_t index)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(item.owner == OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
                                       "Invalid ownership:%{public}s", OwnerToString(item.owner).c_str());
     item.owner = OWNED_BY_SERVER;
+    if ((item.buffer != nullptr) && (item.buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS)) {
+        flag_ |= FLAG_INPUT_EOS;
+        inCond_.notify_all();
+    }
     EXPECT_AND_LOGD_WITH_TAG(
         item.buffer != nullptr, "index=%{public}d, size=%{public}d, flag=%{public}u, pts=%{public}" PRId64, index,
         item.buffer->memory_ != nullptr ? item.buffer->memory_->GetSize() : 0, item.buffer->flag_, item.buffer->pts_);
@@ -527,9 +533,10 @@ int32_t CodecBufferCircular::QueryInputIndex(uint32_t &index, int64_t timeoutUs)
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsSyncMode(), AVCS_ERR_INVALID_OPERATION, "Need enable sync mode");
     std::unique_lock<std::mutex> lock(inMutex_);
-    bool isNotTimeout = WaitForBuffer(lock, inCond_, timeoutUs, false);
+    bool isNotTimeout = WaitForInputBuffer(lock, timeoutUs);
 
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, AVCS_ERR_INVALID_STATE, "Not in running state");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(flag_ & FLAG_INPUT_EOS), AVCS_ERR_INVALID_STATE, "End-of-stream pushed");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(flag_ & FLAG_ERROR), lastError_, "%{public}s",
                                       AVCSErrorToString(static_cast<AVCodecServiceErrCode>(lastError_)).c_str());
     if (!isNotTimeout) {
@@ -548,9 +555,10 @@ int32_t CodecBufferCircular::QueryOutputIndex(uint32_t &index, int64_t timeoutUs
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsSyncMode(), AVCS_ERR_INVALID_OPERATION, "Need enable sync mode");
     std::unique_lock<std::mutex> lock(outMutex_);
-    bool isNotTimeout = WaitForBuffer(lock, outCond_, timeoutUs, true);
+    bool isNotTimeout = WaitForOutputBuffer(lock, timeoutUs);
 
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, AVCS_ERR_INVALID_STATE, "Not in running state");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(flag_ & FLAG_OUTPUT_EOS), AVCS_ERR_INVALID_STATE, "End-of-stream reached");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(flag_ & FLAG_ERROR), lastError_, "%{public}s",
                                       AVCSErrorToString(static_cast<AVCodecServiceErrCode>(lastError_)).c_str());
     if (flag_ & FLAG_STREAM_CHANGED) {
@@ -567,26 +575,52 @@ int32_t CodecBufferCircular::QueryOutputIndex(uint32_t &index, int64_t timeoutUs
     if (iter != outCache_.end()) {
         iter->second.owner = OWNED_BY_USER;
     }
+    if ((iter->second.buffer != nullptr) && (iter->second.buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS)) {
+        flag_ |= FLAG_OUTPUT_EOS;
+        outCond_.notify_all();
+    }
     return AVCS_ERR_OK;
 }
 
-bool CodecBufferCircular::WaitForBuffer(std::unique_lock<std::mutex> &lock, std::condition_variable &cond,
-                                        int64_t timeoutUs, bool isOutput)
+bool CodecBufferCircular::WaitForInputBuffer(std::unique_lock<std::mutex> &lock, int64_t timeoutUs)
 {
     const auto timeout = std::chrono::microseconds(timeoutUs);
-    const auto func = [this, &isOutput] {
-        return (isOutput ? outQueue_ : inQueue_).size() > 0 || // get new buffer
-               (flag_ & FLAG_ERROR) ||                         // on error
-               ((flag_ & FLAG_STREAM_CHANGED) && isOutput) ||  // on output format changed
-               !(flag_ & FLAG_IS_RUNNING);                     // not running
+    const auto predicate = [this] {
+        return !(flag_ & FLAG_IS_RUNNING) || // [1] Not in running state
+               (flag_ & FLAG_INPUT_EOS) ||   // [2] End-of-stream pushed
+               (flag_ & FLAG_ERROR) ||       // [3] Error state detected
+               inQueue_.size() > 0;          // [4] Input buffer available
     };
+
     if (timeoutUs < 0) {
-        cond.wait(lock, func);
-        return true;
-    } else if (timeoutUs == 0) {
-        return func();
+        inCond_.wait(lock, predicate);
+        return true; // Always returns true after wait
     }
-    return cond.wait_for(lock, timeout, func); // true: is not timeout
+    if (timeoutUs == 0) {
+        return predicate(); // Immediate status check
+    }
+    return inCond_.wait_for(lock, timeout, predicate); // Returns true if predicate satisfied
+}
+
+bool CodecBufferCircular::WaitForOutputBuffer(std::unique_lock<std::mutex> &lock, int64_t timeoutUs)
+{
+    const auto timeout = std::chrono::microseconds(timeoutUs);
+    const auto predicate = [this] {
+        return !(flag_ & FLAG_IS_RUNNING) ||    // [1] Not in running state
+               (flag_ & FLAG_OUTPUT_EOS) ||     // [2] End-of-stream reached
+               (flag_ & FLAG_ERROR) ||          // [3] Error state detected
+               (flag_ & FLAG_STREAM_CHANGED) || // [4] Stream description changed
+               outQueue_.size() > 0;            // [5] Output buffer available
+    };
+
+    if (timeoutUs < 0) {
+        outCond_.wait(lock, predicate);
+        return true;
+    }
+    if (timeoutUs == 0) {
+        return predicate();
+    }
+    return outCond_.wait_for(lock, timeout, predicate);
 }
 
 std::shared_ptr<AVBuffer> CodecBufferCircular::GetInputBuffer(uint32_t index)
