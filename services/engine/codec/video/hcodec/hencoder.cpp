@@ -52,15 +52,8 @@ int32_t HEncoder::OnConfigure(const Format &format)
         return ret;
     }
     ConfigureProtocol(format, frameRate);
-
-    ret = ConfigureOutputBitrate(format);
-    if (ret != AVCS_ERR_OK) {
-        HLOGW("ConfigureOutputBitrate failed");
-    }
-    ret = SetColorAspects(format);
-    if (ret != AVCS_ERR_OK) {
-        HLOGW("set color aspect failed");
-    }
+    (void)ConfigureOutputBitrate(format);
+    (void)SetColorAspects(format);
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
     CheckIfEnableCb(format);
