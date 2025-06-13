@@ -22,7 +22,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "AudioCaptureFilter" };
 static constexpr uint64_t AUDIO_NS_PER_SECOND = 1000000000;
-static constexpr uint64_t AUDIO_UNREGULAR_DETLA_TIME = 100000000;
+static constexpr uint64_t AUDIO_UNREGULAR_DELTA_TIME = 100000000;
 static constexpr int64_t AUDIO_CAPTURE_READ_FAILED_WAIT_TIME = 20000000; // 20000000 us 20ms
 static constexpr int64_t AUDIO_CAPTURE_READ_FRAME_TIME = 20000000; // 20000000 ns 20ms
 static constexpr int32_t AUDIO_CAPTURE_MAX_CACHED_FRAMES = 256;
@@ -172,6 +172,7 @@ Status AudioCaptureFilter::DoStart()
     MEDIA_LOG_I("Start");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Start");
     eos_ = false;
+    currentTime_ = 0;
     auto res = Status::ERROR_INVALID_OPERATION;
     // start audioCaptureModule firstly
     if (audioCaptureModule_) {
@@ -205,7 +206,14 @@ Status AudioCaptureFilter::DoPause()
     MEDIA_LOG_I("[audio] pauseTime: " PUBLIC_LOG_D64, pauseTime_);
     if (currentTime_ != 0 && currentTime_ < pauseTime_ && withVideo_) {
         int32_t lostCount = (pauseTime_ - currentTime_) / AUDIO_CAPTURE_READ_FRAME_TIME;
-        FillLostFrame(lostCount);
+        if (lostCount > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
+            // time diff is abnormal, do not fill data frame.
+            MEDIA_LOG_W("[audio] abnormal time diff, please check");
+        } else {
+            FillLostFrame(lostCount);
+        }
+    }
+    if (!cachedAudioData_.empty()) {
         RecordCachedData();
     }
     return ret;
@@ -215,6 +223,7 @@ Status AudioCaptureFilter::DoResume()
 {
     MEDIA_LOG_I("Resume");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Resume");
+    currentTime_ = 0;
     if (taskPtr_) {
         taskPtr_->Start();
     }
@@ -246,6 +255,7 @@ Status AudioCaptureFilter::DoStop()
     }
     firstAudioFramePts_.store(-1);
     firstVideoFramePts_.store(-1);
+    currentTime_ = 0;
     if (!cachedAudioData_.empty()) {
         RecordCachedData();
     }
@@ -320,12 +330,11 @@ Status AudioCaptureFilter::SendEos()
 {
     MEDIA_LOG_I("SendEos");
     Status ret = Status::OK;
+    eos_ = true;
     GetCurrentTime(stopTime_);
     MEDIA_LOG_I("[audio] stopTime: " PUBLIC_LOG_D64, stopTime_);
     if (outputBufferQueue_) {
-        if (currentTime_ != 0 && currentTime_ < stopTime_ && withVideo_) {
-            int32_t lostCount = (stopTime_ - currentTime_) / AUDIO_CAPTURE_READ_FRAME_TIME;
-            FillLostFrame(lostCount);
+        if (!cachedAudioData_.empty()) {
             RecordCachedData();
         }
 
@@ -339,7 +348,6 @@ Status AudioCaptureFilter::SendEos()
         buffer->flag_ |= BUFFER_FLAG_EOS;
         outputBufferQueue_->PushBuffer(buffer, false);
     }
-    eos_ = true;
     return ret;
 }
 
@@ -509,11 +517,16 @@ void AudioCaptureFilter::RecordAudioFrame()
     {
         int64_t audioDataTime = 0;
         audioCaptureModule_->GetAudioTime(audioDataTime, false);
-        if (audioDataTime > currentTime_ && (audioDataTime - currentTime_) > AUDIO_UNREGULAR_DETLA_TIME && withVideo_) {
+        if (audioDataTime > currentTime_ && (audioDataTime - currentTime_) > AUDIO_UNREGULAR_DELTA_TIME && withVideo_) {
             int32_t lostCount = (audioDataTime - AUDIO_CAPTURE_READ_FRAME_TIME - currentTime_)
                 / AUDIO_CAPTURE_READ_FRAME_TIME;
-            FillLostFrame(lostCount);
-            RecordCachedData();
+            if (lostCount > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
+                // time diff is abnormal, please check
+                MEDIA_LOG_W("[audio] abnormal time diff, please check");
+            } else {
+                FillLostFrame(lostCount);
+                RecordCachedData();
+            }
         }
     }
     buffer->memory_->SetSize(bufferSize);
