@@ -419,7 +419,8 @@ void VideoEncSyncSample::PrepareInner()
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
 }
 
-void VideoEncSyncSample::InputLtrParam(int32_t frameInputCount, std::shared_ptr<AVBufferMock> buffer)
+void VideoEncSyncSample::InputLtrParam(OH_AVCodecBufferAttr attr, int32_t frameInputCount,
+                                       std::shared_ptr<AVBufferMock> buffer)
 {
     int32_t stride = 0;
     auto format = GetInputDescription();

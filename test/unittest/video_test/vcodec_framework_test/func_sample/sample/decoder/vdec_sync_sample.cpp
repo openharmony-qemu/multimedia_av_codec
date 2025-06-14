@@ -571,6 +571,7 @@ int32_t VideoDecSyncSample::OutputLoopInnerExt()
         std::shared_ptr<FormatMock> format = videoDec_->GetOutputDescription();
         std::cout << "format = " << format->DumpInfo() << std::endl;
     }
+
     if (ret != AV_ERR_OK) {
         return ret;
     }

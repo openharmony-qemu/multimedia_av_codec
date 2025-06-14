@@ -52,7 +52,7 @@ inline std::atomic<uint32_t> g_shaBufferCount = 0;
 inline SHA512_CTX g_ctxTest;
 
 void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_t size, bool needCheckSHA,
-                      bool needDump)
+               bool needDump)
 {
     if (needCheckSHA) {
         ++g_shaBufferCount;
