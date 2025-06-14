@@ -97,6 +97,7 @@ void CodecBufferCircular::SetIsRunning(bool isRunning)
 
 bool CodecBufferCircular::CanEnableSyncMode()
 {
+    std::scoped_lock lock(inMutex_, outMutex_);
     if (!(flag_ & FLAG_SYNC_ASYNC_CONFIGURED)) {
         return true;
     }
@@ -105,6 +106,7 @@ bool CodecBufferCircular::CanEnableSyncMode()
 
 bool CodecBufferCircular::CanEnableAsyncMode()
 {
+    std::scoped_lock lock(inMutex_, outMutex_);
     if (!(flag_ & FLAG_SYNC_ASYNC_CONFIGURED)) {
         return true;
     }
@@ -113,24 +115,30 @@ bool CodecBufferCircular::CanEnableAsyncMode()
 
 void CodecBufferCircular::EnableSyncMode()
 {
-    CHECK_AND_RETURN_LOG_WITH_TAG(CanEnableSyncMode(), "Can not enable sync mode");
+    std::scoped_lock lock(inMutex_, outMutex_);
+    CHECK_AND_RETURN_LOG_WITH_TAG(!(flag_ & FLAG_SYNC_ASYNC_CONFIGURED) || (flag_ & FLAG_IS_SYNC),
+                                  "Can not enable sync mode");
     flag_ |= FLAG_IS_SYNC;
     flag_ |= FLAG_SYNC_ASYNC_CONFIGURED;
 }
 
 void CodecBufferCircular::EnableAsyncMode()
 {
-    CHECK_AND_RETURN_LOG_WITH_TAG(CanEnableAsyncMode(), "Can not enable async mode");
+    std::scoped_lock lock(inMutex_, outMutex_);
+    CHECK_AND_RETURN_LOG_WITH_TAG(!(flag_ & FLAG_SYNC_ASYNC_CONFIGURED) || !(flag_ & FLAG_IS_SYNC),
+                                  "Can not enable async mode");
     flag_ |= FLAG_SYNC_ASYNC_CONFIGURED;
 }
 
 bool CodecBufferCircular::IsSyncMode()
 {
+    std::scoped_lock lock(inMutex_, outMutex_);
     return (flag_ & FLAG_IS_SYNC) && (flag_ & FLAG_SYNC_ASYNC_CONFIGURED);
 }
 
 void CodecBufferCircular::ResetFlag()
 {
+    std::scoped_lock lock(inMutex_, outMutex_);
     flag_ = FLAG_NONE;
 }
 
@@ -178,8 +186,8 @@ void CodecBufferCircular::FlushCaches()
 int32_t CodecBufferCircular::HandleInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     // Api9
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!IsSyncMode(), AVCS_ERR_INVALID_OPERATION, "Not support sync mode");
     std::lock_guard<std::mutex> lock(inMutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(flag_ & FLAG_IS_SYNC), AVCS_ERR_INVALID_OPERATION, "Not support sync mode");
     BufferCacheIter iter = inCache_.find(index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, AVCS_ERR_INVALID_STATE, "Not in running state");
     if (iter == inCache_.end()) {
@@ -199,52 +207,69 @@ int32_t CodecBufferCircular::HandleInputBuffer(uint32_t index, AVCodecBufferInfo
     item.buffer->memory_->SetSize(info.size);
 
     converter_->WriteToBuffer(item.buffer, item.memory);
-
-    AVCODEC_LOGD_WITH_TAG("index=%{public}d, size=%{public}d, flag=%{public}u, pts=%{public}" PRId64, index,
-                          item.buffer->memory_ != nullptr ? item.buffer->memory_->GetSize() : 0, item.buffer->flag_,
-                          item.buffer->pts_);
     return AVCS_ERR_OK;
 }
 
 int32_t CodecBufferCircular::HandleInputBuffer(uint32_t index)
 {
     std::lock_guard<std::mutex> lock(inMutex_);
-    BufferCacheIter iter = inCache_.find(index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, AVCS_ERR_INVALID_STATE, "Not in running state");
+    BufferCacheIter iter = inCache_.find(index);
     if (iter == inCache_.end()) {
         AVCODEC_LOGW_WITH_TAG("Index is invalid %{publlic}u", index);
-        return IsSyncMode() ? AVCS_ERR_INVALID_OPERATION : AVCS_ERR_OK;
+        return (flag_ & FLAG_IS_SYNC) ? AVCS_ERR_INVALID_OPERATION : AVCS_ERR_OK;
     }
     BufferItem &item = iter->second;
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(item.owner == OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
                                       "Invalid ownership:%{public}s", OwnerToString(item.owner).c_str());
-    item.owner = OWNED_BY_SERVER;
-    if ((item.buffer != nullptr) && (item.buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS)) {
-        flag_ |= FLAG_INPUT_EOS;
-        inCond_.notify_all();
-    }
-    EXPECT_AND_LOGD_WITH_TAG(
-        item.buffer != nullptr, "index=%{public}d, size=%{public}d, flag=%{public}u, pts=%{public}" PRId64, index,
-        item.buffer->memory_ != nullptr ? item.buffer->memory_->GetSize() : 0, item.buffer->flag_, item.buffer->pts_);
+    iter->second.owner = OWNED_BY_SERVER;
     return AVCS_ERR_OK;
 }
 
 int32_t CodecBufferCircular::HandleOutputBuffer(uint32_t index)
 {
     std::lock_guard<std::mutex> lock(outMutex_);
-    BufferCacheIter iter = outCache_.find(index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, AVCS_ERR_INVALID_STATE, "Not in running state");
-    if (iter == inCache_.end()) {
+    BufferCacheIter iter = outCache_.find(index);
+    if (iter == outCache_.end()) {
         AVCODEC_LOGW_WITH_TAG("Index is invalid %{publlic}u", index);
-        return IsSyncMode() ? AVCS_ERR_INVALID_OPERATION : AVCS_ERR_OK;
+        return (flag_ & FLAG_IS_SYNC) ? AVCS_ERR_INVALID_OPERATION : AVCS_ERR_OK;
     }
     BufferItem &item = iter->second;
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(item.owner == OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
                                       "Invalid ownership:%{public}s", OwnerToString(item.owner).c_str());
-    item.owner = OWNED_BY_SERVER;
-    EXPECT_AND_LOGD_WITH_TAG(item.buffer != nullptr, "index=%{public}d, flag=%{public}u, pts=%{public}" PRId64, index,
-                             item.buffer->flag_, item.buffer->pts_);
+    iter->second.owner = OWNED_BY_SERVER;
     return AVCS_ERR_OK;
+}
+
+void CodecBufferCircular::QueueInputBufferDone(uint32_t index)
+{
+    std::lock_guard<std::mutex> lock(inMutex_);
+    BufferCacheIter iter = inCache_.find(index);
+    if (iter == inCache_.end()) {
+        return;
+    }
+    std::shared_ptr<AVBuffer> &buffer = iter->second.buffer;
+    if ((buffer != nullptr) && (buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS)) {
+        flag_ |= FLAG_INPUT_EOS;
+        inCond_.notify_all();
+    }
+    EXPECT_AND_LOGD_WITH_TAG(buffer != nullptr,
+                             "index=%{public}d, size=%{public}d, flag=%{public}u, pts=%{public}" PRId64, index,
+                             buffer->memory_ != nullptr ? buffer->memory_->GetSize() : 0, buffer->flag_, buffer->pts_);
+}
+
+void CodecBufferCircular::ReleaseOutputBufferDone(uint32_t index)
+{
+    std::lock_guard<std::mutex> lock(outMutex_);
+    BufferCacheIter iter = outCache_.find(index);
+    if (iter == outCache_.end()) {
+        return;
+    }
+    std::shared_ptr<AVBuffer> &buffer = iter->second.buffer;
+    EXPECT_AND_LOGD_WITH_TAG(buffer != nullptr,
+                             "index=%{public}d, size=%{public}d, flag=%{public}u, pts=%{public}" PRId64, index,
+                             buffer->memory_ != nullptr ? buffer->memory_->GetSize() : 0, buffer->flag_, buffer->pts_);
 }
 
 std::shared_ptr<Format> CodecBufferCircular::GetParameter(BufferCacheIter &iter)
@@ -287,7 +312,7 @@ void CodecBufferCircular::PrintCaches(bool isOutput)
         return oss.str();
     };
     const std::string userInfo = getCacheInfo(ownerArrays[OWNED_BY_USER], "user");
-    const std::string clientInfo = IsSyncMode() ? getCacheInfo(ownerArrays[OWNED_BY_CLIENT], ",client") : "";
+    const std::string clientInfo = (flag_ & FLAG_IS_SYNC) ? getCacheInfo(ownerArrays[OWNED_BY_CLIENT], ",client") : "";
     const std::string serverInfo = getCacheInfo(ownerArrays[OWNED_BY_SERVER], ",server");
     AVCODEC_LOGI_WITH_TAG("%{public}s cache:%{public}s%{public}s%{public}s", (isOutput ? "out" : "in"),
                           userInfo.c_str(), clientInfo.c_str(), serverInfo.c_str());
@@ -536,8 +561,8 @@ int32_t CodecBufferCircular::QueryOutputBuffer(uint32_t &index, int64_t timeoutU
 
 int32_t CodecBufferCircular::QueryInputIndex(uint32_t &index, int64_t timeoutUs)
 {
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsSyncMode(), AVCS_ERR_INVALID_OPERATION, "Need enable sync mode");
     std::unique_lock<std::mutex> lock(inMutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_SYNC, AVCS_ERR_INVALID_OPERATION, "Need enable sync mode");
     bool isNotTimeout = WaitForInputBuffer(lock, timeoutUs);
 
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, AVCS_ERR_INVALID_STATE, "Not in running state");
@@ -558,8 +583,8 @@ int32_t CodecBufferCircular::QueryInputIndex(uint32_t &index, int64_t timeoutUs)
 
 int32_t CodecBufferCircular::QueryOutputIndex(uint32_t &index, int64_t timeoutUs)
 {
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsSyncMode(), AVCS_ERR_INVALID_OPERATION, "Need enable sync mode");
     std::unique_lock<std::mutex> lock(outMutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_SYNC, AVCS_ERR_INVALID_OPERATION, "Need enable sync mode");
     bool isNotTimeout = WaitForOutputBuffer(lock, timeoutUs);
 
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, AVCS_ERR_INVALID_STATE, "Not in running state");
@@ -630,8 +655,8 @@ bool CodecBufferCircular::WaitForOutputBuffer(std::unique_lock<std::mutex> &lock
 
 std::shared_ptr<AVBuffer> CodecBufferCircular::GetInputBuffer(uint32_t index)
 {
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsSyncMode(), nullptr, "Need enable sync mode");
     std::lock_guard<std::mutex> lock(inMutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_SYNC, nullptr, "Need enable sync mode");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, nullptr, "Not in running state");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(flag_ & FLAG_ERROR), nullptr, "%{public}s",
                                       AVCSErrorToString(static_cast<AVCodecServiceErrCode>(lastError_)).c_str());
@@ -644,8 +669,8 @@ std::shared_ptr<AVBuffer> CodecBufferCircular::GetInputBuffer(uint32_t index)
 
 std::shared_ptr<AVBuffer> CodecBufferCircular::GetOutputBuffer(uint32_t index)
 {
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsSyncMode(), nullptr, "Need enable sync mode");
     std::lock_guard<std::mutex> lock(outMutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_SYNC, nullptr, "Need enable sync mode");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(flag_ & FLAG_IS_RUNNING, nullptr, "Not in running state");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(flag_ & FLAG_ERROR), nullptr, "%{public}s",
                                       AVCSErrorToString(static_cast<AVCodecServiceErrCode>(lastError_)).c_str());

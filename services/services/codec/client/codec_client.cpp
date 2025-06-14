@@ -16,9 +16,9 @@
 #include "codec_client.h"
 #include <cmath>
 #include "avcodec_errors.h"
+#include "avcodec_trace.h"
 #include "codec_service_proxy.h"
 #include "meta/meta_key.h"
-#include "avcodec_trace.h"
 
 using namespace OHOS::Media;
 namespace {
@@ -324,8 +324,10 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->QueueInputBuffer(index, info, flag);
     }
-    AVCODEC_LOGD_WITH_TAG("%{public}s. index:%{public}u", ErrorToStr(ret).c_str(), index);
-    return ret;
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(),
+                                      index);
+    circular_.QueueInputBufferDone(index);
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecClient::QueueInputBuffer(uint32_t index)
@@ -340,8 +342,10 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index)
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->QueueInputBuffer(index);
     }
-    AVCODEC_LOGD_WITH_TAG("%{public}s. index:%{public}u", ErrorToStr(ret).c_str(), index);
-    return ret;
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(),
+                                      index);
+    circular_.QueueInputBufferDone(index);
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecClient::QueueInputParameter(uint32_t index)
@@ -354,8 +358,10 @@ int32_t CodecClient::QueueInputParameter(uint32_t index)
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->QueueInputParameter(index);
     }
-    AVCODEC_LOGD_WITH_TAG("%{public}s. index:%{public}u", ErrorToStr(ret).c_str(), index);
-    return ret;
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(),
+                                      index);
+    circular_.QueueInputBufferDone(index);
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecClient::GetOutputFormat(Format &format)
@@ -393,8 +399,10 @@ int32_t CodecClient::ReleaseOutputBuffer(uint32_t index, bool render)
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->ReleaseOutputBuffer(index, render);
     }
-    AVCODEC_LOGD_WITH_TAG("%{public}s. index:%{public}u", ErrorToStr(ret).c_str(), index);
-    return ret;
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(),
+                                      index);
+    circular_.ReleaseOutputBufferDone(index);
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecClient::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
@@ -411,35 +419,38 @@ int32_t CodecClient::RenderOutputBufferAtTime(uint32_t index, int64_t renderTime
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->RenderOutputBufferAtTime(index, renderTimestampNs);
     }
-    AVCODEC_LOGD_WITH_TAG("%{public}s. index:%{public}u, renderTimestamp:%{public}" PRId64, ErrorToStr(ret).c_str(),
-                          index, renderTimestampNs);
-    return ret;
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(),
+                                      index);
+    circular_.ReleaseOutputBufferDone(index);
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecClient::QueryInputBuffer(uint32_t &index, int64_t timeoutUs)
 {
-    std::shared_lock<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(codecMode_ & CODEC_SURFACE_INPUT), AVCS_ERR_INVALID_OPERATION,
-                                      "Input is the surface");
+    {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(codecMode_ & CODEC_SURFACE_INPUT), AVCS_ERR_INVALID_OPERATION,
+                                          "Input is the surface");
+    }
     return circular_.QueryInputBuffer(index, timeoutUs);
 }
 
 int32_t CodecClient::QueryOutputBuffer(uint32_t &index, int64_t timeoutUs)
 {
-    std::shared_lock<std::shared_mutex> lock(mutex_);
     return circular_.QueryOutputBuffer(index, timeoutUs);
 }
 
 std::shared_ptr<AVBuffer> CodecClient::GetInputBuffer(uint32_t index)
 {
-    std::shared_lock<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(codecMode_ & CODEC_SURFACE_INPUT), nullptr, "Input is the surface");
+    {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        CHECK_AND_RETURN_RET_LOG_WITH_TAG(!(codecMode_ & CODEC_SURFACE_INPUT), nullptr, "Input is the surface");
+    }
     return circular_.GetInputBuffer(index);
 }
 
 std::shared_ptr<AVBuffer> CodecClient::GetOutputBuffer(uint32_t index)
 {
-    std::shared_lock<std::shared_mutex> lock(mutex_);
     return circular_.GetOutputBuffer(index);
 }
 
