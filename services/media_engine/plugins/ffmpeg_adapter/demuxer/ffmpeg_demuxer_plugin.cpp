@@ -434,8 +434,8 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
             }
         });
     }
-    FALSE_RETURN_MSG(avbsfContexts_[avStream.index] != nullptr, "Stream " PUBLIC_LOG_S " will not be converted to annexb",
-            g_bitstreamFilterMap.at(codecID).c_str());
+    FALSE_RETURN_MSG(avbsfContexts_[avStream.index] != nullptr,
+        "Stream " PUBLIC_LOG_S " will not be converted to annexb", g_bitstreamFilterMap.at(codecID).c_str());
     MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " will convert to annexb", avStream.index);
 }
 
@@ -686,9 +686,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     Dump(dumpParam);
 #endif
     if (tempPkt != nullptr && tempPkt->size != samplePacket->pkts[0]->size) {
-        av_packet_free(&tempPkt);
-        av_free(tempPkt);
-        tempPkt = nullptr;
+        FreeAVPacket(tempPkt);
     }
     
     if (copySize < remainSize) {
@@ -1278,16 +1276,16 @@ void FFmpegDemuxerPlugin::UpdateReferenceIds()
             if (referenceIdsMap_.count(id) == 0) {
                 referenceIdsMap_[id] = std::vector<int32_t>();
             }
-            if(!std::any_of(referenceIdsMap_[id].begin(), referenceIdsMap_[id].end(),
-                       [trackIndex](int32_t i) { return static_cast<uint32_t>(i) == trackIndex; })) {
+            if (!std::any_of(referenceIdsMap_[id].begin(), referenceIdsMap_[id].end(),
+                [trackIndex](int32_t i) { return static_cast<uint32_t>(i) == trackIndex; })) {
                 referenceIdsMap_[id].push_back(trackIndex);
             }
 
             if (referenceIdsMap_.count(trackIndex) == 0) {
                 referenceIdsMap_[trackIndex] = std::vector<int32_t>();
             }
-            if(!std::any_of(referenceIdsMap_[trackIndex].begin(), referenceIdsMap_[trackIndex].end(),
-                       [id](int32_t i) { return i == id; })) {
+            if (!std::any_of(referenceIdsMap_[trackIndex].begin(), referenceIdsMap_[trackIndex].end(),
+                [id](int32_t i) { return i == id; })) {
                 referenceIdsMap_[trackIndex].push_back(id);
             }
         }
@@ -1447,7 +1445,7 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
     return ret;
 }
 
-Status FFmpegDemuxerPlugin::SetFirstFrame(AVPacket * pkt)
+Status FFmpegDemuxerPlugin::SetFirstFrame(AVPacket* pkt)
 {
     auto firstFrame = av_packet_alloc();
     FALSE_RETURN_V_MSG_E(firstFrame != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");

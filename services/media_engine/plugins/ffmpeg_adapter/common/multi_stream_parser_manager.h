@@ -70,7 +70,8 @@ private:
     static std::map<VideoStreamType, DestroyFunc> destroyFuncMap_;
 
     // stream manage
-    struct StreamInfo {
+    struct StreamInfo
+    {
         VideoStreamType type;
         StreamParser *parser;
         bool inited;
