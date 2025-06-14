@@ -310,7 +310,7 @@ void AVSourceUnitTest::CheckAuxlAvc()
     ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, trackIdsSize));
     ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, referenceType));
     ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_DESCRIPTION, trackDesc));
-    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_VID);
+    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_AUXILIARY);
     ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     ASSERT_EQ(formatVal_.width, 720);
     ASSERT_EQ(formatVal_.height, 480);
@@ -336,7 +336,7 @@ void AVSourceUnitTest::CheckAuxlAvc()
     ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, trackIdsSize));
     ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, referenceType));
     ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_DESCRIPTION, trackDesc));
-    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_VID);
+    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_AUXILIARY);
     ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     ASSERT_EQ(formatVal_.width, 720);
     ASSERT_EQ(formatVal_.height, 480);
@@ -406,7 +406,7 @@ void AVSourceUnitTest::CheckAuxlAac()
     ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, referenceType));
     ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_DESCRIPTION, trackDesc));
     ASSERT_EQ(formatVal_.channelLayout, 3);
-    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUXILIARY);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.bitRate, 129312);
