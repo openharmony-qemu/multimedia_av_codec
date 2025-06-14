@@ -279,6 +279,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/hwdecoderapi11h26510bit_fuzzer:HwdecoderAPI11H26510BitFuzzTest",
       "fuzztest/hwdecoderapi11h2658bit_fuzzer:HwdecoderAPI11H2658BitFuzzTest",
       "fuzztest/hwdecoderapi11hdr2sdr_fuzzer:HwdecoderAPI11Hdr2SdrFuzzTest",
+      "fuzztest/mediademuxer_fuzzer:MediaDemuxerFuzzTest",
       "fuzztest/mediademuxerptsfunctions_fuzzer:MediaDemuxerPtsFunctionsFuzzTest",
       "fuzztest/mpeg2swdecoderconfigure_fuzzer:Mpeg2SwdecoderConfigureFuzzTest",
       "fuzztest/mpeg2swdecoderresource_fuzzer:Mpeg2SwdecoderResourceFuzzTest",
