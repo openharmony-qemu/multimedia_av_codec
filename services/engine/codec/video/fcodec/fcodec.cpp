@@ -76,8 +76,6 @@ constexpr struct {
 #endif
 };
 constexpr uint32_t SUPPORT_VCODEC_NUM = sizeof(SUPPORT_VCODEC) / sizeof(SUPPORT_VCODEC[0]);
-static std::map<uint64_t, int32_t> g_surfaceCntMap;
-static std::mutex g_surfaceMapMutex;
 } // namespace
 using namespace OHOS::Media;
 
@@ -96,6 +94,14 @@ FCodec::~FCodec()
     }
 #endif // BUILD_ENG_VERSION
     mallopt(M_FLUSH_THREAD_CACHE, 0);
+}
+
+int32_t FCodec::Init(Meta &callerInfo)
+{
+    callerInfo.GetData("av_codec_event_info_instance_id", instanceId_);
+    decName_ = "fdecoder_[" + std::to_string(instanceId_) + "]";
+    AVCODEC_LOGI("current codec name: %{public}s", decName_.c_str());
+    return AVCS_ERR_OK;
 }
 
 #ifdef BUILD_ENG_VERSION
@@ -541,12 +547,9 @@ void FCodec::ReleaseResource()
     ReleaseBuffers();
     format_ = Format();
     CHECK_AND_RETURN_LOG(sInfo_.surface != nullptr, "Surface is nullptr!");
-    int32_t ret = UnRegisterListenerToSurface(sInfo_.surface);
+    UnRegisterListenerToSurface(sInfo_.surface);
     sInfo_.surface = nullptr;
     StopRequestSurfaceBufferThread();
-    CHECK_AND_RETURN_LOGD(ret != 0, "Unregister surface successful!");
-    callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
-    state_ = State::ERROR;
 }
 
 int32_t FCodec::Release()
@@ -1402,15 +1405,15 @@ int32_t FCodec::ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface)
     if (oldId == newId) {
         return AVCS_ERR_OK;
     }
-    GSError err = RegisterListenerToSurface(newSurface);
-    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, err,
-        "surface %{public}" PRIu64 ", RegisterListenerToSurface failed, GSError=%{public}d", newId, err);
+    int32_t ret = RegisterListenerToSurface(newSurface);
+    CHECK_AND_RETURN_RET_LOG(ret == GSERROR_OK, ret,
+        "surface %{public}" PRIu64 ", RegisterListenerToSurface failed, GSError=%{public}d", newId, ret);
     int32_t outputBufferCnt = 0;
     CHECK_AND_RETURN_RET_LOG(
         format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, outputBufferCnt) &&
         outputBufferCnt >= DEFAULT_MIN_BUFFER_CNT, AVCS_ERR_INVALID_VAL,
         "Invalid output buffer cnt: %{public}d", outputBufferCnt);
-    int32_t ret = SetQueueSize(newSurface, outputBufferCnt);
+    ret = SetQueueSize(newSurface, outputBufferCnt);
     if (ret != AVCS_ERR_OK) {
         UnRegisterListenerToSurface(newSurface);
         return ret;
@@ -1480,8 +1483,7 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         int32_t ret = RenderNewSurfaceWithOldBuffer(newSurface, index);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Old surface buffer render failed!");
     }
-    int32_t ret = UnRegisterListenerToSurface(curSurface);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Unregister old surface listener failed!");
+    UnRegisterListenerToSurface(curSurface);
     curSurface->CleanCache(true); // make sure old surface is empty and go black
     return AVCS_ERR_OK;
 }
@@ -1549,51 +1551,28 @@ GSError FCodec::BufferReleasedByConsumer(uint64_t surfaceId)
     return GSERROR_OK;
 }
 
-int32_t FCodec::UnRegisterListenerToSurface(const sptr<Surface> &surface)
+void FCodec::UnRegisterListenerToSurface(const sptr<Surface> &surface)
 {
-    CHECK_AND_RETURN_RET_LOGD(surface != nullptr, AVCS_ERR_OK, "Surface is null, not need to unregister listener.");
-    uint64_t surfaceId = surface->GetUniqueId();
-    std::lock_guard<std::mutex> gLock(g_surfaceMapMutex);
-    if (g_surfaceCntMap.count(surfaceId) > 0) {
-        if (g_surfaceCntMap[surfaceId] > 1) {
-            g_surfaceCntMap[surfaceId] -= 1;
-            AVCODEC_LOGI("Surface(%{public}" PRIu64 ") not need to unregister listener.", surfaceId);
-            return AVCS_ERR_OK;
-        }
-        CHECK_AND_RETURN_RET_LOGD(g_surfaceCntMap[surfaceId] == 1, AVCS_ERR_OK,
-                                  "Surface(%{public}" PRIu64 ") not need to unregister listener.", surfaceId);
-        GSError err = surface->UnRegisterReleaseListener();
-        CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, err,
-                                 "Surface(%{public}" PRIu64 ") UnRegisterReleaseListener failed, GSError=%{public}d",
-                                 surfaceId, err);
-        g_surfaceCntMap.erase(surfaceId);
-        AVCODEC_LOGI("Surface(%{public}" PRIu64 ") UnRegisterReleaseListener success.", surfaceId);
-    }
-    return AVCS_ERR_OK;
+    CHECK_AND_RETURN_LOG(surface != nullptr, "Surface is null, not need to unregister listener.");
+    SurfaceUtils::GetInstance().ReleaseSurface(decName_, surface, false);
 }
 
-GSError FCodec::RegisterListenerToSurface(const sptr<Surface> &surface)
+int32_t FCodec::RegisterListenerToSurface(const sptr<Surface> &surface)
 {
     uint64_t surfaceId = surface->GetUniqueId();
     wptr<FCodec> wp = this;
-    GSError err = surface->RegisterReleaseListener([wp, surfaceId](sptr<SurfaceBuffer> &) {
-        sptr<FCodec> codec = wp.promote();
-        if (!codec) {
-            AVCODEC_LOGD("decoder is gone");
-            return GSERROR_OK;
-        }
-        return codec->BufferReleasedByConsumer(surfaceId);
-    });
-    if (err == GSERROR_OK) {
-        StartRequestSurfaceBufferThread();
-    }
-    std::lock_guard<std::mutex> gLock(g_surfaceMapMutex);
-    if (g_surfaceCntMap.count(surfaceId) == 0) {
-        g_surfaceCntMap.emplace(surfaceId, 1);
-    } else {
-        g_surfaceCntMap[surfaceId] += 1;
-    }
-    return err;
+    bool ret =
+        SurfaceUtils::GetInstance().RegisterReleaseListener(decName_, surface, [wp, surfaceId](sptr<SurfaceBuffer> &) {
+            sptr<FCodec> codec = wp.promote();
+            if (!codec) {
+                AVCODEC_LOGD("decoder is gone");
+                return GSERROR_OK;
+            }
+            return codec->BufferReleasedByConsumer(surfaceId);
+        });
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_UNKNOWN, "surface(%" PRIu64 ") register listener failed", surfaceId);
+    StartRequestSurfaceBufferThread();
+    return AVCS_ERR_OK;
 }
 
 void FCodec::CombineConsumerUsage()
@@ -1624,15 +1603,14 @@ int32_t FCodec::SetOutputSurface(sptr<Surface> surface)
     if (state_ == State::FLUSHED || state_ == State::RUNNING || state_ == State::EOS) {
         return ReplaceOutputSurfaceWhenRunning(surface);
     }
-    int32_t ret = UnRegisterListenerToSurface(sInfo_.surface);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Unregister listener to surface failed, ret=%{public}d", ret);
+    UnRegisterListenerToSurface(sInfo_.surface);
     uint64_t surfaceId = surface->GetUniqueId();
     sInfo_.surface = surface;
     CombineConsumerUsage();
-    GSError err = RegisterListenerToSurface(sInfo_.surface);
-    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, err,
+    int32_t ret = RegisterListenerToSurface(sInfo_.surface);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret,
                              "surface(%{public}" PRIu64 ") register listener to surface failed, GSError=%{public}d",
-                             sInfo_.surface->GetUniqueId(), err);
+                             sInfo_.surface->GetUniqueId(), ret);
     AVCODEC_LOGI("Set surface(%{public}" PRIu64 ") success.", surfaceId);
     return AVCS_ERR_OK;
 }
