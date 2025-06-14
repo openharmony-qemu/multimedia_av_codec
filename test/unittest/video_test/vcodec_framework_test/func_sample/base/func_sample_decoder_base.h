@@ -24,7 +24,8 @@
 #include "openssl/sha.h"
 #include "vcodec_mock.h"
 
-namespace {
+namespace OHOS {
+namespace MediaAVCodec {
 enum VCodecDataProducerType : int32_t {
     H263_STREAM = 1 << 0,
     AVC_STREAM = 1 << 1,
@@ -61,10 +62,7 @@ inline constexpr uint8_t SHA_H263[SHA512_DIGEST_LENGTH] = {
 inline uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
 inline std::atomic<uint32_t> g_shaBufferCount = 0;
 inline SHA512_CTX g_ctxTest;
-} //namespace
 
-namespace OHOS {
-namespace MediaAVCodec {
 struct VDecSignal {
 public:
     std::mutex mutex_;

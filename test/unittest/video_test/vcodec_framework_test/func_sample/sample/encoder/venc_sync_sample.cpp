@@ -419,9 +419,17 @@ void VideoEncSyncSample::PrepareInner()
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
 }
 
-void VideoEncSyncSample::InputLtrParam(std::shared_ptr<FormatMock> format, int32_t frameInputCount,
-                                       std::shared_ptr<AVBufferMock> buffer)
+void VideoEncSyncSample::InputLtrParam(int32_t frameInputCount, std::shared_ptr<AVBufferMock> buffer)
 {
+    int32_t stride = 0;
+    auto format = GetInputDescription();
+    char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+    format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
+    attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
+    for (int32_t i = 0; i < attr.size; i += stride) {
+        (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
+    }
+
     if (!ltrParam.enableUseLtr) {
         return;
     }
@@ -458,7 +466,7 @@ void VideoEncSyncSample::OutputLoopFuncExt()
         shared_lock<shared_mutex> lock(signal_->syncMutex_);
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFuncExt stop running");
         int32_t ret = OutputLoopInnerExt();
-        if (ret == AV_ERR_STREAM_CHANGED || ret == AV_ERR_COMMON_TRY_AGAIN_LATER) {
+        if (ret == AV_ERR_STREAM_CHANGED || ret == AV_ERR_TRY_AGAIN_LATER) {
             ret = AV_ERR_OK;
         }
         EXPECT_EQ(ret, AV_ERR_OK) << "frameOutputCount_: " << frameOutputCount_ << "\n";
@@ -502,7 +510,7 @@ int32_t VideoEncSyncSample::OutputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_, AV_ERR_INVALID_VAL,
                                       "can not dump output file");
     uint32_t index = DEFAULT_INDEX;
-    uint32_t ret = videoEnc_->QueryOutputBuffer(index, 0);
+    uint32_t ret = videoEnc_->QueryOutputBuffer(index, -1);
     if (ret == AV_ERR_STREAM_CHANGED) {
         std::shared_ptr<FormatMock> format = videoEnc_->GetOutputDescription();
         std::cout << "format = " << format->DumpInfo() << std::endl;
@@ -574,11 +582,19 @@ void VideoEncSyncSample::InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr)
     }
 }
 
+void VideoEncSyncSample::InputRoiParam(std::shared_ptr<AVBufferMock> buffer)
+{
+    std::shared_ptr<FormatMock> format = buffer->GetParameter();
+    format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
+    buffer->SetParameter(format);
+    format->Destroy();
+}
+
 int32_t VideoEncSyncSample::InputLoopInnerExt()
 {
     uint32_t index = DEFAULT_INDEX;
-    auto ret = videoEnc_->QueryInputBuffer(index, 0);
-    if (ret == AV_ERR_COMMON_TRY_AGAIN_LATER) {
+    auto ret = videoEnc_->QueryInputBuffer(index, -1);
+    if (ret == AV_ERR_TRY_AGAIN_LATER) {
         return AV_ERR_OK;
     }
 
@@ -595,24 +611,13 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
         format->Destroy();
     }
 
-    std::shared_ptr<FormatMock> formatRoi = buffer->GetParameter();
-    formatRoi->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
-    buffer->SetParameter(formatRoi);
-    formatRoi->Destroy();
+    InputRoiParam(buffer);
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
     } else {
-        int32_t stride = 0;
-        auto format = GetInputDescription();
-        char *dst = reinterpret_cast<char *>(buffer->GetAddr());
-        format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
-        attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
-        for (int32_t i = 0; i < attr.size; i += stride) {
-            (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
-        }
-        InputLtrParam(format, frameInputCount_, buffer);
+        InputLtrParam(frameInputCount_, buffer);
     }
 
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {

@@ -543,12 +543,29 @@ void VideoDecSyncSample::CheckFormatKey()
     format->Destroy();
 }
 
+void VideoDecSyncSample::HandleEOSFrame()
+{
+    if (!isSurfaceMode_ && needDump_ && outFile_->is_open()) {
+        outFile_->close();
+    }
+    if (needCheckSHA_) {
+        (void)memset_s(g_mdTest, SHA512_DIGEST_LENGTH, 0, SHA512_DIGEST_LENGTH);
+        SHA512_Final(g_mdTest, &g_ctxTest);
+        OPENSSL_cleanse(&g_ctxTest, sizeof(g_ctxTest));
+        CheckSHA();
+    }
+    cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
+    cout << "Get EOS Frame, output func exit" << endl;
+    unique_lock<mutex> lock(signal_->mutex_);
+    EXPECT_LE(frameOutputCount_, frameInputCount_);
+}
+
 int32_t VideoDecSyncSample::OutputLoopInnerExt()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_ || isSurfaceMode_, AV_ERR_INVALID_VAL,
                                       "can not dump output file");
     uint32_t index = DEFAULT_INDEX;
-    uint32_t ret = videoDec_->QueryOutputBuffer(index, 0);
+    uint32_t ret = videoDec_->QueryOutputBuffer(index, -1);
 
     if (ret == AV_ERR_STREAM_CHANGED) {
         std::shared_ptr<FormatMock> format = videoDec_->GetOutputDescription();
@@ -583,19 +600,7 @@ int32_t VideoDecSyncSample::OutputLoopInnerExt()
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: RenderOutputBuffer failed index: %d", index);
     }
     if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
-        if (!isSurfaceMode_ && needDump_ && outFile_->is_open()) {
-            outFile_->close();
-        }
-        if (needCheckSHA_) {
-            (void)memset_s(g_mdTest, SHA512_DIGEST_LENGTH, 0, SHA512_DIGEST_LENGTH);
-            SHA512_Final(g_mdTest, &g_ctxTest);
-            OPENSSL_cleanse(&g_ctxTest, sizeof(g_ctxTest));
-            CheckSHA();
-        }
-        cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
-        cout << "Get EOS Frame, output func exit" << endl;
-        unique_lock<mutex> lock(signal_->mutex_);
-        EXPECT_LE(frameOutputCount_, frameInputCount_);
+        HandleEOSFrame();
         signal_->isRunning_.store(false);
         signal_->cond_.notify_all();
     }
@@ -619,7 +624,7 @@ void VideoDecSyncSample::InputLoopFuncExt()
 int32_t VideoDecSyncSample::InputLoopInnerExt()
 {
     uint32_t index = DEFAULT_INDEX;
-    auto ret = videoDec_->QueryInputBuffer(index, 0);
+    auto ret = videoDec_->QueryInputBuffer(index, -1);
     if (ret == AV_ERR_TRY_AGAIN_LATER) {
         return AV_ERR_OK;
     }

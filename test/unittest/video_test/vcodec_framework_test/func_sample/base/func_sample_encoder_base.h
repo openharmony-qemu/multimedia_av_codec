@@ -28,7 +28,8 @@
 #include "window.h"
 #include "vcodec_mock.h"
 
-namespace {
+namespace OHOS {
+namespace MediaAVCodec {
 inline constexpr int32_t REQUEST_I_FRAME = 1;
 inline constexpr int32_t REQUEST_I_FRAME_NUM = 13;
 inline constexpr uint32_t BUFFER_COUNT = 59;
@@ -50,7 +51,7 @@ inline uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
 inline std::atomic<uint32_t> g_shaBufferCount = 0;
 inline SHA512_CTX g_ctxTest;
 
-inline void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_t size, bool needCheckSHA,
+void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_t size, bool needCheckSHA,
                       bool needDump)
 {
     if (needCheckSHA) {
@@ -66,10 +67,7 @@ inline void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr,
         (void)outFile->write(addr, size);
     }
 }
-} // namespace
 
-namespace OHOS {
-namespace MediaAVCodec {
 struct VEncSignal {
 public:
     std::mutex mutex_;
