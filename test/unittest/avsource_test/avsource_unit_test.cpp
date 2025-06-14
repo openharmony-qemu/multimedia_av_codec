@@ -377,7 +377,7 @@ void AVSourceUnitTest::CheckAuxlAac()
     ASSERT_TRUE(format_->GetBuffer(OH_MD_KEY_CODEC_CONFIG, &codecConfig, codecConfigSize));
     ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, trackIdsSize));
     ASSERT_EQ(formatVal_.channelLayout, 3);
-    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.bitRate, 129312);
@@ -406,7 +406,7 @@ void AVSourceUnitTest::CheckAuxlAac()
     ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, referenceType));
     ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_DESCRIPTION, trackDesc));
     ASSERT_EQ(formatVal_.channelLayout, 3);
-    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUXILIARY);
+    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_AUXILIARY);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.bitRate, 129312);
