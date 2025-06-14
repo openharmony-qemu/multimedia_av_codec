@@ -913,7 +913,7 @@ void VideoEncAsyncSample::InputLoopFuncExt()
     }
 }
 
-void VideoEncSample::InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr)
+void VideoEncAsyncSample::InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr)
 {
     if (enableVariableFrameRate_) {
         attr.pts = TIMESTAMP_BASE + DURATION_BASE * frameIndex_;
@@ -936,11 +936,6 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
         format->Destroy();
     }
     
-    std::shared_ptr<FormatMock> format = buffer->GetParameter();
-    format->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
-    buffer->SetParameter(format);
-    format->Destroy();
-
     std::shared_ptr<FormatMock> formatRoi = buffer->GetParameter();
     formatRoi->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
     buffer->SetParameter(formatRoi);
