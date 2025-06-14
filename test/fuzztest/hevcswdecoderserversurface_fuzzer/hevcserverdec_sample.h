@@ -56,10 +56,11 @@ public:
     void InputFunc();
     void WaitForEos();
     int32_t SetOutputSurface();
+    int32_t InitDecoder();
     std::shared_ptr<VDecSignal> signal_;
     const uint8_t *fuzzData;
     size_t fuzzSize;
-    int32_t sendFrameIndex;
+    int32_t sendFrameIndex = 0;
     std::vector<sptr<Surface>> cs_vector;
     std::vector<sptr<Surface>> ps_vector;
     const char *outDIR = "/data/test/media/VDecTest.yuv";
