@@ -458,7 +458,7 @@ void VideoEncSyncSample::OutputLoopFuncExt()
         shared_lock<shared_mutex> lock(signal_->syncMutex_);
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFuncExt stop running");
         int32_t ret = OutputLoopInnerExt();
-        if (ret == AV_ERR_VIDEO_STREAM_CHANGED || ret == AV_ERR_COMMON_TRY_AGAIN_LATER) {
+        if (ret == AV_ERR_STREAM_CHANGED || ret == AV_ERR_COMMON_TRY_AGAIN_LATER) {
             ret = AV_ERR_OK;
         }
         EXPECT_EQ(ret, AV_ERR_OK) << "frameOutputCount_: " << frameOutputCount_ << "\n";
@@ -503,7 +503,7 @@ int32_t VideoEncSyncSample::OutputLoopInnerExt()
                                       "can not dump output file");
     uint32_t index = DEFAULT_INDEX;
     uint32_t ret = videoEnc_->QueryOutputBuffer(index, 0);
-    if (ret == AV_ERR_VIDEO_STREAM_CHANGED) {
+    if (ret == AV_ERR_STREAM_CHANGED) {
         std::shared_ptr<FormatMock> format = videoEnc_->GetOutputDescription();
         std::cout << "format = " << format->DumpInfo() << std::endl;
     }

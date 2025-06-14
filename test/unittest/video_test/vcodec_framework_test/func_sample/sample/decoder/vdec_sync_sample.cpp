@@ -519,7 +519,7 @@ void VideoDecSyncSample::OutputLoopFuncExt()
         }
 
         int32_t ret = OutputLoopInnerExt();
-        if (ret == AV_ERR_COMMON_TRY_AGAIN_LATER || ret == AV_ERR_VIDEO_STREAM_CHANGED) {
+        if (ret == AV_ERR_TRY_AGAIN_LATER || ret == AV_ERR_STREAM_CHANGED) {
             ret = AV_ERR_OK;
         } else if (ret == AV_ERR_OK) {
             frameOutputCount_++;
@@ -550,7 +550,7 @@ int32_t VideoDecSyncSample::OutputLoopInnerExt()
     uint32_t index = DEFAULT_INDEX;
     uint32_t ret = videoDec_->QueryOutputBuffer(index, 0);
 
-    if (ret == AV_ERR_VIDEO_STREAM_CHANGED) {
+    if (ret == AV_ERR_STREAM_CHANGED) {
         std::shared_ptr<FormatMock> format = videoDec_->GetOutputDescription();
         std::cout << "format = " << format->DumpInfo() << std::endl;
     }
@@ -620,7 +620,7 @@ int32_t VideoDecSyncSample::InputLoopInnerExt()
 {
     uint32_t index = DEFAULT_INDEX;
     auto ret = videoDec_->QueryInputBuffer(index, 0);
-    if (ret == AV_ERR_COMMON_TRY_AGAIN_LATER) {
+    if (ret == AV_ERR_TRY_AGAIN_LATER) {
         return AV_ERR_OK;
     }
 
