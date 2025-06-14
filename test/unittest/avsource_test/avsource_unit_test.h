@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -72,6 +72,7 @@ protected:
         int32_t hasAudio = -1;
         int32_t hasTimedMeta = -1;
         int32_t hasSubtitle = -1;
+        int32_t hasAuxl = -1;
         int32_t fileType = 0;
         // track format
         std::string codecMime = "";
@@ -112,6 +113,11 @@ protected:
         int32_t samplePerFrame = 0;
     };
     FormatValue formatVal_;
+
+    bool checkPass_ = false;
+    void CheckAuxlHevc();
+    void CheckAuxlAvc();
+    void CheckAuxlAac();
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
