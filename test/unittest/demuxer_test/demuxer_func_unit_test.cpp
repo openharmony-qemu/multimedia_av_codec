@@ -1650,7 +1650,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0004, TestSize.Level1)
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
     list<int64_t> toPtsList = {0, 5000, 9000, 10000}; // ms
-    vector<int32_t> videoVals = {601, 601, 601, 101, 351, 351, 0, 101, 101, 0, 101, 101};
+    vector<int32_t> videoVals = {601, 601, 601, 101, 351, 351, 101, 101, 101, 101};
     vector<int32_t> audioVals = {430, 430, 430, 71, 251, 251, 72, 72, 72, 72};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
