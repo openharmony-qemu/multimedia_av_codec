@@ -112,38 +112,49 @@ int32_t VDecServerSample::SetOutputSurface()
     return codec_->SetOutputSurface(ps);
 }
 
-void VDecServerSample::RunVideoServerSurfaceDecoder()
+int32_t VDecServerSample::InitDecoder()
 {
     int32_t err;
+    std::vector<CapabilityData> caps;
+    err = GetHevcDecoderCapabilityList(caps);
+    if (err != AVCS_ERR_OK) {
+        cout << "GetHevcDecoderCapabilityList failed" << endl;
+        return err;
+    }
+    err = ConfigServerDecoder();
+    if (err != AVCS_ERR_OK) {
+        cout << "ConfigServerDecoder failed" << endl;
+        return err;
+    }
+    err = SetCallback();
+    if (err != AVCS_ERR_OK) {
+        cout << "SetCallback failed" << endl;
+        return err;
+    }
+    signal_ = std::make_shared<VDecSignal>();
+    if (signal_ == nullptr) {
+        cout << "Failed to new VDecSignal" << endl;
+        err = AVCS_ERR_NO_MEMORY;
+        return err;
+    }
+    err = SetOutputSurface();
+    if (err != AVCS_ERR_OK) {
+        cout << "SetOutputSurface failed" << endl;
+        return err;
+    }
+    return err;
+}
+
+void VDecServerSample::RunVideoServerSurfaceDecoder()
+{
     CreateHevcDecoderByName("OH.Media.Codec.Decoder.Video.HEVC", codec_);
     if (codec_ == nullptr) {
         cout << "Create failed" << endl;
         return;
     }
-    std::vector<CapabilityData> caps;
-    err = GetHevcDecoderCapabilityList(caps);
+    int32_t err = InitDecoder();
     if (err != AVCS_ERR_OK) {
-        cout << "GetHevcDecoderCapabilityList failed" << endl;
-        return;
-    }
-    err = ConfigServerDecoder();
-    if (err != AVCS_ERR_OK) {
-        cout << "ConfigServerDecoder failed" << endl;
-        return;
-    }
-    err = SetOutputSurface();
-    if (err != AVCS_ERR_OK) {
-        cout << "SetOutputSurface failed" << endl;
-        return;
-    }
-    signal_ = std::make_shared<VDecSignal>();
-    if (signal_ == nullptr) {
-        cout << "Failed to new VDecSignal" << endl;
-        return;
-    }
-    err = SetCallback();
-    if (err != AVCS_ERR_OK) {
-        cout << "SetCallback failed" << endl;
+        cout << "Init decoder failed" << endl;
         return;
     }
     err = codec_->Start();
