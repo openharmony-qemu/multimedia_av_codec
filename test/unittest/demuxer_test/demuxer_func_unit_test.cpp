@@ -1606,7 +1606,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0003, TestSize.Level1)
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
     list<int64_t> toPtsList = {0, 5000, 9000, 10000}; // ms
-    vector<int32_t> videoVals = {601, 601, 601, 101, 351, 351, 0, 101, 101, 0, 101, 101};
+    vector<int32_t> videoVals = {601, 601, 601, 101, 351, 351, 101, 101, 101, 101};
+    vector<int32_t> audioVals = {430, 430, 430, 71, 251, 251, 72, 72, 72, 72};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -1618,9 +1619,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0003, TestSize.Level1)
             }
             ReadData();
             for (int32_t i = 0; i < 5; i++) {
-                printf("time = %" PRId64 " | frames_[%d]=%d\n", *toPts, i, frames_[0]);
-                ASSERT_EQ(frames_[i], videoVals[numbers_]);
+                printf("time = %" PRId64 " | frames_[%d]=%d\n", *toPts, i, frames_[i]);
             }
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            ASSERT_EQ(frames_[1], videoVals[numbers_]);
+            ASSERT_EQ(frames_[2], audioVals[numbers_]);
+            ASSERT_EQ(frames_[3], videoVals[numbers_]);
+            ASSERT_EQ(frames_[4], videoVals[numbers_]);
             numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
@@ -1646,6 +1651,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0004, TestSize.Level1)
     }
     list<int64_t> toPtsList = {0, 5000, 9000, 10000}; // ms
     vector<int32_t> videoVals = {601, 601, 601, 101, 351, 351, 0, 101, 101, 0, 101, 101};
+    vector<int32_t> audioVals = {601, 601, 601, 101, 351, 351, 0, 101, 101, 0, 101, 101};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -1656,10 +1662,14 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0004, TestSize.Level1)
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
-            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            for (int32_t i = 0; i < 5; i++) {
+                printf("time = %" PRId64 " | frames_[%d]=%d\n", *toPts, i, frames_[i]);
+            }
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
             ASSERT_EQ(frames_[1], videoVals[numbers_]);
-            ASSERT_EQ(frames_[2], videoVals[numbers_]);
+            ASSERT_EQ(frames_[2], audioVals[numbers_]);
+            ASSERT_EQ(frames_[3], videoVals[numbers_]);
+            ASSERT_EQ(frames_[4], videoVals[numbers_]);
             numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
