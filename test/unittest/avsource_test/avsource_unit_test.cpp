@@ -93,8 +93,8 @@ string g_trpPath = TEST_FILE_PATH + string("mpeg2_ac3.trp");
 string g_lrcPath = TEST_FILE_PATH + string("lrc_test.lrc");
 string g_samiPath = TEST_FILE_PATH + string("sami_test.smi");
 string g_assPath = TEST_FILE_PATH + string("ass_test.ssa");
-string g_mp4AuxlPath = TEST_FILE_PATH + string("muxer_264_aac.mp4");
-string g_mp4AuxlUri = TEST_URI_PATH + string("muxer_264_aac.mp4");
+string g_mp4AuxlPath = TEST_FILE_PATH + string("muxer_auxl_264_aac.mp4");
+string g_mp4AuxlUri = TEST_URI_PATH + string("muxer_auxl_264_aac.mp4");
 
 } // namespace
 

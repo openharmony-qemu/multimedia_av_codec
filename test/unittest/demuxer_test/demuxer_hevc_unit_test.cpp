@@ -70,8 +70,8 @@ string g_hls = TEST_URI_PATH2 + string("index_265.m3u8");
 string g_mp4265InfoParsePath = TEST_FILE_PATH + string("test_265_B_Gop25_4sec.mp4");
 string g_265pcmPath = TEST_FILE_PATH + string("265_pcm_s16le.mov");
 string g_265pcmUri = TEST_URI_PATH + string("265_pcm_s16le.mov");
-string g_mp4HevcAuxlPath = TEST_FILE_PATH + string("muxer_265.mp4");
-string g_mp4HevcAuxlUri = TEST_URI_PATH + string("muxer_265.mp4");
+string g_mp4HevcAuxlPath = TEST_FILE_PATH + string("muxer_auxl_265.mp4");
+string g_mp4HevcAuxlUri = TEST_URI_PATH + string("muxer_auxl_265.mp4");
 
 std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"hdrVivid",   {{"frames", {76,   125}}, {"kFrames", {3, 125}}}},

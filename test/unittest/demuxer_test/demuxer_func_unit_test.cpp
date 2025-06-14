@@ -64,8 +64,8 @@ string g_aviMpeg4PcmPath = TEST_FILE_PATH + string("mpeg4_pcm.avi");
 string g_aviMpeg4PcmUri = TEST_URI_PATH + string("mpeg4_pcm.avi");
 string g_mpg4mp4Path = TEST_FILE_PATH + string("MPEG4.mp4");
 string g_mpg4mp4Uri = TEST_URI_PATH + string("MPEG4.mp4");
-string g_mp4AvcAacAuxlPath = TEST_FILE_PATH + string("muxer_264_aac.mp4");
-string g_mp4AvcAacAuxlUri = TEST_URI_PATH + string("muxer_264_aac.mp4");
+string g_mp4AvcAacAuxlPath = TEST_FILE_PATH + string("muxer_auxl_264_aac.mp4");
+string g_mp4AvcAacAuxlUri = TEST_URI_PATH + string("muxer_auxl_264_aac.mp4");
 } // namespace
 
 /**********************************demuxer fd**************************************/
