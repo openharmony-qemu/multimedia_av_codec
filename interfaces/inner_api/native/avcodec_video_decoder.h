@@ -252,6 +252,78 @@ public:
         (void)exchangeFlag;
         return 0;
     }
+
+    /**
+     * @brief Query available input buffer from decoder
+     *
+     * This function blocks until an input buffer becomes available or timeout occurs.
+     *
+     * @param index [out] Reference to store the index of available input buffer
+     * @param timeoutUs Timeout duration in microseconds (negative value means infinite wait)
+     * @return Returns {@link AVCS_ERR_OK} if buffer is available;
+     *         returns error code if timeout or other failures occur.
+     * @since 6.0
+     * @version 6.0
+     */
+    virtual int32_t QueryInputBuffer(uint32_t &index, int64_t timeoutUs)
+    {
+        (void)index;
+        (void)timeoutUs;
+        return 0;
+    }
+
+    /**
+     * @brief Query available output buffer from decoder
+     *
+     * This function blocks until an output buffer with decoded data becomes available or timeout occurs.
+     *
+     * @param index [out] Reference to store the index of available output buffer
+     * @param timeoutUs Timeout duration in microseconds (negative value means infinite wait)
+     * @return Returns {@link AVCS_ERR_OK} if buffer is available;
+     *         returns error code if timeout or other failures occur.
+     * @since 6.0
+     * @version 6.0
+     */
+    virtual int32_t QueryOutputBuffer(uint32_t &index, int64_t timeoutUs)
+    {
+        (void)index;
+        (void)timeoutUs;
+        return 0;
+    }
+
+    /**
+     * @brief Get input buffer object by index
+     *
+     * Caller should use {@link QueryInputBuffer} to get valid index before calling this function.
+     *
+     * @param index Index of the input buffer obtained from {@link QueryInputBuffer}
+     * @return Shared pointer to {@link AVBuffer} if index is valid;
+     *         returns nullptr if index is invalid or buffer unavailable.
+     * @since 6.0
+     * @version 6.0
+     */
+    virtual std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index)
+    {
+        (void)index;
+        return nullptr;
+    }
+
+    /**
+     * @brief Get output buffer object by index
+     *
+     * Caller should use {@link QueryOutputBuffer} to get valid index before calling this function.
+     *
+     * @param index Index of the output buffer obtained from {@link QueryOutputBuffer}
+     * @return Shared pointer to {@link AVBuffer} containing decoded data if index is valid;
+     *         returns nullptr if index is invalid or buffer unavailable.
+     * @since 6.0
+     * @version 6.0
+     */
+    virtual std::shared_ptr<AVBuffer> GetOutputBuffer(uint32_t index)
+    {
+        (void)index;
+        return nullptr;
+    }
 };
 
 class __attribute__((visibility("default"))) VideoDecoderFactory {

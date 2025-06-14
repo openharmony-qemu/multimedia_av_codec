@@ -12,21 +12,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "fcodec_sample.h"
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <utility>
-#include "fcodec_sample.h"
-#include "native_avbuffer_info.h"
 #include <iostream>
 #include <chrono>
+#include "native_avbuffer_info.h"
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::MediaAVCodec::Codec;
 using namespace std;
-namespace {
-
-} // namespace
 
 void FCodecServerSample::CallBack::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {

@@ -395,7 +395,7 @@ int32_t VideoDecSample::Configure()
     }
     if (scaleMode_) {
         setFormatRet = setFormatRet &&
-                       OH_AVFormat_SetIntValue(format, OH_MD_KEY_SCALING_MODE, OH_ScalingMode::SCALING_MODE_SCALE_CROP);
+            OH_AVFormat_SetIntValue(format, OH_MD_KEY_SCALING_MODE, OH_ScalingMode::SCALING_MODE_SCALE_CROP);
     }
     if (lowLatency_) {
         setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, 1);
@@ -499,12 +499,8 @@ int32_t VideoDecSample::Reset()
     }
     ret = Configure();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Configure failed");
-    if (isSurfaceMode_) {
-        isSurfaceMode_ = false;
-    } else {
-        ret = SetOutputSurface();
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "SetOutputSurface failed");
-    }
+    ret = SetOutputSurface();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "SetOutputSurface failed");
     return ret;
 }
 
