@@ -35,7 +35,7 @@ using namespace testing::mt;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 using namespace OHOS::Media;
 
-namespace {
+namespace VFTSUIT {
 std::atomic<int32_t> g_vencCount = 0;
 std::string g_vencName = "";
 

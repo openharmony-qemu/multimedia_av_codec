@@ -250,17 +250,17 @@ int32_t VideoDecAsyncSample::Prepare()
     return videoDec_->Prepare();
 }
 
-int32_t VideoDecAsyncSample::CreateReader(const std::string& inPath) {
+int32_t VideoDecAsyncSample::CreateReader(const std::string &inPath)
+{
     int32_t dataProducerType = AVC_STREAM;
-    for (const auto& [key, fileType] : fileTypeMap) {
+    for (const auto &[key, fileType] : fileTypeMap) {
         if (inPath.find(key) != std::string::npos) {
             dataProducerType = fileType;
             break;
         }
     }
 
-    switch (dataProducerType)
-    {
+    switch (dataProducerType) {
         case H263_STREAM:
             return CreateH263Reader();
         case AVC_STREAM:
@@ -602,7 +602,7 @@ bool VideoDecAsyncSample::IsCodecData(const uint8_t *const bufferAddr)
 {
     bool isAvcStream = (dataProducerType_ == AVC_STREAM);
     uint8_t naluType = isAvcStream ? (bufferAddr[FRAME_HEAD_LEN] & H264_NALU_TYPE_MASK)
-                                    : ((bufferAddr[FRAME_HEAD_LEN] & H265_NALU_TYPE_MASK) >> 1);
+                                   : ((bufferAddr[FRAME_HEAD_LEN] & H265_NALU_TYPE_MASK) >> 1);
     if ((isAvcStream && ((naluType == H264_SPS) || (naluType == H264_PPS))) ||
         (!isAvcStream && ((naluType == H265_VPS) || (naluType == H265_SPS) || (naluType == H265_PPS)))) {
         return true;
@@ -616,7 +616,7 @@ int32_t VideoDecAsyncSample::ReadOneFrame(uint8_t *bufferAddr, uint32_t &flags)
     (void)inFile_->read(ch, FRAME_HEAD_LEN);
     uint32_t bufferSize =
         static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << OFFSET_8) | ((ch[1] & 0xFF) << OFFSET_16) |
-                            ((ch[0] & 0xFF) << OFFSET_24)); // 0 1 2 3: avcc frame head offset
+                              ((ch[0] & 0xFF) << OFFSET_24)); // 0 1 2 3: avcc frame head offset
 
     (void)inFile_->read(reinterpret_cast<char *>(bufferAddr + FRAME_HEAD_LEN), bufferSize);
     bufferAddr[0] = 0;
@@ -684,14 +684,14 @@ int32_t VideoDecAsyncSample::InputLoopInner()
 {
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVMemoryMock> buffer = signal_->inMemoryQueue_.front();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr,
-                                    AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr, AV_ERR_INVALID_VAL,
+                                      "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (h263Reader_ != nullptr) {
         h263Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (avccReader_ != nullptr) {
         isKeepExecuting_ == false ? avccReader_->FillBuffer(buffer->GetAddr(), attr)
-        : avccReader_->KeepFillBuffer(buffer->GetAddr(), attr);
+                                  : avccReader_->KeepFillBuffer(buffer->GetAddr(), attr);
     } else {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
     }
@@ -732,7 +732,7 @@ void VideoDecAsyncSample::OutputLoopFunc()
 int32_t VideoDecAsyncSample::OutputLoopInner()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_ || isSurfaceMode_, AV_ERR_INVALID_VAL,
-                                    "can not dump output file");
+                                      "can not dump output file");
     struct OH_AVCodecBufferAttr attr = signal_->outAttrQueue_.front();
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
@@ -743,7 +743,7 @@ int32_t VideoDecAsyncSample::OutputLoopInner()
             cout << "output data fail" << endl;
         } else {
             UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                            "Fatal: GetOutputBuffer fail, exit. index: %d", index);
+                                              "Fatal: GetOutputBuffer fail, exit. index: %d", index);
             outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
         }
     }
@@ -814,22 +814,23 @@ void VideoDecAsyncSample::CheckFormatKey()
 int32_t VideoDecAsyncSample::OutputLoopInnerExt()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_ || isSurfaceMode_, AV_ERR_INVALID_VAL,
-                                    "can not dump output file");
+                                      "can not dump output file");
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret;
     auto buffer = signal_->outBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                    "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+                                      "Fatal: GetOutputBuffer fail, exit, index: %d", index);
     CheckFormatKey();
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
     if (!isSurfaceMode_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
         int32_t size = (testParam_ == VCodecTestParam::SW_AVC || testParam_ == VCodecTestParam::SW_MPEG2 ||
-            testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263) ?
-            attr.size : buffer->GetNativeBuffer()->GetSize();
+                        testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263)
+                           ? attr.size
+                           : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
-                                        "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+                                          "Fatal: GetOutputBuffer fail, exit, index: %d", index);
         UpdateSHA(bufferAddr, size);
         ret = FreeOutputBuffer(index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
@@ -884,14 +885,14 @@ int32_t VideoDecAsyncSample::InputLoopInnerExt()
 {
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVBufferMock> buffer = signal_->inBufferQueue_.front();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr,
-                                    AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr, AV_ERR_INVALID_VAL,
+                                      "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (h263Reader_ != nullptr) {
         h263Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (avccReader_ != nullptr) {
         isKeepExecuting_ == false ? avccReader_->FillBuffer(buffer->GetAddr(), attr)
-        : avccReader_->KeepFillBuffer(buffer->GetAddr(), attr);
+                                  : avccReader_->KeepFillBuffer(buffer->GetAddr(), attr);
     } else {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
     }

@@ -8,7 +8,7 @@
 #include "venc_sync_sample.h"
 #endif
 
-namespace {
+namespace VFTSUIT {
 class TEST_SUIT : public testing::TestWithParam<int32_t> {
 public:
     static void SetUpTestCase(void);

@@ -153,8 +153,8 @@ VEncParamWithAttrCallbackTest::VEncParamWithAttrCallbackTest(std::shared_ptr<VEn
 VEncParamWithAttrCallbackTest::~VEncParamWithAttrCallbackTest() {}
 
 void VEncParamWithAttrCallbackTest::OnInputParameterWithAttrAvailable(uint32_t index,
-                                                                    std::shared_ptr<FormatMock> attribute,
-                                                                    std::shared_ptr<FormatMock> parameter)
+                                                                      std::shared_ptr<FormatMock> attribute,
+                                                                      std::shared_ptr<FormatMock> parameter)
 {
     if (signal_ == nullptr) {
         return;
@@ -413,7 +413,7 @@ int32_t VideoEncAsyncSample::CreateInputSurface()
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY, DEFAULT_WIDTH_VENC,
                                                 DEFAULT_HEIGHT_VENC);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN,
-                                    "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail.Error:%d", ret);
+                                      "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail.Error:%d", ret);
 
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_USAGE,
                                                 BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA);
@@ -430,7 +430,7 @@ int32_t VideoEncAsyncSample::CreateInputSurface()
     sptr<Surface> surface = std::static_pointer_cast<SurfaceInnerMock>(surfaceMock)->GetSurface();
     nativeWindow_ = CreateNativeWindowFromSurface(&surface);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_INVALID_VAL,
-                                    "CreateNativeWindowFromSurface failed!");
+                                      "CreateNativeWindowFromSurface failed!");
 
     int32_t ret = AV_ERR_OK;
 
@@ -521,7 +521,8 @@ void VideoEncAsyncSample::RunInner()
     signal_->isRunning_.store(true);
     if (isSurfaceMode_) {
         inputSurfaceLoop_ = make_unique<thread>(&VideoEncAsyncSample::InputFuncSurface, this);
-        inputLoop_ = isSetParamCallback_ ? make_unique<thread>(&VideoEncAsyncSample::InputParamLoopFunc, this) : nullptr;
+        inputLoop_ =
+            isSetParamCallback_ ? make_unique<thread>(&VideoEncAsyncSample::InputParamLoopFunc, this) : nullptr;
         ASSERT_NE(inputSurfaceLoop_, nullptr);
     } else {
         inputLoop_ = make_unique<thread>(&VideoEncAsyncSample::InputLoopFunc, this);
@@ -543,7 +544,8 @@ void VideoEncAsyncSample::RunInnerExt()
     signal_->isRunning_.store(true);
     if (isSurfaceMode_) {
         inputSurfaceLoop_ = make_unique<thread>(&VideoEncAsyncSample::InputFuncSurface, this);
-        inputLoop_ = isSetParamCallback_ ? make_unique<thread>(&VideoEncAsyncSample::InputParamLoopFunc, this) : nullptr;
+        inputLoop_ =
+            isSetParamCallback_ ? make_unique<thread>(&VideoEncAsyncSample::InputParamLoopFunc, this) : nullptr;
         ASSERT_NE(inputSurfaceLoop_, nullptr);
     } else {
         inputLoop_ = make_unique<thread>(&VideoEncAsyncSample::InputLoopFuncExt, this);
@@ -595,7 +597,7 @@ void VideoEncAsyncSample::PrepareInner()
 }
 
 void VideoEncAsyncSample::InputLtrParam(std::shared_ptr<FormatMock> format, int32_t frameInputCount,
-                                std::shared_ptr<AVBufferMock> buffer)
+                                        std::shared_ptr<AVBufferMock> buffer)
 {
     if (!ltrParam.enableUseLtr) {
         return;
@@ -686,7 +688,7 @@ int32_t VideoEncAsyncSample::InputLoopInner()
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVMemoryMock> buffer = signal_->inMemoryQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail. index: %d",
-                                    index);
+                                      index);
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (inFile_->eof()) {
@@ -752,7 +754,7 @@ void VideoEncAsyncSample::OutputLoopFunc()
 int32_t VideoEncAsyncSample::OutputLoopInner()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_, AV_ERR_INVALID_VAL,
-                                    "can not dump output file");
+                                      "can not dump output file");
     struct OH_AVCodecBufferAttr attr = signal_->outAttrQueue_.front();
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
@@ -765,7 +767,7 @@ int32_t VideoEncAsyncSample::OutputLoopInner()
     if (needDump_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         if (outFile_->is_open()) {
             UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                            "Fatal: GetOutputBuffer fail, exit");
+                                              "Fatal: GetOutputBuffer fail, exit");
             outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
         } else {
             UNITTEST_INFO_LOG("output data fail");
@@ -850,19 +852,19 @@ void VideoEncAsyncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_
 int32_t VideoEncAsyncSample::OutputLoopInnerExt()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_, AV_ERR_INVALID_VAL,
-                                    "can not dump output file");
+                                      "can not dump output file");
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outBufferQueue_.front();
 
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                    "Fatal: GetOutputBuffer fail, exit. index: %d", index);
+                                      "Fatal: GetOutputBuffer fail, exit. index: %d", index);
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
     char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
     int32_t size = attr.size;
     UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
-                                    "Fatal: GetOutputBufferAddr fail, exit, index: %d", index);
+                                      "Fatal: GetOutputBufferAddr fail, exit, index: %d", index);
     if (attr.flags == 0 || (attr.flags & AVCODEC_BUFFER_FLAGS_SYNC_FRAME)) {
         frameOutputCount_++;
     }
@@ -926,7 +928,7 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVBufferMock> buffer = signal_->inBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail. index: %d",
-                                    index);
+                                      index);
 
     if (isTemporalScalabilitySyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
         std::shared_ptr<FormatMock> format = buffer->GetParameter();
@@ -935,7 +937,7 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
         UNITTEST_INFO_LOG("request i frame: %s", format->DumpInfo());
         format->Destroy();
     }
-    
+
     std::shared_ptr<FormatMock> formatRoi = buffer->GetParameter();
     formatRoi->PutStringValue(Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiRects_.c_str());
     buffer->SetParameter(formatRoi);

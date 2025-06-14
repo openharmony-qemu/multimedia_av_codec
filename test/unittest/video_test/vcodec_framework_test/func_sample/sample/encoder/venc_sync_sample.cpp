@@ -45,9 +45,7 @@ void VEncCallbackTest::OnStreamChanged(std::shared_ptr<FormatMock> format) {}
 
 void VEncCallbackTest::OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data) {}
 
-void VEncCallbackTest::OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryMock> data, OH_AVCodecBufferAttr attr)
-{
-}
+void VEncCallbackTest::OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryMock> data, OH_AVCodecBufferAttr attr) {}
 
 VEncCallbackTestExt::VEncCallbackTestExt(std::shared_ptr<VEncSignal> signal) : signal_(signal) {}
 
@@ -72,8 +70,8 @@ VEncParamWithAttrCallbackTest::VEncParamWithAttrCallbackTest(std::shared_ptr<VEn
 VEncParamWithAttrCallbackTest::~VEncParamWithAttrCallbackTest() {}
 
 void VEncParamWithAttrCallbackTest::OnInputParameterWithAttrAvailable(uint32_t index,
-                                                                    std::shared_ptr<FormatMock> attribute,
-                                                                    std::shared_ptr<FormatMock> parameter) 
+                                                                      std::shared_ptr<FormatMock> attribute,
+                                                                      std::shared_ptr<FormatMock> parameter)
 {
 }
 
@@ -422,7 +420,7 @@ void VideoEncSyncSample::PrepareInner()
 }
 
 void VideoEncSyncSample::InputLtrParam(std::shared_ptr<FormatMock> format, int32_t frameInputCount,
-                                   std::shared_ptr<AVBufferMock> buffer)
+                                       std::shared_ptr<AVBufferMock> buffer)
 {
     if (!ltrParam.enableUseLtr) {
         return;
@@ -460,7 +458,7 @@ void VideoEncSyncSample::OutputLoopFuncExt()
         shared_lock<shared_mutex> lock(signal_->syncMutex_);
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFuncExt stop running");
         int32_t ret = OutputLoopInnerExt();
-        if (ret == AV_ERR_VIDEO_STREAM_CHANGED || ret == AV_ERR_COMMON_TRY_AGAIN_LATER){
+        if (ret == AV_ERR_VIDEO_STREAM_CHANGED || ret == AV_ERR_COMMON_TRY_AGAIN_LATER) {
             ret = AV_ERR_OK;
         }
         EXPECT_EQ(ret, AV_ERR_OK) << "frameOutputCount_: " << frameOutputCount_ << "\n";
@@ -505,7 +503,7 @@ int32_t VideoEncSyncSample::OutputLoopInnerExt()
                                       "can not dump output file");
     uint32_t index = DEFAULT_INDEX;
     uint32_t ret = videoEnc_->QueryOutputBuffer(index, 0);
-    if(ret == AV_ERR_VIDEO_STREAM_CHANGED) {
+    if (ret == AV_ERR_VIDEO_STREAM_CHANGED) {
         std::shared_ptr<FormatMock> format = videoEnc_->GetOutputDescription();
         std::cout << "format = " << format->DumpInfo() << std::endl;
     }
@@ -515,7 +513,7 @@ int32_t VideoEncSyncSample::OutputLoopInnerExt()
 
     auto buffer = videoEnc_->GetOutputBuffer(index);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                    "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+                                      "Fatal: GetOutputBuffer fail, exit, index: %d", index);
 
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
@@ -586,8 +584,8 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
 
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: QueryInputBuffer fail");
     auto buffer = videoEnc_->GetInputBuffer(index);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr,
-                                    AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr, AV_ERR_INVALID_VAL,
+                                      "Fatal: GetInputBuffer fail, index: %d", index);
 
     if (isTemporalScalabilitySyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
         std::shared_ptr<FormatMock> format = buffer->GetParameter();

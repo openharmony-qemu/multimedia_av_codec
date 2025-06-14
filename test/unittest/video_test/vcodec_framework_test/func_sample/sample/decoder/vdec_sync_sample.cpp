@@ -36,9 +36,7 @@ void VDecCallbackTest::OnStreamChanged(std::shared_ptr<FormatMock> format) {}
 
 void VDecCallbackTest::OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data) {}
 
-void VDecCallbackTest::OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryMock> data, OH_AVCodecBufferAttr attr)
-{
-}
+void VDecCallbackTest::OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryMock> data, OH_AVCodecBufferAttr attr) {}
 
 VDecCallbackTestExt::VDecCallbackTestExt(std::shared_ptr<VDecSignal> signal) {}
 
@@ -162,17 +160,17 @@ int32_t VideoDecSyncSample::Prepare()
     return videoDec_->Prepare();
 }
 
-int32_t VideoDecSyncSample::CreateReader(const std::string& inPath) {
+int32_t VideoDecSyncSample::CreateReader(const std::string &inPath)
+{
     int32_t dataProducerType = AVC_STREAM;
-    for (const auto& [key, fileType] : fileTypeMap) {
+    for (const auto &[key, fileType] : fileTypeMap) {
         if (inPath.find(key) != std::string::npos) {
             dataProducerType = fileType;
             break;
         }
     }
 
-    switch (dataProducerType)
-    {
+    switch (dataProducerType) {
         case H263_STREAM:
             return CreateH263Reader();
         case AVC_STREAM:
@@ -548,11 +546,11 @@ void VideoDecSyncSample::CheckFormatKey()
 int32_t VideoDecSyncSample::OutputLoopInnerExt()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_ || isSurfaceMode_, AV_ERR_INVALID_VAL,
-                                    "can not dump output file");
+                                      "can not dump output file");
     uint32_t index = DEFAULT_INDEX;
     uint32_t ret = videoDec_->QueryOutputBuffer(index, 0);
-    
-    if(ret == AV_ERR_VIDEO_STREAM_CHANGED) {
+
+    if (ret == AV_ERR_VIDEO_STREAM_CHANGED) {
         std::shared_ptr<FormatMock> format = videoDec_->GetOutputDescription();
         std::cout << "format = " << format->DumpInfo() << std::endl;
     }
@@ -562,17 +560,18 @@ int32_t VideoDecSyncSample::OutputLoopInnerExt()
 
     auto buffer = videoDec_->GetOutputBuffer(index);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                    "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+                                      "Fatal: GetOutputBuffer fail, exit, index: %d", index);
     CheckFormatKey();
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
     if (!isSurfaceMode_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
         int32_t size = (testParam_ == VCodecTestParam::SW_AVC || testParam_ == VCodecTestParam::SW_MPEG2 ||
-            testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263) ?
-            attr.size : buffer->GetNativeBuffer()->GetSize();
+                        testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263)
+                           ? attr.size
+                           : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
-                                        "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+                                          "Fatal: GetOutputBuffer fail, exit, index: %d", index);
         UpdateSHA(bufferAddr, size);
         ret = FreeOutputBuffer(index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
@@ -627,16 +626,15 @@ int32_t VideoDecSyncSample::InputLoopInnerExt()
 
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: QueryInputBuffer fail");
     auto buffer = videoDec_->GetInputBuffer(index);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr,
-                                    AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d", index);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr, AV_ERR_INVALID_VAL,
+                                      "Fatal: GetInputBuffer fail, index: %d", index);
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (h263Reader_ != nullptr) {
         h263Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (avccReader_ != nullptr) {
-        isKeepExecuting_ == false
-            ? avccReader_->FillBuffer(buffer->GetAddr(), attr)
-            : avccReader_->KeepFillBuffer(buffer->GetAddr(), attr);
+        isKeepExecuting_ == false ? avccReader_->FillBuffer(buffer->GetAddr(), attr)
+                                  : avccReader_->KeepFillBuffer(buffer->GetAddr(), attr);
     } else {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
     }
