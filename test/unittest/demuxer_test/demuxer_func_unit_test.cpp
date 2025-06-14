@@ -1548,7 +1548,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2317, TestSize.Level1)
 }
 
 std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
-    {"muxer_264_aac",   {{"frames", {601, 601, 601, 430, 430}}, {"kFrames", {3, 3, 3, 430, 430}}}},
+    {"muxer264Aac",   {{"frames", {430, 601, 430, 601, 601}}, {"kFrames", {430, 3, 430, 3, 3}}}},
 };
 
 /**
@@ -1560,8 +1560,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0003, TestSize.Level1)
 {
     ReadSample(g_mp4AvcAacAuxlPath, LOCAL);
     for (auto idx : selectedTrackIds_) {
-        ASSERT_EQ(frames_[idx], infoMap["tsHevcAuxl"]["frames"][idx]);
-        ASSERT_EQ(keyFrames_[idx], infoMap["tsHevcAuxl"]["kFrames"][idx]);
+        ASSERT_EQ(frames_[idx], infoMap["muxer264Aac"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["muxer264Aac"]["kFrames"][idx]);
     }
     RemoveValue();
     selectedTrackIds_.clear();
@@ -1576,8 +1576,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0004, TestSize.Level1)
 {
     ReadSample(g_mp4AvcAacAuxlUri, URI);
     for (auto idx : selectedTrackIds_) {
-        ASSERT_EQ(frames_[idx], infoMap["tsHevcAuxl"]["frames"][idx]);
-        ASSERT_EQ(keyFrames_[idx], infoMap["tsHevcAuxl"]["kFrames"][idx]);
+        ASSERT_EQ(frames_[idx], infoMap["muxer264Aac"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["muxer264Aac"]["kFrames"][idx]);
     }
     RemoveValue();
     selectedTrackIds_.clear();
@@ -1608,10 +1608,10 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0003, TestSize.Level1)
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
-            ASSERT_EQ(frames_[0], videoVals[numbers_]);
-            ASSERT_EQ(frames_[1], videoVals[numbers_]);
-            ASSERT_EQ(frames_[2], videoVals[numbers_]);
+            for (int32_t i = 0; i < 5; i++) {
+                printf("time = %" PRId64 " | frames_[%d]=%d\n", *toPts, i, frames_[0]);
+                ASSERT_EQ(frames_[i], videoVals[numbers_]);
+            }
             numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();

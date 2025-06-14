@@ -268,7 +268,7 @@ void AVSourceUnitTest::CheckAuxlAvc()
     ASSERT_EQ(formatVal_.trackCount, 5);
     format_->Destroy();
 
-    trackIndex_ = 0;
+    trackIndex_ = 1;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -291,7 +291,7 @@ void AVSourceUnitTest::CheckAuxlAvc()
     ASSERT_EQ(formatVal_.width, 720);
     ASSERT_EQ(formatVal_.height, 480);
     ASSERT_EQ(formatVal_.frameRate, 60.100000);
-    ASSERT_EQ(codecConfigSize, 23);
+    ASSERT_EQ(codecConfigSize, 38);
     ASSERT_EQ(trackIds[0], 3);
     ASSERT_EQ(trackIds[1], 4);
     ASSERT_EQ(trackIdsSize, 2);
