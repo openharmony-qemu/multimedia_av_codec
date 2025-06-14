@@ -475,6 +475,13 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
+void InitAVCodecCallback(OH_AVCodecCallback &cb)
+{
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+}
 /**
  * @tc.name: VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_006
  * @tc.desc: 1. 2 codec use same surface;
@@ -508,14 +515,8 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     EXPECT_EQ(vdec2->Create(), true);
     struct OH_AVCodecCallback cb1;
     struct OH_AVCodecCallback cb2;
-    cb1.onError = OnErrorVoid;
-    cb1.onStreamChanged = OnStreamChangedVoid;
-    cb1.onNeedInputBuffer = InBufferHandle;
-    cb1.onNewOutputBuffer = OutBufferHandle;
-    cb2.onError = OnErrorVoid;
-    cb2.onStreamChanged = OnStreamChangedVoid;
-    cb2.onNeedInputBuffer = InBufferHandle;
-    cb2.onNewOutputBuffer = OutBufferHandle;
+    InitAVCodecCallback(cb1);
+    InitAVCodecCallback(cb2);
     signal->isRunning_ = true;
     EXPECT_EQ(vdec1->RegisterCallback(cb1, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec1->sampleId_;
     EXPECT_EQ(vdec1->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << vdec1->sampleId_;
