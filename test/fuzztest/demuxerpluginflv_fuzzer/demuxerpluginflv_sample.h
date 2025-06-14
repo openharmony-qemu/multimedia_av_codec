@@ -24,19 +24,9 @@
 
 #define DEFAULT_BUFFSIZE (3840 * 2160 * 3)
 using MediaAVBuffer = OHOS::Media::AVBuffer;
+using MediaInfo = OHOS::Media::Plugins::MediaInfo;
 namespace OHOS {
 namespace Media {
-class DemuxerPluginFlvTest {
-public:
-    DemuxerPluginFlvTest();
-    ~DemuxerPluginFlvTest();
-    bool InitWithFlvData(const uint8_t* data, size_t size);
-    void RunDemuxerInterfaceFuzz();
-private:
-    int32_t fd_ = -1;
-    size_t dataSize_ = 0;
-    std::shared_ptr<Plugins::Ffmpeg::FFmpegDemuxerPlugin> demuxerPlugin_ = nullptr;
-};
 struct AVBufferWrapper {
     std::shared_ptr<MediaAVBuffer> mediaAVBuffer;
     explicit AVBufferWrapper(uint32_t size)
@@ -51,6 +41,22 @@ private:
     AVBufferWrapper() = delete;
     std::unique_ptr<uint8_t []> ptr;
 };
+
+class DemuxerPluginFlvTest {
+public:
+    DemuxerPluginFlvTest();
+    ~DemuxerPluginFlvTest();
+    bool InitWithFlvData(const uint8_t* data, size_t size);
+    void RunDemuxerInterfaceFuzz();
+private:
+    void PrepareDemuxerPlugin(MediaInfo& mediaInfo, size_t& bufferSize, AVBufferWrapper& buffer);
+    void OperateDemuxerPlugin(MediaInfo& mediaInfo, size_t bufferSize, AVBufferWrapper& buffer);
+
+    int32_t fd_ = -1;
+    size_t dataSize_ = 0;
+    std::shared_ptr<Plugins::Ffmpeg::FFmpegDemuxerPlugin> demuxerPlugin_ = nullptr;
+};
+
 } // namespace Media
 } // namespace OHOS
 

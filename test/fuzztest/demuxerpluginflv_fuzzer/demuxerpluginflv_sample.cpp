@@ -55,11 +55,8 @@ bool DemuxerPluginFlvTest::InitWithFlvData(const uint8_t* data, size_t size)
     return true;
 }
 
-void DemuxerPluginFlvTest::RunDemuxerInterfaceFuzz()
+void DemuxerPluginFlvTest::PrepareDemuxerPlugin(MediaInfo& mediaInfo, size_t& bufferSize, AVBufferWrapper& buffer)
 {
-    if (fd_ < 0) {
-        return;
-    }
     std::string uri = "fd://" + std::to_string(fd_) + "?offset=0&size=" + std::to_string(dataSize_);
     std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(uri);
     std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxer>();
@@ -77,22 +74,13 @@ void DemuxerPluginFlvTest::RunDemuxerInterfaceFuzz()
         return;
     }
     if (demuxerPlugin_->SetDataSource(dataSource) != Status::OK) {
+        demuxerPlugin_ = nullptr;
         return;
     }
 
-    MediaInfo mediaInfo;
     if (demuxerPlugin_->GetMediaInfo(mediaInfo) != Status::OK) {
+        demuxerPlugin_ = nullptr;
         return;
-    }
-
-    for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
-        demuxerPlugin_->SelectTrack(idx);
-    }
-    for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
-        demuxerPlugin_->UnselectTrack(idx);
-    }
-    for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
-        demuxerPlugin_->SelectTrack(idx);
     }
 
     int32_t width = VIDEO_WIDTH_DEFAULT;
@@ -108,8 +96,21 @@ void DemuxerPluginFlvTest::RunDemuxerInterfaceFuzz()
             break;
         }
     }
-    size_t bufferSize = width * height * 3; // 3 bytes per pixel (RGB)
-    AVBufferWrapper buffer(bufferSize); // 3 is use for buffer allocate
+    bufferSize = width * height * 3; // 3 bytes per pixel (RGB)
+    buffer = AVBufferWrapper(bufferSize);
+}
+
+void DemuxerPluginFlvTest::OperateDemuxerPlugin(MediaInfo& mediaInfo, size_t bufferSize, AVBufferWrapper& buffer)
+{
+    for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
+        demuxerPlugin_->SelectTrack(idx);
+    }
+    for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
+        demuxerPlugin_->UnselectTrack(idx);
+    }
+    for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
+        demuxerPlugin_->SelectTrack(idx);
+    }
 
     for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
         demuxerPlugin_->ReadSample(idx, buffer.mediaAVBuffer, INTERFACE_TIMEOUT);
@@ -126,6 +127,21 @@ void DemuxerPluginFlvTest::RunDemuxerInterfaceFuzz()
     demuxerPlugin_->Flush();
     demuxerPlugin_->SeekTo(0, SEEK_TIME_DEFAULT, SeekMode::SEEK_PREVIOUS_SYNC, seekTime);
     demuxerPlugin_->Reset();
+}
+
+void DemuxerPluginFlvTest::RunDemuxerInterfaceFuzz()
+{
+    if (fd_ < 0) {
+        return;
+    }
+    MediaInfo mediaInfo;
+    size_t bufferSize = 0;
+    AVBufferWrapper buffer(1); // 占位初始化
+    PrepareDemuxerPlugin(mediaInfo, bufferSize, buffer);
+    if (!demuxerPlugin_) {
+        return;
+    }
+    OperateDemuxerPlugin(mediaInfo, bufferSize, buffer);
 }
 
 } // namespace Media
