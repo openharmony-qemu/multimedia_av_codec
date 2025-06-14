@@ -39,7 +39,7 @@ namespace {
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
 static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
-
+const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC};
 string g_tsMpeg4Path = TEST_FILE_PATH + string("test_mpeg4_Gop25_4sec.ts");
@@ -64,8 +64,8 @@ string g_aviMpeg4PcmPath = TEST_FILE_PATH + string("mpeg4_pcm.avi");
 string g_aviMpeg4PcmUri = TEST_URI_PATH + string("mpeg4_pcm.avi");
 string g_mpg4mp4Path = TEST_FILE_PATH + string("MPEG4.mp4");
 string g_mpg4mp4Uri = TEST_URI_PATH + string("MPEG4.mp4");
-string g_mp4AvcAacAuxlPath = TEST_FILE_PATH + string("muxer_auxl_264_aac.mp4");
-string g_mp4AvcAacAuxlUri = TEST_URI_PATH + string("muxer_auxl_264_aac.mp4");
+string g_mp4AvcAacAuxlPath = TEST_FILE_PATH + string("muxer_auxl_265_264_aac.mp4");
+string g_mp4AvcAacAuxlUri = TEST_URI_PATH + string("muxer_auxl_265_264_aac.mp4");
 } // namespace
 
 /**********************************demuxer fd**************************************/
@@ -1558,6 +1558,9 @@ std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0003, TestSize.Level1)
 {
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
     ReadSample(g_mp4AvcAacAuxlPath, LOCAL);
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(frames_[idx], infoMap["muxer264Aac"]["frames"][idx]);
@@ -1574,6 +1577,9 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0003, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0004, TestSize.Level1)
 {
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
     ReadSample(g_mp4AvcAacAuxlUri, URI);
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(frames_[idx], infoMap["muxer264Aac"]["frames"][idx]);
@@ -1590,6 +1596,9 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0004, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0003, TestSize.Level1)
 {
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
     InitResource(g_mp4AvcAacAuxlPath, LOCAL);
     ASSERT_TRUE(initStatus_);
     SetInitValue();
@@ -1626,6 +1635,9 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0003, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0004, TestSize.Level1)
 {
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
     InitResource(g_mp4AvcAacAuxlUri, URI);
     ASSERT_TRUE(initStatus_);
     SetInitValue();

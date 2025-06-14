@@ -44,7 +44,7 @@ static const string TEST_FILE_PATH = "/data/test/media/";
 static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 static const string TEST_TIMED_METADATA = "com.openharmony.timed_metadata.test";
 const int64_t SOURCE_OFFSET = 0;
-
+const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 string g_mp4Path = TEST_FILE_PATH + string("test_264_B_Gop25_4sec_cover.mp4");
 string g_mp4Path3 = TEST_FILE_PATH + string("test_mpeg2_B_Gop25_4sec.mp4");
 string g_mp4Path5 = TEST_FILE_PATH + string("test_suffix_mismatch.mp4");
@@ -93,8 +93,8 @@ string g_trpPath = TEST_FILE_PATH + string("mpeg2_ac3.trp");
 string g_lrcPath = TEST_FILE_PATH + string("lrc_test.lrc");
 string g_samiPath = TEST_FILE_PATH + string("sami_test.smi");
 string g_assPath = TEST_FILE_PATH + string("ass_test.ssa");
-string g_mp4AuxlPath = TEST_FILE_PATH + string("muxer_auxl_264_aac.mp4");
-string g_mp4AuxlUri = TEST_URI_PATH + string("muxer_auxl_264_aac.mp4");
+string g_mp4AuxlPath = TEST_FILE_PATH + string("muxer_auxl_265_264_aac.mp4");
+string g_mp4AuxlUri = TEST_URI_PATH + string("muxer_auxl_265_264_aac.mp4");
 
 } // namespace
 
@@ -287,11 +287,11 @@ void AVSourceUnitTest::CheckAuxlAvc()
     ASSERT_TRUE(format_->GetBuffer(OH_MD_KEY_CODEC_CONFIG, &codecConfig, codecConfigSize));
     ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, trackIdsSize));
     ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
     ASSERT_EQ(formatVal_.width, 720);
     ASSERT_EQ(formatVal_.height, 480);
     ASSERT_EQ(formatVal_.frameRate, 60.100000);
-    ASSERT_EQ(codecConfigSize, 38);
+    ASSERT_EQ(codecConfigSize, 23);
     ASSERT_EQ(trackIds[0], 3);
     ASSERT_EQ(trackIds[1], 4);
     ASSERT_EQ(trackIdsSize, 2);
@@ -2927,6 +2927,9 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1808, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_Auxl_0003, TestSize.Level1)
 {
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
     InitResource(g_mp4AuxlPath, LOCAL);
     ASSERT_TRUE(initStatus_);
     CheckAuxlAvc();
@@ -2942,6 +2945,9 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_Auxl_0003, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_Auxl_0004, TestSize.Level1)
 {
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
     InitResource(g_mp4AuxlUri, URI);
     ASSERT_TRUE(initStatus_);
     CheckAuxlAvc();
