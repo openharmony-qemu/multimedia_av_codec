@@ -203,7 +203,7 @@ sptr<IStandardAVCodecService> AVCodecClient::GetAVCodecProxy()
 
 sptr<IStandardAVCodecService> AVCodecClient::GetTemporaryAVCodecProxy()
 {
-    AVCODEC_LOGI("In");
+    AVCODEC_LOGD("In");
     sptr<ISystemAbilityManager> samgr = nullptr;
     CLIENT_COLLIE_LISTEN(samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager(),
                          "AVCodecClient GetTemporaryAVCodecProxy");

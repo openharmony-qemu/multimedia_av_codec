@@ -108,7 +108,6 @@ private:
             buffer->memory_->SetOffset(0);
             buffer->memory_->SetSize(0);
         }
-        buffer->pts_ = 0;
         if (isFirstReceive_) {
             AVCODEC_LOGI_WITH_TAG("first receive buffer from service");
             isFirstReceive_ = false;
@@ -136,7 +135,6 @@ private:
             buffer->memory_->SetOffset(0);
             buffer->memory_->SetSize(0);
         }
-        buffer->pts_ = 0;
         if (isFirstReceive_) {
             AVCODEC_LOGI_WITH_TAG("first receive buffer from service");
             isFirstReceive_ = false;

@@ -249,7 +249,7 @@ int32_t CodecBufferCircular::HandleOutputBuffer(uint32_t index)
 
 std::shared_ptr<Format> CodecBufferCircular::GetParameter(BufferCacheIter &iter)
 {
-    if (iter->second.parameter == nullptr && iter->second.buffer != nullptr) {
+    if (iter->second.parameter == nullptr) {
         iter->second.parameter = std::make_shared<Format>();
         iter->second.parameter->SetMetaPtr(iter->second.buffer->meta_);
     }
@@ -258,10 +258,10 @@ std::shared_ptr<Format> CodecBufferCircular::GetParameter(BufferCacheIter &iter)
 
 std::shared_ptr<Format> CodecBufferCircular::GetAttribute(BufferCacheIter &iter)
 {
-    if (iter->second.attribute == nullptr && iter->second.buffer != nullptr) {
+    if (iter->second.attribute == nullptr) {
         iter->second.attribute = std::make_shared<Format>();
-        iter->second.attribute->PutLongValue(Media::Tag::MEDIA_TIME_STAMP, iter->second.buffer->pts_);
     }
+    iter->second.attribute->PutLongValue(Media::Tag::MEDIA_TIME_STAMP, iter->second.buffer->pts_);
     return iter->second.attribute;
 }
 
@@ -318,11 +318,13 @@ void CodecBufferCircular::OnOutputFormatChanged(const Format &format)
 
 void CodecBufferCircular::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "buffer is nullptr");
     IsSyncMode() ? SyncOnInputBufferAvailable(index, buffer) : AsyncOnInputBufferAvailable(index, buffer);
 }
 
 void CodecBufferCircular::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "buffer is nullptr");
     IsSyncMode() ? SyncOnOutputBufferAvailable(index, buffer) : AsyncOnOutputBufferAvailable(index, buffer);
 }
 
@@ -391,12 +393,14 @@ void CodecBufferCircular::AsyncOnInputBufferAvailable(uint32_t index, std::share
     }
     // AVBuffer callback
     if (mediaCb_ != nullptr) {
+        item.buffer->pts_ = 0;
         lock.unlock();
         mediaCb_->OnInputBufferAvailable(index, item.buffer);
         return;
     }
     // Api9 callback
     if (callback_ != nullptr) {
+        item.buffer->pts_ = 0;
         ConvertToSharedMemory(item.buffer, item.memory);
         if (converter_ != nullptr) {
             converter_->SetInputBufferFormat(item.buffer);
@@ -499,6 +503,7 @@ void CodecBufferCircular::SyncOnInputBufferAvailable(uint32_t index, std::shared
     } else {
         iter->second.buffer = buffer;
     }
+    iter->second.buffer->pts_ = 0;
     iter->second.owner = OWNED_BY_CLIENT;
     inQueue_.push(index);
     inCond_.notify_all();
