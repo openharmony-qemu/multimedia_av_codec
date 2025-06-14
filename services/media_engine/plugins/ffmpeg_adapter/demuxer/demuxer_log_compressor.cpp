@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -66,7 +66,6 @@ static std::unordered_map<TagType, std::string> g_formatToIndex = {
     {Tag::MEDIA_HAS_AUDIO,                "hasAud"},
     {Tag::MEDIA_HAS_SUBTITLE,             "hasSub"},
     {Tag::MEDIA_HAS_TIMEDMETA,            "hasTimed"},
-    {Tag::MEDIA_HAS_AUXILIARY,            "hasAuxl"},
     {Tag::MEDIA_HAS_VIDEO,                "hasVid"},
     {Tag::MEDIA_LANGUAGE,                 "lang"},
     {Tag::MEDIA_LATITUDE,                 "latitude"},
@@ -96,10 +95,7 @@ static std::unordered_map<TagType, std::string> g_formatToIndex = {
     {Tag::VIDEO_ROTATION,                 "rotate"},
     {Tag::VIDEO_SAR,                      "sar"},
     {Tag::VIDEO_WIDTH,                    "w"},
-    {Tag::AUDIO_MAX_INPUT_SIZE,           "maxFrame"},
-    {Tag::TRACK_REFERENCE_TYPE,           "refType"},
-    {Tag::TRACK_DESCRIPTION,              "trackDesc"},
-    {Tag::REFERENCE_TRACK_IDS,            "refIds"}
+    {Tag::AUDIO_MAX_INPUT_SIZE,           "maxFrame"}
 };
 
 std::string DemuxerLogCompressor::FormatTagSerialize(Format& format)
@@ -165,12 +161,6 @@ void DemuxerLogCompressor::StringifyMeta(Meta meta, int32_t trackIndex)
     }
     if (meta.Find(std::string(Tag::TIMED_METADATA_KEY)) != meta.end()) {
         meta.SetData(std::string(Tag::TIMED_METADATA_KEY), "*");
-    }
-    if (meta.Find(std::string(Tag::TRACK_DESCRIPTION)) != meta.end()) {
-        meta.SetData(std::string(Tag::TRACK_DESCRIPTION), "*");
-    }
-    if (meta.Find(std::string(Tag::REFERENCE_TRACK_IDS)) != meta.end()) {
-        meta.SetData(std::string(Tag::REFERENCE_TRACK_IDS), "*");
     }
     if (meta.Find(std::string(Tag::TIMED_METADATA_SRC_TRACK)) != meta.end()) {
         meta.SetData(std::string(Tag::TIMED_METADATA_SRC_TRACK), "*");
