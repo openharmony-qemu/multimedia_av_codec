@@ -184,9 +184,8 @@ void DemuxerUnitTest::SetInitValue()
         if (codecMime.find("image/") != std::string::npos) {
             continue;
         }
-        if (trackType == OH_MediaType::MEDIA_TYPE_VID || trackType == OH_MediaType::MEDIA_TYPE_AUD ||
-            trackType == OH_MediaType::MEDIA_TYPE_SUBTITLE || trackType == OH_MediaType::MEDIA_TYPE_TIMED_METADATA ||
-            trackType == OH_MediaType::MEDIA_TYPE_AUXILIARY) {
+        if (trackType == MediaType::MEDIA_TYPE_VID || trackType == MediaType::MEDIA_TYPE_AUD ||
+            trackType == MediaType::MEDIA_TYPE_SUBTITLE || trackType == MediaType::MEDIA_TYPE_TIMED_METADATA) {
             selectedTrackIds_.push_back(static_cast<uint32_t>(i));
             frames_[i] = 0;
             keyFrames_[i] = 0;
