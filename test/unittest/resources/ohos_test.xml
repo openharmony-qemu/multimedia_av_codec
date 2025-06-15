@@ -22,6 +22,38 @@
             <option name="push" value="muxer_res/pcm_44100_2_s16le.dat -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/aac_2c_44100hz_199k.dat -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/h265_logInfo.dat -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2_u8.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2_s24le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2_s32le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2_f32le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_mono_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2point1_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2_1_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_surround_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_3point1_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_4point0_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_4point1_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2_2_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_quad_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_5point0_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_5point1_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_5point0back_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_5point1back_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_6point0_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_6point0front_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_hexagonal_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_6point1_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_6point1back_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_6point1front_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_7point0_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_7point0front_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_7point1_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_7point1wide_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_7point1wideback_s16le.pcm-> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_octagonal_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_hexadecagonal_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_stereodownmix_s16le.pcm -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -33,6 +65,38 @@
             <option name="push" value="muxer_res/pcm_44100_2_s16le.dat -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/aac_2c_44100hz_199k.dat -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/h265_logInfo.dat -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2_u8.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2_s24le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2_s32le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2_f32le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_mono_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2point1_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2_1_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_surround_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_3point1_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_4point0_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_4point1_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_2_2_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_quad_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_5point0_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_5point1_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_5point0back_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_5point1back_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_6point0_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_6point0front_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_hexagonal_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_6point1_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_6point1back_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_6point1front_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_7point0_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_7point0front_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_7point1_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_7point1wide_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_7point1wideback_s16le.pcm-> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_octagonal_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_hexadecagonal_s16le.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/wav_pcm_44100_stereodownmix_s16le.pcm -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
