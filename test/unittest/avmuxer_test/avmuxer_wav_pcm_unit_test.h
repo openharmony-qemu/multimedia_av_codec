@@ -27,16 +27,11 @@ namespace OHOS {
 namespace MediaAVCodec {
 class AVMuxerWavPcmUnitTest : public testing::Test {
 public:
-    // SetUpTestCase: Called before all test cases
     static void SetUpTestCase(void);
-    // TearDownTestCase: Called after all test case
     static void TearDownTestCase(void);
-    // SetUp: Called before each test cases
     void SetUp(void);
-    // TearDown: Called after each test cases
     void TearDown(void);
-
-    int32_t WriteSample(int32_t trackId, std::shared_ptr<std::ifstream> file, bool &eosFlag, uint32_t flag);    
+    int32_t WriteSample(int32_t trackId, std::shared_ptr<std::ifstream> file, bool &eosFlag, uint32_t flag);
 
 protected:
     std::shared_ptr<AVMuxerSample> avmuxer_ {nullptr};
