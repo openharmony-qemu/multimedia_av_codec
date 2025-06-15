@@ -59,6 +59,8 @@ public:
     int32_t HandleInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
     int32_t HandleInputBuffer(uint32_t index);
     int32_t HandleOutputBuffer(uint32_t index);
+    void QueueInputBufferDone(uint32_t index);
+    void ReleaseOutputBufferDone(uint32_t index);
 
     // Callback
     void OnError(AVCodecErrorType errorType, int32_t errorCode);
@@ -103,7 +105,7 @@ private:
     BufferCache outCache_;
     std::mutex inMutex_;
     std::mutex outMutex_;
-    uint8_t flag_ = FLAG_NONE;
+    std::atomic<uint8_t> flag_ = FLAG_NONE;
 
     // Async mode
     void AsyncOnError(AVCodecErrorType errorType, int32_t errorCode);
