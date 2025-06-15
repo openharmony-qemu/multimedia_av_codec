@@ -18,6 +18,7 @@
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="muxer_res/h264_720_480.dat -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/h264_720_480000.dat -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/g711mu_44100_2.dat -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/pcm_44100_2_s16le.dat -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/aac_2c_44100hz_199k.dat -> /data/test/media" src="res"/>
@@ -30,6 +31,7 @@
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="muxer_res/h264_720_480.dat -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/g711mu_44100_2.dat -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/h264_720_480000.dat -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/pcm_44100_2_s16le.dat -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/aac_2c_44100hz_199k.dat -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/h265_logInfo.dat -> /data/test/media" src="res"/>
