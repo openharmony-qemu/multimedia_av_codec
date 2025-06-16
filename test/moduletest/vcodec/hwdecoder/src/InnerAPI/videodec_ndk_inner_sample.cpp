@@ -755,7 +755,6 @@ void VDecNdkInnerSample::OutputFunc()
         std::shared_ptr<AVSharedMemory> buffer = signal_->outBufferQueue_.front();
         AVCodecBufferFlag flag = signal_->flagQueue_.front();
         uint32_t index = signal_->outIdxQueue_.front();
-        AVCodecBufferInfo info = signal_->infoQueue_.front();
         
         signal_->outBufferQueue_.pop();
         signal_->outIdxQueue_.pop();
