@@ -28,7 +28,7 @@ using namespace testing::ext;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 using namespace OHOS::Media;
 
-namespace {
+namespace VFTSUIT {
 void TEST_SUIT::SetUpTestCase(void) {}
 
 void TEST_SUIT::CreateByNameWithParam(int32_t param)

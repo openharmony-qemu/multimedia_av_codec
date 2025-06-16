@@ -33,7 +33,7 @@ using namespace testing::ext;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 using namespace OHOS::Media;
 
-namespace {
+namespace VFTSUIT {
 constexpr int32_t DEFAULT_LTR_COUNT = 4;
 constexpr int32_t DEFAULT_INVALID_LTR_COUNT = 1000;
 constexpr int32_t DEFAULT_LTR_INTERVAL = 4;

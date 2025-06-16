@@ -618,7 +618,7 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
     if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
     } else {
-        InputLtrParam(frameInputCount_, buffer);
+        InputLtrParam(attr, frameInputCount_, buffer);
     }
 
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {

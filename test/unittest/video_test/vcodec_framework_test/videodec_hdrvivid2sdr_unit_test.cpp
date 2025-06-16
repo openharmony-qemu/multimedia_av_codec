@@ -1055,11 +1055,12 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0181, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0191, TestSize.Level1)
 {
-    CreateByNameWithParam(GetParam());
+    auto testCode = GetParam();
+    CreateByNameWithParam(testCode);
     std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
     format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    PrepareSource(GetParam());
+    PrepareSource(testCode);
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     
@@ -1079,9 +1080,10 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0191, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0201, TestSize.Level1)
 {
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
+    auto testCode = GetParam();
+    CreateByNameWithParam(testCode);
+    SetFormatWithParam(testCode);
+    PrepareSource(testCode);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
