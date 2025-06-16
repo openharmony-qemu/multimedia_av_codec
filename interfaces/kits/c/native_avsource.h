@@ -65,6 +65,23 @@ typedef struct OH_AVSource OH_AVSource;
 OH_AVSource *OH_AVSource_CreateWithDataSource(OH_AVDataSource *dataSource);
 
 /**
+ * @brief Creates an OH_AVSource instance with dataSource and userData.
+ * The instance can be released by calling the interface {@link OH_AVSource_Destroy}.
+ * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @param dataSource A pointer to the data source structure, which can obtain the input data.
+ * @param userData A pointer to user-defined data.
+ * @return Returns a pointer to an OH_AVSource instance if the execution is successful, otherwise returns nullptr.
+ * Possible failure causes:
+ *  1. dataSource is nullptr.
+ *  2. dataSource->size == 0.
+ *  3. set data source failed.
+ *  4. out of memory.
+ *  5. demuxer engine is nullptr.
+ * @since 20
+*/
+OH_AVSource *OH_AVSource_CreateWithDataSourceExt(OH_AVDataSourceExt *dataSource, void* userData);
+
+/**
  * @brief To create an OH_AVSource instance for the resource object corresponding to a unified resource identifier,
  * The instance can be released by calling the interface {@link OH_AVSource_Destroy}.
  * @syscap SystemCapability.Multimedia.Media.Spliter
@@ -159,23 +176,6 @@ OH_AVFormat *OH_AVSource_GetTrackFormat(OH_AVSource *source, uint32_t trackIndex
  * @since 18
  */
 OH_AVFormat *OH_AVSource_GetCustomMetadataFormat(OH_AVSource *source);
-
-/**
- * @brief Creates an OH_AVSource instance with dataSource and userData.
- * The instance can be released by calling the interface {@link OH_AVSource_Destroy}.
- * @syscap SystemCapability.Multimedia.Media.Spliter
- * @param dataSource A pointer to the data source structure, which can obtain the input data.
- * @param userData A pointer to user-defined data.
- * @return Returns a pointer to an OH_AVSource instance if the execution is successful, otherwise returns nullptr.
- * Possible failure causes:
- *  1. dataSource is nullptr.
- *  2. dataSource->size == 0.
- *  3. set data source failed.
- *  4. out of memory.
- *  5. demuxer engine is nullptr.
- * @since 20
-*/
-OH_AVSource *OH_AVSource_CreateWithDataSourceExt(OH_AVDataSourceExt *dataSource, void* userData);
 
 #ifdef __cplusplus
 }
