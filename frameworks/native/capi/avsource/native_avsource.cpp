@@ -199,7 +199,7 @@ OH_AVFormat *OH_AVSource_GetCustomMetadataFormat(OH_AVSource *source)
 struct OH_AVSource *OH_AVSource_CreateWithDataSourceExt(OH_AVDataSourceExt *dataSource, void *userData)
 {
     CHECK_AND_RETURN_RET_LOG(dataSource != nullptr, nullptr, "Input dataSourceExt is nullptr");
-    CHECK_AND_RETURN_RET_LOG(dataSource->size != 0, nullptr, "DatasourceExt size must be greater than zero");
+    CHECK_AND_RETURN_RET_LOG(dataSource->size > 0, nullptr, "DatasourceExt size must be greater than zero");
     CHECK_AND_RETURN_RET_LOG(dataSource->readAt != nullptr, nullptr, "DatasourceExt readAt is nullptr");
 
     std::shared_ptr<NativeAVDataSource> nativeAVDataSource = std::make_shared<NativeAVDataSource>(dataSource, userData);
