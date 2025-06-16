@@ -564,10 +564,8 @@ int32_t VideoDecSyncSample::OutputLoopInnerExt()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_ || isSurfaceMode_, AV_ERR_INVALID_VAL,
                                       "can not dump output file");
-
     uint32_t index = DEFAULT_INDEX;
     uint32_t ret = videoDec_->QueryOutputBuffer(index, -1);
-
     if (ret == AV_ERR_STREAM_CHANGED) {
         std::shared_ptr<FormatMock> format = videoDec_->GetOutputDescription();
         std::cout << "format = " << format->DumpInfo() << std::endl;
