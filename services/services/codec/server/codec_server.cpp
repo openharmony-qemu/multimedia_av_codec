@@ -375,6 +375,7 @@ int32_t CodecServer::Stop()
         return (retCodec == AVCS_ERR_OK) ? retPostProcessing : retCodec;
     }
     StatusChanged(CONFIGURED);
+    OnBufferCirculationStop();
     OnInstanceMemoryResetEvent();
     return AVCS_ERR_OK;
 }
@@ -395,6 +396,7 @@ int32_t CodecServer::Flush()
         StatusChanged(ERROR);
         return (retPostProcessing != AVCS_ERR_OK) ? retPostProcessing : retCodec;
     }
+    OnBufferCirculationStop();
     StatusChanged(FLUSHED);
     return AVCS_ERR_OK;
 }
@@ -442,6 +444,7 @@ int32_t CodecServer::Reset()
         isModeConfirmed_ = false;
     }
     OnInstanceMemoryResetEvent();
+    OnBufferCirculationStop();
     return ret;
 }
 
@@ -469,6 +472,7 @@ int32_t CodecServer::Release()
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
     }
+    OnBufferCirculationStop();
     return ret;
 }
 
@@ -702,6 +706,7 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
     } else {
         return ReleaseOutputBufferOfCodec(index, render);
     }
+    adaptiveFramerateController_.OnFrameConsumed();
 }
 
 int32_t CodecServer::ReleaseOutputBufferOfCodec(uint32_t index, bool render)
@@ -749,23 +754,19 @@ void CodecServer::OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta)
 #endif
 }
 
-int32_t CodecServer::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+void CodecServer::OnBufferCirculationStart()
 {
-    (void)renderTimestampNs;
-    std::shared_lock<std::shared_mutex> freeLock(freeMutex_);
-    if (isFree_) {
-        AVCODEC_LOGE_WITH_TAG("In invalid state, free out");
-        return AVCS_ERR_INVALID_STATE;
-    }
-    std::shared_lock<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
-                                      "In invalid state, %{public}s", GetStatusDescription(status_).data());
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    if (postProcessing_) {
-        return ReleaseOutputBufferOfPostProcessing(index, true);
-    } else {
-        return codecBase_->RenderOutputBuffer(index);
-    }
+    
+}
+
+void CodecServer::OnBufferCirculationStop()
+{
+    adaptiveFramerateController_.Stop();
+}
+
+int32_t CodecServer::RenderOutputBufferAtTime(uint32_t index, [[maybe_unused]]int64_t renderTimestampNs)
+{
+    return ReleaseOutputBuffer(index, true);
 }
 
 int32_t CodecServer::SetParameter(const Format &format)

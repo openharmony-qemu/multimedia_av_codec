@@ -94,6 +94,7 @@ config("av_codec_client_public_config") {
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/utils/include",
+    "../../../services/services/common/adaptive_framerate_controller",
   ]
 
   defines = []
@@ -311,7 +312,10 @@ ohos_shared_library("av_codec_client") {
     deps += [ "$av_codec_root_dir/services/engine:av_codec_engine_package" ]
   }
 
-  deps += [ "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules" ]
+  deps += [
+    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
+    "../../../services/services/common/adaptive_framerate_controller:adaptive_framerate_controller",
+  ]
 
   external_deps = [
     "bounds_checking_function:libsec_static",

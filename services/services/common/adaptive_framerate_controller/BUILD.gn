@@ -1,0 +1,36 @@
+# Copyright (C) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+config("adaptive_framerate_controller_public_config") {
+  include_dirs = [ "./" ]
+}
+
+ohos_source_set("adaptive_framerate_controller") {
+  branch_protector_ret = "pac_ret"
+  sanitize = av_codec_sanitize
+  public_configs = [ ":adaptive_framerate_controller_public_config" ]
+
+  include_dirs = [ "./" ]
+
+  sources = [ "adaptive_framerate_controller.cpp" ]
+
+  deps = [ "../../../dfx:av_codec_service_dfx" ]
+
+  external_deps = [ "c_utils:utils" ]
+
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+}

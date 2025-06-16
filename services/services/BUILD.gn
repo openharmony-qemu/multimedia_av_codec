@@ -148,9 +148,10 @@ ohos_shared_library("av_codec_service") {
     "$av_codec_root_dir/services/engine:av_codec_engine_package",
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
+    "./common/adaptive_framerate_controller:adaptive_framerate_controller",
     "./common/event_manager:event_manager",
-    "./sa_avcodec:sa_manager",
     "./common/event_manager/event_handler/background_event_handler:background_event_handler",
+    "./sa_avcodec:sa_manager",
   ]
 
   if (av_codec_support_codeclist) {

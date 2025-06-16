@@ -30,6 +30,7 @@
 #include "lock_free_queue.h"
 #include "post_processing.h"
 #include "instance_info.h"
+#include "adaptive_framerate_controller.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -146,6 +147,8 @@ private:
     int32_t ReleaseOutputBufferOfCodec(uint32_t index, bool render);
     void OnInstanceMemoryUpdateEvent(std::shared_ptr<Media::Meta> meta = nullptr);
     void OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta = nullptr);
+    void OnBufferCirculationStart();
+    void OnBufferCirculationStop();
 
     CodecStatus status_ = UNINITIALIZED;
 
@@ -210,6 +213,7 @@ private:
     std::atomic<bool> decoderIsEOS_{false};
     std::shared_ptr<AVCodecCallback> shareBufCallback_ = nullptr;
     std::shared_ptr<MediaCodecCallback> avBufCallback_ = nullptr;
+    AdaptiveFramerateController adaptiveFramerateController_;
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {
