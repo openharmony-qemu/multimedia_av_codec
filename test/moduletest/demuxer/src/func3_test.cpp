@@ -1493,3 +1493,203 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_TS_0060, TestSize.Level0)
     ASSERT_EQ(vKeyCount, 31);
     close(fd);
 }
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_COMMENT_0010
+ * @tc.name      : 中文字符串，使用正确/错误的接口类型获取comment
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_COMMENT_0010, TestSize.Level0)
+{
+    const char *file = "/data/test/media/comment_0010.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    int32_t intVal = 0;
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_COMMENT, &intVal));
+    int64_t longVal = 0;
+    ASSERT_FALSE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_COMMENT, &longVal));
+    double doubleVal;
+    ASSERT_FALSE(OH_AVFormat_GetDoubleValue(sourceFormat, OH_MD_KEY_COMMENT, &doubleVal));
+    float floatVal = 0.0;
+    ASSERT_FALSE(OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_COMMENT, &floatVal));
+    const char *stringVal = nullptr;
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+    ASSERT_NE(stringVal, nullptr);
+    ASSERT_EQ(0, strcmp(stringVal, "中文测试字符串中文测试字符串"));
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_COMMENT_0020
+ * @tc.name      : 英文字符串，使用正确/错误的接口类型获取comment
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_COMMENT_0020, TestSize.Level0)
+{
+    const char *file = "/data/test/media/comment_0020.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    int32_t intVal = 0;
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_COMMENT, &intVal));
+    int64_t longVal = 0;
+    ASSERT_FALSE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_COMMENT, &longVal));
+    double doubleVal;
+    ASSERT_FALSE(OH_AVFormat_GetDoubleValue(sourceFormat, OH_MD_KEY_COMMENT, &doubleVal));
+    float floatVal = 0.0;
+    ASSERT_FALSE(OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_COMMENT, &floatVal));
+    const char *stringVal = nullptr;
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+    ASSERT_NE(stringVal, nullptr);
+    ASSERT_EQ(0, strcmp(stringVal, "comment_test"));
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_COMMENT_0030
+ * @tc.name      : 中文数字符号字符串，使用正确/错误的接口类型获取comment
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_COMMENT_0030, TestSize.Level0)
+{
+    const char *file = "/data/test/media/comment_0030.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    int32_t intVal = 0;
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_COMMENT, &intVal));
+    int64_t longVal = 0;
+    ASSERT_FALSE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_COMMENT, &longVal));
+    double doubleVal;
+    ASSERT_FALSE(OH_AVFormat_GetDoubleValue(sourceFormat, OH_MD_KEY_COMMENT, &doubleVal));
+    float floatVal = 0.0;
+    ASSERT_FALSE(OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_COMMENT, &floatVal));
+    const char *stringVal = nullptr;
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+    ASSERT_NE(stringVal, nullptr);
+    ASSERT_EQ(0, strcmp(stringVal, "；；；；；‘’‘’1234"));
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_COMMENT_0040
+ * @tc.name      : 英文数字符号字符串，使用正确/错误的接口类型获取comment
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_COMMENT_0040, TestSize.Level0)
+{
+    const char *file = "/data/test/media/comment_0040.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    int32_t intVal = 0;
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_COMMENT, &intVal));
+    int64_t longVal = 0;
+    ASSERT_FALSE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_COMMENT, &longVal));
+    double doubleVal;
+    ASSERT_FALSE(OH_AVFormat_GetDoubleValue(sourceFormat, OH_MD_KEY_COMMENT, &doubleVal));
+    float floatVal = 0.0;
+    ASSERT_FALSE(OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_COMMENT, &floatVal));
+    const char *stringVal = nullptr;
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+    ASSERT_NE(stringVal, nullptr);
+    ASSERT_EQ(0, strcmp(stringVal, "[[[]]]////1234"));
+}
+/**
+ * @tc.number    : DEMUXER_FUNCTION_COMMENT_0050
+ * @tc.name      : 边界值长字符串，使用正确/错误的接口类型获取comment
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_COMMENT_0050, TestSize.Level0)
+{
+    char uri[] = "/data/test/media/comment_0050.mp4";
+    source = OH_AVSource_CreateWithURI(uri);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    int32_t intVal = 0;
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_COMMENT, &intVal));
+    int64_t longVal = 0;
+    ASSERT_FALSE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_COMMENT, &longVal));
+    double doubleVal;
+    ASSERT_FALSE(OH_AVFormat_GetDoubleValue(sourceFormat, OH_MD_KEY_COMMENT, &doubleVal));
+    float floatVal = 0.0;
+    ASSERT_FALSE(OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_COMMENT, &floatVal));
+    const char *stringVal = nullptr;
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+    ASSERT_NE(stringVal, nullptr);
+    ASSERT_EQ(0, strcmp(stringVal, "comment_comment_comment_comment_comment_comment"
+        "comment_comment_comment_comment_comment_comment_comment_comment_comment_comment_comment_comment"
+        "comment_comment_comment_comment_comment_comment_comment_comment_comment_comment_comment_comment"
+        "comment_comment_com"));
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_COMMENT_0060
+ * @tc.name      : 边界值长字符串超过256，使用正确/错误的接口类型获取comment
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_COMMENT_0060, TestSize.Level0)
+{
+    char uri[] = "/data/test/media/comment_0060.mp4";
+    source = OH_AVSource_CreateWithURI(uri);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    int32_t intVal = 0;
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_COMMENT, &intVal));
+    int64_t longVal = 0;
+    ASSERT_FALSE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_COMMENT, &longVal));
+    double doubleVal;
+    ASSERT_FALSE(OH_AVFormat_GetDoubleValue(sourceFormat, OH_MD_KEY_COMMENT, &doubleVal));
+    float floatVal = 0.0;
+    ASSERT_FALSE(OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_COMMENT, &floatVal));
+    const char *stringVal = nullptr;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_COMMENT_0070
+ * @tc.name      : 不含comment，使用正确/错误的接口类型获取comment
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_COMMENT_0070, TestSize.Level0)
+{
+    char uri[] = "/data/test/media/mp3_h265_fmp4.mp4";
+    source = OH_AVSource_CreateWithURI(uri);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal = nullptr;
+    int32_t intVal = 0;
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_COMMENT, &intVal));
+    int64_t longVal = 0;
+    ASSERT_FALSE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_COMMENT, &longVal));
+    double doubleVal;
+    ASSERT_FALSE(OH_AVFormat_GetDoubleValue(sourceFormat, OH_MD_KEY_COMMENT, &doubleVal));
+    float floatVal = 0.0;
+    ASSERT_FALSE(OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_COMMENT, &floatVal));
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+}
