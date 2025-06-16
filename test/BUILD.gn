@@ -235,6 +235,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxermpgapi11_fuzzer:DemuxerMpgAPI11FuzzTest",
       "fuzztest/demuxerogg_fuzzer:DemuxerOggFuzzTest",
       "fuzztest/demuxeroggapi11_fuzzer:DemuxerOggAPI11FuzzTest",
+      "fuzztest/demuxerpluginflv_fuzzer:DemuxerPluginFlvFuzzTest",
       "fuzztest/demuxerpluginmanager_fuzzer:DemuxerPluginManagerFuzzTest",
       "fuzztest/demuxersrt_fuzzer:DemuxerSrtFuzzTest",
       "fuzztest/demuxersrtapi11_fuzzer:DemuxerSrtAPI11FuzzTest",
