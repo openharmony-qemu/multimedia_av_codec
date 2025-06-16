@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_SURFACE_UTILS_H
-#define AVCODEC_SURFACE_UTILS_H
+#ifndef AVCODEC_SURFACE_TOOLS_H
+#define AVCODEC_SURFACE_TOOLS_H
 
 #include <string>
 #include <mutex>
@@ -37,4 +37,4 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVCODEC_SURFACE_UTILS_H
+#endif // AVCODEC_SURFACE_TOOLS_H
