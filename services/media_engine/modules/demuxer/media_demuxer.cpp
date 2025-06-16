@@ -2645,6 +2645,7 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
             }
         }
         FALSE_GOON_NOEXEC(ret == Status::ERROR_PACKET_CONVERT_FAILED, HandlePacketConvertError());
+        FALSE_GOON_NOEXEC(ret == Status::OK, convertErrorTime_.store(0));
         bool isNeedRetry = ret == Status::OK || ret == Status::ERROR_AGAIN;
         if (isNeedRetry) {
             return GetReadLoopRetryUs(trackId);
