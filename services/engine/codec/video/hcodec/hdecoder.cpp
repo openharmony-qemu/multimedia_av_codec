@@ -27,6 +27,7 @@
 #include "type_converter.h"
 #include "surface_buffer.h"
 #include "buffer_extra_data_impl.h"  // foundation/graphic/graphic_surface/surface/include/
+#include "surface_tools.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -302,7 +303,7 @@ int32_t HDecoder::OnSetOutputSurfaceWhenCfg(const sptr<Surface> &surface)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
-    currSurface_ = SurfaceItem(surface);
+    currSurface_ = SurfaceItem(surface, compUniqueStr_);
     HLOGI("set surface(%" PRIu64 ")(%s) succ", surface->GetUniqueId(), surface->GetName().c_str());
     return AVCS_ERR_OK;
 }
@@ -702,10 +703,7 @@ void HDecoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
 void HDecoder::OnClearBufferPool(OMX_DIRTYPE portIndex)
 {
     if ((portIndex == OMX_DirOutput) && currSurface_.surface_) {
-        GSError err = currSurface_.surface_->CleanCache();
-        if (err != GSERROR_OK) {
-            HLOGW("clean cache failed, GSError=%d", err);
-        }
+        SurfaceTools::GetInstance().CleanCache(compUniqueStr_, currSurface_.surface_, false);
         freeList_.clear();
     }
 }
@@ -743,7 +741,7 @@ void HDecoder::CombineConsumerUsage()
 int32_t HDecoder::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, uint32_t targetSize)
 {
     surface->Connect(); // cleancache will work only if the surface is connected by us
-    surface->CleanCache();
+    SurfaceTools::GetInstance().CleanCache(compUniqueStr_, surface, false);
     GSError err = surface->SetQueueSize(targetSize);
     if (err != GSERROR_OK) {
         HLOGE("surface(%" PRIu64 "), SetQueueSize to %u failed, GSError=%d",
@@ -841,7 +839,8 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
 {
     uint64_t surfaceId = surface->GetUniqueId();
     std::weak_ptr<MsgToken> weakThis = m_token;
-    GSError err = surface->RegisterReleaseListener([weakThis, surfaceId](sptr<SurfaceBuffer>&) {
+    bool ret = SurfaceTools::GetInstance().RegisterReleaseListener(compUniqueStr_, surface,
+        [weakThis, surfaceId](sptr<SurfaceBuffer>&) {
         std::shared_ptr<MsgToken> codec = weakThis.lock();
         if (codec == nullptr) {
             LOGD("decoder is gone");
@@ -852,8 +851,8 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
         codec->SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, param);
         return GSERROR_OK;
     });
-    if (err != GSERROR_OK) {
-        HLOGE("surface(%" PRIu64 "), RegisterReleaseListener failed, GSError=%d", surfaceId, err);
+    if (!ret) {
+        HLOGE("surface(%" PRIu64 "), RegisterReleaseListener failed", surfaceId);
         return AVCS_ERR_UNKNOWN;
     }
     return AVCS_ERR_OK;
@@ -1142,10 +1141,10 @@ void HDecoder::OnEnterUninitializedState()
     cfgedConsumerUsage = 0;
 }
 
-HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface)
-    : surface_(surface), originalTransform_(surface->GetTransform()) {}
+HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface, std::string codecId)
+    : surface_(surface), originalTransform_(surface->GetTransform()), compUniqueStr_(codecId) {}
 
-void HDecoder::SurfaceItem::Release()
+void HDecoder::SurfaceItem::Release(bool cleanAll)
 {
     if (surface_) {
         LOGI("release surface(%" PRIu64 ")", surface_->GetUniqueId());
@@ -1153,6 +1152,7 @@ void HDecoder::SurfaceItem::Release()
             surface_->SetTransform(originalTransform_.value());
             originalTransform_ = std::nullopt;
         }
+        SurfaceTools::GetInstance().ReleaseSurface(compUniqueStr_, surface_, cleanAll);
         surface_ = nullptr;
     }
 }
@@ -1263,7 +1263,7 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     ClassifyOutputBufferOwners(ownedByUs, ownedBySurfaceFlushTime2BufferIndex);
 
     SurfaceItem oldSurface = currSurface_;
-    currSurface_ = SurfaceItem(newSurface);
+    currSurface_ = SurfaceItem(newSurface, compUniqueStr_);
     CombineConsumerUsage();
     // if owned by old surface, we need to transfer them to new surface
     for (auto [flushTime, i] : ownedBySurfaceFlushTime2BufferIndex) {
@@ -1277,8 +1277,7 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
         }
     }
 
-    oldSurface.surface_->CleanCache(true); // make sure old surface is empty and go black
-    oldSurface.Release();
+    oldSurface.Release(true); // make sure old surface is empty and go black
     SetTransform();
     SetScaleMode();
     HLOGI("set surface(%" PRIu64 ")(%s) succ", newId, newSurface->GetName().c_str());
