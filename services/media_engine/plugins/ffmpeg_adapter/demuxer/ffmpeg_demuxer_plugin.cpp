@@ -580,7 +580,6 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> samp
             formatContext_->pb->error = 0;
             return Status::ERROR_AGAIN;
         }
-        return ret;
     }
     dstSamplePacket->isAnnexb = true;
     return ret;
