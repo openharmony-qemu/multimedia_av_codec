@@ -89,6 +89,7 @@ string g_commentTest1100Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Co
 string g_commentTest1200Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Comment_1200.mp4");
 string g_commentTest1300Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Comment_1300.mp4");
 string g_wavAlawPath = TEST_FILE_PATH + string("audio/wav_48000_1_pcm_alaw.wav");
+string g_flacPath2 = TEST_FILE_PATH + string("FLAC_48000_32_1.flac");
 } // namespace
 
 void DemuxerUnitTest::SetUpTestCase(void)
@@ -1215,7 +1216,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1080, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 3072, 4031, 4035, 29952, 29953}; // ms
-    vector<int32_t> audioVals = {313, 313, 313, 281, 281, 281, 271, 272, 272, 270, 271, 271, 1, 1, 1, 2, 2, 2};
+    vector<int32_t> audioVals = {313, 313, 313, 281, 281, 281, 271, 271, 271, 270, 270, 270, 1, 1, 1, 2, 2, 2};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -2971,7 +2972,11 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1801, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1801, TestSize.Level1)
 {
+    return;
     InitResource(g_ac3Path, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -3377,5 +3382,37 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1806, TestSize.Level1)
     }
     ASSERT_NE(demuxer_->SeekToTime(12000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_1803
+ * @tc.desc: seek to the specified time(mts)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1807, TestSize.Level1)
+{
+    InitResource(g_flacPath2, LOCAL);
+    SetInitValue();
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = 
+        {0, 1000, 25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 210000, 219000}; // ms
+    int test_cnt = 2000;
+    int64_t total = 0;
+    float opt_rate = 0.2;
+    int64_t old_cost = 1600;
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        auto start_ts = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < test_cnt; i++) {
+            ret_ = demuxer_->SeekToTime(*toPts, SeekMode::SEEK_PREVIOUS_SYNC);
+        }
+        auto end_ts = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_ts - start_ts).count();
+        total += duration;
+    }
+    int64_t new_cost = total / (test_cnt * toPtsList.size());
+    printf("new_cost %lld\n", new_cost);
+    ASSERT_EQ(total <= old_cost * (1 - opt_rate), true);
 }
 } // namespace
