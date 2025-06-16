@@ -53,12 +53,12 @@ protected:
     const char *INP_DIR_2336_1080_10 = "/data/test/media/hlg_2336_1080_10.h265";
     const char *INP_DIR_2336_1088_10 = "/data/test/media/hlg_2336_1088_10.h265";
     const char *INP_DIR_4K_10 = "/data/test/media/hlg_3840_2160_10.h265";
-    const char *INP_DIR_RESOLUTION = "/data/test/media/hlg_resolution_change_10.h265";
-    const char *INP_DIR_SDR = "/data/test/media/1920_1080_20M_30.h265";
-    const char *INP_DIR_HDR10 = "/data/test/media/hdr10.h265";
-    const char *INP_DIR_HLG = "/data/test/media/hlg.h265";
-    const char *INP_DIR_PQLIMIT = "/data/test/media/pqHdrVivid_4k.h265";
-    const char *INP_DIR_HLGLIMIT = "/data/test/media/hlgHdrVivid_1080p.h265";
+    const char *inpDirResolution = "/data/test/media/hlg_resolution_change_10.h265";
+    const char *inpDirSdr = "/data/test/media/1920_1080_20M_30.h265";
+    const char *inpDirHdr10 = "/data/test/media/hdr10.h265";
+    const char *inpDirHlg = "/data/test/media/hlg.h265";
+    const char *inpDirPqlimit = "/data/test/media/pqHdrVivid_4k.h265";
+    const char *inpDirHlgLimit = "/data/test/media/hlgHdrVivid_1080p.h265";
 };
 } // namespace Media
 } // namespace OHOS
@@ -396,7 +396,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0012, TestSize.Level0
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0013, TestSize.Level0)
 {
     shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
-    vDecSample->INP_DIR = INP_DIR_RESOLUTION;
+    vDecSample->INP_DIR = inpDirResolution;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 10;
@@ -422,7 +422,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0013, TestSize.Level0
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0014, TestSize.Level0)
 {
     shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
-    vDecSample->INP_DIR = INP_DIR_RESOLUTION;
+    vDecSample->INP_DIR = inpDirResolution;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 10;
@@ -491,7 +491,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0016, TestSize.Level0
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0017, TestSize.Level0)
 {
     shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
-    vDecSample->INP_DIR = INP_DIR_SDR;
+    vDecSample->INP_DIR = inpDirSdr;
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -517,7 +517,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0017, TestSize.Level0
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0018, TestSize.Level0)
 {
     shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
-    vDecSample->INP_DIR = INP_DIR_HDR10;
+    vDecSample->INP_DIR = inpDirHdr10;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -543,7 +543,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0018, TestSize.Level0
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0019, TestSize.Level0)
 {
     shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
-    vDecSample->INP_DIR = INP_DIR_HLG;
+    vDecSample->INP_DIR = inpDirHlg;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -569,7 +569,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0019, TestSize.Level0
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0020, TestSize.Level0)
 {
     shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
-    vDecSample->INP_DIR = INP_DIR_PQLIMIT;
+    vDecSample->INP_DIR = inpDirPqlimit;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -595,7 +595,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0020, TestSize.Level0
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0021, TestSize.Level0)
 {
     shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
-    vDecSample->INP_DIR = INP_DIR_HLGLIMIT;
+    vDecSample->INP_DIR = inpDirHlgLimit;
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -687,4 +687,4 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0024, TestSize.Level0
         ASSERT_EQ(AVCS_ERR_UNSUPPORT, vDecSample->Configure());
     }
 }
-} //namespace 
+} //namespace

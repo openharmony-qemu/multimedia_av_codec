@@ -110,7 +110,6 @@ public:
     void SetRunning();
     void GetStride();
     void CreateSurface();
-    bool outputYuvFlag = false;
     int32_t SetOutputSurface();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
     bool PREPARE_FLAG = true;

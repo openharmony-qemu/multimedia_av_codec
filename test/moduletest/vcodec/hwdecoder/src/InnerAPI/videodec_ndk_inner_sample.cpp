@@ -126,7 +126,7 @@ void VDecInnerCallback::OnOutputFormatChanged(const Format& format)
     int32_t stride = 0;
     int32_t sliceHeight = 0;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, currentWidth);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, currentHeight);    
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, currentHeight);
     format.GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
     format.GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight);
     dec_sample->DEFAULT_WIDTH = currentWidth;
@@ -167,7 +167,7 @@ VDecNdkInnerSample::~VDecNdkInnerSample()
     for (int i = 0; i < MAX_SURF_NUM; i++) {
         if (nativeWindow[i]) {
             OH_NativeWindow_DestroyNativeWindow(nativeWindow[i]);
-            nativeWindow[i] = nullptr;            
+            nativeWindow[i] = nullptr;
         }
     }
     g_yuvSurface = false;
@@ -236,7 +236,7 @@ int32_t VDecNdkInnerSample::Configure()
                 errCount++;
             }
         }
-    }    
+    }
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
@@ -247,10 +247,10 @@ int32_t VDecNdkInnerSample::Configure()
             OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
     } else if (BT709_LIMIT_FLAG) {
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-            OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);        
+            OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     } else if (BT709_FULL_FLAG) {
         format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-            OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_FULL);        
+            OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_FULL);
     }
 
     return vdec_->Configure(format);
@@ -286,13 +286,13 @@ void VDecNdkInnerSample::GetStride()
     int32_t stride = 0;
     int32_t sliceHeight = 0;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, currentWidth);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, currentHeight);    
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, currentHeight);
     format.GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
     format.GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight);
     dec_sample->DEFAULT_WIDTH = currentWidth;
     dec_sample->DEFAULT_HEIGHT = currentHeight;
     g_strideSurface = stride;
-    g_sliceSurface = sliceHeight;    
+    g_sliceSurface = sliceHeight;
 }
 
 int32_t VDecNdkInnerSample::Stop()
@@ -425,7 +425,6 @@ int32_t VDecNdkInnerSample::StartVideoDecoder()
     
     outputLoop_ = make_unique<thread>(&VDecNdkInnerSample::OutputFunc, this);
     if (outputLoop_ == nullptr) {
-        cout << "Failed to create output loop" << endl;
         isRunning_.store(false);
         vdec_->Stop();
         ReleaseInFile();
@@ -561,7 +560,6 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
 
     uint8_t *fileBuffer = new uint8_t[bufferSize + START_CODE_SIZE];
     if (fileBuffer == nullptr) {
-        cout << "Fatal: no memory" << endl;
         delete[] fileBuffer;
         return 0;
     }
@@ -586,7 +584,6 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
 
     uint8_t *avBuffer = buffer->GetBase();
     if (avBuffer == nullptr) {
-        cout << "avBuffer == nullptr" << endl;
         inFile_->clear();
         inFile_->seekg(0, ios::beg);
         delete[] fileBuffer;
@@ -594,7 +591,6 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
     }
     if (memcpy_s(avBuffer, size, fileBuffer, bufferSize + START_CODE_SIZE) != EOK) {
         delete[] fileBuffer;
-        cout << "Fatal: memcpy fail" << endl;
         return 0;
     }
 
@@ -604,7 +600,6 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
     int32_t result = vdec_->QueueInputBuffer(index, info, flag);
     if (result != AVCS_ERR_OK) {
         errCount = errCount + 1;
-        cout << "push input data failed,error:" << result << endl;
     }
     frameCount = frameCount + 1;
     if (autoSwitchSurface && (frameCount % (int32_t)DEFAULT_FRAME_RATE == 0)) {
@@ -734,10 +729,6 @@ void VDecNdkInnerSample::InputFunc()
 
 void VDecNdkInnerSample::OutputFunc()
 {
-    FILE *outFile = nullptr;
-    if (outputYuvFlag) {
-        outFile = fopen(OUT_DIR, "wb");
-    }
     SHA512_Init(&g_ctx);
     while (true) {
         if (!isRunning_.load()) {
@@ -777,18 +768,11 @@ void VDecNdkInnerSample::OutputFunc()
             }
             break;
         }
-        if (outFile != nullptr) {
-            fwrite(buffer->GetBase(), 1, info.size, outFile);
-        }
-
         ProcessOutputData(buffer, index);
         if (errCount > 0) {
             isRunning_.store(false);
             break;
         }
-    }
-    if (outFile) {
-        (void)fclose(outFile);
     }
 }
 
