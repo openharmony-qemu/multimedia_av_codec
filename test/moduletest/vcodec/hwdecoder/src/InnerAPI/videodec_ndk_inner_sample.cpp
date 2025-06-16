@@ -602,14 +602,19 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
         errCount = errCount + 1;
     }
     frameCount = frameCount + 1;
+    SwitchSurface();
+    delete[] fileBuffer;
+    return 0;
+}
+
+void VDecNdkInnerSample::SwitchSurface()
+{
     if (autoSwitchSurface && (frameCount % (int32_t)DEFAULT_FRAME_RATE == 0)) {
         switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
         if (ps[switchSurfaceFlag] != nullptr) {
             vdec_->SetOutputSurface(ps[switchSurfaceFlag]) == AVCS_ERR_OK ? (0) : (errCount++);
         }
     }
-    delete[] fileBuffer;
-    return 0;
 }
 
 int32_t VDecNdkInnerSample::StateEOS()

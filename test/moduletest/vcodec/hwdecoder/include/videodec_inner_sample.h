@@ -102,6 +102,7 @@ public:
     void OpenFileFail();
     void InputFunc();
     void OutputFunc();
+    void SwitchSurface();
     void ProcessOutputData(std::shared_ptr<AVSharedMemory> buffer, uint32_t index);
     void FlushBuffer();
     void StopInloop();
