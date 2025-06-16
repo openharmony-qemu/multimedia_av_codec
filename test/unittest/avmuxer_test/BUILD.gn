@@ -53,6 +53,7 @@ ohos_unittest("avmuxer_capi_unit_test") {
     sources = [
       "./avmuxer_sample.cpp",
       "./avmuxer_unit_test.cpp",
+      "./avmuxer_wav_pcm_unit_test.cpp",
       "./capi/avmuxer_capi_mock.cpp",
       "./capi/avmuxer_capi_mock_factory.cpp",
     ]
@@ -97,6 +98,7 @@ ohos_unittest("avmuxer_inner_unit_test") {
     sources = [
       "./avmuxer_sample.cpp",
       "./avmuxer_unit_test.cpp",
+      "./avmuxer_wav_pcm_unit_test.cpp",
       "./inner/avmuxer_inner_mock.cpp",
       "./inner/avmuxer_inner_mock_factory.cpp",
     ]
