@@ -35,7 +35,6 @@
 #include "dma_swap.h"
 #include "media_description.h"
 #include "fsurface_memory.h"
-#include "surface_utils.h"
 #include "task_thread.h"
 
 namespace OHOS {
@@ -50,7 +49,6 @@ class FCodec : public CodecBase, public RefBase {
 public:
     explicit FCodec(const std::string &name);
     ~FCodec() override;
-    int32_t Init(Media::Meta &callerInfo) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
     int32_t Stop() override;
@@ -146,8 +144,8 @@ private:
     // surface listener callback
     void RequestBufferFromConsumer();
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
-    int32_t RegisterListenerToSurface(const sptr<Surface> &surface);
-    void UnRegisterListenerToSurface(const sptr<Surface> &surface);
+    GSError RegisterListenerToSurface(const sptr<Surface> &surface);
+    int32_t UnRegisterListenerToSurface(const sptr<Surface> &surface);
     void RequestSurfaceBufferThread();
     void StartRequestSurfaceBufferThread();
     void StopRequestSurfaceBufferThread();
@@ -161,8 +159,6 @@ private:
     bool disableDmaSwap_ = false;
     int32_t pid_ = -1;
 
-    int32_t instanceId_ = -1;
-    std::string decName_;
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;
     Format format_;
