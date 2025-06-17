@@ -68,7 +68,7 @@ ohos_shared_library("media_plugin_LbvcAudioEncoder") {
 
   external_deps = [
     "c_utils:utils",
-    "drivers_interface_codec:libcodec_proxy_3.0",
+    "drivers_interface_codec:libcodec_proxy_4.0",
     "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

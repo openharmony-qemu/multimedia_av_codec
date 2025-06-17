@@ -168,7 +168,7 @@ ohos_static_library("av_codec_engine_codeclist_mock") {
 
   external_deps = [
     "c_utils:utils",
-    "drivers_interface_codec:libcodec_proxy_3.0",
+    "drivers_interface_codec:libcodec_proxy_4.0",
     "googletest:gmock_main",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",

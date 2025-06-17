@@ -17,15 +17,15 @@
 #include <condition_variable>
 #include <mutex>
 #include "buffer/avbuffer.h"
-#include "v3_0/codec_ext_types.h"
-#include "v3_0/icodec_component_manager.h"
+#include "v4_0/codec_ext_types.h"
+#include "v4_0/icodec_component_manager.h"
 #include "avcodec_info.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Hdi {
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace OHOS::HDI::Codec::V4_0;
 
 struct AudioCodecOmxParam {
     uint32_t size;
