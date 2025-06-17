@@ -371,6 +371,7 @@ Status DemuxerFilter::DoStart()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
     ScopedTimer timer("Demuxer Start", DEMUXER_START_WARNING_MS);
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+    SetIsInPrePausing(false);
     auto ret = demuxer_->Start();
     state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
     return ret;
@@ -381,7 +382,9 @@ Status DemuxerFilter::DoStop()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Stop");
     MEDIA_LOG_I_SHORT("Stop in");
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+    SetIsInPrePausing(true);
     auto ret = demuxer_->Stop();
+    SetIsInPrePausing(false);
     state_ = ret == Status::OK ? FilterState::STOPPED : FilterState::ERROR;
     return ret;
 }
@@ -396,7 +399,9 @@ Status DemuxerFilter::DoPause()
         state_ = FilterState::PAUSED;
         return Status::OK;
     }
+    SetIsInPrePausing(true);
     auto ret = demuxer_->Pause();
+    SetIsInPrePausing(false);
     state_ = ret == Status::OK ? FilterState::PAUSED : FilterState::ERROR;
     return ret;
 }
@@ -406,7 +411,9 @@ Status DemuxerFilter::DoFreeze()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Freeze");
     MEDIA_LOG_I("Freeze in");
     FALSE_RETURN_V_MSG(state_ == FilterState::RUNNING, Status::OK, "current state is %{public}d", state_);
+    SetIsInPrePausing(true);
     auto ret = demuxer_->Pause();
+    SetIsInPrePausing(false);
     state_ = ret == Status::OK ? FilterState::FROZEN : FilterState::ERROR;
     return ret;
 }
@@ -448,6 +455,7 @@ Status DemuxerFilter::DoResume()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Resume");
     MEDIA_LOG_I_SHORT("Resume in");
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+    SetIsInPrePausing(false);
     auto ret = demuxer_->Resume();
     state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
     return ret;
@@ -458,6 +466,7 @@ Status DemuxerFilter::DoUnFreeze()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::UnFreeze");
     MEDIA_LOG_I("UnFreeze in");
     FALSE_RETURN_V_MSG(state_ == FilterState::FROZEN, Status::OK, "current state is %{public}d", state_);
+    SetIsInPrePausing(false);
     auto ret = demuxer_->Resume();
     state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
     return ret;
@@ -665,10 +674,10 @@ std::shared_ptr<Meta> DemuxerFilter::GetGlobalMetaInfo() const
 Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
     int32_t trackId = -1;
-    if (!FindTrackId(outType, trackId)) {
-        MEDIA_LOG_E_SHORT("FindTrackId failed.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    FALSE_RETURN_V_MSG_E(nextFilter != nullptr, Status::ERROR_INVALID_OPERATION, "nextFilter nullptr");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION, "demuxer_ nullptr");
+    FALSE_RETURN_V_MSG_E(FindTrackId(outType, trackId), Status::ERROR_INVALID_PARAMETER, "FindTrackId failed");
+
     std::shared_ptr<Meta> globalInfo = demuxer_->GetGlobalMetaInfo();
     FileType fileType = FileType::UNKNOW;
     if (globalInfo == nullptr || !globalInfo->GetData(Tag::MEDIA_FILE_TYPE, fileType)) {
@@ -681,11 +690,12 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     }
     std::string mimeType;
     meta->GetData(Tag::MIME_TYPE, mimeType);
-    MEDIA_LOG_I_SHORT("LinkNext mimeType " PUBLIC_LOG_S, mimeType.c_str());
+    MEDIA_LOG_I("LinkNext NextFilter, mimeType " PUBLIC_LOG_S " filterType " PUBLIC_LOG_D32,
+        mimeType.c_str(), nextFilter->GetFilterType());
 
     nextFilter_ = nextFilter;
     nextFiltersMap_[outType].push_back(nextFilter_);
-    MEDIA_LOG_I_SHORT("LinkNext NextFilter FilterType " PUBLIC_LOG_D32, nextFilter_->GetFilterType());
+
     meta->SetData(Tag::REGULAR_TRACK_ID, trackId);
     if (fileType == FileType::AVI) {
         MEDIA_LOG_I("File type is AVI " PUBLIC_LOG_D32, static_cast<int32_t>(FileType::AVI));
