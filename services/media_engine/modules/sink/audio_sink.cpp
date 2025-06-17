@@ -1054,8 +1054,8 @@ void AudioSink::DriveBufferCircle()
     availOutputBuffers_.pop();
     swapOutputBuffers_.push(swapBuffer);
     if (isInPrePausing) {
-        MEDIA_LOG_I("DriveBufferCircle availOutputBuffers_ size:%{public}d",
-            static_cast<int>(availOutputBuffers_.size()));
+        MEDIA_LOG_I("DriveBufferCircle availOutputBuffers_ size:%{public}d, swapOutputBuffers_ size:%{public}d",
+            static_cast<int>(availOutputBuffers_.size()), static_cast<int>(swapOutputBuffers_.size()));
     }
     FALSE_RETURN_MSG(inputBufferQueueConsumer_ != nullptr, "bufferQueue consumer is nullptr");
     inputBufferQueueConsumer_->ReleaseBuffer(oldestBuffer);
