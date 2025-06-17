@@ -34,7 +34,7 @@ ohos_shared_library("av_codec_service_utils") {
   ]
 
   sources = [
-    "surface_utils.cpp",
+    "surface_tools.cpp",
     "task_thread.cpp",
   ]
 
@@ -50,7 +50,6 @@ ohos_shared_library("av_codec_service_utils") {
     "-FS",
     "-O2",
     "-D_FORTIFY_SOURCE=2",
-    "-fvisibility=hidden",
     "-Wformat=2",
     "-Wfloat-equal",
     "-Wdate-time",

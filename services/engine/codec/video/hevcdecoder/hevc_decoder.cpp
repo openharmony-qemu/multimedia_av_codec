@@ -1368,7 +1368,7 @@ GSError HevcDecoder::BufferReleasedByConsumer(uint64_t surfaceId)
 void HevcDecoder::UnRegisterListenerToSurface(const sptr<Surface> &surface)
 {
     CHECK_AND_RETURN_LOG(surface != nullptr, "Surface is null, not need to unregister listener.");
-    SurfaceUtils::GetInstance().ReleaseSurface(decName_, surface, false);
+    SurfaceTools::GetInstance().ReleaseSurface(decName_, surface, false);
 }
 
 int32_t HevcDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
@@ -1376,7 +1376,7 @@ int32_t HevcDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
     uint64_t surfaceId = surface->GetUniqueId();
     wptr<HevcDecoder> wp = this;
     bool ret =
-        SurfaceUtils::GetInstance().RegisterReleaseListener(decName_, surface, [wp, surfaceId](sptr<SurfaceBuffer> &) {
+        SurfaceTools::GetInstance().RegisterReleaseListener(decName_, surface, [wp, surfaceId](sptr<SurfaceBuffer> &) {
             sptr<HevcDecoder> codec = wp.promote();
             if (!codec) {
                 AVCODEC_LOGD("decoder is gone");

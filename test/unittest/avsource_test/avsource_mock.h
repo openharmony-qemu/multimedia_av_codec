@@ -52,9 +52,15 @@ private:
 class NativeAVDataSource : public OHOS::Media::IMediaDataSource {
 public:
     explicit NativeAVDataSource(OH_AVDataSource *dataSource)
-        : dataSource_(dataSource)
+        : isExt_(false), dataSource_(dataSource), dataSourceExt_(nullptr), userData_(nullptr)
     {
     }
+
+    NativeAVDataSource(OH_AVDataSourceExt* dataSourceExt, void* userData)
+        : isExt_(true), dataSource_(nullptr), dataSourceExt_(dataSourceExt), userData_(userData)
+    {
+    }
+
     virtual ~NativeAVDataSource() = default;
 
     int32_t ReadAt(const std::shared_ptr<AVSharedMemory> &mem, uint32_t length, int64_t pos = -1)
@@ -62,13 +68,22 @@ public:
         std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(
             mem->GetBase(), mem->GetSize(), mem->GetSize()
         );
-        OH_AVBuffer* avBuffer = new OH_AVBuffer(buffer);
-        return dataSource_->readAt(avBuffer, length, pos);
+        OH_AVBuffer avBuffer(buffer);
+
+        if (isExt_) {
+            return dataSourceExt_->readAt(&avBuffer, length, pos, userData_);
+        } else {
+            return dataSource_->readAt(&avBuffer, length, pos);
+        }
     }
 
     int32_t GetSize(int64_t &size)
     {
-        size = dataSource_->size;
+        if (isExt_) {
+            size = dataSourceExt_->size;
+        } else {
+            size = dataSource_->size;
+        }
         return 0;
     }
 
@@ -83,7 +98,10 @@ public:
     }
 
 private:
+    bool isExt_ = false;
     OH_AVDataSource* dataSource_;
+    OH_AVDataSourceExt* dataSourceExt_ = nullptr;
+    void* userData_ = nullptr;
 };
 
 }  // namespace MediaAVCodec

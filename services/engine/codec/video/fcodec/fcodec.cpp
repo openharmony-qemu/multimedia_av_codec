@@ -1554,7 +1554,7 @@ GSError FCodec::BufferReleasedByConsumer(uint64_t surfaceId)
 void FCodec::UnRegisterListenerToSurface(const sptr<Surface> &surface)
 {
     CHECK_AND_RETURN_LOG(surface != nullptr, "Surface is null, not need to unregister listener.");
-    SurfaceUtils::GetInstance().ReleaseSurface(decName_, surface, false);
+    SurfaceTools::GetInstance().ReleaseSurface(decName_, surface, false);
 }
 
 int32_t FCodec::RegisterListenerToSurface(const sptr<Surface> &surface)
@@ -1562,7 +1562,7 @@ int32_t FCodec::RegisterListenerToSurface(const sptr<Surface> &surface)
     uint64_t surfaceId = surface->GetUniqueId();
     wptr<FCodec> wp = this;
     bool ret =
-        SurfaceUtils::GetInstance().RegisterReleaseListener(decName_, surface, [wp, surfaceId](sptr<SurfaceBuffer> &) {
+        SurfaceTools::GetInstance().RegisterReleaseListener(decName_, surface, [wp, surfaceId](sptr<SurfaceBuffer> &) {
             sptr<FCodec> codec = wp.promote();
             if (!codec) {
                 AVCODEC_LOGD("decoder is gone");

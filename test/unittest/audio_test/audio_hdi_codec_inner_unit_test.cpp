@@ -34,7 +34,7 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media::Plugins;
 using namespace Hdi;
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace OHOS::HDI::Codec::V4_0;
 
 const string LBVC_DECODER_COMPONENT_NAME = "OMX.audio.decoder.lbvc";
 constexpr uint32_t OMX_AUDIO_CODEC_PARAM_INDEX = 0x6F000000 + 0x00A0000B;

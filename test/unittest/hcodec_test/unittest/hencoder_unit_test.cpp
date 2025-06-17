@@ -1296,15 +1296,19 @@ static void ConfigureGopModeForBFrameTest(const std::string &targetType, const s
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
 #ifdef HMOS_TEST
+    auto bEncodeCap = cap.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_B_FRAME));
+    bool supportB = (bEncodeCap != cap.featuresMap.end());
+    TLOGI("%s b frame, support B %d", targetType.c_str(), supportB);
+
     format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
                        Media::Plugins::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE);
     ret = testObj->Configure(format);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(supportB ? AVCS_ERR_OK : AVCS_ERR_UNSUPPORT, ret);
 
     format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
                        Media::Plugins::VIDEO_ENCODE_GOP_H3B_MODE);
     ret = testObj->Configure(format);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(supportB ? AVCS_ERR_OK : AVCS_ERR_UNSUPPORT, ret);
 
     format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, 1000);
     ret = testObj->Configure(format);
