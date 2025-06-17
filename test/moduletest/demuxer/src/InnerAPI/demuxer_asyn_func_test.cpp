@@ -629,7 +629,7 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0210, TestSize.Level3
 
 /**
  * @tc.number    : DEMUXER_ASYN_INNER_FUNC_0220
- * @tc.name      : seek + read 
+ * @tc.name      : seek + read
  * @tc.desc      : func test
  */
 HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0220, TestSize.Level3)
