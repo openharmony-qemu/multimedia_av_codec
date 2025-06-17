@@ -420,6 +420,12 @@ Status AudioSinkFilter::SetLooping(bool loop)
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->SetLooping(loop);
 }
+
+Status AudioSinkFilter::SetAudioHapticsSyncId(int32_t syncId)
+{
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->SetAudioHapticsSyncId(syncId);
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

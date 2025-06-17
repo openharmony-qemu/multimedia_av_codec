@@ -102,6 +102,8 @@ public:
 
     Status SetLooping(bool loop);
 
+    Status SetAudioHapticsSyncId(int32_t syncId);
+
     void OnBufferAvailable();
 
 protected:

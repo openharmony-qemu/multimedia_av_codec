@@ -1574,5 +1574,11 @@ Status AudioSink::SetLooping(bool loop)
     MEDIA_LOG_I("AudioSink SetLooping isLoop_ = " PUBLIC_LOG_D32, isLoop_);
     return Status::OK;
 }
+
+Status AudioSink::SetAudioHapticsSyncId(int32_t syncId)
+{
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    return plugin_->SetAudioHapticsSyncId(syncId);
+}
 } // namespace MEDIA
 } // namespace OHOS
