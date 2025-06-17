@@ -536,7 +536,6 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4400, TestSize.Level0)
     const char *file = "/data/test/media/test_265_B_Gop25_4sec.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -594,7 +593,6 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4500, TestSize.Level0)
     const char *file = "/data/test/media/test_264_B_Gop25_4sec.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -651,7 +649,6 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4510, TestSize.Level0)
     const char *file = "/data/test/media/record_from_ios.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);

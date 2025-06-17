@@ -114,7 +114,7 @@ void DemuxerAviFuncNdkTest::TearDown()
     }
     if (g_fd > 0) {
         close(g_fd);
-    	g_fd = -1;
+        g_fd = -1;
     }
 }
 } // namespace Media

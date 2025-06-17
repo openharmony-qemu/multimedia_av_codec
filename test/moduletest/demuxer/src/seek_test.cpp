@@ -168,6 +168,7 @@ static void CheckSeekMode(seekInfo seekInfo)
         }
     }
     close(fd);
+    fd = -1;
 }
 
 /**

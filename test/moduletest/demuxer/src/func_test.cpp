@@ -523,7 +523,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1200, TestSize.Level0)
     const char *file = "/data/test/media/audio/AAC_48000_1.aac";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -543,7 +542,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1200, TestSize.Level0)
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
-                cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
                 continue;
             }
 
@@ -673,7 +671,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1500, TestSize.Level0)
     const char *file = "/data/test/media/audio/FLAC_48000_1.flac";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -694,7 +691,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1500, TestSize.Level0)
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
-                cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
                 continue;
             }
 
@@ -994,7 +990,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2200, TestSize.Level0)
     const char *file = "/data/test/media/MP3_OGG_48000_1.bin";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size1);
     ASSERT_NE(source, nullptr);
 
@@ -1015,7 +1010,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2200, TestSize.Level0)
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
-                cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
                 continue;
             }
 
@@ -1051,7 +1045,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2300, TestSize.Level0)
     const char *file = "/data/test/media/MP3_OGG_48000_1.bin";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, size1, size2);
     ASSERT_NE(source, nullptr);
 
@@ -1072,7 +1065,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2300, TestSize.Level0)
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
-                cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
                 continue;
             }
 
@@ -1106,7 +1098,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2400, TestSize.Level0)
     const char *file = "/data/test/media/test_video_avcc_10sec.bin";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size1);
     ASSERT_NE(source, nullptr);
 
@@ -1164,7 +1155,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3100, TestSize.Level1)
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1178,7 +1168,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3100, TestSize.Level1)
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    cout << g_trackCount << "####################" << endl;
 
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
@@ -1194,16 +1183,13 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3100, TestSize.Level1)
             }
             if (count == pos) {
                 isEnd = true;
-                cout << pos << " =====curr_pts = attr.pts" << endl;
                 break;
             }
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
-                cout << "is end!!!!!!!!" << endl;
             }
             count++;
         }
-        cout << "count: " << count << endl;
     }
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, startPts / 1000, SEEK_MODE_PREVIOUS_SYNC));
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr));
@@ -1227,7 +1213,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3200, TestSize.Level1)
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1255,16 +1240,13 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3200, TestSize.Level1)
             }
             if (count == pos) {
                 isEnd = true;
-                cout << "curr_pts = attr.pts" << endl;
                 break;
             }
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
-                cout << "is end!!!!!!!!" << endl;
             }
             count++;
         }
-        cout << "count: " << count << endl;
     }
 
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, startPts / 1000, SEEK_MODE_NEXT_SYNC));
@@ -1289,7 +1271,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3300, TestSize.Level1)
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1317,16 +1298,13 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3300, TestSize.Level1)
             }
             if (count == pos) {
                 isEnd = true;
-                cout << "curr_pts = attr.pts" << endl;
                 break;
             }
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
-                cout << "is end!!!!!!!!" << endl;
             }
             count++;
         }
-        cout << "count: " << count << endl;
     }
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, startPts / 1000, SEEK_MODE_CLOSEST_SYNC));
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr));
@@ -1350,7 +1328,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3400, TestSize.Level1)
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1360,7 +1337,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3400, TestSize.Level1)
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    cout << g_trackCount << "####################" << endl;
 
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
@@ -1376,13 +1352,11 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3400, TestSize.Level1)
             }
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
-                cout << "is end!!!!!!!!" << endl;
             } else {
                 endPts = attr.pts;
             }
             count++;
         }
-        cout << "count: " << count << endl;
     }
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, endPts / 1000, SEEK_MODE_PREVIOUS_SYNC));
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr));
@@ -1406,7 +1380,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3500, TestSize.Level1)
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1415,7 +1388,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3500, TestSize.Level1)
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    cout << g_trackCount << "####################" << endl;
 
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
@@ -1429,13 +1401,11 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3500, TestSize.Level1)
             }
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
-                cout << "is end!!!!!!!!" << endl;
             } else {
                 endPts = attr.pts;
             }
             count++;
         }
-        cout << "count: " << count << endl;
     }
     // end I
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, endPts / 1000, SEEK_MODE_NEXT_SYNC));
@@ -1463,7 +1433,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3600, TestSize.Level1)
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1472,7 +1441,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3600, TestSize.Level1)
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    cout << g_trackCount << "####################" << endl;
 
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
@@ -1487,13 +1455,11 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3600, TestSize.Level1)
             }
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
-                cout << "is end!!!!!!!!" << endl;
             } else {
                 endPts = attr.pts;
             }
             count++;
         }
-        cout << "count: " << count << endl;
     }
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, endPts / 1000, SEEK_MODE_CLOSEST_SYNC));
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr));
@@ -1522,7 +1488,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3700, TestSize.Level0)
     bool videoIsEnd = false;
     const char *file = "/data/test/media/01_video_audio.mp4";
     int fd = open(file, O_RDONLY);
-    cout << file << "pos: " << pos << "toMs: " << toMs << " fd:" << fd << " size:" << GetFileSize(file) << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, GetFileSize(file));
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -1577,7 +1542,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3800, TestSize.Level0)
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1636,7 +1600,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3900, TestSize.Level0)
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1660,7 +1623,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3900, TestSize.Level0)
             }
             if (count == pos) {
                 isEnd = true;
-                cout << "curr_pts = attr.pts" << endl;
                 break;
             }
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
@@ -1691,7 +1653,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_4000, TestSize.Level2)
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1717,7 +1678,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_4100, TestSize.Level2)
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1744,7 +1704,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_4200, TestSize.Level1)
 
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1762,7 +1721,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_4200, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
-                cout << "is end !!!!!!!!!!!!!!!" << endl;
             }
         }
     }
@@ -1790,7 +1748,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_4300, TestSize.Level1)
     int count = 0;
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1805,12 +1762,10 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_4300, TestSize.Level1)
     }
     srand(time(nullptr));
     int pos = rand() % 250;
-    cout << " pos= " << pos << endl;
     while (!isEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
             if (count == pos) {
-                cout << count << " count == pos!!!!!!!!!" << endl;
                 ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_UnselectTrackByID(demuxer, 0));
                 ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_UnselectTrackByID(demuxer, 1));
                 ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
@@ -1820,7 +1775,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_4300, TestSize.Level1)
 
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
-                cout << "is end !!!!!!!!!!!!!!!" << endl;
             }
             if (index == MEDIA_TYPE_AUD) {
                 count++;
@@ -1844,7 +1798,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_4400, TestSize.Level1)
     int audioCount = 0;
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1865,7 +1818,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_4400, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 1, memory, &attr));
         if (audioCount == pos) {
-            cout << audioCount << " audioCount == pos remove audio track!!!!!!!!!" << endl;
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_UnselectTrackByID(demuxer, 1));
             ASSERT_NE(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 1, memory, &attr));
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
@@ -1877,7 +1829,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_4400, TestSize.Level1)
     while (true) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-            cout << "is end !!!!!!!!!!!!!!!" << endl;
             break;
         }
     }
@@ -1898,7 +1849,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_4500, TestSize.Level2)
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1921,19 +1871,15 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_7000, TestSize.Level0)
     const char *file = "/data/test/media/01_video_audio.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
-    cout << OH_AVFormat_DumpInfo(sourceFormat) << "sourceFormat" << endl;
 
     trackFormat = OH_AVSource_GetTrackFormat(source, 1);
     ASSERT_NE(trackFormat, nullptr);
-    cout << OH_AVFormat_DumpInfo(trackFormat) << "trackformat1" << endl;
 
     trackFormat2 = OH_AVSource_GetTrackFormat(source, 0);
-    cout << OH_AVFormat_DumpInfo(trackFormat2) << "trackformat0" << endl;
     OH_AVFormat_Destroy(trackFormat2);
     trackFormat2 = nullptr;
     close(fd);
@@ -1950,7 +1896,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_7100, TestSize.Level0)
     const char *file = "/data/test/media/01_video_audio.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -1972,7 +1917,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_7200, TestSize.Level0)
     const char *file = "/data/test/media/01_video_audio.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
