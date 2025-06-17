@@ -100,7 +100,7 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videodec_hdrvivid2sdr_capi_unit_test">
+    <target name="videodec_hdrvivid2sdr_async_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/720_1280_25_avcc.h264 -> /data/test/media" src="res"/>
@@ -110,7 +110,7 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videodec_hdrvivid2sdr_inner_unit_test">
+    <target name="videodec_hdrvivid2sdr_sync_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/720_1280_25_avcc.h264 -> /data/test/media" src="res"/>
@@ -120,7 +120,7 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videodec_capi_unit_test">
+    <target name="videodec_capi_async_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/720_1280_25_avcc.h264 -> /data/test/media" src="res"/>
@@ -130,14 +130,38 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videodec_h263_capi_unit_test">
+    <target name="videodec_capi_sync_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/720_1280_25_avcc.h264 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/720_1280_25_avcc.h265 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/720_1280_25_avcc.hdr.h265 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/rv40.rm -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_h263_capi_async_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/profile2_1920x1080.h263 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videodec_h263_inner_unit_test">
+    <target name="videodec_h263_capi_sync_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/profile2_1920x1080.h263 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_h263_inner_async_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/profile2_1920x1080.h263 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_h263_inner_sync_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/profile2_1920x1080.h263 -> /data/test/media" src="res"/>
@@ -167,7 +191,16 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videodec_inner_unit_test">
+    <target name="videodec_inner_async_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/720_1280_25_avcc.h264 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/720_1280_25_avcc.h265 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/720_1280_25_avcc.hdr.h265 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_inner_sync_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/720_1280_25_avcc.h264 -> /data/test/media" src="res"/>
@@ -183,14 +216,22 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videodec_mpeg_func_unit_test">
+    <target name="videodec_mpeg_func_async_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/mpeg2.m2v -> /data/test/media" src="res"/>
             <option name="push" value="video_res/mpeg4.m4v -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
-    </target>    
+    </target>
+    <target name="videodec_mpeg_func_sync_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/mpeg2.m2v -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/mpeg4.m4v -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="videodec_stable_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
@@ -228,7 +269,7 @@
             <option name="push" value="video_res/SimpleScalable.m4v -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
-    </target>    
+    </target>
     <target name="videodec_hevcdec_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
@@ -238,14 +279,29 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videoenc_capi_unit_test">
+    <target name="videoenc_capi_async_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="../../moduletest/resource/video_encoder/1280_720_nv.yuv -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videoenc_inner_unit_test">
+    <target name="videoenc_capi_sync_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="../../moduletest/resource/video_encoder/1280_720_nv.yuv -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videoenc_inner_async_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="../../moduletest/resource/video_encoder/1280_720_nv.yuv -> /data/test/media" src="res"/>
+            <option name="push" value="../../moduletest/resource/video_encoder/test.rgba -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videoenc_inner_sync_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="../../moduletest/resource/video_encoder/1280_720_nv.yuv -> /data/test/media" src="res"/>
@@ -274,18 +330,10 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videoenc_repeat_previous_frame_capi_unit_test">
+    <target name="videoenc_repeat_previous_frame_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="../../moduletest/resource/video_encoder/1280_720_nv.yuv -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
-        </preparer>
-    </target>
-    <target name="videoenc_repeat_previous_frame_inner_unit_test">
-        <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="../../moduletest/resource/video_encoder/1280_720_nv.yuv -> /data/test/media" src="res"/>
-            <option name="push" value="../../moduletest/resource/video_encoder/test.rgba -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -297,7 +345,16 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videodec_hdecoder_memrecycle_unit_test">
+    <target name="videodec_hdecoder_memrecycle_async_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/720_1280_25_avcc.h264 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/720_1280_25_avcc.h265 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/720_1280_25_avcc.hdr.h265 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_hdecoder_memrecycle_sync_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/720_1280_25_avcc.h264 -> /data/test/media" src="res"/>

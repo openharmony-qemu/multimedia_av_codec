@@ -175,7 +175,7 @@ private:
 
 struct AvccReaderInfo {
     std::string inPath;
-    bool isH264Stream = true; // true: H264; false: H265
+    bool isAvcStream = true; // true: AVC; false: HEVC
 };
 
 class AvccReader : public DataProducerBase {

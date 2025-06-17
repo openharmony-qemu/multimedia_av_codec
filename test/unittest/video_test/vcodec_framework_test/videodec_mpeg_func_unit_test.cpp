@@ -15,10 +15,14 @@
 
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
+#include "avcodec_log.h"
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
-#include "vdec_sample.h"
-#define TEST_SUIT VideoDecInnerTest
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+#include "vdec_async_sample.h"
+#else
+#include "vdec_sync_sample.h"
+#endif
 
 using namespace std;
 using namespace OHOS;
@@ -43,6 +47,7 @@ public:
     void CreateByNameWithParam(int32_t param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(TEST_SUIT)};
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
@@ -76,6 +81,10 @@ void TEST_SUIT::SetUp(void)
 
     format_ = FormatMockFactory::CreateFormat();
     ASSERT_NE(nullptr, format_);
+
+    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+    std::string testCaseName = testInfo_->name();
+    AVCODEC_LOGI("%{public}s", testCaseName.c_str());
 }
 
 void TEST_SUIT::TearDown(void)
@@ -236,7 +245,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_CreateWithNull_002, TestSize.Level1)
 {
     ASSERT_FALSE(CreateVideoCodecByMime(""));
 }
-
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
 /**
  * @tc.name: VideoDecoder_SetCallback_001
  * @tc.desc: video setcallback
@@ -284,7 +293,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_004, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
     ASSERT_NE(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
 }
-
+#endif // VIDEODEC_ASYNC_UNT_TEST
 #ifdef VIDEODEC_CAPI_UNIT_TEST
 /**
  * @tc.name: VideoDecoder_SetCallback_Invalid_001
