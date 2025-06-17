@@ -46,6 +46,7 @@ private:
     bool CreateDemuxerPluginByName(const std::string& typeName, const std::string& filePath, int probSize);
     void RemoveValue();
     bool CreateBufferSize();
+    void GetFrameNum(int32_t i);
     int streamId_ = 0;
     std::map<uint32_t, uint32_t> frames_;
     std::map<uint32_t, uint32_t> keyFrames_;
@@ -155,6 +156,22 @@ void DemuxerAsynInnerFuncTest::RemoveValue()
     }
 }
 
+void DemuxerAsynInnerFuncTest::GetFrameNum(int32_t i)
+{
+    if (avBuf_->flag_ == MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS) {
+        if (i == videoTrackIdx) {
+            isVideoEosFlagForSave = true;
+        } else {
+            isAudioEosFlagForSave = true;
+        }
+    } else {
+        if (i == videoTrackIdx) {
+            videoIndexForRead++;
+        } else {
+            audioIndexForRead++;
+        }
+    }
+}
 /**
  * @tc.number    : DEMUXER_ASYN_INNER_FUNC_0010
  * @tc.name      : trackId为 UNINT32_T_MAX
@@ -281,19 +298,7 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0070, TestSize.Level1
                 continue;
             }
             ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
-            if (avBuf_->flag_ == MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS) {
-                if (i == videoTrackIdx) {
-                    isVideoEosFlagForSave = true;
-                } else {
-                    isAudioEosFlagForSave = true;
-                }
-            } else {
-                if (i == videoTrackIdx) {
-                    videoIndexForRead++;
-                } else {
-                    audioIndexForRead++;
-                }
-            }
+            GetFrameNum(i);
         }
     }
     ASSERT_EQ(videoIndexForRead, 307);
@@ -506,19 +511,7 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0170, TestSize.Level3
                 continue;
             }
             ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
-            if (avBuf_->flag_ == MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS) {
-                if (i == videoTrackIdx) {
-                    isVideoEosFlagForSave = true;
-                } else {
-                    isAudioEosFlagForSave = true;
-                }
-            } else {
-                if (i == videoTrackIdx) {
-                    videoIndexForRead++;
-                } else {
-                    audioIndexForRead++;
-                }
-            }
+            GetFrameNum(i);
         }
     }
     ASSERT_EQ(audioIndexForRead, 318);
@@ -544,26 +537,15 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0180, TestSize.Level3
     ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexVid, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
-    ASSERT_EQ(demuxerPlugin->SeekTo(indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SeekTo(
+        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
     while (!isAudioEosFlagForSave || !isVideoEosFlagForSave) {
         for (int32_t i = 0;i < 2; i++) {
             if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
                 continue;
             }
             ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
-            if (avBuf_->flag_ == MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS) {
-                if (i == videoTrackIdx) {
-                    isVideoEosFlagForSave = true;
-                } else {
-                    isAudioEosFlagForSave = true;
-                }
-            } else {
-                if (i == videoTrackIdx) {
-                    videoIndexForRead++;
-                } else {
-                    audioIndexForRead++;
-                }
-            }
+            GetFrameNum(i);
         }
     }
     ASSERT_EQ(audioIndexForRead, 65);
@@ -592,19 +574,7 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0190, TestSize.Level3
                 continue;
             }
             ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
-            if (avBuf_->flag_ == MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS) {
-                if (i == videoTrackIdx) {
-                    isVideoEosFlagForSave = true;
-                } else {
-                    isAudioEosFlagForSave = true;
-                }
-            } else {
-                if (i == videoTrackIdx) {
-                    videoIndexForRead++;
-                } else {
-                    audioIndexForRead++;
-                }
-            }
+            GetFrameNum(i);
         }
     }
     ASSERT_EQ(audioIndexForRead, 318);
@@ -629,26 +599,15 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0200, TestSize.Level3
     ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
-    ASSERT_EQ(demuxerPlugin->SeekTo(indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SeekTo(
+        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
     while (!isAudioEosFlagForSave || !isVideoEosFlagForSave) {
         for (int32_t i = 0;i < 2; i++) {
             if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
                 continue;
             }
             ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
-            if (avBuf_->flag_ == MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS) {
-                if (i == videoTrackIdx) {
-                    isVideoEosFlagForSave = true;
-                } else {
-                    isAudioEosFlagForSave = true;
-                }
-            } else {
-                if (i == videoTrackIdx) {
-                    videoIndexForRead++;
-                } else {
-                    audioIndexForRead++;
-                }
-            }
+            GetFrameNum(i);
         }
     }
     ASSERT_EQ(audioIndexForRead, 65);
@@ -670,7 +629,7 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0210, TestSize.Level3
 
 /**
  * @tc.number    : DEMUXER_ASYN_INNER_FUNC_0220
- * @tc.name      : seek+read 
+ * @tc.name      : seek + read 
  * @tc.desc      : func test
  */
 HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0220, TestSize.Level3)
@@ -686,26 +645,15 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0220, TestSize.Level3
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
-    ASSERT_EQ(demuxerPlugin->SeekTo(indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SeekTo(
+        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
     while (!isAudioEosFlagForSave || !isVideoEosFlagForSave) {
         for (int32_t i = 0;i < 2; i++) {
             if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
                 continue;
             }
             ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
-            if (avBuf_->flag_ == MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS) {
-                if (i == videoTrackIdx) {
-                    isVideoEosFlagForSave = true;
-                } else {
-                    isAudioEosFlagForSave = true;
-                }
-            } else {
-                if (i == videoTrackIdx) {
-                    videoIndexForRead++;
-                } else {
-                    audioIndexForRead++;
-                }
-            }
+            GetFrameNum(i);
         }
     }
     ASSERT_EQ(audioIndexForRead, 65);
@@ -734,7 +682,8 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0230, TestSize.Level3
     ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
     while (true) {
         if (readCount >= readPos) {
-            ASSERT_EQ(demuxerPlugin->SeekTo(indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
+            ASSERT_EQ(demuxerPlugin->SeekTo(
+                indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
             ASSERT_EQ(demuxerPlugin->GetLastPTSByTrackId(indexAud, pts), Status::ERROR_NOT_EXISTED);
             break;
         } else {
@@ -759,7 +708,8 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0240, TestSize.Level2
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
-    ASSERT_EQ(demuxerPlugin->SeekTo(indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::ERROR_UNKNOWN);
+    ASSERT_EQ(demuxerPlugin->SeekTo(
+        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::ERROR_UNKNOWN);
 }
 
 /**
@@ -780,7 +730,8 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0250, TestSize.Level2
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
-    ASSERT_EQ(demuxerPlugin->SeekTo(indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realtime), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SeekTo(
+        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realtime), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetLastPTSByTrackId(indexVid, pts), Status::ERROR_NOT_EXISTED);
     while (!isAudioEosFlagForSave || !isVideoEosFlagForSave) {
         for (int32_t i = 0;i < 2; i++) {
@@ -788,19 +739,7 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0250, TestSize.Level2
                 continue;
             }
             ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
-            if (avBuf_->flag_ == MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS) {
-                if (i == videoTrackIdx) {
-                    isVideoEosFlagForSave = true;
-                } else {
-                    isAudioEosFlagForSave = true;
-                }
-            } else {
-                if (i == videoTrackIdx) {
-                    videoIndexForRead++;
-                } else {
-                    audioIndexForRead++;
-                }
-            }
+            GetFrameNum(i);
         }
     }
     ASSERT_EQ(audioIndexForRead, 10);
@@ -825,7 +764,8 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0260, TestSize.Level2
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
-    ASSERT_EQ(demuxerPlugin->SeekTo(indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_CLOSEST_SYNC, realtime), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SeekTo(
+        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_CLOSEST_SYNC, realtime), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetLastPTSByTrackId(indexVid, pts), Status::ERROR_NOT_EXISTED);
     while (!isAudioEosFlagForSave || !isVideoEosFlagForSave) {
         for (int32_t i = 0;i < 2; i++) {
@@ -833,19 +773,7 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0260, TestSize.Level2
                 continue;
             }
             ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
-            if (avBuf_->flag_ == MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS) {
-                if (i == videoTrackIdx) {
-                    isVideoEosFlagForSave = true;
-                } else {
-                    isAudioEosFlagForSave = true;
-                }
-            } else {
-                if (i == videoTrackIdx) {
-                    videoIndexForRead++;
-                } else {
-                    audioIndexForRead++;
-                }
-            }
+            GetFrameNum(i);
         }
     }
     ASSERT_EQ(audioIndexForRead, 10);
