@@ -111,8 +111,12 @@ void VideoSampleBase::Release()
     if (outputThread_ && outputThread_->joinable()) {
         outputThread_->join();
     }
+    if (syncThread_ && syncThread_->joinable()) {
+        syncThread_->join();
+    }
     inputThread_ = nullptr;
     outputThread_ = nullptr;
+    syncThread_ = nullptr;
     context_ = nullptr;
     dataProducer_ = nullptr;
     outputFile_ = nullptr;
