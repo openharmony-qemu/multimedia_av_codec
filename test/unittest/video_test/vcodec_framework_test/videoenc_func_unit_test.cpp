@@ -935,7 +935,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_All_001, TestSize.Level1)
     ret = AVCodecSuspend::SuspendActiveAll();
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
-
+#ifdef HMOS_TEST
 /**
  * @tc.name: VideoEncoder_SetPTSParameter_001
  * @tc.desc: SetPTSParameter, avbuffer mode
@@ -953,7 +953,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetPTSParameter_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
-
+#endif // HMOS_TEST
 /**
  * @tc.name: VideoEncoder_Scene_Type_001
  * @tc.desc: set key VIDEO_SCENE_TYPE, value is VIDEO_SCENE_UNKNOWN
