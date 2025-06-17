@@ -137,6 +137,7 @@ struct SampleInfo {
     int32_t iFrameInterval = 2'000;
     int32_t videoDecoderOutputColorspace = -1;
     SampleType sampleType = SampleType::VIDEO_SAMPLE;
+    bool syncMode = false;
 };
 
 struct CodecBufferInfo {

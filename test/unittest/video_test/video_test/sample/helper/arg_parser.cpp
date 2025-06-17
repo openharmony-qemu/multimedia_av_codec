@@ -51,6 +51,7 @@ enum DemoArgumentType : int {
     DEMO_ARG_THREAD_SLEEP_MODE,
     DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,
     DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,
+    DEMO_ARG_SYNC_MODE,
     DEMO_ARG_END,
 };
 
@@ -83,6 +84,7 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
     {DEMO_ARG_THREAD_SLEEP_MODE,                "thread_sleep_mode"},
     {DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,          "pause_before_run_sample"},
     {DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,  "video_decoder_output_colorspace"},
+    {DEMO_ARG_SYNC_MODE,                        "sync_mode"},
 };
 
 constexpr struct option DEMO_LONG_ARGUMENT[] = {
@@ -115,6 +117,7 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"thread_sleep_mode",                required_argument,  nullptr, DEMO_ARG_THREAD_SLEEP_MODE},
     {"pause_before_run_sample",          required_argument,  nullptr, DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE},
     {"video_decoder_output_colorspace",  required_argument,  nullptr, DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE},
+    {"sync_mode",                        required_argument,  nullptr, DEMO_ARG_SYNC_MODE},
 };
 
 constexpr std::string_view HELP_TEXT = R"HELP_TEXT(
@@ -158,10 +161,12 @@ Video codec demo help:
     --pause_before_run_sample           pause before run sample, value greater than 60 then press enter to continue,
                                         greater than 0 then sleep seconds of value
     --video_decoder_output_colorspace   enable video processing and specified colorspace type
+    --sync_mode                         enable sync mode
 
 Example:
     --codec_type 0 --input input.h264 --mime video/avc --width 1280 --height 720 --framerate 30 --pixel_format 1
     --codec_run_mode 0 --frame_interval 0 --repeat_times 1 --hdr_vivid_video 0 --need_dump_output 0 --max_frames 100
+    --sync_mode 1
 )HELP_TEXT";
 
 inline void ShowHelp(SampleInfo &info, const char * const value)
@@ -319,6 +324,11 @@ inline void SetVideoDecoderOutputColorspace(SampleInfo &info, const char * const
     info.videoDecoderOutputColorspace = std::stol(value);
 }
 
+inline void SetSyncMode(SampleInfo &info, const char * const value)
+{
+    info.syncMode = std::stol(value);
+}
+
 const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char * const value)> ARG_OPT_MAP = {
     {DEMO_ARG_HELP,                             ShowHelp},
     {DEMO_ARG_SAMPLE_TYPE,                      SetSampleType},
@@ -349,6 +359,7 @@ const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char
     {DEMO_ARG_THREAD_SLEEP_MODE,                SetThreadSleepMode},
     {DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,          SetPauseBeforeRunSample},
     {DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,  SetVideoDecoderOutputColorspace},
+    {DEMO_ARG_SYNC_MODE,                        SetSyncMode},
 };
 } // namespace
 

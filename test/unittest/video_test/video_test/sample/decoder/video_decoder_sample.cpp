@@ -50,10 +50,15 @@ int32_t VideoDecoderSample::Init()
 }
 
 int32_t VideoDecoderSample::Prepare()
-{
-    inputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::InputThread, this);
-    outputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::OutputThread, this);
-    CHECK_AND_RETURN_RET_LOG(inputThread_ && outputThread_, AVCODEC_SAMPLE_ERR_ERROR, "Create thread failed");
+{   
+    if ((*context_->sampleInfo).syncMode) {
+        syncThread_ = std::make_unique<std::thread>(&VideoDecoderSample::SyncThread, this);
+        CHECK_AND_RETURN_RET_LOG(syncThread_, AVCODEC_SAMPLE_ERR_ERROR, "Create sync thread failed");
+    } else {
+        inputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::InputThread, this);
+        outputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::OutputThread, this);
+        CHECK_AND_RETURN_RET_LOG(inputThread_ && outputThread_, AVCODEC_SAMPLE_ERR_ERROR, "Create thread failed");
+    }
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -104,6 +109,107 @@ void VideoDecoderSample::OutputThread()
     OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputBufferQueue.GetFrameCount());
     NotifySampleDone();
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->outputBufferQueue.GetFrameCount());
+}
+
+void VideoDecoderSample::SyncThread()
+{
+    OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
+    auto &info = *context_->sampleInfo;
+    bool outputDone = false;
+    bool inputDone = false;
+    uint32_t index;
+    int32_t err = 0; // 0: ok 1: eos -1: error
+    int32_t ret;
+    int32_t outFrameCount = 0;
+    while (!outputDone && err == 0) {
+        if (!inputDone) {
+            ret = context_->videoCodec->QueryInput(index, 0);
+            switch (ret) {
+                case AV_ERR_OK: {
+                    auto bufferInfoOpt = context_->videoCodec->GetInput(index);
+                    if (bufferInfoOpt == std::nullopt) {
+                        // 异常处理
+                        err = -1;
+                        break;
+                    }
+                    auto &bufferInfo = bufferInfoOpt.value();
+                    ret = dataProducer_->ReadSample(bufferInfo);
+                    if (bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
+                        inputDone = 1;
+                    }
+                    ret = context_->videoCodec->PushInput(bufferInfo);
+                    if (ret != AVCODEC_SAMPLE_ERR_OK) {
+                        // 异常处理
+                        err = -1;
+                        break;
+                    }
+                    break;
+                }
+                case AV_ERR_TRY_AGAIN_LATER: {
+                    break;
+                }
+                default: {
+                    err = -1;
+                    break;
+                }
+            }
+        }
+        if (!outputDone) {
+            ret = context_->videoCodec->QueryOutput(index, 0);
+            switch (ret) {
+                case AV_ERR_OK: {
+                    auto bufferInfoOpt = context_->videoCodec->GetOutput(index);
+                    if (bufferInfoOpt == std::nullopt) {
+                        // 异常处理
+                        err = -1;
+                        break;
+                    }
+                    auto &bufferInfo = bufferInfoOpt.value();
+                    if (bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
+                        outputDone = 1;
+                        err = 1;
+                    } else {
+                        DumpOutput(bufferInfo);
+                    }
+                    ret = context_->videoCodec->FreeOutput(bufferInfo.bufferIndex);
+                    if (ret != AVCODEC_SAMPLE_ERR_OK) {
+                        // 异常处理
+                        err = -1;
+                        break;
+                    }
+                    outFrameCount++;
+                    break;
+                }
+                case AV_ERR_TRY_AGAIN_LATER: {
+                    break;
+                }
+                case AV_ERR_STREAM_CHANGED: {
+                    auto format = context_->videoCodec->GetFormat();
+                    auto originVideoWidth = info.videoWidth;
+                    auto originVideoHeight = info.videoHeight;
+                    OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_PIC_WIDTH, &info.videoWidth);
+                    OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_PIC_HEIGHT, &info.videoHeight);
+                    OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_STRIDE, &info.videoStrideWidth);
+                    OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_SLICE_HEIGHT, &info.videoSliceHeight);
+                    auto &videoSliceHeight = info.videoSliceHeight;
+                    videoSliceHeight = videoSliceHeight == 0 ? info.videoHeight : videoSliceHeight;
+                    AVCODEC_LOGW("Resolution: %{public}d*%{public}d => %{public}d*%{public}d(%{public}d*%{public}d)",
+                        originVideoWidth, originVideoHeight, info.videoWidth, info.videoHeight,
+                        info.videoStrideWidth, info.videoSliceHeight);
+                    break;
+                }
+                default: {
+                    err = -1;
+                    break;
+                }
+            }
+        }
+        ThreadSleep(info.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP, info.frameInterval);
+    }
+    OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
+    OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", outFrameCount);
+    NotifySampleDone();
+    AVCODEC_LOGI("Exit, frame count: %{public}u", outFrameCount);
 }
 } // Sample
 } // MediaAVCodec

@@ -50,6 +50,7 @@ int32_t VideoDecoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_HEIGHT, sampleInfo.videoHeight);
     OH_AVFormat_SetDoubleValue(format.get(), OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_ENABLE_SYNC_MODE, sampleInfo.syncMode);
 
     if (sampleInfo.videoDecoderOutputColorspace >= 0) {
         OH_AVFormat_SetIntValue(format.get(),
@@ -127,6 +128,40 @@ std::shared_ptr<OH_AVFormat> VideoDecoder::GetFormat()
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, nullptr, "Decoder is null");
     return std::shared_ptr<OH_AVFormat>(OH_VideoDecoder_GetOutputDescription(codec_.get()), OH_AVFormat_Destroy);
+}
+
+int32_t VideoDecoder::QueryInput(uint32_t &index, int64_t timeoutUs)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+    return OH_VideoDecoder_QueryInputBuffer(codec_.get(), &index, 0);
+}
+
+int32_t VideoDecoder::QueryOutput(uint32_t &index, int64_t timeoutUs)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+    return OH_VideoDecoder_QueryOutputBuffer(codec_.get(), &index, 0);
+}
+
+std::optional<CodecBufferInfo> VideoDecoder::GetInput(uint32_t index)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, std::nullopt, "Decoder is null");
+    OH_AVBuffer *buffer = OH_VideoDecoder_GetInputBuffer(codec_.get(), index);
+    std::optional<CodecBufferInfo> bufferInfo;
+    if (buffer != nullptr) {
+        bufferInfo = CodecBufferInfo(index, buffer);
+    }
+    return bufferInfo;
+}
+
+std::optional<CodecBufferInfo> VideoDecoder::GetOutput(uint32_t index)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, std::nullopt, "Decoder is null");
+    OH_AVBuffer *buffer = OH_VideoDecoder_GetOutputBuffer(codec_.get(), index);
+    std::optional<CodecBufferInfo> bufferInfo;
+    if (buffer != nullptr) {
+        bufferInfo = CodecBufferInfo(index, buffer);
+    }
+    return bufferInfo;
 }
 
 int32_t VideoDecoderAPI10::PushInput(CodecBufferInfo &info)

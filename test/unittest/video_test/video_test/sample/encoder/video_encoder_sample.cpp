@@ -39,13 +39,15 @@ int32_t VideoEncoderSample::Init()
 int32_t VideoEncoderSample::Prepare()
 {
     CHECK_AND_RETURN_RET_LOG(context_ && context_->sampleInfo, AVCODEC_SAMPLE_ERR_ERROR, "Context is nullptr");
+    bool syncMode = (*context_->sampleInfo).syncMode;
     auto &info = *context_->sampleInfo;
     if (static_cast<uint8_t>(info.codecRunMode) & 0b01) {  // 0b01: Buffer mode mask
         auto format = context_->videoCodec->GetFormat();
         OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_STRIDE, &info.videoStrideWidth);
         OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_SLICE_HEIGHT, &info.videoSliceHeight);
-
-        inputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::BufferInputThread, this);
+        if (!syncMode) {
+            inputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::BufferInputThread, this);
+        }
     } else {
         auto window = context_->windowWrapper->GetWindow().get();
         (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_BUFFER_GEOMETRY,
@@ -58,15 +60,20 @@ int32_t VideoEncoderSample::Prepare()
         info.videoStrideWidth = strideAlignment > 0 ?
             (strideAlignment * std::ceil(static_cast<float>(info.videoWidth) / strideAlignment)) : info.videoWidth;
         info.videoSliceHeight = info.videoHeight;
-
-        inputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::SurfaceInputThread, this);
+        if (!syncMode) {
+            inputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::SurfaceInputThread, this);
+        }
     }
     AVCODEC_LOGI("Resolution: %{public}d*%{public}d => %{public}d*%{public}d",
         info.videoWidth, info.videoHeight, info.videoStrideWidth, info.videoSliceHeight);
-
-    outputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::OutputThread, this);
-    CHECK_AND_RETURN_RET_LOG(inputThread_->joinable() && outputThread_->joinable(),
-        AVCODEC_SAMPLE_ERR_ERROR, "Create thread failed");
+    if (!syncMode) {
+        outputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::OutputThread, this);
+        CHECK_AND_RETURN_RET_LOG(inputThread_->joinable() && outputThread_->joinable(),
+            AVCODEC_SAMPLE_ERR_ERROR, "Create thread failed");
+    } else {
+        syncThread_ = std::make_unique<std::thread>(&VideoEncoderSample::SyncThread, this);
+        CHECK_AND_RETURN_RET_LOG(syncThread_, AVCODEC_SAMPLE_ERR_ERROR, "Create sync thread failed");
+    }
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -158,6 +165,139 @@ void VideoEncoderSample::OutputThread()
     OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputBufferQueue.GetFrameCount());
     NotifySampleDone();
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->outputBufferQueue.GetFrameCount());
+}
+
+void VideoEncoderSample::SyncThread()
+{
+    OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
+    OHNativeWindowBuffer *buffer = nullptr;
+    int fenceFd = -1;
+    auto &info = *context_->sampleInfo;
+    bool outputDone = false;
+    bool inputDone = false;
+    uint32_t index;
+    int32_t err = 0; // 0: ok 1: eos -1: error
+    int32_t ret;
+    int32_t outFrameCount = 0;
+    int32_t inFrameCount = 0;
+    while (!outputDone && err == 0) {
+        if (!inputDone) {
+            if (static_cast<uint8_t>(info.codecRunMode) & 0b01) {  // 0b01: Buffer mode mask
+                ret = context_->videoCodec->QueryInput(index, 0);
+                switch (ret) {
+                    case AV_ERR_OK: {
+                        auto bufferInfoOpt = context_->videoCodec->GetInput(index);
+                        if (bufferInfoOpt == std::nullopt) {
+                            // 异常处理
+                            err = -1;
+                            break;
+                        }
+                        auto &bufferInfo = bufferInfoOpt.value();
+                        ret = dataProducer_->ReadSample(bufferInfo);
+                        if (bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
+                            inputDone = 1;
+                        }
+                        ret = context_->videoCodec->PushInput(bufferInfo);
+                        if (ret != AVCODEC_SAMPLE_ERR_OK) {
+                            // 异常处理
+                            err = -1;
+                            break;
+                        }
+                        break;
+                    }
+                    case AV_ERR_TRY_AGAIN_LATER: {
+                        break;
+                    }
+                    default: {
+                        err = -1;
+                        break;
+                    }
+                }
+            } else {
+                inFrameCount++;
+                uint64_t pts = static_cast<uint64_t>(inFrameCount) *
+                    ((info.frameInterval == 0) ? 1 : info.frameInterval) * 1000; // 1000: 1ms to us
+                auto window = context_->windowWrapper->GetWindow().get();
+                (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_UI_TIMESTAMP, pts);
+                ret = OH_NativeWindow_NativeWindowRequestBuffer(window, &buffer, &fenceFd);
+                CHECK_AND_CONTINUE_LOG(ret == 0, "RequestBuffer failed, ret: %{public}d", ret);
+
+                BufferHandle* bufferHandle = OH_NativeWindow_GetBufferHandleFromNative(buffer);
+                CHECK_AND_BREAK_LOG(bufferHandle != nullptr, "Get buffer handle failed, thread out");
+                uint8_t *bufferAddr = static_cast<uint8_t *>(mmap(bufferHandle->virAddr, bufferHandle->size,
+                    PROT_READ | PROT_WRITE, MAP_SHARED, bufferHandle->fd, 0));
+                CHECK_AND_BREAK_LOG(bufferAddr != MAP_FAILED, "Map native window buffer failed, thread out");
+
+                CodecBufferInfo bufferInfo(bufferAddr);
+                ret = dataProducer_->ReadSample(bufferInfo);
+                CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
+                CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Read EOS frame, thread out");
+                ret = munmap(bufferAddr, bufferHandle->size);
+                CHECK_AND_BREAK_LOG(ret != -1, "Unmap buffer failed, thread out");
+
+                AVCodecTrace::TraceBegin("OH::Frame", pts);
+                ret = OH_NativeWindow_NativeWindowFlushBuffer(window, buffer, fenceFd, {nullptr, 0});
+                CHECK_AND_BREAK_LOG(ret == 0, "Read frame failed, thread out");
+
+                buffer = nullptr;
+            }
+        }
+        if (!outputDone) {
+            ret = context_->videoCodec->QueryOutput(index, 0);
+            switch (ret) {
+                case AV_ERR_OK: {
+                    auto bufferInfoOpt = context_->videoCodec->GetOutput(index);
+                    if (bufferInfoOpt == std::nullopt) {
+                        // 异常处理
+                        err = -1;
+                        break;
+                    }
+                    auto &bufferInfo = bufferInfoOpt.value();
+                    if (bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
+                        outputDone = 1;
+                        err = 1;
+                    } else {
+                        DumpOutput(bufferInfo);
+                    }
+                    ret = context_->videoCodec->FreeOutput(bufferInfo.bufferIndex);
+                    if (ret != AVCODEC_SAMPLE_ERR_OK) {
+                        // 异常处理
+                        err = -1;
+                        break;
+                    }
+                    outFrameCount++;
+                    break;
+                }
+                case AV_ERR_TRY_AGAIN_LATER: {
+                    break;
+                }
+                case AV_ERR_STREAM_CHANGED: {
+                    auto format = context_->videoCodec->GetFormat();
+                    auto originVideoWidth = info.videoWidth;
+                    auto originVideoHeight = info.videoHeight;
+                    OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_PIC_WIDTH, &info.videoWidth);
+                    OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_PIC_HEIGHT, &info.videoHeight);
+                    OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_STRIDE, &info.videoStrideWidth);
+                    OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_SLICE_HEIGHT, &info.videoSliceHeight);
+                    auto &videoSliceHeight = info.videoSliceHeight;
+                    videoSliceHeight = videoSliceHeight == 0 ? info.videoHeight : videoSliceHeight;
+                    AVCODEC_LOGW("Resolution: %{public}d*%{public}d => %{public}d*%{public}d(%{public}d*%{public}d)",
+                        originVideoWidth, originVideoHeight, info.videoWidth, info.videoHeight,
+                        info.videoStrideWidth, info.videoSliceHeight);
+                    break;
+                }
+                default: {
+                    err = -1;
+                    break;
+                }
+            }
+        }
+        ThreadSleep(info.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP, info.frameInterval);
+    }
+    OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
+    OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", outFrameCount);
+    NotifySampleDone();
+    AVCODEC_LOGI("Exit, frame count: %{public}u", outFrameCount);
 }
 } // Sample
 } // MediaAVCodec

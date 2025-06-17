@@ -37,6 +37,10 @@ public:
     virtual std::shared_ptr<OH_AVFormat> GetFormat() = 0;
     virtual int32_t PushInput(CodecBufferInfo &info) = 0;
     virtual int32_t FreeOutput(uint32_t bufferIndex) = 0;
+    virtual int32_t QueryInput(uint32_t &index, int64_t timeoutUs) = 0;
+    virtual int32_t QueryOutput(uint32_t &index, int64_t timeoutUs) = 0;
+    virtual std::optional<CodecBufferInfo> GetInput(uint32_t index) = 0;
+    virtual std::optional<CodecBufferInfo> GetOutput(uint32_t index) = 0;
 
 protected:
     static std::string GetCodecName(const std::string &codecMime, bool isEncoder, bool isSoftware);

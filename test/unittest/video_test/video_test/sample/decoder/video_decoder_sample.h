@@ -30,6 +30,7 @@ private:
     int32_t Prepare() override;
     void InputThread();
     void OutputThread();
+    void SyncThread();
 };
 } // Sample
 } // MediaAVCodec
