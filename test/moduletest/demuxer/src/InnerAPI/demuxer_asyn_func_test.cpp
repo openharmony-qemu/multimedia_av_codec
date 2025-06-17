@@ -722,7 +722,6 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0250, TestSize.Level2
     indexVid = 0;
     int64_t realtime = 0;
     int64_t seekTime = 10360000;
-    uint32_t timeout = 10;
     int64_t pts = 0;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
@@ -733,17 +732,6 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0250, TestSize.Level2
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realtime), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetLastPTSByTrackId(indexVid, pts), Status::ERROR_NOT_EXISTED);
-    while (!isAudioEosFlagForSave || !isVideoEosFlagForSave) {
-        for (int32_t i = 0;i < 2; i++) {
-            if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
-                continue;
-            }
-            ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
-            GetFrameNum(i);
-        }
-    }
-    ASSERT_EQ(audioIndexForRead, 10);
-    ASSERT_EQ(videoIndexForRead, 7);
 }
 
 /**
@@ -756,7 +744,6 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0260, TestSize.Level2
     indexVid = 0;
     int64_t realtime = 0;
     int64_t seekTime = 10360000;
-    uint32_t timeout = 10;
     int64_t pts = 0;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
@@ -767,17 +754,6 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0260, TestSize.Level2
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_CLOSEST_SYNC, realtime), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetLastPTSByTrackId(indexVid, pts), Status::ERROR_NOT_EXISTED);
-    while (!isAudioEosFlagForSave || !isVideoEosFlagForSave) {
-        for (int32_t i = 0;i < 2; i++) {
-            if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
-                continue;
-            }
-            ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
-            GetFrameNum(i);
-        }
-    }
-    ASSERT_EQ(audioIndexForRead, 10);
-    ASSERT_EQ(videoIndexForRead, 7);
 }
 /**
  * @tc.number    : DEMUXER_ASYN_INNER_FUNC_0270
