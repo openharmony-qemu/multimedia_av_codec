@@ -376,6 +376,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0100, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(60, 6, 95, 95);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -392,6 +393,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0200, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(119, 12, 77, 77);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -408,6 +410,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0300, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(60, 6, 85, 85);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -424,6 +427,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0400, TestSize.Level2)
     CheckTrackSelect();
     CheckFrames(119, 12, 72, 72);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -440,6 +444,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0500, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(60, 6, 144, 144);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -459,6 +464,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0600, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(60, 6, 88, 88);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -478,6 +484,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0700, TestSize.Level2)
     CheckTrackSelect();
     CheckFrames(119, 12, 84, 84);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -497,6 +504,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0800, TestSize.Level2)
     CheckTrackSelect();
     CheckFrames(119, 12, 78, 78);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -516,6 +524,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0900, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(60, 6, 96, 96);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -535,6 +544,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_1000, TestSize.Level2)
     CheckTrackSelect();
     CheckFrames(119, 12, 171, 171);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -551,6 +561,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_1100, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(60, 6, 64, 64);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -567,6 +578,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_1200, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(60, 6, 56, 56);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -583,6 +595,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_1300, TestSize.Level2)
     CheckTrackSelect();
     CheckFrames(60, 6, 57, 57);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -599,6 +612,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_1400, TestSize.Level2)
     CheckTrackSelect();
     CheckFrames(60, 6, 91, 91);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -615,6 +629,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_1500, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(45, 5, 65, 65);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -631,6 +646,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_1600, TestSize.Level2)
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_EQ(source, nullptr);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -659,6 +675,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_1900, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "title"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -675,6 +692,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_2000, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "album"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -690,6 +708,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_2100, TestSize.Level2)
     const char *stringVal;
     ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM_ARTIST, &stringVal));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -706,6 +725,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_2200, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_DATE, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "date"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -722,6 +742,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_2300, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "comment"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -738,6 +759,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_2400, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_GENRE, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "genre"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -754,6 +776,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_2500, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COPYRIGHT, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "copyright"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -769,6 +792,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_2600, TestSize.Level2)
     const char *stringVal;
     ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_LANGUAGE, &stringVal));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -784,6 +808,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_2700, TestSize.Level2)
     const char *stringVal;
     ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_DESCRIPTION, &stringVal));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -799,6 +824,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_2800, TestSize.Level2)
     const char *stringVal;
     ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_LYRICS, &stringVal));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -815,6 +841,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_2900, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ARTIST, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "artist"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -876,6 +903,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_3000, TestSize.Level2)
         }
 
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -892,6 +920,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_3100, TestSize.Level2)
     CheckTrackSelect();
     FramesMultiTrks(120, 12, 145, 145);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -914,6 +943,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_3200, TestSize.Level3)
     ASSERT_NE(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
 	
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -930,6 +960,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_3300, TestSize.Level3)
 
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -955,6 +986,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_3400, TestSize.Level3)
     ret = OH_AVDemuxer_SeekToTime(demuxer, invalidPts, SEEK_MODE_CLOSEST_SYNC);
     ASSERT_NE(ret, AV_ERR_OK);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -979,6 +1011,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_3500, TestSize.Level3)
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
     ASSERT_EQ(ret, AV_ERR_OK);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1032,6 +1065,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_3600, TestSize.Level3)
         }
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1056,6 +1090,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_3700, TestSize.Level3)
     ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
     ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1072,6 +1107,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0100, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(60, 6, 77, 77);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1088,6 +1124,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0200, TestSize.Level2)
     CheckTrackSelect();
     CheckFrames(119, 12, 84, 84);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1104,6 +1141,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0300, TestSize.Level2)
     CheckTrackSelect();
     CheckFrames(60, 6, 78, 78);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1120,6 +1158,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0400, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(119, 12, 57, 57);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1136,6 +1175,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0500, TestSize.Level2)
     CheckTrackSelect();
     CheckFrames(119, 12, 57, 57);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1152,6 +1192,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0600, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(60, 6, 56, 56);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1168,6 +1209,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0700, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(60, 6, 77, 77);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1184,6 +1226,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0800, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(60, 6, 85, 85);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1200,6 +1243,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0900, TestSize.Level0)
     CheckTrackSelect();
     CheckFrames(48, 5, 85, 85);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1258,6 +1302,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1100, TestSize.Level2)
             trackFormat = nullptr;
         }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1274,6 +1319,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1200, TestSize.Level2)
     CheckTrackSelect();
     FramesMultiTrks(167, 17, 142, 142);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1294,6 +1340,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1300, TestSize.Level3)
     OH_AVCodecBufferAttr attr;
     ASSERT_NE(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1310,6 +1357,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1400, TestSize.Level3)
 
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1335,6 +1383,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1500, TestSize.Level3)
     ret = OH_AVDemuxer_SeekToTime(demuxer, invalidPts, SEEK_MODE_CLOSEST_SYNC);
     ASSERT_NE(ret, AV_ERR_OK);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1359,6 +1408,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1600, TestSize.Level3)
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
     ASSERT_EQ(ret, AV_ERR_OK);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1412,6 +1462,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1700, TestSize.Level3)
         }
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1436,4 +1487,5 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1800, TestSize.Level3)
     ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
     ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
     close(fd);
+    fd = -1;
 }

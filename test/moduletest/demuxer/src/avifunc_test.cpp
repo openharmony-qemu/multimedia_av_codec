@@ -82,11 +82,6 @@ void DemuxerAviFuncNdkTest::SetUp()
 }
 void DemuxerAviFuncNdkTest::TearDown()
 {
-    if (g_fd > 0) {
-        close(g_fd);
-        g_fd = -1;
-    }
-
     if (trackFormat != nullptr) {
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
@@ -116,6 +111,10 @@ void DemuxerAviFuncNdkTest::TearDown()
     if (avBuffer != nullptr) {
         OH_AVBuffer_Destroy(avBuffer);
         avBuffer = nullptr;
+    }
+    if (g_fd > 0) {
+        close(g_fd);
+    	g_fd = -1;
     }
 }
 } // namespace Media
@@ -357,6 +356,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0100, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_HEIGHT, &height));
     ASSERT_EQ(height, 288);
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -378,6 +378,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0200, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_WIDTH, &weight));
     ASSERT_EQ(weight, 352);
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -399,6 +400,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0300, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "title"));
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -419,6 +421,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0400, TestSize.Level2)
     const char *stringVal;
     ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM_ARTIST, &stringVal));
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -440,6 +443,7 @@ HWTEST_F(DemuxerAviFuncNdkTest,  DEMUXER_AVI_FUNC_0500, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_DATE, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "2023"));
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -461,6 +465,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0600, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "COMMENT"));
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -482,6 +487,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0700, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_GENRE, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, "Classical"));
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -502,6 +508,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0800, TestSize.Level2)
     const char *stringVal;
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COPYRIGHT, &stringVal));
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -522,6 +529,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_0900, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(g_trackCount, TWO);
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -543,6 +551,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1000, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &br));
     ASSERT_EQ(br, 1092058);
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -564,6 +573,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1100, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &cc));
     ASSERT_EQ(cc, 2);
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -585,6 +595,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1200, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sr));
     ASSERT_EQ(sr, 48000);
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -606,6 +617,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1300, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &stringVal));
     ASSERT_EQ(0, strcmp(stringVal, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2));
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -627,6 +639,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1400, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &type));
     ASSERT_EQ(type, MEDIA_TYPE_AUD);
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -682,6 +695,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_1500, TestSize.Level2)
     ASSERT_EQ(aKeyCount, 14);
     ASSERT_EQ(vKeyCount, 1);
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -1261,6 +1275,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4100, TestSize.Level2)
         }
     }
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -1285,6 +1300,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4200, TestSize.Level2)
 
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -1310,6 +1326,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4300, TestSize.Level2)
     ret = OH_AVDemuxer_SeekToTime(demuxer, invalidPts, SEEK_MODE_CLOSEST_SYNC);
     ASSERT_NE(ret, AV_ERR_OK);
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -1333,6 +1350,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4400, TestSize.Level2)
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
     ASSERT_EQ(ret, AV_ERR_OK);
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -1383,6 +1401,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4500, TestSize.Level2)
         }
     }
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -1406,6 +1425,7 @@ HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_FUNC_4600, TestSize.Level2)
     ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
     ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
