@@ -244,6 +244,49 @@ static int32_t AVSourceReadAt(OH_AVBuffer *data, int32_t length, int64_t pos)
     return length;
 }
 
+static int32_t AVSourceReadAtExt(OH_AVBuffer *data, int32_t length, int64_t pos, void* userData)
+{
+    if (data == nullptr || userData == nullptr) {
+        printf("AVSourceReadAtExt : data or userData is nullptr!\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    std::ifstream* infile = reinterpret_cast<std::ifstream*>(userData);
+    if (!infile->is_open()) {
+        printf("AVSourceReadAtExt: file not open!\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    infile->seekg(0, std::ios::end);
+    int64_t fileSize = infile->tellg();
+    if (pos >= fileSize) {
+        printf("AVSourceReadAtExt: pos over file size\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_EOF;
+    }
+
+    if (pos + length > fileSize) {
+        length = fileSize - pos;
+    }
+
+    infile->seekg(pos, std::ios::beg);
+    if (length <= 0) {
+        printf("AVSourceReadAt : raed length less than zero!\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+    char* buffer = new char[length];
+    infile->read(buffer, length);
+
+    errno_t result = memcpy_s(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)),
+        OH_AVBuffer_GetCapacity(data), buffer, length);
+    delete[] buffer;
+    if (result != 0) {
+        printf("memcpy_s failed!");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    return length;
+}
+
 /**********************************source FD**************************************/
 namespace {
 /**
@@ -2741,4 +2784,56 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1808, TestSize.Level1)
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
+
+/**
+ * @tc.name: AVSource_CreateSourceWithDataSourceExt_1000
+ * @tc.desc: Create two AVSource instances with different ifstream, simulate concurrent ReadAt
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSourceExt_1000, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_mp4Path.c_str());
+    std::ifstream* infile1 = new std::ifstream(g_mp4Path, std::ios::binary);
+    std::ifstream* infile2 = new std::ifstream(g_mp4Path, std::ios::binary);
+    ASSERT_TRUE(infile1->is_open());
+    ASSERT_TRUE(infile2->is_open());
+
+    infile1->seekg(0, std::ios::end);
+    size_ = infile1->tellg();
+    infile1->seekg(0, std::ios::beg);
+    infile2->seekg(0, std::ios::beg);
+
+    OH_AVDataSourceExt dataSourceExt1 = { size_, AVSourceReadAtExt };
+    OH_AVDataSourceExt dataSourceExt2 = { size_, AVSourceReadAtExt };
+
+    OH_AVSource* source1 = OH_AVSource_CreateWithDataSourceExt(&dataSourceExt1, static_cast<void*>(infile1));
+    OH_AVSource* source2 = OH_AVSource_CreateWithDataSourceExt(&dataSourceExt2, static_cast<void*>(infile2));
+    ASSERT_NE(source1, nullptr);
+    ASSERT_NE(source2, nullptr);
+
+    constexpr uint32_t readLen = 64;
+    char buffer1[readLen] = {0};
+    char buffer2[readLen] = {0};
+
+    infile1->seekg(0, std::ios::beg);
+    infile1->read(buffer1, readLen);
+    ASSERT_EQ(infile1->gcount(), readLen);
+
+    infile2->seekg(128, std::ios::beg);
+    infile2->read(buffer2, readLen);
+    ASSERT_EQ(infile2->gcount(), readLen);
+
+    EXPECT_NE(memcmp(buffer1, buffer2, readLen), 0);
+
+    int32_t ret1 = OH_AVSource_Destroy(source1);
+    int32_t ret2 = OH_AVSource_Destroy(source2);
+    ASSERT_EQ(ret1, AV_ERR_OK);
+    ASSERT_EQ(ret2, AV_ERR_OK);
+
+    infile1->close();
+    infile2->close();
+    delete infile1;
+    delete infile2;
+}
+
 } // namespace
