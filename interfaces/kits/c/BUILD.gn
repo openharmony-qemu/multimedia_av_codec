@@ -32,7 +32,7 @@ group("capi_packages") {
   }
 }
 
-config("av_codec_capi_config") {
+config("av_codec_capi_header_config") {
   include_dirs = [
     "$av_codec_root_dir/frameworks/native/capi/common",
     "$av_codec_root_dir/interfaces/inner_api/native",
@@ -40,13 +40,15 @@ config("av_codec_capi_config") {
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/utils/include",
   ]
-
+  defines = []
+  if (av_codec_support_drm) {
+    defines += [ "SUPPORT_DRM" ]
+  }
   cflags = [
     "-fno-exceptions",
     "-Wall",
     "-fno-common",
     "-fstack-protector-all",
-    "-Wshadow",
     "-FPIC",
     "-FS",
     "-O2",
@@ -59,11 +61,10 @@ config("av_codec_capi_config") {
     "-std=c++17",
     "-fno-rtti",
   ]
+}
 
-  defines = []
-  if (av_codec_support_drm) {
-    defines += [ "SUPPORT_DRM" ]
-  }
+config("av_codec_capi_compile_config") {
+  cflags = [ "-Wshadow" ]
 }
 
 config("av_cenc_info_capi_config") {
@@ -74,26 +75,6 @@ config("av_cenc_info_capi_config") {
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/utils/include",
   ]
-
-  cflags = [
-    "-fno-exceptions",
-    "-Wall",
-    "-fno-common",
-    "-fstack-protector-all",
-    "-Wshadow",
-    "-FPIC",
-    "-FS",
-    "-O2",
-    "-D_FORTIFY_SOURCE=2",
-    "-Wformat=2",
-    "-Wdate-time",
-  ]
-
-  cflags_cc = [
-    "-std=c++17",
-    "-fno-rtti",
-  ]
-
   defines = []
 }
 
@@ -102,7 +83,8 @@ ohos_shared_library("native_media_avmuxer") {
   sources =
       [ "$av_codec_root_dir/frameworks/native/capi/avmuxer/native_avmuxer.cpp" ]
 
-  public_configs = [ ":av_codec_capi_config" ]
+  public_configs = [ ":av_codec_capi_header_config" ]
+  configs = [ ":av_codec_capi_compile_config" ]
 
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
@@ -128,7 +110,8 @@ ohos_shared_library("native_media_avdemuxer") {
     "$av_codec_root_dir/frameworks/native/capi/avdemuxer/native_avdemuxer.cpp",
   ]
 
-  public_configs = [ ":av_codec_capi_config" ]
+  public_configs = [ ":av_codec_capi_header_config" ]
+  configs = [ ":av_codec_capi_compile_config" ]
 
   deps = [ "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client" ]
 
@@ -159,7 +142,8 @@ ohos_shared_library("native_media_avsource") {
     "$av_codec_root_dir/frameworks/native/capi/avsource/native_avsource.cpp",
   ]
 
-  public_configs = [ ":av_codec_capi_config" ]
+  public_configs = [ ":av_codec_capi_header_config" ]
+  configs = [ ":av_codec_capi_compile_config" ]
 
   deps = [ "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client" ]
 
@@ -185,7 +169,8 @@ ohos_shared_library("native_media_codecbase") {
     sources += [ "$av_codec_root_dir/frameworks/native/capi/common/native_avcapability.cpp" ]
   }
 
-  public_configs = [ ":av_codec_capi_config" ]
+  public_configs = [ ":av_codec_capi_header_config" ]
+  configs = [ ":av_codec_capi_compile_config" ]
 
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
@@ -210,7 +195,8 @@ ohos_shared_library("native_media_acodec") {
     "$av_codec_root_dir/frameworks/native/capi/avcodec/native_audio_codec.cpp",
   ]
 
-  public_configs = [ ":av_codec_capi_config" ]
+  public_configs = [ ":av_codec_capi_header_config" ]
+  configs = [ ":av_codec_capi_compile_config" ]
 
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
@@ -243,7 +229,8 @@ ohos_shared_library("native_media_adec") {
   install_enable = true
   sources = [ "$av_codec_root_dir/frameworks/native/capi/avcodec/native_audio_decoder.cpp" ]
 
-  public_configs = [ ":av_codec_capi_config" ]
+  public_configs = [ ":av_codec_capi_header_config" ]
+  configs = [ ":av_codec_capi_compile_config" ]
 
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
@@ -267,7 +254,8 @@ ohos_shared_library("native_media_aenc") {
   install_enable = true
   sources = [ "$av_codec_root_dir/frameworks/native/capi/avcodec/native_audio_encoder.cpp" ]
 
-  public_configs = [ ":av_codec_capi_config" ]
+  public_configs = [ ":av_codec_capi_header_config" ]
+  configs = [ ":av_codec_capi_compile_config" ]
 
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
@@ -291,7 +279,8 @@ ohos_shared_library("native_media_vdec") {
   install_enable = true
   sources = [ "$av_codec_root_dir/frameworks/native/capi/avcodec/native_video_decoder.cpp" ]
 
-  public_configs = [ ":av_codec_capi_config" ]
+  public_configs = [ ":av_codec_capi_header_config" ]
+  configs = [ ":av_codec_capi_compile_config" ]
 
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
@@ -323,7 +312,8 @@ ohos_shared_library("native_media_venc") {
   install_enable = true
   sources = [ "$av_codec_root_dir/frameworks/native/capi/avcodec/native_video_encoder.cpp" ]
 
-  public_configs = [ ":av_codec_capi_config" ]
+  public_configs = [ ":av_codec_capi_header_config" ]
+  configs = [ ":av_codec_capi_compile_config" ]
 
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
@@ -353,6 +343,7 @@ ohos_shared_library("native_media_avcencinfo") {
   sanitize = av_codec_sanitize
 
   public_configs = [ ":av_cenc_info_capi_config" ]
+  configs = [ ":av_codec_capi_compile_config" ]
 
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
