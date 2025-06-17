@@ -18,9 +18,12 @@
 #include <iostream>
 #include <string>
 #include "avcodec_errors.h"
+#include "media_description.h"
+#include "native_avcapability.h"
 #include "native_avcodec_base.h"
 #include "native_avcodec_videoencoder.h"
 #include "native_avformat.h"
+#include "native_avmagic.h"
 #include "native_window.h"
 #include "status.h"
 #include "unittest_utils.h"
@@ -32,6 +35,64 @@ using namespace testing::ext;
 using namespace testing::mt;
 
 namespace {
+struct OH_AVCodecCallback GetVoidCallback()
+{
+    struct OH_AVCodecCallback cb;
+    cb.onError = [](OH_AVCodec *codec, int32_t errorCode, void *userData) {
+        (void)codec;
+        (void)errorCode;
+        (void)userData;
+    };
+    cb.onStreamChanged = [](OH_AVCodec *codec, OH_AVFormat *format, void *userData) {
+        (void)codec;
+        (void)format;
+        (void)userData;
+    };
+    cb.onNeedInputBuffer = [](OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData) {
+        (void)codec;
+        (void)index;
+        (void)buffer;
+        (void)userData;
+    };
+    cb.onNewOutputBuffer = [](OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData) {
+        (void)codec;
+        (void)index;
+        (void)buffer;
+        (void)userData;
+    };
+    return cb;
+}
+
+struct OH_AVCodecAsyncCallback GetVoidAsyncCallback()
+{
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = [](OH_AVCodec *codec, int32_t errorCode, void *userData) {
+        (void)codec;
+        (void)errorCode;
+        (void)userData;
+    };
+    cb.onStreamChanged = [](OH_AVCodec *codec, OH_AVFormat *format, void *userData) {
+        (void)codec;
+        (void)format;
+        (void)userData;
+    };
+    cb.onNeedInputData = [](OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData) {
+        (void)codec;
+        (void)index;
+        (void)data;
+        (void)userData;
+    };
+    cb.onNeedOutputData = [](OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
+                             void *userData) {
+        (void)codec;
+        (void)index;
+        (void)data;
+        (void)attr;
+        (void)userData;
+    };
+    return cb;
+}
+
 class VideoStateTest : public testing::TestWithParam<std::string> {
 public:
     static void SetUpTestCase(void);
@@ -1496,5 +1557,289 @@ HWTEST_F(VideoStateTest, VideoEncoder_Flushed_Verify_023, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
 
     EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Flush(videoEnc));
+}
+
+/**
+ * @tc.name: VideoEncoder_Setcallback_001
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Setcallback_001, TestSize.Level1)
+{
+    ASSERT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    ASSERT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+}
+
+/**
+ * @tc.name: VideoEncoder_Setcallback_002
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Setcallback_002, TestSize.Level1)
+{
+    struct OH_AVCodecCallback callback = GetVoidCallback();
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_RegisterCallback(videoEnc, callback, NULL));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_RegisterCallback(videoEnc, callback, NULL));
+}
+
+/**
+ * @tc.name: VideoEncoder_Setcallback_003
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Setcallback_003, TestSize.Level1)
+{
+    ASSERT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    struct OH_AVCodecCallback callback = GetVoidCallback();
+    ASSERT_NE(AV_ERR_OK, OH_VideoEncoder_RegisterCallback(videoEnc, callback, NULL));
+}
+
+/**
+ * @tc.name: VideoEncoder_Setcallback_004
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Setcallback_004, TestSize.Level1)
+{
+    struct OH_AVCodecCallback callback = GetVoidCallback();
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_RegisterCallback(videoEnc, callback, NULL));
+    ASSERT_NE(AV_ERR_OK, SetCallback(videoEnc));
+}
+
+/**
+ * @tc.name: VideoEncoder_Invalid_SetParameterCallback_001
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Invalid_SetParameterCallback_001, TestSize.Level1)
+{
+    ASSERT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    ASSERT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    ASSERT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
+    ASSERT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
+    ASSERT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    ASSERT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    struct OH_AVCodecCallback callback = GetVoidCallback();
+    ASSERT_NE(AV_ERR_OK, OH_VideoEncoder_RegisterCallback(videoEnc, callback, NULL));
+}
+
+/**
+ * @tc.name: VideoEncoder_Invalid_SetParameterCallback_002
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Invalid_SetParameterCallback_002, TestSize.Level1)
+{
+    struct OH_AVCodecCallback callback = GetVoidCallback();
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_RegisterCallback(videoEnc, callback, NULL));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_RegisterCallback(videoEnc, callback, NULL));
+    ASSERT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
+    ASSERT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_RegisterCallback(videoEnc, callback, NULL));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_RegisterCallback(videoEnc, callback, NULL));
+    ASSERT_NE(AV_ERR_OK, SetCallback(videoEnc));
+}
+
+/**
+ * @tc.name: VideoEncoder_Setcallback_Invalid_001
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Setcallback_Invalid_001, TestSize.Level1)
+{
+    struct OH_AVCodecCallback cb = GetVoidCallback();
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_RegisterCallback(nullptr, cb, nullptr));
+}
+
+/**
+ * @tc.name: VideoEncoder_Setcallback_Invalid_002
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Setcallback_Invalid_002, TestSize.Level1)
+{
+    struct OH_AVCodecCallback cb = GetVoidCallback();
+    cb.onNewOutputBuffer = nullptr;
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_RegisterCallback(videoEnc, cb, nullptr));
+}
+
+/**
+ * @tc.name: VideoEncoder_Setcallback_Invalid_003
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Setcallback_Invalid_003, TestSize.Level1)
+{
+    struct OH_AVCodecCallback cb = GetVoidCallback();
+    videoEnc->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_RegisterCallback(videoEnc, cb, nullptr));
+    videoEnc->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
+}
+
+/**
+ * @tc.name: VideoEncoder_PushInputBuffer_Invalid_001
+ * @tc.desc: video push input buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_PushInputBuffer_Invalid_001, TestSize.Level1)
+{
+    struct OH_AVCodecCallback cb = GetVoidCallback();
+    OH_AVCodecBufferAttr attr = {0, 0, 0, 0};
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_RegisterCallback(videoEnc, cb, nullptr));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_PushInputData(videoEnc, 0, attr));
+}
+
+/**
+ * @tc.name: VideoEncoder_PushInputBuffer_Invalid_002
+ * @tc.desc: video push input buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_PushInputBuffer_Invalid_002, TestSize.Level1)
+{
+    struct OH_AVCodecAsyncCallback cb = GetVoidAsyncCallback();
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_SetCallback(videoEnc, cb, nullptr));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_PushInputBuffer(videoEnc, 0));
+}
+
+/**
+ * @tc.name: VideoEncoder_Free_Buffer_Invalid_001
+ * @tc.desc: video free buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Free_Buffer_Invalid_001, TestSize.Level1)
+{
+    struct OH_AVCodecCallback cb = GetVoidCallback();
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_RegisterCallback(videoEnc, cb, nullptr));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_FreeOutputData(videoEnc, 0));
+}
+
+/**
+ * @tc.name: VideoEncoder_Free_Buffer_Invalid_002
+ * @tc.desc: video free buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Free_Buffer_Invalid_002, TestSize.Level1)
+{
+    struct OH_AVCodecAsyncCallback cb = GetVoidAsyncCallback();
+    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_SetCallback(videoEnc, cb, nullptr));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_FreeOutputBuffer(videoEnc, 0));
+}
+
+/**
+ * @tc.name: VideoEncoder_Invalid_SetParameterWithAttrCallback_001
+ * @tc.desc: repeat SetParameterWithAttrCallback and test the compatibility of API9 and API10
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Invalid_SetParameterWithAttrCallback_001, TestSize.Level1)
+{
+    ASSERT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    ASSERT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
+    ASSERT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
+    ASSERT_EQ(AV_ERR_OK, SetCallback(videoEnc));
+    struct OH_AVCodecCallback callback = GetVoidCallback();
+    ASSERT_NE(AV_ERR_OK, OH_VideoEncoder_RegisterCallback(videoEnc, callback, NULL));
+}
+
+/**
+ * @tc.name: VideoEncoder_Invalid_SetParameterWithAttrCallback_002
+ * @tc.desc: repeat SetParameterWithAttrCallback and test the compatibility of API10 and API9
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Invalid_SetParameterWithAttrCallback_002, TestSize.Level1)
+{
+    struct OH_AVCodecCallback callback = GetVoidCallback();
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_RegisterCallback(videoEnc, callback, NULL));
+    ASSERT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
+    ASSERT_EQ(AV_ERR_OK, SetParameterCallback(videoEnc));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_RegisterCallback(videoEnc, callback, NULL));
+    ASSERT_NE(AV_ERR_OK, SetCallback(videoEnc));
+}
+
+/**
+ * @tc.name: VideoEncoder_CreateWithNull_001
+ * @tc.desc: video create
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_CreateWithNull_001, TestSize.Level1)
+{
+    ASSERT_EQ(nullptr, OH_VideoEncoder_CreateByName(""));
+}
+
+/**
+ * @tc.name: VideoEncoder_CreateWithNull_002
+ * @tc.desc: video create
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_CreateWithNull_002, TestSize.Level1)
+{
+    ASSERT_EQ(nullptr, OH_VideoEncoder_CreateByMime(""));
+}
+
+/**
+ * @tc.name: VideoEncoder_Create_001
+ * @tc.desc: video create
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Create_001, TestSize.Level1)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    const char *codecName = OH_AVCapability_GetName(capability);
+    ASSERT_NE(nullptr, OH_VideoEncoder_CreateByName(codecName));
+}
+
+/**
+ * @tc.name: VideoEncoder_PushInputBuffer_Invalid_003
+ * @tc.desc: video push input buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_PushInputBuffer_Invalid_003, TestSize.Level1)
+{
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_PushInputBuffer(nullptr, 0));
+}
+
+/**
+ * @tc.name: VideoEncoder_PushInputBuffer_Invalid_004
+ * @tc.desc: video push input buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_PushInputBuffer_Invalid_004, TestSize.Level1)
+{
+    videoEnc->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_PushInputBuffer(videoEnc, 0));
+    videoEnc->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
+}
+
+/**
+ * @tc.name: VideoEncoder_Free_Buffer_Invalid_003
+ * @tc.desc: video free buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Free_Buffer_Invalid_003, TestSize.Level1)
+{
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_FreeOutputBuffer(nullptr, 0));
+}
+
+/**
+ * @tc.name: VideoEncoder_Free_Buffer_Invalid_004
+ * @tc.desc: video free buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_Free_Buffer_Invalid_004, TestSize.Level1)
+{
+    videoEnc->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_FreeOutputBuffer(videoEnc, 0));
+    videoEnc->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
+}
+
+/**
+ * @tc.name: VideoEncoder_PushParameter_001
+ * @tc.desc: video encodec SetSurface
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoEncoder_PushParameter_001, TestSize.Level1)
+{
+    SetSync0(format);
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(videoEnc, format));
+    ASSERT_NE(AV_ERR_OK, SetParameterCallback(videoEnc));
 }
 } // namespace
