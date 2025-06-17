@@ -22,7 +22,8 @@
 #include "type_converter.h"
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
-#include "v3_0/codec_ext_types.h"
+#include "hcodec_list.h"
+#include "v4_0/codec_ext_types.h"
 #include <algorithm>
 #include <regex>
 
@@ -154,11 +155,14 @@ int32_t HEncoder::SetLTRParam(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameNum)) {
         return AVCS_ERR_OK;
     }
-    if (!caps_.port.video.isSupportLTR) {
+    CodecHDI::VideoFeature ltrFeature =
+        HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_LTR);
+    if (!ltrFeature.support || ltrFeature.extendInfo.empty()) {
         HLOGW("platform not support LTR");
         return AVCS_ERR_OK;
     }
-    if (ltrFrameNum <= 0 || ltrFrameNum > caps_.port.video.maxLTRFrameNum) {
+    int32_t maxLtrNum = ltrFeature.extendInfo[0];
+    if (ltrFrameNum <= 0 || ltrFrameNum > maxLtrNum) {
         HLOGE("invalid ltrFrameNum %d", ltrFrameNum);
         return AVCS_ERR_INVALID_VAL;
     }
@@ -200,7 +204,9 @@ int32_t HEncoder::EnableFrameQPMap(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, enableQPMap)) {
         return AVCS_ERR_OK;
     }
-    if (!caps_.port.video.isSupportQPMap) {
+    CodecHDI::VideoFeature feature =
+        HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_QP_MAP);
+    if (!feature.support) {
         HLOGE("this device dont support qp map");
         return AVCS_ERR_UNSUPPORT;
     }
@@ -221,6 +227,13 @@ int32_t HEncoder::ConfigBEncodeMode(const Format &format)
     Media::Plugins::VideoEncodeBFrameGopMode gopMode;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, *reinterpret_cast<int *>(&gopMode))) {
         return AVCS_ERR_OK;
+    }
+
+    CodecHDI::VideoFeature feature =
+        HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_ENCODE_B_FRAME);
+    if (!feature.support || feature.extendInfo.empty() || feature.extendInfo[0] <= 0) {
+        HLOGE("this device or protocol not support b frame");
+        return AVCS_ERR_UNSUPPORT;
     }
 
     CodecEncGopMode param {};
@@ -271,7 +284,7 @@ int32_t HEncoder::SetTemperalLayer(const Format &format)
         (enableTemporalScale == 0)) {
         return AVCS_ERR_OK;
     }
-    if (!caps_.port.video.isSupportTSVC) {
+    if (!HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_TSVC).support) {
         HLOGW("platform not support temporal scale");
         return AVCS_ERR_OK;
     }
@@ -330,7 +343,7 @@ int32_t HEncoder::GetWaterMarkInfo(std::shared_ptr<AVBuffer> buffer, WaterMarkIn
 
 int32_t HEncoder::OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer)
 {
-    if (!caps_.port.video.isSupportWaterMark) {
+    if (!HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_WATERMARK).support) {
         HLOGE("this device dont support water mark");
         return AVCS_ERR_UNSUPPORT;
     }
@@ -649,6 +662,7 @@ int32_t HEncoder::SetSQRMode(const Format &format)
     }
     if (bitRate.has_value() && !maxBitrate.has_value()) {
         bitrateType.sTargetBitrate = bitRate.value();
+        bitrateType.bitrateEnabled = true;
         LOGI("set target bitrate %u bps", bitrateType.sTargetBitrate);
     }
     if (!SetParameter(OMX_IndexParamControlRateSQR, bitrateType)) {
@@ -658,10 +672,13 @@ int32_t HEncoder::SetSQRMode(const Format &format)
     HLOGI("set SQR mode succ");
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, bitrateType.sqrFactor);
-    outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
-        static_cast<int64_t>(bitrateType.sMaxBitrate));
-    outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE,
-        static_cast<int64_t>(bitrateType.sTargetBitrate));
+    if (bitrateType.bitrateEnabled) {
+        outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE,
+            static_cast<int64_t>(bitrateType.sTargetBitrate));
+    } else {
+        outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE,
+            static_cast<int64_t>(bitrateType.sMaxBitrate));
+    }
     return AVCS_ERR_OK;
 }
 
@@ -870,20 +887,53 @@ int32_t HEncoder::RequestIDRFrame()
     return AVCS_ERR_OK;
 }
 
+void HEncoder::SetSqrParam(const Format &format)
+{
+    StableControlRate bitrateType;
+    InitOMXParamExt(bitrateType);
+    bitrateType.portIndex = OMX_DirOutput;
+    if (!GetParameter(OMX_IndexParamControlRateSQR, bitrateType)) {
+        HLOGE("get OMX_IndexParamControlRateSQR failed");
+        return;
+    }
+    optional<uint32_t> sqrFactor = GetSQRFactorFromUser(format);
+    optional<uint32_t> maxBitrate = GetSQRMaxBitrateFromUser(format);
+    optional<uint32_t> bitRate = GetBitRateFromUser(format);
+    if (sqrFactor.has_value()) {
+        bitrateType.sqrFactor = sqrFactor.value();
+        LOGI("set dynamic sqr factor %u", bitrateType.sqrFactor);
+    }
+    if (maxBitrate.has_value() && !bitrateType.bitrateEnabled) {
+        bitrateType.sMaxBitrate = maxBitrate.value();
+        LOGI("set dynamic max bitrate %u bps", bitrateType.sMaxBitrate);
+    }
+    if (bitRate.has_value() && bitrateType.bitrateEnabled) {
+        bitrateType.sTargetBitrate = bitRate.value();
+        LOGI("set dynamic target bitrate %u bps", bitrateType.sTargetBitrate);
+    }
+    if (!SetParameter(OMX_IndexParamControlRateSQR, bitrateType, true)) {
+        HLOGW("failed to set OMX_IndexParamControlRateSQR");
+    }
+}
+
 int32_t HEncoder::OnSetParameters(const Format &format)
 {
-    optional<uint32_t> bitRate = GetBitRateFromUser(format);
-    if (bitRate.has_value()) {
-        OMX_VIDEO_CONFIG_BITRATETYPE bitrateCfgType;
-        InitOMXParam(bitrateCfgType);
-        bitrateCfgType.nPortIndex = OMX_DirOutput;
-        bitrateCfgType.nEncodeBitrate = bitRate.value();
-        if (!SetParameter(OMX_IndexConfigVideoBitrate, bitrateCfgType, true)) {
-            HLOGW("failed to config OMX_IndexConfigVideoBitrate");
+    optional<VideoEncodeBitrateMode> bitRateMode = GetBitRateModeFromUser(*outputFormat_);
+    if (bitRateMode.has_value() && bitRateMode.value() == SQR) {
+        SetSqrParam(format);
+    } else {
+        optional<uint32_t> bitRate = GetBitRateFromUser(format);
+        if (bitRate.has_value()) {
+            OMX_VIDEO_CONFIG_BITRATETYPE bitrateCfgType;
+            InitOMXParam(bitrateCfgType);
+            bitrateCfgType.nPortIndex = OMX_DirOutput;
+            bitrateCfgType.nEncodeBitrate = bitRate.value();
+            if (!SetParameter(OMX_IndexConfigVideoBitrate, bitrateCfgType, true)) {
+                HLOGW("failed to config OMX_IndexConfigVideoBitrate");
+            }
         }
     }
 
-    optional<VideoEncodeBitrateMode> bitRateMode = GetBitRateModeFromUser(*outputFormat_);
     optional<uint32_t> targetQp = GetCRFtagetQpFromUser(format);
     if (targetQp.has_value() && bitRateMode.has_value() && bitRateMode.value() == CRF) {
         ControlQualitytargetQp bitrateType;

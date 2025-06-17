@@ -21,7 +21,7 @@ using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
 using namespace Lbvc;
 using namespace Hdi;
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace OHOS::HDI::Codec::V4_0;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioLbvcDecoderPlugin"};
 const std::string LBVC_DECODER_COMPONENT_NAME = "OMX.audio.decoder.lbvc";

@@ -70,9 +70,7 @@ ohos_unittest("post_processor_unit_test") {
   ]
 
   if (av_codec_support_test) {
-    sources = [
-      "./post_processor_factory_unit_test.cpp",
-    ]
+    sources = [ "./post_processor_factory_unit_test.cpp" ]
     if (defined(av_codec_support_video_processing_engine) &&
         av_codec_support_video_processing_engine) {
       sources += [ "./super_resolution_post_processor_unit_test.cpp" ]

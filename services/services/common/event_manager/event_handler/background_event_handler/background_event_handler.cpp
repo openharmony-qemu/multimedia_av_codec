@@ -207,11 +207,12 @@ void BackGroundEventHandler::ErasePid(pid_t pid)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     auto eraser = [pid](ObjectList &list, std::string_view name) {
-        auto range = list.equal_range(pid);
-        for (auto iter = range.first; iter != range.second; iter++) {
-            list.erase(iter);
+        auto [begin, end] = list.equal_range(pid);
+        if (begin == end) {
+            return;
         }
-        EXPECT_AND_LOGI(range.first != range.second, "Erased pid: %{public}d from %{public}s", pid, name.data());
+        list.erase(begin, end);
+        AVCODEC_LOGI("Erased pid: %{public}d from %{public}s", pid, name.data());
     };
     eraser(memoryRecycleList_, "MemoryRecycleList");
     eraser(suspendList_, "SuspendedList");

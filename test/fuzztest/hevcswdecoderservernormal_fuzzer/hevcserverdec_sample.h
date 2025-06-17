@@ -67,9 +67,11 @@ public:
     void InputFunc();
     void WaitForEos();
     int32_t SetOutputSurface();
+    int32_t InitDecoder();
     std::shared_ptr<VDecSignal> signal_;
     bool repeatRun = false;
     bool isSurfMode = false;
+    int32_t sendFrameIndex = 0;
     std::atomic<bool> isEOS_ { false };
     std::vector<sptr<Surface>> cs_vector;
     std::vector<sptr<Surface>> ps_vector;

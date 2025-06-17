@@ -88,6 +88,7 @@ typedef enum AVCodecServiceErrCode : ErrCode {
     AVCS_ERR_INVALID_DATA,                                 // Invalid data found when processing input
     AVCS_ERR_DECRYPT_FAILED,                               // drm decrypt failed
     AVCS_ERR_TRY_AGAIN,                                    // try again later
+    AVCS_ERR_STREAM_CHANGED,                               // output format changed
     AVCS_ERR_INPUT_DATA_ERROR,                             // there is somthing wrong for input data
     AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION,       // video unsupport color space conversion
 

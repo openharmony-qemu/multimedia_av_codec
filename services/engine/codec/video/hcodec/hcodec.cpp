@@ -439,7 +439,7 @@ int32_t HCodec::SetLowLatency(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY, enableLowLatency)) {
         return AVCS_ERR_OK;
     }
-    if (!caps_.port.video.isSupportLowLatency) {
+    if (!HCodecList::FindFeature(caps_.port.video.features, VIDEO_FEATURE_LOW_LATENCY).support) {
         HLOGW("platform not support LowLatency");
         return AVCS_ERR_OK;
     }
@@ -1381,7 +1381,9 @@ void HCodec::CleanUpOmxNode()
 int32_t HCodec::OnAllocateComponent()
 {
     HitraceMeterFmtScoped trace(HITRACE_TAG_ZMEDIA, "hcodec %s %s", __func__, caps_.compName.c_str());
-    compMgr_ = GetManager(false, caps_.port.video.isSupportPassthrough, isSecure_);
+    compMgr_ = GetManager(false,
+                          HCodecList::FindFeature(caps_.port.video.features, VIDEO_FEATURE_PASS_THROUGH).support,
+                          isSecure_);
     if (compMgr_ == nullptr) {
         HLOGE("GetCodecComponentManager failed");
         return AVCS_ERR_UNKNOWN;

@@ -1071,7 +1071,13 @@ int32_t HDRCodecNdkSample::Release()
         OH_AVSource_Destroy(source);
         source = nullptr;
     }
-    close(fd);
-    close(outFd);
+    if (fd > 0) {
+        close(fd);
+        fd = -1;
+    }
+    if (outFd > 0) {
+        close(outFd);
+        outFd = -1;
+    }
     return 0;
 }

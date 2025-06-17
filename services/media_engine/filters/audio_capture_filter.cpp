@@ -172,6 +172,7 @@ Status AudioCaptureFilter::DoStart()
     MEDIA_LOG_I("Start");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Start");
     eos_ = false;
+    currentTime_ = 0;
     auto res = Status::ERROR_INVALID_OPERATION;
     // start audioCaptureModule firstly
     if (audioCaptureModule_) {
@@ -222,6 +223,7 @@ Status AudioCaptureFilter::DoResume()
 {
     MEDIA_LOG_I("Resume");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Resume");
+    currentTime_ = 0;
     if (taskPtr_) {
         taskPtr_->Start();
     }
@@ -253,6 +255,7 @@ Status AudioCaptureFilter::DoStop()
     }
     firstAudioFramePts_.store(-1);
     firstVideoFramePts_.store(-1);
+    currentTime_ = 0;
     if (!cachedAudioDataDeque_.empty()) {
         RecordCachedData();
     }
@@ -331,15 +334,6 @@ Status AudioCaptureFilter::SendEos()
     GetCurrentTime(stopTime_);
     MEDIA_LOG_I("[audio] stopTime: " PUBLIC_LOG_D64, stopTime_);
     if (outputBufferQueue_) {
-        if (currentTime_ != 0 && currentTime_ < stopTime_ && withVideo_) {
-            int32_t lostCount = (stopTime_ - currentTime_) / AUDIO_CAPTURE_READ_FRAME_TIME;
-            if (lostCount > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
-                // time diff is abnormal, do not fill data frame.
-                MEDIA_LOG_W("[audio] abnormal time diff, please check");
-            } else {
-                FillLostFrame(lostCount);
-            };
-        }
         if (!cachedAudioDataDeque_.empty()) {
             RecordCachedData();
         }
@@ -524,15 +518,18 @@ void AudioCaptureFilter::RecordAudioFrame()
     {
         int64_t audioDataTime = 0;
         audioCaptureModule_->GetAudioTime(audioDataTime, false);
-        if (audioDataTime > currentTime_ && (audioDataTime - currentTime_) > AUDIO_UNREGULAR_DELTA_TIME && withVideo_) {
+        if (audioDataTime > currentTime_
+            && (audioDataTime - currentTime_) > static_cast<int64_t>(AUDIO_UNREGULAR_DELTA_TIME)
+            && withVideo_) {
             int32_t lostCount = (audioDataTime - AUDIO_CAPTURE_READ_FRAME_TIME - currentTime_)
                 / AUDIO_CAPTURE_READ_FRAME_TIME;
             if (lostCount > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
                 // time diff is abnormal, please check
                 MEDIA_LOG_W("[audio] abnormal time diff, please check");
+            } else {
+                FillLostFrame(lostCount);
+                RecordCachedData();
             }
-            FillLostFrame(lostCount);
-            RecordCachedData();
         }
     }
     buffer->memory_->SetSize(bufferSize);
@@ -550,7 +547,7 @@ void AudioCaptureFilter::GetCurrentTime(int64_t &currentTime)
 {
     struct timespec timestamp = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &timestamp);
-    currentTime = static_cast<int64_t>(timestamp.tv_sec) * AUDIO_NS_PER_SECOND
+    currentTime = static_cast<int64_t>(timestamp.tv_sec) * static_cast<int64_t>(AUDIO_NS_PER_SECOND)
         + static_cast<int64_t>(timestamp.tv_nsec);
 }
 
@@ -669,8 +666,9 @@ int32_t AudioCaptureFilter::RelativeSleep(int64_t nanoTime)
         return ret;
     }
     struct timespec time;
-    time.tv_sec = nanoTime / AUDIO_NS_PER_SECOND;
-    time.tv_nsec = nanoTime - (time.tv_sec * AUDIO_NS_PER_SECOND); // Avoids % operation.
+    time.tv_sec = nanoTime / static_cast<int64_t>(AUDIO_NS_PER_SECOND);
+    // Avoids % operation.
+    time.tv_nsec = nanoTime - (static_cast<int64_t>(time.tv_sec) * static_cast<int64_t>(AUDIO_NS_PER_SECOND));
     clockid_t clockId = CLOCK_MONOTONIC;
     const int relativeFlag = 0; // flag of relative sleep.
     ret = clock_nanosleep(clockId, relativeFlag, &time, nullptr);

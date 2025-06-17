@@ -52,6 +52,9 @@ std::string UriJoin(std::string& baseUrl, const std::string& uri)
         return baseUrl.substr(0, pos) + uri;
     } else {
         std::string::size_type pos = baseUrl.rfind('/');
+        if (pos == std::string::npos) {
+            return uri;
+        }
         return baseUrl.substr(0, pos + 1) + uri;
     }
 }
@@ -78,8 +81,8 @@ M3U8Fragment::M3U8Fragment(std::string uri, double duration, int sequence, bool 
 {
 }
 
-M3U8::M3U8(std::string uri, std::string name, StatusCallbackFunc statusCallback) :
-           uri_(std::move(uri)), name_(std::move(name))
+M3U8::M3U8(std::string uri, std::string name, StatusCallbackFunc statusCallback)
+    : uri_(std::move(uri)), name_(std::move(name))
 {
     monitorStatusCallback_ = statusCallback;
     InitTagUpdatersMap();

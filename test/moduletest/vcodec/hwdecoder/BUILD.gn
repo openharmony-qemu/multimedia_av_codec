@@ -57,8 +57,8 @@ ohos_unittest("hwdecoder_native_module_test") {
   if (av_codec_support_codec) {
     sources = [
       "./src/InnerAPI/api_test.cpp",
-      "./src/InnerAPI/videodec_ndk_inner_sample.cpp",
       "./src/InnerAPI/func_test.cpp",
+      "./src/InnerAPI/videodec_ndk_inner_sample.cpp",
       "./src/api_test.cpp",
       "./src/configure_test.cpp",
       "./src/func_test.cpp",
@@ -88,13 +88,13 @@ ohos_unittest("hwdecoder_native_module_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "json:nlohmann_json_static",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "openssl:libcrypto_shared",
     "window_manager:libwm",
-    "init:libbegetutil",
   ]
   resource_config_file =
       "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"

@@ -187,13 +187,13 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     codecType_ = type;
     codecName_ = name;
     codecMime_ = isMimeType ? name : CodecAbilitySingleton::GetInstance().GetMimeByCodecName(name);
+    callerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
     int32_t ret = isMimeType ? InitByMime(callerInfo, apiVersion) : InitByName(callerInfo, apiVersion);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret,
                                       "Init failed. isMimeType:(%{public}d), name:(%{public}s), error:(%{public}d)",
                                       isMimeType, name.c_str(), ret);
     SetCallerInfo(callerInfo);
     callerInfo.SetData(Tag::MEDIA_CODEC_NAME, codecName_);
-    callerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
 #ifdef AVCODEC_SUPPORT_EVENT_MANAGER
     callerInfo.SetData(EventInfoExtentedKey::CODEC_TYPE.data(), type);
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_INIT, callerInfo);
@@ -510,9 +510,7 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(isValidState, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                                       GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    GSError gsRet = surface->SetSurfaceSourceType(OHSurfaceSource::OH_SURFACE_SOURCE_VIDEO);
-    EXPECT_AND_LOGW_WITH_TAG(gsRet != GSERROR_OK, "Set surface source type failed, %{public}s",
-                             GSErrorStr(gsRet).c_str());
+
     int32_t ret = AVCS_ERR_OK;
     if (postProcessing_) {
         ret = SetOutputSurfaceForPostProcessing(surface);
@@ -924,6 +922,10 @@ inline void CodecServer::StatusChanged(CodecStatus newStatus)
 {
     if (status_ == newStatus) {
         return;
+    }
+    if (status_ == ERROR && videoCb_ != nullptr &&
+        (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) {
+        videoCb_->OnError(AVCODEC_ERROR_FRAMEAORK_FAILED, AVCS_ERR_INVALID_STATE);
     }
     AVCODEC_LOGI_WITH_TAG("Status %{public}s -> %{public}s", GetStatusDescription(status_).data(),
                           GetStatusDescription(newStatus).data());
