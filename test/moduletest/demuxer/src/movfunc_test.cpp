@@ -857,8 +857,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_3000, TestSize.Level2)
     const char *file = "/data/test/media/H264_base@5_1920_1080_30_AAC_48K_1.mov";
     int fd = open(file, O_RDONLY);
     OpenSourceFormat(file, fd, &source, &sourceFormat);
-    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
-    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_NE(OH_AVSource_GetTrackFormat(source, 0), nullptr);
     ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_DURATION, &duration));
     ASSERT_EQ(2000000, duration);
     ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_START_TIME, &startTime));
@@ -1259,8 +1258,7 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1100, TestSize.Level2)
     const char *file = "/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg";
     int fd = open(file, O_RDONLY);
     OpenSourceFormat(file, fd, &source, &sourceFormat);
-    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
-    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_NE(OH_AVSource_GetTrackFormat(source, 0), nullptr);
     ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_DURATION, &duration));
     ASSERT_EQ(2011433, duration);
     ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_START_TIME, &startTime));

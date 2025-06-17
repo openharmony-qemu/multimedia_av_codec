@@ -2463,7 +2463,6 @@ HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_1200, TestSize.Level0)
     const char *file = "/data/test/media/hevc_v_a.ts";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 

@@ -236,7 +236,6 @@ HWTEST_F(DemuxerFunc2NdkTest, SUB_MEDIA_DEMUXER_VTT_4900, TestSize.Level0)
 {
     OH_AVCodecBufferAttr attr;
     const char* mimeType = nullptr;
-    int vttIndex = 1;
     int vttSubtitle = 0;
     uint8_t *data = nullptr;
     const char *file = "/data/test/media/webvtt_test.vtt";
@@ -269,7 +268,7 @@ HWTEST_F(DemuxerFunc2NdkTest, SUB_MEDIA_DEMUXER_VTT_4900, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
     data = OH_AVMemory_GetAddr(memory);
     vttSubtitle = atoi(reinterpret_cast<const char*>(data));
-    vttIndex = VTTFORWARD;
+    int vttIndex = VTTFORWARD;
     ASSERT_EQ(vttSubtitle, VTTFORWARD);
     while (true) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));

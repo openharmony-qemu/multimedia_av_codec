@@ -21,10 +21,10 @@ using namespace std;
 #define FUZZ_PROJECT_NAME "avcapability_fuzzer"
 
 OH_AVCapability *cap = nullptr;
-const int32_t *profiles = nullptr;
-uint32_t profileNum = 0;
+const int32_t *g_profiles = nullptr;
+uint32_t g_profileNum = 0;
 const int32_t *g_levels = nullptr;
-uint32_t levelNum = 0;
+uint32_t g_levelNum = 0;
 OH_AVRange *bitrateRange;
 OH_AVRange *qualityRange;
 OH_AVRange *complexityRange;
@@ -59,8 +59,8 @@ bool AvcapabilityFuzzTest(const uint8_t *data, size_t size)
         OH_AVCapability_GetName(cap);
         OH_AVCapability_IsHardware(cap);
         OH_AVCapability_GetMaxSupportedInstances(cap);
-        OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profileNum);
-        OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &g_levels, &levelNum);
+        OH_AVCapability_GetSupportedProfiles(cap, &g_profiles, &g_profileNum);
+        OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &g_levels, &g_levelNum);
         OH_AVCapability_AreProfileAndLevelSupported(cap, profile, level);
         OH_AVCapability_GetEncoderBitrateRange(cap, bitrateRange);
         OH_AVCapability_GetEncoderQualityRange(cap, qualityRange);
