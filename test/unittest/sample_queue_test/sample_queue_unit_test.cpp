@@ -43,7 +43,7 @@ Status SampleQueueUnitTest::InitLargeSampleQueue()
     sampleQueueConfig.isSupportBitrateSwitch_ = true;
     sampleQueueConfig.queueId_ = 1;
     sampleQueueConfig.bufferCap_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
-    Status status = sampleQueue_->Init(sampleQueueConfig);
+    Status status = sampleQueue_->Init(sampleQueueConfig, false);
     return status;
 }
 
@@ -54,7 +54,7 @@ Status SampleQueueUnitTest::InitNormalSampleQueue()
     sampleQueueConfig.isSupportBitrateSwitch_ = false;
     sampleQueueConfig.queueId_ = 0;
     sampleQueueConfig.bufferCap_ = 1;
-    Status status = sampleQueue_->Init(sampleQueueConfig);
+    Status status = sampleQueue_->Init(sampleQueueConfig, false);
     EXPECT_EQ(status, Status::OK);
     return status;
 }

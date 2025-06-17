@@ -69,7 +69,7 @@ private:
     std::weak_ptr<SampleQueue> sampleQueue_;
 };
 
-Status SampleQueue::Init(const Config& config)
+Status SampleQueue::Init(const Config& config, bool isVideo)
 {
     config_ = config;
     config_.queueSize_ = std::min(config.queueSize_, MAX_SAMPLE_QUEUE_SIZE);
@@ -77,7 +77,7 @@ Status SampleQueue::Init(const Config& config)
     config_.queueName_ = "SampleQueue_" + std::to_string(config_.queueId_);
     sampleBufferQueue_ = AVBufferQueue::Create(config_.queueSize_, MemoryType::VIRTUAL_MEMORY, config_.queueName_);
     FALSE_RETURN_V_MSG_E(sampleBufferQueue_ != nullptr, Status::ERROR_NO_MEMORY, "AVBufferQueue::Create failed");
-    if (config_.isFlvLiveStream_) {
+    if (config_.isFlvLiveStream_ || isVideo) {
         config_.queueSize_ = MAX_SAMPLE_QUEUE_SIZE;
         sampleBufferQueue_->SetLargerQueueSize(config_.queueSize_);
     }

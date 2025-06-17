@@ -360,6 +360,7 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
 
     videoSink_->SetParameter(meta_);
     eosTask_ = std::make_unique<Task>("OS_EOSv", groupId_, TaskType::VIDEO, TaskPriority::HIGH, false);
+    isDecoderReleasedForMute_ = false;
     return Status::OK;
 }
 
@@ -392,6 +393,9 @@ Status DecoderSurfaceFilter::HandleInputBuffer()
 Status DecoderSurfaceFilter::DoStart()
 {
     MEDIA_LOG_I("Start");
+    if (isDecoderReleasedForMute_) {
+        return Status::OK;
+    }
     if (isPaused_.load()) {
         MEDIA_LOG_I("DoStart after pause to execute resume.");
         return DoResume();
@@ -555,6 +559,7 @@ Status DecoderSurfaceFilter::DoStop()
     state_ = ret == Status::OK ? FilterState::STOPPED : FilterState::ERROR;
     FALSE_RETURN_V(ret == Status::OK, ret);
     state_ = ret2 == Status::OK ? FilterState::STOPPED : FilterState::ERROR;
+    isDecoderReleasedForMute_ = true;
     return ret2;
 }
 
@@ -584,6 +589,7 @@ Status DecoderSurfaceFilter::DoRelease()
     if (postProcessor_) {
         postProcessor_->Release();
     }
+    isDecoderReleasedForMute_ = true;
     return Status::OK;
 }
 
@@ -923,7 +929,8 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
                                                  int64_t renderTime)
 {
     if (!isRenderStarted_.load() && render && !(outBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS))
-        && !isInSeekContinous_) {
+        && !isInSeekContinous_ && !isVideoMuted_.load()) {
+        MEDIA_LOG_I("render first frame pts is " PUBLIC_LOG_D64, outBuffer->pts_);
         HandleFirstOutput();
     }
     if ((playRangeEndTime_ != PLAY_RANGE_DEFAULT_VALUE) &&
@@ -1151,7 +1158,7 @@ bool DecoderSurfaceFilter::DrainSeekClosest(uint32_t index, std::shared_ptr<AVBu
 
 Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
 {
-    if (!videoSurface) {
+    if (!videoSurface && !isVideoMuted_.load()) {
         videoDecoder_->SetOutputSurface(nullptr);
         return Status::OK;
     }
@@ -1551,6 +1558,63 @@ void DecoderSurfaceFilter::NotifyMemoryExchange(bool exchangeFlag)
     MEDIA_LOG_D("NotifyMemoryExchange enter.");
     FALSE_RETURN_NOLOG(videoDecoder_ != nullptr);
     videoDecoder_->NotifyMemoryExchange(exchangeFlag);
+}
+
+Status DecoderSurfaceFilter::SetMediaMuted(bool isMuted)
+{
+    MEDIA_LOG_I("DecoderSurfaceFilter SetMediaMuted");
+    if (isMuted) {
+        isRenderStarted_ = false;
+    }
+    videoSink_->SetMediaMuted(isMuted);
+    isVideoMuted_.store(isMuted);
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::DoReleaseOnMuted()
+{
+    MEDIA_LOG_I("DecoderSurfaceFilter::DoReleaseOnMuted enter");
+    if (isDecoderReleasedForMute_ || !isVideoMuted_.load()) {
+        MEDIA_LOG_I("Do not need to release video decoder");
+        return Status::OK;
+    }
+    auto ret = DoRelease();
+    return ret;
+}
+
+Status DecoderSurfaceFilter::DoReInitAndStart()
+{
+    MEDIA_LOG_I("DecoderSurfaceFilter::DoReInitAndStart()");
+    Status ret = Status::OK;
+    if (isDecoderReleasedForMute_) {
+        ret = DoInitAfterLink();
+        FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoInitAfterLink fail");
+        lastRenderTimeNs_ = HST_TIME_NONE;
+        videoDecoder_->Flush();
+        if (postProcessor_) {
+            postProcessor_->Flush();
+        }
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            outputBuffers_.clear();
+            outputBufferMap_.clear();
+        }
+        ret = DoStart();
+        FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoStart fail");
+    } else {
+        lastRenderTimeNs_ = HST_TIME_NONE;
+        videoDecoder_->Flush();
+        if (postProcessor_) {
+            postProcessor_->Flush();
+        }
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            outputBuffers_.clear();
+            outputBufferMap_.clear();
+        }
+        DoStart();
+    }
+    return ret;
 }
 } // namespace Pipeline
 } // namespace MEDIA

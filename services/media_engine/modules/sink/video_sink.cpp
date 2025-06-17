@@ -112,7 +112,7 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
 {
     FALSE_RETURN_V(buffer != nullptr, 0);
     int64_t waitTime = 0;
-    bool render = true;
+    bool render = !isMuted_;
     auto syncCenter = syncCenter_.lock();
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
         int64_t nowCt = syncCenter ? syncCenter->GetClockTimeNow() : 0;
@@ -137,10 +137,14 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
     }
     if ((render && waitTime >= 0) || dropFrameContinuouslyCnt_.load() >= DROP_FRAME_CONTINUOUSLY_MAX_CNT) {
         dropFrameContinuouslyCnt_.store(0);
+        needSyncAfterMute_.store(false);
         renderFrameCnt_++;
+        MEDIA_LOG_D("VideoSink::DoSyncWrite waitTime is " PUBLIC_LOG_D64, waitTime);
         return waitTime > 0 ? waitTime : 0;
     }
-    dropFrameContinuouslyCnt_.fetch_add(1);
+    if (!needSyncAfterMute_.load()) {
+        dropFrameContinuouslyCnt_.fetch_add(1);
+    }
     discardFrameCnt_++;
     PerfRecord(waitTime);
     return -1;
@@ -413,6 +417,16 @@ void VideoSink::VideoLagDetector::Reset()
     lastSystemTimeMs_ = 0;
     lastBufferTimeMs_ = 0;
     totalLagDuration_ = 0;
+}
+
+void VideoSink::SetMediaMuted(bool isMuted)
+{
+    if (isMuted_ && !isMuted) {
+        needSyncAfterMute_.store(true);
+        dropFrameContinuouslyCnt_.store(0);
+        isFirstFrame_ = false;
+    }
+    isMuted_ = isMuted;
 }
 } // namespace Pipeline
 } // namespace MEDIA

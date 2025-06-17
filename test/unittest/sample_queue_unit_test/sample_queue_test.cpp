@@ -190,7 +190,7 @@ HWTEST_F(SampleQueueUnitTest, ResponseForSwitchDone_001, TestSize.Level1)
     sampleQueueConfig.isSupportBitrateSwitch_ = true;
     sampleQueueConfig.queueId_ = NUM_TEST1;
     sampleQueueConfig.bufferCap_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
-    Status status = sampleQueue_->Init(sampleQueueConfig);
+    Status status = sampleQueue_->Init(sampleQueueConfig, false);
     EXPECT_EQ(status, Status::OK);
     int64_t startPtsOnSwitch = NUM_TEST3;
     Status ret = sampleQueue_->DiscardSampleAfter(startPtsOnSwitch);
@@ -213,7 +213,7 @@ HWTEST_F(SampleQueueUnitTest, ResponseForSwitchDone_002, TestSize.Level1)
     sampleQueueConfig.isSupportBitrateSwitch_ = true;
     sampleQueueConfig.queueId_ = NUM_TEST1;
     sampleQueueConfig.bufferCap_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
-    Status status = sampleQueue_->Init(sampleQueueConfig);
+    Status status = sampleQueue_->Init(sampleQueueConfig, false);
     EXPECT_EQ(status, Status::OK);
     int64_t startPtsOnSwitch = NUM_TEST3;
     Status ret = sampleQueue_->DiscardSampleAfter(startPtsOnSwitch);

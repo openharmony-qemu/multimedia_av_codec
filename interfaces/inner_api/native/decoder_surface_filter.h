@@ -124,6 +124,9 @@ public:
     Status SetCameraPostprocessing(bool enable);
     void NotifyPause();
     void NotifyMemoryExchange(bool exchangeFlag);
+    Status SetMediaMuted(bool isMuted);
+    Status DoReleaseOnMuted() override;
+    Status DoReInitAndStart() override;
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -256,6 +259,10 @@ private:
     std::mutex loadLibMutex_ {};
     static void *cameraPostProcessorLibHandle_;
 #endif
+
+    std::atomic<bool> isVideoMuted_ {false};
+    bool isDecoderReleasedForMute_ = true;
+    bool isFirstStart_ = true;
 };
 } // namespace Pipeline
 } // namespace Media

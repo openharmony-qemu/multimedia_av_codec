@@ -59,7 +59,7 @@ public:
     };
     SampleQueue() = default;
     virtual ~SampleQueue() = default;
-    MOCK_METHOD(Status, Init, (const Config& config), ());
+    MOCK_METHOD(Status, Init, (const Config& config, bool isVideo), ());
     MOCK_METHOD(Status, SetSampleQueueCallback, (std::shared_ptr<SampleQueueCallback> sampleQueueCb), ());
     
     MOCK_METHOD(sptr<AVBufferQueueProducer>, GetBufferQueueProducer, (), ());
@@ -82,7 +82,9 @@ public:
     MOCK_METHOD(uint64_t, GetCacheDuration, (), ());
     MOCK_METHOD(void, UpdateQueueId, (int32_t queueId), ());
     MOCK_METHOD(uint32_t, GetMemoryUsage, (), ());
-
+    MOCK_METHOD(Status, AcquireBuffer, (std::shared_ptr<AVBuffer>& sampleBuffer), ());
+    MOCK_METHOD(Status, ReleaseBuffer, (std::shared_ptr<AVBuffer>& sampleBuffer), ());
+    
     Config config_{};
     std::weak_ptr<SampleQueueCallback> sampleQueueCb_;
 

@@ -129,6 +129,7 @@ public:
     void RestartAndClearBuffer();
     bool IsFlvLive();
     Status StopBufferring(bool isAppBackground);
+    Status SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted, bool keepDecodingOnMute);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -170,6 +171,7 @@ private:
     bool isNotPrepareBeforeStart_ {true};
     bool isEnableReselectVideoTrack_ {false};
     int32_t apiVersion_ {0};
+    bool isVideoMuted_ = false;
 };
 } // namespace Pipeline
 } // namespace Media

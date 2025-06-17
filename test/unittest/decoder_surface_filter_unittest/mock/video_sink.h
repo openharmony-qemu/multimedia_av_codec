@@ -42,6 +42,7 @@ public:
         (const std::shared_ptr<OHOS::Media::AVBuffer> &buffer, int64_t renderDelay), ());
     MOCK_METHOD(Status, GetLagInfo, (int32_t & lagTimes, int32_t &maxLagDuration, int32_t &avgLagDuration), ());
     MOCK_METHOD(Status, SetPerfRecEnabled, (bool isPerfRecEnabled), ());
+    MOCK_METHOD(void, SetMediaMuted, (bool isMuted), ());
 };
 }  // namespace Pipeline
 }  // namespace Media
