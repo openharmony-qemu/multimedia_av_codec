@@ -933,7 +933,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2100, TestSize.Level0)
     const char *file = "/data/test/media/MP3_avcc_10sec.bin";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, size1, size2);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
