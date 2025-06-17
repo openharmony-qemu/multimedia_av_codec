@@ -2061,6 +2061,9 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
     int32_t trackSize = static_cast<int32_t>(mediaInfo.tracks.size());
     for (int32_t index = 0; index < trackSize; index++) {
         auto trackMeta = mediaInfo.tracks[index];
+        Plugins::MediaType mediaType;
+        FALSE_CONTINUE_NOLOG(trackMeta.GetData(Tag::MEDIA_TYPE, mediaType));
+        FALSE_CONTINUE_LOGI(mediaType != Plugins::MediaType::AUXILIARY, "Skip auxiliary track" PUBLIC_LOG_D32, index);
         mediaMetaData_.trackMetas.emplace_back(std::make_shared<Meta>(trackMeta));
     }
 }
