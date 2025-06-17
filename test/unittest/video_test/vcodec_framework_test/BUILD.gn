@@ -70,6 +70,12 @@ group("vcodec_framework_test") {
       ":videodec_stable_unit_test",
       ":videodec_state_unit_test",
     ]
+    if (target_cpu == "arm64" && av_codec_support_hcodec) {
+      deps += [
+        ":videoenc_bframe_capi_unit_test",
+        ":videoenc_bframe_inner_unit_test",
+      ]
+    }
     if (av_codec_support_hcodec) {
       deps += [
         ":videoenc_capi_async_unit_test",
@@ -81,8 +87,6 @@ group("vcodec_framework_test") {
         ":videoenc_state_unit_test",
         ":videoenc_temporal_scalability_capi_unit_test",
         ":videoenc_temporal_scalability_inner_unit_test",
-        ":videoenc_bframe_capi_unit_test",
-        ":videoenc_bframe_inner_unit_test",
       ]
     }
   }
@@ -568,7 +572,7 @@ ohos_unittest("videoenc_bframe_capi_unit_test") {
 
   defines = [ "VIDEOENC_CAPI_UNIT_TEST" ]
   if (target_cpu == "arm64") {
-    defines += [ ":new_test" ]
+    defines += [ ":HMOS_TEST" ]
   }
 
   cflags = vcodec_unittest_cflags
@@ -609,7 +613,7 @@ ohos_unittest("videoenc_bframe_inner_unit_test") {
 
   defines = [ "VIDEOENC_INNER_UNIT_TEST" ]
   if (target_cpu == "arm64") {
-    defines += [ ":new_test" ]
+    defines += [ ":HMOS_TEST" ]
   }
 
   cflags = vcodec_unittest_cflags
