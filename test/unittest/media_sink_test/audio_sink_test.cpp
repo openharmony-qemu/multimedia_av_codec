@@ -207,7 +207,7 @@ public:
         (void)meta;
         return true;
     }
-    Status SetAudioHapticSyncId(int32_t syncId)
+    Status SetAudioHapticsSyncId(int32_t syncId)
     {
         (void)syncId;
         return Status::OK;

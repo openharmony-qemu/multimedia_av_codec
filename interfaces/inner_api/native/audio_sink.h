@@ -116,7 +116,7 @@ public:
     void HandleEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
     bool HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
     void HandleAudioRenderRequestPost();
-    Status SetAudioHapticSyncId(int32_t syncId);
+    Status SetAudioHapticsSyncId(int32_t syncId);
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;

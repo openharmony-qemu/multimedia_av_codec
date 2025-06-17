@@ -289,7 +289,7 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
 
     virtual bool IsFormatSupported(const std::shared_ptr<Meta> &meta) = 0;
 
-    virtual Status SetAudioHapticSyncId(int32_t syncId) = 0;
+    virtual Status SetAudioHapticsSyncId(int32_t syncId) = 0;
 };
 
 /// Audio sink plugin api major number.

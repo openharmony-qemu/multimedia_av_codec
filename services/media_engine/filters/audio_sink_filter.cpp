@@ -421,10 +421,10 @@ Status AudioSinkFilter::SetLooping(bool loop)
     return audioSink_->SetLooping(loop);
 }
 
-Status AudioSinkFilter::SetAudioHapticSyncId(int32_t syncId)
+Status AudioSinkFilter::SetAudioHapticsSyncId(int32_t syncId)
 {
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
-    return audioSink_->SetAudioHapticSyncId(syncId);
+    return audioSink_->SetAudioHapticsSyncId(syncId);
 }
 } // namespace Pipeline
 } // namespace Media

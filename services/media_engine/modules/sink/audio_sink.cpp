@@ -1575,10 +1575,10 @@ Status AudioSink::SetLooping(bool loop)
     return Status::OK;
 }
 
-Status AudioSink::SetAudioHapticSyncId(int32_t syncId)
+Status AudioSink::SetAudioHapticsSyncId(int32_t syncId)
 {
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
-    return plugin_->SetAudioHapticSyncId(syncId);
+    return plugin_->SetAudioHapticsSyncId(syncId);
 }
 } // namespace MEDIA
 } // namespace OHOS
