@@ -120,6 +120,7 @@ private:
     bool GetOneBufferFromSurface();
     void TraverseAvaliableBuffers();
     void SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info);
+    void SetBufferPts(BufferInfo* info);
     void ResetSlot(BufferInfo& info);
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
     void OnSignalEndOfInputStream(const MsgInfo &msg) override;
