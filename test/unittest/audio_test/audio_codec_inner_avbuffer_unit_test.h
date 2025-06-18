@@ -48,6 +48,8 @@ public:
     int32_t RunCase();
     void InputFunc();
     void OutputFunc();
+    void SyncFunc();
+    void SyncOutputFunc();
     std::shared_ptr<AVCodecAudioCodec>& GetAudioCodec()
     {
         return audioCodec_;

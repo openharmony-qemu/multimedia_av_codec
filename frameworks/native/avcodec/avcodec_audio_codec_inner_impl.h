@@ -70,8 +70,55 @@ public:
 
     void SetDumpInfo(bool isDump, uint64_t instanceId) override;
 
+    int32_t QueryInputBuffer(uint32_t *index, size_t bufferSize, int64_t timeoutUs) override;
+
+    std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index) override;
+
+    std::shared_ptr<AVBuffer> GetOutputBuffer(int64_t timeoutUs) override;
+
+    int32_t PushInputBuffer(uint32_t index, bool available) override;
+
+    int32_t ReleaseOutputBuffer(const std::shared_ptr<AVBuffer> &buffer) override;
+
 private:
+    class SyncCodecAdapter : public Media::IConsumerListener, public std::enable_shared_from_this<SyncCodecAdapter> {
+    public:
+        explicit SyncCodecAdapter(size_t outputBufferNum);
+        ~SyncCodecAdapter();
+
+        int32_t Prepare(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer);
+
+        int32_t QueryInputBuffer(uint32_t *index, size_t bufferSize, int64_t timeoutUs);
+
+        std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index);
+
+        std::shared_ptr<AVBuffer> GetOutputBuffer(int64_t timeoutUs);
+
+        int32_t PushInputBuffer(uint32_t index, bool available);
+
+        int32_t ReleaseOutputBuffer(const std::shared_ptr<AVBuffer> &buffer);
+
+        sptr<Media::AVBufferQueueProducer> GetProducer();
+
+    private:
+        void OnBufferAvailable();
+        bool WaitFor(std::unique_lock<std::mutex> &lock, int64_t timeoutUs);
+
+        bool init_;
+        uint32_t inputIndex_;
+        std::vector<std::shared_ptr<AVBuffer>> inputBuffers_;
+        std::unordered_map<AVBuffer *, std::shared_ptr<AVBuffer>> outputBuffers_;
+        Media::AVBufferConfig avBufferConfig_;
+        std::shared_ptr<Media::AVBufferQueue> innerBufferQueue_;
+        sptr<Media::AVBufferQueueProducer> bufferQueueProducer_;
+        sptr<Media::AVBufferQueueConsumer> bufferQueueConsumer_;
+        std::mutex outputMutex_;
+        std::condition_variable outputCV_;
+        size_t outputAvaliableNum_;
+    };
+
     std::shared_ptr<ICodecService> codecService_ = nullptr;
+    std::shared_ptr<SyncCodecAdapter> syncCodecAdapter_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

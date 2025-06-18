@@ -16,6 +16,7 @@
 #ifndef MEDIA_AVCODEC_AUDIO_CODEC_H
 #define MEDIA_AVCODEC_AUDIO_CODEC_H
 
+#include "avcodec_errors.h"
 #include "avcodec_common.h"
 #include "meta/format.h"
 #include "meta/meta.h"
@@ -78,6 +79,39 @@ public:
         (void)isTriggeredByOutPort;
         (void)isFlushed;
         (void)bufferStatus;
+    }
+
+    virtual int32_t QueryInputBuffer(uint32_t *index, size_t bufferSize, int64_t timeoutUs)
+    {
+        (void)index;
+        (void)bufferSize;
+        (void)timeoutUs;
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+    }
+
+    virtual std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index)
+    {
+        (void)index;
+        return nullptr;
+    }
+
+    virtual std::shared_ptr<AVBuffer> GetOutputBuffer(int64_t timeoutUs)
+    {
+        (void)timeoutUs;
+        return nullptr;
+    }
+
+    virtual int32_t PushInputBuffer(uint32_t index, bool available)
+    {
+        (void)index;
+        (void)available;
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+    }
+
+    virtual int32_t ReleaseOutputBuffer(const std::shared_ptr<AVBuffer> &buffer)
+    {
+        (void)buffer;
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
 };
 
