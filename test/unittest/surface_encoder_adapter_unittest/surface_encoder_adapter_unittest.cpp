@@ -219,34 +219,6 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, OnOutputBufferAvailable_001, TestSize.Le
 }
 
 /**
- * @tc.name  : Test GetMappingTime
- * @tc.number: GetMappingTime_001
- * @tc.desc  : Test GetMappingTime buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA ！= 0
- */
-HWTEST_F(SurfaceEncoderAdapterUnitTest, GetMappingTime_001, TestSize.Level1)
-{
-    auto avbuffer = AVBuffer::CreateAVBuffer();
-    avbuffer->flag_ = OHOS::MediaAVCodec::AVCODEC_BUFFER_FLAG_CODEC_DATA;
-    int64_t time = surfaceEncoderAdapter_->GetMappingTime(avbuffer);
-    EXPECT_EQ(time, surfaceEncoderAdapter_->startBufferTime_);
-}
-
-/**
- * @tc.name  : Test GetMappingTime
- * @tc.number: GetMappingTime_002
- * @tc.desc  : Test GetMappingTime (mappingTimeQueue_.empty() ||
- *             mappingTimeQueue_.front().first != buffer->pts_) == false
- */
-HWTEST_F(SurfaceEncoderAdapterUnitTest, GetMappingTime_002, TestSize.Level1)
-{
-    auto avbuffer = AVBuffer::CreateAVBuffer();
-    avbuffer->pts_ = TEST_CURRENT_PTS;
-    surfaceEncoderAdapter_->mappingTimeQueue_.push_back({TEST_CURRENT_PTS, TEST_ADJUSTPTS});
-    int64_t time = surfaceEncoderAdapter_->GetMappingTime(avbuffer);
-    EXPECT_EQ(time, TEST_ADJUSTPTS);
-}
-
-/**
  * @tc.name  : Test CheckFrames
  * @tc.number: CheckFrames_001
  * @tc.desc  : Test CheckFrames totalPauseTimeQueue_.empty() == true

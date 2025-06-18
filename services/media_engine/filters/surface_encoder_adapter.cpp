@@ -226,6 +226,8 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
     if (isTransCoderMode) {
         format.PutIntValue(Tag::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
     }
+    format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enableBFrame_);
+    format.PutIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, bFrameGopMode_);
     ret = codecServer_->Configure(format);
     if (ret != 0) {
         SetFaultEvent("SurfaceEncoderAdapter::Configure error", ret);
@@ -246,6 +248,18 @@ Status SurfaceEncoderAdapter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkB
         MEDIA_LOG_E("SetCustomBuffer error");
         return Status::ERROR_UNKNOWN;
     }
+    return Status::OK;
+}
+
+Status SurfaceEncoderAdapter::SetVideoEnableBFrame(bool &enableBFrame)
+{
+    MEDIA_LOG_I("SetVideoEnableBFrame");
+    if (!codecServer_) {
+        MEDIA_LOG_I("CodecServer is null");
+        SetFaultEvent("SurfaceEncoderAdapter::SetVideoEnableBFrame, CodecServer is null");
+        return Status::ERROR_UNKNOWN;
+    }
+    enableBFrame_ = enableBFrame;
     return Status::OK;
 }
 
@@ -486,7 +500,6 @@ Status SurfaceEncoderAdapter::Reset()
     totalPauseTime_ = 0;
     isStart_ = false;
     isStartKeyFramePts_ = false;
-    mappingTimeQueue_.clear();
     pauseResumeQueue_.clear();
     pauseResumePts_.clear();
     if (ret == 0) {
@@ -605,59 +618,32 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         TransCoderOnOutputBufferAvailable(index, buffer);
         return;
     }
-    if (stopTime_ != -1 && buffer->pts_ > stopTime_ - (SEC_TO_NS / videoFrameRate_)) {
-        MEDIA_LOG_I("buffer->pts > stopTime, ready to stop");
-        std::unique_lock<std::mutex> lock(stopMutex_);
-        stopCondition_.notify_all();
-    }
-    int64_t mappingTime = GetMappingTime(buffer);
     FALSE_RETURN_MSG(buffer->memory_ != nullptr, "buffer->memory_ is nullptr, OnOutputBufferAvailable fail");
     int32_t size = buffer->memory_->GetSize();
-    std::shared_ptr<AVBuffer> emptyOutputBuffer;
+    std::shared_ptr<AVBuffer> outputBuffer;
     AVBufferConfig avBufferConfig;
     avBufferConfig.size = size;
     avBufferConfig.memoryType = MemoryType::SHARED_MEMORY;
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
-    Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
+    Status status = outputBufferQueueProducer_->RequestBuffer(outputBuffer, avBufferConfig, TIME_OUT_MS);
     FALSE_RETURN_MSG(status == Status::OK, "RequestBuffer fail.");
-    std::shared_ptr<AVMemory> &bufferMem = emptyOutputBuffer->memory_;
-    FALSE_RETURN_MSG(emptyOutputBuffer->memory_ != nullptr, "emptyOutputBuffer->memory_ is nullptr");
+    std::shared_ptr<AVMemory> &bufferMem = outputBuffer->memory_;
+    FALSE_RETURN_MSG(outputBuffer->memory_ != nullptr, "outputBuffer->memory_ is nullptr");
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
-    *(emptyOutputBuffer->meta_) = *(buffer->meta_);
-    emptyOutputBuffer->pts_ = (mappingTime - startBufferTime_) / NS_PER_US;
-    emptyOutputBuffer->flag_ = buffer->flag_;
-    outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
+    *(outputBuffer->meta_) = *(buffer->meta_);
+    outputBuffer->pts_ = buffer->pts_ / NS_PER_US;
+    outputBuffer->flag_ = buffer->pts_ / NS_PER_US;
+    outputBufferQueueProducer_->PushBuffer(outputBuffer, true);
     {
         std::lock_guard<std::mutex> lock(releaseBufferMutex_);
         indexs_.push_back(index);
     }
     releaseBufferCondition_.notify_all();
-}
-
-int64_t SurfaceEncoderAdapter::GetMappingTime(std::shared_ptr<AVBuffer> buffer)
-{
-    int64_t mappingTime = -1;
-    if (!(buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
-        std::lock_guard<std::mutex> mappingLock(mappingPtsMutex_);
-        if (mappingTimeQueue_.empty() || mappingTimeQueue_.front().first != buffer->pts_) {
-            MEDIA_LOG_D("buffer->pts fail");
-        } else {
-            mappingTime = mappingTimeQueue_.front().second;
-            mappingTimeQueue_.pop_front();
-        }
-        if (startBufferTime_ == -1) {
-            startBufferTime_ = buffer->pts_;
-        }
-        // cache recent 2 pts
-        preKeyFramePts_ = currentKeyFramePts_;
-        currentKeyFramePts_ = buffer->pts_;
-        AddStartPts(buffer->pts_);
-        AddPauseResumePts(buffer->pts_);
-    } else {
-        MEDIA_LOG_D("OnOutputBufferAvailable buffer->flag_" PUBLIC_LOG_U32, buffer->flag_);
-        mappingTime = startBufferTime_ + buffer->pts_;
+    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        MEDIA_LOG_I("EOS received, ready to stop.");
+        std::unique_lock<std::mutex> lock(stopMutex_);
+        stopCondition_.notify_all();
     }
-    return mappingTime;
 }
 
 void SurfaceEncoderAdapter::ReleaseBuffer()
@@ -773,12 +759,28 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
         MEDIA_LOG_D("OnInputParameterWithAttrAvailable totalPauseTimeQueue_[0] " PUBLIC_LOG_D64,
                     totalPauseTimeQueue_[0]);
         if (!isDroppedFrames) {
-            mappingTimeQueue_.push_back({currentPts, adjustPts});
+            if (startBufferTime_ == -1) {
+                startBufferTime_ = currentPts;
+            }
+            int64_t mappingTime = adjustPts - startBufferTime_;
+            MEDIA_LOG_I("OnInputParameterWithAttrAvailable mappingTime = " PUBLIC_LOG_D64, mappingTime);
+            preKeyFramePts_ = currentKeyFramePts_;
+            currentKeyFramePts_ = currentPts;
+            AddStartPts(currentPts);
+            AddPauseResumePts(currentPts);
+            parameter->PutLongValue(Tag::VIDEO_ENCODE_SET_FRAME_PTS, mappingTime);
         }
         lastBufferTime_ = currentPts;
     }
     parameter->PutIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, isDroppedFrames);
     codecServer_->QueueInputParameter(index);
+    if (stopTime_ != -1 && currentPts > stopTime_ - (SEC_TO_NS / videoFrameRate_)) {
+        MEDIA_LOG_I("currentPts > stopTime, send EOS.");
+        int32_t ret = codecServer_->NotifyEos();
+        if (ret != 0) {
+            MEDIA_LOG_E("OnInputParameterWithAttrAvailable codecServer_->NotifyEos() failed!");
+        }
+    }
 }
 
 bool SurfaceEncoderAdapter::CheckFrames(int64_t currentPts, int64_t &checkFramesPauseTime)

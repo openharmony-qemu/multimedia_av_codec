@@ -22,8 +22,7 @@
 #include "type_converter.h"
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
-#include "hcodec_list.h"
-#include "v4_0/codec_ext_types.h"
+#include "v3_0/codec_ext_types.h"
 #include <algorithm>
 #include <regex>
 
@@ -155,14 +154,11 @@ int32_t HEncoder::SetLTRParam(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameNum)) {
         return AVCS_ERR_OK;
     }
-    CodecHDI::VideoFeature ltrFeature =
-        HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_LTR);
-    if (!ltrFeature.support || ltrFeature.extendInfo.empty()) {
+    if (!caps_.port.video.isSupportLTR) {
         HLOGW("platform not support LTR");
         return AVCS_ERR_OK;
     }
-    int32_t maxLtrNum = ltrFeature.extendInfo[0];
-    if (ltrFrameNum <= 0 || ltrFrameNum > maxLtrNum) {
+    if (ltrFrameNum <= 0 || ltrFrameNum > caps_.port.video.maxLTRFrameNum) {
         HLOGE("invalid ltrFrameNum %d", ltrFrameNum);
         return AVCS_ERR_INVALID_VAL;
     }
@@ -204,9 +200,7 @@ int32_t HEncoder::EnableFrameQPMap(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, enableQPMap)) {
         return AVCS_ERR_OK;
     }
-    CodecHDI::VideoFeature feature =
-        HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_QP_MAP);
-    if (!feature.support) {
+    if (!caps_.port.video.isSupportQPMap) {
         HLOGE("this device dont support qp map");
         return AVCS_ERR_UNSUPPORT;
     }
@@ -227,13 +221,6 @@ int32_t HEncoder::ConfigBEncodeMode(const Format &format)
     Media::Plugins::VideoEncodeBFrameGopMode gopMode;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, *reinterpret_cast<int *>(&gopMode))) {
         return AVCS_ERR_OK;
-    }
-
-    CodecHDI::VideoFeature feature =
-        HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_ENCODE_B_FRAME);
-    if (!feature.support || feature.extendInfo.empty() || feature.extendInfo[0] <= 0) {
-        HLOGE("this device or protocol not support b frame");
-        return AVCS_ERR_UNSUPPORT;
     }
 
     CodecEncGopMode param {};
@@ -284,7 +271,7 @@ int32_t HEncoder::SetTemperalLayer(const Format &format)
         (enableTemporalScale == 0)) {
         return AVCS_ERR_OK;
     }
-    if (!HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_TSVC).support) {
+    if (!caps_.port.video.isSupportTSVC) {
         HLOGW("platform not support temporal scale");
         return AVCS_ERR_OK;
     }
@@ -343,7 +330,7 @@ int32_t HEncoder::GetWaterMarkInfo(std::shared_ptr<AVBuffer> buffer, WaterMarkIn
 
 int32_t HEncoder::OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer)
 {
-    if (!HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_WATERMARK).support) {
+    if (!caps_.port.video.isSupportWaterMark) {
         HLOGE("this device dont support water mark");
         return AVCS_ERR_UNSUPPORT;
     }
@@ -1602,6 +1589,10 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ReplyErrorCode(msg.id, AVCS_ERR_OK);
         return;
     }
+    HLOGD("avBuffer->pts_ before setted, absolute pts=%ld", bufferInfo->avBuffer->pts_);
+    bool bret = bufferInfo->avBuffer->meta_->GetData(
+        OHOS::Media::Tag::VIDEO_ENCODE_SET_FRAME_PTS, bufferInfo->avBuffer->pts_);
+    HLOGD("avBuffer->pts_ after setted, relative pts=%ld, bret=%d", bufferInfo->avBuffer->pts_, bret);
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
     WrapSurfaceBufferToSlot(*bufferInfo, bufferInfo->surfaceBuffer, bufferInfo->avBuffer->pts_,
         UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_)));
