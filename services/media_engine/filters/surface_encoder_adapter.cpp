@@ -763,7 +763,7 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
                 startBufferTime_ = currentPts;
             }
             int64_t mappingTime = adjustPts - startBufferTime_;
-            MEDIA_LOG_I("OnInputParameterWithAttrAvailable mappingTime = " PUBLIC_LOG_D64, mappingTime);
+            MEDIA_LOG_D("OnInputParameterWithAttrAvailable mappingTime = " PUBLIC_LOG_D64, mappingTime);
             preKeyFramePts_ = currentKeyFramePts_;
             currentKeyFramePts_ = currentPts;
             AddStartPts(currentPts);
