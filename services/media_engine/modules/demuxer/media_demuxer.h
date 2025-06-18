@@ -274,7 +274,7 @@ private:
     int64_t ReadLoop(int32_t trackId);
     Status CopyFrameToUserQueue(int32_t trackId);
     bool GetBufferFromUserQueue(int32_t queueIndex, int32_t size = 0);
-    Status InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer>);
+    Status InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> sample, bool isAVDemuxer);
     Status InnerSelectTrack(int32_t trackId);
     Status HandleReadSample(int32_t trackId);
     int64_t ParserRefInfo();
@@ -297,7 +297,7 @@ private:
     void EnterDraggingOpenGopCnt();
     void ResetDraggingOpenGopCnt();
     Status ReadSampleWithPerfRecord(const std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp,
-        const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample);
+        const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample, bool isAVDemuxer);
     Status HandleTrackEos(int32_t trackId);
     void SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer);
     void TranscoderUpdateOutputBufferPts(int32_t trackId, std::shared_ptr<AVBuffer> &outputBuffer);
@@ -443,6 +443,8 @@ private:
 
     int64_t videoSeekTime_ {0};
     bool isInSeekDropAudio_ {false};
+
+    uint32_t timeout_ = {10}; // 10 represents 10ms. Optimization can consider dynamic adjustment.
 };
 } // namespace Media
 } // namespace OHOS
