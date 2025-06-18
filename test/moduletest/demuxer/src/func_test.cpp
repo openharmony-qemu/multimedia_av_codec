@@ -1247,7 +1247,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3200, TestSize.Level1)
             count++;
         }
     }
-
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, startPts / 1000, SEEK_MODE_NEXT_SYNC));
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr));
     ASSERT_EQ(attr.pts, startPts);
@@ -1354,7 +1353,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3400, TestSize.Level1)
             } else {
                 endPts = attr.pts;
             }
-
         }
     }
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, endPts / 1000, SEEK_MODE_PREVIOUS_SYNC));
@@ -1403,7 +1401,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3500, TestSize.Level1)
             } else {
                 endPts = attr.pts;
             }
-
         }
     }
     // end I
