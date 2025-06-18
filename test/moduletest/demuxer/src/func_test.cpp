@@ -1457,7 +1457,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3600, TestSize.Level1)
             } else {
                 endPts = attr.pts;
             }
-
         }
     }
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, endPts / 1000, SEEK_MODE_CLOSEST_SYNC));
