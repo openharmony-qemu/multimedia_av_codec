@@ -3459,7 +3459,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Cook_ReleaseOutputBuffer_0
 }
 #endif
 
-#ifdef SUPPORT_CODEC_AC3
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_CreateByMime_01, TestSize.Level1)
 {
     audioDec_ = OH_AudioCodec_CreateByMime(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AC3.data(), false);
@@ -3723,7 +3722,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_ReleaseOutputBuffer_01
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_FreeOutputBuffer(audioDec_, index));
     Release();
 }
-#endif
 
 }
 }

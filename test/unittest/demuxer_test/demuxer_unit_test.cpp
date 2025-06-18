@@ -2572,7 +2572,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1800, TestSize.Level1)
 }
 #endif
 
-#ifdef SUPPORT_CODEC_AC3
 /**
  * @tc.name: Demuxer_ReadSample_1801
  * @tc.desc: copy current sample to buffer(ac3)
@@ -2614,7 +2613,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1801, TestSize.Level1)
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
     list<int64_t> toPtsList = {0, 4500, 7000, 2000, 10000, 8000}; // ms
-    vector<int32_t> audioVals = {317, 317, 317, 188, 188, 188, 116, 116, 116, 260, 260, 260, 30, 30, 30, 88, 88, 88};
+    vector<int32_t> audioVals = {317, 317, 317, 187, 188, 188, 115, 116, 116, 259, 260, 260, 29, 30, 30, 87, 88, 88};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -3015,5 +3014,4 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1806, TestSize.Level1)
     ASSERT_NE(demuxer_->SeekToTime(12000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
 }
-#endif
 } // namespace

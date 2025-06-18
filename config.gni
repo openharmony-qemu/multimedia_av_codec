@@ -40,7 +40,6 @@ declare_args() {
   av_codec_enable_codec_rm = false
   av_codec_enable_codec_rv = false
   av_codec_enable_codec_cook = false
-  av_codec_enable_codec_ac3 = false
   av_codec_support_efficiency_manager = false
   if (defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_efficiency_manager)) {
@@ -156,6 +155,3 @@ if (av_codec_enable_codec_cook) {
   av_codec_defines += [ "SUPPORT_CODEC_COOK" ]
 }
 
-if (av_codec_enable_codec_ac3) {
-  av_codec_defines += [ "SUPPORT_CODEC_AC3" ]
-}
