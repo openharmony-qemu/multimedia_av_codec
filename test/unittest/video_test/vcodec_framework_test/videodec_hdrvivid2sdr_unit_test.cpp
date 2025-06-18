@@ -649,8 +649,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_0101, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-        std::shared_ptr<FormatMock> curFormat = videoDec_->GetOutputDescription();
-        CheckFormatKeyForP3Full(curFormat);
+        CheckFormatKeyForP3Full(videoDec_, format_);
         EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     } else if (testCode == VCodecTestCode::HW_AVC || testCode == VCodecTestCode::SW_AVC) {
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
