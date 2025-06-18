@@ -324,6 +324,25 @@ public:
         (void)index;
         return nullptr;
     }
+    /**
+     * @brief Get video Channel Id. All methods are unavailable after calling this.
+     *
+     * @param channelId channel id
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 3.1
+     * @version 3.1
+     */
+    virtual int32_t GetChannelId(int32_t &channelId) = 0;
+
+    /**
+     * @brief Sets the lpp mode to the decoder.
+     *
+     * @param isLpp lpp mode.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 3.1
+     * @version 3.1
+     */
+    virtual int32_t SetLowPowerPlayerMode(bool isLpp) = 0;
 };
 
 class __attribute__((visibility("default"))) VideoDecoderFactory {

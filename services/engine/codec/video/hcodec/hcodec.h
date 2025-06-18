@@ -49,9 +49,11 @@ public:
 
     int32_t SignalRequestIDRFrame() override;
     int32_t SetParameter(const Format& format) override;
+    int32_t GetChannelId(int32_t &channelId) override;
     int32_t GetInputFormat(Format& format) override;
     int32_t GetOutputFormat(Format& format) override;
     std::string GetHidumperInfo() override;
+    int32_t SetLowPowerPlayerMode(bool isLpp) override;
 
     int32_t Start() override;
     int32_t Stop() override;
@@ -377,6 +379,7 @@ protected:
     bool gotFirstOutput_ = false;
     bool outPortHasChanged_ = false;
     int pid_ = -1;
+    bool isLpp_ = false;
     double codecRate_ = 0.0;
 
     // VRR

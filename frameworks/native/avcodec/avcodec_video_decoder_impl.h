@@ -52,6 +52,8 @@ public:
         const bool svpFlag) override;
 #endif
     int32_t NotifyMemoryExchange(const bool exchangeFlag) override;
+    int32_t GetChannelId(int32_t &channelId) override;
+    int32_t SetLowPowerPlayerMode(bool isLpp) override;
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Format &format);
 
 private:

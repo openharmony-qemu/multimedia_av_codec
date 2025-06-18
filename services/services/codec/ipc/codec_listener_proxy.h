@@ -20,6 +20,7 @@
 #include "i_standard_codec_listener.h"
 #include "avcodec_death_recipient.h"
 #include "nocopyable.h"
+#include "surface_buffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -32,6 +33,8 @@ public:
     void OnOutputFormatChanged(const Format &format) override;
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap) override;
+    void OnOutputBufferUnbinded() override;
 
 private:
     sptr<IStandardCodecListener> listener_ = nullptr;
@@ -49,7 +52,9 @@ public:
     void OnOutputFormatChanged(const Format &format) override;
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
-
+    void OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap) override;
+    void OnOutputBufferUnbinded() override;
+    
     bool InputBufferInfoFromParcel(uint32_t index, AVCodecBufferInfo &info, AVCodecBufferFlag &flag,
                                    MessageParcel &data);
     bool SetOutputBufferRenderTimestamp(uint32_t index, int64_t renderTimestampNs);

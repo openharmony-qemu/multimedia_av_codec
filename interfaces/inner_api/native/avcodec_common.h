@@ -80,6 +80,9 @@ enum AVCodecBufferFlag : uint32_t {
      * @since 12
      */
     AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT = 1 << 6,
+
+    /** This indicated that the buffer contains mul frame for lpp */
+    AVCODEC_BUFFER_FLAG_MUL_FRAME = 1 << 7,
 };
 
 struct AVCodecBufferInfo {
@@ -188,6 +191,15 @@ public:
      * @since 4.1
      */
     virtual void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
+
+    virtual void OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
+    {
+        (void)bufferMap;
+    }
+    
+    virtual void OnOutputBufferUnbinded()
+    {
+    }
 };
 
 class MediaCodecParameterCallback {

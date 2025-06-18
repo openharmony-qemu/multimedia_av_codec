@@ -36,7 +36,9 @@ public:
     virtual void OnOutputFormatChanged(const Format &format) = 0;
     virtual void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
     virtual void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
-
+    virtual void OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap) = 0;
+    virtual void OnOutputBufferUnbinded() = 0;
+    
     uint64_t UpdateGeneration()
     {
         return ++generation_;

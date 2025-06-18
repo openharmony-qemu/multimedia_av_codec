@@ -26,6 +26,7 @@
 #include "avcodec_log.h"
 #include "buffer_converter.h"
 #include "i_standard_codec_listener.h"
+#include "surface_buffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -38,8 +39,11 @@ public:
     void OnOutputFormatChanged(const Format &format) override;
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap) override;
+    void OnOutputBufferUnbinded() override;
 
     void SetCallback(const std::shared_ptr<MediaCodecCallback> &callback);
+    int OnRequestExtras(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option);
     void Init();
     void ClearListenerCache();
     void FlushListenerCache();
@@ -52,6 +56,8 @@ public:
 private:
     void OnInputBufferAvailable(uint32_t index, MessageParcel &data);
     void OnOutputBufferAvailable(uint32_t index, MessageParcel &data);
+    void OnOutputBufferBinded(MessageParcel &data);
+    void OnOutputBufferUnbinded(MessageParcel &data);
     bool CheckGeneration(uint64_t messageGeneration) const;
 
     class CodecBufferCache;

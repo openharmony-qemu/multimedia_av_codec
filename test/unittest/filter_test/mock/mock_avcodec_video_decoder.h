@@ -51,6 +51,8 @@ public:
     MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &callback), (override));
     MOCK_METHOD(int32_t, SetDecryptConfig, (const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag), (override));
+    MOCK_METHOD(int32_t, SetLowPowerPlayerMode, (const bool isLpp), (override));
+    MOCK_METHOD(int32_t, GetChannelId, (int32_t &channelId), (override));
 };
 
 class MockDecoderAdapterCallback : public DecoderAdapterCallback {
