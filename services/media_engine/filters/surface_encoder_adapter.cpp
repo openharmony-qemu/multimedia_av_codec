@@ -632,7 +632,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
     *(outputBuffer->meta_) = *(buffer->meta_);
     outputBuffer->pts_ = buffer->pts_ / NS_PER_US;
-    outputBuffer->flag_ = buffer->pts_ / NS_PER_US;
+    outputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(outputBuffer, true);
     {
         std::lock_guard<std::mutex> lock(releaseBufferMutex_);
