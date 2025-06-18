@@ -27,7 +27,6 @@ const static int32_t TEST_SUCCESS_CODE = 0;
 const static int64_t TEST_PAUSE_TIME = -2;
 const static int64_t TEST_PAUSE_TIME_DEFAULT = -1;
 const static int64_t TEST_CURRENT_PTS = 1;
-const static int64_t TEST_ADJUSTPTS = 1;
 const static uint32_t TEST_INDEX = 1;
 
 void SurfaceEncoderAdapterUnitTest::SetUpTestCase(void) {}
