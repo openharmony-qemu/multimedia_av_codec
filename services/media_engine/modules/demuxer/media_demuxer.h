@@ -325,6 +325,7 @@ private:
     void HandleVideoTrack(int32_t trackId);
     Status HandlePushBuffer(int32_t trackId, std::shared_ptr<AVBuffer>& dstBuffer,
                             sptr<AVBufferQueueProducer>& bufferQueue, Status status);
+    void HandleSeek(int32_t trackId);
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
@@ -412,6 +413,7 @@ private:
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
     int64_t lastAudioPts_ = 0;
     int64_t lastVideoPts_ = 0;
+    int64_t lastAudioPtsInMute_ = 0;
     std::atomic<bool> isOnEventNoMemory_ = false;
     std::atomic<bool> isSeekError_ = false;
     std::atomic<bool> shouldCheckSubtitleFramePts_ = false;

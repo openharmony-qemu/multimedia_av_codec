@@ -2144,7 +2144,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
             false, "UserQueue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
     }
 
-    int64_t mediaTime = syncCenter_->GetMediaTimeNow();
+    int64_t mediaTime = isFlvLiveStream_ ? lastAudioPtsInMute_ : syncCenter_->GetMediaTimeNow();
     if (queueIndex == videoTrackId_ && (isVideoMuted_ || needRestore_) &&
         lastVideoPts_ - mediaTime >= ONE_FRAME_LENGTH) {
         return false;
@@ -2435,18 +2435,11 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
             return Status::OK;
         }
     }
-
-    if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_ && HasVideo()) {
-        if (trackId == videoTrackId_ && isFirstFrameAfterSeek_.load()) {
-            bool isSyncFrame = (bufferMap_[trackId]->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) != 0;
-            if (!isSyncFrame) {
-                MEDIA_LOG_E("The first frame after seeking is not a sync frame");
-            }
-            isFirstFrameAfterSeek_.store(false);
-        }
-        MEDIA_LOG_I("Seeking, found idr frame track " PUBLIC_LOG_D32, trackId);
-        isSeeked_ = false;
+    
+    if (trackId == audioTrackId_) {
+        lastAudioPtsInMute_ = bufferMap_[trackId]->pts_;
     }
+    HandleSeek(trackId);
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (bufferMap_[trackId]->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) {
             return HandleTrackEos(trackId);
@@ -2463,6 +2456,21 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
         MEDIA_LOG_E("Read failed, track " PUBLIC_LOG_D32 ", ret:" PUBLIC_LOG_D32, trackId, static_cast<int32_t>(ret));
     }
     return ret;
+}
+
+void MediaDemuxer::HandleSeek(int32_t trackId)
+{
+    if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_ && HasVideo()) {
+        if (trackId == videoTrackId_ && isFirstFrameAfterSeek_.load()) {
+            bool isSyncFrame = (bufferMap_[trackId]->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) != 0;
+            if (!isSyncFrame) {
+                MEDIA_LOG_E("The first frame after seeking is not a sync frame");
+            }
+            isFirstFrameAfterSeek_.store(false);
+        }
+        MEDIA_LOG_I("Seeking, found idr frame track " PUBLIC_LOG_D32, trackId);
+        isSeeked_ = false;
+    }
 }
 
 Status MediaDemuxer::HandleTrackEos(int32_t trackId)
