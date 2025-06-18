@@ -932,7 +932,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2100, TestSize.Level0)
     int64_t size2 = GetFileSize(file2);
     const char *file = "/data/test/media/MP3_avcc_10sec.bin";
     int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
+
     source = OH_AVSource_CreateWithFD(fd, size1, size2);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -988,7 +988,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2200, TestSize.Level0)
 
     const char *file = "/data/test/media/MP3_OGG_48000_1.bin";
     int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
+
     source = OH_AVSource_CreateWithFD(fd, 0, size1);
     ASSERT_NE(source, nullptr);
 
@@ -1043,7 +1043,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2300, TestSize.Level0)
 
     const char *file = "/data/test/media/MP3_OGG_48000_1.bin";
     int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
+
     source = OH_AVSource_CreateWithFD(fd, size1, size2);
     ASSERT_NE(source, nullptr);
 
@@ -1096,7 +1096,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2400, TestSize.Level0)
 
     const char *file = "/data/test/media/test_video_avcc_10sec.bin";
     int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
+
     source = OH_AVSource_CreateWithFD(fd, 0, size1);
     ASSERT_NE(source, nullptr);
 
@@ -1323,7 +1323,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3400, TestSize.Level1)
     uint32_t trackIndex = 1;
     OH_AVCodecBufferAttr attr;
     const char *file = "/data/test/media/01_video_audio.mp4";
-    int count = 0;
+
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -1354,7 +1354,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3400, TestSize.Level1)
             } else {
                 endPts = attr.pts;
             }
-            count++;
+
         }
     }
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, endPts / 1000, SEEK_MODE_PREVIOUS_SYNC));
@@ -1375,7 +1375,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3500, TestSize.Level1)
     uint32_t trackIndex = 1;
     OH_AVCodecBufferAttr attr;
     const char *file = "/data/test/media/01_video_audio.mp4";
-    int count = 0;
+
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -1403,7 +1403,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3500, TestSize.Level1)
             } else {
                 endPts = attr.pts;
             }
-            count++;
+
         }
     }
     // end I
@@ -1428,7 +1428,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3600, TestSize.Level1)
     uint32_t trackIndex = 1;
     OH_AVCodecBufferAttr attr;
     const char *file = "/data/test/media/01_video_audio.mp4";
-    int count = 0;
+
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -1457,7 +1457,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3600, TestSize.Level1)
             } else {
                 endPts = attr.pts;
             }
-            count++;
+
         }
     }
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, endPts / 1000, SEEK_MODE_CLOSEST_SYNC));
