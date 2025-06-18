@@ -47,9 +47,11 @@ public:
     virtual int32_t Flush() = 0;
     virtual int32_t Reset() = 0;
     virtual int32_t Release() = 0;
+    virtual int32_t GetChannelId(int32_t &channelId) = 0;
     virtual int32_t NotifyEos() = 0;
     virtual sptr<Surface> CreateInputSurface() = 0;
     virtual int32_t SetOutputSurface(sptr<Surface> surface) = 0;
+    virtual int32_t SetLowPowerPlayerMode(bool isLpp) = 0;
     virtual int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) = 0;
     virtual int32_t QueueInputBuffer(uint32_t index) = 0;
     virtual int32_t QueueInputParameter(uint32_t index) = 0;

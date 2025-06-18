@@ -226,6 +226,35 @@ int32_t HCodec::GetOutputFormat(Format &format)
     IF_TRUE_RETURN_VAL_WITH_MSG(!reply->GetValue("format", format),
         AVCS_ERR_UNKNOWN, "output format not replied");
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, caps_.compName);
+    format.PutIntValue("IS_VENDOR", 1);
+    return AVCS_ERR_OK;
+}
+
+int32_t HCodec::GetChannelId(int32_t &channelId)
+{
+    GetChannelIdParam param {};
+    InitOMXParamExt(param);
+    if (!GetParameter(OMX_IndexParamChannelId, param)) {
+        HLOGI("LowPowerPlayer  GetChannelId failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("LowPowerPlayer  GetChannelId Success");
+    channelId = param.channelId;
+    return AVCS_ERR_OK;
+}
+
+int32_t HCodec::SetLowPowerPlayerMode(bool isLpp)
+{
+    bool originalIsLpp = isLpp_;
+    isLpp_ = isLpp;
+    GetLppModeParam param {};
+    InitOMXParamExt(param);
+    param.enable = isLpp;
+    if (!SetParameter(OMX_IndexParamLppMode, param)) {
+        HLOGE("set LowPowerPlayer Mode failed");
+        isLpp_ = originalIsLpp;
+        return AVCS_ERR_UNKNOWN;
+    }
     return AVCS_ERR_OK;
 }
 
@@ -847,6 +876,9 @@ uint32_t HCodec::UserFlagToOmxFlag(AVCodecBufferFlag userFlag)
     }
     if (userFlag & AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         flags |= OMX_BUFFERFLAG_CODECCONFIG;
+    }
+    if (userFlag & AVCODEC_BUFFER_FLAG_MUL_FRAME) {
+        flags |= OMX_BUFFERFLAG_MULTI_FRAME;
     }
     return flags;
 }

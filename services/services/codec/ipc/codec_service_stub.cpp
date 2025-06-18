@@ -188,6 +188,9 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
         case static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE):
             ret = Release(data, reply);
             break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::GET_CHANNEL_ID):
+            ret = GetChannelId(data, reply);
+            break;
         case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_EOS):
             ret = NotifyEos(data, reply);
             break;
@@ -196,6 +199,9 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
             break;
         case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_OUTPUT_SURFACE):
             ret = SetOutputSurface(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_LPP_MODE):
+            ret = SetLowPowerPlayerMode(data, reply);
             break;
         case static_cast<uint32_t>(CodecServiceInterfaceCode::GET_OUTPUT_FORMAT):
             ret = GetOutputFormat(data, reply);
@@ -388,6 +394,13 @@ int32_t CodecServiceStub::Release()
     return InnerRelease();
 }
 
+int32_t CodecServiceStub::GetChannelId(int32_t &channelId)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    return codecServer_->GetChannelId(channelId);
+}
+
 int32_t CodecServiceStub::NotifyEos()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
@@ -407,6 +420,13 @@ int32_t CodecServiceStub::SetOutputSurface(sptr<OHOS::Surface> surface)
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->SetOutputSurface(surface);
+}
+
+int32_t CodecServiceStub::SetLowPowerPlayerMode(bool isLpp)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    return codecServer_->SetLowPowerPlayerMode(isLpp);
 }
 
 int32_t CodecServiceStub::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
@@ -579,6 +599,17 @@ int32_t CodecServiceStub::Release(MessageParcel &data, MessageParcel &reply)
     return AVCS_ERR_OK;
 }
 
+int32_t CodecServiceStub::GetChannelId(MessageParcel &data, MessageParcel &reply)
+{
+    AVCODEC_SYNC_TRACE;
+
+    (void)data;
+    int32_t channelId;
+    (void)GetChannelId(channelId);
+    reply.WriteInt32(channelId);
+    return AVCS_ERR_OK;
+}
+
 int32_t CodecServiceStub::NotifyEos(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
@@ -624,6 +655,16 @@ int32_t CodecServiceStub::SetOutputSurface(MessageParcel &data, MessageParcel &r
 
     bool ret = reply.WriteInt32(SetOutputSurface(surface));
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecServiceStub::SetLowPowerPlayerMode(MessageParcel &data, MessageParcel &reply)
+{
+    AVCODEC_SYNC_TRACE;
+    bool isLpp = data.ReadBool();
+    AVCODEC_LOGD("lpp mode is %{public}d", isLpp);
+    bool ret = reply.WriteInt32(SetLowPowerPlayerMode(isLpp));
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 

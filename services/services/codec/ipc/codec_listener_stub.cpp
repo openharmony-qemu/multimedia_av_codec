@@ -26,6 +26,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListenerStub"};
 constexpr uint8_t LOG_FREQ = 10;
+const int32_t MAX_SIZE = 100;
 } // namespace
 
 namespace OHOS {
@@ -232,6 +233,23 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
             return AVCS_ERR_OK;
         }
         default: {
+            return OnRequestExtras(code, data, reply, option);
+        }
+    }
+}
+
+int CodecListenerStub::OnRequestExtras(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
+{
+    switch (code) {
+        case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_BINDED): {
+            OnOutputBufferBinded(data);
+            return AVCS_ERR_OK;
+        }
+        case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_UN_BINDED): {
+            OnOutputBufferUnbinded(data);
+            return AVCS_ERR_OK;
+        }
+        default: {
             AVCODEC_LOGE_WITH_TAG("Default case, please check codec listener stub");
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
         }
@@ -268,6 +286,14 @@ void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<
     (void)buffer;
 }
 
+void CodecListenerStub::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
+{
+    (void)bufferMap;
+}
+void CodecListenerStub::OnOutputBufferUnbinded()
+{
+}
+
 void CodecListenerStub::OnInputBufferAvailable(uint32_t index, MessageParcel &data)
 {
     std::shared_ptr<AVBuffer> buffer;
@@ -288,6 +314,40 @@ void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, MessageParcel &d
         bool ret = outputBufferCache_->ReadFromParcel(index, data, buffer);
         CHECK_AND_RETURN_LOG_WITH_TAG(ret, "read from parel failed");
         mediaCb->OnOutputBufferAvailable(index, buffer);
+        return;
+    }
+}
+
+void CodecListenerStub::OnOutputBufferBinded(MessageParcel &data)
+{
+    std::shared_ptr<MediaCodecCallback> mediaCb = videoCallback_.lock();
+    if (mediaCb != nullptr) {
+        std::map<uint32_t, sptr<SurfaceBuffer>> bufferMap;
+        const MediaAVCodec::Format format;
+        uint32_t size = data.ReadUint32();
+        if (size > MAX_SIZE) {
+            bufferMap.clear();
+            return;
+        }
+        for (uint32_t i = 0; i < size; i++) {
+            uint32_t key = data.ReadUint32();
+            sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+            surfaceBuffer->ReadFromMessageParcel(data);
+            bufferMap.emplace(key, surfaceBuffer);
+        }
+        AVCODEC_LOGI("LowPowerPlayer CodecListenerStub OnOutputBufferBinded Write Map Success");
+        mediaCb->OnOutputBufferBinded(bufferMap);
+        return;
+    }
+}
+
+void CodecListenerStub::OnOutputBufferUnbinded(MessageParcel &data)
+{
+    AVCODEC_LOGI("LowPowerPlayer CodecListenerStub OnOutputBufferUnbinded Enter");
+    std::shared_ptr<MediaCodecCallback> mediaCb = videoCallback_.lock();
+    if (mediaCb != nullptr) {
+        AVCODEC_LOGI("LowPowerPlayer CodecListenerStub OnOutputBufferUnbinded mediaCb Not Null");
+        mediaCb->OnOutputBufferUnbinded();
         return;
     }
 }

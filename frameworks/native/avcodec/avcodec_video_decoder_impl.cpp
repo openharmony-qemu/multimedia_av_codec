@@ -276,6 +276,23 @@ int32_t AVCodecVideoDecoderImpl::SetDecryptConfig(const sptr<DrmStandard::IMedia
     AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     return codecClient_->SetDecryptConfig(keySessionProxy, svpFlag);
 }
+
+int32_t AVCodecVideoDecoderImpl::GetChannelId(int32_t &channelId)
+{
+    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+
+    AVCODEC_SYNC_TRACE;
+    return codecClient_->GetChannelId(channelId);
+}
+
+int32_t AVCodecVideoDecoderImpl::SetLowPowerPlayerMode(bool isLpp)
+{
+    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+
+    AVCODEC_SYNC_TRACE;
+    return codecClient_->SetLowPowerPlayerMode(isLpp);
+}
+
 #endif
 
 int32_t AVCodecVideoDecoderImpl::NotifyMemoryExchange(const bool exchangeFlag)

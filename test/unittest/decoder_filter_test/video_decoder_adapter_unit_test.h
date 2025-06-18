@@ -212,6 +212,16 @@ public:
         (void)svpFlag;
         return status_;
     }
+
+    virtual int32_t SetLowPowerPlayerMode(bool isLpp)
+    {
+        return status_;
+    }
+
+    virtual int32_t GetChannelId(int32_t &channelId)
+    {
+        return status_;
+    }
 private:
     int32_t status_ = 0;
     int32_t ret = 1;

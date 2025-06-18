@@ -799,6 +799,8 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
     currGeneration_++;
     outputBufferPool_.clear();
     CombineConsumerUsage();
+    std::map<uint32_t, sptr<SurfaceBuffer>> bufferMap;
+    HLOGI("LowPowerPlayer outBufferCnt_: %u", outBufferCnt_);
     for (uint32_t i = 0; i < outBufferCnt_; ++i) {
         sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
         if (surfaceBuffer == nullptr) {
@@ -831,6 +833,10 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         info.attached = false;
         outputBufferPool_.push_back(info);
         HLOGI("generation=%d, bufferId=%u, seq=%u", currGeneration_, info.bufferId, surfaceBuffer->GetSeqNum());
+        bufferMap.emplace(surfaceBuffer->GetSeqNum(), surfaceBuffer);
+    }
+    if (callback_ != nullptr && isLpp_) {
+        callback_->OnOutputBufferBinded(bufferMap);
     }
     return AVCS_ERR_OK;
 }

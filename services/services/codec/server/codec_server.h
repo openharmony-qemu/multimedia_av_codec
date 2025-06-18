@@ -64,10 +64,12 @@ public:
     int32_t Flush() override;
     int32_t Reset() override;
     int32_t Release() override;
+    int32_t GetChannelId(int32_t &channelId) override;
     int32_t NotifyEos() override;
     sptr<Surface> CreateInputSurface() override;
     int32_t SetInputSurface(sptr<Surface> surface);
     int32_t SetOutputSurface(sptr<Surface> surface) override;
+    int32_t SetLowPowerPlayerMode(bool isLpp) override;
     int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
     int32_t QueueInputBuffer(uint32_t index) override;
     int32_t QueueInputParameter(uint32_t index) override;
@@ -100,6 +102,9 @@ public:
 
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
+
+    void OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap);
+    void OnOutputBufferUnbinded();
 
     int32_t Configure(const std::shared_ptr<Media::Meta> &meta) override;
     int32_t SetParameter(const std::shared_ptr<Media::Meta> &parameter) override;
@@ -164,6 +169,7 @@ private:
     bool isModeConfirmed_ = false;
     bool isCreateSurface_ = false;
     bool isSetParameterCb_ = false;
+    bool isLpp_ = false;
     std::shared_ptr<TemporalScalability> temporalScalability_ = nullptr;
     std::shared_ptr<CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::unordered_map<uint32_t, DrmDecryptVideoBuf> decryptVideoBufs_;
@@ -236,6 +242,8 @@ public:
     void OnOutputFormatChanged(const Format &format) override;
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap) override;
+    void OnOutputBufferUnbinded() override;
 
 private:
     std::shared_ptr<CodecServer> codec_ = nullptr;

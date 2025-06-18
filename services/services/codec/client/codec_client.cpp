@@ -286,6 +286,16 @@ int32_t CodecClient::Release()
     return ret;
 }
 
+int32_t CodecClient::GetChannelId(int32_t &channelId)
+{
+    std::scoped_lock lock(mutex_, *syncMutex_);
+    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+
+    int32_t ret = codecProxy_->GetChannelId(channelId);
+    EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
+    return ret;
+}
+
 sptr<OHOS::Surface> CodecClient::CreateInputSurface()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
@@ -309,6 +319,16 @@ int32_t CodecClient::SetOutputSurface(sptr<Surface> surface)
     if (ret == AVCS_ERR_OK) {
         codecMode_ |= CODEC_SURFACE_OUTPUT;
     }
+    return ret;
+}
+
+int32_t CodecClient::SetLowPowerPlayerMode(bool isLpp)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+
+    int32_t ret = codecProxy_->SetLowPowerPlayerMode(isLpp);
+    EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
 
@@ -605,6 +625,16 @@ void CodecClient::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
     AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     AVCODEC_LOGD_WITH_TAG("index:%{public}u", index);
     circular_.OnOutputBufferAvailable(index, buffer);
+}
+
+void CodecClient::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
+{
+    videoCallback_->OnOutputBufferBinded(bufferMap);
+}
+
+void CodecClient::OnOutputBufferUnbinded()
+{
+    videoCallback_->OnOutputBufferUnbinded();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
