@@ -139,6 +139,10 @@ public:
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
     bool IsVideoEos();
     bool HasEosTrack();
+    inline bool IsAudioDemuxDecodeAsync() const
+    {
+        return isAudioDemuxDecodeAsync_;
+    }
     Status GetIFramePos(std::vector<uint32_t> &IFramePos);
     Status Dts2FrameId(int64_t dts, uint32_t &frameId);
     Status SeekMs2FrameId(int64_t seekMs, uint32_t &frameId);
@@ -216,6 +220,7 @@ private:
     void AddDemuxerCopyTaskIfFilter(int32_t trackId, TaskType type);
     void AddHandleFlvSelectBitrateTask();
 
+    void InitIsAudioDemuxDecodeAsync();
     Status StopAllTask();
     Status PauseAllTask();
     Status PauseAllTaskAsync();
@@ -313,7 +318,10 @@ private:
     Status HandleSelectBitrateForFlvLive(int64_t startPts, uint32_t bitrate);
     bool IsIgonreBuffering();
     void InitEnableSampleQueueFlag();
-    inline bool GetEnableSampleQueueFlag() const;
+    inline bool GetEnableSampleQueueFlag() const
+    {
+        return enableSampleQueue_ && isAudioDemuxDecodeAsync_;
+    }
     Status StartTaskWithSampleQueue(int32_t trackId);
     Status PushBufferToQueue(int32_t trackId, std::shared_ptr<AVBuffer>& buffer, bool available);
     void StartTaskInner(int32_t trackId);
@@ -393,6 +401,8 @@ private:
     std::unique_ptr<Task> parserRefInfoTask_;
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
+    bool isAudioDemuxDecodeAsync_ = true;
+    bool isVideoTrackDisabled_ = true;
     std::mutex parserTaskMutex_ {};
     int64_t duration_ {0};
     FileType fileType_ = FileType::UNKNOW;
