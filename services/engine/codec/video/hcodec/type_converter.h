@@ -47,7 +47,6 @@ public:
     // pixel format
     static std::optional<PixelFmt> GraphicFmtToFmt(GraphicPixelFormat format);
     static std::optional<PixelFmt> InnerFmtToFmt(VideoPixelFormat format);
-    static std::optional<GraphicPixelFormat> InnerFmtToDisplayFmt(VideoPixelFormat format, bool is10Bit = false);
     static std::optional<VideoPixelFormat> DisplayFmtToInnerFmt(GraphicPixelFormat format);
     // rotate
     static std::optional<GraphicTransformType> InnerRotateToDisplayRotate(VideoRotation rotate);

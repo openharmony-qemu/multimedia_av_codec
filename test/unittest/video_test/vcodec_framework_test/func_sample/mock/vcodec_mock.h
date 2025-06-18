@@ -144,6 +144,13 @@ namespace VCodecTestParam {
 
 enum VCodecTestCode : int32_t { HW_AVC, HW_HEVC, HW_HDR, HW_HDR_HLG_FULL, SW_AVC, SW_MPEG2, SW_MPEG4, SW_RV40, SW_H263};
 
+enum VCodecPixelFormat : int32_t {
+    NV12 = 2,
+    NV21 = 3,
+    RGBA = 5,
+    RGBA1010102 = 6,
+};
+
 const std::map<int32_t, std::string> decSourcePathMap_ = {{HW_AVC, "/data/test/media/720_1280_25_avcc.h264"},
                                                           {HW_HEVC, "/data/test/media/720_1280_25_avcc.h265"},
                                                           {HW_HDR, "/data/test/media/720_1280_25_avcc.hdr.h265"},

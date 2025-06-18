@@ -14,6 +14,7 @@
  */
 
 #include "venc_async_sample.h"
+#include <algorithm>
 #include <gtest/gtest.h>
 #include "iconsumer_surface.h"
 #include "meta/meta_key.h"
@@ -457,6 +458,25 @@ bool VideoEncAsyncSample::IsValid()
     return videoEnc_->IsValid();
 }
 
+std::string VideoEncAsyncSample::GetFileExtension(const std::string& filePath)
+{
+    // 查找最后一个点号的位置
+    size_t dotPos = filePath.find_last_of('.');
+    // 查找最后一个路径分隔符的位置（支持Windows和Unix风格）
+    size_t slashPos = filePath.find_last_of("/\\");
+    // 如果没有点号，或者点号在路径分隔符之前（表示是目录名中的点号而非扩展名）
+    if (dotPos == std::string::npos || (slashPos != std::string::npos && dotPos < slashPos)) {
+        return "";  // 没有扩展名
+    }
+    // 返回点号之后的部分（扩展名）
+    return filePath.substr(dotPos + 1);
+}
+
+void VideoEncSample::SetInPath(const std::string &path)
+{
+    inPath_ = path;
+}
+
 void VideoEncAsyncSample::SetOutPath(const std::string &path)
 {
     outPath_ = path + ".dat";
@@ -691,16 +711,28 @@ int32_t VideoEncAsyncSample::InputLoopInner()
                                       index);
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
+    bool isYUV = true;
+    if (GetFileExtension(inPath_) == "rgba") {
+        isYUV = false;
+    }
     if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
     } else {
-        int32_t stride = 0;
-        auto format = GetInputDescription();
-        char *dst = reinterpret_cast<char *>(buffer->GetAddr());
-        format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
-        attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
-        for (int32_t i = 0; i < attr.size; i += stride) {
-            (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
+        if (isYUV) {
+            int32_t stride = 0;
+            auto format = GetInputDescription();
+            char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+            format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
+            attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
+            for (int32_t i = 0; i < attr.size; i += stride) {
+                (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
+            }
+        } else { // rgba8888/rgba1010102
+            char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+            for (int32_t i = 0; i < DEFAULT_HEIGHT_VENC; i++) {
+                (void)inFile_->read(dst, DEFAULT_WIDTH * 4); // 4: rgba8888/rgba1010102
+                dst += DEFAULT_WIDTH * 4; // 4: rgba8888/rgba1010102
+            }
         }
     }
 
