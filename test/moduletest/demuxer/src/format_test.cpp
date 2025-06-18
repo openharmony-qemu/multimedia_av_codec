@@ -536,7 +536,6 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4400, TestSize.Level0)
     const char *file = "/data/test/media/test_265_B_Gop25_4sec.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -580,6 +579,7 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4400, TestSize.Level0)
         }
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -593,7 +593,6 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4500, TestSize.Level0)
     const char *file = "/data/test/media/test_264_B_Gop25_4sec.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -637,6 +636,7 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4500, TestSize.Level0)
         }
     }
     close(fd);
+    fd = -1;
 }
 /**
  * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_4510
@@ -649,7 +649,6 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4510, TestSize.Level0)
     const char *file = "/data/test/media/record_from_ios.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -693,6 +692,7 @@ HWTEST_F(DemuxerFormatNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4510, TestSize.Level0)
         }
     }
     close(fd);
+    fd = -1;
 }
 /**
  * @tc.number    : VIDEO_DEMUXER_VVC_0500
@@ -723,6 +723,7 @@ HWTEST_F(DemuxerFormatNdkTest, VIDEO_DEMUXER_VVC_0500, TestSize.Level0)
     ASSERT_EQ(1, g_trackCount);
     CheckAudioKeyVvc();
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -764,6 +765,7 @@ HWTEST_F(DemuxerFormatNdkTest, VIDEO_DEMUXER_VVC_0600, TestSize.Level0)
         }
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -792,6 +794,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0010, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "a"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -820,6 +823,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0020, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "a"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -848,6 +852,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0030, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "a"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -876,6 +881,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0040, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "风景"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -904,6 +910,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0050, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "风景"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -932,6 +939,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0060, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "风景"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -954,6 +962,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0070, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "张三"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -976,6 +985,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0080, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "张三"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -998,6 +1008,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0090, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "张三"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1026,6 +1037,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0100, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "风景"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1054,6 +1066,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0110, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "风景"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1082,6 +1095,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0120, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "风景"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1104,6 +1118,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0130, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "张三"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1126,6 +1141,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0140, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "张三"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1148,6 +1164,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0150, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "张三"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1170,6 +1187,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0160, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "张三"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1192,6 +1210,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0170, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "张三"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1214,6 +1233,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0180, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "张三"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1236,6 +1256,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0190, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "张三"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1258,6 +1279,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0200, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "张三"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1280,6 +1302,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0210, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "张三"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1308,6 +1331,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0220, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "风景"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1336,6 +1360,7 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0230, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "风景"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1364,4 +1389,5 @@ HWTEST_F(DemuxerFormatNdkTest, DEMUXER_GBK_0240, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
     ASSERT_EQ(0, strcmp(album, "风景"));
     close(fd);
+    fd = -1;
 }
