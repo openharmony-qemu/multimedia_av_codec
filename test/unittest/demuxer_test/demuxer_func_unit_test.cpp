@@ -39,7 +39,7 @@ namespace {
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
 static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
-
+const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC};
 string g_tsMpeg4Path = TEST_FILE_PATH + string("test_mpeg4_Gop25_4sec.ts");
@@ -64,6 +64,8 @@ string g_aviMpeg4PcmPath = TEST_FILE_PATH + string("mpeg4_pcm.avi");
 string g_aviMpeg4PcmUri = TEST_URI_PATH + string("mpeg4_pcm.avi");
 string g_mpg4mp4Path = TEST_FILE_PATH + string("MPEG4.mp4");
 string g_mpg4mp4Uri = TEST_URI_PATH + string("MPEG4.mp4");
+string g_mp4AvcAacAuxlPath = TEST_FILE_PATH + string("muxer_auxl_265_264_aac.mp4");
+string g_mp4AvcAacAuxlUri = TEST_URI_PATH + string("muxer_auxl_265_264_aac.mp4");
 } // namespace
 
 /**********************************demuxer fd**************************************/
@@ -1543,5 +1545,135 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2317, TestSize.Level1)
     }
     ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+}
+
+std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
+    {"muxer264Aac",   {{"frames", {430, 601, 430, 601, 601}}, {"kFrames", {430, 3, 430, 3, 3}}}},
+};
+
+/**
+ * @tc.name: Demuxer_ReadSample_Auxl_0003
+ * @tc.desc: copy current sample to buffer, local(mp4 264 aac auxl local)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0003, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    ReadSample(g_mp4AvcAacAuxlPath, LOCAL);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["muxer264Aac"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["muxer264Aac"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_Auxl_0004
+ * @tc.desc: copy current sample to buffer, uri(mp4 264 aac auxl uri)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0004, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    ReadSample(g_mp4AvcAacAuxlUri, URI);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["muxer264Aac"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["muxer264Aac"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_Auxl_0003
+ * @tc.desc: seek to the specified time(mp4 264 aac auxl local)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0003, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_mp4AvcAacAuxlPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    SetInitValue();
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 5000, 9000, 10000}; // ms
+    vector<int32_t> videoVals = {601, 601, 601, 101, 351, 351, 101, 101, 101, 101};
+    vector<int32_t> audioVals = {430, 430, 430, 71, 251, 251, 72, 72, 72, 72};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            for (int32_t i = 0; i < 5; i++) {
+                printf("time = %" PRId64 " | frames_[%d]=%d\n", *toPts, i, frames_[i]);
+            }
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            ASSERT_EQ(frames_[1], videoVals[numbers_]);
+            ASSERT_EQ(frames_[2], audioVals[numbers_]);
+            ASSERT_EQ(frames_[3], videoVals[numbers_]);
+            ASSERT_EQ(frames_[4], videoVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_Auxl_0004
+ * @tc.desc: seek to the specified time(mp4 264 aac auxl uri)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0004, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_mp4AvcAacAuxlUri, URI);
+    ASSERT_TRUE(initStatus_);
+    SetInitValue();
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 5000, 9000, 10000}; // ms
+    vector<int32_t> videoVals = {601, 601, 601, 101, 351, 351, 101, 101, 101, 101};
+    vector<int32_t> audioVals = {430, 430, 430, 71, 251, 251, 72, 72, 72, 72};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            for (int32_t i = 0; i < 5; i++) {
+                printf("time = %" PRId64 " | frames_[%d]=%d\n", *toPts, i, frames_[i]);
+            }
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            ASSERT_EQ(frames_[1], videoVals[numbers_]);
+            ASSERT_EQ(frames_[2], audioVals[numbers_]);
+            ASSERT_EQ(frames_[3], videoVals[numbers_]);
+            ASSERT_EQ(frames_[4], videoVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
 }
 } // namespace
