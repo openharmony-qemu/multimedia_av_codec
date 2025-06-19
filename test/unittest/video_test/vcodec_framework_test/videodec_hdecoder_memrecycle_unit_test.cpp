@@ -18,12 +18,15 @@
 #include <unistd.h>
 #include <vector>
 #include <thread>
+#include "avcodec_log.h"
 #include "avcodec_suspend.h"
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
-#include "vdec_sample.h"
-
-#define TEST_SUIT VideoHDecoderMemoryRecyleTest
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+#include "vdec_async_sample.h"
+#else
+#include "vdec_sync_sample.h"
+#endif
 
 using namespace std;
 using namespace OHOS;
@@ -48,9 +51,15 @@ public:
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
     void CreateExecutingDecoder();
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(TEST_SUIT)};
+
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
-    std::shared_ptr<VideoDecSample> videoDec_ = nullptr;
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+    std::shared_ptr<VideoDecAsyncSample> videoDec_ = nullptr;
+#else
+    std::shared_ptr<VideoDecSyncSample> videoDec_ = nullptr;
+#endif
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VDecCallbackTest> vdecCallback_ = nullptr;
     std::shared_ptr<VDecCallbackTestExt> vdecCallbackExt_ = nullptr;
@@ -79,6 +88,10 @@ void TEST_SUIT::SetUp(void)
 
     format_ = FormatMockFactory::CreateFormat();
     ASSERT_NE(nullptr, format_);
+
+    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+    std::string testCaseName = testInfo_->name();
+    AVCODEC_LOGI("%{public}s", testCaseName.c_str());
 }
 
 void TEST_SUIT::TearDown(void)
@@ -244,8 +257,8 @@ void DestroyMultiHardwareDecoder(const std::vector<int> pidList)
     }
 }
 
-void CreateByNameWithParam(int32_t param, std::shared_ptr<VDecCallbackTest> vdecCallback,
-                           std::shared_ptr<VideoDecSample> videoDec)
+template <typename T>
+void CreateByNameWithParam(int32_t param, std::shared_ptr<VDecCallbackTest> vdecCallback, T& videoDec)
 {
     std::string codecName = "";
     if (param == VCodecTestCode::HW_AVC) {
@@ -271,7 +284,8 @@ void SetFormatWithParam(std::shared_ptr<FormatMock> format)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 }
 
-void PrepareSource(int32_t param, std::shared_ptr<VideoDecSample> videoDec, string fileName)
+template <typename T>
+void PrepareSource(int32_t param, T& videoDec, string fileName)
 {
     std::string sourcePath = decSourcePathMap_.at(param);
     if (param == VCodecTestCode::HW_HEVC) {
@@ -293,6 +307,7 @@ void CreateARunningHardwareAvcDecoder()
     std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
     if (!vdecCallback || !videoDec || !format) {
         std::cout << "create a running hadware avc decoder failed" << std::endl;
+        return;
     }
 
     CreateByNameWithParam(VCodecTestCode::HW_AVC, vdecCallback, videoDec);
@@ -317,6 +332,7 @@ void CreateARunningHardwareHevcDecoder()
     std::shared_ptr<FormatMock> format = FormatMockFactory::CreateFormat();
     if (!vdecCallback || !videoDec || !format) {
         std::cout << "create a running hadware avc decoder failed" << std::endl;
+        return;
     }
 
     CreateByNameWithParam(VCodecTestCode::HW_HEVC, vdecCallback, videoDec);
@@ -859,11 +875,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_MultiProcess_Active_All_002, TestSize.
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Memory_Recycle_007
+ * @tc.name: VideoDecoder_Hardware_Memory_Recycle_001
  * @tc.desc: unordered memory recycle function invocation
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_007, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_001, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -888,11 +904,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_007, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_Hardware_Memory_Recycle_008
+ * @tc.name: VideoDecoder_Hardware_Memory_Recycle_002
  * @tc.desc: unordered memory recycle function invocation
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_008, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Hardware_Memory_Recycle_002, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());

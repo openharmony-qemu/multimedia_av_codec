@@ -120,7 +120,7 @@ private:
     int64_t time_ = 0;
     bool isAVBufferMode_ = false;
     bool isSurfaceMode_ = false;
-    bool isH264Stream_ = true; // true: H264; false: H265
+    bool isAvcStream_ = true; // true: AVC; false: HEVC
     bool isMpeg2Stream_ = true; // true: Mpeg2; false: Mpeg4
 
 private:

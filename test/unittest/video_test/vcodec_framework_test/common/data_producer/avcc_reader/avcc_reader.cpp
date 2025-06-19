@@ -685,7 +685,7 @@ int32_t AvccReader::Init(const std::shared_ptr<AvccReaderInfo> &info)
     nalUnitReader_ = std::static_pointer_cast<NalUnitReader>(std::make_shared<AvccNalUnitReader>(inputFile));
     UNITTEST_CHECK_AND_RETURN_RET_LOG(nalUnitReader_, AV_ERR_INVALID_VAL, "Nal unit reader create failed");
 
-    nalDetector_ = info->isH264Stream ?
+    nalDetector_ = info->isAvcStream ?
         std::static_pointer_cast<NalDetector>(std::make_shared<AVCNalDetector>()) :
         std::static_pointer_cast<NalDetector>(std::make_shared<HEVCNalDetector>());
     UNITTEST_CHECK_AND_RETURN_RET_LOG(nalDetector_, AV_ERR_INVALID_VAL, "Nal detector create failed");

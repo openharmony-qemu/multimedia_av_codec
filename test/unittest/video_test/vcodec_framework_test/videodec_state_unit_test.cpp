@@ -18,9 +18,11 @@
 #include <iostream>
 #include <string>
 #include "avcodec_errors.h"
+#include "media_description.h"
 #include "native_avcodec_base.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_avformat.h"
+#include "native_avmagic.h"
 #include "native_window.h"
 #include "status.h"
 #include "unittest_utils.h"
@@ -32,6 +34,64 @@ using namespace testing::ext;
 using namespace testing::mt;
 
 namespace {
+struct OH_AVCodecCallback GetVoidCallback()
+{
+    struct OH_AVCodecCallback cb;
+    cb.onError = [](OH_AVCodec *codec, int32_t errorCode, void *userData) {
+        (void)codec;
+        (void)errorCode;
+        (void)userData;
+    };
+    cb.onStreamChanged = [](OH_AVCodec *codec, OH_AVFormat *format, void *userData) {
+        (void)codec;
+        (void)format;
+        (void)userData;
+    };
+    cb.onNeedInputBuffer = [](OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData) {
+        (void)codec;
+        (void)index;
+        (void)buffer;
+        (void)userData;
+    };
+    cb.onNewOutputBuffer = [](OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData) {
+        (void)codec;
+        (void)index;
+        (void)buffer;
+        (void)userData;
+    };
+    return cb;
+}
+
+struct OH_AVCodecAsyncCallback GetVoidAsyncCallback()
+{
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = [](OH_AVCodec *codec, int32_t errorCode, void *userData) {
+        (void)codec;
+        (void)errorCode;
+        (void)userData;
+    };
+    cb.onStreamChanged = [](OH_AVCodec *codec, OH_AVFormat *format, void *userData) {
+        (void)codec;
+        (void)format;
+        (void)userData;
+    };
+    cb.onNeedInputData = [](OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData) {
+        (void)codec;
+        (void)index;
+        (void)data;
+        (void)userData;
+    };
+    cb.onNeedOutputData = [](OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
+                             void *userData) {
+        (void)codec;
+        (void)index;
+        (void)data;
+        (void)attr;
+        (void)userData;
+    };
+    return cb;
+}
+
 class VideoStateTest : public testing::TestWithParam<std::string> {
 public:
     static void SetUpTestCase(void);
@@ -1148,5 +1208,334 @@ HWTEST_F(VideoStateTest, VideoDecoder_Flushed_Verify_015, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Flush(videoDec));
 
     EXPECT_EQ(AV_ERR_OK, SetOutputSurface(videoDec));
+}
+
+/**
+ * @tc.name: VideoDecoder_CreateWithNull_001
+ * @tc.desc: video create
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_CreateWithNull_001, TestSize.Level1)
+{
+    ASSERT_EQ(nullptr, OH_VideoDecoder_CreateByName(""));
+}
+
+/**
+ * @tc.name: VideoDecoder_CreateWithNull_002
+ * @tc.desc: video create
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_CreateWithNull_002, TestSize.Level1)
+{
+    ASSERT_EQ(nullptr, OH_VideoDecoder_CreateByMime(""));
+}
+
+/**
+ * @tc.name: VideoDecoder_SetCallback_001
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_SetCallback_001, TestSize.Level1)
+{
+    ASSERT_EQ(AV_ERR_OK, SetCallback(videoDec));
+    ASSERT_EQ(AV_ERR_OK, SetCallback(videoDec));
+}
+
+/**
+ * @tc.name: VideoDecoder_SetCallback_002
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_SetCallback_002, TestSize.Level1)
+{
+    OH_AVCodecCallback callback = GetVoidCallback();
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(videoDec, callback, NULL));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(videoDec, callback, NULL));
+}
+
+/**
+ * @tc.name: VideoDecoder_SetCallback_003
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_SetCallback_003, TestSize.Level1)
+{
+    OH_AVCodecCallback callback = GetVoidCallback();
+    ASSERT_EQ(AV_ERR_OK, SetCallback(videoDec));
+    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(videoDec, callback, NULL));
+}
+
+/**
+ * @tc.name: VideoDecoder_SetCallback_004
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_SetCallback_004, TestSize.Level1)
+{
+    OH_AVCodecCallback callback = GetVoidCallback();
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(videoDec, callback, NULL));
+    ASSERT_NE(AV_ERR_OK, SetCallback(videoDec));
+}
+
+/**
+ * @tc.name: VideoDecoder_SetCallback_Invalid_001
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_SetCallback_Invalid_001, TestSize.Level1)
+{
+    OH_AVCodecCallback callback = GetVoidCallback();
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RegisterCallback(nullptr, callback, nullptr));
+}
+
+/**
+ * @tc.name: VideoDecoder_SetCallback_Invalid_002
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_SetCallback_Invalid_002, TestSize.Level1)
+{
+    OH_AVCodecCallback cb = GetVoidCallback();
+    cb.onNeedInputBuffer = nullptr;
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RegisterCallback(videoDec, cb, nullptr));
+}
+
+/**
+ * @tc.name: VideoDecoder_SetCallback_Invalid_003
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_SetCallback_Invalid_003, TestSize.Level1)
+{
+    OH_AVCodecCallback cb = GetVoidCallback();
+    cb.onNewOutputBuffer = nullptr;
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RegisterCallback(videoDec, cb, nullptr));
+}
+
+/**
+ * @tc.name: VideoDecoder_SetCallback_Invalid_004
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_SetCallback_Invalid_004, TestSize.Level1)
+{
+    OH_AVCodecCallback cb = GetVoidCallback();
+    videoDec->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RegisterCallback(videoDec, cb, nullptr));
+    videoDec->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
+}
+
+/**
+ * @tc.name: VideoDecoder_PushInputBuffer_Invalid_001
+ * @tc.desc: video push input buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_PushInputBuffer_Invalid_001, TestSize.Level1)
+{
+    struct OH_AVCodecCallback cb = GetVoidCallback();
+    OH_AVCodecBufferAttr attr = {0, 0, 0, 0};
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(videoDec, cb, nullptr));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_PushInputData(videoDec, 0, attr));
+}
+
+/**
+ * @tc.name: VideoDecoder_PushInputBuffer_Invalid_002
+ * @tc.desc: video push input buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_PushInputBuffer_Invalid_002, TestSize.Level1)
+{
+    struct OH_AVCodecAsyncCallback cb = GetVoidAsyncCallback();
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_SetCallback(videoDec, cb, nullptr));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_PushInputBuffer(videoDec, 0));
+}
+
+/**
+ * @tc.name: VideoDecoder_Free_Buffer_Invalid_001
+ * @tc.desc: video free buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_Free_Buffer_Invalid_001, TestSize.Level1)
+{
+    struct OH_AVCodecCallback cb = GetVoidCallback();
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(videoDec, cb, nullptr));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_FreeOutputData(videoDec, 0));
+}
+
+/**
+ * @tc.name: VideoDecoder_Free_Buffer_Invalid_002
+ * @tc.desc: video free buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_Free_Buffer_Invalid_002, TestSize.Level1)
+{
+    struct OH_AVCodecAsyncCallback cb = GetVoidAsyncCallback();
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_SetCallback(videoDec, cb, nullptr));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_FreeOutputBuffer(videoDec, 0));
+}
+
+/**
+ * @tc.name: VideoDecoder_Render_Buffer_Invalid_001
+ * @tc.desc: video render buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_Render_Buffer_Invalid_001, TestSize.Level1)
+{
+    struct OH_AVCodecCallback cb = GetVoidCallback();
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(videoDec, cb, nullptr));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_RenderOutputData(videoDec, 0));
+}
+
+/**
+ * @tc.name: VideoDecoder_Render_Buffer_Invalid_002
+ * @tc.desc: video render buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_Render_Buffer_Invalid_002, TestSize.Level1)
+{
+    struct OH_AVCodecAsyncCallback cb = GetVoidAsyncCallback();
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_SetCallback(videoDec, cb, nullptr));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_RenderOutputBuffer(videoDec, 0));
+}
+
+/**
+ * @tc.name: VideoDecoder_PushInputBuffer_Invalid_003
+ * @tc.desc: video push input buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_PushInputBuffer_Invalid_003, TestSize.Level1)
+{
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_PushInputBuffer(nullptr, 0));
+}
+
+/**
+ * @tc.name: VideoDecoder_PushInputBuffer_Invalid_004
+ * @tc.desc: video push input buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_PushInputBuffer_Invalid_004, TestSize.Level1)
+{
+    videoDec->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_PushInputBuffer(videoDec, 0));
+    videoDec->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
+}
+
+/**
+ * @tc.name: VideoDecoder_Free_Buffer_Invalid_003
+ * @tc.desc: video free buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_Free_Buffer_Invalid_003, TestSize.Level1)
+{
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_FreeOutputBuffer(nullptr, 0));
+}
+
+/**
+ * @tc.name: VideoDecoder_Free_Buffer_Invalid_004
+ * @tc.desc: video free buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_Free_Buffer_Invalid_004, TestSize.Level1)
+{
+    videoDec->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_FreeOutputBuffer(videoDec, 0));
+    videoDec->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
+}
+
+/**
+ * @tc.name: VideoDecoder_Render_Buffer_Invalid_003
+ * @tc.desc: video render buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_Render_Buffer_Invalid_003, TestSize.Level1)
+{
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RenderOutputBuffer(nullptr, 0));
+}
+
+/**
+ * @tc.name: VideoDecoder_Render_Buffer_Invalid_004
+ * @tc.desc: video render buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_Render_Buffer_Invalid_004, TestSize.Level1)
+{
+    videoDec->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RenderOutputBuffer(videoDec, 0));
+    videoDec->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
+}
+
+/**
+ * @tc.name: VideoDecoder_Configure_001
+ * @tc.desc: correct key input.
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_Configure_001, TestSize.Level1)
+{
+    SetSync0(format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_ROTATION_ANGLE.data(), 0); // set rotation_angle 0
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE.data(),
+                            15000); // set max input size 15000
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(videoDec, format));
+}
+
+/**
+ * @tc.name: VideoDecoder_Configure_002
+ * @tc.desc: correct key input with redundancy key input
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_Configure_002, TestSize.Level1)
+{
+    SetSync0(format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_ROTATION_ANGLE.data(), 0); // set rotation_angle 0
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE.data(),
+                            15000);                                                     // set max input size 15000
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(), 1); // redundancy key
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(videoDec, format));
+}
+
+/**
+ * @tc.name: VideoDecoder_Configure_003
+ * @tc.desc: correct key input with wrong value type input
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_Configure_003, TestSize.Level1)
+{
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, -2);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    EXPECT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(videoDec, format));
+}
+
+/**
+ * @tc.name: VideoDecoder_Configure_004
+ * @tc.desc: correct key input with wrong value type input
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_Configure_004, TestSize.Level1)
+{
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, -2);
+    EXPECT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(videoDec, format));
+}
+
+/**
+ * @tc.name: VideoDecoder_Configure_005
+ * @tc.desc: empty format input
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_Configure_005, TestSize.Level1)
+{
+    EXPECT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(videoDec, format));
+}
+
+/**
+ * @tc.name: VideoDecoder_Reset_001
+ * @tc.desc: correct flow 1
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoStateTest, VideoDecoder_Reset_001, TestSize.Level1)
+{
+    SetSync0(format);
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(videoDec, format));
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(videoDec));
 }
 } // namespace

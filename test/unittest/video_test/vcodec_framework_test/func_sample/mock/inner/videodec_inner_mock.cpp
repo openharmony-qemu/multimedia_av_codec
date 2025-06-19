@@ -104,7 +104,7 @@ int32_t VideoDecInnerMock::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
     if (videoDec_ != nullptr) {
         std::shared_ptr<VideoDecCallbackMock> callback =
             cb == nullptr ? nullptr : std::make_shared<VideoDecCallbackMock>(cb);
-        return videoDec_->SetCallback(callback);
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(videoDec_->SetCallback(callback)));
     }
     return AV_ERR_UNKNOWN;
 }
@@ -114,7 +114,7 @@ int32_t VideoDecInnerMock::SetCallback(std::shared_ptr<MediaCodecCallbackMock> c
     if (videoDec_ != nullptr) {
         std::shared_ptr<VideoDecCallbackExtMock> callback =
             cb == nullptr ? nullptr : std::make_shared<VideoDecCallbackExtMock>(cb);
-        return videoDec_->SetCallback(callback);
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(videoDec_->SetCallback(callback)));
     }
     return AV_ERR_UNKNOWN;
 }
@@ -125,7 +125,8 @@ int32_t VideoDecInnerMock::SetOutputSurface(std::shared_ptr<SurfaceMock> surface
         auto decSurface = std::static_pointer_cast<SurfaceInnerMock>(surface);
         sptr<Surface> nativeSurface = decSurface->GetSurface();
         if (videoDec_ != nullptr && nativeSurface != nullptr) {
-            return videoDec_->SetOutputSurface(nativeSurface);
+            auto ret = videoDec_->SetOutputSurface(nativeSurface);
+            return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
         }
     }
     return AV_ERR_UNKNOWN;
@@ -135,7 +136,7 @@ int32_t VideoDecInnerMock::Configure(std::shared_ptr<FormatMock> format)
 {
     if (videoDec_ != nullptr && format != nullptr) {
         auto fmt = std::static_pointer_cast<AVFormatInnerMock>(format);
-        return videoDec_->Configure(fmt->GetFormat());
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(videoDec_->Configure(fmt->GetFormat())));
     }
     return AV_ERR_UNKNOWN;
 }
@@ -143,7 +144,7 @@ int32_t VideoDecInnerMock::Configure(std::shared_ptr<FormatMock> format)
 int32_t VideoDecInnerMock::Prepare()
 {
     if (videoDec_ != nullptr) {
-        return videoDec_->Prepare();
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(videoDec_->Prepare()));
     }
     return AV_ERR_UNKNOWN;
 }
@@ -151,7 +152,7 @@ int32_t VideoDecInnerMock::Prepare()
 int32_t VideoDecInnerMock::Start()
 {
     if (videoDec_ != nullptr) {
-        return videoDec_->Start();
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(videoDec_->Start()));
     }
     return AV_ERR_UNKNOWN;
 }
@@ -159,7 +160,7 @@ int32_t VideoDecInnerMock::Start()
 int32_t VideoDecInnerMock::Stop()
 {
     if (videoDec_ != nullptr) {
-        return videoDec_->Stop();
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(videoDec_->Stop()));
     }
     return AV_ERR_UNKNOWN;
 }
@@ -167,7 +168,7 @@ int32_t VideoDecInnerMock::Stop()
 int32_t VideoDecInnerMock::Flush()
 {
     if (videoDec_ != nullptr) {
-        return videoDec_->Flush();
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(videoDec_->Flush()));
     }
     return AV_ERR_UNKNOWN;
 }
@@ -175,7 +176,7 @@ int32_t VideoDecInnerMock::Flush()
 int32_t VideoDecInnerMock::Reset()
 {
     if (videoDec_ != nullptr) {
-        return videoDec_->Reset();
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(videoDec_->Reset()));
     }
     return AV_ERR_UNKNOWN;
 }
@@ -183,7 +184,7 @@ int32_t VideoDecInnerMock::Reset()
 int32_t VideoDecInnerMock::Release()
 {
     if (videoDec_ != nullptr) {
-        return videoDec_->Release();
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(videoDec_->Release()));
     }
     return AV_ERR_UNKNOWN;
 }
@@ -202,9 +203,30 @@ int32_t VideoDecInnerMock::SetParameter(std::shared_ptr<FormatMock> format)
 {
     if (videoDec_ != nullptr && format != nullptr) {
         auto fmt = std::static_pointer_cast<AVFormatInnerMock>(format);
-        return videoDec_->SetParameter(fmt->GetFormat());
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(videoDec_->SetParameter(fmt->GetFormat())));
     }
     return AV_ERR_UNKNOWN;
+}
+
+int32_t VideoDecInnerMock::QueryInputBuffer(uint32_t& index, int64_t timeoutUs)
+{
+    if (videoDec_ != nullptr) {
+        auto ret = videoDec_->QueryInputBuffer(index, timeoutUs);
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
+    }
+    return AV_ERR_UNKNOWN;
+}
+
+std::shared_ptr<AVBufferMock> VideoDecInnerMock::GetInputBuffer(uint32_t index)
+{
+    if (videoDec_ != nullptr) {
+        auto data = videoDec_->GetInputBuffer(index);
+        std::shared_ptr<AVBufferMock> bufMock = (data == nullptr)
+                                                ? nullptr
+                                                : std::make_shared<AVBufferInnerMock>(data);
+        return bufMock;
+    }
+    return nullptr;
 }
 
 int32_t VideoDecInnerMock::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr)
@@ -215,15 +237,38 @@ int32_t VideoDecInnerMock::PushInputData(uint32_t index, OH_AVCodecBufferAttr &a
         info.size = attr.size;
         info.offset = attr.offset;
         AVCodecBufferFlag flags = static_cast<AVCodecBufferFlag>(attr.flags);
-        return videoDec_->QueueInputBuffer(index, info, flags);
+        auto ret = videoDec_->QueueInputBuffer(index, info, flags);
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
     return AV_ERR_UNKNOWN;
+}
+
+int32_t VideoDecInnerMock::QueryOutputBuffer(uint32_t &index, int64_t timeoutUs)
+{
+    if (videoDec_ != nullptr) {
+        auto ret = videoDec_->QueryOutputBuffer(index, timeoutUs);
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
+    }
+    return AV_ERR_UNKNOWN;
+}
+
+std::shared_ptr<AVBufferMock> VideoDecInnerMock::GetOutputBuffer(uint32_t index)
+{
+    if (videoDec_ != nullptr) {
+        auto data = videoDec_->GetOutputBuffer(index);
+        std::shared_ptr<AVBufferMock> bufMock = (data == nullptr)
+                                                ? nullptr
+                                                : std::make_shared<AVBufferInnerMock>(data);
+        return bufMock;
+    }
+    return nullptr;
 }
 
 int32_t VideoDecInnerMock::RenderOutputData(uint32_t index)
 {
     if (videoDec_ != nullptr) {
-        return videoDec_->ReleaseOutputBuffer(index, true);
+        auto ret = videoDec_->ReleaseOutputBuffer(index, true);
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
     return AV_ERR_UNKNOWN;
 }
@@ -231,7 +276,8 @@ int32_t VideoDecInnerMock::RenderOutputData(uint32_t index)
 int32_t VideoDecInnerMock::FreeOutputData(uint32_t index)
 {
     if (videoDec_ != nullptr) {
-        return videoDec_->ReleaseOutputBuffer(index, false);
+        auto ret = videoDec_->ReleaseOutputBuffer(index, false);
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
     return AV_ERR_UNKNOWN;
 }
@@ -239,7 +285,7 @@ int32_t VideoDecInnerMock::FreeOutputData(uint32_t index)
 int32_t VideoDecInnerMock::PushInputBuffer(uint32_t index)
 {
     if (videoDec_ != nullptr) {
-        return videoDec_->QueueInputBuffer(index);
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(videoDec_->QueueInputBuffer(index)));
     }
     return AV_ERR_UNKNOWN;
 }
@@ -247,7 +293,8 @@ int32_t VideoDecInnerMock::PushInputBuffer(uint32_t index)
 int32_t VideoDecInnerMock::RenderOutputBuffer(uint32_t index)
 {
     if (videoDec_ != nullptr) {
-        return videoDec_->ReleaseOutputBuffer(index, true);
+        auto ret = videoDec_->ReleaseOutputBuffer(index, true);
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
     return AV_ERR_UNKNOWN;
 }
@@ -255,7 +302,8 @@ int32_t VideoDecInnerMock::RenderOutputBuffer(uint32_t index)
 int32_t VideoDecInnerMock::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
 {
     if (videoDec_ != nullptr) {
-        return videoDec_->RenderOutputBufferAtTime(index, renderTimestampNs);
+        auto ret = videoDec_->RenderOutputBufferAtTime(index, renderTimestampNs);
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
     return AV_ERR_UNKNOWN;
 }
@@ -263,7 +311,8 @@ int32_t VideoDecInnerMock::RenderOutputBufferAtTime(uint32_t index, int64_t rend
 int32_t VideoDecInnerMock::FreeOutputBuffer(uint32_t index)
 {
     if (videoDec_ != nullptr) {
-        return videoDec_->ReleaseOutputBuffer(index, false);
+        auto ret = videoDec_->ReleaseOutputBuffer(index, false);
+        return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
     return AV_ERR_UNKNOWN;
 }

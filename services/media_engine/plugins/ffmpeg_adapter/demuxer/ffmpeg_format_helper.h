@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -70,6 +70,8 @@ public:
     static FileType GetFileTypeByName(const AVFormatContext& avFormatContext);
     static bool IsVideoCodecId(const AVCodecID &codecId);
     static bool IsImageTrack(const AVStream &avStream);
+    static bool IsVideoType(const AVStream &avStream);
+    static bool IsAudioType(const AVStream &avStream);
 private:
     FFmpegFormatHelper() = delete;
     ~FFmpegFormatHelper() = delete;
@@ -81,6 +83,7 @@ private:
     static void ParseAudioApeTrackInfo(const AVStream& avStream, Meta &format, const AVFormatContext& avFormatContext);
     static void ParseImageTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseTimedMetaTrackInfo(const AVStream& avStream, Meta &format);
+    static void ParseAuxiliaryTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseHvccBoxInfo(const AVStream& avStream, Meta &format);
     static void ParseColorBoxInfo(const AVStream& avStream, Meta &format);
 

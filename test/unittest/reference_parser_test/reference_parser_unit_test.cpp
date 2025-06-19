@@ -57,6 +57,7 @@ void ReferenceParserTest::TearDown()
 } // namespace
 
 namespace {
+constexpr int32_t WAIT_TIME = 5;
 constexpr int64_t DEC_COST_TIME_MS = 6L;
 /**
  * @tc.number       : RP_FUNC_SEEK_IPB_0_0100
@@ -69,6 +70,7 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_IPB_0_0100, TestSize.Level1)
         refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
         ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPB_0));
         ASSERT_EQ(true, refParserDemo_->DoAccurateSeek(1566)); // 1566 is frame 99
+        sleep(WAIT_TIME);
     }
 }
 
@@ -83,6 +85,7 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_IPB_1_0100, TestSize.Level1)
         refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
         ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPB_1));
         ASSERT_EQ(true, refParserDemo_->DoAccurateSeek(1599)); // 1599 is frame 50
+        sleep(WAIT_TIME);
     }
 }
 
@@ -97,6 +100,7 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_IPPP_0_0100, TestSize.Level1)
         refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
         ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPPP_0));
         ASSERT_EQ(true, refParserDemo_->DoAccurateSeek(500)); // 500 is frame 30
+        sleep(WAIT_TIME);
     }
 }
 
@@ -111,6 +115,7 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_IPPP_1_0100, TestSize.Level1)
         refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
         ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPPP_1));
         ASSERT_EQ(true, refParserDemo_->DoAccurateSeek(27840)); // 27840 is frame 696
+        sleep(WAIT_TIME);
     }
 }
 
@@ -125,6 +130,7 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_IPPP_SCALA_0_0100, TestSize.Level1)
         refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
         ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPPP_SCALA_0));
         ASSERT_EQ(true, refParserDemo_->DoAccurateSeek(20040)); // 20040 is frame 501
+        sleep(WAIT_TIME);
     }
 }
 
@@ -139,6 +145,7 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_IPPP_SCALA_1_0100, TestSize.Level1)
         refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
         ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPPP_SCALA_1));
         ASSERT_EQ(true, refParserDemo_->DoAccurateSeek(200)); // 200 is frame 5
+        sleep(WAIT_TIME);
     }
 }
 
@@ -153,6 +160,7 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_SDTP_0100, TestSize.Level1)
         refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
         ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::SDTP));
         ASSERT_EQ(true, refParserDemo_->DoAccurateSeek(10266)); // 10266 is frame 310
+        sleep(WAIT_TIME);
     }
 }
 
@@ -167,6 +175,7 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_IPB_0_0100, TestSize.Level1)
         refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
         ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPB_0));
         ASSERT_EQ(true, refParserDemo_->DoVariableSpeedPlay(416)); // 416 is frame 30
+        sleep(WAIT_TIME);
     }
 }
 
@@ -181,6 +190,7 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_IPB_1_0100, TestSize.Level1)
         refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
         ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPB_1));
         ASSERT_EQ(true, refParserDemo_->DoVariableSpeedPlay(1133)); // 1133 is frame 36
+        sleep(WAIT_TIME);
     }
 }
 
@@ -195,6 +205,7 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_IPPP_0_0100, TestSize.Level1)
         refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
         ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPPP_0));
         ASSERT_EQ(true, refParserDemo_->DoVariableSpeedPlay(23966)); // 23966 is frame 1438
+        sleep(WAIT_TIME);
     }
 }
 
@@ -209,6 +220,7 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_IPPP_1_0100, TestSize.Level1)
         refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
         ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPPP_1));
         ASSERT_EQ(true, refParserDemo_->DoVariableSpeedPlay(23880)); // 23880 is frame 597
+        sleep(WAIT_TIME);
     }
 }
 
@@ -223,6 +235,7 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_IPPP_SCALA_0_0100, TestSize.Leve
         refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
         ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPPP_SCALA_0));
         ASSERT_EQ(true, refParserDemo_->DoVariableSpeedPlay(10680)); // 10680 is frame 267
+        sleep(WAIT_TIME);
     }
 }
 
@@ -237,6 +250,7 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_IPPP_SCALA_1_0100, TestSize.Leve
         refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
         ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::IPPP_SCALA_1));
         ASSERT_EQ(true, refParserDemo_->DoVariableSpeedPlay(400)); // 400 is frame 10
+        sleep(WAIT_TIME);
     }
 }
 
@@ -251,6 +265,7 @@ HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_SDTP_0100, TestSize.Level1)
         refParserDemo_->SetDecIntervalMs(DEC_COST_TIME_MS);
         ASSERT_EQ(0, refParserDemo_->InitScene(MP4Scene::SDTP));
         ASSERT_EQ(true, refParserDemo_->DoVariableSpeedPlay(8233)); // 8233 is frame 249
+        sleep(WAIT_TIME);
     }
 }
 } // namespace

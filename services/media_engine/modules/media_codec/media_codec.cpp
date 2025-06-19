@@ -887,25 +887,24 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
 
 Status MediaCodec::HandleOutputBufferOnce(bool &isBufferAvailable, uint32_t eosStatus, bool isSync)
 {
-    MEDIA_TRACE_DEBUG_POSTFIX("MediaCodec::HandleOutputBufferOnce", "1");
+    MEDIA_TRACE_DEBUG_POSTFIX("MediaCodec::HandleOutputBufferOnce-isSync:" + std::to_string(isSync), "1");
     Status ret = Status::OK;
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
-    {
+    if (cachedOutputBuffer_) {
+        std::swap(emptyOutputBuffer, cachedOutputBuffer_);
+    } else {
         if (isSync) {
             MediaAVCodec::AVCodecTrace traceRequestBuffer("MediaCodec::HandleOutputBufferOnce-RequestBuffer-sync");
             do {
                 ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
             } while (ret != Status::OK && state_ == CodecState::RUNNING);
         } else {
-            if (!cachedOutputBuffer_) {
-                MEDIA_TRACE_DEBUG_POSTFIX("MediaCodec::HandleOutputBufferOnce-RequestBuffer-async", "2");
-                ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS_INNER);
-            } else {
-                std::swap(emptyOutputBuffer, cachedOutputBuffer_);
-            }
+            MEDIA_TRACE_DEBUG_POSTFIX("MediaCodec::HandleOutputBufferOnce-RequestBuffer-async", "2");
+            ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS_INNER);
         }
     }
+
     if (emptyOutputBuffer) {
         emptyOutputBuffer->flag_ = eosStatus;
         isBufferAvailable = true;
@@ -918,11 +917,8 @@ Status MediaCodec::HandleOutputBufferOnce(bool &isBufferAvailable, uint32_t eosS
     ret = CodePluginOutputBuffer(emptyOutputBuffer);
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
         MEDIA_LOG_DD("HandleOutputBufferOnce QueueOutputBuffer ERROR_NOT_ENOUGH_DATA");
-        if (isSync) {
-            outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
-        } else { // cached requested buffer to improve performance
-            std::swap(emptyOutputBuffer, cachedOutputBuffer_);
-        }
+        // To cache the empty OutputBuffer returned by RequestBuffer to improve performance
+        std::swap(emptyOutputBuffer, cachedOutputBuffer_);
     } else if (ret == Status::ERROR_AGAIN) {
         MEDIA_LOG_DD("HandleOutputBufferOnce The output data is not completely read, needs to be read again");
     } else if (ret == Status::END_OF_STREAM) {

@@ -36,6 +36,7 @@
 #include "av_common.h"
 #include "avcodec_common.h"
 #include "window.h"
+#include "iconsumer_surface.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -91,6 +92,7 @@ public:
 
     int32_t StartVideoDecoder();
     int32_t RunVideoDecoder(const std::string &codeName);
+    int32_t RunVideoDec_Surface(const std::string &codeName);
     int32_t PushData(std::shared_ptr<AVSharedMemory> buffer, uint32_t index);
     int32_t SendData(uint32_t bufferSize, uint32_t index, std::shared_ptr<AVSharedMemory> buffer);
     int32_t StateEOS();
@@ -100,26 +102,39 @@ public:
     void OpenFileFail();
     void InputFunc();
     void OutputFunc();
+    void SwitchSurface();
     void ProcessOutputData(std::shared_ptr<AVSharedMemory> buffer, uint32_t index);
     void FlushBuffer();
     void StopInloop();
     void StopOutloop();
     void ReleaseInFile();
     void SetRunning();
+    void GetStride();
+    void CreateSurface();
+    int32_t SetOutputSurface();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
+    bool PREPARE_FLAG = true;
+    bool P3_FULL_FLAG = false;
+    bool BT709_LIMIT_FLAG = false;
+    bool BT709_FULL_FLAG = false;
 
     const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
     const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
+    const char *OUT_DIR2 = "/data/test/media/VDecTest2.yuv";
     uint32_t DEFAULT_WIDTH = 1920;
     uint32_t DEFAULT_HEIGHT = 1080;
     uint32_t DEFAULT_BITRATE = 10000000;
     double DEFAULT_FRAME_RATE = 30.0;
+    uint32_t MAX_SURF_NUM = 2;
     uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;  // 1200 测试用例
     uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
     bool SF_OUTPUT = false;
     bool BEFORE_EOS_INPUT = false;              // 0800 测试用例
     bool BEFORE_EOS_INPUT_INPUT = false;        // 0900 测试用例
     bool AFTER_EOS_DESTORY_CODEC = true;        // 1000 测试用例 结束不销毁codec
+    bool autoSwitchSurface = false;
+    int32_t switchSurfaceFlag = 0;
+    int32_t DEFAULT_FORMAT = static_cast<int32_t>(VideoPixelFormat::NV12);
     
     uint32_t errCount = 0;
     uint32_t outCount = 0;
@@ -127,6 +142,10 @@ public:
     bool sleepOnFPS = false;
     bool repeatRun = false;
     bool enableRandomEos = false;
+    bool HDR2SDR = false;
+    bool outputYuvSurface = false;
+    std::atomic<bool> isRunning_ { false };
+    NativeWindow *nativeWindow[2] = {};
     const char *fileSourcesha256[64] = {"27", "6D", "A2", "D4", "18", "21", "A5", "CD", "50", "F6", "DD", "CA", "46",
                                         "32", "C3", "FE", "58", "FC", "BC", "51", "FD", "70", "C7", "D4", "E7", "4D",
                                         "5C", "76", "E7", "71", "8A", "B3", "C0", "51", "84", "0A", "FA", "AF", "FA",
@@ -134,13 +153,14 @@ public:
                                         "C5", "9A", "43", "59", "85", "DC", "AC", "97", "A3", "FB", "23", "51"};
     
 private:
-    std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
     std::shared_ptr<AVCodecVideoDecoder> vdec_;
     std::shared_ptr<VDecInnerSignal> signal_;
     std::shared_ptr<VDecInnerCallback> cb_;
+    sptr<Surface> cs[2] = {};
+    sptr<Surface> ps[2] = {};
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -92,7 +92,6 @@ protected:
     private:
         VDecServerSample *tester;
     };
-    bool isEnd_ = false;
 
 private:
     int64_t GetSystemTimeUs();

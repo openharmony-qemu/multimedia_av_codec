@@ -631,7 +631,7 @@ Status FFmpegMuxerPlugin::SetCodecParameterVideoDelay(AVStream* stream)
             return Status::ERROR_UNKNOWN;
         }
         MEDIA_LOG_I("cpdecpar->video_delay been set %{public}u", maxReorderPic);
-        stream->codecpar->video_delay = maxReorderPic;
+        stream->codecpar->video_delay = static_cast<int32_t>(maxReorderPic);
     }
     return Status::NO_ERROR;
 }
@@ -744,7 +744,7 @@ bool FFmpegMuxerPlugin::CheckReferenceTrackIDS(const std::shared_ptr<Meta> &trac
     if (trackDesc->Find(Tag::REFERENCE_TRACK_IDS) != trackDesc->end()) {
         trackDesc->Get<Tag::REFERENCE_TRACK_IDS>(vTrackIDs);
         int32_t *trackIDs = vTrackIDs.data();
-        for (int32_t i = 0; i < vTrackIDs.size(); i++) {
+        for (uint32_t i = 0; i < vTrackIDs.size(); i++) {
             if (i > 0) {
                 toStringTrackId += ',';
             }
@@ -934,7 +934,7 @@ Status FFmpegMuxerPlugin::AddAudioAuxiliaryTrack(
     auto st = avformat_new_stream(formatContext_.get(), nullptr);
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NO_MEMORY, "avformat_new_stream failed!");
     ResetCodecParameter(st->codecpar);
-    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUXILIARY;
     st->codecpar->codec_id = codeID;
     st->codecpar->sample_rate = sampleRate;
     st->codecpar->channels = channels;
@@ -1270,12 +1270,13 @@ std::vector<uint8_t> FFmpegMuxerPlugin::TransAnnexbToMp4(const uint8_t *sample, 
     uint8_t *nalEnd = nullptr;
     int32_t startCodeLen = 0;
     uint32_t naluSize = 0;
-
+    FALSE_RETURN_V_MSG_E(nalStart != nullptr, data, "nalStart is null.");
     nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
     FALSE_RETURN_V_MSG_E(nalStart == nalEnd && nalStart + startCodeLen < end, data, "the sample is not annexb.");
     isCopyData = startCodeLen != CODE_LEN ? true : isCopyData;
     while (nalStart + startCodeLen < end) {
         int32_t nextCodeLen = 0;
+        FALSE_RETURN_V_MSG_E((nalStart + startCodeLen) != nullptr, data, "nalEnd is null.");
         nalEnd = FindNalStartCode(nalStart + startCodeLen, end, nextCodeLen);
         naluSize = static_cast<uint32_t>(nalEnd - (nalStart + startCodeLen));
         isCopyData = (nalEnd < end && nextCodeLen != CODE_LEN) ? true : isCopyData;

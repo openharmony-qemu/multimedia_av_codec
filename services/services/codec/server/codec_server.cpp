@@ -316,17 +316,19 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
 
 void CodecServer::StartInputParamTask()
 {
-    inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
-    std::weak_ptr<CodecServer> weakThis = weak_from_this();
-    inputParamTask_->RegisterHandler([weakThis] {
-        std::shared_ptr<CodecServer> cs = weakThis.lock();
-        if (cs) {
-            uint32_t index = cs->temporalScalability_->GetFirstBufferIndex();
-            AVCodecBufferInfo info;
-            AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-            CHECK_AND_RETURN_LOG(cs->QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
-        }
-    });
+    if (inputParamTask_ == nullptr) {
+        inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
+        std::weak_ptr<CodecServer> weakThis = weak_from_this();
+        inputParamTask_->RegisterHandler([weakThis] {
+            std::shared_ptr<CodecServer> cs = weakThis.lock();
+            if (cs) {
+                uint32_t index = cs->temporalScalability_->GetFirstBufferIndex();
+                AVCodecBufferInfo info;
+                AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
+                CHECK_AND_RETURN_LOG(cs->QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
+            }
+        });
+    }
     inputParamTask_->Start();
 }
 
@@ -367,6 +369,10 @@ int32_t CodecServer::Stop()
                                       AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                                       GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (temporalScalability_ != nullptr && inputParamTask_ != nullptr) {
+        temporalScalability_->SetBlockQueueActive();
+        inputParamTask_->Stop();
+    }
     int32_t retPostProcessing = StopPostProcessing();
     int32_t retCodec = codecBase_->Stop();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
@@ -388,6 +394,10 @@ int32_t CodecServer::Flush()
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
                                       "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (temporalScalability_ != nullptr && inputParamTask_ != nullptr) {
+        temporalScalability_->SetBlockQueueActive();
+        inputParamTask_->Stop();
+    }
     int32_t retPostProcessing = FlushPostProcessing();
     int32_t retCodec = codecBase_->Flush();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
