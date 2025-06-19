@@ -719,6 +719,9 @@ bool AudioSink::CopyAudioVividBufferData(AudioStandard::BufferDesc &bufferDesc, 
         ret = memcpy_s(bufferDesc.metaBuffer, bufferDesc.metaLength,
             metaData.data(), bufferDesc.metaLength);
         FALSE_RETURN_V_MSG(ret == 0, false, "copy from cache buffer may fail.");
+    } else {
+        MEDIA_LOG_E("CopyAudioVividBufferData error: size: " PUBLIC_LOG_ZU " metaLength:" PUBLIC_LOG_ZU,
+            metaData.size(), bufferDesc.metaLength);
     }
     return true;
 }
