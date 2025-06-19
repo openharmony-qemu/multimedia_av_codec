@@ -78,6 +78,7 @@ ohos_unittest("demuxer_native_module_test") {
 
       #"./src/net_test.cpp",
       #"./src/net2_test.cpp",
+      "./src/InnerAPI/demuxer_asyn_func_test.cpp",
       "./src/InnerAPI/demuxer_cachesize_func_test.cpp",
       "./src/InnerAPI/demuxer_plugin_func_test.cpp",
       "./src/format_test.cpp",
