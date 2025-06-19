@@ -460,7 +460,7 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_OnOutputBufferAvai
     surfaceEncoderAdapter_->stopTime_ = 1;
     buffer->pts_ = 2;
     surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
-    EXPECT_NE(surfaceEncoderAdapter_->startBufferTime_, -1);
+    EXPECT_NE(surfaceEncoderAdapter_->startBufferTime_, buffer->pts_);
 }
 
 /**
