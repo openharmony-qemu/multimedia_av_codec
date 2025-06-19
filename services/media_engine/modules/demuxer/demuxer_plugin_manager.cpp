@@ -868,7 +868,7 @@ Status DemuxerPluginManager::Pause()
             return ret;
         }
     }
-    return Status::OK; 
+    return Status::OK;
 }
 
 Status DemuxerPluginManager::UpdateMediaInfo(int32_t streamID)
