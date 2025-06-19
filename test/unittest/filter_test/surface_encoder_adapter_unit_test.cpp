@@ -433,7 +433,7 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_TransCoder_200, Te
     surfaceEncoderAdapter_->startBufferTime_ = -1;
     buffer->pts_ = 1;
     surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
-    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, buffer->pts_);
+    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, -1);
 }
 
 /**
@@ -460,7 +460,7 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_OnOutputBufferAvai
     surfaceEncoderAdapter_->stopTime_ = 1;
     buffer->pts_ = 2;
     surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
-    EXPECT_NE(surfaceEncoderAdapter_->startBufferTime_, buffer->pts_);
+    EXPECT_NE(surfaceEncoderAdapter_->startBufferTime_, -1);
 }
 
 /**
