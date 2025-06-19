@@ -2144,11 +2144,13 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
         FALSE_RETURN_V_MSG_E(bufferQueueMap_.count(queueIndex) > 0 && bufferQueueMap_[queueIndex] != nullptr,
             false, "UserQueue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
     }
-
-    int64_t mediaTime = isFlvLiveStream_ ? lastAudioPtsInMute_ : syncCenter_->GetMediaTimeNow();
-    if (queueIndex == videoTrackId_ && (isVideoMuted_ || needRestore_) &&
-        lastVideoPts_ - mediaTime >= ONE_FRAME_LENGTH) {
-        return false;
+    
+    if (queueIndex == videoTrackId_ && (isVideoMuted_ || needRestore_)) {
+        int64_t mediaTime = (!isFlvLiveStream_ && syncCenter_ != nullptr) ?
+            syncCenter_->GetMediaTimeNow() : lastAudioPtsInMute_;
+        if (lastVideoPts_ - mediaTime >= ONE_FRAME_LENGTH) {
+            return false;
+        }
     }
 
     AVBufferConfig avBufferConfig;

@@ -60,7 +60,7 @@ public:
     };
     SampleQueue() = default;
     virtual ~SampleQueue() = default;
-    Status Init(const Config& config, bool isSetMuteVideo);
+    Status Init(const Config& config, bool isSetMuteVideo = false);
     Status SetSampleQueueCallback(std::shared_ptr<SampleQueueCallback> sampleQueueCb);
 
     sptr<AVBufferQueueProducer> GetBufferQueueProducer() const;
