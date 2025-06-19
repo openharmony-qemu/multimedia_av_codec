@@ -2173,7 +2173,14 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
         ret = bufferQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
         REQUEST_BUFFER_TIMEOUT);
     }
+    
+    RecordErrorCount(queueIndex, ret);
 
+    return ret == Status::OK;
+}
+
+void MediaDemuxer::RecordErrorCount(int32_t queueIndex, Status ret)
+{
     if (ret != Status::OK) {
         requestBufferErrorCountMap_[queueIndex]++;
         if ((requestBufferErrorCountMap_[queueIndex] & 0x00000007) == 0) { // log per 8 times fail
@@ -2188,7 +2195,6 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
         requestBufferErrorCountMap_[queueIndex] = 0;
         MEDIA_LOG_DD("RequestBuffer from UserQueue trackId=" PUBLIC_LOG_D32 ",size=" PUBLIC_LOG_U32, queueIndex, size);
     }
-    return ret == Status::OK;
 }
 
 void MediaDemuxer::HandleSelectTrackStreamSeek(int32_t streamID, int32_t& trackId)

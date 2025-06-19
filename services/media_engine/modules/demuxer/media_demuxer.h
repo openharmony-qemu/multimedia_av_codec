@@ -326,6 +326,7 @@ private:
     Status HandlePushBuffer(int32_t trackId, std::shared_ptr<AVBuffer>& dstBuffer,
                             sptr<AVBufferQueueProducer>& bufferQueue, Status status);
     void HandleSeek(int32_t trackId);
+    void RecordErrorCount(int32_t queueIndex, Status ret);
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
