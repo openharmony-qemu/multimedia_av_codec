@@ -28,6 +28,8 @@
 #include "demuxer_plugin_manager.h"
 #include "plugin/plugin_manager_v2.h"
 #include "ffmpeg_demuxer_plugin.h"
+#include "mock/mock_datasource_impl.h"
+#include "mock/mock_FFmpegDemuxerPlugin.h"
 
 using MediaAVBuffer = OHOS::Media::AVBuffer;
 namespace OHOS {
@@ -40,6 +42,7 @@ public:
     void SetUp() override;
     void TearDown() override;
     void InitResource(const std::string &filePath, std::string pluginName);
+    void MockInitResource(const std::string &filePath, std::string pluginName);
     void InitWeakNetworkDemuxerPlugin(
         const std::string& filePath, std::string pluginName, int64_t failOffset, size_t maxFailCount);
     void SetInitValue();
@@ -51,7 +54,10 @@ public:
     void RemoveValue();
 protected:
     int fd_ = -1;
+    std::shared_ptr<OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin> demuxerPluginAdapter_ = nullptr;
     std::shared_ptr<OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin> demuxerPlugin_ = nullptr;
+    std::shared_ptr<BaseStreamDemuxer> streamDemuxer_ = nullptr;
+    std::shared_ptr<OHOS::Media::DataSourceImpl> dataSource_ = nullptr;
     bool initStatus_ = false;
     int32_t nbStreams_ = 0;
     int32_t videoHeight_ = 0;
