@@ -26,7 +26,6 @@
 #include "media_description.h"
 #include "mock/mock_buffer.h"
 #include "mock/mock_memory.h"
-#include "mock/mock_ffmpeg.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -74,15 +73,6 @@ void DemuxerPluginUnitTest::TearDown(void) {
         demuxerPlugin_->Reset();
         demuxerPlugin_ = nullptr;
     }
-    printf("TearDown: 9\n");
-    if (demuxerPluginAdapter_ != nullptr)
-    {
-        printf("TearDown: 7\n");
-        demuxerPluginAdapter_->Reset();
-        printf("TearDown: 10\n");
-        demuxerPluginAdapter_ = nullptr;
-        printf("TearDown: 11\n");
-    }
     printf("TearDown: 8\n");
 }
 
@@ -116,50 +106,6 @@ void DemuxerPluginUnitTest::InitResource(const std::string &filePath, std::strin
     ASSERT_EQ(demuxerPlugin_->GetMediaInfo(mediaInfo_), Status::OK);
     initStatus_ = true;
 }
-
-void DemuxerPluginUnitTest::MockInitResource(const std::string &filePath, std::string pluginName)
-{
-    printf("MockInitResource 1\n");
-    struct stat fileStatus {};
-    if (stat(filePath.c_str(), &fileStatus) != 0) {
-        printf("Failed to get file status for path: %s\n", filePath.c_str());
-        return;
-    }
-    int64_t fileSize = static_cast<int64_t>(fileStatus.st_size);
-    int fd = open(filePath.c_str(), O_RDONLY);
-    if (fd < 0) {
-        printf("Failed to open file: %s\n", filePath.c_str());
-        return;
-    }
-    auto uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
-    std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(uri);
-    std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxer>();
-    std::shared_ptr<Source> source = std::make_shared<Source>();
-    source->SetSource(mediaSource);
-    streamDemuxer->SetSource(source);
-    streamDemuxer->SetSourceType(mediaSource->GetSourceType());
-    streamDemuxer->Init(uri);
-    streamDemuxer->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
-    streamDemuxer_ = streamDemuxer;
-    auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
-    dataSource_ = dataSource;
-    printf("MockInitResource 2\n");
-    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(pluginName);
-    printf("MockInitResource 3\n");
-    // auto demuxerPluginAdapter = std::make_shared<MockDemuxerPluginAdapter>(basePlugin->GetName());
-    auto demuxerPluginAdapter = std::reinterpret_pointer_cast<MockDemuxerPluginAdapter>(basePlugin);
-    // auto demuxerPluginAdapter = std::reinterpret_pointer_cast<MockDemuxerPluginAdapter<MockDemuxerPlugin, OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin>>(basePlugin);
-    demuxerPluginAdapter_ = std::static_pointer_cast<OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin>(demuxerPluginAdapter);
-    printf("MockInitResource 4\n");
-    EXPECT_CALL(*demuxerPluginAdapter, EnsurePacketAllocated).WillRepeatedly(Return(true));
-    printf("MockInitResource 41\n");
-    ASSERT_EQ(demuxerPluginAdapter_->SetDataSource(dataSource), Status::OK);
-    printf("MockInitResource 5\n");
-    ASSERT_EQ(demuxerPluginAdapter_->GetMediaInfo(mediaInfo_), Status::OK);
-    printf("MockInitResource 6\n");
-    initStatus_ = true;
-}
-
 
 void DemuxerPluginUnitTest::InitWeakNetworkDemuxerPlugin(
     const std::string& filePath, std::string pluginName, int64_t failOffset, size_t maxFailCount)
@@ -904,46 +850,73 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_mock_av_packet_alloc__001, TestSize.Leve
     // EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
 }
 
+
 /**
- * @tc.name: Demuxer_ReadSample_0008
- * @tc.desc: Test ReadSample with and without timeout
+ * @tc.name: Demuxer_EnsurePacketAllocated_001
+ * @tc.desc: Test ReadSample with GetNextSampleSize
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0008, TestSize.Level1)
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_EnsurePacketAllocated_001, TestSize.Level1)
 {
-    printf("DemuxerPluginUnitTest::Demuxer_ReadSample_0008 start\n");
     std::string pluginName = "avdemux_flv";
-    MockInitResource(g_flvPath, pluginName);
+    InitResource(g_flvPath, pluginName);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
-    printf("DemuxerPluginUnitTest::Demuxer_ReadSample_0008 start2\n");
-    OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
-    printf("DemuxerPluginUnitTest::Demuxer_ReadSample_0008 start4\n");
-    ASSERT_NE(demuxerPluginAdapter_, nullptr); // 检查插件是否初始化成功
-    printf("DemuxerPluginUnitTest::Demuxer_ReadSample_0008 start5\n");
-    ASSERT_EQ(demuxerPluginAdapter_->SelectTrack(0), Status::OK);
-    printf("DemuxerPluginUnitTest::Demuxer_ReadSample_0008 start6\n");
-    ASSERT_EQ(demuxerPluginAdapter_->SelectTrack(1), Status::OK);
-    printf("DemuxerPluginUnitTest::Demuxer_ReadSample_0008 start7\n");
-
-    // EXPECT_CALL(*demuxerPluginAdapter_, EnsurePacketAllocated).WillRepeatedly(Return(false));
-    // AVPacket *pkt = nullptr;
-    // auto result = demuxerPluginAdapter_->EnsurePacketAllocated(pkt);
-    // ASSERT_EQ(result, false);
-    // printf("DemuxerPluginUnitTest::Demuxer_ReadSample_0008 EnsurePacketAllocated %d\n", static_cast<int>(result));
-    // ASSERT_EQ(demuxerPluginAdapter_->EnsurePacketAllocated(pkt), false);
-    printf("DemuxerPluginUnitTest::Demuxer_ReadSample_0008 start8\n");
-
-    auto ret = demuxerPluginAdapter_->ReadSample(0, buffer.mediaAVBuffer, 100);
-    printf("DemuxerPluginUnitTest::Demuxer_ReadSample_0008 start88\n");
-    for(int i=0; i< 3; i++) {
-        ret = demuxerPluginAdapter_->ReadSample(0, buffer.mediaAVBuffer, 100);
-        printf("DemuxerPluginUnitTest::Demuxer_ReadSample_0008 start9 %d %d\n", i, static_cast<int>(ret));
+    ASSERT_NE(demuxerPlugin_, nullptr); // 检查插件是否初始化成功
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    printf("DemuxerPluginUnitTest::Demuxer_EnsurePacketAllocated_001 read\n");
+    AVPacket *pkt = av_packet_alloc();
+    if(pkt == nullptr) {
+        printf("DemuxerPluginUnitTest::Demuxer_EnsurePacketAllocated_001 av_packet_alloc failed\n");
     }
-    printf("DemuxerPluginUnitTest::Demuxer_ReadSample_0008 end\n");
+    auto ret = demuxerPlugin_->EnsurePacketAllocated(pkt);
+    av_packet_free(&pkt); 
+    printf("DemuxerPluginUnitTest::Demuxer_EnsurePacketAllocated_001 ret=%d\n", static_cast<int>(ret));
+    // ASSERT_NE(ret, false);
 }
 
 
+/**
+ * @tc.name: Demuxer_UpdateInitDownloadData_001
+ * @tc.desc: Test UpdateInitDownloadData
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_UpdateInitDownloadData_001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_flv";
+    InitResource(g_flvPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_NE(demuxerPlugin_, nullptr); // 检查插件是否初始化成功
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    printf("DemuxerPluginUnitTest::Demuxer_UpdateInitDownloadData_001 read\n");
+    demuxerPlugin_->ioContext_.initCompleted = false;
+    demuxerPlugin_->UpdateInitDownloadData(&demuxerPlugin_->ioContext_, UINT32_MAX -1);
+    printf("DemuxerPluginUnitTest::Demuxer_UpdateInitDownloadData_001 end\n");
+    // ASSERT_NE(ret, false);
+}
 
+/**
+ * @tc.name: Demuxer_GetNextSampleSize_001
+ * @tc.desc: Test ReadSample with GetNextSampleSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetNextSampleSize_001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_flv";
+    InitResource(g_flvPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_NE(demuxerPlugin_, nullptr); // 检查插件是否初始化成功
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    printf("DemuxerPluginUnitTest::Demuxer_GetNextSampleSize_001 read\n");
+    int32_t size = 0;
+    demuxerPlugin_->ioContext_.invokerType = OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin::InvokerType::READ;
+    // std::shared_ptr<SamplePacket> samplePacket = demuxerPlugin_->cacheQueue_.Front(0);
+    // samplePacket->isEOS = true;
+    auto ret = demuxerPlugin_->GetNextSampleSize(0, size, 100);
+    printf("DemuxerPluginUnitTest::Demuxer_GetNextSampleSize_001 ret=%d, size=%d\n", static_cast<int>(ret), size);
+    ASSERT_NE(ret, Status::OK);
+}
 
 
