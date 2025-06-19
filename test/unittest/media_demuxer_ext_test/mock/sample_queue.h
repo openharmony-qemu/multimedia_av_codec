@@ -56,6 +56,7 @@ public:
         uint32_t bufferCap_{DEFAULT_SAMPLE_BUFFER_CAP};
         bool isSupportBitrateSwitch_{false};
         bool isFlvLiveStream_{false};
+        bool isNeedSetLarge_ {false};
     };
     SampleQueue() = default;
     virtual ~SampleQueue() = default;

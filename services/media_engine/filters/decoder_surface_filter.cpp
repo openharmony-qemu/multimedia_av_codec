@@ -1568,7 +1568,6 @@ Status DecoderSurfaceFilter::SetMediaMuted(bool isMuted, bool hasInitialized)
             eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_NO_NEED_INIT, Status::OK});
         }
     }
-    }
     videoSink_->SetMediaMuted(isMuted);
     isVideoMuted_.store(isMuted);
     return Status::OK;
