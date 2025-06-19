@@ -3301,9 +3301,11 @@ Status MediaDemuxer::AddSampleBufferQueue(int32_t trackId)
     sampleQueueConfig.queueId_ = trackId;
     sampleQueueConfig.bufferCap_ =
         isVideo ? SampleQueue::DEFAULT_VIDEO_SAMPLE_BUFFER_CAP : SampleQueue::DEFAULT_SAMPLE_BUFFER_CAP;
-    Status status = sampleQueue->Init(sampleQueueConfig, isVideo);
+    Status status = sampleQueue->Init(sampleQueueConfig, isNeedSetLarge_);
     FALSE_RETURN_V_MSG_E(status == Status::OK, status, "SampleQueue Init failed");
-
+    if (isNeedSetLarge_) {
+        isNeedSetLarge_ = false;
+    }
     sampleQueue->SetSampleQueueCallback(shared_from_this());
 
     sampleQueueMap_.insert(std::pair<int32_t, std::shared_ptr<SampleQueue>>(trackId, sampleQueue));
@@ -3694,6 +3696,15 @@ Status MediaDemuxer::StopBufferring(bool isAppBackground)
 void MediaDemuxer::SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted, bool keepDecodingOnMute)
 {
     if (mediaType == OHOS::Media::MediaType::MEDIA_TYPE_VID) {
+        if (!hasSetLargeSize_ && isMuted && videoTrackId_ != -1) {
+            if (sampleQueueMap_.count(videoTrackId_) > 0 && sampleQueueMap_[videoTrackId_] != nullptr) {
+                sampleQueueMap_[videoTrackId_]->SetLargerQueueSize(50);
+                hasSetLargeSize_ = true;
+                MEDIA_LOG_I("MediaDemuxer SetLargerQueueSize");
+            } else {
+                isNeedSetLarge_ = true;
+            }
+        }
         needReleaseVideoDecoder_ = isMuted && !keepDecodingOnMute;
         MEDIA_LOG_I("MediaDemuxer::SetMediaMuted " PUBLIC_LOG_U32 "keepDecodingOnMute_ is "
                     PUBLIC_LOG_U32, isMuted, keepDecodingOnMute);

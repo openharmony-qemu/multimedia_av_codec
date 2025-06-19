@@ -444,6 +444,8 @@ private:
     bool isVideoMuted_ = false;
     bool needReleaseVideoDecoder_ = false;
     bool needRestore_ {false};
+    bool hasSetLargeSize_ {false};
+    bool isNeedSetLarge_ {false};
 };
 } // namespace Media
 } // namespace OHOS

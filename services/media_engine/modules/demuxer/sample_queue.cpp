@@ -77,9 +77,14 @@ Status SampleQueue::Init(const Config& config, bool isVideo)
     config_.queueName_ = "SampleQueue_" + std::to_string(config_.queueId_);
     sampleBufferQueue_ = AVBufferQueue::Create(config_.queueSize_, MemoryType::VIRTUAL_MEMORY, config_.queueName_);
     FALSE_RETURN_V_MSG_E(sampleBufferQueue_ != nullptr, Status::ERROR_NO_MEMORY, "AVBufferQueue::Create failed");
-    if (config_.isFlvLiveStream_ || isVideo) {
-        config_.queueSize_ = MAX_SAMPLE_QUEUE_SIZE;
+    if (isSetMuteVideo) {
+        config_.queueSize_ = MAX_SAMPLE_QUEUE_SIZE_ON_MUTE;
         sampleBufferQueue_->SetLargerQueueSize(config_.queueSize_);
+    } else {
+        if (config_.isFlvLiveStream_) {
+            config_.queueSize_ = MAX_SAMPLE_QUEUE_SIZE;
+            sampleBufferQueue_->SetLargerQueueSize(config_.queueSize_);
+        }
     }
     
     sampleBufferQueueProducer_ = sampleBufferQueue_->GetProducer();
@@ -96,6 +101,18 @@ Status SampleQueue::Init(const Config& config, bool isVideo)
         config_.queueName_.c_str(),
         config_.queueSize_);
     return AttachBuffer();
+}
+
+Status SampleQueue::SetLargerQueueSize(uint32_t size)
+{
+    if (size > config_.queueSize_) {
+        Status status = sampleBufferQueue_->SetLargerQueueSize(size);
+        FALSE_RETURN_V_MSG_E(status == Status::OK, status, "SetLargerQueueSize failed status=" PUBLIC_LOG_D32,
+            static_cast<int32_t>(status));
+        MEDIA_LOG_I("sampleBufferQueue size is change to " PUBLIC_LOG_U32, size);
+        config_.queueSize_ = size;
+    }
+    return Status::OK;
 }
 
 Status SampleQueue::AttachBuffer()
