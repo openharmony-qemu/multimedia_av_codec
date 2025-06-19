@@ -626,7 +626,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Feature_Long_Term_Reference_003, TestSize.Level
     PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, DEFAULT_INVALID_LTR_COUNT);
     ASSERT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
-#endif
 }
 } // namespace
 
