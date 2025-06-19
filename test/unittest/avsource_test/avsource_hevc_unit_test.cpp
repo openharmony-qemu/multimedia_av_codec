@@ -148,6 +148,7 @@ void AVSourceUnitTest::InitResource(const std::string &path, bool local)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, streamsCount_));
     for (int i = 0; i < streamsCount_; i++) {
         format_ = source_->GetTrackFormat(i);
+        ASSERT_NE(format_, nullptr);
         ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
         if (formatVal_.trackType == MediaType::MEDIA_TYPE_VID) {
             vTrackIdx_ = i;
