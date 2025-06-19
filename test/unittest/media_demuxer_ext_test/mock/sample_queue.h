@@ -59,7 +59,7 @@ public:
     };
     SampleQueue() = default;
     virtual ~SampleQueue() = default;
-    MOCK_METHOD(Status, Init, (const Config& config, bool isSetMuteVideo), ());
+    MOCK_METHOD(Status, Init, (const Config& config, bool isSetMuteVideo = false), ());
     MOCK_METHOD(Status, SetSampleQueueCallback, (std::shared_ptr<SampleQueueCallback> sampleQueueCb), ());
     
     MOCK_METHOD(sptr<AVBufferQueueProducer>, GetBufferQueueProducer, (), ());
