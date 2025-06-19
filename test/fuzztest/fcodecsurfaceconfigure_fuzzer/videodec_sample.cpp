@@ -203,7 +203,7 @@ void VDecFuzzSample::PrepareResource()
 void VDecFuzzSample::FormatChangeInputFunc()
 {
     PrepareResource();
-    while (!inEnd_) {
+    while (true) {
         if (!isRunning_.load()) {
             return;
         }
@@ -222,7 +222,7 @@ void VDecFuzzSample::FormatChangeInputFunc()
             if (memcpy_s(OH_AVMemory_GetAddr(buffer), OH_AVMemory_GetSize(buffer), fileBuffer, info.size) != EOK) {
                 free(fileBuffer);
                 isRunning_.store(false);
-                inEnd_ = true;
+                break;
             }
             free(fileBuffer);
             info.flags = AVCODEC_BUFFER_FLAGS_NONE;
@@ -234,12 +234,12 @@ void VDecFuzzSample::FormatChangeInputFunc()
             int32_t ret = SwitchSurface();
             if (ret != AV_ERR_OK) {
                 isRunning_.store(false);
-                inEnd_ = true;
+                break;
             }
             frameCount_++;
         } else {
             OH_VideoDecoder_PushInputData(videoDec_, index, info);
-            inEnd_ = true;
+            break;
         }
         signal_->inQueue_.pop();
         signal_->inBufferQueue_.pop();
@@ -251,16 +251,16 @@ void VDecFuzzSample::FormatChangeInputFunc()
 
 void VDecFuzzSample::OutputFunc()
 {
-    while (!outEnd_) {
+    while (true) {
         if (!isRunning_.load()) {
             cout << "stop, exit" << endl;
-            outEnd_ = true;
+            break;
         }
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
         if (!isRunning_.load()) {
             cout << "wait to stop, exit" << endl;
-            outEnd_ = true;
+            break;
         }
         uint32_t index = signal_->outQueue_.front();
         OH_AVCodecBufferAttr attr = signal_->attrQueue_.front();

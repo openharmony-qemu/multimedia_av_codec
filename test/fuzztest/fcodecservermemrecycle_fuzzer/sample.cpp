@@ -350,9 +350,9 @@ void VDecServerSample::InputFunc()
 {
     frameCount_ = 1;
     errCount = 0;
-    while (!isEnd_) {
+    while (true) {
         if (!isRunning_.load()) {
-            isEnd_ = true;
+            break;
         }
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() {
@@ -363,7 +363,7 @@ void VDecServerSample::InputFunc()
             return signal_->inIdxQueue_.size() > 0;
         });
         if (!isRunning_.load()) {
-            isEnd_ = true;
+            break;
         }
         uint32_t index = signal_->inIdxQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
@@ -373,7 +373,7 @@ void VDecServerSample::InputFunc()
         if (!inFile_->eof()) {
             int ret = ReadData(index, buffer);
             if (ret == 1) {
-                isEnd_ = true;
+                break;
             }
         }
     }
