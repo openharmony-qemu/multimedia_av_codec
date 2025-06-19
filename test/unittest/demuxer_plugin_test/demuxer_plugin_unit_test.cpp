@@ -53,27 +53,20 @@ void DemuxerPluginUnitTest::SetUp(void) {}
 
 
 void DemuxerPluginUnitTest::TearDown(void) {
-    printf("TearDown: 1\n");
     if (fd_ > 0)
     {
-        printf("TearDown: 2\n");
         close(fd_);
         fd_ = -1;
     }
-    printf("TearDown: 3\n");
     if (initStatus_)
     {
-        printf("TearDown: 4\n");
         initStatus_ = false;
     }
-    printf("TearDown: 5\n");
     if (demuxerPlugin_ != nullptr)
     {
-        printf("TearDown: 6\n");
         demuxerPlugin_->Reset();
         demuxerPlugin_ = nullptr;
     }
-    printf("TearDown: 8\n");
 }
 
 
