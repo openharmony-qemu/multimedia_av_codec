@@ -2575,14 +2575,15 @@ Status MediaDemuxer::ReadSampleWithPerfRecord(const std::shared_ptr<Plugins::Dem
     const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample, bool isAVDemuxer)
 {
     Status ret = Status::OK;
+    int64_t demuxDuration = 0;
     if (isAVDemuxer) {
         FALSE_RETURN_V_NOLOG(perfRecEnabled_, pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample));
-        int64_t demuxDuration =
+        demuxDuration =
             CALC_EXPR_TIME_MS(ret = pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample));
     } else {
         FALSE_RETURN_V_NOLOG(perfRecEnabled_,
             pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_));
-        int64_t demuxDuration =
+        demuxDuration =
             CALC_EXPR_TIME_MS(ret = pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample, timeout_));
     }
     FALSE_RETURN_V_MSG(eventReceiver_ != nullptr, Status::OK, "Report perf failed, callback is nullptr");
