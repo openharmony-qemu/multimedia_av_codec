@@ -51,7 +51,6 @@ void DemuxerPluginUnitTest::TearDownTestCase(void) {}
 
 void DemuxerPluginUnitTest::SetUp(void) {}
 
-
 void DemuxerPluginUnitTest::TearDown(void)
 {
     if (fd_ > 0) {
@@ -844,7 +843,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_mock_av_packet_alloc__001, TestSize.Leve
 
 /**
  * @tc.name: Demuxer_EnsurePacketAllocated_001
- * @tc.desc: Test ReadSample with GetNextSampleSize
+ * @tc.desc: EnsurePacketAllocated
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_EnsurePacketAllocated_001, TestSize.Level1)
@@ -889,7 +888,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_UpdateInitDownloadData_001, TestSize.Lev
 
 /**
  * @tc.name: Demuxer_GetNextSampleSize_001
- * @tc.desc: Test ReadSample with GetNextSampleSize
+ * @tc.desc: Test GetNextSampleSize
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetNextSampleSize_001, TestSize.Level1)
