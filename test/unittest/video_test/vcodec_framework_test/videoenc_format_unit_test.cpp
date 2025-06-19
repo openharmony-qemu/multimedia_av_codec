@@ -18,7 +18,7 @@
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
 #include "codeclist_mock.h"
-#include "venc_sample.h"
+#include "venc_async_sample.h"
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videoenc_capi_mock.h"
