@@ -41,7 +41,7 @@ private:
     BackGroundEventHandler() {};
     ~BackGroundEventHandler() = default;
 
-    std::recursive_mutex mutex_;
+    std::mutex mutex_;
     ObjectList memoryRecycleList_;
     ObjectList suspendList_;
 };
