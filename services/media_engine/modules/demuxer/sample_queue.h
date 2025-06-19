@@ -43,9 +43,10 @@ enum class SelectBitrateStatus : uint32_t {
 class SampleQueue : public std::enable_shared_from_this<SampleQueue> {
 public:
     static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE = 1;
+    static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE_ON_MUTE = 50;
     static constexpr uint32_t DEFAULT_SAMPLE_QUEUE_SIZE = 1;
     static constexpr uint32_t MAX_SAMPLE_BUFFER_CAP = 10 * 1024 * 1024;
-    static constexpr uint32_t DEFAULT_VIDEO_SAMPLE_BUFFER_CAP = 1 * 1024 * 1024;
+    static constexpr uint32_t DEFAULT_VIDEO_SAMPLE_BUFFER_CAP = 256 * 1024;
     static constexpr uint32_t DEFAULT_SAMPLE_BUFFER_CAP = 4 * 1024;
     static constexpr int64_t MIN_SWITCH_BITRATE_TIME_US = 3000000;
     static constexpr size_t MAX_BITRATE_SWITCH_WAIT_NUMBER = 1;
@@ -56,6 +57,7 @@ public:
         uint32_t bufferCap_{DEFAULT_SAMPLE_BUFFER_CAP};
         bool isSupportBitrateSwitch_{false};
         bool isFlvLiveStream_{false};
+        bool isNeedSetLarge_{false};
     };
     SampleQueue() = default;
     virtual ~SampleQueue() = default;
@@ -84,9 +86,11 @@ public:
     void UpdateQueueId(int32_t queueId);
     uint32_t GetMemoryUsage();
 
-private:
     Status AcquireBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
     Status ReleaseBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
+    Status SetLargerQueueSize(uint32_t size);
+    
+private:
 
     bool IsKeyFrame(std::shared_ptr<AVBuffer>& sampleBuffer) const;
     bool IsEosFrame(std::shared_ptr<AVBuffer>& sampleBuffer) const;
