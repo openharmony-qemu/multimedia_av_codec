@@ -67,14 +67,13 @@ void AVMuxerWavPcmUnitTest::TearDown()
     }
 }
 
+<<<<<<< HEAD
 static int32_t WritePCMSampleWithMetadata(std::shared_ptr<std::ofstream> file, const uint8_t *pcmData,
+=======
+static int32_t WritePcmSampleWithMetadata(std::shared_ptr<std::ofstream> file, const uint8_t *pcmData,
+>>>>>>> 32c2fb24d3718a42e21ea96d493fdcd253214148
     uint32_t pcmSize, int64_t pts, uint32_t flags)
 {
-    std::cout << "WritePCMSampleWithMetadata: pts=" << pts << ", flags=0x" << std::hex << flags << std::dec
-              << ", pcmSize=" << pcmSize << std::endl;
-
-    std::cout << std::dec << std::endl;
-
     file->write(reinterpret_cast<const char *>(&pts), sizeof(pts));
     file->write(reinterpret_cast<const char *>(&flags), sizeof(flags));
     file->write(reinterpret_cast<const char *>(&pcmSize), sizeof(pcmSize));
@@ -87,11 +86,10 @@ static int32_t WritePCMSampleWithMetadata(std::shared_ptr<std::ofstream> file, c
     return 0;
 }
 
-static int32_t ProcessPCMFile(
+static int32_t ProcessPcmFile(
     std::shared_ptr<std::ifstream> pcmFile, const std::string &outputFileName, int32_t trackId, uint32_t extraFlag = 0)
 {
     if (!pcmFile->is_open()) {
-        std::cerr << "open pcm file fail: " << pcmFile << std::endl;
         return 0;
     }
     pcmFile->seekg(0, std::ios::end);
@@ -99,7 +97,6 @@ static int32_t ProcessPCMFile(
     pcmFile->seekg(0, std::ios::beg);
 
     if (pcmSize == 0) {
-        std::cerr << "pcm file empty" << std::endl;
         return 0;
     }
     std::vector<uint8_t> pcmData(pcmSize);
@@ -107,21 +104,18 @@ static int32_t ProcessPCMFile(
     pcmFile->close();
 
     if (pcmFile->gcount() != static_cast<std::streamsize>(pcmSize)) {
-        std::cerr << "pcm file incomplete!" << std::endl;
         return 0;
     }
 
     std::shared_ptr<std::ofstream> outFile = std::make_shared<std::ofstream>(outputFileName, std::ios::binary);
     if (!outFile->is_open()) {
-        std::cerr << "create output  file fail: " << outputFileName << std::endl;
         return 0;
     }
 
     int64_t pts = 0;
     uint32_t flags = AVCODEC_BUFFER_FLAGS_NONE;
-    int32_t ret = WritePCMSampleWithMetadata(outFile, pcmData.data(), pcmSize, pts, flags);
+    int32_t ret = WritePcmSampleWithMetadata(outFile, pcmData.data(), pcmSize, pts, flags);
     if (ret != 0) {
-        std::cerr << "write metadata fail, errcode: " << ret << std::endl;
         outFile->close();
         return ret;
     }
@@ -136,21 +130,18 @@ int32_t AVMuxerWavPcmUnitTest::WriteSample(
 
     if (file->eof()) {
         eosFlag = true;
-        std::cout << "file reach eof, cannot read pts" << std::endl;
         return 0;
     }
     file->read(reinterpret_cast<char *>(&info.pts), sizeof(info.pts));
 
     if (file->eof()) {
         eosFlag = true;
-        std::cout << "file reach eof, cannot read flags" << std::endl;
         return 0;
     }
     file->read(reinterpret_cast<char *>(&info.flags), sizeof(info.flags));
 
     if (file->eof()) {
         eosFlag = true;
-        std::cout << "file reach eof, cannot read size" << std::endl;
         return 0;
     }
     file->read(reinterpret_cast<char *>(&info.size), sizeof(info.size));
@@ -166,8 +157,6 @@ int32_t AVMuxerWavPcmUnitTest::WriteSample(
 
     OH_AVBuffer *buffer = OH_AVBuffer_Create(info.size);
     file->read(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(buffer)), info.size);
-    std::cout << "WriteSample: readMetadata - pts=" << info.pts << ", flags=0x" << std::hex << info.flags << std::dec
-              << ", size=" << info.size << std::endl;
     OH_AVBuffer_SetBufferAttr(buffer, &info);
     int32_t ret = avmuxer_->WriteSampleBuffer(trackId, buffer);
     OH_AVBuffer_Destroy(buffer);
@@ -208,7 +197,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_U8, TestSize.Level0)
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_2_u8.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -218,7 +207,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_U8, TestSize.Level0)
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -259,7 +248,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_S16LE, TestSize.Level0)
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_2_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -269,7 +258,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_S16LE, TestSize.Level0)
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -310,7 +299,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_S24LE, TestSize.Level0)
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_2_s24le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -320,7 +309,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_S24LE, TestSize.Level0)
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -361,7 +350,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_S32LE, TestSize.Level0)
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_2_s32le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -371,7 +360,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_S32LE, TestSize.Level0)
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -412,7 +401,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_F32LE, TestSize.Level0)
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_2_f32le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -422,7 +411,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_F32LE, TestSize.Level0)
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -491,7 +480,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_MONO, TestSize.Leve
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_mono_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -501,7 +490,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_MONO, TestSize.Leve
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -542,7 +531,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_2POINT1, TestSiz
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_2point1_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -552,7 +541,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_2POINT1, TestSiz
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -593,7 +582,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_2_1, TestSize.Le
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_2_1_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -603,7 +592,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_2_1, TestSize.Le
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -644,7 +633,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_SURROUND, TestSize.
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_surround_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -654,7 +643,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_SURROUND, TestSize.
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -695,7 +684,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_3POINT1, TestSize.L
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_3point1_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -705,7 +694,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_3POINT1, TestSize.L
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -746,7 +735,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_4POINT0, TestSize.L
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_4point0_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -756,7 +745,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_4POINT0, TestSize.L
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -797,7 +786,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_4POINT1, TestSize.L
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_4point1_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -807,7 +796,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_4POINT1, TestSize.L
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -848,7 +837,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_2_2, TestSize.Le
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_2_2_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -858,7 +847,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_2_2, TestSize.Le
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -899,7 +888,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_QUAD, TestSize.Leve
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_quad_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -909,7 +898,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_QUAD, TestSize.Leve
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -950,7 +939,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_5POINT0, TestSiz
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_5point0_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -960,7 +949,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_5POINT0, TestSiz
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1001,7 +990,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_5POINT1, TestSiz
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_5point1_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1011,7 +1000,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_5POINT1, TestSiz
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1052,7 +1041,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_5POINT0_BACK, Te
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_5point0back_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1062,7 +1051,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_5POINT0_BACK, Te
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1103,7 +1092,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_5POINT1_BACK, Te
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_5point1back_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1113,7 +1102,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_5POINT1_BACK, Te
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1154,7 +1143,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_6POINT0, TestSiz
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_6point0_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1164,7 +1153,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_6POINT0, TestSiz
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1205,7 +1194,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_6POINT0_FRONT, T
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_6point0front_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1215,7 +1204,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_6POINT0_FRONT, T
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1256,7 +1245,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_HEXAGONAL, TestSize
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_hexagonal_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1266,7 +1255,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_HEXAGONAL, TestSize
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1307,7 +1296,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_6POINT1, TestSiz
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_6point1_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1317,7 +1306,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_6POINT1, TestSiz
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1358,7 +1347,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_6POINT1_BACK, Te
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_6point1back_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1368,7 +1357,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_6POINT1_BACK, Te
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1409,7 +1398,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_6POINT1_FRONT, T
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_6point1front_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1419,7 +1408,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_6POINT1_FRONT, T
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1460,7 +1449,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_7POINT0, TestSiz
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_7point0_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1470,7 +1459,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_7POINT0, TestSiz
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1511,7 +1500,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_7POINT0_FRONT, T
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_7point0front_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1521,7 +1510,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_7POINT0_FRONT, T
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1562,7 +1551,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_7POINT1, TestSiz
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_7point1_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1572,7 +1561,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_7POINT1, TestSiz
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1613,7 +1602,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_7POINT1_WIDE, Te
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_7point1wide_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1623,7 +1612,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_7POINT1_WIDE, Te
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1664,7 +1653,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_7POINT1_WIDE_BAC
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_7point1wideback_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1674,7 +1663,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_CH_7POINT1_WIDE_BAC
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1715,7 +1704,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_OCTAGONAL, TestSize
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_octagonal_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1725,7 +1714,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_OCTAGONAL, TestSize
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1766,7 +1755,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_HEXADECAGONAL, Test
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_hexadecagonal_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1776,7 +1765,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_HEXADECAGONAL, Test
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
@@ -1817,7 +1806,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_STEREO_DOWNMIX, Tes
     std::string outputDat_ = TEST_FILE_PATH + std::string("pcm_44100_stereodownmix_s16le.dat");
 
     uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+    ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     ASSERT_EQ(ret, 0);
 
     std::shared_ptr<std::ifstream> datFile = std::make_shared<std::ifstream>(outputDat_, std::ios::binary);
@@ -1827,7 +1816,7 @@ HWTEST_F(AVMuxerWavPcmUnitTest, Muxer_WAV_PCM_CHANNEL_LAYOUT_STEREO_DOWNMIX, Tes
     ret = WriteSample(trackId, datFile, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, datFile, eosFlag, flag);
-        ret = ProcessPCMFile(inputFile, outputDat_, trackId, flag);
+        ret = ProcessPcmFile(inputFile, outputDat_, trackId, flag);
     }
     ASSERT_EQ(avmuxer_->Stop(), 0);
 

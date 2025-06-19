@@ -36,7 +36,7 @@
 #include "media_description.h"
 #include "fsurface_memory.h"
 #include "task_thread.h"
-#include "surface_utils.h"
+#include "surface_tools.h"
 #include "HevcDec_Typedef.h"
 
 namespace OHOS {

@@ -35,7 +35,7 @@
 #include "dma_swap.h"
 #include "media_description.h"
 #include "fsurface_memory.h"
-#include "surface_utils.h"
+#include "surface_tools.h"
 #include "task_thread.h"
 
 namespace OHOS {

@@ -27,7 +27,7 @@
 #include "type_converter.h"
 #include "surface_buffer.h"
 #include "buffer_extra_data_impl.h"  // foundation/graphic/graphic_surface/surface/include/
-#include "surface_utils.h"
+#include "surface_tools.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -703,7 +703,7 @@ void HDecoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
 void HDecoder::OnClearBufferPool(OMX_DIRTYPE portIndex)
 {
     if ((portIndex == OMX_DirOutput) && currSurface_.surface_) {
-        SurfaceUtils::GetInstance().CleanCache(compUniqueStr_, currSurface_.surface_, false);
+        SurfaceTools::GetInstance().CleanCache(compUniqueStr_, currSurface_.surface_, false);
         freeList_.clear();
     }
 }
@@ -741,7 +741,7 @@ void HDecoder::CombineConsumerUsage()
 int32_t HDecoder::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, uint32_t targetSize)
 {
     surface->Connect(); // cleancache will work only if the surface is connected by us
-    SurfaceUtils::GetInstance().CleanCache(compUniqueStr_, surface, false);
+    SurfaceTools::GetInstance().CleanCache(compUniqueStr_, surface, false);
     GSError err = surface->SetQueueSize(targetSize);
     if (err != GSERROR_OK) {
         HLOGE("surface(%" PRIu64 "), SetQueueSize to %u failed, GSError=%d",
@@ -839,7 +839,7 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
 {
     uint64_t surfaceId = surface->GetUniqueId();
     std::weak_ptr<MsgToken> weakThis = m_token;
-    bool ret = SurfaceUtils::GetInstance().RegisterReleaseListener(compUniqueStr_, surface,
+    bool ret = SurfaceTools::GetInstance().RegisterReleaseListener(compUniqueStr_, surface,
         [weakThis, surfaceId](sptr<SurfaceBuffer>&) {
         std::shared_ptr<MsgToken> codec = weakThis.lock();
         if (codec == nullptr) {
@@ -1152,7 +1152,7 @@ void HDecoder::SurfaceItem::Release(bool cleanAll)
             surface_->SetTransform(originalTransform_.value());
             originalTransform_ = std::nullopt;
         }
-        SurfaceUtils::GetInstance().ReleaseSurface(compUniqueStr_, surface_, cleanAll);
+        SurfaceTools::GetInstance().ReleaseSurface(compUniqueStr_, surface_, cleanAll);
         surface_ = nullptr;
     }
 }

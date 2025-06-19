@@ -112,9 +112,9 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
   ]
-
+  defines = []
   if (av_codec_support_drm) {
-    defines = [ "SUPPORT_DRM" ]
+    defines += [ "SUPPORT_DRM" ]
   }
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]

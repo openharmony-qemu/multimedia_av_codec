@@ -13,22 +13,22 @@
 * limitations under the License.
 */
 
-#include "surface_utils.h"
+#include "surface_tools.h"
 #include "avcodec_log.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "SurfaceUtils"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "SurfaceTools"};
 }
 
 namespace OHOS {
 namespace MediaAVCodec {
-SurfaceUtils &SurfaceUtils::GetInstance()
+SurfaceTools &SurfaceTools::GetInstance()
 {
-    static SurfaceUtils instance;
+    static SurfaceTools instance;
     return instance;
 }
 
-bool SurfaceUtils::RegisterReleaseListener(std::string producerName, sptr<Surface> surface, OnReleaseFunc callback,
+bool SurfaceTools::RegisterReleaseListener(std::string producerName, sptr<Surface> surface, OnReleaseFunc callback,
     OHSurfaceSource type)
 {
     CHECK_AND_RETURN_RET_LOGW(!producerName.empty() && surface != nullptr, false, "Unexpected param");
@@ -48,7 +48,7 @@ bool SurfaceUtils::RegisterReleaseListener(std::string producerName, sptr<Surfac
     return true;
 }
 
-void SurfaceUtils::CleanCache(std::string producerName, sptr<Surface> surface, bool cleanAll)
+void SurfaceTools::CleanCache(std::string producerName, sptr<Surface> surface, bool cleanAll)
 {
     if (producerName.empty() || surface == nullptr) {
         return;
@@ -63,7 +63,7 @@ void SurfaceUtils::CleanCache(std::string producerName, sptr<Surface> surface, b
     }
 }
 
-void SurfaceUtils::ReleaseSurface(std::string producerName, sptr<Surface> surface, bool cleanAll)
+void SurfaceTools::ReleaseSurface(std::string producerName, sptr<Surface> surface, bool cleanAll)
 {
     if (producerName.empty() || surface == nullptr) {
         return;
