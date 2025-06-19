@@ -69,7 +69,7 @@ private:
     std::weak_ptr<SampleQueue> sampleQueue_;
 };
 
-Status SampleQueue::Init(const Config& config, bool isVideo)
+Status SampleQueue::Init(const Config& config, bool isSetMuteVideo)
 {
     config_ = config;
     config_.queueSize_ = std::min(config.queueSize_, MAX_SAMPLE_QUEUE_SIZE);
