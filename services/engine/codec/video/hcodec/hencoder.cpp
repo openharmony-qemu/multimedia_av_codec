@@ -1602,6 +1602,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ReplyErrorCode(msg.id, AVCS_ERR_OK);
         return;
     }
+    SetBufferPts(bufferInfo);
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
     WrapSurfaceBufferToSlot(*bufferInfo, bufferInfo->surfaceBuffer, bufferInfo->avBuffer->pts_,
         UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_)));
@@ -1622,6 +1623,14 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ResetSlot(*bufferInfo);
         callback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_INPUT_DATA_ERROR);
     }
+}
+
+void HEncoder::SetBufferPts(BufferInfo* info)
+{
+    HLOGD("avBuffer->pts_ before setted, absolute pts=%ld", info->avBuffer->pts_);
+    bool bret = info->avBuffer->meta_->GetData(
+        OHOS::Media::Tag::VIDEO_ENCODE_SET_FRAME_PTS, info->avBuffer->pts_);
+    HLOGD("avBuffer->pts_ after setted, relative pts=%ld, bret=%d", info->avBuffer->pts_, bret);
 }
 
 void HEncoder::OnGetBufferFromSurface(const ParamSP& param)
