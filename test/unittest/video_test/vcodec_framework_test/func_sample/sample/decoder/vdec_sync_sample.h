@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,85 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef VDEC_SAMPLE_H
-#define VDEC_SAMPLE_H
-#include <string>
-#include <thread>
-#include "avcc_reader.h"
-#include "securec.h"
-#include "vcodec_mock.h"
+#ifndef VDEC_SYNC_SAMPLE_H
+#define VDEC_SYNC_SAMPLE_H
+#include "func_sample_decoder_base.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-struct VDecSignal {
+class VideoDecSyncSample : public NoCopyable {
 public:
-    std::mutex mutex_;
-    std::mutex inMutex_;
-    std::mutex outMutex_;
-    std::condition_variable cond_;
-    std::condition_variable inCond_;
-    std::condition_variable outCond_;
-    std::queue<uint32_t> inIndexQueue_;
-    std::queue<uint32_t> outIndexQueue_;
-    std::queue<OH_AVCodecBufferAttr> outAttrQueue_;
-    std::queue<std::shared_ptr<AVMemoryMock>> inMemoryQueue_;
-    std::queue<std::shared_ptr<AVMemoryMock>> outMemoryQueue_;
-    std::queue<std::shared_ptr<AVBufferMock>> inBufferQueue_;
-    std::queue<std::shared_ptr<AVBufferMock>> outBufferQueue_;
-    int32_t errorNum = 0;
-    std::atomic<bool> isRunning_ = false;
-    std::atomic<bool> isPreparing_ = true;
-
-    int32_t width_ = 0;
-    int32_t height_ = 0;
-    int32_t wStride_ = 0;
-    int32_t hStride_ = 0;
-};
-
-class VDecCallbackTest : public AVCodecCallbackMock {
-public:
-    explicit VDecCallbackTest(std::shared_ptr<VDecSignal> signal);
-    ~VDecCallbackTest() override;
-    void OnError(int32_t errorCode) override;
-    void OnStreamChanged(std::shared_ptr<FormatMock> format) override;
-    void OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data) override;
-    void OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryMock> data, OH_AVCodecBufferAttr attr) override;
-
-private:
-    std::shared_ptr<VDecSignal> signal_ = nullptr;
-};
-
-class VDecCallbackTestExt : public MediaCodecCallbackMock {
-public:
-    explicit VDecCallbackTestExt(std::shared_ptr<VDecSignal> signal);
-    ~VDecCallbackTestExt() override;
-    void OnError(int32_t errorCode) override;
-    void OnStreamChanged(std::shared_ptr<FormatMock> format) override;
-    void OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
-    void OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
-
-private:
-    std::shared_ptr<VDecSignal> signal_ = nullptr;
-};
-
-class TestConsumerListener : public IBufferConsumerListener {
-public:
-    TestConsumerListener(Surface *cs, std::string_view name, bool needCheckSHA = false);
-    ~TestConsumerListener();
-    void OnBufferAvailable() override;
-
-private:
-    int64_t timestamp_ = 0;
-    Rect damage_ = {};
-    Surface *cs_ = nullptr;
-    bool needCheckSHA_ = false;
-    std::unique_ptr<std::ofstream> outFile_ = nullptr;
-};
-
-class VideoDecSample : public NoCopyable {
-public:
-    explicit VideoDecSample(std::shared_ptr<VDecSignal> signal);
-    virtual ~VideoDecSample();
+    explicit VideoDecSyncSample(std::shared_ptr<VDecSignal> signal);
+    virtual ~VideoDecSyncSample();
     bool CreateVideoDecMockByMime(const std::string &mime);
     bool CreateVideoDecMockByName(const std::string &name);
 
@@ -116,10 +47,9 @@ public:
     int32_t FreeOutputBuffer(uint32_t index);
     bool IsValid();
     int32_t SetVideoDecryptionConfig();
-
     void SetOutPath(const std::string &path);
     void SetSource(const std::string &path);
-    void SetSourceType(bool isH264Stream);
+    void SetSourceType(bool isAvcStream);
     bool needCheckSHA_ = false;
     bool isAVBufferMode_ = false;
     int32_t testParam_ = VCodecTestParam::SW_AVC;
@@ -134,8 +64,6 @@ private:
     void RunInner();
     void OutputLoopFunc();
     void InputLoopFunc();
-    bool IsCodecData(const uint8_t *const bufferAddr);
-    int32_t ReadOneFrame(uint8_t *bufferAddr, uint32_t &flags);
     int32_t OutputLoopInner();
     int32_t InputLoopInner();
 
@@ -150,6 +78,8 @@ private:
     int32_t CreateAvccReader();
     int32_t CreateMpegReader();
     int32_t CreateH263Reader();
+    int32_t CreateReader(const std::string& inPath);
+    void HandleEOSFrame();
     std::shared_ptr<VideoDecMock> videoDec_ = nullptr;
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::ofstream> outFile_;
@@ -163,9 +93,7 @@ private:
     uint32_t frameInputCount_ = 0;
     uint32_t frameOutputCount_ = 0;
     bool isSurfaceMode_ = false;
-    bool isH264Stream_ = true;  // true: H264; false: H265
-    bool isMpeg2Stream_ = true; // true: Mpeg2; false: Mpeg4
-    bool isMpegStream_ = false;
+    int32_t dataProducerType_ = AVC_STREAM;
     bool isKeepExecuting_ = false;
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
@@ -176,4 +104,4 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // VDEC_SAMPLE_H
+#endif // VDEC_SYNC_SAMPLE_H

@@ -157,6 +157,7 @@ Status AudioG711aDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& out
         CHECK_AND_RETURN_RET_LOG(memory != nullptr && memory->GetCapacity() >= outSize, Status::ERROR_UNKNOWN,
             "memory not enough, capacity:%{public}d, outSize:%{public}d", memory->GetCapacity(), outSize);
         int16_t *decOutputData = reinterpret_cast<int16_t *>(memory->GetAddr());
+        CHECK_AND_RETURN_RET_LOG(decOutputData != nullptr, Status::ERROR_NULL_POINTER, "decOutputData is empty");
         uint8_t *decInputData = reinterpret_cast<uint8_t *>(decodeInput_.data());
         for (int32_t i = 0; i < decodeBytes_ ; ++i) {
             decOutputData[i] = G711aLawDecode(decInputData[i]);

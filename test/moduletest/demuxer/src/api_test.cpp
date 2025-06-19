@@ -71,8 +71,6 @@ void DemuxerApiNdkTest::SetUp()
 
 void DemuxerApiNdkTest::TearDown()
 {
-    close(fd1);
-    fd1 = 0;
     if (memory != nullptr) {
         OH_AVMemory_Destroy(memory);
         memory = nullptr;
@@ -88,6 +86,10 @@ void DemuxerApiNdkTest::TearDown()
     if (demuxer != nullptr) {
         OH_AVDemuxer_Destroy(demuxer);
         demuxer = nullptr;
+    }
+    if (fd1 > 0) {
+        close(fd1);
+        fd1 = -1;
     }
 }
 } // namespace Media
@@ -506,6 +508,7 @@ HWTEST_F(DemuxerApiNdkTest, DEMUXER_API_0200, TestSize.Level2)
     source1 = nullptr;
     source2 = nullptr;
     close(fd2);
+    fd2 = -1;
 }
 
 /**

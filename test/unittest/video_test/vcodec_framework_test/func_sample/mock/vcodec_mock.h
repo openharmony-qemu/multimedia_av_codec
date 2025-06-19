@@ -81,7 +81,11 @@ public:
     virtual int32_t Reset() = 0;
     virtual std::shared_ptr<FormatMock> GetOutputDescription() = 0;
     virtual int32_t SetParameter(std::shared_ptr<FormatMock> format) = 0;
+    virtual int32_t QueryInputBuffer(uint32_t& index, int64_t timeoutUs) = 0;
+    virtual std::shared_ptr<AVBufferMock> GetInputBuffer(uint32_t index) = 0;
     virtual int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) = 0;
+    virtual int32_t QueryOutputBuffer(uint32_t& index, int64_t timeoutUs) = 0;
+    virtual std::shared_ptr<AVBufferMock> GetOutputBuffer(uint32_t index) = 0;
     virtual int32_t RenderOutputData(uint32_t index) = 0;
     virtual int32_t FreeOutputData(uint32_t index) = 0;
     virtual int32_t PushInputBuffer(uint32_t index) = 0;
@@ -109,6 +113,10 @@ public:
     virtual std::shared_ptr<FormatMock> GetOutputDescription() = 0;
     virtual std::shared_ptr<FormatMock> GetInputDescription() = 0;
     virtual int32_t SetParameter(std::shared_ptr<FormatMock> format) = 0;
+    virtual int32_t QueryInputBuffer(uint32_t& index, int64_t timeoutUs) = 0;
+    virtual std::shared_ptr<AVBufferMock> GetInputBuffer(uint32_t index) = 0;
+    virtual int32_t QueryOutputBuffer(uint32_t& index, int64_t timeoutUs) = 0;
+    virtual std::shared_ptr<AVBufferMock> GetOutputBuffer(uint32_t index) = 0;
     virtual int32_t FreeOutputData(uint32_t index) = 0;
     virtual int32_t NotifyEos() = 0;
     virtual int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) = 0;
@@ -159,7 +167,7 @@ constexpr uint32_t DEFAULT_FRAME_RATE = 20;
 constexpr uint32_t DEFAULT_WIDTH_VENC = 1280;
 constexpr uint32_t DEFAULT_HEIGHT_VENC = 720;
 
-constexpr uint32_t SAMPLE_TIMEOUT = 100;
+constexpr uint32_t SAMPLE_TIMEOUT = 20;
 constexpr BufferRequestConfig DEFAULT_CONFIG = {
     .width = 100,
     .height = 100,

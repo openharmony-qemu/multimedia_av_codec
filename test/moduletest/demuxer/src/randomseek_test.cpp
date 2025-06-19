@@ -144,6 +144,7 @@ static void CheckSeekResult(const char *fileName, uint32_t seekCount)
         }
     }
     close(fd);
+    fd = -1;
 }
 
 /**

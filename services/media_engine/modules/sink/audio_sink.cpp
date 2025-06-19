@@ -1027,6 +1027,16 @@ void AudioSink::GetAvailableOutputBuffers()
     return;
 }
 
+void AudioSink::SetIsInPrePausing(bool isInPrePausing)
+{
+    MediaAVCodec::AVCodecTrace trace("AudioSink::SetIsInPrePausing" + std::to_string(isInPrePausing));
+    isInPrePausing_.store(isInPrePausing, std::memory_order_relaxed);
+    FALSE_RETURN_NOLOG(isInPrePausing && (isRenderCallbackMode_ && !isAudioDemuxDecodeAsync_));
+
+    std::lock_guard<std::mutex> lock(availBufferMutex_);
+    DriveBufferCircle();
+}
+
 void AudioSink::DriveBufferCircle()
 {
     FALSE_RETURN_NOLOG(!isEosBuffer_);
@@ -1035,13 +1045,18 @@ void AudioSink::DriveBufferCircle()
     size_t availDataSize = availDataSize_.load();
     int32_t availDataSizeInt32 = availDataSize <= static_cast<size_t>(INT32_MAX) ?
         static_cast<int32_t>(availDataSize): INT32_MAX;
-    FALSE_RETURN_NOLOG(availDataSizeInt32 < maxCbDataSize_);
+    bool isInPrePausing = isInPrePausing_.load(std::memory_order_relaxed);
+    FALSE_RETURN_NOLOG(isInPrePausing || availDataSizeInt32 < maxCbDataSize_);
     std::shared_ptr<AVBuffer> oldestBuffer = availOutputBuffers_.front();
     FALSE_RETURN_MSG(oldestBuffer != nullptr && oldestBuffer->memory_->GetSize() > 0, "buffer or memory is nullptr");
     std::shared_ptr<AVBuffer> swapBuffer = CopyBuffer(oldestBuffer);
     FALSE_RETURN_MSG(swapBuffer != nullptr, "CopyBuffer failed, swapBuffer is nullptr");
     availOutputBuffers_.pop();
     swapOutputBuffers_.push(swapBuffer);
+    if (isInPrePausing) {
+        MEDIA_LOG_I("DriveBufferCircle availOutputBuffers_ size:%{public}d, swapOutputBuffers_ size:%{public}d",
+            static_cast<int>(availOutputBuffers_.size()), static_cast<int>(swapOutputBuffers_.size()));
+    }
     FALSE_RETURN_MSG(inputBufferQueueConsumer_ != nullptr, "bufferQueue consumer is nullptr");
     inputBufferQueueConsumer_->ReleaseBuffer(oldestBuffer);
 }

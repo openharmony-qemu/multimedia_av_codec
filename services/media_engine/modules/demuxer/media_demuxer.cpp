@@ -44,6 +44,7 @@
 #include "avcodec_log.h"
 #include "scoped_timer.h"
 #include "param_wrapper.h"
+#include "parameters.h"
 
 namespace {
 const std::string DUMP_PARAM = "a";
@@ -788,6 +789,7 @@ Status MediaDemuxer::InnerPrepare()
     if (ret == Status::OK) {
         InitMediaMetaData(mediaInfo);
         InitDefaultTrack(mediaInfo, videoTrackId_, audioTrackId_, subtitleTrackId_, videoMime_);
+        InitIsAudioDemuxDecodeAsync();
         if (isTranscoderMode_) {
             TranscoderInitMediaStartPts();
             MEDIA_LOG_I("Media startTime: " PUBLIC_LOG_D64, transcoderStartPts_);
@@ -2061,6 +2063,10 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
     int32_t trackSize = static_cast<int32_t>(mediaInfo.tracks.size());
     for (int32_t index = 0; index < trackSize; index++) {
         auto trackMeta = mediaInfo.tracks[index];
+        Plugins::MediaType mediaType;
+        bool hasMediaType = trackMeta.GetData(Tag::MEDIA_TYPE, mediaType);
+        bool shouldEmplace = !hasMediaType || (mediaType != Plugins::MediaType::AUXILIARY);
+        FALSE_CONTINUE_LOGI(shouldEmplace, "Skip auxiliary track" PUBLIC_LOG_D32, index);
         mediaMetaData_.trackMetas.emplace_back(std::make_shared<Meta>(trackMeta));
     }
 }
@@ -2083,6 +2089,7 @@ void MediaDemuxer::InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, int32_t
         }
         if (ret && mimeType.find("video") == 0 &&
             !IsTrackDisabled(Plugins::MediaType::VIDEO)) {
+            isVideoTrackDisabled_ = false;
             dafaultTrack += "/V:";
             dafaultTrack += std::to_string(index);
             videoMime = mimeType;
@@ -3548,9 +3555,21 @@ void MediaDemuxer::InitEnableSampleQueueFlag()
         ", enableSampleQueue_: " PUBLIC_LOG_D32, enableSampleQueueRes, enableSampleQueue_);
 }
 
-bool MediaDemuxer::GetEnableSampleQueueFlag() const
+void MediaDemuxer::InitIsAudioDemuxDecodeAsync()
 {
-    return enableSampleQueue_;
+    // To optimize the performance for audio only MediaSource, perform audio DEMUX and DECODE in the same thread.
+    // 1. If audiodecoder_async is false, then DEMUX and DECODE run in the same thread.
+    // 2. or audiodecoder_async is true, but both audiodemux_audiodecode_merged is true and isVideoTrackDisabled_ true,
+    //    then DEMUX and DECODE run in the same thread.
+    bool isAudioDeocderAsync =
+        OHOS::system::GetParameter("debug.media_service.audio.audiodecoder_async", "1") == "1";
+    bool isAudioDemuxDecodeMergedEnabled =
+        OHOS::system::GetParameter("debug.media_service.audio.audiodemux_audiodecode_merged", "1") == "1";
+    isAudioDemuxDecodeAsync_ = isAudioDeocderAsync && !(isAudioDemuxDecodeMergedEnabled && isVideoTrackDisabled_);
+
+    MEDIA_LOG_I_SHORT("isAudioDeocderAsync: " PUBLIC_LOG_D32 ", isAudioDemuxDecodeMergedEnabled: " PUBLIC_LOG_D32
+        ", isVideoTrackDisabled_: " PUBLIC_LOG_D32 ", isAudioDemuxDecodeAsync_: " PUBLIC_LOG_D32,
+        isAudioDeocderAsync, isAudioDemuxDecodeMergedEnabled, isVideoTrackDisabled_, isAudioDemuxDecodeAsync_);
 }
 
 bool MediaDemuxer::IsNeedMapToInnerTrackID()

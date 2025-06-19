@@ -499,6 +499,7 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_PTS_INDEX_INNER_API_0010, TestSize.Leve
         }
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -532,6 +533,7 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_PTS_INDEX_INNER_API_0020, TestSize.Leve
     ret = demuxer->GetIndexByRelativePresentationTimeUs(trackCount+1, 7733333, frameIndex);
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -578,6 +580,7 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_PTS_INDEX_INNER_API_0030, TestSize.Leve
         }
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -624,6 +627,7 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_PTS_INDEX_INNER_API_0040, TestSize.Leve
         }
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -657,6 +661,7 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_PTS_INDEX_INNER_API_0050, TestSize.Leve
     ret = demuxer->GetRelativePresentationTimeUsByIndex(trackCount+1, 15, presentationTimeUs);
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -703,5 +708,6 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_PTS_INDEX_INNER_API_0060, TestSize.Leve
         }
     }
     close(fd);
+    fd = -1;
 }
 } // namespace
