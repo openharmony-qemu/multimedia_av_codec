@@ -625,7 +625,7 @@ ohos_unittest("videoenc_format_capi_unit_test") {
     "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
     "./func_sample/mock/capi/videoenc_capi_mock.cpp",
-    "./func_sample/sample/venc_sample.cpp",
+    "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_format_unit_test.cpp",
   ]
 
