@@ -16,6 +16,7 @@
 
 #define HST_LOG_TAG "AudioSinkFilter"
 #include "audio_sink_filter.h"
+#include "avcodec_trace.h"
 #include "common/log.h"
 #include "osal/utils/util.h"
 #include "osal/utils/dump_buffer.h"
@@ -85,6 +86,19 @@ void AudioSinkFilter::OnBufferAvailable()
     } else {
         ProcessInputBuffer();
     }
+}
+
+void AudioSinkFilter::SetIsAudioDemuxDecodeAsync(bool isAudioDemuxDecodeAsync)
+{
+    isAudioDemuxDecodeAsync_ = isAudioDemuxDecodeAsync;
+    FALSE_GOON_NOEXEC(audioSink_, audioSink_->SetIsAudioDemuxDecodeAsync(isAudioDemuxDecodeAsync));
+}
+
+void AudioSinkFilter::DoSetIsInPrePausing(bool isInPrePausing)
+{
+    MediaAVCodec::AVCodecTrace trace("AudioSinkFilter::DoSetIsInPrePausing:" + std::to_string(isInPrePausing));
+    FALSE_GOON_NOEXEC(audioSink_, audioSink_->SetIsInPrePausing(isInPrePausing));
+    MEDIA_LOG_I("AudioSinkFilter::DoSetIsInPrePausing isInPrePausing:%{public}d", isInPrePausing);
 }
 
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -419,6 +433,12 @@ Status AudioSinkFilter::SetLooping(bool loop)
 {
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->SetLooping(loop);
+}
+
+Status AudioSinkFilter::SetAudioHapticsSyncId(int32_t syncId)
+{
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->SetAudioHapticsSyncId(syncId);
 }
 } // namespace Pipeline
 } // namespace Media

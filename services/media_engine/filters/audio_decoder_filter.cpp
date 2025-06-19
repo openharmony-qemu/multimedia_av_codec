@@ -544,6 +544,12 @@ void AudioDecoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
     meta_ = meta;
 }
 
+void AudioDecoderFilter::UpdateIsAsyncMode(bool isAsyncMode)
+{
+    MEDIA_LOG_I_SHORT("AudioDecoderFilter::UpdateIsAsyncMode, isAsyncMode:" PUBLIC_LOG_D32, isAsyncMode);
+    SetIsAsyncMode(isAsyncMode);
+}
+
 Status AudioDecoderFilter::HandleInputBuffer(bool isTriggeredByOutPort)
 {
     ProcessInputBuffer(static_cast<int>(isTriggeredByOutPort ?
@@ -553,7 +559,7 @@ Status AudioDecoderFilter::HandleInputBuffer(bool isTriggeredByOutPort)
 
 bool AudioDecoderFilter::IsNeedProcessInput(bool isOutPort)
 {
-    MEDIA_LOG_D("AudioDecoderFilter::IsNeedProcessInput bufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
+    MEDIA_LOG_DD("AudioDecoderFilter::IsNeedProcessInput bufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
         bufferStatus_, isOutPort);
     FALSE_RETURN_V_MSG_DD((bufferStatus_ != BUFFER_STATUS_AVAIL_IN), isOutPort, "IN avail, need process outport");
     FALSE_RETURN_V_MSG_DD((bufferStatus_ != BUFFER_STATUS_AVAIL_OUT), !isOutPort, "OUT avail, need process inport");
@@ -684,6 +690,9 @@ void AudioDecoderFilter::OnError(CodecErrorType errorType, int32_t errorCode)
 void AudioDecoderFilter::OnOutputFormatChanged(const Format& format)
 {
     FALSE_RETURN_NOLOG(meta_ && nextFilter_);
+    std::string mime;
+    FALSE_RETURN_MSG(meta_->GetData(Tag::MIME_TYPE, mime) && mime != CodecMimeType::AUDIO_VIVID,
+        "Audio mimeType %{public}s unsupport format change", mime.c_str());
     int32_t sampleRate = 0;
     int32_t channels = 0;
     int32_t sampleFormat = 0;
@@ -693,7 +702,15 @@ void AudioDecoderFilter::OnOutputFormatChanged(const Format& format)
     std::string formatChangeInfo = "AudioFormatChange sampleRate " + std::to_string(sampleRate) + " channels "
                                     + std::to_string(channels) + " smpFmt " + std::to_string(sampleFormat);
     MediaAVCodec::AVCodecTrace trace(formatChangeInfo);
-    MEDIA_LOG_I("%s", formatChangeInfo.c_str());
+    MEDIA_LOG_I("%{public}s", formatChangeInfo.c_str());
+    int32_t preSampleRate = 0;
+    int32_t preChannels = 0;
+    int32_t preSampleFormat = 0;
+    meta_->GetData(Tag::AUDIO_SAMPLE_RATE, preSampleRate);
+    meta_->GetData(Tag::AUDIO_OUTPUT_CHANNELS, preChannels);
+    meta_->GetData(Tag::AUDIO_SAMPLE_FORMAT, preSampleFormat);
+    FALSE_RETURN_NOLOG(preSampleRate != sampleRate || preChannels != channels || preSampleFormat != sampleFormat);
+
     meta_->SetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
     meta_->SetData(Tag::AUDIO_OUTPUT_CHANNELS, channels);
     meta_->SetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);

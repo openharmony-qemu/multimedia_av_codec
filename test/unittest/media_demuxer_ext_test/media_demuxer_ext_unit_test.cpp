@@ -2543,4 +2543,115 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_SelectBitRateChangeStream_005,
     mediaDemuxer_->audioTrackId_ = mediaDemuxer_->TRACK_ID_INVALID;
     EXPECT_TRUE(mediaDemuxer_->SelectBitRateChangeStream(0));
 }
+
+/**
+ * @tc.name  : CopyFrameToUserQueue_ShouldReturnError_WhenPluginIsNull
+ * @tc.number: MediaDemuxerExt_CopyFrameToUserQueue_001
+ * @tc.desc  : Test case for returning error when plugin is null
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_CopyFrameToUserQueue_001, TestSize.Level1)
+{
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_)).WillOnce(Return(1));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetPluginByStreamID(_)).WillOnce(Return(nullptr));
+
+    EXPECT_EQ(mediaDemuxer_->CopyFrameToUserQueue(1), Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : CopyFrameToUserQueue_ShouldReturnError_WhenGetNextSampleSizeFails
+ * @tc.number: MediaDemuxerExt_CopyFrameToUserQueue_002
+ * @tc.desc  : Test case for returning error when GetNextSampleSize fails
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_CopyFrameToUserQueue_002, TestSize.Level1)
+{
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_)).WillRepeatedly(Return(-1));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetPluginByStreamID(_)).WillOnce(Return(plugin));
+    // IsNeedMapToInnerTrackID
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, IsDash()).WillRepeatedly(Return(false));
+    mediaDemuxer_->isFlvLiveStream_ = false;
+
+    // GetMemoryUsage return
+    mediaDemuxer_->eventReceiver_ = nullptr;
+    EXPECT_CALL(*plugin, GetNextSampleSize(_, _, _)).WillOnce(Return(Status::ERROR_WAIT_TIMEOUT));
+
+
+    EXPECT_EQ(mediaDemuxer_->CopyFrameToUserQueue(1), Status::ERROR_WAIT_TIMEOUT);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ReadSampleWithPerfRecord_001
+ * @tc.number: MediaDemuxerExt_ReadSampleWithPerfRecord_001
+ * @tc.desc  : isAVDemuxer == true && perfRecEnabled_ == true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ReadSampleWithPerfRecord_001, TestSize.Level1)
+{
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
+    mediaDemuxer_->perfRecEnabled_ = true;
+    mediaDemuxer_->eventReceiver_ = nullptr;
+    mediaDemuxer_->timeout_ = 1000;
+    
+    EXPECT_CALL(*plugin, ReadSample(_, _)).WillOnce(Return(Status::OK));
+
+    Status ret = mediaDemuxer_->ReadSampleWithPerfRecord(plugin, 0, sample, true);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ReadSampleWithPerfRecord_002
+ * @tc.number: MediaDemuxerExt_ReadSampleWithPerfRecord_002
+ * @tc.desc  : isAVDemuxer == true && perfRecEnabled_ == false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ReadSampleWithPerfRecord_002, TestSize.Level1)
+{
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
+    mediaDemuxer_->eventReceiver_ = nullptr;
+    mediaDemuxer_->perfRecEnabled_ = false;
+    mediaDemuxer_->timeout_ = 1000;
+    
+    EXPECT_CALL(*plugin, ReadSample(_, _)).WillOnce(Return(Status::OK));
+
+    Status ret = mediaDemuxer_->ReadSampleWithPerfRecord(plugin, 0, sample, true);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ReadSampleWithPerfRecord_003
+ * @tc.number: MediaDemuxerExt_ReadSampleWithPerfRecord_003
+ * @tc.desc  : isAVDemuxer == false && perfRecEnabled_ == true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ReadSampleWithPerfRecord_003, TestSize.Level1)
+{
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
+    mediaDemuxer_->perfRecEnabled_ = true;
+    mediaDemuxer_->eventReceiver_ = nullptr;
+    mediaDemuxer_->timeout_ = 1000;
+
+    EXPECT_CALL(*plugin, ReadSample(_, _, _)).WillOnce(Return(Status::OK));
+
+    Status ret = mediaDemuxer_->ReadSampleWithPerfRecord(plugin, 0, sample, false);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_ReadSampleWithPerfRecord_004
+ * @tc.number: MediaDemuxerExt_ReadSampleWithPerfRecord_004
+ * @tc.desc  : isAVDemuxer == false && perfRecEnabled_ == false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ReadSampleWithPerfRecord_004, TestSize.Level1)
+{
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
+    mediaDemuxer_->perfRecEnabled_ = false;
+    mediaDemuxer_->eventReceiver_ = nullptr;
+    mediaDemuxer_->timeout_ = 1000;
+
+    EXPECT_CALL(*plugin, ReadSample(_, _, _)).WillOnce(Return(Status::OK));
+
+    Status ret = mediaDemuxer_->ReadSampleWithPerfRecord(plugin, 0, sample, false);
+    EXPECT_EQ(ret, Status::OK);
+}
 }  // namespace OHOS::Media

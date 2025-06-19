@@ -38,7 +38,7 @@ vector<Protocol> g_protocolTable = {
     },
     {
         static_cast<OMX_VIDEO_CODINGTYPE>(CODEC_OMX_VIDEO_CodingVVC),
-        OHOS::HDI::Codec::V3_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_VVC,
+        OHOS::HDI::Codec::V4_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_VVC,
         string("video/vvc"),
     },
 };

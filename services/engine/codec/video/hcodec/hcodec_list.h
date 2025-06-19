@@ -25,6 +25,8 @@ class HCodecList : public CodecListBase {
 public:
     HCodecList() = default;
     int32_t GetCapabilityList(std::vector<CapabilityData>& caps) override;
+    static CodecHDI::VideoFeature FindFeature(const std::vector<CodecHDI::VideoFeature> &features,
+                                              const enum CodecHDI::VideoFeatureKey &key);
 private:
     CapabilityData HdiCapToUserCap(const CodecHDI::CodecCompCapability& hdiCap);
     std::vector<int32_t> GetSupportedBitrateMode(const CodecHDI::CodecVideoPortCap& hdiVideoCap);
@@ -35,6 +37,10 @@ private:
     bool IsSupportedVideoCodec(const CodecHDI::CodecCompCapability& hdiCap);
     void GetSupportedFeatureParam(const CodecHDI::CodecVideoPortCap& hdiVideoCap,
                                   CapabilityData& userCap);
+    void GetSupportedLtrFeatureParam(const CodecHDI::CodecVideoPortCap& hdiVideoCap,
+                                  CapabilityData& userCap);
+    void GetSupportedBFrameFeatureParam(const CodecHDI::CodecVideoPortCap& hdiVideoCap,
+                                        CapabilityData& userCap);
 };
 
 sptr<CodecHDI::ICodecComponentManager> GetManager(bool getCap,

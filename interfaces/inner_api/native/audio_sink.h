@@ -94,6 +94,11 @@ public:
     {
         return isApe_ || isFlac_;
     }
+    void SetIsInPrePausing(bool isInPrePausing);
+    inline void SetIsAudioDemuxDecodeAsync(bool isAudioDemuxDecodeAsync)
+    {
+        isAudioDemuxDecodeAsync_ = isAudioDemuxDecodeAsync;
+    }
     bool GetSyncCenterClockTime(int64_t &clockTime);
     Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
     Status SetLooping(bool loop);
@@ -116,6 +121,7 @@ public:
     void HandleEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
     bool HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
     void HandleAudioRenderRequestPost();
+    Status SetAudioHapticsSyncId(int32_t syncId);
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
@@ -265,6 +271,8 @@ private:
     bool isLoop_ { false };
     bool isRenderCallbackMode_ {true};
     bool isProcessInputMerged_ {true};
+    bool isAudioDemuxDecodeAsync_ {true};
+    std::atomic<bool> isInPrePausing_ {false};
     std::shared_ptr<AudioSinkDataCallback> audioSinkDataCallback_ {nullptr};
     std::mutex availBufferMutex_;
     std::atomic<size_t> availDataSize_ {0};

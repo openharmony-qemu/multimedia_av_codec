@@ -90,6 +90,7 @@ private:
     sptr<Surface> OnCreateInputSurface() override;
     int32_t OnSetInputSurface(sptr<Surface> &inputSurface) override;
     int32_t RequestIDRFrame() override;
+    void SetSqrParam(const Format &format);
     void CheckIfEnableCb(const Format &format);
     int32_t SetLTRParam(const Format &format);
     int32_t EnableEncoderParamsFeedback(const Format &format);
@@ -119,6 +120,7 @@ private:
     bool GetOneBufferFromSurface();
     void TraverseAvaliableBuffers();
     void SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info);
+    void SetBufferPts(BufferInfo* info);
     void ResetSlot(BufferInfo& info);
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
     void OnSignalEndOfInputStream(const MsgInfo &msg) override;

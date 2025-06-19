@@ -206,6 +206,38 @@ typedef struct OH_AVDataSource {
 } OH_AVDataSource;
 
 /**
+ * @brief The function pointer will be called to get sequence media data.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @param data OH_AVBuffer buffer to fill.
+ * @param length Expected to read size.
+ * @param pos Current read offset.
+ * @param userData User-defined data.
+ * @return Actual size of data read to the buffer.
+ * @since 20
+ */
+typedef int32_t (*OH_AVDataSourceReadAtExt)(OH_AVBuffer *data, int32_t length, int64_t pos, void* userData);
+
+/**
+ * @brief User customized data source.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+typedef struct OH_AVDataSourceExt {
+    /**
+     * @brief Total size of the data source.
+     * @syscap SystemCapability.Multimedia.Media.CodecBase
+     * @since 20
+     */
+    int64_t size;
+    /**
+     * @brief Callback interface for reading data from datasource.
+     * @syscap SystemCapability.Multimedia.Media.CodecBase
+     * @since 20
+     */
+    OH_AVDataSourceReadAtExt readAt;
+} OH_AVDataSourceExt;
+
+/**
  * @brief Enumerates the MIME types of video mpeg2 codec.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
@@ -815,6 +847,36 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS;
 extern const char *OH_MD_KEY_ENABLE_MOOV_FRONT;
 
 /**
+ * @brief Key to enable B-frame encoding, value type is int32_t (0 or 1): 1 is enabled, 0 otherwise.
+ *
+ * This is an optional key that applies only to video encoder, default is 0.\n
+ * If enabled, the video encoder will use B-frame, the decode order will be different from the display order.\n
+ * For unsupported platforms, Configuring this key will have no effect.\n
+ * Platform capability can be checked via {@link OH_AVCapability_IsFeatureSupported} with
+ * {@link OH_AVCapabilityFeature::VIDEO_ENCODER_B_FRAME}.\n
+ * It's only used in configuration phase.\n
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
+extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME;
+
+/**
+ * @brief Key for describing the maximum B-frame count of video encoder, value type is int32_t.
+ *
+ * Note: This key is only for querying the capability of the codec currently.
+ * Usage specifications:
+ * 1. Check feature support via {@link OH_AVCapability_IsFeatureSupported} with
+ * {@link OH_AVCapabilityFeature::VIDEO_ENCODER_B_FRAME}.\n
+ * 2. Obtain OH_AVFormat handle via {@link OH_AVCapability_GetFeatureProperties} with
+ * {@link OH_AVCapabilityFeature::VIDEO_ENCODER_B_FRAME}.\n
+ * 3. Get maximum B-frame count via {@link OH_AVFormat_GetIntValue} with this key.\n
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
+extern const char *OH_MD_KEY_VIDEO_ENCODER_MAX_B_FRAMES;
+/**
  * @brief Key to enable Bitrate Control Based on Presentation Time Stamp(PTS),
  * value type is int32_t (0 or 1):1 is enabled, 0 otherwise.
  *
@@ -827,9 +889,41 @@ extern const char *OH_MD_KEY_ENABLE_MOOV_FRONT;
 */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL;
 
-extern const char *OH_MD_KEY_TRACK_REFERENCE_TYPE;
-extern const char *OH_MD_KEY_TRACK_DESCRIPTION;
+/**
+ * @brief Key for describing the reference relationship between tracks, value type is int32_t*.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
 extern const char *OH_MD_KEY_REFERENCE_TRACK_IDS;
+/**
+ * @brief Key for describing the track reference type, value type is string.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
+extern const char *OH_MD_KEY_TRACK_REFERENCE_TYPE;
+/**
+ * @brief Key for describing the track description, value type is string.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
+extern const char *OH_MD_KEY_TRACK_DESCRIPTION;
+
+/**
+ * @brief Key to enable synchronous mode, value type is (0 or 1): 1 is enabled, 0 otherwise.
+ *
+ * This is an optional key, default is 0.\n
+ * When enabled:
+ *       - Callbacks should NOT be set for codecs
+ *       - Buffer query APIs must be used instead
+ *       - Only used in configuration phase
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+extern const char *OH_MD_KEY_ENABLE_SYNC_MODE;
 
 /**
  * @brief Media type.
@@ -846,6 +940,13 @@ typedef enum OH_MediaType {
      * @since 12
      */
     MEDIA_TYPE_SUBTITLE = 2,
+    /** track is timed meta.
+     * @since 20
+     */
+    MEDIA_TYPE_TIMED_METADATA = 5,
+    /** track is auxiliary.
+     * @since 20
+     */
     MEDIA_TYPE_AUXILIARY = 6,
 } OH_MediaType;
 

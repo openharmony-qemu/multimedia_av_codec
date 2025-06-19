@@ -27,7 +27,6 @@
 #include <unistd.h>
 #include <unordered_map>
 #include "fcodec.h"
-#include "foundation/multimedia/av_codec/services/engine/codec/video/fcodec/fcodec.h"
 namespace OHOS {
 namespace MediaAVCodec {
 

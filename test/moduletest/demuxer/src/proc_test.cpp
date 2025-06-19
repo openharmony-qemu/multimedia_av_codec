@@ -74,11 +74,6 @@ void DemuxerProcNdkTest::SetUp()
 }
 void DemuxerProcNdkTest::TearDown()
 {
-    if (g_fd > 0) {
-        close(g_fd);
-        g_fd = -1;
-    }
-
     if (trackFormat != nullptr) {
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
@@ -108,6 +103,10 @@ void DemuxerProcNdkTest::TearDown()
     if (format != nullptr) {
         OH_AVFormat_Destroy(format);
         format = nullptr;
+    }
+    if (g_fd > 0) {
+        close(g_fd);
+        g_fd = -1;
     }
 }
 } // namespace Media
@@ -248,7 +247,6 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1400, TestSize.Level0)
     const char *file = "/data/test/media/video_2audio.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -288,6 +286,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1400, TestSize.Level0)
     ASSERT_EQ(videoFrame, 602);
     ASSERT_EQ(vKeyCount, 3);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -305,7 +304,6 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1500, TestSize.Level0)
     const char *file = "/data/test/media/video_9audio.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -345,6 +343,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1500, TestSize.Level0)
     ASSERT_EQ(videoFrame, 602);
     ASSERT_EQ(vKeyCount, 3);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -399,6 +398,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1600, TestSize.Level0)
     ASSERT_EQ(videoFrame, 602);
     ASSERT_EQ(vKeyCount, 3);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -453,6 +453,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1700, TestSize.Level0)
     ASSERT_EQ(videoFrame, 602);
     ASSERT_EQ(vKeyCount, 3);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -503,6 +504,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1800, TestSize.Level2)
         }
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -540,6 +542,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1900, TestSize.Level2)
     ASSERT_EQ(audioFrame, 8);
     ASSERT_EQ(aKeyCount, 8);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -594,6 +597,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2000, TestSize.Level0)
     ASSERT_EQ(videoFrame, 369);
     ASSERT_EQ(vKeyCount, 3);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -648,6 +652,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2100, TestSize.Level0)
     ASSERT_EQ(videoFrame, 242);
     ASSERT_EQ(vKeyCount, 1);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -703,6 +708,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2200, TestSize.Level0)
     ASSERT_EQ(videoFrame, 26);
     ASSERT_EQ(vKeyCount, 1);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -735,6 +741,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2300, TestSize.Level0)
     ASSERT_EQ(audioFrame, 352);
     ASSERT_EQ(aKeyCount, 352);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -789,6 +796,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2400, TestSize.Level0)
     ASSERT_EQ(videoFrame, 123);
     ASSERT_EQ(vKeyCount, 1);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -846,6 +854,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2600, TestSize.Level0)
         srtIndex++;
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -901,6 +910,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2700, TestSize.Level0)
         ASSERT_EQ(srtSubtitle, srtIndex);
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -942,6 +952,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2800, TestSize.Level2)
     }
 
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -983,6 +994,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2900, TestSize.Level2)
     }
 
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1011,6 +1023,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3000, TestSize.Level2)
         cout << "subtitle"<< "----------------" << data << "-----------------" << endl;
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1052,6 +1065,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3100, TestSize.Level2)
     }
 
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1081,6 +1095,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3200, TestSize.Level2)
         cout << "subtitle"<< "----------------" << data << "-----------------" << endl;
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1122,6 +1137,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3300, TestSize.Level2)
     }
 
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1176,6 +1192,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3400, TestSize.Level0)
     OH_AVFormat_Destroy(trackFormatSecond);
     trackFormatSecond = nullptr;
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1196,6 +1213,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3500, TestSize.Level0)
     ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_START_TIME, &startTime));
     ASSERT_EQ(0, startTime);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1217,6 +1235,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3510, TestSize.Level0)
     cout << "---startTime---" << startTime << endl;
     ASSERT_EQ(START_TIME_NUM, startTime);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1262,6 +1281,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3600, TestSize.Level0)
     ASSERT_EQ(16, bitsPreCodedSample);
     ASSERT_EQ(9, sampleFormat);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1352,6 +1372,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3800, TestSize.Level0)
         }
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1375,6 +1396,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4100, TestSize.Level0)
     cout << "title" << "----------------------" << stringVal << "---------" << endl;
     ASSERT_EQ(0, strcmp(stringVal, "bom"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1398,6 +1420,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4200, TestSize.Level0)
     cout << "title" << "----------------------" << stringVal << "---------" << endl;
     ASSERT_EQ(0, strcmp(stringVal, "bom"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1421,6 +1444,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4300, TestSize.Level0)
     cout << "title" << "----------------------" << stringVal << "---------" << endl;
     ASSERT_EQ(0, strcmp(stringVal, "bom"));
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1477,6 +1501,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4600, TestSize.Level0)
     }
     ASSERT_EQ(AVC_ROTATION, rotation);
     close(fd);
+    fd = -1;
 }
 /**
  * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_4700
@@ -1531,6 +1556,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4700, TestSize.Level0)
     }
     ASSERT_EQ(HEVC_ROTATION, rotation);
     close(fd);
+    fd = -1;
 }
 /**
  * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_6200
@@ -1560,6 +1586,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6200, TestSize.Level2)
     ASSERT_EQ(103, audioFrame);
     cout << "-----------audioFrame-----------" << audioFrame << endl;
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1590,6 +1617,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6400, TestSize.Level2)
     ASSERT_EQ(7, audioFrame);
     cout << "-----------audioFrame-----------" << audioFrame << endl;
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1627,6 +1655,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6600, TestSize.Level0)
     ASSERT_EQ(FRAME_REMAINING, audioFrame);
     cout << "-----------audioFrame-----------" << audioFrame << endl;
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1667,6 +1696,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6700, TestSize.Level0)
     ASSERT_EQ(FRAME_REMAINING, audioFrame);
     cout << "-----------audioFrame-----------" << audioFrame << endl;
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1701,6 +1731,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6800, TestSize.Level0)
     ASSERT_EQ(FRAME_REMAINING, audioFrame);
     cout << "-----------audioFrame-----------" << audioFrame << endl;
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1746,6 +1777,7 @@ HWTEST_F(DemuxerProcNdkTest, VIDEO_DEMUXER_VVC_0100, TestSize.Level0)
     ASSERT_EQ(videoFrame, 600);
     ASSERT_EQ(vKeyCount, 10);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1802,6 +1834,7 @@ HWTEST_F(DemuxerProcNdkTest, VIDEO_DEMUXER_VVC_0200, TestSize.Level0)
     ASSERT_EQ(videoFrame, 3000);
     ASSERT_EQ(vKeyCount, 63);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1836,6 +1869,7 @@ HWTEST_F(DemuxerProcNdkTest, VIDEO_DEMUXER_VVC_0300, TestSize.Level0)
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, index, SEEK_MODE_CLOSEST_SYNC));
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1872,6 +1906,7 @@ HWTEST_F(DemuxerProcNdkTest, VIDEO_DEMUXER_VVC_0400, TestSize.Level0)
         }
     }
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -1925,6 +1960,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_AVI_PROCESS_0100, TestSize.Level2
     ASSERT_EQ(audioFrame[1], 14);
     ASSERT_EQ(aKeyCount[1], 14);
     close(g_fd);
+    g_fd = -1;
 }
 
 /**
@@ -1978,4 +2014,5 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_AVI_PROCESS_0200, TestSize.Level2
     ASSERT_EQ(audioFrame, 40);
     ASSERT_EQ(aKeyCount, 40);
     close(g_fd);
+    g_fd = -1;
 }

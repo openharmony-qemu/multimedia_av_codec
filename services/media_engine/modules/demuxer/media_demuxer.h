@@ -139,6 +139,10 @@ public:
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
     bool IsVideoEos();
     bool HasEosTrack();
+    inline bool IsAudioDemuxDecodeAsync() const
+    {
+        return isAudioDemuxDecodeAsync_;
+    }
     Status GetIFramePos(std::vector<uint32_t> &IFramePos);
     Status Dts2FrameId(int64_t dts, uint32_t &frameId);
     Status SeekMs2FrameId(int64_t seekMs, uint32_t &frameId);
@@ -216,6 +220,7 @@ private:
     void AddDemuxerCopyTaskIfFilter(int32_t trackId, TaskType type);
     void AddHandleFlvSelectBitrateTask();
 
+    void InitIsAudioDemuxDecodeAsync();
     Status StopAllTask();
     Status PauseAllTask();
     Status PauseAllTaskAsync();
@@ -269,7 +274,7 @@ private:
     int64_t ReadLoop(int32_t trackId);
     Status CopyFrameToUserQueue(int32_t trackId);
     bool GetBufferFromUserQueue(int32_t queueIndex, int32_t size = 0);
-    Status InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer>);
+    Status InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> sample, bool isAVDemuxer);
     Status InnerSelectTrack(int32_t trackId);
     Status HandleReadSample(int32_t trackId);
     int64_t ParserRefInfo();
@@ -292,7 +297,7 @@ private:
     void EnterDraggingOpenGopCnt();
     void ResetDraggingOpenGopCnt();
     Status ReadSampleWithPerfRecord(const std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp,
-        const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample);
+        const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample, bool isAVDemuxer);
     Status HandleTrackEos(int32_t trackId);
     void SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer);
     void TranscoderUpdateOutputBufferPts(int32_t trackId, std::shared_ptr<AVBuffer> &outputBuffer);
@@ -313,7 +318,10 @@ private:
     Status HandleSelectBitrateForFlvLive(int64_t startPts, uint32_t bitrate);
     bool IsIgonreBuffering();
     void InitEnableSampleQueueFlag();
-    inline bool GetEnableSampleQueueFlag() const;
+    inline bool GetEnableSampleQueueFlag() const
+    {
+        return enableSampleQueue_ && isAudioDemuxDecodeAsync_;
+    }
     Status StartTaskWithSampleQueue(int32_t trackId);
     Status PushBufferToQueue(int32_t trackId, std::shared_ptr<AVBuffer>& buffer, bool available);
     void StartTaskInner(int32_t trackId);
@@ -394,6 +402,8 @@ private:
     std::unique_ptr<Task> parserRefInfoTask_;
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
+    bool isAudioDemuxDecodeAsync_ = true;
+    bool isVideoTrackDisabled_ = true;
     std::mutex parserTaskMutex_ {};
     int64_t duration_ {0};
     FileType fileType_ = FileType::UNKNOW;
@@ -435,6 +445,8 @@ private:
     int64_t videoSeekTime_ {0};
     bool isInSeekDropAudio_ {false};
     std::atomic<int32_t> convertErrorTime_ {0};
+
+    uint32_t timeout_ = {10}; // 10 represents 10ms. Optimization can consider dynamic adjustment.
 };
 } // namespace Media
 } // namespace OHOS

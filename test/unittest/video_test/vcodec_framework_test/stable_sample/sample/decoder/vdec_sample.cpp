@@ -217,7 +217,7 @@ bool VideoDecSample::Create()
 {
     TITLE_LOG;
 
-    isH264Stream_ = inPath_.find("h264") != std::string::npos;
+    isAvcStream_ = inPath_.find("h264") != std::string::npos;
     isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
@@ -238,7 +238,7 @@ bool VideoDecSample::CreateByMime()
 {
     TITLE_LOG;
 
-    isH264Stream_ = inPath_.find("h264") != std::string::npos;
+    isAvcStream_ = inPath_.find("h264") != std::string::npos;
     isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
@@ -278,7 +278,7 @@ int32_t VideoDecSample::CreateAvccReader()
 {
     std::shared_ptr<AvccReaderInfo> info = std::make_shared<AvccReaderInfo>();
     info->inPath = inPath_;
-    info->isH264Stream = isH264Stream_;
+    info->isAvcStream = isAvcStream_;
 
     signal_->reader_ = std::make_shared<AvccReader>();
     int32_t ret = std::static_pointer_cast<AvccReader>(signal_->reader_)->Init(info);
@@ -395,7 +395,7 @@ int32_t VideoDecSample::Configure()
     }
     if (scaleMode_) {
         setFormatRet = setFormatRet &&
-                       OH_AVFormat_SetIntValue(format, OH_MD_KEY_SCALING_MODE, OH_ScalingMode::SCALING_MODE_SCALE_CROP);
+            OH_AVFormat_SetIntValue(format, OH_MD_KEY_SCALING_MODE, OH_ScalingMode::SCALING_MODE_SCALE_CROP);
     }
     if (lowLatency_) {
         setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, 1);
@@ -499,12 +499,8 @@ int32_t VideoDecSample::Reset()
     }
     ret = Configure();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Configure failed");
-    if (isSurfaceMode_) {
-        isSurfaceMode_ = false;
-    } else {
-        ret = SetOutputSurface();
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "SetOutputSurface failed");
-    }
+    ret = SetOutputSurface();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "SetOutputSurface failed");
     return ret;
 }
 

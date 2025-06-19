@@ -116,6 +116,7 @@ public:
     Status LoadDemuxerPlugin(int32_t streamID, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status Reset();
     Status Start();
+    Status Pause();
     Status Stop();
     Status Flush();
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);

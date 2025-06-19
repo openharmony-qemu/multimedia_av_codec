@@ -13,104 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef VENC_SAMPLE_H
-#define VENC_SAMPLE_H
-#include <atomic>
-#include <fstream>
-#include <iostream>
-#include <mutex>
-#include <queue>
-#include <string>
-#include <thread>
-#include "securec.h"
-#include "window.h"
-#include "vcodec_mock.h"
+#ifndef VENC_ASYNC_SAMPLE_H
+#define VENC_ASYNC_SAMPLE_H
+#include "func_sample_encoder_base.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-struct VEncSignal {
+class VideoEncAsyncSample : public NoCopyable {
 public:
-    std::mutex mutex_;
-    std::mutex inMutex_;
-    std::mutex outMutex_;
-    std::condition_variable cond_;
-    std::condition_variable inCond_;
-    std::condition_variable outCond_;
-    std::queue<uint32_t> inIndexQueue_;
-    std::queue<uint32_t> outIndexQueue_;
-
-    // API 9
-    std::queue<OH_AVCodecBufferAttr> outAttrQueue_;
-    std::queue<std::shared_ptr<AVMemoryMock>> inMemoryQueue_;
-    std::queue<std::shared_ptr<AVMemoryMock>> outMemoryQueue_;
-
-    // API 11
-    std::queue<std::shared_ptr<AVBufferMock>> inBufferQueue_;
-    std::queue<std::shared_ptr<AVBufferMock>> outBufferQueue_;
-    std::queue<std::shared_ptr<FormatMock>> inFormatQueue_;
-    std::queue<std::shared_ptr<FormatMock>> inAttrQueue_;
-
-    int32_t errorNum_ = 0;
-    std::atomic<bool> isRunning_ = false;
-    std::atomic<bool> isPreparing_ = true;
-};
-
-struct LtrParam {
-    bool enableUseLtr = false;
-    int32_t ltrInterval;
-};
-
-class VEncCallbackTest : public AVCodecCallbackMock {
-public:
-    explicit VEncCallbackTest(std::shared_ptr<VEncSignal> signal);
-    virtual ~VEncCallbackTest();
-    void OnError(int32_t errorCode) override;
-    void OnStreamChanged(std::shared_ptr<FormatMock> format) override;
-    void OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data) override;
-    void OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryMock> data, OH_AVCodecBufferAttr attr) override;
-
-private:
-    std::shared_ptr<VEncSignal> signal_ = nullptr;
-};
-
-class VEncCallbackTestExt : public MediaCodecCallbackMock {
-public:
-    explicit VEncCallbackTestExt(std::shared_ptr<VEncSignal> signal);
-    virtual ~VEncCallbackTestExt();
-    void OnError(int32_t errorCode) override;
-    void OnStreamChanged(std::shared_ptr<FormatMock> format) override;
-    void OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
-    void OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
-
-private:
-    std::shared_ptr<VEncSignal> signal_ = nullptr;
-};
-
-class VEncParamCallbackTest : public MediaCodecParameterCallbackMock {
-public:
-    explicit VEncParamCallbackTest(std::shared_ptr<VEncSignal> signal);
-    virtual ~VEncParamCallbackTest();
-    void OnInputParameterAvailable(uint32_t index, std::shared_ptr<FormatMock> parameter) override;
-
-private:
-    std::shared_ptr<VEncSignal> signal_ = nullptr;
-};
-
-class VEncParamWithAttrCallbackTest : public MediaCodecParameterWithAttrCallbackMock {
-public:
-    explicit VEncParamWithAttrCallbackTest(std::shared_ptr<VEncSignal> signal);
-    virtual ~VEncParamWithAttrCallbackTest();
-    void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<FormatMock> attribute,
-                                           std::shared_ptr<FormatMock> parameter) override;
-
-private:
-    std::shared_ptr<VEncSignal> signal_ = nullptr;
-};
-
-class VideoEncSample : public NoCopyable {
-public:
-    explicit VideoEncSample(std::shared_ptr<VEncSignal> signal);
-    virtual ~VideoEncSample();
+    explicit VideoEncAsyncSample(std::shared_ptr<VEncSignal> signal);
+    virtual ~VideoEncAsyncSample();
     bool CreateVideoEncMockByMime(const std::string &mime);
     bool CreateVideoEncMockByName(const std::string &name);
 
@@ -176,7 +88,7 @@ private:
     void InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr);
     void CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock> buffer);
     void InputLtrParam(std::shared_ptr<FormatMock> format, int32_t frameInputCount,
-                       std::shared_ptr<AVBufferMock> buffer);
+                    std::shared_ptr<AVBufferMock> buffer);
     void CheckSHA();
     void PerformEosFrameAndVerifiedSHA();
     std::shared_ptr<VideoEncMock> videoEnc_ = nullptr;
@@ -202,4 +114,4 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // VENC_SAMPLE_H
+#endif // VENC_ASYNC_SAMPLE_H

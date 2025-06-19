@@ -16,6 +16,7 @@
 #include <sys/time.h>
 #include <utility>
 #include "iconsumer_surface.h"
+#include "meta/meta_key.h"
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
 #include "native_buffer_inner.h"
@@ -40,6 +41,10 @@ constexpr uint32_t START_CODE_SIZE = 4;
 constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
 constexpr uint8_t SPS = 7;
 constexpr uint8_t PPS = 8;
+int32_t g_strideSurface = 0;
+int32_t g_sliceSurface = 0;
+bool g_yuvSurface = false;
+VDecNdkInnerSample *dec_sample = nullptr;
 
 SHA512_CTX g_ctx;
 unsigned char g_md[SHA512_DIGEST_LENGTH];
@@ -63,16 +68,71 @@ void clearFlagqueue(std::queue<AVCodecBufferFlag> &q)
 }
 } // namespace
 
+class ConsumerListenerBuffer : public IBufferConsumerListener {
+public:
+    ConsumerListenerBuffer(sptr<Surface> cs, std::string_view name) : cs(cs)
+    {
+        outFile_ = std::make_unique<std::ofstream>();
+        outFile_->open(name.data(), std::ios::out | std::ios::binary);
+    };
+    ~ConsumerListenerBuffer()
+    {
+        if (outFile_ != nullptr) {
+            outFile_->close();
+        }
+    }
+    void OnBufferAvailable() override
+    {
+        sptr<SurfaceBuffer> buffer;
+        int32_t flushFence;
+        cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
+        if (buffer == nullptr) {
+            cout << "surface is nullptr" << endl;
+            return;
+        } else {
+            int32_t frameSize = (g_strideSurface * g_sliceSurface * THREE) >> 1;
+            if (g_yuvSurface && outFile_ != nullptr && frameSize <= buffer->GetSize()) {
+                outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), frameSize);
+            }
+        }
+        cs->ReleaseBuffer(buffer, -1);
+    }
+
+private:
+    int64_t timestamp = 0;
+    Rect damage = {};
+    sptr<Surface> cs {nullptr};
+    std::unique_ptr<std::ofstream> outFile_;
+};
+
 VDecInnerCallback::VDecInnerCallback(std::shared_ptr<VDecInnerSignal> signal) : innersignal_(signal) {}
 
 void VDecInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
+    if (errorCode == AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION && dec_sample->HDR2SDR) {
+        dec_sample->isRunning_.store(false);
+        innersignal_->inCond_.notify_all();
+        innersignal_->outCond_.notify_all();
+        cout << "AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION" << endl;
+    }
     cout << "Error errorType:" << errorType << " errorCode:" << errorCode << endl;
 }
 
 void VDecInnerCallback::OnOutputFormatChanged(const Format& format)
 {
     cout << "Format Changed" << endl;
+    int32_t currentWidth = 0;
+    int32_t currentHeight = 0;
+    int32_t stride = 0;
+    int32_t sliceHeight = 0;
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, currentWidth);
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, currentHeight);
+    format.GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
+    format.GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight);
+    dec_sample->DEFAULT_WIDTH = currentWidth;
+    dec_sample->DEFAULT_HEIGHT = currentHeight;
+    g_strideSurface = stride;
+    g_sliceSurface = sliceHeight;
 }
 
 void VDecInnerCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
@@ -104,6 +164,17 @@ void VDecInnerCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInf
 
 VDecNdkInnerSample::~VDecNdkInnerSample()
 {
+    for (int i = 0; i < MAX_SURF_NUM; i++) {
+        if (nativeWindow[i]) {
+            OH_NativeWindow_DestroyNativeWindow(nativeWindow[i]);
+            nativeWindow[i] = nullptr;
+        }
+    }
+    g_yuvSurface = false;
+    if (!AFTER_EOS_DESTORY_CODEC && vdec_ != nullptr) {
+        (void)Stop();
+        Release();
+    }
 }
 
 int64_t VDecNdkInnerSample::GetSystemTimeUs()
@@ -115,6 +186,34 @@ int64_t VDecNdkInnerSample::GetSystemTimeUs()
     return nanoTime / NANOS_IN_MICRO;
 }
 
+void VDecNdkInnerSample::CreateSurface()
+{
+    cs[0] = Surface::CreateSurfaceAsConsumer();
+    if (cs[0] == nullptr) {
+        cout << "Create the surface consummer fail" << endl;
+        return;
+    }
+    GSError err = cs[0]->SetDefaultUsage(BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER | BUFFER_USAGE_CPU_READ);
+    if (err == GSERROR_OK) {
+        cout << "set consumer usage succ" << endl;
+    } else {
+        cout << "set consumer usage failed" << endl;
+    }
+    sptr<IBufferConsumerListener> listener = new ConsumerListenerBuffer(cs[0], OUT_DIR);
+    cs[0]->RegisterConsumerListener(listener);
+    auto p = cs[0]->GetProducer();
+    ps[0] = Surface::CreateSurfaceAsProducer(p);
+    nativeWindow[0] = CreateNativeWindowFromSurface(&ps[0]);
+    if (autoSwitchSurface)  {
+        cs[1] = Surface::CreateSurfaceAsConsumer();
+        sptr<IBufferConsumerListener> listener2 = new ConsumerListenerBuffer(cs[1], OUT_DIR2);
+        cs[1]->RegisterConsumerListener(listener2);
+        auto p2 = cs[1]->GetProducer();
+        ps[1] = Surface::CreateSurfaceAsProducer(p2);
+        nativeWindow[1] = CreateNativeWindowFromSurface(&ps[1]);
+    }
+}
+
 int32_t VDecNdkInnerSample::CreateByMime(const std::string &mime)
 {
     vdec_ = VideoDecoderFactory::CreateByMime(mime);
@@ -124,16 +223,35 @@ int32_t VDecNdkInnerSample::CreateByMime(const std::string &mime)
 int32_t VDecNdkInnerSample::CreateByName(const std::string &name)
 {
     vdec_ = VideoDecoderFactory::CreateByName(name);
+    dec_sample = this;
     return vdec_ == nullptr ? AVCS_ERR_INVALID_OPERATION : AVCS_ERR_OK;
 }
 
 int32_t VDecNdkInnerSample::Configure()
 {
+    if (autoSwitchSurface) {
+        switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
+        if (ps[switchSurfaceFlag] != nullptr) {
+            if (vdec_->SetOutputSurface(ps[switchSurfaceFlag]) != AVCS_ERR_INVALID_STATE) {
+                errCount++;
+            }
+        }
+    }
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, DEFAULT_FORMAT);
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    if (P3_FULL_FLAG) {
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+            OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+    } else if (BT709_LIMIT_FLAG) {
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+            OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+    } else if (BT709_FULL_FLAG) {
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+            OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_FULL);
+    }
 
     return vdec_->Configure(format);
 }
@@ -145,15 +263,46 @@ int32_t VDecNdkInnerSample::Prepare()
 
 int32_t VDecNdkInnerSample::Start()
 {
-    return vdec_->Start();
+    int32_t ret = vdec_->Start();
+    if (ret != AVCS_ERR_OK) {
+        cout << "Failed to start codec" << endl;
+        isRunning_.store(false);
+        ReleaseInFile();
+        Release();
+    }
+    return ret;
+}
+
+void VDecNdkInnerSample::GetStride()
+{
+    Format format;
+    int32_t ret = vdec_->GetOutputFormat(format);
+    if (ret != AVCS_ERR_OK) {
+        cout << "Failed to get output format" << endl;
+        return;
+    }
+    int32_t currentWidth = 0;
+    int32_t currentHeight = 0;
+    int32_t stride = 0;
+    int32_t sliceHeight = 0;
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, currentWidth);
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, currentHeight);
+    format.GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
+    format.GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight);
+    dec_sample->DEFAULT_WIDTH = currentWidth;
+    dec_sample->DEFAULT_HEIGHT = currentHeight;
+    g_strideSurface = stride;
+    g_sliceSurface = sliceHeight;
 }
 
 int32_t VDecNdkInnerSample::Stop()
 {
     StopInloop();
-    clearIntqueue(signal_->outIdxQueue_);
-    clearBufferqueue(signal_->infoQueue_);
-    clearFlagqueue(signal_->flagQueue_);
+    if (signal_ != nullptr) {
+        clearIntqueue(signal_->outIdxQueue_);
+        clearBufferqueue(signal_->infoQueue_);
+        clearFlagqueue(signal_->flagQueue_);
+    }
     ReleaseInFile();
 
     return vdec_->Stop();
@@ -187,8 +336,11 @@ int32_t VDecNdkInnerSample::Reset()
 
 int32_t VDecNdkInnerSample::Release()
 {
-    int32_t ret = vdec_->Release();
-    vdec_ = nullptr;
+    int32_t ret = 0;
+    if (vdec_ != nullptr) {
+        ret = vdec_->Release();
+        vdec_ = nullptr;
+    }
     if (signal_ != nullptr) {
         signal_ = nullptr;
     }
@@ -230,6 +382,16 @@ int32_t VDecNdkInnerSample::SetCallback()
 int32_t VDecNdkInnerSample::StartVideoDecoder()
 {
     isRunning_.store(true);
+    if (PREPARE_FLAG) {
+        int res = Prepare();
+        if (res != AVCS_ERR_OK) {
+            cout << "prepare failed:" << res << endl;
+            isRunning_.store(false);
+            ReleaseInFile();
+            Release();
+            return res;
+        }
+    }
     int32_t ret = vdec_->Start();
     if (ret != AVCS_ERR_OK) {
         cout << "Failed to start codec" << endl;
@@ -263,7 +425,6 @@ int32_t VDecNdkInnerSample::StartVideoDecoder()
     
     outputLoop_ = make_unique<thread>(&VDecNdkInnerSample::OutputFunc, this);
     if (outputLoop_ == nullptr) {
-        cout << "Failed to create output loop" << endl;
         isRunning_.store(false);
         vdec_->Stop();
         ReleaseInFile();
@@ -298,6 +459,53 @@ int32_t VDecNdkInnerSample::RunVideoDecoder(const std::string &codeName)
         return ret;
     }
 
+    ret = StartVideoDecoder();
+    if (ret != AVCS_ERR_OK) {
+        cout << "Failed to start video decoder" << endl;
+        Release();
+        return ret;
+    }
+    return ret;
+}
+
+int32_t VDecNdkInnerSample::RunVideoDec_Surface(const std::string &codeName)
+{
+    SF_OUTPUT = true;
+    int ret = AVCS_ERR_OK;
+    CreateSurface();
+    if (!nativeWindow[0]) {
+        cout << "Failed to create surface" << endl;
+        return AVCS_ERR_UNKNOWN;
+    }
+    ret = CreateByName(codeName);
+    if (ret != AVCS_ERR_OK) {
+        cout << "Failed to create video decoder" << endl;
+        return ret;
+    }
+
+    ret = Configure();
+    if (ret != AVCS_ERR_OK) {
+        cout << "Failed to configure video decoder" << endl;
+        Release();
+        return ret;
+    }
+
+    ret = SetCallback();
+    if (ret != AVCS_ERR_OK) {
+        cout << "Failed to setCallback" << endl;
+        Release();
+        return ret;
+    }
+
+    if (ps[0] == nullptr) {
+        cout << "ps[0] is nullptr" << endl;
+        return AVCS_ERR_UNKNOWN;
+    }
+    ret = vdec_->SetOutputSurface(ps[0]);
+    if (ret != AVCS_ERR_OK) {
+        cout << "Failed to set surface" << endl;
+        return ret;
+    }
     ret = StartVideoDecoder();
     if (ret != AVCS_ERR_OK) {
         cout << "Failed to start video decoder" << endl;
@@ -352,7 +560,6 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
 
     uint8_t *fileBuffer = new uint8_t[bufferSize + START_CODE_SIZE];
     if (fileBuffer == nullptr) {
-        cout << "Fatal: no memory" << endl;
         delete[] fileBuffer;
         return 0;
     }
@@ -377,7 +584,6 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
 
     uint8_t *avBuffer = buffer->GetBase();
     if (avBuffer == nullptr) {
-        cout << "avBuffer == nullptr" << endl;
         inFile_->clear();
         inFile_->seekg(0, ios::beg);
         delete[] fileBuffer;
@@ -385,7 +591,6 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
     }
     if (memcpy_s(avBuffer, size, fileBuffer, bufferSize + START_CODE_SIZE) != EOK) {
         delete[] fileBuffer;
-        cout << "Fatal: memcpy fail" << endl;
         return 0;
     }
 
@@ -395,12 +600,21 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
     int32_t result = vdec_->QueueInputBuffer(index, info, flag);
     if (result != AVCS_ERR_OK) {
         errCount = errCount + 1;
-        cout << "push input data failed,error:" << result << endl;
     }
-
-    delete[] fileBuffer;
     frameCount = frameCount + 1;
+    SwitchSurface();
+    delete[] fileBuffer;
     return 0;
+}
+
+void VDecNdkInnerSample::SwitchSurface()
+{
+    if (autoSwitchSurface && (frameCount % (int32_t)DEFAULT_FRAME_RATE == 0)) {
+        switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
+        if (ps[switchSurfaceFlag] != nullptr) {
+            vdec_->SetOutputSurface(ps[switchSurfaceFlag]) == AVCS_ERR_OK ? (0) : (errCount++);
+        }
+    }
 }
 
 int32_t VDecNdkInnerSample::StateEOS()
@@ -473,6 +687,9 @@ void VDecNdkInnerSample::OpenFileFail()
 
 void VDecNdkInnerSample::InputFunc()
 {
+    if (outputYuvSurface) {
+        g_yuvSurface = true;
+    }
     errCount = 0;
     while (true) {
         if (!isRunning_.load()) {
@@ -507,6 +724,10 @@ void VDecNdkInnerSample::InputFunc()
 
         if (sleepOnFPS) {
             usleep(FRAME_INTERVAL);
+        }
+        if (errCount > 0) {
+            isRunning_.store(false);
+            break;
         }
     }
 }
@@ -551,9 +772,9 @@ void VDecNdkInnerSample::OutputFunc()
             }
             break;
         }
-
         ProcessOutputData(buffer, index);
         if (errCount > 0) {
+            isRunning_.store(false);
             break;
         }
     }
@@ -664,4 +885,9 @@ void VDecNdkInnerSample::SetRunning()
     isRunning_.store(false);
     signal_->inCond_.notify_all();
     signal_->outCond_.notify_all();
+}
+
+int32_t VDecNdkInnerSample::SetOutputSurface()
+{
+    return vdec_->SetOutputSurface(ps[0]);
 }

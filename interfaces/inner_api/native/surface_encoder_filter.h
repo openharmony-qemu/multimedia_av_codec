@@ -41,6 +41,7 @@ public:
         const std::shared_ptr<FilterCallback> &callback) override;
     Status Configure(const std::shared_ptr<Meta> &parameter);
     Status SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer);
+    Status SetVideoEnableBFrame(bool &enableBFrame);
     Status SetStopTime();
     Status SetInputSurface(sptr<Surface> surface);
     Status SetTransCoderMode();

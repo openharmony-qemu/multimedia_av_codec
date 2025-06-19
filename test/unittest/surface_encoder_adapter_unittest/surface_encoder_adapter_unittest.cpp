@@ -27,7 +27,6 @@ const static int32_t TEST_SUCCESS_CODE = 0;
 const static int64_t TEST_PAUSE_TIME = -2;
 const static int64_t TEST_PAUSE_TIME_DEFAULT = -1;
 const static int64_t TEST_CURRENT_PTS = 1;
-const static int64_t TEST_ADJUSTPTS = 1;
 const static uint32_t TEST_INDEX = 1;
 
 void SurfaceEncoderAdapterUnitTest::SetUpTestCase(void) {}
@@ -216,34 +215,6 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, OnOutputBufferAvailable_001, TestSize.Le
     surfaceEncoderAdapter_->isTransCoderMode = false;
     surfaceEncoderAdapter_->OnOutputBufferAvailable(TEST_INDEX, avbuffer);
     EXPECT_TRUE(surfaceEncoderAdapter_->indexs_.empty());
-}
-
-/**
- * @tc.name  : Test GetMappingTime
- * @tc.number: GetMappingTime_001
- * @tc.desc  : Test GetMappingTime buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA ！= 0
- */
-HWTEST_F(SurfaceEncoderAdapterUnitTest, GetMappingTime_001, TestSize.Level1)
-{
-    auto avbuffer = AVBuffer::CreateAVBuffer();
-    avbuffer->flag_ = OHOS::MediaAVCodec::AVCODEC_BUFFER_FLAG_CODEC_DATA;
-    int64_t time = surfaceEncoderAdapter_->GetMappingTime(avbuffer);
-    EXPECT_EQ(time, surfaceEncoderAdapter_->startBufferTime_);
-}
-
-/**
- * @tc.name  : Test GetMappingTime
- * @tc.number: GetMappingTime_002
- * @tc.desc  : Test GetMappingTime (mappingTimeQueue_.empty() ||
- *             mappingTimeQueue_.front().first != buffer->pts_) == false
- */
-HWTEST_F(SurfaceEncoderAdapterUnitTest, GetMappingTime_002, TestSize.Level1)
-{
-    auto avbuffer = AVBuffer::CreateAVBuffer();
-    avbuffer->pts_ = TEST_CURRENT_PTS;
-    surfaceEncoderAdapter_->mappingTimeQueue_.push_back({TEST_CURRENT_PTS, TEST_ADJUSTPTS});
-    int64_t time = surfaceEncoderAdapter_->GetMappingTime(avbuffer);
-    EXPECT_EQ(time, TEST_ADJUSTPTS);
 }
 
 /**

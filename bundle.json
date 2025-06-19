@@ -88,7 +88,8 @@
           "cJSON",
           "bundle_framework",
           "openmax",
-          "memory_utils"
+          "memory_utils",
+          "config_policy"
         ],
         "third_party": []
       },
