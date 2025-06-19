@@ -627,6 +627,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     Status status = outputBufferQueueProducer_->RequestBuffer(outputBuffer, avBufferConfig, TIME_OUT_MS);
     FALSE_RETURN_MSG(status == Status::OK, "RequestBuffer fail.");
+    FALSE_RETURN_MSG(outputBuffer != nullptr, "outputBuffer is nullptr.");
     std::shared_ptr<AVMemory> &bufferMem = outputBuffer->memory_;
     FALSE_RETURN_MSG(outputBuffer->memory_ != nullptr, "outputBuffer->memory_ is nullptr");
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
@@ -774,6 +775,7 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
     }
     parameter->PutIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, isDroppedFrames);
     codecServer_->QueueInputParameter(index);
+    FALSE_RETURN_MSG(videoFrameRate_ != 0, "videoFrameRate_ = 0, invalid value.");
     if (stopTime_ != -1 && currentPts > stopTime_ - (SEC_TO_NS / videoFrameRate_)) {
         MEDIA_LOG_I("currentPts > stopTime, send EOS.");
         int32_t ret = codecServer_->NotifyEos();
