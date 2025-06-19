@@ -52,18 +52,16 @@ void DemuxerPluginUnitTest::TearDownTestCase(void) {}
 void DemuxerPluginUnitTest::SetUp(void) {}
 
 
-void DemuxerPluginUnitTest::TearDown(void) {
-    if (fd_ > 0)
-    {
+void DemuxerPluginUnitTest::TearDown(void)
+{
+    if (fd_ > 0) {
         close(fd_);
         fd_ = -1;
     }
-    if (initStatus_)
-    {
+    if (initStatus_) {
         initStatus_ = false;
     }
-    if (demuxerPlugin_ != nullptr)
-    {
+    if (demuxerPlugin_ != nullptr) {
         demuxerPlugin_->Reset();
         demuxerPlugin_ = nullptr;
     }
