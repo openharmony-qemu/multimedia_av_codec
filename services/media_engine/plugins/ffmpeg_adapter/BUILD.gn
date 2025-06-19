@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Copyright (C) 2023-2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -107,7 +107,7 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
     "common/ffmpeg_converter.cpp",
     "common/ffmpeg_utils.cpp",
     "common/reference_parser_manager.cpp",
-    "common/stream_parser_manager.cpp",
+    "common/multi_stream_parser_manager.cpp",
     "demuxer/block_queue_pool.cpp",
     "demuxer/demuxer_log_compressor.cpp",
     "demuxer/ffmpeg_demuxer_plugin.cpp",

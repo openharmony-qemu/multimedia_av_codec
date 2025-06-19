@@ -173,6 +173,8 @@ Status AudioCaptureFilter::DoStart()
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Start");
     eos_ = false;
     currentTime_ = 0;
+    firstAudioFramePts_.store(-1);
+    firstVideoFramePts_.store(-1);
     auto res = Status::ERROR_INVALID_OPERATION;
     // start audioCaptureModule firstly
     if (audioCaptureModule_) {
@@ -200,8 +202,7 @@ Status AudioCaptureFilter::DoPause()
     if (ret != Status::OK) {
         MEDIA_LOG_E("audioCaptureModule stop fail");
     }
-    firstAudioFramePts_.store(-1);
-    firstVideoFramePts_.store(-1);
+
     GetCurrentTime(pauseTime_);
     MEDIA_LOG_I("[audio] pauseTime: " PUBLIC_LOG_D64, pauseTime_);
     if (currentTime_ != 0 && currentTime_ < pauseTime_ && withVideo_) {
@@ -224,6 +225,8 @@ Status AudioCaptureFilter::DoResume()
     MEDIA_LOG_I("Resume");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Resume");
     currentTime_ = 0;
+    firstAudioFramePts_.store(-1);
+    firstVideoFramePts_.store(-1);
     if (taskPtr_) {
         taskPtr_->Start();
     }

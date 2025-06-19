@@ -94,6 +94,11 @@ public:
     {
         return isApe_ || isFlac_;
     }
+    void SetIsInPrePausing(bool isInPrePausing);
+    inline void SetIsAudioDemuxDecodeAsync(bool isAudioDemuxDecodeAsync)
+    {
+        isAudioDemuxDecodeAsync_ = isAudioDemuxDecodeAsync;
+    }
     bool GetSyncCenterClockTime(int64_t &clockTime);
     Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
     Status SetLooping(bool loop);
@@ -266,6 +271,8 @@ private:
     bool isLoop_ { false };
     bool isRenderCallbackMode_ {true};
     bool isProcessInputMerged_ {true};
+    bool isAudioDemuxDecodeAsync_ {true};
+    std::atomic<bool> isInPrePausing_ {false};
     std::shared_ptr<AudioSinkDataCallback> audioSinkDataCallback_ {nullptr};
     std::mutex availBufferMutex_;
     std::atomic<size_t> availDataSize_ {0};
