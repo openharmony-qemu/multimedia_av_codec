@@ -80,6 +80,8 @@ public:
 
     Status DoProcessInputBuffer(int recvArg, bool dropFrame) override;
 
+    void UpdateIsAsyncMode(bool isAsyncMode);
+
     Status HandleInputBuffer(bool isTriggeredByOutPort);
 
     Status ChangePlugin(std::shared_ptr<Meta> meta);

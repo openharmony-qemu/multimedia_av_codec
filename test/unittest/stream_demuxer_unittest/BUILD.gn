@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-module_output_path = "av_codec/av_codec/unittest"
+module_output_path = "av_codec/AVCodec_Video/unittest"
 stream_demuxer_unittest_sources = [
   "$av_codec_root_dir/services/media_engine/modules/demuxer/base_stream_demuxer.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/stream_demuxer.cpp",

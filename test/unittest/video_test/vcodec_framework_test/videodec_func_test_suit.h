@@ -1,5 +1,12 @@
 #ifndef VIDEODEC_FUNC_TEST_SUIT_H
 #define VIDEODEC_FUNC_TEST_SUIT_H
+#include "avcodec_log.h"
+
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+#include "vdec_async_sample.h"
+#else
+#include "vdec_sync_sample.h"
+#endif
 
 namespace VFTSUIT {
 
@@ -75,6 +82,7 @@ public:
     void CreateByNameWithParam(int32_t param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(TEST_SUIT)};
 
 protected:
     std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
@@ -103,6 +111,10 @@ void TEST_SUIT::SetUp(void)
 
     format_ = OHOS::MediaAVCodec::FormatMockFactory::CreateFormat();
     ASSERT_NE(nullptr, format_);
+
+    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+    std::string testCaseName = testInfo_->name();
+    AVCODEC_LOGI("%{public}s", testCaseName.c_str());
 }
 
 void TEST_SUIT::TearDown(void)

@@ -106,11 +106,15 @@ public:
 
     void OnBufferAvailable();
 
+    void SetIsAudioDemuxDecodeAsync(bool isAudioDemuxDecodeAsync);
+
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;
 
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
+
+    void DoSetIsInPrePausing(bool isInPrePausing) override;
 
     class AVBufferAvailableListener : public IConsumerListener {
     public:
@@ -148,6 +152,7 @@ private:
     bool isCancelStart_ {false};
     bool isRenderCallbackMode_ {true};
     bool isProcessInputMerged_ {true};
+    bool isAudioDemuxDecodeAsync_ {true};
     bool needImmediateRender_ {false};
 };
 } // namespace Pipeline

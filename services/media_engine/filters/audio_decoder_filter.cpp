@@ -544,6 +544,12 @@ void AudioDecoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
     meta_ = meta;
 }
 
+void AudioDecoderFilter::UpdateIsAsyncMode(bool isAsyncMode)
+{
+    MEDIA_LOG_I_SHORT("AudioDecoderFilter::UpdateIsAsyncMode, isAsyncMode:" PUBLIC_LOG_D32, isAsyncMode);
+    SetIsAsyncMode(isAsyncMode);
+}
+
 Status AudioDecoderFilter::HandleInputBuffer(bool isTriggeredByOutPort)
 {
     ProcessInputBuffer(static_cast<int>(isTriggeredByOutPort ?
@@ -553,7 +559,7 @@ Status AudioDecoderFilter::HandleInputBuffer(bool isTriggeredByOutPort)
 
 bool AudioDecoderFilter::IsNeedProcessInput(bool isOutPort)
 {
-    MEDIA_LOG_D("AudioDecoderFilter::IsNeedProcessInput bufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
+    MEDIA_LOG_DD("AudioDecoderFilter::IsNeedProcessInput bufferStatus:" PUBLIC_LOG_U32X ", isOutPort:" PUBLIC_LOG_D32,
         bufferStatus_, isOutPort);
     FALSE_RETURN_V_MSG_DD((bufferStatus_ != BUFFER_STATUS_AVAIL_IN), isOutPort, "IN avail, need process outport");
     FALSE_RETURN_V_MSG_DD((bufferStatus_ != BUFFER_STATUS_AVAIL_OUT), !isOutPort, "OUT avail, need process inport");

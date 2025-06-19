@@ -87,6 +87,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_MEMORY_0100, TestSize.Level3)
     }
     OH_AVSource_Destroy(source);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -113,6 +114,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_MEMORY_0200, TestSize.Level3)
     }
     OH_AVSource_Destroy(source);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -139,6 +141,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_MEMORY_0300, TestSize.Level3)
     }
     OH_AVSource_Destroy(source);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -170,6 +173,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0100, TestSize.Level3)
     }
     OH_AVSource_Destroy(source);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -201,6 +205,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0200, TestSize.Level3)
     }
     OH_AVSource_Destroy(source);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -232,6 +237,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0300, TestSize.Level3)
     }
     OH_AVSource_Destroy(source);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -263,6 +269,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0400, TestSize.Level3)
     }
     OH_AVSource_Destroy(source);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -294,6 +301,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0500, TestSize.Level3)
     }
     OH_AVSource_Destroy(source);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -325,6 +333,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0600, TestSize.Level3)
     }
     OH_AVSource_Destroy(source);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -351,6 +360,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0700, TestSize.Level3)
     }
     OH_AVSource_Destroy(source);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -377,6 +387,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0800, TestSize.Level3)
     }
     OH_AVSource_Destroy(source);
     close(fd);
+    fd = -1;
 }
 
 /**
@@ -403,5 +414,6 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0900, TestSize.Level3)
     }
     OH_AVSource_Destroy(source);
     close(fd);
+    fd = -1;
 }
 }

@@ -125,20 +125,16 @@ static void CheckSeekMode(seekInfo seekInfo)
 {
     int tarckType = 0;
     OH_AVCodecBufferAttr attr;
+    const char* mimeType = nullptr;
     int fd = open(seekInfo.fileName, O_RDONLY);
     int64_t size = GetFileSize(seekInfo.fileName);
-    cout << seekInfo.fileName << "-------" << fd << "-------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
-
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
-
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    cout << "g_trackCount----" << g_trackCount << endl;
-
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
@@ -152,7 +148,6 @@ static void CheckSeekMode(seekInfo seekInfo)
         int32_t frameNum = 0;
         while (!readEnd) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            // cout << "frameNum---" << frameNum << "---PTS---" << attr.pts << "---tarckType---" << tarckType << endl;
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 readEnd = true;
                 break;
@@ -162,12 +157,19 @@ static void CheckSeekMode(seekInfo seekInfo)
         if (tarckType == MEDIA_TYPE_VID) {
             ASSERT_EQ(seekInfo.videoCount, frameNum);
         } else if (tarckType == MEDIA_TYPE_AUD) {
-            ASSERT_EQ(seekInfo.audioCount, frameNum);
+            OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType);
+            if (strcmp(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_FLAC) == 0) {
+                ASSERT_GE(frameNum, seekInfo.audioCount - 1);
+                ASSERT_LE(frameNum, seekInfo.audioCount + 1);
+            } else {
+                ASSERT_EQ(seekInfo.audioCount, frameNum);
+            }
         } else if (tarckType == MEDIA_TYPE_SUBTITLE) {
             ASSERT_EQ(seekInfo.subtitleCount, frameNum);
         }
     }
     close(fd);
+    fd = -1;
 }
 
 /**

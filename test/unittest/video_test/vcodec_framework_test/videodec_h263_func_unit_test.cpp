@@ -17,13 +17,16 @@
 #include <gtest/hwext/gtest-multithread.h>
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
-#include "vdec_sample.h"
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
+#include "vdec_async_sample.h"
+#else
+#include "vdec_sync_sample.h"
+#endif
+
 #ifdef VIDEODEC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videodec_capi_mock.h"
-#define TEST_SUIT VideoDecCapiTestH263
 #else
-#define TEST_SUIT VideoDecInnerTestH263
 #endif
 #include "videodec_func_test_suit.h"
 
@@ -163,7 +166,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_CreateWithNull_002, TestSize.Level1)
 {
     ASSERT_FALSE(CreateVideoCodecByMime(""));
 }
-
+#ifdef VIDEODEC_ASYNC_UNIT_TEST
 /**
  * @tc.name: VideoDecoder_SetCallback_001
  * @tc.desc: video setcallback
@@ -211,7 +214,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_004, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
     ASSERT_NE(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
 }
-
+#endif // VIDEODEC_ASYNC_UNIT_TEST
 #ifdef VIDEODEC_CAPI_UNIT_TEST
 /**
  * @tc.name: VideoDecoder_SetCallback_Invalid_001

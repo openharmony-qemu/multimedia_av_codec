@@ -41,7 +41,11 @@ public:
     int32_t Release() override;
     std::shared_ptr<FormatMock> GetOutputDescription() override;
     int32_t SetParameter(std::shared_ptr<FormatMock> format) override;
+    int32_t QueryInputBuffer(uint32_t& index, int64_t timeoutUs) override;
+    std::shared_ptr<AVBufferMock> GetInputBuffer(uint32_t index) override;
     int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) override;
+    int32_t QueryOutputBuffer(uint32_t& index, int64_t timeoutUs) override;
+    std::shared_ptr<AVBufferMock> GetOutputBuffer(uint32_t index) override;
     int32_t RenderOutputData(uint32_t index) override;
     int32_t FreeOutputData(uint32_t index) override;
     int32_t PushInputBuffer(uint32_t index) override;

@@ -100,6 +100,11 @@ public:
     Status PauseTaskByTrackId(int32_t trackId);
     bool IsRenderNextVideoFrameSupported();
 
+    inline bool IsAudioDemuxDecodeAsync() const
+    {
+        return demuxer_ && demuxer_->IsAudioDemuxDecodeAsync();
+    }
+
     bool IsDrmProtected();
     // drm callback
     void OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo);

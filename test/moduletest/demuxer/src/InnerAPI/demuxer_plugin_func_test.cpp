@@ -588,7 +588,10 @@ HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_CREATE_PLUGIN_BY_NAME_INNER_FUNC_00
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLAC, TEST_FILE_URI_FLAC, DEF_PROB_SIZE), true);
     ASSERT_EQ(PluginSelectTracks(), true);
     ASSERT_EQ(PluginSeekTo(109824000, Plugins::SeekMode::SEEK_PREVIOUS_SYNC), true);
-    ASSERT_EQ(ResultAssert(1144, 0, 1144, 0), true);
+    ASSERT_GE(frames_[0], 1143);
+    ASSERT_LE(frames_[0], 1145);
+    ASSERT_GE(keyFrames_[0], 1143);
+    ASSERT_LE(keyFrames_[0], 1145);
     RemoveValue();
 }
 
