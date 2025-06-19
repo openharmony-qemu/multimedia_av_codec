@@ -78,6 +78,7 @@ public:
     MOCK_METHOD2(LoadDemuxerPlugin, Status(int32_t streamID, std::shared_ptr<BaseStreamDemuxer> streamDemuxer));
     MOCK_METHOD0(Reset, Status());
     MOCK_METHOD0(Start, Status());
+    MOCK_METHOD0(Pause, Status());
     MOCK_METHOD0(Stop, Status());
     MOCK_METHOD0(Flush, Status());
     MOCK_METHOD3(SeekTo, Status(int64_t seekTime, Plugins::SeekMode mode, int64_t &realSeekTime));
