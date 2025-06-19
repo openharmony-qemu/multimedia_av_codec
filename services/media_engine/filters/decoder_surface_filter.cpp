@@ -559,7 +559,6 @@ Status DecoderSurfaceFilter::DoStop()
     state_ = ret == Status::OK ? FilterState::STOPPED : FilterState::ERROR;
     FALSE_RETURN_V(ret == Status::OK, ret);
     state_ = ret2 == Status::OK ? FilterState::STOPPED : FilterState::ERROR;
-    isDecoderReleasedForMute_ = true;
     return ret2;
 }
 
@@ -1560,11 +1559,15 @@ void DecoderSurfaceFilter::NotifyMemoryExchange(bool exchangeFlag)
     videoDecoder_->NotifyMemoryExchange(exchangeFlag);
 }
 
-Status DecoderSurfaceFilter::SetMediaMuted(bool isMuted)
+Status DecoderSurfaceFilter::SetMediaMuted(bool isMuted, bool hasInitialized)
 {
     MEDIA_LOG_I("DecoderSurfaceFilter SetMediaMuted");
     if (isMuted) {
         isRenderStarted_ = false;
+        if (!hasInitialized) {
+            eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_NO_NEED_INIT, Status::OK});
+        }
+    }
     }
     videoSink_->SetMediaMuted(isMuted);
     isVideoMuted_.store(isMuted);

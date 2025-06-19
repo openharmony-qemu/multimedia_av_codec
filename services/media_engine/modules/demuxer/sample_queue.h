@@ -57,10 +57,11 @@ public:
         uint32_t bufferCap_{DEFAULT_SAMPLE_BUFFER_CAP};
         bool isSupportBitrateSwitch_{false};
         bool isFlvLiveStream_{false};
+        bool isNeedSetLarge_{false};
     };
     SampleQueue() = default;
     virtual ~SampleQueue() = default;
-    Status Init(const Config& config, bool isSetMuteVideo = false);
+    Status Init(const Config& config);
     Status SetSampleQueueCallback(std::shared_ptr<SampleQueueCallback> sampleQueueCb);
 
     sptr<AVBufferQueueProducer> GetBufferQueueProducer() const;

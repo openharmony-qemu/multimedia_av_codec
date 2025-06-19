@@ -1091,10 +1091,10 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, SetMediaMuted, TestSize.Level1)
 {
     Status ret = Status::OK;
     decoderSurfaceFilter_->videoSink_ = std::make_shared<VideoSink>();
-    ret = decoderSurfaceFilter_->SetMediaMuted(true);
+    ret = decoderSurfaceFilter_->SetMediaMuted(true, true);
     EXPECT_EQ(ret, Status::OK);
 
-    ret = decoderSurfaceFilter_->SetMediaMuted(false);
+    ret = decoderSurfaceFilter_->SetMediaMuted(false, true);
     EXPECT_EQ(ret, Status::OK);
 }
 

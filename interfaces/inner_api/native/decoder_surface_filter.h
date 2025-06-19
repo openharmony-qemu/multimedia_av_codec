@@ -124,7 +124,7 @@ public:
     Status SetCameraPostprocessing(bool enable);
     void NotifyPause();
     void NotifyMemoryExchange(bool exchangeFlag);
-    Status SetMediaMuted(bool isMuted);
+    Status SetMediaMuted(bool isMuted, bool hasInitialized);
     Status DoReleaseOnMuted() override;
     Status DoReInitAndStart() override;
 

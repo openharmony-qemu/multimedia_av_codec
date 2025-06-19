@@ -55,8 +55,8 @@ static constexpr char PERFORMANCE_STATS[] = "PERFORMANCE";
 static constexpr int32_t INVALID_STREAM_OR_TRACK_ID = -1;
 static constexpr int32_t SKIP_NEXT_OPEN_GOP_CNT = 2;
 constexpr uint32_t THREAD_PRIORITY_41 = 7;
-constexpr uint32_t ONE_FRAME_LENGTH = 34000;
-constexpr uint32_t SAMPLE_QUEUE_SIZE_ON_MUTE = 50;
+constexpr uint32_t MAX_VIDEO_LEAD_TIME_ON_MUTE_US = 34000; // Maximum video frame advance time during video mute
+constexpr uint32_t SAMPLE_QUEUE_SIZE_ON_MUTE = 50; // After video mute, sampleSize increases to 50
 std::map<OHOS::Media::TrackType, OHOS::Media::StreamType> TRACK_TO_STREAM_MAP = {
     {OHOS::Media::TrackType::TRACK_VIDEO, OHOS::Media::StreamType::VIDEO},
     {OHOS::Media::TrackType::TRACK_AUDIO, OHOS::Media::StreamType::AUDIO},
@@ -2148,7 +2148,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
     if (queueIndex == videoTrackId_ && (isVideoMuted_ || needRestore_)) {
         int64_t mediaTime = (!isFlvLiveStream_ && syncCenter_ != nullptr) ?
             syncCenter_->GetMediaTimeNow() : lastAudioPtsInMute_;
-        if (lastVideoPts_ - mediaTime >= ONE_FRAME_LENGTH) {
+        if (lastVideoPts_ - mediaTime >= MAX_VIDEO_LEAD_TIME_ON_MUTE_US) {
             return false;
         }
     }
@@ -2416,7 +2416,6 @@ void MediaDemuxer::HandleVideoTrack(int32_t trackId)
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_RELEASE_VIDEO_DECODER, trackId});
             needReleaseVideoDecoder_ = false;
         }
-        std::shared_ptr<AVBuffer> dstBuffer;
         sampleQueueMap_[trackId]->Clear();
     }
     lastVideoPts_ = bufferMap_[trackId]->pts_;
@@ -3310,9 +3309,11 @@ Status MediaDemuxer::AddSampleBufferQueue(int32_t trackId)
     sampleQueueConfig.queueId_ = trackId;
     sampleQueueConfig.bufferCap_ =
         isVideo ? SampleQueue::DEFAULT_VIDEO_SAMPLE_BUFFER_CAP : SampleQueue::DEFAULT_SAMPLE_BUFFER_CAP;
-    Status status = sampleQueue->Init(sampleQueueConfig, isNeedSetLarge_);
+    sampleQueueConfig.isNeedSetLarge_ = isNeedSetLarge_;
+    Status status = sampleQueue->Init(sampleQueueConfig);
     FALSE_RETURN_V_MSG_E(status == Status::OK, status, "SampleQueue Init failed");
     if (isNeedSetLarge_) {
+        hasSetLargeSize_ = true;
         isNeedSetLarge_ = false;
     }
     sampleQueue->SetSampleQueueCallback(shared_from_this());
@@ -3717,7 +3718,7 @@ void MediaDemuxer::SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted,
         needReleaseVideoDecoder_ = isMuted && !keepDecodingOnMute;
         MEDIA_LOG_I("MediaDemuxer::SetMediaMuted " PUBLIC_LOG_U32 "keepDecodingOnMute_ is "
                     PUBLIC_LOG_U32, isMuted, keepDecodingOnMute);
-        needRestore_ |= !isMuted && isVideoMuted_;
+        needRestore_ |= (!isMuted && isVideoMuted_);
         isVideoMuted_ = isMuted;
     }
 }
