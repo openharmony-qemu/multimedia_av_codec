@@ -95,6 +95,20 @@ HWTEST_F(VideoSinkUnitTest, InitWaitPeriod_001, TestSize.Level0)
     EXPECT_NE(sink_->initialVideoWaitPeriod_, NUM_0);
 }
 
+/**
+ * @tc.name  : Test SetMediaMuted
+ * @tc.number: SetMediaMuted
+ * @tc.desc  : Test SetMediaMuted
+ */
+HWTEST_F(VideoSinkUnitTest, SetMediaMuted, TestSize.Level0)
+{
+    ASSERT_NE(sink_, nullptr);
+    sink_->isMuted_ = true;
+    sink_->needSyncAfterMute_ = false;
+    sink_->SetMediaMuted(false);
+    EXPECT_EQ(sink_->needSyncAfterMute_, true);
+    EXPECT_EQ(sink_->isMuted_, false);
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

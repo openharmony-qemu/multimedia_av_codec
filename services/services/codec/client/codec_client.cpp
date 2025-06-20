@@ -246,9 +246,10 @@ int32_t CodecClient::NotifyEos()
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->NotifyEos();
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s", ErrorToStr(ret).c_str());
     circular_.NotifyEos();
-    AVCODEC_LOGI_WITH_TAG("%{public}s", ErrorToStr(ret).c_str());
-    return ret;
+    AVCODEC_LOGI_WITH_TAG("success");
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecClient::Reset()

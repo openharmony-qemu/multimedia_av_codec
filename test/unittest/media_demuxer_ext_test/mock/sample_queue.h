@@ -56,6 +56,7 @@ public:
         uint32_t bufferCap_{DEFAULT_SAMPLE_BUFFER_CAP};
         bool isSupportBitrateSwitch_{false};
         bool isFlvLiveStream_{false};
+        bool isNeedSetLarge_ {false};
     };
     SampleQueue() = default;
     virtual ~SampleQueue() = default;
@@ -82,6 +83,9 @@ public:
     MOCK_METHOD(uint64_t, GetCacheDuration, (), ());
     MOCK_METHOD(void, UpdateQueueId, (int32_t queueId), ());
     MOCK_METHOD(uint32_t, GetMemoryUsage, (), ());
+    MOCK_METHOD(Status, AcquireBuffer, (std::shared_ptr<AVBuffer>& sampleBuffer), ());
+    MOCK_METHOD(Status, ReleaseBuffer, (std::shared_ptr<AVBuffer>& sampleBuffer), ());
+    MOCK_METHOD(Status, SetLargerQueueSize, (uint32_t size), ());
 
     Config config_{};
     std::weak_ptr<SampleQueueCallback> sampleQueueCb_;

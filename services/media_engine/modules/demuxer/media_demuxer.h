@@ -179,6 +179,8 @@ public:
 
     Status GetCurrentCacheSize(uint32_t trackIndex, uint32_t& size); // Interface for AVDemuxer
     Status StopBufferring(bool isAppBackground);
+    
+    void SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted, bool keepDecodingOnMute);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -329,6 +331,11 @@ private:
     void InitVideoTrack();
     void InitSubtitleTrack();
     void HandlePacketConvertError();
+    void HandleVideoTrack(int32_t trackId);
+    Status HandlePushBuffer(int32_t trackId, std::shared_ptr<AVBuffer>& dstBuffer,
+                            sptr<AVBufferQueueProducer>& bufferQueue, Status status);
+    void HandleSeek(int32_t trackId);
+    void RecordErrorCount(int32_t queueIndex, Status ret);
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
@@ -417,6 +424,8 @@ private:
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
     int64_t lastAudioPts_ = 0;
+    int64_t lastVideoPts_ = 0;
+    int64_t lastAudioPtsInMute_ = 0;
     std::atomic<bool> isOnEventNoMemory_ = false;
     std::atomic<bool> isSeekError_ = false;
     std::atomic<bool> shouldCheckSubtitleFramePts_ = false;
@@ -445,6 +454,11 @@ private:
     int64_t videoSeekTime_ {0};
     bool isInSeekDropAudio_ {false};
     std::atomic<int32_t> convertErrorTime_ {0};
+    bool isVideoMuted_ = false;
+    bool needReleaseVideoDecoder_ = false;
+    bool needRestore_ {false};
+    bool hasSetLargeSize_ {false};
+    bool isNeedSetLarge_ {false};
 
     uint32_t timeout_ = {10}; // 10 represents 10ms. Optimization can consider dynamic adjustment.
 };
