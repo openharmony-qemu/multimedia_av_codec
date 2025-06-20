@@ -30,6 +30,7 @@ using namespace testing::ext;
 using namespace std;
 using MediaAVBuffer = OHOS::Media::AVBuffer;
 using FFmpegAVBuffer = ::AVBuffer;
+using InvokerTypeAlias = OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin::InvokerType;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media::Plugins;
 
@@ -366,8 +367,9 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0002, TestSize.Level1)
     ASSERT_NE(demuxerPlugin_, nullptr); // 检查插件是否初始化成功
     ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
-    printf("DemuxerPluginUnitTest::Demuxer_SelectTrack_0001 read\n");
     int32_t size = 0;
+    demuxerPlugin_->GetNextSampleSize(0, size, 100);
+    // Used to cover thread existence checks
     demuxerPlugin_->GetNextSampleSize(0, size, 100);
     AVBufferWrapper buffer(size);
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
@@ -748,3 +750,55 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_005, TestSize.Level1)
     ASSERT_EQ(keyFrames_[1], 113);
 }
 
+/**
+ * @tc.name: Demuxer_EnsurePacketAllocated_001
+ * @tc.desc: EnsurePacketAllocated
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_EnsurePacketAllocated_001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_flv";
+    InitResource(g_flvPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_NE(demuxerPlugin_, nullptr); // 检查插件是否初始化成功
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    AVPacket *pkt = av_packet_alloc();
+    demuxerPlugin_->EnsurePacketAllocated(pkt);
+    av_packet_free(&pkt);
+}
+
+/**
+ * @tc.name: Demuxer_UpdateInitDownloadData_001
+ * @tc.desc: Test UpdateInitDownloadData
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_UpdateInitDownloadData_001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_flv";
+    InitResource(g_flvPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_NE(demuxerPlugin_, nullptr); // 检查插件是否初始化成功
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    demuxerPlugin_->ioContext_.initCompleted = false;
+    demuxerPlugin_->UpdateInitDownloadData(&demuxerPlugin_->ioContext_, UINT32_MAX -1);
+}
+
+/**
+ * @tc.name: Demuxer_GetNextSampleSize_001
+ * @tc.desc: Test GetNextSampleSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetNextSampleSize_001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_flv";
+    InitResource(g_flvPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_NE(demuxerPlugin_, nullptr); // 检查插件是否初始化成功
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    int32_t size = 0;
+    demuxerPlugin_->ioContext_.invokerType = InvokerTypeAlias::READ;
+    demuxerPlugin_->GetNextSampleSize(0, size, 100);
+}
