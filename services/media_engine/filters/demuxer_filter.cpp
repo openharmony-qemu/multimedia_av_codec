@@ -163,7 +163,10 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 Status DemuxerFilter::SetTranscoderMode()
 {
     FALSE_RETURN_V(demuxer_ != nullptr, Status::ERROR_NULL_POINTER);
-    return demuxer_->SetTranscoderMode();
+    Status status = demuxer_->SetTranscoderMode();
+    FALSE_RETURN_V(status == Status::OK, status);
+    isTransCoderMode_ = true;
+    return status;
 }
 
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
@@ -227,7 +230,7 @@ Status DemuxerFilter::DoPrepare()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
     FALSE_RETURN_V_MSG_E(mediaSource_ != nullptr, Status::ERROR_INVALID_PARAMETER, "No valid media source");
-    std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
+    std::vector<std::shared_ptr<Meta>> trackInfos = GetStreamMetaInfo();
     MEDIA_LOG_I_SHORT("trackCount: %{public}zu", trackInfos.size());
     if (trackInfos.size() == 0) {
         MEDIA_LOG_E_SHORT("Doprepare: trackCount is invalid.");
@@ -313,7 +316,7 @@ std::string DemuxerFilter::CollectVideoAndAudioMime()
     std::string mime;
     std::string videoMime = "";
     std::string audioMime = "";
-    std::vector<std::shared_ptr<Meta>> metaInfo = demuxer_->GetStreamMetaInfo();
+    std::vector<std::shared_ptr<Meta>> metaInfo = GetStreamMetaInfo();
     for (const auto& trackInfo : metaInfo) {
         if (!(trackInfo->GetData(Tag::MIME_TYPE, mime))) {
             MEDIA_LOG_W_SHORT("Get MIME fail");
@@ -663,7 +666,18 @@ Status DemuxerFilter::SelectTrack(int32_t trackId)
 
 std::vector<std::shared_ptr<Meta>> DemuxerFilter::GetStreamMetaInfo() const
 {
-    return demuxer_->GetStreamMetaInfo();
+    FALSE_RETURN_V_NOLOG(!isTransCoderMode_, demuxer_->GetStreamMetaInfo());
+    auto trackMetas = demuxer_->GetStreamMetaInfo();
+    trackMetas.erase(std::remove_if(trackMetas.begin(), trackMetas.end(),
+        [](const std::shared_ptr<Meta> &trackMeta) {
+            FALSE_RETURN_V_NOLOG(trackMeta, false);
+            Plugins::MediaType mediaType;
+            bool hasMediaType = trackMeta->GetData(Tag::MEDIA_TYPE, mediaType);
+            FALSE_RETURN_V_NOLOG(hasMediaType, false);
+            FALSE_RETURN_V_NOLOG(mediaType == Plugins::MediaType::AUXILIARY, false);
+            return true;
+        }), trackMetas.end());
+    return trackMetas;
 }
 
 std::shared_ptr<Meta> DemuxerFilter::GetGlobalMetaInfo() const
@@ -683,7 +697,7 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     if (globalInfo == nullptr || !globalInfo->GetData(Tag::MEDIA_FILE_TYPE, fileType)) {
         MEDIA_LOG_W("Get file type failed");
     }
-    std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
+    std::vector<std::shared_ptr<Meta>> trackInfos = GetStreamMetaInfo();
     std::shared_ptr<Meta> meta = trackInfos[trackId];
     for (MapIt iter = meta->begin(); iter != meta->end(); iter++) {
         MEDIA_LOG_D_SHORT("Link " PUBLIC_LOG_S, iter->first.c_str());
