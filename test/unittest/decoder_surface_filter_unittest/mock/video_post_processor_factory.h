@@ -21,7 +21,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "./base_video_post_processor.h"
+#include "base_video_post_processor.h"
 
 namespace OHOS {
 namespace Media {
