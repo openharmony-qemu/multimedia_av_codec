@@ -41,7 +41,7 @@ using ::testing::Return;
 using ::testing::DoAll;
 using ::testing::SetArgPointee;
 using ::testing::_;
-using ::testing::Invoke;  
+using ::testing::Invoke;
 
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC};
@@ -857,5 +857,3 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetNextSampleSize_001, TestSize.Level1)
     demuxerPlugin_->ioContext_.invokerType = InvokerTypeAlias::READ;
     demuxerPlugin_->GetNextSampleSize(0, size, 100);
 }
-
-
