@@ -163,6 +163,7 @@ private:
     std::shared_ptr<MediaDemuxer> demuxer_;
     std::shared_ptr<MediaSource> mediaSource_;
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
+    bool isTransCoderMode_ {false};
 
     std::map<StreamType, std::vector<int32_t>> track_id_map_;
     Mutex mapMutex_ {};
