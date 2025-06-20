@@ -699,6 +699,7 @@ OH_AVBuffer *OH_VideoDecoder_GetInputBuffer(struct OH_AVCodec *codec, uint32_t i
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, nullptr, "Video decoder is nullptr!");
 
     std::shared_ptr<AVBuffer> buffer = videoDecObj->videoDecoder_->GetInputBuffer(index);
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, nullptr, "Buffer is nullptr, idx:%{public}u", index);
 
     return videoDecObj->GetTransData(index, buffer, false);
 }
@@ -712,6 +713,7 @@ OH_AVBuffer *OH_VideoDecoder_GetOutputBuffer(struct OH_AVCodec *codec, uint32_t 
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, nullptr, "Video decoder is nullptr!");
 
     std::shared_ptr<AVBuffer> buffer = videoDecObj->videoDecoder_->GetOutputBuffer(index);
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, nullptr, "Buffer is nullptr, idx:%{public}u", index);
 
     return videoDecObj->GetTransData(index, buffer, true);
 }
