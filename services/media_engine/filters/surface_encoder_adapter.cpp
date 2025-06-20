@@ -227,7 +227,6 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
         format.PutIntValue(Tag::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
     }
     format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enableBFrame_);
-    format.PutIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, bFrameGopMode_);
     ret = codecServer_->Configure(format);
     if (ret != 0) {
         SetFaultEvent("SurfaceEncoderAdapter::Configure error", ret);
