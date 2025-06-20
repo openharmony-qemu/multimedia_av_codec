@@ -26,6 +26,11 @@
 using namespace OHOS::Media;
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecBufferCircular"};
+constexpr int64_t MAX_TIMEOUT =
+    std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::time_point::max())
+        .time_since_epoch()
+        .count() /
+    2;
 } // namespace
 namespace OHOS {
 namespace MediaAVCodec {
@@ -638,7 +643,6 @@ int32_t CodecBufferCircular::QueryOutputIndex(uint32_t &index, int64_t timeoutUs
 
 bool CodecBufferCircular::WaitForInputBuffer(std::unique_lock<std::mutex> &lock, int64_t timeoutUs)
 {
-    const auto timeout = std::chrono::microseconds(timeoutUs);
     const auto predicate = [this] {
         return !(flag_ & FLAG_IS_RUNNING) || // [1] Not in running state
                (flag_ & FLAG_INPUT_EOS) ||   // [2] End-of-stream pushed
@@ -653,12 +657,15 @@ bool CodecBufferCircular::WaitForInputBuffer(std::unique_lock<std::mutex> &lock,
     if (timeoutUs == 0) {
         return predicate(); // Immediate status check
     }
-    return inCond_.wait_for(lock, timeout, predicate); // Returns true if predicate satisfied
+    if (timeoutUs > MAX_TIMEOUT) {
+        timeoutUs = MAX_TIMEOUT;
+    }
+    // Returns true if predicate satisfied
+    return inCond_.wait_for(lock, std::chrono::microseconds(timeoutUs), predicate);
 }
 
 bool CodecBufferCircular::WaitForOutputBuffer(std::unique_lock<std::mutex> &lock, int64_t timeoutUs)
 {
-    const auto timeout = std::chrono::microseconds(timeoutUs);
     const auto predicate = [this] {
         return !(flag_ & FLAG_IS_RUNNING) ||    // [1] Not in running state
                (flag_ & FLAG_OUTPUT_EOS) ||     // [2] End-of-stream reached
@@ -674,7 +681,10 @@ bool CodecBufferCircular::WaitForOutputBuffer(std::unique_lock<std::mutex> &lock
     if (timeoutUs == 0) {
         return predicate();
     }
-    return outCond_.wait_for(lock, timeout, predicate);
+    if (timeoutUs > MAX_TIMEOUT) {
+        timeoutUs = MAX_TIMEOUT;
+    }
+    return outCond_.wait_for(lock, std::chrono::microseconds(timeoutUs), predicate);
 }
 
 std::shared_ptr<AVBuffer> CodecBufferCircular::GetInputBuffer(uint32_t index)
