@@ -330,6 +330,7 @@ private:
     void InitAudioTrack();
     void InitVideoTrack();
     void InitSubtitleTrack();
+    void HandlePacketConvertError();
     void HandleVideoTrack(int32_t trackId);
     Status HandlePushBuffer(int32_t trackId, std::shared_ptr<AVBuffer>& dstBuffer,
                             sptr<AVBufferQueueProducer>& bufferQueue, Status status);
@@ -452,6 +453,7 @@ private:
 
     int64_t videoSeekTime_ {0};
     bool isInSeekDropAudio_ {false};
+    std::atomic<int32_t> convertErrorTime_ {0};
     bool isVideoMuted_ = false;
     bool needReleaseVideoDecoder_ = false;
     bool needRestore_ {false};

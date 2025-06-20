@@ -192,7 +192,8 @@ const std::map<Status, AVCodecServiceErrCode> STATUS_TO_AVCSERRCODE = {
     {Status::ERROR_NULL_SURFACE_BUFFER, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
     {Status::ERROR_IPC_WRITE_INTERFACE_TOKEN, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
     {Status::ERROR_IPC_SEND_REQUEST, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
-    {Status::ERROR_DRM_DECRYPT_FAILED, AVCodecServiceErrCode::AVCS_ERR_DECRYPT_FAILED}};
+    {Status::ERROR_DRM_DECRYPT_FAILED, AVCodecServiceErrCode::AVCS_ERR_DECRYPT_FAILED},
+    {Status::ERROR_PACKET_CONVERT_FAILED, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN}};
 
 const std::map<int32_t, AVCodecServiceErrCode> VPEERROR_TO_AVCSERRCODE = {
     {0, AVCodecServiceErrCode::AVCS_ERR_OK},

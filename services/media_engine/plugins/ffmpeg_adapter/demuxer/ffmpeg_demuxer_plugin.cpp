@@ -448,7 +448,7 @@ Status FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
     av_packet_unref(&pkt);
 
     ret = av_bsf_receive_packet(avbsfContexts_[trackId].get(), &pkt);
-    FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
+    FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_PACKET_CONVERT_FAILED,
         "Call av_bsf_receive_packet failed, err:" PUBLIC_LOG_S, AVStrError(ret).c_str());
     return Status::OK;
 }
@@ -593,12 +593,14 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> samp
         ret = ConvertAvcToAnnexb(*srcAVPacket);
         SetDropTag(*srcAVPacket, sample, AV_CODEC_ID_H264);
     }
-    if (ioContext_.retry && ret != Status::OK) {
-        ioContext_.retry = false;
-        formatContext_->pb->eof_reached = 0;
-        formatContext_->pb->error = 0;
+    if (ret != Status::OK) {
         cacheQueue_.Pop(dstSamplePacket->pkts[0]->stream_index);
-        return Status::ERROR_AGAIN;
+        if (ioContext_.retry) {
+            ioContext_.retry = false;
+            formatContext_->pb->eof_reached = 0;
+            formatContext_->pb->error = 0;
+            return Status::ERROR_AGAIN;
+        }
     }
     dstSamplePacket->isAnnexb = true;
     return ret;
