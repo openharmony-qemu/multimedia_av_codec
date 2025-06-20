@@ -41,7 +41,6 @@ public:
     using T::T...;
     ~MockMemoryAdapter() override = default;
     MOCK_METHOD(size_t, GetSize, (), (override));
-
 };
 } // namespace Plugins
 } // namespace Media

@@ -33,6 +33,8 @@ using namespace testing::ext;
 using namespace std;
 using MediaAVBuffer = OHOS::Media::AVBuffer;
 using FFmpegAVBuffer = ::AVBuffer;
+using InvokerTypeAlias = OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin::InvokerType;
+using MockDataSourceAdapterAlias = MockDataSourceAdapter<MockDataSourceInterface, DataSourceImpl>;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media::Plugins;
 using ::testing::Return;
@@ -773,7 +775,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_mock_ReadSample_0001, TestSize.Level1)
     ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
     OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
-    auto mockDataSourceImpl = std::make_shared<MockDataSourceAdapter<MockDataSourceInterface, DataSourceImpl>>(streamDemuxer_, 0);
+    auto mockDataSourceImpl = std::make_shared<MockDataSourceAdapterAlias>(streamDemuxer_, 0);
     demuxerPlugin_->ioContext_.dataSource= std::static_pointer_cast<DataSource>(mockDataSourceImpl);
     EXPECT_CALL(*mockDataSourceImpl, ReadAt).WillRepeatedly(Return(Status::OK));
     for (int i = 0; i < 3; i++) {
@@ -786,7 +788,8 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_mock_ReadSample_0001, TestSize.Level1)
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
     MockBufferAdapter<MockBufferInterface, Buffer> mockBufferAdapter;
     size_t capacity = 10;
-    auto mockMemory = std::make_shared<MockMemoryAdapter<MockMemoryInterface, Memory>>(capacity, std::make_shared<uint8_t>(10));
+    std::shared_ptr<uint8_t> bufData = std::make_shared<uint8_t>(10);
+    auto mockMemory = std::make_shared<MockMemoryAdapter<MockMemoryInterface, Memory>>(capacity, bufData);
     std::shared_ptr<Memory> mockMemoryPtr = static_cast<std::shared_ptr<Memory>>(mockMemory);
     auto mockBuffer = static_cast<Buffer>(mockBufferAdapter);
     EXPECT_CALL(mockBufferAdapter, GetMemory).WillRepeatedly(Return(mockMemoryPtr));
@@ -795,7 +798,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_mock_ReadSample_0001, TestSize.Level1)
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
     EXPECT_CALL(*mockDataSourceImpl, ReadAt).WillRepeatedly(Return(Status::ERROR_AGAIN));
 
-    for(int i=0; i< 6; i++) {
+    for (int i = 0; i < 6; i++) {
         ret = demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100);
     }
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
@@ -816,7 +819,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_EnsurePacketAllocated_001, TestSize.Leve
     ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
     AVPacket *pkt = av_packet_alloc();
     demuxerPlugin_->EnsurePacketAllocated(pkt);
-    av_packet_free(&pkt); 
+    av_packet_free(&pkt);
 }
 
 
@@ -851,7 +854,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetNextSampleSize_001, TestSize.Level1)
     ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
     int32_t size = 0;
-    demuxerPlugin_->ioContext_.invokerType = OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin::InvokerType::READ;
+    demuxerPlugin_->ioContext_.invokerType = InvokerTypeAlias::READ;
     demuxerPlugin_->GetNextSampleSize(0, size, 100);
 }
 
