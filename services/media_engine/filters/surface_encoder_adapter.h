@@ -165,7 +165,6 @@ private:
     int32_t videoFrameRate_{-1};
     std::deque<std::pair<int64_t, StateCode>> pauseResumePts_;
     bool enableBFrame_ {false};
-    int32_t bFrameGopMode_ {1};
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
