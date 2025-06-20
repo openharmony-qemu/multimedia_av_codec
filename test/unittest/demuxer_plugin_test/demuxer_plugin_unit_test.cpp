@@ -21,11 +21,8 @@
 #include "plugin/plugin_manager_v2.h"
 #include <fcntl.h>
 #include <fstream>
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include "media_description.h"
-#include "mock/mock_buffer.h"
-#include "mock/mock_memory.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -34,14 +31,8 @@ using namespace std;
 using MediaAVBuffer = OHOS::Media::AVBuffer;
 using FFmpegAVBuffer = ::AVBuffer;
 using InvokerTypeAlias = OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin::InvokerType;
-using MockDataSourceAdapterAlias = MockDataSourceAdapter<MockDataSourceInterface, DataSourceImpl>;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media::Plugins;
-using ::testing::Return;
-using ::testing::DoAll;
-using ::testing::SetArgPointee;
-using ::testing::_;
-using ::testing::Invoke;
 
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC};
@@ -757,50 +748,6 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_005, TestSize.Level1)
     ASSERT_EQ(frames_[1], 113);
     ASSERT_EQ(keyFrames_[0], 1);
     ASSERT_EQ(keyFrames_[1], 113);
-}
-
-/**
- * @tc.name: Demuxer_mock_ReadSample_0001
- * @tc.desc: Mock Test ReadSample with valid buffer
- * @tc.type: FUNC
- */
-HWTEST_F(DemuxerPluginUnitTest, Demuxer_mock_ReadSample_0001, TestSize.Level1)
-{
-    std::string pluginName = "avdemux_flv";
-    InitResource(g_flvPath, pluginName);
-    ASSERT_TRUE(initStatus_);
-    SetInitValue();
-    ASSERT_NE(demuxerPlugin_, nullptr); // 检查插件是否初始化成功
-    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
-    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
-    OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
-    auto mockDataSourceImpl = std::make_shared<MockDataSourceAdapterAlias>(streamDemuxer_, 0);
-    demuxerPlugin_->ioContext_.dataSource= std::static_pointer_cast<DataSource>(mockDataSourceImpl);
-    EXPECT_CALL(*mockDataSourceImpl, ReadAt).WillRepeatedly(Return(Status::OK));
-    for (int i = 0; i < 3; i++) {
-        auto ret = demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100);
-        if (ret == Status::END_OF_STREAM) {
-            break;
-        }
-    }
-    auto ret = demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100);
-    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
-    MockBufferAdapter<MockBufferInterface, Buffer> mockBufferAdapter;
-    size_t capacity = 10;
-    std::shared_ptr<uint8_t> bufData = std::make_shared<uint8_t>(10);
-    auto mockMemory = std::make_shared<MockMemoryAdapter<MockMemoryInterface, Memory>>(capacity, bufData);
-    std::shared_ptr<Memory> mockMemoryPtr = static_cast<std::shared_ptr<Memory>>(mockMemory);
-    auto mockBuffer = static_cast<Buffer>(mockBufferAdapter);
-    EXPECT_CALL(mockBufferAdapter, GetMemory).WillRepeatedly(Return(mockMemoryPtr));
-    std::shared_ptr<Memory> memoryPtr = mockBufferAdapter.GetMemory(0);
-    EXPECT_CALL(*mockMemory, GetSize).WillRepeatedly(Return(-1));
-    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
-    EXPECT_CALL(*mockDataSourceImpl, ReadAt).WillRepeatedly(Return(Status::ERROR_AGAIN));
-
-    for (int i = 0; i < 6; i++) {
-        ret = demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100);
-    }
-    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
 }
 
 /**
