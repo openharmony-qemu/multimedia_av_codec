@@ -123,7 +123,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1000, TestSize.Level1)
 {
     InitResource(g_mp4Path, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     uint32_t cacheSize = 0;
     ret_ = demuxer_->GetCurrentCacheSize(1, cacheSize);
     ASSERT_EQ(ret_, AVCS_ERR_INVALID_OPERATION);
@@ -142,7 +142,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1001, TestSize.Level1)
 {
     InitResource(g_mp4Path, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -169,7 +169,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1002, TestSize.Level1)
 {
     InitResource(g_mp4TimeMetaPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -196,7 +196,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1003, TestSize.Level1)
 {
     InitResource(g_movPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -223,7 +223,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1004, TestSize.Level1)
 {
     InitResource(g_flvPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -250,7 +250,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1005, TestSize.Level1)
 {
     InitResource(g_aviPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -277,7 +277,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1006, TestSize.Level1)
 {
     InitResource(g_m4vPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -302,7 +302,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1007, TestSize.Level1)
 {
     InitResource(g_mkvPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -329,7 +329,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1008, TestSize.Level1)
 {
     InitResource(g_tsPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -356,7 +356,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1009, TestSize.Level1)
 {
     InitResource(g_mpgPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -383,7 +383,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_2001, TestSize.Level1)
 {
     InitResource(g_m4aPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -403,7 +403,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_2002, TestSize.Level1)
 {
     InitResource(g_apePath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -423,7 +423,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_2003, TestSize.Level1)
 {
     InitResource(g_wavPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -443,7 +443,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_2004, TestSize.Level1)
 {
     InitResource(g_oggPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -463,7 +463,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_2005, TestSize.Level1)
 {
     InitResource(g_aacPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -483,7 +483,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_2006, TestSize.Level1)
 {
     InitResource(g_amrPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -503,7 +503,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_2007, TestSize.Level1)
 {
     InitResource(g_flacPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -523,7 +523,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_3001, TestSize.Level1)
 {
     InitResource(g_vttPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }

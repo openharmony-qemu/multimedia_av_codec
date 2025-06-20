@@ -169,7 +169,7 @@ bool DemuxerUnitTest::isEOS(map<uint32_t, bool>& countFlag)
     return true;
 }
 
-void DemuxerUnitTest::SetInitValue()
+bool DemuxerUnitTest::SetInitValue()
 {
     for (int i = 0; i < nbStreams_; i++) {
         string codecMime = "";
@@ -179,6 +179,9 @@ void DemuxerUnitTest::SetInitValue()
             format_ = nullptr;
         }
         format_ = source_->GetTrackFormat(i);
+        if (format_ == nullptr) {
+            return false;
+        }
         format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, codecMime);
         format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, trackType);
         if (codecMime.find("image/") != std::string::npos) {
@@ -193,6 +196,7 @@ void DemuxerUnitTest::SetInitValue()
             eosFlag_[i] = false;
         }
     }
+    return true;
 }
 
 void DemuxerUnitTest::RemoveValue()
@@ -242,7 +246,7 @@ bool DemuxerUnitTest::CheckKeyFrameIndex(
 
 void DemuxerUnitTest::ReadData()
 {
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             demuxer_->ReadSample(idx, sharedMem_, &info_, flag_);
@@ -260,7 +264,7 @@ void DemuxerUnitTest::ReadData()
 void DemuxerUnitTest::ReadData(int readNum, int64_t &seekTime)
 {
     int num = 0;
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ret_ = demuxer_->ReadSample(idx, sharedMem_, &info_, flag_);
@@ -547,7 +551,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1000, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -576,7 +580,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1050, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -671,7 +675,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1040, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -700,7 +704,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1070, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -729,7 +733,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1090, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -757,7 +761,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1100, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     uint32_t idx = 0;
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -781,7 +785,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1110, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     uint32_t idx = 0;
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -805,7 +809,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1120, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     uint32_t idx = 0;
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -829,7 +833,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1130, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     uint32_t idx = 0;
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -853,7 +857,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1140, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     uint32_t idx = 0;
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -877,7 +881,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1150, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     uint32_t idx = 0;
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -901,7 +905,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1160, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     uint32_t idx = 0;
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -925,7 +929,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1170, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     uint32_t idx = 0;
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -949,7 +953,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1180, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     uint32_t idx = 0;
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -973,7 +977,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1181, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     uint32_t idx = 0;
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -1511,7 +1515,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1200, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (int i = 0; i < 50; i++) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -1538,7 +1542,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1219, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(2), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -1570,7 +1574,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1228, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -1598,7 +1602,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1234, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -1623,7 +1627,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1236, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -1689,7 +1693,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1222, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     uint32_t idx = 0;
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -1748,7 +1752,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1400, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     std::vector<uint32_t> keyFrameIndex = {0};
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
@@ -1778,7 +1782,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1206, TestSize.Level1)
 {
     InitResource(g_flvPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -1817,7 +1821,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1229, TestSize.Level1)
 {
     InitResource(g_fmp4AvcPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -1856,7 +1860,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1238, TestSize.Level1)
 {
     InitResource(g_fmp4m4vPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -1892,7 +1896,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1239, TestSize.Level1)
 {
     InitResource(g_fmp4m4aPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -1932,7 +1936,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3000, TestSize.Level1)
 
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -1958,7 +1962,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3002, TestSize.Level1)
 
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     int32_t vttIndex = 0;
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
@@ -2013,7 +2017,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3003, TestSize.Level1)
 
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     int32_t vttIndex = 0;
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
@@ -2071,7 +2075,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3004, TestSize.Level1)
 
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -2098,7 +2102,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3005, TestSize.Level1)
 
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -2125,7 +2129,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3006, TestSize.Level1)
 
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -2147,7 +2151,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3000, TestSize.Level1)
 {
     InitResource(g_srt, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -2182,7 +2186,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3002, TestSize.Level1)
 {
     InitResource(g_vttPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -2216,7 +2220,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3003, TestSize.Level1)
 {
     InitResource(TEST_FILE_PATH + string("webvtt_test2.vtt"), LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -2252,7 +2256,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3004, TestSize.Level1)
 {
     InitResource(g_lrcPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -2288,7 +2292,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3005, TestSize.Level1)
 {
     InitResource(g_samiPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -2324,7 +2328,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3006, TestSize.Level1)
 {
     InitResource(g_assPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -2682,7 +2686,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1601, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     uint32_t idx = 0;
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -2706,7 +2710,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1601, TestSize.Level1)
     }
     InitResource(g_mp4VvcPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -2805,7 +2809,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_WavAlaw_0001, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(trackIndex), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     std::vector<int> expPtsVec = {0, 85333, 170666, 256000, 341333, 426666, 512000};
     std::vector<int> expSizeVec = {4096, 4096, 4096, 4096, 4096, 4096, 4096};
     size_t idx = 0;
@@ -2834,7 +2838,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_WavAlaw_0001, TestSize.Level1)
     ASSERT_TRUE(!access(g_wavAlawPath.c_str(), F_OK));
     InitResource(g_wavAlawPath, LOCAL);
     ASSERT_TRUE(initStatus_);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -2877,7 +2881,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1800, TestSize.Level1)
     ASSERT_NE(demuxer_->SelectTrackByID(-1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -2906,7 +2910,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1800, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1800, TestSize.Level1)
 {
     InitResource(g_rmvbPath, LOCAL);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -2951,7 +2955,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1801, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -2973,7 +2977,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1801, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1801, TestSize.Level1)
 {
     InitResource(g_ac3Path, LOCAL);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -3017,7 +3021,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1802, TestSize.Level1)
     ASSERT_NE(demuxer_->SelectTrackByID(-1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -3046,7 +3050,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1802, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1802, TestSize.Level1)
 {
     InitResource(g_webmPath, LOCAL);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -3093,7 +3097,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1803, TestSize.Level1)
     ASSERT_NE(demuxer_->SelectTrackByID(-1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -3122,7 +3126,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1803, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1803, TestSize.Level1)
 {
     InitResource(g_mtsPath, LOCAL);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -3169,7 +3173,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1804, TestSize.Level1)
     ASSERT_NE(demuxer_->SelectTrackByID(-1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -3198,7 +3202,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1804, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1804, TestSize.Level1)
 {
     InitResource(g_vobPath, LOCAL);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -3245,7 +3249,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1805, TestSize.Level1)
     ASSERT_NE(demuxer_->SelectTrackByID(-1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -3274,7 +3278,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1805, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1805, TestSize.Level1)
 {
     InitResource(g_m2tsPath, LOCAL);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
@@ -3321,7 +3325,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1806, TestSize.Level1)
     ASSERT_NE(demuxer_->SelectTrackByID(-1), AV_ERR_OK);
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -3350,7 +3354,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1806, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1806, TestSize.Level1)
 {
     InitResource(g_trpPath, LOCAL);
-    SetInitValue();
+    ASSERT_TRUE(SetInitValue());
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
