@@ -116,6 +116,15 @@ public:
             return  Status::OK;
         }
     }
+    Status RequestBufferWaitUs(std::shared_ptr<AVBuffer>& outBuffer,
+                                 const AVBufferConfig& config, int64_t timeoutUs)
+    {
+        if (outBuffer == nullptr) {
+            return  Status::ERROR_NULL_POINTER;
+        } else {
+            return  Status::OK;
+        }
+    }
     Status PushBuffer(const std::shared_ptr<AVBuffer>& inBuffer, bool available)
     {
         return  Status::OK;

@@ -210,6 +210,11 @@ public:
     {
         return  Status::ERROR_UNKNOWN;
     }
+    Status RequestBufferWaitUs(std::shared_ptr<AVBuffer>& outBuffer,
+                                 const AVBufferConfig& config, int64_t timeoutUs)
+    {
+        return  Status::ERROR_UNKNOWN;
+    }
     Status PushBuffer(const std::shared_ptr<AVBuffer>& inBuffer, bool available)
     {
         return  Status::OK;
