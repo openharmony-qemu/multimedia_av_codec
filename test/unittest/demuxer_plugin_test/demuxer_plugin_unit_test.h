@@ -52,7 +52,6 @@ public:
 protected:
     int fd_ = -1;
     std::shared_ptr<OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin> demuxerPlugin_ = nullptr;
-    std::shared_ptr<BaseStreamDemuxer> streamDemuxer_ = nullptr;
     bool initStatus_ = false;
     int32_t nbStreams_ = 0;
     int32_t videoHeight_ = 0;
