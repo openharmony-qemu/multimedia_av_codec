@@ -801,7 +801,6 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_mock_ReadSample_0001, TestSize.Level1)
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
 }
 
-
 /**
  * @tc.name: Demuxer_EnsurePacketAllocated_001
  * @tc.desc: EnsurePacketAllocated
