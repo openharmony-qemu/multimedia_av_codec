@@ -759,7 +759,6 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_WeakNetwork_005, TestSize.Level1)
     ASSERT_EQ(keyFrames_[1], 113);
 }
 
-
 /**
  * @tc.name: Demuxer_mock_ReadSample_0001
  * @tc.desc: Mock Test ReadSample with valid buffer
@@ -821,7 +820,6 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_EnsurePacketAllocated_001, TestSize.Leve
     demuxerPlugin_->EnsurePacketAllocated(pkt);
     av_packet_free(&pkt);
 }
-
 
 /**
  * @tc.name: Demuxer_UpdateInitDownloadData_001
