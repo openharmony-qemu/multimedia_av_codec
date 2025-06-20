@@ -669,7 +669,7 @@ std::vector<std::shared_ptr<Meta>> DemuxerFilter::GetStreamMetaInfo() const
     FALSE_RETURN_V_NOLOG(!isTransCoderMode_, demuxer_->GetStreamMetaInfo());
     auto trackMetas = demuxer_->GetStreamMetaInfo();
     trackMetas.erase(std::remove_if(trackMetas.begin(), trackMetas.end(),
-        [](const std::shared_ptr &trackMeta) {
+        [](const std::shared_ptr<Meta> &trackMeta) {
             FALSE_RETURN_V_NOLOG(trackMeta, false);
             Plugins::MediaType mediaType;
             bool hasMediaType = trackMeta->GetData(Tag::MEDIA_TYPE, mediaType);
