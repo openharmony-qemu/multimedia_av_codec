@@ -299,6 +299,7 @@ Status AudioServerSinkPlugin::Init()
     }
     audioRenderer_->SetInterruptMode(audioInterruptMode_);
     audioRenderer_->SetSourceDuration(sourceDuraionMs_);
+    ApplyAudioHapticsSyncId();
     return Status::OK;
 }
 
@@ -1374,9 +1375,16 @@ bool AudioServerSinkPlugin::IsOffloading()
 
 Status AudioServerSinkPlugin::SetAudioHapticsSyncId(int32_t syncId)
 {
-    FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
-    audioRenderer_->SetAudioHapticsSyncId(syncId);
+    MEDIA_LOG_D("SetAHapSyncId " PUBLIC_LOG_D32, syncId);
+    audioHapticsSyncId_ = syncId;
     return Status::OK;
+}
+
+void AudioServerSinkPlugin::ApplyAudioHapticsSyncId()
+{
+    FALSE_RETURN_W(audioRenderer_ != nullptr);
+    MEDIA_LOG_D("ApplyAHapSyncId " PUBLIC_LOG_D32, audioHapticsSyncId_);
+    audioRenderer_->SetAudioHapticsSyncId(audioHapticsSyncId_);
 }
 } // namespace Plugin
 } // namespace Media

@@ -224,6 +224,7 @@ private:
     size_t WriteAudioBuffer(uint8_t* inputBuffer, size_t bufferSize, bool& shouldDrop);
     int32_t GetCallbackBufferDuration();
     int32_t ChooseVolumeMode();
+    void ApplyAudioHapticsSyncId();
 
     OHOS::Media::Mutex renderMutex_{};
     Callback *callback_{};
@@ -278,6 +279,7 @@ private:
     std::weak_ptr<AudioSinkDataCallback> audioSinkDataCallback_;
     bool isAudioVivid_ {false};
     uint64_t enqueueNumber_ {0};
+    int32_t audioHapticsSyncId_ {0};
 };
 } // namespace Plugin
 } // namespace Media
