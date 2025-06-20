@@ -776,7 +776,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_mock_ReadSample_0001, TestSize.Level1)
     auto mockDataSourceImpl = std::make_shared<MockDataSourceAdapter<MockDataSourceInterface, DataSourceImpl>>(streamDemuxer_, 0);
     demuxerPlugin_->ioContext_.dataSource= std::static_pointer_cast<DataSource>(mockDataSourceImpl);
     EXPECT_CALL(*mockDataSourceImpl, ReadAt).WillRepeatedly(Return(Status::OK));
-    for(int i=0; i< 3; i++) {
+    for (int i = 0; i < 3; i++) {
         auto ret = demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100);
         if (ret == Status::END_OF_STREAM) {
             break;
@@ -787,8 +787,8 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_mock_ReadSample_0001, TestSize.Level1)
     MockBufferAdapter<MockBufferInterface, Buffer> mockBufferAdapter;
     size_t capacity = 10;
     auto mockMemory = std::make_shared<MockMemoryAdapter<MockMemoryInterface, Memory>>(capacity, std::make_shared<uint8_t>(10));
-    std::shared_ptr<Memory> mockMemoryPtr = static_cast<std::shared_ptr<Memory>>(mockMemory); 
-    auto mockBuffer = static_cast<Buffer>(mockBufferAdapter); 
+    std::shared_ptr<Memory> mockMemoryPtr = static_cast<std::shared_ptr<Memory>>(mockMemory);
+    auto mockBuffer = static_cast<Buffer>(mockBufferAdapter);
     EXPECT_CALL(mockBufferAdapter, GetMemory).WillRepeatedly(Return(mockMemoryPtr));
     std::shared_ptr<Memory> memoryPtr = mockBufferAdapter.GetMemory(0);
     EXPECT_CALL(*mockMemory, GetSize).WillRepeatedly(Return(-1));

@@ -28,7 +28,7 @@ namespace Media {
 namespace Plugins {
 
 class MockBufferInterface {
-    public : 
+public: 
     virtual ~MockBufferInterface() = default;
     virtual std::shared_ptr<Memory> GetMemory(uint32_t index = 0) = 0;
 };

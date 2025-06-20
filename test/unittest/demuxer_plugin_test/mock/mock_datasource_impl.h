@@ -27,7 +27,7 @@
 namespace OHOS {
 namespace Media {
 class MockDataSourceInterface {
-    public : 
+public: 
     virtual ~MockDataSourceInterface() = default;
     virtual Status ReadAt(int64_t offset, std::shared_ptr<Buffer> &buffer, size_t expectedLen) = 0;
 };

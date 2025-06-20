@@ -30,7 +30,7 @@ namespace Media {
 namespace Plugins {
 
 class MockMemoryInterface {
-    public : 
+public:
     virtual ~MockMemoryInterface() = default;
     virtual size_t GetSize() = 0;
 };
@@ -38,7 +38,6 @@ class MockMemoryInterface {
 template <typename... T>
 class MockMemoryAdapter : public T... {
 public:
-
     using T::T...;
     ~MockMemoryAdapter() override = default;
     MOCK_METHOD(size_t, GetSize, (), (override));
