@@ -374,7 +374,6 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0002, TestSize.Level1)
     ASSERT_NE(demuxerPlugin_, nullptr); // 检查插件是否初始化成功
     ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
-    printf("DemuxerPluginUnitTest::Demuxer_SelectTrack_0001 read\n");
     int32_t size = 0;
     demuxerPlugin_->GetNextSampleSize(0, size, 100);
     // Used to cover thread existence checks
