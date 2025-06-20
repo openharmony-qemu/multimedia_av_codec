@@ -51,6 +51,7 @@ public:
     int32_t SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer);
 
     void SetOutPath(const std::string &path);
+    void SetInPath(const std::string &path);
     int32_t testParam_ = VCodecTestParam::SW_AVC;
     bool needCheckSHA_ = false;
     bool needSleep_ = false;
@@ -91,6 +92,7 @@ private:
                     std::shared_ptr<AVBufferMock> buffer);
     void CheckSHA();
     void PerformEosFrameAndVerifiedSHA();
+    std::string GetFileExtension(const std::string& filePath);
     std::shared_ptr<VideoEncMock> videoEnc_ = nullptr;
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::ofstream> outFile_;

@@ -87,19 +87,6 @@ HWTEST(HCodecTypeConverterUnitTest, inner_fmt_to_fmt_not_find, TestSize.Level1)
     ASSERT_FALSE(ret.has_value());
 }
 
-HWTEST(HCodecTypeConverterUnitTest, inner_fmt_to_display_fmt_find, TestSize.Level1)
-{
-    optional<GraphicPixelFormat> ret = TypeConverter::InnerFmtToDisplayFmt(VideoPixelFormat::RGBA);
-    ASSERT_TRUE(ret.has_value());
-    EXPECT_EQ(ret.value(), GRAPHIC_PIXEL_FMT_RGBA_8888);
-}
-
-HWTEST(HCodecTypeConverterUnitTest, inner_fmt_to_display_fmt_not_find, TestSize.Level1)
-{
-    optional<GraphicPixelFormat> ret = TypeConverter::InnerFmtToDisplayFmt(VideoPixelFormat::UNKNOWN);
-    ASSERT_FALSE(ret.has_value());
-}
-
 HWTEST(HCodecTypeConverterUnitTest, display_fmt_to_inner_fmt_find, TestSize.Level1)
 {
     optional<VideoPixelFormat> ret = TypeConverter::DisplayFmtToInnerFmt(GRAPHIC_PIXEL_FMT_YCRCB_420_SP);

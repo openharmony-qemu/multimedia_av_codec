@@ -113,7 +113,7 @@ protected:
     bool ReturnInputSurfaceBuffer(BufInfo& buf);
     uint32_t ReadOneFrame(ImgBuf& dstImg);
     static uint32_t ReadOneFrameYUV420P(std::ifstream& src, ImgBuf& dstImg);
-    static uint32_t ReadOneFrameYUV420SP(std::ifstream& src, ImgBuf& dstImg);
+    static uint32_t ReadOneFrameYUV420SP(std::ifstream& src, ImgBuf& dstImg, uint8_t bytesPerPixel);
     static uint32_t ReadOneFrameRGBA(std::ifstream& src, ImgBuf& dstImg);
     void SetStaticMetaData(BufInfo& buf);
     void SetDynamicMetaData(BufInfo& buf);
@@ -121,7 +121,7 @@ protected:
     uint32_t w_ = 0;
     uint32_t h_ = 0;
     GraphicPixelFormat displayFmt_;
-    bool is10Bit = false;
+    bool is10Bit_ = false;
     static constexpr uint32_t BYTES_PER_PIXEL_RBGA = 4;
     static constexpr uint32_t SAMPLE_RATIO = 2;
 
