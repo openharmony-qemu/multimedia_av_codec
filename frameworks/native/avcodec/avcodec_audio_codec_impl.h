@@ -51,6 +51,11 @@ public:
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name);
     void Notify();
 
+    int32_t QueryInputBuffer(uint32_t *index, int64_t timeoutUs);
+    std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index);
+    int32_t QueryOutputBuffer(uint32_t *index, int64_t timeoutUs);
+    std::shared_ptr<AVBuffer> GetOutputBuffer(uint32_t index);
+
 private:
     void ProduceInputBuffer();
     void ConsumerOutputBuffer();
@@ -76,9 +81,35 @@ private:
     private:
         AVCodecAudioCodecImpl *impl_;
     };
+    typedef enum : uint8_t {
+        OUTPUT_NONE           = 0,
+        OUTPUT_STREAM_CHANGED = 1,
+        OUTPUT_BUFFER         = 2,
+    } OutputInfoType;
+
+    class OutputInfo {
+    public:
+        explicit OutputInfo(const Format &format)
+        {
+            type_ = OUTPUT_STREAM_CHANGED;
+            buffer_ = nullptr;
+        }
+        explicit OutputInfo(std::shared_ptr<AVBuffer> buffer)
+        {
+            type_ = OUTPUT_BUFFER;
+            buffer_ = buffer;
+        }
+        ~OutputInfo()
+        {
+            buffer_ = nullptr;
+        }
+        OutputInfoType type_;
+        std::shared_ptr<AVBuffer> buffer_;
+    };
 
 private:
-    std::atomic<bool> isRunning_;
+    std::atomic<bool> isRunning_ = false;
+    std::atomic<bool> isSyncMode_ = false;
     std::shared_ptr<ICodecService> codecService_ = nullptr;
     std::shared_ptr<Media::AVBufferQueue> implBufferQueue_;
     std::unique_ptr<TaskThread> inputTask_;
@@ -100,6 +131,9 @@ private:
     sptr<Media::AVBufferQueueProducer> mediaCodecProducer_;
     sptr<Media::AVBufferQueueProducer> implProducer_;
     sptr<Media::AVBufferQueueConsumer> implConsumer_;
+    std::queue<std::shared_ptr<OutputInfo>> syncOutputQueue_;
+    std::mutex syncOutputMutex_;
+    std::condition_variable syncOutCond_;
 };
 
 class AudioCodecConsumerListener : public Media::IConsumerListener {

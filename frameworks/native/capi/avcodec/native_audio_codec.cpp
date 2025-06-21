@@ -55,6 +55,33 @@ struct AudioCodecObject : public OH_AVCodec {
     std::shared_mutex memoryObjListMutex_;
 };
 
+OH_AVBuffer *GetTransData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "input codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_DECODER ||
+        codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_ENCODER, nullptr, "magic error!");
+
+    struct AudioCodecObject *audioCodecObj = reinterpret_cast<AudioCodecObject *>(codec);
+    CHECK_AND_RETURN_RET_LOG(audioCodecObj->audioCodec_ != nullptr, nullptr, "audioc odec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, nullptr, "get output buffer is nullptr!");
+
+    {
+        std::shared_lock<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
+        for (auto &bufferObj : audioCodecObj->bufferObjList_) {
+            if (bufferObj->IsEqualBuffer(buffer)) {
+                return reinterpret_cast<OH_AVBuffer *>(bufferObj.GetRefPtr());
+            }
+        }
+    }
+
+    OHOS::sptr<OH_AVBuffer> object = new (std::nothrow) OH_AVBuffer(buffer);
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVBuffer");
+
+    std::lock_guard<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
+    audioCodecObj->bufferObjList_.push_back(object);
+    return reinterpret_cast<OH_AVBuffer *>(object.GetRefPtr());
+}
+
 class NativeAudioCodec : public MediaCodecCallback {
 public:
     NativeAudioCodec(OH_AVCodec *codec, struct OH_AVCodecCallback cb, void *userData)
@@ -124,32 +151,6 @@ public:
     }
 
 private:
-    OH_AVBuffer *GetTransData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVBuffer> buffer)
-    {
-        CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "input codec is nullptr!");
-        CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_DECODER ||
-            codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_ENCODER, nullptr, "magic error!");
-
-        struct AudioCodecObject *audioCodecObj = reinterpret_cast<AudioCodecObject *>(codec);
-        CHECK_AND_RETURN_RET_LOG(audioCodecObj->audioCodec_ != nullptr, nullptr, "audioc odec is nullptr!");
-        CHECK_AND_RETURN_RET_LOG(buffer != nullptr, nullptr, "get output buffer is nullptr!");
-
-        {
-            std::shared_lock<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
-            for (auto &bufferObj : audioCodecObj->bufferObjList_) {
-                if (bufferObj->IsEqualBuffer(buffer)) {
-                    return reinterpret_cast<OH_AVBuffer *>(bufferObj.GetRefPtr());
-                }
-            }
-        }
-
-        OHOS::sptr<OH_AVBuffer> object = new (std::nothrow) OH_AVBuffer(buffer);
-        CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVBuffer");
-
-        std::lock_guard<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
-        audioCodecObj->bufferObjList_.push_back(object);
-        return reinterpret_cast<OH_AVBuffer *>(object.GetRefPtr());
-    }
     struct OH_AVCodec *codec_;
     struct OH_AVCodecCallback callback_;
     void *userData_;
@@ -507,6 +508,64 @@ OH_AVErrCode OH_AudioCodec_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySessio
     return AV_ERR_OK;
 }
 #endif
+
+OH_AVErrCode OH_AudioCodec_QueryInputBuffer(OH_AVCodec *codec, uint32_t *index, int64_t timeoutUs)
+{
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "input codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_DECODER,
+        AV_ERR_INVALID_VAL, "magic error!");
+    struct AudioCodecObject *audioCodecObj = reinterpret_cast<AudioCodecObject *>(codec);
+    CHECK_AND_RETURN_RET_LOG(audioCodecObj->audioCodec_ != nullptr, AV_ERR_INVALID_VAL, "audioCodec_ is nullptr!");
+    int32_t ret = audioCodecObj->audioCodec_->QueryInputBuffer(index, timeoutUs);
+    return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
+}
+
+OH_AVBuffer *OH_AudioCodec_GetInputBuffer(OH_AVCodec *codec, uint32_t index)
+{
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "input codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_DECODER, nullptr, "magic error!");
+    struct AudioCodecObject *audioCodecObj = reinterpret_cast<AudioCodecObject *>(codec);
+    CHECK_AND_RETURN_RET_LOG(audioCodecObj->audioCodec_ != nullptr, nullptr, "audioCodec_ is nullptr!");
+    if (audioCodecObj->isFlushing_.load() || audioCodecObj->isFlushed_.load() ||
+        audioCodecObj->isStop_.load()) {
+        AVCODEC_LOGD("At flush or stop, ignore");
+        return nullptr;
+    }
+    std::shared_ptr<AVBuffer> buffer = audioCodecObj->audioCodec_->GetInputBuffer(index);
+    if (buffer == nullptr) {
+        return nullptr;
+    }
+    return GetTransData(codec, index, buffer);
+}
+
+OH_AVErrCode OH_AudioCodec_QueryOutputBuffer(OH_AVCodec *codec, uint32_t *index, int64_t timeoutUs)
+{
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "input codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_DECODER,
+        AV_ERR_INVALID_VAL, "magic error!");
+    struct AudioCodecObject *audioCodecObj = reinterpret_cast<AudioCodecObject *>(codec);
+    CHECK_AND_RETURN_RET_LOG(audioCodecObj->audioCodec_ != nullptr, AV_ERR_INVALID_VAL, "audioCodec_ is nullptr!");
+    int32_t ret = audioCodecObj->audioCodec_->QueryOutputBuffer(index, timeoutUs);
+    return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
+}
+
+OH_AVBuffer *OH_AudioCodec_GetOutputBuffer(OH_AVCodec *codec, uint32_t index)
+{
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "input codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_DECODER, nullptr, "magic error!");
+    struct AudioCodecObject *audioCodecObj = reinterpret_cast<AudioCodecObject *>(codec);
+    CHECK_AND_RETURN_RET_LOG(audioCodecObj->audioCodec_ != nullptr, nullptr, "audioCodec_ is nullptr!");
+    if (audioCodecObj->isFlushing_.load() || audioCodecObj->isFlushed_.load() ||
+        audioCodecObj->isStop_.load()) {
+        AVCODEC_LOGD("At flush or stop, ignore");
+        return nullptr;
+    }
+    std::shared_ptr<AVBuffer> buffer = audioCodecObj->audioCodec_->GetOutputBuffer(index);
+    if (buffer == nullptr) {
+        return nullptr;
+    }
+    return GetTransData(codec, index, buffer);
+}
 
 #ifdef __cplusplus
 };
