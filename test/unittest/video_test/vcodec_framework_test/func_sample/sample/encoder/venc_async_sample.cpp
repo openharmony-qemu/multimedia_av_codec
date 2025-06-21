@@ -712,7 +712,7 @@ int32_t VideoEncAsyncSample::InputLoopInner()
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     bool isYUV = true;
-    if (GetFileExtension(inPath_) == "rgba") {
+    if (GetFileExtension(inPath_) == "rgb") {
         isYUV = false;
     }
     if (inFile_->eof()) {
@@ -976,18 +976,30 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
     formatRoi->Destroy();
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
+    bool isYUV = true;
+    if (GetFileExtension(inPath_) == "rgb") {
+        isYUV = false;
+    }
     if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
     } else {
-        int32_t stride = 0;
-        auto format = GetInputDescription();
-        char *dst = reinterpret_cast<char *>(buffer->GetAddr());
-        format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
-        attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
-        for (int32_t i = 0; i < attr.size; i += stride) {
-            (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
+        if (isYUV) {
+            int32_t stride = 0;
+            auto format = GetInputDescription();
+            char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+            format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
+            attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
+            for (int32_t i = 0; i < attr.size; i += stride) {
+                (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
+            }
+            InputLtrParam(format, frameInputCount_, buffer);
+        } else { // rgba8888/rgba1010102
+            char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+            for (int32_t i = 0; i < DEFAULT_HEIGHT_VENC; i++) {
+                (void)inFile_->read(dst, DEFAULT_WIDTH * 4); // 4: rgba8888/rgba1010102
+                dst += DEFAULT_WIDTH * 4; // 4: rgba8888/rgba1010102
+            }
         }
-        InputLtrParam(format, frameInputCount_, buffer);
     }
 
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {

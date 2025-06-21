@@ -144,7 +144,7 @@ void TEST_SUIT::PrepareSource()
     auto check = [](char it) { return it == '/'; };
     (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
     videoEnc_->SetOutPath(prefix + fileName);
-    videoEnc_->SetInPath("/data/test/media/1280_720_rgba1010102.rgba");
+    videoEnc_->SetInPath("/data/test/media/1280_720_rgba1010102.rgb");
 }
 
 void TEST_SUIT::SetFormatWithParam(int32_t param)
@@ -186,7 +186,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Format_Capi_001, TestSize.Level1)
  * @tc.desc: input rgba file and run encoder. surface mode.
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_Format_Capi_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Format_Capi_002, TestSize.Level1)
 {
     CreateByNameWithParam(HW_HEVC);
     SetFormatWithParam(RGBA1010102);
@@ -205,11 +205,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Format_Capi_002, TestSize.Level1)
  * @tc.desc: input rgba file and run encoder. buffer mode.
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_Format_Capi_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Format_Capi_003, TestSize.Level1)
 {
     videoEnc_->isAVBufferMode_ = true;
     CreateByNameWithParam(HW_HEVC);
     SetFormatWithParam(RGBA1010102);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, OH_HEVCProfile::HEVC_PROFILE_MAIN_10);
     PrepareSource();
     auto ret = videoEnc_->Configure(format_);
     if (ret != AV_ERR_OK) {
