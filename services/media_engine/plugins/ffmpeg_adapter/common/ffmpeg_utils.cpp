@@ -24,6 +24,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr uint32_t FLAC_CODEC_CONFIG_SIZE = 34;
 }
 
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
@@ -46,6 +47,7 @@ bool Mime2CodecId(const std::string &mime, AVCodecID &codecId)
         {MimeType::AUDIO_AMR_WB, AV_CODEC_ID_AMR_WB},
         {MimeType::AUDIO_RAW, AV_CODEC_ID_PCM_U8},
         {MimeType::AUDIO_G711MU, AV_CODEC_ID_PCM_MULAW},
+        {MimeType::AUDIO_FLAC, AV_CODEC_ID_FLAC},
         {MimeType::VIDEO_MPEG4, AV_CODEC_ID_MPEG4},
         {MimeType::VIDEO_AVC, AV_CODEC_ID_H264},
         {MimeType::VIDEO_HEVC, AV_CODEC_ID_HEVC},
@@ -74,6 +76,23 @@ bool Raw2CodecId(AudioSampleFormat sampleFormat, AVCodecID &codecId)
     auto it = table.find(sampleFormat);
     if (it != table.end()) {
         codecId = it->second;
+        return true;
+    }
+    return false;
+}
+
+bool Raw2BitPerSample(AudioSampleFormat sampleFormat, uint8_t &bitPerSample)
+{
+    static const std::unordered_map<AudioSampleFormat, uint8_t> table = {
+        {AudioSampleFormat::SAMPLE_U8, 8},
+        {AudioSampleFormat::SAMPLE_S16LE, 16},
+        {AudioSampleFormat::SAMPLE_S24LE, 24},
+        {AudioSampleFormat::SAMPLE_S32LE, 32},
+        {AudioSampleFormat::SAMPLE_F32LE, 32},
+    };
+    auto it = table.find(sampleFormat);
+    if (it != table.end()) {
+        bitPerSample = it->second;
         return true;
     }
     return false;
@@ -482,6 +501,170 @@ bool IsInputFormatSupported(const char* name)
 int64_t AvTime2Us(int64_t hTime)
 {
     return hTime / AV_CODEC_USECOND;
+}
+
+bool FlacCodecConfig::GenerateCodecConfig(const std::shared_ptr<Meta> &trackDesc)
+{
+    constexpr uint32_t index10 = 10;
+    constexpr uint32_t offset4 = 4;
+    constexpr uint32_t offset12 = 12;
+    constexpr int32_t maxChannel = 8;
+    mCodecConfig.resize(FLAC_CODEC_CONFIG_SIZE, 0);
+    AudioSampleFormat sampleFormat;
+    mSampleRate = 0;
+    mChannels = 0;
+    bool ret = trackDesc->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat);
+    trackDesc->Get<Tag::AUDIO_SAMPLE_RATE>(mSampleRate);
+    trackDesc->Get<Tag::AUDIO_CHANNEL_COUNT>(mChannels);
+    if (!ret || !Raw2BitPerSample(sampleFormat, mBitPerSample)) {
+        MEDIA_LOG_E("not support codec_id:" PUBLIC_LOG_D32 "use default 16. ret" PUBLIC_LOG_D32,
+            static_cast<int32_t>(sampleFormat), static_cast<int32_t>(ret));
+        return false;
+    }
+    if (mChannels < 1 || mChannels > maxChannel) {
+        MEDIA_LOG_E("not support mChannels:" PUBLIC_LOG_D32, mChannels);
+        return false;
+    }
+    uint32_t i = index10;
+    // 10 - 13
+    mCodecConfig.data()[i++] = static_cast<uint8_t>((static_cast<uint32_t>(mSampleRate) >> offset12) & 0XFF);
+    mCodecConfig.data()[i++] = static_cast<uint8_t>((static_cast<uint32_t>(mSampleRate) >> offset4) & 0XFF);
+    mCodecConfig.data()[i] = static_cast<uint8_t>((static_cast<uint32_t>(mSampleRate) << offset4) & 0XF0);
+    mCodecConfig.data()[i] |= static_cast<uint8_t>((static_cast<uint32_t>(mChannels - 1) << 1) & 0x0E);
+    mCodecConfig.data()[i++] |= static_cast<uint8_t>((static_cast<uint32_t>(mBitPerSample - 1) >> offset4) & 0x01);
+    mCodecConfig.data()[i++] |= static_cast<uint8_t>((static_cast<uint32_t>(mBitPerSample - 1) << offset4) & 0xf0);
+    mIsFirstDataFrame = true;
+    return true;
+}
+
+bool FlacCodecConfig::Update()
+{
+    if (mIsUpdateExtraData) {
+        return true;
+    }
+    constexpr uint32_t index13 = 13;
+    constexpr uint32_t offset8 = 8;
+    constexpr uint32_t offset16 = 16;
+    constexpr uint32_t offset24 = 24;
+    constexpr uint32_t offset32 = 32;
+    FALSE_RETURN_V_MSG_E(mCodecConfig.size() >= FLAC_CODEC_CONFIG_SIZE, false,
+        "FlacCodecConfig::Update failed! mCodecConfig size not enough!");
+    uint32_t i = 0;
+    // block size
+    mCodecConfig.data()[i++] = static_cast<uint8_t>((mBlockSize >> offset8) & 0xff);
+    mCodecConfig.data()[i++] = static_cast<uint8_t>(mBlockSize & 0xff) ;
+    mCodecConfig.data()[i++] = mCodecConfig.data()[0];
+    mCodecConfig.data()[i++] = mCodecConfig.data()[1];
+    // min max auido frame siez
+    mCodecConfig.data()[i++] |= static_cast<uint8_t>((mMinFrameSize >> offset16) & 0xff);  // 4
+    mCodecConfig.data()[i++] |= static_cast<uint8_t>((mMinFrameSize >> offset8) & 0xff);  // 5
+    mCodecConfig.data()[i++] |= static_cast<uint8_t>(mMinFrameSize & 0xff);  // 6
+    mCodecConfig.data()[i++] |= static_cast<uint8_t>((mMaxFrameSize >> offset16) & 0xff);  // 7
+    mCodecConfig.data()[i++] |= static_cast<uint8_t>((mMaxFrameSize >> offset8) & 0xff);  // 8
+    mCodecConfig.data()[i++] |= static_cast<uint8_t>(mMaxFrameSize & 0xff);  // 9
+
+    // total sample num
+    i = index13;
+    mCodecConfig.data()[i++] |= static_cast<uint8_t>((mTotalSample >> offset32) & 0x0f);  // 13
+    mCodecConfig.data()[i++] |= static_cast<uint8_t>((mTotalSample >> offset24) & 0xff);  // 14
+    mCodecConfig.data()[i++] |= static_cast<uint8_t>((mTotalSample >> offset16) & 0xff);  // 15
+    mCodecConfig.data()[i++] |= static_cast<uint8_t>((mTotalSample >> offset8) & 0xff);  // 16
+    mCodecConfig.data()[i++] |= static_cast<uint8_t>(mTotalSample & 0xff);  // 17
+    return true;
+}
+
+void FlacCodecConfig::UpdateNewConfig(uint8_t *data, size_t size)
+{
+    if (size != mCodecConfig.size() || size < FLAC_CODEC_CONFIG_SIZE) {
+        MEDIA_LOG_E("UpdateNewConfig failed! curSize:%{public}zu, size:%{public}zu", mCodecConfig.size(), size);
+        return;
+    }
+    constexpr uint32_t startIndex = 10;
+    constexpr uint32_t offset4 = 4;
+    constexpr uint32_t offset12 = 12;
+    int32_t tmpSampleRate = 0;
+    int32_t tmpChannels = 0;
+    uint8_t tmpBitPerSample = 0;
+    uint32_t i = startIndex;
+    // 10 - 13
+    tmpSampleRate = static_cast<int32_t>((static_cast<uint32_t>(data[i++]) << offset12));
+    tmpSampleRate |= static_cast<int32_t>(static_cast<uint32_t>(data[i++]) << offset4);
+    tmpSampleRate |= static_cast<int32_t>(static_cast<uint32_t>(data[i] & 0xf0) >> offset4);
+    tmpChannels = static_cast<int32_t>((static_cast<uint32_t>(data[i]) & 0x0e) >> 1);
+    tmpChannels += 1;
+    tmpBitPerSample = static_cast<uint8_t>(((static_cast<uint32_t>(data[i++]) & 0x01) << offset4));
+    tmpBitPerSample |= static_cast<uint8_t>(static_cast<uint32_t>(data[i++] & 0xf0) >> offset4);
+    tmpBitPerSample += 1;
+    if (tmpSampleRate != mSampleRate || tmpChannels != mChannels || tmpBitPerSample != mBitPerSample) {
+        MEDIA_LOG_E("flac muxer params change! SampleRate:" PUBLIC_LOG_D32 " to " PUBLIC_LOG_D32
+            " mChannels:" PUBLIC_LOG_D32 " to " PUBLIC_LOG_D32 " mBitPerSample:" PUBLIC_LOG_U8 " to " PUBLIC_LOG_U8,
+            mSampleRate, tmpSampleRate, mChannels, tmpChannels, mBitPerSample, tmpBitPerSample);
+        mSampleRate = tmpSampleRate;
+        mChannels = tmpChannels;
+        mBitPerSample = tmpBitPerSample;
+    }
+    memcpy_s(mCodecConfig.data(), mCodecConfig.size(), data, size);
+    mIsUpdateExtraData = true;
+}
+
+static uint32_t GetUtf8Bytes(uint8_t data)
+{
+    constexpr int32_t maxBit = 7;
+    uint32_t bytes = 0;
+    for (int32_t i = maxBit; i > 0; i--) {  // 7 - 1, 7bits
+        if ((data & static_cast<uint8_t>(1 << i)) == 0) {
+            break;
+        }
+        bytes++;
+    }
+    return bytes == 0 ? 1 : bytes;
+}
+
+void FlacCodecConfig::UpdatePerFrame(uint8_t* data, size_t size)
+{
+    constexpr size_t minSize = 16;
+    constexpr uint32_t offset4 = 4;
+    constexpr uint32_t offset8 = 8;
+    constexpr uint32_t index2 = 2;
+    constexpr uint32_t index6 = 6;
+    constexpr uint32_t index7 = 7;
+    if (size < minSize) {
+        return;
+    }
+    if (data[0] != 0xff || (data[1] & 0xf8) != 0xf8) {  // flac frame head
+        return;
+    }
+    uint32_t tempBlockSize = 0;
+    static const uint16_t flacBlockList[minSize] = {
+        0, 192, 576, 1152, 2304, 4608, 0, 0, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768
+    };
+    uint32_t index = static_cast<uint8_t>((data[index2] >> offset4) & 0x0f);
+    if (index == index6) {
+        uint32_t offset = offset4 + GetUtf8Bytes(data[offset4]);
+        tempBlockSize = static_cast<uint32_t>(data[offset]) + 1;
+    } else if (index == index7) {
+        uint32_t offset = offset4 + GetUtf8Bytes(data[offset4]);
+        tempBlockSize = static_cast<uint32_t>(data[offset] << offset8) +
+            static_cast<uint32_t>(data[offset + 1]) + 1;
+    } else {
+        tempBlockSize = flacBlockList[index];
+    }
+    mTotalSample += tempBlockSize;
+    if (tempBlockSize > mBlockSize) {
+        mBlockSize = tempBlockSize;
+    }
+    if (mIsFirstDataFrame) {
+        mMinFrameSize = size;
+        mMaxFrameSize = size;
+        mIsFirstDataFrame = false;
+    }
+    if (size > mMaxFrameSize) {
+        mMaxFrameSize = size;
+    }
+    if (size < mMinFrameSize) {
+        mMinFrameSize = size;
+    }
+    mIsUpdateExtraData = false;
 }
 } // namespace Ffmpeg
 } // namespace Plugins

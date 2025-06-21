@@ -61,6 +61,23 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl);
 void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
 bool IsInputFormatSupported(const char* name);
 int64_t AvTime2Us(int64_t hTime);
+
+struct FlacCodecConfig {
+    bool GenerateCodecConfig(const std::shared_ptr<Meta> &trackDesc);
+    void UpdateNewConfig(uint8_t *data, size_t size);
+    void UpdatePerFrame(uint8_t* data, size_t size);
+    bool Update();
+    uint64_t mTotalSample = 0;
+    uint16_t mBlockSize = 0;
+    bool mIsFirstDataFrame = {true};
+    bool mIsUpdateExtraData = {false};
+    uint32_t mMaxFrameSize = 0;
+    uint32_t mMinFrameSize = 0;
+    int32_t mSampleRate = 0;
+    int32_t mChannels = 0;
+    uint8_t mBitPerSample = 0;
+    std::vector<uint8_t> mCodecConfig;
+};
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

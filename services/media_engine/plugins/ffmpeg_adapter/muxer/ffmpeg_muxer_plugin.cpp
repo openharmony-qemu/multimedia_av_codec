@@ -35,7 +35,7 @@ using namespace Ffmpeg;
 
 std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
-std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3", "wav", "adts"};
+std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3", "wav", "adts", "flac"};
 const std::set<std::string> SUPPORTED_TRACK_REF_TYPE = {"hint", "cdsc", "font", "hind", "vdep", "vplx",
     "subt", "thmb", "auxl", "cdtg", "shsc", "aest"};
 constexpr float LATITUDE_MIN = -90.0f;
@@ -88,6 +88,9 @@ bool CodecId2Cap(AVCodecID codecId, bool encoder, Capability& cap)
         case AV_CODEC_ID_PCM_S16LE:
             cap.SetMime(MimeType::AUDIO_RAW);
             return true;
+        case AV_CODEC_ID_FLAC:
+            cap.SetMime(MimeType::AUDIO_FLAC);
+            return true;
         default:
             break;
     }
@@ -118,6 +121,10 @@ bool FormatName2OutCapability(const std::string& fmtName, MuxerPluginDef& plugin
         return true;
     } else if (fmtName == "adts") {
         auto cap = Capability(MimeType::MEDIA_AAC);
+        pluginDef.AddOutCaps(cap);
+        return true;
+    } else if (fmtName == "flac") {
+        auto cap = Capability(MimeType::MEDIA_FLAC);
         pluginDef.AddOutCaps(cap);
         return true;
     }
@@ -157,7 +164,7 @@ Status RegisterMuxerPlugins(const std::shared_ptr<Register>& reg)
         if (!IsMuxerSupported(outputFormat->name)) {
             continue;
         }
-        if (outputFormat->long_name != nullptr) {
+        if (outputFormat->long_name != nullptr && strncmp(outputFormat->name, "flac ", 4)) {  // 4 not flac
             if (!strncmp(outputFormat->long_name, "raw ", 4)) { // 4
                 continue;
             }
@@ -464,6 +471,15 @@ Status FFmpegMuxerPlugin::SetCodecParameterOfAudioTrack(AVStream *stream, const 
             return SetCodecParameterExtra(stream, codecConfig.data(), codecConfig.size());
         }
         MEDIA_LOG_W("missing codec config of aac!");
+    } else if (par->codec_id == AV_CODEC_ID_FLAC && PluginBase::GetName() == "ffmpegMux_flac") {
+        flacCodecConfig_ = std::make_shared<FlacCodecConfig>();
+        if (!flacCodecConfig_->GenerateCodecConfig(trackDesc)) {
+            flacCodecConfig_ = nullptr;
+            MEDIA_LOG_E("flac GenerateCodecConfig failed!");
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+        codecConfig = flacCodecConfig_->mCodecConfig;
+        return SetCodecParameterExtra(stream, codecConfig.data(), codecConfig.size());
     }
     return Status::NO_ERROR;
 }
@@ -1132,6 +1148,10 @@ Status FFmpegMuxerPlugin::Start()
 Status FFmpegMuxerPlugin::Stop()
 {
     FALSE_RETURN_V_MSG_E(isWriteHeader_, Status::ERROR_WRONG_STATE, "Stop failed! Did not write header!");
+    if (flacCodecConfig_ != nullptr) {
+        FALSE_RETURN_V_MSG_E(flacCodecConfig_->Update(), Status::ERROR_UNKNOWN, "flac codec config update failed!");
+        UpdataExtraData(flacCodecConfig_->mCodecConfig.data(), flacCodecConfig_->mCodecConfig.size());
+    }
     int ret = av_write_frame(formatContext_.get(), nullptr); // flush out cache data
     if (ret < 0) {
         MEDIA_LOG_E("write trailer failed, %{public}s", AVStrError(ret).c_str());
@@ -1165,8 +1185,43 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const std::shared_ptr
     auto st = formatContext_->streams[trackIndex];
     if (st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_HEVC) {
         return WriteVideoSample(trackIndex, sample);
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_FLAC && flacCodecConfig_ != nullptr &&
+        sample->flag_ == static_cast<uint32_t>(AVBufferFlag::CODEC_DATA) &&
+        static_cast<size_t>(sample->memory_->GetSize()) == flacCodecConfig_->mCodecConfig.size()) {
+            flacCodecConfig_->UpdateNewConfig(sample->memory_->GetAddr(), sample->memory_->GetSize());
+            return Status::NO_ERROR;
     }
     return WriteNormal(trackIndex, sample);
+}
+
+Status FFmpegMuxerPlugin::UpdataExtraData(uint8_t *data, int32_t size)
+{
+    (void)memset_s(cachePacket_.get(), sizeof(AVPacket), 0, sizeof(AVPacket));
+    cachePacket_->side_data =
+        static_cast<AVPacketSideData *>(av_malloc(sizeof(AVPacketSideData *) + AV_INPUT_BUFFER_PADDING_SIZE));
+    FALSE_RETURN_V_MSG_E(cachePacket_->side_data != nullptr, Status::ERROR_UNKNOWN, "sideData av_mallocz failed!");
+    cachePacket_->side_data_elems = 0;
+    cachePacket_->side_data[0].data = static_cast<uint8_t *>(av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE));
+    if (cachePacket_->side_data[0].data == nullptr) {
+        av_packet_unref(cachePacket_.get());
+        MEDIA_LOG_E("sideData data av_mallocz failed!");
+        return Status::ERROR_UNKNOWN;
+    }
+    cachePacket_->side_data_elems = 1;
+    cachePacket_->side_data[0].size = size;
+    cachePacket_->side_data[0].type = AV_PKT_DATA_NEW_EXTRADATA;
+    if (memcpy_s(cachePacket_->side_data[0].data, size, data, size) != EOK) {
+        av_packet_unref(cachePacket_.get());
+        MEDIA_LOG_E("sideData memcpy_s failed!");
+        return Status::ERROR_UNKNOWN;
+    }
+    auto ret = av_write_frame(formatContext_.get(), cachePacket_.get());
+    av_packet_unref(cachePacket_.get());
+    if (ret < 0) {
+        MEDIA_LOG_E("UpdataExtraData failed!");
+        return Status::ERROR_UNKNOWN;
+    }
+    return Status::NO_ERROR;
 }
 
 Status FFmpegMuxerPlugin::WriteNormal(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample)
@@ -1196,6 +1251,9 @@ Status FFmpegMuxerPlugin::WriteNormal(uint32_t trackIndex, const std::shared_ptr
     if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::DISPOSABLE_EXT)) {
         MEDIA_LOG_D("It is disposable_ext frame");
         cachePacket_->flags |= AV_PKT_FLAG_DISPOSABLE_EXT;
+    }
+    if (flacCodecConfig_ != nullptr && st->codecpar->codec_id == AV_CODEC_ID_FLAC) {
+        flacCodecConfig_->UpdatePerFrame(sample->memory_->GetAddr(), sample->memory_->GetSize());
     }
 
     auto ret = av_write_frame(formatContext_.get(), cachePacket_.get());

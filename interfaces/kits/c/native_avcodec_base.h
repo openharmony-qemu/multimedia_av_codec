@@ -1146,6 +1146,11 @@ typedef enum OH_AVOutputFormat {
      * @since 18
      */
     AV_OUTPUT_FORMAT_AAC = 11,
+    /**
+     * The muxer output flac file format.
+     * @since 20
+     */
+    AV_OUTPUT_FORMAT_FLAC = 12,
 } OH_AVOutputFormat;
 
 /**
