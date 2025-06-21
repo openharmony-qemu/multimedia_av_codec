@@ -629,12 +629,12 @@ void CodecClient::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
 
 void CodecClient::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
 {
-    videoCallback_->OnOutputBufferBinded(bufferMap);
+    circular_->OnOutputBufferBinded(bufferMap);
 }
 
 void CodecClient::OnOutputBufferUnbinded()
 {
-    videoCallback_->OnOutputBufferUnbinded();
+    circular_->OnOutputBufferUnbinded();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
