@@ -37,6 +37,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
+struct FlacCodecConfig;
 class FFmpegMuxerPlugin : public MuxerPlugin {
 public:
     explicit FFmpegMuxerPlugin(std::string name);
@@ -86,6 +87,7 @@ private:
     bool IsAvccSample(const uint8_t* sample, int32_t size, int32_t nalSizeLen);
     Status SetNalSizeLen(AVStream *stream, const std::vector<uint8_t> &codecConfig);
     void HandleOptions(std::string& optionName);
+    Status UpdataExtraData(uint8_t *data, int32_t size);
     static int32_t IoRead(void *opaque, uint8_t *buf, int bufSize);
     static int32_t IoWrite(void *opaque, uint8_t *buf, int bufSize);
     static int64_t IoSeek(void *opaque, int64_t offset, int whence);
@@ -122,6 +124,7 @@ private:
     std::unordered_map<int32_t, VideoSampleInfo> videoTracksInfo_;
     std::mutex mutex_;
     int32_t editList_ = 1;
+    std::shared_ptr<FlacCodecConfig> flacCodecConfig_ {nullptr};
 };
 } // namespace Ffmpeg
 } // namespace Plugins

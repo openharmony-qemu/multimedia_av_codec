@@ -99,6 +99,7 @@ ohos_unittest("avmuxer_inner_unit_test") {
       "./avmuxer_sample.cpp",
       "./avmuxer_unit_test.cpp",
       "./avmuxer_wav_pcm_unit_test.cpp",
+      "./avmuxer_flac_unit_test.cpp",
       "./inner/avmuxer_inner_mock.cpp",
       "./inner/avmuxer_inner_mock_factory.cpp",
     ]

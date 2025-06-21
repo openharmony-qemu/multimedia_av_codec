@@ -65,6 +65,14 @@ struct AudioTrackParam g_audioRawPar = {
     .frameSize = 1024,
 };
 
+struct AudioTrackParam g_audioFlacPar = {
+    .fileName = "flac_48000_1_s16le.dat",
+    .mimeType = "audio/flac",
+    .sampleRate = 48000,
+    .channels = 1,
+    .frameSize = 0,
+};
+
 struct VideoTrackParam g_videoH264Par = {
     .fileName = "h264_720_480.dat",
     .mimeType = "video/avc",

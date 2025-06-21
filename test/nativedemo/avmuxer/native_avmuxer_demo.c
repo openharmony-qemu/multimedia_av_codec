@@ -40,6 +40,7 @@
 #define MODE_FOUR 4
 #define MODE_FIVE 5
 #define MODE_SIX 6
+#define MODE_SEVEN 7
 #define TYPE_BUFFER_SIZE 20
 #define CONFIG_BUFFER_SIZE 0x1FFF
 
@@ -108,7 +109,9 @@ int AddTrackAudio(OH_AVMuxer *muxer, const AudioTrackParam *param, int fdInput)
         printf("audio format failed!\n");
         return AV_ERR_NO_MEMORY;
     }
-    OH_AVFormat_SetIntValue(formatAudio, "audio_samples_per_frame", param->frameSize);
+    if (param->frameSize > 0) {
+        OH_AVFormat_SetIntValue(formatAudio, "audio_samples_per_frame", param->frameSize);
+    }
     if (param == &g_audioAacPar) {
         OH_AVFormat_SetIntValue(formatAudio, OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
         OH_AVFormat_SetIntValue(formatAudio, OH_MD_KEY_AAC_IS_ADTS, 0);
@@ -426,7 +429,7 @@ void NativeSelectRunMode(void)
 
 void NativeSelectAudio(void)
 {
-    printf("\nplese select audio mode: 0.noAudio 1.aac 2.mpeg 3.amr-nb 4.amr-wb 5.g711mu 6.raw\n");
+    printf("\nplese select audio mode: 0.noAudio 1.aac 2.mpeg 3.amr-nb 4.amr-wb 5.g711mu 6.raw 7.flac\n");
     int num = GetInputNum(1);
     switch (num) {
         case MODE_ONE:
@@ -452,6 +455,10 @@ void NativeSelectAudio(void)
         case MODE_SIX:
             g_muxerParam.audioParams = &g_audioRawPar;
             (void)snprintf_s(g_muxerParam.audioType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "raw");
+            break;
+        case MODE_SEVEN:
+            g_muxerParam.audioParams = &g_audioFlacPar;
+            (void)snprintf_s(g_muxerParam.audioType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "flac");
             break;
         default:
             g_muxerParam.audioParams = NULL;
