@@ -67,6 +67,8 @@ public:
     void OnOutputFormatChanged(const Format &format);
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
+    void OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap);
+    void OnOutputBufferUnbinded();
 
 private:
     typedef enum : uint8_t {
