@@ -210,6 +210,11 @@ MediaDemuxer::MediaDemuxer()
 
     funcBeforeReadSampleMap_.emplace(TrackType::TRACK_SUBTITLE,
         [this](int32_t trackId) { return DoBeforeSubtitleTrackReadLoop(trackId); });
+    std::string enableAsyncDemuxer;
+    int32_t result = OHOS::system::GetStringParameter("sys.media.enable.async.demuxer", enableAsyncDemuxer, "");
+    if (result == 0 && !enableAsyncDemuxer.empty() && enableAsyncDemuxer == "false") {
+        enableAsyncDemuxer_ = false;
+    }
 }
 
 MediaDemuxer::~MediaDemuxer()
@@ -2568,7 +2573,9 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
     }
     GetMemoryUsage(trackId, pluginTemp);
     int32_t size = 0;
-    Status ret = pluginTemp->GetNextSampleSize(static_cast<uint32_t>(innerTrackID), size, timeout_);
+    Status ret = enableAsyncDemuxer_ ?
+        pluginTemp->GetNextSampleSize(static_cast<uint32_t>(innerTrackID), size, timeout_) :
+        pluginTemp->GetNextSampleSize(static_cast<uint32_t>(innerTrackID), size);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_WAIT_TIMEOUT, ret, "Get size timeout " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, ret, "Get size failed for track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, ret,
@@ -2630,7 +2637,7 @@ Status MediaDemuxer::ReadSampleWithPerfRecord(const std::shared_ptr<Plugins::Dem
 {
     Status ret = Status::OK;
     int64_t demuxDuration = 0;
-    if (isAVDemuxer) {
+    if (isAVDemuxer || !enableAsyncDemuxer_) {
         FALSE_RETURN_V_NOLOG(perfRecEnabled_, pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample));
         demuxDuration =
             CALC_EXPR_TIME_MS(ret = pluginTemp->ReadSample(static_cast<uint32_t>(innerTrackID), sample));
