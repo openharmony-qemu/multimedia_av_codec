@@ -630,13 +630,13 @@ void CodecClient::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
 void CodecClient::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
 {
     AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
-    circular_->OnOutputBufferBinded(bufferMap);
+    circular_.OnOutputBufferBinded(bufferMap);
 }
 
 void CodecClient::OnOutputBufferUnbinded()
 {
     AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
-    circular_->OnOutputBufferUnbinded();
+    circular_.OnOutputBufferUnbinded();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
