@@ -320,7 +320,7 @@ void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, MessageParcel &d
 
 void CodecListenerStub::OnOutputBufferBinded(MessageParcel &data)
 {
-    std::shared_ptr<MediaCodecCallback> mediaCb = videoCallback_.lock();
+    std::shared_ptr<MediaCodecCallback> mediaCb = callback_.lock();
     if (mediaCb != nullptr) {
         std::map<uint32_t, sptr<SurfaceBuffer>> bufferMap;
         const MediaAVCodec::Format format;
@@ -344,7 +344,7 @@ void CodecListenerStub::OnOutputBufferBinded(MessageParcel &data)
 void CodecListenerStub::OnOutputBufferUnbinded(MessageParcel &data)
 {
     AVCODEC_LOGI("LowPowerPlayer CodecListenerStub OnOutputBufferUnbinded Enter");
-    std::shared_ptr<MediaCodecCallback> mediaCb = videoCallback_.lock();
+    std::shared_ptr<MediaCodecCallback> mediaCb = callback_.lock();
     if (mediaCb != nullptr) {
         AVCODEC_LOGI("LowPowerPlayer CodecListenerStub OnOutputBufferUnbinded mediaCb Not Null");
         mediaCb->OnOutputBufferUnbinded();
