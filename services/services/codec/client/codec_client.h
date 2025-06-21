@@ -81,6 +81,7 @@ public:
     void OnOutputBufferUnbinded() override;
 
 private:
+    int32_t CreateListenerObject();
     void UpdateGeneration();
     void UpdateFormat(Format &format);
     void SetNeedListen(const bool needListen);
