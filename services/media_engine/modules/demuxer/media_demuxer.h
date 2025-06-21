@@ -461,6 +461,7 @@ private:
     bool isNeedSetLarge_ {false};
 
     uint32_t timeout_ = {10}; // 10 represents 10ms. Optimization can consider dynamic adjustment.
+    bool enableAsyncDemuxer_ = true;
 };
 } // namespace Media
 } // namespace OHOS

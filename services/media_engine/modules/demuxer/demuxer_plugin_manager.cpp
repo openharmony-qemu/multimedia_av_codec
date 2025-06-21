@@ -849,7 +849,7 @@ Status DemuxerPluginManager::Start()
 
 Status DemuxerPluginManager::Pause()
 {
-    MEDIA_LOG_W("laamy DemuxerPluginManager Pause");
+    MEDIA_LOG_W("DemuxerPluginManager Pause");
     if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->Pause();
         if (ret != Status::OK) {
