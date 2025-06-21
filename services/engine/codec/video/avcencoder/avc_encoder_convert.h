@@ -60,14 +60,17 @@ struct YuvImageData {
 };
 
 #if defined(ARMV8)
-int32_t ConvertRgbToNv21Neon(uint8_t *dstData, int32_t width, int32_t height,
+int32_t ConvertRgbToYuv420Neon(uint8_t *dstData, int32_t width, int32_t height,
     int32_t bufferSize, RgbImageData &rgbData);
 #endif
 
-int32_t ConvertRgbToNv21(uint8_t *dstData, int32_t width, int32_t height,
+int32_t ConvertRgbToYuv420(uint8_t *dstData, int32_t width, int32_t height,
     int32_t bufferSize, RgbImageData &rgbData);
 
-int32_t ConvertNv12ToNv21(uint8_t *dstData, int32_t width, int32_t height,
+int32_t ConvertNv12ToYuv420(uint8_t *dstData, int32_t width, int32_t height,
+    int32_t bufferSize, YuvImageData &yuvData);
+
+int32_t ConvertNv21ToYuv420(uint8_t *dstData, int32_t width, int32_t height,
     int32_t bufferSize, YuvImageData &yuvData);
 
 #ifdef __cplusplus
