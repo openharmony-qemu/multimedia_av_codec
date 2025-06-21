@@ -252,7 +252,7 @@ Status SurfaceEncoderAdapter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkB
 
 Status SurfaceEncoderAdapter::SetVideoEnableBFrame(bool &enableBFrame)
 {
-    MEDIA_LOG_I("SetVideoEnableBFrame");
+    MEDIA_LOG_I("SurfaceEncoderAdapter::SetVideoEnableBFrame in, enableBFrame is: %{public}d", enableBFrame);
     if (!codecServer_) {
         MEDIA_LOG_I("CodecServer is null");
         SetFaultEvent("SurfaceEncoderAdapter::SetVideoEnableBFrame, CodecServer is null");
