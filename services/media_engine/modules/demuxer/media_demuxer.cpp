@@ -3523,7 +3523,7 @@ Status MediaDemuxer::OnSampleQueueBufferConsume(int32_t queueId)
 Status MediaDemuxer::NotifySampleQueueBufferConsume(int32_t queueId)
 {
     MEDIA_LOG_DD("NotifySampleQueueBufferConsume queueId=" PUBLIC_LOG_D32, queueId);
-    uint32_t trackId = queueId;
+    int32_t trackId = queueId;
     {
         std::unique_lock<std::mutex> stopLock(stopMutex_);
         if (isStopped_ || isThreadExit_) {
@@ -3738,7 +3738,7 @@ Status MediaDemuxer::GetCurrentCacheSize(uint32_t trackIndex, uint32_t& size)
         int32_t innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
         FALSE_RETURN_V_MSG_E(innerTrackID != INVALID_STREAM_OR_TRACK_ID,
             Status::ERROR_INVALID_PARAMETER, "Plugin is nullptr");
-        trackId = static_cast<uint32_t>(innerTrackID);
+        trackIndex = static_cast<uint32_t>(innerTrackID);
     } else {
         int32_t streamId = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
         pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamId);
