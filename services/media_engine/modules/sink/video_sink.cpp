@@ -137,12 +137,12 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
     }
     if ((render && waitTime >= 0) || dropFrameContinuouslyCnt_.load() >= DROP_FRAME_CONTINUOUSLY_MAX_CNT) {
         dropFrameContinuouslyCnt_.store(0);
-        needSyncAfterMute_.store(false);
+        needDropOnMute_.store(false);
         renderFrameCnt_++;
         MEDIA_LOG_D("VideoSink::DoSyncWrite waitTime is " PUBLIC_LOG_D64, waitTime);
         return waitTime > 0 ? waitTime : 0;
     }
-    if (!needSyncAfterMute_.load()) {
+    if (!needDropOnMute_.load()) {
         dropFrameContinuouslyCnt_.fetch_add(1);
     }
     discardFrameCnt_++;
@@ -421,8 +421,8 @@ void VideoSink::VideoLagDetector::Reset()
 
 void VideoSink::SetMediaMuted(bool isMuted)
 {
-    if (isMuted_ && !isMuted) {
-        needSyncAfterMute_.store(true);
+    if (isMuted) {
+        needDropOnMute_.store(true);
         dropFrameContinuouslyCnt_.store(0);
         isFirstFrame_ = false;
     }
