@@ -87,6 +87,7 @@ private:
     int32_t OutputLoopInnerExt();
     int32_t InputLoopInnerExt();
     void InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr);
+    void ReadFrameToBuffer(std::shared_ptr<AVBufferMock> buffer, struct OH_AVCodecBufferAttr &attr, bool isYUV);
     void CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock> buffer);
     void InputLtrParam(std::shared_ptr<FormatMock> format, int32_t frameInputCount,
                     std::shared_ptr<AVBufferMock> buffer);
