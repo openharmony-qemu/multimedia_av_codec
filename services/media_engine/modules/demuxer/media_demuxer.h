@@ -323,7 +323,7 @@ private:
     void InitEnableSampleQueueFlag();
     inline bool GetEnableSampleQueueFlag() const
     {
-        return enableSampleQueue_ && isAudioDemuxDecodeAsync_ && !isTranscoderMode_;
+        return enableSampleQueue_ && isAudioDemuxDecodeAsync_;
     }
     Status StartTaskWithSampleQueue(int32_t trackId);
     Status PushBufferToQueue(int32_t trackId, std::shared_ptr<AVBuffer>& buffer, bool available);
