@@ -32,6 +32,8 @@ constexpr uint32_t THREE = 3;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
 VEncAPI11FuzzSample *g_vEncSample = nullptr;
+constexpr int32_t TIMESTAMP_BASE = 1000000;
+constexpr int32_t DURATION_BASE = 46000;
 
 void clearIntqueue(std::queue<uint32_t> &q)
 {
@@ -143,6 +145,7 @@ int32_t VEncAPI11FuzzSample::ConfigureVideoEncoder()
         (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, defaultBitRate);
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, defaultBitrateMode);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL, 1);
     int ret = OH_VideoEncoder_Configure(venc_, format);
     OH_AVFormat_Destroy(format);
     return ret;
@@ -312,7 +315,8 @@ int32_t VEncAPI11FuzzSample::PushData(OH_AVBuffer *buffer, uint32_t index, int32
         SetEOS(index, buffer);
         return 0;
     }
-    attr.pts = GetSystemTimeUs();
+    attr.pts = TIMESTAMP_BASE + DURATION_BASE * frameIndex_;
+    frameIndex_++;
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
     OH_AVBuffer_SetBufferAttr(buffer, &attr);
@@ -476,7 +480,8 @@ void VEncAPI11FuzzSample::InputFunc()
             SetEOS(index, buffer);
             break;
         }
-        attr.pts = GetSystemTimeUs();
+        attr.pts = TIMESTAMP_BASE + DURATION_BASE * frameIndex_;
+        frameIndex_++;
         attr.offset = 0;
         attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
         OH_AVBuffer_SetBufferAttr(buffer, &attr);
