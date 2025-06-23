@@ -1192,7 +1192,9 @@ Status MediaDemuxer::StartTaskWithSampleQueue(int32_t trackId)
         taskMap_[trackId]->Start();
     }
     if (sampleConsumerTaskMap_[trackId] != nullptr && !sampleConsumerTaskMap_[trackId]->IsTaskRunning()) {
-        sampleConsumerTaskMap_[trackId]->Start();
+        if (trackId != videoTrackId_ || !isVideoMuted_) {
+            sampleConsumerTaskMap_[trackId]->Start();
+        }
     }
     return Status::OK;
 }
@@ -2157,8 +2159,10 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
             false, "UserQueue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
     }
     
-    if (queueIndex == videoTrackId_ && (isVideoMuted_ || needRestore_)) {
-        int64_t mediaTime = (!isFlvLiveStream_ && syncCenter_ != nullptr) ?
+    if (!HasEosTrack() && queueIndex == videoTrackId_ && (isVideoMuted_ || needRestore_)) {
+        int64_t duration = 0;
+        GetDuration(duration);
+        int64_t mediaTime = (duration > 0 && syncCenter_ != nullptr) ?
             syncCenter_->GetMediaTimeNow() : lastAudioPtsInMute_;
         if (lastVideoPts_ - mediaTime >= MAX_VIDEO_LEAD_TIME_ON_MUTE_US) {
             return false;
@@ -2406,7 +2410,9 @@ void MediaDemuxer::StartTaskInner(int32_t trackId)
     if (GetEnableSampleQueueFlag()) {
         auto sampleConsumerTaskIt = sampleConsumerTaskMap_.find(trackId);
         if (sampleConsumerTaskIt != sampleConsumerTaskMap_.end() && sampleConsumerTaskIt->second != nullptr) {
-            sampleConsumerTaskIt->second->Start();
+            if (trackId != videoTrackId_ || !isVideoMuted_) {
+                sampleConsumerTaskIt->second->Start();
+            }
         } else {
             MEDIA_LOG_W("Track " PUBLIC_LOG_D32 " sampleConsumerTask is not exist", trackId);
         }
@@ -2503,7 +2509,21 @@ Status MediaDemuxer::HandleTrackEos(int32_t trackId)
         ", pts: " PUBLIC_LOG_D64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
         bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
     PushBufferToQueue(trackId, bufferMap_[trackId], true);
+    if (trackId == videoTrackId_ && isVideoMuted_) {
+        ReportEosEvent();
+    }
     return Status::OK;
+}
+
+void MediaDemuxer::ReportEosEvent()
+{
+    MEDIA_LOG_I("MediaDemuxer ReportEOSEvent");
+    FALSE_RETURN_MSG(eventReceiver_ != nullptr, "MediaDemuxer ReportEOSEvent without eventReceiver_");
+    Event event {
+        .srcFilter = "VideoSink",
+        .type = EventType::EVENT_COMPLETE,
+    };
+    eventReceiver_->OnEvent(event);
 }
 
 void MediaDemuxer::SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer)
@@ -3370,7 +3390,7 @@ int64_t MediaDemuxer::SampleConsumerLoop(int32_t trackId)
     FALSE_RETURN_V_MSG_E(sampleQueueMap_.count(trackId) > 0 && sampleQueueMap_[trackId] != nullptr,
         RETRY_DELAY_TIME_US, "SampleQueueMap " PUBLIC_LOG_D32 " is nullptr", trackId);
 
-    if (trackId == videoTrackId_ && isVideoMuted_) {
+    if (!HasEosTrack() && trackId == videoTrackId_ && isVideoMuted_) {
         return SAMPLE_LOOP_DELAY_TIME_US;
     }
 
@@ -3770,6 +3790,15 @@ void MediaDemuxer::SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted,
                     PUBLIC_LOG_U32, isMuted, keepDecodingOnMute);
         needRestore_ |= (!isMuted && isVideoMuted_);
         isVideoMuted_ = isMuted;
+        if (sampleConsumerTaskMap_.find(videoTrackId_) != sampleConsumerTaskMap_.end() &&
+            sampleConsumerTaskMap_[videoTrackId_] != nullptr) {
+            if (isMuted && sampleConsumerTaskMap_[videoTrackId_]->IsTaskRunning()) {
+                sampleConsumerTaskMap_[videoTrackId_]->PauseAsync();
+                sampleConsumerTaskMap_[videoTrackId_]->Pause();
+            } else if (!isMuted && !sampleConsumerTaskMap_[videoTrackId_]->IsTaskRunning()) {
+                sampleConsumerTaskMap_[videoTrackId_]->Start();
+            }
+        }
     }
 }
 } // namespace Media

@@ -258,7 +258,7 @@ private:
     int64_t GetReadLoopRetryUs(int32_t trackId);
     uint64_t GetSampleQueueDuration();
     void UpdateSampleQueueCache();
-
+    void ReportEosEvent();
     Plugins::Seekable seekable_;
     Plugins::Seekable subSeekable_;
     std::string uri_;

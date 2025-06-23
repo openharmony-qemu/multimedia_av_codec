@@ -102,7 +102,7 @@ private:
     bool enableRenderAtTime_ {true};
     PerfRecorder perfRecorder_ {};
     bool isMuted_ = false;
-    std::atomic<bool> needSyncAfterMute_ {false};
+    std::atomic<bool> needDropOnMute_ {false};
 };
 } // namespace Pipeline
 } // namespace Media
