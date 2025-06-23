@@ -2170,6 +2170,9 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
     }
 
     AVBufferConfig avBufferConfig;
+    if (isTranscoderMode_ && isSkippingAudioDecAndEnc_ && queueIndex == audioTrackId_) {
+        avBufferConfig.memoryType = MemoryType::SHARED_MEMORY;
+    }
     avBufferConfig.capacity = size + SAMPLE_BUFFER_SIZE_EXTRA;
     avBufferConfig.size = size;
     Status ret = Status::OK;
@@ -3231,6 +3234,12 @@ Status MediaDemuxer::PauseDemuxerReadLoop()
 Status MediaDemuxer::SetTranscoderMode()
 {
     isTranscoderMode_ = true;
+    return Status::OK;
+}
+
+Status MediaDemuxer::SetSkippingAudioDecAndEnc()
+{
+    isSkippingAudioDecAndEnc_ = true;
     return Status::OK;
 }
 
