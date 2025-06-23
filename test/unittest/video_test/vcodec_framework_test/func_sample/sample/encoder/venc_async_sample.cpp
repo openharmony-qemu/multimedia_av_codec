@@ -983,23 +983,7 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
     if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
     } else {
-        if (isYUV) {
-            int32_t stride = 0;
-            auto format = GetInputDescription();
-            char *dst = reinterpret_cast<char *>(buffer->GetAddr());
-            format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
-            attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
-            for (int32_t i = 0; i < attr.size; i += stride) {
-                (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
-            }
-            InputLtrParam(format, frameInputCount_, buffer);
-        } else { // rgba8888/rgba1010102
-            char *dst = reinterpret_cast<char *>(buffer->GetAddr());
-            for (int32_t i = 0; i < DEFAULT_HEIGHT_VENC; i++) {
-                (void)inFile_->read(dst, DEFAULT_WIDTH * 4); // 4: rgba8888/rgba1010102
-                dst += DEFAULT_WIDTH * 4; // 4: rgba8888/rgba1010102
-            }
-        }
+        ReadFrameToBuffer(buffer, attr, isYUV);
     }
 
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
@@ -1020,6 +1004,28 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
     InputLoopInnerFeatureExt(attr);
     buffer->SetBufferAttr(attr);
     return PushInputBuffer(index);
+}
+
+void VideoEncAsyncSample::ReadFrameToBuffer(
+    std::shared_ptr<AVBufferMock> buffer, struct OH_AVCodecBufferAttr &attr, bool isYUV)
+{
+    if (isYUV) {
+        int32_t stride = 0;
+        auto format = GetInputDescription();
+        char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+        format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
+        attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
+        for (int32_t i = 0; i < attr.size; i += stride) {
+            (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
+        }
+        InputLtrParam(format, frameInputCount_, buffer);
+    } else { // rgba8888/rgba1010102
+        char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+        for (int32_t i = 0; i < DEFAULT_HEIGHT_VENC; i++) {
+            (void)inFile_->read(dst, DEFAULT_WIDTH * 4); // 4: rgba8888/rgba1010102
+            dst += DEFAULT_WIDTH * 4; // 4: rgba8888/rgba1010102
+        }
+    }
 }
 
 void VideoEncAsyncSample::InputFuncSurface()
