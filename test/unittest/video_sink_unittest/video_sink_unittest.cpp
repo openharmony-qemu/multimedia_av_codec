@@ -104,9 +104,9 @@ HWTEST_F(VideoSinkUnitTest, SetMediaMuted, TestSize.Level0)
 {
     ASSERT_NE(sink_, nullptr);
     sink_->isMuted_ = true;
-    sink_->needSyncAfterMute_ = false;
+    sink_->needDropOnMute_ = false;
     sink_->SetMediaMuted(false);
-    EXPECT_EQ(sink_->needSyncAfterMute_, true);
+    EXPECT_EQ(sink_->needDropOnMute_, true);
     EXPECT_EQ(sink_->isMuted_, false);
 }
 } // namespace Pipeline
