@@ -157,6 +157,7 @@ public:
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
     Status SetTranscoderMode();
+    Status SetSkippingAudioDecAndEnc();
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
     void WaitForBufferingEnd();
@@ -322,7 +323,7 @@ private:
     void InitEnableSampleQueueFlag();
     inline bool GetEnableSampleQueueFlag() const
     {
-        return enableSampleQueue_ && isAudioDemuxDecodeAsync_;
+        return enableSampleQueue_ && isAudioDemuxDecodeAsync_ && !isTranscoderMode_;
     }
     Status StartTaskWithSampleQueue(int32_t trackId);
     Status PushBufferToQueue(int32_t trackId, std::shared_ptr<AVBuffer>& buffer, bool available);
@@ -444,6 +445,7 @@ private:
     SyncFrameInfo syncFrameInfo_ {};
     std::mutex syncFrameInfoMutex_ {};
     bool isTranscoderMode_ {false};
+    bool isSkippingAudioDecAndEnc_ {false};
     bool perfRecEnabled_ { false };
     PerfRecorder perfRecorder_ {};
     int32_t apiVersion_ {0};
