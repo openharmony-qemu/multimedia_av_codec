@@ -149,7 +149,7 @@ void FFmpegDemuxerPlugin::UpdateInitDownloadData(IOContext* ioContext, int dataS
 
 Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout)
 {
-    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     Status ret;
     MediaAVCodec::AVCodecTrace trace("ReadSample_timeout");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
@@ -353,7 +353,7 @@ void FFmpegDemuxerPlugin::ReleaseFFmpegReadLoop()
 
 Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout)
 {
-    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MediaAVCodec::AVCodecTrace trace("GetNextSampleSize_timeout");
     MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
