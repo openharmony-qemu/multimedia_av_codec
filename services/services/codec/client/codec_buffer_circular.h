@@ -75,10 +75,9 @@ private:
         FLAG_IS_RUNNING = 1 << 0,
         FLAG_IS_SYNC = 1 << 1,
         FLAG_SYNC_ASYNC_CONFIGURED = 1 << 2,
-        FLAG_STREAM_CHANGED = 1 << 3,
-        FLAG_ERROR = 1 << 4,
-        FLAG_INPUT_EOS = 1 << 5,
-        FLAG_OUTPUT_EOS = 1 << 6,
+        FLAG_ERROR = 1 << 3,
+        FLAG_INPUT_EOS = 1 << 4,
+        FLAG_OUTPUT_EOS = 1 << 5,
     } CodecCircularFlag;
     typedef enum : uint8_t {
         OWNED_BY_SERVER = 0,
@@ -106,6 +105,7 @@ private:
     static std::shared_ptr<Format> GetAttribute(BufferCacheIter &iter);
     static const std::string &OwnerToString(BufferOwner owner);
     void PrintCaches(bool isOutput);
+    void ClearOutputBufferOwnedByCodec();
 
     BufferCache inCache_;
     BufferCache outCache_;
