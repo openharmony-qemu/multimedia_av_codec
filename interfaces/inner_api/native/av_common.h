@@ -78,6 +78,11 @@ enum class VideoPixelFormat : int32_t {
      * RGBA.
      */
     RGBA = 5,
+    /**
+     * RGBA1010102.
+     * since 6.0
+     */
+    RGBA1010102 = 6,
 };
 
 /**

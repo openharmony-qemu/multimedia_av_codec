@@ -38,6 +38,7 @@ namespace {
     constexpr uint8_t H265_NALU_TYPE = 0x1f;
     constexpr int64_t NANOS_IN_SECOND = 1000000000L;
     constexpr int64_t NANOS_IN_MICRO = 1000L;
+    constexpr int32_t SEND_MAX_FRAMES = 10;
     typedef enum OH_AVCodecBufferFlags {
         AVCODEC_BUFFER_FLAGS_NONE = 0,
         /* Indicates that the Buffer is an End-of-Stream frame */
@@ -140,6 +141,34 @@ int32_t VDecServerSample::SetOutputSurface()
     return codec_->SetOutputSurface(ps);
 }
 
+int32_t VDecServerSample::InitDecoder()
+{
+    int32_t err = ConfigServerDecoder();
+    if (err != AVCS_ERR_OK) {
+        cout << "ConfigServerDecoder failed" << endl;
+        return err;
+    }
+    err = SetCallback();
+    if (err != AVCS_ERR_OK) {
+        cout << "SetCallback failed" << endl;
+        return err;
+    }
+    signal_ = std::make_shared<VDecSignal>();
+    if (signal_ == nullptr) {
+        cout << "Failed to new VDecSignal" << endl;
+        err = AVCS_ERR_NO_MEMORY;
+        return err;
+    }
+    if (isSurfMode) {
+        err = SetOutputSurface();
+        if (err != AVCS_ERR_OK) {
+            cout << "SetOutputSurface failed" << endl;
+            return err;
+        }
+    }
+    return err;
+}
+
 void VDecServerSample::RunVideoServerDecoder()
 {
     CreateHevcDecoderByName("OH.Media.Codec.Decoder.Video.HEVC", codec_);
@@ -147,26 +176,10 @@ void VDecServerSample::RunVideoServerDecoder()
         cout << "Create failed" << endl;
         return;
     }
-    int32_t err = ConfigServerDecoder();
+    int32_t err = InitDecoder();
     if (err != AVCS_ERR_OK) {
-        cout << "ConfigServerDecoder failed" << endl;
+        cout << "Init decoder failed" << endl;
         return;
-    }
-    signal_ = std::make_shared<VDecSignal>();
-    if (signal_ == nullptr) {
-        cout << "Failed to new VDecSignal" << endl;
-        return;
-    }
-    err = SetCallback();
-    if (err != AVCS_ERR_OK) {
-        cout << "SetCallback failed" << endl;
-        return;
-    }
-    if (isSurfMode) {
-        err = SetOutputSurface();
-        if (err != AVCS_ERR_OK) {
-            cout << "SetOutputSurface failed" << endl;
-        }
     }
     err = codec_->Start();
     if (err != AVCS_ERR_OK) {
@@ -349,7 +362,7 @@ void VDecServerSample::InputFunc()
 {
     frameCount_ = 1;
     errCount = 0;
-    while (true) {
+    while (sendFrameIndex < SEND_MAX_FRAMES) {
         if (!isRunning_.load()) {
             break;
         }
@@ -375,6 +388,7 @@ void VDecServerSample::InputFunc()
                 break;
             }
         }
+        sendFrameIndex++;
     }
 }
 

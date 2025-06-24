@@ -106,6 +106,7 @@ public:
     int32_t defaultFrameAfter = 1;
     int32_t defaultMaxCount = 1;
     std::atomic<bool> isRunning_ { false };
+    int32_t frameIndex_ = 0;
 private:
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::ifstream> inFile_;

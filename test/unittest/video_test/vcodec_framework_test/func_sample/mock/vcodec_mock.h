@@ -81,7 +81,11 @@ public:
     virtual int32_t Reset() = 0;
     virtual std::shared_ptr<FormatMock> GetOutputDescription() = 0;
     virtual int32_t SetParameter(std::shared_ptr<FormatMock> format) = 0;
+    virtual int32_t QueryInputBuffer(uint32_t& index, int64_t timeoutUs) = 0;
+    virtual std::shared_ptr<AVBufferMock> GetInputBuffer(uint32_t index) = 0;
     virtual int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) = 0;
+    virtual int32_t QueryOutputBuffer(uint32_t& index, int64_t timeoutUs) = 0;
+    virtual std::shared_ptr<AVBufferMock> GetOutputBuffer(uint32_t index) = 0;
     virtual int32_t RenderOutputData(uint32_t index) = 0;
     virtual int32_t FreeOutputData(uint32_t index) = 0;
     virtual int32_t PushInputBuffer(uint32_t index) = 0;
@@ -109,6 +113,10 @@ public:
     virtual std::shared_ptr<FormatMock> GetOutputDescription() = 0;
     virtual std::shared_ptr<FormatMock> GetInputDescription() = 0;
     virtual int32_t SetParameter(std::shared_ptr<FormatMock> format) = 0;
+    virtual int32_t QueryInputBuffer(uint32_t& index, int64_t timeoutUs) = 0;
+    virtual std::shared_ptr<AVBufferMock> GetInputBuffer(uint32_t index) = 0;
+    virtual int32_t QueryOutputBuffer(uint32_t& index, int64_t timeoutUs) = 0;
+    virtual std::shared_ptr<AVBufferMock> GetOutputBuffer(uint32_t index) = 0;
     virtual int32_t FreeOutputData(uint32_t index) = 0;
     virtual int32_t NotifyEos() = 0;
     virtual int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) = 0;
@@ -136,6 +144,13 @@ namespace VCodecTestParam {
 
 enum VCodecTestCode : int32_t { HW_AVC, HW_HEVC, HW_HDR, HW_HDR_HLG_FULL, SW_AVC, SW_MPEG2, SW_MPEG4, SW_RV40, SW_H263};
 
+enum VCodecPixelFormat : int32_t {
+    NV12 = 2,
+    NV21 = 3,
+    RGBA = 5,
+    RGBA1010102 = 6,
+};
+
 const std::map<int32_t, std::string> decSourcePathMap_ = {{HW_AVC, "/data/test/media/720_1280_25_avcc.h264"},
                                                           {HW_HEVC, "/data/test/media/720_1280_25_avcc.h265"},
                                                           {HW_HDR, "/data/test/media/720_1280_25_avcc.hdr.h265"},
@@ -159,7 +174,7 @@ constexpr uint32_t DEFAULT_FRAME_RATE = 20;
 constexpr uint32_t DEFAULT_WIDTH_VENC = 1280;
 constexpr uint32_t DEFAULT_HEIGHT_VENC = 720;
 
-constexpr uint32_t SAMPLE_TIMEOUT = 100;
+constexpr uint32_t SAMPLE_TIMEOUT = 20;
 constexpr BufferRequestConfig DEFAULT_CONFIG = {
     .width = 100,
     .height = 100,

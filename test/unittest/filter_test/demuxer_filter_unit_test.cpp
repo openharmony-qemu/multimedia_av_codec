@@ -853,6 +853,16 @@ HWTEST_F(DemuxerFilterUnitTest, FrameId2SeekMs_0100, TestSize.Level1)
     EXPECT_EQ(seekMs, 840);
     EXPECT_EQ(ret, Status::OK);
 }
+
+HWTEST_F(DemuxerFilterUnitTest, SetMediaMuted, TestSize.Level1)
+{
+    auto demuxerFilter = std::make_shared<DemuxerFilter>("testDemuxerFilter", FilterType::FILTERTYPE_DEMUXER);
+    auto demuxer = std::make_shared<MediaDemuxerMock>();
+    demuxerFilter->demuxer_ = demuxer;
+    Status ret = Status::OK;
+    ret = demuxerFilter->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, true, false);
+    ASSERT_EQ(ret, Status::OK);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

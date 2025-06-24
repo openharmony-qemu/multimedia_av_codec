@@ -104,6 +104,13 @@ public:
         return Status::OK;
     }
 
+    Status RequestBufferWaitUs(std::shared_ptr<AVBuffer>& outBuffer,
+                         const AVBufferConfig& config, int64_t timeoutUs) override
+    {
+        outBuffer = std::make_shared<AVBuffer>();
+        return Status::OK;
+    }
+
     Status PushBuffer(const std::shared_ptr<AVBuffer>& inBuffer, bool available) override
     {
         return Status::OK;

@@ -14,6 +14,7 @@
  */
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
+#include "avcodec_log.h"
 #include "heap_memory_thread.h"
 #include "native_avcapability.h"
 #include "unittest_utils.h"
@@ -39,6 +40,7 @@ public:
     static void TearDownTestCase(void);
     void SetUp(void);
     void TearDown(void);
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(TEST_SUIT)};
 
 private:
     shared_ptr<HeapMemoryThread> heapThread_ = nullptr;
@@ -51,6 +53,10 @@ void VideoDecStableTest::TearDownTestCase(void) {}
 void VideoDecStableTest::SetUp(void)
 {
     heapThread_ = make_shared<HeapMemoryThread>();
+
+    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+    std::string testCaseName = testInfo_->name();
+    AVCODEC_LOGI("%{public}s", testCaseName.c_str());
 }
 
 void VideoDecStableTest::TearDown(void)

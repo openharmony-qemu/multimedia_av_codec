@@ -48,6 +48,7 @@ constexpr uint32_t BUFFERING_TIME_OUT_MS = 1000;
 constexpr uint32_t UPDATE_CACHE_STEP = 10;
 constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
+constexpr size_t DOWNLOADER_RESUME_THRESHOLD = 10 * 1024 * 1024;
 
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
     {MediaAVCodec::MediaType::MEDIA_TYPE_VID, VID_RING_BUFFER_SIZE},
@@ -202,7 +203,9 @@ DashReadRet DashSegmentDownloader::Read(uint8_t *buff, ReadDataInfo &readDataInf
     bool canWriteTmp = canWrite_.load();
     uint32_t maxReadLength = GetMaxReadLength(wantReadLength, currentSegment, currentStreamId);
     realReadLength = buffer_->ReadBuffer(buff, maxReadLength, DEFAULT_WAIT_TIME);
-    if (downloader_!= nullptr && sourceLoader_ != nullptr && !canWriteTmp && realReadLength > 0) {
+    size_t bufferSize = buffer_->GetSize();
+    if (downloader_!= nullptr && sourceLoader_ != nullptr && !canWriteTmp && realReadLength > 0
+        && bufferSize > DOWNLOADER_RESUME_THRESHOLD) {
         downloader_->Resume();
         MEDIA_LOG_D("Dash downloader resume.");
     }

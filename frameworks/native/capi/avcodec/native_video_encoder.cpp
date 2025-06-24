@@ -63,7 +63,6 @@ struct VideoEncoderObject : public OH_AVCodec {
     std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> inputBufferMap_;
     std::shared_ptr<NativeVideoEncoderCallback> callback_ = nullptr;
     bool isSetMemoryCallback_ = false;
-    std::atomic<bool> isEOS_ = false;
     bool isInputSurfaceMode_ = false;
     std::shared_mutex objListMutex_;
 };
@@ -133,8 +132,8 @@ public:
         struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec_);
         CHECK_AND_RETURN_LOG(videoEncObj->videoEncoder_ != nullptr, "Context video encoder is nullptr!");
 
-        if (videoEncObj->isEOS_.load() || videoEncObj->isInputSurfaceMode_) {
-            AVCODEC_LOGD("At eos or surface mode, no buffer available");
+        if (videoEncObj->isInputSurfaceMode_) {
+            AVCODEC_LOGD("At surface mode, no buffer available");
             return;
         }
         OH_AVMemory *data = videoEncObj->GetTransData(index, buffer, false);
@@ -173,10 +172,6 @@ public:
         struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec_);
         CHECK_AND_RETURN_LOG(videoEncObj->videoEncoder_ != nullptr, "Context video encoder is nullptr!");
 
-        if (videoEncObj->isEOS_.load() || videoEncObj->isInputSurfaceMode_) {
-            AVCODEC_LOGD("At eos or surface mode, no buffer available");
-            return;
-        }
         OH_AVBuffer *data = videoEncObj->GetTransData(index, buffer, false);
         callback_.onNeedInputBuffer(codec_, index, data, userData_);
     }
@@ -205,10 +200,7 @@ public:
 
         struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec_);
         CHECK_AND_RETURN_LOG(videoEncObj->videoEncoder_ != nullptr, "Video encoder is nullptr!");
-        if (videoEncObj->isEOS_.load()) {
-            AVCODEC_LOGD("At eos state, no buffer available");
-            return;
-        }
+
         OH_AVFormat *data = videoEncObj->GetTransData(index, parameter);
         onInputParameter_(codec_, index, data, paramUserData_);
     }
@@ -527,8 +519,6 @@ OH_AVErrCode OH_VideoEncoder_Start(struct OH_AVCodec *codec)
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
-
-    videoEncObj->isEOS_.store(false);
     int32_t ret = videoEncObj->videoEncoder_->Start();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder start failed!");
@@ -673,8 +663,6 @@ OH_AVErrCode OH_VideoEncoder_NotifyEndOfStream(OH_AVCodec *codec)
     int32_t ret = videoEncObj->videoEncoder_->NotifyEos();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder notify end of stream failed!");
-
-    videoEncObj->isEOS_.store(true);
     return AV_ERR_OK;
 }
 
@@ -788,10 +776,6 @@ OH_AVErrCode OH_VideoEncoder_PushInputData(struct OH_AVCodec *codec, uint32_t in
     int32_t ret = videoEncObj->videoEncoder_->QueueInputBuffer(index, bufferInfo, bufferFlag);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder push input data failed!");
-    if (bufferFlag == AVCODEC_BUFFER_FLAG_EOS) {
-        videoEncObj->isEOS_.store(true);
-    }
-
     return AV_ERR_OK;
 }
 
@@ -804,19 +788,6 @@ OH_AVErrCode OH_VideoEncoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t 
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "videoEncoder_ is nullptr!");
     CHECK_AND_RETURN_RET_LOG(!videoEncObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
                              "Not support the callback of OH_AVMemory!");
-
-    {
-        std::shared_lock<std::shared_mutex> lock(videoEncObj->objListMutex_);
-        auto bufferIter = videoEncObj->inputBufferMap_.find(index);
-        CHECK_AND_RETURN_RET_LOG(bufferIter != videoEncObj->inputBufferMap_.end(), AV_ERR_INVALID_VAL,
-                                 "Invalid buffer index");
-        auto buffer = bufferIter->second->buffer_;
-        if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
-            videoEncObj->isEOS_.store(true);
-            AVCODEC_LOGD("Set eos status to true");
-        }
-    }
-
     int32_t ret = videoEncObj->videoEncoder_->QueueInputBuffer(index);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "videoEncoder QueueInputBuffer failed!");
@@ -905,6 +876,7 @@ OH_AVBuffer *OH_VideoEncoder_GetInputBuffer(struct OH_AVCodec *codec, uint32_t i
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, nullptr, "Video encoder is nullptr!");
 
     std::shared_ptr<AVBuffer> buffer = videoEncObj->videoEncoder_->GetInputBuffer(index);
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, nullptr, "Buffer is nullptr, idx:%{public}u", index);
 
     return videoEncObj->GetTransData(index, buffer, false);
 }
@@ -918,6 +890,7 @@ OH_AVBuffer *OH_VideoEncoder_GetOutputBuffer(struct OH_AVCodec *codec, uint32_t 
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, nullptr, "Video encoder is nullptr!");
 
     std::shared_ptr<AVBuffer> buffer = videoEncObj->videoEncoder_->GetOutputBuffer(index);
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, nullptr, "Buffer is nullptr, idx:%{public}u", index);
 
     return videoEncObj->GetTransData(index, buffer, true);
 }

@@ -38,7 +38,7 @@ vector<Protocol> g_protocolTable = {
     },
     {
         static_cast<OMX_VIDEO_CODINGTYPE>(CODEC_OMX_VIDEO_CodingVVC),
-        OHOS::HDI::Codec::V3_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_VVC,
+        OHOS::HDI::Codec::V4_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_VVC,
         string("video/vvc"),
     },
 };
@@ -50,13 +50,7 @@ vector<PixelFmt> g_pixelFmtTable = {
     {GRAPHIC_PIXEL_FMT_RGBA_8888,       VideoPixelFormat::RGBA,     "RGBA"},
     {GRAPHIC_PIXEL_FMT_YCBCR_P010,      VideoPixelFormat::NV12,     "NV12_10bit"},
     {GRAPHIC_PIXEL_FMT_YCRCB_P010,      VideoPixelFormat::NV21,     "NV21_10bit"},
-    {GRAPHIC_PIXEL_FMT_RGBA_1010102,    VideoPixelFormat::RGBA,     "RGBA1010102"},
-};
-
-vector<PixelFmt> g_pixelFmtTable10Bit = {
-    {GRAPHIC_PIXEL_FMT_YCBCR_P010,      VideoPixelFormat::NV12,     "NV12_10bit"},
-    {GRAPHIC_PIXEL_FMT_YCRCB_P010,      VideoPixelFormat::NV21,     "NV21_10bit"},
-    {GRAPHIC_PIXEL_FMT_RGBA_1010102,    VideoPixelFormat::RGBA,     "RGBA1010102"},
+    {GRAPHIC_PIXEL_FMT_RGBA_1010102,    VideoPixelFormat::RGBA1010102,     "RGBA1010102"},
 };
 
 struct AVCProfileMapping {
@@ -307,19 +301,6 @@ std::optional<PixelFmt> TypeConverter::InnerFmtToFmt(VideoPixelFormat format)
     });
     if (it != g_pixelFmtTable.end()) {
         return *it;
-    }
-    LOGW("unknown VideoPixelFormat %d", format);
-    return nullopt;
-}
-
-std::optional<GraphicPixelFormat> TypeConverter::InnerFmtToDisplayFmt(VideoPixelFormat format, bool is10Bit)
-{
-    const auto &table = is10Bit ? g_pixelFmtTable10Bit : g_pixelFmtTable;
-    auto it = find_if(table.begin(), table.end(), [format](const PixelFmt& p) {
-        return p.innerFmt == format;
-    });
-    if (it != table.end()) {
-        return it->graphicFmt;
     }
     LOGW("unknown VideoPixelFormat %d", format);
     return nullopt;

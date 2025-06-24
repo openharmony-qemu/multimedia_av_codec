@@ -64,7 +64,6 @@ struct VideoDecoderObject : public OH_AVCodec {
     std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> inputBufferMap_;
     std::shared_ptr<NativeVideoDecoderCallback> callback_ = nullptr;
     bool isSetMemoryCallback_ = false;
-    std::atomic<bool> isEOS_ = false;
     bool isOutputSurfaceMode_ = false;
     std::shared_mutex objListMutex_;
 };
@@ -126,11 +125,6 @@ public:
         struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec_);
         CHECK_AND_RETURN_LOG(videoDecObj->videoDecoder_ != nullptr, "Video decoder is nullptr!");
 
-        if (videoDecObj->isEOS_.load()) {
-            AVCODEC_LOGD("At eos state, no buffer available");
-            return;
-        }
-
         OH_AVMemory *data = videoDecObj->GetTransData(index, buffer, false);
         asyncCallback_.onNeedInputData(codec_, index, data, userData_);
     }
@@ -168,11 +162,6 @@ public:
 
         struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec_);
         CHECK_AND_RETURN_LOG(videoDecObj->videoDecoder_ != nullptr, "Video decoder is nullptr!");
-
-        if (videoDecObj->isEOS_.load()) {
-            AVCODEC_LOGD("At eos state, no buffer available");
-            return;
-        }
 
         OH_AVBuffer *data = videoDecObj->GetTransData(index, buffer, false);
         callback_.onNeedInputBuffer(codec_, index, data, userData_);
@@ -429,7 +418,6 @@ OH_AVErrCode OH_VideoDecoder_Start(struct OH_AVCodec *codec)
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
-    videoDecObj->isEOS_.store(false);
     int32_t ret = videoDecObj->videoDecoder_->Start();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder start failed!");
@@ -532,10 +520,6 @@ OH_AVErrCode OH_VideoDecoder_PushInputData(struct OH_AVCodec *codec, uint32_t in
     int32_t ret = videoDecObj->videoDecoder_->QueueInputBuffer(index, bufferInfo, bufferFlag);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder push input data failed!");
-    if (bufferFlag == AVCODEC_BUFFER_FLAG_EOS) {
-        videoDecObj->isEOS_.store(true);
-    }
-
     return AV_ERR_OK;
 }
 
@@ -548,18 +532,6 @@ OH_AVErrCode OH_VideoDecoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t 
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "video decoder is nullptr!");
     CHECK_AND_RETURN_RET_LOG(!videoDecObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
                              "Not support the callback of OH_AVMemory!");
-
-    {
-        std::shared_lock<std::shared_mutex> lock(videoDecObj->objListMutex_);
-        auto bufferIter = videoDecObj->inputBufferMap_.find(index);
-        CHECK_AND_RETURN_RET_LOG(bufferIter != videoDecObj->inputBufferMap_.end(), AV_ERR_INVALID_VAL,
-                                 "Invalid buffer index");
-        auto buffer = bufferIter->second->buffer_;
-        if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
-            videoDecObj->isEOS_.store(true);
-            AVCODEC_LOGD("Set eos status to true");
-        }
-    }
 
     int32_t ret = videoDecObj->videoDecoder_->QueueInputBuffer(index);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
@@ -727,6 +699,7 @@ OH_AVBuffer *OH_VideoDecoder_GetInputBuffer(struct OH_AVCodec *codec, uint32_t i
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, nullptr, "Video decoder is nullptr!");
 
     std::shared_ptr<AVBuffer> buffer = videoDecObj->videoDecoder_->GetInputBuffer(index);
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, nullptr, "Buffer is nullptr, idx:%{public}u", index);
 
     return videoDecObj->GetTransData(index, buffer, false);
 }
@@ -740,6 +713,7 @@ OH_AVBuffer *OH_VideoDecoder_GetOutputBuffer(struct OH_AVCodec *codec, uint32_t 
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, nullptr, "Video decoder is nullptr!");
 
     std::shared_ptr<AVBuffer> buffer = videoDecObj->videoDecoder_->GetOutputBuffer(index);
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, nullptr, "Buffer is nullptr, idx:%{public}u", index);
 
     return videoDecObj->GetTransData(index, buffer, true);
 }

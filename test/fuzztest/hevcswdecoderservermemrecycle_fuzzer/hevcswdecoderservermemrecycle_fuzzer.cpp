@@ -42,12 +42,12 @@ bool SwdecoderServerNormalFuzzTest(const uint8_t *data, size_t size)
     vDecSample->defaultFrameRate = data[size - FRAME_RATE_SIZE];
     vDecSample->defaultRotation = data[size - ROTATION_SIZE];
     vDecSample->defaultPixelFormat = data[size - PIXELFORMAT_SIZE];
-    if (vDecSample->defaultRotation % 2 == 0) {
+    if (vDecSample->defaultRotation % 2 == 0) { // 2
         vDecSample->inpDir = "/data/test/media/720_1280_25_avcc.h265";
     } else {
         vDecSample->inpDir = "/data/test/media/720_1280_25_avcc.hdr.h265";
     }
-    if (vDecSample->defaultPixelFormat % 2 == 0) {
+    if (vDecSample->defaultPixelFormat % 2 == 0) { // 2
         vDecSample->isSurfMode = true;
     } else {
         vDecSample->isSurfMode = false;

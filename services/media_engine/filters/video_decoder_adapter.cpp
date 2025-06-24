@@ -562,7 +562,10 @@ void VideoDecoderAdapter::OnDumpInfo(int32_t fd)
 void VideoDecoderAdapter::NotifyMemoryExchange(bool exchangeFlag)
 {
     FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr");
+    AVCodecTrace trace("VideoDecoderAdapter::NotifyMemoryExchange " + std::to_string(exchangeFlag));
+    MEDIA_LOG_I("Memory exchange %{public}d begin", exchangeFlag);
     mediaCodec_->NotifyMemoryExchange(exchangeFlag);
+    MEDIA_LOG_I("Memory exchange %{public}d end", exchangeFlag);
 }
 } // namespace Media
 } // namespace OHOS

@@ -453,6 +453,9 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ProcessVideoStartTime_001, TestSize.
         AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    demuxer->isVideoMuted_ = false;
+    std::shared_ptr<AVBuffer> vBuffer = AVBuffer::CreateAVBuffer();
+    demuxer->bufferMap_[trackId] = vBuffer;
     EXPECT_EQ(Status::ERROR_INVALID_PARAMETER, demuxer->HandleReadSample(trackId));
 }
 
@@ -2162,6 +2165,8 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_VideoStreamCallback_001, TestSize.Le
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
     demuxer->RegisterVideoStreamReadyCallback(std::make_shared<VideoStreamReadyTestCallback>());
+    std::shared_ptr<AVBuffer> vBuffer = AVBuffer::CreateAVBuffer();
+    demuxer->bufferMap_[trackId] = vBuffer;
     EXPECT_NE(Status::OK, demuxer->HandleReadSample(trackId));
 }
 
@@ -2230,5 +2235,16 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsLoaclFd_001, TestSize.Level1)
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
     EXPECT_TRUE(demuxer->IsLocalFd());
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDEmuxer_SetMediaMuted, TestSize.Level1)
+{
+    Status ret = Status::OK;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, true, false);
+    EXPECT_EQ(ret, Status::OK);
+
+    demuxer->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, false, false);
+    EXPECT_EQ(ret, Status::OK);
 }
 }

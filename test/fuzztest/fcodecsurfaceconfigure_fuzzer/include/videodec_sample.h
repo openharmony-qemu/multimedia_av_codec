@@ -92,8 +92,6 @@ protected:
     bool isFirstFrame_ = true;
     uint32_t frameCount_ = 0;
     sptr<Surface> surface_ = nullptr;
-    bool inEnd_ = false;
-    bool outEnd_ = false;
 };
 } // namespace Media
 } // namespace OHOS

@@ -235,14 +235,43 @@ void TesterCommon::CheckVivid(const BufInfo& buf)
     }
 }
 
+static std::optional<GraphicPixelFormat> InnerFmtToDisplayFmt(VideoPixelFormat format, bool is10Bit)
+{
+    struct Fmt {
+        VideoPixelFormat videoFmt;
+        bool is10Bit;
+        GraphicPixelFormat graFmt;
+    };
+    vector<Fmt> TABLE = {
+        {VideoPixelFormat::YUVI420,     false,  GRAPHIC_PIXEL_FMT_YCBCR_420_P},
+        {VideoPixelFormat::NV12,        false,  GRAPHIC_PIXEL_FMT_YCBCR_420_SP},
+        {VideoPixelFormat::NV12,        true,   GRAPHIC_PIXEL_FMT_YCBCR_P010},
+        {VideoPixelFormat::NV21,        false,  GRAPHIC_PIXEL_FMT_YCRCB_420_SP},
+        {VideoPixelFormat::NV21,        true,   GRAPHIC_PIXEL_FMT_YCRCB_P010},
+        {VideoPixelFormat::RGBA,        false,  GRAPHIC_PIXEL_FMT_RGBA_8888},
+        {VideoPixelFormat::RGBA,        true,   GRAPHIC_PIXEL_FMT_RGBA_1010102},
+        {VideoPixelFormat::RGBA1010102, false,  GRAPHIC_PIXEL_FMT_RGBA_1010102},
+        {VideoPixelFormat::RGBA1010102, true,   GRAPHIC_PIXEL_FMT_RGBA_1010102},
+    };
+    auto it = find_if(TABLE.begin(), TABLE.end(), [format, is10Bit](const Fmt& p) {
+        return p.videoFmt == format && p.is10Bit == is10Bit;
+    });
+    if (it != TABLE.end()) {
+        return it->graFmt;
+    }
+    return nullopt;
+}
+
 bool TesterCommon::RunEncoder()
 {
     ifs_ = ifstream(opt_.inputFile, ios::binary);
     IF_TRUE_RETURN_VAL_WITH_MSG(!ifs_, false, "Failed to open file %s", opt_.inputFile.c_str());
-    is10Bit = (opt_.protocol == H265) && (opt_.profile == HEVC_PROFILE_MAIN_10);
-    optional<GraphicPixelFormat> displayFmt = TypeConverter::InnerFmtToDisplayFmt(opt_.pixFmt, is10Bit);
-    IF_TRUE_RETURN_VAL_WITH_MSG(!displayFmt, false, "invalid pixel format");
-    displayFmt_ = displayFmt.value();
+    if (!opt_.isBufferMode) {
+        is10Bit_ = (opt_.protocol == H265) && (opt_.profile == HEVC_PROFILE_MAIN_10);
+        optional<GraphicPixelFormat> displayFmt = InnerFmtToDisplayFmt(opt_.pixFmt, is10Bit_);
+        IF_TRUE_RETURN_VAL_WITH_MSG(!displayFmt, false, "invalid pixel format");
+        displayFmt_ = displayFmt.value();
+    }
     w_ = opt_.dispW;
     h_ = opt_.dispH;
 
@@ -278,7 +307,7 @@ bool TesterCommon::UpdateMemberFromResourceParam(const ResourceParams& param)
 {
     ifstream ifs = ifstream(param.inputFile, ios::binary);
     IF_TRUE_RETURN_VAL_WITH_MSG(!ifs, false, "Failed to open file %s", param.inputFile.c_str());
-    optional<GraphicPixelFormat> displayFmt = TypeConverter::InnerFmtToDisplayFmt(param.pixFmt);
+    optional<GraphicPixelFormat> displayFmt = InnerFmtToDisplayFmt(param.pixFmt, is10Bit_);
     IF_TRUE_RETURN_VAL_WITH_MSG(!displayFmt, false, "invalid pixel format");
     ifs_ = std::move(ifs);
     displayFmt_ = displayFmt.value();
@@ -468,7 +497,7 @@ bool TesterCommon::ReturnInputSurfaceBuffer(BufInfo& buf)
         },
         .timestamp = buf.attr.pts,
     };
-    if (is10Bit) {
+    if (is10Bit_) {
         vector<uint8_t> vec(sizeof(CM_ColorSpaceInfo));
         CM_ColorSpaceInfo* info = (CM_ColorSpaceInfo*)vec.data();
         info->primaries = COLORPRIMARIES_BT2020;
@@ -520,20 +549,20 @@ uint32_t TesterCommon::ReadOneFrameYUV420P(std::ifstream& src, ImgBuf& dstImg)
     return dst - start;
 }
 
-uint32_t TesterCommon::ReadOneFrameYUV420SP(std::ifstream& src, ImgBuf& dstImg)
+uint32_t TesterCommon::ReadOneFrameYUV420SP(std::ifstream& src, ImgBuf& dstImg, uint8_t bytesPerPixel)
 {
     char* dst = reinterpret_cast<char*>(dstImg.va);
     char* start = dst;
     // copy Y
     for (uint32_t i = 0; i < dstImg.dispH; i++) {
-        src.read(dst, dstImg.dispW);
-        RETURN_ZERO_IF_EOS(dstImg.dispW);
+        src.read(dst, dstImg.dispW * bytesPerPixel);
+        RETURN_ZERO_IF_EOS(dstImg.dispW * bytesPerPixel);
         dst += dstImg.byteStride;
     }
     // copy UV
     for (uint32_t i = 0; i < dstImg.dispH / SAMPLE_RATIO; i++) {
-        src.read(dst, dstImg.dispW);
-        RETURN_ZERO_IF_EOS(dstImg.dispW);
+        src.read(dst, dstImg.dispW * bytesPerPixel);
+        RETURN_ZERO_IF_EOS(dstImg.dispW * bytesPerPixel);
         dst += dstImg.byteStride;
     }
     return dst - start;
@@ -565,7 +594,9 @@ uint32_t TesterCommon::ReadOneFrame(ImgBuf& dstImg)
     switch (dstImg.fmt) {
         case GRAPHIC_PIXEL_FMT_YCBCR_420_P:
         case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
-        case GRAPHIC_PIXEL_FMT_YCRCB_420_SP: {
+        case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
+        case GRAPHIC_PIXEL_FMT_YCBCR_P010:
+        case GRAPHIC_PIXEL_FMT_YCRCB_P010: {
             sampleSize = GetYuv420Size(dstImg.byteStride, dstImg.dispH);
             break;
         }
@@ -593,13 +624,18 @@ uint32_t TesterCommon::ReadOneFrame(ImgBuf& dstImg)
         }
         case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
         case GRAPHIC_PIXEL_FMT_YCRCB_420_SP: {
-            return ReadOneFrameYUV420SP(ifs_, dstImg);
+            return ReadOneFrameYUV420SP(ifs_, dstImg, 1);
+        }
+        case GRAPHIC_PIXEL_FMT_YCBCR_P010:
+        case GRAPHIC_PIXEL_FMT_YCRCB_P010: {
+            return ReadOneFrameYUV420SP(ifs_, dstImg, 2); // bytesPerPixel=2
         }
         case GRAPHIC_PIXEL_FMT_RGBA_1010102:
         case GRAPHIC_PIXEL_FMT_RGBA_8888: {
             return ReadOneFrameRGBA(ifs_, dstImg);
         }
-        default: return 0;
+        default:
+            return 0;
     }
 }
 

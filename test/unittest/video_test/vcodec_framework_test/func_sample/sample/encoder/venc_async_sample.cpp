@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 
-#include "venc_sample.h"
+#include "venc_async_sample.h"
+#include <algorithm>
 #include <gtest/gtest.h>
 #include "iconsumer_surface.h"
 #include "meta/meta_key.h"
@@ -31,44 +32,6 @@
 using namespace std;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 using namespace OHOS::MediaAVCodec;
-namespace {
-constexpr int32_t REQUEST_I_FRAME = 1;
-constexpr int32_t REQUEST_I_FRAME_NUM = 13;
-constexpr uint32_t BUFFER_COUNT = 59;
-constexpr uint8_t SHA_AVC[SHA512_DIGEST_LENGTH] = {
-    0x39, 0x2c, 0x3a, 0x78, 0xf0, 0xf7, 0xbe, 0xde, 0xc8, 0x2d, 0x45, 0x19, 0x9d, 0xd8, 0x3e, 0x88,
-    0x5f, 0xf0, 0x0b, 0xf5, 0x14, 0x01, 0x21, 0xea, 0xd2, 0xcf, 0xe3, 0xd9, 0x35, 0x6a, 0x2c, 0x98,
-    0xc6, 0x48, 0xc7, 0x90, 0xca, 0xe7, 0xc1, 0xb0, 0x4e, 0x9c, 0x05, 0x1e, 0xdd, 0x22, 0xd2, 0xe0,
-    0x5e, 0x9a, 0xf8, 0xbc, 0xbe, 0x39, 0x26, 0x46, 0x6e, 0xa3, 0xcd, 0x1b, 0xbb, 0xf5, 0xc8, 0x87};
-constexpr uint8_t SHA_HEVC[SHA512_DIGEST_LENGTH] = {
-    0xb0, 0xca, 0x29, 0xa3, 0x3c, 0x8e, 0x36, 0x3f, 0xbc, 0x30, 0xa8, 0x70, 0x09, 0x29, 0xb5, 0xff,
-    0x8f, 0xe2, 0xf9, 0x58, 0xc5, 0x00, 0x02, 0x7c, 0xa9, 0x05, 0xe0, 0x69, 0x09, 0xa7, 0x2e, 0xb2,
-    0xdf, 0x5d, 0xf4, 0x05, 0xea, 0xde, 0xe9, 0x9b, 0x1e, 0x5b, 0x37, 0x04, 0x2f, 0x3d, 0xe9, 0x2c,
-    0xb2, 0x8c, 0xc3, 0x99, 0xd4, 0xdc, 0xdf, 0xee, 0xb4, 0xd9, 0x0c, 0xd0, 0xee, 0x39, 0x94, 0x3c};
-constexpr int32_t TIMESTAMP_BASE = 1000000;
-constexpr int32_t DURATION_BASE = 46000;
-constexpr int32_t RATIO_US_TO_NS = 1000;
-
-uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
-std::atomic<uint32_t> g_shaBufferCount = 0;
-SHA512_CTX g_ctxTest;
-
-void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_t size, bool needCheckSHA)
-{
-    if (needCheckSHA) {
-        ++g_shaBufferCount;
-    }
-    if (needCheckSHA && g_shaBufferCount < BUFFER_COUNT) {
-        SHA512_Update(&g_ctxTest, addr, size);
-    }
-    if (VideoEncSample::needDump_) {
-        if (!outFile->is_open()) {
-            cout << "output data fail" << endl;
-        }
-        (void)outFile->write(addr, size);
-    }
-}
-} // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -207,13 +170,13 @@ void VEncParamWithAttrCallbackTest::OnInputParameterWithAttrAvailable(uint32_t i
     signal_->inCond_.notify_all();
 }
 
-bool VideoEncSample::needDump_ = false;
-VideoEncSample::VideoEncSample(std::shared_ptr<VEncSignal> signal)
+bool VideoEncAsyncSample::needDump_ = false;
+VideoEncAsyncSample::VideoEncAsyncSample(std::shared_ptr<VEncSignal> signal)
     : signal_(signal), inPath_("/data/test/media/1280_720_nv.yuv"), nativeWindow_(nullptr)
 {
 }
 
-VideoEncSample::~VideoEncSample()
+VideoEncAsyncSample::~VideoEncAsyncSample()
 {
     FlushInner();
     if (videoEnc_ != nullptr) {
@@ -237,19 +200,19 @@ VideoEncSample::~VideoEncSample()
     }
 }
 
-bool VideoEncSample::CreateVideoEncMockByMime(const std::string &mime)
+bool VideoEncAsyncSample::CreateVideoEncMockByMime(const std::string &mime)
 {
     videoEnc_ = VCodecMockFactory::CreateVideoEncMockByMime(mime);
     return videoEnc_ != nullptr;
 }
 
-bool VideoEncSample::CreateVideoEncMockByName(const std::string &name)
+bool VideoEncAsyncSample::CreateVideoEncMockByName(const std::string &name)
 {
     videoEnc_ = VCodecMockFactory::CreateVideoEncMockByName(name);
     return videoEnc_ != nullptr;
 }
 
-int32_t VideoEncSample::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
+int32_t VideoEncAsyncSample::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -259,7 +222,7 @@ int32_t VideoEncSample::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
     return ret;
 }
 
-int32_t VideoEncSample::SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb)
+int32_t VideoEncAsyncSample::SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -269,7 +232,7 @@ int32_t VideoEncSample::SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb)
     return ret;
 }
 
-int32_t VideoEncSample::SetCallback(std::shared_ptr<MediaCodecParameterCallbackMock> cb)
+int32_t VideoEncAsyncSample::SetCallback(std::shared_ptr<MediaCodecParameterCallbackMock> cb)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -279,7 +242,7 @@ int32_t VideoEncSample::SetCallback(std::shared_ptr<MediaCodecParameterCallbackM
     return ret;
 }
 
-int32_t VideoEncSample::SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallbackMock> cb)
+int32_t VideoEncAsyncSample::SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallbackMock> cb)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -289,7 +252,7 @@ int32_t VideoEncSample::SetCallback(std::shared_ptr<MediaCodecParameterWithAttrC
     return ret;
 }
 
-int32_t VideoEncSample::Configure(std::shared_ptr<FormatMock> format)
+int32_t VideoEncAsyncSample::Configure(std::shared_ptr<FormatMock> format)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -297,7 +260,7 @@ int32_t VideoEncSample::Configure(std::shared_ptr<FormatMock> format)
     return videoEnc_->Configure(format);
 }
 
-int32_t VideoEncSample::Prepare()
+int32_t VideoEncAsyncSample::Prepare()
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -305,7 +268,7 @@ int32_t VideoEncSample::Prepare()
     return videoEnc_->Prepare();
 }
 
-int32_t VideoEncSample::SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer)
+int32_t VideoEncAsyncSample::SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -313,7 +276,7 @@ int32_t VideoEncSample::SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer)
     return videoEnc_->SetCustomBuffer(buffer);
 }
 
-int32_t VideoEncSample::Start()
+int32_t VideoEncAsyncSample::Start()
 {
     if (signal_ == nullptr || videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -330,7 +293,7 @@ int32_t VideoEncSample::Start()
     return ret;
 }
 
-int32_t VideoEncSample::Stop()
+int32_t VideoEncAsyncSample::Stop()
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -338,7 +301,7 @@ int32_t VideoEncSample::Stop()
     return videoEnc_->Stop();
 }
 
-int32_t VideoEncSample::Flush()
+int32_t VideoEncAsyncSample::Flush()
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -346,7 +309,7 @@ int32_t VideoEncSample::Flush()
     return videoEnc_->Flush();
 }
 
-int32_t VideoEncSample::Reset()
+int32_t VideoEncAsyncSample::Reset()
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -354,7 +317,7 @@ int32_t VideoEncSample::Reset()
     return videoEnc_->Reset();
 }
 
-int32_t VideoEncSample::Release()
+int32_t VideoEncAsyncSample::Release()
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -362,7 +325,7 @@ int32_t VideoEncSample::Release()
     return videoEnc_->Release();
 }
 
-std::shared_ptr<FormatMock> VideoEncSample::GetOutputDescription()
+std::shared_ptr<FormatMock> VideoEncAsyncSample::GetOutputDescription()
 {
     if (videoEnc_ == nullptr) {
         return nullptr;
@@ -370,7 +333,7 @@ std::shared_ptr<FormatMock> VideoEncSample::GetOutputDescription()
     return videoEnc_->GetOutputDescription();
 }
 
-std::shared_ptr<FormatMock> VideoEncSample::GetInputDescription()
+std::shared_ptr<FormatMock> VideoEncAsyncSample::GetInputDescription()
 {
     if (videoEnc_ == nullptr) {
         return nullptr;
@@ -378,7 +341,7 @@ std::shared_ptr<FormatMock> VideoEncSample::GetInputDescription()
     return videoEnc_->GetInputDescription();
 }
 
-int32_t VideoEncSample::SetParameter(std::shared_ptr<FormatMock> format)
+int32_t VideoEncAsyncSample::SetParameter(std::shared_ptr<FormatMock> format)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -386,7 +349,7 @@ int32_t VideoEncSample::SetParameter(std::shared_ptr<FormatMock> format)
     return videoEnc_->SetParameter(format);
 }
 
-int32_t VideoEncSample::NotifyEos()
+int32_t VideoEncAsyncSample::NotifyEos()
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -394,7 +357,7 @@ int32_t VideoEncSample::NotifyEos()
     return videoEnc_->NotifyEos();
 }
 
-int32_t VideoEncSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr)
+int32_t VideoEncAsyncSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -403,7 +366,7 @@ int32_t VideoEncSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr
     return videoEnc_->PushInputData(index, attr);
 }
 
-int32_t VideoEncSample::FreeOutputData(uint32_t index)
+int32_t VideoEncAsyncSample::FreeOutputData(uint32_t index)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -411,7 +374,7 @@ int32_t VideoEncSample::FreeOutputData(uint32_t index)
     return videoEnc_->FreeOutputData(index);
 }
 
-int32_t VideoEncSample::PushInputBuffer(uint32_t index)
+int32_t VideoEncAsyncSample::PushInputBuffer(uint32_t index)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -420,7 +383,7 @@ int32_t VideoEncSample::PushInputBuffer(uint32_t index)
     return videoEnc_->PushInputBuffer(index);
 }
 
-int32_t VideoEncSample::PushInputParameter(uint32_t index)
+int32_t VideoEncAsyncSample::PushInputParameter(uint32_t index)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -428,7 +391,7 @@ int32_t VideoEncSample::PushInputParameter(uint32_t index)
     return videoEnc_->PushInputParameter(index);
 }
 
-int32_t VideoEncSample::FreeOutputBuffer(uint32_t index)
+int32_t VideoEncAsyncSample::FreeOutputBuffer(uint32_t index)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -437,7 +400,7 @@ int32_t VideoEncSample::FreeOutputBuffer(uint32_t index)
 }
 
 #ifdef VIDEOENC_CAPI_UNIT_TEST
-int32_t VideoEncSample::CreateInputSurface()
+int32_t VideoEncAsyncSample::CreateInputSurface()
 {
     auto surfaceMock = videoEnc_->CreateInputSurface();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_NO_MEMORY, "OH_VideoEncoder_GetSurface fail");
@@ -460,7 +423,7 @@ int32_t VideoEncSample::CreateInputSurface()
     return AV_ERR_OK;
 }
 #else
-int32_t VideoEncSample::CreateInputSurface()
+int32_t VideoEncAsyncSample::CreateInputSurface()
 {
     auto surfaceMock = videoEnc_->CreateInputSurface();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_INVALID_VAL, "CreateInputSurface fail");
@@ -487,7 +450,7 @@ int32_t VideoEncSample::CreateInputSurface()
 }
 #endif
 
-bool VideoEncSample::IsValid()
+bool VideoEncAsyncSample::IsValid()
 {
     if (videoEnc_ == nullptr) {
         return false;
@@ -495,12 +458,31 @@ bool VideoEncSample::IsValid()
     return videoEnc_->IsValid();
 }
 
-void VideoEncSample::SetOutPath(const std::string &path)
+std::string VideoEncAsyncSample::GetFileExtension(const std::string& filePath)
+{
+    // 查找最后一个点号的位置
+    size_t dotPos = filePath.find_last_of('.');
+    // 查找最后一个路径分隔符的位置（支持Windows和Unix风格）
+    size_t slashPos = filePath.find_last_of("/\\");
+    // 如果没有点号，或者点号在路径分隔符之前（表示是目录名中的点号而非扩展名）
+    if (dotPos == std::string::npos || (slashPos != std::string::npos && dotPos < slashPos)) {
+        return "";  // 没有扩展名
+    }
+    // 返回点号之后的部分（扩展名）
+    return filePath.substr(dotPos + 1);
+}
+
+void VideoEncSample::SetInPath(const std::string &path)
+{
+    inPath_ = path;
+}
+
+void VideoEncAsyncSample::SetOutPath(const std::string &path)
 {
     outPath_ = path + ".dat";
 }
 
-void VideoEncSample::FlushInner()
+void VideoEncAsyncSample::FlushInner()
 {
     if (signal_ == nullptr) {
         return;
@@ -545,12 +527,12 @@ void VideoEncSample::FlushInner()
     }
 }
 
-int32_t VideoEncSample::ReadOneFrame()
+int32_t VideoEncAsyncSample::ReadOneFrame()
 {
     return DEFAULT_WIDTH_VENC * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
 }
 
-void VideoEncSample::RunInner()
+void VideoEncAsyncSample::RunInner()
 {
     if (signal_ == nullptr) {
         return;
@@ -558,21 +540,22 @@ void VideoEncSample::RunInner()
     signal_->isPreparing_.store(false);
     signal_->isRunning_.store(true);
     if (isSurfaceMode_) {
-        inputSurfaceLoop_ = make_unique<thread>(&VideoEncSample::InputFuncSurface, this);
-        inputLoop_ = isSetParamCallback_ ? make_unique<thread>(&VideoEncSample::InputParamLoopFunc, this) : nullptr;
+        inputSurfaceLoop_ = make_unique<thread>(&VideoEncAsyncSample::InputFuncSurface, this);
+        inputLoop_ =
+            isSetParamCallback_ ? make_unique<thread>(&VideoEncAsyncSample::InputParamLoopFunc, this) : nullptr;
         ASSERT_NE(inputSurfaceLoop_, nullptr);
     } else {
-        inputLoop_ = make_unique<thread>(&VideoEncSample::InputLoopFunc, this);
+        inputLoop_ = make_unique<thread>(&VideoEncAsyncSample::InputLoopFunc, this);
         ASSERT_NE(inputLoop_, nullptr);
     }
     signal_->inCond_.notify_all();
 
-    outputLoop_ = make_unique<thread>(&VideoEncSample::OutputLoopFunc, this);
+    outputLoop_ = make_unique<thread>(&VideoEncAsyncSample::OutputLoopFunc, this);
     ASSERT_NE(outputLoop_, nullptr);
     signal_->outCond_.notify_all();
 }
 
-void VideoEncSample::RunInnerExt()
+void VideoEncAsyncSample::RunInnerExt()
 {
     if (signal_ == nullptr) {
         return;
@@ -580,21 +563,22 @@ void VideoEncSample::RunInnerExt()
     signal_->isPreparing_.store(false);
     signal_->isRunning_.store(true);
     if (isSurfaceMode_) {
-        inputSurfaceLoop_ = make_unique<thread>(&VideoEncSample::InputFuncSurface, this);
-        inputLoop_ = isSetParamCallback_ ? make_unique<thread>(&VideoEncSample::InputParamLoopFunc, this) : nullptr;
+        inputSurfaceLoop_ = make_unique<thread>(&VideoEncAsyncSample::InputFuncSurface, this);
+        inputLoop_ =
+            isSetParamCallback_ ? make_unique<thread>(&VideoEncAsyncSample::InputParamLoopFunc, this) : nullptr;
         ASSERT_NE(inputSurfaceLoop_, nullptr);
     } else {
-        inputLoop_ = make_unique<thread>(&VideoEncSample::InputLoopFuncExt, this);
+        inputLoop_ = make_unique<thread>(&VideoEncAsyncSample::InputLoopFuncExt, this);
         ASSERT_NE(inputLoop_, nullptr);
     }
     signal_->inCond_.notify_all();
 
-    outputLoop_ = make_unique<thread>(&VideoEncSample::OutputLoopFuncExt, this);
+    outputLoop_ = make_unique<thread>(&VideoEncAsyncSample::OutputLoopFuncExt, this);
     ASSERT_NE(outputLoop_, nullptr);
     signal_->outCond_.notify_all();
 }
 
-void VideoEncSample::WaitForEos()
+void VideoEncAsyncSample::WaitForEos()
 {
     unique_lock<mutex> lock(signal_->mutex_);
     auto lck = [this]() { return !signal_->isRunning_.load(); };
@@ -611,7 +595,7 @@ void VideoEncSample::WaitForEos()
     FlushInner();
 }
 
-void VideoEncSample::PrepareInner()
+void VideoEncAsyncSample::PrepareInner()
 {
     if (signal_ == nullptr) {
         return;
@@ -632,8 +616,8 @@ void VideoEncSample::PrepareInner()
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
 }
 
-void VideoEncSample::InputLtrParam(std::shared_ptr<FormatMock> format, int32_t frameInputCount,
-                                   std::shared_ptr<AVBufferMock> buffer)
+void VideoEncAsyncSample::InputLtrParam(std::shared_ptr<FormatMock> format, int32_t frameInputCount,
+                                        std::shared_ptr<AVBufferMock> buffer)
 {
     if (!ltrParam.enableUseLtr) {
         return;
@@ -656,7 +640,7 @@ void VideoEncSample::InputLtrParam(std::shared_ptr<FormatMock> format, int32_t f
     }
 }
 
-void VideoEncSample::InputParamLoopFunc()
+void VideoEncAsyncSample::InputParamLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoEnc_, nullptr);
@@ -699,7 +683,7 @@ void VideoEncSample::InputParamLoopFunc()
     }
 }
 
-void VideoEncSample::InputLoopFunc()
+void VideoEncAsyncSample::InputLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoEnc_, nullptr);
@@ -719,7 +703,7 @@ void VideoEncSample::InputLoopFunc()
     }
 }
 
-int32_t VideoEncSample::InputLoopInner()
+int32_t VideoEncAsyncSample::InputLoopInner()
 {
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVMemoryMock> buffer = signal_->inMemoryQueue_.front();
@@ -727,16 +711,28 @@ int32_t VideoEncSample::InputLoopInner()
                                       index);
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
+    bool isYUV = true;
+    if (GetFileExtension(inPath_) == "rgb") {
+        isYUV = false;
+    }
     if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
     } else {
-        int32_t stride = 0;
-        auto format = GetInputDescription();
-        char *dst = reinterpret_cast<char *>(buffer->GetAddr());
-        format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
-        attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
-        for (int32_t i = 0; i < attr.size; i += stride) {
-            (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
+        if (isYUV) {
+            int32_t stride = 0;
+            auto format = GetInputDescription();
+            char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+            format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
+            attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
+            for (int32_t i = 0; i < attr.size; i += stride) {
+                (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
+            }
+        } else { // rgba8888/rgba1010102
+            char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+            for (int32_t i = 0; i < DEFAULT_HEIGHT_VENC; i++) {
+                (void)inFile_->read(dst, DEFAULT_WIDTH * 4); // 4: rgba8888/rgba1010102
+                dst += DEFAULT_WIDTH * 4; // 4: rgba8888/rgba1010102
+            }
         }
     }
 
@@ -757,7 +753,7 @@ int32_t VideoEncSample::InputLoopInner()
     return PushInputData(index, attr);
 }
 
-void VideoEncSample::OutputLoopFunc()
+void VideoEncAsyncSample::OutputLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoEnc_, nullptr);
@@ -787,7 +783,7 @@ void VideoEncSample::OutputLoopFunc()
     signal_->cond_.notify_all();
 }
 
-int32_t VideoEncSample::OutputLoopInner()
+int32_t VideoEncAsyncSample::OutputLoopInner()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_, AV_ERR_INVALID_VAL,
                                       "can not dump output file");
@@ -829,7 +825,7 @@ int32_t VideoEncSample::OutputLoopInner()
     return AV_ERR_OK;
 }
 
-void VideoEncSample::OutputLoopFuncExt()
+void VideoEncAsyncSample::OutputLoopFuncExt()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoEnc_, nullptr);
@@ -857,7 +853,7 @@ void VideoEncSample::OutputLoopFuncExt()
     signal_->cond_.notify_all();
 }
 
-void VideoEncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock> buffer)
+void VideoEncAsyncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock> buffer)
 {
     std::shared_ptr<FormatMock> format = buffer->GetParameter();
     if (!(attr.flags & AVCODEC_BUFFER_FLAG_CODEC_DATA) && !(attr.flags & AVCODEC_BUFFER_FLAG_EOS)) {
@@ -885,7 +881,7 @@ void VideoEncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<A
     format->Destroy();
 }
 
-int32_t VideoEncSample::OutputLoopInnerExt()
+int32_t VideoEncAsyncSample::OutputLoopInnerExt()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_, AV_ERR_INVALID_VAL,
                                       "can not dump output file");
@@ -904,7 +900,7 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     if (attr.flags == 0 || (attr.flags & AVCODEC_BUFFER_FLAGS_SYNC_FRAME)) {
         frameOutputCount_++;
     }
-    UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
+    UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_, needDump_);
 
 #ifdef HMOS_TEST
     CheckFormatKey(attr, buffer);
@@ -930,7 +926,7 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     return AV_ERR_OK;
 }
 
-void VideoEncSample::InputLoopFuncExt()
+void VideoEncAsyncSample::InputLoopFuncExt()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoEnc_, nullptr);
@@ -951,7 +947,7 @@ void VideoEncSample::InputLoopFuncExt()
     }
 }
 
-void VideoEncSample::InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr)
+void VideoEncAsyncSample::InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr)
 {
     if (enableVariableFrameRate_) {
         attr.pts = TIMESTAMP_BASE + DURATION_BASE * frameIndex_;
@@ -959,7 +955,7 @@ void VideoEncSample::InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr)
     }
 }
 
-int32_t VideoEncSample::InputLoopInnerExt()
+int32_t VideoEncAsyncSample::InputLoopInnerExt()
 {
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVBufferMock> buffer = signal_->inBufferQueue_.front();
@@ -980,18 +976,14 @@ int32_t VideoEncSample::InputLoopInnerExt()
     formatRoi->Destroy();
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
+    bool isYUV = true;
+    if (GetFileExtension(inPath_) == "rgb") {
+        isYUV = false;
+    }
     if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
     } else {
-        int32_t stride = 0;
-        auto format = GetInputDescription();
-        char *dst = reinterpret_cast<char *>(buffer->GetAddr());
-        format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
-        attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
-        for (int32_t i = 0; i < attr.size; i += stride) {
-            (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
-        }
-        InputLtrParam(format, frameInputCount_, buffer);
+        ReadFrameToBuffer(buffer, attr, isYUV);
     }
 
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
@@ -1014,7 +1006,29 @@ int32_t VideoEncSample::InputLoopInnerExt()
     return PushInputBuffer(index);
 }
 
-void VideoEncSample::InputFuncSurface()
+void VideoEncAsyncSample::ReadFrameToBuffer(
+    std::shared_ptr<AVBufferMock> buffer, struct OH_AVCodecBufferAttr &attr, bool isYUV)
+{
+    if (isYUV) {
+        int32_t stride = 0;
+        auto format = GetInputDescription();
+        char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+        format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
+        attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
+        for (int32_t i = 0; i < attr.size; i += stride) {
+            (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
+        }
+        InputLtrParam(format, frameInputCount_, buffer);
+    } else { // rgba8888/rgba1010102
+        char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+        for (int32_t i = 0; i < DEFAULT_HEIGHT_VENC; i++) {
+            (void)inFile_->read(dst, DEFAULT_WIDTH * 4); // 4: rgba8888/rgba1010102
+            dst += DEFAULT_WIDTH * 4; // 4: rgba8888/rgba1010102
+        }
+    }
+}
+
+void VideoEncAsyncSample::InputFuncSurface()
 {
     while (signal_->isRunning_.load()) {
         OHNativeWindowBuffer *ohNativeWindowBuffer;
@@ -1064,7 +1078,7 @@ void VideoEncSample::InputFuncSurface()
     }
 }
 
-int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWindowBuffer *ohNativeWindowBuffer)
+int32_t VideoEncAsyncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWindowBuffer *ohNativeWindowBuffer)
 {
     using namespace chrono;
     int32_t ret = 0;
@@ -1101,7 +1115,7 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
     return ret;
 }
 
-void VideoEncSample::CheckSHA()
+void VideoEncAsyncSample::CheckSHA()
 {
     const uint8_t *sha = nullptr;
     switch (testParam_) {
@@ -1126,7 +1140,7 @@ void VideoEncSample::CheckSHA()
     cout << std::dec << "\n========================================\n";
 }
 
-void VideoEncSample::PerformEosFrameAndVerifiedSHA()
+void VideoEncAsyncSample::PerformEosFrameAndVerifiedSHA()
 {
     if (needDump_ && outFile_->is_open()) {
         outFile_->close();

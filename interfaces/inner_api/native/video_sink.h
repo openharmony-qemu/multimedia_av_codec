@@ -44,6 +44,7 @@ public:
     void UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t renderDelay = 0);
     Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
     Status SetPerfRecEnabled(bool isPerfRecEnabled);
+    void SetMediaMuted(bool isMuted);
 
 private:
     int64_t CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer,
@@ -100,6 +101,8 @@ private:
     int64_t renderAdvanceThreshold_ {80000};
     bool enableRenderAtTime_ {true};
     PerfRecorder perfRecorder_ {};
+    bool isMuted_ = false;
+    std::atomic<bool> needDropOnMute_ {false};
 };
 } // namespace Pipeline
 } // namespace Media

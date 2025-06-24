@@ -40,6 +40,7 @@ constexpr std::string_view INPUT_FILE_PATH = "/data/test/media/mp3_2c_44100hz_60
 constexpr std::string_view OUTPUT_PCM_FILE_PATH = "/data/test/media/mp3_2c_44100hz_60k.pcm";
 constexpr int32_t INPUT_FRAME_BYTES = 2 * 1024 * 4;
 constexpr int32_t TIME_OUT_MS = 8;
+constexpr int64_t MILLISECOUND_TO_SECOND = 1000;
 
 typedef enum OH_AVCodecBufferFlags {
     AVCODEC_BUFFER_FLAGS_NONE = 0,
@@ -97,15 +98,21 @@ int32_t AudioDecInnerAvBuffer::RunCase()
     audioCodec_ = AudioCodecFactory::CreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     DEMO_CHECK_AND_RETURN_RET_LOG(audioCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
                                   "audioCodec_ is null");
+    bool enableSync = false;
+    meta_->GetData(Tag::AV_CODEC_ENABLE_SYNC_MODE, enableSync);
     audioCodec_->Configure(meta_);
 
-    audioCodec_->SetOutputBufferQueue(innerBufferQueue_->GetProducer());
+    if (!enableSync) {
+        audioCodec_->SetOutputBufferQueue(innerBufferQueue_->GetProducer());
+    }
     audioCodec_->Prepare();
 
-    implConsumer_ = innerBufferQueue_->GetConsumer();
-    sptr<Media::IConsumerListener> comsumerListener = new AudioCodecConsumerListener(this);
-    implConsumer_->SetBufferAvailableListener(comsumerListener);
-    mediaCodecProducer_ = audioCodec_->GetInputBufferQueue();
+    if (!enableSync) {
+        implConsumer_ = innerBufferQueue_->GetConsumer();
+        sptr<Media::IConsumerListener> comsumerListener = new AudioCodecConsumerListener(this);
+        implConsumer_->SetBufferAvailableListener(comsumerListener);
+        mediaCodecProducer_ = audioCodec_->GetInputBufferQueue();
+    }
 
     audioCodec_->Start();
     isRunning_.store(true);
@@ -113,7 +120,11 @@ int32_t AudioDecInnerAvBuffer::RunCase()
     fileSize_ = GetFileSize(INPUT_FILE_PATH.data());
     inputFile_ = std::make_unique<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
     outputFile_ = std::make_unique<std::ofstream>(OUTPUT_PCM_FILE_PATH, std::ios::binary);
-    InputFunc();
+    if (!enableSync) {
+        InputFunc();
+    } else {
+        SyncFunc();
+    }
     inputFile_->close();
     outputFile_->close();
     return ret;
@@ -204,6 +215,80 @@ void AudioDecInnerAvBuffer::OutputFunc()
         }
         implConsumer_->ReleaseBuffer(outputBuffer);
         bufferConsumerAvailableCount_--;
+    }
+}
+
+void AudioDecInnerAvBuffer::SyncFunc()
+{
+    DEMO_CHECK_AND_RETURN_LOG(inputFile_ != nullptr && inputFile_->is_open(), "Fatal: open file fail");
+    int32_t sumReadSize = 0;
+    int32_t ret;
+    int64_t size;
+    int64_t pts;
+    uint32_t index = 0;
+    size_t requestBufferSize = GetInputBufferSize();
+    while (isRunning_) {
+        // input
+        ret = audioCodec_->QueryInputBuffer(
+            &index, requestBufferSize, static_cast<int64_t>(TIME_OUT_MS) * MILLISECOUND_TO_SECOND);
+        if (ret != static_cast<int32_t>(Media::Status::OK)) {
+            std::cout << "audioCodec_->QueryInputBuffer fail,ret=" << ret << std::endl;
+            break;
+        }
+        std::shared_ptr<AVBuffer> inputBuffer = audioCodec_->GetInputBuffer(index);
+        DEMO_CHECK_AND_BREAK_LOG(inputBuffer != nullptr, "buffer is nullptr");
+        inputFile_->read(reinterpret_cast<char *>(&size), sizeof(size));
+        if (inputFile_->eof() || inputFile_->gcount() == 0 || size == 0) {
+            inputBuffer->memory_->SetSize(1);
+            inputBuffer->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
+            sumReadSize += 0;
+            audioCodec_->PushInputBuffer(index, true);
+            sumReadSize += inputFile_->gcount();
+            std::cout << "SyncFunc, INPUT_FRAME_BYTES:" << size << " flag:" << inputBuffer->flag_
+                      << " sumReadSize:" << sumReadSize << " fileSize_:" << fileSize_
+                      << " process:" << 100 * sumReadSize / fileSize_ << "%" << std::endl;  // 100
+            std::cout << "end buffer\n";
+            break;
+        }
+        DEMO_CHECK_AND_BREAK_LOG(inputFile_->gcount() == sizeof(size), "Fatal: read size fail");
+        sumReadSize += inputFile_->gcount();
+        inputFile_->read(reinterpret_cast<char *>(&pts), sizeof(pts));
+        DEMO_CHECK_AND_BREAK_LOG(inputFile_->gcount() == sizeof(pts), "Fatal: read pts fail");
+        sumReadSize += inputFile_->gcount();
+        inputFile_->read(reinterpret_cast<char *>(inputBuffer->memory_->GetAddr()), size);
+        DEMO_CHECK_AND_BREAK_LOG(inputFile_->gcount() == size, "Fatal: read buffer fail");
+        inputBuffer->memory_->SetSize(size);
+        inputBuffer->flag_ = AVCODEC_BUFFER_FLAGS_NONE;
+        sumReadSize += inputFile_->gcount();
+        audioCodec_->PushInputBuffer(index, true);
+        std::cout << "SyncFunc, INPUT_FRAME_BYTES:" << size << " flag:" << inputBuffer->flag_
+                  << " sumReadSize:" << sumReadSize << " fileSize_:" << fileSize_
+                  << " process:" << 100 * sumReadSize / fileSize_ << "%" << std::endl;  // 100
+
+        SyncOutputFunc();
+    }
+}
+
+void AudioDecInnerAvBuffer::SyncOutputFunc()
+{
+    int32_t sumWriteSize = 0;
+    while (isRunning_) {
+        std::shared_ptr<AVBuffer> outputBuffer =
+            audioCodec_->GetOutputBuffer(static_cast<int64_t>(TIME_OUT_MS) * MILLISECOUND_TO_SECOND);
+        if (outputBuffer == nullptr) {
+            std::cout << "SyncFunc OH_AVBuffer is nullptr" << std::endl;
+            break;
+        }
+        std::cout << "SyncFunc, OUT_FRAME_BYTES:" << outputBuffer->memory_->GetSize()
+                  << ", sumWriteSize:" << sumWriteSize << std::endl;
+        sumWriteSize += outputBuffer->memory_->GetSize();
+        outputFile_->write(
+            reinterpret_cast<char *>(outputBuffer->memory_->GetAddr()), outputBuffer->memory_->GetSize());
+        if (outputBuffer->flag_ == AVCODEC_BUFFER_FLAGS_EOS || outputBuffer->memory_->GetSize() == 0) {
+            std::cout << "out eos" << std::endl;
+            isRunning_.store(false);
+        }
+        audioCodec_->ReleaseOutputBuffer(outputBuffer);
     }
 }
 
@@ -462,6 +547,20 @@ HWTEST_F(AVCodecAudioCodecUnitTest, AudioDecode_001, TestSize.Level1)
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(44100); // expected sampleRate
     meta->Set<Tag::MEDIA_BITRATE>(60000); // BITRATE is 60000
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audioDec->RunCase());
+}
+
+HWTEST_F(AVCodecAudioCodecUnitTest, AudioSyncDecode_001, TestSize.Level1)
+{
+    auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
+    auto& meta = audioDec->GetAudioMeta();
+    meta = std::make_shared<Media::Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_CHANNEL_LAYOUT>(Media::Plugins::AudioChannelLayout::STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(44100); // expected sampleRate
+    meta->Set<Tag::MEDIA_BITRATE>(60000); // BITRATE is 60000
+    meta->Set<Tag::AV_CODEC_ENABLE_SYNC_MODE>(true);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audioDec->RunCase());
 }
 

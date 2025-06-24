@@ -100,6 +100,11 @@ public:
     Status PauseTaskByTrackId(int32_t trackId);
     bool IsRenderNextVideoFrameSupported();
 
+    inline bool IsAudioDemuxDecodeAsync() const
+    {
+        return demuxer_ && demuxer_->IsAudioDemuxDecodeAsync();
+    }
+
     bool IsDrmProtected();
     // drm callback
     void OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo);
@@ -129,6 +134,7 @@ public:
     void RestartAndClearBuffer();
     bool IsFlvLive();
     Status StopBufferring(bool isAppBackground);
+    Status SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted, bool keepDecodingOnMute);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -157,6 +163,7 @@ private:
     std::shared_ptr<MediaDemuxer> demuxer_;
     std::shared_ptr<MediaSource> mediaSource_;
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
+    bool isTransCoderMode_ {false};
 
     std::map<StreamType, std::vector<int32_t>> track_id_map_;
     Mutex mapMutex_ {};
@@ -170,6 +177,7 @@ private:
     bool isNotPrepareBeforeStart_ {true};
     bool isEnableReselectVideoTrack_ {false};
     int32_t apiVersion_ {0};
+    bool isVideoMuted_ = false;
 };
 } // namespace Pipeline
 } // namespace Media

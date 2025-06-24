@@ -842,7 +842,7 @@ std::optional<CodecScenario> CodecParamChecker::CheckCodecScenario(const Media::
     if (codecType == AVCODEC_TYPE_VIDEO_ENCODER) {
         scenario = CodecScenario::CODEC_SCENARIO_ENC_NORMAL;
     }
-    
+
     for (const auto& checker : VIDEO_SCENARIO_CHECKER_LIST) {
         auto ret = checker(capData.value(), format, codecType);
         if (ret == std::nullopt) {

@@ -211,6 +211,16 @@ Status SurfaceEncoderFilter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBu
     return mediaCodec_->SetWatermark(waterMarkBuffer);
 }
 
+Status SurfaceEncoderFilter::SetVideoEnableBFrame(bool &enableBFrame)
+{
+    MEDIA_LOG_I("SurfaceEncoderFilter::SetVideoEnableBFrame in, enableBFrame is: %{public}d", enableBFrame);
+    if (mediaCodec_ == nullptr) {
+        MEDIA_LOG_E("mediaCodec_ is nullptr");
+        return Status::ERROR_UNKNOWN;
+    }
+    return mediaCodec_->SetVideoEnableBFrame(enableBFrame);
+}
+
 Status SurfaceEncoderFilter::SetStopTime()
 {
     MEDIA_LOG_I("SetStopTime");

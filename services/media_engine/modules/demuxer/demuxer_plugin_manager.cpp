@@ -847,6 +847,30 @@ Status DemuxerPluginManager::Start()
     return Status::OK;   // todo: 待适配返回值
 }
 
+Status DemuxerPluginManager::Pause()
+{
+    MEDIA_LOG_W("DemuxerPluginManager Pause");
+    if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curVideoStreamID_].plugin->Pause();
+        if (ret != Status::OK) {
+            return ret;
+        }
+    }
+    if (curAudioStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curAudioStreamID_].plugin->Pause();
+        if (ret != Status::OK) {
+            return ret;
+        }
+    }
+    if (curSubTitleStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->Pause();
+        if (ret != Status::OK) {
+            return ret;
+        }
+    }
+    return Status::OK;
+}
+
 Status DemuxerPluginManager::UpdateMediaInfo(int32_t streamID)
 {
     Plugins::MediaInfo mediaInfo = curMediaInfo_;

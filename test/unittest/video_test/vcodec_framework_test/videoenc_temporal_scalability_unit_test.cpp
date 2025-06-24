@@ -14,18 +14,17 @@
  */
 
 #include <gtest/gtest.h>
+#include "avcodec_log.h"
+#include "codeclist_mock.h"
+#include "native_avmagic.h"
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
-#include "codeclist_mock.h"
-#include "venc_sample.h"
-#include "native_avmagic.h"
+
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videoenc_capi_mock.h"
-#define TEST_SUIT VideoEncTemporalScalabilityCapiTest
-#else
-#define TEST_SUIT VideoEncTemporalScalabilityInnerTest
 #endif
+#include "videoenc_func_test_suit.h"
 
 using namespace std;
 using namespace OHOS;
@@ -34,94 +33,16 @@ using namespace testing::ext;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 using namespace OHOS::Media;
 
-namespace {
+namespace VFTSUIT {
 constexpr int32_t DEFAULT_LTR_COUNT = 4;
 constexpr int32_t DEFAULT_INVALID_LTR_COUNT = 1000;
 constexpr int32_t DEFAULT_LTR_INTERVAL = 4;
-class TEST_SUIT : public testing::TestWithParam<int32_t> {
-public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp(void);
-    void TearDown(void);
-
-    bool CreateVideoCodecByName(const std::string &decName);
-    bool CreateVideoCodecByMime(const std::string &decMime);
-    void CreateByNameWithParam(int32_t param);
-    void SetFormatWithParam(int32_t param);
-    void PrepareSource(int32_t param);
-    bool GetTemporalScalabilityCapability(int32_t param, bool isTemporalScalability);
-
-protected:
-    std::shared_ptr<CodecListMock> capability_ = nullptr;
-    std::shared_ptr<VideoEncSample> videoEnc_ = nullptr;
-    std::shared_ptr<FormatMock> format_ = nullptr;
-    std::shared_ptr<VEncCallbackTest> vencCallback_ = nullptr;
-    std::shared_ptr<VEncCallbackTestExt> vencCallbackExt_ = nullptr;
-    std::shared_ptr<VEncParamCallbackTest> vencParamCallback_ = nullptr;
-    std::shared_ptr<VEncParamWithAttrCallbackTest> vencParamWithAttrCallback_ = nullptr;
-};
 
 void TEST_SUIT::SetUpTestCase(void)
 {
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
-}
-
-void TEST_SUIT::TearDownTestCase(void) {}
-
-void TEST_SUIT::SetUp(void)
-{
-    std::shared_ptr<VEncSignal> vencSignal = std::make_shared<VEncSignal>();
-    vencCallback_ = std::make_shared<VEncCallbackTest>(vencSignal);
-    ASSERT_NE(nullptr, vencCallback_);
-
-    vencCallbackExt_ = std::make_shared<VEncCallbackTestExt>(vencSignal);
-    ASSERT_NE(nullptr, vencCallbackExt_);
-
-    vencParamCallback_ = std::make_shared<VEncParamCallbackTest>(vencSignal);
-    ASSERT_NE(nullptr, vencParamCallback_);
-
-    vencParamWithAttrCallback_ = std::make_shared<VEncParamWithAttrCallbackTest>(vencSignal);
-    ASSERT_NE(nullptr, vencParamWithAttrCallback_);
-
-    videoEnc_ = std::make_shared<VideoEncSample>(vencSignal);
-    ASSERT_NE(nullptr, videoEnc_);
-
-    format_ = FormatMockFactory::CreateFormat();
-    ASSERT_NE(nullptr, format_);
-}
-
-void TEST_SUIT::TearDown(void)
-{
-    if (format_ != nullptr) {
-        format_->Destroy();
-    }
-    videoEnc_ = nullptr;
-}
-
-bool TEST_SUIT::CreateVideoCodecByMime(const std::string &encMime)
-{
-    if (videoEnc_->CreateVideoEncMockByMime(encMime) == false || videoEnc_->SetCallback(vencCallback_) != AV_ERR_OK) {
-        return false;
-    }
-    return true;
-}
-
-bool TEST_SUIT::CreateVideoCodecByName(const std::string &name)
-{
-    if (videoEnc_->isAVBufferMode_) {
-        if (videoEnc_->CreateVideoEncMockByName(name) == false ||
-            videoEnc_->SetCallback(vencCallbackExt_) != AV_ERR_OK) {
-            return false;
-        }
-    } else {
-        if (videoEnc_->CreateVideoEncMockByName(name) == false || videoEnc_->SetCallback(vencCallback_) != AV_ERR_OK) {
-            return false;
-        }
-    }
-    return true;
 }
 
 void TEST_SUIT::CreateByNameWithParam(int32_t param)
@@ -506,6 +427,10 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_014, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
 /**
@@ -704,11 +629,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Feature_Long_Term_Reference_003, TestSize.Level
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, DEFAULT_INVALID_LTR_COUNT);
-#ifdef VIDEOENC_CAPI_UNIT_TEST
     ASSERT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
-#else
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEnc_->Configure(format_));
-#endif
 }
 } // namespace
 
@@ -718,7 +639,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < argc; ++i) {
         cout << argv[i] << endl;
         if (strcmp(argv[i], "--need_dump") == 0) {
-            VideoEncSample::needDump_ = true;
+            VideoEncAsyncSample::needDump_ = true;
             DecArgv(i, argc, argv);
         }
     }

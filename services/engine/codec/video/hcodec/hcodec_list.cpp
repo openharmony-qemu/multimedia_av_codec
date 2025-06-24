@@ -16,6 +16,7 @@
 #include "hcodec_list.h"
 #include <map>
 #include <numeric>
+#include <algorithm>
 #include "syspara/parameters.h"
 #include "hdf_base.h"
 #include "iservmgr_hdi.h"
@@ -129,6 +130,16 @@ int32_t HCodecList::GetCapabilityList(std::vector<CapabilityData>& caps)
     return AVCS_ERR_OK;
 }
 
+VideoFeature HCodecList::FindFeature(const vector<VideoFeature> &features, const enum VideoFeatureKey &key)
+{
+    auto it = find_if(features.begin(), features.end(),
+        [&key](const VideoFeature& feature) { return feature.key == key; });
+    if (it == features.end()) {
+        return {key, false, {}};
+    }
+    return *it;
+}
+
 bool HCodecList::IsSupportedVideoCodec(const CodecCompCapability &hdiCap)
 {
     if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_AVC || hdiCap.role == MEDIA_ROLETYPE_VIDEO_HEVC ||
@@ -167,7 +178,6 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     userCap.measuredFrameRate = GetMeasuredFrameRate(hdiVideoCap);
     userCap.supportSwapWidthHeight = hdiCap.canSwapWidthHeight;
     userCap.encodeQuality = {0, MAX_ENCODE_QUALITY};
-    GetSupportedFeatureParam(hdiVideoCap, userCap);
     LOGI("----- codecName: %s -----", userCap.codecName.c_str());
     LOGI("codecType: %d, mimeType: %s, maxInstance %d",
         userCap.codecType, userCap.mimeType.c_str(), userCap.maxInstance);
@@ -180,11 +190,10 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     LOGI("blockPerFrame: [%d, %d], blockPerSecond: [%d, %d]",
         userCap.blockPerFrame.minVal, userCap.blockPerFrame.maxVal,
         userCap.blockPerSecond.minVal, userCap.blockPerSecond.maxVal);
-    LOGI("isSupportPassthrough: %d", hdiVideoCap.isSupportPassthrough);
-    LOGI("isSupportWaterMark: %d, isSupportLowLatency: %d, isSupportTSVC: %d, isSupportLTR %d and maxLTRFrameNum %d",
-        hdiVideoCap.isSupportWaterMark, hdiVideoCap.isSupportLowLatency, hdiVideoCap.isSupportTSVC,
-        hdiVideoCap.isSupportLTR, hdiVideoCap.maxLTRFrameNum);
-    LOGI("isSupportQPMap: %d", hdiVideoCap.isSupportQPMap);
+    GetSupportedFeatureParam(hdiVideoCap, userCap);
+    GetSupportedLtrFeatureParam(hdiVideoCap, userCap);
+    GetSupportedBFrameFeatureParam(hdiVideoCap, userCap);
+    LOGI("isSupportPassthrough: %d", FindFeature(hdiVideoCap.features, VIDEO_FEATURE_PASS_THROUGH).support);
     return userCap;
 }
 
@@ -294,29 +303,69 @@ void HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap, Capabi
 void HCodecList::GetSupportedFeatureParam(const CodecVideoPortCap& hdiVideoCap,
                                           CapabilityData& userCap)
 {
-    if (hdiVideoCap.isSupportLowLatency) {
-        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_LOW_LATENCY)] = Format();
-    }
-    if (hdiVideoCap.isSupportTSVC) {
-        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY)] = Format();
-    }
-    if (hdiVideoCap.isSupportLTR) {
-        Format format;
-        int32_t maxLTRFrameNum = hdiVideoCap.maxLTRFrameNum;
-        if (maxLTRFrameNum >= 0) {
-            format.PutIntValue(OHOS::Media::Tag::FEATURE_PROPERTY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT, maxLTRFrameNum);
-            userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE)] = format;
+    // convert CodecHDI to AVCodec Feature
+    map<CodecHDI::VideoFeatureKey, pair<AVCapabilityFeature, string>> featureConvertMap = {
+        {   CodecHDI::VIDEO_FEATURE_LOW_LATENCY,
+            {AVCapabilityFeature::VIDEO_LOW_LATENCY, "isSupportLowLatency"}
+        },
+        {   CodecHDI::VIDEO_FEATURE_TSVC,
+            {AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY, "isSupportTSVC"}
+        },
+        {   CodecHDI::VIDEO_FEATURE_WATERMARK,
+            {AVCapabilityFeature::VIDEO_WATERMARK, "isSupportWaterMark"}
+        },
+        {   CodecHDI::VIDEO_FEATURE_SEEK_WITHOUT_FLUSH,
+            {AVCapabilityFeature::VIDEO_DECODER_SEEK_WITHOUT_FLUSH, "isSupportSeekWithoutFlush"}
+        },
+        {   CodecHDI::VIDEO_FEATURE_QP_MAP,
+            {AVCapabilityFeature::VIDEO_ENCODER_QP_MAP, "isSupportQPMap"}
+        },
+    };
+
+    for (auto featureInfo: featureConvertMap) {
+        VideoFeature feature = FindFeature(hdiVideoCap.features, featureInfo.first);
+        if (feature.support) {
+            userCap.featuresMap[static_cast<int32_t>(featureInfo.second.first)] = Format();
         }
+        LOGI("%s: %d", featureInfo.second.second.c_str(), feature.support);
     }
-    if (hdiVideoCap.isSupportWaterMark) {
-        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_WATERMARK)] = Format();
+}
+
+void HCodecList::GetSupportedLtrFeatureParam(const CodecVideoPortCap& hdiVideoCap,
+                                             CapabilityData& userCap)
+{
+    VideoFeature feature = FindFeature(hdiVideoCap.features, VIDEO_FEATURE_LTR);
+    if (!feature.support || feature.extendInfo.empty()) {
+        LOGI("isSupportLTR: 0");
+        return;
     }
-    if (hdiVideoCap.isSupportSeekWithoutFlush) {
-        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_DECODER_SEEK_WITHOUT_FLUSH)] = Format();
+    Format format;
+    int32_t maxLTRFrameNum = feature.extendInfo[0];
+    if (maxLTRFrameNum >= 0) {
+        format.PutIntValue(OHOS::Media::Tag::FEATURE_PROPERTY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT, maxLTRFrameNum);
+        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE)] = format;
+        LOGI("isSupportLTR: 1, maxLTRFrameNum: %d", maxLTRFrameNum);
+        return;
     }
-    if (hdiVideoCap.isSupportQPMap) {
-        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_QP_MAP)] = Format();
+    LOGI("isSupportLTR: 0");
+}
+
+void HCodecList::GetSupportedBFrameFeatureParam(const CodecVideoPortCap& hdiVideoCap,
+                                                CapabilityData& userCap)
+{
+    VideoFeature feature = FindFeature(hdiVideoCap.features, VIDEO_FEATURE_ENCODE_B_FRAME);
+    if (!feature.support || feature.extendInfo.empty()) {
+        LOGI("isSupportBFrame: 0");
+        return;
     }
-    userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_B_FRAME)] = Format();
+    Format format;
+    int32_t maxBFrameCount = feature.extendInfo[0];
+    if (maxBFrameCount > 0) {
+        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_B_FRAME)] = format;
+        LOGI("isSupportBFrame: 1, maxSupportBFrameCnt: %u", maxBFrameCount);
+        return;
+    }
+    LOGI("isSupportBFrame: 0");
+    return;
 }
 } // namespace OHOS::MediaAVCodec

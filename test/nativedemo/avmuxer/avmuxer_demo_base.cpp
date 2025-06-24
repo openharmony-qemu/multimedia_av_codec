@@ -26,6 +26,7 @@ namespace {
     constexpr int MODE_FOUR = 4;
     constexpr int MODE_FIVE = 5;
     constexpr int MODE_SIX = 6;
+    constexpr int MODE_SEVEN = 7;
     constexpr int CONFIG_BUFFER_SZIE = 0x1FFF;
 }
 
@@ -60,7 +61,7 @@ std::shared_ptr<std::ifstream> OpenFile(const std::string &filePath)
 void AVMuxerDemoBase::SelectFormatMode()
 {
     int num;
-    std::cout<<"\nplease select muxer type: 0.mp4 1.m4a 2.amr 3.mp3 4.wav 5.aac"<<std::endl;
+    std::cout<<"\nplease select muxer type: 0.mp4 1.m4a 2.amr 3.mp3 4.wav 5.aac 6.flac"<<std::endl;
     std::cin>>num;
     switch (num) {
         case MODE_ZERO:
@@ -87,6 +88,10 @@ void AVMuxerDemoBase::SelectFormatMode()
             format_ = "aac";
             outputFormat_ = Plugins::OutputFormat::AAC;
             break;
+        case MODE_SIX:
+            format_ = "flac";
+            outputFormat_ = Plugins::OutputFormat::FLAC;
+            break;
         default:
             format_ = "mp4";
             outputFormat_ = Plugins::OutputFormat::MPEG_4;
@@ -97,7 +102,7 @@ void AVMuxerDemoBase::SelectFormatMode()
 void AVMuxerDemoBase::SelectAudioMode()
 {
     int num;
-    std::cout<<"\nplease select audio file: 0.noAudio 1.aac 2.mpeg 3.amrnb 4.amrwb 5.g711mu 6.raw"<<std::endl;
+    std::cout<<"\nplease select audio file: 0.noAudio 1.aac 2.mpeg 3.amrnb 4.amrwb 5.g711mu 6.raw 7.flac"<<std::endl;
     std::cin>>num;
     switch (num) {
         case MODE_ZERO:
@@ -127,6 +132,10 @@ void AVMuxerDemoBase::SelectAudioMode()
         case MODE_SIX:
             audioType_ = "wav";
             audioParams_ = &g_audioRawPar;
+            break;
+        case MODE_SEVEN:
+            audioType_ = "flac";
+            audioParams_ = &g_audioFlacPar;
             break;
         default:
             audioType_ = "noAudio";
@@ -598,7 +607,9 @@ int AVMuxerDemoBase::AddAudioTrack(const AudioTrackParam *param)
     audioParams->Set<Tag::MIME_TYPE>(param->mimeType);
     audioParams->Set<Tag::AUDIO_SAMPLE_RATE>(param->sampleRate);
     audioParams->Set<Tag::AUDIO_CHANNEL_COUNT>(param->channels);
-    audioParams->Set<Tag::AUDIO_SAMPLE_PER_FRAME>(param->frameSize);
+    if (param->frameSize > 0) {
+        audioParams->Set<Tag::AUDIO_SAMPLE_PER_FRAME>(param->frameSize);
+    }
     if (param == &g_audioAacPar) {
         audioParams->Set<Tag::MEDIA_PROFILE>(Plugins::AACProfile::AAC_PROFILE_LC);
         audioParams->Set<Tag::AUDIO_AAC_IS_ADTS>(0);

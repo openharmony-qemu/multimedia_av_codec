@@ -84,6 +84,15 @@ int32_t AVCodecAudioCodecImpl::Configure(const Format &format)
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     auto meta = const_cast<Format &>(format).GetMeta();
     inputBufferSize_ = 0;
+
+    int32_t syncMode = 0;
+    format.GetIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, syncMode);
+    isSyncMode_.store(syncMode == 1);
+    AVCODEC_LOGI("AVCodecAudioCodecImpl:0x%{public}06" PRIXPTR " sync mode:%{public}d", FAKE_POINTER(this), syncMode);
+    if (isSyncMode_.load()) {
+        std::shared_ptr<AVCodecInnerCallback> innerCallback = std::make_shared<AVCodecInnerCallback>(this);
+        codecService_->SetCallback(innerCallback);
+    }
     return codecService_->Configure(meta);
 }
 
@@ -107,7 +116,9 @@ int32_t AVCodecAudioCodecImpl::Prepare()
     implConsumer_->SetBufferAvailableListener(comsumerListener);
 
     outputTask_->RegisterHandler([this] { ConsumerOutputBuffer(); });
-    inputTask_->RegisterHandler([this] { ProduceInputBuffer(); });
+    if (!isSyncMode_.load()) {
+        inputTask_->RegisterHandler([this] { ProduceInputBuffer(); });
+    }
     return AVCS_ERR_OK;
 }
 
@@ -121,11 +132,13 @@ int32_t AVCodecAudioCodecImpl::Start()
     isRunning_ = true;
     indexInput_ = 0;
     indexOutput_ = 0;
-    if (inputTask_) {
-        inputTask_->Start();
-    } else {
-        AVCODEC_LOGE("Start failed, inputTask_ is nullptr, please check the inputTask_.");
-        ret = AVCS_ERR_UNKNOWN;
+    if (!isSyncMode_.load()) {
+        if (inputTask_) {
+            inputTask_->Start();
+        } else {
+            AVCODEC_LOGE("Start failed, inputTask_ is nullptr, please check the inputTask_.");
+            ret = AVCS_ERR_UNKNOWN;
+        }
     }
     if (outputTask_) {
         outputTask_->Start();
@@ -174,6 +187,7 @@ int32_t AVCodecAudioCodecImpl::Reset()
     ClearCache();
     ClearInputBuffer();
     inputBufferSize_ = 0;
+    isSyncMode_.store(false);
     return ret;
 }
 
@@ -199,8 +213,10 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
     {
         std::unique_lock lock(inputMutex_);
         auto it = inputBufferObjMap_.find(index);
-        CHECK_AND_RETURN_RET_LOG(it != inputBufferObjMap_.end(), AVCS_ERR_INVALID_VAL,
-            "Index does not exist");
+        if (it == inputBufferObjMap_.end()) {
+            AVCODEC_LOGE("Index:%{public}d does not exist", index);
+            return AVCS_ERR_INVALID_VAL;
+        }
         buffer = it->second;
         inputBufferObjMap_.erase(index);
     }
@@ -492,6 +508,120 @@ void AVCodecAudioCodecImpl::PauseTask()
     }
 }
 
+int32_t AVCodecAudioCodecImpl::QueryInputBuffer(uint32_t *index, int64_t timeoutUs)
+{
+    if (index == nullptr) {
+        AVCODEC_LOGE("input nullptr index");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    if (!isRunning_.load()) {
+        AVCODEC_LOGE("not start");
+        return AVCS_ERR_INVALID_STATE;
+    }
+    if (!isSyncMode_.load()) {
+        AVCODEC_LOGE("not in sync mode");
+        return AVCS_ERR_INVALID_OPERATION;
+    }
+    AVCODEC_SYNC_TRACE;
+    Media::AVBufferConfig avBufferConfig;
+    avBufferConfig.size = GetInputBufferSize();
+    std::unique_lock lock2(inputMutex2_);
+    CHECK_AND_RETURN_RET_LOG(mediaCodecProducer_ != nullptr, AVCS_ERR_INVALID_VAL, "mediaCodecProducer_ is nullptr");
+    std::shared_ptr<AVBuffer> emptyBuffer = nullptr;
+    Status ret = mediaCodecProducer_->RequestBufferWaitUs(emptyBuffer, avBufferConfig, timeoutUs);
+    if (ret == Media::Status::ERROR_WAIT_TIMEOUT) {
+        AVCODEC_LOGW("produceInputBuffer RequestBuffer wait:%{public}" PRId64 " us timeout", timeoutUs);
+        return AVCS_ERR_TRY_AGAIN;
+    } else if (ret != Media::Status::OK) {
+        AVCODEC_LOGE("produceInputBuffer RequestBuffer fail, ret=%{public}d", ret);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    if (emptyBuffer == nullptr) {
+        AVCODEC_LOGE("buffer is nullptr");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    std::unique_lock lock1(inputMutex_);
+    inputBufferObjMap_[indexInput_] = emptyBuffer;
+    *index = indexInput_;
+    AVCODEC_LOGD("new input buffer index:%{public}d", *index);
+    indexInput_ = (indexInput_ >= MAX_INDEX) ? 0 : ++indexInput_;
+    return AVCS_ERR_OK;
+}
+
+std::shared_ptr<AVBuffer> AVCodecAudioCodecImpl::GetInputBuffer(uint32_t index)
+{
+    if (!isSyncMode_.load() || !isRunning_.load()) {
+        AVCODEC_LOGE("not start or not in sync mode, %{public}d, %{public}d", isSyncMode_.load(), isRunning_.load());
+        return nullptr;
+    }
+    AVCODEC_SYNC_TRACE;
+    std::unique_lock lock(inputMutex_);
+    std::shared_ptr<AVBuffer> buffer;
+    auto it = inputBufferObjMap_.find(index);
+    if (it == inputBufferObjMap_.end()) {
+        AVCODEC_LOGE("Index:%{public}d does not exist", index);
+        return nullptr;
+    }
+    buffer = it->second;
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, nullptr, "buffer not found");
+    return buffer;
+}
+
+int32_t AVCodecAudioCodecImpl::QueryOutputBuffer(uint32_t *index, int64_t timeoutUs)
+{
+    if (index == nullptr) {
+        AVCODEC_LOGE("input nullptr index");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    if (!isRunning_.load()) {
+        AVCODEC_LOGE("not start");
+        return AVCS_ERR_INVALID_STATE;
+    }
+    if (!isSyncMode_.load()) {
+        AVCODEC_LOGE("not in sync mode");
+        return AVCS_ERR_INVALID_OPERATION;
+    }
+    AVCODEC_SYNC_TRACE;
+    std::unique_lock lock(syncOutputMutex_);
+    if (syncOutputQueue_.empty() && timeoutUs != 0) {
+        if (timeoutUs < 0) {
+            syncOutCond_.wait(lock, [this] { return !syncOutputQueue_.empty(); });
+        } else {
+            auto timeout = std::chrono::microseconds(timeoutUs);
+            syncOutCond_.wait_for(lock, timeout, [this] { return !syncOutputQueue_.empty(); });
+        }
+    }
+    if (syncOutputQueue_.empty()) {
+        AVCODEC_LOGW("output RequestBuffer wait:%{public}" PRId64 " us timeout", timeoutUs);
+        return AVCS_ERR_TRY_AGAIN;
+    }
+    std::shared_ptr<OutputInfo> out = syncOutputQueue_.front();
+    syncOutputQueue_.pop();
+    if (out->type_ == OUTPUT_STREAM_CHANGED) {
+        return AVCS_ERR_STREAM_CHANGED;
+    }
+    std::lock_guard mapLock(outputMutex_);
+    *index = indexOutput_;
+    outputBufferObjMap_[indexOutput_] = out->buffer_;
+    indexOutput_ = (indexOutput_ >= MAX_INDEX) ? 0 : ++indexOutput_;
+    return AVCS_ERR_OK;
+}
+
+std::shared_ptr<AVBuffer> AVCodecAudioCodecImpl::GetOutputBuffer(uint32_t index)
+{
+    if (!isSyncMode_.load() || !isRunning_.load()) {
+        AVCODEC_LOGE("not start or not in sync mode, %{public}d, %{public}d", isSyncMode_.load(), isRunning_.load());
+        return nullptr;
+    }
+    AVCODEC_SYNC_TRACE;
+    std::lock_guard mapLock(outputMutex_);
+    if (outputBufferObjMap_.find(index) == outputBufferObjMap_.end()) {
+        AVCODEC_LOGE("not find output buffer index:%{public}d", index);
+        return nullptr;
+    }
+    return outputBufferObjMap_[index];
+}
+
 AVCodecAudioCodecImpl::AVCodecInnerCallback::AVCodecInnerCallback(AVCodecAudioCodecImpl *impl) : impl_(impl) {}
 
 void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
@@ -503,11 +633,18 @@ void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnError(AVCodecErrorType error
 
 void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnOutputFormatChanged(const Format &format)
 {
-    if (impl_->callback_) {
+    if (!impl_->isSyncMode_.load() && impl_->callback_) {
         impl_->callback_->OnOutputFormatChanged(format);
-    } else {
-        AVCODEC_LOGE("receive format changed, but impl callback is nullptr");
     }
+    if (!impl_->isSyncMode_.load()) {
+        AVCODEC_LOGE("receive format changed, but impl callback is nullptr");
+        return;
+    }
+    AVCODEC_SYNC_TRACE;
+    std::lock_guard lock(impl_->syncOutputMutex_);
+    std::shared_ptr<OutputInfo> out = std::make_shared<OutputInfo>(format);
+    impl_->syncOutputQueue_.push(out);
+    impl_->syncOutCond_.notify_all();
 }
 
 void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnInputBufferAvailable(uint32_t index,
@@ -521,7 +658,7 @@ void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnOutputBufferAvailable(uint32
                                                                           std::shared_ptr<AVBuffer> buffer)
 {
     std::shared_ptr<AVBuffer> outputBuffer;
-    if (impl_->callback_) {
+    if (!impl_->isSyncMode_.load() && impl_->callback_) {
         Media::Status ret = impl_->implConsumer_->AcquireBuffer(outputBuffer);
         if (ret != Media::Status::OK) {
             AVCODEC_LOGE("Consumer AcquireBuffer fail,ret=%{public}d", ret);
@@ -534,6 +671,21 @@ void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnOutputBufferAvailable(uint32
         impl_->callback_->OnOutputBufferAvailable(impl_->indexOutput_, outputBuffer);
         impl_->indexOutput_ = (impl_->indexOutput_ >= MAX_INDEX) ? 0 : ++impl_->indexOutput_;
     }
+
+    if (!impl_->isSyncMode_.load()) {
+        return;
+    }
+    AVCODEC_SYNC_TRACE;
+    Media::Status ret = impl_->implConsumer_->AcquireBuffer(outputBuffer);
+    if (ret != Media::Status::OK) {
+        AVCODEC_LOGE("In sync mode Consumer AcquireBuffer fail,ret=%{public}d", ret);
+        return;
+    }
+    std::lock_guard lock(impl_->syncOutputMutex_);
+    std::shared_ptr<OutputInfo> out = std::make_shared<OutputInfo>(outputBuffer);
+    impl_->syncOutputQueue_.push(out);
+    impl_->syncOutCond_.notify_all();
 }
+
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -59,6 +59,9 @@ public:
     int32_t HandleInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
     int32_t HandleInputBuffer(uint32_t index);
     int32_t HandleOutputBuffer(uint32_t index);
+    void QueueInputBufferDone(uint32_t index);
+    void ReleaseOutputBufferDone(uint32_t index);
+    void NotifyEos();
 
     // Callback
     void OnError(AVCodecErrorType errorType, int32_t errorCode);
@@ -88,6 +91,11 @@ private:
         std::shared_ptr<Format> parameter = nullptr;
         std::shared_ptr<Format> attribute = nullptr;
         BufferOwner owner = OWNED_BY_SERVER;
+
+        // Used in QueueInputBuffer/ReleaseOutputBuffer
+        uint32_t flag = 0;
+        int32_t size = 0;
+        int64_t pts = 0;
     } BufferItem;
     using IndexQueue = std::queue<uint32_t>;
     using BufferCache = std::unordered_map<uint32_t, BufferItem>;
@@ -103,7 +111,7 @@ private:
     BufferCache outCache_;
     std::mutex inMutex_;
     std::mutex outMutex_;
-    uint8_t flag_ = FLAG_NONE;
+    std::atomic<uint8_t> flag_ = FLAG_NONE;
 
     // Async mode
     void AsyncOnError(AVCodecErrorType errorType, int32_t errorCode);

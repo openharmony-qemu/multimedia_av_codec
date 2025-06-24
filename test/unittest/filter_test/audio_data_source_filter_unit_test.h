@@ -49,6 +49,8 @@ public:
     MOCK_METHOD(Status, SetQueueSize, (uint32_t size), (override));
     MOCK_METHOD(Status, RequestBuffer,
                 (std::shared_ptr<AVBuffer> & outBuffer, const AVBufferConfig & config, int32_t timeoutMs), (override));
+    MOCK_METHOD(Status, RequestBufferWaitUs,
+                (std::shared_ptr<AVBuffer> & outBuffer, const AVBufferConfig & config, int64_t timeoutUs), (override));
     MOCK_METHOD(Status, PushBuffer, (const std::shared_ptr<AVBuffer> & inBuffer, bool available), (override));
     MOCK_METHOD(Status, ReturnBuffer, (const std::shared_ptr<AVBuffer> & inBuffer, bool available), (override));
     MOCK_METHOD(Status, AttachBuffer, (std::shared_ptr<AVBuffer> & inBuffer, bool isFilled), (override));

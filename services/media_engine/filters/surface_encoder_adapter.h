@@ -78,6 +78,7 @@ public:
     Status Init(const std::string &mime, bool isEncoder);
     Status Configure(const std::shared_ptr<Meta> &meta);
     Status SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer);
+    Status SetVideoEnableBFrame(bool &enableBFrame);
     Status SetStopTime();
     Status SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer);
     Status SetEncoderAdapterCallback(const std::shared_ptr<EncoderAdapterCallback> &encoderAdapterCallback);
@@ -116,7 +117,6 @@ private:
     void ConfigureAboutEnableTemporalScale(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     bool CheckFrames(int64_t currentPts, int64_t &checkFramesPauseTime);
     void GetCurrentTime(int64_t &currentTime);
-    int64_t GetMappingTime(std::shared_ptr<AVBuffer> buffer);
     void AddStartPts(int64_t currentPts);
     void AddStopPts();
     bool AddPauseResumePts(int64_t currentPts);
@@ -130,7 +130,6 @@ private:
     std::condition_variable releaseBufferCondition_;
     std::vector<uint32_t> indexs_;
     std::deque<std::pair<int64_t, StateCode>> pauseResumeQueue_;
-    std::deque<std::pair<int64_t, int64_t>> mappingTimeQueue_;
     std::deque<int64_t> totalPauseTimeQueue_{0};
     int64_t checkFramesPauseTime_{0};
     std::atomic<bool> isThreadExit_ = true;
@@ -165,6 +164,7 @@ private:
     int64_t preKeyFramePts_{-1};
     int32_t videoFrameRate_{-1};
     std::deque<std::pair<int64_t, StateCode>> pauseResumePts_;
+    bool enableBFrame_ {false};
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

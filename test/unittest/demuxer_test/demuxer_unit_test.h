@@ -34,7 +34,7 @@ public:
     int64_t GetFileSize(const std::string &fileName);
     int32_t OpenFile(const std::string &fileName);
     bool isEOS(std::map<uint32_t, bool>& countFlag);
-    void SetInitValue();
+    bool SetInitValue();
     void ReadData();
     void ReadData(int readNum, int64_t &seekTime);
     void RemoveValue();

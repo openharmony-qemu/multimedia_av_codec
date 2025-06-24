@@ -206,6 +206,38 @@ typedef struct OH_AVDataSource {
 } OH_AVDataSource;
 
 /**
+ * @brief The function pointer will be called to get sequence media data.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @param data OH_AVBuffer buffer to fill.
+ * @param length Expected to read size.
+ * @param pos Current read offset.
+ * @param userData User-defined data.
+ * @return Actual size of data read to the buffer.
+ * @since 20
+ */
+typedef int32_t (*OH_AVDataSourceReadAtExt)(OH_AVBuffer *data, int32_t length, int64_t pos, void* userData);
+
+/**
+ * @brief User customized data source.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+typedef struct OH_AVDataSourceExt {
+    /**
+     * @brief Total size of the data source.
+     * @syscap SystemCapability.Multimedia.Media.CodecBase
+     * @since 20
+     */
+    int64_t size;
+    /**
+     * @brief Callback interface for reading data from datasource.
+     * @syscap SystemCapability.Multimedia.Media.CodecBase
+     * @since 20
+     */
+    OH_AVDataSourceReadAtExt readAt;
+} OH_AVDataSourceExt;
+
+/**
  * @brief Enumerates the MIME types of video mpeg2 codec.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
@@ -857,9 +889,28 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_MAX_B_FRAMES;
 */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL;
 
-extern const char *OH_MD_KEY_TRACK_REFERENCE_TYPE;
-extern const char *OH_MD_KEY_TRACK_DESCRIPTION;
+/**
+ * @brief Key for describing the reference relationship between tracks, value type is int32_t*.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
 extern const char *OH_MD_KEY_REFERENCE_TRACK_IDS;
+/**
+ * @brief Key for describing the track reference type, value type is string.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
+extern const char *OH_MD_KEY_TRACK_REFERENCE_TYPE;
+/**
+ * @brief Key for describing the track description, value type is string.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+*/
+extern const char *OH_MD_KEY_TRACK_DESCRIPTION;
+
 /**
  * @brief Key to enable synchronous mode, value type is (0 or 1): 1 is enabled, 0 otherwise.
  *
@@ -889,6 +940,13 @@ typedef enum OH_MediaType {
      * @since 12
      */
     MEDIA_TYPE_SUBTITLE = 2,
+    /** track is timed meta.
+     * @since 20
+     */
+    MEDIA_TYPE_TIMED_METADATA = 5,
+    /** track is auxiliary.
+     * @since 20
+     */
     MEDIA_TYPE_AUXILIARY = 6,
 } OH_MediaType;
 
@@ -1088,6 +1146,11 @@ typedef enum OH_AVOutputFormat {
      * @since 18
      */
     AV_OUTPUT_FORMAT_AAC = 11,
+    /**
+     * The muxer output flac file format.
+     * @since 20
+     */
+    AV_OUTPUT_FORMAT_FLAC = 12,
 } OH_AVOutputFormat;
 
 /**

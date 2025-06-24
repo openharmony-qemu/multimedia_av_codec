@@ -139,6 +139,10 @@ public:
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
     bool IsVideoEos();
     bool HasEosTrack();
+    inline bool IsAudioDemuxDecodeAsync() const
+    {
+        return isAudioDemuxDecodeAsync_;
+    }
     Status GetIFramePos(std::vector<uint32_t> &IFramePos);
     Status Dts2FrameId(int64_t dts, uint32_t &frameId);
     Status SeekMs2FrameId(int64_t seekMs, uint32_t &frameId);
@@ -175,6 +179,8 @@ public:
 
     Status GetCurrentCacheSize(uint32_t trackIndex, uint32_t& size); // Interface for AVDemuxer
     Status StopBufferring(bool isAppBackground);
+    
+    void SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted, bool keepDecodingOnMute);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -216,6 +222,7 @@ private:
     void AddDemuxerCopyTaskIfFilter(int32_t trackId, TaskType type);
     void AddHandleFlvSelectBitrateTask();
 
+    void InitIsAudioDemuxDecodeAsync();
     Status StopAllTask();
     Status PauseAllTask();
     Status PauseAllTaskAsync();
@@ -251,7 +258,7 @@ private:
     int64_t GetReadLoopRetryUs(int32_t trackId);
     uint64_t GetSampleQueueDuration();
     void UpdateSampleQueueCache();
-
+    void ReportEosEvent();
     Plugins::Seekable seekable_;
     Plugins::Seekable subSeekable_;
     std::string uri_;
@@ -269,7 +276,7 @@ private:
     int64_t ReadLoop(int32_t trackId);
     Status CopyFrameToUserQueue(int32_t trackId);
     bool GetBufferFromUserQueue(int32_t queueIndex, int32_t size = 0);
-    Status InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer>);
+    Status InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> sample, bool isAVDemuxer);
     Status InnerSelectTrack(int32_t trackId);
     Status HandleReadSample(int32_t trackId);
     int64_t ParserRefInfo();
@@ -292,7 +299,7 @@ private:
     void EnterDraggingOpenGopCnt();
     void ResetDraggingOpenGopCnt();
     Status ReadSampleWithPerfRecord(const std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp,
-        const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample);
+        const int32_t &innerTrackID, const std::shared_ptr<AVBuffer> &sample, bool isAVDemuxer);
     Status HandleTrackEos(int32_t trackId);
     void SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer);
     void TranscoderUpdateOutputBufferPts(int32_t trackId, std::shared_ptr<AVBuffer> &outputBuffer);
@@ -313,13 +320,22 @@ private:
     Status HandleSelectBitrateForFlvLive(int64_t startPts, uint32_t bitrate);
     bool IsIgonreBuffering();
     void InitEnableSampleQueueFlag();
-    inline bool GetEnableSampleQueueFlag() const;
+    inline bool GetEnableSampleQueueFlag() const
+    {
+        return enableSampleQueue_ && isAudioDemuxDecodeAsync_;
+    }
     Status StartTaskWithSampleQueue(int32_t trackId);
     Status PushBufferToQueue(int32_t trackId, std::shared_ptr<AVBuffer>& buffer, bool available);
     void StartTaskInner(int32_t trackId);
     void InitAudioTrack();
     void InitVideoTrack();
     void InitSubtitleTrack();
+    void HandlePacketConvertError();
+    void HandleVideoTrack(int32_t trackId);
+    Status HandlePushBuffer(int32_t trackId, std::shared_ptr<AVBuffer>& dstBuffer,
+                            sptr<AVBufferQueueProducer>& bufferQueue, Status status);
+    void HandleSeek(int32_t trackId);
+    void RecordErrorCount(int32_t queueIndex, Status ret);
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
@@ -393,6 +409,8 @@ private:
     std::unique_ptr<Task> parserRefInfoTask_;
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
+    bool isAudioDemuxDecodeAsync_ = true;
+    bool isVideoTrackDisabled_ = true;
     std::mutex parserTaskMutex_ {};
     int64_t duration_ {0};
     FileType fileType_ = FileType::UNKNOW;
@@ -406,6 +424,8 @@ private:
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
     int64_t lastAudioPts_ = 0;
+    int64_t lastVideoPts_ = 0;
+    int64_t lastAudioPtsInMute_ = 0;
     std::atomic<bool> isOnEventNoMemory_ = false;
     std::atomic<bool> isSeekError_ = false;
     std::atomic<bool> shouldCheckSubtitleFramePts_ = false;
@@ -433,6 +453,15 @@ private:
 
     int64_t videoSeekTime_ {0};
     bool isInSeekDropAudio_ {false};
+    std::atomic<int32_t> convertErrorTime_ {0};
+    bool isVideoMuted_ = false;
+    bool needReleaseVideoDecoder_ = false;
+    bool needRestore_ {false};
+    bool hasSetLargeSize_ {false};
+    bool isNeedSetLarge_ {false};
+
+    uint32_t timeout_ = {10}; // 10 represents 10ms. Optimization can consider dynamic adjustment.
+    bool enableAsyncDemuxer_ = true;
 };
 } // namespace Media
 } // namespace OHOS

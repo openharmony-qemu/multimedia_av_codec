@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -62,6 +62,8 @@ string g_doubleVividUri = TEST_URI_PATH + string("audiovivid_hdrvivid_2s.mp4");
 string g_mp4265InfoParsePath = TEST_FILE_PATH + string("test_265_B_Gop25_4sec.mp4");
 string g_265pcmPath = TEST_FILE_PATH + string("265_pcm_s16le.mov");
 string g_265pcmUri = TEST_URI_PATH + string("265_pcm_s16le.mov");
+string g_mp4AuxlPath = TEST_FILE_PATH + string("muxer_auxl_265.mp4");
+string g_mp4AuxlUri = TEST_URI_PATH + string("muxer_auxl_265.mp4");
 
 std::map<std::string, std::map<std::string, int32_t>> infoMap = {
     {"hdrVivid", {
@@ -148,6 +150,7 @@ void AVSourceUnitTest::InitResource(const std::string &path, bool local)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, streamsCount_));
     for (int i = 0; i < streamsCount_; i++) {
         format_ = source_->GetTrackFormat(i);
+        ASSERT_NE(format_, nullptr);
         ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
         if (formatVal_.trackType == MediaType::MEDIA_TYPE_VID) {
             vTrackIdx_ = i;
@@ -195,6 +198,140 @@ void AVSourceUnitTest::CheckHevcInfo(const std::string resName)
             }
         }
     }
+}
+
+void AVSourceUnitTest::CheckAuxlHevc()
+{
+    checkPass_ = false;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_HAS_AUXILIARY, formatVal_.hasAuxl));
+    ASSERT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_FILE_TYPE, formatVal_.fileType));
+    ASSERT_EQ(formatVal_.fileType, 101);
+    ASSERT_EQ(formatVal_.hasAudio, 0);
+    ASSERT_EQ(formatVal_.hasVideo, 1);
+    ASSERT_EQ(formatVal_.hasAuxl, 1);
+#endif
+    ASSERT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 501000);
+    ASSERT_EQ(formatVal_.trackCount, 3);
+    format_->Destroy();
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    uint8_t *codecConfig = nullptr;
+    size_t codecConfigSize;
+    int32_t *trackIds = nullptr;
+    size_t trackIdsSize;
+    string trackDesc;
+    string referenceType;
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
+    ASSERT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
+    ASSERT_TRUE(format_->GetBuffer(OH_MD_KEY_CODEC_CONFIG, &codecConfig, codecConfigSize));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_PROFILE, formatVal_.profile));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_COLOR_PRIMARIES, formatVal_.colorPri));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRANSFER_CHARACTERISTICS, formatVal_.colorTrans));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_MATRIX_COEFFICIENTS, formatVal_.colorMatrix));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_RANGE_FLAG, formatVal_.colorRange));
+    ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, trackIdsSize));
+    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_VID);
+    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    ASSERT_EQ(formatVal_.width, 720);
+    ASSERT_EQ(formatVal_.height, 480);
+    ASSERT_EQ(static_cast<int32_t>(formatVal_.frameRate), 31);
+    ASSERT_EQ(codecConfigSize, 113);
+    ASSERT_EQ(formatVal_.profile, 1);
+    ASSERT_EQ(formatVal_.colorPri, 9);
+    ASSERT_EQ(formatVal_.colorTrans, 2);
+    ASSERT_EQ(formatVal_.colorMatrix, 9);
+    ASSERT_EQ(formatVal_.colorRange, 0);
+    ASSERT_EQ(trackIds[0], 1);
+    ASSERT_EQ(trackIds[1], 2);
+    ASSERT_EQ(trackIdsSize, 2);
+    format_->Destroy();
+
+    trackIndex_ = 1;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
+    ASSERT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
+    ASSERT_TRUE(format_->GetBuffer(OH_MD_KEY_CODEC_CONFIG, &codecConfig, codecConfigSize));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_PROFILE, formatVal_.profile));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_COLOR_PRIMARIES, formatVal_.colorPri));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRANSFER_CHARACTERISTICS, formatVal_.colorTrans));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_MATRIX_COEFFICIENTS, formatVal_.colorMatrix));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_RANGE_FLAG, formatVal_.colorRange));
+    ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, trackIdsSize));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, referenceType));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_DESCRIPTION, trackDesc));
+    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_AUXILIARY);
+    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    ASSERT_EQ(formatVal_.width, 720);
+    ASSERT_EQ(formatVal_.height, 480);
+    ASSERT_EQ(static_cast<int32_t>(formatVal_.frameRate), 31);
+    ASSERT_EQ(codecConfigSize, 113);
+    ASSERT_EQ(formatVal_.profile, 1);
+    ASSERT_EQ(formatVal_.colorPri, 9);
+    ASSERT_EQ(formatVal_.colorTrans, 2);
+    ASSERT_EQ(formatVal_.colorMatrix, 9);
+    ASSERT_EQ(formatVal_.colorRange, 0);
+    ASSERT_EQ(trackIds[0], 0);
+    ASSERT_EQ(trackIds[1], 2);
+    ASSERT_EQ(trackIdsSize, 2);
+    ASSERT_EQ(referenceType, "vdep");
+    ASSERT_EQ(trackDesc, "com.openharmony.moviemode.depth");
+    format_->Destroy();
+
+    trackIndex_ = 2;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
+    ASSERT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
+    ASSERT_TRUE(format_->GetBuffer(OH_MD_KEY_CODEC_CONFIG, &codecConfig, codecConfigSize));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_PROFILE, formatVal_.profile));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_COLOR_PRIMARIES, formatVal_.colorPri));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRANSFER_CHARACTERISTICS, formatVal_.colorTrans));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_MATRIX_COEFFICIENTS, formatVal_.colorMatrix));
+    ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_RANGE_FLAG, formatVal_.colorRange));
+    ASSERT_TRUE(format_->GetIntBuffer(OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, trackIdsSize));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_REFERENCE_TYPE, referenceType));
+    ASSERT_TRUE(format_->GetStringValue(OH_MD_KEY_TRACK_DESCRIPTION, trackDesc));
+    ASSERT_EQ(formatVal_.trackType, OH_MediaType::MEDIA_TYPE_AUXILIARY);
+    ASSERT_EQ(formatVal_.codecMime, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    ASSERT_EQ(formatVal_.width, 720);
+    ASSERT_EQ(formatVal_.height, 480);
+    ASSERT_EQ(static_cast<int32_t>(formatVal_.frameRate), 31);
+    ASSERT_EQ(codecConfigSize, 113);
+    ASSERT_EQ(formatVal_.profile, 1);
+    ASSERT_EQ(formatVal_.colorPri, 9);
+    ASSERT_EQ(formatVal_.colorTrans, 2);
+    ASSERT_EQ(formatVal_.colorMatrix, 9);
+    ASSERT_EQ(formatVal_.colorRange, 0);
+    ASSERT_EQ(trackIds[0], 0);
+    ASSERT_EQ(trackIds[1], 1);
+    ASSERT_EQ(trackIdsSize, 2);
+    ASSERT_EQ(referenceType, "auxl");
+    ASSERT_EQ(trackDesc, "com.openharmony.moviemode.prey");
+    format_->Destroy();
+    checkPass_ = true;
 }
 
 namespace {
@@ -944,5 +1081,37 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1700, TestSize.Level1)
     format_->GetLongValue(Media::Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
     int64_t bitsPerCodecSample;
     format_->GetLongValue(Media::Tag::AUDIO_BITS_PER_CODED_SAMPLE, bitsPerCodecSample);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_Auxl_0001
+ * @tc.desc: get format(auxl local)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_Auxl_0001, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_mp4AuxlPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    CheckAuxlHevc();
+    ASSERT_TRUE(checkPass_);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_Auxl_0002
+ * @tc.desc: get format(auxl url)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_Auxl_0002, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_mp4AuxlUri, URI);
+    ASSERT_TRUE(initStatus_);
+    CheckAuxlHevc();
+    ASSERT_TRUE(checkPass_);
 }
 } // namespace

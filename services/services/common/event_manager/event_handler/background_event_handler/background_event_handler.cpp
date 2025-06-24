@@ -135,7 +135,7 @@ BackGroundEventHandler &BackGroundEventHandler::GetInstance()
 
 void BackGroundEventHandler::NotifyFreeze(InstanceId instanceId)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     auto codecInstance = AVCodecServerManager::GetInstance().GetCodecInstanceByInstanceId(instanceId);
     if (codecInstance == std::nullopt) {
         return;
@@ -149,7 +149,7 @@ void BackGroundEventHandler::NotifyFreeze(InstanceId instanceId)
 
 void BackGroundEventHandler::NotifyFreeze(const std::vector<pid_t> &pidList)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     for (auto &codecInstance : GetDirectlyInvokedCodecInstanceListByPidList(pidList)) {
         auto &callerPid = codecInstance.second.caller.pid;
         auto &forwardPid = codecInstance.second.forwardCaller.pid;
@@ -161,7 +161,7 @@ void BackGroundEventHandler::NotifyFreeze(const std::vector<pid_t> &pidList)
 
 void BackGroundEventHandler::NotifyActive(InstanceId instanceId)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     auto codecInstance = AVCodecServerManager::GetInstance().GetCodecInstanceByInstanceId(instanceId);
     if (codecInstance == std::nullopt) {
         return;
@@ -175,7 +175,7 @@ void BackGroundEventHandler::NotifyActive(InstanceId instanceId)
 
 void BackGroundEventHandler::NotifyActive(const std::vector<pid_t> &pidList)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     for (auto &codecInstance : GetDirectlyInvokedCodecInstanceListByPidList(pidList)) {
         auto &callerPid = codecInstance.second.caller.pid;
         auto &forwardPid = codecInstance.second.forwardCaller.pid;
@@ -187,7 +187,7 @@ void BackGroundEventHandler::NotifyActive(const std::vector<pid_t> &pidList)
 
 void BackGroundEventHandler::NotifyActiveAll()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (memoryRecycleList_.empty() && suspendList_.empty()) {
         return;
     }
@@ -205,7 +205,7 @@ void BackGroundEventHandler::NotifyActiveAll()
 
 void BackGroundEventHandler::ErasePid(pid_t pid)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     auto eraser = [pid](ObjectList &list, std::string_view name) {
         auto [begin, end] = list.equal_range(pid);
         if (begin == end) {
@@ -220,7 +220,7 @@ void BackGroundEventHandler::ErasePid(pid_t pid)
 
 void BackGroundEventHandler::EraseInstance(InstanceId instanceId)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     auto eraser = [instanceId](ObjectList &list, std::string_view name) {
         for (auto iter = list.begin(); iter != list.end();) {
             if (iter->second == instanceId) {

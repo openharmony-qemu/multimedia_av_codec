@@ -22,7 +22,8 @@
 #include "type_converter.h"
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
-#include "v3_0/codec_ext_types.h"
+#include "hcodec_list.h"
+#include "v4_0/codec_ext_types.h"
 #include <algorithm>
 #include <regex>
 
@@ -154,11 +155,14 @@ int32_t HEncoder::SetLTRParam(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameNum)) {
         return AVCS_ERR_OK;
     }
-    if (!caps_.port.video.isSupportLTR) {
+    CodecHDI::VideoFeature ltrFeature =
+        HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_LTR);
+    if (!ltrFeature.support || ltrFeature.extendInfo.empty()) {
         HLOGW("platform not support LTR");
         return AVCS_ERR_OK;
     }
-    if (ltrFrameNum <= 0 || ltrFrameNum > caps_.port.video.maxLTRFrameNum) {
+    int32_t maxLtrNum = ltrFeature.extendInfo[0];
+    if (ltrFrameNum <= 0 || ltrFrameNum > maxLtrNum) {
         HLOGE("invalid ltrFrameNum %d", ltrFrameNum);
         return AVCS_ERR_INVALID_VAL;
     }
@@ -200,7 +204,9 @@ int32_t HEncoder::EnableFrameQPMap(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_QP_MAP, enableQPMap)) {
         return AVCS_ERR_OK;
     }
-    if (!caps_.port.video.isSupportQPMap) {
+    CodecHDI::VideoFeature feature =
+        HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_QP_MAP);
+    if (!feature.support) {
         HLOGE("this device dont support qp map");
         return AVCS_ERR_UNSUPPORT;
     }
@@ -221,6 +227,13 @@ int32_t HEncoder::ConfigBEncodeMode(const Format &format)
     Media::Plugins::VideoEncodeBFrameGopMode gopMode;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, *reinterpret_cast<int *>(&gopMode))) {
         return AVCS_ERR_OK;
+    }
+
+    CodecHDI::VideoFeature feature =
+        HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_ENCODE_B_FRAME);
+    if (!feature.support || feature.extendInfo.empty() || feature.extendInfo[0] <= 0) {
+        HLOGE("this device or protocol not support b frame");
+        return AVCS_ERR_UNSUPPORT;
     }
 
     CodecEncGopMode param {};
@@ -271,7 +284,7 @@ int32_t HEncoder::SetTemperalLayer(const Format &format)
         (enableTemporalScale == 0)) {
         return AVCS_ERR_OK;
     }
-    if (!caps_.port.video.isSupportTSVC) {
+    if (!HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_TSVC).support) {
         HLOGW("platform not support temporal scale");
         return AVCS_ERR_OK;
     }
@@ -330,7 +343,7 @@ int32_t HEncoder::GetWaterMarkInfo(std::shared_ptr<AVBuffer> buffer, WaterMarkIn
 
 int32_t HEncoder::OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer)
 {
-    if (!caps_.port.video.isSupportWaterMark) {
+    if (!HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_WATERMARK).support) {
         HLOGE("this device dont support water mark");
         return AVCS_ERR_UNSUPPORT;
     }
@@ -1589,6 +1602,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ReplyErrorCode(msg.id, AVCS_ERR_OK);
         return;
     }
+    SetBufferPts(bufferInfo);
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
     WrapSurfaceBufferToSlot(*bufferInfo, bufferInfo->surfaceBuffer, bufferInfo->avBuffer->pts_,
         UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_)));
@@ -1609,6 +1623,14 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ResetSlot(*bufferInfo);
         callback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_INPUT_DATA_ERROR);
     }
+}
+
+void HEncoder::SetBufferPts(BufferInfo* info)
+{
+    HLOGD("avBuffer->pts_ before setted, absolute pts=%ld", info->avBuffer->pts_);
+    bool bret = info->avBuffer->meta_->GetData(
+        OHOS::Media::Tag::VIDEO_ENCODE_SET_FRAME_PTS, info->avBuffer->pts_);
+    HLOGD("avBuffer->pts_ after setted, relative pts=%ld, bret=%d", info->avBuffer->pts_, bret);
 }
 
 void HEncoder::OnGetBufferFromSurface(const ParamSP& param)
