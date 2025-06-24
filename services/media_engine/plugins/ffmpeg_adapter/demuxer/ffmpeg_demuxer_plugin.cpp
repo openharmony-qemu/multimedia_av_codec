@@ -1473,10 +1473,9 @@ Status FFmpegDemuxerPlugin::SetFirstFrame(AVPacket* pkt, bool isConvert)
         return Status::ERROR_WRONG_STATE;
     }
     if (isConvert) {
-        bool convertRet = streamParsers_->ConvertExtraDataToAnnexb(
-        pkt->stream_index,
-        formatContext_->streams[pkt->stream_index]->codecpar->extradata,
-        formatContext_->streams[pkt->stream_index]->codecpar->extradata_size);
+        bool convertRet = streamParsers_->ConvertExtraDataToAnnexb(pkt->stream_index,
+            formatContext_->streams[pkt->stream_index]->codecpar->extradata,
+            formatContext_->streams[pkt->stream_index]->codecpar->extradata_size);
         if (!convertRet) {
             MEDIA_LOG_E("ConvertExtraDataToAnnexb failed:" PUBLIC_LOG_D32, pkt->stream_index);
             FreeAVPacket(firstFrame);
@@ -1650,7 +1649,8 @@ void FFmpegDemuxerPlugin::SyncSeekThread()
     }
 }
 
-bool FFmpegDemuxerPlugin::IsUseFirstFrameDts(int trackIndex, int64_t seekTime) {
+bool FFmpegDemuxerPlugin::IsUseFirstFrameDts(int trackIndex, int64_t seekTime)
+{
     if (seekTime == 0 &&
         FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MPEGTS &&
         FFmpegFormatHelper::IsVideoType(*(formatContext_->streams[trackIndex])) &&
