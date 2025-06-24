@@ -50,7 +50,7 @@ int32_t VideoDecoderSample::Init()
 }
 
 int32_t VideoDecoderSample::Prepare()
-{   
+{
     if ((*context_->sampleInfo).syncMode) {
         syncThread_ = std::make_unique<std::thread>(&VideoDecoderSample::SyncThread, this);
         CHECK_AND_RETURN_RET_LOG(syncThread_, AVCODEC_SAMPLE_ERR_ERROR, "Create sync thread failed");
