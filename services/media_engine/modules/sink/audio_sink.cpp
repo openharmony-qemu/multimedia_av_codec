@@ -20,6 +20,7 @@
 #include "common/log.h"
 #include "calc_max_amplitude.h"
 #include "scoped_timer.h"
+#include "avcodec_info.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioSink" };
@@ -39,6 +40,7 @@ constexpr int64_t INIT_PLUGIN_WARNING_MS = 20;
 constexpr int64_t OVERTIME_WARNING_MS = 50;
 constexpr int64_t FORMAT_CHANGE_MS = 100;
 constexpr int64_t BUFFER_CONSUME_MS = 50;
+constexpr int64_t FIX_DELAY_MS_AUDIO_VIVID = 60;
 }
 
 namespace OHOS {
@@ -214,16 +216,19 @@ Status AudioSink::InitAudioSinkInfo(std::shared_ptr<Meta>& meta)
     }
     MEDIA_LOG_I("Audiosink playingBufferDurationUs_ = " PUBLIC_LOG_D64, playingBufferDurationUs_);
     std::string mime;
-    bool mimeGetRes = meta->Get<Tag::MIME_TYPE>(mime);
-    if (mimeGetRes && mime == "audio/x-ape") {
+    if (!meta->Get<Tag::MIME_TYPE>(mime)) {
+        return Status::OK;
+    }
+    if (mime == MediaAVCodec::CodecMimeType::AUDIO_APE) {
         isApe_ = true;
         MEDIA_LOG_I("AudioSink::Init is ape");
-    }
-    if (mimeGetRes && mime == "audio/flac") {
+    } else if (mime == MediaAVCodec::CodecMimeType::AUDIO_FLAC) {
         isFlac_ = true;
         MEDIA_LOG_I("AudioSink::Init is flac");
+    } else if (mime == MediaAVCodec::CodecMimeType::AUDIO_VIVID) {
+        fixDelay_ = FIX_DELAY_MS_AUDIO_VIVID * HST_USECOND;
+        MEDIA_LOG_I("Audio vivid update fix delay to 60ms");
     }
-
     return Status::OK;
 }
 
