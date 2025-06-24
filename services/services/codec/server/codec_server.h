@@ -147,8 +147,7 @@ private:
     int32_t ReleaseOutputBufferOfCodec(uint32_t index, bool render);
     void OnInstanceMemoryUpdateEvent(std::shared_ptr<Media::Meta> meta = nullptr);
     void OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta = nullptr);
-    void OnBufferCirculationStart();
-    void OnBufferCirculationStop();
+    void InitFramerateCalculator();
 
     CodecStatus status_ = UNINITIALIZED;
 
@@ -213,7 +212,7 @@ private:
     std::atomic<bool> decoderIsEOS_{false};
     std::shared_ptr<AVCodecCallback> shareBufCallback_ = nullptr;
     std::shared_ptr<MediaCodecCallback> avBufCallback_ = nullptr;
-    AdaptiveFramerateController adaptiveFramerateController_;
+    std::shared_ptr<FramerateCalculator> framerateCalculator_ = nullptr;
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

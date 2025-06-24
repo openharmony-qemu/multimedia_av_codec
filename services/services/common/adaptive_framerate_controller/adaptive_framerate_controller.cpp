@@ -22,70 +22,119 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 
 namespace OHOS {
 namespace MediaAVCodec {
-bool AdaptiveFramerateController::Initialize(std::function<void(double)> &&resetFramerateHandler)
-{
-    ResetFramerateHandler_ = std::move(resetFramerateHandler);
-    return true;
-}
+FramerateCalculator::FramerateCalculator(int32_t instanceId, std::function<void(double)> &&resetFramerateHandler)
+    : instanceId_(instanceId), status_(Status::INITIALIZED), resetFramerateHandler_(std::move(resetFramerateHandler)) {}
 
-void AdaptiveFramerateController::OnFrameConsumed()
+void FramerateCalculator::OnFrameConsumed()
 {
-    if (frameCount_ == 0) {
-        std::unique_lock<std::mutex> lock(mutex_);
-        if (!loopThread_) {
-            isRunning_ = true;
-            loopThread_ = std::make_unique<std::thread>(&AdaptiveFramerateController::Loop, this);
-        }
+    if (status_ != Status::UNINITIALIZED) {
+        return;
+    } else if (status_ == Status::INITIALIZED || status_ == Status::STOPPED) {
         lastAdjustmentTime_ = std::chrono::steady_clock::now();
+        Register2AFC();
+        status_ = Status::RUNNING;
     }
     frameCount_++;
 }
 
-void AdaptiveFramerateController::Stop()
+void FramerateCalculator::OnStopped()
 {
-    std::unique_lock<std::mutex> lock(mutex_);
-    isRunning_ = false;
-    if (loopThread_ && loopThread_->joinable()) {
-        condition_.notify_all();
-        lock.unlock();
-        loopThread_->join();
-        loopThread_.reset();
-    }
-    frameCount_.store(0);
+    status_ = Status::STOPPED;
+    UnregisterFromAFC();
 }
 
-bool AdaptiveFramerateController::ResetFramerate()
+bool FramerateCalculator::CheckAndResetFramerate()
 {
     auto frameCount = frameCount_.exchange(0);
     auto now = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(now - lastAdjustmentTime_).count();
     lastAdjustmentTime_ = now;
-    if (elapsedTime <= 0) {
-        AVCODEC_LOGW("Elapsed time is zero, skipping framerate reset.");
+    CHECK_AND_RETURN_RET_LOGW(elapsedTime > 0, false, "Elapsed time is invalid, cannot calculate framerate");
+
+    auto framerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
+    if (!(lastFramerate_ <= 0 || std::abs(framerate - lastFramerate_) / lastFramerate_ > 0.1)) {  // 0.1: 10% threshold
         return false;
     }
-    auto framerate = static_cast<double>(frameCount) / elapsedTime;
-    if (!(lastFramerate_ <= 0 || std::abs(framerate - lastFramerate_) / lastFramerate_ > 0.05)) {
-        return true;
-    }
-    ResetFramerateHandler_(framerate);
-    AVCODEC_LOGI("Reset framerate: %{public}.2f fps", framerate);
+    resetFramerateHandler_(framerate);
+
+    char direction = (framerate > lastFramerate_) ? '+' : '-';
+    AVCODEC_LOGD("Reset framerate: %{public}.2ffps %{public}c, frame count: %{public}u, elapsed: %{public}lldms",
+        framerate, direction, frameCount, elapsedTime);
+
     lastFramerate_ = framerate;
     return true;
+}
+
+void FramerateCalculator::Register2AFC()
+{
+    auto &afc = AdaptiveFramerateController::GetInstance();
+    afc.Add(instanceId_, shared_from_this());
+}
+
+void FramerateCalculator::UnregisterFromAFC()
+{
+    auto &afc = AdaptiveFramerateController::GetInstance();
+    afc.Remove(instanceId_);
+}
+
+AdaptiveFramerateController &AdaptiveFramerateController::GetInstance()
+{
+    static AdaptiveFramerateController instance;
+    return instance;
+}
+
+void AdaptiveFramerateController::Add(int32_t intanceId, std::shared_ptr<FramerateCalculator> calculator)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    calculators_[intanceId] = calculator;
+    if (!isRunning_) {
+        isRunning_ = true;
+        if (!looper_) {
+            looper_ = std::make_unique<std::thread>(&AdaptiveFramerateController::Loop, this);
+        }
+    }
+}
+
+void AdaptiveFramerateController::Remove(int32_t instanceId)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    calculators_.erase(instanceId);
+    if (calculators_.empty()) {
+        isRunning_ = false;
+        condition_.notify_all();
+        if (looper_ && looper_->joinable()) {
+            looper_->join();
+            looper_.reset();
+        }
+    }
 }
 
 void AdaptiveFramerateController::Loop()
 {
     using namespace std::chrono_literals;
-    constexpr auto CheckInterval = 2s;
+    constexpr auto CheckInterval = 1s;
+    AVCODEC_LOGD("started");
     while (true) {
         std::unique_lock<std::mutex> lock(mutex_);
         condition_.wait_for(lock, CheckInterval, [this]() { return !isRunning_; });
         if (!isRunning_) {
             break;
-        }        
-        ResetFramerate();
+        }
+        for (auto it = calculators_.begin(); it != calculators_.end();) {
+            auto calculator = it->second.lock();
+            if (!calculator) {
+                it = calculators_.erase(it);
+                continue;
+            }
+            calculator->CheckAndResetFramerate();
+            ++it;
+        }
+        if (calculators_.empty()) {
+            isRunning_ = false;
+            break;
+        }
     }
+    AVCODEC_LOGD("stopped");
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

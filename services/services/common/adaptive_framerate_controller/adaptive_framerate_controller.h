@@ -26,24 +26,45 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class AdaptiveFramerateController {
+class FramerateCalculator : public std::enable_shared_from_this<FramerateCalculator> {
 public:
-    bool Initialize(std::function<void(double)> &&resetFramerateHandler);
+    FramerateCalculator(int32_t instanceId, std::function<void(double)> &&resetFramerateHandler);
     void OnFrameConsumed();
-    void Stop();
+    void OnStopped();
+    bool CheckAndResetFramerate();
 
 private:
-    bool ResetFramerate();
-    void Loop();
+    enum class Status {
+        UNINITIALIZED,
+        INITIALIZED,
+        RUNNING,
+        STOPPED,
+    };
+    void Register2AFC();
+    void UnregisterFromAFC();
 
-    std::function<void(double)> ResetFramerateHandler_;
-    std::atomic<bool> isRunning_ = false;
-    std::unique_ptr<std::thread> loopThread_;
-    std::mutex mutex_;
-    std::condition_variable condition_;
+    int32_t instanceId_;
+    std::atomic<Status> status_ = Status::UNINITIALIZED;
+    std::function<void(double)> resetFramerateHandler_;
     std::atomic<uint32_t> frameCount_{0};
     double lastFramerate_{0.0};
     std::chrono::steady_clock::time_point lastAdjustmentTime_{};
+};
+
+class AdaptiveFramerateController {
+public:
+    static AdaptiveFramerateController &GetInstance();
+    void Add(int32_t intanceId, std::shared_ptr<FramerateCalculator> calculator);
+    void Remove(int32_t instanceId);
+
+private:
+    void Loop();
+
+    std::unordered_map<int32_t, std::weak_ptr<FramerateCalculator>> calculators_;
+    std::unique_ptr<std::thread> looper_;
+    std::atomic<bool> isRunning_ = false;
+    std::mutex mutex_;
+    std::condition_variable condition_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
