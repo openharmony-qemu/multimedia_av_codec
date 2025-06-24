@@ -148,6 +148,7 @@ private:
     Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
     void SyncSeekThread();
     Status DoSeekInternal(int trackIndex, int64_t seekTime, SeekMode mode, int64_t& realSeekTime);
+    bool IsUseFirstFrameDts(int trackIndex, int64_t seekTime);
 
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
     static int HandleReadOK(IOContext* ioContext, int dataSize);

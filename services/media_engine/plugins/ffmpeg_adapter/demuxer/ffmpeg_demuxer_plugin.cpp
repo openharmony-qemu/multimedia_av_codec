@@ -1642,6 +1642,16 @@ void FFmpegDemuxerPlugin::SyncSeekThread()
     }
 }
 
+bool FFmpegDemuxerPlugin::IsUseFirstFrameDts(int trackIndex, int64_t seekTime) {
+    if (seekTime == 0 &&
+        FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MPEGTS &&
+        FFmpegFormatHelper::IsAudioType(*(formatContext_->streams[trackIndex])) &&
+        FirstFrameValid(trackIndex)) {
+        return true;
+    }
+    return false;
+}
+
 Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, SeekMode mode, int64_t& realSeekTime)
 {
     auto avStream = formatContext_->streams[trackIndex];
@@ -1650,6 +1660,9 @@ Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, See
     if (!CheckStartTime(formatContext_.get(), avStream, ffTime, seekTime)) {
         MEDIA_LOG_E("Get start time from track " PUBLIC_LOG_D32 " failed", trackIndex);
         return Status::ERROR_INVALID_OPERATION;
+    }
+    if (IsUseFirstFrameDts(trackIndex, seekTime)) {
+        ffTime = firstFrameMap_[trackIndex]->dts;
     }
     realSeekTime = ConvertTimeFromFFmpeg(ffTime, avStream->time_base);
     int flag = ConvertFlagsToFFmpeg(avStream, ffTime, mode, seekTime);
