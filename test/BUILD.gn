@@ -269,6 +269,8 @@ group("av_codec_fuzz_test") {
       "fuzztest/encoderapi11_fuzzer:EncoderAPI11FuzzTest",
       "fuzztest/encoderapi11h26510bit_fuzzer:EncoderAPI11H26510BitFuzzTest",
       "fuzztest/encoderapi11h2658bit_fuzzer:EncoderAPI11H2658BitFuzzTest",
+      "fuzztest/encoderapi11h265bframe10bit_fuzzer:EncoderAPI11H265BFrame10BitFuzzTest",
+      "fuzztest/encoderapi11h265bframe8bit_fuzzer:EncoderAPI11H265BFrame8BitFuzzTest",
       "fuzztest/encoderconfigure_fuzzer:EncoderConfigureFuzzTest",
       "fuzztest/encoderinner_fuzzer:EncoderInnerFuzzTest",
       "fuzztest/encodersetparameter_fuzzer:EncoderSetParameterFuzzTest",
