@@ -701,7 +701,7 @@ void Downloader::RequestData()
         if (isDestructor_) {
             return;
         }
-        if (currentRequest_->requestSize_ == FIRST_REQUEST_SIZE && !currentRequest_->isFirstRangeRequestReady_
+        if (currentRequest_->preRequestSize_ == FIRST_REQUEST_SIZE && !currentRequest_->isFirstRangeRequestReady_
             && currentRequest_->serverError_ == SERVER_RANGE_ERROR_CODE) {
             MEDIA_LOG_I("first request is above filesize, need retry.");
             currentRequest_->startPos_ = 0;
@@ -917,6 +917,7 @@ void Downloader::UpdateRequestSize(Downloader* mediaDownloader)
         remaining = mediaDownloader->currentRequest_->endPos_ - mediaDownloader->currentRequest_->startPos_ + 1;
     }
 
+    mediaDownloader->currentRequest_->preRequestSize_ = mediaDownloader->currentRequest_->requestSize_;
     mediaDownloader->currentRequest_->requestSize_ = remaining < PER_REQUEST_SIZE ? remaining : PER_REQUEST_SIZE;
 }
 
