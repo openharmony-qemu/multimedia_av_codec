@@ -17,7 +17,7 @@
 #include "avcodec_log.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "EventManager"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AdaptiveFramerateController"};
 } // namespace
 
 namespace OHOS {
