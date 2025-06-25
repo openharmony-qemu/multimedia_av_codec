@@ -148,6 +148,7 @@ private:
     Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
     void SyncSeekThread();
     Status DoSeekInternal(int trackIndex, int64_t seekTime, SeekMode mode, int64_t& realSeekTime);
+    bool IsUseFirstFrameDts(int trackIndex, int64_t seekTime);
 
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
     static int HandleReadOK(IOContext* ioContext, int dataSize);
@@ -239,7 +240,7 @@ private:
     std::map<int32_t, std::vector<int32_t>> referenceIdsMap_ {};
     
     Status ParseVideoFirstFrames();
-    Status SetFirstFrame(AVPacket* pkt);
+    Status SetFirstFrame(AVPacket* pkt, bool isConvert = true);
     bool FirstFrameValid(uint32_t trackIndex);
     std::map<int32_t, AVPacket *> firstFrameMap_ {};
     bool TrackIsChecked(const uint32_t trackId);
