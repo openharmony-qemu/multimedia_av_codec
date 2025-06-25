@@ -2690,7 +2690,8 @@ int64_t MediaDemuxer::GetReadLoopRetryUs(int32_t trackId)
     FALSE_RETURN_V_MSG_E(sampleQueueMap_.count(trackId) > 0 && sampleQueueMap_[trackId] != nullptr, NEXT_DELAY_TIME_US,
         "sampleQueue " PUBLIC_LOG_D32 " is nullptr", trackId);
     uint64_t sampleDuration = sampleQueueMap_[trackId]->GetCacheDuration();
-    if (sampleDuration <= SAMPLE_FLOW_CONTROL_MIN_SAMPLE_DURATION_US) {
+    if (sampleDuration <= SAMPLE_FLOW_CONTROL_MIN_SAMPLE_DURATION_US  ||
+        ((isVideoMuted_ || needRestore_) && trackId == videoTrackId_)) {
         return NEXT_DELAY_TIME_US;
     }
     return static_cast<int64_t>(sampleDuration >> SAMPLE_FLOW_CONTROL_RATE_POW);
