@@ -1516,9 +1516,11 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         if (ret != Status::OK) {
             return ret;
         }
-        if (!TrackIsChecked(pkt->stream_index)) {
-            checkedTrackIds_.push_back(pkt->stream_index);
+        if (TrackIsChecked(pkt->stream_index)) {
+            pkt = nullptr;
+            continue;
         }
+        checkedTrackIds_.push_back(pkt->stream_index);
         auto stream = formatContext_->streams[pkt->stream_index];
         FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_NULL_POINTER,
             "Stream " PUBLIC_LOG_D32 " is invalid", pkt->stream_index);
