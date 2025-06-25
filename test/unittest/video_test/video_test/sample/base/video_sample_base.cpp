@@ -60,9 +60,10 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     ret = Init();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Init failed");
     PrintSampleInfo(info);
-
-    ret = videoCodec->SetCallback(reinterpret_cast<uintptr_t *>(context_.get()));
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Video codec set callback failed");
+    if (!info.syncMode) {
+        ret = videoCodec->SetCallback(reinterpret_cast<uintptr_t *>(context_.get()));
+        CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Video codec set callback failed");
+    }
     ret = videoCodec->Configure(info);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Video codec config failed");
     if (!(static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b01)) {  // 0b01: buffer mode mask
@@ -110,8 +111,12 @@ void VideoSampleBase::Release()
     if (outputThread_ && outputThread_->joinable()) {
         outputThread_->join();
     }
+    if (syncThread_ && syncThread_->joinable()) {
+        syncThread_->join();
+    }
     inputThread_ = nullptr;
     outputThread_ = nullptr;
+    syncThread_ = nullptr;
     context_ = nullptr;
     dataProducer_ = nullptr;
     outputFile_ = nullptr;

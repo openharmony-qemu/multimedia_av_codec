@@ -31,6 +31,7 @@ private:
     void BufferInputThread();
     void SurfaceInputThread();
     void OutputThread();
+    void SyncThread();
 };
 } // Sample
 } // MediaAVCodec

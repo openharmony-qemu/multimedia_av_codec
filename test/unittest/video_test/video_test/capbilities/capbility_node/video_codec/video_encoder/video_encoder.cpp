@@ -58,6 +58,7 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PROFILE, sampleInfo.profile);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_I_FRAME_INTERVAL, sampleInfo.iFrameInterval);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_ENABLE_SYNC_MODE, sampleInfo.syncMode);
 
     int ret = OH_VideoEncoder_Configure(codec_.get(), format.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
@@ -140,6 +141,40 @@ int32_t VideoEncoder::NotifyEndOfStream()
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
         "Notify end of stream failed, ret: %{public}d", ret);
     return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoEncoder::QueryInput(uint32_t &index, int64_t timeoutUs)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
+    return OH_VideoEncoder_QueryInputBuffer(codec_.get(), &index, 0);
+}
+
+int32_t VideoEncoder::QueryOutput(uint32_t &index, int64_t timeoutUs)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
+    return OH_VideoEncoder_QueryOutputBuffer(codec_.get(), &index, 0);
+}
+
+std::optional<CodecBufferInfo> VideoEncoder::GetInput(uint32_t index)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, std::nullopt, "Encoder is null");
+    OH_AVBuffer *buffer = OH_VideoEncoder_GetInputBuffer(codec_.get(), index);
+    std::optional<CodecBufferInfo> bufferInfo;
+    if (buffer != nullptr) {
+        bufferInfo = CodecBufferInfo(index, buffer);
+    }
+    return bufferInfo;
+}
+
+std::optional<CodecBufferInfo> VideoEncoder::GetOutput(uint32_t index)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, std::nullopt, "Encoder is null");
+    OH_AVBuffer *buffer = OH_VideoEncoder_GetOutputBuffer(codec_.get(), index);
+    std::optional<CodecBufferInfo> bufferInfo;
+    if (buffer != nullptr) {
+        bufferInfo = CodecBufferInfo(index, buffer);
+    }
+    return bufferInfo;
 }
 
 int32_t VideoEncoderAPI10::FreeOutput(uint32_t bufferIndex)

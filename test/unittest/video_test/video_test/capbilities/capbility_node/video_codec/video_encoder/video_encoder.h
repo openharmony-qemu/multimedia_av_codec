@@ -33,6 +33,10 @@ public:
     int32_t Stop() override;
     int32_t Reset() override;
     std::shared_ptr<OH_AVFormat> GetFormat() override;
+    int32_t QueryInput(uint32_t &index, int64_t timeoutUs) override;
+    int32_t QueryOutput(uint32_t &index, int64_t timeoutUs) override;
+    std::optional<CodecBufferInfo> GetInput(uint32_t index) override;
+    std::optional<CodecBufferInfo> GetOutput(uint32_t index) override;
 
 private:
     int32_t NotifyEndOfStream();

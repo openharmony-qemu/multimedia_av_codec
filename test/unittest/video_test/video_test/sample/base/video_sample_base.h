@@ -48,6 +48,7 @@ protected:
     std::shared_ptr<DataProducerBase> dataProducer_ = nullptr;
     std::unique_ptr<std::thread> inputThread_ = nullptr;
     std::unique_ptr<std::thread> outputThread_ = nullptr;
+    std::unique_ptr<std::thread> syncThread_ = nullptr;
 
     std::shared_ptr<SampleContext> context_ = nullptr;
 };
