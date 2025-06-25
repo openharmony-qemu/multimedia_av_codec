@@ -72,6 +72,7 @@ group("av_codec_unit_test") {
         "unittest/codeclist_test:codeclist_capi_unit_test",
         "unittest/codeclist_test:codeclist_inner_unit_test",
         "unittest/codeclist_test/coverage_unit_test:codeclist_coverage_unit_test",
+        "unittest/dash_mpd_downloader_unittest:dash_mpd_downloader_unittest",
         "unittest/dash_test:dash_media_downloader_unit_test",
         "unittest/dash_test:dash_mpd_downloader_unit_test",
         "unittest/dash_test:dash_mpd_parser_unit_test",
