@@ -544,9 +544,14 @@ AVPacket* FFmpegDemuxerPlugin::CombinePackets(std::shared_ptr<SamplePacket> samp
         int offset = 0;
         bool copySuccess = true;
         for (auto pkt : samplePacket->pkts) {
-            if (pkt == nullptr) {
+            if (pkt == nullptr || tempPkt == nullptr || tempPkt->data == nullptr || pkt->data == nullptr) {
                 copySuccess = false;
-                MEDIA_LOG_E("Cache packet is nullptr");
+                MEDIA_LOG_E("Cache packet or data is nullptr");
+                break;
+            }
+            if (offset < 0 || pkt->size < 0 || offset > INT_MAX - pkt->size || offset + pkt->size > totalSize) {
+                copySuccess = false;
+                MEDIA_LOG_E("Memcpy param invalid: totalSize=%d, offset=%d, pktsize=%d", totalSize, offset, pkt->size);
                 break;
             }
             ret = memcpy_s(tempPkt->data + offset, pkt->size, pkt->data, pkt->size);
