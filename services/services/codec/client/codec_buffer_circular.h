@@ -96,7 +96,6 @@ private:
         int32_t size = 0;
         int64_t pts = 0;
     } BufferItem;
-    using IndexQueue = std::queue<uint32_t>;
     using BufferCache = std::unordered_map<uint32_t, BufferItem>;
     using BufferCacheIter = BufferCache::iterator;
 
@@ -127,6 +126,18 @@ private:
     std::shared_ptr<BufferConverter> converter_ = nullptr;
 
     // Sync mode
+    typedef enum : uint8_t {
+        EVENT_UNKNOWN,
+        EVENT_OUTPUT_BUFFER,
+        EVENT_INPUT_BUFFER,
+        EVENT_STREAM_CHANGED,
+    } EventType;
+    typedef struct Event {
+        EventType type = EVENT_UNKNOWN;
+        uint32_t index = 0;
+    } Event;
+    using EventQueue = std::queue<Event>;
+
     void SyncOnError(AVCodecErrorType errorType, int32_t errorCode);
     void SyncOnOutputFormatChanged(const Format &format);
     void SyncOnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> &buffer);
@@ -138,8 +149,8 @@ private:
 
     std::condition_variable inCond_;
     std::condition_variable outCond_;
-    IndexQueue inQueue_;
-    IndexQueue outQueue_;
+    EventQueue inQueue_;
+    EventQueue outQueue_;
     int32_t lastError_ = 0;
 };
 } // namespace MediaAVCodec

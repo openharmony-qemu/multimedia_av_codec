@@ -31,7 +31,6 @@ constexpr int64_t MAX_TIMEOUT =
         .time_since_epoch()
         .count() /
     2;
-constexpr uint32_t FORMAT_CHANGED_EVENT = UINT32_MAX;
 } // namespace
 namespace OHOS {
 namespace MediaAVCodec {
@@ -154,14 +153,14 @@ void CodecBufferCircular::ClearCaches()
         std::lock_guard<std::mutex> lock(inMutex_);
         PrintCaches(false);
         inCache_.clear();
-        std::queue<uint32_t> emptyQueue;
+        EventQueue emptyQueue;
         std::swap(inQueue_, emptyQueue);
     }
     {
         std::lock_guard<std::mutex> lock(outMutex_);
         PrintCaches(true);
         outCache_.clear();
-        std::queue<uint32_t> emptyQueue;
+        EventQueue emptyQueue;
         std::swap(outQueue_, emptyQueue);
     }
 }
@@ -174,7 +173,7 @@ void CodecBufferCircular::FlushCaches()
         for (auto &val : inCache_) {
             val.second.owner = OWNED_BY_SERVER;
         }
-        std::queue<uint32_t> emptyQueue;
+        EventQueue emptyQueue;
         std::swap(inQueue_, emptyQueue);
     }
     {
@@ -183,7 +182,7 @@ void CodecBufferCircular::FlushCaches()
         for (auto &val : outCache_) {
             val.second.owner = OWNED_BY_SERVER;
         }
-        std::queue<uint32_t> emptyQueue;
+        EventQueue emptyQueue;
         std::swap(outQueue_, emptyQueue);
     }
 }
@@ -362,19 +361,9 @@ const std::string &CodecBufferCircular::OwnerToString(BufferOwner owner)
 void CodecBufferCircular::ClearOutputBufferOwnedByCodec()
 {
     for (auto iter = outCache_.begin(); iter != outCache_.end();) {
-        if (iter->second.owner != OWNED_BY_USER) {
+        if (iter->second.owner == OWNED_BY_SERVER) {
             iter = outCache_.erase(iter);
         } else {
-            BufferItem &item = iter->second;
-            if (item.buffer != nullptr) {
-                item.pts = item.buffer->pts_;
-                item.flag = item.buffer->flag_;
-                item.size = (item.buffer->memory_ != nullptr) ? item.buffer->memory_->GetSize() : 0;
-            }
-            item.buffer = nullptr;
-            item.memory = nullptr;
-            item.parameter = nullptr;
-            item.attribute = nullptr;
             ++iter;
         }
     }
@@ -568,7 +557,7 @@ void CodecBufferCircular::SyncOnError(AVCodecErrorType errorType, int32_t errorC
 void CodecBufferCircular::SyncOnOutputFormatChanged(const Format &format)
 {
     std::lock_guard<std::mutex> lock(outMutex_);
-    outQueue_.push(FORMAT_CHANGED_EVENT);
+    outQueue_.push(Event({.type = EVENT_STREAM_CHANGED}));
     ClearOutputBufferOwnedByCodec();
     outCond_.notify_all();
 }
@@ -585,7 +574,7 @@ void CodecBufferCircular::SyncOnInputBufferAvailable(uint32_t index, std::shared
     }
     iter->second.buffer->pts_ = 0;
     iter->second.owner = OWNED_BY_CLIENT;
-    inQueue_.push(index);
+    inQueue_.push(Event({.type = EVENT_INPUT_BUFFER, .index = index}));
     inCond_.notify_all();
 }
 
@@ -600,7 +589,7 @@ void CodecBufferCircular::SyncOnOutputBufferAvailable(uint32_t index, std::share
         iter->second.buffer = buffer;
     }
     iter->second.owner = OWNED_BY_CLIENT;
-    outQueue_.push(index);
+    outQueue_.push(Event({.type = EVENT_OUTPUT_BUFFER, .index = index}));
     outCond_.notify_all();
 }
 
@@ -627,8 +616,9 @@ int32_t CodecBufferCircular::QueryInputIndex(uint32_t &index, int64_t timeoutUs)
     if (!isNotTimeout) {
         return AVCS_ERR_TRY_AGAIN;
     }
-    index = inQueue_.front();
+    Event event = inQueue_.front();
     inQueue_.pop();
+    index = event.index;
     BufferCacheIter iter = inCache_.find(index);
     if (iter != inCache_.end()) {
         iter->second.owner = OWNED_BY_USER;
@@ -649,18 +639,23 @@ int32_t CodecBufferCircular::QueryOutputIndex(uint32_t &index, int64_t timeoutUs
     if (!isNotTimeout) {
         return AVCS_ERR_TRY_AGAIN;
     }
-    uint32_t indexOrEvent = outQueue_.front();
+    Event event = outQueue_.front();
     outQueue_.pop();
-    if (indexOrEvent == FORMAT_CHANGED_EVENT) {
+    if (event.type == EVENT_STREAM_CHANGED) {
         AVCODEC_LOGI_WITH_TAG("Output format changed");
         return AVCS_ERR_STREAM_CHANGED;
     }
-    index = indexOrEvent;
+    index = event.index;
     BufferCacheIter iter = outCache_.find(index);
-    if (iter != outCache_.end()) {
-        iter->second.owner = OWNED_BY_USER;
+    if (iter == outCache_.end()) {
+        return AVCS_ERR_OK;
     }
-    if ((iter->second.buffer != nullptr) && (iter->second.buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS)) {
+    BufferItem &item = iter->second;
+    item.owner = OWNED_BY_USER;
+    if (item.buffer != nullptr) {
+        item.flag = item.buffer->flag_;
+    }
+    if (item.flag & AVCODEC_BUFFER_FLAG_EOS) {
         flag_ |= FLAG_OUTPUT_EOS;
         outCond_.notify_all();
     }
