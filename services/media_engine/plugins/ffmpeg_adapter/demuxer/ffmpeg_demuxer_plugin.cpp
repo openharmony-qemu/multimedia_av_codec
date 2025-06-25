@@ -551,7 +551,8 @@ AVPacket* FFmpegDemuxerPlugin::CombinePackets(std::shared_ptr<SamplePacket> samp
             }
             if (offset < 0 || pkt->size < 0 || offset > INT_MAX - pkt->size || offset + pkt->size > totalSize) {
                 copySuccess = false;
-                MEDIA_LOG_E("Memcpy param invalid: totalSize=%d, offset=%d, pktsize=%d", totalSize, offset, pkt->size);
+                MEDIA_LOG_E("Memcpy param invalid: totalSize=" PUBLIC_LOG_D32 ", offset=" PUBLIC_LOG_D32 ", pkt->size="
+                    PUBLIC_LOG_D32, totalSize, offset, pkt->size);
                 break;
             }
             ret = memcpy_s(tempPkt->data + offset, pkt->size, pkt->data, pkt->size);
