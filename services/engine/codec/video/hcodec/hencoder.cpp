@@ -610,7 +610,7 @@ std::optional<VideoEncodeBitrateMode> HEncoder::GetBitRateModeFromUser(const For
 
 int32_t HEncoder::SetCRFMode(int32_t targetQp)
 {
-    ControlQualitytargetQp bitrateType;
+    ControlQualityTargetQp bitrateType;
     InitOMXParamExt(bitrateType);
     bitrateType.portIndex = OMX_DirOutput;
     bitrateType.targetQp = static_cast<uint32_t>(targetQp);
@@ -936,7 +936,7 @@ int32_t HEncoder::OnSetParameters(const Format &format)
 
     optional<uint32_t> targetQp = GetCRFtagetQpFromUser(format);
     if (targetQp.has_value() && bitRateMode.has_value() && bitRateMode.value() == CRF) {
-        ControlQualitytargetQp bitrateType;
+        ControlQualityTargetQp bitrateType;
         InitOMXParamExt(bitrateType);
         bitrateType.portIndex = OMX_DirOutput;
         bitrateType.targetQp = targetQp.value();
