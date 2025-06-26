@@ -164,6 +164,7 @@ private:
     bool isDownloading_ {false};
     bool requestWholeFile_ {false};
     int requestSize_ {0};
+    int preRequestSize_ {0};
     int retryTimes_ {0};
     int32_t clientError_ {0};
     int32_t serverError_ {0};
