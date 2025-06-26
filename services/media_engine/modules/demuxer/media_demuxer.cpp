@@ -2465,7 +2465,7 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
             draggingLock.unlock();
             bool isDiscardable = videoStreamReadyCallback->IsVideoStreamDiscardable(bufferMap_[trackId]);
             UpdateSyncFrameInfo(bufferMap_[trackId], trackId, isDiscardable);
-            CopyBufferToDfxBufferQueue(bufferMap[trackId], !isDiscardable && isBufferSizeValid);
+            CopyBufferToDfxBufferQueue(bufferMap_[trackId], !isDiscardable && isBufferSizeValid);
             PushBufferToQueue(trackId, bufferMap_[trackId], !isDiscardable && isBufferSizeValid);
             return Status::OK;
         }
@@ -2514,7 +2514,8 @@ void MediaDemuxer::CopyBufferToDfxBufferQueue(std::shared_ptr<AVBuffer> buffer, 
     dfxBufferQueueProducer_->PushBuffer(dfxBuffer, res == Status::OK);
 }
 
-std::string Sha256HashMemory(const void* data, size_t size) {
+std::string Sha256HashMemory(const void* data, size_t size)
+{
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256_CTX sha256;
 
@@ -2533,8 +2534,7 @@ std::string Sha256HashMemory(const void* data, size_t size) {
 void MediaDemuxer::HandleDecoderErrorFrame(int64_t pts)
 {
     FALSE_RETURN_NOLOG(dfxBufferQueueConsumer_ != nullptr && dfxBufferQueueProducer_ != nullptr);
-    for (std::shared_ptr<AVBuffer> buffer = nullptr; dfxBufferQueueConsumer_->AcquireBuffer(buffer) == Status::OK; )
-    {
+    for (std::shared_ptr<AVBuffer> buffer = nullptr; dfxBufferQueueConsumer_->AcquireBuffer(buffer) == Status::OK;) {
         ON_SCOPE_EXIT(0) {
             dfxBufferQueueConsumer_->ReleaseBuffer(buffer);
         };
@@ -2581,7 +2581,7 @@ Status MediaDemuxer::HandleTrackEos(int32_t trackId)
     return Status::OK;
 }
 
-Status MediaDemuxer::GenerateDfxBufferQueue(uint32_t trackId)
+Status MediaDemuxer::GenerateDfxBufferQueue(int32_t trackId)
 {
     FALSE_RETURN_V_NOLOG(enableDfxBufferQueue_ && trackId == videoTrackId_, Status::OK);
     dfxBufferQueue_ = AVBufferQueue::Create(DFX_BUFFER_QUEUE_SIZE_MAX, MemoryType::VIRTUAL_MEMORY, "DfxBufferQueue");

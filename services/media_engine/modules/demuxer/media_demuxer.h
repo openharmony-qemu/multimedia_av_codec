@@ -260,9 +260,9 @@ private:
     uint64_t GetSampleQueueDuration();
     void UpdateSampleQueueCache();
     void ReportEosEvent();
-    Status GenerateDfxBufferQueue(uint32_t trackId);
+    Status GenerateDfxBufferQueue(int32_t trackId);
     void InitEnableDfxBufferQueue();
-    void CopyBufferToDfxBufferQueue(std::shared_ptr<AVBuffer> buffer);
+    void CopyBufferToDfxBufferQueue(std::shared_ptr<AVBuffer> buffer, bool dropable);
 
     Plugins::Seekable seekable_;
     Plugins::Seekable subSeekable_;

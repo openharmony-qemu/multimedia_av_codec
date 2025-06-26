@@ -1067,11 +1067,11 @@ Status DecoderSurfaceFilter::CheckBufferDecodedCorrectly(uint32_t index, std::sh
 {
     static const std::string strVideoStreamErr = "video_decoder_input_stream_error";
     int32_t errFlag = 0;
-    FALSE_RETURN_V_NOLOG(outputBuffer->meta_ != nullptr 
+    FALSE_RETURN_V_NOLOG(outputBuffer->meta_ != nullptr
         && outputBuffer->meta_->GetData(strVideoStreamErr, errFlag) && errFlag != 0, Status::OK);
-    FALSE_RETURN_V_MSG(eventReceiver != nullptr, Status::OK,
+    FALSE_RETURN_V_MSG(eventReceiver_ != nullptr, Status::OK,
         "Err frame pts " PUBLIC_LOG_D64 ", eventReceiver is nullptr", outputBuffer->pts_);
-    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_DECODER_ERROR_FRAME, outputBuffer->pts_});
+    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_DECODE_ERROR_FRAME, outputBuffer->pts_});
     videoDecoder_->ReleaseOutputBuffer(index, false);
     MEDIA_LOG_E("Decoded buffer is error pts " PUBLIC_LOG_D64, outputBuffer->pts_);
     return Status::ERROR_INVALID_DATA;
