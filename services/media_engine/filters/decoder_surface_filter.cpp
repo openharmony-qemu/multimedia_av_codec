@@ -1050,6 +1050,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
         MEDIA_LOG_I("DrainOutputBuffer output EOS");
     }
     std::unique_lock<std::mutex> lock(mutex_);
+    FALSE_RETURN_NOLOG(CheckBufferDecodedCorrectly(index, outputBuffer) == Status::OK);
     FALSE_RETURN_NOLOG(!DrainSeekContinuous(index, outputBuffer));
     FALSE_RETURN_NOLOG(postProcessor_ != nullptr || !DrainSeekClosest(index, outputBuffer));
     FALSE_RETURN_NOLOG(!DrainPreroll(index, outputBuffer));
@@ -1060,6 +1061,20 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     if (!IS_FILTER_ASYNC) {
         condBufferAvailable_.notify_one();
     }
+}
+
+Status DecoderSurfaceFilter::CheckBufferDecodedCorrectly(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
+{
+    static const std::string strVideoStreamErr = "video_decoder_input_stream_error";
+    int32_t errFlag = 0;
+    FALSE_RETURN_V_NOLOG(outputBuffer->meta_ != nullptr 
+        && outputBuffer->meta_->GetData(strVideoStreamErr, errFlag) && errFlag != 0, Status::OK);
+    FALSE_RETURN_V_MSG(eventReceiver != nullptr, Status::OK,
+        "Err frame pts " PUBLIC_LOG_D64 ", eventReceiver is nullptr", outputBuffer->pts_);
+    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_DECODER_ERROR_FRAME, outputBuffer->pts_});
+    videoDecoder_->ReleaseOutputBuffer(index, false);
+    MEDIA_LOG_E("Decoded buffer is error pts " PUBLIC_LOG_D64, outputBuffer->pts_);
+    return Status::ERROR_INVALID_DATA;
 }
 
 void DecoderSurfaceFilter::DecoderDrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)

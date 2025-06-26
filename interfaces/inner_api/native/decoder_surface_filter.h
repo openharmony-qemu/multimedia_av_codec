@@ -160,6 +160,7 @@ private:
 #ifdef SUPPORT_CAMERA_POST_PROCESSOR
     void LoadCameraPostProcessorLib();
 #endif
+    Status CheckBufferDecodedCorrectly(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
 
     std::string name_;
     FilterType filterType_;
