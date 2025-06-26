@@ -1309,9 +1309,41 @@ void FFmpegDemuxerPlugin::UpdateReferenceIds()
     }
 }
 
+void FFmpegDemuxerPlugin::GetStreamInitialParams()
+{
+    FALSE_RETURN_MSG_W(formatContext_ != nullptr, "AVFormatContext is nullptr");
+    for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        auto stream = formatContext_->streams[trackIndex];
+        if (stream == nullptr) {
+            continue;
+        }
+        Meta format;
+        int64_t bitRate = static_cast<int64_t>(stream->codecpar->bit_rate);
+        if (bitRate > 0) {
+            format.Set<Tag::MEDIA_BITRATE>(bitRate);
+        } else {
+            MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " bitrate parse failed", trackIndex);
+        }
+        streamInitialParam_[trackIndex] = format;
+    }
+}
+
+void FFmpegDemuxerPlugin::SetStreamInitialParams(uint32_t trackId, Meta &format)
+{
+    FALSE_RETURN_MSG_W(streamInitialParam_.count(trackId) > 0, "TrackId is invalid");
+    int64_t bitRate = 0;
+    bool ret = streamInitialParam_[trackId].GetData(Tag::MEDIA_BITRATE, bitRate);
+    if (!ret || bitRate <= 0) {
+        MEDIA_LOG_W("Track " PUBLIC_LOG_D32 " has no bitrate", trackId);
+    } else {
+        format.Set<Tag::MEDIA_BITRATE>(bitRate);
+    }
+}
+
 Status FFmpegDemuxerPlugin::GetMediaInfo()
 {
     MediaAVCodec::AVCodecTrace trace("FFmpegDemuxerPlugin::GetMediaInfo");
+    GetStreamInitialParams();
     Status ret = ParseVideoFirstFrames();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse video info failed");
 
@@ -1345,6 +1377,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo()
             avStream->codecpar->codec_id == AV_CODEC_ID_VVC) {
             ConvertCsdToAnnexb(*avStream, meta);
         }
+        SetStreamInitialParams(trackId, meta);
         mediaInfo_.tracks.push_back(meta);
         DemuxerLogCompressor::StringifyMeta(meta, trackId);
     }
