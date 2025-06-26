@@ -1609,8 +1609,9 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsInOneTimeline(const DashSegTi
                                                                  std::shared_ptr<DashStreamDescription> streamDesc)
 {
     int repeat = 0;
+    int segCountTmp = sampleInfo.segCount_;
 
-    while (repeat <= sampleInfo.segCount_) {
+    while (repeat <= segCountTmp) {
         repeat++;
         if (segmentSeq == -1) {
             segmentSeq = streamDesc->startNumberSeq_;
