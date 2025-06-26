@@ -34,7 +34,7 @@ constexpr int32_t DEFAULT_VIDEO_WIDTH = 1920;
 constexpr int32_t DEFAULT_VIDEO_HEIGHT = 1080;
 constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 240000000;
 constexpr int32_t DEFAULT_VIDEO_BITRATE = 20000000;
-constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
+constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 60;
 constexpr int32_t DEFAULT_VIDEO_FRAMERATE = 30;
 constexpr double DEFAULT_VIDEO_FRAMERATE_DOUBLE = 30.0;
 constexpr int32_t VIDEO_QUALITY_DEFAULT = 80;
@@ -1255,23 +1255,23 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Encoder_Convert_001, TestSize.Level1)
         .range = COLOR_RANGE::RANGE_FULL,
         .bytesPerPixel = RGBA_BUFFER_SIZE,
     };
-    int32_t ret = ConvertRgbToNv21(dst, width, height, dstBufferSize, data);
+    int32_t ret = ConvertRgbToYuv420(dst, width, height, dstBufferSize, data);
     EXPECT_EQ(ret, AVCS_ERR_OK);
 
-    ret = ConvertRgbToNv21(dst, width, height, dstBufferSize - 1, data);
+    ret = ConvertRgbToYuv420(dst, width, height, dstBufferSize - 1, data);
     EXPECT_EQ(ret, AVCS_ERR_NO_MEMORY);
 
-    ret = ConvertRgbToNv21(nullptr, width, height, dstBufferSize, data);
+    ret = ConvertRgbToYuv420(nullptr, width, height, dstBufferSize, data);
     EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
 
 #if defined(ARMV8)
-    ret = ConvertRgbToNv21Neon(dst, width, height, dstBufferSize, data);
+    ret = ConvertRgbToYuv420Neon(dst, width, height, dstBufferSize, data);
     EXPECT_EQ(ret, AVCS_ERR_OK);
 
-    ret = ConvertRgbToNv21Neon(dst, width, height, dstBufferSize - 1, data);
+    ret = ConvertRgbToYuv420Neon(dst, width, height, dstBufferSize - 1, data);
     EXPECT_EQ(ret, AVCS_ERR_NO_MEMORY);
 
-    ret = ConvertRgbToNv21Neon(nullptr, width, height, dstBufferSize, data);
+    ret = ConvertRgbToYuv420Neon(nullptr, width, height, dstBufferSize, data);
     EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
 #endif
 }
@@ -1292,10 +1292,33 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Encoder_Convert_002, TestSize.Level1)
         .stride = width,
         .uvOffset = 0,
     };
-    int32_t ret = ConvertNv12ToNv21(dst, width, height, dstBufferSize, data);
+    int32_t ret = ConvertNv12ToYuv420(dst, width, height, dstBufferSize, data);
     EXPECT_EQ(ret, AVCS_ERR_OK);
 
-    ret = ConvertNv12ToNv21(dst, width, height, dstBufferSize - 1, data);
+    ret = ConvertNv12ToYuv420(dst, width, height, dstBufferSize - 1, data);
+    EXPECT_EQ(ret, AVCS_ERR_NO_MEMORY);
+}
+
+/**
+ * @tc.name: Test_Encoder_Convert_003
+ * @tc.desc: encoder convert coverage
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Encoder_Convert_003, TestSize.Level1)
+{
+    int32_t width = CONVERT_WIDTH;
+    int32_t height = CONVERT_HEIGHT;
+    int32_t dstBufferSize = width * height * YUV_BUFFER_SIZE / 2;
+    uint8_t *dst = (uint8_t *)malloc(dstBufferSize);
+    uint8_t *src = (uint8_t *)malloc(dstBufferSize);
+    YuvImageData data = {
+        .data = src,
+        .stride = width,
+        .uvOffset = 0,
+    };
+    int32_t ret = ConvertNv21ToYuv420(dst, width, height, dstBufferSize, data);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    ret = ConvertNv21ToYuv420(dst, width, height, dstBufferSize - 1, data);
     EXPECT_EQ(ret, AVCS_ERR_NO_MEMORY);
 }
 } // namespace

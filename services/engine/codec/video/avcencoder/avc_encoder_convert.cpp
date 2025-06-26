@@ -59,7 +59,7 @@ inline uint8_t Clip3(uint8_t min, uint8_t value, uint8_t max)
 }
 
 #if defined(ARMV8)
-int32_t ConvertRgbToNv21Neon(uint8_t *dstData, int32_t width, int32_t height,
+int32_t ConvertRgbToYuv420Neon(uint8_t *dstData, int32_t width, int32_t height,
     int32_t bufferSize, RgbImageData &rgbData)
 {
     const uint8_t *srcData = rgbData.data;
@@ -108,10 +108,11 @@ int32_t ConvertRgbToNv21Neon(uint8_t *dstData, int32_t width, int32_t height,
     int stridePadding = srcStride - width;
 
     int yStride = 0;
-    int uStride = yStride;
+    int uStride = yStride >> 1;
 
     int lumaOffset = 0;
     int chromaUOffset = dstStride * height;
+    int chromaVOffset = chromaUOffset + (dstStride >> 1) * (height >> 1);
     const int batchOffset = 16;            // each time process 16 pixels
 
     for (int j = 0; j < height; ++j) {
@@ -153,14 +154,14 @@ int32_t ConvertRgbToNv21Neon(uint8_t *dstData, int32_t width, int32_t height,
 
             vst1q_u8(dstData + lumaOffset, pixel_y);
 
-            if (j % 2 == 0) {   // calc 2 cpmpoents: u, v
+            if (j % 2 == 0) {   // calc 2 components: u, v
                 int16x8_t r = vreinterpretq_s16_u16(vandq_u16(vreinterpretq_u16_u8(pixel_rgb.val[0]), mask));
                 int16x8_t g = vreinterpretq_s16_u16(vandq_u16(vreinterpretq_u16_u8(pixel_rgb.val[1]), mask));
                 int16x8_t b = vreinterpretq_s16_u16(vandq_u16(vreinterpretq_u16_u8(pixel_rgb.val[2]), mask));
 
                 int16x8_t signed_u;
                 int16x8_t signed_v;
-                uint8x8x2_t result;
+                uint8x8_t result[2]; // 2 row for u & v
                 signed_u = vmulq_n_s16(r, weights[1][0]);   // u coeff = -28
                 signed_v = vmulq_n_s16(r, weights[2][0]);   // v coeff = 112
 
@@ -170,12 +171,14 @@ int32_t ConvertRgbToNv21Neon(uint8_t *dstData, int32_t width, int32_t height,
                 signed_u = vmlaq_s16(signed_u, b, u3_scalar);
                 signed_v = vmlaq_s16(signed_v, b, v3_scalar);
 
-                result.val[1] = vreinterpret_u8_s8(vadd_s8(vqshrn_n_s16(signed_u, 8), s8_rounding));  // 8 bits
-                result.val[0] = vreinterpret_u8_s8(vadd_s8(vqshrn_n_s16(signed_v, 8), s8_rounding));  // 8 bits
+                result[0] = vreinterpret_u8_s8(vadd_s8(vqshrn_n_s16(signed_u, 8), s8_rounding));  // 8 bits
+                result[1] = vreinterpret_u8_s8(vadd_s8(vqshrn_n_s16(signed_v, 8), s8_rounding));  // 8 bits
 
-                vst2_u8(dstData + chromaUOffset, result);
+                vst1_u8(dstData + chromaUOffset, result[0]);
+                vst1_u8(dstData + chromaVOffset, result[1]);
 
-                chromaUOffset += (i == 0 && isPad) ? widthLess : batchOffset;
+                chromaUOffset += (i == 0 && isPad) ? (widthLess >> 1) : (batchOffset >> 1);
+                chromaVOffset += (i == 0 && isPad) ? (widthLess >> 1) : (batchOffset >> 1);
             }
             if (i == 0 && isPad) {
                 rgbaOffset += bytesPerPixel * widthLess;
@@ -188,6 +191,7 @@ int32_t ConvertRgbToNv21Neon(uint8_t *dstData, int32_t width, int32_t height,
 
         if ((j & 1) == 0) {
             chromaUOffset += uStride;
+            chromaVOffset += uStride;
         }
 
         lumaOffset += yStride;
@@ -197,7 +201,7 @@ int32_t ConvertRgbToNv21Neon(uint8_t *dstData, int32_t width, int32_t height,
 }
 #endif
 
-int32_t ConvertRgbToNv21(uint8_t *dstData, int32_t width, int32_t height,
+int32_t ConvertRgbToYuv420(uint8_t *dstData, int32_t width, int32_t height,
     int32_t bufferSize, RgbImageData &rgbData)
 {
     const uint8_t *srcData = rgbData.data;
@@ -215,7 +219,8 @@ int32_t ConvertRgbToNv21(uint8_t *dstData, int32_t width, int32_t height,
         return AVCS_ERR_NO_MEMORY;
     }
 
-    uint8_t *dstV = dstData + dstStride * height;
+    uint8_t *dstU = dstData + dstStride * height;
+    uint8_t *dstV = dstU + (dstStride >> 1) * (height >> 1);
 
     const uint8_t *pRed = srcData;          // r data 0
     const uint8_t *pGreen = srcData + 1;    // g data 1
@@ -239,10 +244,10 @@ int32_t ConvertRgbToNv21(uint8_t *dstData, int32_t width, int32_t height,
             dstData[x] = Clip3(zeroLvl, luma, maxLvlLuma);
 
             if ((x & 1) == 0 && (y & 1) == 0) {
-                uint8_t u = ((r * weights[1][0] + g * weights[1][1] + b * weights[1][2]) >> 8) + 128;  // nv21: U
-                uint8_t v = ((r * weights[2][0] + g * weights[2][1] + b * weights[2][2]) >> 8) + 128;  // nv21: V
-                dstV[x] = Clip3(zeroLvl, v, maxLvlChroma);
-                dstV[x + 1] = Clip3(zeroLvl, u, maxLvlChroma);
+                uint8_t u = ((r * weights[1][0] + g * weights[1][1] + b * weights[1][2]) >> 8) + 128;
+                uint8_t v = ((r * weights[2][0] + g * weights[2][1] + b * weights[2][2]) >> 8) + 128;
+                dstU[x >> 1] = Clip3(zeroLvl, v, maxLvlChroma);
+                dstV[x >> 1] = Clip3(zeroLvl, u, maxLvlChroma);
             }
             pRed += bytesPerPixel;
             pGreen += bytesPerPixel;
@@ -250,7 +255,8 @@ int32_t ConvertRgbToNv21(uint8_t *dstData, int32_t width, int32_t height,
         }
 
         if ((y & 1) == 0) {
-            dstV += dstStride;
+            dstU += dstStride >> 1;
+            dstV += dstStride >> 1;
         }
 
         pRed -= bytesPerPixel * width;
@@ -265,25 +271,27 @@ int32_t ConvertRgbToNv21(uint8_t *dstData, int32_t width, int32_t height,
     return AVCS_ERR_OK;
 }
 
-int32_t ConvertNv12ToNv21(uint8_t *dstData, int32_t width, int32_t height,
+int32_t ConvertNv12ToYuv420(uint8_t *dstData, int32_t width, int32_t height,
     int32_t bufferSize, YuvImageData &yuvData)
 {
     if (bufferSize < (width * height * 3 / 2)) {    // yuv bufferSize dstStride * height * 3 / 2
-        AVCODEC_LOGE("conversion buffer is too small for converting from RGB to YUV");
+        AVCODEC_LOGE("conversion buffer is too small for converting from NV12 to YUV");
         return AVCS_ERR_NO_MEMORY;
     }
 
     int32_t dstStride = width;
     uint8_t *dstY = dstData;
     uint8_t *dstU = dstData + dstStride * height;
-    uint8_t *dstV = dstData + dstStride * height + 1;
+    uint8_t *dstV = dstU + (dstStride >> 1) * (height >> 1);
 
     int32_t srcStride = yuvData.stride;
     const uint8_t *srcY = yuvData.data;
     const uint8_t *srcU = srcY + yuvData.uvOffset;
-    const uint8_t *srcV = srcU + 1;
+    const uint8_t *srcV = srcY + yuvData.uvOffset + 1;
 
-    for (int32_t y = 0; y < height; y++) {
+    int32_t x;
+    int32_t y;
+    for (y = 0; y < height; y++) {
         errno_t ret = memcpy_s(dstY, width, srcY, width);
         CHECK_AND_RETURN_RET_LOG(ret == EOK, AVCS_ERR_UNKNOWN, "memcpy_s failed");
         dstY += dstStride;
@@ -292,10 +300,56 @@ int32_t ConvertNv12ToNv21(uint8_t *dstData, int32_t width, int32_t height,
 
     height = height >> 1;
     width = width >> 1;
-    for (int32_t y = 0; y < height; y++) {
-        for (int32_t x = 0; x < width; x++) {
-            dstU[x * 2] = srcV[x * 2];          // 2: addr + pos * 2 for u
-            dstV[x * 2] = srcU[x * 2];          // 2: (addr + 1) + pos * 2 for v
+    dstStride = dstStride >> 1;
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dstU[x] = srcU[x << 1];
+            dstV[x] = srcV[x << 1];
+        }
+
+        dstU += dstStride;
+        dstV += dstStride;
+        srcU += srcStride;
+        srcV += srcStride;
+    }
+
+    return AVCS_ERR_OK;
+}
+
+int32_t ConvertNv21ToYuv420(uint8_t *dstData, int32_t width, int32_t height,
+    int32_t bufferSize, YuvImageData &yuvData)
+{
+    if (bufferSize < (width * height * 3 / 2)) {    // yuv bufferSize dstStride * height * 3 / 2
+        AVCODEC_LOGE("conversion buffer is too small for converting from NV21 to YUV");
+        return AVCS_ERR_NO_MEMORY;
+    }
+
+    int32_t dstStride = width;
+    uint8_t *dstY = dstData;
+    uint8_t *dstU = dstData + dstStride * height;
+    uint8_t *dstV = dstU + (dstStride >> 1) * (height >> 1);
+
+    int32_t srcStride = yuvData.stride;
+    const uint8_t *srcY = yuvData.data;
+    const uint8_t *srcU = srcY + yuvData.uvOffset + 1;
+    const uint8_t *srcV = srcY + yuvData.uvOffset;
+
+    int32_t x;
+    int32_t y;
+    for (y = 0; y < height; y++) {
+        errno_t ret = memcpy_s(dstY, width, srcY, width);
+        CHECK_AND_RETURN_RET_LOG(ret == EOK, AVCS_ERR_UNKNOWN, "memcpy_s failed");
+        dstY += dstStride;
+        srcY += srcStride;
+    }
+
+    height = height >> 1;
+    width = width >> 1;
+    dstStride = dstStride >> 1;
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dstU[x] = srcU[x << 1];
+            dstV[x] = srcV[x << 1];
         }
 
         dstU += dstStride;
