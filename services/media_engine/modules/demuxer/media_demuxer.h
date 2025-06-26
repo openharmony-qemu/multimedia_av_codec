@@ -181,6 +181,7 @@ public:
     Status StopBufferring(bool isAppBackground);
     
     void SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted, bool keepDecodingOnMute);
+    void HandleDecoderErrorFrame(int64_t pts);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -259,6 +260,10 @@ private:
     uint64_t GetSampleQueueDuration();
     void UpdateSampleQueueCache();
     void ReportEosEvent();
+    Status GenerateDfxBufferQueue(int32_t trackId);
+    void InitEnableDfxBufferQueue();
+    void CopyBufferToDfxBufferQueue(std::shared_ptr<AVBuffer> buffer, bool dropable);
+
     Plugins::Seekable seekable_;
     Plugins::Seekable subSeekable_;
     std::string uri_;
@@ -462,6 +467,11 @@ private:
 
     uint32_t timeout_ = {10}; // 10 represents 10ms. Optimization can consider dynamic adjustment.
     bool enableAsyncDemuxer_ = true;
+
+    bool enableDfxBufferQueue_ {false};
+    std::shared_ptr<AVBufferQueue> dfxBufferQueue_ {nullptr};
+    sptr<AVBufferQueueProducer> dfxBufferQueueProducer_ {nullptr};
+    sptr<AVBufferQueueConsumer> dfxBufferQueueConsumer_ {nullptr};
 };
 } // namespace Media
 } // namespace OHOS

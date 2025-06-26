@@ -1048,7 +1048,6 @@ Status DemuxerFilter::StopBufferring(bool isAppBackground)
     return demuxer_->StopBufferring(isAppBackground);
 }
 
-
 Status DemuxerFilter::SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted, bool keepDecodingOnMute)
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
@@ -1057,6 +1056,12 @@ Status DemuxerFilter::SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMut
         isVideoMuted_ = isMuted;
     }
     return Status::OK;
+}
+
+void DemuxerFilter::HandleDecoderErrorFrame(int64_t pts)
+{
+    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
+    demuxer_->HandleDecoderErrorFrame(pts);
 }
 } // namespace Pipeline
 } // namespace Media
