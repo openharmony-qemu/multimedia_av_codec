@@ -471,21 +471,7 @@ int32_t FCodec::Stop()
     CHECK_AND_RETURN_RET_LOG((IsActive()), AVCS_ERR_INVALID_STATE, "Stop codec failed: not in executing state");
     state_ = State::STOPPING;
     AVCODEC_LOGI("step into STOPPING status");
-    std::unique_lock<std::mutex> sLock(sendMutex_);
-    sendCv_.notify_one();
-    sLock.unlock();
-    inputAvailQue_->SetActive(false, false);
-    sendTask_->Stop();
-
-    if (sInfo_.surface != nullptr) {
-        renderAvailQue_->SetActive(false, false);
-        requestSurfaceBufferQue_->SetActive(false, false);
-    }
-    std::unique_lock<std::mutex> rLock(recvMutex_);
-    recvCv_.notify_one();
-    rLock.unlock();
-    codecAvailQue_->SetActive(false, false);
-    receiveTask_->Stop();
+    StopThread();
     avcodec_close(avCodecContext_.get());
     ResetContext(true);
     ReleaseBuffers();
@@ -1380,6 +1366,10 @@ int32_t FCodec::RenderOutputBuffer(uint32_t index)
     std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
     oLock.unlock();
     std::lock_guard<std::mutex> sLock(surfaceMutex_);
+    std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
+    CHECK_AND_RETURN_RET_LOG(bufferMemory != nullptr, AVCS_ERR_INVALID_VAL, "bufferMemory is nullptr");
+    int32_t size = bufferMemory->GetSize();
+    CHECK_AND_RETURN_RET_LOGW(size > 0, AVCS_ERR_OK, "buf(%{public}u) size=%{public}d", index, size);
     if (frameBuffer->owner_ == Owner::OWNED_BY_USER) {
         std::shared_ptr<FSurfaceMemory> surfaceMemory = frameBuffer->sMemory_;
         int32_t ret = FlushSurfaceMemory(surfaceMemory, index);
