@@ -149,6 +149,8 @@ private:
     void SyncSeekThread();
     Status DoSeekInternal(int trackIndex, int64_t seekTime, SeekMode mode, int64_t& realSeekTime);
     bool IsUseFirstFrameDts(int trackIndex, int64_t seekTime);
+    Status GetStreamInitialParams();
+    Status SetStreamInitialParams(uint32_t trackId, Meta &format);
 
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
     static int HandleReadOK(IOContext* ioContext, int dataSize);
@@ -328,6 +330,7 @@ private:
     std::mutex seekWaitMutex_;
     std::condition_variable seekWaitCv_;
     std::atomic<bool> threadReady_ {false};
+    std::unordered_map<uint32_t, Meta> streamInitialParam_;
 };
 
 typedef struct DtsFinder {
