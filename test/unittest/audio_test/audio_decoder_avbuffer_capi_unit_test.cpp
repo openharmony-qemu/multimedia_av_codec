@@ -82,6 +82,8 @@ constexpr string_view INPUT_OPUS_FILE_PATH = "/data/test/media/voice_opus.dat";
 constexpr string_view OUTPUT_OPUS_PCM_FILE_PATH = "/data/test/media/opus_decode.pcm";
 constexpr string_view INPUT_APE_FILE_PATH = "/data/test/media/voice_ape.dat";
 constexpr string_view OUTPUT_APE_PCM_FILE_PATH = "/data/test/media/ape_decode.pcm";
+constexpr string_view INPUT_AC3_FILE_PATH = "/data/test/media/voice_ac3.dat";
+constexpr string_view OUTPUT_AC3_PCM_FILE_PATH = "/data/test/media/ac3_decode.pcm";
 constexpr string_view INPUT_AAC_LC_ADTS_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k_lc.dat";
 constexpr string_view OUTPUT_AAC_LC_ADTS_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k_lc.pcm";
 constexpr string_view INPUT_AAC_HE_ADTS_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k_he.dat";
@@ -103,7 +105,8 @@ enum class AudioBufferFormatType : int32_t {
     TYPE_G711MU = 6,
     TYPE_OPUS = 7,
     TYPE_APE = 8,
-    TYPE_MAX = 9,
+    TYPE_AC3 = 9,
+    TYPE_MAX = 10,
 };
 
 class AudioCodecBufferSignal {
@@ -460,6 +463,9 @@ int32_t AudioDecoderBufferCapiUnitTest::InitFile(AudioBufferFormatType audioType
     } else if (audioType == AudioBufferFormatType::TYPE_APE) {
         inputFile_.open(INPUT_APE_FILE_PATH, std::ios::binary);
         pcmOutputFile_.open(OUTPUT_APE_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
+    } else if (audioType == AudioBufferFormatType::TYPE_AC3) {
+        inputFile_.open(INPUT_AC3_FILE_PATH, std::ios::binary);
+        pcmOutputFile_.open(OUTPUT_AC3_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
     } else {
         cout << "Fatal: audio format type not support" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
@@ -512,6 +518,8 @@ int32_t AudioDecoderBufferCapiUnitTest::CreateCodecFunc(AudioBufferFormatType au
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_OPUS_NAME).data());
     } else if (audioType == AudioBufferFormatType::TYPE_APE) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_APE_NAME).data());
+    } else if (audioType == AudioBufferFormatType::TYPE_AC3) {
+        audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_AC3_NAME).data());
     } else {
         cout << "audio name not support" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
@@ -3156,6 +3164,270 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_VorbisFormatChanged, TestS
     EXPECT_EQ(g_outputChannels, DEFAULT_CHANNEL_COUNT);
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_CreateByMime_01, TestSize.Level1)
+{
+    audioDec_ = OH_AudioCodec_CreateByMime(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AC3.data(), false);
+    EXPECT_NE(nullptr, audioDec_);
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_CreateByName_01, TestSize.Level1)
+{
+    audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_AC3_NAME).data());
+    EXPECT_NE(nullptr, audioDec_);
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_Configure_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_Configure_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    format_ = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format_);
+
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), DEFAULT_SAMPLE_FORMAT);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), 44100);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_)); // missing channel count
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), ABNORMAL_MIN_CHANNEL_COUNT);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_)); // abnormal min channel count
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), ABNORMAL_MAX_CHANNEL_COUNT);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_)); // abnormal max channel count
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), DEFAULT_CHANNEL_COUNT);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_)); // normal channel count
+
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_Configure_03, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    format_ = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format_);
+
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), DEFAULT_SAMPLE_FORMAT);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), DEFAULT_CHANNEL_COUNT);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), 44100);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_)); // missing sample rate
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), ABNORMAL_SAMPLE_RATE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_)); // abnormal sample rate
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_)); // normal sample rate
+
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_SetParameter_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioDec_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_SetParameter(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_SetParameter_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_SetParameter(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_Start_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_Start_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Start(audioDec_));
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_Stop_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    sleep(1);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_Flush_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_Reset_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_Reset_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_Reset_03, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_Destroy_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioDec_));
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_Destroy_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioDec_));
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_GetOutputFormat_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+
+    EXPECT_NE(nullptr, OH_AudioCodec_GetOutputDescription(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_IsValid_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    bool isValid = false;
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_IsValid(audioDec_, &isValid));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_Prepare_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Prepare(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_PushInputData_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+
+    // case0 传参异常
+    const uint32_t index = 1024;
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_PushInputBuffer(audioDec_, index));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_AC3_ReleaseOutputBuffer_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_AC3));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_AC3));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+
+    // case0 传参异常
+    const uint32_t index = 1024;
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_FreeOutputBuffer(audioDec_, index));
     Release();
 }
 

@@ -33,6 +33,7 @@ public:
     static constexpr std::string_view AUDIO_DECODER_G711MU_NAME = "OH.Media.Codec.Decoder.Audio.G711mu";
     static constexpr std::string_view AUDIO_DECODER_APE_NAME = "OH.Media.Codec.Decoder.Audio.Ape";
     static constexpr std::string_view AUDIO_DECODER_LBVC_NAME = "OH.Media.Codec.Decoder.Audio.LBVC";
+    static constexpr std::string_view AUDIO_DECODER_AC3_NAME = "OH.Media.Codec.Decoder.Audio.AC3";
     static constexpr std::string_view AUDIO_DECODER_RAW_NAME = "OH.Media.Codec.Decoder.Audio.Raw";
 
     static constexpr std::string_view AUDIO_ENCODER_FLAC_NAME = "OH.Media.Codec.Encoder.Audio.Flac";
