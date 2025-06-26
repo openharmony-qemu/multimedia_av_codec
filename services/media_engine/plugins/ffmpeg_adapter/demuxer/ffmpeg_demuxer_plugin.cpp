@@ -1301,9 +1301,9 @@ void FFmpegDemuxerPlugin::UpdateReferenceIds()
     }
 }
 
-Status FFmpegDemuxerPlugin::GetStreamInitialParams()
+void FFmpegDemuxerPlugin::GetStreamInitialParams()
 {
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    FALSE_RETURN_MSG_W(formatContext_ != nullptr, "AVFormatContext is nullptr");
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         auto stream = formatContext_->streams[trackIndex];
         if (stream == nullptr) {
@@ -1318,14 +1318,11 @@ Status FFmpegDemuxerPlugin::GetStreamInitialParams()
         }
         streamInitialParam_[trackIndex] = format;
     }
-
-    return Status::OK;
 }
 
-Status FFmpegDemuxerPlugin::SetStreamInitialParams(uint32_t trackId, Meta &format)
+void FFmpegDemuxerPlugin::SetStreamInitialParams(uint32_t trackId, Meta &format)
 {
-    FALSE_RETURN_V_MSG_E(streamInitialParam_.count(trackId) > 0, Status::ERROR_INVALID_PARAMETER,
-        "TrackId is invalid");
+    FALSE_RETURN_MSG_W(streamInitialParam_.count(trackId) > 0, "TrackId is invalid");
     int64_t bitRate = 0;
     bool ret = streamInitialParam_[trackId].GetData(Tag::MEDIA_BITRATE, bitRate);
     if (!ret || bitRate <= 0) {
@@ -1333,7 +1330,6 @@ Status FFmpegDemuxerPlugin::SetStreamInitialParams(uint32_t trackId, Meta &forma
     } else {
         format.Set<Tag::MEDIA_BITRATE>(bitRate);
     }
-    return Status::OK;
 }
 
 Status FFmpegDemuxerPlugin::GetMediaInfo()

@@ -149,8 +149,8 @@ private:
     void SyncSeekThread();
     Status DoSeekInternal(int trackIndex, int64_t seekTime, SeekMode mode, int64_t& realSeekTime);
     bool IsUseFirstFrameDts(int trackIndex, int64_t seekTime);
-    Status GetStreamInitialParams();
-    Status SetStreamInitialParams(uint32_t trackId, Meta &format);
+    void GetStreamInitialParams();
+    void SetStreamInitialParams(uint32_t trackId, Meta &format);
 
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
     static int HandleReadOK(IOContext* ioContext, int dataSize);
