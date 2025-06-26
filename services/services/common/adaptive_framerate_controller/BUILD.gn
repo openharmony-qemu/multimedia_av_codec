@@ -29,7 +29,10 @@ ohos_source_set("adaptive_framerate_controller") {
 
   deps = [ "../../../dfx:av_codec_service_dfx" ]
 
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "init:libbegetutil",
+  ]
 
   subsystem_name = "multimedia"
   part_name = "av_codec"

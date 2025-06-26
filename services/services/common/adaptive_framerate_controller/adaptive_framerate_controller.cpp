@@ -15,21 +15,24 @@
 
 #include "adaptive_framerate_controller.h"
 #include "avcodec_log.h"
+#include "syspara/parameters.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AdaptiveFramerateController"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AFC"};
+auto afcEnable = OHOS::system::GetBoolParameter("OHOS.MediaAVCodec.AFC.Enable", true);
 } // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
 FramerateCalculator::FramerateCalculator(int32_t instanceId, std::function<void(double)> &&resetFramerateHandler)
-    : instanceId_(instanceId), status_(Status::INITIALIZED), resetFramerateHandler_(std::move(resetFramerateHandler)) {}
+    : instanceId_(instanceId), resetFramerateHandler_(std::move(resetFramerateHandler)) {}
 
 void FramerateCalculator::OnFrameConsumed()
 {
-    if (status_ != Status::UNINITIALIZED) {
+    if (!afcEnable) {
         return;
-    } else if (status_ == Status::INITIALIZED || status_ == Status::STOPPED) {
+    }
+    if (status_ == Status::INITIALIZED || status_ == Status::STOPPED) {
         lastAdjustmentTime_ = std::chrono::steady_clock::now();
         Register2AFC();
         status_ = Status::RUNNING;
@@ -47,21 +50,22 @@ bool FramerateCalculator::CheckAndResetFramerate()
 {
     auto frameCount = frameCount_.exchange(0);
     auto now = std::chrono::steady_clock::now();
-    auto elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(now - lastAdjustmentTime_).count();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastAdjustmentTime_).count();
     lastAdjustmentTime_ = now;
-    CHECK_AND_RETURN_RET_LOGW(elapsedTime > 0, false, "Elapsed time is invalid, cannot calculate framerate");
+    CHECK_AND_RETURN_RET_LOGW_WITH_TAG(elapsedTime > 0, false, "Elapsed time is invalid, cannot calculate framerate");
 
-    auto framerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
-    if (!(lastFramerate_ <= 0 || std::abs(framerate - lastFramerate_) / lastFramerate_ > 0.1)) {  // 0.1: 10% threshold
+    auto actualFramerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
+    if (!(lastFramerate_ <= 0 || std::abs(actualFramerate - lastFramerate_) / lastFramerate_ > 0.1)) { // 0.1: threshold
         return false;
     }
-    resetFramerateHandler_(framerate);
+    auto resetFramerate = actualFramerate * (actualFramerate > lastFramerate_ ? 1.5 : 1.0); // 1.5: increase factor
+    resetFramerateHandler_(resetFramerate);
 
-    char direction = (framerate > lastFramerate_) ? '+' : '-';
-    AVCODEC_LOGD("Reset framerate: %{public}.2ffps %{public}c, frame count: %{public}u, elapsed: %{public}lldms",
-        framerate, direction, frameCount, elapsedTime);
+    char direction = (resetFramerate > lastFramerate_) ? '+' : '-';
+    AVCODEC_LOGD_WITH_TAG("Reset framerate: %{public}.2ffps(%{public}.2f) %{public}c",
+        resetFramerate, actualFramerate, direction);
 
-    lastFramerate_ = framerate;
+    lastFramerate_ = resetFramerate;
     return true;
 }
 
@@ -97,11 +101,12 @@ void AdaptiveFramerateController::Add(int32_t intanceId, std::shared_ptr<Framera
 
 void AdaptiveFramerateController::Remove(int32_t instanceId)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     calculators_.erase(instanceId);
     if (calculators_.empty()) {
         isRunning_ = false;
         condition_.notify_all();
+        lock.unlock();
         if (looper_ && looper_->joinable()) {
             looper_->join();
             looper_.reset();
@@ -112,11 +117,11 @@ void AdaptiveFramerateController::Remove(int32_t instanceId)
 void AdaptiveFramerateController::Loop()
 {
     using namespace std::chrono_literals;
-    constexpr auto CheckInterval = 1s;
+    constexpr auto checkInterval = 1s;
     AVCODEC_LOGD("started");
     while (true) {
         std::unique_lock<std::mutex> lock(mutex_);
-        condition_.wait_for(lock, CheckInterval, [this]() { return !isRunning_; });
+        condition_.wait_for(lock, checkInterval, [this]() { return !isRunning_; });
         if (!isRunning_) {
             break;
         }

@@ -23,10 +23,12 @@
 #include <condition_variable>
 #include <mutex>
 #include <memory>
+#include "avcodec_dfx_component.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-class FramerateCalculator : public std::enable_shared_from_this<FramerateCalculator> {
+class FramerateCalculator : public std::enable_shared_from_this<FramerateCalculator>,
+                            public AVCodecDfxComponent {
 public:
     FramerateCalculator(int32_t instanceId, std::function<void(double)> &&resetFramerateHandler);
     void OnFrameConsumed();
@@ -35,7 +37,6 @@ public:
 
 private:
     enum class Status {
-        UNINITIALIZED,
         INITIALIZED,
         RUNNING,
         STOPPED,
@@ -44,7 +45,7 @@ private:
     void UnregisterFromAFC();
 
     int32_t instanceId_;
-    std::atomic<Status> status_ = Status::UNINITIALIZED;
+    std::atomic<Status> status_ = Status::INITIALIZED;
     std::function<void(double)> resetFramerateHandler_;
     std::atomic<uint32_t> frameCount_{0};
     double lastFramerate_{0.0};

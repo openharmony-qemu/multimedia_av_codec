@@ -208,7 +208,7 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     AVCODEC_LOGI_WITH_TAG("Create codec %{public}s by %{public}s success", codecName_.c_str(),
                           (isMimeType ? "mime" : "name"));
     StatusChanged(INITIALIZED);
-    InitFramerateCalculator();
+    InitFramerateCalculator(callerInfo);
     return AVCS_ERR_OK;
 }
 
@@ -593,11 +593,11 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
         std::lock_guard<std::shared_mutex> lock(mutex_);
         ret = QueueInputBufferIn(index, info, flag);
         if (ret == AVCS_ERR_OK) {
+            if (framerateCalculator_) {
+                framerateCalculator_->OnStopped();
+            }
             CodecStatus newStatus = END_OF_STREAM;
             StatusChanged(newStatus);
-        }
-        if (framerateCalculator_) {
-            framerateCalculator_->OnStopped();
         }
     } else {
         std::shared_lock<std::shared_mutex> lock(mutex_);
@@ -724,7 +724,7 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
                                       "In invalid state, %{public}s", GetStatusDescription(status_).data());
 
-    if (framerateCalculator_) {
+    if (framerateCalculator_ && status_ == RUNNING) {
         framerateCalculator_->OnFrameConsumed();
     }
     if (postProcessing_) {
@@ -779,7 +779,7 @@ void CodecServer::OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta)
 #endif
 }
 
-void CodecServer::InitFramerateCalculator()
+void CodecServer::InitFramerateCalculator(Meta &callerInfo)
 {
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
         framerateCalculator_ = std::make_shared<FramerateCalculator>(instanceId_,
@@ -795,6 +795,9 @@ void CodecServer::InitFramerateCalculator()
                 codecBase->SetParameter(format);
             }
         );
+        if (framerateCalculator_) {
+            framerateCalculator_->SetTag(CreateVideoLogTag(callerInfo));
+        }
     }
 }
 
