@@ -117,6 +117,7 @@ private:
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);
     int64_t GetStreamDuration(const AVStream& avStream);
+    Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
     bool IsUseFirstFrameDts(int trackIndex, int64_t seekTime);
     void GetStreamInitialParams();
     void SetStreamInitialParams(uint32_t trackId, Meta &format);
@@ -151,6 +152,7 @@ private:
     Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status GetSeiInfo();
+    Status SeiInfoInit();
     bool HasCodecParameters();
     Status GetMediaInfo();
     void ResetParam();

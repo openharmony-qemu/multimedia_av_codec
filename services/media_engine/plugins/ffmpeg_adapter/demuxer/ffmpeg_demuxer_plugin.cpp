@@ -1211,6 +1211,29 @@ void FFmpegDemuxerPlugin::InitParser()
     }
 }
 
+Status SeiInfoInit()
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    Status ret = Status::OK;
+    for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        auto avStream = formatContext_->streams[trackIndex];
+        if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            ret = GetVideoFirstKeyFrame(trackIndex);
+            FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY, "No memory");
+            FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
+                Status::ERROR_WRONG_STATE, "Get first frame failed");
+            if (HaveValidParser(avStream->codecpar->codec_id)) {
+                bool convertRet = streamParser_->ConvertExtraDataToAnnexb(
+                avStream->codecpar->extradata, avStream->codecpar->extradata_size);
+                FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_INVALID_DATA, "ConvertExtraDataToAnnexb failed");
+                streamParserInited_ = true;
+            }
+            break;
+        }
+    }
+    return Status::OK;
+}
+
 Status FFmpegDemuxerPlugin::GetSeiInfo()
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
@@ -1220,22 +1243,8 @@ Status FFmpegDemuxerPlugin::GetSeiInfo()
         extraType = true;
     }
     if ((streamParser_ != nullptr && !streamParserInited_) || (extraType)) {
-        for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
-            auto avStream = formatContext_->streams[trackIndex];
-            if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-                ret = GetVideoFirstKeyFrame(trackIndex);
-                FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY, "No memory");
-                FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
-                    Status::ERROR_WRONG_STATE, "Get first frame failed");
-                if (HaveValidParser(avStream->codecpar->codec_id)) {
-                    bool convertRet = streamParser_->ConvertExtraDataToAnnexb(
-                    avStream->codecpar->extradata, avStream->codecpar->extradata_size);
-                    FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_INVALID_DATA, "ConvertExtraDataToAnnexb failed");
-                    streamParserInited_ = true;
-                }
-                break;
-            }
-        }
+        ret = SeiInfoInit();
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeiInfoInit failed");
     }
     return ret;
 }
@@ -1562,11 +1571,22 @@ Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
     return Status::OK;
 }
 
+Status FFmpegDemuxerPlugin::CheckSeekParams(int64_t seekTime, SeekMode mode) const
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
+    FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS, Status::ERROR_INVALID_PARAMETER,
+        "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
+    FALSE_RETURN_V_MSG_E(g_seekModeToFFmpegSeekFlags.count(mode) != 0, Status::ERROR_INVALID_PARAMETER,
+        "Seek mode " PUBLIC_LOG_U32 " is not supported", static_cast<uint32_t>(mode));
+    return Status::OK;
+}
+
 bool FFmpegDemuxerPlugin::IsUseFirstFrameDts(int trackIndex, int64_t seekTime)
 {
     if (seekTime == 0 &&
         FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MPEGTS &&
-        FFmpegFormatHelper::IsVideoType(*(formatContext_->streams[trackIndex])) &&
+        formatContext_->streams[trackIndex]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
         firstFrame_ != nullptr) {
             return true;
     }
@@ -1578,14 +1598,9 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     (void) trackId;
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MediaAVCodec::AVCodecTrace trace("SeekTo");
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
-    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
 
-    FALSE_RETURN_V_MSG_E(seekTime >= 0, Status::ERROR_INVALID_PARAMETER,
-        "Seek time " PUBLIC_LOG_D64 " is not unsupported", seekTime);
-    FALSE_RETURN_V_MSG_E(g_seekModeToFFmpegSeekFlags.count(mode) != 0, Status::ERROR_INVALID_PARAMETER,
-        "Seek mode " PUBLIC_LOG_D32 " is not unsupported", static_cast<uint32_t>(mode));
-
+    Status check = CheckSeekParams(seekTime, mode);
+    FALSE_RETURN_V_MSG_E(check == Status::OK, check, "CheckSeekParams failed");
     int trackIndex = static_cast<int>(selectedTrackIds_[0]);
     for (size_t i = 1; i < selectedTrackIds_.size(); i++) {
         int index = static_cast<int>(selectedTrackIds_[i]);
@@ -1603,7 +1618,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         return Status::ERROR_INVALID_OPERATION;
     }
     if (IsUseFirstFrameDts(trackIndex, seekTime)) {
-        ffTime = firstFrameMap_[trackIndex]->dts;
+        ffTime = firstFrame_->dts;
     }
     realSeekTime = ConvertTimeFromFFmpeg(ffTime, avStream->time_base);
     int flag = ConvertFlagsToFFmpeg(avStream, ffTime, mode, seekTime);
