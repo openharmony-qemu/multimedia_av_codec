@@ -1303,7 +1303,7 @@ void FFmpegDemuxerPlugin::UpdateReferenceIds()
             continue;
         }
         for (auto id : item.second) {
-            MEDIA_LOG_D("Track %{publi}d ref %{public}d", item.first, id);
+            MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " ref " PUBLIC_LOG_D32, item.first, id);
         }
         mediaInfo_.tracks[item.first].Set<Tag::REFERENCE_TRACK_IDS>(item.second);
     }
