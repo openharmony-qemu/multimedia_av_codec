@@ -62,6 +62,7 @@ public:
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
 
     Status SetTranscoderMode();
+    Status SetSkippingAudioDecAndEnc();
     Status SetDataSource(const std::shared_ptr<MediaSource> source);
     Status SetSubtitleSource(const std::shared_ptr<MediaSource> source);
     void SetBundleName(const std::string& bundleName);
@@ -135,6 +136,7 @@ public:
     bool IsFlvLive();
     Status StopBufferring(bool isAppBackground);
     Status SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted, bool keepDecodingOnMute);
+    void HandleDecoderErrorFrame(int64_t pts);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;

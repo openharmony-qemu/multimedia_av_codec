@@ -362,6 +362,7 @@ HWTEST_F(DecoderSurfaceFilterUnittest, DoPreroll_001, TestSize.Level0)
     EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Start()).WillRepeatedly(Return(Status::ERROR_NULL_POINTER));
     EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
     EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    decoderSurfaceFilter_->isDecoderReleasedForMute_ = false;
     decoderSurfaceFilter_->inPreroll_.store(false);
     decoderSurfaceFilter_->isPaused_.store(false);
     auto mockEventReceiver = std::make_shared<MockEventReceiver>();

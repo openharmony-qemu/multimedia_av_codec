@@ -36,6 +36,7 @@
 #include "fsurface_memory.h"
 #include "task_thread.h"
 #include "AvcEnc_Typedef.h"
+#include "hitrace_meter.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -44,6 +45,8 @@ namespace Codec {
 using CreateAvcEncoderFuncType = uint32_t (*)(AVC_ENC_HANDLE *phEncoder, AVC_ENC_INIT_PARAM *pstInitParam);
 using EncodeFuncType = uint32_t (*)(AVC_ENC_HANDLE hEncoder, AVC_ENC_INARGS *pstInArgs, AVC_ENC_OUTARGS *pstOutArgs);
 using DeleteFuncType = uint32_t (*)(AVC_ENC_HANDLE hEncoder);
+
+#define SCOPED_TRACE_AVC(name) HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, name)
 
 class AvcEncoder : public CodecBase, public RefBase {
 public:
@@ -139,9 +142,10 @@ private:
 
     struct NVFrame {
         uint8_t *srcY   = nullptr;
-        uint8_t *srcUV  = nullptr;
+        uint8_t *srcU  = nullptr;
+        uint8_t *srcV  = nullptr;
         int32_t yStride = 0;
-        int32_t uvStide = 0;
+        int32_t uvStride = 0;
         int32_t width   = 0;
         int32_t height  = 0;
     };
@@ -149,7 +153,7 @@ private:
     int32_t FillAvcEncoderInDefaultArgs(AVC_ENC_INARGS &inArgs);
     int32_t FillAvcEncoderInArgs(std::shared_ptr<AVBuffer> &buffer, AVC_ENC_INARGS &inArgs);
 
-    void FillNV21ToAvcEncInArgs(AVC_ENC_INARGS &inArgs, NVFrame &nvFrame, int64_t pts);
+    void FillYuv420ToAvcEncInArgs(AVC_ENC_INARGS &inArgs, NVFrame &nvFrame, int64_t pts);
     int32_t GetSurfaceBufferUvOffset(sptr<SurfaceBuffer> &surfaceBuffer, VideoPixelFormat format);
     int32_t GetInputFrameFromAVBuffer(std::shared_ptr<AVBuffer> &buffer, InputFrame &inFrame);
     int32_t Yuv420ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &inArgs);
@@ -211,7 +215,8 @@ private:
     static std::mutex encoderCountMutex_;
     static std::vector<uint32_t> encInstanceIDSet_;
     static std::vector<uint32_t> freeIDSet_;
-    static constexpr uint32_t SURFACE_MODE_CONSUMER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_CPU_READ;
+    static constexpr uint32_t SURFACE_MODE_CONSUMER_USAGE =
+        BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_CPU_READ | BUFFER_USAGE_MEM_MMZ_CACHE;
     Format format_;
     int32_t encWidth_;
     int32_t encHeight_;

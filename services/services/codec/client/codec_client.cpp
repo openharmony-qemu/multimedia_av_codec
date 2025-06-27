@@ -61,7 +61,7 @@ CodecClient::~CodecClient()
         SetNeedListen(false);
         circular_.SetIsRunning(false);
     }
-    AVCODEC_LOGD_WITH_TAG("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGI_WITH_TAG("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
 void CodecClient::AVCodecServerDied()

@@ -38,7 +38,7 @@ constexpr uint32_t DEFAULT_IN_BUFFER_CNT = 4;
 constexpr uint32_t DEFAULT_OUT_BUFFER_CNT = 4;
 constexpr uint32_t DEFAULT_MIN_BUFFER_CNT = 2;
 constexpr int32_t VIDEO_MIN_BUFFER_SIZE = 1474560;
-constexpr int32_t VIDEO_MIN_SIZE = 16;
+constexpr int32_t VIDEO_MIN_SIZE = 64;
 constexpr int32_t VIDEO_ALIGNMENT_SIZE = 2;
 constexpr int32_t VIDEO_MAX_WIDTH_SIZE = 2560;
 constexpr int32_t VIDEO_MAX_HEIGHT_SIZE = 2560;
@@ -47,10 +47,10 @@ constexpr int32_t DEFAULT_VIDEO_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_TRY_ENCODE_TIME = 100;
 constexpr uint32_t DEFAULT_ENCODE_WAIT_TIME = 200;
 constexpr int32_t VIDEO_INSTANCE_SIZE = 16;
-constexpr int32_t VIDEO_BITRATE_MIN_SIZE = 1;
+constexpr int32_t VIDEO_BITRATE_MIN_SIZE = 10000;
 constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 240000000;
 constexpr int32_t VIDEO_FRAMERATE_MIN_SIZE = 1;
-constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
+constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 60;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
 constexpr int32_t VIDEO_QUALITY_MAX = 100;
@@ -844,7 +844,7 @@ void AvcEncoder::InitAvcEncoderParams()
     initParams_.level = 0;
     initParams_.encMode = ENC_MODE::MODE_CBR;
     initParams_.profile = ENC_PROFILE::PROFILE_BASE;
-    initParams_.colorFmt = COLOR_FORMAT::YUV_420SP_VU;
+    initParams_.colorFmt = COLOR_FORMAT::YUV_420P;
 
     for (int i = 0; i < IV_MAX_RAW_COMPONENTS; i++) {
         avcEncInputArgs_.inputBufs[i] = nullptr;
@@ -874,7 +874,7 @@ void AvcEncoder::FillAvcInitParams(AVC_ENC_INIT_PARAM &param)
     param.qpMax = static_cast<uint32_t>(encQpMax_);
     param.qpMin = static_cast<uint32_t>(encQpMin_);
     param.iperiod = static_cast<uint32_t>(encIperiod_);
-    param.colorFmt = COLOR_FORMAT::YUV_420SP_VU;
+    param.colorFmt = COLOR_FORMAT::YUV_420P;
     param.range = srcRange_;
     param.primaries = static_cast<uint8_t>(srcPrimary_);
     param.transfer = static_cast<uint8_t>(srcTransfer_);
@@ -1284,18 +1284,22 @@ int32_t AvcEncoder::CheckBufferSize(int32_t bufferSize, int32_t stride, int32_t 
     return AVCS_ERR_UNSUPPORT_SOURCE;
 }
 
-void AvcEncoder::FillNV21ToAvcEncInArgs(AVC_ENC_INARGS &inArgs, NVFrame &nvFrame, int64_t pts)
+void AvcEncoder::FillYuv420ToAvcEncInArgs(AVC_ENC_INARGS &inArgs, NVFrame &nvFrame, int64_t pts)
 {
-    inArgs.inputBufs[0] = nvFrame.srcY;
-    inArgs.inputBufs[1] = nvFrame.srcUV;
-    inArgs.width[0] = static_cast<uint32_t>(nvFrame.width);
-    inArgs.width[1] = static_cast<uint32_t>(nvFrame.width);
-    inArgs.height[0] = static_cast<uint32_t>(nvFrame.height);
-    inArgs.height[1] = static_cast<uint32_t>(nvFrame.height) >> 1;
-    inArgs.stride[0] = static_cast<uint32_t>(nvFrame.yStride);
-    inArgs.stride[1] = static_cast<uint32_t>(nvFrame.uvStide);
+    inArgs.inputBufs[0] = nvFrame.srcY; // 0 : y buffer
+    inArgs.inputBufs[1] = nvFrame.srcU; // 1 : u buffer
+    inArgs.inputBufs[2] = nvFrame.srcV; // 2 : v buffer
+    inArgs.width[0] = static_cast<uint32_t>(nvFrame.width);        // 0 : y width
+    inArgs.width[1] = static_cast<uint32_t>(nvFrame.width) >> 1;   // 1 : u width
+    inArgs.width[2] = static_cast<uint32_t>(nvFrame.width) >> 1;   // 2 : v width
+    inArgs.height[0] = static_cast<uint32_t>(nvFrame.height);      // 0 : y height
+    inArgs.height[1] = static_cast<uint32_t>(nvFrame.height) >> 1; // 1 : u height
+    inArgs.height[2] = static_cast<uint32_t>(nvFrame.height) >> 1; // 2 : v height
+    inArgs.stride[0] = static_cast<uint32_t>(nvFrame.yStride);     // 0 : y stride
+    inArgs.stride[1] = static_cast<uint32_t>(nvFrame.uvStride);    // 1 : u stride
+    inArgs.stride[2] = static_cast<uint32_t>(nvFrame.uvStride);    // 2 : v stride
 
-    inArgs.colorFmt = COLOR_FORMAT::YUV_420SP_VU;
+    inArgs.colorFmt = COLOR_FORMAT::YUV_420P;
     inArgs.timestamp = static_cast<uint64_t>(pts);
     inArgs.configArgs.bitrate = static_cast<uint32_t>(encBitrate_);
     inArgs.configArgs.idrRequest = encIdrRequest_ ? 1 : 0;
@@ -1304,7 +1308,7 @@ void AvcEncoder::FillNV21ToAvcEncInArgs(AVC_ENC_INARGS &inArgs, NVFrame &nvFrame
 
 int32_t AvcEncoder::FillAvcEncoderInDefaultArgs(AVC_ENC_INARGS &inArgs)
 {
-    inArgs.colorFmt = COLOR_FORMAT::YUV_420SP_VU;
+    inArgs.colorFmt = COLOR_FORMAT::YUV_420P;
     for (int i = 0; i < IV_MAX_RAW_COMPONENTS; i++) {
         inArgs.inputBufs[i] = nullptr;
         inArgs.width[i] = 0;
@@ -1316,16 +1320,31 @@ int32_t AvcEncoder::FillAvcEncoderInDefaultArgs(AVC_ENC_INARGS &inArgs)
 
 int32_t AvcEncoder::Nv21ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &inArgs)
 {
-    NVFrame nvFrame = {
-        .srcY    = inFrame.buffer,
-        .srcUV   = inFrame.buffer + inFrame.uvOffset,
-        .yStride = inFrame.stride,
-        .uvStide = inFrame.stride,
-        .width   = inFrame.width,
-        .height  = inFrame.height,
+    int32_t width = inFrame.width;
+    int32_t height = inFrame.height;
+    uint8_t *dstData = convertBuffer_->memory_->GetAddr();
+    int32_t dstSize = convertBuffer_->memory_->GetCapacity();
+
+    YuvImageData yuvData = {
+        .data     = inFrame.buffer,
+        .stride   = inFrame.stride,
+        .uvOffset = inFrame.uvOffset,
     };
 
-    FillNV21ToAvcEncInArgs(inArgs, nvFrame, inFrame.pts);
+    int32_t ret = ConvertNv21ToYuv420(dstData, width, height, dstSize, yuvData);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale video frame failed: %{public}d", ret);
+
+    NVFrame nvFrame = {
+        .srcY    = dstData,
+        .srcU    = dstData + width * height,
+        .srcV    = dstData + width * height + (width >> 1) * (height >> 1),
+        .yStride = width,
+        .uvStride = width >> 1,
+        .width   = width,
+        .height  = height,
+    };
+
+    FillYuv420ToAvcEncInArgs(inArgs, nvFrame, inFrame.pts);
     return AVCS_ERR_OK;
 }
 
@@ -1342,51 +1361,36 @@ int32_t AvcEncoder::Nv12ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &
         .uvOffset = inFrame.uvOffset,
     };
 
-    int32_t ret = ConvertNv12ToNv21(dstData, width, height, dstSize, yuvData);
+    int32_t ret = ConvertNv12ToYuv420(dstData, width, height, dstSize, yuvData);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale video frame failed: %{public}d", ret);
 
     NVFrame nvFrame = {
         .srcY    = dstData,
-        .srcUV   = dstData + width * height,
+        .srcU    = dstData + width * height,
+        .srcV    = dstData + width * height + (width >> 1) * (height >> 1),
         .yStride = width,
-        .uvStide = width,
+        .uvStride = width >> 1,
         .width   = width,
         .height  = height,
     };
 
-    FillNV21ToAvcEncInArgs(inArgs, nvFrame, inFrame.pts);
+    FillYuv420ToAvcEncInArgs(inArgs, nvFrame, inFrame.pts);
     return AVCS_ERR_OK;
 }
 
 int32_t AvcEncoder::Yuv420ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &inArgs)
 {
-    uint8_t* srcData[AV_NUM_DATA_POINTERS] = {
-        inFrame.buffer,
-        inFrame.buffer + inFrame.uvOffset,
-        inFrame.buffer + inFrame.uvOffset + (inFrame.stride / 2) * (inFrame.height / 2),  // v: 1/2 width, 1/2 height
-    };
-    int32_t srcLineSize[AV_NUM_DATA_POINTERS] = {
-        inFrame.stride,
-        inFrame.stride / 2,    // 2: u stride
-        inFrame.stride / 2     // 2: v stride
-    };
-
-    int32_t ret = ConvertVideoFrame(&scale_,
-        srcData, srcLineSize, ConvertPixelFormatToFFmpeg(VideoPixelFormat::YUVI420),
-        inFrame.width, inFrame.height,
-        scaleData_, scaleLineSize_, ConvertPixelFormatToFFmpeg(VideoPixelFormat::NV21));
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale video frame failed: %{public}d", ret);
-
     NVFrame nvFrame = {
-        .srcY    = scaleData_[0],
-        .srcUV   = scaleData_[1],
-        .yStride = scaleLineSize_[0],
-        .uvStide = scaleLineSize_[1],
+        .srcY    = inFrame.buffer,
+        .srcU    = inFrame.buffer + inFrame.uvOffset,
+        .srcV    = inFrame.buffer + inFrame.uvOffset + (inFrame.height >> 1) * (inFrame.stride >> 1),
+        .yStride = inFrame.stride,
+        .uvStride = inFrame.stride >> 1,
         .width   = inFrame.width,
         .height  = inFrame.height,
     };
 
-    FillNV21ToAvcEncInArgs(inArgs, nvFrame, inFrame.pts);
+    FillYuv420ToAvcEncInArgs(inArgs, nvFrame, inFrame.pts);
     return AVCS_ERR_OK;
 }
 
@@ -1413,21 +1417,22 @@ int32_t AvcEncoder::RgbaToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &
 
     int32_t ret = AVCS_ERR_OK;
 #if defined(ARMV8)
-    ret = ConvertRgbToNv21Neon(dstData, width, height, dstSize, rgbData);
+    ret = ConvertRgbToYuv420Neon(dstData, width, height, dstSize, rgbData);
 #else
-    ret = ConvertRgbToNv21(dstData, width, height, dstSize, rgbData);
+    ret = ConvertRgbToYuv420(dstData, width, height, dstSize, rgbData);
 #endif
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale video frame failed: %{public}d", ret);
 
     NVFrame nvFrame = {
         .srcY    = dstData,
-        .srcUV   = dstData + width * height,
+        .srcU    = dstData + width * height,
+        .srcV    = dstData + width * height + (width >> 1) * (height >> 1),
         .yStride = width,
-        .uvStide = width,
+        .uvStride = width >> 1,
         .width   = width,
         .height  = height,
     };
-    FillNV21ToAvcEncInArgs(inArgs, nvFrame, inFrame.pts);
+    FillYuv420ToAvcEncInArgs(inArgs, nvFrame, inFrame.pts);
     return AVCS_ERR_OK;
 }
 
@@ -1492,6 +1497,7 @@ int32_t AvcEncoder::GetInputFrameFromAVBuffer(std::shared_ptr<AVBuffer> &buffer,
 
 int32_t AvcEncoder::FillAvcEncoderInArgs(std::shared_ptr<AVBuffer> &buffer, AVC_ENC_INARGS &inArgs)
 {
+    SCOPED_TRACE_AVC("FillAvcEncoderInArgs");
     InputFrame inFrame;
     int32_t ret = GetInputFrameFromAVBuffer(buffer, inFrame);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_DATA, "Get input frame failed!");
@@ -1521,6 +1527,7 @@ int32_t AvcEncoder::FillAvcEncoderInArgs(std::shared_ptr<AVBuffer> &buffer, AVC_
 
 int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &outArgs)
 {
+    SCOPED_TRACE_AVC("EncoderAvcFrame");
     uint32_t ret = 0;
     std::unique_lock<std::mutex> sLock(encRunMutex_);
     if (avcEncoder_ == nullptr || avcEncoderFrameFunc_ == nullptr) {
@@ -1574,6 +1581,7 @@ void AvcEncoder::EncoderAvcTailer()
 
 void AvcEncoder::SendFrame()
 {
+    SCOPED_TRACE_AVC("SendFrame");
     CHECK_AND_RETURN_LOG(state_ != State::STOPPING && state_ != State::FLUSHING, "Invalid state");
     if (state_ != State::RUNNING || isSendEos_) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_ENCODE_TIME));

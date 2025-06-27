@@ -204,8 +204,8 @@ DashReadRet DashSegmentDownloader::Read(uint8_t *buff, ReadDataInfo &readDataInf
     uint32_t maxReadLength = GetMaxReadLength(wantReadLength, currentSegment, currentStreamId);
     realReadLength = buffer_->ReadBuffer(buff, maxReadLength, DEFAULT_WAIT_TIME);
     size_t bufferSize = buffer_->GetSize();
-    if (downloader_!= nullptr && sourceLoader_ != nullptr && !canWriteTmp && realReadLength > 0
-        && bufferSize > DOWNLOADER_RESUME_THRESHOLD) {
+    if (downloader_ != nullptr && sourceLoader_ != nullptr && !canWriteTmp && realReadLength > 0
+        && bufferSize < DOWNLOADER_RESUME_THRESHOLD) {
         downloader_->Resume();
         MEDIA_LOG_D("Dash downloader resume.");
     }

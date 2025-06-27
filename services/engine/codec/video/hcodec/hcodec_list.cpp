@@ -361,6 +361,7 @@ void HCodecList::GetSupportedBFrameFeatureParam(const CodecVideoPortCap& hdiVide
     Format format;
     int32_t maxBFrameCount = feature.extendInfo[0];
     if (maxBFrameCount > 0) {
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_MAX_B_FRAME, maxBFrameCount);
         userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_B_FRAME)] = format;
         LOGI("isSupportBFrame: 1, maxSupportBFrameCnt: %u", maxBFrameCount);
         return;

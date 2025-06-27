@@ -20,6 +20,9 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <iomanip>
+#include <openssl/sha.h>
+#include <sstream>
 
 #include "avcodec_common.h"
 #include "avcodec_trace.h"
@@ -45,6 +48,8 @@
 #include "scoped_timer.h"
 #include "param_wrapper.h"
 #include "parameters.h"
+#include "scope_guard.h"
+#include "syspara/parameters.h"
 
 namespace {
 const std::string DUMP_PARAM = "a";
@@ -99,6 +104,7 @@ const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType
     { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
 };
 constexpr uint32_t LIMIT_MEMORY_REPORT_COUNT = 1000;
+constexpr int32_t DFX_BUFFER_QUEUE_SIZE_MAX = 50;
 
 static const std::map<TrackType, DemuxerTrackType> TRACK_MAP = {
     {TrackType::TRACK_AUDIO, DemuxerTrackType::AUDIO},
@@ -207,6 +213,7 @@ MediaDemuxer::MediaDemuxer()
 {
     MEDIA_LOG_D("In");
     InitEnableSampleQueueFlag();
+    InitEnableDfxBufferQueue();
 
     funcBeforeReadSampleMap_.emplace(TrackType::TRACK_SUBTITLE,
         [this](int32_t trackId) { return DoBeforeSubtitleTrackReadLoop(trackId); });
@@ -1093,6 +1100,7 @@ Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQu
         bufferQueueMap_.insert(std::pair<int32_t, sptr<AVBufferQueueProducer>>(trackId, producer));
         bufferMap_.insert(std::pair<int32_t, std::shared_ptr<AVBuffer>>(trackId, nullptr));
         MEDIA_LOG_I("Set bufferQueue successfully");
+        GenerateDfxBufferQueue(trackId);
         if (GetEnableSampleQueueFlag()) {
             ret = AddSampleBufferQueue(trackId);
             FALSE_RETURN_V_MSG_E(
@@ -2170,6 +2178,9 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
     }
 
     AVBufferConfig avBufferConfig;
+    if (isTranscoderMode_ && isSkippingAudioDecAndEnc_ && queueIndex == audioTrackId_) {
+        avBufferConfig.memoryType = MemoryType::SHARED_MEMORY;
+    }
     avBufferConfig.capacity = size + SAMPLE_BUFFER_SIZE_EXTRA;
     avBufferConfig.size = size;
     Status ret = Status::OK;
@@ -2457,6 +2468,7 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
             draggingLock.unlock();
             bool isDiscardable = videoStreamReadyCallback->IsVideoStreamDiscardable(bufferMap_[trackId]);
             UpdateSyncFrameInfo(bufferMap_[trackId], trackId, isDiscardable);
+            CopyBufferToDfxBufferQueue(bufferMap_[trackId], !isDiscardable && isBufferSizeValid);
             PushBufferToQueue(trackId, bufferMap_[trackId], !isDiscardable && isBufferSizeValid);
             return Status::OK;
         }
@@ -2476,12 +2488,69 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
             SetOutputBufferPts(bufferMap_[trackId]);
         }
         FALSE_GOON_NOEXEC(isTranscoderMode_, TranscoderUpdateOutputBufferPts(trackId, bufferMap_[trackId]));
+        CopyBufferToDfxBufferQueue(bufferMap_[trackId], !isDroppable && isBufferSizeValid);
         PushBufferToQueue(trackId, bufferMap_[trackId], !isDroppable && isBufferSizeValid);
     } else {
         PushBufferToQueue(trackId, bufferMap_[trackId], false);
         MEDIA_LOG_E("Read failed, track " PUBLIC_LOG_D32 ", ret:" PUBLIC_LOG_D32, trackId, static_cast<int32_t>(ret));
     }
     return ret;
+}
+
+void MediaDemuxer::CopyBufferToDfxBufferQueue(std::shared_ptr<AVBuffer> buffer, bool dropable)
+{
+    FALSE_RETURN_NOLOG(dfxBufferQueueProducer_ != nullptr && dfxBufferQueueConsumer_ != nullptr);
+    FALSE_RETURN_NOLOG(!dropable);
+    std::shared_ptr<AVBuffer> dfxBuffer = nullptr;
+    auto config = buffer->GetConfig();
+    config.memoryType = MemoryType::VIRTUAL_MEMORY;
+    auto res = dfxBufferQueueProducer_->RequestBuffer(dfxBuffer, config, REQUEST_BUFFER_TIMEOUT);
+    if (res != Status::OK) {
+        std::shared_ptr<AVBuffer> tmpBuffer = nullptr;
+        dfxBufferQueueConsumer_->AcquireBuffer(tmpBuffer);
+        dfxBufferQueueConsumer_->ReleaseBuffer(tmpBuffer);
+        res = dfxBufferQueueProducer_->RequestBuffer(dfxBuffer, config, REQUEST_BUFFER_TIMEOUT);
+    }
+    FALSE_RETURN(res == Status::OK && dfxBuffer != nullptr);
+    res = AVBuffer::Clone(buffer, dfxBuffer);
+    TRUE_LOG(res != Status::OK, MEDIA_LOG_E, "Clone AVBuffer failed, errCode %{public}d", static_cast<int32_t>(res));
+    dfxBufferQueueProducer_->PushBuffer(dfxBuffer, res == Status::OK);
+}
+
+std::string Sha256HashMemory(const void* data, size_t size)
+{
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256_CTX sha256;
+
+    SHA256_Init(&sha256);
+    SHA256_Update(&sha256, data, size);
+    SHA256_Final(hash, &sha256);
+
+    static const int32_t setWNum = 2;
+    std::stringstream ss;
+    for (int32_t i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+        ss << std::hex << std::setw(setWNum) << std::setfill('0') << static_cast<int32_t>(hash[i]);
+    }
+    return ss.str();
+}
+
+void MediaDemuxer::HandleDecoderErrorFrame(int64_t pts)
+{
+    FALSE_RETURN_NOLOG(dfxBufferQueueConsumer_ != nullptr && dfxBufferQueueProducer_ != nullptr);
+    for (std::shared_ptr<AVBuffer> buffer = nullptr; dfxBufferQueueConsumer_->AcquireBuffer(buffer) == Status::OK;) {
+        ON_SCOPE_EXIT(0) {
+            dfxBufferQueueConsumer_->ReleaseBuffer(buffer);
+        };
+        if (buffer->pts_ == pts) {
+            FALSE_RETURN_MSG_W(
+                buffer->memory_->GetAddr() != nullptr && buffer->memory_->GetSize() > 0, "invalid buffer");
+            auto hashStr = Sha256HashMemory(buffer->memory_->GetAddr(), buffer->memory_->GetSize());
+            MEDIA_LOG_E("InputBuffer hash res %{public}s", hashStr.c_str());
+            return;
+        }
+        continue;
+    }
+    MEDIA_LOG_E("Cant find buffer with same pts " PUBLIC_LOG_D64 ", maybe Gop is too long", pts);
 }
 
 void MediaDemuxer::HandleSeek(int32_t trackId)
@@ -2512,6 +2581,26 @@ Status MediaDemuxer::HandleTrackEos(int32_t trackId)
     if (trackId == videoTrackId_ && isVideoMuted_) {
         ReportEosEvent();
     }
+    return Status::OK;
+}
+
+Status MediaDemuxer::GenerateDfxBufferQueue(int32_t trackId)
+{
+    FALSE_RETURN_V_NOLOG(enableDfxBufferQueue_ && trackId == videoTrackId_, Status::OK);
+    dfxBufferQueue_ = AVBufferQueue::Create(DFX_BUFFER_QUEUE_SIZE_MAX, MemoryType::VIRTUAL_MEMORY, "DfxBufferQueue");
+    dfxBufferQueueProducer_ = dfxBufferQueue_->GetProducer();
+    dfxBufferQueueConsumer_ = dfxBufferQueue_->GetConsumer();
+
+    static const int32_t normalBufferSize = 256 * 1024;
+    for (uint32_t i = 0; i < DFX_BUFFER_QUEUE_SIZE_MAX; i++) {
+        auto avAllocator = AVAllocatorFactory::CreateVirtualAllocator();
+        std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator, normalBufferSize);
+        FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "CreateAVBuffer failed");
+        Status status = dfxBufferQueueProducer_->AttachBuffer(buffer, false);
+        FALSE_RETURN_V_MSG_E(
+            status == Status::OK, status, "AttachBuffer failed status=" PUBLIC_LOG_D32, static_cast<int32_t>(status));
+    }
+    MEDIA_LOG_I("Generate DFX buffer queue success");
     return Status::OK;
 }
 
@@ -3235,6 +3324,12 @@ Status MediaDemuxer::SetTranscoderMode()
     return Status::OK;
 }
 
+Status MediaDemuxer::SetSkippingAudioDecAndEnc()
+{
+    isSkippingAudioDecAndEnc_ = true;
+    return Status::OK;
+}
+
 void MediaDemuxer::SetCacheLimit(uint32_t limitSize)
 {
     MEDIA_LOG_D("In");
@@ -3801,6 +3896,13 @@ void MediaDemuxer::SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted,
             }
         }
     }
+}
+
+void MediaDemuxer::InitEnableDfxBufferQueue()
+{
+    const std::string dfxBufferQueueTag = "debug.media_service.enable_dfx_buffer_queue";
+    enableDfxBufferQueue_ = OHOS::system::GetBoolParameter(dfxBufferQueueTag, false);
+    MEDIA_LOG_I("enableDfxBufferQueue_ " PUBLIC_LOG_D32, enableDfxBufferQueue_);
 }
 } // namespace Media
 } // namespace OHOS

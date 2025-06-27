@@ -857,10 +857,12 @@ OH_AVErrCode OH_VideoEncoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
     int32_t ret = videoEncObj->videoEncoder_->QueryOutputBuffer(*index, timeoutUs);
     switch (ret) {
-        case AVCS_ERR_TRY_AGAIN:
-            return AV_ERR_TRY_AGAIN_LATER;
         case AVCS_ERR_OK:
             return AV_ERR_OK;
+        case AVCS_ERR_TRY_AGAIN:
+            return AV_ERR_TRY_AGAIN_LATER;
+        case AVCS_ERR_STREAM_CHANGED:
+            return AV_ERR_STREAM_CHANGED;
         default:
             AVCODEC_LOGE("Video encoder query output data failed!");
     }
