@@ -1231,7 +1231,7 @@ Status SeiInfoInit()
             break;
         }
     }
-    return Status::OK; 
+    return Status::OK;
 }
 
 Status FFmpegDemuxerPlugin::GetSeiInfo()
