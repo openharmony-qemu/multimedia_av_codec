@@ -87,7 +87,7 @@ private:
     bool IsAvccSample(const uint8_t* sample, int32_t size, int32_t nalSizeLen);
     Status SetNalSizeLen(AVStream *stream, const std::vector<uint8_t> &codecConfig);
     void HandleOptions(std::string& optionName);
-    Status UpdataExtraData(uint8_t *data, int32_t size);
+    Status UpdateExtraData(uint8_t *data, size_t size);
     static int32_t IoRead(void *opaque, uint8_t *buf, int bufSize);
     static int32_t IoWrite(void *opaque, uint8_t *buf, int bufSize);
     static int64_t IoSeek(void *opaque, int64_t offset, int whence);

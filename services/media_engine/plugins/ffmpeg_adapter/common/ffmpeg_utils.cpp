@@ -89,6 +89,11 @@ bool Raw2BitPerSample(AudioSampleFormat sampleFormat, uint8_t &bitPerSample)
         {AudioSampleFormat::SAMPLE_S24LE, 24},
         {AudioSampleFormat::SAMPLE_S32LE, 32},
         {AudioSampleFormat::SAMPLE_F32LE, 32},
+        {AudioSampleFormat::SAMPLE_U8P, 8},
+        {AudioSampleFormat::SAMPLE_S16P, 16},
+        {AudioSampleFormat::SAMPLE_S24P, 24},
+        {AudioSampleFormat::SAMPLE_S32P, 32},
+        {AudioSampleFormat::SAMPLE_F32P, 32},
     };
     auto it = table.find(sampleFormat);
     if (it != table.end()) {
@@ -510,14 +515,14 @@ bool FlacCodecConfig::GenerateCodecConfig(const std::shared_ptr<Meta> &trackDesc
     constexpr uint32_t offset12 = 12;
     constexpr int32_t maxChannel = 8;
     mCodecConfig.resize(FLAC_CODEC_CONFIG_SIZE, 0);
-    AudioSampleFormat sampleFormat;
+    AudioSampleFormat sampleFormat = INVALID_WIDTH;
     mSampleRate = 0;
     mChannels = 0;
     bool ret = trackDesc->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat);
     trackDesc->Get<Tag::AUDIO_SAMPLE_RATE>(mSampleRate);
     trackDesc->Get<Tag::AUDIO_CHANNEL_COUNT>(mChannels);
     if (!ret || !Raw2BitPerSample(sampleFormat, mBitPerSample)) {
-        MEDIA_LOG_E("not support codec_id:" PUBLIC_LOG_D32 "use default 16. ret" PUBLIC_LOG_D32,
+        MEDIA_LOG_E("not support codec_id: " PUBLIC_LOG_D32 ", ret: " PUBLIC_LOG_D32,
             static_cast<int32_t>(sampleFormat), static_cast<int32_t>(ret));
         return false;
     }
@@ -526,13 +531,11 @@ bool FlacCodecConfig::GenerateCodecConfig(const std::shared_ptr<Meta> &trackDesc
         return false;
     }
     uint32_t i = index10;
-    // 10 - 13
+    // 10 - 12
     mCodecConfig.data()[i++] = static_cast<uint8_t>((static_cast<uint32_t>(mSampleRate) >> offset12) & 0XFF);
     mCodecConfig.data()[i++] = static_cast<uint8_t>((static_cast<uint32_t>(mSampleRate) >> offset4) & 0XFF);
     mCodecConfig.data()[i] = static_cast<uint8_t>((static_cast<uint32_t>(mSampleRate) << offset4) & 0XF0);
     mCodecConfig.data()[i] |= static_cast<uint8_t>((static_cast<uint32_t>(mChannels - 1) << 1) & 0x0E);
-    mCodecConfig.data()[i++] |= static_cast<uint8_t>((static_cast<uint32_t>(mBitPerSample - 1) >> offset4) & 0x01);
-    mCodecConfig.data()[i++] |= static_cast<uint8_t>((static_cast<uint32_t>(mBitPerSample - 1) << offset4) & 0xf0);
     mIsFirstDataFrame = true;
     return true;
 }
@@ -542,7 +545,8 @@ bool FlacCodecConfig::Update()
     if (mIsUpdateExtraData) {
         return true;
     }
-    constexpr uint32_t index13 = 13;
+    constexpr uint32_t index12 = 12;
+    constexpr uint32_t offset4 = 4;
     constexpr uint32_t offset8 = 8;
     constexpr uint32_t offset16 = 16;
     constexpr uint32_t offset24 = 24;
@@ -555,7 +559,7 @@ bool FlacCodecConfig::Update()
     mCodecConfig.data()[i++] = static_cast<uint8_t>(mBlockSize & 0xff) ;
     mCodecConfig.data()[i++] = mCodecConfig.data()[0];
     mCodecConfig.data()[i++] = mCodecConfig.data()[1];
-    // min max auido frame siez
+    // min max auido frame size
     mCodecConfig.data()[i++] |= static_cast<uint8_t>((mMinFrameSize >> offset16) & 0xff);  // 4
     mCodecConfig.data()[i++] |= static_cast<uint8_t>((mMinFrameSize >> offset8) & 0xff);  // 5
     mCodecConfig.data()[i++] |= static_cast<uint8_t>(mMinFrameSize & 0xff);  // 6
@@ -564,7 +568,11 @@ bool FlacCodecConfig::Update()
     mCodecConfig.data()[i++] |= static_cast<uint8_t>(mMaxFrameSize & 0xff);  // 9
 
     // total sample num
-    i = index13;
+    i = index12;
+    // 12
+    mCodecConfig.data()[i++] |= static_cast<uint8_t>((static_cast<uint32_t>(mBitPerSample - 1) >> offset4) & 0x01);
+    // 13
+    mCodecConfig.data()[i] |= static_cast<uint8_t>((static_cast<uint32_t>(mBitPerSample - 1) << offset4) & 0xf0);
     mCodecConfig.data()[i++] |= static_cast<uint8_t>((mTotalSample >> offset32) & 0x0f);  // 13
     mCodecConfig.data()[i++] |= static_cast<uint8_t>((mTotalSample >> offset24) & 0xff);  // 14
     mCodecConfig.data()[i++] |= static_cast<uint8_t>((mTotalSample >> offset16) & 0xff);  // 15
@@ -588,8 +596,8 @@ void FlacCodecConfig::UpdateNewConfig(uint8_t *data, size_t size)
     uint32_t i = startIndex;
     // 10 - 13
     tmpSampleRate = static_cast<int32_t>((static_cast<uint32_t>(data[i++]) << offset12));
-    tmpSampleRate |= static_cast<int32_t>(static_cast<uint32_t>(data[i++]) << offset4);
-    tmpSampleRate |= static_cast<int32_t>(static_cast<uint32_t>(data[i] & 0xf0) >> offset4);
+    tmpSampleRate += static_cast<int32_t>(static_cast<uint32_t>(data[i++]) << offset4);
+    tmpSampleRate += static_cast<int32_t>(static_cast<uint32_t>(data[i] & 0xf0) >> offset4);
     tmpChannels = static_cast<int32_t>((static_cast<uint32_t>(data[i]) & 0x0e) >> 1);
     tmpChannels += 1;
     tmpBitPerSample = static_cast<uint8_t>(((static_cast<uint32_t>(data[i++]) & 0x01) << offset4));
@@ -609,6 +617,7 @@ void FlacCodecConfig::UpdateNewConfig(uint8_t *data, size_t size)
 
 static uint32_t GetUtf8Bytes(uint8_t data)
 {
+    constexpr uint32_t num2 = 2;
     constexpr int32_t maxBit = 7;
     uint32_t bytes = 0;
     for (int32_t i = maxBit; i > 0; i--) {  // 7 - 1, 7bits
@@ -617,7 +626,19 @@ static uint32_t GetUtf8Bytes(uint8_t data)
         }
         bytes++;
     }
-    return bytes == 0 ? 1 : bytes;
+    return bytes < num2 ? (bytes + 1) : bytes;
+}
+
+void FlacCodecConfig::UpdateBitPerSample(uint8_t byte)
+{
+    static const uint8_t flacBitDepthTable[8] = {0, 8, 12, 0, 16, 20, 24, 32};
+    uint8_t index = static_cast<uint8_t>((byte >> 1) & 0x07);
+    uint8_t bitPerSample = flacBitDepthTable[index];
+    if (bitPerSample == 0 || bitPerSample == mBitPerSample || mCodecConfig.size() < FLAC_CODEC_CONFIG_SIZE) {
+        return;
+    }
+    MEDIA_LOG_I("update bit per sample from " PUBLIC_LOG_U8 " to " PUBLIC_LOG_U8, mBitPerSample, bitPerSample);
+    mBitPerSample = bitPerSample;
 }
 
 void FlacCodecConfig::UpdatePerFrame(uint8_t* data, size_t size)
@@ -626,6 +647,7 @@ void FlacCodecConfig::UpdatePerFrame(uint8_t* data, size_t size)
     constexpr uint32_t offset4 = 4;
     constexpr uint32_t offset8 = 8;
     constexpr uint32_t index2 = 2;
+    constexpr uint32_t index3 = 3;
     constexpr uint32_t index6 = 6;
     constexpr uint32_t index7 = 7;
     if (size < minSize) {
@@ -657,6 +679,7 @@ void FlacCodecConfig::UpdatePerFrame(uint8_t* data, size_t size)
         mMinFrameSize = size;
         mMaxFrameSize = size;
         mIsFirstDataFrame = false;
+        UpdateBitPerSample(data[index3]);
     }
     if (size > mMaxFrameSize) {
         mMaxFrameSize = size;
