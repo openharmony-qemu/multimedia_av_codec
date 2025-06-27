@@ -1211,7 +1211,7 @@ void FFmpegDemuxerPlugin::InitParser()
     }
 }
 
-Status SeiInfoInit()
+Status FFmpegDemuxerPlugin::SeiInfoInit()
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     Status ret = Status::OK;
