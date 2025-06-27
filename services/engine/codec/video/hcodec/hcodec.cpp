@@ -451,7 +451,7 @@ int32_t HCodec::SetLowLatency(const Format &format)
         HLOGW("set low latency failed");
         return AVCS_ERR_UNKNOWN;
     }
-    HLOGI("set low latency succ %d", enableLowLatency);
+    HLOGI("set low latency %s", enableLowLatency ? "enable" : "disable");
     return AVCS_ERR_OK;
 }
 
