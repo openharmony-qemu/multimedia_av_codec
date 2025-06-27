@@ -58,7 +58,7 @@ bool FramerateCalculator::CheckAndResetFramerate()
     if (!(lastFramerate_ <= 0 || std::abs(actualFramerate - lastFramerate_) / lastFramerate_ > 0.1)) { // 0.1: threshold
         return false;
     }
-    auto resetFramerate = actualFramerate * (actualFramerate > lastFramerate_ ? 1.5 : 1.0); // 1.5: increase factor
+    auto resetFramerate = actualFramerate * (actualFramerate > lastFramerate_ ? 2.0 : 1.0); // 2.0: increase factor
     resetFramerateHandler_(resetFramerate);
 
     char direction = (resetFramerate > lastFramerate_) ? '+' : '-';
