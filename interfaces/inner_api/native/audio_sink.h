@@ -103,9 +103,21 @@ public:
     Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
     Status SetLooping(bool loop);
     bool IsInputBufferDataEnough(int32_t size, bool isAudioVivid);
-    bool CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
     Status GetBufferDesc(AudioStandard::BufferDesc &bufferDesc);
     Status EnqueueBufferDesc(const AudioStandard::BufferDesc &bufferDesc);
+    bool HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
+    void HandleAudioRenderRequestPost();
+    Status SetAudioHapticsSyncId(int32_t syncId);
+
+protected:
+    std::atomic<OHOS::Media::Pipeline::FilterState> state_;
+private:
+    Status PrepareInputBufferQueue();
+    std::shared_ptr<Plugins::AudioSinkPlugin> CreatePlugin();
+    bool OnNewAudioMediaTime(int64_t mediaTimeUs);
+    int64_t getPendingAudioPlayoutDurationUs(int64_t nowUs);
+    int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
+    bool CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
     void SyncWriteByRenderInfo();
     void UpdateRenderInfo();
     void UpdateAmplitude();
@@ -119,18 +131,6 @@ public:
     void ResetInfo();
     bool IsEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
     void HandleEosBuffer(std::shared_ptr<AVBuffer> &filledOutputBuffer);
-    bool HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
-    void HandleAudioRenderRequestPost();
-    Status SetAudioHapticsSyncId(int32_t syncId);
-
-protected:
-    std::atomic<OHOS::Media::Pipeline::FilterState> state_;
-private:
-    Status PrepareInputBufferQueue();
-    std::shared_ptr<Plugins::AudioSinkPlugin> CreatePlugin();
-    bool OnNewAudioMediaTime(int64_t mediaTimeUs);
-    int64_t getPendingAudioPlayoutDurationUs(int64_t nowUs);
-    int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
     void UpdateAudioWriteTimeMayWait();
     bool UpdateTimeAnchorIfNeeded(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void DrainAndReportEosEvent();
