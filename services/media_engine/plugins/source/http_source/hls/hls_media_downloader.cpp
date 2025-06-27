@@ -1222,7 +1222,7 @@ void HlsMediaDownloader::DownloadReport()
 void HlsMediaDownloader::OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv)
 {
     keyLen_ = keyLen;
-    if (keyLen == 0) {
+    if (keyLen <= 0 || keyLen > DECRYPT_UNIT_LEN) {
         return;
     }
     NZERO_LOG(memcpy_s(iv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN));
