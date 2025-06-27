@@ -247,6 +247,21 @@ int32_t CodecServiceProxy::Release()
     return reply.ReadInt32();
 }
 
+int32_t CodecServiceProxy::GetChannelId(int32_t &channelId)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "LowPowerPlayer Write descriptor failed!");
+    int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::GET_CHANNEL_ID),
+                                        data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "LowPowerPlayer Send request failed");
+    channelId = reply.ReadInt32();
+    return AVCS_ERR_OK;
+}
+
 sptr<OHOS::Surface> CodecServiceProxy::CreateInputSurface()
 {
     MessageParcel data;
@@ -299,6 +314,23 @@ int32_t CodecServiceProxy::SetOutputSurface(sptr<OHOS::Surface> surface)
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::SET_OUTPUT_SURFACE), data,
                                         reply, option);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
+
+    return reply.ReadInt32();
+}
+
+int32_t CodecServiceProxy::SetLowPowerPlayerMode(bool isLpp)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
+
+    data.WriteBool(isLpp);
+    int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::SET_LPP_MODE), data,
+                                        reply, option);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 
     return reply.ReadInt32();
 }

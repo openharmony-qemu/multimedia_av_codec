@@ -140,6 +140,17 @@ public:
         (void)svpFlag;
         return 0;
     }
+
+    int32_t SetLowPowerPlayerMode(bool isLpp)
+    {
+        return ret;
+    }
+
+    int32_t GetChannelId(int32_t &channelId)
+    {
+        return ret;
+    }
+
     int32_t ret = 1;
 };
 class MyDecoderAdapterCallback : public DecoderAdapterCallback {

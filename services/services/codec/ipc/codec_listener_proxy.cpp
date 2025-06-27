@@ -22,6 +22,7 @@
 #include "avsharedmemory_ipc.h"
 #include "buffer/avbuffer.h"
 #include "meta/meta.h"
+#include "surface_buffer.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListenerProxy"};
@@ -211,6 +212,45 @@ void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, std::shared_ptr
     CHECK_AND_RETURN_LOG_WITH_TAG(error == AVCS_ERR_OK, "Send request failed");
 }
 
+void CodecListenerProxy::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
+{
+    AVCODEC_LOGI("LowPowerPlayer Send request OnOutputBufferBinded Enter");
+    CHECK_AND_RETURN_LOG(outputBufferCache_ != nullptr, "Output buffer cache is nullptr");
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_ASYNC);
+    bool token = data.WriteInterfaceToken(CodecListenerProxy::GetDescriptor());
+    CHECK_AND_RETURN_LOG(token, "LowpowerPlayer Write descriptor failed!");
+    data.WriteUint64(GetGeneration());
+    data.WriteUint32(bufferMap.size());
+    for (const auto& buffer : bufferMap) {
+        if (!data.WriteUint32((buffer.first))) {
+            AVCODEC_LOGE("LowPowerPlayer Write Data Key Failed");
+        }
+        if (buffer.second != nullptr) {
+            bool res = buffer.second->WriteToMessageParcel(data);
+            AVCODEC_LOGI("LowPowerPlayer WriteToMessageParcel: %{public}u", static_cast<uint32_t>(res));
+        }
+    }
+    int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_BINDED),
+                                      data, reply, option);
+    CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "LowPowerPlayer Send request OnOutputBufferBinded failed");
+}
+
+void CodecListenerProxy::OnOutputBufferUnbinded()
+{
+    CHECK_AND_RETURN_LOG(outputBufferCache_ != nullptr, "Output buffer cache is nullptr");
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+    bool token = data.WriteInterfaceToken(CodecListenerProxy::GetDescriptor());
+    CHECK_AND_RETURN_LOG(token, "LowpowerPlayer Write descriptor failed!");
+    data.WriteUint64(GetGeneration());
+    int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_UN_BINDED),
+                                      data, reply, option);
+    CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "LowPowerPlayer Send request OnOutputBufferUnbinded failed");
+}
+
 bool CodecListenerProxy::InputBufferInfoFromParcel(uint32_t index, AVCodecBufferInfo &info, AVCodecBufferFlag &flag,
                                                    MessageParcel &data)
 {
@@ -280,6 +320,19 @@ void CodecListenerCallback::OnOutputBufferAvailable(uint32_t index, std::shared_
 {
     if (listener_ != nullptr) {
         listener_->OnOutputBufferAvailable(index, buffer);
+    }
+}
+
+void CodecListenerCallback::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
+{
+    if (listener_ != nullptr) {
+        listener_->OnOutputBufferBinded(bufferMap);
+    }
+}
+void CodecListenerCallback::OnOutputBufferUnbinded()
+{
+    if (listener_ != nullptr) {
+        listener_->OnOutputBufferUnbinded();
     }
 }
 } // namespace MediaAVCodec

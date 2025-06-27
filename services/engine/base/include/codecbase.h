@@ -153,6 +153,18 @@ public:
         (void)isFlushed;
         (void)bufferStatus;
     }
+
+    virtual int32_t GetChannelId(int32_t &channelId)
+    {
+        (void)channelId;
+        return 0;
+    }
+
+    virtual int32_t SetLowPowerPlayerMode(const bool isLpp)
+    {
+        (void) isLpp;
+        return AVCODEC_ERROR_EXTEND_START;
+    }
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

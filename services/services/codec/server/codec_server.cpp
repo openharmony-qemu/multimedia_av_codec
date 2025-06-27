@@ -211,6 +211,21 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     return AVCS_ERR_OK;
 }
 
+int32_t CodecServer::SetLowPowerPlayerMode(bool isLpp)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(status_ == INITIALIZED, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
+                             GetStatusDescription(status_).data());
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    isLpp_ = isLpp;
+    AVCODEC_LOGI("CodecServer::SetLowPowerPlayerMode: %{public}d", isLpp_);
+    int32_t ret = codecBase_->SetLowPowerPlayerMode(isLpp);
+    if (ret != AVCS_ERR_OK) {
+        isLpp_ = false;
+    }
+    return ret;
+}
+
 int32_t CodecServer::InitByName(Meta &callerInfo, API_VERSION apiVersion)
 {
     int32_t ret = GetAudioCodecName(codecType_, codecName_);
@@ -482,6 +497,14 @@ int32_t CodecServer::Release()
     return ret;
 }
 
+int32_t CodecServer::GetChannelId(int32_t &channelId)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    int32_t ret = codecBase_->GetChannelId(channelId);
+    return ret;
+}
+
 sptr<Surface> CodecServer::CreateInputSurface()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
@@ -520,7 +543,14 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(isValidState, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                                       GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-
+    GSError gsRet;
+    if (isLpp_) {
+        gsRet = surface->SetSurfaceSourceType(OHSurfaceSource::OH_SURFACE_SOURCE_LOWPOWERVIDEO);
+    } else {
+        gsRet = surface->SetSurfaceSourceType(OHSurfaceSource::OH_SURFACE_SOURCE_VIDEO);
+    }
+    EXPECT_AND_LOGW_WITH_TAG(gsRet != GSERROR_OK, "Set surface source type failed, %{public}s",
+                             GSErrorStr(gsRet).c_str());
     int32_t ret = AVCS_ERR_OK;
     if (postProcessing_) {
         ret = SetOutputSurfaceForPostProcessing(surface);
@@ -1027,6 +1057,18 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffe
     }
 }
 
+void CodecServer::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
+{
+    CHECK_AND_RETURN_LOG(videoCb_ != nullptr, "videoCb_ is nullptr!");
+    videoCb_->OnOutputBufferBinded(bufferMap);
+}
+ 
+void CodecServer::OnOutputBufferUnbinded()
+{
+    CHECK_AND_RETURN_LOG(videoCb_ != nullptr, "videoCb_ is nullptr!");
+    videoCb_->OnOutputBufferUnbinded();
+}
+
 void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "buffer is nullptr!");
@@ -1135,6 +1177,18 @@ void VCodecBaseCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr
     if (codec_ != nullptr) {
         codec_->OnOutputBufferAvailable(index, buffer);
     }
+}
+
+void VCodecBaseCallback::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
+{
+    CHECK_AND_RETURN_LOG(codec_ != nullptr, "codec_ is nullptr!");
+    codec_->OnOutputBufferBinded(bufferMap);
+}
+ 
+void VCodecBaseCallback::OnOutputBufferUnbinded()
+{
+    CHECK_AND_RETURN_LOG(codec_ != nullptr, "codec_ is nullptr!");
+    codec_->OnOutputBufferUnbinded();
 }
 
 int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)

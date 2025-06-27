@@ -422,6 +422,24 @@ void CodecBase::ProcessInputBuffer()
     mock->ProcessInputBuffer();
 }
 
+int32_t CodecBase::SetLowPowerPlayerMode(const bool isLpp)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->SetLowPowerPlayerMode(isLpp);
+}
+
+int32_t CodecBase::GetChannelId(int32_t &channelId)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->GetChannelId(channelId);
+}
+
 int32_t CodecBase::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
                                             const bool svpFlag)
 {

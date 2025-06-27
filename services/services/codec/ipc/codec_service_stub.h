@@ -45,9 +45,11 @@ public:
     int32_t Flush() override;
     int32_t Reset() override;
     int32_t Release() override;
+    int32_t GetChannelId(int32_t &channelId) override;
     int32_t NotifyEos() override;
     sptr<Surface> CreateInputSurface() override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
+    int32_t SetLowPowerPlayerMode(bool isLpp) override;
     int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
     int32_t QueueInputBuffer(uint32_t index) override;
     int32_t QueueInputParameter(uint32_t index) override;
@@ -80,9 +82,11 @@ private:
     int32_t Flush(MessageParcel &data, MessageParcel &reply);
     int32_t Reset(MessageParcel &data, MessageParcel &reply);
     int32_t Release(MessageParcel &data, MessageParcel &reply);
+    int32_t GetChannelId(MessageParcel &data, MessageParcel &reply);
     int32_t NotifyEos(MessageParcel &data, MessageParcel &reply);
     int32_t CreateInputSurface(MessageParcel &data, MessageParcel &reply);
     int32_t SetOutputSurface(MessageParcel &data, MessageParcel &reply);
+    int32_t SetLowPowerPlayerMode(MessageParcel &data, MessageParcel &reply);
     int32_t QueueInputBuffer(MessageParcel &data, MessageParcel &reply);
     int32_t GetOutputFormat(MessageParcel &data, MessageParcel &reply);
     int32_t ReleaseOutputBuffer(MessageParcel &data, MessageParcel &reply);

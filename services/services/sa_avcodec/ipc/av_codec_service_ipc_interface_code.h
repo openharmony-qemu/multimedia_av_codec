@@ -23,7 +23,9 @@ enum class CodecListenerInterfaceCode {
     ON_ERROR = 0,
     ON_OUTPUT_FORMAT_CHANGED,
     ON_INPUT_BUFFER_AVAILABLE,
-    ON_OUTPUT_BUFFER_AVAILABLE
+    ON_OUTPUT_BUFFER_AVAILABLE,
+    ON_OUTPUT_BUFFER_BINDED,
+    ON_OUTPUT_BUFFER_UN_BINDED
 };
 
 enum class CodecServiceInterfaceCode {
@@ -58,6 +60,8 @@ enum class CodecServiceInterfaceCode {
     NOTIFY_MEMORY_WRITE_BACK,
     NOTIFY_SUSPEND,
     NOTIFY_RESUME,
+    GET_CHANNEL_ID,
+    SET_LPP_MODE
 };
 
 enum class AVCodecListServiceInterfaceCode {

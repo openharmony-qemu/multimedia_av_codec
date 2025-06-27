@@ -229,6 +229,8 @@ public:
     MOCK_METHOD(sptr<Media::AVBufferQueueProducer>, GetOutputBufferQueueProducer, ());
     MOCK_METHOD(void, ProcessInputBufferInner, (int32_t triggerSource, bool isFlushed, uint32_t &bufferStatus));
     MOCK_METHOD(void, ProcessInputBuffer, ());
+    MOCK_METHOD(int32_t, SetLowPowerPlayerMode, (const bool isLpp));
+    MOCK_METHOD(int32_t, GetChannelId, (int32_t &channelId));
     MOCK_METHOD(int32_t, SetAudioDecryptionConfig,
                 (const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag));
     MOCK_METHOD(int32_t, SetCustomBuffer, (std::shared_ptr<AVBuffer> buffer));
@@ -285,6 +287,8 @@ public:
     virtual int32_t Prepare();
     virtual sptr<Media::AVBufferQueueProducer> GetInputBufferQueue();
     virtual void ProcessInputBuffer();
+    virtual int32_t SetLowPowerPlayerMode(const bool isLpp);
+    virtual int32_t GetChannelId(int32_t &channelId);
     virtual int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta)
     {
         (void)mime;

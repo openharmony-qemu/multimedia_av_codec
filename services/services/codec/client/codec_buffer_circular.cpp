@@ -399,6 +399,20 @@ void CodecBufferCircular::OnOutputBufferAvailable(uint32_t index, std::shared_pt
     IsSyncMode() ? SyncOnOutputBufferAvailable(index, buffer) : AsyncOnOutputBufferAvailable(index, buffer);
 }
 
+void CodecBufferCircular::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
+{
+    if (!IsSyncMode() && (mediaCb_ != nullptr)) {
+        mediaCb_->OnOutputBufferBinded(bufferMap);
+    }
+}
+ 
+void CodecBufferCircular::OnOutputBufferUnbinded()
+{
+    if (!IsSyncMode() && (mediaCb_ != nullptr)) {
+        mediaCb_->OnOutputBufferUnbinded();
+    }
+}
+
 /******************************** Async mode ********************************/
 void CodecBufferCircular::AsyncOnError(AVCodecErrorType errorType, int32_t errorCode)
 {
