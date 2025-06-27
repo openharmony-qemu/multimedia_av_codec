@@ -1150,7 +1150,7 @@ Status FFmpegMuxerPlugin::Stop()
     FALSE_RETURN_V_MSG_E(isWriteHeader_, Status::ERROR_WRONG_STATE, "Stop failed! Did not write header!");
     if (flacCodecConfig_ != nullptr) {
         FALSE_RETURN_V_MSG_E(flacCodecConfig_->Update(), Status::ERROR_UNKNOWN, "flac codec config update failed!");
-        UpdataExtraData(flacCodecConfig_->mCodecConfig.data(), flacCodecConfig_->mCodecConfig.size());
+        UpdateExtraData(flacCodecConfig_->mCodecConfig.data(), flacCodecConfig_->mCodecConfig.size());
     }
     int ret = av_write_frame(formatContext_.get(), nullptr); // flush out cache data
     if (ret < 0) {
@@ -1194,11 +1194,11 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const std::shared_ptr
     return WriteNormal(trackIndex, sample);
 }
 
-Status FFmpegMuxerPlugin::UpdataExtraData(uint8_t *data, int32_t size)
+Status FFmpegMuxerPlugin::UpdateExtraData(uint8_t *data, size_t size)
 {
     (void)memset_s(cachePacket_.get(), sizeof(AVPacket), 0, sizeof(AVPacket));
     cachePacket_->side_data =
-        static_cast<AVPacketSideData *>(av_malloc(sizeof(AVPacketSideData *) + AV_INPUT_BUFFER_PADDING_SIZE));
+        static_cast<AVPacketSideData *>(av_malloc(sizeof(AVPacketSideData) + AV_INPUT_BUFFER_PADDING_SIZE));
     FALSE_RETURN_V_MSG_E(cachePacket_->side_data != nullptr, Status::ERROR_UNKNOWN, "sideData av_mallocz failed!");
     cachePacket_->side_data_elems = 0;
     cachePacket_->side_data[0].data = static_cast<uint8_t *>(av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE));
@@ -1218,7 +1218,7 @@ Status FFmpegMuxerPlugin::UpdataExtraData(uint8_t *data, int32_t size)
     auto ret = av_write_frame(formatContext_.get(), cachePacket_.get());
     av_packet_unref(cachePacket_.get());
     if (ret < 0) {
-        MEDIA_LOG_E("UpdataExtraData failed!");
+        MEDIA_LOG_E("UpdateExtraData failed!");
         return Status::ERROR_UNKNOWN;
     }
     return Status::NO_ERROR;

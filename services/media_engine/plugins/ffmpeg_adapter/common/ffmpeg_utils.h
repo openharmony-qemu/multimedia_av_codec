@@ -66,6 +66,7 @@ struct FlacCodecConfig {
     bool GenerateCodecConfig(const std::shared_ptr<Meta> &trackDesc);
     void UpdateNewConfig(uint8_t *data, size_t size);
     void UpdatePerFrame(uint8_t* data, size_t size);
+    void UpdateBitPerSample(uint8_t byte);
     bool Update();
     uint64_t mTotalSample = 0;
     uint16_t mBlockSize = 0;
