@@ -169,6 +169,12 @@ Status DemuxerFilter::SetTranscoderMode()
     return status;
 }
 
+Status DemuxerFilter::SetSkippingAudioDecAndEnc()
+{
+    FALSE_RETURN_V(demuxer_ != nullptr, Status::ERROR_NULL_POINTER);
+    return demuxer_->SetSkippingAudioDecAndEnc();
+}
+
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SetDataSource");
