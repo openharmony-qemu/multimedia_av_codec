@@ -419,7 +419,7 @@ std::string ConvertArrayToString(const int* array, size_t size)
 }
 
 enum ValueType {
-    INT32_t = 0,
+    INT32 = 0,
     FLOAT = 1
 };
 
@@ -442,7 +442,7 @@ static void SetToFormatIfConvertSuccess(Meta& format, const TagType& tag, std::s
 {
     bool convertSuccess = false;
     switch (valueType) {
-        case ValueType::INT32_t: {
+        case ValueType::INT32: {
             int32_t int32Value = -1;
             if (ConvertString(valueStr, int32Value)) {
                 format.SetData<int32_t>(tag, int32Value);
@@ -622,7 +622,7 @@ void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, s
             } else if (StartWith(valPtr->value, "00000043") || StartWith(valPtr->value, "00000015")) { // int
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: int", (valPtr->key + KEY_PREFIX_LEN));
                 SetToFormatIfConvertSuccess(
-                    *format, valPtr->key + KEY_PREFIX_LEN, valPtr->value + VALUE_PREFIX_LEN, ValueType::INT32_t);
+                    *format, valPtr->key + KEY_PREFIX_LEN, valPtr->value + VALUE_PREFIX_LEN, ValueType::INT32);
             } else { // unknow
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: unknow", (valPtr->key + KEY_PREFIX_LEN));
                 format->SetData(valPtr->key + KEY_PREFIX_LEN, std::string(valPtr->value + VALUE_PREFIX_LEN));
@@ -1030,7 +1030,7 @@ void FFmpegFormatHelper::ParseTimedMetaTrackInfo(const AVStream& avStream, Meta 
     if (valPtr == nullptr) {
         MEDIA_LOG_W("Get src track id failed");
     } else {
-        SetToFormatIfConvertSuccess(format, Tag::TIMED_METADATA_SRC_TRACK, valPtr->value, ValueType::INT32_t);
+        SetToFormatIfConvertSuccess(format, Tag::TIMED_METADATA_SRC_TRACK, valPtr->value, ValueType::INT32);
     }
 }
 
@@ -1061,20 +1061,17 @@ void FFmpegFormatHelper::ParseAuxiliaryTrackInfo(const AVStream& avStream, Meta 
         if (values.find(",") != std::string::npos) {
             referenceIdsString = SplitByChar(values.c_str(), ",");
         }
-        if (referenceIdsString.size() > 0) {
-            for (std::string subStr : referenceIdsString) {
-                // Ffmpeg ensures that the value is definitely Int type
-                int32_t id = -1;
-                if (ConvertString<int32_t>(subStr, id)) {
-                    referenceIds.push_back(id);
-                } else {
-                    MEDIA_LOG_W("error trackids " PUBLIC_LOG_S, subStr.c_str());
-                }
+        FALSE_RETURN_MSG_W(referenceIdsString.size() > 0, "Auxl track without ref track");
+        for (std::string subStr : referenceIdsString) {
+            // Ffmpeg ensures that the value is definitely Int type
+            int32_t id = -1;
+            if (ConvertString<int32_t>(subStr, id)) {
+                referenceIds.push_back(id);
+            } else {
+                MEDIA_LOG_W("error trackids " PUBLIC_LOG_S, subStr.c_str());
             }
-            format.Set<Tag::REFERENCE_TRACK_IDS>(referenceIds);
-        } else {
-            MEDIA_LOG_W("Auxl track without ref track");
         }
+        format.Set<Tag::REFERENCE_TRACK_IDS>(referenceIds);
     }
 }
 
