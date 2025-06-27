@@ -117,6 +117,9 @@ private:
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);
     int64_t GetStreamDuration(const AVStream& avStream);
+    bool IsUseFirstFrameDts(int trackIndex, int64_t seekTime);
+    void GetStreamInitialParams();
+    void SetStreamInitialParams(uint32_t trackId, Meta &format);
 
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
     static int AVWritePacket(void* opaque, uint8_t* buf, int bufSize);
@@ -259,6 +262,7 @@ private:
     bool IsMultiVideoTrack();
     int AVReadFrameLimit(AVPacket *pkt);
     Status SetAVReadFrameLimit();
+    std::unordered_map<uint32_t, Meta> streamInitialParam_;
 };
 
 typedef struct DtsFinder {

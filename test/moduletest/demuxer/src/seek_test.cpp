@@ -881,19 +881,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0025, TestSize.Level2)
  */
 HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0027, TestSize.Level2)
 {
-    seekInfo fileTest1{"/data/test/media/h264_aac_640.ts", SEEK_MODE_NEXT_SYNC, 0, 121, 176, 0};
+    seekInfo fileTest1{"/data/test/media/h264_aac_640.ts", SEEK_MODE_NEXT_SYNC, 0, 123, 176, 0};
     CheckSeekMode(fileTest1);
     seekInfo fileTest2{"/data/test/media/h264_aac_640.ts", SEEK_MODE_NEXT_SYNC, 3500000, 16, 29, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/h264_aac_640.ts", SEEK_MODE_NEXT_SYNC, 4156556, 1, 8, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/h264_aac_640.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 121, 176, 0};
+    seekInfo fileTest4{"/data/test/media/h264_aac_640.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 123, 176, 0};
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{"/data/test/media/h264_aac_640.ts", SEEK_MODE_PREVIOUS_SYNC, 3500000, 16, 29, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/h264_aac_640.ts", SEEK_MODE_PREVIOUS_SYNC, 4156556, 1, 8, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/h264_aac_640.ts", SEEK_MODE_CLOSEST_SYNC, 0, 121, 176, 0};
+    seekInfo fileTest7{"/data/test/media/h264_aac_640.ts", SEEK_MODE_CLOSEST_SYNC, 0, 123, 176, 0};
     CheckSeekMode(fileTest7);
     seekInfo fileTest8{"/data/test/media/h264_aac_640.ts", SEEK_MODE_CLOSEST_SYNC, 3500000, 16, 29, 0};
     CheckSeekMode(fileTest8);
@@ -908,19 +908,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0027, TestSize.Level2)
  */
 HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0028, TestSize.Level2)
 {
-    seekInfo fileTest1{"/data/test/media/h264_aac_1280.ts", SEEK_MODE_NEXT_SYNC, 0, 121, 176, 0};
+    seekInfo fileTest1{"/data/test/media/h264_aac_1280.ts", SEEK_MODE_NEXT_SYNC, 0, 123, 176, 0};
     CheckSeekMode(fileTest1);
     seekInfo fileTest2{"/data/test/media/h264_aac_1280.ts", SEEK_MODE_NEXT_SYNC, 3500000, 16, 29, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/h264_aac_1280.ts", SEEK_MODE_NEXT_SYNC, 4156556, 1, 8, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/h264_aac_1280.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 121, 176, 0};
+    seekInfo fileTest4{"/data/test/media/h264_aac_1280.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 123, 176, 0};
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{"/data/test/media/h264_aac_1280.ts", SEEK_MODE_PREVIOUS_SYNC, 3500000, 16, 29, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/h264_aac_1280.ts", SEEK_MODE_PREVIOUS_SYNC, 4156556, 1, 8, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/h264_aac_1280.ts", SEEK_MODE_CLOSEST_SYNC, 0, 121, 176, 0};
+    seekInfo fileTest7{"/data/test/media/h264_aac_1280.ts", SEEK_MODE_CLOSEST_SYNC, 0, 123, 176, 0};
     CheckSeekMode(fileTest7);
     seekInfo fileTest8{"/data/test/media/h264_aac_1280.ts", SEEK_MODE_CLOSEST_SYNC, 3500000, 16, 29, 0};
     CheckSeekMode(fileTest8);
@@ -935,19 +935,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0028, TestSize.Level2)
  */
 HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0029, TestSize.Level2)
 {
-    seekInfo fileTest1{"/data/test/media/h264_aac_1920.ts", SEEK_MODE_NEXT_SYNC, 0, 121, 176, 0};
+    seekInfo fileTest1{"/data/test/media/h264_aac_1920.ts", SEEK_MODE_NEXT_SYNC, 0, 123, 176, 0};
     CheckSeekMode(fileTest1);
     seekInfo fileTest2{"/data/test/media/h264_aac_1920.ts", SEEK_MODE_NEXT_SYNC, 3500000, 16, 29, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/h264_aac_1920.ts", SEEK_MODE_NEXT_SYNC, 4156556, 1, 8, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/h264_aac_1920.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 121, 176, 0};
+    seekInfo fileTest4{"/data/test/media/h264_aac_1920.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 123, 176, 0};
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{"/data/test/media/h264_aac_1920.ts", SEEK_MODE_PREVIOUS_SYNC, 3500000, 16, 29, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/h264_aac_1920.ts", SEEK_MODE_PREVIOUS_SYNC, 4156556, 1, 8, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/h264_aac_1920.ts", SEEK_MODE_CLOSEST_SYNC, 0, 121, 176, 0};
+    seekInfo fileTest7{"/data/test/media/h264_aac_1920.ts", SEEK_MODE_CLOSEST_SYNC, 0, 123, 176, 0};
     CheckSeekMode(fileTest7);
     seekInfo fileTest8{"/data/test/media/h264_aac_1920.ts", SEEK_MODE_CLOSEST_SYNC, 3500000, 16, 29, 0};
     CheckSeekMode(fileTest8);
@@ -1010,19 +1010,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0031, TestSize.Level2)
  */
 HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0033, TestSize.Level2)
 {
-    seekInfo fileTest1{"/data/test/media/h265_mp3_640.ts", SEEK_MODE_NEXT_SYNC, 0, 240, 155, 0};
+    seekInfo fileTest1{"/data/test/media/h265_mp3_640.ts", SEEK_MODE_NEXT_SYNC, 0, 242, 155, 0};
     CheckSeekMode(fileTest1);
     seekInfo fileTest2{"/data/test/media/h265_mp3_640.ts", SEEK_MODE_NEXT_SYNC, 3466666, 32, 22, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/h265_mp3_640.ts", SEEK_MODE_NEXT_SYNC, 4091722, 1, 8, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/h265_mp3_640.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 240, 155, 0};
+    seekInfo fileTest4{"/data/test/media/h265_mp3_640.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 242, 155, 0};
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{"/data/test/media/h265_mp3_640.ts", SEEK_MODE_PREVIOUS_SYNC, 3466666, 33, 22, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/h265_mp3_640.ts", SEEK_MODE_PREVIOUS_SYNC, 4091722, 1, 8, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/h265_mp3_640.ts", SEEK_MODE_CLOSEST_SYNC, 0, 240, 155, 0};
+    seekInfo fileTest7{"/data/test/media/h265_mp3_640.ts", SEEK_MODE_CLOSEST_SYNC, 0, 242, 155, 0};
     CheckSeekMode(fileTest7);
     seekInfo fileTest8{"/data/test/media/h265_mp3_640.ts", SEEK_MODE_CLOSEST_SYNC, 3466666, 33, 22, 0};
     CheckSeekMode(fileTest8);
@@ -1037,19 +1037,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0033, TestSize.Level2)
  */
 HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0034, TestSize.Level2)
 {
-    seekInfo fileTest1{"/data/test/media/h265_mp3_1280.ts", SEEK_MODE_NEXT_SYNC, 0, 240, 155, 0};
+    seekInfo fileTest1{"/data/test/media/h265_mp3_1280.ts", SEEK_MODE_NEXT_SYNC, 0, 242, 155, 0};
     CheckSeekMode(fileTest1);
     seekInfo fileTest2{"/data/test/media/h265_mp3_1280.ts", SEEK_MODE_NEXT_SYNC, 3466666, 32, 22, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/h265_mp3_1280.ts", SEEK_MODE_NEXT_SYNC, 4091722, 1, 8, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/h265_mp3_1280.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 240, 155, 0};
+    seekInfo fileTest4{"/data/test/media/h265_mp3_1280.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 242, 155, 0};
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{"/data/test/media/h265_mp3_1280.ts", SEEK_MODE_PREVIOUS_SYNC, 3466666, 33, 22, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/h265_mp3_1280.ts", SEEK_MODE_PREVIOUS_SYNC, 4091722, 1, 8, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/h265_mp3_1280.ts", SEEK_MODE_CLOSEST_SYNC, 0, 240, 155, 0};
+    seekInfo fileTest7{"/data/test/media/h265_mp3_1280.ts", SEEK_MODE_CLOSEST_SYNC, 0, 242, 155, 0};
     CheckSeekMode(fileTest7);
     seekInfo fileTest8{"/data/test/media/h265_mp3_1280.ts", SEEK_MODE_CLOSEST_SYNC, 3466666, 33, 22, 0};
     CheckSeekMode(fileTest8);
@@ -1064,19 +1064,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0034, TestSize.Level2)
  */
 HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0035, TestSize.Level2)
 {
-    seekInfo fileTest1{"/data/test/media/h265_mp3_1920.ts", SEEK_MODE_NEXT_SYNC, 0, 240, 155, 0};
+    seekInfo fileTest1{"/data/test/media/h265_mp3_1920.ts", SEEK_MODE_NEXT_SYNC, 0, 242, 155, 0};
     CheckSeekMode(fileTest1);
     seekInfo fileTest2{"/data/test/media/h265_mp3_1920.ts", SEEK_MODE_NEXT_SYNC, 3466666, 32, 22, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/h265_mp3_1920.ts", SEEK_MODE_NEXT_SYNC, 4091722, 1, 8, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/h265_mp3_1920.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 240, 155, 0};
+    seekInfo fileTest4{"/data/test/media/h265_mp3_1920.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 242, 155, 0};
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{"/data/test/media/h265_mp3_1920.ts", SEEK_MODE_PREVIOUS_SYNC, 3466666, 33, 22, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/h265_mp3_1920.ts", SEEK_MODE_PREVIOUS_SYNC, 4091722, 1, 8, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/h265_mp3_1920.ts", SEEK_MODE_CLOSEST_SYNC, 0, 240, 155, 0};
+    seekInfo fileTest7{"/data/test/media/h265_mp3_1920.ts", SEEK_MODE_CLOSEST_SYNC, 0, 242, 155, 0};
     CheckSeekMode(fileTest7);
     seekInfo fileTest8{"/data/test/media/h265_mp3_1920.ts", SEEK_MODE_CLOSEST_SYNC, 3466666, 33, 22, 0};
     CheckSeekMode(fileTest8);
@@ -1116,19 +1116,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0036, TestSize.Level2)
  */
 HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0037, TestSize.Level2)
 {
-    seekInfo fileTest1{"/data/test/media/hevc_v.ts", SEEK_MODE_NEXT_SYNC, 0, 600, 0, 0};
+    seekInfo fileTest1{"/data/test/media/hevc_v.ts", SEEK_MODE_NEXT_SYNC, 0, 602, 0, 0};
     CheckSeekMode(fileTest1);
     seekInfo fileTest2{"/data/test/media/hevc_v.ts", SEEK_MODE_NEXT_SYNC, 6466666, 212, 0, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/hevc_v.ts", SEEK_MODE_NEXT_SYNC, 10033333, 1, 0, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/hevc_v.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 600, 0, 0};
+    seekInfo fileTest4{"/data/test/media/hevc_v.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 602, 0, 0};
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{"/data/test/media/hevc_v.ts", SEEK_MODE_PREVIOUS_SYNC, 6466666, 213, 0, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/hevc_v.ts", SEEK_MODE_PREVIOUS_SYNC, 10033333, 1, 0, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/hevc_v.ts", SEEK_MODE_CLOSEST_SYNC, 0, 600, 0, 0};
+    seekInfo fileTest7{"/data/test/media/hevc_v.ts", SEEK_MODE_CLOSEST_SYNC, 0, 602, 0, 0};
     CheckSeekMode(fileTest7);
     seekInfo fileTest8{"/data/test/media/hevc_v.ts", SEEK_MODE_CLOSEST_SYNC, 6466666, 213, 0, 0};
     CheckSeekMode(fileTest8);
@@ -1143,19 +1143,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0037, TestSize.Level2)
  */
 HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0038, TestSize.Level2)
 {
-    seekInfo fileTest1{"/data/test/media/hevc_v_a.ts", SEEK_MODE_NEXT_SYNC, 0, 600, 384, 0};
+    seekInfo fileTest1{"/data/test/media/hevc_v_a.ts", SEEK_MODE_NEXT_SYNC, 0, 602, 384, 0};
     CheckSeekMode(fileTest1);
     seekInfo fileTest2{"/data/test/media/hevc_v_a.ts", SEEK_MODE_NEXT_SYNC, 6466666, 212, 136, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/hevc_v_a.ts", SEEK_MODE_NEXT_SYNC, 9946799, 3, 4, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/hevc_v_a.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 600, 384, 0};
+    seekInfo fileTest4{"/data/test/media/hevc_v_a.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 602, 384, 0};
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{"/data/test/media/hevc_v_a.ts", SEEK_MODE_PREVIOUS_SYNC, 6466666, 213, 138, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/hevc_v_a.ts", SEEK_MODE_PREVIOUS_SYNC, 9946799, 4, 4, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/hevc_v_a.ts", SEEK_MODE_CLOSEST_SYNC, 0, 600, 384, 0};
+    seekInfo fileTest7{"/data/test/media/hevc_v_a.ts", SEEK_MODE_CLOSEST_SYNC, 0, 602, 384, 0};
     CheckSeekMode(fileTest7);
     seekInfo fileTest8{"/data/test/media/hevc_v_a.ts", SEEK_MODE_CLOSEST_SYNC, 6466666, 213, 136, 0};
     CheckSeekMode(fileTest8);
@@ -1788,19 +1788,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0063, TestSize.Level2)
  */
 HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0064, TestSize.Level2)
 {
-    seekInfo fileTest1{"/data/test/media/ts_video.ts", SEEK_MODE_NEXT_SYNC, 0, 601, 384, 0};
+    seekInfo fileTest1{"/data/test/media/ts_video.ts", SEEK_MODE_NEXT_SYNC, 0, 602, 384, 0};
     CheckSeekMode(fileTest1);
     seekInfo fileTest2{"/data/test/media/ts_video.ts", SEEK_MODE_NEXT_SYNC, 6433333, 215, 138, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/ts_video.ts", SEEK_MODE_NEXT_SYNC, 10000033, 1, 2, 0};
     CheckSeekMode(fileTest3);
-    seekInfo fileTest4{"/data/test/media/ts_video.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 601, 384, 0};
+    seekInfo fileTest4{"/data/test/media/ts_video.ts", SEEK_MODE_PREVIOUS_SYNC, 0, 602, 384, 0};
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{"/data/test/media/ts_video.ts", SEEK_MODE_PREVIOUS_SYNC, 6433333, 216, 138, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/ts_video.ts", SEEK_MODE_PREVIOUS_SYNC, 10000033, 1, 2, 0};
     CheckSeekMode(fileTest6);
-    seekInfo fileTest7{"/data/test/media/ts_video.ts", SEEK_MODE_CLOSEST_SYNC, 0, 601, 384, 0};
+    seekInfo fileTest7{"/data/test/media/ts_video.ts", SEEK_MODE_CLOSEST_SYNC, 0, 602, 384, 0};
     CheckSeekMode(fileTest7);
     seekInfo fileTest8{"/data/test/media/ts_video.ts", SEEK_MODE_CLOSEST_SYNC, 6433333, 216, 138, 0};
     CheckSeekMode(fileTest8);
