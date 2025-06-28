@@ -1222,7 +1222,7 @@ Status FFmpegDemuxerPlugin::SeiInfoInit()
             FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY, "No memory");
             FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
                 Status::ERROR_WRONG_STATE, "Get first frame failed");
-            if (HaveValidParser(avStream->codecpar->codec_id)) {
+            if (HaveValidParser(avStream->codecpar->codec_id) && streamParser_ != nullptr) {
                 bool convertRet = streamParser_->ConvertExtraDataToAnnexb(
                     avStream->codecpar->extradata, avStream->codecpar->extradata_size);
                 FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_INVALID_DATA, "ConvertExtraDataToAnnexb failed");
