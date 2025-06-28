@@ -32,7 +32,7 @@ class MultiStreamParserManager {
 public:
     MultiStreamParserManager() {};
     ~MultiStreamParserManager();
-    Status Create(uint32_t trackId, VideoStreamType streamType);
+    Status Create(uint32_t trackId, VideoStreamType videoStreamType);
 
     bool ParserIsCreated(uint32_t trackId);
     bool ParserIsInited(uint32_t trackId);
@@ -83,7 +83,7 @@ private:
     };
     std::map<uint32_t, StreamInfo> streamMap_ {};
 
-    bool Init(VideoStreamType streamType);
+    bool Init(VideoStreamType videoStreamType);
 };
 } // namespace Plugins
 } // namespace Media

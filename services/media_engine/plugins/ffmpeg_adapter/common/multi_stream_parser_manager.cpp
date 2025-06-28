@@ -33,32 +33,33 @@ std::map<VideoStreamType, DestroyFunc> MultiStreamParserManager::destroyFuncMap_
 MultiStreamParserManager::~MultiStreamParserManager()
 {
     for (auto streamInfo : streamMap_) {
-        VideoStreamType streamType = (streamInfo.second).type;
+        VideoStreamType videoStreamType = (streamInfo.second).type;
         StreamParser* streamParser = (streamInfo.second).parser;
-        if (streamParser && destroyFuncMap_.count(streamType) > 0) {
-            destroyFuncMap_[streamType](streamParser);
+        if (streamParser && destroyFuncMap_.count(videoStreamType) > 0) {
+            destroyFuncMap_[videoStreamType](streamParser);
             (streamInfo.second).parser = nullptr;
         }
     }
 }
 
-Status MultiStreamParserManager::Create(uint32_t trackId, VideoStreamType streamType)
+Status MultiStreamParserManager::Create(uint32_t trackId, VideoStreamType videoStreamType)
 {
     std::lock_guard<std::mutex> lock(mtx_);
-    MEDIA_LOG_D("Create parser " PUBLIC_LOG_D32, streamType);
-    if (!Init(streamType)) {
+    MEDIA_LOG_D("Create parser " PUBLIC_LOG_D32, videoStreamType);
+    if (!Init(videoStreamType)) {
         return Status::ERROR_UNKNOWN;
     }
-    StreamParser* streamParser = createFuncMap_[streamType]();
-    FALSE_RETURN_V_MSG_E(streamParser != nullptr, Status::ERROR_UNKNOWN, "Create failed:" PUBLIC_LOG_D32, streamType);
+    StreamParser* streamParser = createFuncMap_[videoStreamType]();
+    FALSE_RETURN_V_MSG_E(streamParser != nullptr, Status::ERROR_UNKNOWN, "Create failed:" PUBLIC_LOG_D32,
+        videoStreamType);
     if (streamMap_.count(trackId) > 0 && streamMap_[trackId].parser != nullptr) {
-        MEDIA_LOG_W("Parser change, %{public}d->%{public}d", streamMap_[trackId].type, streamType);
-        if (destroyFuncMap_.count(streamType) > 0) {
-            destroyFuncMap_[streamType](streamParser);
+        MEDIA_LOG_W("Parser change, %{public}d->%{public}d", streamMap_[trackId].type, videoStreamType);
+        if (destroyFuncMap_.count(videoStreamType) > 0) {
+            destroyFuncMap_[videoStreamType](streamParser);
         }
         streamMap_[trackId].parser = nullptr;
     }
-    streamMap_[trackId].type = streamType;
+    streamMap_[trackId].type = videoStreamType;
     streamMap_[trackId].parser = streamParser;
     streamMap_[trackId].inited = false;
     return Status::OK;
