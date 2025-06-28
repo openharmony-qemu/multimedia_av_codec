@@ -28,7 +28,6 @@
 #include "codec_hdi.h"
 #include "type_converter.h"
 #include "buffer/avbuffer.h"
-#include "meta/meta_key.h" // foundation/multimedia/histreamer/interface/inner_api/
 
 namespace OHOS::MediaAVCodec {
 class HCodec : public CodecBase, protected StateMachine {
@@ -255,6 +254,9 @@ protected:
     virtual void OnReleaseOutputBuffer(const BufferInfo &info) {}
     virtual void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
     virtual void BeforeCbOutToUser(BufferInfo &info) {}
+    virtual void ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer) {}
+    virtual void ProcAVBufferToUser(std::shared_ptr<AVBuffer> avBuffer,
+        std::shared_ptr<CodecHDI::OmxCodecBuffer> omxBuffer) {}
     void RecordBufferStatus(OMX_DIRTYPE portIndex, uint32_t bufferId, BufferOwner nextOwner);
     virtual void SubmitBuffersToNextOwner() {}
 

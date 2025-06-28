@@ -28,6 +28,7 @@
 #include "surface_buffer.h"
 #include "buffer_extra_data_impl.h"  // foundation/graphic/graphic_surface/surface/include/
 #include "surface_tools.h"
+#include "hcodec_utils.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -639,33 +640,67 @@ static bool IsNotSame(const OHOS::HDI::Display::Graphic::Common::V1_0::BufferHan
            crop1.height != crop2.height;
 }
 
-void HDecoder::BeforeCbOutToUser(BufferInfo &info)
+void HDecoder::ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer)
 {
+    if (buffer == nullptr) {
+        return;
+    }
     using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
-    std::vector<uint8_t> vec;
-    GSError err = info.surfaceBuffer->GetMetadata(ATTRKEY_CROP_REGION, vec);
+    vector<uint8_t> vec;
+    GSError err = buffer->GetMetadata(ATTRKEY_CROP_REGION, vec);
     if (err != GSERROR_OK || vec.size() != sizeof(BufferHandleMetaRegion)) {
         return;
     }
     auto* newCrop = reinterpret_cast<BufferHandleMetaRegion*>(vec.data());
-    if (IsNotSame(crop_, *newCrop)) {
-        HLOGI("crop update: left/top/width/height, %u/%u/%u/%u -> %u/%u/%u/%u",
-            crop_.left, crop_.top, crop_.width, crop_.height,
-            newCrop->left, newCrop->top, newCrop->width, newCrop->height);
-        crop_ = *newCrop;
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, newCrop->width);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, newCrop->height);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, newCrop->width);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, newCrop->height);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, newCrop->left);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, newCrop->top);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT,
-            static_cast<int32_t>(newCrop->left + newCrop->width) - 1);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM,
-            static_cast<int32_t>(newCrop->top + newCrop->height) - 1);
-        HLOGI("output format changed: %s", outputFormat_->Stringify().c_str());
-        callback_->OnOutputFormatChanged(*(outputFormat_.get()));
+    if (!IsNotSame(crop_, *newCrop)) {
+        return;
     }
+    HLOGI("crop update: left/top/width/height, %u/%u/%u/%u -> %u/%u/%u/%u",
+        crop_.left, crop_.top, crop_.width, crop_.height,
+        newCrop->left, newCrop->top, newCrop->width, newCrop->height);
+    crop_ = *newCrop;
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, newCrop->width);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, newCrop->height);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, newCrop->width);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, newCrop->height);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, newCrop->left);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, newCrop->top);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT,
+        static_cast<int32_t>(newCrop->left + newCrop->width) - 1);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM,
+        static_cast<int32_t>(newCrop->top + newCrop->height) - 1);
+    HLOGI("output format changed: %s", outputFormat_->Stringify().c_str());
+    callback_->OnOutputFormatChanged(*(outputFormat_.get()));
+}
+
+void HDecoder::ProcAVBufferToUser(shared_ptr<AVBuffer> avBuffer, shared_ptr<CodecHDI::OmxCodecBuffer> omxBuffer)
+{
+    if (avBuffer == nullptr || avBuffer->meta_ == nullptr || omxBuffer == nullptr) {
+        return;
+    }
+    shared_ptr<Media::Meta> meta = avBuffer->meta_;
+    meta->Clear();
+    BinaryReader reader(static_cast<uint8_t*>(omxBuffer->alongParam.data()), omxBuffer->alongParam.size());
+    uint32_t* index = nullptr;
+    while ((index = reader.Read<uint32_t>()) != nullptr) {
+        switch (*index) {
+            case static_cast<uint32_t>(OMX_IndexInputStreamError): {
+                auto *inputStreamError = reader.Read<int32_t>();
+                IF_TRUE_RETURN_VOID(inputStreamError == nullptr);
+                meta->SetData(OHOS::Media::Tag::VIDEO_DECODER_INTPUT_STREAM_ERROR, *inputStreamError);
+                HLOGI("inputStreamError: %d, pts: %" PRId64" ", *inputStreamError, omxBuffer->pts);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+}
+
+void HDecoder::BeforeCbOutToUser(BufferInfo &info)
+{
+    ProcSurfaceBufferToUser(info.surfaceBuffer);
+    ProcAVBufferToUser(info.avBuffer, info.omxBuffer);
 }
 
 int32_t HDecoder::SubmitAllBuffersOwnedByUs()
