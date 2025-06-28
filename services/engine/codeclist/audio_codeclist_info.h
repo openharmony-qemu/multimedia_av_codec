@@ -42,6 +42,7 @@ public:
     CapabilityData GetRawDecoderCapability();
     CapabilityData GetLbvcEncoderCapability();
     CapabilityData GetVendorAacEncoderCapability();
+    CapabilityData GetAc3DecoderCapability();
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
     CapabilityData GetVividDecoderCapability();
     CapabilityData GetAmrnbEncoderCapability();
@@ -49,9 +50,6 @@ public:
 #endif
 #ifdef SUPPORT_CODEC_COOK
     CapabilityData GetCookDecoderCapability();
-#endif
-#ifdef SUPPORT_CODEC_AC3
-    CapabilityData GetAc3DecoderCapability();
 #endif
 private:
     std::vector<CapabilityData> audioCapabilities_;

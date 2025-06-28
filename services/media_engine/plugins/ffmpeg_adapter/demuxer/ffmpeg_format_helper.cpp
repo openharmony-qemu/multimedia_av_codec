@@ -104,9 +104,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
 #ifdef SUPPORT_CODEC_COOK
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
 #endif
-#ifdef SUPPORT_CODEC_AC3
     {AV_CODEC_ID_AC3, MimeType::AUDIO_AC3},
-#endif
     {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
     {AV_CODEC_ID_WEBVTT, MimeType::TEXT_WEBVTT},
     {AV_CODEC_ID_FFMETADATA, MimeType::TIMED_METADATA}

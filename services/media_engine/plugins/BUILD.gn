@@ -39,7 +39,4 @@ group("av_codec_media_engine_plugins") {
     deps +=
         [ "ffmpeg_adapter/audio_decoder/cook:media_plugin_CookAudioDecoder" ]
   }
-  if (av_codec_enable_codec_ac3) {
-    deps += [ "ffmpeg_adapter/audio_decoder/ac3:media_plugin_Ac3AudioDecoder" ]
-  }
 }
