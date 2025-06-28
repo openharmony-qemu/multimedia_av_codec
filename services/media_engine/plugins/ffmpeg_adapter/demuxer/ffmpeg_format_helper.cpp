@@ -16,6 +16,7 @@
 #define HST_LOG_TAG "FfmpegFormatHelper"
 
 #include <algorithm>
+#include <charconv>
 #include <regex>
 #include <iconv.h>
 #include <sstream>
@@ -417,6 +418,56 @@ std::string ConvertArrayToString(const int* array, size_t size)
     return result;
 }
 
+enum ValueType {
+    INT32 = 0,
+    FLOAT = 1
+};
+
+template <typename T>
+bool ConvertString(const std::string &str, T &result)
+{
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+    return ec == std::errc{} && ptr == str.data() + str.size();
+}
+
+bool StringConverterFloat(const std::string &str, float &result)
+{
+    char *end = nullptr;
+    errno = 0;
+    result = std::strtof(str.c_str(), &end);
+    return end != str.c_str() && *end == '\0' && errno == 0;
+}
+
+static void SetToFormatIfConvertSuccess(Meta& format, const TagType& tag, std::string valueStr, ValueType valueType)
+{
+    bool convertSuccess = false;
+    switch (valueType) {
+        case ValueType::INT32: {
+            int32_t int32Value = -1;
+            if (ConvertString(valueStr, int32Value)) {
+                format.SetData<int32_t>(tag, int32Value);
+                convertSuccess = true;
+            }
+            break;
+        }
+        case ValueType::FLOAT: {
+            float floatValue = -1;
+            if (StringConverterFloat(valueStr, floatValue)) {
+                format.SetData<float>(tag, floatValue);
+                convertSuccess = true;
+            }
+            break;
+        }
+        default:
+            MEDIA_LOG_W("Unsupport value type " PUBLIC_LOG_D32, static_cast<int32_t>(valueType));
+            break;
+    }
+    if (!convertSuccess) {
+        MEDIA_LOG_W("Parse failed key[" PUBLIC_LOG_S "] value[" PUBLIC_LOG_S "] type[" PUBLIC_LOG_D32 "]",
+            std::string(tag).c_str(), valueStr.c_str(), static_cast<int32_t>(valueType));
+    }
+}
+
 bool IsPCMStream(AVCodecID codecID)
 {
     MEDIA_LOG_D("CodecID " PUBLIC_LOG_D32 "[" PUBLIC_LOG_S "]",
@@ -546,8 +597,8 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
         MEDIA_LOG_D("Info format error");
         return;
     }
-    format.Set<Tag::MEDIA_LATITUDE>(std::stof(numbers->str()));
-    format.Set<Tag::MEDIA_LONGITUDE>(std::stof((++numbers)->str()));
+    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LATITUDE, numbers->str(), ValueType::FLOAT);
+    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LONGITUDE, (++numbers)->str(), ValueType::FLOAT);
 }
 
 void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format)
@@ -566,10 +617,12 @@ void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, s
                 format->SetData(valPtr->key + KEY_PREFIX_LEN, std::string(valPtr->value + VALUE_PREFIX_LEN));
             } else if (StartWith(valPtr->value, "00000017")) { // float
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: float", (valPtr->key + KEY_PREFIX_LEN));
-                format->SetData(valPtr->key + KEY_PREFIX_LEN, std::stof(valPtr->value + VALUE_PREFIX_LEN));
+                SetToFormatIfConvertSuccess(
+                    *format, valPtr->key + KEY_PREFIX_LEN, valPtr->value + VALUE_PREFIX_LEN, ValueType::FLOAT);
             } else if (StartWith(valPtr->value, "00000043") || StartWith(valPtr->value, "00000015")) { // int
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: int", (valPtr->key + KEY_PREFIX_LEN));
-                format->SetData(valPtr->key + KEY_PREFIX_LEN, std::stoi(valPtr->value + VALUE_PREFIX_LEN));
+                SetToFormatIfConvertSuccess(
+                    *format, valPtr->key + KEY_PREFIX_LEN, valPtr->value + VALUE_PREFIX_LEN, ValueType::INT32);
             } else { // unknow
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: unknow", (valPtr->key + KEY_PREFIX_LEN));
                 format->SetData(valPtr->key + KEY_PREFIX_LEN, std::string(valPtr->value + VALUE_PREFIX_LEN));
@@ -876,16 +929,24 @@ void FFmpegFormatHelper::ParseAudioApeTrackInfo(const AVStream& avStream, Meta &
         // Ffmpeg ensures that the value is definitely Int type
         const AVDictionaryEntry *meta = av_dict_get(avFormatContext.metadata, "max_frame_size", NULL, 0);
         if (meta != nullptr) {
-            int64_t maxFrameSize = std::stoll(meta->value);
-            FALSE_RETURN_MSG(maxFrameSize >= INT32_MIN && maxFrameSize <= INT32_MAX, "Parse max frame size failed");
-            format.Set<Tag::AUDIO_MAX_INPUT_SIZE>(static_cast<int32_t>(maxFrameSize));
+            int64_t maxFrameSize = -1;
+            if (ConvertString<int64_t>(meta->value, maxFrameSize)) {
+                FALSE_RETURN_MSG(maxFrameSize >= INT32_MIN && maxFrameSize <= INT32_MAX, "Parse max frame size failed");
+                format.Set<Tag::AUDIO_MAX_INPUT_SIZE>(static_cast<int32_t>(maxFrameSize));
+            } else {
+                MEDIA_LOG_W("error frameSize " PUBLIC_LOG_S, meta->value);
+            }
         }
         meta = av_dict_get(avFormatContext.metadata, "sample_per_frame", NULL, 0);
         if (meta != nullptr) {
-            int64_t samplePerFrame = std::stoll(meta->value);
-            FALSE_RETURN_MSG(samplePerFrame >= INT32_MIN && samplePerFrame <= INT32_MAX,
-                "Parse sample per frame failed");
-            format.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(static_cast<int32_t>(samplePerFrame));
+            int64_t samplePerFrame = -1;
+            if (ConvertString<int64_t>(meta->value, samplePerFrame)) {
+                FALSE_RETURN_MSG(samplePerFrame >= INT32_MIN && samplePerFrame <= INT32_MAX,
+                    "Parse sample per frame failed");
+                format.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(static_cast<int32_t>(samplePerFrame));
+            } else {
+                MEDIA_LOG_W("error frameSize " PUBLIC_LOG_S, meta->value);
+            }
         }
     }
 }
@@ -1001,15 +1062,17 @@ void FFmpegFormatHelper::ParseAuxiliaryTrackInfo(const AVStream& avStream, Meta 
         if (values.find(",") != std::string::npos) {
             referenceIdsString = SplitByChar(values.c_str(), ",");
         }
-        if (referenceIdsString.size() > 0) {
-            for (std::string subStr : referenceIdsString) {
-                // Ffmpeg ensures that the value is definitely Int type
-                referenceIds.push_back(std::stoi(subStr));
+        FALSE_RETURN_MSG_W(referenceIdsString.size() > 0, "Auxl track without ref track");
+        for (std::string subStr : referenceIdsString) {
+            // Ffmpeg ensures that the value is definitely Int type
+            int32_t id = -1;
+            if (ConvertString<int32_t>(subStr, id)) {
+                referenceIds.push_back(id);
+            } else {
+                MEDIA_LOG_W("error trackids " PUBLIC_LOG_S, subStr.c_str());
             }
-            format.Set<Tag::REFERENCE_TRACK_IDS>(referenceIds);
-        } else {
-            MEDIA_LOG_W("Auxl track without ref track");
         }
+        format.Set<Tag::REFERENCE_TRACK_IDS>(referenceIds);
     }
 }
 
