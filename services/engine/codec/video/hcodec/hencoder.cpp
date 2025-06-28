@@ -599,6 +599,16 @@ std::optional<uint32_t> HEncoder::GetCRFtagetQpFromUser(const Format &format)
     return nullopt;
 }
 
+std::optional<double> HEncoder::GetOperatingRateFromUser(const Format &format)
+{
+    double operatingRate = 0.0;
+    if (format.GetDoubleValue(OHOS::Media::Tag::VIDEO_ENCODER_OPERATING_RATE, operatingRate) && operatingRate > 0.0) {
+        LOGI("user set operating rate %.2f", operatingRate);
+        return operatingRate;
+    }
+    return nullopt;
+}
+
 std::optional<VideoEncodeBitrateMode> HEncoder::GetBitRateModeFromUser(const Format &format)
 {
     VideoEncodeBitrateMode mode;
@@ -953,6 +963,16 @@ int32_t HEncoder::OnSetParameters(const Format &format)
         framerateCfgType.xEncodeFramerate = frameRate.value() * FRAME_RATE_COEFFICIENT;
         if (!SetParameter(OMX_IndexConfigVideoFramerate, framerateCfgType, true)) {
             HLOGW("failed to config OMX_IndexConfigVideoFramerate");
+        }
+    }
+
+    optional<double> operatingRate = GetOperatingRateFromUser(format);
+    if (operatingRate.has_value()) {
+        OMX_PARAM_U32TYPE config;
+        InitOMXParam(config);
+        config.nU32 = static_cast<uint32_t>(operatingRate.value());
+        if (!SetParameter(OMX_IndexParamOperatingRate, config, true)) {
+            HLOGW("failed to set OMX_IndexConfigOperatingRate");
         }
     }
 

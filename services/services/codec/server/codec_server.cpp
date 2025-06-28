@@ -208,6 +208,7 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     AVCODEC_LOGI_WITH_TAG("Create codec %{public}s by %{public}s success", codecName_.c_str(),
                           (isMimeType ? "mime" : "name"));
     StatusChanged(INITIALIZED);
+    InitFramerateCalculator(callerInfo);
     return AVCS_ERR_OK;
 }
 
@@ -397,6 +398,9 @@ int32_t CodecServer::Stop()
     }
     StatusChanged(CONFIGURED);
     OnInstanceMemoryResetEvent();
+    if (framerateCalculator_) {
+        framerateCalculator_->OnStopped();
+    }
     return AVCS_ERR_OK;
 }
 
@@ -421,6 +425,9 @@ int32_t CodecServer::Flush()
         return (retPostProcessing != AVCS_ERR_OK) ? retPostProcessing : retCodec;
     }
     StatusChanged(FLUSHED);
+    if (framerateCalculator_) {
+        framerateCalculator_->OnStopped();
+    }
     return AVCS_ERR_OK;
 }
 
@@ -435,6 +442,9 @@ int32_t CodecServer::NotifyEos()
         CodecStatus newStatus = END_OF_STREAM;
         StatusChanged(newStatus);
         CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
+        if (framerateCalculator_) {
+            framerateCalculator_->OnStopped();
+        }
     }
     return ret;
 }
@@ -467,6 +477,9 @@ int32_t CodecServer::Reset()
         isModeConfirmed_ = false;
     }
     OnInstanceMemoryResetEvent();
+    if (framerateCalculator_) {
+        framerateCalculator_->OnStopped();
+    }
     return ret;
 }
 
@@ -493,6 +506,9 @@ int32_t CodecServer::Release()
     if (ret == AVCS_ERR_OK) {
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
+    }
+    if (framerateCalculator_) {
+        framerateCalculator_->OnStopped();
     }
     return ret;
 }
@@ -607,6 +623,9 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
         std::lock_guard<std::shared_mutex> lock(mutex_);
         ret = QueueInputBufferIn(index, info, flag);
         if (ret == AVCS_ERR_OK) {
+            if (framerateCalculator_) {
+                framerateCalculator_->OnStopped();
+            }
             CodecStatus newStatus = END_OF_STREAM;
             StatusChanged(newStatus);
         }
@@ -735,6 +754,9 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
                                       "In invalid state, %{public}s", GetStatusDescription(status_).data());
 
+    if (framerateCalculator_ && status_ == RUNNING) {
+        framerateCalculator_->OnFrameConsumed();
+    }
     if (postProcessing_) {
         return ReleaseOutputBufferOfPostProcessing(index, render);
     } else {
@@ -787,23 +809,31 @@ void CodecServer::OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta)
 #endif
 }
 
-int32_t CodecServer::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+void CodecServer::InitFramerateCalculator(Meta &callerInfo)
 {
-    (void)renderTimestampNs;
-    std::shared_lock<std::shared_mutex> freeLock(freeMutex_);
-    if (isFree_) {
-        AVCODEC_LOGE_WITH_TAG("In invalid state, free out");
-        return AVCS_ERR_INVALID_STATE;
+    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
+        framerateCalculator_ = std::make_shared<FramerateCalculator>(instanceId_,
+            [weakCodecBase = std::weak_ptr<CodecBase>(codecBase_), codecType = codecType_](double framerate) {
+                auto codecBase = weakCodecBase.lock();
+                if (!codecBase) {
+                    return;
+                }
+                Format format;
+                auto key = codecType == AVCODEC_TYPE_VIDEO_ENCODER ?
+                    Tag::VIDEO_ENCODER_OPERATING_RATE : Tag::VIDEO_FRAME_RATE;
+                format.PutDoubleValue(key, framerate);
+                codecBase->SetParameter(format);
+            }
+        );
+        if (framerateCalculator_) {
+            framerateCalculator_->SetTag(CreateVideoLogTag(callerInfo));
+        }
     }
-    std::shared_lock<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
-                                      "In invalid state, %{public}s", GetStatusDescription(status_).data());
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    if (postProcessing_) {
-        return ReleaseOutputBufferOfPostProcessing(index, true);
-    } else {
-        return codecBase_->RenderOutputBuffer(index);
-    }
+}
+
+int32_t CodecServer::RenderOutputBufferAtTime(uint32_t index, [[maybe_unused]]int64_t renderTimestampNs)
+{
+    return ReleaseOutputBuffer(index, true);
 }
 
 int32_t CodecServer::SetParameter(const Format &format)
@@ -1759,6 +1789,9 @@ int32_t CodecServer::NotifySuspend()
     CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == FLUSHED || status_ == END_OF_STREAM,
         AVCS_ERR_INVALID_STATE, "No need to suspend, status:%{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (framerateCalculator_) {
+        framerateCalculator_->OnStopped();
+    }
     return codecBase_->NotifySuspend();
 }
 
