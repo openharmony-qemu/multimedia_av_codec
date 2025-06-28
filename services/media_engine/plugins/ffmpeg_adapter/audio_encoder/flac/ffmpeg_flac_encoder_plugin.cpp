@@ -41,11 +41,6 @@ static const int32_t FLAC_ENCODER_SAMPLE_RATE_TABLE[] = {
 static const uint64_t FLAC_CHANNEL_LAYOUT_TABLE[] = {AV_CH_LAYOUT_MONO,    AV_CH_LAYOUT_STEREO,  AV_CH_LAYOUT_SURROUND,
                                                      AV_CH_LAYOUT_QUAD,    AV_CH_LAYOUT_5POINT0, AV_CH_LAYOUT_5POINT1,
                                                      AV_CH_LAYOUT_6POINT1, AV_CH_LAYOUT_7POINT1};
-const std::map<int32_t, int32_t> BITS_PER_RAW_SAMPLE_MAP = {
-    {OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE, 16},
-    {OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S24LE, 24},
-    {OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S32LE, 32},
-};
 static std::set<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE,
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S32LE,
@@ -86,24 +81,12 @@ static bool CheckChannelLayout(uint64_t channelLayout)
     return isExist;
 }
 
-static bool CheckBitsPerSample(int32_t bitsPerCodedSample)
-{
-    bool isExist = std::any_of(BITS_PER_RAW_SAMPLE_MAP.begin(),
-        BITS_PER_RAW_SAMPLE_MAP.end(), [bitsPerCodedSample](const std::pair<int32_t, int32_t>& value) {
-        return value.first == bitsPerCodedSample;
-    });
-    return isExist;
-}
-
 Status FFmpegFlacEncoderPlugin::SetContext(const std::shared_ptr<Meta> &format)
 {
     int32_t complianceLevel;
-    int32_t bitsPerCodedSample;
     auto avCodecContext = basePlugin->GetCodecContext();
     format->GetData(Tag::AUDIO_FLAC_COMPLIANCE_LEVEL, complianceLevel);
-    format->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, bitsPerCodedSample);
     avCodecContext->strict_std_compliance = complianceLevel;
-    avCodecContext->bits_per_raw_sample = BITS_PER_RAW_SAMPLE_MAP.at(bitsPerCodedSample);
     return Status::OK;
 }
 
@@ -125,11 +108,9 @@ Status FFmpegFlacEncoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
 {
     int32_t channelCount;
     int32_t sampleRate;
-    int32_t bitsPerCodedSample;
     int32_t complianceLevel;
     format->GetData(Tag::AUDIO_CHANNEL_COUNT, channelCount);
     format->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
-    format->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, bitsPerCodedSample);
     format->GetData(Tag::AUDIO_FLAC_COMPLIANCE_LEVEL, complianceLevel);
 
     AudioChannelLayout channelLayout;
@@ -151,9 +132,6 @@ Status FFmpegFlacEncoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
         return Status::ERROR_INVALID_PARAMETER;
     } else if (channelCount < MIN_CHANNELS || channelCount > MAX_CHANNELS) {
         AVCODEC_LOGE("init failed, because channelCount=%{public}d not support.", channelCount);
-        return Status::ERROR_INVALID_PARAMETER;
-    } else if (!CheckBitsPerSample(bitsPerCodedSample)) {
-        AVCODEC_LOGE("init failed, because bitsPerCodedSample=%{public}d not support.", bitsPerCodedSample);
         return Status::ERROR_INVALID_PARAMETER;
     } else if (complianceLevel < MIN_COMPLIANCE_LEVEL || complianceLevel > MAX_COMPLIANCE_LEVEL) {
         AVCODEC_LOGE("init failed, because complianceLevel=%{public}d not support.", complianceLevel);

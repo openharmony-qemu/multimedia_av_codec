@@ -57,7 +57,6 @@ constexpr uint32_t BITS_RATE = 261000;
 constexpr int32_t MP3_BIT_RATE = 128000;
 constexpr int32_t ABNORMAL_BITS_RATE = -1;
 constexpr int32_t BITS_PER_CODED_SAMPLE = AudioSampleFormat::SAMPLE_S16LE;
-constexpr int32_t ABNORMAL_BITS_SAMPLE = AudioSampleFormat::INVALID_WIDTH;
 constexpr uint64_t CHANNEL_LAYOUT = OH_AudioChannelLayout::CH_LAYOUT_STEREO;
 constexpr uint64_t ABNORMAL_CHANNEL_LAYOUT = OH_AudioChannelLayout::CH_LAYOUT_10POINT2;
 constexpr uint64_t ABNORMAL_CHANNEL_LAYOUT_UNKNOWN = OH_AudioChannelLayout::CH_LAYOUT_UNKNOWN;
@@ -863,22 +862,6 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Configure_02, TestSize.Lev
 
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(),
         ABNORMAL_CHANNEL_LAYOUT_UNKNOWN);
-
-    ASSERT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
-}
-
-HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_Configure_03, TestSize.Level1)
-{
-    CreateCodecFunc(AudioBufferFormatType::TYPE_FLAC);
-    format = OH_AVFormat_Create();
-    EXPECT_NE(nullptr, format);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
-    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), ABNORMAL_BITS_SAMPLE);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
-    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
 
     ASSERT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
 }
