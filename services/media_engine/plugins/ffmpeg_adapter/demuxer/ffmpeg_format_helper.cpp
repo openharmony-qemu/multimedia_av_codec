@@ -1030,7 +1030,7 @@ void FFmpegFormatHelper::ParseTimedMetaTrackInfo(const AVStream& avStream, Meta 
     if (valPtr == nullptr) {
         MEDIA_LOG_W("Get src track id failed");
     } else {
-        SetToFormatIfConvertSuccess(format, Tag::TIMED_METADATA_SRC_TRACK, valPtr->value, ValueType::INT32);
+        format.Set<Tag::TIMED_METADATA_SRC_TRACK>(std::stoi(valPtr->value));
     }
 }
 
