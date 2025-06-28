@@ -118,8 +118,7 @@ void AdaptiveFramerateController::Loop()
 {
     using namespace std::chrono_literals;
     constexpr auto checkInterval = 1s;
-    AVCODEC_LOGD("started");
-    while (true) {
+    while (isRunning_) {
         std::unique_lock<std::mutex> lock(mutex_);
         condition_.wait_for(lock, checkInterval, [this]() { return !isRunning_; });
         if (!isRunning_) {
@@ -139,7 +138,6 @@ void AdaptiveFramerateController::Loop()
             break;
         }
     }
-    AVCODEC_LOGD("stopped");
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
