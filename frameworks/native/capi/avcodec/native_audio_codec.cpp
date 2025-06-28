@@ -65,19 +65,14 @@ OH_AVBuffer *GetTransData(struct OH_AVCodec *codec, uint32_t index, std::shared_
     CHECK_AND_RETURN_RET_LOG(audioCodecObj->audioCodec_ != nullptr, nullptr, "audioc odec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, nullptr, "get output buffer is nullptr!");
 
-    {
-        std::shared_lock<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
-        for (auto &bufferObj : audioCodecObj->bufferObjList_) {
-            if (bufferObj->IsEqualBuffer(buffer)) {
-                return reinterpret_cast<OH_AVBuffer *>(bufferObj.GetRefPtr());
-            }
+    std::lock_guard<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
+    for (auto &bufferObj : audioCodecObj->bufferObjList_) {
+        if (bufferObj->IsEqualBuffer(buffer)) {
+            return reinterpret_cast<OH_AVBuffer *>(bufferObj.GetRefPtr());
         }
     }
-
     OHOS::sptr<OH_AVBuffer> object = new (std::nothrow) OH_AVBuffer(buffer);
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVBuffer");
-
-    std::lock_guard<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
     audioCodecObj->bufferObjList_.push_back(object);
     return reinterpret_cast<OH_AVBuffer *>(object.GetRefPtr());
 }

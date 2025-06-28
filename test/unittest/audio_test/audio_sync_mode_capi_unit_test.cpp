@@ -775,5 +775,26 @@ HWTEST_F(AudioSyncModeCapiUnitTest, sync_invalid_01, TestSize.Level1)
     EXPECT_EQ(OH_AudioCodec_QueryOutputBuffer(invalidCodec, &index, 1000), AV_ERR_INVALID_VAL);
 }
 
+HWTEST_F(AudioSyncModeCapiUnitTest, input_zero_01, TestSize.Level1)
+{
+    codec_ = OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_AAC, false);
+    ASSERT_NE(codec_, nullptr);
+    ASSERT_EQ(OH_AudioCodec_Configure(codec_, format_), AV_ERR_OK);
+    ASSERT_EQ(OH_AudioCodec_Start(codec_), AV_ERR_OK);
+
+    uint32_t index = 0;
+    OH_AVErrCode ret = OH_AudioCodec_QueryInputBuffer(codec_, &index, inTimeout_);
+    while (ret != AV_ERR_TRY_AGAIN_LATER) {
+        OH_AVBuffer *inputBuf = OH_AudioCodec_GetInputBuffer(codec_, index);
+        ASSERT_NE(inputBuf, nullptr);
+        ret = OH_AudioCodec_QueryInputBuffer(codec_, &index, inTimeout_);
+    }
+
+    OH_AudioCodec_PushInputBuffer(codec_, index);
+    ret = OH_AudioCodec_QueryInputBuffer(codec_, &index, inTimeout_);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    OH_AudioCodec_Destroy(codec_);
+}
+
 }
 }
