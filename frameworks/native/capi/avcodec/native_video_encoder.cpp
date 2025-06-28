@@ -556,6 +556,7 @@ OH_AVErrCode OH_VideoEncoder_Flush(struct OH_AVCodec *codec)
     int32_t ret = videoEncObj->videoEncoder_->Flush();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder flush failed!");
+    videoEncObj->ClearBufferList();
     return AV_ERR_OK;
 }
 
