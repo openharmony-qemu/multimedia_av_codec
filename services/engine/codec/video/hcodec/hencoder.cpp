@@ -1377,12 +1377,16 @@ void HEncoder::ParseRoiStringValid(const std::string &roiValue, shared_ptr<Codec
     constexpr int defaultOffset = -3; // default roi qp
     while (std::regex_search(temp, match, pattern) && vaildCount < roiNum) {
         int32_t qpOffset, left, top, right, bottom;
-        top = std::clamp(std::stoi(match[TOP_INDEX].str()), 0, static_cast<int>(height_));
-        left = std::clamp(std::stoi(match[LEFT_INDEX].str()), 0, static_cast<int>(width_));
-        bottom = std::clamp(std::stoi(match[BOTTOM_INDEX].str()), 0, static_cast<int>(height_));
-        right = std::clamp(std::stoi(match[RIGHT_INDEX].str()), 0, static_cast<int>(width_));
+        top = std::clamp(static_cast<int>(std::strtol(match[TOP_INDEX].str().c_str(), nullptr, 10)), //10:Decimal
+            0, static_cast<int>(height_));
+        left = std::clamp(static_cast<int>(std::strtol(match[LEFT_INDEX].str().c_str(), nullptr, 10)), //10:Decimal
+            0, static_cast<int>(width_));
+        bottom = std::clamp(static_cast<int>(std::strtol(match[BOTTOM_INDEX].str().c_str(), nullptr, 10)), //10:Decimal
+            0, static_cast<int>(height_));
+        right = std::clamp(static_cast<int>(std::strtol(match[RIGHT_INDEX].str().c_str(), nullptr, 10)), //10:Decimal
+            0, static_cast<int>(width_));
         if (match[QPOFFSET_INDEX].matched) {
-            qpOffset = std::stoi(match[QPOFFSET_INDEX].str());
+            qpOffset = static_cast<int>(std::strtol(match[QPOFFSET_INDEX].str().c_str(), nullptr, 10)); //10:Decimal
         } else {
             qpOffset = defaultOffset;
         }
