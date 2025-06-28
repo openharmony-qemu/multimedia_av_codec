@@ -740,6 +740,7 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
 {
     FALSE_RETURN_V_MSG(size != 0 && size == bufferDesc.bufLength, false,
         "bufferDesc or request size is unavailable");
+    bufferDesc.dataLength = 0;
     std::lock_guard<std::mutex> lock(availBufferMutex_);
     MEDIA_TRACE_DEBUG("AudioSink::CopyDataToBufferDesc");
     int64_t bufferPts = HST_TIME_NONE;
