@@ -29,7 +29,7 @@ using CreateFunc = StreamParser *(*)();
 using DestroyFunc = void (*)(StreamParser *);
 class StreamParserManager {
 public:
-    static std::shared_ptr<StreamParserManager> Create(VideoStreamType streamType);
+    static std::shared_ptr<StreamParserManager> Create(VideoStreamType videoStreamType);
     StreamParserManager();
     StreamParserManager(const StreamParserManager &) = delete;
     StreamParserManager operator=(const StreamParserManager &) = delete;
