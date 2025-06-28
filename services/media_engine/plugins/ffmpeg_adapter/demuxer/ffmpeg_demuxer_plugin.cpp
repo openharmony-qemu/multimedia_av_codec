@@ -1211,25 +1211,40 @@ void FFmpegDemuxerPlugin::InitParser()
     }
 }
 
-Status FFmpegDemuxerPlugin::GetSeiInfo()
+Status FFmpegDemuxerPlugin::SeiInfoInit()
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     Status ret = Status::OK;
-    if (streamParser_ != nullptr && !streamParserInited_) {
-        for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
-            auto avStream = formatContext_->streams[trackIndex];
+    for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        auto avStream = formatContext_->streams[trackIndex];
+        if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            ret = GetVideoFirstKeyFrame(trackIndex);
+            FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY, "No memory");
+            FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
+                Status::ERROR_WRONG_STATE, "Get first frame failed");
             if (HaveValidParser(avStream->codecpar->codec_id)) {
-                ret = GetVideoFirstKeyFrame(trackIndex);
-                FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY, "No memory");
-                FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
-                    Status::ERROR_WRONG_STATE, "Get first frame failed");
                 bool convertRet = streamParser_->ConvertExtraDataToAnnexb(
                     avStream->codecpar->extradata, avStream->codecpar->extradata_size);
                 FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_INVALID_DATA, "ConvertExtraDataToAnnexb failed");
                 streamParserInited_ = true;
-                break;
             }
+            break;
         }
+    }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::GetSeiInfo()
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    Status ret = Status::OK;
+    bool extraType = false;
+    if (FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MPEGTS) {
+        extraType = true;
+    }
+    if ((streamParser_ != nullptr && !streamParserInited_) || (extraType)) {
+        ret = SeiInfoInit();
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeiInfoInit failed");
     }
     return ret;
 }
@@ -1275,9 +1290,41 @@ Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
     return Status::OK;
 }
 
+void FFmpegDemuxerPlugin::GetStreamInitialParams()
+{
+    FALSE_RETURN_MSG_W(formatContext_ != nullptr, "AVFormatContext is nullptr");
+    for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        auto stream = formatContext_->streams[trackIndex];
+        if (stream == nullptr) {
+            continue;
+        }
+        Meta format;
+        int64_t bitRate = static_cast<int64_t>(stream->codecpar->bit_rate);
+        if (bitRate > 0) {
+            format.Set<Tag::MEDIA_BITRATE>(bitRate);
+        } else {
+            MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " bitrate parse failed", trackIndex);
+        }
+        streamInitialParam_[trackIndex] = format;
+    }
+}
+
+void FFmpegDemuxerPlugin::SetStreamInitialParams(uint32_t trackId, Meta &format)
+{
+    FALSE_RETURN_MSG_W(streamInitialParam_.count(trackId) > 0, "TrackId is invalid");
+    int64_t bitRate = 0;
+    bool ret = streamInitialParam_[trackId].GetData(Tag::MEDIA_BITRATE, bitRate);
+    if (!ret || bitRate <= 0) {
+        MEDIA_LOG_W("Track " PUBLIC_LOG_D32 " has no bitrate", trackId);
+    } else {
+        format.Set<Tag::MEDIA_BITRATE>(bitRate);
+    }
+}
+
 Status FFmpegDemuxerPlugin::GetMediaInfo()
 {
     MediaAVCodec::AVCodecTrace trace("FFmpegDemuxerPlugin::GetMediaInfo");
+    GetStreamInitialParams();
     Status ret = GetSeiInfo();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetSeiInfo failed");
 
@@ -1309,6 +1356,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo()
             avStream->codecpar->codec_id == AV_CODEC_ID_VVC) {
             ConvertCsdToAnnexb(*avStream, meta);
         }
+        SetStreamInitialParams(trackIndex, meta);
         mediaInfo_.tracks.push_back(meta);
         DemuxerLogCompressor::StringifyMeta(meta, trackIndex);
     }
@@ -1523,19 +1571,36 @@ Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
     return Status::OK;
 }
 
+Status FFmpegDemuxerPlugin::CheckSeekParams(int64_t seekTime, SeekMode mode) const
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
+    FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS, Status::ERROR_INVALID_PARAMETER,
+        "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
+    FALSE_RETURN_V_MSG_E(g_seekModeToFFmpegSeekFlags.count(mode) != 0, Status::ERROR_INVALID_PARAMETER,
+        "Seek mode " PUBLIC_LOG_U32 " is not supported", static_cast<uint32_t>(mode));
+    return Status::OK;
+}
+
+bool FFmpegDemuxerPlugin::IsUseFirstFrameDts(int trackIndex, int64_t seekTime)
+{
+    if (seekTime == 0 &&
+        FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MPEGTS &&
+        formatContext_->streams[trackIndex]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+        firstFrame_ != nullptr) {
+            return true;
+    }
+    return false;
+}
+
 Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime)
 {
     (void) trackId;
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MediaAVCodec::AVCodecTrace trace("SeekTo");
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
-    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
 
-    FALSE_RETURN_V_MSG_E(seekTime >= 0, Status::ERROR_INVALID_PARAMETER,
-        "Seek time " PUBLIC_LOG_D64 " is not unsupported", seekTime);
-    FALSE_RETURN_V_MSG_E(g_seekModeToFFmpegSeekFlags.count(mode) != 0, Status::ERROR_INVALID_PARAMETER,
-        "Seek mode " PUBLIC_LOG_D32 " is not unsupported", static_cast<uint32_t>(mode));
-
+    Status check = CheckSeekParams(seekTime, mode);
+    FALSE_RETURN_V_MSG_E(check == Status::OK, check, "CheckSeekParams failed");
     int trackIndex = static_cast<int>(selectedTrackIds_[0]);
     for (size_t i = 1; i < selectedTrackIds_.size(); i++) {
         int index = static_cast<int>(selectedTrackIds_[i]);
@@ -1551,6 +1616,9 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     if (!CheckStartTime(formatContext_.get(), avStream, ffTime, seekTime)) {
         MEDIA_LOG_E("Get start time from track " PUBLIC_LOG_D32 " failed", trackIndex);
         return Status::ERROR_INVALID_OPERATION;
+    }
+    if (IsUseFirstFrameDts(trackIndex, seekTime)) {
+        ffTime = firstFrame_->dts;
     }
     realSeekTime = ConvertTimeFromFFmpeg(ffTime, avStream->time_base);
     int flag = ConvertFlagsToFFmpeg(avStream, ffTime, mode, seekTime);
