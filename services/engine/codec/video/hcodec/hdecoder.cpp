@@ -687,7 +687,7 @@ void HDecoder::ProcAVBufferToUser(shared_ptr<AVBuffer> avBuffer, shared_ptr<Code
             case static_cast<uint32_t>(OMX_IndexInputStreamError): {
                 auto *inputStreamError = reader.Read<int32_t>();
                 IF_TRUE_RETURN_VOID(inputStreamError == nullptr);
-                meta->SetData(OHOS::Media::Tag::VIDEO_DECODER_INTPUT_STREAM_ERROR, *inputStreamError);
+                meta->SetData(OHOS::Media::Tag::VIDEO_DECODER_INPUT_STREAM_ERROR, *inputStreamError);
                 HLOGI("inputStreamError: %d, pts: %" PRId64" ", *inputStreamError, omxBuffer->pts);
                 break;
             }
