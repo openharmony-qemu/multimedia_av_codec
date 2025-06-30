@@ -1,0 +1,114 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+module_output_path = "av_codec/av_codec/unittest"
+
+av_codec_unittest_include_dirs = [
+  "$av_codec_root_dir/interfaces/inner_api/native",
+  "$av_codec_root_dir/interfaces/interfaces/inner_api/native",
+]
+
+av_codec_unittest_cflags = [
+  "-std=c++17",
+  "-fno-rtti",
+  "-fno-exceptions",
+  "-Wall",
+  "-fno-common",
+  "-fstack-protector-all",
+  "-Wshadow",
+  "-FPIC",
+  "-FS",
+  "-O2",
+  "-D_FORTIFY_SOURCE=2",
+  "-Wformat=2",
+  "-Wdate-time",
+  "-Dprivate=public",
+  "-Dprotected=public",
+]
+
+##################################################################################################################
+ohos_unittest("metadata_filter_unittest") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  include_dirs = av_codec_unittest_include_dirs
+  include_dirs += [
+    "./",
+    "$av_codec_root_dir/interfaces/kits/c",
+    "$av_codec_root_dir/services/engine/common/include",
+    "$av_codec_root_dir/services/engine/base/include",
+    "$av_codec_root_dir/services/utils/include",
+    "$av_codec_root_dir/services/engine/codec/include/audio",
+    "$av_codec_root_dir/services/engine/factory",
+    "$av_codec_root_dir/services/media_engine/plugins/source",
+    "$av_codec_root_dir/interfaces",
+    "$av_codec_root_dir/interfaces/inner_api/native",
+    "$av_codec_root_dir/services/media_engine/filters",
+  ]
+
+  cflags = av_codec_unittest_cflags
+
+  cflags_cc = cflags
+
+  public_configs = []
+  configs = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+
+  if (av_codec_support_test) {
+    sources = [
+      "$av_codec_root_dir//services/media_engine/plugins/source/data_stream_source_plugin.cpp",
+      "$av_codec_root_dir//services/media_engine/plugins/source/file_fd_source_plugin.cpp",
+      "$av_codec_root_dir//services/media_engine/plugins/source/file_source_plugin.cpp",
+      "./metadata_filter_unittest.cpp",
+    ]
+  }
+
+  deps = [
+    "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
+    "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/engine/codec/audio:av_codec_audio_ffmpeg_codec",
+    "$av_codec_root_dir/services/media_engine/filters:av_codec_media_engine_filters",
+    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
+    "$av_codec_root_dir/services/services:av_codec_service",
+    "$av_codec_root_dir/services/utils:av_codec_service_utils",
+  ]
+
+  public_configs = []
+
+  external_deps = [
+    "audio_framework:audio_capturer",
+    "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
+    "googletest:gmock",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
+    "hilog:libhilog",
+    "hisysevent:libhisysevent",
+    "hitrace:libhitracechain",
+    "init:libbegetutil",
+    "ipc:ipc_single",
+    "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
+    "safwk:system_ability_fwk",
+  ]
+
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
+
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}
