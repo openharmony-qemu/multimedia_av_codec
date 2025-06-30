@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -225,6 +225,8 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
     }
     if (isTransCoderMode) {
         format.PutIntValue(Tag::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
+        meta->Get<Tag::AV_TRANSCODER_ENABLE_B_FRAME>(enableBFrame_);
+        MEDIA_LOG_I("Transcoder enable B frame: %{public}d", static_cast<int32_t>(enableBFrame_));
     }
     format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enableBFrame_);
     ret = codecServer_->Configure(format);
@@ -537,10 +539,7 @@ Status SurfaceEncoderAdapter::NotifyEos(int64_t pts)
     int32_t ret = 0;
     MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64 " current PTS: " PUBLIC_LOG_D64, pts, currentPts_.load());
     eosPts_ = pts;
-    if (!isTransCoderMode || currentPts_.load() >= eosPts_.load()) {
-        MEDIA_LOG_I("Notify encoder eos");
-        ret = codecServer_->NotifyEos();
-    }
+    ret = codecServer_->NotifyEos();
     if (ret == 0) {
         return Status::OK;
     } else {
@@ -575,10 +574,6 @@ std::shared_ptr<Meta> SurfaceEncoderAdapter::GetOutputFormat()
 
 void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    if (buffer->pts_ >= eosPts_.load() && codecServer_) {
-        MEDIA_LOG_I("Notify encoder eos");
-        codecServer_->NotifyEos();
-    }
     int32_t size = buffer->memory_->GetSize();
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;

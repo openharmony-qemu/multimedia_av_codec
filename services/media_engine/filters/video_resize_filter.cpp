@@ -102,9 +102,6 @@ public:
     {
         if (auto videoResizeFilter = videoResizeFilter_.lock()) {
             videoResizeFilter->OnOutputBufferAvailable(index, static_cast<uint32_t>(flag));
-            if (flag == DETAIL_ENH_BUFFER_FLAG_EOS) {
-                videoResizeFilter->NotifyNextFilterEos();
-            }
         } else {
             MEDIA_LOG_I("invalid videoResizeFilter");
         }
@@ -377,11 +374,9 @@ void VideoResizeFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
                 MEDIA_LOG_E("videoEnhancer is null");
                 return;
             }
-            if (currentFrameNum_.load() >= frameNum_) {
-                MEDIA_LOG_I("currentFrameNum: " PUBLIC_LOG_D64 " frameNum: " PUBLIC_LOG_D64,
-                    currentFrameNum_.load(), frameNum_);
-                videoEnhancer_->NotifyEos();
-            }
+            MEDIA_LOG_I("currentFrameNum: " PUBLIC_LOG_D64 " frameNum: " PUBLIC_LOG_D64,
+                currentFrameNum_.load(), frameNum_);
+            videoEnhancer_->NotifyEos();
 #endif
             return;
         }
@@ -495,12 +490,9 @@ void VideoResizeFilter::OnOutputBufferAvailable(uint32_t index, uint32_t flag)
         std::lock_guard<std::mutex> lock(releaseBufferMutex_);
         if (flag != static_cast<uint32_t>(DETAIL_ENH_BUFFER_FLAG_EOS)) {
             currentFrameNum_.fetch_add(VARIABLE_INCREMENT_INTERVAL, std::memory_order_relaxed);
-            indexs_.push_back(index);
-            if (videoEnhancer_ && currentFrameNum_.load() >= frameNum_) {
-                MEDIA_LOG_I("currentFrameNum: " PUBLIC_LOG_D64 " frameNum: " PUBLIC_LOG_D64,
-                    currentFrameNum_.load(), frameNum_);
-                videoEnhancer_->NotifyEos();
-            }
+            indexs_.push_back(std::make_pair(false, index));
+        } else {
+            indexs_.push_back(std::make_pair(true, index));
         }
     }
     releaseBufferCondition_.notify_all();
@@ -511,7 +503,7 @@ void VideoResizeFilter::ReleaseBuffer()
 {
     MEDIA_LOG_I("ReleaseBuffer");
     while (!isThreadExit_) {
-        std::vector<uint32_t> indexs;
+        std::vector<std::pair<bool, uint32_t>> indexs;
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
             releaseBufferCondition_.wait(lock, [this] {
@@ -521,12 +513,20 @@ void VideoResizeFilter::ReleaseBuffer()
             indexs_.clear();
         }
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-        if (videoEnhancer_) {
-            for (auto &index : indexs) {
-                videoEnhancer_->ReleaseOutputBuffer(index, true);
-            }
-        }
+        ReleaseOutputBuffer(indexs);
 #endif
+    }
+}
+
+void VideoResizeFilter::ReleaseOutputBuffer(std::vector<std::pair<bool, uint32_t>> &indexs)
+{
+    for (auto &index : indexs) {
+        if (!index.first) {
+            videoEnhancer_->ReleaseOutputBuffer(index.second, true);
+        } else {
+            videoEnhancer_->ReleaseOutputBuffer(index.second, false);
+            NotifyNextFilterEos();
+        }
     }
 }
 
