@@ -509,7 +509,6 @@ void HlsPlayListDownloader::ReOpen(void)
     }
 
     // 重新启动一级目录连接流程
-    MEDIA_LOG_I("urlOrigin_:" PUBLIC_LOG_S, urlOrigin_.c_str());
     DoOpen(urlOrigin_);
 }
 }
