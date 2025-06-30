@@ -40,7 +40,7 @@ constexpr int64_t INIT_PLUGIN_WARNING_MS = 20;
 constexpr int64_t OVERTIME_WARNING_MS = 50;
 constexpr int64_t FORMAT_CHANGE_MS = 100;
 constexpr int64_t BUFFER_CONSUME_MS = 50;
-constexpr int64_t FIX_DELAY_MS_AUDIO_VIVID = 60;
+constexpr int64_t FIX_DELAY_MS_AUDIO_VIVID = 80;
 }
 
 namespace OHOS {
