@@ -716,6 +716,9 @@ void MediaDemuxer::UpdateThreadPriority(int32_t trackId)
 {
 #ifdef SUPPORT_START_STOP_ON_DEMAND
     taskMap_[trackId]->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
+    if (GetEnableSampleQueueFlag()) {
+        sampleConsumerTaskMap_[trackId]->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
+    }
 #else
     if (!HasVideo() && trackId == audioTrackId_) {
         taskMap_[trackId]->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
