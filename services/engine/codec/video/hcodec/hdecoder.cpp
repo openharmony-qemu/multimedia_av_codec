@@ -803,24 +803,24 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
     HLOGI("LowPowerPlayer outBufferCnt_: %u", outBufferCnt_);
     for (uint32_t i = 0; i < outBufferCnt_; ++i) {
         sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
-        if (surfaceBuffer == nullptr) {
-            return AVCS_ERR_UNKNOWN;
-        }
+        IF_TRUE_RETURN_VAL(surfaceBuffer == nullptr, AVCS_ERR_UNKNOWN);
+
         GSError err = surfaceBuffer->Alloc(requestCfg_);
         if (err != GSERROR_OK) {
             HLOGE("Alloc surfacebuffer %u failed, GSError=%d", i, err);
             return err == GSERROR_NO_MEM ? AVCS_ERR_NO_MEMORY : AVCS_ERR_UNKNOWN;
         }
         shared_ptr<OmxCodecBuffer> omxBuffer = SurfaceBufferToOmxBuffer(surfaceBuffer);
-        if (omxBuffer == nullptr) {
-            return AVCS_ERR_UNKNOWN;
+        IF_TRUE_RETURN_VAL(omxBuffer == nullptr, AVCS_ERR_UNKNOWN);
+        if (isLpp_) {
+            err = currSurface_.surface_->AttachBufferToQueue(surfaceBuffer);
+            IF_TRUE_RETURN_VAL_WITH_MSG(err != GSERROR_OK, AVCS_ERR_UNKNOWN,
+                                        "AttachBufferToQueue %u failed, GSError=%d", i, err);
         }
         shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
         int32_t hdfRet = compNode_->UseBuffer(OMX_DirOutput, *omxBuffer, *outBuffer);
-        if (hdfRet != HDF_SUCCESS) {
-            HLOGE("Failed to UseBuffer with output port");
-            return AVCS_ERR_NO_MEMORY;
-        }
+        IF_TRUE_RETURN_VAL_WITH_MSG(hdfRet != HDF_SUCCESS, AVCS_ERR_NO_MEMORY, "Failed to UseBuffer with output port");
+
         SetCallerToBuffer(surfaceBuffer->GetFileDescriptor());
         outBuffer->fenceFd = -1;
         BufferInfo info {};
@@ -830,7 +830,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         info.avBuffer = AVBuffer::CreateAVBuffer();
         info.omxBuffer = outBuffer;
         info.bufferId = outBuffer->bufferId;
-        info.attached = false;
+        info.attached = isLpp_ ? true : false;
         outputBufferPool_.push_back(info);
         HLOGI("generation=%d, bufferId=%u, seq=%u", currGeneration_, info.bufferId, surfaceBuffer->GetSeqNum());
         bufferMap.emplace(surfaceBuffer->GetSeqNum(), surfaceBuffer);
