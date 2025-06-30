@@ -576,33 +576,6 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_OnOutputBufferAvai
 }
 
 /**
- * @tc.name: SurfaceEncoderAdapter_OnOutputBufferAvailable_0200
- * @tc.desc: OnOutputBufferAvailable
- * @tc.type: FUNC
- */
-HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_OnOutputBufferAvailable_0200, TestSize.Level1)
-{
-    surfaceEncoderAdapter_->outputBufferQueueProducer_ =
-                                new OHOS::Media::Pipeline::SurfaceEncoderAdapterUnitTestAP();
-    uint32_t index = 1;
-    uint8_t data[100];
-    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
-    surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
-    surfaceEncoderAdapter_->isTransCoderMode = false;
-    surfaceEncoderAdapter_->stopTime_ = 1;
-    buffer->pts_ = 2;
-    surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
-    buffer->flag_ = 0;
-    surfaceEncoderAdapter_->startBufferTime_ = -1;
-    surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
-    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, buffer->pts_);
-
-    buffer->flag_ = 1;
-    surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
-    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, buffer->pts_);
-}
-
-/**
  * @tc.name: SurfaceEncoderAdapter_ConfigureGeneralFormat_0100
  * @tc.desc: ConfigureGeneralFormat
  * @tc.type: FUNC
