@@ -24,8 +24,6 @@
 
 namespace OHOS {
 namespace Media {
-const std::string MEDIA_ROOT = "file:///data/test/media/";
-const std::string VIDEO_FILE1 = MEDIA_ROOT + "camera_info_parser.mp4";
 
 class MockMediaSource;
 class SourceTest : public testing::Test {
