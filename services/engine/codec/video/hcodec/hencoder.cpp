@@ -1615,7 +1615,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         bufferInfo->omxBuffer->filledLen = 0;
     }
     if (enableVariableFrameRate_ && CalculateFrameRateParamIntoOmxBuffer(bufferInfo->omxBuffer->pts) != 0) {
-            ReplyErrorCode(msg.id, AVCS_ERR_INPUT_DATA_ERROR);
+        ReplyErrorCode(msg.id, AVCS_ERR_INPUT_DATA_ERROR);
     }
     WrapPerFrameParamIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->avBuffer->meta_);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
