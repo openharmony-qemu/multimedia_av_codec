@@ -48,7 +48,7 @@ constexpr uint32_t DEFAULT_TRY_ENCODE_TIME = 100;
 constexpr uint32_t DEFAULT_ENCODE_WAIT_TIME = 200;
 constexpr int32_t VIDEO_INSTANCE_SIZE = 16;
 constexpr int32_t VIDEO_BITRATE_MIN_SIZE = 10000;
-constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 240000000;
+constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 30000000;
 constexpr int32_t VIDEO_FRAMERATE_MIN_SIZE = 1;
 constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 60;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
@@ -130,7 +130,7 @@ AvcEncoder::AvcEncoder(const std::string &name)
       state_(State::UNINITIALIZED),
       encWidth_(DEFAULT_VIDEO_WIDTH),
       encHeight_(DEFAULT_VIDEO_HEIGHT),
-      encBitrate_(0),
+      encBitrate_(DEFAULT_VIDEO_BITRATE),
       encQp_(VIDEO_QP_DEFAULT),
       encQpMax_(VIDEO_QP_MAX),
       encQpMin_(VIDEO_QP_MIN),
@@ -277,12 +277,11 @@ void AvcEncoder::GetBufferFromSurface()
     if (ret != GSERROR_OK || buffer == nullptr) {
         return;
     }
-    constexpr uint32_t waitForEver = -1;
-    (void)fence->Wait(waitForEver);
     if (state_ == State::STOPPING) {
         inputSurface_->ReleaseBuffer(buffer, -1);
         return;
     }
+
     AVCODEC_LOGD("timestamp: %{public}" PRId64 ", dataSize: %{public}d", pts, buffer->GetSize());
 
     CHECK_AND_RETURN_LOG(!freeList_.empty(), "freeList_ is empty!");
@@ -295,12 +294,14 @@ void AvcEncoder::GetBufferFromSurface()
     CHECK_AND_RETURN_LOG(inputBuffer != nullptr, "input buffer is null");
     if (enableSurfaceModeInputCb_) {
         inputBuffer->surfaceBuffer_ = buffer;
+        inputBuffer->fence_ = fence;
         inputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer();
         CHECK_AND_RETURN_LOG(inputBuffer->avBuffer_ != nullptr, "Allocate input buffer failed!");
         inputBuffer->avBuffer_->pts_ = pts;
         callback_->OnInputBufferAvailable(index, inputBuffer->avBuffer_);
     } else {
         inputBuffer->surfaceBuffer_ = nullptr;
+        inputBuffer->fence_ = fence;
         inputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(buffer);
         CHECK_AND_RETURN_LOG(inputBuffer->avBuffer_ != nullptr, "Allocate input buffer failed!");
         inputBuffer->avBuffer_->pts_ = pts;
@@ -527,7 +528,7 @@ void AvcEncoder::GetPixelFmtFromUser(const Format &format)
         srcPixelFmt_ = innerFmt;
         AVCODEC_LOGI("configuread pixel fmt %{public}d", static_cast<int32_t>(innerFmt));
     } else {
-        AVCODEC_LOGI("user don't set pixel fmt, use default nv21");
+        AVCODEC_LOGI("user don't set pixel fmt, use default yuv420");
     }
     return;
 }
@@ -1337,9 +1338,10 @@ int32_t AvcEncoder::Nv21ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &
     NVFrame nvFrame = {
         .srcY    = dstData,
         .srcU    = dstData + width * height,
-        .srcV    = dstData + width * height + (width >> 1) * (height >> 1),
+        .srcV    = dstData + width * height +
+            (static_cast<uint32_t>(width) >> 1) * (static_cast<uint32_t>(height) >> 1),
         .yStride = width,
-        .uvStride = width >> 1,
+        .uvStride = static_cast<uint32_t>(width) >> 1,
         .width   = width,
         .height  = height,
     };
@@ -1367,9 +1369,10 @@ int32_t AvcEncoder::Nv12ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &
     NVFrame nvFrame = {
         .srcY    = dstData,
         .srcU    = dstData + width * height,
-        .srcV    = dstData + width * height + (width >> 1) * (height >> 1),
+        .srcV    = dstData + width * height +
+            (static_cast<uint32_t>(width) >> 1) * (static_cast<uint32_t>(height) >> 1),
         .yStride = width,
-        .uvStride = width >> 1,
+        .uvStride = static_cast<uint32_t>(width) >> 1,
         .width   = width,
         .height  = height,
     };
@@ -1383,9 +1386,10 @@ int32_t AvcEncoder::Yuv420ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS
     NVFrame nvFrame = {
         .srcY    = inFrame.buffer,
         .srcU    = inFrame.buffer + inFrame.uvOffset,
-        .srcV    = inFrame.buffer + inFrame.uvOffset + (inFrame.height >> 1) * (inFrame.stride >> 1),
+        .srcV    = inFrame.buffer + inFrame.uvOffset +
+            (static_cast<uint32_t>(inFrame.height) >> 1) * (static_cast<uint32_t>(inFrame.stride) >> 1),
         .yStride = inFrame.stride,
-        .uvStride = inFrame.stride >> 1,
+        .uvStride = static_cast<uint32_t>(inFrame.stride) >> 1,
         .width   = inFrame.width,
         .height  = inFrame.height,
     };
@@ -1548,13 +1552,11 @@ int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &out
         outputAVBuffer->memory_->SetSize(outArgs.bytes);
         outputAVBuffer->pts_ = static_cast<int64_t>(outArgs.timestamp);
         outputAVBuffer->flag_ = AvcFrameTypeToBufferFlag(outArgs.encodedFrameType);
+    } else if (isSendEos_) {
+        outputAVBuffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
     } else {
         outputAVBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
         AVCODEC_LOGE("Cannot send frame to encodec: %{public}d", ret);
-    }
-
-    if (isSendEos_) {
-        outputAVBuffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
     }
 
     outputBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
@@ -1604,6 +1606,11 @@ void AvcEncoder::SendFrame()
         return;
     }
 
+    sptr<SyncFence> fence = inputBuffer->fence_;
+    if (fence != nullptr) {
+        constexpr uint32_t waitForEver = -1;
+        fence->Wait(waitForEver);
+    }
     CHECK_AND_RETURN_LOG(inputAVBuffer->memory_ != nullptr, "input buffer memory nullptr");
     ret = FillAvcEncoderInArgs(inputAVBuffer, avcEncInputArgs_);
     if (ret != AVCS_ERR_OK) {

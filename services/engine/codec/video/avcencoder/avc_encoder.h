@@ -87,6 +87,7 @@ public:
 
         std::shared_ptr<AVBuffer> avBuffer_ = nullptr;
         sptr<SurfaceBuffer> surfaceBuffer_ = nullptr;
+        sptr<SyncFence> fence_ = nullptr;
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
         int32_t width_ = 0;
         int32_t height_ = 0;
