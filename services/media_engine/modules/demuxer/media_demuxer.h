@@ -355,6 +355,7 @@ private:
 
     // memoryUsage
     std::unordered_map<uint32_t, uint32_t> trackMemoryUsages_; // Event parameter
+    std::mutex memoryReportLimitMutex_ {};
     std::unordered_map<int32_t, uint32_t> memoryReportLimitCount_;
     std::unordered_map<uint32_t, funcPreReadSample> funcBeforeReadSampleMap_;
 
