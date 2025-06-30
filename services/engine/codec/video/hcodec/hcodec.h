@@ -383,8 +383,8 @@ protected:
     double codecRate_ = 0.0;
 
     // VRR
-#ifdef USE_VIDEO_PROCESSING_ENGINE
     bool isVrrInitialized_ = false;
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     virtual int32_t VrrPrediction(BufferInfo &info) { return AVCS_ERR_UNSUPPORT; }
 #endif
 
