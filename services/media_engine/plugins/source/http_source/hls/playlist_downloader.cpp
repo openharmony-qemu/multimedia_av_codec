@@ -31,6 +31,7 @@ constexpr int PLAYLIST_UPDATE_RATE = 1000 * 1000;
 constexpr int MIN_PRE_PARSE_CONTENT_LEN = 10 * 1024; // 10k
 constexpr int RETRY_DELTA_TIME_TO_REPORT_ERROR = 5 * 1000; // 5s
 constexpr int RETRY_TIME_TO_REPORT_ERROR = 10; // 10
+constexpr int HTTP_SERVER_ERROR_410 = 410; // 410 表示请求的资源已经从服务器上永久删除，不再可用
 
 static bool isNumber(const std::string& str)
 {
@@ -100,6 +101,11 @@ void PlayListDownloader::DoOpen(const std::string& url)
             eventCallback_->OnEvent({PluginEventType::CLIENT_ERROR,
                                     {NetworkClientErrorCode::ERROR_TIME_OUT}, "download m3u8"});
 
+            return;
+        }
+        // 目标资源永久删除，需要重头重新请求
+        if (request->GetServerError() == HTTP_SERVER_ERROR_410 && request->GetRetryTimes() <= 1) {
+            ReOpen();
             return;
         }
         playList_.clear();

@@ -1910,4 +1910,30 @@ HWTEST_F(HlsMediaDownloaderUnitTest, STOP_BUFFERING_001, TestSize.Level1)
     downloader->StopBufferring(false);
     EXPECT_EQ(downloader->isInterrupt_, false);
 }
+
+HWTEST_F(HlsMediaDownloaderUnitTest, PLAYLIST_DOWNLOADER_005, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
+    header_, nullptr);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                            std::shared_ptr<DownloadRequest>& request) {};
+    downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->callback_ = sourceCallback;
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHlsLive.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    downloader->playlistDownloader_->PlayListDownloaderInit();
+    downloader->playlistDownloader_->Resume();
+    downloader->playlistDownloader_->Pause(false);
+    downloader->playlistDownloader_->Pause(true);
+    EXPECT_EQ(downloader->playlistDownloader_->IsLive(), true);
+    EXPECT_NE(downloader->playlistDownloader_->updateTask_, nullptr);
+
+    downloader->playlistDownloader_->ReOpen();
+    downloader->GetSeekable();
+    EXPECT_EQ(downloader->playlistDownloader_->IsLive(), true);
+    EXPECT_NE(downloader->playlistDownloader_->updateTask_, nullptr);
+    delete sourceCallback;
+}
 }

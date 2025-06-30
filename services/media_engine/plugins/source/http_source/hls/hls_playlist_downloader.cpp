@@ -40,6 +40,7 @@ constexpr unsigned int MAX_LIVE_TS_NUM = 3;
 // [In future] StateMachine thread: call plugin GetDuration -> call GetDuration
 void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
+    urlOrigin_= url;
     url_ = url;
     master_ = nullptr;
     SaveHttpHeader(httpHeader);
@@ -492,6 +493,24 @@ bool HlsPlayListDownloader::IsPureByteRange()
         return true;
     }
     return false;
+}
+
+void HlsPlayListDownloader::ReOpen(void)
+{
+    // 关闭直播目录更新，清空一二级目录对象
+    Pause(true);
+    master_ = nullptr;
+    currentVariant_ = nullptr;
+    isLiveUpdateTaskStarted_ = false;
+
+    // 从异常流程过来，允许重新开始下发请求
+    if (downloader_ != nullptr) {
+        downloader_->ReStart();
+    }
+
+    // 重新启动一级目录连接流程
+    MEDIA_LOG_I("urlOrigin_:" PUBLIC_LOG_S, urlOrigin_.c_str());
+    DoOpen(urlOrigin_);
 }
 }
 }

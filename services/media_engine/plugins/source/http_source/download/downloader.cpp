@@ -361,6 +361,12 @@ void Downloader::Start()
     MEDIA_LOG_I("start End");
 }
 
+void Downloader::ReStart()
+{
+    MEDIA_LOG_I("Downloader::ReStart");
+    shouldStartNextRequest = true;
+}
+
 void Downloader::Pause(bool isAsync)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
