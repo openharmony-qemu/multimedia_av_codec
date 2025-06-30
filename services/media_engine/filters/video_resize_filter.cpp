@@ -520,6 +520,7 @@ void VideoResizeFilter::ReleaseBuffer()
     }
 }
 
+#ifdef USE_VIDEO_PROCESSING_ENGINE
 void VideoResizeFilter::ReleaseOutputBuffer(std::vector<std::pair<bool, uint32_t>> &indexs)
 {
     for (auto &index : indexs) {
@@ -531,6 +532,7 @@ void VideoResizeFilter::ReleaseOutputBuffer(std::vector<std::pair<bool, uint32_t
         }
     }
 }
+#endif
 
 void VideoResizeFilter::SetFaultEvent(const std::string &errMsg, int32_t ret)
 {
