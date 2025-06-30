@@ -513,7 +513,9 @@ void VideoResizeFilter::ReleaseBuffer()
             indexs_.clear();
         }
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-        ReleaseOutputBuffer(indexs);
+        if (videoEnhancer_) {
+            ReleaseOutputBuffer(indexs);
+        }
 #endif
     }
 }
