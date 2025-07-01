@@ -212,6 +212,7 @@ public:
     void SetAppState(bool isAppBackground);
     void StopBufferring();
     std::string GetContentType();
+    void ReStart();
 
 private:
     bool BeginDownload();

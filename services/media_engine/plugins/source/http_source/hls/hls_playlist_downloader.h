@@ -60,6 +60,7 @@ public:
     bool ReadFmp4Header(uint8_t* buffer, uint32_t& readLen, uint32_t streamId) override;
     bool IsHlsFmp4() override;
     bool IsPureByteRange() override;
+    void ReOpen(void) override;
 
 private:
     void UpdateMasterInfo(bool isPreParse);
@@ -68,6 +69,7 @@ private:
 
 private:
     std::string url_ {};
+    std::string urlOrigin_ {};
     PlayListChangeCallback* callback_ {nullptr};
     std::shared_ptr<M3U8MasterPlaylist> master_;
     std::shared_ptr<M3U8VariantStream> currentVariant_;
