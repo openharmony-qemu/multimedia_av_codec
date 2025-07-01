@@ -652,7 +652,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1183, TestSize.Level1)
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals});
     }
-    
 }
 
 /**
