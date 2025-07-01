@@ -562,16 +562,21 @@ ohos_unittest("videoenc_bframe_capi_unit_test") {
   include_dirs = [
     "./",
     "./common/utils",
+    "./func_sample/base",
     "./func_sample/mock",
     "./func_sample/mock/capi",
-    "./func_sample/sample",
+    "./func_sample/sample/encoder",
+    "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi",
     "$av_codec_root_dir/test/unittest/common/",
     "$av_codec_root_dir/frameworks/native/capi/common",
   ]
 
-  defines = [ "VIDEOENC_CAPI_UNIT_TEST" ]
+  defines = [
+    "VIDEOENC_CAPI_UNIT_TEST",
+    "VideoEncSample=VideoEncAsyncSample",
+    ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
   }
@@ -584,7 +589,7 @@ ohos_unittest("videoenc_bframe_capi_unit_test") {
     "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
     "./func_sample/mock/capi/videoenc_capi_mock.cpp",
-    "./func_sample/sample/venc_sample.cpp",
+    "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_bframe_unit_test.cpp",
   ]
 
@@ -593,8 +598,7 @@ ohos_unittest("videoenc_bframe_capi_unit_test") {
 
   external_deps = []
 
-  resource_config_file =
-      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+  resource_config_file = resource_configuration_file
 }
 
 #################################################################################################################
@@ -604,15 +608,20 @@ ohos_unittest("videoenc_bframe_inner_unit_test") {
   include_dirs = [
     "./",
     "./common/utils",
+    "./func_sample/base",
     "./func_sample/mock",
     "./func_sample/mock/inner",
-    "./func_sample/sample",
+    "./func_sample/sample/encoder",
+    "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/codeclist_test",
     "$av_codec_root_dir/test/unittest/common/",
   ]
 
-  defines = [ "VIDEOENC_INNER_UNIT_TEST" ]
+  defines = [
+    "VIDEOENC_INNER_UNIT_TEST",
+    "VideoEncSample=VideoEncAsyncSample",
+    ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
   }
@@ -625,7 +634,7 @@ ohos_unittest("videoenc_bframe_inner_unit_test") {
     "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
     "./func_sample/mock/inner/videoenc_inner_mock.cpp",
-    "./func_sample/sample/venc_sample.cpp",
+    "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_bframe_unit_test.cpp",
   ]
 
@@ -638,8 +647,7 @@ ohos_unittest("videoenc_bframe_inner_unit_test") {
     external_deps += [ "drm_framework:drm_framework" ]
   }
 
-  resource_config_file =
-      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+  resource_config_file = resource_configuration_file
 }
 
 #################################################################################################################

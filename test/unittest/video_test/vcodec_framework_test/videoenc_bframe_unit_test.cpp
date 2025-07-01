@@ -17,7 +17,7 @@
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
 #include "codeclist_mock.h"
-#include "venc_sample.h"
+#include "venc_async_sample.h"
 #include "native_avmagic.h"
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
@@ -161,88 +161,6 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
 }
 
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC));
-
-/**
- * @tc.name: VideoEncoder_Scene_Type_001
- * @tc.desc: set key VIDEO_SCENE_TYPE, value is VIDEO_SCENE_UNKNOWN
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, VideoEncoder_Scene_Type_001, TestSize.Level1)
-{
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_SCENE_TYPE,
-        static_cast<int32_t>(VideoSceneType::VIDEO_SCENE_UNKNOWN));
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
-}
-
-/**
- * @tc.name: VideoEncoder_Scene_Type_002
- * @tc.desc: set key VIDEO_SCENE_TYPE, value is VIDEO_SCENE_CAMERA_RECODER
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, VideoEncoder_Scene_Type_002, TestSize.Level1)
-{
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_SCENE_TYPE,
-        static_cast<int32_t>(VideoSceneType::VIDEO_SCENE_CAMERA_RECODER));
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
-}
-
-/**
- * @tc.name: VideoEncoder_Scene_Type_003
- * @tc.desc: set key VIDEO_SCENE_TYPE, value is -1
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, VideoEncoder_Scene_Type_003, TestSize.Level1)
-{
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_SCENE_TYPE, -1);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
-}
-
-/**
- * @tc.name: VideoEncoder_Scene_Type_004
- * @tc.desc: set key VIDEO_SCENE_TYPE, value is INT32_MAX
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, VideoEncoder_Scene_Type_004, TestSize.Level1)
-{
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_SCENE_TYPE, INT32_MAX);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
-}
-
-/**
- * @tc.name: VideoEncoder_Scene_Type_005
- * @tc.desc: set key VIDEO_SCENE_TYPE, value is INT32_MIN
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, VideoEncoder_Scene_Type_005, TestSize.Level1)
-{
-    CreateByNameWithParam(GetParam());
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_SCENE_TYPE, INT32_MIN);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
-}
 
 /**
  * @tc.name: VideoEncoder_B_Frame_001
@@ -509,6 +427,623 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_015, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, INT32_MAX);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_001
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_002
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is true and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_002, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_H3B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_003
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_003, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, false);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_004
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is true and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_004, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, false);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_H3B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_005
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_005, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, -1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_006
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is true and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_006, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, -1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_H3B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_007
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is INT32_MAX and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_007, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, INT32_MAX);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_008
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is INT32_MAX and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_008, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, INT32_MAX);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_H3B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_009
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is INT32_MIN and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_009, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, INT32_MIN);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_010
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is INT32_MIN and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_010, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, INT32_MIN);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_H3B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_011
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_011, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, true);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_012
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is false
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_012, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, false);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_013
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is -1
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_013, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, -1);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_014
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is INT32_MIN
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_014, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, INT32_MIN);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_015
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is INT32_MAX
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_015, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, INT32_MAX);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_LTR_001
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_002
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is true and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_002, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, true);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_H3B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_003
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_003, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, false);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_004
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is true and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_004, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, false);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_H3B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_005
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_005, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, -1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_006
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is true and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_006, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, -1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_H3B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_007
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is INT32_MAX and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_007, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, INT32_MAX);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_008
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is INT32_MAX and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_008, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, INT32_MAX);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_H3B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_009
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is INT32_MIN and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_009, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, INT32_MIN);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_010
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is INT32_MIN and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_010, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, INT32_MIN);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_H3B_MODE));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_011
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_011, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, true);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_012
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is false
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_012, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, false);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_013
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is -1
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_013, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, -1);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_014
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is INT32_MIN
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_014, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, INT32_MIN);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_B_Frame_LTR_015
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is INT32_MAX
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_015, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, INT32_MAX);
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());

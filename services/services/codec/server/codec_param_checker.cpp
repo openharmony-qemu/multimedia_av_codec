@@ -40,6 +40,7 @@ constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 1000;
 const std::unordered_map<CodecScenario, std::string_view> CODEC_SCENARIO_TO_STRING = {
     {CodecScenario::CODEC_SCENARIO_ENC_NORMAL, "encoder normal"},
     {CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY, "encoder temporal scalability"},
+    {CodecScenario::CODEC_SCENARIO_ENC_ENABLE_B_FRAME, "encoder enable b frame"},
     {CodecScenario::CODEC_SCENARIO_DEC_NORMAL, "decoder normal"},
 };
 
@@ -82,6 +83,8 @@ template<class T> bool IsSupported(std::vector<T> cap, T value)
 // Video scenario checker
 std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData, const Format &format,
                                                         AVCodecType codecType);
+std::optional<CodecScenario> BFrameScenarioChecker(CapabilityData &capData, const Format &format,
+                                                   AVCodecType codecType);
 
 // Video codec checker
 int32_t ResolutionChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
@@ -102,7 +105,6 @@ int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScena
 int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
-int32_t VideoSceneTypeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 
 // Checkers list define
 using ScenarioCheckerType =
@@ -123,7 +125,6 @@ const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     MatrixCoefficientsChecker,
     LTRFrameCountChecker,
     BFrameParamChecker,
-    VideoSceneTypeChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST = {
@@ -161,6 +162,7 @@ const ParamCheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
 const ParamCheckerListType VIDEO_DECODER_PARAMETER_CHECKER_LIST = {};
 
 const ScenarioCheckerListType VIDEO_SCENARIO_CHECKER_LIST = {
+    BFrameScenarioChecker,
     TemporalScalabilityChecker,
 };
 
@@ -176,12 +178,14 @@ const std::vector<std::string_view> FORMAT_MERGE_LIST = {
 const std::unordered_map<CodecScenario, ParamCheckerListType> CONFIGURE_CHECKERS_TABLE = {
     {CodecScenario::CODEC_SCENARIO_ENC_NORMAL, VIDEO_ENCODER_CONFIGURE_CHECKER_LIST},
     {CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY, VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST},
+    {CodecScenario::CODEC_SCENARIO_ENC_ENABLE_B_FRAME, VIDEO_ENCODER_CONFIGURE_CHECKER_LIST},
     {CodecScenario::CODEC_SCENARIO_DEC_NORMAL, VIDEO_DECODER_CONFIGURE_CHECKER_LIST},
 };
 
 const std::unordered_map<CodecScenario, ParamCheckerListType> PARAMETER_CHECKERS_TABLE = {
     {CodecScenario::CODEC_SCENARIO_ENC_NORMAL, VIDEO_ENCODER_PARAMETER_CHECKER_LIST},
     {CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY, VIDEO_ENCODER_PARAMETER_CHECKER_LIST},
+    {CodecScenario::CODEC_SCENARIO_ENC_ENABLE_B_FRAME, VIDEO_ENCODER_PARAMETER_CHECKER_LIST},
     {CodecScenario::CODEC_SCENARIO_DEC_NORMAL, VIDEO_DECODER_PARAMETER_CHECKER_LIST},
 };
 
@@ -216,6 +220,36 @@ std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData,
     return scenario;
 }
 
+std::optional<CodecScenario> BFrameScenarioChecker(CapabilityData &capData, const Format &format,
+                                                   AVCodecType codecType)
+{
+    int32_t enable = 0;
+    std::optional<CodecScenario> scenario = std::nullopt;
+    bool enableExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enable);
+    bool temporalGopSizeExist = format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE);
+    bool modeExist = format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE);
+    PrintParam(enableExist, Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enable);
+
+    if (codecType == AVCODEC_TYPE_VIDEO_DECODER) {
+        if (enableExist) {
+            AVCODEC_LOGW("B-frame mode is only supported in video encoder!");
+        }
+        return scenario;
+    }
+    if (!enableExist || !enable) {
+        AVCODEC_LOGW("Please enable key VIDEO_ENCODER_ENABLE_B_FRAME or set a correct value!");
+        return scenario;
+    }
+    CHECK_AND_RETURN_RET_LOGW(capData.featuresMap.count(
+        static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_B_FRAME)),
+        scenario, "Not support B-frame");
+    
+    if (temporalGopSizeExist || modeExist) {
+        AVCODEC_LOGW("B-frame and temporalscalability encoding are not compatible,using B-frame mode by default!");
+    }
+    scenario = CodecScenario::CODEC_SCENARIO_ENC_ENABLE_B_FRAME;
+    return scenario;
+}
 int32_t ResolutionChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
     (void)scenario;
@@ -764,24 +798,6 @@ int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenari
     return AVCS_ERR_OK;
 }
 
-int32_t VideoSceneTypeChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
-{
-    (void)capData;
-    (void)scenario;
-    int32_t sceneType;
-    bool sceneTypeExist = format.GetIntValue(Tag::VIDEO_SCENE_TYPE, sceneType);
-    if (!sceneTypeExist) {
-        return AVCS_ERR_OK;
-    }
-    PrintParam(sceneTypeExist, Tag::VIDEO_SCENE_TYPE, sceneType);
-
-    if (sceneType < static_cast<int32_t>(VideoSceneType::VIDEO_SCENE_UNKNOWN) ||
-        sceneType > static_cast<int32_t>(VideoSceneType::VIDEO_SCENE_CAMERA_RECODER)) {
-        format.PutIntValue(Tag::VIDEO_SCENE_TYPE, static_cast<int32_t>(VideoSceneType::VIDEO_SCENE_UNKNOWN));
-        AVCODEC_LOGE("VideoSceneType Param invalid, %{public}s: %{public}d", Tag::VIDEO_SCENE_TYPE, sceneType);
-    }
-    return AVCS_ERR_OK;
-}
 } // namespace
 
 namespace OHOS {
