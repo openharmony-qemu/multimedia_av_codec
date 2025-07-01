@@ -250,6 +250,7 @@ std::optional<CodecScenario> BFrameScenarioChecker(CapabilityData &capData, cons
     scenario = CodecScenario::CODEC_SCENARIO_ENC_ENABLE_B_FRAME;
     return scenario;
 }
+
 int32_t ResolutionChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
     (void)scenario;

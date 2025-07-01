@@ -576,7 +576,7 @@ ohos_unittest("videoenc_bframe_capi_unit_test") {
   defines = [
     "VIDEOENC_CAPI_UNIT_TEST",
     "VideoEncSample=VideoEncAsyncSample",
-    ]
+  ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
   }
@@ -621,7 +621,7 @@ ohos_unittest("videoenc_bframe_inner_unit_test") {
   defines = [
     "VIDEOENC_INNER_UNIT_TEST",
     "VideoEncSample=VideoEncAsyncSample",
-    ]
+  ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
   }
@@ -629,6 +629,7 @@ ohos_unittest("videoenc_bframe_inner_unit_test") {
   cflags = vcodec_unittest_cflags
 
   sources = [
+    "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
     "./common/utils/unittest_utils.cpp",

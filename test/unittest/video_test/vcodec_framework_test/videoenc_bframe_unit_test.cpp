@@ -435,7 +435,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_015, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_001
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
  * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
  * @tc.type: FUNC
  */
@@ -458,7 +458,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_001, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_002
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
  * value is true and VIDEO_ENCODE_GOP_H3B_MODE
  * @tc.type: FUNC
  */
@@ -481,7 +481,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_002, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_003
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
  * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
  * @tc.type: FUNC
  */
@@ -504,7 +504,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_003, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_004
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
  * value is true and VIDEO_ENCODE_GOP_H3B_MODE
  * @tc.type: FUNC
  */
@@ -527,7 +527,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_004, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_005
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
  * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
  * @tc.type: FUNC
  */
@@ -550,7 +550,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_005, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_006
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
  * value is true and VIDEO_ENCODE_GOP_H3B_MODE
  * @tc.type: FUNC
  */
@@ -573,7 +573,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_006, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_007
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
  * value is INT32_MAX and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
  * @tc.type: FUNC
  */
@@ -596,7 +596,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_007, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_008
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
  * value is INT32_MAX and VIDEO_ENCODE_GOP_H3B_MODE
  * @tc.type: FUNC
  */
@@ -619,7 +619,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_008, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_009
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
  * value is INT32_MIN and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
  * @tc.type: FUNC
  */
@@ -642,7 +642,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_009, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_010
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
  * value is INT32_MIN and VIDEO_ENCODE_GOP_H3B_MODE
  * @tc.type: FUNC
  */
@@ -665,7 +665,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_010, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_011
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
  * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
  * @tc.type: FUNC
  */
@@ -686,7 +686,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_011, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_012
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is false
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
+ * value is false
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_012, TestSize.Level1)
@@ -706,7 +707,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_012, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_013
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is -1
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
+ * value is -1
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_013, TestSize.Level1)
@@ -726,7 +728,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_013, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_014
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is INT32_MIN
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
+ * value is INT32_MIN
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_014, TestSize.Level1)
@@ -746,7 +749,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_014, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_Enable_Temporal_Scalability_015
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is INT32_MAX
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,enable temporal scalability,
+ * value is INT32_MAX
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_015, TestSize.Level1)
@@ -766,8 +770,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_Enable_Temporal_Scalability_015, TestSi
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_LTR_001
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
- * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME, VideoEncodeBFrameGopMode, VIDEO_ENCODER_LTR_FRAME_COUNT,
+ * value is true, VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_001, TestSize.Level1)
@@ -786,8 +790,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_001, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_002
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
- * value is true and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, VIDEO_ENCODER_LTR_FRAME_COUNT
+ * value is true and VIDEO_ENCODE_GOP_H3B_MODE, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_002, TestSize.Level1)
@@ -806,8 +810,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_002, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_003
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
- * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, VIDEO_ENCODER_LTR_FRAME_COUNT
+ * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_003, TestSize.Level1)
@@ -826,8 +830,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_003, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_004
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
- * value is true and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, VIDEO_ENCODER_LTR_FRAME_COUNT
+ * value is true and VIDEO_ENCODE_GOP_H3B_MODE, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_004, TestSize.Level1)
@@ -846,8 +850,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_004, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_005
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
- * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, VIDEO_ENCODER_LTR_FRAME_COUNT
+ * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_005, TestSize.Level1)
@@ -866,8 +870,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_005, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_006
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
- * value is true and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, VIDEO_ENCODER_LTR_FRAME_COUNT
+ * value is true and VIDEO_ENCODE_GOP_H3B_MODE, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_006, TestSize.Level1)
@@ -886,8 +890,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_006, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_007
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
- * value is INT32_MAX and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, VIDEO_ENCODER_LTR_FRAME_COUNT
+ * value is INT32_MAX and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_007, TestSize.Level1)
@@ -906,8 +910,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_007, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_008
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
- * value is INT32_MAX and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, VIDEO_ENCODER_LTR_FRAME_COUNT
+ * value is INT32_MAX and VIDEO_ENCODE_GOP_H3B_MODE, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_008, TestSize.Level1)
@@ -926,8 +930,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_008, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_009
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
- * value is INT32_MIN and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, VIDEO_ENCODER_LTR_FRAME_COUNT
+ * value is INT32_MIN and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_009, TestSize.Level1)
@@ -946,8 +950,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_009, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_010
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
- * value is INT32_MIN and VIDEO_ENCODE_GOP_H3B_MODE
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, VIDEO_ENCODER_LTR_FRAME_COUNT
+ * value is INT32_MIN and VIDEO_ENCODE_GOP_H3B_MODE, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_010, TestSize.Level1)
@@ -966,8 +970,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_010, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_011
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode,
- * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, VIDEO_ENCODER_LTR_FRAME_COUNT
+ * value is true and VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_011, TestSize.Level1)
@@ -984,7 +988,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_011, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_012
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is false
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME, VIDEO_ENCODER_LTR_FRAME_COUNT
+ * value is false, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_012, TestSize.Level1)
@@ -1001,7 +1006,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_012, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_013
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is -1
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME, VIDEO_ENCODER_LTR_FRAME_COUNT
+ * value is -1, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_013, TestSize.Level1)
@@ -1018,7 +1024,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_013, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_014
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is INT32_MIN
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME, VIDEO_ENCODER_LTR_FRAME_COUNT
+ * value is INT32_MIN, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_014, TestSize.Level1)
@@ -1035,7 +1042,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_014, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_B_Frame_LTR_015
- * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME and VideoEncodeBFrameGopMode, value is INT32_MAX
+ * @tc.desc: set key VIDEO_ENCODER_ENABLE_B_FRAME, VIDEO_ENCODER_LTR_FRAME_COUNT
+ * value is INT32_MAX, 2
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_B_Frame_LTR_015, TestSize.Level1)
