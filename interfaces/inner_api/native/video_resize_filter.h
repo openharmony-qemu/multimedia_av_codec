@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -74,6 +74,7 @@ protected:
 
 private:
     void ReleaseBuffer();
+    void ReleaseOutputBuffer(std::vector<uint32_t> &indexs);
     std::string name_;
     FilterType filterType_;
 
@@ -96,6 +97,7 @@ private:
     std::condition_variable releaseBufferCondition_;
     std::shared_ptr<Task> releaseBufferTask_{nullptr};
     std::vector<uint32_t> indexs_;
+    uint32_t eosBufferIndex_ {UINT32_MAX};
     int64_t eosPts_ {UINT32_MAX};
     int64_t frameNum_ {UINT32_MAX};
     std::atomic<int64_t> currentFrameNum_ = 0;

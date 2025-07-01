@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -754,6 +754,22 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest,
     Status ret = surfaceEncoderAdapter_->SetEncoderAdapterKeyFramePtsCallback(
         std::make_shared<MockEncoderAdapterKeyFramePtsCallback>());
     EXPECT_EQ(ret, Status::OK);
+}
+
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_SetEnableBFrame_0100
+ * @tc.desc: SetEnableBFrame Test
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_SetEnableBFrame_0100, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    meta->Set<Tag::AV_TRANSCODER_ENABLE_B_FRAME>(true);
+    EXPECT_EQ(surfaceEncoderAdapter_->Configure(meta), Status::OK);
+    EXPECT_EQ(surfaceEncoderAdapter_->enableBFrame_, true);
 }
 }  // namespace Pipeline
 }  // namespace Media
