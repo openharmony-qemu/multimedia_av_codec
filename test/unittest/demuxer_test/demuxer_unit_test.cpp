@@ -283,6 +283,42 @@ void DemuxerUnitTest::ReadData(int readNum, int64_t &seekTime)
     }
 }
 
+void DemuxerUnitTest::SeekTest(const std::list<int64_t> &toPtsList, const std::list<Media::SeekMode> &sm,
+    const std::vector<std::vector<int32_t>> &ExpVals)
+{
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = sm.begin(); mode != sm.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            for (size_t i = 0; i < ExpVals.size(); i++) {
+                printf("time = %" PRId64 " | frames_[%d]=%d\n", *toPts, i, frames_[i]);
+                ASSERT_EQ(frames_[i], ExpVals[i][numbers_]);
+            }
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+void DemuxerUnitTest::ReadAllSampleWithCheck(std::vector<uint32_t> &keyFrameIndex)
+{
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            if (idx == 0) {
+                ASSERT_TRUE(CheckKeyFrameIndex(
+                    keyFrameIndex, frames_[0], flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME));
+            }
+            CountFrames(idx);
+        }
+    }
+}
+
 /**********************************demuxer fd**************************************/
 namespace {
 /**
@@ -2715,20 +2751,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1601, TestSize.Level1)
         vector<int32_t> audioVals = {433, 433, 433, 240, 240, 240, 132, 132, 132, 348, 348, 348};
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
-        for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
-            for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-                ret_ = demuxer_->SeekToTime(*toPts, *mode);
-                if (ret_ != AV_ERR_OK) {
-                    printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
-                    continue;
-                }
-                ReadData();
-                printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
-                numbers_ += 1;
-                RemoveValue();
-                selectedTrackIds_.clear();
-            }
-        }
+        SeekTest(toPtsList, seekModes, {audioVals});
         ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
         ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     }

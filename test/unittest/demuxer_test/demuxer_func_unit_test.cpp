@@ -1606,27 +1606,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0003, TestSize.Level1)
         vector<int32_t> audioVals = {430, 430, 430, 71, 251, 251, 72, 72, 72, 72};
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
-        for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
-            for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-                ret_ = demuxer_->SeekToTime(*toPts, *mode);
-                if (ret_ != AV_ERR_OK) {
-                    printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
-                    continue;
-                }
-                ReadData();
-                for (int32_t i = 0; i < 5; i++) {
-                    printf("time = %" PRId64 " | frames_[%d]=%d\n", *toPts, i, frames_[i]);
-                }
-                ASSERT_EQ(frames_[0], audioVals[numbers_]);
-                ASSERT_EQ(frames_[1], videoVals[numbers_]);
-                ASSERT_EQ(frames_[2], audioVals[numbers_]);
-                ASSERT_EQ(frames_[3], videoVals[numbers_]);
-                ASSERT_EQ(frames_[4], videoVals[numbers_]);
-                numbers_ += 1;
-                RemoveValue();
-                selectedTrackIds_.clear();
-            }
-        }
+        SeekTest(toPtsList, seekModes, {audioVals, videoVals, audioVals, videoVals, videoVals});
     }
 }
 
@@ -1649,27 +1629,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0004, TestSize.Level1)
         vector<int32_t> audioVals = {430, 430, 430, 71, 251, 251, 72, 72, 72, 72};
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
-        for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
-            for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-                ret_ = demuxer_->SeekToTime(*toPts, *mode);
-                if (ret_ != AV_ERR_OK) {
-                    printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
-                    continue;
-                }
-                ReadData();
-                for (int32_t i = 0; i < 5; i++) {
-                    printf("time = %" PRId64 " | frames_[%d]=%d\n", *toPts, i, frames_[i]);
-                }
-                ASSERT_EQ(frames_[0], audioVals[numbers_]);
-                ASSERT_EQ(frames_[1], videoVals[numbers_]);
-                ASSERT_EQ(frames_[2], audioVals[numbers_]);
-                ASSERT_EQ(frames_[3], videoVals[numbers_]);
-                ASSERT_EQ(frames_[4], videoVals[numbers_]);
-                numbers_ += 1;
-                RemoveValue();
-                selectedTrackIds_.clear();
-            }
-        }
+        SeekTest(toPtsList, seekModes, {audioVals, videoVals, audioVals, videoVals, videoVals});
     }
 }
 } // namespace
