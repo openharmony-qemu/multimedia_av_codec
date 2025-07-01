@@ -116,7 +116,7 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
     auto syncCenter = syncCenter_.lock();
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
         int64_t nowCt = syncCenter ? syncCenter->GetClockTimeNow() : 0;
-        if (isFirstFrame_ && !needDropOnMute_) {
+        if (isFirstFrame_ && !needDropOnMute_.load()) {
             FALSE_RETURN_V(syncCenter != nullptr, false);
             isFirstFrame_ = false;
             firstFrameClockTime_  = nowCt;
