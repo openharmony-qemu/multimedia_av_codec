@@ -375,14 +375,15 @@ void SurfaceDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         std::lock_guard<std::mutex> lock(releaseBufferMutex_);
         if ((buffer->flag_ & BUFFER_IS_EOS) == 1) {
             MEDIA_LOG_I("Buffer index: %{public}u" PRIu32 " flag: %{public}u" PRIu32, index, buffer->flag_);
-            dropIndexs_.push_back(std::make_pair(true, index));
+            dropIndexs_.push_back(index);
+            eosBufferIndex_ = index;
         } else if (buffer->pts_ > lastBufferPts_.load()) {
             lastBufferPts_ = buffer->pts_;
             frameNum_.fetch_add(VARIABLE_INCREMENT_INTERVAL, std::memory_order_relaxed);
             indexs_.push_back(index);
         } else {
             MEDIA_LOG_W("Buffer drop index: " PUBLIC_LOG_U32 " pts: " PUBLIC_LOG_D64, index, buffer->pts_);
-            dropIndexs_.push_back(std::make_pair(false, index));
+            dropIndexs_.push_back(index);
         }
     }
     releaseBufferCondition_.notify_all();
@@ -418,7 +419,7 @@ void SurfaceDecoderAdapter::ReleaseBuffer()
     MEDIA_LOG_I("ReleaseBuffer");
     while (!isThreadExit_) {
         std::vector<uint32_t> indexs;
-        std::vector<std::pair<bool, uint32_t>> dropIndexs;
+        std::vector<uint32_t> dropIndexs;
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
             releaseBufferCondition_.wait(lock, [this] {
@@ -434,10 +435,10 @@ void SurfaceDecoderAdapter::ReleaseBuffer()
             codecServer_->ReleaseOutputBuffer(index, true);
         }
         for (auto &dropIndex : dropIndexs) {
-            MediaAVCodec::AVCodecTrace trace("ReleaseBuffer drop " + std::to_string(dropIndex.second));
-            MEDIA_LOG_D("Drop buffer, index: " PUBLIC_LOG_U32, dropIndex.second);
-            codecServer_->ReleaseOutputBuffer(dropIndex.second, false);
-            if (dropIndex.first) {
+            MediaAVCodec::AVCodecTrace trace("ReleaseBuffer drop " + std::to_string(dropIndex));
+            MEDIA_LOG_D("Drop buffer, index: " PUBLIC_LOG_U32, dropIndex);
+            codecServer_->ReleaseOutputBuffer(dropIndex, false);
+            if (dropIndex == eosBufferIndex_) {
                 int64_t lastBufferPts = GetLastBufferPts();
                 int64_t frameNum = GetFrameNum();
                 MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64 " frameNum: " PUBLIC_LOG_D64,

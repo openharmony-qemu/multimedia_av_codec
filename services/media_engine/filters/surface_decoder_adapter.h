@@ -85,7 +85,8 @@ private:
     std::mutex releaseBufferMutex_;
     std::condition_variable releaseBufferCondition_;
     std::vector<uint32_t> indexs_;
-    std::vector<std::pair<bool, uint32_t>> dropIndexs_;
+    std::vector<uint32_t> dropIndexs_;
+    uint32_t eosBufferIndex_ {UINT32_MAX};
     std::atomic<int64_t> frameNum_ = 0;
     std::atomic<int64_t> lastBufferPts_ = INT64_MIN;
     std::atomic<bool> isThreadExit_ = true;

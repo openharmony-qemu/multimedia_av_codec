@@ -488,11 +488,11 @@ void VideoResizeFilter::OnOutputBufferAvailable(uint32_t index, uint32_t flag)
 #ifdef USE_VIDEO_PROCESSING_ENGINE
     {
         std::lock_guard<std::mutex> lock(releaseBufferMutex_);
+        indexs_.push_back(index);
         if (flag != static_cast<uint32_t>(DETAIL_ENH_BUFFER_FLAG_EOS)) {
             currentFrameNum_.fetch_add(VARIABLE_INCREMENT_INTERVAL, std::memory_order_relaxed);
-            indexs_.push_back(std::make_pair(false, index));
         } else {
-            indexs_.push_back(std::make_pair(true, index));
+            eosBufferIndex_ = index;
         }
     }
     releaseBufferCondition_.notify_all();
@@ -503,7 +503,7 @@ void VideoResizeFilter::ReleaseBuffer()
 {
     MEDIA_LOG_I("ReleaseBuffer");
     while (!isThreadExit_) {
-        std::vector<std::pair<bool, uint32_t>> indexs;
+        std::vector<uint32_t> indexs;
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
             releaseBufferCondition_.wait(lock, [this] {
@@ -521,13 +521,13 @@ void VideoResizeFilter::ReleaseBuffer()
 }
 
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-void VideoResizeFilter::ReleaseOutputBuffer(std::vector<std::pair<bool, uint32_t>> &indexs)
+void VideoResizeFilter::ReleaseOutputBuffer(std::vector<uint32_t> &indexs)
 {
     for (auto &index : indexs) {
-        if (!index.first) {
-            videoEnhancer_->ReleaseOutputBuffer(index.second, true);
+        if (index != eosBufferIndex_) {
+            videoEnhancer_->ReleaseOutputBuffer(index, true);
         } else {
-            videoEnhancer_->ReleaseOutputBuffer(index.second, false);
+            videoEnhancer_->ReleaseOutputBuffer(index, false);
             NotifyNextFilterEos();
         }
     }

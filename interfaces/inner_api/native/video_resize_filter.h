@@ -74,7 +74,7 @@ protected:
 
 private:
     void ReleaseBuffer();
-    void ReleaseOutputBuffer(std::vector<std::pair<bool, uint32_t>> &indexs);
+    void ReleaseOutputBuffer(std::vector<uint32_t> &indexs);
     std::string name_;
     FilterType filterType_;
 
@@ -96,7 +96,8 @@ private:
     std::mutex releaseBufferMutex_;
     std::condition_variable releaseBufferCondition_;
     std::shared_ptr<Task> releaseBufferTask_{nullptr};
-    std::vector<std::pair<bool, uint32_t>> indexs_;
+    std::vector<uint32_t> indexs_;
+    uint32_t eosBufferIndex_ {UINT32_MAX};
     int64_t eosPts_ {UINT32_MAX};
     int64_t frameNum_ {UINT32_MAX};
     std::atomic<int64_t> currentFrameNum_ = 0;
