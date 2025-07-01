@@ -62,6 +62,7 @@ private:
 
     void EraseObject(std::map<sptr<IRemoteObject>, pid_t> &stubMap, pid_t pid);
     void EraseCodecObjectByPid(pid_t pid);
+    void PrintCodecCallersInfo();
     void Init();
 
     class AsyncExecutor {
