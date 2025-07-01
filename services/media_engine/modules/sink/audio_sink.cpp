@@ -227,7 +227,7 @@ Status AudioSink::InitAudioSinkInfo(std::shared_ptr<Meta>& meta)
         MEDIA_LOG_I("AudioSink::Init is flac");
     } else if (mime == MediaAVCodec::CodecMimeType::AUDIO_VIVID) {
         fixDelay_ = FIX_DELAY_MS_AUDIO_VIVID * HST_USECOND;
-        MEDIA_LOG_I("Audio vivid update fix delay to 60ms");
+        MEDIA_LOG_I("Audio vivid update fix delay to" PUBLIC_LOG_D64, fixDelay_);
     }
     return Status::OK;
 }
