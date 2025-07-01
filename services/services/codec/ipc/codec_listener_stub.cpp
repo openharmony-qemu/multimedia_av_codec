@@ -169,11 +169,11 @@ private:
 CodecListenerStub::CodecListenerStub()
 {
     if (inputBufferCache_ == nullptr) {
-        inputBufferCache_ = std::make_shared<CodecBufferCache>(false);
+        inputBufferCache_ = std::make_unique<CodecBufferCache>(false);
     }
 
     if (outputBufferCache_ == nullptr) {
-        outputBufferCache_ = std::make_shared<CodecBufferCache>(true);
+        outputBufferCache_ = std::make_unique<CodecBufferCache>(true);
     }
     AVCODEC_LOGD_WITH_TAG("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
