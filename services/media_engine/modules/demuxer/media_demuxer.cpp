@@ -2448,6 +2448,7 @@ void MediaDemuxer::HandleVideoTrack(int32_t trackId)
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_RELEASE_VIDEO_DECODER, trackId});
             needReleaseVideoDecoder_ = false;
         }
+        sampleQueueMap_[trackId]->Clear();
     }
     lastVideoPts_ = bufferMap_[trackId]->pts_;
 }
