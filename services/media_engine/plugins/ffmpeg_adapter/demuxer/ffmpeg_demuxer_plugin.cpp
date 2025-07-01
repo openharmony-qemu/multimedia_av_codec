@@ -1534,7 +1534,8 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
     AVPacket *pkt = nullptr;
     Status ret = Status::OK;
     bool extraType = false;
-    if (FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MPEGTS) {
+    FileType fileType = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
+    if (fileType == FileType::MPEGTS || fileType == FileType::MP4 || fileType == FileType::MOV) {
         extraType = true;
     }
     while (checkedTrackIds_.size() < formatContext_->nb_streams && (!streamParsers_->AllParserInited() || extraType)) {
@@ -1557,7 +1558,8 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         if (ret != Status::OK) {
             return ret;
         }
-        if (TrackIsChecked(pkt->stream_index)) {
+        if (TrackIsChecked(pkt->stream_index) ||
+            !(static_cast<uint32_t>(pkt->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY))) {
             pkt = nullptr;
             continue;
         }
@@ -1693,8 +1695,9 @@ void FFmpegDemuxerPlugin::SyncSeekThread()
 
 bool FFmpegDemuxerPlugin::IsUseFirstFrameDts(int trackIndex, int64_t seekTime)
 {
+    FileType fileType = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
     if (seekTime == 0 &&
-        FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MPEGTS &&
+        (fileType == FileType::MPEGTS || fileType == FileType::MP4 || fileType == FileType::MOV) &&
         FFmpegFormatHelper::IsVideoType(*(formatContext_->streams[trackIndex])) &&
         FirstFrameValid(trackIndex)) {
             return true;
