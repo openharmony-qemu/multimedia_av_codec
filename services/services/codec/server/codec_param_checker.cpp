@@ -226,6 +226,7 @@ std::optional<CodecScenario> BFrameScenarioChecker(CapabilityData &capData, cons
     int32_t enable = 0;
     std::optional<CodecScenario> scenario = std::nullopt;
     bool enableExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enable);
+    bool temporalEnableExist = format.ContainKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY);
     bool temporalGopSizeExist = format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE);
     bool modeExist = format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE);
     PrintParam(enableExist, Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enable);
@@ -244,7 +245,7 @@ std::optional<CodecScenario> BFrameScenarioChecker(CapabilityData &capData, cons
         static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_B_FRAME)),
         scenario, "Not support B-frame");
     
-    if (temporalGopSizeExist || modeExist) {
+    if (temporalGopSizeExist || modeExist || temporalEnableExist) {
         AVCODEC_LOGW("B-frame and temporalscalability encoding are not compatible,using B-frame mode by default!");
     }
     scenario = CodecScenario::CODEC_SCENARIO_ENC_ENABLE_B_FRAME;
