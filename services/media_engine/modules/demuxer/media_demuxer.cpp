@@ -2448,7 +2448,6 @@ void MediaDemuxer::HandleVideoTrack(int32_t trackId)
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_RELEASE_VIDEO_DECODER, trackId});
             needReleaseVideoDecoder_ = false;
         }
-        sampleQueueMap_[trackId]->Clear();
     }
     lastVideoPts_ = bufferMap_[trackId]->pts_;
 }
@@ -3907,6 +3906,11 @@ void MediaDemuxer::InitEnableDfxBufferQueue()
     const std::string dfxBufferQueueTag = "debug.media_service.enable_dfx_buffer_queue";
     enableDfxBufferQueue_ = OHOS::system::GetBoolParameter(dfxBufferQueueTag, false);
     MEDIA_LOG_I("enableDfxBufferQueue_ " PUBLIC_LOG_D32, enableDfxBufferQueue_);
+}
+
+bool MediaDemuxer::IsVideoMuted()
+{
+    return isVideoMuted_ || needRestore_;
 }
 } // namespace Media
 } // namespace OHOS

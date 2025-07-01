@@ -116,7 +116,7 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
     auto syncCenter = syncCenter_.lock();
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
         int64_t nowCt = syncCenter ? syncCenter->GetClockTimeNow() : 0;
-        if (isFirstFrame_) {
+        if (isFirstFrame_ && !needDropOnMute_) {
             FALSE_RETURN_V(syncCenter != nullptr, false);
             isFirstFrame_ = false;
             firstFrameClockTime_  = nowCt;
@@ -272,7 +272,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
     if (diff < 0) { // buffer is early, diff < 0 or 0 < diff < 40ms(25Hz) render it
         waitTimeUs = 0 - diff;
         RenderAtTimeLog(waitTimeUs);
-        if (waitTimeUs > WAIT_TIME_US_THRESHOLD) {
+        if (waitTimeUs > WAIT_TIME_US_THRESHOLD && !needDropOnMute_.load()) {
             waitTimeUs = WAIT_TIME_US_THRESHOLD;
         }
     } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) { // > 40ms, buffer is late
@@ -424,7 +424,6 @@ void VideoSink::SetMediaMuted(bool isMuted)
     if (isMuted) {
         needDropOnMute_.store(true);
         dropFrameContinuouslyCnt_.store(0);
-        isFirstFrame_ = false;
     }
     isMuted_ = isMuted;
 }
