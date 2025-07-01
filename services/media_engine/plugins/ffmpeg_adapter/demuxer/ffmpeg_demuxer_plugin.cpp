@@ -1558,24 +1558,21 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         if (ret != Status::OK) {
             return ret;
         }
-        if (TrackIsChecked(pkt->stream_index) ||
+        if (TrackIsChecked(trackId) ||
             !(static_cast<uint32_t>(pkt->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY))) {
             pkt = nullptr;
             continue;
         }
-        checkedTrackIds_.push_back(pkt->stream_index);
-        auto stream = formatContext_->streams[pkt->stream_index];
+        checkedTrackIds_.push_back(trackId);
+        auto stream = formatContext_->streams[trackId];
         FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_NULL_POINTER,
-            "Stream " PUBLIC_LOG_D32 " is invalid", pkt->stream_index);
+            "Stream " PUBLIC_LOG_D32 " is invalid", trackId);
         if (streamParsers_->ParserIsCreated(trackId) && !streamParsers_->ParserIsInited(trackId)) {
             ret = SetFirstFrame(pkt);
         } else if (extraType && FFmpegFormatHelper::IsVideoType(*stream)) {
             ret = SetFirstFrame(pkt, false);
         }
-        if (ret != Status::OK) {
-            MEDIA_LOG_E("Set first frame failed, track " PUBLIC_LOG_D32, pkt->stream_index);
-            return ret;
-        }
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set first frame failed, track " PUBLIC_LOG_D32, trackId);
         pkt = nullptr;
     }
     return ret;
