@@ -222,9 +222,8 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
     }
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "buffer not found");
     if (!(buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) && buffer->GetConfig().size <= 0) {
-        AVCODEC_LOGW("buffer size is 0, please fill audio buffer in");
-        mediaCodecProducer_->PushBuffer(buffer, false);
-        return AVCS_ERR_OK;
+        AVCODEC_LOGE("buffer size is 0,please fill audio buffer in");
+        return AVCS_ERR_UNKNOWN;
     }
     {
         std::unique_lock lock(outputMutex_2);
