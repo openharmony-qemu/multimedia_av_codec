@@ -1558,16 +1558,15 @@ std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0003, TestSize.Level1)
 {
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        ReadSample(g_mp4AvcAacAuxlPath, LOCAL);
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(frames_[idx], infoMap["muxer264Aac"]["frames"][idx]);
+            ASSERT_EQ(keyFrames_[idx], infoMap["muxer264Aac"]["kFrames"][idx]);
+        }
+        RemoveValue();
+        selectedTrackIds_.clear();
     }
-    ReadSample(g_mp4AvcAacAuxlPath, LOCAL);
-    for (auto idx : selectedTrackIds_) {
-        ASSERT_EQ(frames_[idx], infoMap["muxer264Aac"]["frames"][idx]);
-        ASSERT_EQ(keyFrames_[idx], infoMap["muxer264Aac"]["kFrames"][idx]);
-    }
-    RemoveValue();
-    selectedTrackIds_.clear();
 }
 
 /**
@@ -1577,16 +1576,15 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0003, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0004, TestSize.Level1)
 {
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        ReadSample(g_mp4AvcAacAuxlUri, URI);
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(frames_[idx], infoMap["muxer264Aac"]["frames"][idx]);
+            ASSERT_EQ(keyFrames_[idx], infoMap["muxer264Aac"]["kFrames"][idx]);
+        }
+        RemoveValue();
+        selectedTrackIds_.clear();
     }
-    ReadSample(g_mp4AvcAacAuxlUri, URI);
-    for (auto idx : selectedTrackIds_) {
-        ASSERT_EQ(frames_[idx], infoMap["muxer264Aac"]["frames"][idx]);
-        ASSERT_EQ(keyFrames_[idx], infoMap["muxer264Aac"]["kFrames"][idx]);
-    }
-    RemoveValue();
-    selectedTrackIds_.clear();
 }
 
 /**
@@ -1596,39 +1594,38 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0004, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0003, TestSize.Level1)
 {
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    InitResource(g_mp4AvcAacAuxlPath, LOCAL);
-    ASSERT_TRUE(initStatus_);
-    SetInitValue();
-    for (auto idx : selectedTrackIds_) {
-        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
-    }
-    list<int64_t> toPtsList = {0, 5000, 9000, 10000}; // ms
-    vector<int32_t> videoVals = {601, 601, 601, 101, 351, 351, 101, 101, 101, 101};
-    vector<int32_t> audioVals = {430, 430, 430, 71, 251, 251, 72, 72, 72, 72};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
-    ASSERT_NE(sharedMem_, nullptr);
-    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
-        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            ret_ = demuxer_->SeekToTime(*toPts, *mode);
-            if (ret_ != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
-                continue;
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_mp4AvcAacAuxlPath, LOCAL);
+        ASSERT_TRUE(initStatus_);
+        SetInitValue();
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+        }
+        list<int64_t> toPtsList = {0, 5000, 9000, 10000}; // ms
+        vector<int32_t> videoVals = {601, 601, 601, 101, 351, 351, 101, 101, 101, 101};
+        vector<int32_t> audioVals = {430, 430, 430, 71, 251, 251, 72, 72, 72, 72};
+        sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+        ASSERT_NE(sharedMem_, nullptr);
+        for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+            for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+                ret_ = demuxer_->SeekToTime(*toPts, *mode);
+                if (ret_ != AV_ERR_OK) {
+                    printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                    continue;
+                }
+                ReadData();
+                for (int32_t i = 0; i < 5; i++) {
+                    printf("time = %" PRId64 " | frames_[%d]=%d\n", *toPts, i, frames_[i]);
+                }
+                ASSERT_EQ(frames_[0], audioVals[numbers_]);
+                ASSERT_EQ(frames_[1], videoVals[numbers_]);
+                ASSERT_EQ(frames_[2], audioVals[numbers_]);
+                ASSERT_EQ(frames_[3], videoVals[numbers_]);
+                ASSERT_EQ(frames_[4], videoVals[numbers_]);
+                numbers_ += 1;
+                RemoveValue();
+                selectedTrackIds_.clear();
             }
-            ReadData();
-            for (int32_t i = 0; i < 5; i++) {
-                printf("time = %" PRId64 " | frames_[%d]=%d\n", *toPts, i, frames_[i]);
-            }
-            ASSERT_EQ(frames_[0], audioVals[numbers_]);
-            ASSERT_EQ(frames_[1], videoVals[numbers_]);
-            ASSERT_EQ(frames_[2], audioVals[numbers_]);
-            ASSERT_EQ(frames_[3], videoVals[numbers_]);
-            ASSERT_EQ(frames_[4], videoVals[numbers_]);
-            numbers_ += 1;
-            RemoveValue();
-            selectedTrackIds_.clear();
         }
     }
 }
@@ -1640,39 +1637,38 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0003, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0004, TestSize.Level1)
 {
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    InitResource(g_mp4AvcAacAuxlUri, URI);
-    ASSERT_TRUE(initStatus_);
-    SetInitValue();
-    for (auto idx : selectedTrackIds_) {
-        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
-    }
-    list<int64_t> toPtsList = {0, 5000, 9000, 10000}; // ms
-    vector<int32_t> videoVals = {601, 601, 601, 101, 351, 351, 101, 101, 101, 101};
-    vector<int32_t> audioVals = {430, 430, 430, 71, 251, 251, 72, 72, 72, 72};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
-    ASSERT_NE(sharedMem_, nullptr);
-    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
-        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            ret_ = demuxer_->SeekToTime(*toPts, *mode);
-            if (ret_ != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
-                continue;
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_mp4AvcAacAuxlUri, URI);
+        ASSERT_TRUE(initStatus_);
+        SetInitValue();
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+        }
+        list<int64_t> toPtsList = {0, 5000, 9000, 10000}; // ms
+        vector<int32_t> videoVals = {601, 601, 601, 101, 351, 351, 101, 101, 101, 101};
+        vector<int32_t> audioVals = {430, 430, 430, 71, 251, 251, 72, 72, 72, 72};
+        sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+        ASSERT_NE(sharedMem_, nullptr);
+        for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+            for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+                ret_ = demuxer_->SeekToTime(*toPts, *mode);
+                if (ret_ != AV_ERR_OK) {
+                    printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                    continue;
+                }
+                ReadData();
+                for (int32_t i = 0; i < 5; i++) {
+                    printf("time = %" PRId64 " | frames_[%d]=%d\n", *toPts, i, frames_[i]);
+                }
+                ASSERT_EQ(frames_[0], audioVals[numbers_]);
+                ASSERT_EQ(frames_[1], videoVals[numbers_]);
+                ASSERT_EQ(frames_[2], audioVals[numbers_]);
+                ASSERT_EQ(frames_[3], videoVals[numbers_]);
+                ASSERT_EQ(frames_[4], videoVals[numbers_]);
+                numbers_ += 1;
+                RemoveValue();
+                selectedTrackIds_.clear();
             }
-            ReadData();
-            for (int32_t i = 0; i < 5; i++) {
-                printf("time = %" PRId64 " | frames_[%d]=%d\n", *toPts, i, frames_[i]);
-            }
-            ASSERT_EQ(frames_[0], audioVals[numbers_]);
-            ASSERT_EQ(frames_[1], videoVals[numbers_]);
-            ASSERT_EQ(frames_[2], audioVals[numbers_]);
-            ASSERT_EQ(frames_[3], videoVals[numbers_]);
-            ASSERT_EQ(frames_[4], videoVals[numbers_]);
-            numbers_ += 1;
-            RemoveValue();
-            selectedTrackIds_.clear();
         }
     }
 }
