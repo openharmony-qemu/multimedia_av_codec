@@ -233,10 +233,8 @@ void CreateMultiHardwareDecoder(std::vector<int>& pidList, int32_t testCode)
                     break;
             }
 
-            execl("/data/test/videodec_hdecoder_memrecycle_unit_test",
-                "videodec_hdecoder_memrecycle_unit_test",
-                arg,
-                nullptr);
+            std::string path = "/data/test/" + std::string(TEST_SUIT_NAME);
+            execl(path.c_str(), TEST_SUIT_NAME, arg, nullptr);
             std::cerr << "execl failed!" << std::endl;
             exit(1);
         } else if (pid > 0) {
