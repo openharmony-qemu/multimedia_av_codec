@@ -1430,9 +1430,10 @@ int32_t AvcEncoder::RgbaToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &
     NVFrame nvFrame = {
         .srcY    = dstData,
         .srcU    = dstData + width * height,
-        .srcV    = dstData + width * height + (width >> 1) * (height >> 1),
+        .srcV    = dstData + width * height +
+            (static_cast<uint32_t>(width) >> 1) * (static_cast<uint32_t>(height) >> 1),
         .yStride = width,
-        .uvStride = width >> 1,
+        .uvStride = static_cast<uint32_t>(width) >> 1,
         .width   = width,
         .height  = height,
     };
