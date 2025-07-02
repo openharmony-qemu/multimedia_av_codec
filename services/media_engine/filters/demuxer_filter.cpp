@@ -1069,6 +1069,14 @@ void DemuxerFilter::HandleDecoderErrorFrame(int64_t pts)
     FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
     demuxer_->HandleDecoderErrorFrame(pts);
 }
+
+bool DemuxerFilter::IsVideoMuted()
+{
+    if (demuxer_ != nullptr) {
+        return demuxer_->IsVideoMuted();
+    }
+    return isVideoMuted_;
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

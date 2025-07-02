@@ -1606,30 +1606,10 @@ Status DecoderSurfaceFilter::DoReInitAndStart()
     if (isDecoderReleasedForMute_) {
         ret = DoInitAfterLink();
         FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoInitAfterLink fail");
-        lastRenderTimeNs_ = HST_TIME_NONE;
-        videoDecoder_->Flush();
-        if (postProcessor_) {
-            postProcessor_->Flush();
-        }
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            outputBuffers_.clear();
-            outputBufferMap_.clear();
-        }
         ret = DoStart();
         FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoStart fail");
     } else {
-        lastRenderTimeNs_ = HST_TIME_NONE;
-        videoDecoder_->Flush();
-        if (postProcessor_) {
-            postProcessor_->Flush();
-        }
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            outputBuffers_.clear();
-            outputBufferMap_.clear();
-        }
-        DoStart();
+        ret = DoStart();
     }
     return ret;
 }
