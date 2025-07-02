@@ -336,7 +336,7 @@ Status AudioSink::Pause()
                 plugin_->PauseTransitent();
             });
         }
-    } else if (isTransitent_ || (isEos_ && (isCalledBySystemApp_ || isLoop_))) {
+    } else if (isTransitent_ || (isEos_ && isLoop_)) {
         ScopedTimer timer("AudioSinkPlugin PauseTransitent", OVERTIME_WARNING_MS);
         ret = plugin_->PauseTransitent();
     } else {
