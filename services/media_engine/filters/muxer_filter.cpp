@@ -384,7 +384,7 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
         inputBufferQueue->ReturnBuffer(inputBuffer, true);
     }
     if (eventReceiver_ != nullptr && isCompleted) {
-            HandleTransCoderComplete();
+        HandleTransCoderComplete();
     }
 }
 
