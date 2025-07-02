@@ -225,10 +225,15 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
     }
     if (isTransCoderMode) {
         format.PutIntValue(Tag::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
-        meta->Get<Tag::AV_TRANSCODER_ENABLE_B_FRAME>(enableBFrame_);
+        bool isSetEnable = meta->Get<Tag::AV_TRANSCODER_ENABLE_B_FRAME>(enableBFrame_);
         MEDIA_LOG_I("Transcoder enable B frame: %{public}d", static_cast<int32_t>(enableBFrame_));
+        if (isSetEnable) {
+            format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, static_cast<int32_t>(enableBFrame_));
+        }
     }
-    format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enableBFrame_);
+    if (!isTransCoderMode) {
+        format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enableBFrame_);
+    }
     ret = codecServer_->Configure(format);
     if (ret != 0) {
         SetFaultEvent("SurfaceEncoderAdapter::Configure error", ret);
