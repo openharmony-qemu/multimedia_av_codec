@@ -903,7 +903,6 @@ ohos_unittest("videodec_hdecoder_memrecycle_async_unit_test") {
 
   defines = [
     "TEST_SUIT=VideoHDecMemoryRecyleAsyncTest",
-    "UNIT_TEST=videodec_hdecoder_memrecycle_async_unit_test",
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_HARDWARE_MEMRECYCLE_UNIT_TEST",
     "VideoDecSample=VideoDecAsyncSample",
@@ -1378,7 +1377,6 @@ ohos_unittest("videodec_hdecoder_memrecycle_sync_unit_test") {
 
   defines = [
     "TEST_SUIT=VideoHDecMemoryRecyleSyncTest",
-    "UNIT_TEST=videodec_hdecoder_memrecycle_sync_unit_test",
     "VIDEODEC_HARDWARE_MEMRECYCLE_UNIT_TEST",
     "VIDEODEC_SYNC_UNIT_TEST",
     "VideoDecSample=VideoDecSyncSample",
