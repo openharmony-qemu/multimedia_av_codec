@@ -61,8 +61,8 @@ private:
     bool CheckGeneration(uint64_t messageGeneration) const;
 
     class CodecBufferCache;
-    std::shared_ptr<CodecBufferCache> inputBufferCache_;
-    std::shared_ptr<CodecBufferCache> outputBufferCache_;
+    std::unique_ptr<CodecBufferCache> inputBufferCache_;
+    std::unique_ptr<CodecBufferCache> outputBufferCache_;
     std::weak_ptr<MediaCodecCallback> callback_;
     bool needListen_ = false;
     std::shared_ptr<std::recursive_mutex> syncMutex_;

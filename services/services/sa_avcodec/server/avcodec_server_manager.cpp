@@ -129,7 +129,7 @@ int32_t AVCodecServerManager::CreateCodecListStubObject(sptr<IRemoteObject> &obj
 
     pid_t pid = IPCSkeleton::GetCallingPid();
     codecListStubMap_[object] = pid;
-    AVCODEC_LOGD("The number of codeclist services(%{public}zu).", codecListStubMap_.size());
+    AVCODEC_LOGD("The number of codeclist services(%{public}zu)", codecListStubMap_.size());
     return AVCS_ERR_OK;
 }
 #endif
@@ -156,7 +156,7 @@ int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
     codecStubMap_.emplace(pid, std::make_pair(object, instanceInfo));
 
     SetCritical(true);
-    AVCODEC_LOGD("The number of codec services(%{public}zu).", codecStubMap_.size());
+    AVCODEC_LOGD("The number of codec services(%{public}zu)", codecStubMap_.size());
     return AVCS_ERR_OK;
 }
 #endif
@@ -172,7 +172,8 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
                     bool { return objectPair.second.first == object; });
             CHECK_AND_BREAK_LOG(it != codecStubMap_.end(), "find codec object failed, pid(%{public}d)", pid);
 
-            AVCODEC_LOGI("destroy codec stub services(%{public}zu) pid(%{public}d)", codecStubMap_.size(), pid);
+            auto preSize = codecStubMap_.size();
+            AVCODEC_LOGI("codec stub services(%{public}zu->%{public}zu) pid(%{public}d)", preSize, preSize - 1, pid);
             codecStubMap_.erase(it);
             break;
         }
@@ -182,7 +183,9 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
                     bool { return objectPair.first == object; });
             CHECK_AND_BREAK_LOG(it != codecListStubMap_.end(), "find codeclist object failed, pid(%{public}d)", pid);
 
-            AVCODEC_LOGI("destroy codeclist stub services(%{public}zu) pid(%{public}d)", codecListStubMap_.size(), pid);
+            auto preSize = codecListStubMap_.size();
+            AVCODEC_LOGI("codeclist stub services(%{public}zu->%{public}zu) pid(%{public}d)", preSize, preSize - 1,
+                         pid);
             codecListStubMap_.erase(it);
             break;
         }
@@ -225,27 +228,72 @@ void AVCodecServerManager::EraseCodecObjectByPid(pid_t pid)
 void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    AVCODEC_LOGI("codec stub services(%{public}zu) pid(%{public}d).", codecStubMap_.size(), pid);
+    auto preSize = codecStubMap_.size();
     EraseCodecObjectByPid(pid);
-    AVCODEC_LOGI("codec stub services(%{public}zu).", codecStubMap_.size());
+    AVCODEC_LOGI("codec stub services(%{public}zu->%{public}zu),pid(%{public}d)", preSize, codecStubMap_.size(), pid);
 
-    AVCODEC_LOGI("codeclist stub services(%{public}zu) pid(%{public}d).", codecListStubMap_.size(), pid);
+    preSize = codecListStubMap_.size();
     EraseObject(codecListStubMap_, pid);
-    AVCODEC_LOGI("codeclist stub services(%{public}zu).", codecListStubMap_.size());
+    AVCODEC_LOGI("codeclist stub services(%{public}zu->%{public}zu),pid(%{public}d)", preSize, codecListStubMap_.size(),
+                 pid);
     executor_.Clear();
     if (codecStubMap_.size() == 0) {
         SetCritical(false);
+    } else {
+        PrintCodecCallersInfo();
     }
+}
+
+void AVCodecServerManager::PrintCodecCallersInfo()
+{
+    typedef struct CodecCallerInfo {
+        InstanceInfo info;
+        int32_t count = 0;
+    } CodecCallerInfo;
+    auto processCodecType = [](auto &infoMap, const char *typeStr) {
+        for (auto &[pid, data] : infoMap) {
+            const InstanceInfo &info = data.info;
+            const bool isForwardCaller = (info.forwardCaller.pid != INVALID_PID);
+            const CallerInfo &caller = isForwardCaller ? info.forwardCaller : info.caller;
+            if (isForwardCaller) {
+                AVCODEC_LOGI("[%{public}s->%{public}s][pid %{public}zu] holding %{public}d %{public}s",
+                             caller.processName.c_str(), info.caller.processName.c_str(), caller.pid, data.count,
+                             typeStr);
+            } else {
+                AVCODEC_LOGI("[%{public}s][pid %{public}zu] holding %{public}d %{public}s", caller.processName.c_str(),
+                             caller.pid, data.count, typeStr);
+            }
+        }
+    };
+    std::map<pid_t, CodecCallerInfo> vencCallerInfo;
+    std::map<pid_t, CodecCallerInfo> vdecCallerInfo;
+    for (auto &[_, instance] : codecStubMap_) {
+        const InstanceInfo &info = instance.second;
+        const pid_t actualPid = (info.forwardCaller.pid != INVALID_PID) ? info.forwardCaller.pid : info.caller.pid;
+        auto *targetMap = (info.codecType == AVCODEC_TYPE_VIDEO_ENCODER)   ? &vencCallerInfo
+                          : (info.codecType == AVCODEC_TYPE_VIDEO_DECODER) ? &vdecCallerInfo
+                                                                           : nullptr;
+        if (targetMap == nullptr) {
+            continue;
+        }
+        CodecCallerInfo &data = (*targetMap)[actualPid];
+        if (data.count == 0) {
+            data.info = info;
+        }
+        data.count++;
+    }
+    processCodecType(vencCallerInfo, "video encoder");
+    processCodecType(vdecCallerInfo, "video decoder");
 }
 
 void AVCodecServerManager::NotifyProcessStatus(const int32_t status)
 {
-    CHECK_AND_RETURN_LOG(notifyProcessStatusFunc_ != nullptr, "notify memory manager is nullptr, %{public}d.", status);
+    CHECK_AND_RETURN_LOG(notifyProcessStatusFunc_ != nullptr, "notify memory manager is nullptr, %{public}d", status);
     int32_t ret = notifyProcessStatusFunc_(pid_, 1, status, AV_CODEC_SERVICE_ID);
     if (ret == 0) {
-        AVCODEC_LOGI("notify memory manager to %{public}d success.", status);
+        AVCODEC_LOGI("notify memory manager to %{public}d success", status);
     } else {
-        AVCODEC_LOGW("notify memory manager to %{public}d fail.", status);
+        AVCODEC_LOGW("notify memory manager to %{public}d fail", status);
     }
 }
 
@@ -257,12 +305,12 @@ void AVCodecServerManager::SetMemMgrStatus(const bool isStarted)
 void AVCodecServerManager::SetCritical(const bool isKeyService)
 {
     CHECK_AND_RETURN_LOG(memMgrStarted_, "Memory manager service is not started");
-    CHECK_AND_RETURN_LOG(setCriticalFunc_ != nullptr, "set critical is nullptr, %{public}d.", isKeyService);
+    CHECK_AND_RETURN_LOG(setCriticalFunc_ != nullptr, "set critical is nullptr, %{public}d", isKeyService);
     int32_t ret = setCriticalFunc_(pid_, isKeyService, AV_CODEC_SERVICE_ID);
     if (ret == 0) {
-        AVCODEC_LOGI("set critical to %{public}d success.", isKeyService);
+        AVCODEC_LOGI("set critical to %{public}d success", isKeyService);
     } else {
-        AVCODEC_LOGW("set critical to %{public}d fail.", isKeyService);
+        AVCODEC_LOGW("set critical to %{public}d fail", isKeyService);
     }
 }
 
