@@ -66,6 +66,8 @@ protected:
     std::map<uint32_t, int32_t> frames_;
     std::map<uint32_t, int32_t> keyFrames_;
     std::map<uint32_t, bool> eosFlag_;
+    bool readFlag_ = false;
+    bool seekTestFlag_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

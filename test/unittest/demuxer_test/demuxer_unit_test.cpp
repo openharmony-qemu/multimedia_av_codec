@@ -286,16 +286,17 @@ void DemuxerUnitTest::ReadData(int readNum, int64_t &seekTime)
 void DemuxerUnitTest::SeekTest(const std::list<int64_t> &toPtsList, const std::list<Media::SeekMode> &sm,
     const std::vector<std::vector<int32_t>> &ExpVals)
 {
-    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
-        for (auto mode = sm.begin(); mode != sm.end(); mode++) {
-            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+    seekTestFlag_ = false;
+    for (auto &toPts : toPtsList) {
+        for (auto &mode : sm) {
+            ret_ = demuxer_->SeekToTime(toPts, mode);
             if (ret_ != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", toPts, ret_);
                 continue;
             }
             ReadData();
             for (size_t i = 0; i < ExpVals.size(); i++) {
-                printf("time = %" PRId64 " | frames_[%d]=%d\n", *toPts, i, frames_[i]);
+                printf("time = %" PRId64 " | frames_[%d]=%d\n", toPts, static_cast<int32_t>(i), frames_[i]);
                 ASSERT_EQ(frames_[i], ExpVals[i][numbers_]);
             }
             numbers_ += 1;
@@ -303,10 +304,12 @@ void DemuxerUnitTest::SeekTest(const std::list<int64_t> &toPtsList, const std::l
             selectedTrackIds_.clear();
         }
     }
+    seekTestFlag_ = true;
 }
 
 void DemuxerUnitTest::ReadAllSampleWithCheck(std::vector<uint32_t> &keyFrameIndex)
 {
+    readFlag_ = false;
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -317,6 +320,7 @@ void DemuxerUnitTest::ReadAllSampleWithCheck(std::vector<uint32_t> &keyFrameInde
             CountFrames(idx);
         }
     }
+    readFlag_ = true;
 }
 
 /**********************************demuxer fd**************************************/
@@ -2752,6 +2756,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1601, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {audioVals});
+        ASSERT_TRUE(seekTestFlag_);
         ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
         ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     }

@@ -1607,6 +1607,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0003, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {audioVals, videoVals, audioVals, videoVals, videoVals});
+        ASSERT_TRUE(seekTestFlag_);
     }
 }
 
@@ -1630,6 +1631,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0004, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {audioVals, videoVals, audioVals, videoVals, videoVals});
+        ASSERT_TRUE(seekTestFlag_);
     }
 }
 } // namespace

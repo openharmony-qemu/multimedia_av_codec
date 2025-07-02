@@ -491,6 +491,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1170, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals});
+        ASSERT_TRUE(seekTestFlag_);
     }
 }
 
@@ -513,6 +514,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1171, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals});
+        ASSERT_TRUE(seekTestFlag_);
     }
 }
 
@@ -536,6 +538,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1180, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals});
+        ASSERT_TRUE(seekTestFlag_);
     }
 }
 
@@ -558,6 +561,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1181, TestSize.Level1)
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SeekTest(toPtsList, seekModes, {videoVals});
+    ASSERT_TRUE(seekTestFlag_);
 }
 
 /**
@@ -579,6 +583,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1182, TestSize.Level1)
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SeekTest(toPtsList, seekModes, {videoVals});
+    ASSERT_TRUE(seekTestFlag_);
 }
 
 /**
@@ -601,6 +606,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2308, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals, audioVals});
+        ASSERT_TRUE(seekTestFlag_);
         ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
         ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     }
@@ -626,6 +632,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2309, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals, audioVals});
+        ASSERT_TRUE(seekTestFlag_);
         ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
         ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     }
@@ -651,6 +658,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1183, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals});
+        ASSERT_TRUE(seekTestFlag_);
     }
 }
 
@@ -743,6 +751,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1190, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals});
+        ASSERT_TRUE(seekTestFlag_);
     }
 }
 
@@ -765,6 +774,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1191, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals});
+        ASSERT_TRUE(seekTestFlag_);
     }
 }
 
@@ -787,6 +797,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1192, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals});
+        ASSERT_TRUE(seekTestFlag_);
         ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
         ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     }
@@ -811,6 +822,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1193, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals});
+        ASSERT_TRUE(seekTestFlag_);
         ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
         ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     }
@@ -836,6 +848,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1198, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals, audioVals});
+        ASSERT_TRUE(seekTestFlag_);
         ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
         ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     }
@@ -861,6 +874,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1199, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals, audioVals});
+        ASSERT_TRUE(seekTestFlag_);
         ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
         ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     }
@@ -886,6 +900,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1207, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals, audioVals});
+        ASSERT_TRUE(seekTestFlag_);
         ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
         ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     }
@@ -911,6 +926,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1208, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals, audioVals});
+        ASSERT_TRUE(seekTestFlag_);
         ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
         ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     }
@@ -933,6 +949,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1401, TestSize.Level1)
         ASSERT_TRUE(SetInitValue());
         std::vector<uint32_t> keyFrameIndex = {0};
         ReadAllSampleWithCheck(keyFrameIndex);
+        ASSERT_TRUE(readFlag_);
         printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
         printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
         ASSERT_EQ(frames_[0], 76);
@@ -960,6 +977,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1402, TestSize.Level1)
         ASSERT_TRUE(SetInitValue());
         std::vector<uint32_t> keyFrameIndex = {0};
         ReadAllSampleWithCheck(keyFrameIndex);
+        ASSERT_TRUE(readFlag_);
         printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
         printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
         ASSERT_EQ(frames_[0], 76);
@@ -989,6 +1007,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1203, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals});
+        ASSERT_TRUE(seekTestFlag_);
         ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
         ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     }
@@ -1013,6 +1032,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1204, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals});
+        ASSERT_TRUE(seekTestFlag_);
         ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
         ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     }
@@ -1067,6 +1087,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1413, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals, audioVals});
+        ASSERT_TRUE(seekTestFlag_);
         ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
         ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     }
@@ -1144,6 +1165,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0001, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals, videoVals, videoVals});
+        ASSERT_TRUE(seekTestFlag_);
     }
 }
 
@@ -1166,6 +1188,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_Auxl_0002, TestSize.Level1)
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals, videoVals, videoVals});
+        ASSERT_TRUE(seekTestFlag_);
     }
 }
 } // namespace
