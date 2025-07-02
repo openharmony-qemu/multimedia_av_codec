@@ -1606,9 +1606,11 @@ Status DecoderSurfaceFilter::DoReInitAndStart()
     if (isDecoderReleasedForMute_) {
         ret = DoInitAfterLink();
         FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoInitAfterLink fail");
+        videoDecoder_->Flush();
         ret = DoStart();
         FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoStart fail");
     } else {
+        videoDecoder_->Flush();
         ret = DoStart();
     }
     return ret;

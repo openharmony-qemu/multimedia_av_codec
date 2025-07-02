@@ -424,6 +424,9 @@ void VideoSink::SetMediaMuted(bool isMuted)
     if (isMuted) {
         needDropOnMute_.store(true);
         dropFrameContinuouslyCnt_.store(0);
+        if (discardFrameCnt_ < VIDEO_SINK_START_FRAME) {
+            discardFrameCnt_ = VIDEO_SINK_START_FRAME;
+        }
     }
     isMuted_ = isMuted;
 }
