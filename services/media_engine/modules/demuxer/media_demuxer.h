@@ -183,7 +183,10 @@ public:
     
     void SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted, bool keepDecodingOnMute);
     void HandleDecoderErrorFrame(int64_t pts);
-    bool IsVideoMuted();
+    inline bool IsVideoMuted() const
+    {
+        return isVideoMuted_ || needRestore_;
+    }
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;

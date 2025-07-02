@@ -3908,10 +3908,5 @@ void MediaDemuxer::InitEnableDfxBufferQueue()
     enableDfxBufferQueue_ = OHOS::system::GetBoolParameter(dfxBufferQueueTag, false);
     MEDIA_LOG_I("enableDfxBufferQueue_ " PUBLIC_LOG_D32, enableDfxBufferQueue_);
 }
-
-inline bool MediaDemuxer::IsVideoMuted()
-{
-    return isVideoMuted_ || needRestore_;
-}
 } // namespace Media
 } // namespace OHOS
