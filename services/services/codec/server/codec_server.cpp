@@ -322,6 +322,13 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
             } else {
                 temporalScalability_->SetTag(this->GetTag());
             }
+            config.RemoveKey(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE);
+            break;
+        case CodecScenario::CODEC_SCENARIO_ENC_ENABLE_B_FRAME:
+            config.RemoveKey(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT);
+            config.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE);
+            config.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE);
+            config.RemoveKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY);
             break;
         default:
             break;
