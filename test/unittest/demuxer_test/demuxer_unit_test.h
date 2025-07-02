@@ -45,6 +45,9 @@ public:
     void InitResource(const std::string &path, bool local);
     void ReadSample(const std::string &path, bool local, bool checkBufferInfo = false);
     bool CheckCache(uint32_t readTrackId, uint32_t times, uint32_t checkTrackId, uint32_t expect, bool exist = true);
+    void ReadAllSampleWithCheck(std::vector<uint32_t> &keyFrameIndex);
+    void SeekTest(const std::list<int64_t> &toPtsList, const std::list<Media::SeekMode> &seekModes,
+        const std::vector<std::vector<int32_t>> &ExpVals);
 
 protected:
     std::shared_ptr<AVSourceMock> source_ = nullptr;
@@ -63,6 +66,8 @@ protected:
     std::map<uint32_t, int32_t> frames_;
     std::map<uint32_t, int32_t> keyFrames_;
     std::map<uint32_t, bool> eosFlag_;
+    bool readFlag_ = false;
+    bool seekTestFlag_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
