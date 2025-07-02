@@ -301,18 +301,27 @@ int32_t GetNaluSize(const uint8_t *nalStart)
 bool IsHvccSyncFrame(const uint8_t *sample, int32_t size)
 {
     const uint8_t* nalStart = sample;
-    const uint8_t* nalEnd = nalStart + size;
+    const uint8_t* end = nalStart + size;
     int32_t sizeLen = NAL_START_CODE_SIZE;
     int32_t naluSize = 0;
     naluSize = GetNaluSize(nalStart);
+    if (nalStart >= end - sizeLen) {
+        return false;
+    }
     nalStart = nalStart + sizeLen;
-    while (nalStart < nalEnd) {
+    while (nalStart < end) {
         uint8_t naluType = static_cast<uint8_t>((nalStart[0] & 0x7E) >> 1);
         if (naluType >= 0x10 && naluType <= 0x17) {
             return true;
         }
+        if (nalStart >= end - naluSize) {
+            return false;
+        }
         nalStart = nalStart + naluSize;
         naluSize = GetNaluSize(nalStart);
+        if (nalStart >= end - sizeLen) {
+            return false;
+        }
         nalStart = nalStart + sizeLen;
     }
     return false;
@@ -336,12 +345,18 @@ bool IsAnnexbSyncFrame(const uint8_t *sample, int32_t size)
     const uint8_t* nalEnd = nullptr;
     int32_t startCodeLen = 0;
     nalStart = FindNalStartCode(nalStart, end, startCodeLen);
+    if (nalStart >= end - startCodeLen) {
+        return false;
+    }
     nalStart = nalStart + startCodeLen;
     while (nalStart < end) {
         nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
         uint8_t naluType = static_cast<uint8_t>((nalStart[0] & 0x7E) >> 1);
         if (naluType >= 0x10 && naluType <= 0x17) {
             return true;
+        }
+        if (nalEnd >= end - startCodeLen) {
+            return false;
         }
         nalStart = nalEnd + startCodeLen;
     }
@@ -350,7 +365,7 @@ bool IsAnnexbSyncFrame(const uint8_t *sample, int32_t size)
 
 bool IsHevcSyncFrame(const uint8_t *sample, int32_t size)
 {
-    if (size < 4) {
+    if (size < NAL_START_CODE_SIZE) {
         return false;
     }
     if (IsBeginAsAnnexb(sample, size)) {
@@ -1632,7 +1647,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         bool isSpecialStreamType = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
         bool isSyncFrame = (static_cast<uint32_t>(pkt->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY) ||
             (stream->codecpar->codec_id == AV_CODEC_ID_HEVC && IsHevcSyncFrame(pkt->data, pkt->size)));
-        if (!isSpecialStreamType && (TrackIsChecked(trackId) || isSyncFrame)) {
+        if (!isSpecialStreamType && (TrackIsChecked(trackId) || !isSyncFrame)) {
             pkt = nullptr;
             continue;
         }
