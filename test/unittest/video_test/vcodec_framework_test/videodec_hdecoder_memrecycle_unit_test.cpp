@@ -23,10 +23,8 @@
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
-#define TEST_SUIT_NAME "videodec_hdecoder_memrecycle_async_unit_test"
 #include "vdec_async_sample.h"
 #else
-#define TEST_SUIT_NAME "videodec_hdecoder_memrecycle_sync_unit_test"
 #include "vdec_sync_sample.h"
 #endif
 
