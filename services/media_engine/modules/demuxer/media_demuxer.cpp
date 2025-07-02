@@ -3909,7 +3909,7 @@ void MediaDemuxer::InitEnableDfxBufferQueue()
     MEDIA_LOG_I("enableDfxBufferQueue_ " PUBLIC_LOG_D32, enableDfxBufferQueue_);
 }
 
-bool MediaDemuxer::IsVideoMuted()
+inline bool MediaDemuxer::IsVideoMuted()
 {
     return isVideoMuted_ || needRestore_;
 }
