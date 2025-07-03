@@ -256,11 +256,11 @@ void AVCodecServerManager::PrintCodecCallersInfo()
             const bool isForwardCaller = (info.forwardCaller.pid != INVALID_PID);
             const CallerInfo &caller = isForwardCaller ? info.forwardCaller : info.caller;
             if (isForwardCaller) {
-                AVCODEC_LOGI("[%{public}s->%{public}s][pid %{public}zu] holding %{public}d %{public}s",
+                AVCODEC_LOGI("[%{public}s->%{public}s][pid %{public}d] holding %{public}d %{public}s",
                              caller.processName.c_str(), info.caller.processName.c_str(), caller.pid, data.count,
                              typeStr);
             } else {
-                AVCODEC_LOGI("[%{public}s][pid %{public}zu] holding %{public}d %{public}s", caller.processName.c_str(),
+                AVCODEC_LOGI("[%{public}s][pid %{public}d] holding %{public}d %{public}s", caller.processName.c_str(),
                              caller.pid, data.count, typeStr);
             }
         }

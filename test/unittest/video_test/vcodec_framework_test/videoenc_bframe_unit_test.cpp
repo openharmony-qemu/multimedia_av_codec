@@ -18,6 +18,7 @@
 #include "unittest_utils.h"
 #include "codeclist_mock.h"
 #include "venc_async_sample.h"
+#include "venc_sync_sample.h"
 #include "native_avmagic.h"
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
@@ -43,7 +44,6 @@ public:
     void TearDown(void);
 
     bool CreateVideoCodecByName(const std::string &decName);
-    bool CreateVideoCodecByMime(const std::string &decMime);
     void CreateByNameWithParam(int32_t param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
@@ -95,14 +95,6 @@ void TEST_SUIT::TearDown(void)
         format_->Destroy();
     }
     videoEnc_ = nullptr;
-}
-
-bool TEST_SUIT::CreateVideoCodecByMime(const std::string &encMime)
-{
-    if (videoEnc_->CreateVideoEncMockByMime(encMime) == false || videoEnc_->SetCallback(vencCallback_) != AV_ERR_OK) {
-        return false;
-    }
-    return true;
 }
 
 bool TEST_SUIT::CreateVideoCodecByName(const std::string &name)
