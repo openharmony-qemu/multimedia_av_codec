@@ -1609,8 +1609,9 @@ Status DecoderSurfaceFilter::DoReInitAndStart()
     }
     videoDecoder_->Flush();
     ret = DoStart();
-    FALSE_RETURN_MSG(eventReceiver_ != nullptr, "DoReInitAndStart without eventReceiver_");
-    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_VIDEO_DECODER_RESTART, Status::OK});
+    if (eventReceiver_ != nullptr) {
+        eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_VIDEO_DECODER_RESTART, Status::OK});
+    }
     FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoStart fail");
     return ret;
 }
