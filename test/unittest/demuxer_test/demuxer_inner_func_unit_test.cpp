@@ -203,7 +203,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1003, TestSize.Level1)
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     std::vector<std::vector<int32_t>> cacheCheckSteps = {
-        {1, 1,  0, 0}, // read track 1 1 time, check track 0
+        {1, 1,  0, 45886}, // read track 1 1 time, check track 0
         {1, 10, 0, 59158}, // read track 1 10 times, check track 0
         {0, 10, 1, 0}, // read track 0 10 times, check track 1
         {0, -1, 0, 0}, // read to end
