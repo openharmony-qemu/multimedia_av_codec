@@ -91,6 +91,7 @@ public:
     uint64_t GetMemorySize() override;
     bool IsHlsFmp4() override;
     std::string GetContentType() override;
+    std::string GetCurUrl() override;
 
 private:
     int64_t HttpMonitorLoop();

@@ -195,6 +195,17 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
     FALSE_RETURN_V(source != nullptr, Status::ERROR_INVALID_OPERATION);
+    InitSourcePlugin(source);
+    redirectUrl_ = GetCurUrl();
+    FALSE_RETURN_V(!redirectUrl_.empty() && source->GetSourceUri() != redirectUrl_, Status::OK);
+    uri_ = redirectUrl_;
+    FALSE_RETURN_V(IsSeekToTimeSupported(), Status::OK);
+    InitSourcePlugin(source);
+    return Status::OK;
+}
+
+Status HttpSourcePlugin::InitSourcePlugin(const std::shared_ptr<MediaSource>& source)
+{
     SetDownloaderBySource(source);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     if (callback_ != nullptr) {
@@ -209,7 +220,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     FALSE_RETURN_MSG(source != nullptr, "source is null.");
     std::shared_ptr<PlayStrategy> playStrategy;
     if (source != nullptr) {
-        uri_ = source->GetSourceUri();
+        uri_ = redirectUrl_.empty() ? source->GetSourceUri() : redirectUrl_;
         httpHeader_ = source->GetSourceHeader();
         playStrategy = source->GetPlayStrategy();
         mimeType_ = source->GetMimeType();
@@ -564,6 +575,12 @@ bool HttpSourcePlugin::IsHlsFmp4()
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
     return downloader_->IsHlsFmp4();
+}
+
+std::string HttpSourcePlugin::GetCurUrl()
+{
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader_ is nullptr");
+    return downloader_->GetCurUrl();
 }
 }
 }

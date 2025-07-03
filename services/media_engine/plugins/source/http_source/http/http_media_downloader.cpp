@@ -1990,6 +1990,17 @@ void HttpMediaDownloader::ClearBuffer()
             sizeBefore, sizeAfter);
     }
 }
+
+std::string HttpMediaDownloader::GetCurUrl()
+{
+    FALSE_RETURN_V_MSG_E(downloadRequest_ != nullptr, "", "currentRequest_ is nullptr");
+    GetContentLength();
+    if (!downloadRequest_->haveRedirectRetry_.load()) {
+        return "";
+    }
+    return downloadRequest_->GetUrl();
+}
+
 }
 }
 }

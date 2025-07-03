@@ -211,6 +211,10 @@ public:
     {
         return false;
     }
+    virtual std::string GetCurUrl()
+    {
+        return "";
+    }
 };
 }
 }
