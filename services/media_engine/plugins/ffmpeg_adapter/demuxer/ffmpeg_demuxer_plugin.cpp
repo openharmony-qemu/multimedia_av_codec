@@ -81,7 +81,9 @@ const int32_t POS_7 = 7;
 const int32_t POS_8 = 8;
 const int32_t POS_9 = 9;
 const int32_t POS_14 = 14;
+const int32_t POS_16 = 16;
 const int32_t POS_21 = 21;
+const int32_t POS_24 = 24;
 const int32_t POS_FF = 0xff;
 const int32_t LEN_MASK = 0x7f;
 const int32_t TAG_MASK = 0x80;
@@ -296,7 +298,7 @@ bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size)
 int32_t GetNaluSize(const uint8_t *nalStart)
 {
     return static_cast<int32_t>(
-        (nalStart[POS_3]) | (nalStart[POS_2] << 8) | (nalStart[POS_1] << 16) | (nalStart[POS_0] << 24)); // 4 bytes
+        (nalStart[POS_3]) | (nalStart[POS_2] << POS_8) | (nalStart[POS_1] << POS_16) | (nalStart[POS_0] << POS_24));
 }
 
 bool IsHvccSyncFrame(const uint8_t *sample, int32_t size)
