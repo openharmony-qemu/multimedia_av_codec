@@ -3876,6 +3876,8 @@ Status MediaDemuxer::StopBufferring(bool isAppBackground)
 void MediaDemuxer::SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted, bool keepDecodingOnMute)
 {
     if (mediaType == OHOS::Media::MediaType::MEDIA_TYPE_VID) {
+        needRestore_ |= (!isMuted && isVideoMuted_);
+        isVideoMuted_ = isMuted;
         if (!hasSetLargeSize_ && isMuted && videoTrackId_ != -1) {
             if (sampleQueueMap_.count(videoTrackId_) > 0 && sampleQueueMap_[videoTrackId_] != nullptr) {
                 sampleQueueMap_[videoTrackId_]->SetLargerQueueSize(SAMPLE_QUEUE_SIZE_ON_MUTE);
@@ -3888,15 +3890,11 @@ void MediaDemuxer::SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted,
         needReleaseVideoDecoder_ = isMuted && !keepDecodingOnMute;
         MEDIA_LOG_I("MediaDemuxer::SetMediaMuted " PUBLIC_LOG_U32 "keepDecodingOnMute_ is "
                     PUBLIC_LOG_U32, isMuted, keepDecodingOnMute);
-        needRestore_ |= (!isMuted && isVideoMuted_);
-        isVideoMuted_ = isMuted;
         if (sampleConsumerTaskMap_.find(videoTrackId_) != sampleConsumerTaskMap_.end() &&
             sampleConsumerTaskMap_[videoTrackId_] != nullptr) {
             if (isMuted && sampleConsumerTaskMap_[videoTrackId_]->IsTaskRunning()) {
                 sampleConsumerTaskMap_[videoTrackId_]->PauseAsync();
                 sampleConsumerTaskMap_[videoTrackId_]->Pause();
-            } else if (!isMuted && !sampleConsumerTaskMap_[videoTrackId_]->IsTaskRunning()) {
-                sampleConsumerTaskMap_[videoTrackId_]->Start();
             }
         }
     }
@@ -3907,6 +3905,13 @@ void MediaDemuxer::InitEnableDfxBufferQueue()
     const std::string dfxBufferQueueTag = "debug.media_service.enable_dfx_buffer_queue";
     enableDfxBufferQueue_ = OHOS::system::GetBoolParameter(dfxBufferQueueTag, false);
     MEDIA_LOG_I("enableDfxBufferQueue_ " PUBLIC_LOG_D32, enableDfxBufferQueue_);
+}
+
+void MediaDemuxer::NotifyResumeUnMute()
+{
+    if (!isVideoMuted_ && !sampleConsumerTaskMap_[videoTrackId_]->IsTaskRunning()) {
+        sampleConsumerTaskMap_[videoTrackId_]->Start();
+    }
 }
 } // namespace Media
 } // namespace OHOS
