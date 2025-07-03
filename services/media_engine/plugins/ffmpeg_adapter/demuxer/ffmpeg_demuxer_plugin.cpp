@@ -1580,6 +1580,7 @@ Status FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
         bool isSpecialStreamType = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
         bool isSyncFrame = (static_cast<uint32_t>(pkt->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY) ||
             (stream->codecpar->codec_id == AV_CODEC_ID_HEVC && IsHevcSyncFrame(pkt->data, pkt->size)));
+
         if (static_cast<uint32_t>(pkt->stream_index) == trackIndex) {
             if (!isSpecialStreamType && !isSyncFrame) {
                 pkt = nullptr;
