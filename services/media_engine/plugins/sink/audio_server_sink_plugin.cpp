@@ -299,7 +299,6 @@ Status AudioServerSinkPlugin::Init()
     }
     audioRenderer_->SetInterruptMode(audioInterruptMode_);
     audioRenderer_->SetSourceDuration(sourceDuraionMs_);
-    ApplyAudioHapticsSyncId();
     return Status::OK;
 }
 
@@ -428,6 +427,7 @@ Status AudioServerSinkPlugin::Start()
     if (audioRenderer_ == nullptr) {
         return Status::ERROR_WRONG_STATE;
     }
+    ApplyAudioHapticsSyncId();
     bool ret = audioRenderer_->Start();
     FALSE_RETURN_V_MSG(ret, Status::ERROR_UNKNOWN, "AudioRenderer::Start failed");
     MEDIA_LOG_I_SHORT("AudioRenderer::Start end");
