@@ -20,6 +20,7 @@
 #include "avcodec_mime_type.h"
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
+#include "avcodec_common.h"
 
 
 namespace {
@@ -141,18 +142,27 @@ Status AudioG711aDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>
     return Status::OK;
 }
 
-Status AudioG711aDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer)
+void AudioG711aDecoderPlugin::SetOutputBasicInfo(std::shared_ptr<AVBuffer> &outputBuffer)
 {
-    if (!outputBuffer) {
-        AVCODEC_LOGE("AudioG711aDecoderPlugin Queue out buffer is null.");
-        return Status::ERROR_INVALID_PARAMETER;
+    outputBuffer->pts_ = pts_;
+    if (dataCallback_ != nullptr) {
+        dataCallback_->OnOutputBufferDone(outputBuffer);
     }
-    if (decodeBytes_ <= 0) {
-        return Status::ERROR_NOT_ENOUGH_DATA;
+}
+
+Status AudioG711aDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
+{
+    CHECK_AND_RETURN_RET_LOG(outputBuffer != nullptr && outputBuffer->memory_ != nullptr,
+        Status::ERROR_INVALID_PARAMETER, "AudioG711aDecoderPlugin Queue out buffer is null.");
+    auto memory = outputBuffer->memory_;
+    memory->SetSize(0);
+
+    std::lock_guard<std::mutex> lock(avMutex_);
+    if (outputBuffer->flag_ == MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS) {
+        SetOutputBasicInfo(outputBuffer);
+        return Status::END_OF_STREAM;
     }
-    {
-        std::lock_guard<std::mutex> lock(avMutex_);
-        auto memory = outputBuffer->memory_;
+    if (decodeBytes_ > 0) {
         int32_t outSize = static_cast<int32_t>(sizeof(int16_t)) * decodeBytes_;
         CHECK_AND_RETURN_RET_LOG(memory != nullptr && memory->GetCapacity() >= outSize, Status::ERROR_UNKNOWN,
             "memory not enough, capacity:%{public}d, outSize:%{public}d", memory->GetCapacity(), outSize);
@@ -163,14 +173,13 @@ Status AudioG711aDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& out
             decOutputData[i] = G711aLawDecode(decInputData[i]);
         }
         memory->SetSize(outSize);
-        outputBuffer->pts_ = pts_;
         if (sampleFormat_ == SAMPLE_S16LE && sampleRate_ > 0 && channels_ > 0) {
             float usPerSample = TIME_ONE_SECOND / sampleRate_;
             outputBuffer->duration_ = static_cast<uint32_t>((outSize / 2.0f / channels_) * usPerSample); // 2 bytes
         }
-        dataCallback_->OnOutputBufferDone(outputBuffer);
-        decodeBytes_ = 0;
     }
+    SetOutputBasicInfo(outputBuffer);
+    decodeBytes_ = 0;
     return Status::OK;
 }
 
@@ -221,7 +230,7 @@ Status AudioG711aDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parame
     if (parameter->Find(Tag::AUDIO_MAX_INPUT_SIZE) != parameter->end()) {
         parameter->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
         AVCODEC_LOGI("AudioG711aDecoderPlugin SetParameter maxInputSize_: %{public}d", maxInputSize_);
-        if (maxInputSize_ < 0 || maxInputSize_ > AVCODEC_G711A_MAX_INT32 / sizeof(int16_t)) {
+        if (maxInputSize_ < 0 || maxInputSize_ > static_cast<int32_t>(AVCODEC_G711A_MAX_INT32 / sizeof(int16_t))) {
             maxInputSize_ = INPUT_BUFFER_SIZE_DEFAULT;
         }
         maxOutputSize_ = maxInputSize_ * static_cast<int32_t>(sizeof(int16_t));
