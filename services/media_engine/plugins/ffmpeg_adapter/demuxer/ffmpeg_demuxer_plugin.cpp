@@ -295,7 +295,7 @@ bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size)
 
 int32_t GetNaluSize(const uint8_t *nalStart)
 {
-    return static_cast<uint32_t>((nalStart[3]) | (nalStart[2] << 8) | (nalStart[1] << 16) | (nalStart[0] << 24));
+    return static_cast<int32_t>((nalStart[3]) | (nalStart[2] << 8) | (nalStart[1] << 16) | (nalStart[0] << 24));
 }
 
 bool IsHvccSyncFrame(const uint8_t *sample, int32_t size)
@@ -305,21 +305,21 @@ bool IsHvccSyncFrame(const uint8_t *sample, int32_t size)
     int32_t sizeLen = NAL_START_CODE_SIZE;
     int32_t naluSize = 0;
     naluSize = GetNaluSize(nalStart);
-    if (nalStart >= end - sizeLen) {
+    if (nalStart > end - sizeLen) {
         return false;
     }
     nalStart = nalStart + sizeLen;
     while (nalStart < end) {
         uint8_t naluType = static_cast<uint8_t>((nalStart[0] & 0x7E) >> 1);
-        if (naluType >= 0x10 && naluType <= 0x17) {
+        if (naluType > 0x10 && naluType <= 0x17) {
             return true;
         }
-        if (nalStart >= end - naluSize) {
+        if (nalStart > end - naluSize) {
             return false;
         }
         nalStart = nalStart + naluSize;
         naluSize = GetNaluSize(nalStart);
-        if (nalStart >= end - sizeLen) {
+        if (nalStart > end - sizeLen) {
             return false;
         }
         nalStart = nalStart + sizeLen;
@@ -345,17 +345,17 @@ bool IsAnnexbSyncFrame(const uint8_t *sample, int32_t size)
     const uint8_t* nalEnd = nullptr;
     int32_t startCodeLen = 0;
     nalStart = FindNalStartCode(nalStart, end, startCodeLen);
-    if (nalStart >= end - startCodeLen) {
+    if (nalStart > end - startCodeLen) {
         return false;
     }
     nalStart = nalStart + startCodeLen;
     while (nalStart < end) {
         nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
         uint8_t naluType = static_cast<uint8_t>((nalStart[0] & 0x7E) >> 1);
-        if (naluType >= 0x10 && naluType <= 0x17) {
+        if (naluType > 0x10 && naluType <= 0x17) {
             return true;
         }
-        if (nalEnd >= end - startCodeLen) {
+        if (nalEnd > end - startCodeLen) {
             return false;
         }
         nalStart = nalEnd + startCodeLen;
