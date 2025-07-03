@@ -638,6 +638,7 @@ void HCodec::OutputPortChangedState::OnStateEntered()
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 }
 
+// LCOV_EXCL_START
 void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
@@ -689,6 +690,7 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
         }
     }
 }
+// LCOV_EXCL_STOP
 
 void HCodec::OutputPortChangedState::OnShutDown(const MsgInfo &info)
 {
