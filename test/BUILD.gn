@@ -83,6 +83,7 @@ group("av_codec_unit_test") {
         "unittest/dash_test:dash_mpd_parser_unit_test",
         "unittest/dash_test:dash_segment_downloader_unit_test",
         "unittest/dash_test:dash_xml_unit_test",
+        "unittest/dash_unittest:dash_segment_downloader_unittest",
         "unittest/decoder_filter_test:decoder_filter_unit_test",
         "unittest/decoder_surface_filter_unittest:decoder_surface_filter_unittest",
         "unittest/demuxer_filter_unittest:demuxer_filter_unittest",
