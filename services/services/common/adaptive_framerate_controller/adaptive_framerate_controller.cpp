@@ -55,15 +55,26 @@ bool FramerateCalculator::CheckAndResetFramerate()
     CHECK_AND_RETURN_RET_LOGW_WITH_TAG(elapsedTime > 0, false, "Elapsed time is invalid, cannot calculate framerate");
 
     auto actualFramerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
-    if (!(lastFramerate_ <= 0 || std::abs(actualFramerate - lastFramerate_) / lastFramerate_ > 0.1)) { // 0.1: threshold
+    auto fluctuationFramerate = std::abs(actualFramerate - lastFramerate_);
+    if (!(fluctuationFramerate > 5 && (fluctuationFramerate / lastFramerate_ > 0.1))) { // 5/0.1: reset threshold
         return false;
     }
-    auto resetFramerate = actualFramerate * (actualFramerate > lastFramerate_ ? 2.0 : 1.0); // 2.0: increase factor
+    auto resetFramerate = actualFramerate;
+    if (actualFramerate > lastFramerate_) {
+        decreseCheckTimes_ = MAX_DECREASE_CHECK_TIMES;
+        resetFramerate *= 2.0; // 2.0: increase factor
+    } else if (decreseCheckTimes_ > 0) {
+        decreseCheckTimes_--;
+        return false;
+    }
+    if (resetFramerate < 1.0) { // 1.0: minimum framerate
+        resetFramerate = 1.0;
+    }
     resetFramerateHandler_(resetFramerate);
 
     char direction = (resetFramerate > lastFramerate_) ? '+' : '-';
-    AVCODEC_LOGD_WITH_TAG("Reset framerate: %{public}.2ffps(%{public}.2f) %{public}c",
-        resetFramerate, actualFramerate, direction);
+    AVCODEC_LOGD_WITH_TAG("Reset framerate: %{public}.2f -> %{public}.2ffps(%{public}.2f) %{public}c",
+        lastFramerate_, resetFramerate, actualFramerate, direction);
 
     lastFramerate_ = resetFramerate;
     return true;

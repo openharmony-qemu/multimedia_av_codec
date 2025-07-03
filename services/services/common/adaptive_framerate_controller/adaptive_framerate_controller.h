@@ -48,7 +48,9 @@ private:
     std::atomic<Status> status_ = Status::INITIALIZED;
     std::function<void(double)> resetFramerateHandler_;
     std::atomic<uint32_t> frameCount_{0};
-    double lastFramerate_{0.0};
+    double lastFramerate_{1.0};
+    uint8_t decreseCheckTimes_{0};
+    static constexpr uint8_t MAX_DECREASE_CHECK_TIMES = 3; // Maximum times
     std::chrono::steady_clock::time_point lastAdjustmentTime_{};
 };
 
