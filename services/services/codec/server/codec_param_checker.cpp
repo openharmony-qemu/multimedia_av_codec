@@ -800,7 +800,7 @@ int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenari
     return AVCS_ERR_OK;
 }
 
-void SQRDynamicParameterCheck(CapabilityData &capData, const Format &format, Format oldFormat)
+void SQRDynamicParameterCheck(CapabilityData &capData, const Format &format, Format &oldFormat)
 {
     int32_t bitrateMode;
     bool bitrateModeExist = oldFormat.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
