@@ -800,6 +800,28 @@ int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenari
     return AVCS_ERR_OK;
 }
 
+void SQRDynamicParameterCheck(CapabilityData &capData, const Format &format, Format oldFormat)
+{
+    int32_t bitrateMode;
+    bool bitrateModeExist = oldFormat.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (!bitrateModeExist || bitrateMode != VideoEncodeBitrateMode::SQR) {
+        return;
+    }
+    int64_t maxBitrate;
+    int32_t sqrFactor;
+    bool maxBitrateExist = format.GetLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, maxBitrate);
+    bool sqrFactorExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor);
+    if (sqrFactorExist && !capData.sqrFactor.InRange(sqrFactor)) {
+        AVCODEC_LOGW("Param invalid, %{public}s: %{public}d, range: %{public}d-%{public}d",
+            MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR.data(), static_cast<int32_t>(sqrFactor),
+            capData.sqrFactor.minVal, capData.sqrFactor.maxVal);
+    }
+    if (maxBitrateExist && !capData.maxBitrate.InRange(maxBitrate)) {
+        AVCODEC_LOGW("Param invalid, %{public}s: %{public}d, range: %{public}d-%{public}d",
+            MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE.data(), static_cast<int32_t>(maxBitrate),
+            capData.maxBitrate.minVal, capData.maxBitrate.maxVal);
+    }
+}
 } // namespace
 
 namespace OHOS {
@@ -839,6 +861,8 @@ int32_t CodecParamChecker::CheckParameterValid(const Media::Format &format, Medi
     auto checkers = PARAMETER_CHECKERS_TABLE.find(scenario);
     CHECK_AND_RETURN_RET_LOG(checkers != PARAMETER_CHECKERS_TABLE.end(), AVCS_ERR_UNSUPPORT,
         "This scenario can not find any checkers");
+
+    SQRDynamicParameterCheck(capData.value(), format, oldFormat);
 
     MergeFormat(format, oldFormat);
 
