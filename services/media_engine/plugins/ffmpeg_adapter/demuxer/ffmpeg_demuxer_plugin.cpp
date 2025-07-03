@@ -295,7 +295,8 @@ bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size)
 
 int32_t GetNaluSize(const uint8_t *nalStart)
 {
-    return static_cast<int32_t>((nalStart[3]) | (nalStart[2] << 8) | (nalStart[1] << 16) | (nalStart[0] << 24));
+    return static_cast<int32_t>(
+        (nalStart[POS_3]) | (nalStart[POS_2] << 8) | (nalStart[POS_1] << 16) | (nalStart[POS_0] << 24)); // 4 bytes
 }
 
 bool IsHvccSyncFrame(const uint8_t *sample, int32_t size)
