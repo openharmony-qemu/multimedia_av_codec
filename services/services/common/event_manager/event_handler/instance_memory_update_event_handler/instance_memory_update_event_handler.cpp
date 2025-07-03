@@ -227,6 +227,8 @@ uint32_t InstanceMemoryUpdateEventHandler::ThresholdParser::GetThreshold()
 {
     char configFilePathBuf[MAX_PATH_LEN] = {0};
     GetOneCfgFile("etc/reliability/leak_detector_config.json", configFilePathBuf, MAX_PATH_LEN);
+    CHECK_AND_RETURN_RET_LOGW(realpath(configFilePathBuf, configFilePathBuf) != nullptr,
+        UINT32_MAX, "Can not get real path of threshold config json file");
     std::ifstream configFile(configFilePathBuf);
     CHECK_AND_RETURN_RET_LOG(configFile.is_open(), UINT32_MAX, "Can not open threshold config json file");
 
