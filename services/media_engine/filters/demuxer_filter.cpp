@@ -1077,6 +1077,13 @@ bool DemuxerFilter::IsVideoMuted()
     }
     return isVideoMuted_;
 }
+
+Status DemuxerFilter::NotifyResumeUnMute()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+    demuxer_->NotifyResumeUnMute();
+    return Status::OK;
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
