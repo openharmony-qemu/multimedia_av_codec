@@ -1569,7 +1569,7 @@ Status FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
             break;
         }
         int32_t trackId = pkt->stream_index;
-        cacheQueue_.AddTrackQueue(pkt->stream_index);
+        cacheQueue_.AddTrackQueue(trackId);
         auto stream = formatContext_->streams[trackId];
         FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_NULL_POINTER,
             "Stream " PUBLIC_LOG_D32 " is invalid", trackId);
