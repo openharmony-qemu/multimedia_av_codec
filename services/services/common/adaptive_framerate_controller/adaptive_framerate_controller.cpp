@@ -20,6 +20,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AFC"};
 auto afcEnable = OHOS::system::GetBoolParameter("OHOS.MediaAVCodec.AFC.Enable", true);
+constexpr uint8_t MAX_DECREASE_CHECK_TIMES = 3;
 } // namespace
 
 namespace OHOS {
