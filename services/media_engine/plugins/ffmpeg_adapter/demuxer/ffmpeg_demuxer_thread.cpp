@@ -286,46 +286,29 @@ bool FFmpegDemuxerPlugin::EnsurePacketAllocated(AVPacket*& pkt)
     return true;
 }
 
-bool FFmpegDemuxerPlugin::ReadFrameAndHandleError(AVPacket* pkt)
+bool FFmpegDemuxerPlugin::ReadAndProcessFrame(AVPacket* pkt)
 {
-    std::unique_lock<std::mutex> sLock(syncMutex_);
-    readLoopStatus_ = Status::OK;
-    int ffmpegRet = AVReadFrameLimit(pkt);
-    if (ffmpegRet == AVERROR_EOF) { // eos
-        WebvttMP4EOSProcess(pkt);
-        av_packet_free(&pkt);
-        Status ret = PushEOSToAllCache();
-        if (ret != Status::OK) {
-            readLoopStatus_ = ret;
+    {
+        std::unique_lock<std::mutex> sLock(syncMutex_);
+        readLoopStatus_ = Status::OK;
+        int ffmpegRet = AVReadFrameLimit(pkt);
+        if (ffmpegRet == AVERROR_EOF) {
+            HandleAVPacketEndOfStream(pkt);
+            return true;
+        }
+        if (ffmpegRet < 0) {
+            HandleAVPacketReadError(pkt, ffmpegRet);
             return false;
         }
-        readLoopStatus_ = Status::END_OF_STREAM;
-        {
-            std::lock_guard<std::mutex> readLock(readSampleMutex_);
-            readCacheCv_.notify_one();
-        }
-        return true;
     }
-    if (ffmpegRet < 0) { // failed
-        av_packet_free(&pkt);
-        MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
-            AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
-        readLoopStatus_ = Status::ERROR_UNKNOWN;
-        return false;
-    }
-    return true;
-}
-
-bool FFmpegDemuxerPlugin::ProcessReadPacket(AVPacket* pkt)
-{
     auto trackId = pkt->stream_index;
     if (!TrackIsSelected(trackId)) {
         av_packet_unref(pkt);
         return true;
     }
-    AVStream *avStream = formatContext_->streams[trackId];
-    bool isWebvtt = IsWebvttMP4(avStream);
-    if (isWebvtt && WebvttPktProcess(pkt)) {
+    AVStream* avStream = formatContext_->streams[trackId];
+    bool isWebVTT = IsWebvttMP4(avStream);
+    if (isWebVTT && WebvttPktProcess(pkt)) {
         return true;
     }
     Status ret = AddPacketToCacheQueue(pkt);
@@ -334,18 +317,14 @@ bool FFmpegDemuxerPlugin::ProcessReadPacket(AVPacket* pkt)
         readLoopStatus_ = ret;
         return false;
     }
-    if (isWebvtt) {
+    if (isWebVTT) {
         AVPacket* vttePkt = nullptr;
         if (!EnsurePacketAllocated(vttePkt)) {
             readLoopStatus_ = Status::ERROR_NULL_POINTER;
             return false;
         }
-        if (!ReadFrameAndHandleError(vttePkt)) {
-            MEDIA_LOG_E("Read webvtt packet failed");
+        if (!ReadOnePacketAndProcessWebVTT(vttePkt)) {
             return false;
-        }
-        if (WebvttPktProcess(vttePkt)) {
-            MEDIA_LOG_D("Webvtt packet processed successfully");
         }
     }
     {
@@ -355,14 +334,50 @@ bool FFmpegDemuxerPlugin::ProcessReadPacket(AVPacket* pkt)
     return true;
 }
 
-bool FFmpegDemuxerPlugin::ReadAndProcessFrame(AVPacket* pkt)
+void FFmpegDemuxerPlugin::HandleAVPacketEndOfStream(AVPacket* pkt)
 {
-    if (!ReadFrameAndHandleError(pkt)) {
-        return false;
+    WebvttMP4EOSProcess(pkt);
+    av_packet_free(&pkt);
+    Status ret = PushEOSToAllCache();
+    if (ret != Status::OK) {
+        readLoopStatus_ = ret;
+        return;
     }
-    return ProcessReadPacket(pkt);
+    readLoopStatus_ = Status::END_OF_STREAM;
+    {
+        std::lock_guard<std::mutex> readLock(readSampleMutex_);
+        readCacheCv_.notify_one();
+    }
 }
 
+void FFmpegDemuxerPlugin::HandleAVPacketReadError(AVPacket* pkt, int ffmpegRet)
+{
+    FALSE_RETURN_MSG(pkt != nullptr, "AVPacket is nullptr");
+    av_packet_free(&pkt);
+    MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
+        AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
+    readLoopStatus_ = Status::ERROR_UNKNOWN;
+}
+
+bool FFmpegDemuxerPlugin::ReadOnePacketAndProcessWebVTT(AVPacket* pkt)
+{
+    std::unique_lock<std::mutex> sLock(syncMutex_);
+    readLoopStatus_ = Status::OK;
+    int ffmpegRet = AVReadFrameLimit(pkt);
+
+    if (ffmpegRet == AVERROR_EOF) {
+        HandleAVPacketEndOfStream(pkt);
+        return false;
+    }
+    if (ffmpegRet < 0) {
+        HandleAVPacketReadError(pkt, ffmpegRet);
+        return false;
+    }
+    if (WebvttPktProcess(pkt)) {
+        MEDIA_LOG_D("Webvtt packet processed successfully");
+    }
+    return true;
+}
 void FFmpegDemuxerPlugin::ReleaseFFmpegReadLoop()
 {
     if (ioContext_.invokerType != InvokerType::DESTORY) {

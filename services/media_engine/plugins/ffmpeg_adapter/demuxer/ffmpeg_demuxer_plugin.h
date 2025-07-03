@@ -313,8 +313,9 @@ private:
     void HandleReadWait();
     bool EnsurePacketAllocated(AVPacket*& pkt);
     bool ReadAndProcessFrame(AVPacket* pkt);
-    bool ReadFrameAndHandleError(AVPacket* pkt);
-    bool ProcessReadPacket(AVPacket* pkt);
+    void HandleAVPacketEndOfStream(AVPacket* pkt);
+    void HandleAVPacketReadError(AVPacket* pkt, int ffmpegRet);
+    bool ReadOnePacketAndProcessWebVTT(AVPacket* pkt);
     void ReleaseFFmpegReadLoop();
     std::unique_ptr<std::thread> readThread_ {nullptr};
     std::condition_variable readLoopCv_;
