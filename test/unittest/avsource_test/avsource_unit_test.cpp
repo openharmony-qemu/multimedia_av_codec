@@ -2970,15 +2970,14 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1808, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_Auxl_0003, TestSize.Level1)
 {
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_mp4AuxlPath, LOCAL);
+        ASSERT_TRUE(initStatus_);
+        CheckAuxlAvc();
+        ASSERT_TRUE(checkPass_);
+        CheckAuxlAac();
+        ASSERT_TRUE(checkPass_);
     }
-    InitResource(g_mp4AuxlPath, LOCAL);
-    ASSERT_TRUE(initStatus_);
-    CheckAuxlAvc();
-    ASSERT_TRUE(checkPass_);
-    CheckAuxlAac();
-    ASSERT_TRUE(checkPass_);
 }
 
 /**
@@ -2988,15 +2987,14 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_Auxl_0003, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_Auxl_0004, TestSize.Level1)
 {
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_mp4AuxlUri, URI);
+        ASSERT_TRUE(initStatus_);
+        CheckAuxlAvc();
+        ASSERT_TRUE(checkPass_);
+        CheckAuxlAac();
+        ASSERT_TRUE(checkPass_);
     }
-    InitResource(g_mp4AuxlUri, URI);
-    ASSERT_TRUE(initStatus_);
-    CheckAuxlAvc();
-    ASSERT_TRUE(checkPass_);
-    CheckAuxlAac();
-    ASSERT_TRUE(checkPass_);
 }
 
 /**
