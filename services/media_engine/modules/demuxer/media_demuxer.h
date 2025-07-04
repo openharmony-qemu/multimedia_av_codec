@@ -187,6 +187,7 @@ public:
     {
         return isVideoMuted_ || needRestore_;
     }
+    void NotifyResumeUnMute();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;

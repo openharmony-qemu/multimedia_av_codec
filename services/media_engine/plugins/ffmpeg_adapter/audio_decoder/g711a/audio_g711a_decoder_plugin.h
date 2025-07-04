@@ -61,7 +61,7 @@ public:
 
     Status Release() override;
 
-    Status SetDataCallback(DataCallback* dataCallback) override
+    Status SetDataCallback(DataCallback *dataCallback) override
     {
         dataCallback_ = dataCallback;
         return Status::OK;
@@ -73,6 +73,7 @@ private:
     DataCallback* dataCallback_ {nullptr};
 
     int16_t G711aLawDecode(uint8_t aLawValue);
+    void SetOutputBasicInfo(std::shared_ptr<AVBuffer> &outputBuffer);
 
     std::vector<uint8_t> decodeInput_;
     int32_t decodeBytes_;

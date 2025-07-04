@@ -181,7 +181,6 @@ private:
     Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, int32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
-    bool GetNextFrame(const uint8_t *data, const uint32_t size);
     bool NeedCombineFrame(uint32_t trackId);
     AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
@@ -313,6 +312,9 @@ private:
     void HandleReadWait();
     bool EnsurePacketAllocated(AVPacket*& pkt);
     bool ReadAndProcessFrame(AVPacket* pkt);
+    void HandleAVPacketEndOfStream(AVPacket* pkt);
+    void HandleAVPacketReadError(AVPacket* pkt, int ffmpegRet);
+    bool ReadOnePacketAndProcessWebVTT(AVPacket* pkt);
     void ReleaseFFmpegReadLoop();
     std::unique_ptr<std::thread> readThread_ {nullptr};
     std::condition_variable readLoopCv_;

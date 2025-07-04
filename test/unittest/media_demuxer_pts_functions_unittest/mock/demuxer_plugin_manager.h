@@ -20,7 +20,6 @@
 #include <gtest/gtest.h>
 
 #include "avcodec_common.h"
-#include "./avbuffer.h"
 #include "common/media_core.h"
 #include "common/media_source.h"
 #include "demuxer/type_finder.h"
@@ -107,6 +106,6 @@ public:
     MOCK_METHOD1(SetIsHlsFmp4, void(bool isHlsFmp4));
     MOCK_METHOD2(GetCurrentCacheSize, Status(uint32_t trackId, uint32_t& size));
 };
-}
-}
+} // OHOS
+} // Media
 #endif

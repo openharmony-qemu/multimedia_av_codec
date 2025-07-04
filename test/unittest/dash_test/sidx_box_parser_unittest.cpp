@@ -23,6 +23,9 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+const static int32_t VOLUME_TEST = 24;
+const static int32_t INVALID_TEST = -1;
+const static int32_t NUM_TEST = 0;
 class SidxBoxParserUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void) {}
@@ -41,7 +44,7 @@ HWTEST_F(SidxBoxParserUnitTest, BuildSubSegmentIndexes_001, TestSize.Level1)
     char mockStr[24] {-1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1};
     DashList<std::shared_ptr<SubSegmentIndex>> mockList;
     uint32_t currPos {0};
-    ASSERT_EQ(false, SidxBoxParser::BuildSubSegmentIndexes(mockStr, 0, 0, mockList, currPos));
+    ASSERT_EQ(false, SidxBoxParser::BuildSubSegmentIndexes(mockStr, NUM_TEST, NUM_TEST, mockList, currPos));
 }
 
 /**
@@ -53,7 +56,7 @@ HWTEST_F(SidxBoxParserUnitTest, ParseSidxBox_001, TestSize.Level1)
 {
     char mockStr[24] {-1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1};
     DashList<std::shared_ptr<SubSegmentIndex>> mockList;
-    ASSERT_EQ(-1, SidxBoxParser::ParseSidxBox(mockStr, 24, 0, mockList));
+    ASSERT_EQ(INVALID_TEST, SidxBoxParser::ParseSidxBox(mockStr, VOLUME_TEST, NUM_TEST, mockList));
 }
 }
 }

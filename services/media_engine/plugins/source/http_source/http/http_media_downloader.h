@@ -106,6 +106,7 @@ public:
     std::string GetContentType() override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void ClearBuffer() override;
+    std::string GetCurUrl() override;
 
 private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);

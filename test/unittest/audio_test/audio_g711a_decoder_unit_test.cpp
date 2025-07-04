@@ -17,6 +17,7 @@
 #include "plugin/plugin_manager_v2.h"
 #include "plugin/codec_plugin.h"
 #include "avcodec_codec_name.h"
+#include "avcodec_common.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -119,7 +120,7 @@ HWTEST_F(G711aUnitTest, SetParamter_001, TestSize.Level1)
     EXPECT_EQ(plugin_->QueueOutputBuffer(avBuffer_), Status::OK);
     avBuffer_->memory_->SetSize(0);
     EXPECT_EQ(plugin_->QueueInputBuffer(avBuffer_), Status::OK);
-    EXPECT_EQ(plugin_->QueueOutputBuffer(avBuffer_), Status::ERROR_NOT_ENOUGH_DATA);
+    EXPECT_EQ(plugin_->QueueOutputBuffer(avBuffer_), Status::OK);
     plugin_->Flush();
     plugin_->Stop();
     EXPECT_EQ(plugin_->Reset(), Status::OK);
@@ -298,6 +299,31 @@ HWTEST_F(G711aUnitTest, Decode_005, TestSize.Level1)
     EXPECT_EQ(plugin_->Reset(), Status::OK);
 }
 
+HWTEST_F(G711aUnitTest, Eos_001, TestSize.Level1)
+{
+    if (plugin_ == nullptr) {
+        cout << "g711a plugin is nullptr!" << endl;
+        return;
+    }
+    plugin_->Init();
+    plugin_->SetDataCallback(this);
+    meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    meta_->Set<Tag::AUDIO_MAX_INPUT_SIZE>(G711A_MAX_INPUT_SIZE);
+    EXPECT_EQ(plugin_->SetParameter(meta_), Status::OK);
+    plugin_->Start();
+    uint8_t *buffer = avBuffer_->memory_->GetAddr();
+    for (int i = 0; i < TEST_INPUT_SIZE; i++) {
+        buffer[i] = TEST_INPUT_ARR[i];
+    }
+    avBuffer_->memory_->SetSize(0);
+    avBuffer_->flag_ = MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS;
+    EXPECT_EQ(plugin_->QueueInputBuffer(avBuffer_), Status::OK);
+    EXPECT_EQ(plugin_->QueueOutputBuffer(avBuffer_), Status::END_OF_STREAM);
+    buffer = avBuffer_->memory_->GetAddr();
+    plugin_->Flush();
+    plugin_->Stop();
+    EXPECT_EQ(plugin_->Reset(), Status::OK);
+}
 } // namespace Plugins
 } // namespace Media
 } // namespace OHOS

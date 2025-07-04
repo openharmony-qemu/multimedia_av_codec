@@ -22,7 +22,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "AudioCaptureFilter" };
 static constexpr uint64_t AUDIO_NS_PER_SECOND = 1000000000;
-static constexpr uint64_t AUDIO_UNREGULAR_DELTA_TIME = 100000000;
+static constexpr int64_t AUDIO_UNREGULAR_DELTA_TIME = 100000000;
 static constexpr int64_t AUDIO_CAPTURE_READ_FAILED_WAIT_TIME = 20000000; // 20000000 us 20ms
 static constexpr int64_t AUDIO_CAPTURE_READ_FRAME_TIME = 20000000; // 20000000 ns 20ms
 static constexpr int32_t AUDIO_CAPTURE_MAX_CACHED_FRAMES = 256;

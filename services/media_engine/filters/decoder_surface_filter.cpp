@@ -1606,13 +1606,13 @@ Status DecoderSurfaceFilter::DoReInitAndStart()
     if (isDecoderReleasedForMute_) {
         ret = DoInitAfterLink();
         FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoInitAfterLink fail");
-        videoDecoder_->Flush();
-        ret = DoStart();
-        FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoStart fail");
-    } else {
-        videoDecoder_->Flush();
-        ret = DoStart();
     }
+    videoDecoder_->Flush();
+    ret = DoStart();
+    if (eventReceiver_ != nullptr) {
+        eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_VIDEO_DECODER_RESTART, Status::OK});
+    }
+    FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoStart fail");
     return ret;
 }
 } // namespace Pipeline
