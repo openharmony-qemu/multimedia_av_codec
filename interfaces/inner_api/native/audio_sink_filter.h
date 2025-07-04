@@ -88,6 +88,9 @@ public:
     int32_t SetMaxAmplitudeCbStatus(bool status);
 
     void SetIsCancelStart(bool isCancelStart);
+
+    bool NeedImmediateRender();
+
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;
@@ -123,6 +126,8 @@ private:
 
     bool forceUpdateTimeAnchorNextTime_ {false};
     bool isCancelStart_ {false};
+
+    bool needImmediateRender_ {false};
 };
 } // namespace Pipeline
 } // namespace Media

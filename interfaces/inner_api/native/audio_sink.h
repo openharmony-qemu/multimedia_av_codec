@@ -63,6 +63,7 @@ public:
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status SetMuted(bool isMuted);
     Status SetSeekTime(int64_t seekTime);
+    bool NeedImmediateRender();
     bool GetSyncCenterClockTime(int64_t &clockTime);
     Status SetIsCalledBySystemApp(bool isCalledBySystemApp);
     Status SetLooping(bool loop);
@@ -173,6 +174,7 @@ private:
     std::atomic<bool> eosDraining_ {false};
     std::atomic<EosInterruptState> eosInterruptType_ {EosInterruptState::NONE};
     bool isApe_ {false};
+    bool isFlac_ {false};
     int64_t playRangeStartTime_ = -1;
     int64_t playRangeEndTime_ = -1;
     // vars for audio progress optimization

@@ -46,10 +46,12 @@ AudioSinkFilter::AVBufferAvailableListener::AVBufferAvailableListener(std::share
 
 void AudioSinkFilter::AVBufferAvailableListener::OnBufferAvailable()
 {
-    if (auto sink = audioSinkFilter_.lock()) {
-        sink->ProcessInputBuffer();
+    auto sink = audioSinkFilter_.lock();
+    FALSE_RETURN_MSG(sink != nullptr, "invalid audioSink");
+    if (sink->NeedImmediateRender()) {
+        sink->DoProcessInputBuffer(0, 0);
     } else {
-        MEDIA_LOG_I("invalid audioSink");
+        sink->ProcessInputBuffer();
     }
 }
 
@@ -79,9 +81,15 @@ Status AudioSinkFilter::DoInitAfterLink()
 {
     audioSink_->SetParameter(globalMeta_);
     Status ret = audioSink_->Init(trackMeta_, eventReceiver_);
+    needImmediateRender_ = audioSink_->NeedImmediateRender();
     audioSink_->SetEventReceiver(eventReceiver_);
     audioSink_->SetThreadGroupId(groupId_);
     return ret;
+}
+
+bool AudioSinkFilter::NeedImmediateRender()
+{
+    return needImmediateRender_;
 }
 
 Status AudioSinkFilter::DoPrepare()

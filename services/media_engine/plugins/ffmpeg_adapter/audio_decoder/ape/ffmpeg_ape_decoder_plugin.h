@@ -77,11 +77,18 @@ private:
 
     int32_t GetInputBufferSize();
     int32_t GetOutputBufferSize();
+    void CalcBufferSize(const std::shared_ptr<Meta> &parameter, void *extradata);
 
 private:
     int32_t channels_;
     DataCallback *dataCallback_{nullptr};
     std::unique_ptr<FfmpegBaseDecoder> basePlugin;
+    int16_t version;
+    int32_t sampleSizePerFrame;
+    int32_t sampleSizePerOutBuffer;
+    int16_t compressionLevel;
+    int32_t sampleRate;
+    int32_t depth;
 };
 } // namespace Ffmpeg
 } // namespace Plugins
