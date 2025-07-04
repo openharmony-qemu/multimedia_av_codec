@@ -21,6 +21,7 @@
 #include "buffer/avsharedmemory.h"
 #include "avcodec_common.h"
 #include "meta/format.h"
+#include "native_avcapability.h"
 
 
 #define AV_MAGIC(a, b, c, d) (((a) << 24) + ((b) << 16) + ((c) << 8) + ((d) << 0))
@@ -50,6 +51,7 @@ struct OH_AVCapability : public OHOS::RefBase {
     OH_AVCapability();
     ~OH_AVCapability() override;
     OHOS::MediaAVCodec::CapabilityData *capabilityData_;
+    OH_AVRange *sampleRateRanges_ = nullptr;
     enum AVMagic magic_;
 };
 

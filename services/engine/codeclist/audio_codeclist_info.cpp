@@ -41,6 +41,12 @@ constexpr int MAX_CHANNEL_COUNT_G711A = 6;
 
 constexpr int MIN_BIT_RATE_AAC = 8000;
 constexpr int MAX_BIT_RATE_AAC = 960000;
+constexpr int MIN_VORBIS_SAMPLE_RATE = 8000;
+constexpr int MAX_VORBIS_SAMPLE_RATE = 96000;
+constexpr int MIN_FLAC_SAMPLE_RATE = 8000;
+constexpr int MAX_FLAC_SAMPLE_RATE = 384000;
+constexpr int MAX_INT32 = 0x7FFFFFFF; // 2147483647
+
 const std::vector<int32_t> AUDIO_VORBIS_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000,
                                                        32000, 44100, 48000, 64000, 88200, 96000};
 const std::vector<int32_t> AUDIO_AMRNB_SAMPLE_RATE = {8000};
@@ -108,6 +114,15 @@ constexpr int MAX_BIT_RATE_G711A_DECODER = 64000;
 
 const std::string VENDOR_AAC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libaac_enc.z.so";
 
+static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sampleRate)
+{
+    std::vector<Range> sampleRateRange;
+    for (auto i = 0; i < sampleRate.size(); i++) {
+        sampleRateRange.push_back(Range(sampleRate[i], sampleRate[i]));
+    }
+    return sampleRateRange;
+}
+
 CapabilityData AudioCodeclistInfo::GetMP3DecoderCapability()
 {
     CapabilityData audioMp3Capability;
@@ -118,6 +133,7 @@ CapabilityData AudioCodeclistInfo::GetMP3DecoderCapability()
     audioMp3Capability.bitrate = Range(MIN_BIT_RATE_MP3, MAX_BIT_RATE_MP3);
     audioMp3Capability.channels = Range(1, MAX_CHANNEL_COUNT_MP3);
     audioMp3Capability.sampleRate = AUDIO_MP3_SAMPLE_RATE;
+    audioMp3Capability.sampleRateRanges = convertVectorToRange(AUDIO_MP3_SAMPLE_RATE);
     audioMp3Capability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioMp3Capability;
 }
@@ -132,6 +148,7 @@ CapabilityData AudioCodeclistInfo::GetMP3EncoderCapability()
     audioMp3Capability.bitrate = Range(MIN_BIT_RATE_MP3_ENCODE, MAX_BIT_RATE_MP3);
     audioMp3Capability.channels = Range(1, MAX_CHANNEL_COUNT_MP3);
     audioMp3Capability.sampleRate = AUDIO_MP3_SAMPLE_RATE;
+    audioMp3Capability.sampleRateRanges = convertVectorToRange(AUDIO_MP3_SAMPLE_RATE);
     audioMp3Capability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioMp3Capability;
 }
@@ -146,6 +163,7 @@ CapabilityData AudioCodeclistInfo::GetAacDecoderCapability()
     audioAacCapability.bitrate = Range(MIN_BIT_RATE_AAC, MAX_BIT_RATE_AAC);
     audioAacCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
     audioAacCapability.sampleRate = AUDIO_AAC_SAMPLE_RATE;
+    audioAacCapability.sampleRateRanges = convertVectorToRange(AUDIO_AAC_SAMPLE_RATE);
     audioAacCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioAacCapability;
 }
@@ -160,6 +178,7 @@ CapabilityData AudioCodeclistInfo::GetOpusDecoderCapability()
     audioOpusCapability.bitrate = Range(1, MAX_BIT_RATE_OPUS);
     audioOpusCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
     audioOpusCapability.sampleRate = AUDIO_OPUS_SAMPLE_RATE;
+    audioOpusCapability.sampleRateRanges = convertVectorToRange(AUDIO_OPUS_SAMPLE_RATE);
     audioOpusCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioOpusCapability;
 }
@@ -174,6 +193,7 @@ CapabilityData AudioCodeclistInfo::GetFlacDecoderCapability()
     audioFlacCapability.bitrate = Range(1, MAX_BIT_RATE_FLAC);
     audioFlacCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
     audioFlacCapability.sampleRate = AUDIO_FLAC_SAMPLE_RATE;
+    audioFlacCapability.sampleRateRanges = {Range(MIN_FLAC_SAMPLE_RATE, MAX_FLAC_SAMPLE_RATE)};
     audioFlacCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioFlacCapability;
 }
@@ -188,6 +208,7 @@ CapabilityData AudioCodeclistInfo::GetVorbisDecoderCapability()
     audioVorbisCapability.bitrate = Range(MIN_BIT_RATE_VORBIS, MAX_BIT_RATE_VORBIS);
     audioVorbisCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
     audioVorbisCapability.sampleRate = AUDIO_VORBIS_SAMPLE_RATE;
+    audioVorbisCapability.sampleRateRanges = {Range(MIN_VORBIS_SAMPLE_RATE, MAX_VORBIS_SAMPLE_RATE)};
     audioVorbisCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioVorbisCapability;
 }
@@ -202,6 +223,7 @@ CapabilityData AudioCodeclistInfo::GetAmrnbDecoderCapability()
     audioAmrnbCapability.bitrate = Range(MIN_BIT_RATE_AMRNB, MAX_BIT_RATE_AMRNB);
     audioAmrnbCapability.channels = Range(1, 1);
     audioAmrnbCapability.sampleRate = AUDIO_AMRNB_SAMPLE_RATE;
+    audioAmrnbCapability.sampleRateRanges = convertVectorToRange(AUDIO_AMRNB_SAMPLE_RATE);
     audioAmrnbCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioAmrnbCapability;
 }
@@ -216,6 +238,7 @@ CapabilityData AudioCodeclistInfo::GetAmrwbDecoderCapability()
     audioAmrwbCapability.bitrate = Range(MIN_BIT_RATE_AMRWB, MAX_BIT_RATE_AMRWB);
     audioAmrwbCapability.channels = Range(1, 1);
     audioAmrwbCapability.sampleRate = AUDIO_AMRWB_SAMPLE_RATE;
+    audioAmrwbCapability.sampleRateRanges = convertVectorToRange(AUDIO_AMRWB_SAMPLE_RATE);
     audioAmrwbCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioAmrwbCapability;
 }
@@ -230,6 +253,7 @@ CapabilityData AudioCodeclistInfo::GetAPEDecoderCapability()
     audioApeCapability.bitrate = Range(0, MAX_BIT_RATE_APE);
     audioApeCapability.channels = Range(1, MAX_CHANNEL_COUNT_APE);
     audioApeCapability.sampleRate = AUDIO_SAMPLE_RATE;
+    audioApeCapability.sampleRateRanges = {Range(1, MAX_INT32)};
     audioApeCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioApeCapability;
 }
@@ -244,6 +268,7 @@ CapabilityData AudioCodeclistInfo::GetRawDecoderCapability()
     audioRawCapability.bitrate = Range(0, MAX_BIT_RATE_RAW);
     audioRawCapability.channels = Range(1, MAX_CHANNEL_COUNT_RAW);
     audioRawCapability.sampleRate = AUDIO_RAW_SAMPLE_RATE;
+    audioRawCapability.sampleRateRanges = {Range(1, MAX_INT32)};
     audioRawCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioRawCapability;
 }
@@ -259,6 +284,7 @@ CapabilityData AudioCodeclistInfo::GetVividDecoderCapability()
     audioVividCapability.bitrate = Range(MIN_BIT_RATE_VIVID_DECODER, MAX_BIT_RATE_VIVID_DECODER);
     audioVividCapability.channels = Range(1, MAX_CHANNEL_COUNT_VIVID);
     audioVividCapability.sampleRate = AUDIO_VIVID_SAMPLE_RATE;
+    audioVividCapability.sampleRateRanges = convertVectorToRange(AUDIO_VIVID_SAMPLE_RATE);
     audioVividCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioVividCapability;
 }
@@ -273,6 +299,7 @@ CapabilityData AudioCodeclistInfo::GetAmrnbEncoderCapability()
     audioAmrnbCapability.bitrate = Range(1, MAX_BIT_RATE_AMRNB);
     audioAmrnbCapability.channels = Range(1, 1);
     audioAmrnbCapability.sampleRate = AUDIO_AMRNB_SAMPLE_RATE;
+    audioAmrnbCapability.sampleRateRanges = convertVectorToRange(AUDIO_AMRNB_SAMPLE_RATE);
     audioAmrnbCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioAmrnbCapability;
 }
@@ -287,6 +314,7 @@ CapabilityData AudioCodeclistInfo::GetAmrwbEncoderCapability()
     audioAmrwbCapability.bitrate = Range(1, MAX_BIT_RATE_AMRWB);
     audioAmrwbCapability.channels = Range(1, 1);
     audioAmrwbCapability.sampleRate = AUDIO_AMRWB_SAMPLE_RATE;
+    audioAmrwbCapability.sampleRateRanges = convertVectorToRange(AUDIO_AMRWB_SAMPLE_RATE);
     audioAmrwbCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioAmrwbCapability;
 }
@@ -349,6 +377,7 @@ CapabilityData AudioCodeclistInfo::GetL2hcEncoderCapability()
     l2hcEncodeCapability.bitrate = Range(MIN_BITRATE_L2HC, MAX_BITRATE_L2HC);
     l2hcEncodeCapability.channels = Range(1, MAX_CHANNEL_COUNT_L2HC);
     l2hcEncodeCapability.sampleRate = AUDIO_L2HC_SAMPLE_RATE;
+    l2hcEncodeCapability.sampleRateRanges = convertVectorToRange(AUDIO_L2HC_SAMPLE_RATE);
     l2hcEncodeCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     l2hcEncodeCapability.maxVersion = MAX_SUPPORT_L2HC_VERSION;
     return l2hcEncodeCapability;
@@ -364,6 +393,7 @@ CapabilityData AudioCodeclistInfo::GetL2hcDecoderCapability()
     l2hcDecodeCapability.bitrate = Range(0, 0);
     l2hcDecodeCapability.channels = Range(1, MAX_CHANNEL_COUNT_L2HC);
     l2hcDecodeCapability.sampleRate = AUDIO_L2HC_SAMPLE_RATE;
+    l2hcDecodeCapability.sampleRateRanges = convertVectorToRange(AUDIO_L2HC_SAMPLE_RATE);
     l2hcDecodeCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     l2hcDecodeCapability.maxVersion = MAX_SUPPORT_L2HC_VERSION;
     return l2hcDecodeCapability;
@@ -392,6 +422,7 @@ CapabilityData AudioCodeclistInfo::GetVendorAacEncoderCapability()
     audioAacCapability.bitrate = Range(MIN_BIT_RATE_AAC_ENCODER, MAX_BIT_RATE_AAC_ENCODER);
     audioAacCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
     audioAacCapability.sampleRate = AUDIO_AAC_SAMPLE_RATE;
+    audioAacCapability.sampleRateRanges = convertVectorToRange(AUDIO_AAC_SAMPLE_RATE);
     audioAacCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     audioAacCapability.profiles = { AAC_PROFILE_LC, AAC_PROFILE_HE, AAC_PROFILE_HE_V2 };
     audioAacCapability.rank = 1; // larger than default rank 0
@@ -409,6 +440,7 @@ CapabilityData AudioCodeclistInfo::GetAacEncoderCapability()
     audioAacCapability.bitrate = Range(MIN_BIT_RATE_AAC_ENCODER, MAX_BIT_RATE_AAC_ENCODER);
     audioAacCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
     audioAacCapability.sampleRate = AUDIO_AAC_SAMPLE_RATE;
+    audioAacCapability.sampleRateRanges = convertVectorToRange(AUDIO_AAC_SAMPLE_RATE);
     audioAacCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     audioAacCapability.profiles = { AAC_PROFILE_LC };
     return audioAacCapability;
@@ -424,6 +456,7 @@ CapabilityData AudioCodeclistInfo::GetOpusEncoderCapability()
     audioOpusCapability.bitrate = Range(MIN_BIT_RATE_OPUS, MAX_BIT_RATE_OPUS);
     audioOpusCapability.channels = Range(1, MAX_CHANNEL_COUNT_OPUS);
     audioOpusCapability.sampleRate = AUDIO_OPUS_SAMPLE_RATE;
+    audioOpusCapability.sampleRateRanges = convertVectorToRange(AUDIO_OPUS_SAMPLE_RATE);
     audioOpusCapability.complexity = Range(MIN_OPUS_COMPLIANCE_LEVEL, MAX_OPUS_COMPLIANCE_LEVEL);
     audioOpusCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioOpusCapability;
@@ -439,6 +472,7 @@ CapabilityData AudioCodeclistInfo::GetFlacEncoderCapability()
     audioFlacCapability.bitrate = Range(MIN_BIT_RATE_FLAC, MAX_BIT_RATE_FLAC);
     audioFlacCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
     audioFlacCapability.sampleRate = AUDIO_FLAC_ENC_SAMPLE_RATE;
+    audioFlacCapability.sampleRateRanges = convertVectorToRange(AUDIO_FLAC_ENC_SAMPLE_RATE);
     audioFlacCapability.complexity = Range(MIN_FLAC_COMPLIANCE_LEVEL, MAX_FLAC_COMPLIANCE_LEVEL);
     audioFlacCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioFlacCapability;
@@ -454,6 +488,7 @@ CapabilityData AudioCodeclistInfo::GetG711muDecoderCapability()
     audioG711muDecoderCapability.bitrate = Range(1, MAX_BIT_RATE_G711MU_DECODER);
     audioG711muDecoderCapability.channels = Range(1, 1);
     audioG711muDecoderCapability.sampleRate = AUDIO_G711MU_SAMPLE_RATE;
+    audioG711muDecoderCapability.sampleRateRanges = convertVectorToRange(AUDIO_G711MU_SAMPLE_RATE);
     audioG711muDecoderCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioG711muDecoderCapability;
 }
@@ -469,6 +504,7 @@ CapabilityData AudioCodeclistInfo::GetG711muEncoderCapability()
     audioG711muEncoderCapability.bitrate = Range(MAX_BIT_RATE_G711MU_ENCODER, MAX_BIT_RATE_G711MU_ENCODER);
     audioG711muEncoderCapability.channels = Range(1, 1);
     audioG711muEncoderCapability.sampleRate = AUDIO_G711MU_SAMPLE_RATE;
+    audioG711muEncoderCapability.sampleRateRanges = convertVectorToRange(AUDIO_G711MU_SAMPLE_RATE);
     audioG711muEncoderCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioG711muEncoderCapability;
 }
@@ -483,6 +519,7 @@ CapabilityData AudioCodeclistInfo::GetG711aDecoderCapability()
     audioG711aDecoderCapability.bitrate = Range(1, MAX_BIT_RATE_G711A_DECODER);
     audioG711aDecoderCapability.channels = Range(1, MAX_CHANNEL_COUNT_G711A);
     audioG711aDecoderCapability.sampleRate = AUDIO_G711A_SAMPLE_RATE;
+    audioG711aDecoderCapability.sampleRateRanges = convertVectorToRange(AUDIO_G711A_SAMPLE_RATE);
     audioG711aDecoderCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioG711aDecoderCapability;
 }
@@ -498,6 +535,7 @@ CapabilityData  AudioCodeclistInfo::GetCookDecoderCapability()
     audioCookCapability.bitrate = Range(1, MAX_BIT_RATE_COOK);
     audioCookCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
     audioCookCapability.sampleRate = AUDIO_COOK_SAMPLE_RATE;
+    audioCookCapability.sampleRateRanges = convertVectorToRange(AUDIO_COOK_SAMPLE_RATE);
     audioCookCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioCookCapability;
 }
@@ -513,6 +551,7 @@ CapabilityData AudioCodeclistInfo::GetAc3DecoderCapability()
     audioAc3Capability.bitrate = Range(MIN_BIT_RATE_AC3, MAX_BIT_RATE_AC3);
     audioAc3Capability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
     audioAc3Capability.sampleRate = AUDIO_AC3_SAMPLE_RATE;
+    audioAc3Capability.sampleRateRanges = convertVectorToRange(AUDIO_AC3_SAMPLE_RATE);
     audioAc3Capability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioAc3Capability;
 }

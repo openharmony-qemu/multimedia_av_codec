@@ -30,9 +30,8 @@ constexpr int32_t SAMPLES = 9216;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
 constexpr int32_t EXPAND_SIZE = 2;
-static const int32_t FLAC_DECODER_SAMPLE_RATE_TABLE[] = {
-    8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000, 192000,
-};
+constexpr int32_t MIN_SAMPLE_RATE = 8000;
+constexpr int32_t MAX_SAMPLE_RATE = 384000;
 } // namespace
 
 namespace OHOS {
@@ -53,11 +52,10 @@ FFmpegFlacDecoderPlugin::~FFmpegFlacDecoderPlugin()
 
 bool FFmpegFlacDecoderPlugin::CheckSampleRate(int32_t sampleRate) const noexcept
 {
-    bool isExist = std::any_of(std::begin(FLAC_DECODER_SAMPLE_RATE_TABLE),
-        std::end(FLAC_DECODER_SAMPLE_RATE_TABLE), [sampleRate](int32_t value) {
-        return value == sampleRate;
-    });
-    return isExist;
+    if (sampleRate < MIN_SAMPLE_RATE || sampleRate > MAX_SAMPLE_RATE) {
+        return false;
+    }
+    return true;
 }
 
 Status FFmpegFlacDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)

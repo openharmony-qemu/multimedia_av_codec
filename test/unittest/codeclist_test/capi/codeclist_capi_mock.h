@@ -50,6 +50,7 @@ public:
     std::vector<int32_t> GetSupportedProfiles() override;
     std::vector<int32_t> GetSupportedLevelsForProfile(int32_t profile) override;
     bool AreProfileAndLevelSupported(int32_t profile, int32_t level) override;
+    std::vector<Range> GetAudioSupportedSampleRateRanges() override;
 
 private:
     OH_AVCapability *codeclist_ = nullptr;

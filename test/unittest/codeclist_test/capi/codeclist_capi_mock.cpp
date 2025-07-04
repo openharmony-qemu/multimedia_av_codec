@@ -385,5 +385,26 @@ bool CodecListCapiMock::AreProfileAndLevelSupported(int32_t profile, int32_t lev
     std::cout << "codeclist_ is nullptr" << std::endl;
     return false;
 }
+
+std::vector<Range> CodecListCapiMock::GetAudioSupportedSampleRateRanges()
+{
+    std::vector<Range> retRange{Range(0, 0)};
+    if (codeclist_ != nullptr) {
+        OH_AVRange *ranges = nullptr;
+        uint32_t rangesNum = 0;
+        OH_AVErrCode ret = OH_AVCapability_GetAudioSupportedSampleRateRanges(codeclist_, &ranges, &rangesNum);
+        if (ret != AV_ERR_OK) {
+            std::cout << "OH_AVCapability_GetAudioSupportedSampleRateRanges returns error: " << ret << std::endl;
+            return retRange;
+        }
+        for (uint32_t i = 0; i < rangesNum; i++) {
+            retRange[i].minVal = ranges[i].minVal;
+            retRange[i].maxVal = ranges[i].maxVal;
+        }
+        return retRange;
+    }
+    std::cout << "codeclist_ is nullptr" << std::endl;
+    return retRange;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

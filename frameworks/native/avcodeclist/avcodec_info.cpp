@@ -574,6 +574,15 @@ std::vector<int32_t> AudioCaps::GetSupportedSampleRates()
     return sampleRate;
 }
 
+std::vector<Range> AudioCaps::GetSupportedSampleRateRanges()
+{
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, std::vector<Range>(), "data is null");
+    std::vector<Range> sampleRateRanges = data_->sampleRateRanges;
+    CHECK_AND_RETURN_RET_LOG(sampleRateRanges.size() != 0, sampleRateRanges,
+        "GetSupportedSampleRateRanges failed: sampleRate ranges is null");
+    return sampleRateRanges;
+}
+
 std::vector<int32_t> AudioCaps::GetSupportedProfiles()
 {
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, std::vector<int32_t>(), "data is null");

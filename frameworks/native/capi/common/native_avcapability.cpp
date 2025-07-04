@@ -288,6 +288,44 @@ OH_AVErrCode OH_AVCapability_GetAudioSupportedSampleRates(OH_AVCapability *capab
     return AV_ERR_OK;
 }
 
+OH_AVErrCode OH_AVCapability_GetAudioSupportedSampleRateRanges(OH_AVCapability *capability,
+                                                               OH_AVRange **sampleRateRanges, uint32_t *rangesNum)
+{
+    CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
+        AV_ERR_INVALID_VAL, "Invalid parameter");
+    CHECK_AND_RETURN_RET_LOG(sampleRateRanges != nullptr && rangesNum != nullptr, AV_ERR_INVALID_VAL,
+                             "Get audio supported samplerate ranges failed: null input");
+    *sampleRateRanges = nullptr;
+    *rangesNum = 0;
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isAudio(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the audio capability");
+    }
+    std::shared_ptr<AudioCaps> codecInfo = std::make_shared<AudioCaps>(capData);
+    const std::vector<Range> &vec = codecInfo->GetSupportedSampleRateRanges();
+
+    if (vec.size() == 0) {
+        return AV_ERR_OK;
+    }
+    std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
+    CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, AV_ERR_UNKNOWN,
+        "Get audio supported samplerates failed: CreateAVCodecList failed");
+    if (capability->sampleRateRanges_ != nullptr) {
+        capability->sampleRateRanges_ = nullptr;
+    }
+
+    size_t vecSize = vec.size() * sizeof(OH_AVRange);
+    capability->sampleRateRanges_ = static_cast<OH_AVRange *>(codeclist->NewBuffer(vecSize));
+    CHECK_AND_RETURN_RET_LOG(capability->sampleRateRanges_ != nullptr, AV_ERR_NO_MEMORY, "new buffer failed");
+    for (size_t i = 0; i < vec.size(); i++) {
+        capability->sampleRateRanges_[i].minVal = vec[i].minVal;
+        capability->sampleRateRanges_[i].maxVal = vec[i].maxVal;
+    }
+    *sampleRateRanges = capability->sampleRateRanges_;
+    *rangesNum = vec.size();
+    return AV_ERR_OK;
+}
+
 OH_AVErrCode OH_AVCapability_GetAudioChannelCountRange(OH_AVCapability *capability, OH_AVRange *channelCountRange)
 {
     CHECK_AND_RETURN_RET_LOG(channelCountRange != nullptr, AV_ERR_INVALID_VAL,

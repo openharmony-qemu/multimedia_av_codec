@@ -786,6 +786,9 @@ HWTEST_F(CodecListUnitTest, CodecList_UNSUPPORTED_MIME_002, TestSize.Level1)
         range = capability_->GetVideoFrameRateRangeForSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
         EXPECT_EQ(0, range.minVal);
         EXPECT_EQ(0, range.maxVal);
+        std::vector<Range> ranges = capability_->GetAudioSupportedSampleRateRanges();
+        EXPECT_EQ(0, ranges[0].minVal);
+        EXPECT_EQ(0, ranges[0].maxVal);
     }
 }
 
@@ -1307,4 +1310,18 @@ HWTEST_F(CodecListUnitTest, CodecList_AreProfileAndLevelSupported_Vvc_002, TestS
             EXPECT_FALSE(capability_->AreProfileAndLevelSupported(ERROR_VIDEO_VVC_PROFILE, ERROR_LEVEL));
         }
     }
+}
+
+/**
+ * @tc.name: CodecList_GetAudioSupportedSampleRateRanges_001
+ * @tc.desc: CodecList GetAudioSupportedSampleRateRanges
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetAudioSupportedSampleRateRanges_001, TestSize.Level1)
+{
+    capability_ = CodecListMockFactory::GetCapability(AUDIO_FLAC_MIME, false);
+    ASSERT_NE(nullptr, capability_) << "audio decoder codeclist create fail!" << std::endl;
+    std::vector<Range> sampleRateRanges = capability_->GetAudioSupportedSampleRateRanges();
+    EXPECT_EQ(AUDIO_FLAC_SAMPLE_RATE_RANGE.minVal, sampleRateRanges[0].minVal);
+    EXPECT_EQ(AUDIO_FLAC_SAMPLE_RATE_RANGE.maxVal, sampleRateRanges[0].maxVal);
 }
