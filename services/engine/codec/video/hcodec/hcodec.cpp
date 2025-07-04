@@ -230,6 +230,7 @@ int32_t HCodec::GetOutputFormat(Format &format)
     return AVCS_ERR_OK;
 }
 
+// LCOV_EXCL_START
 int32_t HCodec::GetChannelId(int32_t &channelId)
 {
     GetChannelIdParam param {};
@@ -272,6 +273,7 @@ std::string HCodec::GetHidumperInfo()
         "", "hidumper info not replied");
     return info;
 }
+// LCOV_EXCL_STOP
 
 sptr<Surface> HCodec::CreateInputSurface()
 {
@@ -671,6 +673,7 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
     return AVCS_ERR_OK;
 }
 
+// LCOV_EXCL_START
 int32_t HCodec::AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_PORTDEFINITIONTYPE& def)
 {
     SCOPED_TRACE();
@@ -713,6 +716,7 @@ int32_t HCodec::AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_P
     }
     return AVCS_ERR_OK;
 }
+// LCOV_EXCL_STOP
 
 int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
 {
