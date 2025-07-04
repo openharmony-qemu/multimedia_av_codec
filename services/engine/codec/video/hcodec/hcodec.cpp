@@ -73,6 +73,7 @@ int32_t HCodec::Init(Media::Meta &callerInfo)
         caller_.calledByAvcodec = true;
         caller_.app = caller_.avcodecCaller;
     }
+    callerInfo.GetData("av_codec_event_info_instance_id", instanceId_);
     return DoSyncCall(MsgWhat::INIT, nullptr);
 }
 

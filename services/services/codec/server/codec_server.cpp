@@ -31,6 +31,8 @@
 #include "media_description.h"
 #include "meta/meta_key.h"
 #include "surface_type.h"
+#include "surface_tools.h"
+#include "surface_utils.h"
 #ifdef SUPPORT_DRM
 #include "imedia_key_session_service.h"
 #endif
@@ -396,6 +398,15 @@ int32_t CodecServer::Stop()
         temporalScalability_->SetBlockQueueActive();
         inputParamTask_->Stop();
     }
+    if (isSurfaceMode_) {
+        std::optional<std::pair<std::string, int32_t>> pInfo =
+            SurfaceTools::GetInstance().GetCurProducerInfo(surfaceId_);
+        if (pInfo != std::nullopt) {
+            SurfaceTools::GetInstance().CleanCache(pInfo.value().first,
+                SurfaceUtils::GetInstance()->GetSurface(surfaceId_), true);
+        }
+    }
+
     int32_t retPostProcessing = StopPostProcessing();
     int32_t retCodec = codecBase_->Stop();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
@@ -504,6 +515,14 @@ int32_t CodecServer::Release()
         }
         temporalScalability_ = nullptr;
     }
+    if (isSurfaceMode_) {
+        std::optional<std::pair<std::string, int32_t>> pInfo =
+            SurfaceTools::GetInstance().GetCurProducerInfo(surfaceId_);
+        if (pInfo != std::nullopt) {
+            SurfaceTools::GetInstance().CleanCache(pInfo.value().first,
+                SurfaceUtils::GetInstance()->GetSurface(surfaceId_), true);
+        }
+    }
     int32_t ret = codecBase_->Release();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     codecBase_ = nullptr;
@@ -580,6 +599,7 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     } else {
         ret = codecBase_->SetOutputSurface(surface);
     }
+    surfaceId_ = surface->GetUniqueId();
     isSurfaceMode_ = true;
 #ifdef EMULATOR_ENABLED
     Format config_emulator;

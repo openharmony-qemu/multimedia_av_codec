@@ -1559,7 +1559,7 @@ int32_t FCodec::RegisterListenerToSurface(const sptr<Surface> &surface)
                 return GSERROR_OK;
             }
             return codec->BufferReleasedByConsumer(surfaceId);
-        });
+        }, instanceId_);
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_UNKNOWN, "surface(%" PRIu64 ") register listener failed", surfaceId);
     StartRequestSurfaceBufferThread();
     return AVCS_ERR_OK;
