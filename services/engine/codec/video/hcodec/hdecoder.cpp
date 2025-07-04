@@ -411,6 +411,7 @@ int32_t HDecoder::SetScaleMode()
     return AVCS_ERR_OK;
 }
 
+// LCOV_EXCL_START
 int32_t HDecoder::SetVrrEnable(const Format &format)
 {
     int32_t vrrEnable = 0;
@@ -496,6 +497,7 @@ int32_t HDecoder::InitVrr()
     return AVCS_ERR_OK;
 }
 #endif
+// LCOV_EXCL_STOP
 
 int32_t HDecoder::SubmitOutputBuffersToOmxNode()
 {
@@ -1324,6 +1326,7 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     HLOGI("set surface(%" PRIu64 ")(%s) succ", newId, newSurface->GetName().c_str());
 }
 
+// LCOV_EXCL_START
 #ifdef USE_VIDEO_PROCESSING_ENGINE
 int32_t HDecoder::VrrPrediction(BufferInfo &info)
 {
@@ -1351,4 +1354,5 @@ int32_t HDecoder::VrrPrediction(BufferInfo &info)
     return AVCS_ERR_OK;
 }
 #endif
+// LCOV_EXCL_STOP
 } // namespace OHOS::MediaAVCodec
