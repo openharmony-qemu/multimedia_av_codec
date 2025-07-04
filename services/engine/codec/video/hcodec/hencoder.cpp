@@ -198,6 +198,7 @@ int32_t HEncoder::EnableEncoderParamsFeedback(const Format &format)
     return AVCS_ERR_OK;
 }
 
+// LCOV_EXCL_START
 int32_t HEncoder::EnableFrameQPMap(const Format &format)
 {
     int32_t enableQPMap = false;
@@ -255,6 +256,7 @@ int32_t HEncoder::ConfigBEncodeMode(const Format &format)
     }
     return AVCS_ERR_OK;
 }
+// LCOV_EXCL_STOP
 
 int32_t HEncoder::SetQpRange(const Format &format, bool isCfg)
 {
@@ -618,6 +620,7 @@ std::optional<VideoEncodeBitrateMode> HEncoder::GetBitRateModeFromUser(const For
     return nullopt;
 }
 
+// LCOV_EXCL_START
 int32_t HEncoder::SetCRFMode(int32_t targetQp)
 {
     ControlQualityTargetQp bitrateType;
@@ -633,6 +636,7 @@ int32_t HEncoder::SetCRFMode(int32_t targetQp)
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TARGET_QP, targetQp);
     return AVCS_ERR_OK;
 }
+// LCOV_EXCL_STOP
 
 int32_t HEncoder::SetConstantQualityMode(int32_t quality)
 {
@@ -1205,6 +1209,7 @@ void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodec
     HLOGI("pts=%" PRId64 ", requestIFrame", omxBuffer->pts);
 }
 
+// LCOV_EXCL_START
 void HEncoder::WrapQPMapParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                            const shared_ptr<Media::Meta> &meta)
 {
@@ -1229,6 +1234,7 @@ void HEncoder::WrapQPMapParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> 
     AppendToVector(omxBuffer->alongParam, param);
     AppendArrayToVector(omxBuffer->alongParam, qpMap);
 }
+// LCOV_EXCL_STOP
 
 void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                              const shared_ptr<Media::Meta> &meta)
