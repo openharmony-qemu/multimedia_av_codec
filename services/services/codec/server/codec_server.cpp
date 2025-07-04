@@ -1014,6 +1014,7 @@ void CodecServer::OnError(int32_t errorType, int32_t errorCode)
     std::lock_guard<std::shared_mutex> lock(cbMutex_);
     lastErrMsg_ = AVCSErrorToString(static_cast<AVCodecServiceErrCode>(errorCode));
     FaultEventWrite(FaultType::FAULT_TYPE_INNER_ERROR, lastErrMsg_, "Codec");
+    AVCODEC_LOGW_WITH_TAG("%{public}s", lastErrMsg_.c_str());
     if (videoCb_ != nullptr) {
         videoCb_->OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
     }
@@ -1612,7 +1613,7 @@ void CodecServer::PostProcessingOnError(int32_t errorCode)
         return;
     }
     int32_t ret = VPEErrorToAVCSError(errorCode);
-    AVCODEC_LOGD_WITH_TAG("PostProcessingOnError, errorCodec:%{public}d -> %{public}d", errorCode, ret);
+    AVCODEC_LOGW_WITH_TAG("PostProcessingOnError, errorCodec:%{public}d -> %{public}d", errorCode, ret);
     videoCb_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, ret);
 }
 
