@@ -81,6 +81,8 @@ private:
     void SetDownloaderBySource(std::shared_ptr<MediaSource> source);
     bool CheckIsM3U8Uri();
     void InitHttpSource(const std::shared_ptr<MediaSource>& source);
+    std::string GetCurUrl();
+    Status InitSourcePlugin(const std::shared_ptr<MediaSource>& source);
 
     uint32_t bufferSize_;
     uint32_t waterline_;
@@ -94,6 +96,7 @@ private:
     std::string mimeType_ {};
     std::atomic<bool> isInterruptNeeded_{false};
     std::shared_ptr<MediaSourceLoaderCombinations> loaderCombinations_ {nullptr};
+    std::string redirectUrl_ {};
 };
 } // namespace HttpPluginLite
 } // namespace Plugin
