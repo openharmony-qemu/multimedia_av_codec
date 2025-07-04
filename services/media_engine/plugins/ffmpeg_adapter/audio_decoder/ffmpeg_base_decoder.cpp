@@ -86,6 +86,11 @@ int32_t FfmpegBaseDecoder::GetMaxInputSize() const noexcept
     return maxInputSize_;
 }
 
+void FfmpegBaseDecoder::SetMaxInputSize(int32_t setSize)
+{
+    maxInputSize_ = setSize;
+}
+
 bool FfmpegBaseDecoder::HasExtraData() const noexcept
 {
     return hasExtra_;

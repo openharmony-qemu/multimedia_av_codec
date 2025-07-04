@@ -58,6 +58,8 @@ public:
 
     Status OpenContext();
 
+    void SetMaxInputSize(int32_t setSize);
+
     std::shared_ptr<Meta> GetFormat() const noexcept;
 
     std::shared_ptr<AVCodecContext> GetCodecContext() const noexcept;
