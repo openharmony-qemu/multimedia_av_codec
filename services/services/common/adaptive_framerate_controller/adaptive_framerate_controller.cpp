@@ -101,7 +101,7 @@ AdaptiveFramerateController &AdaptiveFramerateController::GetInstance()
 
 void AdaptiveFramerateController::Add(int32_t intanceId, std::shared_ptr<FramerateCalculator> calculator)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(calculatorsMutex_);
     calculators_[intanceId] = calculator;
     if (!isRunning_) {
         isRunning_ = true;
@@ -113,16 +113,20 @@ void AdaptiveFramerateController::Add(int32_t intanceId, std::shared_ptr<Framera
 
 void AdaptiveFramerateController::Remove(int32_t instanceId)
 {
-    std::unique_lock<std::mutex> lock(mutex_);
-    calculators_.erase(instanceId);
-    if (calculators_.empty()) {
-        isRunning_ = false;
-        condition_.notify_all();
-        lock.unlock();
-        if (looper_ && looper_->joinable()) {
-            looper_->join();
-            looper_.reset();
+    {
+        std::lock_guard<std::mutex> calculatorsLock(calculatorsMutex_);
+        calculators_.erase(instanceId);
+        if (!calculators_.empty() || !looper_) {
+            return;
         }
+    }
+
+    std::lock_guard<std::mutex> looperReleaseLock(looperReleaseMutex_);
+    isRunning_ = false;
+    condition_.notify_all();
+    if (looper_ && looper_->joinable()) {
+        looper_->join();
+        looper_.reset();
     }
 }
 
@@ -131,7 +135,7 @@ void AdaptiveFramerateController::Loop()
     using namespace std::chrono_literals;
     constexpr auto checkInterval = 1s;
     while (isRunning_) {
-        std::unique_lock<std::mutex> lock(mutex_);
+        std::unique_lock<std::mutex> lock(calculatorsMutex_);
         condition_.wait_for(lock, checkInterval, [this]() { return !isRunning_; });
         if (!isRunning_) {
             break;
