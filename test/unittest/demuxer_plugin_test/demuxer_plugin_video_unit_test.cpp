@@ -43,7 +43,7 @@ list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SY
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 static const string TEST_RELATIVE_PATH = "/data/test/media/";
-// FLV 
+// FLV
 string g_flvUriPath = TEST_URI_PATH + "h264.flv";
 string g_flvPath = string("/data/test/media/h264.flv");
 // MP4
@@ -53,6 +53,12 @@ string g_mp4Path_3 = string("/data/test/media/MPEG4.mp4");
 // FMP4
 string g_fmp4Path_1 = string("/data/test/media/h264_fmp4.mp4");
 string g_fmp4Path_2 = string("/data/test/media/h265_fmp4.mp4");
+// MOV
+string g_movPath_1 = string("/data/test/media/265_pcm_s16le.mov");
+string g_movPath_2 = string("/data/test/media/h264_aac.mov");
+string g_movPath_3 = string("/data/test/media/h264_mp3.mov");
+string g_movPath_4 = string("/data/test/media/h264_vorbis.mov");
+string g_movPath_5 = string("/data/test/media/MPEG4_mp2.mov");
 // MKV
 string g_mkvPath_1 = string("/data/test/media/h264_mp3_4sec.mkv");
 string g_mkvPath_2 = string("/data/test/media/h265_aac_4sec.mkv");
@@ -332,6 +338,7 @@ void DemuxerPluginUnitTest::CheckAllFrames(const std::vector<int>& expectedFrame
             eosFlag_[i] = false;
         }
     }
+    vector<int> KeyFrameIndexs;
     SetInitValue();
     OHOS::Media::AVBufferWrapper buffer(videoHeight_ * videoWidth_ * 3); // 3 is use for buffer allocate
     while (!isEOS(eosFlag_)) {
@@ -343,12 +350,20 @@ void DemuxerPluginUnitTest::CheckAllFrames(const std::vector<int>& expectedFrame
             ASSERT_TRUE(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR);
             flag_ = buffer.mediaAVBuffer->flag_;
             if (id == 0) {
+                if (flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
+                    KeyFrameIndexs.push_back(frames_[0]);
+                }
                 EXPECT_TRUE(CheckKeyFrameIndex(
                     keyFrameIndex, frames_[0], flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME));
             }
             CountFrames(id);
         }
     }
+    cout << "KeyFrameIndex :[" << endl;
+    for (auto indexs : KeyFrameIndexs) {
+        cout << indexs << ", ";
+    }
+    cout << "]" << endl;
     for (size_t i = 0; i < expectedFrames.size(); ++i) {
         EXPECT_EQ(frames_[i], expectedFrames[i]);
         EXPECT_EQ(keyFrames_[i], expectedKeyFrames[i]);
@@ -793,10 +808,10 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP4_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP4_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_mp4Path_1;
-    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3); // 读帧
+    std::string filePath = g_mp4Path_2;
+    InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({602, 604, 433, 433}, {3, 3, 433, 433}, {0, 250, 500});
+    CheckAllFrames({602, 433, 417}, {3, 433, 417}, {0, 250, 500});
 }
 
 /**
@@ -807,24 +822,14 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP4_0002, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP4_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_mp4Path_2;
-    InitResource(filePath, pluginName);
-    ASSERT_TRUE(initStatus_);
-    CheckAllFrames({602, 433, 417}, {3, 433, 417}, {0, 250, 500});
-}
-
-/**
- * @tc.name: Demuxer_ReadSample_MP4_0004
- * @tc.desc: Copy current sample to buffer (mp4)
- * @tc.type: FUNC
- */
-HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP4_0004, TestSize.Level1)
-{
-    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     std::string filePath = g_mp4Path_3;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({602, 434}, {51, 434}, {0, 250});
+    CheckAllFrames({602, 434}, {51, 434}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144,
+                                           156, 168, 180, 192, 204, 216, 228, 240, 252, 264, 276,
+                                           288, 300, 312, 324, 336, 348, 360, 372, 384, 396, 408,
+                                           420, 432, 444, 456, 468, 480, 492, 504, 516, 528, 540,
+                                           552, 564, 576, 588, 600});
 }
 
 /**
@@ -838,7 +843,96 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_FMP4_0001, TestSize.Level1)
     std::string filePath = g_fmp4Path_1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({602, 433}, {3, 433}, {0, 250});
+    CheckAllFrames({602, 433}, {3, 433}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_FMP4_0002
+ * @tc.desc: Copy current sample to buffer (fmp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_FMP4_0002, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_fmp4Path_2;
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({604, 433}, {3, 433}, {0, 246, 497});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_MOV_0001
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_1;
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({604, 433}, {3, 433}, {0, 246, 497});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_MOV_0002
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0002, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_2;
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 434}, {3, 434}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_MOV_0003
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0003, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_3;
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 386}, {3, 386}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_MOV_0004
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0004, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_4;
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 609}, {3, 609}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_MOV_0005
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0005, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_5;
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 385}, {51, 385}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120,
+                                          132, 144, 156, 168, 180, 192, 204, 216, 228,
+                                          240, 252, 264, 276, 288, 300, 312, 324, 336,
+                                          348, 360, 372, 384, 396, 408, 420, 432, 444,
+                                          456, 468, 480, 492, 504, 516, 528, 540, 552,
+                                          564, 576, 588, 600,});
 }
 
 /**
@@ -1124,13 +1218,26 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPG_0003, TestSize.Level1)
                                                     571, 621, 658, 684, 727, 772, 867, 1117, 1163});
 }
 
-
 /**
- * @tc.name: Demuxer_ReadSample_WeakNetwork_MP4_0003
+ * @tc.name: Demuxer_ReadSample_WeakNetwork_MP4_0001
  * @tc.desc: Copy current sample to buffer (mp4)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0003, TestSize.Level1)
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_mp4Path_1;
+    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 604, 433, 433}, {3, 3, 433, 433}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_WeakNetwork_MP4_0002
+ * @tc.desc: Copy current sample to buffer (mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     std::string filePath = g_mp4Path_2;
@@ -1144,13 +1251,120 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0003, TestSiz
  * @tc.desc: Copy current sample to buffer (mp4)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0004, TestSize.Level1)
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     std::string filePath = g_mp4Path_3;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({602, 434}, {3, 434}, {0, 250});
+    CheckAllFrames({602, 434}, {51, 434}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144,
+                                           156, 168, 180, 192, 204, 216, 228, 240, 252, 264, 276,
+                                           288, 300, 312, 324, 336, 348, 360, 372, 384, 396, 408,
+                                           420, 432, 444, 456, 468, 480, 492, 504, 516, 528, 540,
+                                           552, 564, 576, 588, 600});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_WeakNetwork_FMP4_0001
+ * @tc.desc: Copy current sample to buffer (fmp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_FMP4_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_fmp4Path_1;
+    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 433}, {3, 433}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_WeakNetwork_FMP4_0002
+ * @tc.desc: Copy current sample to buffer (fmp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_FMP4_0002, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_fmp4Path_2;
+    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({604, 433}, {3, 433}, {0, 246, 497});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_WeakNetwork_MOV_0001
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_1;
+    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({604, 433}, {3, 433}, {0, 246, 497});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_WeakNetwork_MOV_0002
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0002, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_2;
+    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 434}, {3, 434}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_WeakNetwork_MOV_0003
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0003, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_3;
+    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 386}, {3, 386}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_WeakNetwork_MOV_0004
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0004, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_4;
+    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 609}, {3, 609}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_WeakNetwork_MOV_0005
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0005, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_5;
+    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 385}, {51, 385}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120,
+                                          132, 144, 156, 168, 180, 192, 204, 216, 228,
+                                          240, 252, 264, 276, 288, 300, 312, 324, 336,
+                                          348, 360, 372, 384, 396, 408, 420, 432, 444,
+                                          456, 468, 480, 492, 504, 516, 528, 540, 552,
+                                          564, 576, 588, 600,});
 }
 
 /**
@@ -1436,6 +1650,154 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPG_0003, TestSiz
                                                     571, 621, 658, 684, 727, 772, 867, 1117, 1163});
 }
 
+/**
+ * @tc.name: Demuxer_ReadSample_URI_MP4_0001
+ * @tc.desc: Copy current sample to buffer (mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP4_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_mp4Path_1;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 604, 433, 433}, {3, 3, 433, 433}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_URI_MP4_0002
+ * @tc.desc: Copy current sample to buffer (mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP4_0002, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_mp4Path_2;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 433, 417}, {3, 433, 417}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_URI_MP4_0003
+ * @tc.desc: Copy current sample to buffer (mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP4_0003, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_mp4Path_3;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 434}, {51, 434}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144,
+                                           156, 168, 180, 192, 204, 216, 228, 240, 252, 264, 276,
+                                           288, 300, 312, 324, 336, 348, 360, 372, 384, 396, 408,
+                                           420, 432, 444, 456, 468, 480, 492, 504, 516, 528, 540,
+                                           552, 564, 576, 588, 600});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_URI_FMP4_0001
+ * @tc.desc: Copy current sample to buffer (fmp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_FMP4_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_fmp4Path_1;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 433}, {3, 433}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_URI_FMP4_0002
+ * @tc.desc: Copy current sample to buffer (fmp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_FMP4_0002, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_fmp4Path_2;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({604, 433}, {3, 433}, {0, 246, 497});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_URI_MOV_0001
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_1;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({604, 433}, {3, 433}, {0, 246, 497});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_URI_MOV_0002
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0002, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_2;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 434}, {3, 434}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_URI_MOV_0003
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0003, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_3;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 386}, {3, 386}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_URI_MOV_0004
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0004, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_4;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 609}, {3, 609}, {0, 250, 500});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_URI_MOV_0005
+ * @tc.desc: Copy current sample to buffer (mov)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0005, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_movPath_5;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({602, 385}, {51, 385}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120,
+                                          132, 144, 156, 168, 180, 192, 204, 216, 228,
+                                          240, 252, 264, 276, 288, 300, 312, 324, 336,
+                                          348, 360, 372, 384, 396, 408, 420, 432, 444,
+                                          456, 468, 480, 492, 504, 516, 528, 540, 552,
+                                          564, 576, 588, 600,});
+}
 
 /**
  * @tc.name: Demuxer_ReadSample_URI_MKV_0001
