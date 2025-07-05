@@ -1290,6 +1290,7 @@ Status MediaDemuxer::DoSelectTrack(int32_t trackId, int32_t curTrackId)
         demuxerPluginManager_->UpdateTempTrackMapInfo(trackId, trackId, -1);
 
         if (GetEnableSampleQueueFlag()) {
+            AutoLock lock(mapMutex_);
             sampleQueueMap_.insert(
                 std::pair<int32_t, std::shared_ptr<SampleQueue>>(trackId, sampleQueueMap_[curTrackId]));
             sampleQueueMap_.erase(curTrackId);
@@ -2295,6 +2296,7 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
     bufferMap_.erase(currentTrackId);
 
     if (GetEnableSampleQueueFlag()) {
+        AutoLock lock(mapMutex_);
         sampleQueueMap_.insert(
             std::pair<int32_t, std::shared_ptr<SampleQueue>>(newTrackId, sampleQueueMap_[currentTrackId]));
         sampleQueueMap_.erase(currentTrackId);
