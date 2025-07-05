@@ -118,7 +118,7 @@ void DemuxerPluginUnitTest::TearDown(void)
 
 void DemuxerPluginUnitTest::InitResourceURI(const std::string &filePath, std::string pluginName)
 {
-    std::string uri = TEST_URI_PATH + filePath.substr(TEST_RELATIVE_PATH.size()); 
+    std::string uri = TEST_URI_PATH + filePath.substr(TEST_RELATIVE_PATH.size());
     std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(uri);
     std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxer>();
     std::shared_ptr<Source> source = std::make_shared<Source>();
@@ -138,7 +138,7 @@ void DemuxerPluginUnitTest::InitResourceURI(const std::string &filePath, std::st
 void DemuxerPluginUnitTest::InitWeakNetworkDemuxerPluginURI(
     const std::string& filePath, std::string pluginName, int64_t failOffset, size_t maxFailCount)
 {
-    std::string uri = TEST_URI_PATH + filePath.substr(TEST_RELATIVE_PATH.size()); 
+    std::string uri = TEST_URI_PATH + filePath.substr(TEST_RELATIVE_PATH.size());
     printf("DemuxerPluginUnitTest::InitWeakNetworkDemuxerPluginURI, uri: %s\n", uri.c_str());
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
     SourceCallback cb = SourceCallback(demuxerPluginManager);
@@ -652,12 +652,12 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorSeekToTime_0001, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     ASSERT_EQ(demuxerPlugin_->GetMediaInfo(mediaInfo_), Status::OK);
     SetInitValue();
-    int64_t seekTime_ = 0;
+    int64_t seekTime = 0;
     for (uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx) {
         ASSERT_EQ(demuxerPlugin_->SelectTrack(idx), Status::OK);
     }
-    ASSERT_NE(demuxerPlugin_->SeekTo(0, INT64_MAX, SeekMode::SEEK_NEXT_SYNC, seekTime_), Status::OK);
-    ASSERT_NE(demuxerPlugin_->SeekTo(0, -1000, SeekMode::SEEK_NEXT_SYNC, seekTime_), Status::OK);
+    ASSERT_NE(demuxerPlugin_->SeekTo(0, INT64_MAX, SeekMode::SEEK_NEXT_SYNC, seekTime), Status::OK);
+    ASSERT_NE(demuxerPlugin_->SeekTo(0, -1000, SeekMode::SEEK_NEXT_SYNC, seekTime), Status::OK);
 }
 
 /**
@@ -924,7 +924,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0005, TestSize.Level1)
                                           240, 252, 264, 276, 288, 300, 312, 324, 336,
                                           348, 360, 372, 384, 396, 408, 420, 432, 444,
                                           456, 468, 480, 492, 504, 516, 528, 540, 552,
-                                          564, 576, 588, 600,});
+                                          564, 576, 588, 600});
 }
 
 /**
@@ -1103,14 +1103,14 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0004, TestSize.Level1)
     std::string filePath = g_aviPath4;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 174, 0}, {103, 174, 0},{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-                                                16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-                                                30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
-                                                44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-                                                58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
-                                                72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
-                                                86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
-                                                100, 101, 102});
+    CheckAllFrames({103, 174, 0}, {103, 174, 0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                                                  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+                                                  30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                                                  44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+                                                  58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+                                                  72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
+                                                  86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
+                                                  100, 101, 102});
 }
 
 /**
@@ -1356,7 +1356,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0005, TestSiz
                                           240, 252, 264, 276, 288, 300, 312, 324, 336,
                                           348, 360, 372, 384, 396, 408, 420, 432, 444,
                                           456, 468, 480, 492, 504, 516, 528, 540, 552,
-                                          564, 576, 588, 600,});
+                                          564, 576, 588, 600});
 }
 
 /**
@@ -1535,14 +1535,14 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0004, TestSiz
     std::string filePath = g_aviPath4;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 174, 0}, {103, 174, 0},{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-                                                16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-                                                30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
-                                                44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-                                                58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
-                                                72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
-                                                86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
-                                                100, 101, 102});
+    CheckAllFrames({103, 174, 0}, {103, 174, 0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                                                  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+                                                  30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                                                  44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+                                                  58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+                                                  72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
+                                                  86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
+                                                  100, 101, 102});
 }
 
 /**
