@@ -63,10 +63,11 @@ private:
     void Loop();
 
     std::unordered_map<int32_t, std::weak_ptr<FramerateCalculator>> calculators_;
+    std::mutex calculatorsMutex_;
     std::unique_ptr<std::thread> looper_;
-    std::atomic<bool> isRunning_ = false;
-    std::mutex mutex_;
+    std::mutex looperReleaseMutex_;
     std::condition_variable condition_;
+    std::atomic<bool> isRunning_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
