@@ -182,6 +182,7 @@ struct CapabilityData {
     Range maxBitrate;
     Range sqrFactor;
     int32_t maxVersion = 0;
+    std::vector<Range> sampleRateRanges;
 };
 
 struct LevelParams {
@@ -559,6 +560,13 @@ public:
      * @version 4.0
      */
     std::vector<int32_t> GetSupportedSampleRates();
+
+    /**
+     * @brief Get supported audio sample rate ranges.
+     * @return Returns an array of supported sample rate ranges.
+     * @since 6.0
+     */
+    std::vector<Range> GetSupportedSampleRateRanges();
 
     /**
      * @brief Get supported codec profile number.

@@ -68,6 +68,7 @@ bool CodecListParcel::Marshalling(MessageParcel &parcel, CapabilityData &capabil
     (void)parcel.WriteInt32(capabilityData.sqrFactor.minVal);
     (void)parcel.WriteInt32(capabilityData.sqrFactor.maxVal);
     (void)parcel.WriteInt32(capabilityData.maxVersion);
+    (void)Marshalling(parcel, capabilityData.sampleRateRanges);
     AVCODEC_LOGD("success to Marshalling capabilityDataArray");
 
     return true;
@@ -102,6 +103,16 @@ bool CodecListParcel::Marshalling(MessageParcel &parcel, const std::map<int32_t,
         (void)parcel.WriteInt32(it->first);
         Format format = it->second;
         format.GetMeta()->ToParcel(parcel);
+    }
+    return true;
+}
+
+bool CodecListParcel::Marshalling(MessageParcel &parcel, const std::vector<Range> &audioSampleRateRanges)
+{
+    parcel.WriteUint32(audioSampleRateRanges.size());
+    for (const Range range: audioSampleRateRanges) {
+        parcel.WriteInt32(range.minVal);
+        parcel.WriteInt32(range.maxVal);
     }
     return true;
 }
@@ -153,6 +164,7 @@ bool CodecListParcel::Unmarshalling(MessageParcel &parcel, CapabilityData &capab
     capabilityData.sqrFactor.minVal = parcel.ReadInt32();
     capabilityData.sqrFactor.maxVal = parcel.ReadInt32();
     capabilityData.maxVersion = parcel.ReadInt32();
+    CHECK_AND_RETURN_RET_LOG(Unmarshalling(parcel, capabilityData.sampleRateRanges), false, "sampleRateRanges failed");
     AVCODEC_LOGD("success to Unmarshalling capabilityDataArray");
     return true;
 }
@@ -198,6 +210,18 @@ bool CodecListParcel::Unmarshalling(MessageParcel &parcel, std::map<int32_t, For
         meta->FromParcel(parcel);
         format.SetMeta(std::move(meta));
         mapIntToFormat.insert(std::make_pair(key, format));
+    }
+    return true;
+}
+
+bool CodecListParcel::Unmarshalling(MessageParcel &parcel, std::vector<Range> &audioSampleRateRanges)
+{
+    uint32_t size = parcel.ReadUint32();
+    for (uint32_t index = 0; index < size; index++) {
+        Range range;
+        range.minVal = parcel.ReadInt32();
+        range.maxVal = parcel.ReadInt32();
+        audioSampleRateRanges.insert(audioSampleRateRanges.end(), range);
     }
     return true;
 }
