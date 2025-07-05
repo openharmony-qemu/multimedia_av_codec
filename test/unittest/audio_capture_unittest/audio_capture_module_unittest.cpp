@@ -223,9 +223,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, OnInterrupt_001, TestSize.Level1)
     status = audioCaptureModule_->Init();
 
     // Test OnInterrupt interruptEvent.hintType == AudioStandard::InterruptHint::INTERRUPT_HINT_MUTE
-    AudioStandard::InterruptEvent interruptEvent {
-        .hintType = AudioStandard::InterruptHint::INTERRUPT_HINT_MUTE
-    };
+    AudioStandard::InterruptEvent interruptEvent = {};
+    interruptEvent.hintType = AudioStandard::InterruptHint::INTERRUPT_HINT_MUTE;
     audioCaptureModule_->audioInterruptCallback_->OnInterrupt(interruptEvent);
 
     // Test OnInterrupt interruptEvent.hintType == AudioStandard::InterruptHint::INTERRUPT_HINT_UNMUTE
@@ -255,9 +254,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, OnInterrupt_002, TestSize.Level1)
 
     // Test OnInterrupt audioCaptureModuleCallback_ == nullptr
     audioCaptureModule_->audioCaptureModuleCallback_ = nullptr;
-    AudioStandard::InterruptEvent interruptEvent {
-        .hintType = AudioStandard::InterruptHint::INTERRUPT_HINT_NONE
-    };
+    AudioStandard::InterruptEvent interruptEvent = {};
+    interruptEvent.hintType = AudioStandard::InterruptHint::INTERRUPT_HINT_NONE;
     audioCaptureModule_->audioInterruptCallback_->OnInterrupt(interruptEvent);
 
     // Test OnInterrupt audioCaptureModuleCallback_ != nullptr
