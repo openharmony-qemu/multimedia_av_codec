@@ -39,49 +39,49 @@ using namespace OHOS::Media::Plugins;
 
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC};
-
+const int32_t DEFAULT_TIMEOUT = 100; // 100ms
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 static const string TEST_RELATIVE_PATH = "/data/test/media/";
 // FLV
-string g_flvUriPath = TEST_URI_PATH + "h264.flv";
 string g_flvPath = string("/data/test/media/h264.flv");
 // MP4
-string g_mp4Path_1 = string("/data/test/media/h264_double_video_audio.mp4");
-string g_mp4Path_2 = string("/data/test/media/avcc_aac_mp3.mp4");
-string g_mp4Path_3 = string("/data/test/media/MPEG4.mp4");
+string g_mp4Path1 = string("/data/test/media/h264_double_video_audio.mp4");
+string g_mp4Path2 = string("/data/test/media/avcc_aac_mp3.mp4");
+string g_mp4Path3 = string("/data/test/media/MPEG4.mp4");
 // FMP4
-string g_fmp4Path_1 = string("/data/test/media/h264_fmp4.mp4");
-string g_fmp4Path_2 = string("/data/test/media/h265_fmp4.mp4");
+string g_fmp4Path1 = string("/data/test/media/h264_fmp4.mp4");
+string g_fmp4Path2 = string("/data/test/media/h265_fmp4.mp4");
 // MOV
-string g_movPath_1 = string("/data/test/media/265_pcm_s16le.mov");
-string g_movPath_2 = string("/data/test/media/h264_aac.mov");
-string g_movPath_3 = string("/data/test/media/h264_mp3.mov");
-string g_movPath_4 = string("/data/test/media/h264_vorbis.mov");
-string g_movPath_5 = string("/data/test/media/MPEG4_mp2.mov");
+string g_movPath1 = string("/data/test/media/265_pcm_s16le.mov");
+string g_movPath2 = string("/data/test/media/h264_aac.mov");
+string g_movPath3 = string("/data/test/media/h264_mp3.mov");
+string g_movPath4 = string("/data/test/media/h264_vorbis.mov");
+string g_movPath5 = string("/data/test/media/MPEG4_mp2.mov");
 // MKV
-string g_mkvPath_1 = string("/data/test/media/h264_mp3_4sec.mkv");
-string g_mkvPath_2 = string("/data/test/media/h265_aac_4sec.mkv");
-string g_mkvPath_3 = string("/data/test/media/h265_opus_4sec.mkv");
+string g_mkvPath1 = string("/data/test/media/h264_mp3_4sec.mkv");
+string g_mkvPath2 = string("/data/test/media/h265_aac_4sec.mkv");
+string g_mkvPath3 = string("/data/test/media/h265_opus_4sec.mkv");
 // MPEG-TS
-string g_mpegTsPath_1 = string("/data/test/media/2obj_44100Hz_16bit_32k.ts");
-string g_mpegTsPath_2 = string("/data/test/media/hevc_aac_1920x1080_g30_30fps.ts");
-string g_mpegTsPath_3 = string("/data/test/media/h264_ac3.mts");
-string g_mpegTsPath_4 = string("/data/test/media/test_mpeg2_Gop25_4sec.ts");
-string g_mpegTsPath_5 = string("/data/test/media/test_mpeg4_Gop25_4sec.ts");
+string g_mpegTsPath1 = string("/data/test/media/2obj_44100Hz_16bit_32k.ts");
+string g_mpegTsPath2 = string("/data/test/media/hevc_aac_1920x1080_g30_30fps.ts");
+string g_mpegTsPath3 = string("/data/test/media/h264_ac3.mts");
+string g_mpegTsPath4 = string("/data/test/media/test_mpeg2_Gop25_4sec.ts");
+string g_mpegTsPath5 = string("/data/test/media/test_mpeg4_Gop25_4sec.ts");
 // AVI
-string g_aviPath_1 = string("/data/test/media/h264_aac.avi");
-string g_aviPath_2 = string("/data/test/media/h264_mp3.avi");
-string g_aviPath_3 = string("/data/test/media/mpeg4_pcm.avi");
-string g_aviPath_4 = string("/data/test/media/test_263_aac_B_Gop25_4sec_cover.avi");
-string g_aviPath_5 = string("/data/test/media/test_mpeg4_mp3_B_Gop25_4sec_cover.avi");
-string g_aviPath_6 = string("/data/test/media/test_mpeg2_mp2_B_Gop25_4sec_cover.avi");
+string g_aviPath1 = string("/data/test/media/h264_aac.avi");
+string g_aviPath2 = string("/data/test/media/h264_mp3.avi");
+string g_aviPath3 = string("/data/test/media/mpeg4_pcm.avi");
+string g_aviPath4 = string("/data/test/media/test_263_aac_B_Gop25_4sec_cover.avi");
+string g_aviPath5 = string("/data/test/media/test_mpeg4_mp3_B_Gop25_4sec_cover.avi");
+string g_aviPath6 = string("/data/test/media/test_mpeg2_mp2_B_Gop25_4sec_cover.avi");
 // MPG
-string g_mpgPath_1 = string("/data/test/media/mpeg_mpeg2_mp2.mpeg");
-string g_mpgPath_2 = string("/data/test/media/mpeg_mpeg2_mp3.mpeg");
-string g_mpgPath_3 = string("/data/test/media/mpeg_h264_mp2.mpeg");
+string g_mpgPath1 = string("/data/test/media/mpeg_mpeg2_mp2.mpeg");
+string g_mpgPath2 = string("/data/test/media/mpeg_mpeg2_mp3.mpeg");
+string g_mpgPath3 = string("/data/test/media/mpeg_h264_mp2.mpeg");
 
-void DemuxerPluginUnitTest::SetUpTestCase(void) {
+void DemuxerPluginUnitTest::SetUpTestCase(void)
+{
     if (server != nullptr) {
         server->StopServer();
         server.reset();
@@ -91,7 +91,8 @@ void DemuxerPluginUnitTest::SetUpTestCase(void) {
     cout << "start" << endl;
 }
 
-void DemuxerPluginUnitTest::TearDownTestCase(void) {
+void DemuxerPluginUnitTest::TearDownTestCase(void)
+{
     if (server == nullptr) {
         return;
     }
@@ -338,32 +339,23 @@ void DemuxerPluginUnitTest::CheckAllFrames(const std::vector<int>& expectedFrame
             eosFlag_[i] = false;
         }
     }
-    vector<int> KeyFrameIndexs;
     SetInitValue();
     OHOS::Media::AVBufferWrapper buffer(videoHeight_ * videoWidth_ * 3); // 3 is use for buffer allocate
     while (!isEOS(eosFlag_)) {
         for (auto id : selectedTrackIds_) {
-            auto ret = demuxerPlugin_->ReadSample(id, buffer.mediaAVBuffer, 100);
+            auto ret = demuxerPlugin_->ReadSample(id, buffer.mediaAVBuffer, DEFAULT_TIMEOUT);
             while (ret == Status::ERROR_WAIT_TIMEOUT) {
-                ret = demuxerPlugin_->ReadSample(id, buffer.mediaAVBuffer, 100);
+                ret = demuxerPlugin_->ReadSample(id, buffer.mediaAVBuffer, DEFAULT_TIMEOUT);
             }
             ASSERT_TRUE(ret == Status::OK || ret == Status::END_OF_STREAM || ret == Status::NO_ERROR);
             flag_ = buffer.mediaAVBuffer->flag_;
             if (id == 0) {
-                if (flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
-                    KeyFrameIndexs.push_back(frames_[0]);
-                }
                 EXPECT_TRUE(CheckKeyFrameIndex(
                     keyFrameIndex, frames_[0], flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME));
             }
             CountFrames(id);
         }
     }
-    cout << "KeyFrameIndex :[" << endl;
-    for (auto indexs : KeyFrameIndexs) {
-        cout << indexs << ", ";
-    }
-    cout << "]" << endl;
     for (size_t i = 0; i < expectedFrames.size(); ++i) {
         EXPECT_EQ(frames_[i], expectedFrames[i]);
         EXPECT_EQ(keyFrames_[i], expectedKeyFrames[i]);
@@ -501,8 +493,8 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorReadSample_0002, TestSize.Level1)
     ASSERT_EQ(demuxerPlugin_->Reset(), Status::OK);
     ASSERT_NE(demuxerPlugin_->SelectTrack(0), Status::OK);
     ASSERT_NE(demuxerPlugin_->SelectTrack(1), Status::OK);
-    OHOS::Media::AVBufferWrapper buffer_1(DEFAULT_BUFFSIZE);
-    ASSERT_NE(demuxerPlugin_->ReadSample(0, buffer_1.mediaAVBuffer, 100), Status::OK);
+    OHOS::Media::AVBufferWrapper buffer1(DEFAULT_BUFFSIZE);
+    ASSERT_NE(demuxerPlugin_->ReadSample(0, buffer1.mediaAVBuffer, 100), Status::OK);
 }
 
 /**
@@ -623,14 +615,14 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekToTime_0001, TestSize.Level1)
     for (uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx) {
         ASSERT_EQ(demuxerPlugin_->SelectTrack(idx), Status::OK);
     }
-    int64_t seekTime_ = 0;
+    int64_t seekTime = 0;
     list<int64_t> toPtsList = {0, 1500, 1000, 1740, 1970, 2100}; // ms
     vector<int32_t> videoVals = {76, 76, 76, 0, 76, 0, 0, 76, 76, 0, 76, 0, 0, 76, 0, 0, 76, 0};
     vector<int32_t> audioVals = {107, 107, 107, 0, 107, 0, 0, 107, 107, 0, 107, 0, 0, 107, 0, 0, 107, 0};
     OHOS::Media::AVBufferWrapper buffer(videoHeight_ * videoWidth_ * 3);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            Status ret_ = demuxerPlugin_->SeekTo(-1, *toPts, *mode, seekTime_);
+            Status ret_ = demuxerPlugin_->SeekTo(-1, *toPts, *mode, seekTime);
             if (ret_ != Status::OK) {
                 printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
@@ -644,8 +636,8 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekToTime_0001, TestSize.Level1)
             RemoveValue();
         }
     }
-    ASSERT_NE(demuxerPlugin_->SeekTo(0, 11000, SeekMode::SEEK_NEXT_SYNC, seekTime_), Status::OK);
-    ASSERT_NE(demuxerPlugin_->SeekTo(0, -1000, SeekMode::SEEK_NEXT_SYNC, seekTime_), Status::OK);
+    ASSERT_NE(demuxerPlugin_->SeekTo(0, 11000, SeekMode::SEEK_NEXT_SYNC, seekTime), Status::OK);
+    ASSERT_NE(demuxerPlugin_->SeekTo(0, -1000, SeekMode::SEEK_NEXT_SYNC, seekTime), Status::OK);
 }
 
 /**
@@ -794,7 +786,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetNextSampleSize_001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP4_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_mp4Path_1;
+    std::string filePath = g_mp4Path1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 604, 433, 433}, {3, 3, 433, 433}, {0, 250, 500});
@@ -808,7 +800,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP4_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP4_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_mp4Path_2;
+    std::string filePath = g_mp4Path2;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 433, 417}, {3, 433, 417}, {0, 250, 500});
@@ -822,7 +814,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP4_0002, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP4_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_mp4Path_3;
+    std::string filePath = g_mp4Path3;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 434}, {51, 434}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144,
@@ -840,7 +832,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP4_0003, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_FMP4_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_fmp4Path_1;
+    std::string filePath = g_fmp4Path1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 433}, {3, 433}, {0, 250, 500});
@@ -854,7 +846,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_FMP4_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_FMP4_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_fmp4Path_2;
+    std::string filePath = g_fmp4Path2;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({604, 433}, {3, 433}, {0, 246, 497});
@@ -868,7 +860,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_FMP4_0002, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_1;
+    std::string filePath = g_movPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({604, 433}, {3, 433}, {0, 246, 497});
@@ -882,7 +874,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_2;
+    std::string filePath = g_movPath2;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 434}, {3, 434}, {0, 250, 500});
@@ -896,7 +888,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0002, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_3;
+    std::string filePath = g_movPath3;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 386}, {3, 386}, {0, 250, 500});
@@ -910,7 +902,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0003, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0004, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_4;
+    std::string filePath = g_movPath4;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 609}, {3, 609}, {0, 250, 500});
@@ -924,7 +916,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0004, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0005, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_5;
+    std::string filePath = g_movPath5;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 385}, {51, 385}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120,
@@ -943,7 +935,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0005, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MKV_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_matroska,webm";
-    std::string filePath = g_mkvPath_1;
+    std::string filePath = g_mkvPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({239, 153, 0}, {4, 153, 0}, {0, 60, 120, 180});
@@ -957,7 +949,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MKV_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MKV_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_matroska,webm";
-    std::string filePath = g_mkvPath_2;
+    std::string filePath = g_mkvPath2;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({242, 173, 0}, {1, 173, 0}, {0, 500});
@@ -971,7 +963,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MKV_0002, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MKV_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_matroska,webm";
-    std::string filePath = g_mkvPath_3;
+    std::string filePath = g_mkvPath3;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({242, 200, 0}, {1, 200, 0}, {0, 500});
@@ -985,15 +977,15 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MKV_0003, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_1;
+    std::string filePath = g_mpegTsPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({92, 0, 0}, {92, 0, 0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,  
-                                            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,  
-                                            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,  
-                                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,  
-                                            58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,  
-                                            72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,  
+    CheckAllFrames({92, 0, 0}, {92, 0, 0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                                            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+                                            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+                                            58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+                                            72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
                                             86, 87, 88, 89, 90, 91});
 }
 
@@ -1005,7 +997,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0001, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_2;
+    std::string filePath = g_mpegTsPath2;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({303, 433, 0}, {0, 433, 0}, {500});
@@ -1019,7 +1011,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0002, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_3;
+    std::string filePath = g_mpegTsPath3;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 314, 0}, {3, 314, 0}, {0, 250, 500});
@@ -1033,7 +1025,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0003, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0004, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_4;
+    std::string filePath = g_mpegTsPath4;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 174, 0}, {5, 174, 0}, {0, 25, 50, 75, 100});
@@ -1047,7 +1039,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0004, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0005, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_5;
+    std::string filePath = g_mpegTsPath5;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 155, 0}, {9, 155, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
@@ -1061,7 +1053,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0005, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_1;
+    std::string filePath = g_aviPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 433, 0}, {3, 433, 0}, {0, 250, 500});
@@ -1075,7 +1067,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_2;
+    std::string filePath = g_aviPath2;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 386, 0}, {3, 386, 0}, {0, 250, 500});
@@ -1089,15 +1081,15 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0002, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_3;
+    std::string filePath = g_aviPath3;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({604, 433, 0}, {51, 433, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 
-                                                120, 132, 144, 156, 168, 180, 192, 204, 216, 
-                                                228, 240, 252, 264, 276, 288, 300, 312, 324,
-                                                336, 348, 360, 372, 384, 396, 408, 420, 432, 
-                                                444, 456, 468, 480, 492, 504, 516, 528, 540,
-                                                552, 564, 576, 588, 600});
+    CheckAllFrames({604, 433, 0}, {51, 433, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108,
+                                                 120, 132, 144, 156, 168, 180, 192, 204, 216,
+                                                 228, 240, 252, 264, 276, 288, 300, 312, 324,
+                                                 336, 348, 360, 372, 384, 396, 408, 420, 432,
+                                                 444, 456, 468, 480, 492, 504, 516, 528, 540,
+                                                 552, 564, 576, 588, 600});
 }
 
 /**
@@ -1108,7 +1100,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0003, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0004, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_4;
+    std::string filePath = g_aviPath4;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 174, 0}, {103, 174, 0},{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
@@ -1129,7 +1121,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0004, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0005, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_5;
+    std::string filePath = g_aviPath5;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 156, 0}, {9, 156, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
@@ -1143,7 +1135,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0005, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0006, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_6;
+    std::string filePath = g_aviPath6;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 155, 0}, {9, 155, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
@@ -1157,7 +1149,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0006, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPG_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpeg";
-    std::string filePath = g_mpgPath_1;
+    std::string filePath = g_mpgPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({1253, 2164, 0}, {109, 2164, 0}, {0, 12, 14, 26, 38, 50, 62, 74, 86,
@@ -1183,20 +1175,20 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPG_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPG_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpeg";
-    std::string filePath = g_mpgPath_2;
+    std::string filePath = g_mpgPath2;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({1253, 2165, 0}, {120, 2165, 0}, {0, 12, 14, 17, 29, 41, 53, 65, 77, 89, 101, 113,
                                                     125, 137, 149, 161, 173, 185, 197, 209,
                                                     217, 218, 219, 220, 221, 222, 234, 246, 258, 270, 282,
                                                     294, 306, 318, 330, 334, 346, 358,
-                                                    370, 382, 394, 396, 408, 420, 432, 435, 447, 459, 471, 
+                                                    370, 382, 394, 396, 408, 420, 432, 435, 447, 459, 471,
                                                     483, 495, 507, 519, 531, 543, 555,
                                                     567, 571, 583, 595, 607, 619, 631, 643, 655, 667, 672,
                                                     679, 680, 681, 693, 705, 717, 729,
-                                                    741, 753, 765, 772, 773, 774, 775, 787, 799, 811, 
+                                                    741, 753, 765, 772, 773, 774, 775, 787, 799, 811,
                                                     823, 835, 847, 859, 871, 883, 895, 907,
-                                                    919, 931, 943, 955, 967, 979, 991, 1003, 1015, 
+                                                    919, 931, 943, 955, 967, 979, 991, 1003, 1015,
                                                     1027, 1039, 1051, 1063, 1075, 1087, 1099,
                                                     1111, 1123, 1135, 1147, 1159, 1171, 1183, 1195,
                                                     1207, 1219, 1231, 1243
@@ -1211,7 +1203,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPG_0002, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPG_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpeg";
-    std::string filePath = g_mpgPath_3;
+    std::string filePath = g_mpgPath3;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({1253, 2164, 0}, {19, 2164, 0}, {0, 89, 123, 193, 224, 288, 334, 396, 436, 531,
@@ -1226,7 +1218,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPG_0003, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_mp4Path_1;
+    std::string filePath = g_mp4Path1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 604, 433, 433}, {3, 3, 433, 433}, {0, 250, 500});
@@ -1240,7 +1232,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0001, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_mp4Path_2;
+    std::string filePath = g_mp4Path2;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 433, 417}, {3, 433, 417}, {0, 250, 500});
@@ -1254,7 +1246,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0002, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_mp4Path_3;
+    std::string filePath = g_mp4Path3;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 434}, {51, 434}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144,
@@ -1272,7 +1264,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0003, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_FMP4_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_fmp4Path_1;
+    std::string filePath = g_fmp4Path1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 433}, {3, 433}, {0, 250, 500});
@@ -1286,7 +1278,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_FMP4_0001, TestSi
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_FMP4_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_fmp4Path_2;
+    std::string filePath = g_fmp4Path2;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({604, 433}, {3, 433}, {0, 246, 497});
@@ -1300,7 +1292,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_FMP4_0002, TestSi
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_1;
+    std::string filePath = g_movPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({604, 433}, {3, 433}, {0, 246, 497});
@@ -1314,7 +1306,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0001, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_2;
+    std::string filePath = g_movPath2;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 434}, {3, 434}, {0, 250, 500});
@@ -1328,7 +1320,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0002, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_3;
+    std::string filePath = g_movPath3;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 386}, {3, 386}, {0, 250, 500});
@@ -1342,7 +1334,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0003, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0004, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_4;
+    std::string filePath = g_movPath4;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 609}, {3, 609}, {0, 250, 500});
@@ -1356,7 +1348,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0004, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0005, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_5;
+    std::string filePath = g_movPath5;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 385}, {51, 385}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120,
@@ -1375,7 +1367,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0005, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MKV_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_matroska,webm";
-    std::string filePath = g_mkvPath_1;
+    std::string filePath = g_mkvPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({239, 153, 0}, {4, 153, 0}, {0, 60, 120, 180});
@@ -1389,7 +1381,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MKV_0001, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MKV_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_matroska,webm";
-    std::string filePath = g_mkvPath_2;
+    std::string filePath = g_mkvPath2;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({242, 173, 0}, {1, 173, 0}, {0, 500});
@@ -1403,7 +1395,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MKV_0002, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MKV_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_matroska,webm";
-    std::string filePath = g_mkvPath_3;
+    std::string filePath = g_mkvPath3;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({242, 200, 0}, {1, 200, 0}, {0, 500});
@@ -1417,15 +1409,15 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MKV_0003, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_1;
+    std::string filePath = g_mpegTsPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({92, 0, 0}, {92, 0, 0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,  
-                                            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,  
-                                            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,  
-                                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,  
-                                            58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,  
-                                            72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,  
+    CheckAllFrames({92, 0, 0}, {92, 0, 0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                                            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+                                            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+                                            58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+                                            72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
                                             86, 87, 88, 89, 90, 91});
 }
 
@@ -1437,7 +1429,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0001, Tes
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_2;
+    std::string filePath = g_mpegTsPath2;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({303, 433, 0}, {0, 433, 0}, {500});
@@ -1451,7 +1443,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0002, Tes
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_3;
+    std::string filePath = g_mpegTsPath3;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 314, 0}, {3, 314, 0}, {0, 250, 500});
@@ -1465,7 +1457,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0003, Tes
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0004, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_4;
+    std::string filePath = g_mpegTsPath4;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 174, 0}, {5, 174, 0}, {0, 25, 50, 75, 100});
@@ -1479,7 +1471,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0004, Tes
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0005, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_5;
+    std::string filePath = g_mpegTsPath5;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 155, 0}, {9, 155, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
@@ -1493,7 +1485,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0005, Tes
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_1;
+    std::string filePath = g_aviPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 433, 0}, {3, 433, 0}, {0, 250, 500});
@@ -1507,7 +1499,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0001, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_2;
+    std::string filePath = g_aviPath2;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 386, 0}, {3, 386, 0}, {0, 250, 500});
@@ -1521,15 +1513,15 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0002, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_3;
+    std::string filePath = g_aviPath3;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({604, 433, 0}, {51, 433, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 
-                                                120, 132, 144, 156, 168, 180, 192, 204, 216, 
-                                                228, 240, 252, 264, 276, 288, 300, 312, 324,
-                                                336, 348, 360, 372, 384, 396, 408, 420, 432, 
-                                                444, 456, 468, 480, 492, 504, 516, 528, 540,
-                                                552, 564, 576, 588, 600});
+    CheckAllFrames({604, 433, 0}, {51, 433, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108,
+                                                 120, 132, 144, 156, 168, 180, 192, 204, 216,
+                                                 228, 240, 252, 264, 276, 288, 300, 312, 324,
+                                                 336, 348, 360, 372, 384, 396, 408, 420, 432,
+                                                 444, 456, 468, 480, 492, 504, 516, 528, 540,
+                                                 552, 564, 576, 588, 600});
 }
 
 /**
@@ -1540,7 +1532,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0003, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0004, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_4;
+    std::string filePath = g_aviPath4;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 174, 0}, {103, 174, 0},{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
@@ -1561,7 +1553,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0004, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0005, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_5;
+    std::string filePath = g_aviPath5;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 156, 0}, {9, 156, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
@@ -1575,7 +1567,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0005, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0006, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_6;
+    std::string filePath = g_aviPath6;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 155, 0}, {9, 155, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
@@ -1589,7 +1581,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0006, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPG_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpeg";
-    std::string filePath = g_mpgPath_1;
+    std::string filePath = g_mpgPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({1253, 2164, 0}, {109, 2164, 0}, {0, 12, 14, 26, 38, 50, 62, 74, 86,
@@ -1615,20 +1607,20 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPG_0001, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPG_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpeg";
-    std::string filePath = g_mpgPath_2;
+    std::string filePath = g_mpgPath2;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({1253, 2165, 0}, {120, 2165, 0}, {0, 12, 14, 17, 29, 41, 53, 65, 77, 89, 101, 113,
                                                     125, 137, 149, 161, 173, 185, 197, 209,
                                                     217, 218, 219, 220, 221, 222, 234, 246, 258, 270, 282,
                                                     294, 306, 318, 330, 334, 346, 358,
-                                                    370, 382, 394, 396, 408, 420, 432, 435, 447, 459, 471, 
+                                                    370, 382, 394, 396, 408, 420, 432, 435, 447, 459, 471,
                                                     483, 495, 507, 519, 531, 543, 555,
                                                     567, 571, 583, 595, 607, 619, 631, 643, 655, 667, 672,
                                                     679, 680, 681, 693, 705, 717, 729,
-                                                    741, 753, 765, 772, 773, 774, 775, 787, 799, 811, 
+                                                    741, 753, 765, 772, 773, 774, 775, 787, 799, 811,
                                                     823, 835, 847, 859, 871, 883, 895, 907,
-                                                    919, 931, 943, 955, 967, 979, 991, 1003, 1015, 
+                                                    919, 931, 943, 955, 967, 979, 991, 1003, 1015,
                                                     1027, 1039, 1051, 1063, 1075, 1087, 1099,
                                                     1111, 1123, 1135, 1147, 1159, 1171, 1183, 1195,
                                                     1207, 1219, 1231, 1243
@@ -1643,7 +1635,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPG_0002, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPG_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpeg";
-    std::string filePath = g_mpgPath_3;
+    std::string filePath = g_mpgPath3;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({1253, 2164, 0}, {19, 2164, 0}, {0, 89, 123, 193, 224, 288, 334, 396, 436, 531,
@@ -1658,7 +1650,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPG_0003, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP4_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_mp4Path_1;
+    std::string filePath = g_mp4Path1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 604, 433, 433}, {3, 3, 433, 433}, {0, 250, 500});
@@ -1672,7 +1664,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP4_0001, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP4_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_mp4Path_2;
+    std::string filePath = g_mp4Path2;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 433, 417}, {3, 433, 417}, {0, 250, 500});
@@ -1686,7 +1678,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP4_0002, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP4_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_mp4Path_3;
+    std::string filePath = g_mp4Path3;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 434}, {51, 434}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144,
@@ -1704,7 +1696,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP4_0003, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_FMP4_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_fmp4Path_1;
+    std::string filePath = g_fmp4Path1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 433}, {3, 433}, {0, 250, 500});
@@ -1718,7 +1710,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_FMP4_0001, TestSize.Level
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_FMP4_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_fmp4Path_2;
+    std::string filePath = g_fmp4Path2;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({604, 433}, {3, 433}, {0, 246, 497});
@@ -1732,7 +1724,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_FMP4_0002, TestSize.Level
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_1;
+    std::string filePath = g_movPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({604, 433}, {3, 433}, {0, 246, 497});
@@ -1746,7 +1738,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0001, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_2;
+    std::string filePath = g_movPath2;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 434}, {3, 434}, {0, 250, 500});
@@ -1760,7 +1752,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0002, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_3;
+    std::string filePath = g_movPath3;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 386}, {3, 386}, {0, 250, 500});
@@ -1774,7 +1766,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0003, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0004, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_4;
+    std::string filePath = g_movPath4;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 609}, {3, 609}, {0, 250, 500});
@@ -1788,7 +1780,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0004, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0005, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_movPath_5;
+    std::string filePath = g_movPath5;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 385}, {51, 385}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120,
@@ -1807,7 +1799,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0005, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MKV_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_matroska,webm";
-    std::string filePath = g_mkvPath_1;
+    std::string filePath = g_mkvPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({239, 153, 0}, {4, 153, 0}, {0, 60, 120, 180});
@@ -1821,7 +1813,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MKV_0001, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MKV_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_matroska,webm";
-    std::string filePath = g_mkvPath_2;
+    std::string filePath = g_mkvPath2;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({242, 173, 0}, {1, 173, 0}, {0, 500});
@@ -1835,7 +1827,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MKV_0002, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MKV_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_matroska,webm";
-    std::string filePath = g_mkvPath_3;
+    std::string filePath = g_mkvPath3;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({242, 200, 0}, {1, 200, 0}, {0, 500});
@@ -1849,15 +1841,15 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MKV_0003, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_1;
+    std::string filePath = g_mpegTsPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({92, 0, 0}, {92, 0, 0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,  
-                                            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,  
-                                            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,  
-                                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,  
-                                            58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,  
-                                            72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,  
+    CheckAllFrames({92, 0, 0}, {92, 0, 0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                                            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+                                            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+                                            58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+                                            72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
                                             86, 87, 88, 89, 90, 91});
 }
 
@@ -1869,7 +1861,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0001, TestSize.Le
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_2;
+    std::string filePath = g_mpegTsPath2;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({303, 433, 0}, {0, 433, 0}, {500});
@@ -1883,7 +1875,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0002, TestSize.Le
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_3;
+    std::string filePath = g_mpegTsPath3;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 314, 0}, {3, 314, 0}, {0, 250, 500});
@@ -1897,7 +1889,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0003, TestSize.Le
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0004, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_4;
+    std::string filePath = g_mpegTsPath4;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 174, 0}, {5, 174, 0}, {0, 25, 50, 75, 100});
@@ -1911,7 +1903,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0004, TestSize.Le
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0005, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpegts";
-    std::string filePath = g_mpegTsPath_5;
+    std::string filePath = g_mpegTsPath5;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 155, 0}, {9, 155, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
@@ -1925,7 +1917,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0005, TestSize.Le
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_1;
+    std::string filePath = g_aviPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 433, 0}, {3, 433, 0}, {0, 250, 500});
@@ -1939,7 +1931,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0001, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_2;
+    std::string filePath = g_aviPath2;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 386, 0}, {3, 386, 0}, {0, 250, 500});
@@ -1953,15 +1945,15 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0002, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_3;
+    std::string filePath = g_aviPath3;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({604, 433, 0}, {51, 433, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 
-                                                120, 132, 144, 156, 168, 180, 192, 204, 216, 
-                                                228, 240, 252, 264, 276, 288, 300, 312, 324,
-                                                336, 348, 360, 372, 384, 396, 408, 420, 432, 
-                                                444, 456, 468, 480, 492, 504, 516, 528, 540,
-                                                552, 564, 576, 588, 600});
+    CheckAllFrames({604, 433, 0}, {51, 433, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108,
+                                                 120, 132, 144, 156, 168, 180, 192, 204, 216,
+                                                 228, 240, 252, 264, 276, 288, 300, 312, 324,
+                                                 336, 348, 360, 372, 384, 396, 408, 420, 432,
+                                                 444, 456, 468, 480, 492, 504, 516, 528, 540,
+                                                 552, 564, 576, 588, 600});
 }
 
 /**
@@ -1972,7 +1964,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0003, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0004, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_4;
+    std::string filePath = g_aviPath4;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 174, 0}, {103, 174, 0},{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
@@ -1993,7 +1985,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0004, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0005, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_5;
+    std::string filePath = g_aviPath5;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 156, 0}, {9, 156, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
@@ -2007,7 +1999,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0005, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0006, TestSize.Level1)
 {
     std::string pluginName = "avdemux_avi";
-    std::string filePath = g_aviPath_6;
+    std::string filePath = g_aviPath6;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 155, 0}, {9, 155, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
@@ -2021,7 +2013,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0006, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPG_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpeg";
-    std::string filePath = g_mpgPath_1;
+    std::string filePath = g_mpgPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({1253, 2164, 0}, {109, 2164, 0}, {0, 12, 14, 26, 38, 50, 62, 74, 86,
@@ -2047,20 +2039,20 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPG_0001, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPG_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpeg";
-    std::string filePath = g_mpgPath_2;
+    std::string filePath = g_mpgPath2;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({1253, 2165, 0}, {120, 2165, 0}, {0, 12, 14, 17, 29, 41, 53, 65, 77, 89, 101, 113,
                                                     125, 137, 149, 161, 173, 185, 197, 209,
                                                     217, 218, 219, 220, 221, 222, 234, 246, 258, 270, 282,
-                                                     294, 306, 318, 330, 334, 346, 358,
-                                                    370, 382, 394, 396, 408, 420, 432, 435, 447, 459, 471, 
+                                                    294, 306, 318, 330, 334, 346, 358,
+                                                    370, 382, 394, 396, 408, 420, 432, 435, 447, 459, 471,
                                                     483, 495, 507, 519, 531, 543, 555,
                                                     567, 571, 583, 595, 607, 619, 631, 643, 655, 667, 672,
-                                                     679, 680, 681, 693, 705, 717, 729,
-                                                    741, 753, 765, 772, 773, 774, 775, 787, 799, 811, 
+                                                    679, 680, 681, 693, 705, 717, 729,
+                                                    741, 753, 765, 772, 773, 774, 775, 787, 799, 811,
                                                     823, 835, 847, 859, 871, 883, 895, 907,
-                                                    919, 931, 943, 955, 967, 979, 991, 1003, 1015, 
+                                                    919, 931, 943, 955, 967, 979, 991, 1003, 1015,
                                                     1027, 1039, 1051, 1063, 1075, 1087, 1099,
                                                     1111, 1123, 1135, 1147, 1159, 1171, 1183, 1195,
                                                     1207, 1219, 1231, 1243
@@ -2075,7 +2067,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPG_0002, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPG_0003, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mpeg";
-    std::string filePath = g_mpgPath_3;
+    std::string filePath = g_mpgPath3;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({1253, 2164, 0}, {19, 2164, 0}, {0, 89, 123, 193, 224, 288, 334, 396, 436, 531,

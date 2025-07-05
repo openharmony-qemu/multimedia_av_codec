@@ -37,16 +37,16 @@ using InvokerTypeAlias = OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin::Invo
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media::Plugins;
 // M4A, AAC, MP3, OGG, FLAC, WAV, AMR, APE
-string g_m4aPath_1 = string("/data/test/media/audio/h264_fmp4.m4a");
-string g_accPath_1 = string("/data/test/media/audio/aac_44100_1.aac");
-string g_mp3Path_1 = string("/data/test/media/audio/mp3_48000_1_cover.mp3");
-string g_oggPath_1 = string("/data/test/media/audio/ogg_48000_1.ogg");
-string g_flacPath_1 = string("/data/test/media/audio/flac_48000_1_cover.flac");
-string g_wavPath_1 = string("/data/test/media/audio/wav_48000_1.wav");
-string g_wavPath_2 = string("/data/test/media/audio/wav_48000_1_pcm_alaw.wav");
-string g_amrPath_1 = string("/data/test/media/audio/amr_nb_8000_1.amr");
-string g_amrPath_2 = string("/data/test/media/audio/amr_wb_16000_1.amr");
-string g_apePath_1 = string("/data/test/media/ape_test.ape");
+string g_m4aPath1 = string("/data/test/media/audio/h264_fmp4.m4a");
+string g_accPath1 = string("/data/test/media/audio/aac_44100_1.aac");
+string g_mp3Path1 = string("/data/test/media/audio/mp3_48000_1_cover.mp3");
+string g_oggPath1 = string("/data/test/media/audio/ogg_48000_1.ogg");
+string g_flacPath1 = string("/data/test/media/audio/flac_48000_1_cover.flac");
+string g_wavPath1 = string("/data/test/media/audio/wav_48000_1.wav");
+string g_wavPath2 = string("/data/test/media/audio/wav_48000_1_pcm_alaw.wav");
+string g_amrPath1 = string("/data/test/media/audio/amr_nb_8000_1.amr");
+string g_amrPath2 = string("/data/test/media/audio/amr_wb_16000_1.amr");
+string g_apePath1 = string("/data/test/media/ape_test.ape");
 
 /**
  * @tc.name: Demuxer_ReadSample_M4A_0001
@@ -56,7 +56,7 @@ string g_apePath_1 = string("/data/test/media/ape_test.ape");
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_M4A_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_m4aPath_1;
+    std::string filePath = g_m4aPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(433);
@@ -72,7 +72,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_M4A_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AAC_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_aac";
-    std::string filePath = g_accPath_1;
+    std::string filePath = g_accPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1293);
@@ -88,7 +88,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AAC_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP3_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mp3";
-    std::string filePath = g_mp3Path_1;
+    std::string filePath = g_mp3Path1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1251);
@@ -104,7 +104,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP3_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_OGG_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_ogg";
-    std::string filePath = g_oggPath_1;
+    std::string filePath = g_oggPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1598);
@@ -120,7 +120,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_OGG_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_FLAC_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flac";
-    std::string filePath = g_flacPath_1;
+    std::string filePath = g_flacPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(313);
@@ -136,7 +136,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_FLAC_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WAV_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_wav";
-    std::string filePath = g_wavPath_1;
+    std::string filePath = g_wavPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(704);
@@ -152,7 +152,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WAV_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WAV_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_wav";
-    std::string filePath = g_wavPath_2;
+    std::string filePath = g_wavPath2;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(352);
@@ -168,7 +168,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WAV_0002, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AMR_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_amr";
-    std::string filePath = g_amrPath_1;
+    std::string filePath = g_amrPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1501);
@@ -184,7 +184,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AMR_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AMR_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_amr";
-    std::string filePath = g_amrPath_2;
+    std::string filePath = g_amrPath2;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1500);
@@ -200,7 +200,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AMR_0002, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_APE_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_ape";
-    std::string filePath = g_apePath_1;
+    std::string filePath = g_apePath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(7);
@@ -216,7 +216,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_APE_0001, TestSize.Level1)
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_M4A_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_m4aPath_1;
+    std::string filePath = g_m4aPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(433);
@@ -232,7 +232,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_M4A_0001, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AAC_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_aac";
-    std::string filePath = g_accPath_1;
+    std::string filePath = g_accPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1293);
@@ -248,7 +248,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AAC_0001, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP3_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mp3";
-    std::string filePath = g_mp3Path_1;
+    std::string filePath = g_mp3Path1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1251);
@@ -264,7 +264,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP3_0001, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_OGG_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_ogg";
-    std::string filePath = g_oggPath_1;
+    std::string filePath = g_oggPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1598);
@@ -280,7 +280,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_OGG_0001, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_FLAC_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flac";
-    std::string filePath = g_flacPath_1;
+    std::string filePath = g_flacPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(313);
@@ -296,7 +296,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_FLAC_0001, TestSi
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_WAV_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_wav";
-    std::string filePath = g_wavPath_1;
+    std::string filePath = g_wavPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(704);
@@ -312,7 +312,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_WAV_0001, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_WAV_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_wav";
-    std::string filePath = g_wavPath_2;
+    std::string filePath = g_wavPath2;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(352);
@@ -328,7 +328,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_WAV_0002, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AMR_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_amr";
-    std::string filePath = g_amrPath_1;
+    std::string filePath = g_amrPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1501);
@@ -344,7 +344,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AMR_0001, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AMR_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_amr";
-    std::string filePath = g_amrPath_2;
+    std::string filePath = g_amrPath2;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1500);
@@ -360,7 +360,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AMR_0002, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_APE_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_ape";
-    std::string filePath = g_apePath_1;
+    std::string filePath = g_apePath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(7);
@@ -376,7 +376,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_APE_0001, TestSiz
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_M4A_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    std::string filePath = g_m4aPath_1;
+    std::string filePath = g_m4aPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(433);
@@ -392,7 +392,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_M4A_0001, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AAC_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_aac";
-    std::string filePath = g_accPath_1;
+    std::string filePath = g_accPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1293);
@@ -408,7 +408,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AAC_0001, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP3_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mp3";
-    std::string filePath = g_mp3Path_1;
+    std::string filePath = g_mp3Path1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1251);
@@ -424,7 +424,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP3_0001, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_OGG_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_ogg";
-    std::string filePath = g_oggPath_1;
+    std::string filePath = g_oggPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1598);
@@ -440,7 +440,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_OGG_0001, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_FLAC_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flac";
-    std::string filePath = g_flacPath_1;
+    std::string filePath = g_flacPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(313);
@@ -456,7 +456,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_FLAC_0001, TestSize.Level
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_WAV_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_wav";
-    std::string filePath = g_wavPath_1;
+    std::string filePath = g_wavPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(704);
@@ -472,7 +472,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_WAV_0001, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_WAV_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_wav";
-    std::string filePath = g_wavPath_2;
+    std::string filePath = g_wavPath2;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(352);
@@ -488,7 +488,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_WAV_0002, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AMR_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_amr";
-    std::string filePath = g_amrPath_1;
+    std::string filePath = g_amrPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1501);
@@ -504,7 +504,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AMR_0001, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AMR_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_amr";
-    std::string filePath = g_amrPath_2;
+    std::string filePath = g_amrPath2;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1500);
@@ -520,7 +520,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AMR_0002, TestSize.Level1
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_APE_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_ape";
-    std::string filePath = g_apePath_1;
+    std::string filePath = g_apePath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(7);
