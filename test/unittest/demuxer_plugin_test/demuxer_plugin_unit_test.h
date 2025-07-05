@@ -32,7 +32,6 @@
 using MediaAVBuffer = OHOS::Media::AVBuffer;
 namespace OHOS {
 namespace Media {
-
 class DemuxerPluginUnitTest : public testing::Test {
 public:
     static void SetUpTestCase();
@@ -40,7 +39,10 @@ public:
     void SetUp() override;
     void TearDown() override;
     void InitResource(const std::string &filePath, std::string pluginName);
+    void InitResourceURI(const std::string &filePath, std::string pluginName);
     void InitWeakNetworkDemuxerPlugin(
+        const std::string& filePath, std::string pluginName, int64_t failOffset, size_t maxFailCount);
+    void InitWeakNetworkDemuxerPluginURI(
         const std::string& filePath, std::string pluginName, int64_t failOffset, size_t maxFailCount);
     void SetInitValue();
     bool isEOS(std::map<uint32_t, bool>& countFlag);
@@ -49,6 +51,8 @@ public:
     void SetEosValue();
     void ReadData();
     void RemoveValue();
+    void CheckAllFrames(const std::vector<int>& expectedFrames, const std::vector<int>& expectedKeyFrames,
+        const std::vector<uint32_t>& keyFrameIndex);
 protected:
     int fd_ = -1;
     std::shared_ptr<OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin> demuxerPlugin_ = nullptr;
@@ -57,6 +61,7 @@ protected:
     int32_t videoHeight_ = 0;
     int32_t videoWidth_ = 0;
     int32_t numbers_ = 0;
+    std::vector<uint32_t> selectedTrackIds_;
     std::map<uint32_t, int32_t> frames_;
     std::map<uint32_t, int32_t> keyFrames_;
     std::map<uint32_t, bool> eosFlag_;
@@ -117,8 +122,6 @@ private:
     size_t failCount_ = 0;
     int num = 0;
 };
-
 } // namespace Media
 } // namespace OHOS
-
 #endif // DEMUXER_PLUGIN_UNIT_TEST_H
