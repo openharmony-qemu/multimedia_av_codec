@@ -58,6 +58,7 @@ public:
     virtual std::vector<int32_t> GetSupportedProfiles() = 0;
     virtual std::vector<int32_t> GetSupportedLevelsForProfile(int32_t profile) = 0;
     virtual bool AreProfileAndLevelSupported(int32_t profile, int32_t level) = 0;
+    virtual std::vector<Range> GetAudioSupportedSampleRateRanges() = 0;
 };
 
 class __attribute__((visibility("default"))) CodecListMockFactory {
@@ -92,6 +93,7 @@ const std::map<std::string, std::string> CAPABILITY_ENCODER_HARD_NAME = {
     {std::string(CodecMimeType::VIDEO_HEVC), "OMX.hisi.video.encoder.hevc"}};
 
 const std::string DEFAULT_AUDIO_MIME = std::string(CodecMimeType::AUDIO_AAC);
+const std::string AUDIO_FLAC_MIME = std::string(CodecMimeType::AUDIO_FLAC);
 const std::string DEFAULT_VIDEO_MIME = std::string(CodecMimeType::VIDEO_AVC);
 const std::string DEFAULT_UNSUPPORTED_MIME = std::string(CodecMimeType::IMAGE_PNG);
 constexpr int32_t MAX_SURPPORT_ACODEC = 16;
@@ -191,6 +193,8 @@ const std::vector<int32_t> DEFAULT_VIDEO_VVC_PROFILES = {
 const std::vector<int32_t> DEFAULT_VIDEO_VVC_LEVELS = {
     VVC_LEVEL_1, VVC_LEVEL_2, VVC_LEVEL_21, VVC_LEVEL_3, VVC_LEVEL_31,
     VVC_LEVEL_4, VVC_LEVEL_41, VVC_LEVEL_5};
+
+constexpr OH_AVRange AUDIO_FLAC_SAMPLE_RATE_RANGE = {8000, 384000};
 } // namespace CodecListTestParam
 } // namespace MediaAVCodec
 } // namespace OHOS

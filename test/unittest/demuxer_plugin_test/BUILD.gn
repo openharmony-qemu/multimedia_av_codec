@@ -27,6 +27,7 @@ demuxer_plugin_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/ffmpeg_format_helper.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_convert.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_utils.cpp",
+  "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
 ]
 config("demuxer_plugin_test_unittest_cfg") {
   defines = [
@@ -67,6 +68,8 @@ config("demuxer_plugin_test_unittest_cfg") {
     "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
+    "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
+    "$av_codec_root_dir/test/nativedemo/include",
   ]
 }
 
@@ -79,7 +82,11 @@ ohos_unittest("demuxer_plugin_unit_test") {
     ":demuxer_plugin_test_unittest_cfg",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
-  sources = demuxer_plugin_test_sources + [ "demuxer_plugin_unit_test.cpp" ]
+  sources = demuxer_plugin_test_sources
+  sources += [
+    "demuxer_plugin_audio_unit_test.cpp",
+    "demuxer_plugin_video_unit_test.cpp",
+  ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",

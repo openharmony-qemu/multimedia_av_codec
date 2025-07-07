@@ -272,5 +272,16 @@ bool CodecListInnerMock::AreProfileAndLevelSupported(int32_t profile, int32_t le
     std::cout << "codeclist_ is nullptr" << std::endl;
     return false;
 }
+
+std::vector<Range> CodecListInnerMock::GetAudioSupportedSampleRateRanges()
+{
+    std::vector<Range> retRange{Range(0, 0)};
+    if (codeclist_ != nullptr) {
+        std::shared_ptr<AudioCaps> codecInfo = std::make_shared<AudioCaps>(capabilityData_);
+        return codecInfo->GetSupportedSampleRateRanges();
+    }
+    std::cout << "codeclist_ is nullptr" << std::endl;
+    return retRange;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

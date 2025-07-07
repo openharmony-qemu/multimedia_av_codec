@@ -212,6 +212,22 @@ OH_AVErrCode OH_AVCapability_GetAudioSupportedSampleRates(OH_AVCapability *capab
                                                           uint32_t *sampleRateNum);
 
 /**
+ * @brief Get the audio codec's supported sample rate ranges.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @param capability Audio codec capability pointer. Do not give a video codec capability pointer
+ * @param sampleRateRanges Output parameter. A pointer to the sample rate ranges array
+ * @param rangesNum Output parameter. The element number of the sample rate ranges array
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, the sampleRates is nullptr, or sampleRateNum is nullptr.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_NO_MEMORY}, internal use memory malloc failed.
+ * @since 20
+ */
+OH_AVErrCode OH_AVCapability_GetAudioSupportedSampleRateRanges(OH_AVCapability *capability,
+                                                               OH_AVRange **sampleRateRanges, uint32_t *rangesNum);
+
+/**
  * @brief Get the audio codec's supported audio channel count range.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @param capability Audio codec capability pointer. If a video codec capability pointer is given,
