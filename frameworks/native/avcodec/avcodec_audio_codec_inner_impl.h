@@ -70,7 +70,7 @@ public:
 
     void SetDumpInfo(bool isDump, uint64_t instanceId) override;
 
-    int32_t QueryInputBuffer(uint32_t *index, size_t bufferSize, int64_t timeoutUs) override;
+    int32_t QueryInputBuffer(uint32_t *index, int32_t bufferSize, int64_t timeoutUs) override;
 
     std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index) override;
 
@@ -88,7 +88,7 @@ private:
 
         int32_t Prepare(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer);
 
-        int32_t QueryInputBuffer(uint32_t *index, size_t bufferSize, int64_t timeoutUs);
+        int32_t QueryInputBuffer(uint32_t *index, int32_t bufferSize, int64_t timeoutUs);
 
         std::shared_ptr<AVBuffer> GetInputBuffer(uint32_t index);
 

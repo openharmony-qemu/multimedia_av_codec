@@ -295,7 +295,7 @@ void AVCodecAudioCodecInnerImpl::ProcessInputBuffer()
     codecService_->ProcessInputBuffer();
 }
 
-int32_t AVCodecAudioCodecInnerImpl::QueryInputBuffer(uint32_t *index, size_t bufferSize, int64_t timeoutUs)
+int32_t AVCodecAudioCodecInnerImpl::QueryInputBuffer(uint32_t *index, int32_t bufferSize, int64_t timeoutUs)
 {
     return syncCodecAdapter_ != nullptr ? syncCodecAdapter_->QueryInputBuffer(index, bufferSize, timeoutUs)
                                         : AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
@@ -400,7 +400,7 @@ int32_t AVCodecAudioCodecInnerImpl::SyncCodecAdapter::Prepare(
 }
 
 int32_t AVCodecAudioCodecInnerImpl::SyncCodecAdapter::QueryInputBuffer(
-    uint32_t *index, size_t bufferSize, int64_t timeoutUs)
+    uint32_t *index, int32_t bufferSize, int64_t timeoutUs)
 {
     if (!init_) {
         AVCODEC_LOGW("SyncCodecAdapter QueryInputBuffer do not work before prepare");
@@ -415,7 +415,7 @@ int32_t AVCodecAudioCodecInnerImpl::SyncCodecAdapter::QueryInputBuffer(
     avBufferConfig_.size = bufferSize;
     Status ret = bufferQueueProducer_->RequestBufferWaitUs(inputBuffers_[inputIndex_], avBufferConfig_, timeoutUs);
     if (ret != Status::OK) {
-        AVCODEC_LOGE("SyncCodecAdapter RequestBuffer failed, index %{pubilc}u is invaild", *index);
+        AVCODEC_LOGE("SyncCodecAdapter RequestBuffer failed, index %{public}u is invaild", *index);
         return StatusToAVCodecServiceErrCode(ret);
     }
 
@@ -430,7 +430,7 @@ int32_t AVCodecAudioCodecInnerImpl::SyncCodecAdapter::QueryInputBuffer(
 std::shared_ptr<AVBuffer> AVCodecAudioCodecInnerImpl::SyncCodecAdapter::GetInputBuffer(uint32_t index)
 {
     if (index >= inputBuffers_.size() || inputBuffers_[index] == nullptr) {
-        AVCODEC_LOGD("SyncCodecAdapter GetInputBuffer failed, index %{pubilc}u is invaild", index);
+        AVCODEC_LOGD("SyncCodecAdapter GetInputBuffer failed, index %{public}u is invaild", index);
         return nullptr;
     }
 
