@@ -1,0 +1,95 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#####################hydra-fuzz###################
+import("//build/config/features.gni")
+import("//build/test.gni")
+module_output_path = "av_codec/av_codec"
+MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
+
+##############################fuzztest##########################################
+ohos_fuzztest("SyncResourceCapiDecFuzzTest") {
+  module_out_path = module_output_path
+  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/syncresourcecapidec_fuzzer"
+  include_dirs = [
+    "$MEDIA_ROOT_DIR/interfaces/kits/c",
+    "$MEDIA_ROOT_DIR/test/fuzztest/syncresourcecapidec_fuzzer",
+    "$MEDIA_ROOT_DIR/test/unittest/common/",
+    "$MEDIA_ROOT_DIR/test/unittest/common/common_mock/drm_mock/capi",
+
+    "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/common/utils",
+    "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/common/data_producer/avcc_reader/",
+    "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/common/data_producer/base/",
+    "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/func_sample/base",
+    "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/func_sample/mock",
+    "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/func_sample/mock/capi",
+    "$MEDIA_ROOT_DIR/test/fuzztest/sysnc_fuzzer/sample/decoder",
+    "$MEDIA_ROOT_DIR/test/fuzztest/sysnc_fuzzer/sample/encoder",
+    "$MEDIA_ROOT_DIR/test/unittest/codeclist_test",
+    "$MEDIA_ROOT_DIR/test/unittest/codeclist_test/capi",
+  ]
+
+  cflags = [
+    "-g",
+    "-O0",
+    "-Wno-unused-variable",
+    "-fno-omit-frame-pointer",
+  ]
+
+  defines = [
+    "VIDEODEC_SYNC_UNIT_TEST",
+    "VIDEODEC_CAPI_UNIT_TEST",
+  ]
+
+  sources = [ 
+    "syncresourcedec_fuzzer.cpp",
+    "$MEDIA_ROOT_DIR/test/fuzztest/sysnc_fuzzer/sample/decoder/vdec_sync_sample.cpp",
+
+    "$MEDIA_ROOT_DIR/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
+    "$MEDIA_ROOT_DIR/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
+    "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/common/data_producer/avcc_reader/avcc_reader.cpp",
+    "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/common/utils/unittest_utils.cpp",
+    "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
+    "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/func_sample/mock/capi/videodec_capi_mock.cpp",
+    "$MEDIA_ROOT_DIR/test/unittest/common/common_mock/drm_mock/capi/media_key_system_mock.cpp",
+    ]
+
+  public_deps = [ "$MEDIA_ROOT_DIR/test/unittest/common:av_codec_capi_unit_test" ]
+
+
+  external_deps = [
+    "c_utils:utils",
+    "drm_framework:drm_framework",
+    "drm_framework:native_drm",
+    "ffmpeg:libohosffmpeg",
+    "graphic_2d:libgraphic_utils",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "media_foundation:native_media_core",
+    "googletest:gtest",
+  ]
+
+  resource_config_file =
+      "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
+}
+
+group("fuzztest") {
+  testonly = true
+  deps = []
+  deps += [
+    # deps file
+    ":SyncResourceCapiDecFuzzTest",  #引用测试套
+  ]
+}
