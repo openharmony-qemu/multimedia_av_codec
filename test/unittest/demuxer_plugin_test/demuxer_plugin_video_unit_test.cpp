@@ -920,11 +920,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MOV_0005, TestSize.Level1)
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 385}, {51, 385}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120,
-                                          132, 144, 156, 168, 180, 192, 204, 216, 228,
-                                          240, 252, 264, 276, 288, 300, 312, 324, 336,
-                                          348, 360, 372, 384, 396, 408, 420, 432, 444,
-                                          456, 468, 480, 492, 504, 516, 528, 540, 552,
-                                          564, 576, 588, 600});
+                                           132, 144, 156, 168, 180, 192, 204, 216, 228,
+                                           240, 252, 264, 276, 288, 300, 312, 324, 336,
+                                           348, 360, 372, 384, 396, 408, 420, 432, 444,
+                                           456, 468, 480, 492, 504, 516, 528, 540, 552,
+                                           564, 576, 588, 600});
 }
 
 /**
@@ -938,7 +938,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MKV_0001, TestSize.Level1)
     std::string filePath = g_mkvPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({239, 153, 0}, {4, 153, 0}, {0, 60, 120, 180});
+    CheckAllFrames({239, 153}, {4, 153}, {0, 60, 120, 180});
 }
 
 /**
@@ -952,7 +952,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MKV_0002, TestSize.Level1)
     std::string filePath = g_mkvPath2;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({242, 173, 0}, {1, 173, 0}, {0, 500});
+    CheckAllFrames({242, 173}, {1, 173}, {0});
 }
 
 /**
@@ -966,7 +966,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MKV_0003, TestSize.Level1)
     std::string filePath = g_mkvPath3;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({242, 200, 0}, {1, 200, 0}, {0, 500});
+    CheckAllFrames({242, 200}, {1, 200}, {0});
 }
 
 /**
@@ -980,13 +980,13 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0001, TestSize.Level1
     std::string filePath = g_mpegTsPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({92, 0, 0}, {92, 0, 0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-                                            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-                                            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
-                                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-                                            58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
-                                            72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
-                                            86, 87, 88, 89, 90, 91});
+    CheckAllFrames({92}, {92}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                                16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+                                30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                                44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+                                58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+                                72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
+                                86, 87, 88, 89, 90, 91});
 }
 
 /**
@@ -1000,7 +1000,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0002, TestSize.Level1
     std::string filePath = g_mpegTsPath2;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({303, 433, 0}, {0, 433, 0}, {500});
+    CheckAllFrames({303, 433}, {0, 433}, {});
 }
 
 /**
@@ -1014,7 +1014,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0003, TestSize.Level1
     std::string filePath = g_mpegTsPath3;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({602, 314, 0}, {3, 314, 0}, {0, 250, 500});
+    CheckAllFrames({602, 314}, {3, 314}, {0, 250, 500});
 }
 
 /**
@@ -1028,7 +1028,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0004, TestSize.Level1
     std::string filePath = g_mpegTsPath4;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 174, 0}, {5, 174, 0}, {0, 25, 50, 75, 100});
+    CheckAllFrames({103, 174}, {5, 174}, {0, 25, 50, 75, 100});
 }
 
 /**
@@ -1042,7 +1042,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0005, TestSize.Level1
     std::string filePath = g_mpegTsPath5;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 155, 0}, {9, 155, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
+    CheckAllFrames({103, 155}, {9, 155}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
 }
 
 /**
@@ -1056,7 +1056,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0001, TestSize.Level1)
     std::string filePath = g_aviPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({602, 433, 0}, {3, 433, 0}, {0, 250, 500});
+    CheckAllFrames({602, 433}, {3, 433}, {0, 250, 500});
 }
 
 /**
@@ -1070,7 +1070,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0002, TestSize.Level1)
     std::string filePath = g_aviPath2;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({602, 386, 0}, {3, 386, 0}, {0, 250, 500});
+    CheckAllFrames({602, 386}, {3, 386}, {0, 250, 500});
 }
 
 /**
@@ -1084,12 +1084,12 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0003, TestSize.Level1)
     std::string filePath = g_aviPath3;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({604, 433, 0}, {51, 433, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108,
-                                                 120, 132, 144, 156, 168, 180, 192, 204, 216,
-                                                 228, 240, 252, 264, 276, 288, 300, 312, 324,
-                                                 336, 348, 360, 372, 384, 396, 408, 420, 432,
-                                                 444, 456, 468, 480, 492, 504, 516, 528, 540,
-                                                 552, 564, 576, 588, 600});
+    CheckAllFrames({604, 433}, {51, 433}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108,
+                                           120, 132, 144, 156, 168, 180, 192, 204, 216,
+                                           228, 240, 252, 264, 276, 288, 300, 312, 324,
+                                           336, 348, 360, 372, 384, 396, 408, 420, 432,
+                                           444, 456, 468, 480, 492, 504, 516, 528, 540,
+                                           552, 564, 576, 588, 600});
 }
 
 /**
@@ -1103,14 +1103,14 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0004, TestSize.Level1)
     std::string filePath = g_aviPath4;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 174, 0}, {103, 174, 0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-                                                  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-                                                  30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
-                                                  44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-                                                  58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
-                                                  72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
-                                                  86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
-                                                  100, 101, 102});
+    CheckAllFrames({103, 174}, {103, 174}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                                            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+                                            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+                                            58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+                                            72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
+                                            86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
+                                            100, 101, 102});
 }
 
 /**
@@ -1124,7 +1124,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0005, TestSize.Level1)
     std::string filePath = g_aviPath5;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 156, 0}, {9, 156, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
+    CheckAllFrames({103, 156}, {9, 156}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
 }
 
 /**
@@ -1138,7 +1138,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AVI_0006, TestSize.Level1)
     std::string filePath = g_aviPath6;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 155, 0}, {9, 155, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
+    CheckAllFrames({103, 155}, {9, 155}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
 }
 
 /**
@@ -1152,19 +1152,19 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPG_0001, TestSize.Level1)
     std::string filePath = g_mpgPath1;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({1253, 2164, 0}, {109, 2164, 0}, {0, 12, 14, 26, 38, 50, 62, 74, 86,
-                                                98, 110, 122, 134, 146, 158, 170, 182, 194,
-                                                206, 218, 230, 242, 254, 266, 278, 290, 302,
-                                                314, 326, 338, 350, 362, 374, 386, 396, 408,
-                                                420, 432, 444, 456, 468, 480, 492, 504, 516,
-                                                528, 540, 552, 564, 571, 583, 595, 607, 619,
-                                                621, 633, 645, 657, 658, 670, 672, 684, 696,
-                                                708, 720, 732, 744, 756, 768, 780, 792, 804,
-                                                816, 828, 840, 852, 864, 876, 888, 900, 912,
-                                                924, 936, 948, 960, 972, 984, 996, 1008, 1020,
-                                                1032, 1044, 1056, 1068, 1080, 1092, 1104, 1116,
-                                                1128, 1140, 1152, 1164, 1176, 1188, 1200, 1212,
-                                                1224, 1236, 1248, });
+    CheckAllFrames({1253, 2164}, {109, 2164}, {0, 12, 14, 26, 38, 50, 62, 74, 86,
+                                               98, 110, 122, 134, 146, 158, 170, 182, 194,
+                                               206, 218, 230, 242, 254, 266, 278, 290, 302,
+                                               314, 326, 338, 350, 362, 374, 386, 396, 408,
+                                               420, 432, 444, 456, 468, 480, 492, 504, 516,
+                                               528, 540, 552, 564, 571, 583, 595, 607, 619,
+                                               621, 633, 645, 657, 658, 670, 672, 684, 696,
+                                               708, 720, 732, 744, 756, 768, 780, 792, 804,
+                                               816, 828, 840, 852, 864, 876, 888, 900, 912,
+                                               924, 936, 948, 960, 972, 984, 996, 1008, 1020,
+                                               1032, 1044, 1056, 1068, 1080, 1092, 1104, 1116,
+                                               1128, 1140, 1152, 1164, 1176, 1188, 1200, 1212,
+                                               1224, 1236, 1248});
 }
 
 /**
@@ -1178,21 +1178,20 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPG_0002, TestSize.Level1)
     std::string filePath = g_mpgPath2;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({1253, 2165, 0}, {120, 2165, 0}, {0, 12, 14, 17, 29, 41, 53, 65, 77, 89, 101, 113,
-                                                    125, 137, 149, 161, 173, 185, 197, 209,
-                                                    217, 218, 219, 220, 221, 222, 234, 246, 258, 270, 282,
-                                                    294, 306, 318, 330, 334, 346, 358,
-                                                    370, 382, 394, 396, 408, 420, 432, 435, 447, 459, 471,
-                                                    483, 495, 507, 519, 531, 543, 555,
-                                                    567, 571, 583, 595, 607, 619, 631, 643, 655, 667, 672,
-                                                    679, 680, 681, 693, 705, 717, 729,
-                                                    741, 753, 765, 772, 773, 774, 775, 787, 799, 811,
-                                                    823, 835, 847, 859, 871, 883, 895, 907,
-                                                    919, 931, 943, 955, 967, 979, 991, 1003, 1015,
-                                                    1027, 1039, 1051, 1063, 1075, 1087, 1099,
-                                                    1111, 1123, 1135, 1147, 1159, 1171, 1183, 1195,
-                                                    1207, 1219, 1231, 1243
-                                                    });
+    CheckAllFrames({1253, 2165}, {120, 2165}, {0, 12, 14, 17, 29, 41, 53, 65, 77, 89, 101, 113,
+                                               125, 137, 149, 161, 173, 185, 197, 209,
+                                               217, 218, 219, 220, 221, 222, 234, 246, 258, 270, 282,
+                                               294, 306, 318, 330, 334, 346, 358,
+                                               370, 382, 394, 396, 408, 420, 432, 435, 447, 459, 471,
+                                               483, 495, 507, 519, 531, 543, 555,
+                                               567, 571, 583, 595, 607, 619, 631, 643, 655, 667, 672,
+                                               679, 680, 681, 693, 705, 717, 729,
+                                               741, 753, 765, 772, 773, 774, 775, 787, 799, 811,
+                                               823, 835, 847, 859, 871, 883, 895, 907,
+                                               919, 931, 943, 955, 967, 979, 991, 1003, 1015,
+                                               1027, 1039, 1051, 1063, 1075, 1087, 1099,
+                                               1111, 1123, 1135, 1147, 1159, 1171, 1183, 1195,
+                                               1207, 1219, 1231, 1243});
 }
 
 /**
@@ -1206,8 +1205,8 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPG_0003, TestSize.Level1)
     std::string filePath = g_mpgPath3;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({1253, 2164, 0}, {19, 2164, 0}, {0, 89, 123, 193, 224, 288, 334, 396, 436, 531,
-                                                    571, 621, 658, 684, 727, 772, 867, 1117, 1163});
+    CheckAllFrames({1253, 2164}, {19, 2164}, {0, 89, 123, 193, 224, 288, 334, 396, 436, 531,
+                                              571, 621, 658, 684, 727, 772, 867, 1117, 1163});
 }
 
 /**
@@ -1352,11 +1351,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MOV_0005, TestSiz
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 385}, {51, 385}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120,
-                                          132, 144, 156, 168, 180, 192, 204, 216, 228,
-                                          240, 252, 264, 276, 288, 300, 312, 324, 336,
-                                          348, 360, 372, 384, 396, 408, 420, 432, 444,
-                                          456, 468, 480, 492, 504, 516, 528, 540, 552,
-                                          564, 576, 588, 600});
+                                           132, 144, 156, 168, 180, 192, 204, 216, 228,
+                                           240, 252, 264, 276, 288, 300, 312, 324, 336,
+                                           348, 360, 372, 384, 396, 408, 420, 432, 444,
+                                           456, 468, 480, 492, 504, 516, 528, 540, 552,
+                                           564, 576, 588, 600});
 }
 
 /**
@@ -1370,7 +1369,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MKV_0001, TestSiz
     std::string filePath = g_mkvPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({239, 153, 0}, {4, 153, 0}, {0, 60, 120, 180});
+    CheckAllFrames({239, 153}, {4, 153}, {0, 60, 120, 180});
 }
 
 /**
@@ -1384,7 +1383,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MKV_0002, TestSiz
     std::string filePath = g_mkvPath2;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({242, 173, 0}, {1, 173, 0}, {0, 500});
+    CheckAllFrames({242, 173}, {1, 173}, {0});
 }
 
 /**
@@ -1398,7 +1397,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MKV_0003, TestSiz
     std::string filePath = g_mkvPath3;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({242, 200, 0}, {1, 200, 0}, {0, 500});
+    CheckAllFrames({242, 200}, {1, 200}, {0});
 }
 
 /**
@@ -1412,13 +1411,13 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0001, Tes
     std::string filePath = g_mpegTsPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({92, 0, 0}, {92, 0, 0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-                                            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-                                            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
-                                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-                                            58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
-                                            72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
-                                            86, 87, 88, 89, 90, 91});
+    CheckAllFrames({92}, {92}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                                16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+                                30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                                44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+                                58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+                                72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
+                                86, 87, 88, 89, 90, 91});
 }
 
 /**
@@ -1432,7 +1431,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0002, Tes
     std::string filePath = g_mpegTsPath2;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({303, 433, 0}, {0, 433, 0}, {500});
+    CheckAllFrames({303, 433}, {0, 433}, {});
 }
 
 /**
@@ -1446,7 +1445,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0003, Tes
     std::string filePath = g_mpegTsPath3;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({602, 314, 0}, {3, 314, 0}, {0, 250, 500});
+    CheckAllFrames({602, 314}, {3, 314}, {0, 250, 500});
 }
 
 /**
@@ -1460,7 +1459,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0004, Tes
     std::string filePath = g_mpegTsPath4;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 174, 0}, {5, 174, 0}, {0, 25, 50, 75, 100});
+    CheckAllFrames({103, 174}, {5, 174}, {0, 25, 50, 75, 100});
 }
 
 /**
@@ -1474,7 +1473,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0005, Tes
     std::string filePath = g_mpegTsPath5;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 155, 0}, {9, 155, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
+    CheckAllFrames({103, 155}, {9, 155}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
 }
 
 /**
@@ -1488,7 +1487,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0001, TestSiz
     std::string filePath = g_aviPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({602, 433, 0}, {3, 433, 0}, {0, 250, 500});
+    CheckAllFrames({602, 433}, {3, 433}, {0, 250, 500});
 }
 
 /**
@@ -1502,7 +1501,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0002, TestSiz
     std::string filePath = g_aviPath2;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({602, 386, 0}, {3, 386, 0}, {0, 250, 500});
+    CheckAllFrames({602, 386}, {3, 386}, {0, 250, 500});
 }
 
 /**
@@ -1516,12 +1515,12 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0003, TestSiz
     std::string filePath = g_aviPath3;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({604, 433, 0}, {51, 433, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108,
-                                                 120, 132, 144, 156, 168, 180, 192, 204, 216,
-                                                 228, 240, 252, 264, 276, 288, 300, 312, 324,
-                                                 336, 348, 360, 372, 384, 396, 408, 420, 432,
-                                                 444, 456, 468, 480, 492, 504, 516, 528, 540,
-                                                 552, 564, 576, 588, 600});
+    CheckAllFrames({604, 433}, {51, 433}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108,
+                                           120, 132, 144, 156, 168, 180, 192, 204, 216,
+                                           228, 240, 252, 264, 276, 288, 300, 312, 324,
+                                           336, 348, 360, 372, 384, 396, 408, 420, 432,
+                                           444, 456, 468, 480, 492, 504, 516, 528, 540,
+                                           552, 564, 576, 588, 600});
 }
 
 /**
@@ -1535,14 +1534,14 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0004, TestSiz
     std::string filePath = g_aviPath4;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 174, 0}, {103, 174, 0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-                                                  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-                                                  30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
-                                                  44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-                                                  58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
-                                                  72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
-                                                  86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
-                                                  100, 101, 102});
+    CheckAllFrames({103, 174}, {103, 174}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                                            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+                                            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+                                            58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+                                            72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
+                                            86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
+                                            100, 101, 102});
 }
 
 /**
@@ -1556,7 +1555,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0005, TestSiz
     std::string filePath = g_aviPath5;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 156, 0}, {9, 156, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
+    CheckAllFrames({103, 156}, {9, 156}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
 }
 
 /**
@@ -1570,7 +1569,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AVI_0006, TestSiz
     std::string filePath = g_aviPath6;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 155, 0}, {9, 155, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
+    CheckAllFrames({103, 155}, {9, 155}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
 }
 
 /**
@@ -1584,19 +1583,19 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPG_0001, TestSiz
     std::string filePath = g_mpgPath1;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({1253, 2164, 0}, {109, 2164, 0}, {0, 12, 14, 26, 38, 50, 62, 74, 86,
-                                                    98, 110, 122, 134, 146, 158, 170, 182, 194,
-                                                    206, 218, 230, 242, 254, 266, 278, 290, 302,
-                                                    314, 326, 338, 350, 362, 374, 386, 396, 408,
-                                                    420, 432, 444, 456, 468, 480, 492, 504, 516,
-                                                    528, 540, 552, 564, 571, 583, 595, 607, 619,
-                                                    621, 633, 645, 657, 658, 670, 672, 684, 696,
-                                                    708, 720, 732, 744, 756, 768, 780, 792, 804,
-                                                    816, 828, 840, 852, 864, 876, 888, 900, 912,
-                                                    924, 936, 948, 960, 972, 984, 996, 1008, 1020,
-                                                    1032, 1044, 1056, 1068, 1080, 1092, 1104, 1116,
-                                                    1128, 1140, 1152, 1164, 1176, 1188, 1200, 1212,
-                                                    1224, 1236, 1248, });
+    CheckAllFrames({1253, 2164}, {109, 2164}, {0, 12, 14, 26, 38, 50, 62, 74, 86,
+                                               98, 110, 122, 134, 146, 158, 170, 182, 194,
+                                               206, 218, 230, 242, 254, 266, 278, 290, 302,
+                                               314, 326, 338, 350, 362, 374, 386, 396, 408,
+                                               420, 432, 444, 456, 468, 480, 492, 504, 516,
+                                               528, 540, 552, 564, 571, 583, 595, 607, 619,
+                                               621, 633, 645, 657, 658, 670, 672, 684, 696,
+                                               708, 720, 732, 744, 756, 768, 780, 792, 804,
+                                               816, 828, 840, 852, 864, 876, 888, 900, 912,
+                                               924, 936, 948, 960, 972, 984, 996, 1008, 1020,
+                                               1032, 1044, 1056, 1068, 1080, 1092, 1104, 1116,
+                                               1128, 1140, 1152, 1164, 1176, 1188, 1200, 1212,
+                                               1224, 1236, 1248});
 }
 
 /**
@@ -1610,21 +1609,20 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPG_0002, TestSiz
     std::string filePath = g_mpgPath2;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({1253, 2165, 0}, {120, 2165, 0}, {0, 12, 14, 17, 29, 41, 53, 65, 77, 89, 101, 113,
-                                                    125, 137, 149, 161, 173, 185, 197, 209,
-                                                    217, 218, 219, 220, 221, 222, 234, 246, 258, 270, 282,
-                                                    294, 306, 318, 330, 334, 346, 358,
-                                                    370, 382, 394, 396, 408, 420, 432, 435, 447, 459, 471,
-                                                    483, 495, 507, 519, 531, 543, 555,
-                                                    567, 571, 583, 595, 607, 619, 631, 643, 655, 667, 672,
-                                                    679, 680, 681, 693, 705, 717, 729,
-                                                    741, 753, 765, 772, 773, 774, 775, 787, 799, 811,
-                                                    823, 835, 847, 859, 871, 883, 895, 907,
-                                                    919, 931, 943, 955, 967, 979, 991, 1003, 1015,
-                                                    1027, 1039, 1051, 1063, 1075, 1087, 1099,
-                                                    1111, 1123, 1135, 1147, 1159, 1171, 1183, 1195,
-                                                    1207, 1219, 1231, 1243
-                                                    });
+    CheckAllFrames({1253, 2165}, {120, 2165}, {0, 12, 14, 17, 29, 41, 53, 65, 77, 89, 101, 113,
+                                               125, 137, 149, 161, 173, 185, 197, 209,
+                                               217, 218, 219, 220, 221, 222, 234, 246, 258, 270, 282,
+                                               294, 306, 318, 330, 334, 346, 358,
+                                               370, 382, 394, 396, 408, 420, 432, 435, 447, 459, 471,
+                                               483, 495, 507, 519, 531, 543, 555,
+                                               567, 571, 583, 595, 607, 619, 631, 643, 655, 667, 672,
+                                               679, 680, 681, 693, 705, 717, 729,
+                                               741, 753, 765, 772, 773, 774, 775, 787, 799, 811,
+                                               823, 835, 847, 859, 871, 883, 895, 907,
+                                               919, 931, 943, 955, 967, 979, 991, 1003, 1015,
+                                               1027, 1039, 1051, 1063, 1075, 1087, 1099,
+                                               1111, 1123, 1135, 1147, 1159, 1171, 1183, 1195,
+                                               1207, 1219, 1231, 1243});
 }
 
 /**
@@ -1638,8 +1636,8 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPG_0003, TestSiz
     std::string filePath = g_mpgPath3;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({1253, 2164, 0}, {19, 2164, 0}, {0, 89, 123, 193, 224, 288, 334, 396, 436, 531,
-                                                    571, 621, 658, 684, 727, 772, 867, 1117, 1163});
+    CheckAllFrames({1253, 2164}, {19, 2164}, {0, 89, 123, 193, 224, 288, 334, 396, 436, 531,
+                                              571, 621, 658, 684, 727, 772, 867, 1117, 1163});
 }
 
 /**
@@ -1784,11 +1782,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MOV_0005, TestSize.Level1
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({602, 385}, {51, 385}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120,
-                                          132, 144, 156, 168, 180, 192, 204, 216, 228,
-                                          240, 252, 264, 276, 288, 300, 312, 324, 336,
-                                          348, 360, 372, 384, 396, 408, 420, 432, 444,
-                                          456, 468, 480, 492, 504, 516, 528, 540, 552,
-                                          564, 576, 588, 600});
+                                           132, 144, 156, 168, 180, 192, 204, 216, 228,
+                                           240, 252, 264, 276, 288, 300, 312, 324, 336,
+                                           348, 360, 372, 384, 396, 408, 420, 432, 444,
+                                           456, 468, 480, 492, 504, 516, 528, 540, 552,
+                                           564, 576, 588, 600});
 }
 
 /**
@@ -1802,7 +1800,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MKV_0001, TestSize.Level1
     std::string filePath = g_mkvPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({239, 153, 0}, {4, 153, 0}, {0, 60, 120, 180});
+    CheckAllFrames({239, 153}, {4, 153}, {0, 60, 120, 180});
 }
 
 /**
@@ -1816,7 +1814,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MKV_0002, TestSize.Level1
     std::string filePath = g_mkvPath2;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({242, 173, 0}, {1, 173, 0}, {0, 500});
+    CheckAllFrames({242, 173}, {1, 173}, {0});
 }
 
 /**
@@ -1830,7 +1828,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MKV_0003, TestSize.Level1
     std::string filePath = g_mkvPath3;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({242, 200, 0}, {1, 200, 0}, {0, 500});
+    CheckAllFrames({242, 200}, {1, 200}, {0});
 }
 
 /**
@@ -1844,13 +1842,13 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0001, TestSize.Le
     std::string filePath = g_mpegTsPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({92, 0, 0}, {92, 0, 0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-                                            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-                                            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
-                                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-                                            58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
-                                            72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
-                                            86, 87, 88, 89, 90, 91});
+    CheckAllFrames({92}, {92}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                                16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+                                30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                                44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+                                58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+                                72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
+                                86, 87, 88, 89, 90, 91});
 }
 
 /**
@@ -1864,7 +1862,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0002, TestSize.Le
     std::string filePath = g_mpegTsPath2;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({303, 433, 0}, {0, 433, 0}, {500});
+    CheckAllFrames({303, 433}, {0, 433}, {});
 }
 
 /**
@@ -1878,7 +1876,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0003, TestSize.Le
     std::string filePath = g_mpegTsPath3;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({602, 314, 0}, {3, 314, 0}, {0, 250, 500});
+    CheckAllFrames({602, 314}, {3, 314}, {0, 250, 500});
 }
 
 /**
@@ -1892,7 +1890,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0004, TestSize.Le
     std::string filePath = g_mpegTsPath4;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 174, 0}, {5, 174, 0}, {0, 25, 50, 75, 100});
+    CheckAllFrames({103, 174}, {5, 174}, {0, 25, 50, 75, 100});
 }
 
 /**
@@ -1906,7 +1904,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0005, TestSize.Le
     std::string filePath = g_mpegTsPath5;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 155, 0}, {9, 155, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
+    CheckAllFrames({103, 155}, {9, 155}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
 }
 
 /**
@@ -1920,7 +1918,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0001, TestSize.Level1
     std::string filePath = g_aviPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({602, 433, 0}, {3, 433, 0}, {0, 250, 500});
+    CheckAllFrames({602, 433}, {3, 433}, {0, 250, 500});
 }
 
 /**
@@ -1934,7 +1932,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0002, TestSize.Level1
     std::string filePath = g_aviPath2;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({602, 386, 0}, {3, 386, 0}, {0, 250, 500});
+    CheckAllFrames({602, 386}, {3, 386}, {0, 250, 500});
 }
 
 /**
@@ -1948,12 +1946,12 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0003, TestSize.Level1
     std::string filePath = g_aviPath3;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({604, 433, 0}, {51, 433, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108,
-                                                 120, 132, 144, 156, 168, 180, 192, 204, 216,
-                                                 228, 240, 252, 264, 276, 288, 300, 312, 324,
-                                                 336, 348, 360, 372, 384, 396, 408, 420, 432,
-                                                 444, 456, 468, 480, 492, 504, 516, 528, 540,
-                                                 552, 564, 576, 588, 600});
+    CheckAllFrames({604, 433}, {51, 433}, {0, 12, 24, 36, 48, 60, 72, 84, 96, 108,
+                                           120, 132, 144, 156, 168, 180, 192, 204, 216,
+                                           228, 240, 252, 264, 276, 288, 300, 312, 324,
+                                           336, 348, 360, 372, 384, 396, 408, 420, 432,
+                                           444, 456, 468, 480, 492, 504, 516, 528, 540,
+                                           552, 564, 576, 588, 600});
 }
 
 /**
@@ -1967,14 +1965,14 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0004, TestSize.Level1
     std::string filePath = g_aviPath4;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 174, 0}, {103, 174, 0}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-                                                  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-                                                  30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
-                                                  44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-                                                  58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
-                                                  72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
-                                                  86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
-                                                  100, 101, 102});
+    CheckAllFrames({103, 174}, {103, 174}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                                            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+                                            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+                                            58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+                                            72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
+                                            86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
+                                            100, 101, 102});
 }
 
 /**
@@ -1988,7 +1986,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0005, TestSize.Level1
     std::string filePath = g_aviPath5;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 156, 0}, {9, 156, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
+    CheckAllFrames({103, 156}, {9, 156}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
 }
 
 /**
@@ -2002,7 +2000,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AVI_0006, TestSize.Level1
     std::string filePath = g_aviPath6;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({103, 155, 0}, {9, 155, 0}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
+    CheckAllFrames({103, 155}, {9, 155}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
 }
 
 /**
@@ -2016,19 +2014,19 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPG_0001, TestSize.Level1
     std::string filePath = g_mpgPath1;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({1253, 2164, 0}, {109, 2164, 0}, {0, 12, 14, 26, 38, 50, 62, 74, 86,
-                                                98, 110, 122, 134, 146, 158, 170, 182, 194,
-                                                206, 218, 230, 242, 254, 266, 278, 290, 302,
-                                                314, 326, 338, 350, 362, 374, 386, 396, 408,
-                                                420, 432, 444, 456, 468, 480, 492, 504, 516,
-                                                528, 540, 552, 564, 571, 583, 595, 607, 619,
-                                                621, 633, 645, 657, 658, 670, 672, 684, 696,
-                                                708, 720, 732, 744, 756, 768, 780, 792, 804,
-                                                816, 828, 840, 852, 864, 876, 888, 900, 912,
-                                                924, 936, 948, 960, 972, 984, 996, 1008, 1020,
-                                                1032, 1044, 1056, 1068, 1080, 1092, 1104, 1116,
-                                                1128, 1140, 1152, 1164, 1176, 1188, 1200, 1212,
-                                                1224, 1236, 1248, });
+    CheckAllFrames({1253, 2164}, {109, 2164}, {0, 12, 14, 26, 38, 50, 62, 74, 86,
+                                               98, 110, 122, 134, 146, 158, 170, 182, 194,
+                                               206, 218, 230, 242, 254, 266, 278, 290, 302,
+                                               314, 326, 338, 350, 362, 374, 386, 396, 408,
+                                               420, 432, 444, 456, 468, 480, 492, 504, 516,
+                                               528, 540, 552, 564, 571, 583, 595, 607, 619,
+                                               621, 633, 645, 657, 658, 670, 672, 684, 696,
+                                               708, 720, 732, 744, 756, 768, 780, 792, 804,
+                                               816, 828, 840, 852, 864, 876, 888, 900, 912,
+                                               924, 936, 948, 960, 972, 984, 996, 1008, 1020,
+                                               1032, 1044, 1056, 1068, 1080, 1092, 1104, 1116,
+                                               1128, 1140, 1152, 1164, 1176, 1188, 1200, 1212,
+                                               1224, 1236, 1248, });
 }
 
 /**
@@ -2042,21 +2040,20 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPG_0002, TestSize.Level1
     std::string filePath = g_mpgPath2;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({1253, 2165, 0}, {120, 2165, 0}, {0, 12, 14, 17, 29, 41, 53, 65, 77, 89, 101, 113,
-                                                    125, 137, 149, 161, 173, 185, 197, 209,
-                                                    217, 218, 219, 220, 221, 222, 234, 246, 258, 270, 282,
-                                                    294, 306, 318, 330, 334, 346, 358,
-                                                    370, 382, 394, 396, 408, 420, 432, 435, 447, 459, 471,
-                                                    483, 495, 507, 519, 531, 543, 555,
-                                                    567, 571, 583, 595, 607, 619, 631, 643, 655, 667, 672,
-                                                    679, 680, 681, 693, 705, 717, 729,
-                                                    741, 753, 765, 772, 773, 774, 775, 787, 799, 811,
-                                                    823, 835, 847, 859, 871, 883, 895, 907,
-                                                    919, 931, 943, 955, 967, 979, 991, 1003, 1015,
-                                                    1027, 1039, 1051, 1063, 1075, 1087, 1099,
-                                                    1111, 1123, 1135, 1147, 1159, 1171, 1183, 1195,
-                                                    1207, 1219, 1231, 1243
-                                                    });
+    CheckAllFrames({1253, 2165}, {120, 2165}, {0, 12, 14, 17, 29, 41, 53, 65, 77, 89, 101, 113,
+                                               125, 137, 149, 161, 173, 185, 197, 209,
+                                               217, 218, 219, 220, 221, 222, 234, 246, 258, 270, 282,
+                                               294, 306, 318, 330, 334, 346, 358,
+                                               370, 382, 394, 396, 408, 420, 432, 435, 447, 459, 471,
+                                               483, 495, 507, 519, 531, 543, 555,
+                                               567, 571, 583, 595, 607, 619, 631, 643, 655, 667, 672,
+                                               679, 680, 681, 693, 705, 717, 729,
+                                               741, 753, 765, 772, 773, 774, 775, 787, 799, 811,
+                                               823, 835, 847, 859, 871, 883, 895, 907,
+                                               919, 931, 943, 955, 967, 979, 991, 1003, 1015,
+                                               1027, 1039, 1051, 1063, 1075, 1087, 1099,
+                                               1111, 1123, 1135, 1147, 1159, 1171, 1183, 1195,
+                                               1207, 1219, 1231, 1243});
 }
 
 /**
@@ -2070,6 +2067,6 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPG_0003, TestSize.Level1
     std::string filePath = g_mpgPath3;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({1253, 2164, 0}, {19, 2164, 0}, {0, 89, 123, 193, 224, 288, 334, 396, 436, 531,
-                                                    571, 621, 658, 684, 727, 772, 867, 1117, 1163});
+    CheckAllFrames({1253, 2164}, {19, 2164}, {0, 89, 123, 193, 224, 288, 334, 396, 436, 531,
+                                              571, 621, 658, 684, 727, 772, 867, 1117, 1163});
 }

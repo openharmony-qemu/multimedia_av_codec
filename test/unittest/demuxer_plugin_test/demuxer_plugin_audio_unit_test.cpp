@@ -61,7 +61,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_M4A_0001, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(433);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({433, 0, 0}, {433, 0, 0}, numbers);
+    CheckAllFrames({433}, {433}, numbers);
 }
 
 /**
@@ -77,7 +77,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AAC_0001, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1293);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1293, 0, 0}, {1293, 0, 0}, numbers);
+    CheckAllFrames({1293}, {1293}, numbers);
 }
 
 /**
@@ -93,7 +93,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP3_0001, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1251);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1251, 0, 0}, {1251, 0, 0}, numbers);
+    CheckAllFrames({1251, 0}, {1251, 0}, numbers);
 }
 
 /**
@@ -109,7 +109,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_OGG_0001, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1598);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1598, 0, 0}, {1598, 0, 0}, numbers);
+    CheckAllFrames({1598}, {1598}, numbers);
 }
 
 /**
@@ -125,7 +125,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_FLAC_0001, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(313);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({313, 0, 0}, {313, 0, 0}, numbers);
+    CheckAllFrames({313, 0}, {313, 0}, numbers);
 }
 
 /**
@@ -141,7 +141,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WAV_0001, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(704);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({704, 0, 0}, {704, 0, 0}, numbers);
+    CheckAllFrames({704}, {704}, numbers);
 }
 
 /**
@@ -157,7 +157,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WAV_0002, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(352);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({352, 0, 0}, {352, 0, 0}, numbers);
+    CheckAllFrames({352}, {352}, numbers);
 }
 
 /**
@@ -173,7 +173,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AMR_0001, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1501);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1501, 0, 0}, {1501, 0, 0}, numbers);
+    CheckAllFrames({1501}, {1501}, numbers);
 }
 
 /**
@@ -189,7 +189,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_AMR_0002, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1500);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1500, 0, 0}, {1500, 0, 0}, numbers);
+    CheckAllFrames({1500}, {1500}, numbers);
 }
 
 /**
@@ -205,7 +205,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_APE_0001, TestSize.Level1)
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(7);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({7, 0, 0}, {7, 0, 0}, numbers);
+    CheckAllFrames({7}, {7}, numbers);
 }
 
 /**
@@ -221,7 +221,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_M4A_0001, TestSiz
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(433);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({433, 0, 0}, {433, 0, 0}, numbers);
+    CheckAllFrames({433}, {433}, numbers);
 }
 
 /**
@@ -237,7 +237,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AAC_0001, TestSiz
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1293);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1293, 0, 0}, {1293, 0, 0}, numbers);
+    CheckAllFrames({1293}, {1293}, numbers);
 }
 
 /**
@@ -253,7 +253,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP3_0001, TestSiz
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1251);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1251, 0, 0}, {1251, 0, 0}, numbers);
+    CheckAllFrames({1251, 0}, {1251, 0}, numbers);
 }
 
 /**
@@ -269,7 +269,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_OGG_0001, TestSiz
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1598);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1598, 0, 0}, {1598, 0, 0}, numbers);
+    CheckAllFrames({1598}, {1598}, numbers);
 }
 
 /**
@@ -285,7 +285,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_FLAC_0001, TestSi
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(313);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({313, 0, 0}, {313, 0, 0}, numbers);
+    CheckAllFrames({313, 0}, {313, 0}, numbers);
 }
 
 /**
@@ -301,7 +301,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_WAV_0001, TestSiz
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(704);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({704, 0, 0}, {704, 0, 0}, numbers);
+    CheckAllFrames({704}, {704}, numbers);
 }
 
 /**
@@ -317,7 +317,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_WAV_0002, TestSiz
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(352);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({352, 0, 0}, {352, 0, 0}, numbers);
+    CheckAllFrames({352}, {352}, numbers);
 }
 
 /**
@@ -333,7 +333,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AMR_0001, TestSiz
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1501);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1501, 0, 0}, {1501, 0, 0}, numbers);
+    CheckAllFrames({1501}, {1501}, numbers);
 }
 
 /**
@@ -349,7 +349,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_AMR_0002, TestSiz
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1500);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1500, 0, 0}, {1500, 0, 0}, numbers);
+    CheckAllFrames({1500}, {1500}, numbers);
 }
 
 /**
@@ -365,7 +365,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_APE_0001, TestSiz
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(7);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({7, 0, 0}, {7, 0, 0}, numbers);
+    CheckAllFrames({7}, {7}, numbers);
 }
 
 /**
@@ -381,7 +381,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_M4A_0001, TestSize.Level1
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(433);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({433, 0, 0}, {433, 0, 0}, numbers);
+    CheckAllFrames({433}, {433}, numbers);
 }
 
 /**
@@ -397,7 +397,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AAC_0001, TestSize.Level1
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1293);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1293, 0, 0}, {1293, 0, 0}, numbers);
+    CheckAllFrames({1293}, {1293}, numbers);
 }
 
 /**
@@ -413,7 +413,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP3_0001, TestSize.Level1
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1251);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1251, 0, 0}, {1251, 0, 0}, numbers);
+    CheckAllFrames({1251, 0}, {1251, 0}, numbers);
 }
 
 /**
@@ -429,7 +429,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_OGG_0001, TestSize.Level1
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1598);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1598, 0, 0}, {1598, 0, 0}, numbers);
+    CheckAllFrames({1598}, {1598}, numbers);
 }
 
 /**
@@ -445,7 +445,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_FLAC_0001, TestSize.Level
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(313);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({313, 0, 0}, {313, 0, 0}, numbers);
+    CheckAllFrames({313, 0}, {313, 0}, numbers);
 }
 
 /**
@@ -461,7 +461,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_WAV_0001, TestSize.Level1
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(704);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({704, 0, 0}, {704, 0, 0}, numbers);
+    CheckAllFrames({704}, {704}, numbers);
 }
 
 /**
@@ -477,7 +477,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_WAV_0002, TestSize.Level1
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(352);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({352, 0, 0}, {352, 0, 0}, numbers);
+    CheckAllFrames({352}, {352}, numbers);
 }
 
 /**
@@ -493,7 +493,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AMR_0001, TestSize.Level1
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1501);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1501, 0, 0}, {1501, 0, 0}, numbers);
+    CheckAllFrames({1501}, {1501}, numbers);
 }
 
 /**
@@ -509,7 +509,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_AMR_0002, TestSize.Level1
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(1500);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({1500, 0, 0}, {1500, 0, 0}, numbers);
+    CheckAllFrames({1500}, {1500}, numbers);
 }
 
 /**
@@ -525,5 +525,5 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_APE_0001, TestSize.Level1
     ASSERT_TRUE(initStatus_);
     std::vector<uint32_t> numbers(7);
     std::iota(numbers.begin(), numbers.end(), 0);
-    CheckAllFrames({7, 0, 0}, {7, 0, 0}, numbers);
+    CheckAllFrames({7}, {7}, numbers);
 }
