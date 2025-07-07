@@ -268,6 +268,8 @@ int32_t CodecServer::Configure(const Format &format)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     Format config = format;
 
+    format.GetIntValue(Tag::VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, pushBlankBufferOnShutdown_);
+
     int32_t isSetParameterCb = 0;
     format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
     isSetParameterCb_ = isSetParameterCb != 0;
@@ -493,6 +495,7 @@ int32_t CodecServer::Reset()
     if (ret == AVCS_ERR_OK) {
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
+        pushBlankBufferOnShutdown_ = false;
     }
     OnInstanceMemoryResetEvent();
     if (framerateCalculator_) {
