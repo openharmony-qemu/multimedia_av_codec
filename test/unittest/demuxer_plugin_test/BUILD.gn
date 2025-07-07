@@ -91,7 +91,14 @@ ohos_unittest("demuxer_plugin_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
   ]
-
+  if (target_cpu == "arm64" || is_emulator) {
+    av_codec_path = "\"/system/lib64\""
+  } else {
+    av_codec_path = "\"/system/lib\""
+  }
+  defines = [
+    "AV_CODEC_PATH=${av_codec_path}",
+  ]
   external_deps = [
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",

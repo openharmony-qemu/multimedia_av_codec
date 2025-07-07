@@ -43,6 +43,7 @@ const int32_t DEFAULT_TIMEOUT = 100; // 100ms
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 static const string TEST_RELATIVE_PATH = "/data/test/media/";
+const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 // FLV
 string g_flvPath = string("/data/test/media/h264.flv");
 // MP4
@@ -1000,7 +1001,9 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0002, TestSize.Level1
     std::string filePath = g_mpegTsPath2;
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({303, 433}, {0, 433}, {});
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        CheckAllFrames({303, 433}, {11, 433}, {0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300});
+    }
 }
 
 /**
@@ -1431,7 +1434,9 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0002, Tes
     std::string filePath = g_mpegTsPath2;
     InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({303, 433}, {0, 433}, {});
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        CheckAllFrames({303, 433}, {11, 433}, {0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300});
+    }
 }
 
 /**
@@ -1862,7 +1867,9 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0002, TestSize.Le
     std::string filePath = g_mpegTsPath2;
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
-    CheckAllFrames({303, 433}, {0, 433}, {});
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        CheckAllFrames({303, 433}, {11, 433}, {0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300});
+    }
 }
 
 /**
