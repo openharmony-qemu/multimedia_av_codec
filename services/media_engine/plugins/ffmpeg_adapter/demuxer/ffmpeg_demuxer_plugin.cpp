@@ -1325,7 +1325,8 @@ Status FFmpegDemuxerPlugin::GetSeiInfo()
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     Status ret = Status::OK;
     bool extraType = false;
-    if (FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MPEGTS) {
+    FileType fileType = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
+    if (fileType == FileType::MPEGTS || fileType == FileType::MP4 || fileType == FileType::MOV) {
         extraType = true;
     }
     if ((streamParser_ != nullptr && !streamParserInited_) || (extraType)) {
