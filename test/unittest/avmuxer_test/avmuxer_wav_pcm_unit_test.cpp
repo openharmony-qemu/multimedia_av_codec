@@ -67,11 +67,7 @@ void AVMuxerWavPcmUnitTest::TearDown()
     }
 }
 
-<<<<<<< HEAD
-static int32_t WritePCMSampleWithMetadata(std::shared_ptr<std::ofstream> file, const uint8_t *pcmData,
-=======
 static int32_t WritePcmSampleWithMetadata(std::shared_ptr<std::ofstream> file, const uint8_t *pcmData,
->>>>>>> 32c2fb24d3718a42e21ea96d493fdcd253214148
     uint32_t pcmSize, int64_t pts, uint32_t flags)
 {
     file->write(reinterpret_cast<const char *>(&pts), sizeof(pts));

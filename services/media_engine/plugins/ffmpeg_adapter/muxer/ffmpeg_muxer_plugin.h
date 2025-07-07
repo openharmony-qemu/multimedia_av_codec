@@ -93,6 +93,7 @@ private:
     static void DeInitAvIoCtx(AVIOContext *ptr);
     static int32_t IoOpen(AVFormatContext *s, AVIOContext **pb, const char *url, int flags, AVDictionary **options);
     static void IoClose(AVFormatContext *s, AVIOContext *pb);
+    void CheckChannelLayout(uint64_t channelLayout, const std::shared_ptr<Meta> &trackDesc);
 
 private:
     struct IOContext {
