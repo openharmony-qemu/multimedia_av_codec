@@ -169,7 +169,7 @@ private:
     CallerInfo caller_, forwardCaller_;
     bool isSurfaceMode_ = false;
     uint64_t surfaceId_ = -1;
-    bool pushBlankBufferOnShutdown_ = false;
+    int32_t pushBlankBufferOnShutdown_ = false;
     bool isModeConfirmed_ = false;
     bool isCreateSurface_ = false;
     bool isSetParameterCb_ = false;
