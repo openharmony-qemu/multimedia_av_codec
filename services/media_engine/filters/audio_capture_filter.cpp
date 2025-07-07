@@ -25,6 +25,7 @@ static constexpr uint64_t AUDIO_NS_PER_SECOND = 1000000000;
 static constexpr int64_t AUDIO_UNREGULAR_DELTA_TIME = 100000000;
 static constexpr int64_t AUDIO_CAPTURE_READ_FAILED_WAIT_TIME = 20000000; // 20000000 us 20ms
 static constexpr int64_t AUDIO_CAPTURE_READ_FRAME_TIME = 20000000; // 20000000 ns 20ms
+static constexpr int64_t AUDIO_CAPTURE_READ_FRAME_TIME_HALF = 10000000;
 static constexpr int32_t AUDIO_CAPTURE_MAX_CACHED_FRAMES = 256;
 }
 
@@ -175,6 +176,8 @@ Status AudioCaptureFilter::DoStart()
     currentTime_ = 0;
     firstAudioFramePts_.store(-1);
     firstVideoFramePts_.store(-1);
+    GetCurrentTime(startTime_);
+    MEDIA_LOG_I("[audio] startTime_: " PUBLIC_LOG_D64, startTime_);
     auto res = Status::ERROR_INVALID_OPERATION;
     // start audioCaptureModule firstly
     if (audioCaptureModule_) {
@@ -205,17 +208,25 @@ Status AudioCaptureFilter::DoPause()
 
     GetCurrentTime(pauseTime_);
     MEDIA_LOG_I("[audio] pauseTime: " PUBLIC_LOG_D64, pauseTime_);
-    if (currentTime_ != 0 && currentTime_ < pauseTime_ && withVideo_) {
-        int32_t lostCount = (pauseTime_ - currentTime_) / AUDIO_CAPTURE_READ_FRAME_TIME;
+    if (withVideo_) {
+        int32_t lostCount = 0;
+        if (currentTime_ != 0 && currentTime_ < pauseTime_) {
+            lostCount = ((pauseTime_ - currentTime_) + AUDIO_CAPTURE_READ_FRAME_TIME_HALF)
+                / AUDIO_CAPTURE_READ_FRAME_TIME;
+        } else if (currentTime_ == 0) {
+            lostCount = ((pauseTime_ - startTime_ + AUDIO_CAPTURE_READ_FRAME_TIME_HALF)
+                / AUDIO_CAPTURE_READ_FRAME_TIME) - cachedAudioDataDeque_.size();
+            MEDIA_LOG_I("[audio] no video frame return, fill audio frame by startTime");
+        }
         if (lostCount > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
             // time diff is abnormal, do not fill data frame.
             MEDIA_LOG_W("[audio] abnormal time diff, please check");
         } else {
             FillLostFrame(lostCount);
         }
-    }
-    if (!cachedAudioDataDeque_.empty()) {
-        RecordCachedData();
+        if (!cachedAudioDataDeque_.empty()) {
+            RecordCachedData();
+        }
     }
     return ret;
 }
@@ -227,6 +238,8 @@ Status AudioCaptureFilter::DoResume()
     currentTime_ = 0;
     firstAudioFramePts_.store(-1);
     firstVideoFramePts_.store(-1);
+    GetCurrentTime(startTime_);
+    MEDIA_LOG_I("[audio] resumeTime: " PUBLIC_LOG_D64, startTime_);
     if (taskPtr_) {
         taskPtr_->Start();
     }
@@ -259,6 +272,7 @@ Status AudioCaptureFilter::DoStop()
     firstAudioFramePts_.store(-1);
     firstVideoFramePts_.store(-1);
     currentTime_ = 0;
+    startTime_ = 0;
     if (!cachedAudioDataDeque_.empty()) {
         RecordCachedData();
     }
@@ -414,35 +428,32 @@ void AudioCaptureFilter::CalculateAVTime()
 
     if (firstAudioFramePts_.load() > firstVideoFramePts_.load()) {
         // audio frame is later than video frame, add zeros to the front of the cache queue.
-        int32_t diffCount = static_cast<int32_t>((firstAudioFramePts_.load() - firstVideoFramePts_.load())
-            / AUDIO_CAPTURE_READ_FRAME_TIME);
+        int32_t diffCount = static_cast<int32_t>((firstAudioFramePts_.load() - firstVideoFramePts_.load()
+            + AUDIO_CAPTURE_READ_FRAME_TIME_HALF) / AUDIO_CAPTURE_READ_FRAME_TIME);
         if (diffCount > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
             // video time is abnormal, do not fill data frame.
-            startTime_ = firstAudioFramePts_.load();
+            currentTime_ = firstAudioFramePts_.load();
         } else {
-            startTime_ = firstAudioFramePts_.load() - diffCount * AUDIO_CAPTURE_READ_FRAME_TIME;
+            currentTime_ = firstAudioFramePts_.load() - diffCount * AUDIO_CAPTURE_READ_FRAME_TIME;
             MEDIA_LOG_I("Audio late, diffCount: " PUBLIC_LOG_D32, diffCount);
             FillLostFrame(diffCount);
         }
     } else {
         // audio frame is faster than video frame, crop frames of the cache queue.
-        int32_t diffCount = static_cast<int32_t>((firstVideoFramePts_.load() - firstAudioFramePts_.load())
-            / AUDIO_CAPTURE_READ_FRAME_TIME);
+        int32_t diffCount = static_cast<int32_t>((firstVideoFramePts_.load() - firstAudioFramePts_.load()
+            + AUDIO_CAPTURE_READ_FRAME_TIME_HALF) / AUDIO_CAPTURE_READ_FRAME_TIME);
         if (diffCount > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
             // video time is abnormal, do not crop data frame.
-            startTime_ = firstAudioFramePts_.load();
+            currentTime_ = firstAudioFramePts_.load();
         } else {
-            startTime_ = firstAudioFramePts_.load() + diffCount * AUDIO_CAPTURE_READ_FRAME_TIME;
+            currentTime_ = firstAudioFramePts_.load() + diffCount * AUDIO_CAPTURE_READ_FRAME_TIME;
             MEDIA_LOG_I("Video late, diffCount: " PUBLIC_LOG_D32, diffCount);
-            while (diffCount > 0) {
-                if (!cachedAudioDataDeque_.empty()) {
-                    cachedAudioDataDeque_.pop_front();
-                }
+            while (diffCount > 0 && !cachedAudioDataDeque_.empty()) {
+                cachedAudioDataDeque_.pop_front();
                 --diffCount;
             }
         }
     }
-    currentTime_ = startTime_;
 }
 
 void AudioCaptureFilter::FillLostFrame(int32_t lostCount)
@@ -524,8 +535,8 @@ void AudioCaptureFilter::RecordAudioFrame()
         if (audioDataTime > currentTime_
             && (audioDataTime - currentTime_) > static_cast<int64_t>(AUDIO_UNREGULAR_DELTA_TIME)
             && withVideo_) {
-            int32_t lostCount = (audioDataTime - AUDIO_CAPTURE_READ_FRAME_TIME - currentTime_)
-                / AUDIO_CAPTURE_READ_FRAME_TIME;
+            int32_t lostCount = (audioDataTime - AUDIO_CAPTURE_READ_FRAME_TIME - currentTime_
+                + AUDIO_CAPTURE_READ_FRAME_TIME_HALF) / AUDIO_CAPTURE_READ_FRAME_TIME;
             if (lostCount > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
                 // time diff is abnormal, please check
                 MEDIA_LOG_W("[audio] abnormal time diff, please check");
@@ -556,8 +567,10 @@ void AudioCaptureFilter::GetCurrentTime(int64_t &currentTime)
 
 void AudioCaptureFilter::SetVideoFirstFramePts(int64_t firstFramePts)
 {
-    firstVideoFramePts_.store(firstFramePts);
-    MEDIA_LOG_I("set firstVideoFramePts: " PUBLIC_LOG_D64, firstVideoFramePts_.load());
+    if (firstFramePts > startTime_) {
+        firstVideoFramePts_.store(firstFramePts);
+        MEDIA_LOG_I("set firstVideoFramePts: " PUBLIC_LOG_D64, firstVideoFramePts_.load());
+    }
 }
 
 void AudioCaptureFilter::SetWithVideo(bool withVideo)

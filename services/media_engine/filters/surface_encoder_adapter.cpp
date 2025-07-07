@@ -800,15 +800,20 @@ bool SurfaceEncoderAdapter::CheckFrames(int64_t currentPts, int64_t &checkFrames
     if (stateCode == StateCode::RESUME && currentPts < pauseResumeQueue_[0].first) {
         return true;
     }
-    // resumetime后的第一帧，放到pausepts后的第一帧
-    if (stateCode == StateCode::PAUSE) {
-        // pausetime与上一帧之间的帧间隔
-        int64_t interFrameCount = ((pauseResumeQueue_[0].first - lastBufferTime_) + (SEC_TO_NS / videoFrameRate_) - 1) /
-            (SEC_TO_NS / videoFrameRate_);
-        // pausetime与本应该收到的下一帧的差
-        checkFramesPauseTime = checkFramesPauseTime + (SEC_TO_NS / videoFrameRate_) * interFrameCount -
-            (pauseResumeQueue_[0].first - lastBufferTime_);
-    } else {
+    // pop expire nodes
+    // currentpts bigger than the first two node, it means the pause and resume node are useless
+    if (pauseResumeQueue_.size() > 1
+        && currentPts >= pauseResumeQueue_[0].first
+        && currentPts >= pauseResumeQueue_[1].first) {
+        if (pauseResumeQueue_[0].second == StateCode::RESUME && !totalPauseTimeQueue_.empty()) {
+            // pop totalPauseTime
+            totalPauseTimeQueue_.pop_front();
+        }
+        pauseResumeQueue_.pop_front();
+        MEDIA_LOG_I("pauseResumeQueue_ pop expire nodes");
+        return CheckFrames(currentPts, checkFramesPauseTime);
+    }
+    if (stateCode == StateCode::RESUME && currentPts >= pauseResumeQueue_[0].first) {
         if (!totalPauseTimeQueue_.empty()) {
             // after resume pop totalPauseTime
             totalPauseTimeQueue_.pop_front();
