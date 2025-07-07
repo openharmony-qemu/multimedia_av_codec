@@ -81,7 +81,7 @@ public:
         (void)bufferStatus;
     }
 
-    virtual int32_t QueryInputBuffer(uint32_t *index, size_t bufferSize, int64_t timeoutUs)
+    virtual int32_t QueryInputBuffer(uint32_t *index, int32_t bufferSize, int64_t timeoutUs)
     {
         (void)index;
         (void)bufferSize;
