@@ -929,7 +929,6 @@ extern const char *OH_MD_KEY_ENABLE_SYNC_MODE;
  * @brief Key for specifying whether to output a blank frame during video decoder shutdown,
  * value type is int32_t (0 or 1): 1 is enabled, 0 otherwise.
  *
- * 
  * This is an optional key, only used when configuring a video decoder in surface mode.\n
  * By default, this feature is disabled (0).\n
  * When enabled, the video decoder will output a blank frame (typically black)
