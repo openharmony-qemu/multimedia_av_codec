@@ -624,7 +624,7 @@ OH_AVErrCode OH_VideoEncoder_FreeOutputData(struct OH_AVCodec *codec, uint32_t i
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(videoEncObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
+    CHECK_AND_RETURN_RET_LOG(videoEncObj->callback_ != nullptr, AV_ERR_INVALID_STATE,
                              "The callback of OH_AVMemory is nullptr!");
 
     int32_t ret = videoEncObj->videoEncoder_->ReleaseOutputBuffer(index);
