@@ -55,7 +55,6 @@ constexpr uint32_t MAIN_MATCH_STRIDE = 4;
 constexpr uint32_t NAL_START_PATTERN = 0x01000100;
 constexpr uint32_t BITWISE_NOT_NAL_START_PATTERN = ~0x01000100;
 constexpr uint32_t NAL_MATCH_MASK = 0x80008000U;
-constexpr uint32_t COMPLIANCE_NEG = -1;
 
 bool IsMuxerSupported(const char *name)
 {
@@ -786,8 +785,9 @@ Status FFmpegMuxerPlugin::SetAuxiliaryMeta(const std::shared_ptr<Meta> &trackDes
 void FFmpegMuxerPlugin::CheckChannelLayout(uint64_t channelLayout, const std::shared_ptr<Meta> &trackDesc)
 {
     if (channelLayout == AudioChannelLayout::STEREO_DOWNMIX) {
-        formatContext_->strict_std_compliance = COMPLIANCE_NEG;
-        MEDIA_LOG_W("channelLayout is STEREO_DOWNMIX, set compliance level: " PUBLIC_LOG_D32, COMPLIANCE_NEG);
+        formatContext_->strict_std_compliance = FF_COMPLIANCE_UNOFFICIAL;
+        MEDIA_LOG_W("channelLayout is STEREO_DOWNMIX, set compliance level: " PUBLIC_LOG_D32,
+                    FF_COMPLIANCE_UNOFFICIAL);
     }
 }
 
