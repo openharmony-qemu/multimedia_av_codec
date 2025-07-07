@@ -16,10 +16,8 @@
 #include <cstdint>
 #include <fuzzer/FuzzedDataProvider.h>
 #include "native_avcapability.h"
-
-#define private public
 #include "venc_sync_sample.h"
-#undef private
+
 
 using namespace std;
 using namespace OHOS;

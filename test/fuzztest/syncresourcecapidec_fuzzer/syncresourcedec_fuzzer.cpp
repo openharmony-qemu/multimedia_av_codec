@@ -25,7 +25,8 @@ using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "syncresourcecapidec_fuzzer"
 
 std::string sourcePath = "/data/test/media/720_1280_25_avcc.h264";
-std::string outPath = "/data/test/media/outputTest" uint32_t DEFAULT_WIDTH = 720;
+std::string outPath = "/data/test/media/outputTest";
+uint32_t DEFAULT_WIDTH = 720;
 uint32_t DEFAULT_HEIGHT = 1280;
 std::shared_ptr<VideoDecSyncSample> videoDec = nullptr;
 std::shared_ptr<FormatMock> format = nullptr;
