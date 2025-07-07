@@ -267,8 +267,9 @@ int32_t CodecServer::Configure(const Format &format)
                                       GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     Format config = format;
-
-    format.GetIntValue(Tag::VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, pushBlankBufferOnShutdown_);
+    if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
+        format.GetIntValue(Tag::VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, pushBlankBufferOnShutdown_);
+    }
 
     int32_t isSetParameterCb = 0;
     format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
@@ -400,7 +401,7 @@ int32_t CodecServer::Stop()
         temporalScalability_->SetBlockQueueActive();
         inputParamTask_->Stop();
     }
-    if (isSurfaceMode_) {
+    if (isSurfaceMode_ && pushBlankBufferOnShutdown_) {
         std::optional<std::pair<std::string, int32_t>> pInfo =
             SurfaceTools::GetInstance().GetCurProducerInfo(surfaceId_);
         if (pInfo != std::nullopt) {
@@ -518,7 +519,7 @@ int32_t CodecServer::Release()
         }
         temporalScalability_ = nullptr;
     }
-    if (isSurfaceMode_) {
+    if (isSurfaceMode_ && pushBlankBufferOnShutdown_) {
         std::optional<std::pair<std::string, int32_t>> pInfo =
             SurfaceTools::GetInstance().GetCurProducerInfo(surfaceId_);
         if (pInfo != std::nullopt) {
