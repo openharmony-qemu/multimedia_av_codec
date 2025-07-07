@@ -798,6 +798,15 @@ Status FFmpegMuxerPlugin::SetAuxiliaryMeta(const std::shared_ptr<Meta> &trackDes
     return Status::NO_ERROR;
 }
 
+void FFmpegMuxerPlugin::CheckChannelLayout(uint64_t channelLayout, const std::shared_ptr<Meta> &trackDesc)
+{
+    if (channelLayout == AudioChannelLayout::STEREO_DOWNMIX) {
+        formatContext_->strict_std_compliance = FF_COMPLIANCE_UNOFFICIAL;
+        MEDIA_LOG_W("channelLayout is STEREO_DOWNMIX, set compliance level: " PUBLIC_LOG_D32,
+                    FF_COMPLIANCE_UNOFFICIAL);
+    }
+}
+
 Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID)
 {
     int32_t sampleRate = 0;
@@ -836,6 +845,7 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
         AudioChannelLayout channelLayout = UNKNOWN;
         trackDesc->Get<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
         auto ffChannelLayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);
+        CheckChannelLayout(ffChannelLayout, trackDesc);
         MEDIA_LOG_D("channelLayout:" PUBLIC_LOG_D64 ", ffChannelLayout:" PUBLIC_LOG_U64,
             channelLayout, ffChannelLayout);
         FALSE_RETURN_V_MSG_E(ffChannelLayout != AV_CH_LAYOUT_NATIVE, Status::ERROR_INVALID_DATA,
