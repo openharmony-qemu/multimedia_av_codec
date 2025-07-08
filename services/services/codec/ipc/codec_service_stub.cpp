@@ -89,7 +89,7 @@ const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
 
 class QosTool {
 public:
-    QosTool(OHOS::QOS::QosLevel level)
+    explicit QosTool(OHOS::QOS::QosLevel level)
     {
         OHOS::QOS::SetThreadQos(level);
     }
