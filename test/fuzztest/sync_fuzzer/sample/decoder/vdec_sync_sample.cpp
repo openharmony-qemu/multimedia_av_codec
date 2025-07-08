@@ -205,7 +205,7 @@ int32_t VideoDecSyncSample::FuzzStart()
         return AV_ERR_UNKNOWN;
     }
     PrepareInner();
-    ret = videoDec_->Start();
+    int32_t ret = videoDec_->Start();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
     FuzzRunInner();
     return ret;
@@ -234,7 +234,7 @@ int32_t VideoDecSyncSample::InputFuncFUZZ(const uint8_t *data, size_t size)
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     uint32_t bufferSize = buffer->GetCapacity();
-    if (size > bufferSzie) {
+    if (size > bufferSize) {
         return AV_ERR_NO_MEMORY;
     }
     uint8_t *bufferAddr = buffer->GetAddr();
@@ -609,7 +609,7 @@ int32_t VideoDecSyncSample::OutputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_ || isSurfaceMode_, AV_ERR_INVALID_VAL,
                                       "can not dump output file");
     uint32_t index = DEFAULT_INDEX;
-    uint32_t ret = videoDec_->QueryOutputBuffer(index, -1);
+    uint32_t ret = videoDec_->QueryOutputBuffer(index, 10);
     if (ret == AV_ERR_STREAM_CHANGED) {
         std::shared_ptr<FormatMock> format = videoDec_->GetOutputDescription();
         std::cout << "format = " << format->DumpInfo() << std::endl;
@@ -668,7 +668,7 @@ void VideoDecSyncSample::InputLoopFuncExt()
 int32_t VideoDecSyncSample::InputLoopInnerExt()
 {
     uint32_t index = DEFAULT_INDEX;
-    auto ret = videoDec_->QueryInputBuffer(index, -1);
+    auto ret = videoDec_->QueryInputBuffer(index, 10);
     if (ret == AV_ERR_TRY_AGAIN_LATER) {
         return AV_ERR_OK;
     }

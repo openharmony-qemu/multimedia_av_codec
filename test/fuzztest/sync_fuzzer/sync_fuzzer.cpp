@@ -113,7 +113,7 @@ bool VideoEncoderInnerFuzzTest(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     uint32_t index = fdp.ConsumeIntegral<uint32_t>();
     bool flag = fdp.ConsumeBool();
-    int64_t timeout flag ? 1 : 0;
+    int64_t timeout = flag ? 1 : 0;
     AVCodecVideoEncoderImpl encoderImpl;
     encoderImpl.QueryInputBuffer(index, timeout);
     encoderImpl.QueryOutputBuffer(index, timeout);
@@ -143,7 +143,7 @@ bool VideoDecoderInnerFuzzTest(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     uint32_t index = fdp.ConsumeIntegral<uint32_t>();
     bool flag = fdp.ConsumeBool();
-    int64_t timeout flag ? 1 : 0;
+    int64_t timeout = flag ? 1 : 0;
     AVCodecVideoDecoderImpl decoderImpl;
 
     decoderImpl.QueryInputBuffer(index, timeout);

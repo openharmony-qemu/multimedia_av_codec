@@ -187,11 +187,11 @@ int32_t VideoEncSyncSample::Start()
 
 int32_t VideoEncSyncSample::FuzzStart()
 {
-    if (signal_ == nullptr || videoDec_ == nullptr) {
+    if (signal_ == nullptr || videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
     PrepareInner();
-    ret = videoEnc_->Start();
+    int32_t ret = videoEnc_->Start();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
     FuzzRunInner();
     return ret;
@@ -205,22 +205,22 @@ void VideoEncSyncSample::FuzzRunInner()
     signal_->isPreparing_.store(false);
     signal_->isRunning_.store(true);
 
-    outputLoop_ = make_unique<thread>(&VideoDecSyncSample::OutputLoopFuncExt, this);
+    outputLoop_ = make_unique<thread>(&VideoEncSyncSample::OutputLoopFuncExt, this);
     ASSERT_NE(outputLoop_, nullptr);
 }
 
 int32_t VideoEncSyncSample::InputFuncFUZZ(const uint8_t *data, size_t size)
 {
     uint32_t index = DEFAULT_INDEX;
-    auto ret = videoDec_->QueryInputBuffer(index, 10);
+    auto ret = videoEnc_->QueryInputBuffer(index, 10);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: QueryInputBuffer fail");
-    auto buffer = videoDec_->GetInputBuffer(index);
+    auto buffer = videoEnc_->GetInputBuffer(index);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetInputBuffer fail, index: %d", index);
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     uint32_t bufferSize = buffer->GetCapacity();
-    if (size > bufferSzie) {
+    if (size > bufferSize) {
         return AV_ERR_NO_MEMORY;
     }
     uint8_t *bufferAddr = buffer->GetAddr();
@@ -556,7 +556,7 @@ int32_t VideoEncSyncSample::OutputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_, AV_ERR_INVALID_VAL,
                                       "can not dump output file");
     uint32_t index = DEFAULT_INDEX;
-    uint32_t ret = videoEnc_->QueryOutputBuffer(index, -1);
+    uint32_t ret = videoEnc_->QueryOutputBuffer(index, 10);
     if (ret == AV_ERR_STREAM_CHANGED) {
         std::shared_ptr<FormatMock> format = videoEnc_->GetOutputDescription();
         std::cout << "format = " << format->DumpInfo() << std::endl;
@@ -639,7 +639,7 @@ void VideoEncSyncSample::InputRoiParam(std::shared_ptr<AVBufferMock> buffer)
 int32_t VideoEncSyncSample::InputLoopInnerExt()
 {
     uint32_t index = DEFAULT_INDEX;
-    auto ret = videoEnc_->QueryInputBuffer(index, -1);
+    auto ret = videoEnc_->QueryInputBuffer(index, 10);
     if (ret == AV_ERR_TRY_AGAIN_LATER) {
         return AV_ERR_OK;
     }

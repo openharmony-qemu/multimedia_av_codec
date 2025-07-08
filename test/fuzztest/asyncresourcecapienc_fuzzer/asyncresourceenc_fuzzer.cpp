@@ -16,7 +16,6 @@
 #include <cstdint>
 #include <fuzzer/FuzzedDataProvider.h>
 #include "native_avcapability.h"
-
 #include "venc_async_sample.h"
 
 using namespace std;
@@ -92,7 +91,7 @@ bool VideoEncoderResourceFuzzTest(const uint8_t *data, size_t size)
     EncPrepareSource();
     videoEnc->Prepare();
     videoEnc->FuzzStart();
-    int ret = videoDec->InputFuncFUZZ(data, size);
+    int ret = videoEnc->InputFuncFUZZ(data, size);
     if (ret != 0) {
         return false;
     }

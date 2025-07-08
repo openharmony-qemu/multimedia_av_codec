@@ -53,7 +53,7 @@ ohos_fuzztest("SyncResourceCapiDecFuzzTest") {
 
   sources = [ 
     "syncresourcedec_fuzzer.cpp",
-    "$MEDIA_ROOT_DIR/test/fuzztest/sysnc_fuzzer/sample/decoder/vdec_sync_sample.cpp",
+    "$MEDIA_ROOT_DIR/test/fuzztest/sync_fuzzer/sample/decoder/vdec_sync_sample.cpp",
 
     "$MEDIA_ROOT_DIR/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
     "$MEDIA_ROOT_DIR/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
