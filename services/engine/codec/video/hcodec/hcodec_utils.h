@@ -86,11 +86,7 @@ std::string StringifyMeta(std::shared_ptr<Media::Meta> &meta);
 
 class HCodecQosTool {
 public:
-    void SetThreadInteractiveQos();
-    void ResetThreadQos();
-
-private:
-    bool inInteractiveQos_ = false;
+    static void SetThreadInteractiveQos(bool enable);
 };
 }
 #endif // HCODEC_UTILS_H

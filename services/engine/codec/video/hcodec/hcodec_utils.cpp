@@ -50,17 +50,13 @@ std::string StringifyMeta(std::shared_ptr<Media::Meta> &meta)
     return dumpStream.str();
 }
 
-void HCodecQosTool::SetThreadInteractiveQos()
+void HCodecQosTool::SetThreadInteractiveQos(bool enable)
 {
-    if (!inInteractiveQos_) {
+    thread_local bool inInteractiveQos_ = false;
+    if (enable && !inInteractiveQos_) {
         inInteractiveQos_ = true;
         OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
-    }
-}
-
-void HCodecQosTool::ResetThreadQos()
-{
-    if (inInteractiveQos_) {
+    } else if (!enable && inInteractiveQos_) {
         inInteractiveQos_ = false;
         OHOS::QOS::ResetThreadQos();
     }
