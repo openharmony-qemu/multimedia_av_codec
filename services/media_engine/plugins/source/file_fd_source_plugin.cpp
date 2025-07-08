@@ -431,6 +431,11 @@ void FileFdSourcePlugin::CacheDataLoop()
     
     DeleteCacheBuffer(cacheBuffer, bufferSize);
 
+    CheckAndNotifyBufferingEnd();
+}
+
+void CheckAndNotifyBufferingEnd()
+{
     if (isBuffering_ && (static_cast<int64_t>(ringBuffer_->GetSize()) > waterLineAbove_ ||
         GetLastSize(cachePosition_.load()) == 0)) {
         NotifyBufferingEnd();
