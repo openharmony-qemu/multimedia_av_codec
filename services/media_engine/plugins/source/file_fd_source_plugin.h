@@ -82,6 +82,7 @@ private:
     void CheckReadTime();
     bool IsValidTime(int64_t curTime, int64_t lastTime);
     void WaitForInterrupt(int32_t waitTimeMS);
+    void CheckAndNotifyBufferingEnd();
     
     int32_t fd_ {-1};
     int64_t offset_ {0};

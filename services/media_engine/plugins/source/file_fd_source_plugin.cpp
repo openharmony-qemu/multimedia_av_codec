@@ -403,6 +403,8 @@ void FileFdSourcePlugin::CacheDataLoop()
     }
     int size = read(fd_, cacheBuffer, bufferSize);
     if (size <= 0) {
+        int64_t ct = steadyClock2_.ElapsedMilliseconds() - curTime;
+        MEDIA_LOG_I("read failed, cost time: " PUBLIC_LOG_U64, ct);
         DeleteCacheBuffer(cacheBuffer, bufferSize);
         HandleReadResult(bufferSize, size);
         return;
@@ -429,6 +431,11 @@ void FileFdSourcePlugin::CacheDataLoop()
     
     DeleteCacheBuffer(cacheBuffer, bufferSize);
 
+    CheckAndNotifyBufferingEnd();
+}
+
+void FileFdSourcePlugin::CheckAndNotifyBufferingEnd()
+{
     if (isBuffering_ && (static_cast<int64_t>(ringBuffer_->GetSize()) > waterLineAbove_ ||
         GetLastSize(cachePosition_.load()) == 0)) {
         NotifyBufferingEnd();
