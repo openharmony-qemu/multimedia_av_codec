@@ -1055,9 +1055,12 @@ int32_t HDecoder::Attach(BufferInfo &info)
 int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
 {
     info.lastFlushTime = GetNowUs();
-    sptr<BufferExtraData> extraData = new BufferExtraDataImpl();
-    extraData->ExtraSet("VIDEO_RATE", codecRate_);
-    info.surfaceBuffer->SetExtraData(extraData);
+    if (!isVrrInitialized_) {
+        sptr<BufferExtraData> extraData = new BufferExtraDataImpl();
+        extraData->ExtraSet("VIDEO_RATE", codecRate_);
+        info.surfaceBuffer->SetExtraData(extraData);
+    }
+
     BufferFlushConfig cfg {
         .damage = {.x = 0, .y = 0, .w = info.surfaceBuffer->GetWidth(), .h = info.surfaceBuffer->GetHeight() },
         .timestamp = info.omxBuffer->pts,
