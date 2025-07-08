@@ -88,7 +88,7 @@ HWTEST_F(SurfaceDecoderAdapterUnitTest, SurfaceDecoderAdapterCallback_OnOutputBu
     callback = std::make_shared<SurfaceDecoderAdapterCallback>(adapter_);
     buffer->flag_ = 1;
     callback->OnOutputBufferAvailable(NUM_1, buffer);
-    surfaceDecoderAdapter = callback->surfaceDecoderAdapter_.lock();
+    auto surfaceDecoderAdapter = callback->surfaceDecoderAdapter_.lock();
     ASSERT_NE(surfaceDecoderAdapter, nullptr);
     uint32_t renderIndex = surfaceDecoderAdapter->indexs_[0];
     EXPECT_EQ(renderIndex, NUM_1);
