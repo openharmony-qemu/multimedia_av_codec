@@ -34,7 +34,7 @@ ohos_fuzztest("AsyncResourceCapiDecFuzzTest") {
     "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/func_sample/mock",
     "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/func_sample/mock/capi",
     "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/func_sample/mock/inner",
-    "$MEDIA_ROOT_DIR/test/fuzztest/sysnc_fuzzer/sample/decoder",
+    "$MEDIA_ROOT_DIR/test/fuzztest/sync_fuzzer/sample/decoder",
     "$MEDIA_ROOT_DIR/test/unittest/codeclist_test",
     "$MEDIA_ROOT_DIR/test/unittest/codeclist_test/capi",
   ]
@@ -53,7 +53,7 @@ ohos_fuzztest("AsyncResourceCapiDecFuzzTest") {
 
   sources = [
     "asyncresourcedec_fuzzer.cpp",
-    "$MEDIA_ROOT_DIR/test/fuzztest/sysnc_fuzzer/sample/decoder/vdec_async_sample.cpp",
+    "$MEDIA_ROOT_DIR/test/fuzztest/sync_fuzzer/sample/decoder/vdec_async_sample.cpp",
 
     "$MEDIA_ROOT_DIR/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
     "$MEDIA_ROOT_DIR/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",

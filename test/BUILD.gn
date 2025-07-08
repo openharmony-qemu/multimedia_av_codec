@@ -340,6 +340,11 @@ group("av_codec_fuzz_test") {
       "fuzztest/swdecodersetparameter_fuzzer:SwdecoderSetParameterFuzzTest",
       "fuzztest/demuxersetdatasourcewithprobsize_fuzzer:DemuxerSetDataSourceWithProbSizeFuzzTest",
       "fuzztest/demuxergetcommentdata_fuzzer:DemuxerGetCommentDataFuzzTest",
+      "fuzztest/asyncresourcecapidec_fuzzer:AsyncResourceCapiDecFuzzTest",
+      "fuzztest/asyncresourcecapienc_fuzzer:AsyncResourceCapiEncFuzzTest",
+      "fuzztest/sync_fuzzer:SyncFuzzTest",
+      "fuzztest/syncresourcecapidec_fuzzer:SyncResourceCapiDecFuzzTest",
+      "fuzztest/syncresourcecapienc_fuzzer:SyncResourceCapiEncFuzzTest",
     ]
   }
 }

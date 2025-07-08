@@ -33,8 +33,8 @@ ohos_fuzztest("SyncResourceCapiDecFuzzTest") {
     "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/func_sample/base",
     "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/func_sample/mock",
     "$MEDIA_ROOT_DIR/test/unittest/video_test/vcodec_framework_test/func_sample/mock/capi",
-    "$MEDIA_ROOT_DIR/test/fuzztest/sysnc_fuzzer/sample/decoder",
-    "$MEDIA_ROOT_DIR/test/fuzztest/sysnc_fuzzer/sample/encoder",
+    "$MEDIA_ROOT_DIR/test/fuzztest/sync_fuzzer/sample/decoder",
+    "$MEDIA_ROOT_DIR/test/fuzztest/sync_fuzzer/sample/encoder",
     "$MEDIA_ROOT_DIR/test/unittest/codeclist_test",
     "$MEDIA_ROOT_DIR/test/unittest/codeclist_test/capi",
   ]
