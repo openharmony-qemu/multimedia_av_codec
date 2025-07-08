@@ -375,7 +375,7 @@ void SurfaceDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         std::lock_guard<std::mutex> lock(releaseBufferMutex_);
         if ((buffer->flag_ & BUFFER_IS_EOS) == 1) {
             MEDIA_LOG_I("Buffer index: %{public}u" PRIu32 " flag: %{public}u" PRIu32, index, buffer->flag_);
-            dropIndexs_.push_back(index);
+            indexs_.push_back(index);
             eosBufferIndex_ = index;
         } else if (buffer->pts_ > lastBufferPts_.load()) {
             lastBufferPts_ = buffer->pts_;
@@ -433,18 +433,18 @@ void SurfaceDecoderAdapter::ReleaseBuffer()
         for (auto &index : indexs) {
             MEDIA_LOG_D("Release buffer, index: " PUBLIC_LOG_U32, index);
             codecServer_->ReleaseOutputBuffer(index, true);
-        }
-        for (auto &dropIndex : dropIndexs) {
-            MediaAVCodec::AVCodecTrace trace("ReleaseBuffer drop " + std::to_string(dropIndex));
-            MEDIA_LOG_D("Drop buffer, index: " PUBLIC_LOG_U32, dropIndex);
-            codecServer_->ReleaseOutputBuffer(dropIndex, false);
-            if (dropIndex == eosBufferIndex_) {
+            if (index == eosBufferIndex_) {
                 int64_t lastBufferPts = GetLastBufferPts();
                 int64_t frameNum = GetFrameNum();
                 MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64 " frameNum: " PUBLIC_LOG_D64,
                     lastBufferPts, frameNum);
                 decoderAdapterCallback_->OnBufferEos(lastBufferPts, frameNum);
             }
+        }
+        for (auto &dropIndex : dropIndexs) {
+            MediaAVCodec::AVCodecTrace trace("ReleaseBuffer drop " + std::to_string(dropIndex));
+            MEDIA_LOG_D("Drop buffer, index: " PUBLIC_LOG_U32, dropIndex);
+            codecServer_->ReleaseOutputBuffer(dropIndex, false);
         }
     }
     MEDIA_LOG_I("ReleaseBuffer end");

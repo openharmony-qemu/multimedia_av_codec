@@ -595,6 +595,11 @@ void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, st
         MEDIA_LOG_I("emptyOutputBuffer->memory_ is nullptr");
         return;
     }
+    if (size != 0) {
+        bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
+    } else {
+        bufferMem->SetSize(0);
+    }
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
     *(emptyOutputBuffer->meta_) = *(buffer->meta_);
     emptyOutputBuffer->pts_ = buffer->pts_;
