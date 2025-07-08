@@ -600,7 +600,6 @@ void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, st
     } else {
         bufferMem->SetSize(0);
     }
-    bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
     *(emptyOutputBuffer->meta_) = *(buffer->meta_);
     emptyOutputBuffer->pts_ = buffer->pts_;
     emptyOutputBuffer->flag_ = buffer->flag_;
