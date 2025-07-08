@@ -27,13 +27,14 @@ class SurfaceTools {
 public:
     static SurfaceTools &GetInstance();
     bool RegisterReleaseListener(std::string producerName, sptr<Surface> surface, OnReleaseFunc callback,
-        OHSurfaceSource type = OH_SURFACE_SOURCE_VIDEO);
+        int32_t instanceId, OHSurfaceSource type = OH_SURFACE_SOURCE_VIDEO);
     void CleanCache(std::string producerName, sptr<Surface> surface, bool cleanAll);
     void ReleaseSurface(std::string producerName, sptr<Surface> surface, bool cleanAll);
+    std::optional<std::pair<std::string, int32_t>> GetCurProducerInfo(uint64_t surfaceId);
 
 private:
     std::mutex mutex_;
-    std::unordered_map<uint64_t, std::string> surfaceProducerMap_;
+    std::unordered_map<uint64_t, std::pair<std::string, int32_t>> surfaceProducerMap_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

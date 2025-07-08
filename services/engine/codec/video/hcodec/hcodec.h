@@ -344,6 +344,7 @@ protected:
     std::string shortName_;
     uint32_t componentId_ = 0;
     std::string compUniqueStr_;
+    int32_t instanceId_ = -1;
     struct CallerInfo {
         int32_t pid = -1;
         std::string processName;

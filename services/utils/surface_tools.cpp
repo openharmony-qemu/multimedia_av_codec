@@ -29,7 +29,7 @@ SurfaceTools &SurfaceTools::GetInstance()
 }
 
 bool SurfaceTools::RegisterReleaseListener(std::string producerName, sptr<Surface> surface, OnReleaseFunc callback,
-    OHSurfaceSource type)
+    int32_t instanceId, OHSurfaceSource type)
 {
     CHECK_AND_RETURN_RET_LOGW(!producerName.empty() && surface != nullptr, false, "Unexpected param");
 
@@ -44,7 +44,7 @@ bool SurfaceTools::RegisterReleaseListener(std::string producerName, sptr<Surfac
     AVCODEC_LOGI("producerName=%{public}s register listener to surface id=%{public}" PRIu64,
         producerName.c_str(), id);
     surface->SetSurfaceSourceType(type);
-    surfaceProducerMap_[id] = producerName;
+    surfaceProducerMap_[id] = std::pair<std::string, int32_t>(producerName, instanceId);
     return true;
 }
 
@@ -56,7 +56,7 @@ void SurfaceTools::CleanCache(std::string producerName, sptr<Surface> surface, b
     uint64_t id = surface->GetUniqueId();
     std::lock_guard<std::mutex> lock(mutex_);
     auto iter = surfaceProducerMap_.find(id);
-    if (iter != surfaceProducerMap_.end() && iter->second == producerName) {
+    if (iter != surfaceProducerMap_.end() && iter->second.first == producerName) {
         surface->CleanCache(cleanAll);
         AVCODEC_LOGI("producerName=%{public}s CleanCache to surface id=%{public}" PRIu64,
             producerName.c_str(), id);
@@ -71,7 +71,7 @@ void SurfaceTools::ReleaseSurface(std::string producerName, sptr<Surface> surfac
     uint64_t id = surface->GetUniqueId();
     std::lock_guard<std::mutex> lock(mutex_);
     auto iter = surfaceProducerMap_.find(id);
-    if (iter != surfaceProducerMap_.end() && iter->second == producerName) {
+    if (iter != surfaceProducerMap_.end() && iter->second.first == producerName) {
         surface->CleanCache(cleanAll);
         AVCODEC_LOGI("producerName=%{public}s CleanCache to surface id=%{public}" PRIu64,
             producerName.c_str(), id);
@@ -81,6 +81,16 @@ void SurfaceTools::ReleaseSurface(std::string producerName, sptr<Surface> surfac
         surface->SetSurfaceSourceType(OHSurfaceSource::OH_SURFACE_SOURCE_DEFAULT);
         surfaceProducerMap_.erase(iter);
     }
+}
+std::optional<std::pair<std::string, int32_t>> SurfaceTools::GetCurProducerInfo(uint64_t surfaceId)
+{
+    std::optional<std::pair<std::string, int32_t>> info = std::nullopt;
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto iter = surfaceProducerMap_.find(surfaceId);
+    if (iter != surfaceProducerMap_.end()) {
+        info = iter->second;
+    }
+    return info;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

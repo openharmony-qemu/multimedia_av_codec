@@ -893,7 +893,7 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
         param->SetValue("surfaceId", surfaceId);
         codec->SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, param);
         return GSERROR_OK;
-    });
+    }, instanceId_);
     if (!ret) {
         HLOGE("surface(%" PRIu64 "), RegisterReleaseListener failed", surfaceId);
         return AVCS_ERR_UNKNOWN;
