@@ -1315,6 +1315,7 @@ int32_t CodecServer::Prepare()
 sptr<Media::AVBufferQueueProducer> CodecServer::GetInputBufferQueue()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, nullptr, "codecBase_ is nullptr");
     return codecBase_->GetInputBufferQueue();
 }
 
@@ -1340,6 +1341,7 @@ void CodecServer::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlus
 void CodecServer::ProcessInputBuffer()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_LOG(codecBase_ != nullptr, "codecBase_ is nullptr");
     return codecBase_->ProcessInputBuffer();
 }
 
