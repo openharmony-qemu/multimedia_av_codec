@@ -64,7 +64,6 @@ const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000;
 const int DEFAULT_CHANNEL_CNT = 3;
 const int FLV_READ_SIZE_LIMIT_FACTOR = 2;
 const int FLV_READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2;
-const uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -78,9 +77,7 @@ const int32_t POS_7 = 7;
 const int32_t POS_8 = 8;
 const int32_t POS_9 = 9;
 const int32_t POS_14 = 14;
-const int32_t POS_16 = 16;
 const int32_t POS_21 = 21;
-const int32_t POS_24 = 24;
 const int32_t POS_FF = 0xff;
 const int32_t LEN_MASK = 0x7f;
 const int32_t TAG_MASK = 0x80;
@@ -283,99 +280,6 @@ bool IsSupportedTrack(const AVStream& avStream)
         }
     }
     return true;
-}
-
-bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size)
-{
-    if (size < NAL_START_CODE_SIZE) {
-        return false;
-    }
-    bool hasShortStartCode = (sample[0] == 0 && sample[1] == 0 && sample[2] == 1); // 001
-    bool hasLongStartCode = (sample[0] == 0 && sample[1] == 0 && sample[2] == 0 && sample[3] == 1); // 0001
-    return hasShortStartCode || hasLongStartCode;
-}
-
-int32_t GetNaluSize(const uint8_t *nalStart)
-{
-    return static_cast<int32_t>(
-        (nalStart[POS_3]) | (nalStart[POS_2] << POS_8) | (nalStart[POS_1] << POS_16) | (nalStart[POS_0] << POS_24));
-}
-
-bool IsHvccSyncFrame(const uint8_t *sample, int32_t size)
-{
-    const uint8_t* nalStart = sample;
-    const uint8_t* end = nalStart + size;
-    int32_t sizeLen = NAL_START_CODE_SIZE;
-    int32_t naluSize = 0;
-    naluSize = GetNaluSize(nalStart);
-    if (nalStart > end - sizeLen) {
-        return false;
-    }
-    nalStart = nalStart + sizeLen;
-    while (nalStart < end) {
-        uint8_t naluType = static_cast<uint8_t>((nalStart[0] & 0x7E) >> 1);
-        if (naluType > 0x10 && naluType <= 0x17) {
-            return true;
-        }
-        if (nalStart > end - naluSize) {
-            return false;
-        }
-        nalStart = nalStart + naluSize;
-        if (nalStart > end - sizeLen) {
-            return false;
-        }
-        naluSize = GetNaluSize(nalStart);
-        nalStart = nalStart + sizeLen;
-    }
-    return false;
-}
-
-const uint8_t* FindNalStartCode(const uint8_t *start, const uint8_t *end, int32_t &startCodeLen)
-{
-    startCodeLen = sizeof(START_CODE);
-    auto *iter = std::search(start, end, START_CODE, START_CODE + startCodeLen);
-    if (iter != end && (iter > start && *(iter - 1) == 0x00)) {
-        ++startCodeLen;
-        return iter - 1;
-    }
-    return iter;
-}
-
-bool IsAnnexbSyncFrame(const uint8_t *sample, int32_t size)
-{
-    const uint8_t* nalStart = sample;
-    const uint8_t* end = nalStart + size;
-    const uint8_t* nalEnd = nullptr;
-    int32_t startCodeLen = 0;
-    nalStart = FindNalStartCode(nalStart, end, startCodeLen);
-    if (nalStart > end - startCodeLen) {
-        return false;
-    }
-    nalStart = nalStart + startCodeLen;
-    while (nalStart < end) {
-        nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
-        uint8_t naluType = static_cast<uint8_t>((nalStart[0] & 0x7E) >> 1);
-        if (naluType > 0x10 && naluType <= 0x17) {
-            return true;
-        }
-        if (nalEnd > end - startCodeLen) {
-            return false;
-        }
-        nalStart = nalEnd + startCodeLen;
-    }
-    return false;
-}
-
-bool IsHevcSyncFrame(const uint8_t *sample, int32_t size)
-{
-    if (size < NAL_START_CODE_SIZE) {
-        return false;
-    }
-    if (IsBeginAsAnnexb(sample, size)) {
-        return IsAnnexbSyncFrame(sample, size);
-    } else {
-        return IsHvccSyncFrame(sample, size);
-    }
 }
 } // namespace
 
@@ -590,6 +494,16 @@ Status FFmpegDemuxerPlugin::SetDrmCencInfo(
         sample->meta_->SetData(Media::Tag::DRM_CENC_INFO, std::move(drmCencVec));
     }
     return Status::OK;
+}
+
+bool FFmpegDemuxerPlugin::GetNextFrame(const uint8_t *data, const uint32_t size)
+{
+    if (size < NAL_START_CODE_SIZE) {
+        return false;
+    }
+    bool hasShortStartCode = (data[0] == 0 && data[1] == 0 && data[2] == 1); // 001
+    bool hasLongStartCode = (data[0] == 0 && data[1] == 0 && data[2] == 0 && data[3] == 1); // 0001
+    return hasShortStartCode || hasLongStartCode;
 }
 
 bool FFmpegDemuxerPlugin::NeedCombineFrame(uint32_t trackId)
@@ -908,7 +822,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
         if (IsWebvttMP4(avStream) && WebvttPktProcess(pkt)) {
             break;
         } else if (!IsWebvttMP4(avStream) && (!NeedCombineFrame(readId) ||
-            (cacheQueue_.HasCache(static_cast<uint32_t>(trackId)) && IsBeginAsAnnexb(pkt->data, pkt->size)))) {
+            (cacheQueue_.HasCache(static_cast<uint32_t>(trackId)) && GetNextFrame(pkt->data, pkt->size)))) {
             continueRead = false;
         }
         ret = AddPacketToCacheQueue(pkt);
@@ -1532,7 +1446,7 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
 #endif
     auto trackId = pkt->stream_index;
     Status ret = Status::OK;
-    if (NeedCombineFrame(trackId) && !IsBeginAsAnnexb(pkt->data, pkt->size) && cacheQueue_.HasCache(trackId)) {
+    if (NeedCombineFrame(trackId) && !GetNextFrame(pkt->data, pkt->size) && cacheQueue_.HasCache(trackId)) {
         std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
         if (cacheSamplePacket != nullptr) {
             cacheSamplePacket->pkts.push_back(pkt);
@@ -1569,24 +1483,13 @@ Status FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
             av_packet_free(&pkt);
             break;
         }
-        int32_t trackId = pkt->stream_index;
-        cacheQueue_.AddTrackQueue(trackId);
-        auto stream = formatContext_->streams[trackId];
-        FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_NULL_POINTER,
-            "Stream " PUBLIC_LOG_D32 " is invalid", trackId);
+        cacheQueue_.AddTrackQueue(pkt->stream_index);
         ret = AddPacketToCacheQueue(pkt);
         if (ret != Status::OK) {
             return ret;
         }
-        bool isSpecialStreamType = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
-        bool isSyncFrame = (static_cast<uint32_t>(pkt->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY) ||
-            (stream->codecpar->codec_id == AV_CODEC_ID_HEVC && IsHevcSyncFrame(pkt->data, pkt->size)));
 
         if (static_cast<uint32_t>(pkt->stream_index) == trackIndex) {
-            if (!isSpecialStreamType && !isSyncFrame) {
-                pkt = nullptr;
-                continue;
-            }
             firstFrame_ = av_packet_alloc();
             FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");
             int avRet = av_new_packet(firstFrame_, pkt->size);
@@ -1682,9 +1585,8 @@ Status FFmpegDemuxerPlugin::CheckSeekParams(int64_t seekTime, SeekMode mode) con
 
 bool FFmpegDemuxerPlugin::IsUseFirstFrameDts(int trackIndex, int64_t seekTime)
 {
-    FileType fileType = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
     if (seekTime == 0 &&
-        (fileType == FileType::MPEGTS || fileType == FileType::MP4 || fileType == FileType::MOV) &&
+        FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MPEGTS &&
         formatContext_->streams[trackIndex]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
         firstFrame_ != nullptr) {
             return true;
