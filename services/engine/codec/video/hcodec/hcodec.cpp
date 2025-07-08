@@ -1106,7 +1106,7 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
     }
 #ifndef AV_CODEC_HCODEC_ENABLE_QOS_THE_WHOLE_TIME
     if (!isEncoder_ || codecRate_ < HIGH_FPS) {
-        OHOS::MediaAVCodec::HCodecQosTool::SetThreadInteractiveQos(false);
+        SetThreadInteractiveQos(false);
     }
 #endif
     info.BeginCpuAccess();

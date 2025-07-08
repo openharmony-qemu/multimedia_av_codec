@@ -84,9 +84,6 @@ private:
 
 std::string StringifyMeta(std::shared_ptr<Media::Meta> &meta);
 
-class HCodecQosTool {
-public:
-    static void SetThreadInteractiveQos(bool enable);
-};
+void SetThreadInteractiveQos(bool enable);
 }
 #endif // HCODEC_UTILS_H

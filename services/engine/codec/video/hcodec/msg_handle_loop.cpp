@@ -120,7 +120,7 @@ MsgId MsgHandleLoop::GenerateMsgId()
 void MsgHandleLoop::MainLoop()
 {
     pthread_setname_np(pthread_self(), "OS_HCodecLoop");
-    OHOS::MediaAVCodec::HCodecQosTool::SetThreadInteractiveQos(true);
+    OHOS::MediaAVCodec::SetThreadInteractiveQos(true);
     while (true) {
         MsgInfo info;
         {

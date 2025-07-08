@@ -50,7 +50,7 @@ std::string StringifyMeta(std::shared_ptr<Media::Meta> &meta)
     return dumpStream.str();
 }
 
-void HCodecQosTool::SetThreadInteractiveQos(bool enable)
+void SetThreadInteractiveQos(bool enable)
 {
     thread_local bool inInteractiveQos_ = false;
     if (enable && !inInteractiveQos_) {
