@@ -313,7 +313,7 @@ void VideoEncAsyncSample::FuzzRunInner()
     signal_->isPreparing_.store(false);
     signal_->isRunning_.store(true);
 
-    outputLoop_ = make_unique<thread>(&VideoDecAsyncSample::OutputLoopFunc, this);
+    outputLoop_ = make_unique<thread>(&VideoEncAsyncSample::OutputLoopFunc, this);
     ASSERT_NE(outputLoop_, nullptr);
     signal_->outCond_.notify_all();
 }
@@ -323,7 +323,6 @@ int32_t VideoEncAsyncSample::InputFuncFUZZ(const uint8_t *data, size_t size)
     unique_lock<mutex> lock(signal_->inMutex_);
     signal_->inCond_.wait(
         lock, [this]() { return (signal_->inIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
-    UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open() && !inFile_->eof(), "inFile is invalid");
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVMemoryMock> buffer = signal_->inMemoryQueue_.front();
 
@@ -522,7 +521,7 @@ std::string VideoEncAsyncSample::GetFileExtension(const std::string& filePath)
     return filePath.substr(dotPos + 1);
 }
 
-void VideoEncSample::SetInPath(const std::string &path)
+void VideoEncAsyncSample::SetInPath(const std::string &path)
 {
     inPath_ = path;
 }

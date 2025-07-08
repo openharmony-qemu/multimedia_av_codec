@@ -299,7 +299,7 @@ int32_t VideoDecAsyncSample::FuzzStart()
         return AV_ERR_UNKNOWN;
     }
     PrepareInner();
-    ret = videoDec_->Start();
+    int32_t ret = videoDec_->Start();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
     FuzzRunInner();
     return ret;
@@ -323,7 +323,6 @@ int32_t VideoDecAsyncSample::InputFuncFUZZ(const uint8_t *data, size_t size)
     unique_lock<mutex> lock(signal_->inMutex_);
     signal_->inCond_.wait(
         lock, [this]() { return (signal_->inIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
-    UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open() && !inFile_->eof(), "inFile is invalid");
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVMemoryMock> buffer = signal_->inMemoryQueue_.front();
 
