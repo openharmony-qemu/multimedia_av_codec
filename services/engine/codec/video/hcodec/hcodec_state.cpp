@@ -508,6 +508,8 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             ReplyErrorCode(info.id, codec_->RequestIDRFrame());
             break;
         case MsgWhat::FLUSH:
+            thread_local HCodecQosTool qosTool;
+            qosTool.SetThreadInteractiveQos();
             OnFlush(info);
             break;
         case MsgWhat::GET_BUFFER_FROM_SURFACE:
@@ -598,6 +600,8 @@ void HCodec::RunningState::OnCodecEvent(CodecEventType event, uint32_t data1, ui
 
 void HCodec::RunningState::OnShutDown(const MsgInfo &info)
 {
+    thread_local HCodecQosTool qosTool;
+    qosTool.SetThreadInteractiveQos();
     codec_->isShutDownFromRunning_ = true;
     codec_->notifyCallerAfterShutdownComplete_ = true;
     codec_->keepComponentAllocated_ = (info.type == MsgWhat::STOP);

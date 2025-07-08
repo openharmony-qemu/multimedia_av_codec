@@ -30,6 +30,7 @@
 #include "event_manager.h"
 #include "ipc_skeleton.h"
 #include "background_event_handler.h"
+#include "qos.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServiceStub"};
@@ -85,6 +86,22 @@ const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::NOTIFY_RESUME),
      "CodecServiceStub NotifyResume"},
 };
+
+class QosTool {
+public:
+    QosTool(OHOS::QOS::QosLevel level)
+    {
+        OHOS::QOS::SetThreadQos(level);
+    }
+    ~QosTool()
+    {
+        OHOS::QOS::ResetThreadQos();
+    }
+
+private:
+    QosTool() {}
+};
+#define AVCODEC_FUNC_INTERACTIVE_QOS QosTool qosTool(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE)
 } // namespace
 
 namespace OHOS {
@@ -511,6 +528,7 @@ int32_t CodecServiceStub::SetListenerObject(MessageParcel &data, MessageParcel &
 
 int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
 {
+    AVCODEC_FUNC_INTERACTIVE_QOS;
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     Meta callerInfo;
     callerInfo.FromParcel(data);
@@ -527,6 +545,7 @@ int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::Configure(MessageParcel &data, MessageParcel &reply)
 {
+    AVCODEC_FUNC_INTERACTIVE_QOS;
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     Format format;
     (void)AVCodecParcel::Unmarshalling(data, format);
@@ -547,6 +566,7 @@ int32_t CodecServiceStub::Prepare(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::Start(MessageParcel &data, MessageParcel &reply)
 {
+    AVCODEC_FUNC_INTERACTIVE_QOS;
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     (void)data;
 
@@ -557,6 +577,7 @@ int32_t CodecServiceStub::Start(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::Stop(MessageParcel &data, MessageParcel &reply)
 {
+    AVCODEC_FUNC_INTERACTIVE_QOS;
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     (void)data;
 
@@ -567,6 +588,7 @@ int32_t CodecServiceStub::Stop(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::Flush(MessageParcel &data, MessageParcel &reply)
 {
+    AVCODEC_FUNC_INTERACTIVE_QOS;
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     (void)data;
 
@@ -577,6 +599,7 @@ int32_t CodecServiceStub::Flush(MessageParcel &data, MessageParcel &reply)
 
 int32_t CodecServiceStub::Reset(MessageParcel &data, MessageParcel &reply)
 {
+    AVCODEC_FUNC_INTERACTIVE_QOS;
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     (void)data;
 

@@ -1102,13 +1102,14 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
     if (!gotFirstOutput_) {
         HLOGI("got first output, pts = %" PRId64 ", len = %u, flags = 0x%x",
             info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag);
-#ifndef AV_CODEC_HCODEC_ENABLE_QOS_THE_WHOLE_TIME
-        if (!isEncoder_ || codecRate_ < HIGH_FPS) {
-            OHOS::QOS::ResetThreadQos();
-        }
-#endif
         gotFirstOutput_ = true;
     }
+#ifndef AV_CODEC_HCODEC_ENABLE_QOS_THE_WHOLE_TIME
+    if (!isEncoder_ || codecRate_ < HIGH_FPS) {
+        thread_local HCodecQosTool qosTool;
+        qosTool.ResetThreadQos();
+    }
+#endif
     info.BeginCpuAccess();
 #ifdef BUILD_ENG_VERSION
     info.Dump(compUniqueStr_, outRecord_.totalCnt, dumpMode_, isEncoder_);

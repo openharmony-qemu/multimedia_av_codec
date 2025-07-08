@@ -16,6 +16,7 @@
 #include <sstream>
 #include <string>
 #include "hcodec_utils.h"
+#include "qos.h"
 
 namespace OHOS::MediaAVCodec {
 std::string StringifyMeta(std::shared_ptr<Media::Meta> &meta)
@@ -47,5 +48,21 @@ std::string StringifyMeta(std::shared_ptr<Media::Meta> &meta)
         }
     }
     return dumpStream.str();
+}
+
+void HCodecQosTool::SetThreadInteractiveQos()
+{
+    if (!inInteractiveQos_) {
+        inInteractiveQos_ = true;
+        OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+    }
+}
+
+void HCodecQosTool::ResetThreadQos()
+{
+    if (inInteractiveQos_) {
+        inInteractiveQos_ = false;
+        OHOS::QOS::ResetThreadQos();
+    }
 }
 }

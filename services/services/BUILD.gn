@@ -173,6 +173,7 @@ ohos_shared_library("av_codec_service") {
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
+    "qos_manager:qos"
   ]
 
   public_external_deps = [ "json:nlohmann_json_static" ]
