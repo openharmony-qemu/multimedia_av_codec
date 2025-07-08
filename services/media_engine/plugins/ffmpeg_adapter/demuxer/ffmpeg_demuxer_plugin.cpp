@@ -1623,8 +1623,9 @@ static bool IsSyncFrameCheckNeeded(std::shared_ptr<AVFormatContext> formatContex
     return true;
 }
 
-static bool IsSyncFrame(AVPacket *pkt, std::shared_ptr<AVFormatContext> formatContext)
+static bool IsSyncFrame(AVStream *stream, AVPacket *pkt, std::shared_ptr<AVFormatContext> formatContext)
 {
+    FALSE_RETURN_V_MSG_E(stream != nullptr, false, "stream is nullptr");
     FALSE_RETURN_V_MSG_E(pkt != nullptr, false, "pkt is nullptr");
     FALSE_RETURN_V_MSG_E(formatContext != nullptr, false, "AVFormatContext is nullptr");
     return (static_cast<uint32_t>(pkt->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY) ||
@@ -1667,7 +1668,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
             return ret;
         }
         bool isSpecialStreamType = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
-        bool isSyncFrame = IsSyncFrame(pkt, formatContext_);
+        bool isSyncFrame = IsSyncFrame(stream, pkt, formatContext_);
         if (!isSpecialStreamType && (TrackIsChecked(trackId) || !isSyncFrame)) {
             pkt = nullptr;
             continue;
