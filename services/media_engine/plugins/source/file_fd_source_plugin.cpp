@@ -434,7 +434,7 @@ void FileFdSourcePlugin::CacheDataLoop()
     CheckAndNotifyBufferingEnd();
 }
 
-void CheckAndNotifyBufferingEnd()
+void FileFdSourcePlugin::CheckAndNotifyBufferingEnd()
 {
     if (isBuffering_ && (static_cast<int64_t>(ringBuffer_->GetSize()) > waterLineAbove_ ||
         GetLastSize(cachePosition_.load()) == 0)) {
