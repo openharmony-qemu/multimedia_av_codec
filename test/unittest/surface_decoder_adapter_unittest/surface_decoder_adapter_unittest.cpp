@@ -87,8 +87,9 @@ HWTEST_F(SurfaceDecoderAdapterUnitTest, SurfaceDecoderAdapterCallback_OnOutputBu
     adapter_->decoderAdapterCallback_ = decoderAdapterCallback;
     callback = std::make_shared<SurfaceDecoderAdapterCallback>(adapter_);
     buffer->flag_ = 1;
-    EXPECT_CALL(*decoderAdapterCallback, OnBufferEos(_, _)).WillOnce(Return());
     callback->OnOutputBufferAvailable(NUM_1, buffer);
+    uint32_t renderIndex = callback->indexs_[0];
+    EXPECT_EQ(renderIndex, NUM_1);
 }
 
 /**
