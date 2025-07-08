@@ -31,13 +31,13 @@ using namespace OHOS::Media::Plugins;
 using namespace OHOS::Media::Plugins::Ffmpeg;
 using namespace OHOS::MediaAVCodec;
 
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "FFmpegEncoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "FFmpegDecoderPlugin"};
 
 std::vector<std::string_view> codecVec = {
     AVCodecCodecName::AUDIO_DECODER_MP3_NAME, AVCodecCodecName::AUDIO_DECODER_AAC_NAME,
     AVCodecCodecName::AUDIO_DECODER_FLAC_NAME, AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME,
     AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME, AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME,
-    AVCodecCodecName::AUDIO_DECODER_APE_NAME
+    AVCodecCodecName::AUDIO_DECODER_APE_NAME, AVCodecCodecName::AUDIO_DECODER_AC3_NAME
 };
 
 void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap);
@@ -83,6 +83,10 @@ void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap)
         case 6: // 6:ape
             InitDefinition<FFmpegAPEDecoderPlugin>(MimeType::AUDIO_APE,
                 AVCodecCodecName::AUDIO_DECODER_APE_NAME, definition, cap);
+            break;
+        case 7: // 7:ac3
+            InitDefinition<FFmpegAC3DecoderPlugin>(MimeType::AUDIO_AC3,
+                AVCodecCodecName::AUDIO_DECODER_AC3_NAME, definition, cap);
             break;
         default:
             MEDIA_LOG_I("codec is not supported right now");
