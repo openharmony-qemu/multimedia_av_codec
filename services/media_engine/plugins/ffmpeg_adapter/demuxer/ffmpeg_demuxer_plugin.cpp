@@ -1616,7 +1616,7 @@ Status FFmpegDemuxerPlugin::SetFirstFrame(AVPacket* pkt, bool isConvert)
 static bool IsSyncFrameCheckNeeded(std::shared_ptr<AVFormatContext> formatContext)
 {
     FALSE_RETURN_V_MSG_E(formatContext != nullptr, false, "AVFormatContext is nullptr");
-    FileType fileType = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
+    FileType fileType = FFmpegFormatHelper::GetFileTypeByName(*formatContext);
     if (fileType == FileType::MPEGTS || fileType == FileType::MPEGPS) {
         return false;
     }
