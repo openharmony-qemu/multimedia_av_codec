@@ -182,7 +182,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Start_001, TestSize.Level1)
 
 /**
  * @tc.name: VideoDecoder_Configure_001
- * @tc.desc: correct flow 1
+ * @tc.desc: video codec Configure
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Configure_001, TestSize.Level1)

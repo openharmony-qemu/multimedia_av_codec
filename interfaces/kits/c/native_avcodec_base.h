@@ -935,7 +935,6 @@ extern const char *OH_MD_KEY_ENABLE_SYNC_MODE;
  * when stop or release to ensure a smooth transition to no-signal state on display devices.\n
  * This prevents display retention or flickering caused by abrupt termination.\n
  *
- * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 20
  */
 extern const char *OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN;
