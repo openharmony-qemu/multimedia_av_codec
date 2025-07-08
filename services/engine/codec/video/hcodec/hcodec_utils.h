@@ -83,5 +83,7 @@ private:
 };
 
 std::string StringifyMeta(std::shared_ptr<Media::Meta> &meta);
+
+void SetThreadInteractiveQos(bool enable);
 }
 #endif // HCODEC_UTILS_H

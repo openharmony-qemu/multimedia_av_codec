@@ -20,6 +20,7 @@
 #include <cinttypes>
 #include "qos.h"
 #include "hcodec_log.h"
+#include "hcodec_utils.h"
 
 using namespace std;
 
@@ -119,7 +120,7 @@ MsgId MsgHandleLoop::GenerateMsgId()
 void MsgHandleLoop::MainLoop()
 {
     pthread_setname_np(pthread_self(), "OS_HCodecLoop");
-    OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+    OHOS::MediaAVCodec::SetThreadInteractiveQos(true);
     while (true) {
         MsgInfo info;
         {
