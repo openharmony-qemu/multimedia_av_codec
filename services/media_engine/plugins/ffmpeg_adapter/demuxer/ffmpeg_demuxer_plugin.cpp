@@ -53,7 +53,7 @@ const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const int32_t DEF_PROBE_SCORE_LIMIT = 50;
 const uint32_t STR_MAX_LEN = 4;
 const uint32_t RANK_MAX = 100;
-const uint32_t NAL_START_CODE_SIZE = 4;
+const int32_t NAL_START_CODE_SIZE = 4;
 const uint32_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
 const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
@@ -1613,6 +1613,16 @@ Status FFmpegDemuxerPlugin::SetFirstFrame(AVPacket* pkt, bool isConvert)
     return Status::OK;
 }
 
+static bool IsSyncFrameCheckNeeded(std::shared_ptr<AVFormatContext> formatContext)
+{
+    FALSE_RETURN_V_MSG_E(formatContext != nullptr, false, "AVFormatContext is nullptr");
+    FileType fileType = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
+    if (fileType == FileType::MPEGTS || fileType == FileType::MPEGPS) {
+        return false;
+    }
+    return true;
+}
+
 Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
@@ -1649,8 +1659,11 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         }
         bool isSpecialStreamType = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
         bool isSyncFrame = (static_cast<uint32_t>(pkt->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY) ||
-            (stream->codecpar->codec_id == AV_CODEC_ID_HEVC && IsHevcSyncFrame(pkt->data, pkt->size)));
-        if (!isSpecialStreamType && (TrackIsChecked(trackId) || !isSyncFrame)) {
+            (stream->codecpar->codec_id == AV_CODEC_ID_HEVC &&
+                IsSyncFrameCheckNeeded(formatContext_) && IsHevcSyncFrame(pkt->data, pkt->size)));
+
+        if (!isSpecialStreamType && (TrackIsChecked(trackId) ||
+            (!isSyncFrame && IsSyncFrameCheckNeeded(formatContext_)))) {
             pkt = nullptr;
             continue;
         }
