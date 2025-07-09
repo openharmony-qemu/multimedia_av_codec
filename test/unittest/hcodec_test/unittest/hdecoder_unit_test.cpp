@@ -1314,8 +1314,8 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_flush_valid_001,
     EXPECT_EQ(AVCS_ERR_OK, ret);
  
     ret = testObj->NotifySuspend();
-    EXPECT_EQ(AVCS_ERR_OK, ret); 
- 
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+    
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
