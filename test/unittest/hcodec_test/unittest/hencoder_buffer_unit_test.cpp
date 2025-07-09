@@ -213,6 +213,32 @@ HWTEST_F(HEncoderBufferUnitTest, encode_buffer_264_codecbase_setparam, TestSize.
     ASSERT_TRUE(ret);
 }
 
+HWTEST_F(HEncoderBufferUnitTest, encode_buffer_CRF_targetQp_setparam, TestSize.Level1)
+{
+    OHOS::system::SetParameter("hcodec.dump", "1100");
+    CommandOpt opt = {
+        .apiType = ApiType::TEST_CODEC_BASE,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H264,
+        .pixFmt = VideoPixelFormat::NV12,
+        .frameRate = 30,
+        .targetQp = 20,
+        .timeout = 100,
+        .isBufferMode = true,
+        .setParameterParamsMap = {{2, SetParameterParams{
+            .requestIdr = true,
+            .targetQp = 30,
+            .bitRate = 15000000, // target bitrate : 15M
+            .frameRate = 60, // 60: target framerate
+        }}},
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+
 HWTEST_F(HEncoderBufferUnitTest, encode_buffer_sqr_maxbitrate_setparam, TestSize.Level1)
 {
     OHOS::system::SetParameter("hcodec.dump", "0100");
@@ -371,6 +397,30 @@ HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_capi_old, TestSize.Level1)
         .frameRate = 30,
         .timeout = 100,
         .isBufferMode = true,
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+
+HWTEST_F(HEncoderBufferUnitTest, encode_buffer_operatingRate_setparam, TestSize.Level1)
+{
+    OHOS::system::SetParameter("hcodec.dump", "1100");
+    CommandOpt opt = {
+        .apiType = ApiType::TEST_CODEC_BASE,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H264,
+        .pixFmt = VideoPixelFormat::NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = true,
+        .setParameterParamsMap = {{2, SetParameterParams{
+            .requestIdr = true,
+            .operatingRate = 100.0,
+            .frameRate = 30, // 60: target framerate
+        }}},
     };
     bool ret = TesterCommon::Run(opt);
     ASSERT_TRUE(ret);
