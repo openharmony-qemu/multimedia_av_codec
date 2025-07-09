@@ -73,6 +73,7 @@ struct SetParameterParams {
     std::optional<OH_ScalingMode> scaleMode;
     std::optional<uint32_t> targetQp;
     std::optional<SQRParam> sqrParam;
+    std::optional<double> operatingRate;
 };
 
 struct PerFrameParams {
