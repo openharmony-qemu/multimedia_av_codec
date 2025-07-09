@@ -80,7 +80,7 @@ bool AvcapabilityFuzzTest(const uint8_t *data, size_t size)
         OH_AVCapability_IsFeatureSupported(cap, feature);
         OH_AVCapability_GetFeatureProperties(cap, feature);
         OH_AVCapability_GetAudioChannelCountRange(cap, &range);
-        OH_AVCapability_GetAudioSupportedSampleRates(cap, &g_sampleRates, &g_sampleRateNum)
+        OH_AVCapability_GetAudioSupportedSampleRates(cap, &g_sampleRates, &g_sampleRateNum);
     }
     return true;
 }
