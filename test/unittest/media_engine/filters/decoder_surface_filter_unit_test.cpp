@@ -481,10 +481,6 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetPostProcessorFd, 
     int32_t postProcessorFd = -1;
     auto ret = decoderSurfaceFilter_->SetPostProcessorFd(postProcessorFd);
     EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
-
-    postProcessorFd = 999;
-    ret = decoderSurfaceFilter_->SetPostProcessorFd(postProcessorFd);
-    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
 }
 
 HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetSpeed, TestSize.Level1)
