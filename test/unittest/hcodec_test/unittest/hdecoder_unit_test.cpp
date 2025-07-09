@@ -1446,7 +1446,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_resume_when_codec_is_running_valid_001
         EXPECT_EQ(AVCS_ERR_OK, ret);
     } else {
         ret = testObj->NotifyResume();
-        EXPECT_EQ(AVCS_ERR_OK, ret);    
+        EXPECT_EQ(AVCS_ERR_OK, ret);
     }
  
     ret = testObj->Release();
