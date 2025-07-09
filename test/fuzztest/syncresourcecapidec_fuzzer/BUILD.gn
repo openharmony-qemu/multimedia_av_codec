@@ -69,8 +69,6 @@ ohos_fuzztest("SyncResourceCapiDecFuzzTest") {
 
   external_deps = [
     "c_utils:utils",
-    "drm_framework:drm_framework",
-    "drm_framework:native_drm",
     "ffmpeg:libohosffmpeg",
     "graphic_2d:libgraphic_utils",
     "graphic_surface:surface",
@@ -80,6 +78,13 @@ ohos_fuzztest("SyncResourceCapiDecFuzzTest") {
     "media_foundation:native_media_core",
     "googletest:gtest",
   ]
+
+  if (av_codec_support_drm) {
+    external_deps += [
+      "drm_framework:drm_framework",
+      "drm_framework:native_drm",
+    ]
+  }
 
   resource_config_file =
       "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
