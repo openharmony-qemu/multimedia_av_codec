@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "securec.h"
 #include <cstddef>
 #include <cstdint>
 #include "native_avcapability.h"
@@ -25,16 +27,12 @@ const int32_t *g_profiles = nullptr;
 uint32_t g_profileNum = 0;
 const int32_t *g_levels = nullptr;
 uint32_t g_levelNum = 0;
-OH_AVRange *bitrateRange;
-OH_AVRange *qualityRange;
-OH_AVRange *complexityRange;
 const int32_t *g_pixFormat = nullptr;
 uint32_t g_pixFormatNum = 0;
-int32_t *g_widthAlignment = nullptr;
-int32_t *g_heightAlignment = nullptr;
-OH_AVRange *widthRange;
-OH_AVRange *heightRange;
-OH_AVRange *frameRateRange;
+const int32_t *sampleRates = nullptr;
+uint32_t sampleRateNum = 0;
+int32_t g_widthAlignment = 0;
+int32_t g_heightAlignment = 0;
 
 bool AvcapabilityFuzzTest(const uint8_t *data, size_t size)
 {
@@ -55,6 +53,8 @@ bool AvcapabilityFuzzTest(const uint8_t *data, size_t size)
 
     OH_AVCodec_GetCapability(mimeStr.c_str(), isEncoder);
     cap = OH_AVCodec_GetCapabilityByCategory(mimeStr.c_str(), isEncoder, category);
+    OH_AVRange range;
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     if (cap != nullptr) {
         OH_AVCapability_GetName(cap);
         OH_AVCapability_IsHardware(cap);
@@ -62,23 +62,25 @@ bool AvcapabilityFuzzTest(const uint8_t *data, size_t size)
         OH_AVCapability_GetSupportedProfiles(cap, &g_profiles, &g_profileNum);
         OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &g_levels, &g_levelNum);
         OH_AVCapability_AreProfileAndLevelSupported(cap, profile, level);
-        OH_AVCapability_GetEncoderBitrateRange(cap, bitrateRange);
-        OH_AVCapability_GetEncoderQualityRange(cap, qualityRange);
-        OH_AVCapability_GetEncoderComplexityRange(cap, complexityRange);
+        OH_AVCapability_GetEncoderBitrateRange(cap, &range);
+        OH_AVCapability_GetEncoderQualityRange(cap, &range);
+        OH_AVCapability_GetEncoderComplexityRange(cap, &range);
         OH_AVCapability_IsEncoderBitrateModeSupported(cap, mode);
         OH_AVCapability_GetVideoSupportedPixelFormats(cap, &g_pixFormat, &g_pixFormatNum);
-        OH_AVCapability_GetVideoWidthAlignment(cap, g_widthAlignment);
-        OH_AVCapability_GetVideoHeightAlignment(cap, g_heightAlignment);
-        OH_AVCapability_GetVideoWidthRangeForHeight(cap, height, widthRange);
-        OH_AVCapability_GetVideoHeightRangeForWidth(cap, width, heightRange);
-        OH_AVCapability_GetVideoWidthRange(cap, widthRange);
-        OH_AVCapability_GetVideoHeightRange(cap, heightRange);
+        OH_AVCapability_GetVideoWidthAlignment(cap, &g_widthAlignment);
+        OH_AVCapability_GetVideoHeightAlignment(cap, &g_heightAlignment);
+        OH_AVCapability_GetVideoWidthRangeForHeight(cap, height, &range);
+        OH_AVCapability_GetVideoHeightRangeForWidth(cap, width, &range);
+        OH_AVCapability_GetVideoWidthRange(cap, &range);
+        OH_AVCapability_GetVideoHeightRange(cap, &range);
         OH_AVCapability_IsVideoSizeSupported(cap, width, height);
-        OH_AVCapability_GetVideoFrameRateRange(cap, frameRateRange);
-        OH_AVCapability_GetVideoFrameRateRangeForSize(cap, width, height, frameRateRange);
+        OH_AVCapability_GetVideoFrameRateRange(cap, &range);
+        OH_AVCapability_GetVideoFrameRateRangeForSize(cap, width, height, &range);
         OH_AVCapability_AreVideoSizeAndFrameRateSupported(cap, width, height, frameRate);
         OH_AVCapability_IsFeatureSupported(cap, feature);
         OH_AVCapability_GetFeatureProperties(cap, feature);
+        OH_AVCapability_GetAudioChannelCountRange(cap, &range);
+        OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum)
     }
     return true;
 }
