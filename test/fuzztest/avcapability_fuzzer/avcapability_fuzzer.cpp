@@ -29,8 +29,8 @@ const int32_t *g_levels = nullptr;
 uint32_t g_levelNum = 0;
 const int32_t *g_pixFormat = nullptr;
 uint32_t g_pixFormatNum = 0;
-const int32_t *sampleRates = nullptr;
-uint32_t sampleRateNum = 0;
+const int32_t *g_sampleRates = nullptr;
+uint32_t g_sampleRateNum = 0;
 int32_t g_widthAlignment = 0;
 int32_t g_heightAlignment = 0;
 
@@ -80,7 +80,7 @@ bool AvcapabilityFuzzTest(const uint8_t *data, size_t size)
         OH_AVCapability_IsFeatureSupported(cap, feature);
         OH_AVCapability_GetFeatureProperties(cap, feature);
         OH_AVCapability_GetAudioChannelCountRange(cap, &range);
-        OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum)
+        OH_AVCapability_GetAudioSupportedSampleRates(cap, &g_sampleRates, &g_sampleRateNum)
     }
     return true;
 }
