@@ -29,7 +29,7 @@ public:
     bool RegisterReleaseListener(std::string producerName, sptr<Surface> surface, OnReleaseFunc callback,
         int32_t instanceId, OHSurfaceSource type = OH_SURFACE_SOURCE_VIDEO);
     void CleanCache(std::string producerName, sptr<Surface> surface, bool cleanAll);
-    void ReleaseSurface(std::string producerName, sptr<Surface> surface, bool cleanAll);
+    void ReleaseSurface(std::string producerName, sptr<Surface> surface, bool cleanAll, bool abadon = false);
     std::optional<std::pair<std::string, int32_t>> GetCurProducerInfo(uint64_t surfaceId);
 
 private:

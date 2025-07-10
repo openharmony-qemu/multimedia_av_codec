@@ -401,21 +401,20 @@ int32_t CodecServer::Stop()
         temporalScalability_->SetBlockQueueActive();
         inputParamTask_->Stop();
     }
-    if (isSurfaceMode_ && pushBlankBufferOnShutdown_) {
-        std::optional<std::pair<std::string, int32_t>> pInfo =
-            SurfaceTools::GetInstance().GetCurProducerInfo(surfaceId_);
-        if (pInfo != std::nullopt) {
-            SurfaceTools::GetInstance().CleanCache(pInfo.value().first,
-                SurfaceUtils::GetInstance()->GetSurface(surfaceId_), true);
-        }
-    }
-
     int32_t retPostProcessing = StopPostProcessing();
     int32_t retCodec = codecBase_->Stop();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     if ((retPostProcessing + retCodec) != AVCS_ERR_OK) {
         StatusChanged(ERROR);
         return (retCodec == AVCS_ERR_OK) ? retPostProcessing : retCodec;
+    }
+    if (isSurfaceMode_ && codecType_ == AVCODEC_TYPE_VIDEO_DECODER && pushBlankBufferOnShutdown_) {
+        std::optional<std::pair<std::string, int32_t>> pInfo =
+            SurfaceTools::GetInstance().GetCurProducerInfo(surfaceId_);
+        if (pInfo != std::nullopt) {
+            SurfaceTools::GetInstance().CleanCache(pInfo.value().first,
+                SurfaceUtils::GetInstance()->GetSurface(surfaceId_), true);
+        }
     }
     StatusChanged(CONFIGURED);
     OnInstanceMemoryResetEvent();
@@ -519,15 +518,15 @@ int32_t CodecServer::Release()
         }
         temporalScalability_ = nullptr;
     }
-    if (isSurfaceMode_ && pushBlankBufferOnShutdown_) {
+    int32_t ret = codecBase_->Release();
+    if (isSurfaceMode_ && codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
         std::optional<std::pair<std::string, int32_t>> pInfo =
             SurfaceTools::GetInstance().GetCurProducerInfo(surfaceId_);
         if (pInfo != std::nullopt) {
-            SurfaceTools::GetInstance().CleanCache(pInfo.value().first,
-                SurfaceUtils::GetInstance()->GetSurface(surfaceId_), true);
+            SurfaceTools::GetInstance().ReleaseSurface(pInfo.value().first,
+                SurfaceUtils::GetInstance()->GetSurface(surfaceId_), pushBlankBufferOnShutdown_, true);
         }
     }
-    int32_t ret = codecBase_->Release();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     codecBase_ = nullptr;
     shareBufCallback_ = nullptr;
