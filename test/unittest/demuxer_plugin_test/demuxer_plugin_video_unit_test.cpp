@@ -1335,7 +1335,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0004, TestSiz
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     std::string filePath = g_mp4Path4;
-    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
+    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 4330600, 3);
     ASSERT_TRUE(initStatus_);
     if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
         CheckAllFrames({16, 16, 16}, {1, 1, 1}, {0});
