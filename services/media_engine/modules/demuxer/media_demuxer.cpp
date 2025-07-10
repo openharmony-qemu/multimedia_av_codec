@@ -3911,8 +3911,11 @@ void MediaDemuxer::InitEnableDfxBufferQueue()
 
 void MediaDemuxer::NotifyResumeUnMute()
 {
-    if (!isVideoMuted_ && !sampleConsumerTaskMap_[videoTrackId_]->IsTaskRunning()) {
-        sampleConsumerTaskMap_[videoTrackId_]->Start();
+    if (sampleConsumerTaskMap_.find(videoTrackId_) != sampleConsumerTaskMap_.end() &&
+            sampleConsumerTaskMap_[videoTrackId_] != nullptr) {
+        if (!isVideoMuted_ && !sampleConsumerTaskMap_[videoTrackId_]->IsTaskRunning()) {
+            sampleConsumerTaskMap_[videoTrackId_]->Start();
+        }
     }
 }
 } // namespace Media
