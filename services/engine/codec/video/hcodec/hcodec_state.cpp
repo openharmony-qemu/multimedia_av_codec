@@ -183,16 +183,10 @@ void HCodec::UninitializedState::OnStateEntered()
 {
     codec_->gotFirstInput_ = false;
     codec_->gotFirstOutput_ = false;
-    codec_->inTotalCnt_ = 0;
-    codec_->outRecord_.totalCnt = 0;
-    codec_->outRecord_.totalCostUs = 0;
+    codec_->onePtsInToOutTotalCostUs_ = 0;
     codec_->inTimeMap_.clear();
-    codec_->lastInPts_ = -1;
-    codec_->lastOutPts_ = -1;
-    codec_->inputWaitFenceCostUs_ = 0;
-    codec_->outputWaitFenceCostUs_ = 0;
-    codec_->inputDiscardCnt_ = 0;
-    codec_->outputDiscardCnt_ = 0;
+    codec_->record_[OMX_DirInput].ResetAll();
+    codec_->record_[OMX_DirOutput].ResetAll();
     codec_->circulateHasStopped_ = false;
     codec_->OnEnterUninitializedState();
     codec_->ReleaseComponent();
@@ -776,7 +770,7 @@ void HCodec::OutputPortChangedState::HandleOutputPortDisabled()
         int32_t err = codec_->compNode_->SendCommand(CODEC_COMMAND_PORT_ENABLE, OMX_DirOutput, {});
         if (err == HDF_SUCCESS) {
             ret = codec_->AllocateBuffersOnPort(OMX_DirOutput);
-            codec_->UpdateOwner(false);
+            codec_->UpdateOwner(OMX_DirOutput);
         } else {
             SLOGE("ask omx to enable out port failed, ret=%d", ret);
             ret = AVCS_ERR_UNKNOWN;
