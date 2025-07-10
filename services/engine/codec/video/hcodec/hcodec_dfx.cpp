@@ -226,8 +226,8 @@ void HCodec::UpdateHoldTime(const TimePoint& now, const BufferInfo& info, Buffer
         currOwner[oldOwner]--;
         currOwner[newOwner]++;
         HLOGI("%s = %u, after hold %.1f ms, %s -> %s, %d/%d/%d/%d", (info.isInput ? "inBufId" : "outBufId"),
-          info.bufferId, holdUs / US_TO_MS, ToString(oldOwner), ToString(newOwner),
-          currOwner[OWNED_BY_US], currOwner[OWNED_BY_USER], currOwner[OWNED_BY_OMX], currOwner[OWNED_BY_SURFACE]);
+            info.bufferId, holdUs / US_TO_MS, ToString(oldOwner), ToString(newOwner),
+            currOwner[OWNED_BY_US], currOwner[OWNED_BY_USER], currOwner[OWNED_BY_OMX], currOwner[OWNED_BY_SURFACE]);
     }
 }
 
