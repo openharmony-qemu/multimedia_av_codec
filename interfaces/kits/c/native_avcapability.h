@@ -219,7 +219,7 @@ OH_AVErrCode OH_AVCapability_GetAudioSupportedSampleRates(OH_AVCapability *capab
  * @param rangesNum Output parameter. The element number of the sample rate ranges array
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
- * {@link AV_ERR_INVALID_VAL}, the capability is invalid, the sampleRates is nullptr, or sampleRateNum is nullptr.
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, the sampleRateRanges is nullptr, or rangesNum is nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_NO_MEMORY}, internal use memory malloc failed.
  * @since 20
