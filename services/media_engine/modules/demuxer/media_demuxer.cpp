@@ -3510,6 +3510,7 @@ int64_t MediaDemuxer::SampleConsumerLoop(int32_t trackId)
         AVBufferConfig avBufferConfig;
         std::shared_ptr<AVBuffer> dstBuffer;
         avBufferConfig.capacity = static_cast<int32_t>(size);
+        avBufferConfig.size = static_cast<int32_t>(size);
         status = bufferQueue->RequestBuffer(dstBuffer, avBufferConfig, REQUEST_BUFFER_TIMEOUT);
         CHECK_AND_BREAK_LOG_LIMIT_POW2(status == Status::OK, SAMPLE_LOOP_REQUEST_FAILED_LOG_POW2,
             "RequestBuffer from bufferQueue failed " PUBLIC_LOG_D32, trackId);
