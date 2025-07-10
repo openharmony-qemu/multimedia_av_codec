@@ -215,7 +215,7 @@ Status AudioCaptureFilter::DoPause()
                 / AUDIO_CAPTURE_READ_FRAME_TIME;
         } else if (currentTime_ == 0) {
             lostCount = ((pauseTime_ - startTime_ + AUDIO_CAPTURE_READ_FRAME_TIME_HALF)
-                / AUDIO_CAPTURE_READ_FRAME_TIME) - cachedAudioDataDeque_.size();
+                / AUDIO_CAPTURE_READ_FRAME_TIME) - static_cast<int64_t>(cachedAudioDataDeque_.size());
             MEDIA_LOG_I("[audio] no video frame return, fill audio frame by startTime");
         }
         if (lostCount > AUDIO_CAPTURE_MAX_CACHED_FRAMES) {
