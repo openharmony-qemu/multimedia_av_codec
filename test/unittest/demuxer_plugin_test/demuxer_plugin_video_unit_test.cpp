@@ -2254,7 +2254,6 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_SRT_0001, TestSize.Level1
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({5}, {5}, {0, 1, 2, 3, 4});
-    printf("ok\n");
 }
 
 /**
@@ -2269,5 +2268,4 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_VTT_0001, TestSize.Level1
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({4}, {4}, {0, 1, 2, 3});
-    printf("ok\n");
 }
