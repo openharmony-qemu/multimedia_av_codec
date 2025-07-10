@@ -854,6 +854,11 @@ HWTEST_F(DemuxerFilterUnitTest, FrameId2SeekMs_0100, TestSize.Level1)
     EXPECT_EQ(ret, Status::OK);
 }
 
+/**
+ * @tc.name: SetMediaMuted
+ * @tc.desc: SetMediaMuted
+ * @tc.type: FUNC
+ */
 HWTEST_F(DemuxerFilterUnitTest, SetMediaMuted, TestSize.Level1)
 {
     auto demuxerFilter = std::make_shared<DemuxerFilter>("testDemuxerFilter", FilterType::FILTERTYPE_DEMUXER);
@@ -861,6 +866,20 @@ HWTEST_F(DemuxerFilterUnitTest, SetMediaMuted, TestSize.Level1)
     demuxerFilter->demuxer_ = demuxer;
     Status ret = Status::OK;
     ret = demuxerFilter->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, true, false);
+    ASSERT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: NotifyResumeUnMute_0100
+ * @tc.desc: NotifyResumeUnMute
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, NotifyResumeUnMute_0100, TestSize.Level1)
+{
+    auto demuxerFilter = std::make_shared<DemuxerFilter>("testDemuxerFilter", FilterType::FILTERTYPE_DEMUXER);
+    auto demuxer = std::make_shared<MediaDemuxerMock>();
+    demuxerFilter->demuxer_ = demuxer;
+    Status ret = demuxerFilter->NotifyResumeUnMute();
     ASSERT_EQ(ret, Status::OK);
 }
 }  // namespace Pipeline
