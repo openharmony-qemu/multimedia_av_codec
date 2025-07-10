@@ -35,7 +35,7 @@ FuncTracker::~FuncTracker()
 
 void HCodec::OnPrintAllBufferOwner(const MsgInfo& msg)
 {
-    std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime;
+    TimePoint lastOwnerChangeTime;
     msg.param->GetValue(KEY_LAST_OWNER_CHANGE_TIME, lastOwnerChangeTime);
     if (lastOwnerChangeTime == lastOwnerChangeTime_) {
         UpdateOwner();  // update all owner count trace in case of systrace is catched too late
@@ -53,25 +53,25 @@ void HCodec::OnPrintAllBufferOwner(const MsgInfo& msg)
 void HCodec::PrintAllBufferInfo()
 {
     auto now = chrono::steady_clock::now();
-    PrintAllBufferInfo(true, now);
-    PrintAllBufferInfo(false, now);
+    PrintAllBufferInfo(now, OMX_DirInput);
+    PrintAllBufferInfo(now, OMX_DirOutput);
 }
 
-void HCodec::PrintAllBufferInfo(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now)
+void HCodec::PrintAllBufferInfo(const TimePoint& now, OMX_DIRTYPE port)
 {
-    const char* inOutStr = isInput ? " in" : "out";
-    bool eos = isInput ? inputPortEos_ : outputPortEos_;
-    uint64_t cnt = isInput ? inTotalCnt_ : outRecord_.totalCnt;
-    int64_t lastPts = isInput ? lastInPts_ : lastOutPts_;
-    const std::array<int, OWNER_CNT>& arr = isInput ? inputOwner_ : outputOwner_;
-    const vector<BufferInfo>& pool = isInput ? inputBufferPool_ : outputBufferPool_;
+    const Record& record = record_[port];
+    const char* inOutStr = (port == OMX_DirInput) ? " in" : "out";
+    bool eos = (port == OMX_DirInput) ? inputPortEos_ : outputPortEos_;
+    const std::array<int, OWNER_CNT>& arr = record.currOwner_;
+    const vector<BufferInfo>& pool = (port == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
 
     std::stringstream s;
     for (const BufferInfo& info : pool) {
         int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
         s << info.bufferId << ":" << ToString(info.owner) << "(" << holdMs << "), ";
     }
-    HLOGI("%s: eos=%d, cnt=%" PRIu64 ", pts=%" PRId64 ", %d/%d/%d/%d, %s", inOutStr, eos, cnt, lastPts,
+    HLOGI("%s: eos=%d, cnt=%" PRIu64 ", pts=%" PRId64 ", %d/%d/%d/%d, %s", inOutStr, eos,
+          record.frameCntTotal_, record.lastPts_,
           arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE], s.str().c_str());
 }
 
@@ -88,7 +88,7 @@ std::string HCodec::OnGetHidumperInfo()
 
     s << "        " << compUniqueStr_ << "[" << currState_->GetName() << "]" << endl;
     s << "        " << "------------INPUT-----------" << endl;
-    s << "        " << "eos:" << inputPortEos_ << ", etb:" << inTotalCnt_
+    s << "        " << "eos:" << inputPortEos_ << ", etb:" << record_[OMX_DirInput].frameCntTotal_
       << ", bufferCapacity:" << getbufferCapacity(inputBufferPool_) << endl;
     for (const BufferInfo& info : inputBufferPool_) {
         int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
@@ -115,202 +115,195 @@ std::string HCodec::OnGetHidumperInfo()
 
 void HCodec::UpdateOwner()
 {
-    UpdateOwner(true);
-    UpdateOwner(false);
+    UpdateOwner(OMX_DirInput);
+    UpdateOwner(OMX_DirOutput);
 }
 
-void HCodec::UpdateOwner(bool isInput)
+void HCodec::UpdateOwner(OMX_DIRTYPE port)
 {
-    std::array<int, OWNER_CNT>& arr = isInput ? inputOwner_ : outputOwner_;
-    const std::array<std::string, OWNER_CNT>& ownerStr = isInput ? inputOwnerStr_ : outputOwnerStr_;
-    const vector<BufferInfo>& pool = isInput ? inputBufferPool_ : outputBufferPool_;
+    std::array<int, OWNER_CNT>& arr = record_[port].currOwner_;
+    const vector<BufferInfo>& pool = (port == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
 
     arr.fill(0);
     for (const BufferInfo &info : pool) {
         arr[info.owner]++;
     }
     for (uint32_t owner = 0; owner < static_cast<uint32_t>(OWNER_CNT); owner++) {
-        CountTrace(HITRACE_TAG_ZMEDIA, ownerStr[owner], arr[owner]);
+        CountTrace(HITRACE_TAG_ZMEDIA, record_[port].ownerTraceTag_[owner], arr[owner]);
     }
 }
 
-void HCodec::ReduceOwner(bool isInput, BufferOwner owner)
+void HCodec::ReduceOwner(OMX_DIRTYPE port, BufferOwner owner)
 {
-    std::array<int, OWNER_CNT>& arr = isInput ? inputOwner_ : outputOwner_;
-    const std::array<std::string, OWNER_CNT>& ownerStr = isInput ? inputOwnerStr_ : outputOwnerStr_;
-    arr[owner]--;
-    CountTrace(HITRACE_TAG_ZMEDIA, ownerStr[owner], arr[owner]);
-}
-
-void HCodec::PrintInputStatistic(BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now)
-{
-    lastInPts_ = info.omxBuffer->pts;
-    if (inTotalCnt_ == 0) {
-        firstInTime_ = now;
-    }
-    inTotalCnt_++;
-    if (inTotalCnt_ % PRINT_PER_FRAME == 0) {
-        PrintStatistic(info.isInput, now);
-        firstInTime_ = now;
-        inputHoldTimeRecord_.fill({0, 0});
-        inputWaitFenceCostUs_ = 0;
-        inputDiscardCnt_ = 0;
-    }
-}
- 
-void HCodec::PrintOutputStatistic(BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now)
-{
-    lastOutPts_ = info.omxBuffer->pts;
-    if (outRecord_.totalCnt == 0) {
-        firstOutTime_ = now;
-    }
-    outRecord_.totalCnt++;
-    if (outRecord_.totalCnt % PRINT_PER_FRAME == 0) {
-        PrintStatistic(info.isInput, now);
-        firstOutTime_ = now;
-        outputHoldTimeRecord_.fill({0, 0});
-        outputWaitFenceCostUs_ = 0;
-        outputDiscardCnt_ = 0;
-    }
-}
-
-void HCodec::PrintStatistic(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now)
-{
-    int64_t fromFirstToNow = chrono::duration_cast<chrono::microseconds>(
-        now - (isInput ? firstInTime_ : firstOutTime_)).count();
-    if (fromFirstToNow == 0) {
-        return;
-    }
-    double fps = PRINT_PER_FRAME * US_TO_S / fromFirstToNow;
-    const std::array<int, OWNER_CNT>& arr = isInput ? inputOwner_ : outputOwner_;
-    double aveHoldMs[OWNER_CNT];
-    for (uint32_t owner = 0; owner < static_cast<uint32_t>(OWNER_CNT); owner++) {
-        TotalCntAndCost& holdRecord = isInput ? inputHoldTimeRecord_[owner] : outputHoldTimeRecord_[owner];
-        aveHoldMs[owner] = (holdRecord.totalCnt == 0) ? -1 : (holdRecord.totalCostUs / US_TO_MS / holdRecord.totalCnt);
-    }
-    const char* inOutStr = isInput ? " in" : "out";
-    uint64_t cnt = isInput ? inTotalCnt_ : outRecord_.totalCnt;
-    int64_t lastPts = isInput ? lastInPts_ : lastOutPts_;
-    uint64_t discardCnt = isInput ? inputDiscardCnt_ : outputDiscardCnt_;
-    uint64_t waitFenceCostUs = isInput ? inputWaitFenceCostUs_ : outputWaitFenceCostUs_;
-    HLOGI("%s: fps=%.1f, cnt=%" PRIu64 ", pts=%" PRId64 ", %d/%d/%d/%d, %.0f/%.0f/%.0f/%.0f, "
-        "fence %.3f, discard %.0f%%", inOutStr, fps, cnt, lastPts,
-        arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE],
-        aveHoldMs[OWNED_BY_US], aveHoldMs[OWNED_BY_USER], aveHoldMs[OWNED_BY_OMX], aveHoldMs[OWNED_BY_SURFACE],
-        waitFenceCostUs / US_TO_MS / PRINT_PER_FRAME,
-        static_cast<double>(discardCnt) / PRINT_PER_FRAME * 100); // 100: percent
+    Record& record = record_[port];
+    record.currOwner_[owner]--;
+    CountTrace(HITRACE_TAG_ZMEDIA, record.ownerTraceTag_[owner], record.currOwner_[owner]);
 }
 
 void HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
 {
-    debugMode_ ? ChangeOwnerDebug(info, newOwner) : ChangeOwnerNormal(info, newOwner);
-}
-
-void HCodec::ChangeOwnerNormal(BufferInfo& info, BufferOwner newOwner)
-{
-    std::array<int, OWNER_CNT>& arr = info.isInput ? inputOwner_ : outputOwner_;
-    const std::array<std::string, OWNER_CNT>& ownerStr = info.isInput ? inputOwnerStr_ : outputOwnerStr_;
-
-    BufferOwner oldOwner = info.owner;
     auto now = chrono::steady_clock::now();
+    OMX_DIRTYPE port = info.isInput ? OMX_DirInput : OMX_DirOutput;
+    Record& record = record_[port];
+    std::array<int, OWNER_CNT>& currOwner = record.currOwner_;
+    BufferOwner oldOwner = info.owner;
+    if (!record.beginOfInterval_.has_value()) {
+        record.ResetInterval(now);
+    }
+
+    UpdateHoldCnt(now, port, oldOwner);
+    UpdateHoldCnt(now, port, newOwner);
+    UpdateHoldTime(now, info, newOwner);
+
+    // now change owner
+    currOwner[oldOwner]--;
+    currOwner[newOwner]++;
+    info.owner = newOwner;
+    info.lastOwnerChangeTime = now;
+    record.lastOwnerChangeTime_[oldOwner] = now;
+    record.lastOwnerChangeTime_[newOwner] = now;
     lastOwnerChangeTime_ = now;
     if (circulateHasStopped_) {
-        const char* oldOwnerStr = ToString(oldOwner);
-        const char* newOwnerStr = ToString(newOwner);
         HLOGI("circulate resume, %s, %s -> %s, pts=%" PRId64,
-            (info.isInput ? "in" : "out"), oldOwnerStr, newOwnerStr, info.omxBuffer->pts);
+            (info.isInput ? "in" : "out"), ToString(oldOwner), ToString(newOwner), info.omxBuffer->pts);
         circulateHasStopped_ = false;
     }
-    arr[oldOwner]--;
-    arr[newOwner]++;
-    CountTrace(HITRACE_TAG_ZMEDIA, ownerStr[oldOwner], arr[oldOwner]);
-    CountTrace(HITRACE_TAG_ZMEDIA, ownerStr[newOwner], arr[newOwner]);
 
-    uint64_t holdUs = static_cast<uint64_t>(
-        chrono::duration_cast<chrono::microseconds>(now - info.lastOwnerChangeTime).count());
-    TotalCntAndCost& holdRecord = info.isInput ? inputHoldTimeRecord_[oldOwner] :
-                                                outputHoldTimeRecord_[oldOwner];
-    holdRecord.totalCnt++;
-    holdRecord.totalCostUs += holdUs;
-
-    // now change owner
-    info.lastOwnerChangeTime = now;
-    info.owner = newOwner;
+    CountTrace(HITRACE_TAG_ZMEDIA, record.ownerTraceTag_[oldOwner], currOwner[oldOwner]);
+    CountTrace(HITRACE_TAG_ZMEDIA, record.ownerTraceTag_[newOwner], currOwner[newOwner]);
 
     if (info.isInput && oldOwner == OWNED_BY_US && newOwner == OWNED_BY_OMX) {
-        PrintInputStatistic(info, now);
+        record.frameCntTotal_++;
+        record.frameCntInterval_++;
+        record.frameMbitsInterval_ += info.omxBuffer->filledLen * BYTE_TO_MBIT;
+        record.lastPts_ = info.omxBuffer->pts;
+        debugMode_ ? UpdateInputRecord(now, info) : PrintStatistic(now, port);
     }
     if (!info.isInput && oldOwner == OWNED_BY_US && newOwner == OWNED_BY_USER) {
-        PrintOutputStatistic(info, now);
+        record.frameCntTotal_++;
+        record.frameCntInterval_++;
+        record.frameMbitsInterval_ += info.omxBuffer->filledLen * BYTE_TO_MBIT;
+        record.lastPts_ = info.omxBuffer->pts;
+        debugMode_ ? UpdateOutputRecord(now, info) : PrintStatistic(now, port);
     }
 }
 
-void HCodec::ChangeOwnerDebug(BufferInfo& info, BufferOwner newOwner)
+// now, on this port, this owner's hold cnt is gonna change
+void HCodec::UpdateHoldCnt(const TimePoint& now, OMX_DIRTYPE port, BufferOwner owner)
 {
-    std::array<int, OWNER_CNT>& arr = info.isInput ? inputOwner_ : outputOwner_;
-    const std::array<std::string, OWNER_CNT>& ownerStr = info.isInput ? inputOwnerStr_ : outputOwnerStr_;
-
-    BufferOwner oldOwner = info.owner;
-    auto now = chrono::steady_clock::now();
-    lastOwnerChangeTime_ = now;
-    circulateHasStopped_ = false;
-    arr[oldOwner]--;
-    arr[newOwner]++;
-    CountTrace(HITRACE_TAG_ZMEDIA, ownerStr[oldOwner], arr[oldOwner]);
-    CountTrace(HITRACE_TAG_ZMEDIA, ownerStr[newOwner], arr[newOwner]);
-
-    const char* oldOwnerStr = ToString(oldOwner);
-    const char* newOwnerStr = ToString(newOwner);
-    const char* idStr = info.isInput ? "inBufId" : "outBufId";
-
-    uint64_t holdUs = static_cast<uint64_t>
-        (chrono::duration_cast<chrono::microseconds>(now - info.lastOwnerChangeTime).count());
-    double holdMs = holdUs / US_TO_MS;
-    TotalCntAndCost& holdRecord = info.isInput ? inputHoldTimeRecord_[oldOwner] :
-                                                outputHoldTimeRecord_[oldOwner];
-    holdRecord.totalCnt++;
-    holdRecord.totalCostUs += holdUs;
-    double aveHoldMs = holdRecord.totalCostUs / US_TO_MS / holdRecord.totalCnt;
-
-    // now change owner
-    info.lastOwnerChangeTime = now;
-    info.owner = newOwner;
-    HLOGI("%s = %u, after hold %.1f ms (%.1f ms), %s -> %s, %d/%d/%d/%d",
-          idStr, info.bufferId, holdMs, aveHoldMs, oldOwnerStr, newOwnerStr,
-          arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE]);
-
-    if (info.isInput && oldOwner == OWNED_BY_US && newOwner == OWNED_BY_OMX) {
-        UpdateInputRecord(info, now);
+    Record& record = record_[port];
+    if (!record.lastOwnerChangeTime_[owner].has_value()) {
+        return;
     }
-    if (!info.isInput && oldOwner == OWNED_BY_OMX && newOwner == OWNED_BY_US) {
-        UpdateOutputRecord(info, now);
+    auto holdUs = chrono::duration_cast<chrono::microseconds>(
+        now - record.lastOwnerChangeTime_[owner].value()).count();
+    if (holdUs < 0) {
+        HLOGW("steady clock has go backwards, %ld us", holdUs);
+        record.ResetInterval(now);
+        return;
+    }
+    TotalEvent& holdCnt = record.holdCntInterval_[owner];
+    holdCnt.eventCnt += holdUs;
+    holdCnt.eventSum += (holdUs * record.currOwner_[owner]);
+}
+
+// now, this buffer is gonna change to new owner
+void HCodec::UpdateHoldTime(const TimePoint& now, const BufferInfo& info, BufferOwner newOwner)
+{
+    Record& record = record_[info.isInput ? OMX_DirInput : OMX_DirOutput];
+    auto holdUs = chrono::duration_cast<chrono::microseconds>(now - info.lastOwnerChangeTime).count();
+    if (holdUs < 0) {
+        HLOGW("steady clock has go backwards, %ld us", holdUs);
+        record.ResetInterval(now);
+        return;
+    }
+    BufferOwner oldOwner = info.owner;
+    TotalEvent& oldOwnerHoldTime = record.holdTimeInterval_[oldOwner];
+    oldOwnerHoldTime.eventCnt++;
+    oldOwnerHoldTime.eventSum += holdUs;
+    if (debugMode_) {
+        std::array<int, OWNER_CNT> currOwner = record.currOwner_;
+        currOwner[oldOwner]--;
+        currOwner[newOwner]++;
+        HLOGI("%s = %u, after hold %.1f ms, %s -> %s, %d/%d/%d/%d", (info.isInput ? "inBufId" : "outBufId"),
+          info.bufferId, holdUs / US_TO_MS, ToString(oldOwner), ToString(newOwner),
+          currOwner[OWNED_BY_US], currOwner[OWNED_BY_USER], currOwner[OWNED_BY_OMX], currOwner[OWNED_BY_SURFACE]);
     }
 }
 
-void HCodec::UpdateInputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now)
+bool HCodec::CalculateInterval(const TimePoint& now, OMX_DIRTYPE port, IntervalAverage& ave)
+{
+    Record& record = record_[port];
+    auto fromBeginOfIntervalToNowUs = chrono::duration_cast<chrono::microseconds>(
+        now - record.beginOfInterval_.value()).count();
+    if (fromBeginOfIntervalToNowUs < 0) {
+        HLOGW("steady clock has go backwards, %ld us", fromBeginOfIntervalToNowUs);
+        record.ResetInterval(now);
+        return false;
+    }
+    if (fromBeginOfIntervalToNowUs == 0) {
+        return false;
+    }
+
+    ave.fps = record.frameCntInterval_ * US_TO_S / fromBeginOfIntervalToNowUs;
+    ave.mbps = record.frameMbitsInterval_ * US_TO_S / fromBeginOfIntervalToNowUs;
+    for (uint32_t owner = 0; owner < static_cast<uint32_t>(OWNER_CNT); owner++) {
+        const TotalEvent& holdCnt = record.holdCntInterval_[owner];
+        ave.holdCnt[owner] = (holdCnt.eventCnt == 0) ? 0 :
+            static_cast<double>(holdCnt.eventSum) / holdCnt.eventCnt;
+        const TotalEvent& holdTime = record.holdTimeInterval_[owner];
+        ave.holdMs[owner] = (holdTime.eventCnt == 0) ? -1 :
+            (holdTime.eventSum / US_TO_MS / holdTime.eventCnt);
+    }
+    return true;
+}
+
+void HCodec::PrintStatistic(const TimePoint& now, OMX_DIRTYPE port)
+{
+    Record& record = record_[port];
+    if (record.frameCntInterval_ % PRINT_PER_FRAME != 0) {
+        return;
+    }
+    IntervalAverage ave;
+    bool ret = CalculateInterval(now, port, ave);
+    if (!ret) {
+        return;
+    }
+    const char* inOutStr = (port == OMX_DirInput) ? " in" : "out";
+    HLOGI("%s: fps=%.1f, Mbps=%.1f, cnt=%" PRIu64 ", pts=%" PRId64 ", %.1f/%.1f/%.1f/%.1f, %.0f/%.0f/%.0f/%.0f, "
+        "fence %.3f, discard %.0f%%", inOutStr, ave.fps, ave.mbps, record.frameCntTotal_, record.lastPts_,
+        ave.holdCnt[OWNED_BY_US], ave.holdCnt[OWNED_BY_USER], ave.holdCnt[OWNED_BY_OMX], ave.holdCnt[OWNED_BY_SURFACE],
+        ave.holdMs[OWNED_BY_US], ave.holdMs[OWNED_BY_USER], ave.holdMs[OWNED_BY_OMX], ave.holdMs[OWNED_BY_SURFACE],
+        record.waitFenceCostUsInterval_ / US_TO_MS / PRINT_PER_FRAME,
+        static_cast<double>(record.discardCntInterval_) / PRINT_PER_FRAME * 100); // 100: percent
+    record.ResetInterval(now);
+}
+
+void HCodec::UpdateInputRecord(const TimePoint& now, const BufferInfo& info)
 {
     if (!info.IsValidFrame()) {
         return;
     }
     inTimeMap_[info.omxBuffer->pts] = now;
-    if (inTotalCnt_ == 0) {
-        firstInTime_ = now;
+    Record& record = record_[info.isInput ? OMX_DirInput : OMX_DirOutput];
+    auto fromBeginOfIntervalToNowUs = chrono::duration_cast<chrono::microseconds>(
+        now - record.beginOfInterval_.value()).count();
+    if (fromBeginOfIntervalToNowUs < 0) {
+        HLOGW("steady clock has go backwards, %ld us", fromBeginOfIntervalToNowUs);
+        record.ResetInterval(now);
+        return;
     }
-    inTotalCnt_++;
-
-    uint64_t fromFirstInToNow = static_cast<uint64_t>
-        (chrono::duration_cast<chrono::microseconds>(now - firstInTime_).count());
-    if (fromFirstInToNow == 0) {
+    if (fromBeginOfIntervalToNowUs == 0) {
         HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag);
     } else {
-        double inFps = inTotalCnt_ * US_TO_S / fromFirstInToNow;
+        double inFps = record.frameCntInterval_ * US_TO_S / fromBeginOfIntervalToNowUs;
         HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, in fps %.2f",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag, inFps);
     }
 }
 
-void HCodec::UpdateOutputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now)
+void HCodec::UpdateOutputRecord(const TimePoint& now, const BufferInfo& info)
 {
     if (!info.IsValidFrame()) {
         return;
@@ -319,27 +312,32 @@ void HCodec::UpdateOutputRecord(const BufferInfo& info, std::chrono::time_point<
     if (it == inTimeMap_.end()) {
         return;
     }
-    if (outRecord_.totalCnt == 0) {
-        firstOutTime_ = now;
-    }
-    outRecord_.totalCnt++;
-
-    uint64_t fromInToOut = static_cast<uint64_t>
-        (chrono::duration_cast<chrono::microseconds>(now - it->second).count());
+    Record& record = record_[info.isInput ? OMX_DirInput : OMX_DirOutput];
+    auto fromInToOut = chrono::duration_cast<chrono::microseconds>(now - it->second).count();
     inTimeMap_.erase(it);
-    outRecord_.totalCostUs += fromInToOut;
+    if (fromInToOut < 0) {
+        HLOGW("steady clock has go backwards, %ld us", fromInToOut);
+        record.ResetInterval(now);
+        return;
+    }
+    onePtsInToOutTotalCostUs_ += fromInToOut;
     double oneFrameCostMs = fromInToOut / US_TO_MS;
-    double averageCostMs = outRecord_.totalCostUs / US_TO_MS / outRecord_.totalCnt;
+    double averageCostMs = onePtsInToOutTotalCostUs_ / US_TO_MS / record.frameCntInterval_;
 
-    uint64_t fromFirstOutToNow = static_cast<uint64_t>
-        (chrono::duration_cast<chrono::microseconds>(now - firstOutTime_).count());
-    if (fromFirstOutToNow == 0) {
+    auto fromBeginOfIntervalToNowUs = chrono::duration_cast<chrono::microseconds>(
+        now - record.beginOfInterval_.value()).count();
+    if (fromBeginOfIntervalToNowUs < 0) {
+        HLOGW("steady clock has go backwards, %ld us", fromBeginOfIntervalToNowUs);
+        record.ResetInterval(now);
+        return;
+    }
+    if (fromBeginOfIntervalToNowUs == 0) {
         HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, "
               "cost %.2f ms (%.2f ms)",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag,
               oneFrameCostMs, averageCostMs);
     } else {
-        double outFps = outRecord_.totalCnt * US_TO_S / fromFirstOutToNow;
+        double outFps = record.frameCntInterval_ * US_TO_S / fromBeginOfIntervalToNowUs;
         HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, "
               "cost %.2f ms (%.2f ms), out fps %.2f",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag,

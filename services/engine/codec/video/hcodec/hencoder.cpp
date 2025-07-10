@@ -605,7 +605,6 @@ std::optional<double> HEncoder::GetOperatingRateFromUser(const Format &format)
 {
     double operatingRate = 0.0;
     if (format.GetDoubleValue(OHOS::Media::Tag::VIDEO_ENCODER_OPERATING_RATE, operatingRate) && operatingRate > 0.0) {
-        LOGI("user set operating rate %.2f", operatingRate);
         return operatingRate;
     }
     return nullopt;
@@ -1575,9 +1574,7 @@ int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()
             HLOGE("Failed to UseBuffer on input port");
             return AVCS_ERR_UNKNOWN;
         }
-        BufferInfo info {};
-        info.isInput = true;
-        info.owner = BufferOwner::OWNED_BY_SURFACE;
+        BufferInfo info(true, BufferOwner::OWNED_BY_SURFACE, record_);
         info.surfaceBuffer = nullptr;
         info.avBuffer = AVBuffer::CreateAVBuffer();
         info.omxBuffer = outBuffer;
@@ -1596,7 +1593,7 @@ void HEncoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
     }
     const BufferInfo &info = pool[i];
     FreeOmxBuffer(portIndex, info);
-    ReduceOwner((portIndex == OMX_DirInput), info.owner);
+    ReduceOwner(portIndex, info.owner);
     pool.erase(pool.begin() + i);
 }
 
@@ -1625,7 +1622,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     if (inputSurface_ && bufferInfo->avBuffer->meta_->GetData(
         OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, discard) && discard) {
         HLOGI("inBufId = %u, discard by user, pts = %" PRId64, bufferId, bufferInfo->avBuffer->pts_);
-        inputDiscardCnt_++;
+        record_[OMX_DirInput].discardCntInterval_++;
         bufferInfo->avBuffer->meta_->Clear();
         ResetSlot(*bufferInfo);
         ReplyErrorCode(msg.id, AVCS_ERR_OK);
