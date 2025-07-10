@@ -50,6 +50,8 @@ string g_flvPath = string("/data/test/media/h264.flv");
 string g_mp4Path1 = string("/data/test/media/h264_double_video_audio.mp4");
 string g_mp4Path2 = string("/data/test/media/avcc_aac_mp3.mp4");
 string g_mp4Path3 = string("/data/test/media/MPEG4.mp4");
+string g_mp4Path4 = string("/data/test/media/muxer_auxl_265.mp4");
+string g_mp4Path5 = string("/data/test/media/muxer_auxl_265_264_aac.mp4");
 // FMP4
 string g_fmp4Path1 = string("/data/test/media/h264_fmp4.mp4");
 string g_fmp4Path2 = string("/data/test/media/h265_fmp4.mp4");
@@ -80,6 +82,10 @@ string g_aviPath6 = string("/data/test/media/test_mpeg2_mp2_B_Gop25_4sec_cover.a
 string g_mpgPath1 = string("/data/test/media/mpeg_mpeg2_mp2.mpeg");
 string g_mpgPath2 = string("/data/test/media/mpeg_mpeg2_mp3.mpeg");
 string g_mpgPath3 = string("/data/test/media/mpeg_h264_mp2.mpeg");
+// SRT
+string g_srtPath1 = string("/data/test/media/subtitle.srt");
+// VTT
+string g_vttPath1 = string("/data/test/media/webvtt_test.vtt");
 
 void DemuxerPluginUnitTest::SetUpTestCase(void)
 {
@@ -826,6 +832,40 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP4_0003, TestSize.Level1)
 }
 
 /**
+ * @tc.name: Demuxer_ReadSample_MP4_0004
+ * @tc.desc: Copy current sample to buffer (mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP4_0004, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_mp4Path4;
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        CheckAllFrames({16, 16, 16}, {1, 1, 1}, {0});
+    }
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_MP4_0005
+ * @tc.desc: Copy current sample to buffer (mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MP4_0005, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_mp4Path5;
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        std::vector<uint32_t> numbers(430);
+        std::iota(numbers.begin(), numbers.end(), 0);
+        CheckAllFrames({430, 601, 430, 601, 601}, {430, 3, 430, 3, 3}, numbers);
+    }
+}
+
+/**
  * @tc.name: Demuxer_ReadSample_FMP4_0001
  * @tc.desc: Copy current sample to buffer (fmp4)
  * @tc.type: FUNC
@@ -1213,6 +1253,34 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPG_0003, TestSize.Level1)
 }
 
 /**
+ * @tc.name: Demuxer_ReadSample_SRT_0001
+ * @tc.desc: Copy current sample to buffer (SRT)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_SRT_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_srt";
+    std::string filePath = g_srtPath1;
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({5}, {5}, {0, 1, 2, 3, 4});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_VTT_0001
+ * @tc.desc: Copy current sample to buffer (VTT)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_VTT_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_webvtt";
+    std::string filePath = g_vttPath1;
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({4}, {4}, {0, 1, 2, 3});
+}
+
+/**
  * @tc.name: Demuxer_ReadSample_WeakNetwork_MP4_0001
  * @tc.desc: Copy current sample to buffer (mp4)
  * @tc.type: FUNC
@@ -1256,6 +1324,40 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0003, TestSiz
                                            288, 300, 312, 324, 336, 348, 360, 372, 384, 396, 408,
                                            420, 432, 444, 456, 468, 480, 492, 504, 516, 528, 540,
                                            552, 564, 576, 588, 600});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_WeakNetwork_MP4_0004
+ * @tc.desc: Copy current sample to buffer (mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0004, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_mp4Path4;
+    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
+    ASSERT_TRUE(initStatus_);
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        CheckAllFrames({16, 16, 16}, {1, 1, 1}, {0});
+    }
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_WeakNetwork_MP4_0005
+ * @tc.desc: Copy current sample to buffer (mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MP4_0005, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_mp4Path5;
+    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
+    ASSERT_TRUE(initStatus_);
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        std::vector<uint32_t> numbers(430);
+        std::iota(numbers.begin(), numbers.end(), 0);
+        CheckAllFrames({430, 601, 430, 601, 601}, {430, 3, 430, 3, 3}, numbers);
+    }
 }
 
 /**
@@ -1646,6 +1748,34 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPG_0003, TestSiz
 }
 
 /**
+ * @tc.name: Demuxer_ReadSample_WeakNetwork_SRT_0001
+ * @tc.desc: Copy current sample to buffer (SRT)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_SRT_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_srt";
+    std::string filePath = g_srtPath1;
+    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({5}, {5}, {0, 1, 2, 3, 4});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_WeakNetwork_VTT_0001
+ * @tc.desc: Copy current sample to buffer (VTT)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_VTT_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_webvtt";
+    std::string filePath = g_vttPath1;
+    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({4}, {4}, {0, 1, 2, 3});
+}
+
+/**
  * @tc.name: Demuxer_ReadSample_URI_MP4_0001
  * @tc.desc: Copy current sample to buffer (mp4)
  * @tc.type: FUNC
@@ -1689,6 +1819,40 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP4_0003, TestSize.Level1
                                            288, 300, 312, 324, 336, 348, 360, 372, 384, 396, 408,
                                            420, 432, 444, 456, 468, 480, 492, 504, 516, 528, 540,
                                            552, 564, 576, 588, 600});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_URI_MP4_0004
+ * @tc.desc: Copy current sample to buffer (mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP4_0004, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_mp4Path4;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        CheckAllFrames({16, 16, 16}, {1, 1, 1}, {0});
+    }
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_URI_MP4_0005
+ * @tc.desc: Copy current sample to buffer (mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MP4_0005, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_mp4Path5;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        std::vector<uint32_t> numbers(430);
+        std::iota(numbers.begin(), numbers.end(), 0);
+        CheckAllFrames({430, 601, 430, 601, 601}, {430, 3, 430, 3, 3}, numbers);
+    }
 }
 
 /**
@@ -2076,4 +2240,34 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPG_0003, TestSize.Level1
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({1253, 2164}, {19, 2164}, {0, 89, 123, 193, 224, 288, 334, 396, 436, 531,
                                               571, 621, 658, 684, 727, 772, 867, 1117, 1163});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_URI_SRT_0001
+ * @tc.desc: Copy current sample to buffer (SRT)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_SRT_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_srt";
+    std::string filePath = g_srtPath1;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({5}, {5}, {0, 1, 2, 3, 4});
+    printf("ok\n");
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_URI_VTT_0001
+ * @tc.desc: Copy current sample to buffer (VTT)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_VTT_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_webvtt";
+    std::string filePath = g_vttPath1;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    CheckAllFrames({4}, {4}, {0, 1, 2, 3});
+    printf("ok\n");
 }
