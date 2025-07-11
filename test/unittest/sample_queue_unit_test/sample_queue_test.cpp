@@ -350,5 +350,36 @@ HWTEST_F(SampleQueueUnitTest, Clear_001, TestSize.Level1)
     Status ret = sampleQueue_->Clear();
     EXPECT_EQ(ret, Status::OK);
 }
+
+/**
+ * @tc.name  : Test SetLargerQueueSize
+ * @tc.number: SetLargerQueueSize_001
+ * @tc.desc  : Test SetLargerQueueSize
+ */
+HWTEST_F(SampleQueueUnitTest, SetLargerQueueSize_001, TestSize.Level1)
+{
+    SampleQueue::Config sampleQueueConfig{};
+    sampleQueueConfig.isFlvLiveStream_ = true;
+    sampleQueueConfig.isSupportBitrateSwitch_ = true;
+    sampleQueueConfig.queueId_ = NUM_TEST1;
+    sampleQueueConfig.bufferCap_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
+    Status status = sampleQueue_->Init(sampleQueueConfig);
+    EXPECT_EQ(status, Status::OK);
+
+    sampleQueue_->config_.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
+    Status ret = sampleQueue_->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE_ON_MUTE);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE_ON_MUTE);
+
+    sampleQueue_->config_.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE_ON_MUTE;
+    ret = sampleQueue_->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE_ON_MUTE);
+
+    sampleQueue_->config_.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
+    ret = sampleQueue_->SetLargerQueueSize(AVBUFFER_QUEUE_MAX_QUEUE_SIZE_FOR_LARGER + NUM_TEST1);
+    EXPECT_NE(ret, Status::OK);
+    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
+}
 }
 }  // namespace OHOS::Media

@@ -2237,7 +2237,12 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsLoaclFd_001, TestSize.Level1)
     EXPECT_TRUE(demuxer->IsLocalFd());
 }
 
-HWTEST_F(MediaDemuxerUnitTest, MediaDEmuxer_SetMediaMuted, TestSize.Level1)
+/**
+ * @tc.name: MediaDemuxer_SetMediaMuted
+ * @tc.desc: test SetMediaMute
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetMediaMuted, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     demuxer->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, true, false);
