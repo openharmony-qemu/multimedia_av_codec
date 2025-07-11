@@ -364,6 +364,10 @@ void AVCodecAudioCodecImpl::ProduceInputBuffer()
         callback_->OnInputBufferAvailable(indexInput_, emptyBuffer);
         indexInput_ = (indexInput_ >= MAX_INDEX) ? 0 : ++indexInput_;
     }
+    if (!isRunning_) {
+        AVCODEC_LOGI("ProduceInputBuffer exit");
+        return;
+    }
 
     inputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),
                              [this] { return ((mediaCodecProducer_->GetQueueSize() > 0) || !isRunning_); });
@@ -400,6 +404,10 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
             break;
         }
         inputCondition_.notify_all();
+    }
+    if (!isRunning_) {
+        AVCODEC_LOGI("ConsumerOutputBuffer exit");
+        return;
     }
     std::unique_lock lock2(outputMutex_2);
     outputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),
@@ -453,6 +461,9 @@ void AVCodecAudioCodecImpl::ClearInputBuffer()
 void AVCodecAudioCodecImpl::StopTaskAsync()
 {
     isRunning_ = false;
+    // stop input/output thread faster
+    ClearCache();
+    ReturnInputBuffer();
     {
         std::lock_guard lock(inputMutex2_);
         inputCondition_.notify_one();
@@ -472,6 +483,9 @@ void AVCodecAudioCodecImpl::StopTaskAsync()
 void AVCodecAudioCodecImpl::PauseTaskAsync()
 {
     isRunning_ = false;
+    // stop input/output thread faster
+    ClearCache();
+    ReturnInputBuffer();
     {
         std::lock_guard lock(inputMutex2_);
         inputCondition_.notify_one();
