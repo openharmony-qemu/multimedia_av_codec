@@ -133,6 +133,9 @@ private:
     bool vrrDynamicSwitch_ = false;
     Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle* vrrHandle_ = nullptr;
 #endif
+
+    // Lpp target pts
+    int32_t SetLppTargetPts(const Format &format);
     // freeze
     int32_t FreezeBuffers() override;
     int32_t ActiveBuffers() override;
