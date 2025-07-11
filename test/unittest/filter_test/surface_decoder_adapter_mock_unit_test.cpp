@@ -158,8 +158,8 @@ HWTEST_F(SurfaceDecoderMockUnitTest, FailBranchsCover_0400, TestSize.Level1)
     buffer->pts_ = 0;
     surfaceDecoderAdapter_->lastBufferPts_.store(1);
     surfaceDecoderAdapter_->OnOutputBufferAvailable(index, buffer);
-    uint32_t dropIndex = surfaceDecoderAdapter_->dropIndexs_[0];
-    EXPECT_EQ(dropIndex, index);
+    uint32_t renderIndex = surfaceDecoderAdapter_->indexs_[0];
+    EXPECT_EQ(renderIndex, index);
 }
 
 }  // namespace Media

@@ -30,6 +30,8 @@
 #include "buffer/avbuffer.h"
 
 namespace OHOS::MediaAVCodec {
+using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
+
 class HCodec : public CodecBase, protected StateMachine {
 public:
     static std::shared_ptr<HCodec> Create(const std::string &name);
@@ -134,12 +136,66 @@ protected:
         DUMP_DECODER_OUTPUT = 0b0001,
     };
 
+    struct TotalEvent {
+        uint64_t eventCnt = 0;
+        uint64_t eventSum = 0;
+    };
+
+    struct IntervalAverage {
+        double fps;
+        double mbps;
+        double holdCnt[OWNER_CNT];
+        double holdMs[OWNER_CNT];
+    };
+
+    struct Record {
+        void ResetInterval(std::optional<TimePoint> beginOfInterval)
+        {
+            beginOfInterval_ = beginOfInterval;
+            holdTimeInterval_.fill(TotalEvent{0, 0});
+            holdCntInterval_.fill(TotalEvent{0, 0});
+            frameCntInterval_ = 0;
+            frameMbitsInterval_ = 0;
+            discardCntInterval_ = 0;
+            waitFenceCostUsInterval_ = 0;
+        }
+        void ResetAll()
+        {
+            ResetInterval(std::nullopt);
+            frameCntTotal_ = 0;
+            currOwner_.fill(0);
+            lastOwnerChangeTime_.fill(std::nullopt);
+            lastPts_ = -1;
+        }
+        // 不变值
+        std::array<std::string, OWNER_CNT> ownerTraceTag_;
+        // 从构造开始到某一刻的统计值
+        uint64_t frameCntTotal_ = 0;         // 送帧/出帧总数
+        // 当前统计区间的起始时刻点
+        std::optional<TimePoint> beginOfInterval_;
+        // 从起始到某一刻的统计值
+        std::array<TotalEvent, OWNER_CNT> holdTimeInterval_;  // 每个轮转方持有单个buffer时长的总值
+        std::array<TotalEvent, OWNER_CNT> holdCntInterval_;  // 每个轮转方持有buffer数量乘以持有时长的总值
+        uint64_t frameCntInterval_ = 0;      // 送帧/出帧总个数
+        double frameMbitsInterval_ = 0;    // 送帧/出帧总M比特数
+        uint64_t discardCntInterval_ = 0;       // 丢帧总数
+        uint64_t waitFenceCostUsInterval_ = 0;  // 等fence的总耗时
+        // 某一刻的瞬时值
+        std::array<int, OWNER_CNT> currOwner_;  // 此刻每个轮转方持有几个buffer
+        std::array<std::optional<TimePoint>, OWNER_CNT> lastOwnerChangeTime_;  // 每个轮转方最新一次轮转发生在哪个时刻
+        int64_t lastPts_ = -1;          // 最新的一帧的pts
+    } record_[2]; // 2: port count
+
     struct BufferInfo {
-        BufferInfo() : lastOwnerChangeTime(std::chrono::steady_clock::now()) {}
-        bool isInput = true;
-        BufferOwner owner = OWNED_BY_US;
+        BufferInfo(bool isIn, BufferOwner beginOwner, Record (&record)[2]) // 2: port count
+            : isInput(isIn), owner(beginOwner), lastOwnerChangeTime(std::chrono::steady_clock::now())
+        {
+            record[isInput ? OMX_DirInput : OMX_DirOutput].lastOwnerChangeTime_[owner] = lastOwnerChangeTime;
+        }
+        bool isInput;
+        BufferOwner owner;
         BufferOwner nextStepOwner = OWNER_CNT;
-        std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime;
+        TimePoint lastOwnerChangeTime;
         int64_t lastFlushTime = 0;
         uint32_t bufferId = 0;
         std::shared_ptr<CodecHDI::OmxCodecBuffer> omxBuffer;
@@ -171,21 +227,21 @@ protected:
     static const char* ToString(MsgWhat what);
     static const char* ToString(BufferOwner owner);
     void ReplyErrorCode(MsgId id, int32_t err);
+    void UpdateOwner();
+    void UpdateOwner(OMX_DIRTYPE port);
+    void ReduceOwner(OMX_DIRTYPE port, BufferOwner owner);
+    void ChangeOwner(BufferInfo& info, BufferOwner newOwner);
     void OnPrintAllBufferOwner(const MsgInfo& msg);
     void PrintAllBufferInfo();
-    void PrintAllBufferInfo(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now);
-    void PrintStatistic(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now);
-    void PrintInputStatistic(BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);
-    void PrintOutputStatistic(BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);
     std::string OnGetHidumperInfo();
-    void UpdateOwner();
-    void UpdateOwner(bool isInput);
-    void ReduceOwner(bool isInput, BufferOwner owner);
-    void ChangeOwner(BufferInfo& info, BufferOwner newOwner);
-    void ChangeOwnerNormal(BufferInfo& info, BufferOwner newOwner);
-    void ChangeOwnerDebug(BufferInfo& info, BufferOwner newOwner);
-    void UpdateInputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);
-    void UpdateOutputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);
+
+    void PrintAllBufferInfo(const TimePoint& now, OMX_DIRTYPE port);
+    void UpdateHoldCnt(const TimePoint& now, OMX_DIRTYPE port, BufferOwner owner);
+    void UpdateHoldTime(const TimePoint& now, const BufferInfo& info, BufferOwner newOwner);
+    bool CalculateInterval(const TimePoint& now, OMX_DIRTYPE port, IntervalAverage& ave);
+    void PrintStatistic(const TimePoint& now, OMX_DIRTYPE port);
+    void UpdateInputRecord(const TimePoint& now, const BufferInfo& info);
+    void UpdateOutputRecord(const TimePoint& now, const BufferInfo& info);
 
     // configure
     virtual int32_t OnConfigure(const Format &format) = 0;
@@ -344,6 +400,7 @@ protected:
     std::string shortName_;
     uint32_t componentId_ = 0;
     std::string compUniqueStr_;
+    int32_t instanceId_ = -1;
     struct CallerInfo {
         int32_t pid = -1;
         std::string processName;
@@ -390,43 +447,19 @@ protected:
     virtual int32_t VrrPrediction(BufferInfo &info) { return AVCS_ERR_UNSUPPORT; }
 #endif
 
-    struct TotalCntAndCost {
-        uint64_t totalCnt = 0;
-        uint64_t totalCostUs = 0;
-    };
-
-    // whole lift time
-    uint64_t inTotalCnt_ = 0;
-    TotalCntAndCost outRecord_;
-    std::unordered_map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> inTimeMap_;
-    int64_t lastInPts_ = -1;
-    int64_t lastOutPts_ = -1;
-
-    // normal: every 400 frames, debug: whole life time
+    std::unordered_map<int64_t, TimePoint> inTimeMap_;
+    uint64_t onePtsInToOutTotalCostUs_ = 0;
     static constexpr uint64_t PRINT_PER_FRAME = 400;
-    std::array<TotalCntAndCost, OWNER_CNT> inputHoldTimeRecord_;
-    std::array<TotalCntAndCost, OWNER_CNT> outputHoldTimeRecord_;
-    std::chrono::time_point<std::chrono::steady_clock> firstInTime_;
-    std::chrono::time_point<std::chrono::steady_clock> firstOutTime_;
-    uint64_t inputWaitFenceCostUs_ = 0;
-    uint64_t outputWaitFenceCostUs_ = 0;
-    uint64_t inputDiscardCnt_ = 0;
-    uint64_t outputDiscardCnt_ = 0;
-
     // used when buffer circulation stoped
     static constexpr char KEY_LAST_OWNER_CHANGE_TIME[] = "lastOwnerChangeTime";
-    std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime_;
+    TimePoint lastOwnerChangeTime_;
     bool circulateHasStopped_ = false;
-
-    std::array<int, HCodec::OWNER_CNT> inputOwner_ {};
-    std::array<std::string, HCodec::OWNER_CNT> inputOwnerStr_ {};
-    std::array<int, HCodec::OWNER_CNT> outputOwner_ {};
-    std::array<std::string, HCodec::OWNER_CNT> outputOwnerStr_ {};
 
     static constexpr char BUFFER_ID[] = "buffer-id";
     static constexpr uint32_t WAIT_FENCE_MS = 1000;
     static constexpr uint32_t STRIDE_ALIGNMENT = 32;
     static constexpr double FRAME_RATE_COEFFICIENT = 65536.0;
+    static constexpr double BYTE_TO_MBIT = 8.0 / 1024.0 / 1024.0;
 
 private:
     struct BaseState : State {

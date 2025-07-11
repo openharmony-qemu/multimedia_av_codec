@@ -829,6 +829,11 @@ int32_t FCodec::AllocateOutputBuffersFromSurface(int32_t bufferCnt)
         CHECK_AND_RETURN_RET_LOG(surfaceMemory != nullptr, AVCS_ERR_UNKNOWN, "Creata surface memory failed!");
         ret = surfaceMemory->AllocSurfaceBuffer();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Alloc surface buffer failed!");
+        sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
+        CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "surface buf(%{public}u) is null.", i);
+        ret = Attach(surfaceBuffer);
+        CHECK_AND_CONTINUE_LOG(ret == AVCS_ERR_OK, "surface buf(%{public}u) attach to surface failed.", i);
+        surfaceMemory->isAttached = true;
         std::shared_ptr<FBuffer> buf = std::make_shared<FBuffer>();
         CHECK_AND_RETURN_RET_LOG(buf != nullptr, AVCS_ERR_UNKNOWN, "Creata output buffer failed!");
         buf->sMemory_ = surfaceMemory;
@@ -1352,6 +1357,7 @@ int32_t FCodec::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemor
         return AVCS_ERR_UNKNOWN;
     }
     renderSurfaceBufferMap_[index] = std::make_pair(surfaceBuffer, flushConfig);
+    renderAvailQue_->Push(index);
     return AVCS_ERR_OK;
 }
 
@@ -1375,7 +1381,6 @@ int32_t FCodec::RenderOutputBuffer(uint32_t index)
         int32_t ret = FlushSurfaceMemory(surfaceMemory, index);
         EXPECT_AND_LOGW(ret != AVCS_ERR_OK, "Flush surface memory(index=%{public}u) failed: %{public}d", index, ret);
         frameBuffer->owner_ = Owner::OWNED_BY_SURFACE;
-        renderAvailQue_->Push(index);
         AVCODEC_LOGD("Render output buffer with index, index=%{public}u", index);
         return AVCS_ERR_OK;
     } else {
@@ -1559,7 +1564,7 @@ int32_t FCodec::RegisterListenerToSurface(const sptr<Surface> &surface)
                 return GSERROR_OK;
             }
             return codec->BufferReleasedByConsumer(surfaceId);
-        });
+        }, instanceId_);
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_UNKNOWN, "surface(%" PRIu64 ") register listener failed", surfaceId);
     StartRequestSurfaceBufferThread();
     return AVCS_ERR_OK;

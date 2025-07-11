@@ -47,7 +47,8 @@ public:
     void SetUp(void);
     void TearDown(void);
 
-    void CreateCodecServiceStub(std::shared_ptr<AVCodecServer> &server);
+    std::shared_ptr<AVCodecServer> CreateAVCodecServer();
+    sptr<IRemoteObject> CreateCodecServiceStub(std::shared_ptr<AVCodecServer> &server);
 
     std::shared_ptr<SystemAbilityMock> saMock_;
     std::shared_ptr<MemMgrClientMock> memMgrMock_;
@@ -89,24 +90,35 @@ void SaAVCodecUnitTest::TearDown(void)
     codeclistStubMock_ = nullptr;
 }
 
-void SaAVCodecUnitTest::CreateCodecServiceStub(std::shared_ptr<AVCodecServer> &server)
+std::shared_ptr<AVCodecServer> SaAVCodecUnitTest::CreateAVCodecServer()
 {
-    sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
+    std::shared_ptr<AVCodecServer> server = nullptr;
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, SetDeathListener(listener)).Times(1).WillOnce(Return(AVCS_ERR_OK));
-    EXPECT_CALL(*codecStubMock_, Create()).Times(AtLeast(1)).WillOnce(Return(new CodecServiceStub()));
-    EXPECT_CALL(*codecStubMock_, CodecServiceStubDtor()).Times(AtLeast(1));
 
     server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
     EXPECT_NE(server, nullptr);
+    return server;
+}
+
+sptr<IRemoteObject> SaAVCodecUnitTest::CreateCodecServiceStub(std::shared_ptr<AVCodecServer> &server)
+{
+    EXPECT_NE(server, nullptr);
+    if (server == nullptr) {
+        return nullptr;
+    }
+    sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
     sptr<IRemoteObject> codecStub = nullptr;
+    EXPECT_CALL(*avcodecStubMock_, SetDeathListener(listener)).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecStubMock_, Create()).Times(AtLeast(1)).WillOnce(Return(new CodecServiceStub()));
+    EXPECT_CALL(*codecStubMock_, CodecServiceStubDtor()).Times(AtLeast(1));
     int32_t ret = server->GetSubSystemAbility(IStandardAVCodecService::AVCODEC_CODEC, listener, codecStub);
     EXPECT_NE(codecStub, nullptr);
     EXPECT_EQ(ret, AVCS_ERR_OK);
     stubList_.emplace_back(AVCodecServerManager::StubType::CODEC, codecStub);
+    return codecStub;
 }
 
 /**
@@ -163,14 +175,9 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_Constructor_003, TestSize.Level1)
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStart_001, TestSize.Level1)
 {
-    EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
-    EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
     EXPECT_CALL(*saMock_, AddSystemAbilityListener(MEMORY_MANAGER_SA_ID)).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
-
-    auto server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
-    EXPECT_NE(server, nullptr);
+    auto server = CreateAVCodecServer();
+    ASSERT_NE(server, nullptr);
 
     EXPECT_CALL(*saMock_, Publish(server.get())).Times(1).WillOnce(Return(true));
     server->OnStart();
@@ -183,14 +190,9 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStart_001, TestSize.Level1)
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStart_002, TestSize.Level1)
 {
-    EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
-    EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
     EXPECT_CALL(*saMock_, AddSystemAbilityListener(MEMORY_MANAGER_SA_ID)).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
-
-    auto server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
-    EXPECT_NE(server, nullptr);
+    auto server = CreateAVCodecServer();
+    ASSERT_NE(server, nullptr);
 
     EXPECT_CALL(*saMock_, Publish(server.get())).Times(1).WillOnce(Return(false));
     server->OnStart();
@@ -203,13 +205,8 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStart_002, TestSize.Level1)
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStop_001, TestSize.Level1)
 {
-    EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
-    EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
-
-    auto server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
-    EXPECT_NE(server, nullptr);
+    auto server = CreateAVCodecServer();
+    ASSERT_NE(server, nullptr);
 
     server->OnStop();
     server = nullptr;
@@ -221,13 +218,8 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStop_001, TestSize.Level1)
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnAddSystemAbility_001, TestSize.Level1)
 {
-    EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
-    EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
-
-    auto server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
-    EXPECT_NE(server, nullptr);
+    auto server = CreateAVCodecServer();
+    ASSERT_NE(server, nullptr);
 
     server->OnAddSystemAbility(MEMORY_MANAGER_SA_ID, "testId");
     server = nullptr;
@@ -243,18 +235,14 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_001, TestSize.Lev
     IStandardAVCodecService::AVCodecSystemAbility subSystemId;
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
 
-    EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
-    EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, SetDeathListener(listener)).Times(2).WillRepeatedly(Return(AVCS_ERR_OK));
-
     EXPECT_CALL(*codecStubMock_, Create()).Times(1).WillOnce(Return(new CodecServiceStub()));
     EXPECT_CALL(*codecStubMock_, CodecServiceStubDtor()).Times(1);
     EXPECT_CALL(*codeclistStubMock_, Create()).Times(1).WillOnce(Return(new CodecListServiceStub()));
     EXPECT_CALL(*codeclistStubMock_, CodecListServiceStubDtor()).Times(1);
-    auto server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
-    EXPECT_NE(server, nullptr);
+
+    auto server = CreateAVCodecServer();
+    ASSERT_NE(server, nullptr);
 
     subSystemId = IStandardAVCodecService::AVCODEC_CODEC;
     sptr<IRemoteObject> codecStub = nullptr;
@@ -281,21 +269,17 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_002, TestSize.Lev
 {
     IStandardAVCodecService::AVCodecSystemAbility subSystemId;
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
-
-    EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
-    EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, SetDeathListener(listener))
         .Times(2)
         .WillRepeatedly(Return(AVCS_ERR_INVALID_OPERATION));
-    auto server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
 
     EXPECT_CALL(*codecStubMock_, Create()).Times(1).WillOnce(Return(new CodecServiceStub()));
     EXPECT_CALL(*codecStubMock_, CodecServiceStubDtor()).Times(1);
     EXPECT_CALL(*codeclistStubMock_, Create()).Times(1).WillOnce(Return(new CodecListServiceStub()));
     EXPECT_CALL(*codeclistStubMock_, CodecListServiceStubDtor()).Times(1);
-    EXPECT_NE(server, nullptr);
+
+    auto server = CreateAVCodecServer();
+    ASSERT_NE(server, nullptr);
 
     subSystemId = IStandardAVCodecService::AVCODEC_CODEC;
     sptr<IRemoteObject> codecStub = nullptr;
@@ -319,15 +303,12 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_003, TestSize.Lev
 {
     IStandardAVCodecService::AVCodecSystemAbility subSystemId;
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
-    EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
-    EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
 
     EXPECT_CALL(*codecStubMock_, Create()).Times(1).WillOnce(nullptr);
     EXPECT_CALL(*codeclistStubMock_, Create()).Times(1).WillOnce(nullptr);
-    auto server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
-    EXPECT_NE(server, nullptr);
+
+    auto server = CreateAVCodecServer();
+    ASSERT_NE(server, nullptr);
 
     subSystemId = IStandardAVCodecService::AVCODEC_CODEC;
     sptr<IRemoteObject> codecStub = nullptr;
@@ -351,15 +332,12 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_004, TestSize.Lev
 {
     auto subSystemId = static_cast<IStandardAVCodecService::AVCodecSystemAbility>(INVALID_NUM);
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
-    EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
-    EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
 
     EXPECT_CALL(*codecStubMock_, Create()).Times(0);
     EXPECT_CALL(*codeclistStubMock_, Create()).Times(0);
-    auto server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
-    EXPECT_NE(server, nullptr);
+
+    auto server = CreateAVCodecServer();
+    ASSERT_NE(server, nullptr);
 
     sptr<IRemoteObject> codecStub = nullptr;
     int32_t ret = server->GetSubSystemAbility(subSystemId, listener, codecStub);
@@ -397,13 +375,101 @@ void PrintAndCloseFd(int32_t fd)
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_Dump_001, TestSize.Level1)
 {
-    std::shared_ptr<AVCodecServer> server = nullptr;
+    auto server = CreateAVCodecServer();
     std::vector<std::u16string> args = {u"All"};
     int32_t fileFd = open(DUMP_FILE_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP);
     EXPECT_CALL(*codecStubMock_, Dump).Times(AtLeast(1)).WillRepeatedly(Return(OHOS::NO_ERROR));
 
-    CreateCodecServiceStub(server);
+    (void)CreateCodecServiceStub(server);
     EXPECT_EQ(server->Dump(fileFd, args), OHOS::NO_ERROR);
     PrintAndCloseFd(fileFd);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_DestroyStubObjectForPid_001
+ * @tc.desc:
+ *     1. server manager DestroyStubObjectForPid
+ *     2. video decoder without forward caller
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_DestroyStubObjectForPid_001, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    const int32_t callerId = 123;
+    InstanceInfo vdecInfo = {
+        .codecType = AVCODEC_TYPE_VIDEO_DECODER,
+        .caller = {.pid = callerId},
+    };
+    auto server = CreateAVCodecServer();
+    ASSERT_NE(server, nullptr);
+    manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, vdecInfo));
+    manager.DestroyStubObjectForPid(INVALID_NUM);
+    manager.DestroyStubObjectForPid(callerId);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_DestroyStubObjectForPid_002
+ * @tc.desc:
+ *     1. server manager DestroyStubObjectForPid
+ *     2. video decoder with forward caller
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_DestroyStubObjectForPid_002, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    const int32_t callerId = 123;
+    const int32_t fowardCallerId = 1234;
+    InstanceInfo vdecInfo = {
+        .codecType = AVCODEC_TYPE_VIDEO_DECODER,
+        .caller = {.pid = callerId},
+        .forwardCaller = {.pid = fowardCallerId},
+    };
+    auto server = CreateAVCodecServer();
+    ASSERT_NE(server, nullptr);
+    manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, vdecInfo));
+    manager.DestroyStubObjectForPid(INVALID_NUM);
+    manager.DestroyStubObjectForPid(callerId);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_DestroyStubObjectForPid_003
+ * @tc.desc:
+ *     1. server manager DestroyStubObjectForPid
+ *     2. video encoder without forward caller
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_DestroyStubObjectForPid_003, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    const int32_t callerId = 123;
+    InstanceInfo vdecInfo = {
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = callerId},
+    };
+    auto server = CreateAVCodecServer();
+    ASSERT_NE(server, nullptr);
+    manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, vdecInfo));
+    manager.DestroyStubObjectForPid(INVALID_NUM);
+    manager.DestroyStubObjectForPid(callerId);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_DestroyStubObjectForPid_004
+ * @tc.desc:
+ *     1. server manager DestroyStubObjectForPid
+ *     2. video encoder with forward caller
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_DestroyStubObjectForPid_004, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    const int32_t callerId = 123;
+    const int32_t fowardCallerId = 1234;
+    InstanceInfo vdecInfo = {
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = callerId},
+        .forwardCaller = {.pid = fowardCallerId},
+    };
+    auto server = CreateAVCodecServer();
+    ASSERT_NE(server, nullptr);
+    manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, vdecInfo));
+    manager.DestroyStubObjectForPid(INVALID_NUM);
+    manager.DestroyStubObjectForPid(callerId);
 }
 } // namespace

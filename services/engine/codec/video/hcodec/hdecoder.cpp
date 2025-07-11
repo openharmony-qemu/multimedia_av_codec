@@ -325,10 +325,8 @@ int32_t HDecoder::OnSetParameters(const Format &format)
         InitOMXParam(framerateCfgType);
         framerateCfgType.nPortIndex = OMX_DirInput;
         framerateCfgType.nU32 = frameRate.value() * FRAME_RATE_COEFFICIENT;
-        if (SetParameter(OMX_IndexCodecExtConfigOperatingRate, framerateCfgType, true)) {
-            HLOGI("succ to set frameRate %.f", frameRate.value());
-        } else {
-            HLOGW("succ to set frameRate %.f", frameRate.value());
+        if (!SetParameter(OMX_IndexCodecExtConfigOperatingRate, framerateCfgType, true)) {
+            HLOGW("failed to set frameRate %.f", frameRate.value());
         }
         codecRate_ = frameRate.value();
     }
@@ -418,7 +416,6 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_OUTPUT_ENABLE_VRR, vrrEnable) || vrrEnable != 1) {
 #ifdef USE_VIDEO_PROCESSING_ENGINE
         vrrDynamicSwitch_ = false;
-        HLOGI("VRR vrrDynamicSwitch_ false");
 #endif
         HLOGD("VRR disabled");
         return AVCS_ERR_OK;
@@ -523,8 +520,8 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
         return AVCS_ERR_UNKNOWN;
     }
     uint32_t outputBufferCnt = outPortHasChanged_ ? def.nBufferCountMin :
-                                                    std::min<uint32_t>(def.nBufferCountMin, inTotalCnt_ + 1);
-    HLOGI("submit buffer count[%u], inTotalCnt_[%u]", outputBufferCnt, inTotalCnt_);
+        std::min<uint32_t>(def.nBufferCountMin, record_[OMX_DirInput].frameCntTotal_ + 1);
+    HLOGI("submit buffer count[%u], inTotalCnt_[%u]", outputBufferCnt, record_[OMX_DirInput].frameCntTotal_);
     for (uint32_t i = 0; i < outputBufferCnt; i++) {
         DynamicModeSubmitBuffer();
     }
@@ -733,7 +730,7 @@ void HDecoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
     }
     BufferInfo& info = pool[i];
     FreeOmxBuffer(portIndex, info);
-    ReduceOwner((portIndex == OMX_DirInput), info.owner);
+    ReduceOwner(portIndex, info.owner);
     pool.erase(pool.begin() + i);
 }
 
@@ -813,9 +810,7 @@ int32_t HDecoder::AllocOutDynamicSurfaceBuf()
             HLOGE("Failed to UseBuffer on input port");
             return AVCS_ERR_UNKNOWN;
         }
-        BufferInfo info {};
-        info.isInput = false;
-        info.owner = BufferOwner::OWNED_BY_US;
+        BufferInfo info(false, BufferOwner::OWNED_BY_US, record_);
         info.surfaceBuffer = nullptr;
         info.avBuffer = (currSurface_.surface_ ? AVBuffer::CreateAVBuffer() : nullptr);
         info.omxBuffer = outBuffer;
@@ -860,9 +855,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
 
         SetCallerToBuffer(surfaceBuffer->GetFileDescriptor());
         outBuffer->fenceFd = -1;
-        BufferInfo info {};
-        info.isInput = false;
-        info.owner = BufferOwner::OWNED_BY_US;
+        BufferInfo info(false, BufferOwner::OWNED_BY_US, record_);
         info.surfaceBuffer = surfaceBuffer;
         info.avBuffer = AVBuffer::CreateAVBuffer();
         info.omxBuffer = outBuffer;
@@ -893,7 +886,7 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
         param->SetValue("surfaceId", surfaceId);
         codec->SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, param);
         return GSERROR_OK;
-    });
+    }, instanceId_);
     if (!ret) {
         HLOGE("surface(%" PRIu64 "), RegisterReleaseListener failed", surfaceId);
         return AVCS_ERR_UNKNOWN;
@@ -1137,7 +1130,7 @@ void HDecoder::OnReleaseOutputBuffer(const BufferInfo &info)
         if (debugMode_) {
             HLOGI("outBufId = %u, discard by user, pts = %" PRId64, info.bufferId, info.omxBuffer->pts);
         } else {
-            outputDiscardCnt_++;
+            record_[OMX_DirOutput].discardCntInterval_++;
         }
     }
 }

@@ -391,6 +391,11 @@ void CommandOpt::ParseSetParameter(uint32_t frameNo, const string &s)
         value >> targetQp;
         setParameterParamsMap[frameNo].targetQp = targetQp;
     }
+    if (key == "operatingRate") {
+        double operatingRate;
+        value >> operatingRate;
+        setParameterParamsMap[frameNo].operatingRate = operatingRate;
+    }
     if (key == "sqr") { // sqr,bitrate(optional),maxBitrate(optional),sqrFactor(optional)
         SQRParam sqrParam;
         std::string token;

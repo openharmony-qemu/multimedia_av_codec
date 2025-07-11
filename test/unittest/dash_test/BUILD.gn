@@ -296,3 +296,37 @@ ohos_unittest("histream_dash_mpd_parser_unittest") {
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
+
+ohos_unittest("sidx_box_parser_unittest") {
+  module_out_path = module_output_path
+  testonly = true
+  configs = [
+    ":dash_unittest_cfg",
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+  sources = dash_test_sources + [ "sidx_box_parser_unittest.cpp" ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "curl:curl_shared",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "ipc:ipc_single",
+    "libxml2:libxml2",
+    "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
+    "openssl:libcrypto_shared",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}

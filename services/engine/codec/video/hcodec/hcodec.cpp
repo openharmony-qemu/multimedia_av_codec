@@ -73,6 +73,7 @@ int32_t HCodec::Init(Media::Meta &callerInfo)
         caller_.calledByAvcodec = true;
         caller_.app = caller_.avcodecCaller;
     }
+    callerInfo.GetData("av_codec_event_info_instance_id", instanceId_);
     return DoSyncCall(MsgWhat::INIT, nullptr);
 }
 
@@ -660,9 +661,7 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
             return AVCS_ERR_NO_MEMORY;
         }
         SetCallerToBuffer(outBuffer->fd);
-        BufferInfo bufInfo;
-        bufInfo.isInput        = (portIndex == OMX_DirInput) ? true : false;
-        bufInfo.owner          = BufferOwner::OWNED_BY_US;
+        BufferInfo bufInfo((portIndex == OMX_DirInput), BufferOwner::OWNED_BY_US, record_);
         bufInfo.surfaceBuffer  = nullptr;
         bufInfo.avBuffer       = avBuffer;
         bufInfo.omxBuffer      = outBuffer;
@@ -705,9 +704,7 @@ int32_t HCodec::AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_P
             HLOGE("Failed to UseBuffer on %s port", (portIndex == OMX_DirInput ? "input" : "output"));
             return AVCS_ERR_INVALID_VAL;
         }
-        BufferInfo bufInfo;
-        bufInfo.isInput        = (portIndex == OMX_DirInput) ? true : false;
-        bufInfo.owner          = BufferOwner::OWNED_BY_US;
+        BufferInfo bufInfo((portIndex == OMX_DirInput), BufferOwner::OWNED_BY_US, record_);
         bufInfo.surfaceBuffer  = nullptr;
         bufInfo.avBuffer       = avBuffer;
         bufInfo.omxBuffer      = outBuffer;
@@ -750,9 +747,7 @@ int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
             HLOGE("Failed to UseBuffer on %s port", (portIndex == OMX_DirInput ? "input" : "output"));
             return AVCS_ERR_INVALID_VAL;
         }
-        BufferInfo bufInfo;
-        bufInfo.isInput        = (portIndex == OMX_DirInput) ? true : false;
-        bufInfo.owner          = BufferOwner::OWNED_BY_US;
+        BufferInfo bufInfo((portIndex == OMX_DirInput), BufferOwner::OWNED_BY_US, record_);
         bufInfo.surfaceBuffer  = surfaceBuffer;
         bufInfo.avBuffer       = avBuffer;
         bufInfo.omxBuffer      = outBuffer;
@@ -909,7 +904,8 @@ bool HCodec::WaitFence(const sptr<SyncFence>& fence)
         return true;
     }
     SCOPED_TRACE();
-    uint64_t& waitFenceCostUs = isEncoder_ ? inputWaitFenceCostUs_ : outputWaitFenceCostUs_;
+    uint64_t& waitFenceCostUs = isEncoder_ ?
+        record_[OMX_DirInput].waitFenceCostUsInterval_ : record_[OMX_DirOutput].waitFenceCostUsInterval_;
     auto before = chrono::steady_clock::now();
     int waitRes = fence->Wait(WAIT_FENCE_MS);
     if (waitRes == 0) {
@@ -1014,7 +1010,7 @@ int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
         gotFirstInput_ = true;
     }
 #ifdef BUILD_ENG_VERSION
-    info.Dump(compUniqueStr_, inTotalCnt_, dumpMode_, isEncoder_);
+    info.Dump(compUniqueStr_, record_[OMX_DirInput].frameCntTotal_, dumpMode_, isEncoder_);
 #endif
     info.EndCpuAccess();
     int32_t ret = compNode_->EmptyThisBuffer(*(info.omxBuffer));
@@ -1102,16 +1098,16 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
     if (!gotFirstOutput_) {
         HLOGI("got first output, pts = %" PRId64 ", len = %u, flags = 0x%x",
             info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag);
-#ifndef AV_CODEC_HCODEC_ENABLE_QOS_THE_WHOLE_TIME
-        if (!isEncoder_ || codecRate_ < HIGH_FPS) {
-            OHOS::QOS::ResetThreadQos();
-        }
-#endif
         gotFirstOutput_ = true;
     }
+#ifndef AV_CODEC_HCODEC_ENABLE_QOS_THE_WHOLE_TIME
+    if (!isEncoder_ || codecRate_ < HIGH_FPS) {
+        SetThreadInteractiveQos(false);
+    }
+#endif
     info.BeginCpuAccess();
 #ifdef BUILD_ENG_VERSION
-    info.Dump(compUniqueStr_, outRecord_.totalCnt, dumpMode_, isEncoder_);
+    info.Dump(compUniqueStr_, record_[OMX_DirOutput].frameCntTotal_, dumpMode_, isEncoder_);
 #endif
     shared_ptr<OmxCodecBuffer> omxBuffer = info.omxBuffer;
     info.avBuffer->pts_ = omxBuffer->pts;
@@ -1434,9 +1430,9 @@ int32_t HCodec::OnAllocateComponent()
         return AVCS_ERR_UNKNOWN;
     }
     compUniqueStr_ = "[" + to_string(componentId_) + "][" + shortName_ + "]";
-    inputOwnerStr_ = { compUniqueStr_ + "in_us", compUniqueStr_ + "in_user",
+    record_[OMX_DirInput].ownerTraceTag_ = { compUniqueStr_ + "in_us", compUniqueStr_ + "in_user",
                        compUniqueStr_ + "in_omx", compUniqueStr_ + "in_surface"};
-    outputOwnerStr_ = { compUniqueStr_ + "out_us", compUniqueStr_ + "out_user",
+    record_[OMX_DirOutput].ownerTraceTag_ = { compUniqueStr_ + "out_us", compUniqueStr_ + "out_user",
                         compUniqueStr_ + "out_omx", compUniqueStr_ + "out_surface"};
     HLOGI("create omx node %s succ", caps_.compName.c_str());
     PrintCaller();

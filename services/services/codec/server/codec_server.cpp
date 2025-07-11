@@ -31,6 +31,8 @@
 #include "media_description.h"
 #include "meta/meta_key.h"
 #include "surface_type.h"
+#include "surface_tools.h"
+#include "surface_utils.h"
 #ifdef SUPPORT_DRM
 #include "imedia_key_session_service.h"
 #endif
@@ -265,6 +267,9 @@ int32_t CodecServer::Configure(const Format &format)
                                       GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     Format config = format;
+    if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
+        format.GetIntValue(Tag::VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, pushBlankBufferOnShutdown_);
+    }
 
     int32_t isSetParameterCb = 0;
     format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
@@ -396,6 +401,15 @@ int32_t CodecServer::Stop()
         temporalScalability_->SetBlockQueueActive();
         inputParamTask_->Stop();
     }
+    if (isSurfaceMode_ && pushBlankBufferOnShutdown_) {
+        std::optional<std::pair<std::string, int32_t>> pInfo =
+            SurfaceTools::GetInstance().GetCurProducerInfo(surfaceId_);
+        if (pInfo != std::nullopt) {
+            SurfaceTools::GetInstance().CleanCache(pInfo.value().first,
+                SurfaceUtils::GetInstance()->GetSurface(surfaceId_), true);
+        }
+    }
+
     int32_t retPostProcessing = StopPostProcessing();
     int32_t retCodec = codecBase_->Stop();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
@@ -482,6 +496,7 @@ int32_t CodecServer::Reset()
     if (ret == AVCS_ERR_OK) {
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
+        pushBlankBufferOnShutdown_ = false;
     }
     OnInstanceMemoryResetEvent();
     if (framerateCalculator_) {
@@ -503,6 +518,14 @@ int32_t CodecServer::Release()
             inputParamTask_ = nullptr;
         }
         temporalScalability_ = nullptr;
+    }
+    if (isSurfaceMode_ && pushBlankBufferOnShutdown_) {
+        std::optional<std::pair<std::string, int32_t>> pInfo =
+            SurfaceTools::GetInstance().GetCurProducerInfo(surfaceId_);
+        if (pInfo != std::nullopt) {
+            SurfaceTools::GetInstance().CleanCache(pInfo.value().first,
+                SurfaceUtils::GetInstance()->GetSurface(surfaceId_), true);
+        }
     }
     int32_t ret = codecBase_->Release();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
@@ -580,6 +603,7 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     } else {
         ret = codecBase_->SetOutputSurface(surface);
     }
+    surfaceId_ = surface->GetUniqueId();
     isSurfaceMode_ = true;
 #ifdef EMULATOR_ENABLED
     Format config_emulator;

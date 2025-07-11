@@ -181,6 +181,24 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Start_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: VideoDecoder_Configure_001
+ * @tc.desc: video codec Configure
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Configure_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+
+    format_->PutIntValue("video_decoder_blank_frame_on_shutdown", 1);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
  * @tc.name: VideoDecoder_SetParameter_001
  * @tc.desc: video codec SetParameter
  * @tc.type: FUNC
