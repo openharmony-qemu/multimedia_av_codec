@@ -63,7 +63,7 @@ void SurfaceTools::CleanCache(std::string producerName, sptr<Surface> surface, b
     }
 }
 
-void SurfaceTools::ReleaseSurface(std::string producerName, sptr<Surface> surface, bool cleanAll)
+void SurfaceTools::ReleaseSurface(std::string producerName, sptr<Surface> surface, bool cleanAll, bool abadon)
 {
     if (producerName.empty() || surface == nullptr) {
         return;
@@ -79,9 +79,12 @@ void SurfaceTools::ReleaseSurface(std::string producerName, sptr<Surface> surfac
         AVCODEC_LOGI("producerName=%{public}s UnRegisterReleaseListener to surface id=%{public}" PRIu64,
             producerName.c_str(), id);
         surface->SetSurfaceSourceType(OHSurfaceSource::OH_SURFACE_SOURCE_DEFAULT);
-        surfaceProducerMap_.erase(iter);
+        if (abadon) {
+            surfaceProducerMap_.erase(iter);
+        }
     }
 }
+
 std::optional<std::pair<std::string, int32_t>> SurfaceTools::GetCurProducerInfo(uint64_t surfaceId)
 {
     std::optional<std::pair<std::string, int32_t>> info = std::nullopt;
