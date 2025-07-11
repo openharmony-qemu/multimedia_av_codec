@@ -252,6 +252,7 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
         std::lock_guard<std::mutex> readLock(readSampleMutex_);
         readCacheCv_.notify_one();
     }
+    seekWaitCv_.notify_one();
     MEDIA_LOG_I("Read loop end");
 }
 

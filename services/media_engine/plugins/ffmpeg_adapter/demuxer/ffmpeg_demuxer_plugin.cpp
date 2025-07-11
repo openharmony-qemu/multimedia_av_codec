@@ -1796,7 +1796,7 @@ void FFmpegDemuxerPlugin::SyncSeekThread()
         MEDIA_LOG_I("Seek notify read thread to stop");
         readCbCv_.notify_all();
         std::unique_lock<std::mutex> waitLock(seekWaitMutex_);
-        seekWaitCv_.wait(waitLock, [this] { return threadState_ == WAITING; });
+        seekWaitCv_.wait(waitLock, [this] { return threadState_ == WAITING || threadState_ == NOT_STARTED; });
     }
 }
 
