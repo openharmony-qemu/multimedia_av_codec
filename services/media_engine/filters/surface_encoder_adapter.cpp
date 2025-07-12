@@ -351,6 +351,7 @@ Status SurfaceEncoderAdapter::Start()
     }
     int32_t ret;
     isThreadExit_ = false;
+    hasReceivedEOS_ = false;
     if (releaseBufferTask_) {
         releaseBufferTask_->Start();
     }
@@ -642,6 +643,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     releaseBufferCondition_.notify_all();
     if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
         MEDIA_LOG_I("EOS received, ready to stop.");
+        hasReceivedEOS_ = true;
         std::unique_lock<std::mutex> lock(stopMutex_);
         stopCondition_.notify_all();
     }
@@ -907,6 +909,10 @@ void SurfaceEncoderAdapter::HandleWaitforStop()
 {
     // Determine whether to end directly or wait STOP_TIME_OUT_MS
     std::unique_lock<std::mutex> lock(stopMutex_);
+    if (hasReceivedEOS_) {
+        MEDIA_LOG_I("SurfaceEncoderAdapter::HandleWaitforStop, EOS has received, directly stop");
+        return;
+    }
     std::cv_status waitStatus = stopCondition_.wait_for(lock, std::chrono::milliseconds(STOP_TIME_OUT_MS));
     // Waiting timeout with no video frame received
     if (waitStatus == std::cv_status::timeout && currentKeyFramePts_ == -1) {
