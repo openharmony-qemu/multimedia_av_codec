@@ -502,6 +502,7 @@ void HlsPlayListDownloader::ReOpen(void)
     master_ = nullptr;
     currentVariant_ = nullptr;
     isLiveUpdateTaskStarted_ = false;
+    retryStartTime_ = 0; // 重置重试时间
 
     // 从异常流程过来，允许重新开始下发请求
     if (downloader_ != nullptr) {
