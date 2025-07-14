@@ -440,6 +440,7 @@ Status TimeAndIndexConversion::GetRelativePresentationTimeUsByIndex(const uint32
     const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
     FALSE_RETURN_V_MSG_E(trackIndex < trakInfoVec_.size(), Status::ERROR_INVALID_DATA, "Track is out of range");
+    FALSE_RETURN_V_MSG_E(index < UINT32_MAX, Status::ERROR_INVALID_DATA, "Index is out of range");
     bool frameCheck = IsWithinPTSAndIndexConversionMaxFrames(trackIndex);
     FALSE_RETURN_V_MSG_E(frameCheck, Status::ERROR_INVALID_DATA, "Frame count exceeds limit");
     InitPTSandIndexConvert();
