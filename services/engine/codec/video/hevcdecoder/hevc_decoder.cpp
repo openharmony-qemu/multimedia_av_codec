@@ -499,6 +499,14 @@ int32_t HevcDecoder::Flush()
     if (sInfo_.surface != nullptr) {
         renderAvailQue_->SetActive(false, false);
         requestSurfaceBufferQue_->SetActive(false, false);
+        std::vector<std::shared_ptr<HBuffer>> bufferList = buffers_[INDEX_OUTPUT];
+        for (auto &outputBuffer : bufferList) {
+            if (outputBuffer->owner_ == Owner::OWNED_BY_SURFACE) {
+                AVCODEC_LOGI("outputBuffer owner is Owner::OWNED_BY_SURFACE, need CleanCache.");
+                sInfo_.surface->CleanCache();
+                break;
+            }
+        }
     }
 
     ResetBuffers();
@@ -921,8 +929,7 @@ int32_t HevcDecoder::UpdateSurfaceMemory(uint32_t index)
         if (surfaceMemory->isAttached) {
             sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
             CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get surface buffer failed!");
-            int32_t ret = Detach(surfaceBuffer);
-            CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Surface buffer detach failed!");
+            Detach(surfaceBuffer);
             surfaceMemory->isAttached = false;
         }
         surfaceMemory->ReleaseSurfaceBuffer();
