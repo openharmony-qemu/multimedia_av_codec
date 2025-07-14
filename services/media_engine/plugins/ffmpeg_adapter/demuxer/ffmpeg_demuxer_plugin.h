@@ -147,7 +147,7 @@ private:
     int SelectSeekTrack() const;
     Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
     void SyncSeekThread();
-    Status DoSeekInternal(int trackIndex, int64_t seekTime, SeekMode mode, int64_t& realSeekTime);
+    Status DoSeekInternal(int trackIndex, int64_t seekTime, int64_t ffTime, SeekMode mode, int64_t& realSeekTime);
     bool IsUseFirstFrameDts(int trackIndex, int64_t seekTime);
     void GetStreamInitialParams();
     void SetStreamInitialParams(uint32_t trackId, Meta &format);
@@ -244,6 +244,7 @@ private:
     Status SetFirstFrame(AVPacket* pkt, bool isConvert = true);
     bool FirstFrameValid(uint32_t trackIndex);
     std::map<int32_t, AVPacket *> firstFrameMap_ {};
+    std::unordered_map<int32_t, int64_t> seekCalibMap_ {};
     bool TrackIsChecked(const uint32_t trackId);
     std::vector<uint32_t> checkedTrackIds_ {};
 
