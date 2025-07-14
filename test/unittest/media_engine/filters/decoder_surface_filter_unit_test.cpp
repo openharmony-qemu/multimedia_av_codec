@@ -505,6 +505,15 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetSpeed, TestSize.L
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
 }
 
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetCameraPostprocessingDirect, TestSize.Level1)
+{
+    auto ret = decoderSurfaceFilter_->SetCameraPostprocessingDirect(true);
+    EXPECT_EQ(ret, Status::OK);
+
+    ret = decoderSurfaceFilter_->SetCameraPostprocessingDirect(false);
+    EXPECT_EQ(ret, Status::OK);
+}
+
 HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetCameraPostprocessing, TestSize.Level1)
 {
     auto ret = decoderSurfaceFilter_->SetCameraPostprocessing(true);
@@ -512,6 +521,20 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetCameraPostprocess
 
     ret = decoderSurfaceFilter_->SetCameraPostprocessing(false);
     EXPECT_EQ(ret, Status::OK);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_InitPostProcessorType, TestSize.Level1)
+{
+    decoderSurfaceFilter_->fdsanFd_ = std::make_unique<FdsanFd>(999);
+    decoderSurfaceFilter_->enableCameraPostprocessing_ = true;
+    decoderSurfaceFilter_->postProcessorType_ = VideoPostProcessorType::NONE;
+    decoderSurfaceFilter_->meta_->SetData(ENHANCE_FLAG, SCENE_INSERT_FRAME);
+    decoderSurfaceFilter_->InitPostProcessorType();
+    EXPECT_EQ(decoderSurfaceFilter_->postProcessorType_, VideoPostProcessorType::CAMERA_INSERT_FRAME);
+    decoderSurfaceFilter_->postProcessorType_ = VideoPostProcessorType::NONE;
+    decoderSurfaceFilter_->meta_->SetData(ENHANCE_FLAG, SCENE_MP_PWP);
+    decoderSurfaceFilter_->InitPostProcessorType();
+    EXPECT_EQ(decoderSurfaceFilter_->postProcessorType_, VideoPostProcessorType::CAMERA_MP_PWP);
 }
 
 #ifdef SUPPORT_CAMERA_POST_PROCESSOR
