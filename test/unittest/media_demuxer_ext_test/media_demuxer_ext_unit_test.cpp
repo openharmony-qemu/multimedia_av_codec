@@ -2654,4 +2654,102 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_ReadSampleWithPerfRecord_004, 
     Status ret = mediaDemuxer_->ReadSampleWithPerfRecord(plugin, 0, sample, false);
     EXPECT_EQ(ret, Status::OK);
 }
+
+/**
+ * @tc.name  : MediaDemuxer_DoSelectTrack_001
+ * @tc.number: MediaDemuxer_DoSelectTrack_001
+ * @tc.desc  : test DoSelectTrack
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_DoSelectTrack_001, TestSize.Level1)
+{
+    mediaDemuxer_->audioTrackId_  = NUM_0;
+    mediaDemuxer_->sampleQueueMap_[NUM_0] = nullptr;
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillOnce(Return(0)).WillOnce(Return(1));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpInnerTrackIDByTrackID(_))
+        .WillOnce(Return(0)).WillOnce(Return(1));
+    EXPECT_CALL(*plugin, UnselectTrack(_)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*plugin, SelectTrack(_)).WillOnce(Return(Status::OK));
+
+    // curTrackId == audioTrackId_   true
+    // sampleQueueMap_[curTrackId] != nullptr  false
+    EXPECT_EQ(mediaDemuxer_->DoSelectTrack(NUM_1, NUM_0), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_DoSelectTrack_002
+ * @tc.number: MediaDemuxer_DoSelectTrack_002
+ * @tc.desc  : test DoSelectTrack
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_DoSelectTrack_002, TestSize.Level1)
+{
+    mediaDemuxer_->audioTrackId_  = NUM_0;
+    mediaDemuxer_->sampleQueueMap_[NUM_2] = nullptr;
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillOnce(Return(2)).WillOnce(Return(1));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpInnerTrackIDByTrackID(_))
+        .WillOnce(Return(2)).WillOnce(Return(1));
+    EXPECT_CALL(*plugin, UnselectTrack(_)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*plugin, SelectTrack(_)).WillOnce(Return(Status::OK));
+
+    // curTrackId == audioTrackId_   false
+    // sampleQueueMap_[curTrackId] != nullptr  false
+    EXPECT_EQ(mediaDemuxer_->DoSelectTrack(NUM_1, NUM_2), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_DoSelectTrack_003
+ * @tc.number: MediaDemuxer_DoSelectTrack_003
+ * @tc.desc  : test DoSelectTrack
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_DoSelectTrack_003, TestSize.Level1)
+{
+    mediaDemuxer_->audioTrackId_  = NUM_0;
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[NUM_0] = sampleQueue;
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillOnce(Return(0)).WillOnce(Return(1));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpInnerTrackIDByTrackID(_))
+        .WillOnce(Return(0)).WillOnce(Return(1));
+    EXPECT_CALL(*plugin, UnselectTrack(_)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*plugin, SelectTrack(_)).WillOnce(Return(Status::OK));
+
+    // curTrackId == audioTrackId_   true
+    // sampleQueueMap_[curTrackId] != nullptr  true
+    EXPECT_EQ(mediaDemuxer_->DoSelectTrack(NUM_1, NUM_0), Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_DoSelectTrack_004
+ * @tc.number: MediaDemuxer_DoSelectTrack_004
+ * @tc.desc  : test DoSelectTrack
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_DoSelectTrack_004, TestSize.Level1)
+{
+    mediaDemuxer_->audioTrackId_  = NUM_0;
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[NUM_2] = sampleQueue;
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillOnce(Return(2)).WillOnce(Return(1));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpInnerTrackIDByTrackID(_))
+        .WillOnce(Return(2)).WillOnce(Return(1));
+    EXPECT_CALL(*plugin, UnselectTrack(_)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*plugin, SelectTrack(_)).WillOnce(Return(Status::OK));
+
+    // curTrackId == audioTrackId_   false
+    // sampleQueueMap_[curTrackId] != nullptr  true
+    EXPECT_EQ(mediaDemuxer_->DoSelectTrack(NUM_1, NUM_2), Status::OK);
+}
 }  // namespace OHOS::Media

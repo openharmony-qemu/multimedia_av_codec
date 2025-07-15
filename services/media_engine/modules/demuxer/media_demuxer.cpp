@@ -1280,6 +1280,9 @@ Status MediaDemuxer::DoSelectTrack(int32_t trackId, int32_t curTrackId)
             sampleConsumerTaskMap_[curTrackId] != nullptr) {
             sampleConsumerTaskMap_[curTrackId]->Stop();
         }
+        if (curTrackId == audioTrackId_ && sampleQueueMap_[curTrackId] != nullptr) {
+            sampleQueueMap_[curTrackId]->Clear();
+        }
         Status ret = UnselectTrack(curTrackId);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Unselect track failed");
         bufferQueueMap_.insert(
