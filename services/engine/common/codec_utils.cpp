@@ -81,6 +81,8 @@ int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **sc
         srcPos += dataSize;
     }
     srcPos = 0;
+    stride = ((stride + UV_SCALE_FACTOR - 1) / UV_SCALE_FACTOR) * UV_SCALE_FACTOR;
+    height = ((height + UV_SCALE_FACTOR - 1) / UV_SCALE_FACTOR) * UV_SCALE_FACTOR;
     if (pixFmt == VideoPixelFormat::YUVI420) {
         dataSize = scaleLineSize[1];
         writeSize = dataSize > (stride / UV_SCALE_FACTOR) ? (stride / UV_SCALE_FACTOR) : dataSize;
