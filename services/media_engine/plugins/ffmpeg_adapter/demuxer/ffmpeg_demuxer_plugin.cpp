@@ -1875,7 +1875,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         return Status::ERROR_INVALID_OPERATION;
     }
 
-    if (IsEnableSeekTimeCalib(formatContext_)) {
+    if (IsEnableSeekTimeCalib(formatContext_) && seekCalibMap_.count(trackIndex) > 0) {
         int64_t calibTime = ffTime - seekCalibMap_[trackIndex];
         auto ret = DoSeekInternal(trackIndex, seekTime, calibTime, mode, realSeekTime);
         if (ret == Status::OK) {
