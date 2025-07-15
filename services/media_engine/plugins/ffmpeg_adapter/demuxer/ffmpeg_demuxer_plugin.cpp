@@ -1879,9 +1879,9 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         int64_t calibTime = ffTime - seekCalibMap_[trackIndex];
         auto ret = DoSeekInternal(trackIndex, seekTime, calibTime, mode, realSeekTime);
         if (ret == Status::OK) {
-            MEDIA_LOG_E("Seek By calibTime " PUBLIC_LOG_D64 " succcess", calibTime);
             return ret;
         }
+        MEDIA_LOG_E("Seek using calibTime " PUBLIC_LOG_D64 " failed", calibTime);
     }
     
     if (IsUseFirstFrameDts(trackIndex, seekTime)) {
