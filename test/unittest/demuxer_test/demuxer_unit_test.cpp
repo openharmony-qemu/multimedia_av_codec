@@ -3409,4 +3409,25 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1806, TestSize.Level1)
     ASSERT_NE(demuxer_->SeekToTime(12000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
 }
+
+/**
+ * @tc.name: Demuxer_SeekToTime_1806
+ * @tc.desc: seek to the specified time(trp)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1807, TestSize.Level1)
+{
+    InitResource(g_trpPath, LOCAL);
+    ASSERT_TRUE(SetInitValue());
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 4500, 7000, 2000, 6000}; // ms
+    vector<int32_t> videoVals = {242, 242, 242, 133, 133, 133, 73, 73, 73, 193, 193, 193, 97, 97, 97};
+    vector<int32_t> audioVals = {315, 315, 315, 175, 175, 175, 97, 97, 97, 253, 253, 253, 128, 128, 128};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    SeekTest(toPtsList, seekModes, {videoVals, audioVals});
+    ASSERT_TRUE(seekTestFlag_);
+}
 } // namespace
