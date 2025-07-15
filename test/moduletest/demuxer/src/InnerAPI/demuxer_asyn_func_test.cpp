@@ -318,6 +318,7 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0080, TestSize.Level1
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
     ASSERT_EQ(CreateBufferSize(), true);
+    ASSERT_EQ(demuxerPlugin->ReadSample(indexVid, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexVid, avBuf_, timeout), Status::ERROR_WAIT_TIMEOUT);
 }
 /**

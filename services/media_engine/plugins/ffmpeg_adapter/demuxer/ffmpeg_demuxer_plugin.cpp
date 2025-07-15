@@ -1613,6 +1613,7 @@ Status FFmpegDemuxerPlugin::SetFirstFrame(AVPacket* pkt, bool isConvert)
         }
     }
     firstFrameMap_[pkt->stream_index] = firstFrame;
+    seekCalibMap_[pkt->stream_index] = pkt->pts - pkt->dts;
     return Status::OK;
 }
 
@@ -1644,7 +1645,8 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
     Status ret = Status::OK;
     bool extraType = false;
     FileType fileType = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
-    if (fileType == FileType::MPEGTS || fileType == FileType::MP4 || fileType == FileType::MOV) {
+    if (fileType == FileType::MPEGTS || fileType == FileType::MP4 ||
+        fileType == FileType::MOV || fileType == FileType::FLV) {
         extraType = true;
     }
     while (checkedTrackIds_.size() < formatContext_->nb_streams && (!streamParsers_->AllParserInited() || extraType)) {
@@ -1812,18 +1814,11 @@ bool FFmpegDemuxerPlugin::IsUseFirstFrameDts(int trackIndex, int64_t seekTime)
     return false;
 }
 
-Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, SeekMode mode, int64_t& realSeekTime)
+Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, int64_t ffTime,
+    SeekMode mode, int64_t& realSeekTime)
 {
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
-    int64_t ffTime = ConvertTimeToFFmpeg(seekTime * MS_TO_NS, avStream->time_base);
-    if (!CheckStartTime(formatContext_.get(), avStream, ffTime, seekTime)) {
-        MEDIA_LOG_E("Get start time from track " PUBLIC_LOG_D32 " failed", trackIndex);
-        return Status::ERROR_INVALID_OPERATION;
-    }
-    if (IsUseFirstFrameDts(trackIndex, seekTime)) {
-        ffTime = firstFrameMap_[trackIndex]->dts;
-    }
     realSeekTime = ConvertTimeFromFFmpeg(ffTime, avStream->time_base);
     int flag = ConvertFlagsToFFmpeg(avStream, ffTime, mode, seekTime);
     MEDIA_LOG_I("Time [" PUBLIC_LOG_U64 "/" PUBLIC_LOG_U64 "/" PUBLIC_LOG_D64 "] flag ["
@@ -1849,6 +1844,15 @@ Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, See
     return Status::OK;
 }
 
+static bool IsEnableSeekTimeCalib(const std::shared_ptr<AVFormatContext> &formatContext)
+{
+    FALSE_RETURN_V_MSG_E(formatContext != nullptr, false, "AVFormatContext is nullptr");
+    if (FileType::FLV == FFmpegFormatHelper::GetFileTypeByName(*formatContext)) {
+        return true;
+    }
+    return false;
+}
+
 Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime)
 {
     (void) trackId;
@@ -1862,7 +1866,29 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     }
     int trackIndex = SelectSeekTrack();
     MEDIA_LOG_D("Seek based on track " PUBLIC_LOG_D32, trackIndex);
-    return DoSeekInternal(trackIndex, seekTime, mode, realSeekTime);
+
+    auto avStream = formatContext_->streams[trackIndex];
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
+    int64_t ffTime = ConvertTimeToFFmpeg(seekTime * MS_TO_NS, avStream->time_base);
+    if (!CheckStartTime(formatContext_.get(), avStream, ffTime, seekTime)) {
+        MEDIA_LOG_E("Get start time from track " PUBLIC_LOG_D32 " failed", trackIndex);
+        return Status::ERROR_INVALID_OPERATION;
+    }
+
+    if (IsEnableSeekTimeCalib(formatContext_) && seekCalibMap_.count(trackIndex) > 0) {
+        int64_t calibTime = ffTime - seekCalibMap_[trackIndex];
+        auto ret = DoSeekInternal(trackIndex, seekTime, calibTime, mode, realSeekTime);
+        if (ret == Status::OK) {
+            return ret;
+        }
+        MEDIA_LOG_E("Seek using calibTime " PUBLIC_LOG_D64 " failed", calibTime);
+    }
+    
+    if (IsUseFirstFrameDts(trackIndex, seekTime)) {
+        ffTime = firstFrameMap_[trackIndex]->dts;
+    }
+    
+    return DoSeekInternal(trackIndex, seekTime, ffTime, mode, realSeekTime);
 }
 
 Status FFmpegDemuxerPlugin::Flush()
