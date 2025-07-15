@@ -1846,7 +1846,7 @@ Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, int
 
 static bool IsEnableSeekTimeCalib(const std::shared_ptr<AVFormatContext> &formatContext)
 {
-    FALSE_RETURN_V_MSG_E(formatContext == nullptr, false, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(formatContext != nullptr, false, "AVFormatContext is nullptr");
     if (FileType::FLV == FFmpegFormatHelper::GetFileTypeByName(*formatContext)) {
         return true;
     }
