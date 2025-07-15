@@ -76,8 +76,6 @@ public:
     uint32_t DEFAULT_WIDTH = 1280;
     uint32_t DEFAULT_HEIGHT = 720;
     uint32_t DEFAULT_BITRATE = 5000000;
-    uint32_t DEFAULT_MAX_BITRATE = 10000000;
-    uint32_t DEFAULT_SQR_FACTOR = 15;
     uint32_t DEFAULT_QUALITY = 30;
     double DEFAULT_FRAME_RATE = 30.0;
     bool isAVCEncoder = true;
@@ -97,7 +95,6 @@ public:
     int32_t ConfigureVideoEncoder();
     int32_t ConfigureVideoEncoder_Temporal(int32_t temporal_gop_size);
     int32_t ConfigureVideoEncoder_fuzz(int32_t data);
-    void ConfigureBitrateMode(struct OH_AVFormat *format);
     int32_t SetVideoEncoderCallback();
     int32_t CreateSurface();
     int32_t StartVideoEncoder();
@@ -146,7 +143,6 @@ public:
     void readMultiFilesFunc();
     int32_t InitBuffer(OHNativeWindowBuffer *&ohNativeWindowBuffer, OH_NativeBuffer *&nativeBuffer, uint8_t *&dst);
     void InputEnableRepeatSleep();
-    void SetSQRParameters(OH_AVFormat *format);
     VEncAPI11Signal *signal_;
     uint32_t errCount = 0;
     bool enableForceIDR = false;
@@ -161,9 +157,6 @@ public:
     bool needResetBitrate = false;
     bool needResetFrameRate = false;
     bool needResetQP = false;
-    bool needResetSQRFactor = false;
-    bool needResetMaxBitrate = false;
-    bool needResetQuality = false;
     bool enableQP = false;
     bool repeatRun = false;
     bool showLog = false;

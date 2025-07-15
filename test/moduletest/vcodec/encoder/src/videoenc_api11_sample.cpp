@@ -173,23 +173,6 @@ int64_t VEncAPI11Sample::GetSystemTimeUs()
     return nanoTime / NANOS_IN_MICRO;
 }
 
-void VEncAPI11Sample::ConfigureBitrateMode(struct OH_AVFormat *format)
-{
-    if (DEFAULT_BITRATE_MODE == CQ) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, DEFAULT_QUALITY);
-    } else if (DEFAULT_BITRATE_MODE == SQR) {
-        (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_SQR_FACTOR, DEFAULT_SQR_FACTOR);
-    } else {
-        (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
-    }
-    if (enableQP) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MAX, DEFAULT_QP);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MIN, DEFAULT_QP);
-    }
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, DEFAULT_BITRATE_MODE);
-}
-
 int32_t VEncAPI11Sample::ConfigureVideoEncoder()
 {
     OH_AVFormat *format = OH_AVFormat_Create();
@@ -212,7 +195,16 @@ int32_t VEncAPI11Sample::ConfigureVideoEncoder()
     } else if (configMain) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, HEVC_PROFILE_MAIN);
     }
-    ConfigureBitrateMode(format);
+    if (DEFAULT_BITRATE_MODE == CQ) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, DEFAULT_QUALITY);
+    } else {
+        (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
+    }
+    if (enableQP) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MAX, DEFAULT_QP);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MIN, DEFAULT_QP);
+    }
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, DEFAULT_BITRATE_MODE);
     if (enableLTR && (ltrParam.ltrCount >= 0)) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_COUNT, ltrParam.ltrCount);
     }
@@ -635,9 +627,6 @@ void VEncAPI11Sample::InputFuncSurface()
         if (err != 0) {
             break;
         }
-        if (enableAutoSwitchParam) {
-            AutoSwitchParam();
-        }
         usleep(FRAME_INTERVAL);
         InputEnableRepeatSleep();
     }
@@ -821,22 +810,6 @@ bool VEncAPI11Sample::RandomEOS(uint32_t index)
     return false;
 }
 
-void VEncAPI11Sample::SetSQRParameters(OH_AVFormat *format)
-{
-    if (needResetSQRFactor) {
-        int32_t currentSQRFactor = DEFAULT_SQR_FACTOR << 1;
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_SQR_FACTOR, currentSQRFactor);
-    }
-    if (needResetMaxBitrate) {
-        int64_t currentMaxBitrate = DEFAULT_MAX_BITRATE << 1;
-        (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_MAX_BITRATE, currentMaxBitrate);
-    }
-    if (needResetQuality) {
-        int32_t currentQuality = DEFAULT_QUALITY << 1;
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, currentQuality);
-    }
-}
-
 void VEncAPI11Sample::AutoSwitchParam()
 {
     int64_t currentBitrate = DEFAULT_BITRATE;
@@ -857,7 +830,6 @@ void VEncAPI11Sample::AutoSwitchParam()
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MAX, currentQP);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MIN, currentQP);
         }
-        SetSQRParameters(format);
         SetParameter(format) == AV_ERR_OK ? (0) : (errCount++);
         OH_AVFormat_Destroy(format);
     }
@@ -878,7 +850,6 @@ void VEncAPI11Sample::AutoSwitchParam()
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MAX, currentQP);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MIN, currentQP);
         }
-        SetSQRParameters(format);
         SetParameter(format) == AV_ERR_OK ? (0) : (errCount++);
         OH_AVFormat_Destroy(format);
     }
