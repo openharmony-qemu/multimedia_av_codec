@@ -583,7 +583,7 @@ bool FlacCodecConfig::Update()
 
 void FlacCodecConfig::UpdateNewConfig(uint8_t *data, size_t size)
 {
-    if (size != mCodecConfig.size() || size < FLAC_CODEC_CONFIG_SIZE) {
+    if (size != mCodecConfig.size() || size < FLAC_CODEC_CONFIG_SIZE || data == nullptr) {
         MEDIA_LOG_E("UpdateNewConfig failed! curSize:%{public}zu, size:%{public}zu", mCodecConfig.size(), size);
         return;
     }
@@ -611,7 +611,10 @@ void FlacCodecConfig::UpdateNewConfig(uint8_t *data, size_t size)
         mChannels = tmpChannels;
         mBitPerSample = tmpBitPerSample;
     }
-    memcpy_s(mCodecConfig.data(), mCodecConfig.size(), data, size);
+    if (memcpy_s(mCodecConfig.data(), mCodecConfig.size(), data, size) != EOK) {
+        MEDIA_LOG_E("flac UpdateNewConfig memcpy_s failed!");
+        return;
+    }
     mIsUpdateExtraData = true;
 }
 
@@ -650,7 +653,7 @@ void FlacCodecConfig::UpdatePerFrame(uint8_t* data, size_t size)
     constexpr uint32_t index3 = 3;
     constexpr uint32_t index6 = 6;
     constexpr uint32_t index7 = 7;
-    if (size < minSize) {
+    if (size < minSize || data == nullptr) {
         return;
     }
     if (data[0] != 0xff || (data[1] & 0xf8) != 0xf8) {  // flac frame head
