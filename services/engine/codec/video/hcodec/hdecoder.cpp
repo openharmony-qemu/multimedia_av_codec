@@ -331,6 +331,7 @@ int32_t HDecoder::OnSetParameters(const Format &format)
         codecRate_ = frameRate.value();
     }
     (void)SetVrrEnable(format);
+    (void)SetLppTargetPts(format);
     return AVCS_ERR_OK;
 }
 
@@ -495,6 +496,23 @@ int32_t HDecoder::InitVrr()
 }
 #endif
 // LCOV_EXCL_STOP
+
+int32_t HDecoder::SetLppTargetPts(const Format &format)
+{
+    int64_t targetPts = 0;
+    if (!format.GetLongValue("video_seek_pts", targetPts)) {
+        return AVCS_ERR_OK;
+    }
+    HLOGI("SetLppTargetPts targePts = %lld", targetPts);
+    LppTargetPtsParam param;
+    InitOMXParamExt(param);
+    param.targetPts = targetPts;
+    if (!SetParameter(OMX_IndexParamLppTargetPts, param)) {
+        HLOGI("SetLppTargetPts failed");
+        return AVCS_ERR_INVALID_OPERATION;
+    }
+    return AVCS_ERR_OK;
+}
 
 int32_t HDecoder::SubmitOutputBuffersToOmxNode()
 {
