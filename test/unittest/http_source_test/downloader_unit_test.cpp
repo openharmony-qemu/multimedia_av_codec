@@ -1129,7 +1129,7 @@ HWTEST_F(DownloaderUnitTest, IsChunkedIsChunk, TestSize.Level1)
     bool isInterruptNeeded = false;
     Request_->headerInfo_.isChunked = true;
     Request_->headerInfo_.fileContentLen = LIVE_CONTENT_LENGTH;
-    EXPECT_EQ(Request_->IsChunked(isInterruptNeeded), Seekable::SEEKABLE);
+    EXPECT_EQ(Request_->IsChunked(isInterruptNeeded), Seekable::UNSEEKABLE);
 }
 
 HWTEST_F(DownloaderUnitTest, GetBitRateError01, TestSize.Level1)
