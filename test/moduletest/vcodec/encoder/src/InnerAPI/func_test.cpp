@@ -85,7 +85,25 @@ void HwEncInnerFuncNdkTest::TearDown()
 } // namespace
 
 namespace {
-
+bool isSupportRGBA1010102Format()
+{
+    const int32_t *pixelFormat = nullptr;
+    uint32_t pixelFormatNum = 0;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    if (capability == nullptr) {
+        return false;
+    }
+    int32_t ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat, &pixelFormatNum);
+    if (pixelFormat == nullptr || pixelFormatNum == 0 || ret != AV_ERR_OK) {
+        return false;
+    }
+    for (int i = 0; i < pixelFormatNum; i++) {
+        if (pixelFormat[i] == static_cast<int32_t>(AV_PIXEL_FORMAT_RGBA1010102)) {
+            return true;
+        }
+    }
+    return false;
+}
 /**
  * @tc.number    : VIDEO_ENCODE_INNER_REPEAT_FUNC_0100
  * @tc.name      : repeat surface h264 encode send eos,max count -1,frame after 73ms
@@ -2438,7 +2456,7 @@ HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_SYNC_FUNC_0350, TestSize.Level2)
 HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_RGBA1010102_0100, TestSize.Level2)
 {
     auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
-    if (!vEncInnerSample->GetWaterMarkCapability(g_codecMime)) {
+    if (!vEncInnerSample->GetWaterMarkCapability(g_codecMime) || !isSupportRGBA1010102Format()) {
         return;
     }
     BufferRequestConfig bufferConfig = {
