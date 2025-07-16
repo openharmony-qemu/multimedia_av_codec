@@ -34,6 +34,7 @@
 #include "native_averrors.h"
 #include "window.h"
 #include "iconsumer_surface.h"
+#include <map>
 
 namespace OHOS {
 namespace Media {
@@ -95,7 +96,17 @@ public:
     int32_t picWidth_ = 0;
     int32_t picHeight_ = 0;
     bool enableVRR = false;
-    
+    bool enableLowLatency = false;
+    bool getInputBufferIndexRepeat = false;
+    int32_t enbleSyncMode = 0;
+    int64_t syncInputWaitTime = -1;
+    int64_t syncOutputWaitTime = -1;
+    bool queryOutputBufferEOS = false;
+    bool queryInputBufferEOS = false;
+    bool getOutputBufferIndexRepeated = false;
+    bool getOutputBufferIndexNoExisted = false;
+    bool abnormalIndexValue = false;
+    bool isCheckFlush = false;
     int32_t Start();
     int32_t Stop();
     int32_t Flush();
@@ -106,6 +117,7 @@ public:
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
     int32_t StartDecoder();
+    int32_t StartSyncDecoder();
     int32_t StartVideoDecoder();
     int64_t GetSystemTimeUs();
     int32_t CreateVideoDecoder(std::string codeName);
@@ -125,8 +137,17 @@ public:
     int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr);
     void GetStride();
     void InputFuncTest();
+    void SyncInputFunc();
     void InFuncTest();
     void OutputFuncTest();
+    void SyncOutputFunc();
+    int32_t SyncOutputFuncEos(uint32_t &last_index, uint32_t &outFrames, uint32_t &index,
+    OH_AVBuffer *buffer, OH_AVCodecBufferAttr &attr);
+    int32_t QueryInputBuffer(uint32_t index, int64_t timeoutUs);
+    int32_t QueryOutputBuffer(uint32_t index, int64_t timeoutUs);
+    OH_AVBuffer *GetInputBuffer(uint32_t index);
+    OH_AVBuffer *GetOutputBuffer(uint32_t index);
+    int32_t PushInputBuffer(uint32_t index);
     void ReleaseSignal();
     void CreateSurface();
     void ReleaseInFile();
@@ -149,6 +170,7 @@ public:
     int64_t start_time = 0;
     int32_t maxInputSize = 0;
     int64_t end_time = 0;
+    int32_t FLUSH_COUNTS = 0;
     bool autoSwitchSurface = false;
     std::atomic<bool> isFlushing_ { false };
     int32_t switchSurfaceFlag = 0;
@@ -162,6 +184,9 @@ public:
     bool outputYuvSurface = false;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
     int32_t DecodeSetSurface();
+    int32_t OpenFile();
+    std::map<uint32_t, OH_AVBuffer*>indexBufferBefore;
+    std::map<uint32_t, OH_AVBuffer*>indexBufferAfter;
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;

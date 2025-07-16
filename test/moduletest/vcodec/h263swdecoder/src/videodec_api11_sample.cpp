@@ -32,6 +32,7 @@ constexpr int32_t SIXTEEN = 16;
 constexpr int32_t TWENTY_FOUR = 24;
 constexpr uint32_t START_CODE_SIZE = 4;
 constexpr int32_t DEFAULT_ANGLE = 90;
+constexpr uint32_t MILLION = 1000000;
 SHA512_CTX g_c;
 unsigned char g_md[SHA512_DIGEST_LENGTH];
 VDecAPI11Sample *dec_sample = nullptr;
@@ -238,6 +239,7 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     if (useHDRSource) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_PROFILE);
     }
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, enbleSyncMode);
     int ret = OH_VideoDecoder_Configure(vdec_, format);
     OH_AVFormat_Destroy(format);
     return ret;
@@ -439,6 +441,56 @@ int32_t VDecAPI11Sample::StartVideoDecoder()
     return AV_ERR_OK;
 }
 
+int32_t VDecAPI11Sample::StartSyncVideoDecoder()
+{
+    isRunning_.store(true);
+    int ret = OH_VideoDecoder_Start(vdec_);
+    if (ret != AV_ERR_OK) {
+        cout << "Failed to start codec" << endl;
+        isRunning_.store(false);
+        ReleaseInFile();
+        Release();
+        return ret;
+    }
+    inFile_ = make_unique<ifstream>();
+    if (inFile_ == nullptr) {
+        isRunning_.store(false);
+        (void)OH_VideoDecoder_Stop(vdec_);
+        return AV_ERR_UNKNOWN;
+    }
+    inFile_->open(INP_DIR, ios::in | ios::binary);
+    if (!inFile_->is_open()) {
+        cout << "failed open file " << INP_DIR << endl;
+        isRunning_.store(false);
+        (void)OH_VideoDecoder_Stop(vdec_);
+        inFile_->close();
+        inFile_.reset();
+        inFile_ = nullptr;
+        return AV_ERR_UNKNOWN;
+    }
+    signal_ = new VDecAPI11Signal();
+    inputLoop_ = make_unique<thread>(&VDecAPI11Sample::SyncInputFunc, this);
+    if (inputLoop_ == nullptr) {
+        cout << "Failed to create input loop" << endl;
+        isRunning_.store(false);
+        (void)OH_VideoDecoder_Stop(vdec_);
+        ReleaseInFile();
+        return AV_ERR_UNKNOWN;
+    }
+    outputLoop_ = make_unique<thread>(&VDecAPI11Sample::SyncOutputFunc, this);
+    if (outputLoop_ == nullptr) {
+        cout << "Failed to create output loop" << endl;
+        isRunning_.store(false);
+        (void)OH_VideoDecoder_Stop(vdec_);
+        ReleaseInFile();
+        StopInloop();
+        Release();
+        return AV_ERR_UNKNOWN;
+    }
+
+    return AV_ERR_OK;
+}
+
 void VDecAPI11Sample::testAPI()
 {
     cs[0] = Surface::CreateSurfaceAsConsumer();
@@ -506,6 +558,41 @@ void VDecAPI11Sample::InputFuncTest()
         signal_->inIdxQueue_.pop();
         signal_->inBufferQueue_.pop();
         lock.unlock();
+        if (!inFile_->eof()) {
+            int ret = PushData(index, buffer);
+            if (ret == 1) {
+                flag = false;
+                break;
+            }
+        }
+        if (sleepOnFPS) {
+            usleep(MICRO_IN_SECOND / (int32_t)DEFAULT_FRAME_RATE);
+        }
+    }
+}
+
+void VDecAPI11Sample::SyncInputFunc()
+{
+    if (outputYuvSurface) {
+        g_yuvSurface = true;
+    }
+    bool flag = true;
+    while (flag) {
+        if (!isRunning_.load()) {
+            flag = false;
+            break;
+        }
+        uint32_t index;
+        if (OH_VideoDecoder_QueryInputBuffer(vdec_, &index, syncInputWaitTime) != AV_ERR_OK) {
+            cout << "OH_VideoDecoder_QueryInputBuffer fail" << endl;
+            continue;
+        }
+        OH_AVBuffer *buffer = OH_VideoDecoder_GetInputBuffer(vdec_, index);
+        if (buffer == nullptr) {
+            cout << "OH_VideoDecoder_GetInputBuffer fail" << endl;
+            errCount = errCount + 1;
+            continue;
+        }
         if (!inFile_->eof()) {
             int ret = PushData(index, buffer);
             if (ret == 1) {
@@ -751,6 +838,70 @@ void VDecAPI11Sample::OutputFuncTest()
     }
 }
 
+void VDecAPI11Sample::SyncOutputFunc()
+{
+    FILE *outFile = nullptr;
+    if (outputYuvFlag) {
+        outFile = fopen(OUT_DIR, "wb");
+    }
+    SHA512_Init(&g_c);
+    bool flag = true;
+    while (flag) {
+        if (!isRunning_.load()) {
+            flag = false;
+            break;
+        }
+        OH_AVCodecBufferAttr attr;
+        uint32_t index = 0;
+        if (OH_VideoDecoder_QueryOutputBuffer(vdec_, &index, syncOutputWaitTime) != AV_ERR_OK) {
+            cout << "OH_VideoDecoder_QueryOutputBuffer fail" << endl;
+            continue;
+        }
+        OH_AVBuffer *buffer = OH_VideoDecoder_GetOutputBuffer(vdec_, index);
+        if (buffer == nullptr) {
+            cout << "OH_VideoDecoder_GetOutputBuffer fail" << endl;
+            errCount = errCount + 1;
+            continue;
+        }
+        if (OH_AVBuffer_GetBufferAttr(buffer, &attr) != AV_ERR_OK) {
+            errCount = errCount + 1;
+        }
+        if (SyncOutputFuncEos(attr, index) != AV_ERR_OK) {
+            flag = false;
+            break;
+        }
+        if (outFile != nullptr) {
+            fwrite(OH_AVBuffer_GetAddr(buffer), 1, attr.size, outFile);
+        }
+        ProcessOutputData(buffer, index, attr.size);
+        if (errCount > 0) {
+            flag = false;
+            break;
+        }
+    }
+    if (outFile) {
+        (void)fclose(outFile);
+    }
+}
+
+int32_t VDecAPI11Sample::SyncOutputFuncEos(OH_AVCodecBufferAttr attr, uint32_t index)
+{
+    if (CheckAttrFlag(attr) == -1) {
+        if (queryInputBufferEOS) {
+            OH_VideoDecoder_QueryInputBuffer(vdec_, &index, 0);
+            OH_VideoDecoder_QueryInputBuffer(vdec_, &index, MILLION);
+            OH_VideoDecoder_QueryInputBuffer(vdec_, &index, -1);
+        }
+        if (queryOutputBufferEOS) {
+            OH_VideoDecoder_QueryOutputBuffer(vdec_, &index, 0);
+            OH_VideoDecoder_QueryOutputBuffer(vdec_, &index, MILLION);
+            OH_VideoDecoder_QueryOutputBuffer(vdec_, &index, -1);
+        }
+        return AV_ERR_UNKNOWN;
+    }
+    return AV_ERR_OK;
+}
+
 void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index, int32_t size)
 {
     if (!SF_OUTPUT) {
@@ -908,4 +1059,10 @@ int32_t VDecAPI11Sample::RepeatCallSetSurface()
         }
     }
     return AV_ERR_OK;
+}
+
+int32_t VDecAPI11Sample::DecodeSetSurface()
+{
+    CreateSurface();
+    return OH_VideoDecoder_SetSurface(vdec_, nativeWindow[0]);
 }

@@ -98,6 +98,7 @@ public:
     int32_t SetVideoEncoderCallback();
     int32_t CreateSurface();
     int32_t StartVideoEncoder();
+    int32_t VideoEncoder();
     int32_t SetParameter(OH_AVFormat *format);
     void SetBufferParameter(OH_AVBuffer *buffer);
     void SetLTRParameter(OH_AVBuffer *buffer);
@@ -105,6 +106,8 @@ public:
     void GetStride();
     void testApi();
     void WaitForEOS();
+    int32_t SyncOutputFuncEos(uint32_t &last_index, uint32_t &outFrames, uint32_t &index,
+        OH_AVBuffer *buffer, OH_AVCodecBufferAttr &attr);
     int32_t OpenFile();
     uint32_t ReturnZeroIfEOS(uint32_t expectedSize);
     int64_t GetSystemTimeUs();
@@ -113,6 +116,7 @@ public:
     int32_t Reset();
     int32_t Stop();
     int32_t Release();
+    int32_t ReadFile(uint32_t index, OH_AVBuffer *buffer);
     void Flush_buffer();
     void AutoSwitchParam();
     void RepeatStartBeforeEOS();
@@ -121,6 +125,7 @@ public:
     int32_t PushData(OH_AVBuffer *buffer, uint32_t index, int32_t &result);
     int32_t CheckResult(bool isRandomEosSuccess, int32_t pushResult);
     void InputFunc();
+    void SyncInputFunc();
     int32_t state_EOS();
     void InputFuncSurface();
     uint32_t ReadOneFrameYUV420SP(uint8_t *dst);
@@ -132,6 +137,7 @@ public:
     int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr);
     void OutputFuncFail();
     void OutputFunc();
+    void SyncOutputFunc();
     uint32_t FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer);
     void ReleaseSignal();
     void ReleaseInFile();
@@ -143,6 +149,10 @@ public:
     void readMultiFilesFunc();
     int32_t InitBuffer(OHNativeWindowBuffer *&ohNativeWindowBuffer, OH_NativeBuffer *&nativeBuffer, uint8_t *&dst);
     void InputEnableRepeatSleep();
+    int32_t QueryInputBuffer(uint32_t index, int64_t timeoutUs);
+    int32_t QueryOutputBuffer(uint32_t index, int64_t timeoutUs);
+    OH_AVBuffer *GetInputBuffer(uint32_t index);
+    OH_AVBuffer *GetOutputBuffer(uint32_t index);
     VEncAPI11Signal *signal_;
     uint32_t errCount = 0;
     bool enableForceIDR = false;
@@ -161,6 +171,9 @@ public:
     bool repeatRun = false;
     bool showLog = false;
     bool enableLTR = false;
+    bool getInputBufferIndexRepeat = false;
+    bool abnormalIndexValue = false;
+    bool getOutputBufferIndexNoExisted = false;
     int64_t encode_count = 0;
     bool enable_random_eos = false;
     uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;  // 1200 测试用例
@@ -187,8 +200,15 @@ public:
     int32_t DEFAULT_FRAME_AFTER = 1;
     int32_t DEFAULT_MAX_COUNT = 1;
     uint32_t inCount = 0;
-private:
+    int32_t enbleSyncMode = 0;
+    int64_t syncInputWaitTime = -1;
+    int64_t syncOutputWaitTime = -1;
+    bool queryOutputBufferEOS = false;
+    bool queryInputBufferEOS = false;
+    bool getOutputBufferIndexRepeated = false;
+    bool noDestroy = false;
     std::atomic<bool> isRunning_ { false };
+private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;

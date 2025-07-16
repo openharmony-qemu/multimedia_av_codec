@@ -91,6 +91,11 @@ public:
     int32_t sliceHeight_ = 0;
     int32_t picWidth_ = 0;
     int32_t picHeight_ = 0;
+    int32_t enbleSyncMode = 0;
+    int64_t syncInputWaitTime = -1;
+    int64_t syncOutputWaitTime = -1;
+    bool queryOutputBufferEOS = false;
+    bool queryInputBufferEOS = false;
 
     int32_t Start();
     int32_t Stop();
@@ -98,6 +103,7 @@ public:
     int32_t Reset();
     int32_t Prepare();
     int32_t StartDecoder();
+    int32_t StartSyncDecoder();
     int32_t state_EOS();
     void SetEOS(uint32_t index, OH_AVBuffer *buffer);
     void WaitForEOS();
@@ -122,7 +128,10 @@ public:
     void GetStride();
     void InputFuncTest();
     void InFuncTest();
+    void SyncInputFunc();
     void OutputFuncTest();
+    void SyncOutputFunc();
+    int32_t SyncOutputFuncEos(OH_AVCodecBufferAttr attr, uint32_t index);
     void ReleaseSignal();
     void CreateSurface();
     void ReleaseInFile();

@@ -933,4 +933,97 @@ HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_MPEG2VIDEO_PARA_1000, TestSize.Level2)
         ASSERT_EQ(0, vDecSample->errCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_SWMPEG2_FUNC_0010
+ * @tc.name      : mpeg2同步软解输出nv12
+ * @tc.desc      : function test
+ */
+HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWMPEG2_FUNC_0010, TestSize.Level1)
+{
+    if (cap_mpeg2 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_6;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg2));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_SWMPEG2_FUNC_0020
+ * @tc.name      : mpeg2同步软解输出nv21
+ * @tc.desc      : function test
+ */
+HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWMPEG2_FUNC_0020, TestSize.Level0)
+{
+    if (cap_mpeg2 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_6;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg2));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_SWMPEG2_FUNC_0030
+ * @tc.name      : mpeg2同步软解输出surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWMPEG2_FUNC_0030, TestSize.Level1)
+{
+    if (cap_mpeg2 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_6;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->enbleSyncMode = 1;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg2));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_SWMPEG2_FUNC_0040
+ * @tc.name      : 264同步软解输出rgba
+ * @tc.desc      : function test
+ */
+HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWMPEG2_FUNC_0040, TestSize.Level1)
+{
+    if (cap_mpeg2 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_6;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_RGBA;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg2));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
+}
 }
