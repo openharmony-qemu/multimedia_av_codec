@@ -240,7 +240,7 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
         if ((!NeedCombineFrame(trackId_) || cacheQueue_.GetCacheSize(trackId_) != 1) && NeedWaitForRead()) {
             HandleReadWait();
         }
-        }
+        {
             std::lock_guard<std::mutex> readLock(readSampleMutex_);
             readCacheCv_.notify_one();
         }
