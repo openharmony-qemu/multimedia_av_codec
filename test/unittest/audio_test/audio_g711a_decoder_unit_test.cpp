@@ -97,10 +97,7 @@ void G711aUnitTest::TearDown(void)
 
 HWTEST_F(G711aUnitTest, SetParamter_001, TestSize.Level1)
 {
-    if (plugin_ == nullptr) {
-        cout << "g711a plugin is nullptr!" << endl;
-        return;
-    }
+    ASSERT_NE(plugin_, nullptr);
     plugin_->Init();
     plugin_->SetDataCallback(this);
     EXPECT_EQ(plugin_->SetParameter(meta_), Status::OK);
@@ -128,10 +125,7 @@ HWTEST_F(G711aUnitTest, SetParamter_001, TestSize.Level1)
 
 HWTEST_F(G711aUnitTest, SetParamter_002, TestSize.Level1)
 {
-    if (plugin_ == nullptr) {
-        cout << "g711a plugin is nullptr!" << endl;
-        return;
-    }
+    ASSERT_NE(plugin_, nullptr);
     plugin_->Init();
     plugin_->SetDataCallback(this);
     meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(0);
@@ -151,10 +145,7 @@ HWTEST_F(G711aUnitTest, SetParamter_002, TestSize.Level1)
 
 HWTEST_F(G711aUnitTest, GetParamter_001, TestSize.Level1)
 {
-    if (plugin_ == nullptr) {
-        cout << "g711a plugin is nullptr!" << endl;
-        return;
-    }
+    ASSERT_NE(plugin_, nullptr);
     shared_ptr<Media::Meta> tmpMeta = make_shared<Media::Meta>();
     int32_t maxInputSize = 0;
     int32_t maxOutputSize = 0;
@@ -194,10 +185,7 @@ HWTEST_F(G711aUnitTest, GetParamter_001, TestSize.Level1)
 
 HWTEST_F(G711aUnitTest, Decode_001, TestSize.Level1)
 {
-    if (plugin_ == nullptr) {
-        cout << "g711a plugin is nullptr!" << endl;
-        return;
-    }
+    ASSERT_NE(plugin_, nullptr);
     plugin_->Init();
     plugin_->SetDataCallback(this);
     meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
@@ -223,10 +211,7 @@ HWTEST_F(G711aUnitTest, Decode_001, TestSize.Level1)
 
 HWTEST_F(G711aUnitTest, Decode_002, TestSize.Level1)
 {
-    if (plugin_ == nullptr) {
-        cout << "g711a plugin is nullptr!" << endl;
-        return;
-    }
+    ASSERT_NE(plugin_, nullptr);
     plugin_->Init();
     plugin_->SetDataCallback(this);
     meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S32LE);
@@ -242,10 +227,7 @@ HWTEST_F(G711aUnitTest, Decode_002, TestSize.Level1)
 
 HWTEST_F(G711aUnitTest, Decode_003, TestSize.Level1)
 {
-    if (plugin_ == nullptr) {
-        cout << "g711a plugin is nullptr!" << endl;
-        return;
-    }
+    ASSERT_NE(plugin_, nullptr);
     plugin_->SetDataCallback(this);
     meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S32LE);
     EXPECT_EQ(plugin_->SetParameter(meta_), Status::OK);
@@ -263,10 +245,7 @@ HWTEST_F(G711aUnitTest, Decode_003, TestSize.Level1)
 
 HWTEST_F(G711aUnitTest, Decode_004, TestSize.Level1)
 {
-    if (plugin_ == nullptr) {
-        cout << "g711a plugin is nullptr!" << endl;
-        return;
-    }
+    ASSERT_NE(plugin_, nullptr);
     plugin_->Init();
     plugin_->SetDataCallback(this);
     meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(0);
@@ -282,10 +261,7 @@ HWTEST_F(G711aUnitTest, Decode_004, TestSize.Level1)
 
 HWTEST_F(G711aUnitTest, Decode_005, TestSize.Level1)
 {
-    if (plugin_ == nullptr) {
-        cout << "g711a plugin is nullptr!" << endl;
-        return;
-    }
+    ASSERT_NE(plugin_, nullptr);
     plugin_->Init();
     plugin_->SetDataCallback(this);
     meta_->Set<Tag::AUDIO_SAMPLE_RATE>(0);
@@ -301,10 +277,7 @@ HWTEST_F(G711aUnitTest, Decode_005, TestSize.Level1)
 
 HWTEST_F(G711aUnitTest, Eos_001, TestSize.Level1)
 {
-    if (plugin_ == nullptr) {
-        cout << "g711a plugin is nullptr!" << endl;
-        return;
-    }
+    ASSERT_NE(plugin_, nullptr);
     plugin_->Init();
     plugin_->SetDataCallback(this);
     meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
