@@ -308,6 +308,7 @@ private:
     Status SetAVReadFrameLimit();
 
     Status WaitForLoop(const uint32_t trackId, const uint32_t timeout);
+    bool ShouldWaitForRead(uint32_t trackId);
     void FFmpegReadLoop();
     bool NeedWaitForRead();
     void HandleReadWait();
