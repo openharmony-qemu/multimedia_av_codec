@@ -85,7 +85,7 @@ void HwEncInnerFuncNdkTest::TearDown()
 } // namespace
 
 namespace {
-bool isSupportRGBA1010102Format()
+bool isSupportRgba1010102Format()
 {
     const int32_t *pixelFormat = nullptr;
     uint32_t pixelFormatNum = 0;
@@ -2456,7 +2456,7 @@ HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_SYNC_FUNC_0350, TestSize.Level2)
 HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_RGBA1010102_0100, TestSize.Level2)
 {
     auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
-    if (!vEncInnerSample->GetWaterMarkCapability(g_codecMime) || !isSupportRGBA1010102Format()) {
+    if (!vEncInnerSample->GetWaterMarkCapability(g_codecMime) || !isSupportRgba1010102Format()) {
         return;
     }
     BufferRequestConfig bufferConfig = {
