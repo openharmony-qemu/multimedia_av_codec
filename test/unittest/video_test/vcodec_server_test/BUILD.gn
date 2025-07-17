@@ -48,6 +48,7 @@ group("codec_server_test") {
 ##################################################################################################################
 codec_server_coverage_include_dirs = [
   "./",
+  "../vcodec_framework_test/common/utils",
   "./mock/include",
   "$av_codec_root_dir/test/unittest/common",
   "$av_codec_root_dir/interfaces/inner_api/native",
@@ -91,6 +92,7 @@ ohos_unittest("codec_server_coverage_unit_test") {
     "$av_codec_root_dir/services/services/codec/server/post_processing/dynamic_interface.cpp",
     "$av_codec_root_dir/services/services/codec/server/post_processing/state_machine.cpp",
     "$av_codec_root_dir/services/services/codec/server/temporal_scalability.cpp",
+    "../vcodec_framework_test/common/utils/unittest_utils.cpp",
     "./codec_server_coverage_unit_test.cpp",
     "./mock/codec_drm_decrypt_mock.cpp",
     "./mock/codecbase_mock.cpp",
@@ -106,8 +108,8 @@ ohos_unittest("codec_server_coverage_unit_test") {
   deps = [
     ":av_codec_engine_codeclist_mock",  # av_codec_engine_codeclist_mock
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "$av_codec_root_dir/services/utils:av_codec_service_utils",
     "$av_codec_root_dir/services/services/common/adaptive_framerate_controller:adaptive_framerate_controller",
+    "$av_codec_root_dir/services/utils:av_codec_service_utils",
   ]
 
   external_deps = [
