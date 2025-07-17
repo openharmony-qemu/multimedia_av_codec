@@ -513,7 +513,7 @@ HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Start_003, TestSize.Level1)
 sptr<Surface> CreateSurface()
 {
     auto consumer = Surface::CreateSurfaceAsConsumer();
-    auto p = consumer_->GetProducer();
+    auto p = consumer->GetProducer();
     return Surface::CreateSurfaceAsProducer(p);
 }
 
@@ -696,7 +696,7 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Valid_Test_003, TestSize.Level1)
     sptr<Surface> surface = CreateSurface();
     if (surface != nullptr) {
         EXPECT_CALL(*codecBaseMock_, SetOutputSurface(surface)).Times(0);
-        int32_t ret = server_->SetOutputSurface(surface);
+        server_->SetOutputSurface(surface);
     }
 }
 
