@@ -90,6 +90,11 @@ void PlayListDownloader::DoOpen(const std::string& url)
 {
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                       std::shared_ptr<DownloadRequest>& request) {
+        // 目标资源永久删除，需要重头重新请求
+        if (request->GetServerError() == HTTP_SERVER_ERROR_410) {
+            ReOpen();
+            return;
+        }
         if (retryStartTime_ == 0) {
             retryStartTime_ = request->GetNowTime();
         }
@@ -101,11 +106,6 @@ void PlayListDownloader::DoOpen(const std::string& url)
             eventCallback_->OnEvent({PluginEventType::CLIENT_ERROR,
                                     {NetworkClientErrorCode::ERROR_TIME_OUT}, "download m3u8"});
 
-            return;
-        }
-        // 目标资源永久删除，需要重头重新请求
-        if (request->GetServerError() == HTTP_SERVER_ERROR_410 && request->GetRetryTimes() <= 1) {
-            ReOpen();
             return;
         }
         playList_.clear();
