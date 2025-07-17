@@ -100,6 +100,8 @@ std::string HCodec::OnGetHidumperInfo()
     }
     s << "        " << "----------------------------" << endl;
     s << "        " << "------------OUTPUT----------" << endl;
+    s << "        " << "eos:" << outputPortEos_ << ", fbd:" << record_[OMX_DirOutput].frameCntTotal_
+      << ", bufferCapacity:" << getbufferCapacity(outputBufferPool_) << endl;
     for (const BufferInfo& info : outputBufferPool_) {
         int fd = info.surfaceBuffer == nullptr ? -1 : info.surfaceBuffer->GetFileDescriptor();
         int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
