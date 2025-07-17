@@ -121,6 +121,7 @@ private:
     void AddStopPts();
     bool AddPauseResumePts(int64_t currentPts);
     void HandleWaitforStop();
+    void Clear();
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoEncoder> codecServer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
