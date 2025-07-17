@@ -51,7 +51,7 @@ public:
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
     void CreateExecutingDecoder();
-    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(TEST_SUIT)};
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(LOG_DOMAIN_FRAMEWORK)};
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;

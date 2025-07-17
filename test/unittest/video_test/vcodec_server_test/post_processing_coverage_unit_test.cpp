@@ -13,12 +13,16 @@
  * limitations under the License.
  */
 
+#include <chrono>
 #include <memory>
+#include <thread>
 #include "avcodec_errors.h"
-#include "codeclist_core.h"
 #include "codec_server_coverage_unit_test.h"
-#include "meta/meta_key.h"
+#include "codeclist_core.h"
 #include "media_description.h"
+#include "meta/meta_key.h"
+#include "unittest_utils.h"
+
 #define EXPECT_CALL_GET_HCODEC_CAPS_MOCK                                                                               \
     EXPECT_CALL(*codecBaseMock_, GetHCapabilityList).Times(AtLeast(1)).WillRepeatedly
 #define EXPECT_CALL_GET_FCODEC_CAPS_MOCK                                                                               \
@@ -50,8 +54,8 @@ void CodecServerUnitTest::CreateCodecByMime()
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
 
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, true, codecMime,
-        *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, true, codecMime, *validFormat_.GetMeta(),
+                                API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
 
@@ -295,5 +299,14 @@ HWTEST_F(CodecServerUnitTest, CleanPostProcessingResource_Valid_Test_001, TestSi
     EXPECT_EQ(server_->postProcessingInputBufferInfoQueue_, nullptr);
     EXPECT_EQ(server_->postProcessingOutputBufferInfoQueue_, nullptr);
 }
-} // MediaAVCodec
-} // namespace
+} // namespace MediaAVCodec
+} // namespace OHOS
+
+int main(int argc, char **argv)
+{
+    testing::GTEST_FLAG(output) = "xml:./";
+    testing::InitGoogleTest(&argc, argv);
+    auto res = RUN_ALL_TESTS();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // 1000ms
+    return res;
+}
