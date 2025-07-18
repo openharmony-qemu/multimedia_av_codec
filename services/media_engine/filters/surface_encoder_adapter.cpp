@@ -349,6 +349,7 @@ Status SurfaceEncoderAdapter::Start()
         SetFaultEvent("SurfaceEncoderAdapter::Start, CodecServer is null");
         return Status::ERROR_UNKNOWN;
     }
+    Clear();
     int32_t ret;
     isThreadExit_ = false;
     hasReceivedEOS_ = false;
@@ -500,15 +501,7 @@ Status SurfaceEncoderAdapter::Reset()
         return Status::OK;
     }
     int32_t ret = codecServer_->Reset();
-    startBufferTime_ = -1;
-    stopTime_ = -1;
-    pauseTime_ = -1;
-    resumeTime_ = -1;
-    totalPauseTime_ = 0;
-    isStart_ = false;
-    isStartKeyFramePts_ = false;
-    pauseResumeQueue_.clear();
-    pauseResumePts_.clear();
+    Clear();
     if (ret == 0) {
         curState_ = ProcessStateCode::IDLE;
         return Status::OK;
@@ -920,6 +913,27 @@ void SurfaceEncoderAdapter::HandleWaitforStop()
         encoderAdapterCallback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL,
                                          AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED);
     }
+}
+
+void SurfaceEncoderAdapter::Clear()
+{
+    MEDIA_LOG_I("SurfaceEncoderAdapter::Clear enter");
+    startBufferTime_ = -1;
+    stopTime_ = -1;
+    pauseTime_ = -1;
+    resumeTime_ = -1;
+    totalPauseTime_ = 0;
+    isStart_ = false;
+    isResume_ = false;
+    isStartKeyFramePts_ = false;
+    pauseResumeQueue_.clear();
+    pauseResumePts_.clear();
+    totalPauseTimeQueue_ = {0};
+    checkFramesPauseTime_ = 0;
+    currentPts_ = -1;
+    currentKeyFramePts_ = -1;
+    preKeyFramePts_ = -1;
+    videoFrameRate_ = -1;
 }
 
 bool SurfaceEncoderAdapter::GetIsTransCoderMode()
