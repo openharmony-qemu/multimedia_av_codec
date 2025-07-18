@@ -789,4 +789,105 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_RESOLUTION_PROFILE_0010, TestSize.Level2)
     ASSERT_EQ(350, vDecSample->outFrameCount);
     ASSERT_EQ(0, vDecSample->errCount);
 }
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_SW264_FUNC_0010
+ * @tc.name      : 264同步软解输出nv12
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW264_FUNC_0010, TestSize.Level1)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_SW264_FUNC_0020
+ * @tc.name      : 264同步软解输出nv21
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW264_FUNC_0020, TestSize.Level0)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_SW264_FUNC_0030
+ * @tc.name      : 264同步软解输出surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW264_FUNC_0030, TestSize.Level1)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_SW264_FUNC_0040
+ * @tc.name      : 264同步软解输出rgba
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW264_FUNC_0040, TestSize.Level1)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_RGBA;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
+}
 } // namespace

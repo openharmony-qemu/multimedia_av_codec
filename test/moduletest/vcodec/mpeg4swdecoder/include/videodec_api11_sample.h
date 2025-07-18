@@ -86,6 +86,11 @@ public:
     uint32_t expectCropBottom = 0;
     uint32_t expectCropLeft = 0;
     uint32_t expectCropRight = 0;
+    int32_t enbleSyncMode = 0;
+    int64_t syncInputWaitTime = -1;
+    int64_t syncOutputWaitTime = -1;
+    bool queryOutputBufferEOS = false;
+    bool queryInputBufferEOS = false;
     const char *fileSourcesha256[64] = {"27", "6D", "A2", "D4", "18", "21", "A5", "CD", "50", "F6", "DD", "CA", "46",
                                         "32", "C3", "FE", "58", "FC", "BC", "51", "FD", "70", "C7", "D4", "E7", "4D",
                                         "5C", "76", "E7", "71", "8A", "B3", "C0", "51", "84", "0A", "FA", "AF", "FA",
@@ -95,12 +100,14 @@ public:
     int32_t Start();
     int32_t Stop();
     int32_t Flush();
+    int32_t DecodeSetSurface();
     int32_t Reset();
     int32_t state_EOS();
     void SetEOS(uint32_t index, OH_AVBuffer *buffer);
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
     int32_t StartVideoDecoder();
+    int32_t StartSyncVideoDecoder();
     int64_t GetSystemTimeUs();
     int32_t CreateVideoDecoder(std::string codeName);
     int32_t SetVideoDecoderCallback();
@@ -119,12 +126,15 @@ public:
     int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr);
     void OutputFunc();
     void InputFuncTest();
+    void SyncInputFunc();
     void GetBufferSize();
     void SetAttr(OH_AVCodecBufferAttr &attr, int64_t startPts, uint32_t bufferSize);
     void SetRepeat();
     void PtrStep(uint32_t &bufferSize, unsigned char **pBuffer, uint32_t size);
     void PtrStepExtraRead(uint32_t &bufferSize, unsigned char **pBuffer);
     void OutputFuncTest();
+    void SyncOutputFunc();
+int32_t SyncOutputFuncEos(OH_AVCodecBufferAttr attr, uint32_t index);
     void ReleaseSignal();
     void CreateSurface();
     void ReleaseInFile();

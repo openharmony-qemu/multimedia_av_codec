@@ -85,7 +85,25 @@ void HwEncInnerFuncNdkTest::TearDown()
 } // namespace
 
 namespace {
-
+bool IsSupportRgba1010102Format()
+{
+    const int32_t *pixelFormat = nullptr;
+    uint32_t pixelFormatNum = 0;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    if (capability == nullptr) {
+        return false;
+    }
+    int32_t ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat, &pixelFormatNum);
+    if (pixelFormat == nullptr || pixelFormatNum == 0 || ret != AV_ERR_OK) {
+        return false;
+    }
+    for (int i = 0; i < pixelFormatNum; i++) {
+        if (pixelFormat[i] == static_cast<int32_t>(AV_PIXEL_FORMAT_RGBA1010102)) {
+            return true;
+        }
+    }
+    return false;
+}
 /**
  * @tc.number    : VIDEO_ENCODE_INNER_REPEAT_FUNC_0100
  * @tc.name      : repeat surface h264 encode send eos,max count -1,frame after 73ms
@@ -2354,5 +2372,119 @@ HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0150, TestSize.Leve
         ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
         vEncInnerSample->WaitForEOS();
     }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SYNC_FUNC_0340
+ * @tc.name      : 264 waterMark encode
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_SYNC_FUNC_0340, TestSize.Level2)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        return;
+    }
+    BufferRequestConfig bufferConfig = {
+        .width = 128,
+        .height = 72,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+    vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_SYNC_FUNC_0340.h264";
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->enbleSyncMode = 1;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    ASSERT_EQ(AVCS_ERR_OK, vEncSample->SetCustomBuffer(bufferConfig));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+    vEncSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SYNC_FUNC_0350
+ * @tc.name      : 265 waterMark encode
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_SYNC_FUNC_0350, TestSize.Level2)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        return;
+    }
+    BufferRequestConfig bufferConfig = {
+        .width = 1280,
+        .height = 720,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+    vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_SYNC_FUNC_0350.h265";
+    vEncSample->WATER_MARK_DIR = "/data/test/media/1280_720_50.rgba";
+
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 0;
+    vEncSample->videoCoordinateY = 0;
+    vEncSample->enbleSyncMode = 1;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecNameHevc));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    ASSERT_EQ(AVCS_ERR_OK, vEncSample->SetCustomBuffer(bufferConfig));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+    vEncSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_RGBA1010102_0100
+ * @tc.name      : waterMark rgba1010102 265 surface encode
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_RGBA1010102_0100, TestSize.Level2)
+{
+    auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+    if (!vEncInnerSample->GetWaterMarkCapability(g_codecMime) || !IsSupportRgba1010102Format()) {
+        return;
+    }
+    BufferRequestConfig bufferConfig = {
+        .width = 1280,
+        .height = 720,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncInnerSample->INP_DIR = "/data/test/media/1280_720_rgba1010102.yuv";
+    vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_RGBA1010102_0100.h265";
+    vEncInnerSample->WATER_MARK_DIR = "/data/test/media/1280_720_50.rgba";
+
+    vEncInnerSample->surfaceInput = true;
+    vEncInnerSample->enableWaterMark = true;
+    vEncInnerSample->videoCoordinateX = 0;
+    vEncInnerSample->configMain10 = true;
+    vEncInnerSample->videoCoordinateY = 0;
+    vEncInnerSample->DEFAULT_PIX_FMT = static_cast<int32_t>(VideoPixelFormat::RGBA1010102);
+    vEncInnerSample->videoCoordinateWidth = bufferConfig.width;
+    vEncInnerSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
+    ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+    ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->SetCustomBuffer(bufferConfig));
+    ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+    vEncInnerSample->WaitForEOS();
 }
 } // namespace
