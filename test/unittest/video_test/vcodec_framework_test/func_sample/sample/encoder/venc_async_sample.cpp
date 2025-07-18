@@ -658,6 +658,7 @@ void VideoEncAsyncSample::InputParamLoopFunc()
         if (attr != nullptr) {
             int64_t pts = 0;
             EXPECT_EQ(true, attr->GetLongValue(Media::Tag::MEDIA_TIME_STAMP, pts));
+            EXPECT_TRUE(frameInputCount_ != 0 || pts != 0);
             UNITTEST_INFO_LOG("attribute: %s", attr->DumpInfo());
         }
 
@@ -1091,8 +1092,8 @@ int32_t VideoEncAsyncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativ
     region.rects = rect;
     int64_t systemTimeUs = time_point_cast<microseconds>(system_clock::now()).time_since_epoch().count();
     if (enableVariableFrameRate_) {
-        systemTimeUs = (TIMESTAMP_BASE + DURATION_BASE * frameIndex_) * RATIO_US_TO_NS;
         frameIndex_++;
+        systemTimeUs = (TIMESTAMP_BASE + DURATION_BASE * frameIndex_) * RATIO_US_TO_NS;
     }
     OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
     ret = OH_NativeBuffer_Unmap(nativeBuffer);
