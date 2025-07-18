@@ -1353,6 +1353,52 @@ HWTEST(TestAudioSink, UpdateLastBufferPTS_001, TestSize.Level1)
     innerSynchroizer->UpdateLastBufferPTS(bufferOffset, speed);
     EXPECT_EQ(innerSynchroizer->lastBufferPTS_, tempPTS);
 }
+
+HWTEST(TestAudioSink, audio_sink_SetAudioSinkPluginParameters_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    auto ret = audioSink->SetAudioSinkPluginParameters(audioSink->plugin_);
+    ASSERT_TRUE(ret == Status::OK);
+}
+
+HWTEST(TestAudioSink, audio_sink_PreCreateAndStartNewPlugin_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->volume_ = 0;
+    audioSink->speed_  = -1;
+    audioSink->effectMode_ = -1;
+    audioSink->state_  = Pipeline::FilterState::RUNNING;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    auto plugin = audioSink->PreCreateAndStartNewPlugin(meta, nullptr);
+    ASSERT_TRUE(plugin != nullptr);
+}
+
+HWTEST(TestAudioSink, audio_sink_HandleFormatChange_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->volume_ = 0;
+    audioSink->speed_  = -1;
+    audioSink->effectMode_ = -1;
+    audioSink->state_  = Pipeline::FilterState::RUNNING;
+    std::shared_ptr<TestAudioSinkMock> plugin = std::make_shared<TestAudioSinkMock>("test");
+    audioSink->plugin_ = plugin;
+    audioSink->SetThreadGroupId("HiPlayer_1");
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    auto ret = audioSink->HandleFormatChange(meta, nullptr);
+    ASSERT_TRUE(ret == Status::OK);
+}
+
+HWTEST(TestAudioSink, audio_sink_ChangeTrackForFormatChange_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->SetThreadGroupId("HiPlayer_1");
+    audioSink->hasPluginCreateTaskFinished_ = true;
+    auto ret = audioSink->ChangeTrackForFormatChange();
+    ASSERT_TRUE(ret == Status::OK);
+}
 } // namespace Test
 } // namespace Media
 } // namespace OHOS
