@@ -1829,10 +1829,10 @@ Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, int
         FALSE_RETURN_V_MSG_E(keyFrameNext >= 0, Status::ERROR_OUT_OF_RANGE,
             "Seek failed, err: Not next key frame");
     }
+    std::unique_lock<std::mutex> sLock(syncMutex_);
     auto ret = av_seek_frame(formatContext_.get(), trackIndex, ffTime, flag);
-    if (formatContext_->pb->error) {
-        formatContext_->pb->error = 0;
-    }
+    sLock.unlock();
+    formatContext_->pb->error = 0;
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
         "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ret).c_str());
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
@@ -1901,8 +1901,10 @@ Status FFmpegDemuxerPlugin::Flush()
         ret = cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
     }
     if (formatContext_) {
+        std::unique_lock<std::mutex> sLock(syncMutex_);
         avio_flush(formatContext_.get()->pb);
         avformat_flush(formatContext_.get());
+        sLock.unlock();
     }
     return ret;
 }
