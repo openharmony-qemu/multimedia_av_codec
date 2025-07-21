@@ -49,7 +49,7 @@ std::string g_codecName = "";
 std::string g_codecMimeHevc = "video/hevc";
 std::string g_codecNameHevc = "";
 OH_AVCapability *cap = nullptr;
-
+OH_AVCapability *cap_Hevc = nullptr;
 fileInfo file_640_480_rgba{"/data/test/media/640_480.rgba", GRAPHIC_PIXEL_FMT_RGBA_8888, 640, 480 };
 fileInfo file_1280_536_nv21{"/data/test/media/1280_536_nv21.yuv", GRAPHIC_PIXEL_FMT_YCRCB_420_SP, 1280, 536 };
 fileInfo file_1280_720_nv12{"/data/test/media/1280_720_nv12.yuv", GRAPHIC_PIXEL_FMT_YCBCR_420_SP, 1280, 720 };
@@ -65,8 +65,8 @@ void HwEncInnerFunc2NdkTest::SetUpTestCase()
     g_codecName = tmpCodecName;
     cout << "g_codecName: " << g_codecName << endl;
 
-    OH_AVCapability *capHevc = OH_AVCodec_GetCapabilityByCategory(g_codecMimeHevc.c_str(), true, HARDWARE);
-    const char *tmpCodecNameHevc = OH_AVCapability_GetName(capHevc);
+    cap_Hevc = OH_AVCodec_GetCapabilityByCategory(g_codecMimeHevc.c_str(), true, HARDWARE);
+    const char *tmpCodecNameHevc = OH_AVCapability_GetName(cap_Hevc);
     g_codecNameHevc = tmpCodecNameHevc;
     cout << "g_codecNameHevc: " << g_codecNameHevc << endl;
 }
@@ -127,7 +127,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0020, TestSize.L
             OH_AVFormat_Destroy(format);
             format = nullptr;
         }
-        auto vEncInnerSample = make_unique<VEncAPI11Sample>();
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
         vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
         vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0020.h264";
         vEncInnerSample->enbleSyncMode = 1;
@@ -156,7 +156,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0030, TestSize.L
             OH_AVFormat_Destroy(format);
             format = nullptr;
         }
-        auto vEncInnerSample = make_unique<VEncAPI11Sample>();
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
         vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
         vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0030.h264";
         vEncInnerSample->enbleSyncMode = 1;
@@ -185,7 +185,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0040, TestSize.L
             OH_AVFormat_Destroy(format);
             format = nullptr;
         }
-        auto vEncInnerSample = make_unique<VEncAPI11Sample>();
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
         vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
         vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0040.h264";
         vEncInnerSample->enbleSyncMode = 1;
@@ -214,7 +214,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0050, TestSize.L
             OH_AVFormat_Destroy(format);
             format = nullptr;
         }
-        auto vEncInnerSample = make_unique<VEncAPI11Sample>();
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
         vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
         vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0050.h264";
         vEncInnerSample->enbleSyncMode = 1;
@@ -243,7 +243,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0060, TestSize.L
             OH_AVFormat_Destroy(format);
             format = nullptr;
         }
-        auto vEncInnerSample = make_unique<VEncAPI11Sample>();
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
         vEncInnerSample->DEFAULT_WIDTH = 3840;
         vEncInnerSample->DEFAULT_HEIGHT = 2160;
         vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_MULTIFILE_0070.264";
@@ -279,7 +279,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0070, TestSize.L
             OH_AVFormat_Destroy(format);
             format = nullptr;
         }
-        auto vEncInnerSample = make_unique<VEncAPI11Sample>();
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
         vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
         vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0070.h265";
         vEncInnerSample->enbleSyncMode = 1;
@@ -308,7 +308,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0080, TestSize.L
             OH_AVFormat_Destroy(format);
             format = nullptr;
         }
-        auto vEncInnerSample = make_unique<VEncAPI11Sample>();
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
         vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
         vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0080.h265";
         vEncInnerSample->enbleSyncMode = 1;
@@ -337,7 +337,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0090, TestSize.L
             OH_AVFormat_Destroy(format);
             format = nullptr;
         }
-        auto vEncInnerSample = make_unique<VEncAPI11Sample>();
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
         vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
         vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0090.h265";
         vEncInnerSample->enbleSyncMode = 1;
@@ -366,7 +366,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0100, TestSize.L
             OH_AVFormat_Destroy(format);
             format = nullptr;
         }
-        auto vEncInnerSample = make_unique<VEncAPI11Sample>();
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
         vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
         vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0100.h265";
         vEncInnerSample->enbleSyncMode = 1;
@@ -395,7 +395,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0110, TestSize.L
             OH_AVFormat_Destroy(format);
             format = nullptr;
         }
-        auto vEncInnerSample = make_unique<VEncAPI11Sample>();
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
         vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
         vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0110.h265";
         vEncInnerSample->enbleSyncMode = 1;
@@ -424,7 +424,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0120, TestSize.L
             OH_AVFormat_Destroy(format);
             format = nullptr;
         }
-        auto vEncInnerSample = make_unique<VEncAPI11Sample>();
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
         vEncInnerSample->DEFAULT_WIDTH = 3840;
         vEncInnerSample->DEFAULT_HEIGHT = 2160;
         vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0120.h265";
