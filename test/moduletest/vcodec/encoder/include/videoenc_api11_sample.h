@@ -201,6 +201,7 @@ public:
     int32_t DEFAULT_MAX_COUNT = 1;
     uint32_t inCount = 0;
     int32_t enbleSyncMode = 0;
+	int32_t enbleBFrameMode = 0;
     int64_t syncInputWaitTime = -1;
     int64_t syncOutputWaitTime = -1;
     bool queryOutputBufferEOS = false;
