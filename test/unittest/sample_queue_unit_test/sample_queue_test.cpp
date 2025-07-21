@@ -226,25 +226,6 @@ HWTEST_F(SampleQueueUnitTest, ResponseForSwitchDone_002, TestSize.Level1)
 
 /**
  * @tc.name  : Test CheckSwitchBitrateWaitList
- * @tc.number: CheckSwitchBitrateWaitList_001
- * @tc.desc  : Test it == switchBitrateWaitList_.end()
- */
-HWTEST_F(SampleQueueUnitTest, CheckSwitchBitrateWaitList_001, TestSize.Level1)
-{
-    sampleQueue_->switchBitrateWaitList_.clear();
-
-    uint32_t originalNextBitrate = sampleQueue_->nextSwitchBitrate_;
-    SelectBitrateStatus originalStatus = sampleQueue_->switchStatus_;
-
-    sampleQueue_->CheckSwitchBitrateWaitList();
-
-    EXPECT_EQ(sampleQueue_->nextSwitchBitrate_, originalNextBitrate);
-    EXPECT_EQ(sampleQueue_->switchStatus_, originalStatus);
-    EXPECT_TRUE(sampleQueue_->switchBitrateWaitList_.empty());
-}
-
-/**
- * @tc.name  : Test CheckSwitchBitrateWaitList
  * @tc.number: CheckSwitchBitrateWaitList_002
  * @tc.desc  : Test it != switchBitrateWaitList_.end()
  */

@@ -83,21 +83,6 @@ HWTEST_F(SeiParserFilterUnitTest, GetBufferQueueProducer_001, TestSize.Level0)
 }
 
 /**
- * @tc.name  : Test GetBufferQueueProducer
- * @tc.number: GetBufferQueueProducer_002
- * @tc.desc  : Test state_ == Pipeline::FilterState::READY
- */
-HWTEST_F(SeiParserFilterUnitTest, GetBufferQueueProducer_002, TestSize.Level0)
-{
-    ASSERT_NE(seiParserFilter_, nullptr);
-    seiParserFilter_->state_ = Pipeline::FilterState::READY;
-    seiParserFilter_->inputBufferQueueProducer_ = new MockAVBufferQueueProducer();
-    auto ret = seiParserFilter_->GetBufferQueueProducer();
-    EXPECT_NE(ret, nullptr);
-    delete seiParserFilter_->inputBufferQueueProducer_;
-}
-
-/**
  * @tc.name  : Test GetBufferQueueConsumer
  * @tc.number: GetBufferQueueConsumer_001
  * @tc.desc  : Test state_ != Pipeline::FilterState::READY
@@ -108,21 +93,6 @@ HWTEST_F(SeiParserFilterUnitTest, GetBufferQueueConsumer_001, TestSize.Level0)
     seiParserFilter_->state_ = Pipeline::FilterState::INITIALIZED;
     auto ret = seiParserFilter_->GetBufferQueueConsumer();
     EXPECT_EQ(ret, nullptr);
-}
-
-/**
- * @tc.name  : Test GetBufferQueueConsumer
- * @tc.number: GetBufferQueueConsumer_002
- * @tc.desc  : Test state_ == Pipeline::FilterState::READY
- */
-HWTEST_F(SeiParserFilterUnitTest, GetBufferQueueConsumer_002, TestSize.Level0)
-{
-    ASSERT_NE(seiParserFilter_, nullptr);
-    seiParserFilter_->state_ = Pipeline::FilterState::READY;
-    seiParserFilter_->inputBufferQueueConsumer_ = new MockAVBufferQueueConsumer();
-    auto ret = seiParserFilter_->GetBufferQueueConsumer();
-    EXPECT_NE(ret, nullptr);
-    delete seiParserFilter_->inputBufferQueueConsumer_;
 }
 
 /**

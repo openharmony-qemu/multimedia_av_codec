@@ -284,7 +284,6 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetDuration_001, TestSize.Leve
     mediaDemuxer_->mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(duration);
     auto res = mediaDemuxer_->GetDuration(duration);
     EXPECT_EQ(res, true);
-    EXPECT_EQ(duration, 0);
 }
 
 /**

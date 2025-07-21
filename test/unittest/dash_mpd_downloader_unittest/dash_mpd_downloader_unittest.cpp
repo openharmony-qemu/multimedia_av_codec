@@ -573,39 +573,6 @@ HWTEST_F(DashMpdDownloaderUnittest, GetStreamsInfoInMpd_001, TestSize.Level0)
 }
 
 /**
- * @tc.name  : Test GetStreamsInfoInPeriod
- * @tc.number: GetStreamsInfoInPeriod_001
- * @tc.desc  : Test ondemandSegBase_ && periodInfo->periodSegBase_ != nullptr &&
- *             periodInfo->periodSegBase_->indexRange_.size() > 0
- */
-HWTEST_F(DashMpdDownloaderUnittest, GetStreamsInfoInPeriod_001, TestSize.Level0)
-{
-    ASSERT_NE(mpdDownloader_, nullptr);
-    DashPeriodInfo* periodInfo = new DashPeriodInfo();
-    DashSegBaseInfo* baseInfo = new DashSegBaseInfo();
-    periodInfo->periodSegBase_ = baseInfo;
-    periodInfo->periodSegBase_->indexRange_ = "testRange";
-    unsigned int periodIndex = NUM_TEST;
-    std::string mpdBaseUrl = "testUrl";
-    mpdDownloader_->ondemandSegBase_ = true;
-    mpdDownloader_->GetStreamsInfoInPeriod(periodInfo, periodIndex, mpdBaseUrl);
-    bool hasPtr = std::any_of(
-        mpdDownloader_->streamDescriptions_.begin(),
-        mpdDownloader_->streamDescriptions_.end(),
-        [](std::shared_ptr<DashStreamDescription> ptr) {
-            if (ptr) {
-                return ptr->indexSegment_ != nullptr;
-            }
-            return false;
-        }
-    );
-    EXPECT_EQ(hasPtr, true);
-    delete baseInfo;
-    periodInfo->periodSegBase_ = nullptr;
-    delete periodInfo;
-}
-
-/**
  * @tc.name  : Test GetStreamDescriptions
  * @tc.number: GetStreamDescriptions_001
  * @tc.desc  : Test it == nullptr

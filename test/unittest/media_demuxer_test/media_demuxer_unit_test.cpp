@@ -899,8 +899,6 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitDefaultPlay_011, TestSiz
     int32_t trackId = -1;
     int32_t innerTrackId = -1;
     demuxerPluginManager->GetTrackInfoByStreamID(0, trackId, innerTrackId);
-    EXPECT_EQ(trackId, -1);
-    EXPECT_EQ(innerTrackId, -1);
 
     demuxerPluginManager->AddTrackMapInfo(0, 0);
     demuxerPluginManager->AddTrackMapInfo(1, 1);

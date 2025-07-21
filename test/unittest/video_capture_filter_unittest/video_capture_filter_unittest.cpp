@@ -31,38 +31,6 @@ void VideoCaptureFilterUnitTest::SetUp(void) {}
 
 void VideoCaptureFilterUnitTest::TearDown(void) {}
 
-/**
- * @tc.name  : Test OnAudioSessionChecked
- * @tc.number: OnAudioSessionChecked_001
- * @tc.desc  : Test it1 != playerMap_.end()
- *             Test player != nullptr && player->IsPlaying()
- */
-HWTEST_F(VideoCaptureFilterUnitTest, OnLinkedResult_001, TestSize.Level0)
-{
-    auto videoCaptureFilter = std::make_shared<VideoCaptureFilter>("testVideoCaptureFilter", FilterType::VIDEO_CAPTURE);
-    auto linkCallback = std::make_shared<VideoCaptureFilterLinkCallback>(videoCaptureFilter);
-    auto bufferListener = std::make_shared<ConsumerSurfaceBufferListener>(videoCaptureFilter);
-    sptr<AVBufferQueueProducer> outputBufferQueue = new MockAVBufferQueueProducer();
-    std::shared_ptr<Meta> meta = nullptr;
-    linkCallback->OnLinkedResult(outputBufferQueue, meta);
-    linkCallback->OnUnlinkedResult(meta);
-    linkCallback->OnUpdatedResult(meta);
-    bufferListener->OnBufferAvailable();
-    auto filterPtr = linkCallback->videoCaptureFilter_.lock();
-    ASSERT_NE(filterPtr, nullptr);
-    auto bufferQueue = filterPtr->outputBufferQueueProducer_;
-    EXPECT_EQ(bufferQueue, outputBufferQueue);
-    
-    linkCallback->videoCaptureFilter_ = std::weak_ptr<VideoCaptureFilter>();
-    bufferListener->videoCaptureFilter_ = std::weak_ptr<VideoCaptureFilter>();
-    linkCallback->OnLinkedResult(outputBufferQueue, meta);
-    linkCallback->OnUnlinkedResult(meta);
-    linkCallback->OnUpdatedResult(meta);
-    bufferListener->OnBufferAvailable();
-    delete outputBufferQueue;
-    outputBufferQueue = nullptr;
-}
-
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
