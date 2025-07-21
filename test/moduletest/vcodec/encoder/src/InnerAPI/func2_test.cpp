@@ -56,7 +56,6 @@ fileInfo file_1280_720_nv12{"/data/test/media/1280_720_nv12.yuv", GRAPHIC_PIXEL_
 fileInfo file_1920_816_rgba{"/data/test/media/1920_816.rgba", GRAPHIC_PIXEL_FMT_RGBA_8888, 1920, 816 };
 fileInfo file_1920_1080_nv21{"/data/test/media/1920_1080_nv21.yuv", GRAPHIC_PIXEL_FMT_YCRCB_420_SP, 1920, 1080 };
 fileInfo file_3840_2160_nv12{"/data/test/media/3840_2160_nv12.yuv", GRAPHIC_PIXEL_FMT_YCBCR_420_SP, 3840, 2160 };
-fileInfo file_1280_720_nv12_10bit{"/data/test/media/1280_720_nv12_10bit.yuv", GRAPHIC_PIXEL_FMT_YCBCR_P010, 1280, 720 };
 
 void HwEncInnerFunc2NdkTest::SetUpTestCase()
 {

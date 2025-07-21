@@ -26,6 +26,10 @@
 #include "avcodec_list.h"
 #include "avcodec_common.h"
 
+using namespace std;
+using namespace OHOS;
+using namespace OHOS::Media;
+using namespace testing::ext;
 namespace {
 OH_AVCodec *venc_ = NULL;
 OH_AVCapability *cap = nullptr;
@@ -33,6 +37,13 @@ OH_AVCapability *cap_hevc = nullptr;
 constexpr uint32_t CODEC_NAME_SIZE = 128;
 char g_codecName[CODEC_NAME_SIZE] = {};
 char g_codecNameHEVC[CODEC_NAME_SIZE] = {};
+
+fileInfo file_640_480_rgba{"/data/test/media/640_480.rgba", NATIVEBUFFER_PIXEL_FMT_RGBA_8888, 640, 480 };
+fileInfo file_1280_536_nv21{"/data/test/media/1280_536_nv21.yuv", NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP, 1280, 536 };
+fileInfo file_1280_720_nv12{"/data/test/media/1280_720_nv12.yuv", NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP, 1280, 720 };
+fileInfo file_1920_816_rgba{"/data/test/media/1920_816.rgba", NATIVEBUFFER_PIXEL_FMT_RGBA_8888, 1920, 816 };
+fileInfo file_1920_1080_nv21{"/data/test/media/1920_1080_nv21.yuv", NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP, 1920, 1080 };
+fileInfo file_3840_2160_nv12{"/data/test/media/3840_2160_nv12.yuv", NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP, 3840, 2160 };
 } // namespace
 namespace OHOS {
 namespace Media {
@@ -49,18 +60,6 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-
-using namespace std;
-using namespace OHOS;
-using namespace OHOS::Media;
-using namespace testing::ext;
-
-fileInfo file_640_480_rgba{"/data/test/media/640_480.rgba", NATIVEBUFFER_PIXEL_FMT_RGBA_8888, 640, 480 };
-fileInfo file_1280_536_nv21{"/data/test/media/1280_536_nv21.yuv", NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP, 1280, 536 };
-fileInfo file_1280_720_nv12{"/data/test/media/1280_720_nv12.yuv", NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP, 1280, 720 };
-fileInfo file_1920_816_rgba{"/data/test/media/1920_816.rgba", NATIVEBUFFER_PIXEL_FMT_RGBA_8888, 1920, 816 };
-fileInfo file_1920_1080_nv21{"/data/test/media/1920_1080_nv21.yuv", NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP, 1920, 1080 };
-fileInfo file_3840_2160_nv12{"/data/test/media/3840_2160_nv12.yuv", NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP, 3840, 2160 };
 
 void HwEncFunc3NdkTest::SetUpTestCase()
 {
