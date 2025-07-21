@@ -2190,7 +2190,6 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
             return false;
         }
     }
-
     AVBufferConfig avBufferConfig;
     if (isTranscoderMode_ && isSkippingAudioDecAndEnc_ && queueIndex == audioTrackId_) {
         avBufferConfig.memoryType = MemoryType::SHARED_MEMORY;
@@ -2214,7 +2213,6 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
         ret = bufferQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
         REQUEST_BUFFER_TIMEOUT);
     }
-    
     RecordErrorCount(queueIndex, ret);
 
     return ret == Status::OK;
