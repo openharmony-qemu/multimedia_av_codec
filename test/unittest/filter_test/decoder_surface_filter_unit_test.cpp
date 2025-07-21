@@ -1134,10 +1134,16 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DoReInitAndStart, TestSize.Level1)
     Status ret = Status::OK;
     auto videoDecoderMock = std::make_shared<VideoDecoderAdapterMock>();
     decoderSurfaceFilter_->videoDecoder_ = videoDecoderMock;
+    decoderSurfaceFilter_->hasReceivedReleaseEvent_ = false;
+    ret = decoderSurfaceFilter_->DoReInitAndStart();
+    EXPECT_EQ(ret, Status::OK);
+
+    decoderSurfaceFilter_->hasReceivedReleaseEvent_ = true;
     decoderSurfaceFilter_->isDecoderReleasedForMute_ = true;
     ret = decoderSurfaceFilter_->DoReInitAndStart();
     EXPECT_NE(ret, Status::OK);
 
+    decoderSurfaceFilter_->hasReceivedReleaseEvent_ = true;
     decoderSurfaceFilter_->isDecoderReleasedForMute_ = false;
     ret = decoderSurfaceFilter_->DoReInitAndStart();
     EXPECT_NE(ret, Status::OK);

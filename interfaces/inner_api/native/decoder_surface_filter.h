@@ -264,7 +264,7 @@ private:
 
     std::atomic<bool> isVideoMuted_ {false};
     bool isDecoderReleasedForMute_ {true};
-    bool hasReceivedReleaseEvent {false};
+    bool hasReceivedReleaseEvent_ {false};
     bool isFirstStart_ = true;
 };
 } // namespace Pipeline

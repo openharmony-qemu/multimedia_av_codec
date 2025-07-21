@@ -1598,7 +1598,7 @@ Status DecoderSurfaceFilter::SetMediaMuted(bool isMuted, bool hasInitialized)
     MEDIA_LOG_I("DecoderSurfaceFilter SetMediaMuted");
     isVideoMuted_.store(isMuted);
     if (isMuted) {
-        hasReceivedReleaseEvent = false;
+        hasReceivedReleaseEvent_ = false;
         isRenderStarted_ = false;
         if (!hasInitialized) {
             eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_NO_NEED_INIT, Status::OK});
@@ -1612,7 +1612,7 @@ Status DecoderSurfaceFilter::SetMediaMuted(bool isMuted, bool hasInitialized)
 Status DecoderSurfaceFilter::DoReleaseOnMuted(bool needRelease)
 {
     MEDIA_LOG_I("DecoderSurfaceFilter::DoReleaseOnMuted enter");
-    hasReceivedReleaseEvent = true;
+    hasReceivedReleaseEvent_ = true;
     if (isDecoderReleasedForMute_ || !needRelease || !isVideoMuted_.load()) {
         MEDIA_LOG_I("Do not need to release video decoder");
         return Status::OK;
@@ -1625,7 +1625,7 @@ Status DecoderSurfaceFilter::DoReInitAndStart()
 {
     MEDIA_LOG_I("DecoderSurfaceFilter::DoReInitAndStart()");
     Status ret = Status::OK;
-    if (!hasReceivedReleaseEvent) {
+    if (!hasReceivedReleaseEvent_) {
         if (eventReceiver_ != nullptr) {
             eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_VIDEO_DECODER_RESTART, Status::OK});
         }
