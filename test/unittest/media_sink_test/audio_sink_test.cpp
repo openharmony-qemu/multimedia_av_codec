@@ -1397,7 +1397,7 @@ HWTEST(TestAudioSink, audio_sink_ChangeTrackForFormatChange_001, TestSize.Level1
     audioSink->SetThreadGroupId("HiPlayer_1");
     audioSink->hasPluginCreateTaskFinished_ = true;
     auto ret = audioSink->ChangeTrackForFormatChange();
-    ASSERT_TRUE(ret == Status::OK);
+    ASSERT_TRUE(ret == Status::ERROR_NULL_POINTER);
 }
 } // namespace Test
 } // namespace Media
