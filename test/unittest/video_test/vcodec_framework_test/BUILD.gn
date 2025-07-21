@@ -43,6 +43,45 @@ vcodec_unittest_cflags = [
   "-Dprivate=public",
   "-Dprotected=public",
 ]
+av_codec_capi_external_deps = [
+  "av_codec:av_codec_client",
+  "av_codec:capi_packages",
+  "av_codec:native_media_vdec",
+  "av_codec:native_media_venc",
+  "bounds_checking_function:libsec_static",
+  "c_utils:utils",
+  "graphic_2d:libgraphic_utils",
+  "graphic_2d:librender_service_client",
+  "graphic_surface:surface",
+  "graphic_surface:sync_fence",
+  "hilog:libhilog",
+  "hisysevent:libhisysevent",
+  "hitrace:hitrace_meter",
+  "init:libbegetutil",
+  "ipc:ipc_single",
+  "media_foundation:media_foundation",
+  "media_foundation:native_media_core",
+  "openssl:libcrypto_shared",
+]
+av_codec_inner_external_deps = [
+  "av_codec:av_codec_client",
+  "bounds_checking_function:libsec_static",
+  "c_utils:utils",
+  "eventhandler:libeventhandler",
+  "graphic_2d:libgraphic_utils",
+  "graphic_2d:librender_service_base",
+  "graphic_2d:librender_service_client",
+  "graphic_surface:surface",
+  "graphic_surface:sync_fence",
+  "hilog:libhilog",
+  "hisysevent:libhisysevent",
+  "hitrace:hitrace_meter",
+  "init:libbegetutil",
+  "ipc:ipc_single",
+  "media_foundation:media_foundation",
+  "media_foundation:native_media_core",
+  "openssl:libcrypto_shared",
+]
 
 group("vcodec_framework_test") {
   testonly = true
@@ -73,8 +112,8 @@ group("vcodec_framework_test") {
     if (target_cpu == "arm64" && av_codec_support_hcodec) {
       deps += [
         ":videoenc_bframe_capi_async_unit_test",
-        ":videoenc_bframe_inner_async_unit_test",
         ":videoenc_bframe_capi_sync_unit_test",
+        ":videoenc_bframe_inner_async_unit_test",
         ":videoenc_bframe_inner_sync_unit_test",
       ]
     }
@@ -82,6 +121,7 @@ group("vcodec_framework_test") {
       deps += [
         ":videoenc_capi_async_unit_test",
         ":videoenc_capi_sync_unit_test",
+        ":videoenc_format_capi_unit_test",
         ":videoenc_inner_async_unit_test",
         ":videoenc_inner_sync_unit_test",
         ":videoenc_repeat_previous_frame_unit_test",
@@ -89,7 +129,6 @@ group("vcodec_framework_test") {
         ":videoenc_state_unit_test",
         ":videoenc_temporal_scalability_capi_unit_test",
         ":videoenc_temporal_scalability_inner_unit_test",
-        ":videoenc_format_capi_unit_test"
       ]
     }
   }
@@ -99,6 +138,9 @@ group("vcodec_framework_test") {
 ohos_unittest("videodec_capi_async_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -134,10 +176,8 @@ ohos_unittest("videodec_capi_async_unit_test") {
     "./videodec_func_unit_test.cpp",
   ]
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
     include_dirs +=
@@ -156,6 +196,9 @@ ohos_unittest("videodec_capi_async_unit_test") {
 ohos_unittest("videodec_h263_capi_async_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -189,11 +232,8 @@ ohos_unittest("videodec_h263_capi_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_h263_func_unit_test.cpp",
   ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
     include_dirs +=
@@ -213,6 +253,9 @@ ohos_unittest("videodec_h263_capi_async_unit_test") {
 ohos_unittest("videodec_inner_async_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -247,11 +290,8 @@ ohos_unittest("videodec_inner_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_func_unit_test.cpp",
   ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]
@@ -264,6 +304,9 @@ ohos_unittest("videodec_inner_async_unit_test") {
 ohos_unittest("videodec_h263_inner_async_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -298,11 +341,8 @@ ohos_unittest("videodec_h263_inner_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_h263_func_unit_test.cpp",
   ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]
@@ -316,6 +356,9 @@ ohos_unittest("videodec_h263_inner_async_unit_test") {
 ohos_unittest("videodec_mpeg_func_async_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -351,10 +394,8 @@ ohos_unittest("videodec_mpeg_func_async_unit_test") {
     "./videodec_mpeg_func_unit_test.cpp",
   ]
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]
@@ -367,6 +408,9 @@ ohos_unittest("videodec_mpeg_func_async_unit_test") {
 ohos_unittest("videoenc_capi_async_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -402,11 +446,8 @@ ohos_unittest("videoenc_capi_async_unit_test") {
     "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_func_unit_test.cpp",
   ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  external_deps = av_codec_capi_external_deps
 
   resource_config_file = resource_configuration_file
 }
@@ -415,6 +456,9 @@ ohos_unittest("videoenc_capi_async_unit_test") {
 ohos_unittest("videoenc_inner_async_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -450,11 +494,8 @@ ohos_unittest("videoenc_inner_async_unit_test") {
     "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_func_unit_test.cpp",
   ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  external_deps = av_codec_inner_external_deps
 
   resource_config_file = resource_configuration_file
 }
@@ -463,6 +504,9 @@ ohos_unittest("videoenc_inner_async_unit_test") {
 ohos_unittest("videoenc_temporal_scalability_capi_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -497,11 +541,8 @@ ohos_unittest("videoenc_temporal_scalability_capi_unit_test") {
     "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_temporal_scalability_unit_test.cpp",
   ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  external_deps = av_codec_capi_external_deps
 
   resource_config_file = resource_configuration_file
 }
@@ -510,6 +551,9 @@ ohos_unittest("videoenc_temporal_scalability_capi_unit_test") {
 ohos_unittest("videoenc_temporal_scalability_inner_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -545,10 +589,8 @@ ohos_unittest("videoenc_temporal_scalability_inner_unit_test") {
     "./videoenc_temporal_scalability_unit_test.cpp",
   ]
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]
@@ -561,6 +603,9 @@ ohos_unittest("videoenc_temporal_scalability_inner_unit_test") {
 ohos_unittest("videoenc_bframe_capi_async_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -594,11 +639,8 @@ ohos_unittest("videoenc_bframe_capi_async_unit_test") {
     "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_bframe_unit_test.cpp",
   ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  external_deps = av_codec_capi_external_deps
 
   resource_config_file = resource_configuration_file
 }
@@ -607,6 +649,9 @@ ohos_unittest("videoenc_bframe_capi_async_unit_test") {
 ohos_unittest("videoenc_bframe_inner_async_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -640,11 +685,8 @@ ohos_unittest("videoenc_bframe_inner_async_unit_test") {
     "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_bframe_unit_test.cpp",
   ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]
@@ -653,11 +695,13 @@ ohos_unittest("videoenc_bframe_inner_async_unit_test") {
   resource_config_file = resource_configuration_file
 }
 
-
 #################################################################################################################
 ohos_unittest("videoenc_bframe_capi_sync_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -691,11 +735,8 @@ ohos_unittest("videoenc_bframe_capi_sync_unit_test") {
     "./func_sample/sample/encoder/venc_sync_sample.cpp",
     "./videoenc_bframe_unit_test.cpp",
   ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  external_deps = av_codec_capi_external_deps
 
   resource_config_file = resource_configuration_file
 }
@@ -704,6 +745,9 @@ ohos_unittest("videoenc_bframe_capi_sync_unit_test") {
 ohos_unittest("videoenc_bframe_inner_sync_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -738,10 +782,8 @@ ohos_unittest("videoenc_bframe_inner_sync_unit_test") {
     "./videoenc_bframe_unit_test.cpp",
   ]
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]
@@ -750,11 +792,13 @@ ohos_unittest("videoenc_bframe_inner_sync_unit_test") {
   resource_config_file = resource_configuration_file
 }
 
-
 #################################################################################################################
 ohos_unittest("videoenc_repeat_previous_frame_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -789,11 +833,8 @@ ohos_unittest("videoenc_repeat_previous_frame_unit_test") {
     "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_repeat_previous_frame_unit_test.cpp",
   ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  external_deps = av_codec_capi_external_deps
 
   resource_config_file = resource_configuration_file
 }
@@ -802,6 +843,9 @@ ohos_unittest("videoenc_repeat_previous_frame_unit_test") {
 ohos_unittest("videoenc_format_capi_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -834,11 +878,8 @@ ohos_unittest("videoenc_format_capi_unit_test") {
     "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_format_unit_test.cpp",
   ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  external_deps = av_codec_capi_external_deps
 
   resource_config_file = resource_configuration_file
 }
@@ -897,6 +938,9 @@ ohos_unittest("videoenc_stable_unit_test") {
 ohos_unittest("video_buffer_converter_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
   include_dirs = [
     "$av_codec_root_dir/services/services/codec/ipc",
     "$av_codec_root_dir/services/services/common",
@@ -904,17 +948,11 @@ ohos_unittest("video_buffer_converter_unit_test") {
   ]
   cflags = vcodec_unittest_cflags
   sources = [ "./buffer_converter_unit_test.cpp" ]
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
-
-  external_deps = [
-    "c_utils:utils",
-    "graphic_surface:surface",
-    "graphic_surface:sync_fence",
-    "hilog:libhilog",
-    "ipc:ipc_single",
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
   ]
+  external_deps = av_codec_capi_external_deps
 
   resource_config_file = resource_configuration_file
 }
@@ -923,6 +961,9 @@ ohos_unittest("video_buffer_converter_unit_test") {
 ohos_unittest("videodec_hdrvivid2sdr_async_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -959,22 +1000,12 @@ ohos_unittest("videodec_hdrvivid2sdr_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_hdrvivid2sdr_unit_test.cpp",
   ]
-
-  deps = [ "$av_codec_root_dir/interfaces/kits/c:capi_packages" ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = [
-    "c_utils:utils",
-    "graphic_2d:librender_service_client",
-    "graphic_surface:surface",
-    "graphic_surface:sync_fence",
-    "hilog:libhilog",
-    "ipc:ipc_single",
-    "openssl:libcrypto_shared",
-    "window_manager:libwm",
+  deps = [
+    "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
   ]
+  external_deps = av_codec_capi_external_deps
+  external_deps += [ "window_manager:libwm" ]
 
   if (av_codec_support_drm) {
     include_dirs +=
@@ -993,6 +1024,9 @@ ohos_unittest("videodec_hdrvivid2sdr_async_unit_test") {
 ohos_unittest("videodec_hdecoder_memrecycle_async_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -1034,12 +1068,11 @@ ohos_unittest("videodec_hdecoder_memrecycle_async_unit_test") {
     "./videodec_hdecoder_memrecycle_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/interfaces/kits/c:capi_packages" ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
-  external_deps = []
+  deps = [
+    "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
+  external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]
@@ -1132,6 +1165,9 @@ ohos_unittest("videodec_memrecycle_unit_test") {
 ohos_unittest("videodec_capi_sync_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -1167,10 +1203,8 @@ ohos_unittest("videodec_capi_sync_unit_test") {
     "./videodec_func_unit_test.cpp",
   ]
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
     include_dirs +=
@@ -1189,6 +1223,9 @@ ohos_unittest("videodec_capi_sync_unit_test") {
 ohos_unittest("videodec_h263_capi_sync_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -1223,10 +1260,8 @@ ohos_unittest("videodec_h263_capi_sync_unit_test") {
     "./videodec_h263_func_unit_test.cpp",
   ]
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
     include_dirs +=
@@ -1245,6 +1280,9 @@ ohos_unittest("videodec_h263_capi_sync_unit_test") {
 ohos_unittest("videodec_inner_sync_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -1280,10 +1318,8 @@ ohos_unittest("videodec_inner_sync_unit_test") {
     "./videodec_func_unit_test.cpp",
   ]
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]
@@ -1296,6 +1332,9 @@ ohos_unittest("videodec_inner_sync_unit_test") {
 ohos_unittest("videodec_h263_inner_sync_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -1331,10 +1370,8 @@ ohos_unittest("videodec_h263_inner_sync_unit_test") {
     "./videodec_h263_func_unit_test.cpp",
   ]
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]
@@ -1347,6 +1384,9 @@ ohos_unittest("videodec_h263_inner_sync_unit_test") {
 ohos_unittest("videodec_mpeg_func_sync_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -1382,10 +1422,8 @@ ohos_unittest("videodec_mpeg_func_sync_unit_test") {
     "./videodec_mpeg_func_unit_test.cpp",
   ]
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]
@@ -1398,6 +1436,9 @@ ohos_unittest("videodec_mpeg_func_sync_unit_test") {
 ohos_unittest("videodec_hdrvivid2sdr_sync_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -1435,21 +1476,13 @@ ohos_unittest("videodec_hdrvivid2sdr_sync_unit_test") {
     "./videodec_hdrvivid2sdr_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/interfaces/kits/c:capi_packages" ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = [
-    "c_utils:utils",
-    "graphic_2d:librender_service_client",
-    "graphic_surface:surface",
-    "graphic_surface:sync_fence",
-    "hilog:libhilog",
-    "ipc:ipc_single",
-    "openssl:libcrypto_shared",
-    "window_manager:libwm",
+  deps = [
+    "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
   ]
+  external_deps = av_codec_capi_external_deps
+
+  external_deps += [ "window_manager:libwm" ]
 
   if (av_codec_support_drm) {
     include_dirs +=
@@ -1468,6 +1501,9 @@ ohos_unittest("videodec_hdrvivid2sdr_sync_unit_test") {
 ohos_unittest("videodec_hdecoder_memrecycle_sync_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -1508,13 +1544,11 @@ ohos_unittest("videodec_hdecoder_memrecycle_sync_unit_test") {
     "./func_sample/sample/decoder/vdec_sync_sample.cpp",
     "./videodec_hdecoder_memrecycle_unit_test.cpp",
   ]
-
-  deps = [ "$av_codec_root_dir/interfaces/kits/c:capi_packages" ]
-
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
-  external_deps = []
+  deps = [
+    "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
+  external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]
@@ -1527,6 +1561,9 @@ ohos_unittest("videodec_hdecoder_memrecycle_sync_unit_test") {
 ohos_unittest("videoenc_capi_sync_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -1563,10 +1600,8 @@ ohos_unittest("videoenc_capi_sync_unit_test") {
     "./videoenc_func_unit_test.cpp",
   ]
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  external_deps = av_codec_capi_external_deps
 
   resource_config_file = resource_configuration_file
 }
@@ -1575,6 +1610,9 @@ ohos_unittest("videoenc_capi_sync_unit_test") {
 ohos_unittest("videoenc_inner_sync_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+  ]
   include_dirs = [
     "./",
     "./common/utils",
@@ -1611,10 +1649,8 @@ ohos_unittest("videoenc_inner_sync_unit_test") {
     "./videoenc_func_unit_test.cpp",
   ]
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
-
-  external_deps = []
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  external_deps = av_codec_inner_external_deps
 
   resource_config_file = resource_configuration_file
 }
@@ -1661,8 +1697,6 @@ ohos_unittest("videodec_state_unit_test") {
   ]
 
   cflags_cc = cflags
-
-  public_configs = []
 
   if (av_codec_support_test) {
     sources = [ "./videodec_state_unit_test.cpp" ]
@@ -1733,8 +1767,6 @@ ohos_unittest("videoenc_state_unit_test") {
   ]
 
   cflags_cc = cflags
-
-  public_configs = []
 
   if (av_codec_support_test) {
     sources = [ "./videoenc_state_unit_test.cpp" ]
