@@ -153,6 +153,7 @@ public:
     int32_t QueryOutputBuffer(uint32_t index, int64_t timeoutUs);
     OH_AVBuffer *GetInputBuffer(uint32_t index);
     OH_AVBuffer *GetOutputBuffer(uint32_t index);
+    void SetConfigureEnc(OH_AVFormat *format);
     VEncAPI11Signal *signal_;
     uint32_t errCount = 0;
     bool enableForceIDR = false;
