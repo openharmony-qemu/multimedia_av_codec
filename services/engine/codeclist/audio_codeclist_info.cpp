@@ -117,7 +117,8 @@ const std::string VENDOR_AAC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libaac_en
 static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sampleRate)
 {
     std::vector<Range> sampleRateRange;
-    for (auto i = 0; i < sampleRate.size(); i++) {
+    uint32_t sampleRateSize = sampleRate.size();
+    for (uint32_t i = 0; i < sampleRateSize; i++) {
         sampleRateRange.push_back(Range(sampleRate[i], sampleRate[i]));
     }
     return sampleRateRange;
