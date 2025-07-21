@@ -2173,18 +2173,15 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
         FALSE_RETURN_V_MSG_E(bufferQueueMap_.count(queueIndex) > 0 && bufferQueueMap_[queueIndex] != nullptr,
             false, "UserQueue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
     }
-
     bool needSetSmallerSize = queueIndex == videoTrackId_ && hasSetLargeSize_ && !isVideoMuted_ && !needRestore_;
-    if (needSetSmallerSize) {
-        if (sampleQueueMap_[queueIndex]->IsEmpty()) {
-            sampleQueueMap_[queueIndex]->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
-            hasSetLargeSize_ = false;
-        } else {
-            return false;
-        }
+    if (needSetSmallerSize && sampleQueueMap_[queueIndex]->IsEmpty()) {
+        sampleQueueMap_[queueIndex]->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
+        hasSetLargeSize_ = false;
+    } else if (needSetSmallerSize) {
+        return false;
     }
-    
-    if (!HasEosTrack() && queueIndex == videoTrackId_ && (isVideoMuted_ || needRestore_)) {
+    bool needControlReadSample = !HasEosTrack() && queueIndex == videoTrackId_ && (isVideoMuted_ || needRestore_);
+    if (needControlReadSample) {
         int64_t duration = 0;
         mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(duration);
         int64_t mediaTime = (duration > 0 && syncCenter_ != nullptr) ?
