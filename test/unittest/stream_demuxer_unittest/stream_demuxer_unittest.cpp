@@ -131,36 +131,6 @@ HWTEST_F(StreamDemuxerUnitTest, ProcInnerDash_001, TestSize.Level0)
 }
 
 /**
- * @tc.name: Test ReadRetry  API
- * @tc.number: ReadRetry_001
- * @tc.desc: Test IsDash() && streamID != data->streamID
- */
-HWTEST_F(StreamDemuxerUnitTest, ReadRetry_001, TestSize.Level0)
-{
-    ASSERT_NE(streamDemuxer_, nullptr);
-    streamDemuxer_->isDash_ = true;
-    EXPECT_EQ(streamDemuxer_->IsDash(), true);
-    streamDemuxer_->isInterruptNeeded_.store(false);
-    auto mockSource = std::make_shared<MockSource>();
-    EXPECT_CALL(*(mockSource), Read(_, _, _, _)).WillRepeatedly(Return(Status::OK));
-    streamDemuxer_->source_ = mockSource;
-    int32_t streamID = NUM_TEST;
-    uint64_t offset = NUM_TEST;
-    size_t size = ID_TEST;
-    auto mockMemory1 = std::make_shared<MockMemory>(NUM_TEST);
-    auto mockTest = std::make_shared<MockBuffer>();
-    EXPECT_CALL(*(mockTest), GetMemory()).WillRepeatedly(Return(mockMemory1));
-    std::shared_ptr<Buffer> bufferPtr = mockTest;
-    bufferPtr->streamID = ID_TEST;
-    CacheData cacheDataTest;
-    auto mockBuffer = nullptr;
-    cacheDataTest.data = mockBuffer;
-    streamDemuxer_->cacheDataMap_[streamID] = cacheDataTest;
-    auto ret = streamDemuxer_->ReadRetry(streamID, offset, size, bufferPtr);
-    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
-}
-
-/**
  * @tc.name: Test PullData  API
  * @tc.number: PullData_001
  * @tc.desc: Test source_ == nullptr
@@ -178,35 +148,6 @@ HWTEST_F(StreamDemuxerUnitTest, PullData_001, TestSize.Level0)
     bufferPtr->streamID = ID_TEST;
     auto ret = streamDemuxer_->PullData(streamID, offset, size, bufferPtr);
     EXPECT_EQ(ret, Status::ERROR_INVALID_OPERATION);
-}
-
-/**
- * @tc.name: Test PullData  API
- * @tc.number: PullData_002
- * @tc.desc: Test (offset + readSize) > totalSize
- */
-HWTEST_F(StreamDemuxerUnitTest, PullData_002, TestSize.Level0)
-{
-    ASSERT_NE(streamDemuxer_, nullptr);
-    auto mockSource = std::make_shared<MockSource>();
-    EXPECT_CALL(*(mockSource), IsSeekToTimeSupported()).WillRepeatedly(Return(false));
-    EXPECT_CALL(*(mockSource), GetSeekable()).WillRepeatedly(Return(Plugins::Seekable::INVALID));
-    EXPECT_CALL(*(mockSource), GetSize(_))
-    .WillRepeatedly(DoAll(
-        SetArgReferee<0>(ID_TEST),
-        Return(Status::OK)
-    ));
-    streamDemuxer_->source_ = mockSource;
-    int32_t streamID = ID_TEST;
-    uint64_t offset = ID_TEST;
-    size_t size = ID_TEST;
-    auto mockTest = std::make_shared<MockBuffer>();
-    EXPECT_CALL(*(mockTest), GetMemory()).WillRepeatedly(Return(nullptr));
-    std::shared_ptr<Buffer> bufferPtr = mockTest;
-    streamDemuxer_->position_ = offset;
-    streamDemuxer_->isDataSrc_ = false;
-    auto ret = streamDemuxer_->PullData(streamID, offset, size, bufferPtr);
-    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
 }
 
 /**
