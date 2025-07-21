@@ -933,7 +933,6 @@ void SurfaceEncoderAdapter::Clear()
     currentPts_ = -1;
     currentKeyFramePts_ = -1;
     preKeyFramePts_ = -1;
-    videoFrameRate_ = -1;
 }
 
 bool SurfaceEncoderAdapter::GetIsTransCoderMode()
