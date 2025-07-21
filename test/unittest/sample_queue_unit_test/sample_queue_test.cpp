@@ -382,7 +382,7 @@ SampleQueue::Config sampleQueueConfig{};
     EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
 
     sampleQueue_->config_.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
-    ret = sampleQueue_->SetLargerQueueSize(MAX_SAMPLE_QUEUE_SIZE);
+    ret = sampleQueue_->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
     EXPECT_EQ(ret, Status::OK);
     EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
 }
