@@ -60,6 +60,7 @@ public:
     uint32_t defaultRotation = 0;
     uint32_t defaultPixelFormat = AV_PIXEL_FORMAT_NV12;
     uint32_t frameCount_ = 0;
+    int enbleBlankFrame = 0;
     int32_t Start();
     int32_t Stop();
     int32_t Flush();

@@ -44,6 +44,7 @@ bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     vDecSample->defaultFrameRate = consumeFrameRate;
     vDecSample->defaultRotation = consumeRotation ;
     vDecSample->defaultPixelFormat = consumePixelFormat;
+    vDecSample->enbleBlankFrame = fdp.ConsumeIntegral<int>();
     vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG4");
     vDecSample->ConfigureVideoDecoder();
     vDecSample->SetVideoDecoderCallback();

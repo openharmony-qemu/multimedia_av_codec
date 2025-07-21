@@ -77,6 +77,10 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     int data1 = fdp.ConsumeIntegral<int32_t>();
     bool data2 = fdp.ConsumeBool();
     VEncAPI11FuzzSample *vEncSample = new VEncAPI11FuzzSample();
+    bool isRgba1010102 = fdp.ConsumeBool();
+    if (isRgba1010102) {
+        vEncSample->defaultPixFmt = AV_PIXEL_FORMAT_RGBA1010102;
+    }
     vEncSample->fuzzData = data;
     vEncSample->fuzzSize = size;
     vEncSample->surfInput = data2;

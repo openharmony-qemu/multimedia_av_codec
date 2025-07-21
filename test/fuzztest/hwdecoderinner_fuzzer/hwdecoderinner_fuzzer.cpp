@@ -1,0 +1,94 @@
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include <cstddef>
+#include <cstdint>
+#include "videodec_inner_sample.h"
+#include <fuzzer/FuzzedDataProvider.h>
+#include "native_avcapability.h"
+using namespace std;
+using namespace OHOS;
+using namespace OHOS::Media;
+using namespace OHOS::MediaAVCodec;
+#define FUZZ_PROJECT_NAME "hwdecoderinner_fuzzer"
+
+namespace OHOS {
+void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
+{
+    std::ofstream file(filename, std::ios::out | std::ios::binary);
+    if (file.is_open()) {
+        file.write(reinterpret_cast<const char*>(data), size);
+        file.close();
+    }
+}
+
+bool HwdecoderInnerFuzzTest(const uint8_t *data, size_t size)
+{
+    if (size < sizeof(int32_t)) {
+        return false;
+    }
+    std::string filename = "/data/test/corpus-HwdecoderInnerFuzzTest";
+    SaveCorpus(data, size, filename);
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+    if (cap == nullptr) {
+        return false;
+    }
+    string codecName = OH_AVCapability_GetName(cap);
+    FuzzedDataProvider fdp(data, size);
+    VDecNdkInnerFuzzSample *vDecSample = new VDecNdkInnerFuzzSample();
+    vDecSample->isP3Full = fdp.ConsumeBool();
+    if (vDecSample->isP3Full) {
+        vDecSample->DEFAULT_COLORSPACE = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_FULL);
+    }
+    vDecSample->SF_OUTPUT = fdp.ConsumeBool();
+    int32_t ret = vDecSample->CreateByName(codecName);
+    if (ret != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;
+    }
+    ret = vDecSample->Configure();
+    if (ret != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;
+    }
+    vDecSample->SetCallback();
+    if (vDecSample->SF_OUTPUT) {
+        vDecSample->SetOutputSurface();
+    }
+    vDecSample->Prepare();
+    ret = vDecSample->Start();
+    if (ret != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return true;
+    }
+    vDecSample->InputFuncFUZZ(data, size);
+    vDecSample->Flush();
+    vDecSample->Stop();
+    vDecSample->Reset();
+    delete vDecSample;
+    vDecSample = nullptr;
+    return true;
+}
+} // namespace OHOS
+
+/* Fuzzer entry point */
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+{
+    /* Run your code on data */
+    OHOS::HwdecoderInnerFuzzTest(data, size);
+    return 0;
+}

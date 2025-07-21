@@ -62,7 +62,7 @@ public:
     uint32_t defaultHeight = 1080;
     uint32_t defaultFrameRate = 30;
     uint32_t defaultRotation = 0;
-    
+    int enbleBlankFrame = 0;
     uint32_t defaultPixelFormat = 1;
     uint32_t frameCount_ = 0;
     const char *fileSourcesha256[64] = {"27", "6D", "A2", "D4", "18", "21", "A5", "CD", "50", "F6", "DD", "CA", "46",
