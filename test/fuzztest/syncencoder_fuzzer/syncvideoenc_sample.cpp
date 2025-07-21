@@ -23,7 +23,7 @@
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
-std::random_device rd;
+
 namespace {
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
@@ -46,6 +46,7 @@ int32_t g_picWidth;
 int32_t g_picHeight;
 int32_t g_keyWidth;
 int32_t g_keyHeight;
+std::random_device g_rd;
 constexpr int32_t TIMESTAMP_BASE = 1000000;
 constexpr int32_t DURATION_BASE = 46000;
 
@@ -59,7 +60,7 @@ void clearIntqueue(std::queue<uint32_t> &q)
 
 VEncSyncSample::~VEncSyncSample()
 {
-    if (SURF_INPUT && nativeWindow) {
+    if (surfInput && nativeWindow) {
         OH_NativeWindow_DestroyNativeWindow(nativeWindow);
         nativeWindow = nullptr;
     }
@@ -165,9 +166,9 @@ void VEncSyncSample::DumpLtrInfo(OH_AVBuffer *buffer)
 void VEncSyncSample::DumpQPInfo(OH_AVBuffer *buffer)
 {
     OH_AVFormat *format = OH_AVBuffer_GetParameter(buffer);
-    int32_t qp_average = 0;
+    int32_t qpAverage = 0;
     double mse = 0;
-    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_AVERAGE, &qp_average);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_AVERAGE, &qpAverage);
     OH_AVFormat_GetDoubleValue(format, OH_MD_KEY_VIDEO_ENCODER_MSE, &mse);
 }
 
@@ -185,7 +186,7 @@ int64_t VEncSyncSample::GetSystemTimeUs()
 {
     struct timespec now;
     (void)clock_gettime(CLOCK_BOOTTIME, &now);
-    int64_t nanoTime = (int64_t)now.tv_sec * NANOS_IN_SECOND + now.tv_nsec;
+    int64_t nanoTime = static_cast<int64_t>(now.tv_sec) * NANOS_IN_SECOND + now.tv_nsec;
 
     return nanoTime / NANOS_IN_MICRO;
 }
@@ -196,8 +197,8 @@ int32_t VEncSyncSample::ConfigureVideoEncoder()
     if (format == nullptr) {
         return AV_ERR_UNKNOWN;
     }
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, defaultWidth);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, defaultHeight);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, defaultFrameRate);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, defaultKeyFrameInterval);
@@ -208,9 +209,9 @@ int32_t VEncSyncSample::ConfigureVideoEncoder()
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, HEVC_PROFILE_MAIN);
     if (DEFAULT_BITRATE_MODE == CQ) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, DEFAULT_QUALITY);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, defaultQuality);
     } else {
-        (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
+        (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, defaultBitrate);
     }
     if (enableQP) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MAX, defaultQp);
@@ -221,13 +222,13 @@ int32_t VEncSyncSample::ConfigureVideoEncoder()
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_COUNT, ltrParam.ltrCount);
     }
     if (enableColorSpaceParams) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_RANGE_FLAG, DEFAULT_RANGE_FLAG);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_RANGE_FLAG, defaultRangeFlag);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_COLOR_PRIMARIES, DEFAULT_COLOR_PRIMARIES);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_TRANSFER_CHARACTERISTICS, DEFAULT_TRANSFER_CHARACTERISTICS);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MATRIX_COEFFICIENTS, DEFAULT_MATRIX_COEFFICIENTS);
     }
     if (enableRepeat) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, DEFAULT_FRAME_AFTER);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, defaultFrameAfter);
         if (setMaxCount) {
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, defaultMaxCount);
         }
@@ -239,23 +240,23 @@ int32_t VEncSyncSample::ConfigureVideoEncoder()
     return ret;
 }
 
-int32_t VEncSyncSample::ConfigureVideoEncoderTemporal(int32_t temporal_gop_size)
+int32_t VEncSyncSample::ConfigureVideoEncoderTemporal(int32_t temporalGopSize)
 {
     OH_AVFormat *format = OH_AVFormat_Create();
     if (format == nullptr) {
         cout << "Fatal: Failed to create format" << endl;
         return AV_ERR_UNKNOWN;
     }
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, defaultWidth);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, defaultHeight);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, defaultFrameRate);
-    (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
+    (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, defaultBitrate);
 
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, defaultKeyFrameInterval);
 
-    if (TEMPORAL_CONFIG) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporal_gop_size);
+    if (temporalConfig) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
             ADJACENT_REFERENCE);
     }
@@ -264,14 +265,14 @@ int32_t VEncSyncSample::ConfigureVideoEncoderTemporal(int32_t temporal_gop_size)
     } else {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 0);
     }
-    if (TEMPORAL_JUMP_MODE) {
+    if (temporalJumpMode) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, JUMP_REFERENCE);
     }
     if (enableLTR && (ltrParam.ltrCount > 0)) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_COUNT, ltrParam.ltrCount);
     }
-    if (TEMPORAL_UNIFORMLY) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporal_gop_size);
+    if (temporalUniformly) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
             UNIFORMLY_SCALED_REFERENCE);
     }
@@ -293,9 +294,9 @@ int32_t VEncSyncSample::ConfigureVideoEncoderFuzz(int32_t data)
         return AV_ERR_UNKNOWN;
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, data);
-    DEFAULT_WIDTH = data;
+    defaultWidth = data;
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, data);
-    DEFAULT_HEIGHT = data;
+    defaultHeight = data;
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, data % MAX_PIXEL_FMT);
     double frameRate = data;
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, frameRate);
@@ -321,7 +322,7 @@ int32_t VEncSyncSample::SetVideoEncoderCallback()
         cout << "Failed to new VEncAPI11Signal" << endl;
         return AV_ERR_UNKNOWN;
     }
-    if (SURF_INPUT) {
+    if (surfInput) {
         int32_t ret = OH_VideoEncoder_RegisterParameterCallback(venc_, onEncInputParam, static_cast<void *>(this));
         if (ret != AV_ERR_OK) {
             return ret;
@@ -414,7 +415,7 @@ int32_t VEncSyncSample::CreateSurface()
         cout << "NativeWindowHandleOpt SET_FORMAT fail" << endl;
         return ret;
     }
-    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_BUFFER_GEOMETRY, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_BUFFER_GEOMETRY, defaultWidth, defaultHeight);
     if (ret != AV_ERR_OK) {
         cout << "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail" << endl;
         return ret;
@@ -454,7 +455,7 @@ int32_t VEncSyncSample::StartVideoEncoder()
 {
     isRunning_.store(true);
     int32_t ret = 0;
-    if (SURF_INPUT) {
+    if (surfInput) {
         ret = CreateSurface();
         if (ret != AV_ERR_OK) {
             return ret;
@@ -484,7 +485,7 @@ int32_t VEncSyncSample::StartVideoEncoder()
 
 int32_t VEncSyncSample::VideoEncoder()
 {
-    if (SURF_INPUT) {
+    if (surfInput) {
         inputLoop_ = make_unique<thread>(&VEncSyncSample::InputFuncSurface, this);
     } else {
         if (enbleSyncMode == 0) {
@@ -562,17 +563,19 @@ uint32_t VEncSyncSample::ReadOneFrameYUV420SP(uint8_t *dst)
 {
     uint8_t *start = dst;
     // copy Y
-    for (uint32_t i = 0; i < DEFAULT_HEIGHT; i++) {
-        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH);
-        if (!ReturnZeroIfEOS(DEFAULT_WIDTH))
-            return 0;
+    for (uint32_t i = 0; i < defaultHeight; i++) {
+        inFile_->read(reinterpret_cast<char *>(dst), defaultWidth);
+        if (!ReturnZeroIfEOS(defaultWidth)) {
+            return 0;   
+        }
         dst += stride_;
     }
     // copy UV
-    for (uint32_t i = 0; i < DEFAULT_HEIGHT / sampleRatio; i++) {
-        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH);
-        if (!ReturnZeroIfEOS(DEFAULT_WIDTH))
+    for (uint32_t i = 0; i < defaultHeight / sampleRatio; i++) {
+        inFile_->read(reinterpret_cast<char *>(dst), defaultWidth);
+        if (!ReturnZeroIfEOS(defaultWidth)) {
             return 0;
+        }
         dst += stride_;
     }
     return dst - start;
@@ -583,16 +586,17 @@ uint32_t VEncSyncSample::ReadOneFrameYUVP010(uint8_t *dst)
     uint8_t *start = dst;
     int32_t num = 2;
     // copy Y
-    for (uint32_t i = 0; i < DEFAULT_HEIGHT; i++) {
-        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH*num);
-        if (!ReturnZeroIfEOS(DEFAULT_WIDTH*num))
+    for (uint32_t i = 0; i < defaultHeight; i++) {
+        inFile_->read(reinterpret_cast<char *>(dst), defaultWidth * num);
+        if (!ReturnZeroIfEOS(defaultWidth * num)) {
             return 0;
+        }
         dst += stride_;
     }
     // copy UV
-    for (uint32_t i = 0; i < DEFAULT_HEIGHT / sampleRatio; i++) {
-        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH*num);
-        if (!ReturnZeroIfEOS(DEFAULT_WIDTH * num)) {
+    for (uint32_t i = 0; i < defaultHeight / sampleRatio; i++) {
+        inFile_->read(reinterpret_cast<char *>(dst), defaultWidth * num);
+        if (!ReturnZeroIfEOS(defaultWidth * num)) {
             return 0;
         }
         dst += stride_;
@@ -603,8 +607,8 @@ uint32_t VEncSyncSample::ReadOneFrameYUVP010(uint8_t *dst)
 uint32_t VEncSyncSample::ReadOneFrameRGBA8888(uint8_t *dst)
 {
     uint8_t *start = dst;
-    for (uint32_t i = 0; i < DEFAULT_HEIGHT; i++) {
-        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH * RGBA_SIZE);
+    for (uint32_t i = 0; i < defaultHeight; i++) {
+        inFile_->read(reinterpret_cast<char *>(dst), defaultWidth * RGBA_SIZE);
         if (inFile_->eof()) {
             return 0;
         }
@@ -620,8 +624,8 @@ uint32_t VEncSyncSample::FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuffer, O
     struct Region::Rect *rect = new Region::Rect();
     rect->x = 0;
     rect->y = 0;
-    rect->w = DEFAULT_WIDTH;
-    rect->h = DEFAULT_HEIGHT;
+    rect->w = defaultWidth;
+    rect->h = defaultHeight;
     region.rects = rect;
     NativeWindowHandleOpt(nativeWindow, SET_UI_TIMESTAMP, GetSystemTimeUs());
     ret = OH_NativeBuffer_Unmap(nativeBuffer);
@@ -731,7 +735,7 @@ int32_t VEncSyncSample::InitBuffer(OHNativeWindowBuffer *&ohNativeWindowBuffer,
     dst = (uint8_t *)virAddr;
     const SurfaceBuffer *sbuffer = SurfaceBuffer::NativeBufferToSurfaceBuffer(nativeBuffer);
     int32_t stride = sbuffer->GetStride();
-    if (dst == nullptr || stride < (int32_t)DEFAULT_WIDTH) {
+    if (dst == nullptr || stride < static_cast<int32_t>(defaultWidth)) {
         cout << "invalid va or stride=" << stride << endl;
         err = NativeWindowCancelBuffer(nativeWindow, ohNativeWindowBuffer);
         isRunning_.store(false);
@@ -782,8 +786,8 @@ void VEncSyncSample::FlushBuffer()
 
 void VEncSyncSample::RepeatStartBeforeEOS()
 {
-    if (REPEAT_START_FLUSH_BEFORE_EOS > 0) {
-        REPEAT_START_FLUSH_BEFORE_EOS--;
+    if (repeatStartFlushBeforeEos > 0) {
+        repeatStartFlushBeforeEos--;
         OH_VideoEncoder_Flush(venc_);
         FlushBuffer();
         OH_VideoEncoder_Start(venc_);
@@ -799,8 +803,8 @@ void VEncSyncSample::RepeatStartBeforeEOS()
 
 bool VEncSyncSample::RandomEOS(uint32_t index)
 {
-    int32_t randomEos = rd() % 25;
-    if (enable_random_eos && randomEos == frameCount) {
+    int32_t randomEos = g_rd() % 25;
+    if (enableRandomEos && randomEos == frameCount) {
         OH_VideoEncoder_NotifyEndOfStream(venc_);
         cout << "random eos" << endl;
         frameCount++;
@@ -814,13 +818,13 @@ bool VEncSyncSample::RandomEOS(uint32_t index)
 
 void VEncSyncSample::AutoSwitchParam()
 {
-    int64_t currentBitrate = DEFAULT_BITRATE;
+    int64_t currentBitrate = defaultBitrate;
     double currentFrameRate = defaultFrameRate;
     int32_t currentQP = defaultQp;
     if (frameCount == switchParamsTimeSec * static_cast<int32_t>(defaultFrameRate)) {
         OH_AVFormat *format = OH_AVFormat_Create();
         if (needResetBitrate) {
-            currentBitrate = DEFAULT_BITRATE >> 1;
+            currentBitrate = defaultBitrate >> 1;
             (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, currentBitrate);
         }
         if (needResetFrameRate) {
@@ -838,7 +842,7 @@ void VEncSyncSample::AutoSwitchParam()
     if (frameCount == static_cast<int32_t>(switchParamsTimeSec * static_cast<int32_t>(defaultFrameRate * DOUBLE))) {
         OH_AVFormat *format = OH_AVFormat_Create();
         if (needResetBitrate) {
-            currentBitrate = DEFAULT_BITRATE << 1;
+            currentBitrate = defaultBitrate << 1;
             cout<<"switch bitrate "<< currentBitrate;
             (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, currentBitrate);
         }
@@ -927,7 +931,7 @@ void VEncSyncSample::SetBufferParameter(OH_AVBuffer *buffer)
     if (!enableAutoSwitchBufferParam) {
         return;
     }
-    if (frameCount == switchParamsTimeSec * (int32_t)defaultFrameRate) {
+    if (frameCount == switchParamsTimeSec * static_cast<int32_t>(defaultFrameRate)) {
         OH_AVFormat *format = OH_AVFormat_Create();
         if (needResetQP) {
             currentQP = defaultQp;
@@ -937,7 +941,7 @@ void VEncSyncSample::SetBufferParameter(OH_AVBuffer *buffer)
         OH_AVBuffer_SetParameter(buffer, format) == AV_ERR_OK ? (0) : (errCount++);
         OH_AVFormat_Destroy(format);
     }
-    if (frameCount == static_cast<int32_t>(switchParamsTimeSec * (int32_t)defaultFrameRate * DOUBLE)) {
+    if (frameCount == static_cast<int32_t>(switchParamsTimeSec * static_cast<int32_t>(defaultFrameRate * DOUBLE))) {
         OH_AVFormat *format = OH_AVFormat_Create();
         if (needResetQP) {
             currentQP = defaultQp * DOUBLE;
@@ -960,12 +964,12 @@ int32_t VEncSyncSample::PushData(OH_AVBuffer *buffer, uint32_t index, int32_t &r
     }
     uint32_t size = static_cast<uint32_t>(OH_AVBuffer_GetCapacity(buffer));
     if (DEFAULT_PIX_FMT == AV_PIXEL_FORMAT_RGBA || DEFAULT_PIX_FMT == AV_PIXEL_FORMAT_RGBA1010102) {
-        if (size < DEFAULT_HEIGHT * stride_) {
+        if (size < defaultHeight * stride_) {
             return -1;
         }
         attr.size = ReadOneFrameRGBA8888(fileBuffer);
     } else {
-        if (size < (DEFAULT_HEIGHT * stride_ + (DEFAULT_HEIGHT * stride_ / DOUBLE))) {
+        if (size < (defaultHeight * stride_ + (defaultHeight * stride_ / DOUBLE))) {
             return -1;
         }
         attr.size = ReadOneFrameYUV420SP(fileBuffer);
@@ -973,8 +977,8 @@ int32_t VEncSyncSample::PushData(OH_AVBuffer *buffer, uint32_t index, int32_t &r
     if (repeatRun && inFile_->eof()) {
         inFile_->clear();
         inFile_->seekg(0, ios::beg);
-        encode_count++;
-        cout << "repeat"<< "   encode_count:" << encode_count << endl;
+        encodeCount++;
+        cout << "repeat"<< "   encodeCount:" << encodeCount << endl;
         return -1;
     }
     if (inFile_->eof()) {

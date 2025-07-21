@@ -139,7 +139,7 @@ void VDecInnerCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<A
 void VDecInnerCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info,
     AVCodecBufferFlag flag, std::shared_ptr<AVSharedMemory> buffer)
 {
-    if (g_decSample->SF_OUTPUT) {
+    if (g_decSample->sfOutput) {
         g_decSample->vdec_->ReleaseOutputBuffer(index, true);
     } else {
         g_decSample->vdec_->ReleaseOutputBuffer(index, false);
@@ -225,7 +225,7 @@ int32_t VDecNdkInnerFuzzSample::Configure()
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, defaultWidth);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, defaultHeight);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, DEFAULT_FORMAT);
-    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, defaultFrameRate);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, defaultColorspace);
     return vdec_->Configure(format);
 }
@@ -412,7 +412,7 @@ int32_t VDecNdkInnerFuzzSample::StartVideoDecoder()
 
 int32_t VDecNdkInnerFuzzSample::RunVideoDecoder(const std::string &codeName)
 {
-    SF_OUTPUT = false;
+    sfOutput = false;
     int32_t ret = CreateByName(codeName);
     if (ret != AVCS_ERR_OK) {
         cout << "Failed to create video decoder" << endl;
@@ -442,9 +442,9 @@ int32_t VDecNdkInnerFuzzSample::RunVideoDecoder(const std::string &codeName)
     return ret;
 }
 
-int32_t VDecNdkInnerFuzzSample::RunVideoDec_Surface(const std::string &codeName)
+int32_t VDecNdkInnerFuzzSample::RunVideoDecSurface(const std::string &codeName)
 {
-    SF_OUTPUT = true;
+    sfOutput = true;
     int ret = AVCS_ERR_OK;
     CreateSurface();
     if (!nativeWindow[0]) {
@@ -498,8 +498,8 @@ int32_t VDecNdkInnerFuzzSample::PushData(std::shared_ptr<AVSharedMemory> buffer,
         return 1;
     }
 
-    if (BEFORE_EOS_INPUT_INPUT && frameCount > TEN) {
-        BEFORE_EOS_INPUT_INPUT = false;
+    if (beforeEosInputInput && frameCount > TEN) {
+        beforeEosInputInput = false;
     }
 
     char ch[4] = {};
@@ -517,9 +517,9 @@ int32_t VDecNdkInnerFuzzSample::PushData(std::shared_ptr<AVSharedMemory> buffer,
         return 1;
     }
 
-    uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
+    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
                                      ((ch[0] & 0xFF) << TWENTY_FOUR));
-    if (bufferSize >= defaultWidth * defaultHeight * THREE >> 1) {
+    if (bufferSize >= ((defaultWidth * defaultHeight * THREE) >> 1)) {
         cout << "read bufferSize abnormal. buffersize = " << bufferSize << endl;
         return 1;
     }
@@ -550,7 +550,7 @@ int32_t VDecNdkInnerFuzzSample::SendData(uint32_t bufferSize, uint32_t index, st
     }
 
     int32_t size = buffer->GetSize();
-    if (size < (int32_t)(bufferSize + START_CODE_SIZE)) {
+    if (size < static_cast<int32_t>(bufferSize + START_CODE_SIZE)) {
         delete[] fileBuffer;
         cout << "buffer size not enough." << endl;
         return 0;
@@ -583,7 +583,7 @@ int32_t VDecNdkInnerFuzzSample::SendData(uint32_t bufferSize, uint32_t index, st
 
 void VDecNdkInnerFuzzSample::SwitchSurface()
 {
-    if (autoSwitchSurface && (frameCount % (int32_t)DEFAULT_FRAME_RATE == 0)) {
+    if (autoSwitchSurface && (frameCount % static_cast<int32_t>(defaultFrameRate) == 0)) {
         switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
         if (ps[switchSurfaceFlag] != nullptr) {
             vdec_->SetOutputSurface(ps[switchSurfaceFlag]) == AVCS_ERR_OK ? (0) : (errCount++);
@@ -710,7 +710,8 @@ void VDecNdkInnerFuzzSample::InputFunc()
         g_yuvSurface = true;
     }
     errCount = 0;
-    while (true) {
+    bool flags = true;
+    while (flags) {
         if (!isRunning_.load()) {
             break;
         }
@@ -746,6 +747,7 @@ void VDecNdkInnerFuzzSample::InputFunc()
         }
         if (errCount > 0) {
             isRunning_.store(false);
+            flags = false;
             break;
         }
     }
@@ -792,7 +794,7 @@ void VDecNdkInnerFuzzSample::OutputFunc()
                 (void)Stop();
                 Release();
             }
-            flags =false;
+            flags = false;
             break;
         }
         ProcessOutputData(buffer, index);
@@ -805,9 +807,9 @@ void VDecNdkInnerFuzzSample::OutputFunc()
 
 void VDecNdkInnerFuzzSample::ProcessOutputData(std::shared_ptr<AVSharedMemory> buffer, uint32_t index)
 {
-    if (!SF_OUTPUT) {
+    if (!sfOutput) {
         uint32_t size = buffer->GetSize();
-        if (size >= defaultWidth * defaultHeight * THREE >> 1) {
+        if (size >= ((defaultWidth * defaultHeight * THREE) >> 1)) {
             uint8_t *cropBuffer = new uint8_t[size];
             if (memcpy_s(cropBuffer, size, buffer->GetBase(),
 				            defaultWidth * defaultHeight) != EOK) {
@@ -819,7 +821,7 @@ void VDecNdkInnerFuzzSample::ProcessOutputData(std::shared_ptr<AVSharedMemory> b
 				            buffer->GetBase() + defaultWidth * defaultHeight, uvSize) != EOK) {
                 cout << "Fatal: memory copy failed UV" << endl;
             }
-            SHA512_Update(&g_ctx, cropBuffer, defaultWidth * defaultHeight * THREE >> 1);
+            SHA512_Update(&g_ctx, cropBuffer, (defaultWidth * defaultHeight * THREE) >> 1);
             delete[] cropBuffer;
         }
 

@@ -21,7 +21,7 @@
 #include "native_avcapability.h"
 #include <fuzzer/FuzzedDataProvider.h>
 #include <fstream>
-#include <string.h>
+#include <cstring>
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -95,9 +95,9 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     int data0 = fdp.ConsumeIntegral<int32_t>();
     g_vDecSample = new VDecSyncSample();
-    g_vDecSample->codecType = fdp.ConsumeIntegralInRange<int32_t>(1, 8);
+    g_vDecSample->codecType = fdp.ConsumeIntegralInRange<int32_t>(ONE, EIGHT);
     CodepType();
-    g_vDecSample->SF_OUTPUT = fdp.ConsumeBool();
+    g_vDecSample->sfOutput = fdp.ConsumeBool();
     g_vDecSample->defaultWidth = fdp.ConsumeIntegral<int64_t>();
     g_vDecSample->defaultHeight = fdp.ConsumeIntegral<int64_t>();
     g_vDecSample->defaultFrameRate = fdp.ConsumeIntegral<int64_t>();
@@ -116,7 +116,7 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     g_vDecSample->ConfigureVideoDecoder();
-    if (g_vDecSample->SF_OUTPUT) {
+    if (g_vDecSample->sfOutput) {
     g_vDecSample->DecodeSetSurface();
     }
     if (g_vDecSample->Start() != 0) {

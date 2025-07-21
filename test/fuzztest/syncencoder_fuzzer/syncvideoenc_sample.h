@@ -73,10 +73,10 @@ public:
     ~VEncSyncSample();
     const char *inpDir = "/data/test/media/1280_720_nv.yuv";
     const char *outDir = "/data/test/media/VEncTest.h264";
-    uint32_t DEFAULT_WIDTH = 1280;
-    uint32_t DEFAULT_HEIGHT = 720;
-    uint32_t DEFAULT_BITRATE = 5000000;
-    uint32_t DEFAULT_QUALITY = 30;
+    uint32_t defaultWidth = 1280;
+    uint32_t defaultHeight = 720;
+    uint32_t defaultBitrate = 5000000;
+    uint32_t defaultQuality = 30;
     double defaultFrameRate = 30.0;
     bool isAVCEncoder = true;
     const uint8_t *fuzzData;
@@ -89,15 +89,15 @@ public:
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN;
     OH_AVPixelFormat DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     uint32_t defaultKeyFrameInterval = 1000;
-    uint32_t DEFAULT_RANGE_FLAG = 0;
+    uint32_t defaultRangeFlag = 0;
     uint32_t DEFAULT_COLOR_PRIMARIES = COLOR_PRIMARY_BT709;
     uint32_t DEFAULT_TRANSFER_CHARACTERISTICS = TRANSFER_CHARACTERISTIC_BT709;
     uint32_t DEFAULT_MATRIX_COEFFICIENTS = MATRIX_COEFFICIENT_BT709;
-    uint32_t repeat_time = 0;
+    uint32_t repeatTime = 0;
     int32_t enbleBFrameMode = 0;
     int32_t CreateVideoEncoder(const char *codecName);
     int32_t ConfigureVideoEncoder();
-    int32_t ConfigureVideoEncoderTemporal(int32_t temporal_gop_size);
+    int32_t ConfigureVideoEncoderTemporal(int32_t temporalGopSize);
     int32_t ConfigureVideoEncoderFuzz(int32_t data);
     int32_t SetVideoEncoderCallback();
     int32_t CreateSurface();
@@ -166,7 +166,7 @@ public:
     int32_t codecType = 0;
     int32_t switchParamsTimeSec = 3;
     bool sleepOnFPS = false;
-    bool SURF_INPUT = false;
+    bool surfInput = false;
     bool enableAutoSwitchParam = false;
     bool enableColorSpaceParams = false;
     bool enableAutoSwitchBufferParam = false;
@@ -181,18 +181,18 @@ public:
     bool getInputBufferIndexRepeat = false;
     bool abnormalIndexValue = false;
     bool getOutputBufferIndexNoExisted = false;
-    int64_t encode_count = 0;
-    bool enable_random_eos = false;
+    int64_t encodeCount = 0;
+    bool enableRandomEos = false;
     uint32_t repeatStartStopBeforeEos = 0;  // 1200 测试用例
-    uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
-    int64_t start_time = 0;
+    uint32_t repeatStartFlushBeforeEos = 0; // 1300 测试用例
+    int64_t startTime = 0;
     int64_t endTime = 0;
     LtrTestParameter ltrParam;
-    bool TEMPORAL_CONFIG = false;
+    bool temporalConfig = false;
     bool temporalEnable = false;
-    bool TEMPORAL_JUMP_MODE = false;
-    bool TEMPORAL_DEFAULT = false;
-    bool TEMPORAL_UNIFORMLY = false;
+    bool temporalJumpMode = false;
+    bool temporalDefault = false;
+    bool temporalUniformly = false;
     bool getQpMse = false;
     std::vector<fileInfo> fileInfos;
     bool readMultiFiles = false;
@@ -204,7 +204,7 @@ public:
     bool enableRepeat = false;
     bool enableSeekEos = false;
     bool setMaxCount = false;
-    int32_t DEFAULT_FRAME_AFTER = 1;
+    int32_t defaultFrameAfter = 1;
     int32_t defaultMaxCount = 1;
     uint32_t inCount = 0;
     int32_t enbleSyncMode = 0;

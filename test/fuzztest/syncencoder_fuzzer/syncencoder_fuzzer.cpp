@@ -82,7 +82,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     }
     g_vEncSample->fuzzData = data;
     g_vEncSample->fuzzSize = size;
-    g_vEncSample->SURF_INPUT = data2;
+    g_vEncSample->surfInput = data2;
     g_vEncSample->fuzzMode = true;
     g_vEncSample->enbleBFrameMode = fdp.ConsumeIntegral<int32_t>();
     g_vEncSample->enbleSyncMode = fdp.ConsumeIntegral<int32_t>();
@@ -92,7 +92,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     g_vEncSample->setMaxCount = fdp.ConsumeBool();
     g_vEncSample->defaultKeyFrameInterval = fdp.ConsumeIntegral<uint32_t>();
     g_vEncSample->DEFAULT_BITRATE_MODE = fdp.ConsumeIntegral<uint32_t>();
-    g_vEncSample->DEFAULT_QUALITY = fdp.ConsumeIntegral<uint32_t>();
+    g_vEncSample->defaultQuality = fdp.ConsumeIntegral<uint32_t>();
     int32_t ret = g_vEncSample->CreateVideoEncoder(g_codeName.c_str());
     if (ret != 0) {
         delete g_vEncSample;

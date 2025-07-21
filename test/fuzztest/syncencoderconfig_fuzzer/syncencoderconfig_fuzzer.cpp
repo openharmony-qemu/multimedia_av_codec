@@ -75,7 +75,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     }
     vEncSample->fuzzData = data;
     vEncSample->fuzzSize = size;
-    vEncSample->SURF_INPUT = data2;
+    vEncSample->surfInput = data2;
     vEncSample->fuzzMode = true;
     vEncSample->enbleSyncMode = fdp.ConsumeIntegral<int32_t>();
     vEncSample->syncInputWaitTime = fdp.ConsumeIntegral<int64_t>();

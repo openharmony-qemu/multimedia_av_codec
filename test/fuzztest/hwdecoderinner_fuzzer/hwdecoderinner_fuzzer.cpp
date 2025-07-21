@@ -51,7 +51,7 @@ bool HwdecoderInnerFuzzTest(const uint8_t *data, size_t size)
     if (vDecSample->isP3Full) {
         vDecSample->defaultColorspace = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_FULL);
     }
-    vDecSample->SF_OUTPUT = fdp.ConsumeBool();
+    vDecSample->sfOutput = fdp.ConsumeBool();
     int32_t ret = vDecSample->CreateByName(codecName);
     if (ret != 0) {
         delete vDecSample;
@@ -65,7 +65,7 @@ bool HwdecoderInnerFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     vDecSample->SetCallback();
-    if (vDecSample->SF_OUTPUT) {
+    if (vDecSample->sfOutput) {
         vDecSample->SetOutputSurface();
     }
     vDecSample->Prepare();

@@ -92,7 +92,7 @@ public:
 
     int32_t StartVideoDecoder();
     int32_t RunVideoDecoder(const std::string &codeName);
-    int32_t RunVideoDec_Surface(const std::string &codeName);
+    int32_t RunVideoDecSurface(const std::string &codeName);
     int32_t PushData(std::shared_ptr<AVSharedMemory> buffer, uint32_t index);
     int32_t SendData(uint32_t bufferSize, uint32_t index, std::shared_ptr<AVSharedMemory> buffer);
     int32_t StateEOS();
@@ -125,13 +125,13 @@ public:
     uint32_t defaultWidth = 1920;
     uint32_t defaultHeight = 1080;
     uint32_t defaultBitrate = 10000000;
-    double DEFAULT_FRAME_RATE = 30.0;
+    double defaultFrameRate = 30.0;
     uint32_t maxSurfNum = 2;
     uint32_t repeatStartStopBeforeEos = 0;  // 1200 测试用例
     uint32_t repeatStartFlushBeforeEos = 0; // 1300 测试用例
-    bool SF_OUTPUT = false;
+    bool sfOutput = false;
     bool beforeEosInput = false;              // 0800 测试用例
-    bool BEFORE_EOS_INPUT_INPUT = false;        // 0900 测试用例
+    bool beforeEosInputInput = false;        // 0900 测试用例
     bool afterEosDestoryCodec = true;        // 1000 测试用例 结束不销毁codec
     bool autoSwitchSurface = false;
     int32_t switchSurfaceFlag = 0;
