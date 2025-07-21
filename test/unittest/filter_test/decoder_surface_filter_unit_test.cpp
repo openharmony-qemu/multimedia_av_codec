@@ -1110,17 +1110,17 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DoReleaseOnMuted, TestSize.Level1)
     decoderSurfaceFilter_->videoDecoder_ = videoDecoderMock;
     decoderSurfaceFilter_->isDecoderReleasedForMute_ = true;
     decoderSurfaceFilter_->isVideoMuted_ = true;
-    ret = decoderSurfaceFilter_->DoReleaseOnMuted();
+    ret = decoderSurfaceFilter_->DoReleaseOnMuted(true);
     EXPECT_EQ(ret, Status::OK);
 
     decoderSurfaceFilter_->isDecoderReleasedForMute_ = false;
     decoderSurfaceFilter_->isVideoMuted_ = false;
-    ret = decoderSurfaceFilter_->DoReleaseOnMuted();
+    ret = decoderSurfaceFilter_->DoReleaseOnMuted(true);
     EXPECT_EQ(ret, Status::OK);
 
     decoderSurfaceFilter_->isDecoderReleasedForMute_ = false;
     decoderSurfaceFilter_->isVideoMuted_ = true;
-    ret = decoderSurfaceFilter_->DoReleaseOnMuted();
+    ret = decoderSurfaceFilter_->DoReleaseOnMuted(true);
     EXPECT_EQ(ret, Status::OK);
 }
 

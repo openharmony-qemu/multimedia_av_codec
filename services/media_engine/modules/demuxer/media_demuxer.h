@@ -181,7 +181,7 @@ public:
     Status GetCurrentCacheSize(uint32_t trackIndex, uint32_t& size); // Interface for AVDemuxer
     Status StopBufferring(bool isAppBackground);
     
-    void SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted, bool keepDecodingOnMute);
+    void SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted);
     void HandleDecoderErrorFrame(int64_t pts);
     inline bool IsVideoMuted() const
     {
@@ -471,7 +471,6 @@ private:
     bool needReleaseVideoDecoder_ = false;
     bool needRestore_ {false};
     bool hasSetLargeSize_ {false};
-    bool isNeedSetLarge_ {false};
 
     uint32_t timeout_ = {10}; // 10 represents 10ms. Optimization can consider dynamic adjustment.
     bool enableAsyncDemuxer_ = true;

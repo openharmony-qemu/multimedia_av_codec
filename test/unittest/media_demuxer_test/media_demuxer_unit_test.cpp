@@ -2245,10 +2245,10 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsLoaclFd_001, TestSize.Level1)
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetMediaMuted, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    demuxer->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, true, false);
+    demuxer->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, true);
     EXPECT_EQ(demuxer->isVideoMuted_, true);
 
-    demuxer->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, false, false);
+    demuxer->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, false);
     EXPECT_EQ(demuxer->isVideoMuted_, false);
 }
 }

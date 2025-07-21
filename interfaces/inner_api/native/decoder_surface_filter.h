@@ -126,7 +126,7 @@ public:
     void NotifyPause();
     void NotifyMemoryExchange(bool exchangeFlag);
     Status SetMediaMuted(bool isMuted, bool hasInitialized);
-    Status DoReleaseOnMuted() override;
+    Status DoReleaseOnMuted(bool needRelease) override;
     Status DoReInitAndStart() override;
 
 protected:
@@ -263,7 +263,8 @@ private:
 #endif
 
     std::atomic<bool> isVideoMuted_ {false};
-    bool isDecoderReleasedForMute_ = true;
+    bool isDecoderReleasedForMute_ {true};
+    bool hasReceivedReleaseEvent {false};
     bool isFirstStart_ = true;
 };
 } // namespace Pipeline
