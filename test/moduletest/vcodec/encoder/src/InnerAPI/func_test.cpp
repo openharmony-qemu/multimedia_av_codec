@@ -2580,7 +2580,7 @@ HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0030, TestSize.Le
  * @tc.name      : 264 video vbr sync encode
  * @tc.desc      : function test
  */
-HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0040, TestSize.Level2)
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0040, TestSize.Level0)
 {
     if (cap != nullptr) {
 		OH_AVFormat *format =  OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_B_FRAME);
@@ -2609,7 +2609,7 @@ HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0040, TestSize.Le
  * @tc.name      : 264 video surface sync encode
  * @tc.desc      : function test
  */
-HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0050, TestSize.Level2)
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0050, TestSize.Level0)
 {
     if (cap != nullptr) {
 		OH_AVFormat *format =  OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_B_FRAME);
@@ -2671,7 +2671,7 @@ HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0060, TestSize.Le
 
 /**
  * @tc.number    : VIDEO_ENCODE_BFRAME_INNER_SYNC_0070
- * @tc.name      : 265 video cq sync encode
+ * @tc.name      : 265 video CBR sync encode
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0070, TestSize.Level2)
@@ -2689,7 +2689,7 @@ HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0070, TestSize.Le
 		vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0070.h265";
 		vEncInnerSample->enbleSyncMode = 1;
 		vEncInnerSample->enbleBFrameMode = true;
-        vEncInnerSample->DEFAULT_BITRATE_MODE = CQ;
+        vEncInnerSample->DEFAULT_BITRATE_MODE = CBR;
         ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
         ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
         ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
@@ -2700,7 +2700,7 @@ HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0070, TestSize.Le
 
 /**
  * @tc.number    : VIDEO_ENCODE_BFRAME_INNER_SYNC_0080
- * @tc.name      : 265 video cbr sync encode
+ * @tc.name      : 265 video CQ sync encode
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0080, TestSize.Level2)
@@ -2718,7 +2718,7 @@ HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0080, TestSize.Le
 		vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0080.h265";
 		vEncInnerSample->enbleSyncMode = 1;
 		vEncInnerSample->enbleBFrameMode = true;
-        vEncInnerSample->DEFAULT_BITRATE_MODE = CBR;
+        vEncInnerSample->DEFAULT_BITRATE_MODE = CQ;
         ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
         ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
         ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
@@ -2761,7 +2761,7 @@ HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0090, TestSize.Le
  * @tc.name      : 265 video vbr sync encode
  * @tc.desc      : function test
  */
-HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0100, TestSize.Level2)
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0100, TestSize.Level0)
 {
     if (cap_Hevc != nullptr) {
 		OH_AVFormat *format =  OH_AVCapability_GetFeatureProperties(cap_Hevc, VIDEO_ENCODER_B_FRAME);
@@ -2790,7 +2790,7 @@ HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0100, TestSize.Le
  * @tc.name      : 265 video surface sync encode
  * @tc.desc      : function test
  */
-HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0110, TestSize.Level2)
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0110, TestSize.Level0)
 {
     if (cap_Hevc != nullptr) {
 		OH_AVFormat *format =  OH_AVCapability_GetFeatureProperties(cap_Hevc, VIDEO_ENCODER_B_FRAME);
