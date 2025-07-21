@@ -1596,16 +1596,17 @@ void DecoderSurfaceFilter::NotifyMemoryExchange(bool exchangeFlag)
 Status DecoderSurfaceFilter::SetMediaMuted(bool isMuted, bool hasInitialized)
 {
     MEDIA_LOG_I("DecoderSurfaceFilter SetMediaMuted");
-    isVideoMuted_.store(isMuted);
-    if (isMuted) {
+    if (isMuted && !isVideoMuted_) {
         hasReceivedReleaseEvent_ = false;
         isRenderStarted_ = false;
-        if (!hasInitialized) {
+        if (!hasInitialized && eventReceiver_ != nullptr) {
             eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_NO_NEED_INIT, Status::OK});
         }
     }
-    videoSink_->SetMediaMuted(isMuted);
     isVideoMuted_.store(isMuted);
+    if (videoSink_ != nullptr) {
+        videoSink_->SetMediaMuted(isMuted);
+    }
     return Status::OK;
 }
 
