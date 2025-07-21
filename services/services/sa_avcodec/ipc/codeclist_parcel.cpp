@@ -217,6 +217,7 @@ bool CodecListParcel::Unmarshalling(MessageParcel &parcel, std::map<int32_t, For
 bool CodecListParcel::Unmarshalling(MessageParcel &parcel, std::vector<Range> &audioSampleRateRanges)
 {
     uint32_t size = parcel.ReadUint32();
+    CHECK_AND_RETURN_RET_LOG(size <= MAX_MAP_SIZE, false, "audioSampleRateRanges is invalid");
     for (uint32_t index = 0; index < size; index++) {
         Range range;
         range.minVal = parcel.ReadInt32();
