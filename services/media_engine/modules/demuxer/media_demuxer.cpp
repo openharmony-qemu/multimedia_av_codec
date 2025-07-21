@@ -2461,7 +2461,7 @@ void MediaDemuxer::HandleVideoTrack(int32_t trackId)
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_RELEASE_VIDEO_DECODER, trackId});
             bool needPauseSampleConsumer = sampleConsumerTaskMap_.find(videoTrackId_) !=
                 sampleConsumerTaskMap_.end() && sampleConsumerTaskMap_[videoTrackId_] != nullptr &&
-                sampleConsumerTaskMap_[videoTrackId_]->IsTaskRunning()
+                sampleConsumerTaskMap_[videoTrackId_]->IsTaskRunning();
             if (needPauseSampleConsumer) {
                 sampleConsumerTaskMap_[videoTrackId_]->PauseAsync();
                 sampleConsumerTaskMap_[videoTrackId_]->Pause();
