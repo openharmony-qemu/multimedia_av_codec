@@ -3916,7 +3916,7 @@ void MediaDemuxer::SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted)
 {
     if (mediaType == OHOS::Media::MediaType::MEDIA_TYPE_VID) {
         needRestore_ = !needReleaseVideoDecoder_ && isVideoMuted_ && !isMuted;
-        needReleaseVideoDecoder_ = isMuted && !isVideoMuted_;
+        needReleaseVideoDecoder_ = isMuted ? !isVideoMuted_ || needReleaseVideoDecoder_ : false;
         isVideoMuted_ = isMuted;
         MEDIA_LOG_I("MediaDemuxer::SetMediaMuted " PUBLIC_LOG_U32, isMuted);
     }
