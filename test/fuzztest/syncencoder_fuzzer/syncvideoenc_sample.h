@@ -71,24 +71,24 @@ class VEncSyncSample : public NoCopyable {
 public:
     VEncSyncSample() = default;
     ~VEncSyncSample();
-    const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    const char *OUT_DIR = "/data/test/media/VEncTest.h264";
+    const char *inpDir = "/data/test/media/1280_720_nv.yuv";
+    const char *outDir = "/data/test/media/VEncTest.h264";
     uint32_t DEFAULT_WIDTH = 1280;
     uint32_t DEFAULT_HEIGHT = 720;
     uint32_t DEFAULT_BITRATE = 5000000;
     uint32_t DEFAULT_QUALITY = 30;
-    double DEFAULT_FRAME_RATE = 30.0;
+    double defaultFrameRate = 30.0;
     bool isAVCEncoder = true;
     const uint8_t *fuzzData;
     int32_t maxFrameInput = 20;
     size_t fuzzSize;
     OH_HEVCProfile hevcProfile = HEVC_PROFILE_MAIN;
     OH_AVCProfile avcProfile = AVC_PROFILE_BASELINE;
-    int32_t DEFAULT_QP = 20;
+    int32_t defaultQp = 20;
     uint32_t DEFAULT_BITRATE_MODE = CBR;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN;
     OH_AVPixelFormat DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
-    uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
+    uint32_t defaultKeyFrameInterval = 1000;
     uint32_t DEFAULT_RANGE_FLAG = 0;
     uint32_t DEFAULT_COLOR_PRIMARIES = COLOR_PRIMARY_BT709;
     uint32_t DEFAULT_TRANSFER_CHARACTERISTICS = TRANSFER_CHARACTERISTIC_BT709;
@@ -97,8 +97,8 @@ public:
     int32_t enbleBFrameMode = 0;
     int32_t CreateVideoEncoder(const char *codecName);
     int32_t ConfigureVideoEncoder();
-    int32_t ConfigureVideoEncoder_Temporal(int32_t temporal_gop_size);
-    int32_t ConfigureVideoEncoder_fuzz(int32_t data);
+    int32_t ConfigureVideoEncoderTemporal(int32_t temporal_gop_size);
+    int32_t ConfigureVideoEncoderFuzz(int32_t data);
     int32_t SetVideoEncoderCallback();
     int32_t CreateSurface();
     int32_t StartVideoEncoder();
@@ -108,9 +108,9 @@ public:
     void SetLTRParameter(OH_AVBuffer *buffer);
     void SetForceIDR();
     void GetStride();
-    void testApi();
+    void TestApi();
     void WaitForEOS();
-    int32_t SyncOutputFuncEos(uint32_t &last_index, uint32_t &outFrames, uint32_t &index,
+    int32_t SyncOutputFuncEos(uint32_t &lastIndex, uint32_t &outFrames, uint32_t &index,
         OH_AVBuffer *buffer, OH_AVCodecBufferAttr &attr);
     int32_t OpenFile();
     uint32_t ReturnZeroIfEOS(uint32_t expectedSize);
@@ -122,7 +122,7 @@ public:
     int32_t Release();
     int32_t SetParameter(int32_t data);
     int32_t ReadFile(uint32_t index, OH_AVBuffer *buffer);
-    void Flush_buffer();
+    void FlushBuffer();
     void AutoSwitchParam();
     void RepeatStartBeforeEOS();
     bool RandomEOS(uint32_t index);
@@ -131,7 +131,7 @@ public:
     int32_t CheckResult(bool isRandomEosSuccess, int32_t pushResult);
     void InputFunc();
     void SyncInputFunc();
-    int32_t state_EOS();
+    int32_t StateEos();
     void InputFuncSurface();
     uint32_t ReadOneFrameYUV420SP(uint8_t *dst);
     uint32_t ReadOneFrameRGBA8888(uint8_t *dst);
@@ -151,7 +151,7 @@ public:
     void DumpLtrInfo(OH_AVBuffer *buffer);
     void DumpQPInfo(OH_AVBuffer *buffer);
     void DumpInfo(OH_AVCodecBufferAttr attr, OH_AVBuffer *buffer);
-    void readMultiFilesFunc();
+    void ReadMultiFilesFunc();
     int32_t InitBuffer(OHNativeWindowBuffer *&ohNativeWindowBuffer, OH_NativeBuffer *&nativeBuffer, uint8_t *&dst);
     void InputEnableRepeatSleep();
     int32_t QueryInputBuffer(uint32_t index, int64_t timeoutUs);
@@ -183,13 +183,13 @@ public:
     bool getOutputBufferIndexNoExisted = false;
     int64_t encode_count = 0;
     bool enable_random_eos = false;
-    uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;  // 1200 测试用例
+    uint32_t repeatStartStopBeforeEos = 0;  // 1200 测试用例
     uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
     int64_t start_time = 0;
-    int64_t end_time = 0;
+    int64_t endTime = 0;
     LtrTestParameter ltrParam;
     bool TEMPORAL_CONFIG = false;
-    bool TEMPORAL_ENABLE = false;
+    bool temporalEnable = false;
     bool TEMPORAL_JUMP_MODE = false;
     bool TEMPORAL_DEFAULT = false;
     bool TEMPORAL_UNIFORMLY = false;
@@ -205,7 +205,7 @@ public:
     bool enableSeekEos = false;
     bool setMaxCount = false;
     int32_t DEFAULT_FRAME_AFTER = 1;
-    int32_t DEFAULT_MAX_COUNT = 1;
+    int32_t defaultMaxCount = 1;
     uint32_t inCount = 0;
     int32_t enbleSyncMode = 0;
     int64_t syncInputWaitTime = -1;
@@ -229,7 +229,7 @@ private:
     bool isFirstFrame_ = true;
     OHNativeWindow *nativeWindow;
     int stride_;
-    static constexpr uint32_t SAMPLE_RATIO = 2;
+    static constexpr uint32_t sampleRatio = 2;
 };
 } // namespace Media
 } // namespace OHOS

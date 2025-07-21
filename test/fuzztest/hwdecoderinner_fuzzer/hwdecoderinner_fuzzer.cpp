@@ -49,7 +49,7 @@ bool HwdecoderInnerFuzzTest(const uint8_t *data, size_t size)
     VDecNdkInnerFuzzSample *vDecSample = new VDecNdkInnerFuzzSample();
     vDecSample->isP3Full = fdp.ConsumeBool();
     if (vDecSample->isP3Full) {
-        vDecSample->DEFAULT_COLORSPACE = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_FULL);
+        vDecSample->defaultColorspace = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_FULL);
     }
     vDecSample->SF_OUTPUT = fdp.ConsumeBool();
     int32_t ret = vDecSample->CreateByName(codecName);

@@ -19,9 +19,11 @@
 #include "native_buffer_inner.h"
 #include "syncvideoenc_sample.h"
 #include "native_avcapability.h"
+#include <random>
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
+std::random_device rd;
 namespace {
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
@@ -39,7 +41,7 @@ constexpr int32_t ONE = 1;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
 OH_AVCapability *cap = nullptr;
-VEncSyncSample *enc_sample = nullptr;
+VEncSyncSample *g_encSample = nullptr;
 int32_t g_picWidth;
 int32_t g_picHeight;
 int32_t g_keyWidth;
@@ -67,14 +69,14 @@ VEncSyncSample::~VEncSyncSample()
 
 static void VencError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
-    if (enc_sample == nullptr) {
+    if (g_encSample == nullptr) {
         return;
     }
     if (errorCode == AV_ERR_INPUT_DATA_ERROR) {
-        enc_sample->errCount += 1;
-        enc_sample->isRunning_.store(false);
-        enc_sample->signal_->inCond_.notify_all();
-        enc_sample->signal_->outCond_.notify_all();
+        g_encSample->errCount += 1;
+        g_encSample->isRunning_.store(false);
+        g_encSample->signal_->inCond_.notify_all();
+        g_encSample->signal_->outCond_.notify_all();
     }
     cout << "Error errorCode=" << errorCode << endl;
 }
@@ -115,27 +117,27 @@ static void onEncInputParam(OH_AVCodec *codec, uint32_t index, OH_AVFormat *para
     if (!parameter || !userData) {
         return;
     }
-    if (enc_sample->frameCount % enc_sample->ltrParam.ltrInterval == 0) {
+    if (g_encSample->frameCount % g_encSample->ltrParam.ltrInterval == 0) {
         OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_MARK_LTR, 1);
     }
-    if (!enc_sample->ltrParam.enableUseLtr) {
-        enc_sample->frameCount++;
+    if (!g_encSample->ltrParam.enableUseLtr) {
+        g_encSample->frameCount++;
         OH_VideoEncoder_PushInputParameter(codec, index);
         return;
     }
     static int32_t useLtrIndex = 0;
-    if (enc_sample->ltrParam.useLtrIndex == 0) {
+    if (g_encSample->ltrParam.useLtrIndex == 0) {
         useLtrIndex = LTR_INTERVAL;
-    } else if (enc_sample->ltrParam.useBadLtr) {
+    } else if (g_encSample->ltrParam.useBadLtr) {
         useLtrIndex = BADPOC;
     } else {
-        uint32_t interval = enc_sample->ltrParam.ltrInterval;
-        if (interval > 0 && enc_sample->frameCount > 0 && (enc_sample->frameCount % interval == 0)) {
-            useLtrIndex = enc_sample->frameCount / interval * interval;
+        uint32_t interval = g_encSample->ltrParam.ltrInterval;
+        if (interval > 0 && g_encSample->frameCount > 0 && (g_encSample->frameCount % interval == 0)) {
+            useLtrIndex = g_encSample->frameCount / interval * interval;
         }
     }
-    if (enc_sample->frameCount > useLtrIndex) {
-        if (!enc_sample->ltrParam.useLtrOnce) {
+    if (g_encSample->frameCount > useLtrIndex) {
+        if (!g_encSample->ltrParam.useLtrOnce) {
             OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrIndex);
         } else {
             if (!useLtrOnce) {
@@ -143,11 +145,11 @@ static void onEncInputParam(OH_AVCodec *codec, uint32_t index, OH_AVFormat *para
                 useLtrOnce = true;
             }
         }
-    } else if (enc_sample->frameCount == useLtrIndex && enc_sample->frameCount > 0) {
-        int32_t sampleInterval = enc_sample->ltrParam.ltrInterval;
+    } else if (g_encSample->frameCount == useLtrIndex && g_encSample->frameCount > 0) {
+        int32_t sampleInterval = g_encSample->ltrParam.ltrInterval;
         OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrIndex - sampleInterval);
     }
-    enc_sample->frameCount++;
+    g_encSample->frameCount++;
     OH_VideoEncoder_PushInputParameter(codec, index);
 }
 
@@ -197,26 +199,22 @@ int32_t VEncSyncSample::ConfigureVideoEncoder()
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
-    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, defaultFrameRate);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, defaultKeyFrameInterval);
     if (isAVCEncoder) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, avcProfile);
     } else {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, hevcProfile);
     }
-    if (configMain10) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, HEVC_PROFILE_MAIN_10);
-    } else if (configMain) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, HEVC_PROFILE_MAIN);
-    }
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, HEVC_PROFILE_MAIN);
     if (DEFAULT_BITRATE_MODE == CQ) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, DEFAULT_QUALITY);
     } else {
         (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
     }
     if (enableQP) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MAX, DEFAULT_QP);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MIN, DEFAULT_QP);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MAX, defaultQp);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MIN, defaultQp);
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, DEFAULT_BITRATE_MODE);
     if (enableLTR && (ltrParam.ltrCount >= 0)) {
@@ -231,7 +229,7 @@ int32_t VEncSyncSample::ConfigureVideoEncoder()
     if (enableRepeat) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, DEFAULT_FRAME_AFTER);
         if (setMaxCount) {
-            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, DEFAULT_MAX_COUNT);
+            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, defaultMaxCount);
         }
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, enbleSyncMode);
@@ -241,7 +239,7 @@ int32_t VEncSyncSample::ConfigureVideoEncoder()
     return ret;
 }
 
-int32_t VEncSyncSample::ConfigureVideoEncoder_Temporal(int32_t temporal_gop_size)
+int32_t VEncSyncSample::ConfigureVideoEncoderTemporal(int32_t temporal_gop_size)
 {
     OH_AVFormat *format = OH_AVFormat_Create();
     if (format == nullptr) {
@@ -251,17 +249,17 @@ int32_t VEncSyncSample::ConfigureVideoEncoder_Temporal(int32_t temporal_gop_size
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
-    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, defaultFrameRate);
     (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
 
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, defaultKeyFrameInterval);
 
     if (TEMPORAL_CONFIG) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporal_gop_size);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
             ADJACENT_REFERENCE);
     }
-    if (TEMPORAL_ENABLE) {
+    if (temporalEnable) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     } else {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 0);
@@ -287,7 +285,7 @@ int32_t VEncSyncSample::ConfigureVideoEncoder_Temporal(int32_t temporal_gop_size
     return ret;
 }
 
-int32_t VEncSyncSample::ConfigureVideoEncoder_fuzz(int32_t data)
+int32_t VEncSyncSample::ConfigureVideoEncoderFuzz(int32_t data)
 {
     OH_AVFormat *format = OH_AVFormat_Create();
     if (format == nullptr) {
@@ -337,7 +335,7 @@ int32_t VEncSyncSample::SetVideoEncoderCallback()
     return OH_VideoEncoder_RegisterCallback(venc_, cb_, static_cast<void *>(signal_));
 }
 
-int32_t VEncSyncSample::state_EOS()
+int32_t VEncSyncSample::StateEos()
 {
     unique_lock<mutex> lock(signal_->inMutex_);
     signal_->inCond_.wait(lock, [this]() { return signal_->inIdxQueue_.size() > 0; });
@@ -380,7 +378,7 @@ void VEncSyncSample::StopInloop()
     }
 }
 
-void VEncSyncSample::testApi()
+void VEncSyncSample::TestApi()
 {
     OH_VideoEncoder_GetSurface(venc_, &nativeWindow);
     OH_VideoEncoder_Prepare(venc_);
@@ -445,7 +443,7 @@ int32_t VEncSyncSample::OpenFile()
         (void)OH_VideoEncoder_Stop(venc_);
         return AV_ERR_UNKNOWN;
     }
-    inFile_->open(INP_DIR, ios::in | ios::binary);
+    inFile_->open(inpDir, ios::in | ios::binary);
     if (!inFile_->is_open()) {
         ret = OpenFileFail();
     }
@@ -477,7 +475,7 @@ int32_t VEncSyncSample::StartVideoEncoder()
         (void)OH_VideoEncoder_Stop(venc_);
         return AV_ERR_UNKNOWN;
     }
-    readMultiFilesFunc();
+    ReadMultiFilesFunc();
     if (VideoEncoder() != AV_ERR_OK) {
         return AV_ERR_UNKNOWN;
     }
@@ -517,10 +515,10 @@ int32_t VEncSyncSample::VideoEncoder()
     return AV_ERR_OK;
 }
 
-void VEncSyncSample::readMultiFilesFunc()
+void VEncSyncSample::ReadMultiFilesFunc()
 {
     if (!readMultiFiles) {
-        inFile_->open(INP_DIR, ios::in | ios::binary);
+        inFile_->open(inpDir, ios::in | ios::binary);
         if (!inFile_->is_open()) {
             OpenFileFail();
         }
@@ -537,7 +535,7 @@ int32_t VEncSyncSample::CreateVideoEncoder(const char *codecName)
         isAVCEncoder = false;
     }
     venc_ = OH_VideoEncoder_CreateByName(codecName);
-    enc_sample = this;
+    g_encSample = this;
     return venc_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
 
@@ -571,7 +569,7 @@ uint32_t VEncSyncSample::ReadOneFrameYUV420SP(uint8_t *dst)
         dst += stride_;
     }
     // copy UV
-    for (uint32_t i = 0; i < DEFAULT_HEIGHT / SAMPLE_RATIO; i++) {
+    for (uint32_t i = 0; i < DEFAULT_HEIGHT / sampleRatio; i++) {
         inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH);
         if (!ReturnZeroIfEOS(DEFAULT_WIDTH))
             return 0;
@@ -592,10 +590,11 @@ uint32_t VEncSyncSample::ReadOneFrameYUVP010(uint8_t *dst)
         dst += stride_;
     }
     // copy UV
-    for (uint32_t i = 0; i < DEFAULT_HEIGHT / SAMPLE_RATIO; i++) {
+    for (uint32_t i = 0; i < DEFAULT_HEIGHT / sampleRatio; i++) {
         inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH*num);
-        if (!ReturnZeroIfEOS(DEFAULT_WIDTH*num))
+        if (!ReturnZeroIfEOS(DEFAULT_WIDTH * num)) {
             return 0;
+        }
         dst += stride_;
     }
     return dst - start;
@@ -606,8 +605,9 @@ uint32_t VEncSyncSample::ReadOneFrameRGBA8888(uint8_t *dst)
     uint8_t *start = dst;
     for (uint32_t i = 0; i < DEFAULT_HEIGHT; i++) {
         inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH * RGBA_SIZE);
-        if (inFile_->eof())
+        if (inFile_->eof()) {
             return 0;
+        }
         dst += stride_;
     }
     return dst - start;
@@ -766,7 +766,7 @@ int32_t VEncSyncSample::OpenFileFail()
     return AV_ERR_UNKNOWN;
 }
 
-void VEncSyncSample::Flush_buffer()
+void VEncSyncSample::FlushBuffer()
 {
     unique_lock<mutex> inLock(signal_->inMutex_);
     clearIntqueue(signal_->inIdxQueue_);
@@ -785,22 +785,22 @@ void VEncSyncSample::RepeatStartBeforeEOS()
     if (REPEAT_START_FLUSH_BEFORE_EOS > 0) {
         REPEAT_START_FLUSH_BEFORE_EOS--;
         OH_VideoEncoder_Flush(venc_);
-        Flush_buffer();
+        FlushBuffer();
         OH_VideoEncoder_Start(venc_);
     }
     
-    if (REPEAT_START_STOP_BEFORE_EOS > 0) {
-        REPEAT_START_STOP_BEFORE_EOS--;
+    if (repeatStartStopBeforeEos > 0) {
+        repeatStartStopBeforeEos--;
         OH_VideoEncoder_Stop(venc_);
-        Flush_buffer();
+        FlushBuffer();
         OH_VideoEncoder_Start(venc_);
     }
 }
 
 bool VEncSyncSample::RandomEOS(uint32_t index)
 {
-    int32_t random_eos = rand() % 25;
-    if (enable_random_eos && random_eos == frameCount) {
+    int32_t randomEos = rd() % 25;
+    if (enable_random_eos && randomEos == frameCount) {
         OH_VideoEncoder_NotifyEndOfStream(venc_);
         cout << "random eos" << endl;
         frameCount++;
@@ -815,27 +815,27 @@ bool VEncSyncSample::RandomEOS(uint32_t index)
 void VEncSyncSample::AutoSwitchParam()
 {
     int64_t currentBitrate = DEFAULT_BITRATE;
-    double currentFrameRate = DEFAULT_FRAME_RATE;
-    int32_t currentQP = DEFAULT_QP;
-    if (frameCount == switchParamsTimeSec * (int32_t)DEFAULT_FRAME_RATE) {
+    double currentFrameRate = defaultFrameRate;
+    int32_t currentQP = defaultQp;
+    if (frameCount == switchParamsTimeSec * static_cast<int32_t>(defaultFrameRate)) {
         OH_AVFormat *format = OH_AVFormat_Create();
         if (needResetBitrate) {
             currentBitrate = DEFAULT_BITRATE >> 1;
             (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, currentBitrate);
         }
         if (needResetFrameRate) {
-            currentFrameRate = DEFAULT_FRAME_RATE * DOUBLE;
+            currentFrameRate = defaultFrameRate * DOUBLE;
             (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, currentFrameRate);
         }
         if (needResetQP) {
-            currentQP = DEFAULT_QP;
+            currentQP = defaultQp;
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MAX, currentQP);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MIN, currentQP);
         }
         SetParameter(format) == AV_ERR_OK ? (0) : (errCount++);
         OH_AVFormat_Destroy(format);
     }
-    if (frameCount == static_cast<int32_t>(switchParamsTimeSec * (int32_t)DEFAULT_FRAME_RATE * DOUBLE)) {
+    if (frameCount == static_cast<int32_t>(switchParamsTimeSec * static_cast<int32_t>(defaultFrameRate * DOUBLE))) {
         OH_AVFormat *format = OH_AVFormat_Create();
         if (needResetBitrate) {
             currentBitrate = DEFAULT_BITRATE << 1;
@@ -843,12 +843,12 @@ void VEncSyncSample::AutoSwitchParam()
             (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, currentBitrate);
         }
         if (needResetFrameRate) {
-            currentFrameRate = DEFAULT_FRAME_RATE / DOUBLE;
+            currentFrameRate = defaultFrameRate / DOUBLE;
             cout<< "switch framerate" << currentFrameRate << endl;
             (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, currentFrameRate);
         }
         if (needResetQP) {
-            currentQP = DEFAULT_QP * DOUBLE;
+            currentQP = defaultQp * DOUBLE;
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MAX, currentQP);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MIN, currentQP);
         }
@@ -923,24 +923,24 @@ void VEncSyncSample::SetLTRParameter(OH_AVBuffer *buffer)
 
 void VEncSyncSample::SetBufferParameter(OH_AVBuffer *buffer)
 {
-    int32_t currentQP = DEFAULT_QP;
+    int32_t currentQP = defaultQp;
     if (!enableAutoSwitchBufferParam) {
         return;
     }
-    if (frameCount == switchParamsTimeSec * (int32_t)DEFAULT_FRAME_RATE) {
+    if (frameCount == switchParamsTimeSec * (int32_t)defaultFrameRate) {
         OH_AVFormat *format = OH_AVFormat_Create();
         if (needResetQP) {
-            currentQP = DEFAULT_QP;
+            currentQP = defaultQp;
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MAX, currentQP);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MIN, currentQP);
         }
         OH_AVBuffer_SetParameter(buffer, format) == AV_ERR_OK ? (0) : (errCount++);
         OH_AVFormat_Destroy(format);
     }
-    if (frameCount == static_cast<int32_t>(switchParamsTimeSec * (int32_t)DEFAULT_FRAME_RATE * DOUBLE)) {
+    if (frameCount == static_cast<int32_t>(switchParamsTimeSec * (int32_t)defaultFrameRate * DOUBLE)) {
         OH_AVFormat *format = OH_AVFormat_Create();
         if (needResetQP) {
-            currentQP = DEFAULT_QP * DOUBLE;
+            currentQP = defaultQp * DOUBLE;
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MAX, currentQP);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_MIN, currentQP);
         }
@@ -1019,8 +1019,10 @@ int32_t VEncSyncSample::CheckResult(bool isRandomEosSuccess, int32_t pushResult)
 void VEncSyncSample::InputFunc()
 {
     errCount = 0;
-    while (true) {
+    bool flag = true;
+    while (flag) {
         if (!isRunning_.load()) {
+            flag = false;
             break;
         }
         RepeatStartBeforeEOS();
@@ -1032,6 +1034,7 @@ void VEncSyncSample::InputFunc()
             return signal_->inIdxQueue_.size() > 0;
         });
         if (!isRunning_.load()) {
+            flag = false;
             break;
         }
         uint32_t index = signal_->inIdxQueue_.front();
@@ -1050,6 +1053,7 @@ void VEncSyncSample::InputFunc()
                 continue;
             }
             if (CheckResult(isRandomEosSuccess, pushResult) == -1) {
+                flag = false;
                 break;
             }
             if (enableAutoSwitchParam) {
@@ -1167,8 +1171,9 @@ void VEncSyncSample::OutputFuncFail()
 
 void VEncSyncSample::OutputFunc()
 {
-    FILE *outFile = fopen(OUT_DIR, "wb");
-    while (true) {
+    FILE *outFile = fopen(outDir, "wb");
+    bool flag = true;
+    while (flag) {
         if (!isRunning_.load()) {
             break;
         }
@@ -1206,6 +1211,7 @@ void VEncSyncSample::OutputFunc()
             errCount = errCount + 1;
         }
         if (errCount > 0) {
+            flag = false;
             OutputFuncFail();
             break;
         }
@@ -1235,7 +1241,7 @@ void VEncSyncSample::SyncOutputFunc()
     }
 }
 
-int32_t VEncSyncSample::SyncOutputFuncEos(uint32_t &last_index, uint32_t &outFrames, uint32_t &index,
+int32_t VEncSyncSample::SyncOutputFuncEos(uint32_t &lastIndex, uint32_t &outFrames, uint32_t &index,
     OH_AVBuffer *buffer, OH_AVCodecBufferAttr &attr)
 {
     if (getOutputBufferIndexNoExisted) {
@@ -1247,10 +1253,10 @@ int32_t VEncSyncSample::SyncOutputFuncEos(uint32_t &last_index, uint32_t &outFra
         return AV_ERR_UNKNOWN;
     }
     if (outFrames == 0 && getOutputBufferIndexRepeated) {
-        last_index = index;
+        lastIndex = index;
     } else if (outFrames == 1 && getOutputBufferIndexRepeated) {
-        cout << "getOutputBufferIndexRepeated last_index: " << last_index << "index" << index << endl;
-        buffer = OH_VideoEncoder_GetOutputBuffer(venc_, last_index);
+        cout << "getOutputBufferIndexRepeated lastIndex: " << lastIndex << "index" << index << endl;
+        buffer = OH_VideoEncoder_GetOutputBuffer(venc_, lastIndex);
         if (buffer == nullptr) {
             abnormalIndexValue = true;
             cout << "OH_VideoEncoder_GetOutputBuffer repeat buffer nullptr" << endl;

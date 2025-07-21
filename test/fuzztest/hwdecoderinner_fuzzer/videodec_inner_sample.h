@@ -114,30 +114,30 @@ public:
     int32_t InputFuncFUZZ(const uint8_t *data, size_t size);
     int32_t SetOutputSurface();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
-    bool PREPARE_FLAG = true;
-    bool P3_FULL_FLAG = false;
-    bool BT709_LIMIT_FLAG = false;
-    bool BT709_FULL_FLAG = false;
+    bool prepareFlag = true;
+    bool p3FullFlag = false;
+    bool bT709LimitFlag = false;
+    bool bT709FullFlag = false;
 
-    const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
-    const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
-    const char *OUT_DIR2 = "/data/test/media/VDecTest2.yuv";
-    uint32_t DEFAULT_WIDTH = 1920;
-    uint32_t DEFAULT_HEIGHT = 1080;
-    uint32_t DEFAULT_BITRATE = 10000000;
+    const char *inpDir = "/data/test/media/1920_1080_10_30Mb.h264";
+    const char *outDir = "/data/test/media/VDecTest.yuv";
+    const char *outDir2 = "/data/test/media/VDecTest2.yuv";
+    uint32_t defaultWidth = 1920;
+    uint32_t defaultHeight = 1080;
+    uint32_t defaultBitrate = 10000000;
     double DEFAULT_FRAME_RATE = 30.0;
-    uint32_t MAX_SURF_NUM = 2;
-    uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;  // 1200 测试用例
-    uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
+    uint32_t maxSurfNum = 2;
+    uint32_t repeatStartStopBeforeEos = 0;  // 1200 测试用例
+    uint32_t repeatStartFlushBeforeEos = 0; // 1300 测试用例
     bool SF_OUTPUT = false;
-    bool BEFORE_EOS_INPUT = false;              // 0800 测试用例
+    bool beforeEosInput = false;              // 0800 测试用例
     bool BEFORE_EOS_INPUT_INPUT = false;        // 0900 测试用例
-    bool AFTER_EOS_DESTORY_CODEC = true;        // 1000 测试用例 结束不销毁codec
+    bool afterEosDestoryCodec = true;        // 1000 测试用例 结束不销毁codec
     bool autoSwitchSurface = false;
     int32_t switchSurfaceFlag = 0;
     bool isP3Full = false;
     int32_t DEFAULT_FORMAT = static_cast<int32_t>(VideoPixelFormat::NV12);
-    int32_t DEFAULT_COLORSPACE = 0;
+    int32_t defaultColorspace = 0;
     
     uint32_t errCount = 0;
     uint32_t outCount = 0;
@@ -145,7 +145,7 @@ public:
     bool sleepOnFPS = false;
     bool repeatRun = false;
     bool enableRandomEos = false;
-    bool HDR2SDR = false;
+    bool hdR2Sdr = false;
     bool outputYuvSurface = false;
     std::atomic<bool> isRunning_ { false };
     NativeWindow *nativeWindow[2] = {};

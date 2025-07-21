@@ -29,8 +29,11 @@ using namespace OHOS::Media;
 
 
 OH_AVCapability *cap = nullptr;
-string codeName = "";
-VEncSyncSample *vEncSample = nullptr;
+string g_codeName = "";
+VEncSyncSample *g_vEncSample = nullptr;
+constexpr int32_t ONE = 1;
+constexpr int32_t TWO = 2;
+
 
 void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
 {
@@ -52,10 +55,10 @@ string GetCodeName(const char* mimeName, OH_AVCodecCategory category)
 
 void CodeType()
 {
-    if (vEncSample->codecType == 1) {
-        codeName = GetCodeName(OH_AVCODEC_MIMETYPE_VIDEO_AVC, HARDWARE);
-    } else if (vEncSample->codecType == 2) {
-        codeName = GetCodeName(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, HARDWARE);
+    if (g_vEncSample->codecType == ONE) {
+        g_codeName = GetCodeName(OH_AVCODEC_MIMETYPE_VIDEO_AVC, HARDWARE);
+    } else if (g_vEncSample->codecType == TWO) {
+        g_codeName = GetCodeName(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, HARDWARE);
     }
 }
 
@@ -70,41 +73,41 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     int data1 = fdp.ConsumeIntegral<int32_t>();
     bool data2 = fdp.ConsumeBool();
-    vEncSample = new VEncSyncSample();
-    vEncSample->codecType = fdp.ConsumeIntegralInRange<int32_t>(1, 2);
+    g_vEncSample = new VEncSyncSample();
+    g_vEncSample->codecType = fdp.ConsumeIntegralInRange<int32_t>(ONE, TWO);
     CodeType();
     bool isRgba1010102 = fdp.ConsumeBool();
     if (isRgba1010102) {
-        vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_RGBA1010102;
+        g_vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_RGBA1010102;
     }
-    vEncSample->fuzzData = data;
-    vEncSample->fuzzSize = size;
-    vEncSample->SURF_INPUT = data2;
-    vEncSample->fuzzMode = true;
-    vEncSample->enbleBFrameMode = fdp.ConsumeIntegral<int32_t>();
-    vEncSample->enbleSyncMode = fdp.ConsumeIntegral<int32_t>();
-    vEncSample->syncInputWaitTime = fdp.ConsumeIntegral<int64_t>();
-    vEncSample->syncOutputWaitTime = fdp.ConsumeIntegral<int64_t>();
-    vEncSample->enableRepeat = fdp.ConsumeBool();
-    vEncSample->setMaxCount = fdp.ConsumeBool();
-    vEncSample->DEFAULT_KEY_FRAME_INTERVAL = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->DEFAULT_BITRATE_MODE = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->DEFAULT_QUALITY = fdp.ConsumeIntegral<uint32_t>();
-    int32_t ret = vEncSample->CreateVideoEncoder(codeName.c_str());
+    g_vEncSample->fuzzData = data;
+    g_vEncSample->fuzzSize = size;
+    g_vEncSample->SURF_INPUT = data2;
+    g_vEncSample->fuzzMode = true;
+    g_vEncSample->enbleBFrameMode = fdp.ConsumeIntegral<int32_t>();
+    g_vEncSample->enbleSyncMode = fdp.ConsumeIntegral<int32_t>();
+    g_vEncSample->syncInputWaitTime = fdp.ConsumeIntegral<int64_t>();
+    g_vEncSample->syncOutputWaitTime = fdp.ConsumeIntegral<int64_t>();
+    g_vEncSample->enableRepeat = fdp.ConsumeBool();
+    g_vEncSample->setMaxCount = fdp.ConsumeBool();
+    g_vEncSample->defaultKeyFrameInterval = fdp.ConsumeIntegral<uint32_t>();
+    g_vEncSample->DEFAULT_BITRATE_MODE = fdp.ConsumeIntegral<uint32_t>();
+    g_vEncSample->DEFAULT_QUALITY = fdp.ConsumeIntegral<uint32_t>();
+    int32_t ret = g_vEncSample->CreateVideoEncoder(g_codeName.c_str());
     if (ret != 0) {
-        delete vEncSample;
-        vEncSample = nullptr;
+        delete g_vEncSample;
+        g_vEncSample = nullptr;
         return true;
     }
-    if (vEncSample->enbleSyncMode == 0) {
-        vEncSample->SetVideoEncoderCallback();
+    if (g_vEncSample->enbleSyncMode == 0) {
+        g_vEncSample->SetVideoEncoderCallback();
     }
-    vEncSample->ConfigureVideoEncoder();
-    vEncSample->StartVideoEncoder();
-    vEncSample->SetParameter(data1);
-    vEncSample->WaitForEOS();
-    delete vEncSample;
-    vEncSample = nullptr;
+    g_vEncSample->ConfigureVideoEncoder();
+    g_vEncSample->StartVideoEncoder();
+    g_vEncSample->SetParameter(data1);
+    g_vEncSample->WaitForEOS();
+    delete g_vEncSample;
+    g_vEncSample = nullptr;
     return true;
 }
 } // namespace OHOS

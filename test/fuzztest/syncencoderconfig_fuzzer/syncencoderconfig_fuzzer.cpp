@@ -29,6 +29,8 @@ using namespace OHOS::Media;
 
 
 OH_AVCapability *cap = nullptr;
+constexpr int32_t ONE = 1;
+constexpr int32_t TWO = 2;
 
 void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
 {
@@ -62,10 +64,10 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     int data1 = fdp.ConsumeIntegral<int32_t>();
     bool data2 = fdp.ConsumeBool();
     VEncSyncSample *vEncSample = new VEncSyncSample();
-    vEncSample->codecType = fdp.ConsumeIntegralInRange<int32_t>(1, 2);
-    if (vEncSample->codecType == 1) {
+    vEncSample->codecType = fdp.ConsumeIntegralInRange<int32_t>(ONE, TWO);
+    if (vEncSample->codecType == ONE) {
         codeName = GetCodeName(OH_AVCODEC_MIMETYPE_VIDEO_AVC, HARDWARE);
-    } else if (vEncSample->codecType == 2) {
+    } else if (vEncSample->codecType == TWO) {
         codeName = GetCodeName(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, HARDWARE);
     }
     if (codeName == "") {
@@ -88,7 +90,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     if (vEncSample->enbleSyncMode == 0) {
         vEncSample->SetVideoEncoderCallback();
     }
-    vEncSample->ConfigureVideoEncoder_fuzz(intval);
+    vEncSample->ConfigureVideoEncoderFuzz(intval);
     vEncSample->StartVideoEncoder();
     vEncSample->SetParameter(data1);
     vEncSample->WaitForEOS();
