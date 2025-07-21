@@ -488,7 +488,7 @@ int32_t CodecClient::SetParameter(const Format &format)
 
 int32_t CodecClient::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::scoped_lock lock(mutex_, *syncMutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(callback != nullptr, AVCS_ERR_NO_MEMORY, "Callback is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(callbackMode_ == MEMORY_CALLBACK || callbackMode_ == INVALID_CALLBACK,
                                       AVCS_ERR_INVALID_STATE, "The callback of AVBuffer is already set!");
@@ -503,7 +503,7 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<AVCodecCallback> &callbac
 
 int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::scoped_lock lock(mutex_, *syncMutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(callback != nullptr, AVCS_ERR_NO_MEMORY, "Callback is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(callbackMode_ == BUFFER_CALLBACK || callbackMode_ == INVALID_CALLBACK,
                                       AVCS_ERR_INVALID_STATE, "The callback of AVSharedMemory is already set!");
@@ -518,7 +518,7 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecCallback> &call
 
 int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::scoped_lock lock(mutex_, *syncMutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(callback != nullptr, AVCS_ERR_NO_MEMORY, "Callback is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(!isConfigured_, AVCS_ERR_INVALID_STATE, "Need to be configured before!");
 
@@ -532,7 +532,7 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecParameterCallba
 
 int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::scoped_lock lock(mutex_, *syncMutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(callback != nullptr, AVCS_ERR_NO_MEMORY, "Callback is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(!isConfigured_, AVCS_ERR_INVALID_STATE, "Need to configure encoder!");
 
