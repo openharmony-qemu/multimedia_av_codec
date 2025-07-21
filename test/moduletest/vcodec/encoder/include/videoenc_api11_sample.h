@@ -153,6 +153,7 @@ public:
     int32_t QueryOutputBuffer(uint32_t index, int64_t timeoutUs);
     OH_AVBuffer *GetInputBuffer(uint32_t index);
     OH_AVBuffer *GetOutputBuffer(uint32_t index);
+    void SetConfigureEnc(OH_AVFormat *format);
     VEncAPI11Signal *signal_;
     uint32_t errCount = 0;
     bool enableForceIDR = false;
@@ -201,6 +202,7 @@ public:
     int32_t DEFAULT_MAX_COUNT = 1;
     uint32_t inCount = 0;
     int32_t enbleSyncMode = 0;
+    int32_t enbleBFrameMode = 0;
     int64_t syncInputWaitTime = -1;
     int64_t syncOutputWaitTime = -1;
     bool queryOutputBufferEOS = false;
