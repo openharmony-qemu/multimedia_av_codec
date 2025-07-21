@@ -2174,7 +2174,8 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
             false, "UserQueue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
     }
 
-    if (queueIndex == videoTrackId_ && hasSetLargeSize_ && !isVideoMuted_ && !needRestore_) {
+    bool needSetSmallerSize = queueIndex == videoTrackId_ && hasSetLargeSize_ && !isVideoMuted_ && !needRestore_;
+    if (needSetSmallerSize) {
         if (sampleQueueMap_[queueIndex]->IsEmpty()) {
             sampleQueueMap_[queueIndex]->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
             hasSetLargeSize_ = false;
@@ -2455,23 +2456,18 @@ Status MediaDemuxer::PushBufferToQueue(int32_t trackId, std::shared_ptr<AVBuffer
 
 void MediaDemuxer::HandleVideoTrack(int32_t trackId)
 {
-    if (bufferMap_[trackId]->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME)) {
-        MEDIA_LOG_I("MediaDemuxer::HandleVideoTrack read key frame pts " PUBLIC_LOG_D64, bufferMap_[trackId]->pts_);
-    } else {
-        MEDIA_LOG_I("MediaDemuxer::HandleVideoTrack read frame pts " PUBLIC_LOG_D64, bufferMap_[trackId]->pts_);
-    }
     if (isVideoMuted_ && (bufferMap_[trackId]->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME))) {
         // callback release decoder
         if (needReleaseVideoDecoder_) {
             needReleaseVideoDecoder_ = false;
             MEDIA_LOG_I("MediaDemuxer::HandleReadSample read key frame, ReleaseVideoDecoder");
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_RELEASE_VIDEO_DECODER, trackId});
-            if (sampleConsumerTaskMap_.find(videoTrackId_) != sampleConsumerTaskMap_.end() &&
-                sampleConsumerTaskMap_[videoTrackId_] != nullptr) {
-                if (sampleConsumerTaskMap_[videoTrackId_]->IsTaskRunning()) {
-                    sampleConsumerTaskMap_[videoTrackId_]->PauseAsync();
-                    sampleConsumerTaskMap_[videoTrackId_]->Pause();
-                }
+            bool needPauseSampleConsumer = sampleConsumerTaskMap_.find(videoTrackId_) !=
+                sampleConsumerTaskMap_.end() && sampleConsumerTaskMap_[videoTrackId_] != nullptr &&
+                sampleConsumerTaskMap_[videoTrackId_]->IsTaskRunning()
+            if (needPauseSampleConsumer) {
+                sampleConsumerTaskMap_[videoTrackId_]->PauseAsync();
+                sampleConsumerTaskMap_[videoTrackId_]->Pause();
             }
             if (!hasSetLargeSize_) {
                 sampleQueueMap_[videoTrackId_]->SetLargerQueueSize(SAMPLE_QUEUE_SIZE_ON_MUTE);
