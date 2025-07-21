@@ -566,7 +566,7 @@ uint32_t VEncSyncSample::ReadOneFrameYUV420SP(uint8_t *dst)
     for (uint32_t i = 0; i < defaultHeight; i++) {
         inFile_->read(reinterpret_cast<char *>(dst), defaultWidth);
         if (!ReturnZeroIfEOS(defaultWidth)) {
-            return 0;   
+            return 0;
         }
         dst += stride_;
     }
