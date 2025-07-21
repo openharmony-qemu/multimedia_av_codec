@@ -759,7 +759,7 @@ void VDecNdkInnerFuzzSample::OutputFunc()
     bool flags = true;
     while (flags) {
         if (!isRunning_.load()) {
-            flags =false;
+            flags = false;
             break;
         }
 
