@@ -122,6 +122,7 @@ public:
     Status SetSpeed(float speed);
     Status SetPostProcessorFd(int32_t postProcessorFd);
     Status SetCameraPostprocessing(bool enable);
+    Status SetCameraPostprocessingDirect(bool enable);
     void NotifyPause();
     void NotifyMemoryExchange(bool exchangeFlag);
     Status SetMediaMuted(bool isMuted, bool hasInitialized);

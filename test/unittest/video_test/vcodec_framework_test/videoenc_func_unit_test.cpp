@@ -209,13 +209,14 @@ bool TEST_SUIT::GetTemporalScalabilityCapability(int32_t param)
 
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC));
 
+#if defined(VIDEOENC_INNER_UNIT_TEST)
 #if defined(VIDEOENC_ASYNC_UNIT_TEST)
 /**
- * @tc.name: VideoEncoder_Invalid_SetParameterCallback_003
+ * @tc.name: VideoEncoder_Invalid_SetParameterCallback_001
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoEncoder_Invalid_SetParameterCallback_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Invalid_SetParameterCallback_001, TestSize.Level1)
 {
     ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
@@ -226,7 +227,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Invalid_SetParameterCallback_003, TestSize.Leve
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->Start());
 }
-#elif defined(VIDEOENC_ASYNC_UNIT_TEST) && defined(VIDEOENC_INNER_UNIT_TEST)
+
 /**
  * @tc.name: VideoEncoder_SetParameterWithAttrCallback_001
  * @tc.desc: SetParameterWithAttrCallback and check if meta has pts key-value
@@ -274,7 +275,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Multithread_Create_001, TestSize.Level1)
     GTEST_RUN_TASK(MultiThreadCreateVEnc);
     cout << "remaining num: " << g_vencCount.load() << endl;
 }
-#ifdef VIDEOENC_INNER_UNIT_TEST
+
 /**
  * @tc.name: VideoEncoder_SetROIParameter_001
  * @tc.desc: SetROIParameter and check if meta has roi key-value

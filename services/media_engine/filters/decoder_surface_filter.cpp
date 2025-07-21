@@ -57,6 +57,8 @@ static const int64_t OVERTIME_WARNING_MS = 50;
 static const double DEFAULT_FRAME_RATE = 30.0; // 30.0 is the hisi default frame rate.
 static const std::string ENHANCE_FLAG = "com.openharmony.deferredVideoEnhanceFlag";
 static const std::string VIDEO_ID = "com.openharmony.videoId";
+static const std::string SCENE_INSERT_FRAME = "1";
+static const std::string SCENE_MP_PWP = "2"; // moving photo playing with processing
 
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
@@ -807,8 +809,13 @@ void DecoderSurfaceFilter::InitPostProcessorType()
     meta_->GetData(ENHANCE_FLAG, enhanceflag);
     MEDIA_LOG_D("enhanceflag: %{public}s", enhanceflag.c_str());
     FALSE_RETURN_NOLOG(
-        enableCameraPostprocessing_.load() && enhanceflag == "1" && fdsanFd_ != nullptr && fdsanFd_->Get() >= 0);
-    postProcessorType_ = VideoPostProcessorType::CAMERA_INSERT_FRAME;
+        enableCameraPostprocessing_.load() && (enhanceflag == SCENE_INSERT_FRAME || enhanceflag == SCENE_MP_PWP) &&
+        fdsanFd_ != nullptr && fdsanFd_->Get() >= 0);
+    if (enhanceflag == SCENE_INSERT_FRAME) {
+        postProcessorType_ = VideoPostProcessorType::CAMERA_INSERT_FRAME;
+    } else if (enhanceflag == SCENE_MP_PWP) {
+        postProcessorType_ = VideoPostProcessorType::CAMERA_MP_PWP;
+    }
 #ifdef SUPPORT_CAMERA_POST_PROCESSOR
     LoadCameraPostProcessorLib();
 #endif
@@ -939,7 +946,7 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
         HandleEosOutput(index);
         return Status::OK;
     }
- 
+
     if ((outBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS)) && !isInSeekContinous_) {
         ResetSeekInfo();
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
@@ -1021,7 +1028,7 @@ void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBu
         Filter::ProcessOutputBuffer(false, 0);
         return;
     }
-    
+
     int64_t waitTime = CalculateNextRender(index, outputBuffer);
     if (enableRenderAtTime_) {
         int64_t renderTimeNs = waitTime * NS_PER_US + GetSystimeTimeNs();
@@ -1089,6 +1096,7 @@ void DecoderSurfaceFilter::DecoderDrainOutputBuffer(uint32_t index, std::shared_
     }
     prevDecoderPts_ = outputBuffer->pts_;
     FALSE_RETURN_NOLOG(!DrainSeekClosest(index, outputBuffer));
+    MEDIA_LOG_D("DecoderDrainOutputBuffer ReleaseOutputBuffer: " PUBLIC_LOG_D64, outputBuffer->pts_);
     videoDecoder_->ReleaseOutputBuffer(index, true, outputBuffer->pts_);
 }
 
@@ -1302,7 +1310,7 @@ void DecoderSurfaceFilter::SetBitrateStart()
 {
     bitrateChange_++;
 }
- 
+
 void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &format)
 {
     AutoLock lock(formatChangeMutex_);
@@ -1329,7 +1337,7 @@ void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &for
     }
     surfaceWidth_ = width;
     surfaceHeight_ = height;
- 
+
     MEDIA_LOG_I("ReportVideoSizeChange videoWidth: " PUBLIC_LOG_D32 " videoHeight: "
         PUBLIC_LOG_D32, surfaceWidth_, surfaceHeight_);
     std::pair<int32_t, int32_t> videoSize {surfaceWidth_, surfaceHeight_};
@@ -1372,14 +1380,14 @@ int64_t DecoderSurfaceFilter::GetSystimeTimeNs()
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count();
 }
- 
+
 void DecoderSurfaceFilter::HandleFirstOutput()
 {
     isRenderStarted_ = true;
     FALSE_RETURN_MSG(eventReceiver_ != nullptr, "ReportFirsrFrameEvent without eventReceiver_");
     eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
 }
- 
+
 void DecoderSurfaceFilter::HandleEosOutput(int index)
 {
     int64_t curTimeNs = GetSystimeTimeNs();
@@ -1404,7 +1412,7 @@ void DecoderSurfaceFilter::HandleEosOutput(int index)
         strongPtr->ReportEosEvent();
         }, (lastRenderTimeNs - curTimeNs) / MICROSECONDS_CONVERT_UNIT, false);
 }
- 
+
 void DecoderSurfaceFilter::ReportEosEvent()
 {
     MEDIA_LOG_I("ReportEOSEvent");
@@ -1415,16 +1423,16 @@ void DecoderSurfaceFilter::ReportEosEvent()
     };
     eventReceiver_->OnEvent(event);
 }
- 
+
 void DecoderSurfaceFilter::RenderAtTimeDfx(int64_t renderTime, int64_t currentTime, int64_t lastRenderTimeNs)
 {
     FALSE_RETURN_NOLOG(enableRenderAtTimeDfx_);
     renderTimeQueue_.push_back(renderTime);
- 
+
     auto firstValidIt = std::lower_bound(renderTimeQueue_.begin(), renderTimeQueue_.end(), currentTime);
     renderTimeQueue_.erase(renderTimeQueue_.begin(), firstValidIt);
     MEDIA_LOG_D("RenderTimeQueue size = %{public}zu", renderTimeQueue_.size());
- 
+
     int32_t count = 0;
     for (auto it = renderTimeQueue_.begin(); it != renderTimeQueue_.end(); ++it) {
         if (count < MAX_DEBUG_LOG) {
@@ -1551,14 +1559,25 @@ Status DecoderSurfaceFilter::SetPostProcessorFd(int32_t postProcessorFd)
     FALSE_RETURN_V(fdsanFd_ && (fdsanFd_->Get() >= 0), Status::ERROR_INVALID_PARAMETER);
     return Status::OK;
 }
- 
+
 Status DecoderSurfaceFilter::SetCameraPostprocessing(bool enable)
 {
     MEDIA_LOG_I("SetCameraPostprocessing enter. %{public}d", enable);
     enableCameraPostprocessing_.store(enable);
     return Status::OK;
 }
- 
+
+Status DecoderSurfaceFilter::SetCameraPostprocessingDirect(bool enable)
+{
+    if (postProcessor_ != nullptr) {
+        MEDIA_LOG_I("SetCameraPostprocessingDirect start SetCameraPostProcessing");
+        postProcessor_->SetCameraPostProcessing(enable);
+    } else {
+        MEDIA_LOG_W("SetCameraPostprocessingDirect postProcessor_ is null");
+    }
+    return Status::OK;
+}
+
 void DecoderSurfaceFilter::NotifyPause()
 {
     MEDIA_LOG_D("NotifyPause enter.");

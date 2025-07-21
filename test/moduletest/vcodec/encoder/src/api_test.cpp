@@ -22,6 +22,7 @@
 #include "native_avcodec_videoencoder.h"
 #include "videoenc_sample.h"
 #include "native_avcapability.h"
+#include "videoenc_api11_sample.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -795,5 +796,129 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1410, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_Configure(venc_, format));
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SYNC_API_0010
+ * @tc.name      : QueryInputBuffer OH_AVCodec is nullptr
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_SYNC_API_0010, TestSize.Level2)
+{
+    uint32_t index;
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_QueryInputBuffer(nullptr, &index, -1));
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SYNC_API_0020
+ * @tc.name      : QueryInputBuffer timeoutUs is INT64_MAX
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_SYNC_API_0020, TestSize.Level2)
+{
+    uint32_t index;
+    venc_ = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(nullptr, venc_);
+    format = OH_AVFormat_Create();
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, 1);
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(venc_));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(venc_));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_QueryInputBuffer(venc_, &index, INT64_MAX));
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SYNC_API_0030
+ * @tc.name      : QueryInputBuffer timeoutUs is INT64_MIN
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_SYNC_API_0030, TestSize.Level2)
+{
+    uint32_t index;
+    venc_ = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(nullptr, venc_);
+    format = OH_AVFormat_Create();
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, 1);
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Prepare(venc_));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(venc_));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_QueryInputBuffer(venc_, &index, INT64_MIN));
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SYNC_API_0040
+ * @tc.name      : GetInputBuffer OH_AVCodec is nullptr
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_SYNC_API_0040, TestSize.Level2)
+{
+    ASSERT_EQ(nullptr, OH_VideoEncoder_GetInputBuffer(nullptr, 1));
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SYNC_API_0050
+ * @tc.name      : QueryOutputBuffer OH_AVCodec is nullptr
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_SYNC_API_0050, TestSize.Level2)
+{
+    uint32_t index;
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_QueryOutputBuffer(nullptr, &index, -1));
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SYNC_API_0060
+ * @tc.name      : QueryOutputBuffer timeoutUs is INT64_MAX
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_SYNC_API_0060, TestSize.Level2)
+{
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->enbleSyncMode = 1;
+        vEncSample->syncOutputWaitTime = INT64_MAX;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SYNC_API_0070
+ * @tc.name      : QueryOutputBuffer timeoutUs is INT64_MIN
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_SYNC_API_0070, TestSize.Level2)
+{
+    if (cap != nullptr) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->enbleSyncMode = 1;
+        vEncSample->syncOutputWaitTime = INT64_MIN;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SYNC_API_0080
+ * @tc.name      : GetOutputBuffer OH_AVCodec is nullptr
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_SYNC_API_0080, TestSize.Level2)
+{
+    ASSERT_EQ(nullptr, OH_VideoEncoder_GetOutputBuffer(nullptr, 1));
 }
 } // namespace

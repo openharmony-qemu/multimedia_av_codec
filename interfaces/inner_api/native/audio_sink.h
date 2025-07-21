@@ -146,9 +146,15 @@ private:
         size_t &size, size_t &cacheBufferSize, int64_t &bufferPts);
     bool CopyAudioVividBufferData(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
         size_t &size, size_t &cacheBufferSize, int64_t &bufferPts);
-    Status InitAudioSinkPlugin(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+    Status InitAudioSinkPlugin(const std::shared_ptr<Meta>& meta,
+        const std::shared_ptr<Pipeline::EventReceiver>& receiver,
+        const std::shared_ptr<Plugins::AudioSinkPlugin>& plugin);
     Status InitAudioSinkInfo(std::shared_ptr<Meta>& meta);
-    Status SetAudioSinkPluginParameters();
+    Status SetAudioSinkPluginParameters(const std::shared_ptr<Plugins::AudioSinkPlugin>& plugin);
+    std::shared_ptr<Plugins::AudioSinkPlugin> PreCreateAndStartNewPlugin(const std::shared_ptr<Meta>& meta,
+        const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+    void FlushForChangeTrack();
+    Status ChangeTrackForFormatChange();
     void GetAvailableOutputBuffers();
     void ClearAvailableOutputBuffers();
     void DriveBufferCircle();
@@ -287,6 +293,11 @@ private:
     std::atomic<bool> formatChange_ {false};
     std::mutex formatChangeMutex_ {};
     std::condition_variable formatChangeCond_ {};
+    std::unique_ptr<Task> changeTrackTask_ {nullptr};
+    std::shared_ptr<Plugins::AudioSinkPlugin> newPlugin_ {};
+    std::atomic<bool> hasPluginCreateTaskFinished_ {false};
+    std::mutex preCreatePluginMutex_ {};
+    std::condition_variable preCreatePluginCond_ {};
     class AudioDataSynchroizer {
         public:
             void UpdateCurrentBufferInfo(int64_t bufferPts, int64_t bufferDuration);

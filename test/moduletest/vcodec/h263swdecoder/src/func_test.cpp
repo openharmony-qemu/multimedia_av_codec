@@ -982,4 +982,101 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level2)
         }
     }
 }
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_SW263_FUNC_0010
+ * @tc.name      : 263同步软解输出nv12
+ * @tc.desc      : function test
+ */
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW263_FUNC_0010, TestSize.Level1)
+{
+    if (cap_263 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/profile0_level10_I_128x96.h263";
+        vDecSample->DEFAULT_WIDTH = 128;
+        vDecSample->DEFAULT_HEIGHT = 96;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName263));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+        ASSERT_EQ(FRAMESIZE90, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_SW263_FUNC_0020
+ * @tc.name      : 263同步软解输出nv21
+ * @tc.desc      : function test
+ */
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW263_FUNC_0020, TestSize.Level0)
+{
+    if (cap_263 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/profile0_level10_I_128x96.h263";
+        vDecSample->DEFAULT_WIDTH = 128;
+        vDecSample->DEFAULT_HEIGHT = 96;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName263));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+        ASSERT_EQ(FRAMESIZE90, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_SW263_FUNC_0030
+ * @tc.name      : 263同步软解输出surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW263_FUNC_0030, TestSize.Level1)
+{
+    if (cap_263 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/profile0_level10_I_128x96.h263";
+        vDecSample->DEFAULT_WIDTH = 128;
+        vDecSample->DEFAULT_HEIGHT = 96;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->enbleSyncMode = 1;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName263));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+        ASSERT_EQ(FRAMESIZE90, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_SW263_FUNC_0040
+ * @tc.name      : 263同步软解输出rgba
+ * @tc.desc      : function test
+ */
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW263_FUNC_0040, TestSize.Level1)
+{
+    if (cap_263 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/profile0_level10_I_128x96.h263";
+        vDecSample->DEFAULT_WIDTH = 128;
+        vDecSample->DEFAULT_HEIGHT = 96;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_RGBA;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName263));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+        ASSERT_EQ(FRAMESIZE90, vDecSample->outFrameCount);
+    }
+}
 } // namespace

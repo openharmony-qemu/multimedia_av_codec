@@ -42,6 +42,7 @@ enum VideoPostProcessorType {
     NONE,
     SUPER_RESOLUTION,
     CAMERA_INSERT_FRAME,
+    CAMERA_MP_PWP, // moving photo playing with processing
 };
 
 class BaseVideoPostProcessor {
@@ -73,6 +74,7 @@ public:
     MOCK_METHOD(void, SetSeekTime, (int64_t seekTimeUs, PlayerSeekMode mode), ());
     MOCK_METHOD(void, ResetSeekInfo, (), ());
     MOCK_METHOD(Status, SetSpeed, (float speed), ());
+    MOCK_METHOD(Status, SetCameraPostProcessing, (bool isOpen), ());
 };
 
 } // namespace Media
