@@ -2180,7 +2180,8 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
     } else if (needSetSmallerSize) {
         return false;
     }
-    if (!HasEosTrack() && queueIndex == videoTrackId_ && (isVideoMuted_ || needRestore_)) {
+    bool needControlRead = !HasEosTrack() && queueIndex == videoTrackId_ && (isVideoMuted_ || needRestore_);
+    if (needControlRead) {
         int64_t duration = 0;
         mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(duration);
         int64_t mediaTime = (duration > 0 && syncCenter_ != nullptr) ?
