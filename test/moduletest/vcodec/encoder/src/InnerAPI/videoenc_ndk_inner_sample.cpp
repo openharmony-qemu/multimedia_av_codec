@@ -197,11 +197,11 @@ int32_t VEncNdkInnerSample::Configure()
         format.PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_KEY_I_FRAME_INTERVAL);
     }
     format.PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, enbleSyncMode);
-	if (enbleBFrameMode) {
-		format.PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enbleBFrameMode);
-		format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
-		static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_H3B_MODE));
-	}
+    if (enbleBFrameMode) {
+        format.PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enbleBFrameMode);
+        format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+        static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_H3B_MODE));
+    }
     return venc_->Configure(format);
 }
 
