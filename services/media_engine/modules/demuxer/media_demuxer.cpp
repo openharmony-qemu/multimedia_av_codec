@@ -2180,8 +2180,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
     } else if (needSetSmallerSize) {
         return false;
     }
-    bool needControlReadSample = !HasEosTrack() && queueIndex == videoTrackId_ && (isVideoMuted_ || needRestore_);
-    if (needControlReadSample) {
+    if (!HasEosTrack() && queueIndex == videoTrackId_ && (isVideoMuted_ || needRestore_)) {
         int64_t duration = 0;
         mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(duration);
         int64_t mediaTime = (duration > 0 && syncCenter_ != nullptr) ?
@@ -2190,6 +2189,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
             return false;
         }
     }
+    
     AVBufferConfig avBufferConfig;
     if (isTranscoderMode_ && isSkippingAudioDecAndEnc_ && queueIndex == audioTrackId_) {
         avBufferConfig.memoryType = MemoryType::SHARED_MEMORY;
@@ -2203,9 +2203,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
         if (ret != Status::OK && isVideoMuted_ && queueIndex == videoTrackId_ && !needReleaseVideoDecoder_) {
             std::shared_ptr<AVBuffer> dstBuffer;
             ret = sampleQueueMap_[queueIndex]->AcquireBuffer(dstBuffer);
-            if (ret == Status::OK) {
-                ret = sampleQueueMap_[queueIndex]->ReleaseBuffer(dstBuffer);
-            }
+            ret = ret == Status::OK ? sampleQueueMap_[queueIndex]->ReleaseBuffer(dstBuffer) : ret;
             ret = sampleQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
                                                              REQUEST_BUFFER_TIMEOUT);
         }
@@ -2213,7 +2211,9 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
         ret = bufferQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
         REQUEST_BUFFER_TIMEOUT);
     }
+    
     RecordErrorCount(queueIndex, ret);
+    
     return ret == Status::OK;
 }
 
