@@ -39,6 +39,7 @@ bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     vDecSample->defaultFrameRate = fdp.ConsumeIntegral<uint32_t>();
     vDecSample->defaultRotation = fdp.ConsumeIntegral<uint32_t>();
     vDecSample->defaultPixelFormat = fdp.ConsumeIntegral<uint32_t>();
+    vDecSample->enbleBlankFrame = fdp.ConsumeIntegral<int>();
     size_t maxSize = std::numeric_limits<size_t>::max();
     vDecSample->randomName = fdp.ConsumeRandomLengthString(maxSize);
     vDecSample->randomMime = fdp.ConsumeRandomLengthString(maxSize);
