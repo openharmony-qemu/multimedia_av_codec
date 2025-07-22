@@ -25,7 +25,7 @@ public:
     bool GetWaterMarkCapability(int32_t param);
     bool GetTemporalScalabilityCapability(int32_t param);
     bool GetTemporalScalabilityCapability(int32_t param, bool isTemporalScalability);
-    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(LOG_DOMAIN_FRAMEWORK)};
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(TEST_SUIT)};
 
 protected:
     std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;

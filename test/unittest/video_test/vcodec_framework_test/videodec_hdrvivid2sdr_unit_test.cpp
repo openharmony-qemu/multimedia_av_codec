@@ -52,7 +52,7 @@ public:
     void SetAVCFormat();
     void PrepareSource(int32_t param);
     void ConfigureHdrVivid2Sdr(int32_t testCode);
-    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(LOG_DOMAIN_FRAMEWORK)};
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(TEST_SUIT)};
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;

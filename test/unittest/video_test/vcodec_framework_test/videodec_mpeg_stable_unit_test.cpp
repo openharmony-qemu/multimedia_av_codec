@@ -40,7 +40,7 @@ public:
     static void TearDownTestCase(void);
     void SetUp(void);
     void TearDown(void);
-    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, STRINGFY(LOG_DOMAIN_FRAMEWORK)};
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(TEST_SUIT)};
 
 private:
     shared_ptr<HeapMemoryThread> heapThread_ = nullptr;
