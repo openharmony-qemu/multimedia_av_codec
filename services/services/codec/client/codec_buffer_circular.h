@@ -86,6 +86,12 @@ private:
         OWNED_BY_CLIENT = 1,
         OWNED_BY_USER = 2,
     } BufferOwner;
+
+    typedef enum : uint8_t {
+        MODE_ASYNC,
+        MODE_SYNC,
+    } ModeType;
+
     typedef struct BufferItem {
         std::shared_ptr<AVBuffer> buffer = nullptr;
         std::shared_ptr<AVSharedMemory> memory = nullptr;
@@ -107,6 +113,26 @@ private:
     static const std::string &OwnerToString(BufferOwner owner);
     void PrintCaches(bool isOutput);
     void ClearOutputBufferOwnedByCodec();
+
+    template <ModeType mode>
+    inline bool CanEnableMode()
+    {
+        bool isUnconfigured = !(flag_ & FLAG_SYNC_ASYNC_CONFIGURED);
+        bool modeMatched = !(flag_ & FLAG_IS_SYNC);
+        if constexpr (mode == MODE_SYNC) {
+            modeMatched = (flag_ & FLAG_IS_SYNC);
+        }
+        return isUnconfigured || modeMatched;
+    }
+
+    template <ModeType mode>
+    inline void EnableMode()
+    {
+        if constexpr (mode == MODE_SYNC) {
+            flag_ |= FLAG_IS_SYNC;
+        }
+        flag_ |= FLAG_SYNC_ASYNC_CONFIGURED;
+    }
 
     BufferCache inCache_;
     BufferCache outCache_;
