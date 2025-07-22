@@ -394,7 +394,10 @@ void FFmpegDemuxerPlugin::ReleaseFFmpegReadLoop()
         ioContext_.invokerType = InvokerType::DESTORY;
         readLoopCv_.notify_one();
     }
+    std::unique_lock<std::mutex> readLock(readPacketMutex_);
+    ioContext_.readCbReady = true;
     readCbCv_.notify_one();
+    readLock.unlock();
     if (readThread_ != nullptr && readThread_->joinable()) {
         readThread_->join();
     }
