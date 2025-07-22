@@ -1614,10 +1614,8 @@ Status DecoderSurfaceFilter::DoReleaseOnMuted(bool needRelease)
 {
     MEDIA_LOG_I("DecoderSurfaceFilter::DoReleaseOnMuted enter");
     hasReceivedReleaseEvent_ = true;
-    if (isDecoderReleasedForMute_ || !needRelease || !isVideoMuted_.load()) {
-        MEDIA_LOG_I("Do not need to release video decoder");
-        return Status::OK;
-    }
+    FALSE_RETURN_V_MSG(!isDecoderReleasedForMute_ && needRelease && isVideoMuted_.load(), Status::OK,
+        "Do not need to release video decoder");
     auto ret = DoRelease();
     return ret;
 }

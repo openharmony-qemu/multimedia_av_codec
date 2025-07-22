@@ -347,6 +347,7 @@ private:
                             sptr<AVBufferQueueProducer>& bufferQueue, Status status);
     void HandleSeek(int32_t trackId);
     void RecordErrorCount(int32_t queueIndex, Status ret);
+    void HandleVideoSampleQueue();
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;

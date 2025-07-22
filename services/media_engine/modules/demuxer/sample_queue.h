@@ -90,6 +90,7 @@ public:
     Status ReleaseBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
     Status SetLargerQueueSize(uint32_t size);
     bool IsEmpty();
+    Status AddQueueSize(uint32_t size);
     
 private:
 

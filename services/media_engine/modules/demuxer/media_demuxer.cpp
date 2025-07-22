@@ -2202,9 +2202,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
         ret = sampleQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
         REQUEST_BUFFER_TIMEOUT);
         if (ret != Status::OK && isVideoMuted_ && queueIndex == videoTrackId_ && !needReleaseVideoDecoder_) {
-            std::shared_ptr<AVBuffer> dstBuffer;
-            ret = sampleQueueMap_[queueIndex]->AcquireBuffer(dstBuffer);
-            ret = ret == Status::OK ? sampleQueueMap_[queueIndex]->ReleaseBuffer(dstBuffer) : ret;
+            HandleVideoSampleQueue();
             ret = sampleQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
                                                              REQUEST_BUFFER_TIMEOUT);
         }
@@ -3566,7 +3564,12 @@ Status MediaDemuxer::HandlePushBuffer(int32_t trackId, std::shared_ptr<AVBuffer>
         int64_t size = dstBuffer->memory_->GetSize();
         std::vector<uint8_t> memory = std::vector<uint8_t>(size + config.size());
         dstBuffer->memory_->Read(memory.data(), size, 0);
-        bool hasXps = size >= config.size() ? memcmp(config.data(), memory.data(), config.size()) == 0 : false;
+        bool hasXps = false;
+        if (size >= config.size()) {
+            hasXps = memcmp(config.data(), memory.data(), config.size()) == 0;
+        } else {
+            hasXps = false;
+        }
         if (!hasXps) {
             memory.insert(memory.begin(), config.begin(), config.end());
             dstBuffer->memory_->Write(memory.data(), memory.size(), 0);
@@ -3936,6 +3939,16 @@ void MediaDemuxer::NotifyResumeUnMute()
         if (!isVideoMuted_ && !sampleConsumerTaskMap_[videoTrackId_]->IsTaskRunning()) {
             sampleConsumerTaskMap_[videoTrackId_]->Start();
         }
+    }
+}
+
+void MediaDemuxer::HandleVideoSampleQueue()
+{
+    Status ret = sampleQueueMap_[videoTrackId_]->AddQueueSize(SAMPLE_QUEUE_ADD_SIZE_ON_MUTE);
+    if (ret != Status::OK) {
+        std::shared_ptr<AVBuffer> dstBuffer;
+        sampleQueueMap_[videoTrackId_]->AcquireBuffer(dstBuffer);
+        sampleQueueMap_[videoTrackId_]->ReleaseBuffer(dstBuffer);
     }
 }
 } // namespace Media
