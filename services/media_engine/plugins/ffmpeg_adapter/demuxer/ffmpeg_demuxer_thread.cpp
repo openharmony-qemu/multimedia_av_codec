@@ -107,7 +107,7 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
     if (ioContext->invokerType != READ) {
         ioContext->retry = true;
         ioContext->initErrorAgain = (ioContext->invokerType == INIT ? true : false);
-        MEDIA_LOG_I("Read again, set retry, invokerType!=READ");
+        MEDIA_LOG_I("Read again, invokerType!=READ, offset:" PUBLIC_LOG_D64, ioContext->offset);
         return AV_READ_PACKET_READ_ERROR;
     }
     tryCount++;
@@ -117,7 +117,7 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
         ioContext->readCbReady = false; // Reset the flag
         tryCount = 0;
     } else {
-        MEDIA_LOG_I("Read again, retry count: " PUBLIC_LOG_D32, tryCount);
+        MEDIA_LOG_I("Read again, retry count: " PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64, tryCount, ioContext->offset);
         std::this_thread::sleep_for(std::chrono::milliseconds(AV_READ_PACKET_SLEEP_TIME));
     }
     return AV_READ_PACKET_READ_AGAIN;
