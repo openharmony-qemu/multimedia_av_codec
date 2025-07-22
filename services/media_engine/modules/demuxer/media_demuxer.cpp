@@ -2212,9 +2212,9 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
         ret = bufferQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
         REQUEST_BUFFER_TIMEOUT);
     }
-    
+
     RecordErrorCount(queueIndex, ret);
-    
+
     return ret == Status::OK;
 }
 
