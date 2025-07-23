@@ -127,6 +127,7 @@ ohos_unittest("surface_encoder_filter_unittest") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "safwk:system_ability_fwk",
+    "ffrt:libffrt"
   ]
 
   if (av_codec_support_drm) {
