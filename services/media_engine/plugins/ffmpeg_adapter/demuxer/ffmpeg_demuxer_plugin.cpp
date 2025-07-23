@@ -1964,7 +1964,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     if (samplePacket->isEOS) {
         ret = SetEosSample(sample);
         if (ret == Status::OK) {
-            MEDIA_LOG_I("Track:%{public}d eos [%{public}ld/%{public}ld/%{public}ld]",
+            MEDIA_LOG_I("Track:" PUBLIC_LOG_D32 " eos [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
                 trackId, trackDfxInfoMap_[trackId].lastPts,
                 trackDfxInfoMap_[trackId].lastDuration, trackDfxInfoMap_[trackId].lastPos);
             cacheQueue_.Pop(trackId);
@@ -1973,9 +1973,9 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     }
     ret = ConvertAVPacketToSample(sample, samplePacket);
     if (trackDfxInfoMap_.count(trackId) > 0 && !trackDfxInfoMap_[trackId].dumpFirstInfo) {
-        MEDIA_LOG_I("Track:%{public}d begin [%{public}ld/%{public}ld/%{public}ld] ret[%{public}d]",
+        MEDIA_LOG_I("Track:" PUBLIC_LOG_D32 " eos [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
             trackId, trackDfxInfoMap_[trackId].lastPts,
-            trackDfxInfoMap_[trackId].lastDuration, trackDfxInfoMap_[trackId].lastPos, ret);
+            trackDfxInfoMap_[trackId].lastDuration, trackDfxInfoMap_[trackId].lastPos);
         trackDfxInfoMap_[trackId].dumpFirstInfo = true;
     }
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {

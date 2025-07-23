@@ -179,7 +179,7 @@ private:
     Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
-    Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, int32_t writeSize);
+    Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, uint32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     bool NeedCombineFrame(uint32_t trackId);
