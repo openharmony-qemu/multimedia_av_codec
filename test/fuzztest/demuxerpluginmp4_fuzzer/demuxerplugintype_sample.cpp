@@ -172,12 +172,12 @@ void DemuxerPluginTypeTest::RunDemuxerInterfaceFuzz()
     std::thread readPluginThread1([mediaInfo, this]() {
         MediaInfo Info = mediaInfo;
         AVBufferWrapper buf(videoWidthDefault_ * videoHeightDefault_ * THREE);
-        DemuxerPlugintask(mediaInfo, buf);
+        DemuxerPlugintask(Info, buf);
     });
     std::thread readPluginThread2([mediaInfo, this]() {
-        MediaInfo Info = mediaInfo;
+        MediaInfo Info1 = mediaInfo;
         AVBufferWrapper buf1(videoWidthDefault_ * videoHeightDefault_ * THREE);
-        DemuxerPlugintask(mediaInfo, buf1);
+        DemuxerPlugintask(Info1, buf1);
     });
     readPluginThread1.join();
     readPluginThread2.join();
