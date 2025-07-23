@@ -282,7 +282,7 @@ private:
         int64_t lastPts;
         int64_t lastPos;
         int64_t lastDuration;
-        bool DumpFirstInfo = false;
+        bool dumpFirstInfo = false;
     };
     void UpdateLastPacketInfo(int32_t trackIndex, int64_t pts, int64_t pos, int64_t duration);
     struct DumpParam {

@@ -753,7 +753,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
 {
     Status bufferIsValid = BufferIsValid(sample, samplePacket);
-    FALSE_RETURN_V_MSG_E(bufferIsValid == Status::OK, bufferIsValid, "Temp packet is empty");
+    FALSE_RETURN_V_MSG_E(bufferIsValid == Status::OK, bufferIsValid, "AVBuffer or packet is invalid");
     WriteBufferAttr(sample, samplePacket);
 
     // convert
@@ -1972,11 +1972,11 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         return ret;
     }
     ret = ConvertAVPacketToSample(sample, samplePacket);
-    if (trackDfxInfoMap_.count(trackId) > 0 && !trackDfxInfoMap_[trackId].DumpFirstInfo) {
+    if (trackDfxInfoMap_.count(trackId) > 0 && !trackDfxInfoMap_[trackId].dumpFirstInfo) {
         MEDIA_LOG_I("Track:%{public}d begin [%{public}ld/%{public}ld/%{public}ld] ret[%{public}d]",
             trackId, trackDfxInfoMap_[trackId].lastPts,
             trackDfxInfoMap_[trackId].lastDuration, trackDfxInfoMap_[trackId].lastPos, ret);
-        trackDfxInfoMap_[trackId].DumpFirstInfo = true;
+        trackDfxInfoMap_[trackId].dumpFirstInfo = true;
     }
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
         return Status::OK;
