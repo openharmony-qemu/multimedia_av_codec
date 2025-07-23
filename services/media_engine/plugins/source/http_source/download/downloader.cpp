@@ -342,6 +342,10 @@ bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32
 
 std::string Downloader::GetContentType()
 {
+    if (isDestructor_) {
+        MEDIA_LOG_E("Get %{public}s content type failed, uuid %{public}ld", name_.c_str(), uuid_);
+        return contentType_;
+    }
     FALSE_RETURN_V_NOLOG(!isContentTypeUpdated_, contentType_);
     AutoLock lock(sleepMutex_);
     MEDIA_LOG_I("GetContentType wait begin ");
@@ -566,7 +570,7 @@ std::string GetUserAgent()
 
 bool Downloader::BeginDownload()
 {
-    MEDIA_LOG_I("BeginDownload");
+    MEDIA_LOG_I("BeginDownload %{public}s", name_.c_str());
     std::string url = currentRequest_->url_;
     std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
 

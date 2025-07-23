@@ -33,6 +33,7 @@ constexpr int DEFAULT_EXPECT_DURATION = 19;
 constexpr int ERROR_COUNT = 5;
 const std::string LOWER_M3U8 = "m3u8";
 const std::string DASH_SUFFIX = ".mpd";
+const std::string EQUAL_M3U8 = "=" + LOWER_M3U8;
 
 }
 
@@ -520,9 +521,35 @@ bool HttpSourcePlugin::CheckIsM3U8Uri()
     }
     std::string uri = uri_;
     std::transform(uri.begin(), uri.end(), uri.begin(), ::tolower);
-    if (uri.find(LOWER_M3U8) != std::string::npos) {
-        return true;
+
+    std::string::size_type pos = uri.find('?');
+    std::string uriMain = (pos != std::string::npos) ? uri.substr(0, pos) : uri;
+    std::string uriParam = (pos != std::string::npos) ? uri.substr(pos + 1) : "";
+    pos = uriMain.rfind('/');
+    if (pos == std::string::npos) {
+        return false;
     }
+
+    // 现网的很多hls链接是非.m3u8关键字，举例：http://xxx/xxxx?autotype=m3u8; http://xxx/aaa.doplaylist?auto=m3u8
+    // 优先判断资源类型(.和?中间的字符串，姑且称资源类型)；参数携带为次。如果不携带资源类型，还走原来的逻辑
+    std::string leafNameSuffix = uriMain.substr(pos + 1);
+    pos = leafNameSuffix.rfind('.');
+    if (pos != std::string::npos) {     // 找到资源格式
+        std::string suffix = uriMain.substr(pos + 1);
+        if (suffix == LOWER_M3U8) {
+            return true;
+        }
+        if (!uriParam.empty()) {
+            if (uriParam.find(EQUAL_M3U8) != std::string::npos) {
+                return true;
+            }
+        }
+    } else {    // 没有标明资源格式，按原先规则里找；当前未从param后面找=m3u8
+        if (uri.find(LOWER_M3U8) != std::string::npos) {
+            return true;
+        }
+    }
+    
     return false;
 }
 
