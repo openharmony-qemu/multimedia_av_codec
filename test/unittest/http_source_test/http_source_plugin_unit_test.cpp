@@ -379,6 +379,43 @@ HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported4, TestSize.Level1)
     EXPECT_FALSE(httpSourcePlugin->IsSeekToTimeSupported());
 }
 
+HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported5, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "https://cdn-audio.qimao.com/103631e612434cb62a10227bccc5d596/687daf28/tts/5/30/10/"
+    "1h8m3u8rtbJpBe63EHmhJwyKzaNDe.mp3?expire=1753150104";
+    EXPECT_FALSE(httpSourcePlugin->IsSeekToTimeSupported());
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported6, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "http://xxx/xxxx?autotype=m3u8";
+    EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported7, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "http://xxx/aaa.doplaylist?autotype=m3u8";
+    EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported8, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "http://xxx/aaa.doplaylist?autotypem3u8";
+    EXPECT_FALSE(httpSourcePlugin->IsSeekToTimeSupported());
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported9, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "http:aaa.doplaylist?autotype=m3u8";
+    EXPECT_FALSE(httpSourcePlugin->IsSeekToTimeSupported());
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported10, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "http://autotype=m3u8";
+    EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
+}
+
 HWTEST_F(HttpSourcePluginUnitTest, Read_IsNull, TestSize.Level1)
 {
     httpSourcePlugin->downloader_ = nullptr;

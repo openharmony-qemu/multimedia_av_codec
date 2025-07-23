@@ -343,7 +343,7 @@ bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32
 std::string Downloader::GetContentType()
 {
     if (isDestructor_) {
-        MEDIA_LOG_E("Get %{public}s content type failed, uuid %{public}ld", name_.c_str(), uuid_);
+        MEDIA_LOG_E("Get %{public}s content type failed, uuid %{public}lld", name_.c_str(), uuid_);
         return contentType_;
     }
     FALSE_RETURN_V_NOLOG(!isContentTypeUpdated_, contentType_);
