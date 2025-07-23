@@ -34,6 +34,7 @@ using namespace OHOS::Media::Plugins::Ffmpeg;
 
 namespace OHOS {
 namespace Media {
+constexpr uint32_t THREE = 3;
 DemuxerPluginTypeTest::DemuxerPluginTypeTest() = default;
 
 DemuxerPluginTypeTest::~DemuxerPluginTypeTest()
@@ -168,14 +169,14 @@ void DemuxerPluginTypeTest::RunDemuxerInterfaceFuzz()
     for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
         demuxerPlugin_->SelectTrack(idx);
     }
-    std::thread readPluginThread1([mediaInfo, this](){
+    std::thread readPluginThread1([mediaInfo, this]() {
         MediaInfo Info = mediaInfo;
-        AVBufferWrapper buf(videoWidthDefault_ * videoHeightDefault_ * 3);
+        AVBufferWrapper buf(videoWidthDefault_ * videoHeightDefault_ * THREE);
         DemuxerPlugintask(mediaInfo, buf);
     });
-    std::thread readPluginThread2([mediaInfo, this](){
+    std::thread readPluginThread2([mediaInfo, this]() {
         MediaInfo Info = mediaInfo;
-        AVBufferWrapper buf1(videoWidthDefault_ * videoHeightDefault_ * 3);
+        AVBufferWrapper buf1(videoWidthDefault_ * videoHeightDefault_ * THREE);
         DemuxerPlugintask(mediaInfo, buf1);
     });
     readPluginThread1.join();

@@ -23,13 +23,15 @@ using namespace std;
 using namespace OHOS::Media;
 
 namespace OHOS {
+constexpr uint32_t WIDTH = 1920;
+constexpr uint32_t HEIGHT = 1080;
 void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t size)
 {
     std::shared_ptr<DemuxerPluginTypeTest> demuxerTest = std::make_shared<DemuxerPluginTypeTest>();
     demuxerTest->testFilePath_ = "/data/test/demuxerpluginmov.mov";
     demuxerTest->demuxerPluginName_ = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    demuxerTest->videoHeightDefault_ = 1080;
-    demuxerTest->videoWidthDefault_ = 1920;
+    demuxerTest->videoHeightDefault_ = HEIGHT;
+    demuxerTest->videoWidthDefault_ = WIDTH;
     if (demuxerTest->InitWithData(data, size)) {
         demuxerTest->RunDemuxerInterfaceFuzz();
     }
