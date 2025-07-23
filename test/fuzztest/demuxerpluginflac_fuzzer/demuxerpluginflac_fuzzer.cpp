@@ -26,7 +26,7 @@ namespace OHOS {
 void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t size)
 {
     std::shared_ptr<DemuxerPluginTypeTest> demuxerTest = std::make_shared<DemuxerPluginTypeTest>();
-    demuxerTest->testFilePath_ = "/data/test/demuxerpluginflac.avi";
+    demuxerTest->testFilePath_ = "/data/test/demuxerpluginflac.flac";
     demuxerTest->demuxerPluginName_ = "avdemux_flac";
     if (demuxerTest->InitWithData(data, size)) {
         demuxerTest->RunDemuxerInterfaceFuzz();
