@@ -285,6 +285,7 @@ private:
         bool dumpFirstInfo = false;
     };
     void UpdateLastPacketInfo(int32_t trackIndex, int64_t pts, int64_t pos, int64_t duration);
+    void DummpPacketInfo(int32_t trackIndex, std::string prefix);
     struct DumpParam {
         DumpMode mode;
         uint8_t* buf;

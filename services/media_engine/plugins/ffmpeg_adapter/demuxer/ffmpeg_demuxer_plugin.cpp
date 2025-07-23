@@ -780,7 +780,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         tempPkt->size, remainSize, copySize, samplePacket->offset);
     SetDrmCencInfo(sample, samplePacket);
 
-    sample->flag_ = ConvertFlagsFromFFmpeg(*tempPkt, (copySize != static_cast<uint32_t>(tempPkt->size)));;
+    sample->flag_ = ConvertFlagsFromFFmpeg(*tempPkt, (copySize != static_cast<uint32_t>(tempPkt->size)));
     ret = WriteBuffer(sample, tempPkt->data + samplePacket->offset, copySize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Write buffer failed");
 
@@ -1930,6 +1930,14 @@ void FFmpegDemuxerPlugin::ResetEosStatus()
     }
 }
 
+void FFmpegDemuxerPlugin::DummpPacketInfo(int32_t trackIndex, std::string prefix)
+{
+    MEDIA_LOG_I(
+        "Info Track[" PUBLIC_LOG_D32 "] [" PUBLIC_LOG_S "] [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
+        trackIndex, prefix.c_str(), trackDfxInfoMap_[trackIndex].lastPts,
+        trackDfxInfoMap_[trackIndex].lastDuration, trackDfxInfoMap_[trackIndex].lastPos);
+}
+
 Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
@@ -1964,18 +1972,14 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     if (samplePacket->isEOS) {
         ret = SetEosSample(sample);
         if (ret == Status::OK) {
-            MEDIA_LOG_I("Track:" PUBLIC_LOG_D32 " eos [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
-                trackId, trackDfxInfoMap_[trackId].lastPts,
-                trackDfxInfoMap_[trackId].lastDuration, trackDfxInfoMap_[trackId].lastPos);
+            DummpPacketInfo(trackId, "eos");
             cacheQueue_.Pop(trackId);
         }
         return ret;
     }
     ret = ConvertAVPacketToSample(sample, samplePacket);
     if (trackDfxInfoMap_.count(trackId) > 0 && !trackDfxInfoMap_[trackId].dumpFirstInfo) {
-        MEDIA_LOG_I("Track:" PUBLIC_LOG_D32 " eos [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
-            trackId, trackDfxInfoMap_[trackId].lastPts,
-            trackDfxInfoMap_[trackId].lastDuration, trackDfxInfoMap_[trackId].lastPos);
+        DummpPacketInfo(trackId, "first");
         trackDfxInfoMap_[trackId].dumpFirstInfo = true;
     }
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
