@@ -203,6 +203,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/audiodecoderconfigure_fuzzer:AudiodecoderConfigureFuzzTest",
       "fuzztest/audiodecoderflac_fuzzer:AudioDecoderFlacFuzzTest",
       "fuzztest/audiodecoderflush_fuzzer:AudioDecoderFlushFuzzTest",
+      "fuzztest/audiodecoderg711a_fuzzer:AudioDecoderG711AFuzzTest",
       "fuzztest/audiodecoderg711_fuzzer:AudioDecoderG711FuzzTest",
       "fuzztest/audiodecoderheaac_fuzzer:AudioDecoderHEAacFuzzTest",
       "fuzztest/audiodecoderhev2aac_fuzzer:AudioDecoderHEV2AacFuzzTest",
