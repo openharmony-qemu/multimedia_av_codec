@@ -31,7 +31,7 @@ using namespace OHOS::Media;
 OH_AVCapability *cap = nullptr;
 constexpr int32_t ONE = 1;
 constexpr int32_t TWO = 2;
-string codeName = "";
+string g_codeName = "";
 VEncSyncSample *vEncSample = nullptr;
 
 void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
@@ -55,15 +55,15 @@ string GetCodeName(const char* mimeName, OH_AVCodecCategory category)
 void ReleaseSample()
 {
     delete vEncSample;
-    vEncSample = nullptr;    
+    vEncSample = nullptr;
 }
 
 void CodecType()
 {
     if (vEncSample->codecType == ONE) {
-        codeName = GetCodeName(OH_AVCODEC_MIMETYPE_VIDEO_AVC, HARDWARE);
+        g_codeName = GetCodeName(OH_AVCODEC_MIMETYPE_VIDEO_AVC, HARDWARE);
     } else if (vEncSample->codecType == TWO) {
-        codeName = GetCodeName(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, HARDWARE);
+        g_codeName = GetCodeName(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, HARDWARE);
     }
 }
 
@@ -80,7 +80,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     vEncSample = new VEncSyncSample();
     vEncSample->codecType = fdp.ConsumeIntegralInRange<int32_t>(ONE, TWO);
     CodecType();
-    if (codeName == "") {
+    if (g_codeName == "") {
         return false;
     }
     vEncSample->fuzzData = data;
@@ -91,7 +91,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     vEncSample->syncInputWaitTime = fdp.ConsumeIntegral<int64_t>();
     vEncSample->syncOutputWaitTime = fdp.ConsumeIntegral<int64_t>();
     int32_t intval = fdp.ConsumeIntegral<uint32_t>();
-    int32_t ret = vEncSample->CreateVideoEncoder(codeName.c_str());
+    int32_t ret = vEncSample->CreateVideoEncoder(g_codeName.c_str());
     if (ret != 0) {
         ReleaseSample();
         return true;
@@ -102,7 +102,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     vEncSample->ConfigureVideoEncoderFuzz(intval);
     if (vEncSample->enbleSyncMode == 0) {
         ReleaseSample();
-        return false;        
+        return false; 
     }
     if (vEncSample->Start() != 0) {
         ReleaseSample();

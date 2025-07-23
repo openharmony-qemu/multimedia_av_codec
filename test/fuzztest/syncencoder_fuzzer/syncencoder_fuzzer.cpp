@@ -56,7 +56,7 @@ string GetCodeName(const char* mimeName, OH_AVCodecCategory category)
 void ReleaseSample()
 {
     delete g_vEncSample;
-    g_vEncSample = nullptr;    
+    g_vEncSample = nullptr;
 }
 
 void CodeType()
@@ -87,7 +87,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     }
     g_vEncSample->fuzzData = data;
     g_vEncSample->fuzzSize = size;
-    g_vEncSample->surfInput = fdp.ConsumeBool();;
+    g_vEncSample->surfInput = fdp.ConsumeBool();
     g_vEncSample->fuzzMode = true;
     g_vEncSample->enbleBFrameMode = fdp.ConsumeIntegral<int32_t>();
     g_vEncSample->enbleSyncMode = 1;
@@ -98,8 +98,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     g_vEncSample->defaultKeyFrameInterval = fdp.ConsumeIntegral<uint32_t>();
     g_vEncSample->DEFAULT_BITRATE_MODE = fdp.ConsumeIntegral<uint32_t>();
     g_vEncSample->defaultQuality = fdp.ConsumeIntegral<uint32_t>();
-    int32_t ret = g_vEncSample->CreateVideoEncoder(g_codeName.c_str());
-    if (ret != 0) {
+    if (g_vEncSample->CreateVideoEncoder(g_codeName.c_str()) != 0) {
         ReleaseSample();
         return false;
     }
