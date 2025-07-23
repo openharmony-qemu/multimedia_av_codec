@@ -284,8 +284,12 @@ private:
         int64_t lastDuration;
         bool dumpFirstInfo = false;
     };
-    void UpdateLastPacketInfo(int32_t trackIndex, int64_t pts, int64_t pos, int64_t duration);
-    void DummpPacketInfo(int32_t trackIndex, std::string prefix);
+    enum Stage : int32_t {
+        FIRST_READ = 0,
+        FILE_END   = 1,
+    };
+    void UpdateLastPacketInfo(int32_t trackId, int64_t pts, int64_t pos, int64_t duration);
+    void DumpPacketInfo(int32_t trackId, Stage stage);
     struct DumpParam {
         DumpMode mode;
         uint8_t* buf;

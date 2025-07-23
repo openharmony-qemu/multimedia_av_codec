@@ -742,11 +742,11 @@ Status FFmpegDemuxerPlugin::BufferIsValid(std::shared_ptr<AVBuffer> sample, std:
     return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::UpdateLastPacketInfo(int32_t trackIndex, int64_t pts, int64_t pos, int64_t duration)
+void FFmpegDemuxerPlugin::UpdateLastPacketInfo(int32_t trackId, int64_t pts, int64_t pos, int64_t duration)
 {
-    trackDfxInfoMap_[trackIndex].lastPts = pts;
-    trackDfxInfoMap_[trackIndex].lastDuration = duration;
-    trackDfxInfoMap_[trackIndex].lastPos = pos;
+    trackDfxInfoMap_[trackId].lastPts = pts;
+    trackDfxInfoMap_[trackId].lastDuration = duration;
+    trackDfxInfoMap_[trackId].lastPos = pos;
 }
 
 Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
@@ -1930,12 +1930,21 @@ void FFmpegDemuxerPlugin::ResetEosStatus()
     }
 }
 
-void FFmpegDemuxerPlugin::DummpPacketInfo(int32_t trackIndex, std::string prefix)
+void FFmpegDemuxerPlugin::DumpPacketInfo(int32_t trackId, Stage stage)
 {
-    MEDIA_LOG_I(
-        "Info Track[" PUBLIC_LOG_D32 "] [" PUBLIC_LOG_S "] [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
-        trackIndex, prefix.c_str(), trackDfxInfoMap_[trackIndex].lastPts,
-        trackDfxInfoMap_[trackIndex].lastDuration, trackDfxInfoMap_[trackIndex].lastPos);
+    if (trackDfxInfoMap_.count(trackId) <= 0) {
+        return;
+    }
+    if (stage == Stage::FIRST_READ && !trackDfxInfoMap_[trackId].dumpFirstInfo) {
+        MEDIA_LOG_I("Info Track[" PUBLIC_LOG_D32 "] [first] [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
+            trackId, trackDfxInfoMap_[trackId].lastPts,
+            trackDfxInfoMap_[trackId].lastDuration, trackDfxInfoMap_[trackId].lastPos);
+        trackDfxInfoMap_[trackId].dumpFirstInfo = true;
+    } else if (stage == Stage::FILE_END) {
+        MEDIA_LOG_I("Info Track[" PUBLIC_LOG_D32 "] [eos] [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
+            trackId, trackDfxInfoMap_[trackId].lastPts,
+            trackDfxInfoMap_[trackId].lastDuration, trackDfxInfoMap_[trackId].lastPos);
+    }
 }
 
 Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
@@ -1972,16 +1981,13 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     if (samplePacket->isEOS) {
         ret = SetEosSample(sample);
         if (ret == Status::OK) {
-            DummpPacketInfo(trackId, "eos");
+            DumpPacketInfo(trackId, Stage::FILE_END);
             cacheQueue_.Pop(trackId);
         }
         return ret;
     }
     ret = ConvertAVPacketToSample(sample, samplePacket);
-    if (trackDfxInfoMap_.count(trackId) > 0 && !trackDfxInfoMap_[trackId].dumpFirstInfo) {
-        DummpPacketInfo(trackId, "first");
-        trackDfxInfoMap_[trackId].dumpFirstInfo = true;
-    }
+    DumpPacketInfo(trackId, Stage::FIRST_READ);
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
         return Status::OK;
     } else if (ret == Status::OK) {
