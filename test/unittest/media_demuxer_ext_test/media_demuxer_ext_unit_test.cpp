@@ -2751,4 +2751,75 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_DoSelectTrack_004, TestSize.Level
     // sampleQueueMap_[curTrackId] != nullptr  true
     EXPECT_EQ(mediaDemuxer_->DoSelectTrack(NUM_1, NUM_2), Status::OK);
 }
+/**
+ * @tc.name  : MediaDemuxer_HandleEosDrag_001
+ * @tc.number: MediaDemuxer_HandleEosDrag_001
+ * @tc.desc  : test HandleEosDrag
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleEosDrag_001, TestSize.Level1)
+{
+    int32_t trackId = 0;
+    std::shared_ptr<AVBuffer> buffer = std::make_shared<AVBuffer>();
+    buffer->flag_ = static_cast<uint32_t>(AVBufferFlag::EOS);
+    buffer->pts_ = 0;
+    mediaDemuxer_->bufferMap_[trackId] = buffer;
+    mediaDemuxer_->eosMap_[trackId] = false;
+    bool isDiscardable = false;
+    mediaDemuxer_->HandleEosDrag(trackId, isDiscardable);
+    EXPECT_EQ(mediaDemuxer_->eosMap_[trackId], true);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_HandleEosDrag_002
+ * @tc.number: MediaDemuxer_HandleEosDrag_002
+ * @tc.desc  : test HandleEosDrag
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleEosDrag_002, TestSize.Level1)
+{
+    int32_t trackId = 0;
+    std::shared_ptr<AVBuffer> buffer = std::make_shared<AVBuffer>();
+    buffer->flag_ = static_cast<uint32_t>(AVBufferFlag::EOS);
+    buffer->pts_ = 0;
+    mediaDemuxer_->bufferMap_[trackId] = buffer;
+    mediaDemuxer_->eosMap_[trackId] = false;
+    bool isDiscardable = true;
+    mediaDemuxer_->HandleEosDrag(trackId, isDiscardable);
+    EXPECT_EQ(mediaDemuxer_->eosMap_[trackId], false);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_HandleEosDrag_003
+ * @tc.number: MediaDemuxer_HandleEosDrag_003
+ * @tc.desc  : test HandleEosDrag
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleEosDrag_003, TestSize.Level1)
+{
+    int32_t trackId = 0;
+    std::shared_ptr<AVBuffer> buffer = std::make_shared<AVBuffer>();
+    buffer->flag_ = 0;
+    buffer->pts_ = 0;
+    mediaDemuxer_->bufferMap_[trackId] = buffer;
+    mediaDemuxer_->eosMap_[trackId] = false;
+    bool isDiscardable = false;
+    mediaDemuxer_->HandleEosDrag(trackId, isDiscardable);
+    EXPECT_EQ(mediaDemuxer_->eosMap_[trackId], false);
+}
+
+/**
+ * @tc.name  : MediaDemuxer_HandleEosDrag_004
+ * @tc.number: MediaDemuxer_HandleEosDrag_004
+ * @tc.desc  : test HandleEosDrag
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleEosDrag_004, TestSize.Level1)
+{
+    int32_t trackId = 0;
+    std::shared_ptr<AVBuffer> buffer = std::make_shared<AVBuffer>();
+    buffer->flag_ = 0;
+    buffer->pts_ = 0;
+    mediaDemuxer_->bufferMap_[trackId] = buffer;
+    mediaDemuxer_->eosMap_[trackId] = false;
+    bool isDiscardable = true;
+    mediaDemuxer_->HandleEosDrag(trackId, isDiscardable);
+    EXPECT_EQ(mediaDemuxer_->eosMap_[trackId], false);
+}
 }  // namespace OHOS::Media
