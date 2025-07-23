@@ -188,7 +188,7 @@ int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct Surface
     AVCODEC_SYNC_TRACE;
     if (surfaceInfo.surfaceFence != nullptr) {
         int32_t waitRes = surfaceInfo.surfaceFence->Wait(WAIT_FENCE_MS);
-        EXPECT_AND_LOGW(waitRes != 0, "wait fence time out, cost more than %{public}u ms", WAIT_FENCE_MS);
+        EXPECT_AND_LOGD(waitRes != 0, "wait fence time out, cost more than %{public}u ms", WAIT_FENCE_MS);
     }
     uint32_t yScaleLineSize = static_cast<uint32_t>(surfaceInfo.scaleLineSize[0]);
     if (IsYuvFormat(pixFmt)) {
