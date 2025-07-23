@@ -771,6 +771,8 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
     } else {
         if (g_pFfRotationMap.count(std::string(valPtr->value)) > 0) {
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap[std::string(valPtr->value)]);
+        } else {
+            MEDIA_LOG_D("Unsupport rotate " PUBLIC_LOG_S, valPtr->value);
         }
     }
     FileType fileType = GetFileTypeByName(avFormatContext);

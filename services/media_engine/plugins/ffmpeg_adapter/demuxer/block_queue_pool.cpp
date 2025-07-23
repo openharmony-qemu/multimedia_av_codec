@@ -239,7 +239,7 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
         return nullptr;
     }
     auto& queVector = queMap_[trackIndex];
-    for (auto index = 0; index < static_cast<int32_t>(queVector.size()); ++index) {
+    for (auto index = static_cast<int32_t>(queVector.size()) - 1; index >= 0; --index) {
         auto queIndex = queVector[index];
         if (quePool_[queIndex].blockQue == nullptr) {
             MEDIA_LOG_D("Block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);

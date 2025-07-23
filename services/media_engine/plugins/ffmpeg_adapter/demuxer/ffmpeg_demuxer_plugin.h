@@ -174,6 +174,7 @@ private:
     Status AddPacketToCacheQueue(AVPacket *pkt);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
+    Status BufferIsValid(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
         std::shared_ptr<SamplePacket> dstSamplePacket);
@@ -280,8 +281,10 @@ private:
         int frameIndex = 0; // for each track
         int64_t lastPts;
         int64_t lastPos;
-        int64_t lastDurantion;
+        int64_t lastDuration;
+        bool DumpFirstInfo = false;
     };
+    void UpdateLastPacketInfo(int32_t trackIndex, int64_t pts, int64_t pos, int64_t duration);
     struct DumpParam {
         DumpMode mode;
         uint8_t* buf;
