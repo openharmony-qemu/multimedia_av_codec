@@ -239,7 +239,7 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
         return nullptr;
     }
     auto& queVector = queMap_[trackIndex];
-    for (auto it = queVector.begin(); it != queVector.end()) {
+    for (auto it = queVector.begin(); it != queVector.end(); ++it) {
         int32_t index = std::distance(queVector.begin(), it);
         auto queIndex = queVector[index];
         if (quePool_[queIndex].blockQue == nullptr) {
