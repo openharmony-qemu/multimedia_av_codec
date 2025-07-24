@@ -853,11 +853,20 @@ Status MediaCodec::ChangePlugin(const std::string &mime, bool isEncoder, const s
 
         CHECK_AND_RETURN_RET_LOG(codecPlugin_ != nullptr, Status::ERROR_INVALID_PARAMETER, "createPlugin failed");
         ret = codecPlugin_->SetParameter(meta);
-        MEDIA_LOG_I("codecPlugin SetParameter ret %{public}d", ret);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("codecPlugin SetParameter ret %{public}d", ret);
+            return ret;
+        }
         ret = codecPlugin_->Init();
-        MEDIA_LOG_I("codecPlugin Init ret %{public}d", ret);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("codecPlugin Init ret %{public}d", ret);
+            return ret;
+        }
         ret = codecPlugin_->SetDataCallback(this);
-        MEDIA_LOG_I("codecPlugin SetDataCallback ret %{public}d", ret);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("codecPlugin SetDataCallback ret %{public}d", ret);
+            return ret;
+        }
     }
 
     // discard undecoded data and unconsumed decoded data.
@@ -866,11 +875,14 @@ Status MediaCodec::ChangePlugin(const std::string &mime, bool isEncoder, const s
     ClearInputBuffer();
     ResetBufferStatusInfo();
 
+    AutoLock lock(stateMutex_);
     PrepareInputBufferQueue();
     PrepareOutputBufferQueue();
     if (state_ == CodecState::RUNNING) {
         ret = codecPlugin_->Start();
-        MEDIA_LOG_I("codecPlugin Start ret %{public}d", ret);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("codecPlugin Start ret %{public}d", ret);
+        }
     }
 
     return ret;
