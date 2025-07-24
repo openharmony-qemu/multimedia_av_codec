@@ -105,10 +105,11 @@ void HCodec::BaseState::OnCodecEvent(CodecEventType event, uint32_t data1, uint3
 {
     if (event == CODEC_EVENT_ERROR) {
         SLOGE("omx report error event, data1 = %u, data2 = %u", data1, data2);
-    if (data1 == static_cast<uint32_t>(OMX_ErrorUnsupportedSetting) ||
-        data1 == static_cast<uint32_t>(OMX_ErrorInsufficientResources)) {
-        SLOGE("unsupport or insufficient resources, need force shut down");
-        (void)codec_->ForceShutdown(codec_->stateGeneration_, false);
+        codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
+        if (data1 == static_cast<uint32_t>(OMX_ErrorUnsupportedSetting) ||
+            data1 == static_cast<uint32_t>(OMX_ErrorInsufficientResources)) {
+            SLOGE("unsupport or insufficient resources, need force shut down");
+            (void)codec_->ForceShutdown(codec_->stateGeneration_, false);
         }
     } else {
         SLOGW("ignore event %d, data1 = %u, data2 = %u", event, data1, data2);
