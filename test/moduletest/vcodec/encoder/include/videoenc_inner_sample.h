@@ -175,7 +175,7 @@ public:
     int32_t DEFAULT_SQR_FACTOR = 30;
     int64_t DEFAULT_MAX_BITERATE = 4000000;
     int32_t DEFAULT_SQR_FACTOR_RUN = 30;
-    int64_t DEFAULT_MAX_BITERATE_RUN = 4000000;    
+    int64_t DEFAULT_MAX_BITERATE_RUN = 4000000;
 
     uint32_t errCount = 0;
     uint32_t outCount = 0;
