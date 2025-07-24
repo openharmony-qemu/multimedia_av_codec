@@ -306,6 +306,7 @@ private:
     void TranscoderInitMediaStartPts();
     void UpdateBufferQueueListener(int32_t trackId);
     bool IsOpenGopBufferDroppable(std::shared_ptr<AVBuffer> sample, int32_t trackId);
+    void HandleEosDrag(int32_t trackId, bool isDiscardable = false);
     void UpdateSyncFrameInfo(std::shared_ptr<AVBuffer> sample, int32_t trackId, bool isDiscardable = false);
     void EnterDraggingOpenGopCnt();
     void ResetDraggingOpenGopCnt();

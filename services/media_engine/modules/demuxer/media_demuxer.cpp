@@ -2475,6 +2475,7 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
             std::shared_ptr<VideoStreamReadyCallback> videoStreamReadyCallback = VideoStreamReadyCallback_;
             draggingLock.unlock();
             bool isDiscardable = videoStreamReadyCallback->IsVideoStreamDiscardable(bufferMap_[trackId]);
+            HandleEosDrag(trackId, isDiscardable);
             UpdateSyncFrameInfo(bufferMap_[trackId], trackId, isDiscardable);
             CopyBufferToDfxBufferQueue(bufferMap_[trackId], !isDiscardable && isBufferSizeValid);
             PushBufferToQueue(trackId, bufferMap_[trackId], !isDiscardable && isBufferSizeValid);
@@ -2503,6 +2504,13 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
         MEDIA_LOG_E("Read failed, track " PUBLIC_LOG_D32 ", ret:" PUBLIC_LOG_D32, trackId, static_cast<int32_t>(ret));
     }
     return ret;
+}
+
+void MediaDemuxer::HandleEosDrag(int32_t trackId, bool isDiscardable)
+{
+    if (bufferMap_[trackId]->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS) && !isDiscardable) {
+        eosMap_[trackId] = true;
+    }
 }
 
 void MediaDemuxer::CopyBufferToDfxBufferQueue(std::shared_ptr<AVBuffer> buffer, bool dropable)
