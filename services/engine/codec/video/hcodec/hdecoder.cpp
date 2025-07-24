@@ -850,7 +850,6 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
     outputBufferPool_.clear();
     CombineConsumerUsage();
     std::map<uint32_t, sptr<SurfaceBuffer>> bufferMap;
-    HLOGI("LowPowerPlayer outBufferCnt_: %u", outBufferCnt_);
     for (uint32_t i = 0; i < outBufferCnt_; ++i) {
         sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
         IF_TRUE_RETURN_VAL(surfaceBuffer == nullptr, AVCS_ERR_UNKNOWN);
@@ -904,7 +903,7 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
         param->SetValue("surfaceId", surfaceId);
         codec->SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, param);
         return GSERROR_OK;
-    }, instanceId_);
+    }, instanceId_, (isLpp_ ? OH_SURFACE_SOURCE_LOWPOWERVIDEO : OH_SURFACE_SOURCE_VIDEO));
     if (!ret) {
         HLOGE("surface(%" PRIu64 "), RegisterReleaseListener failed", surfaceId);
         return AVCS_ERR_UNKNOWN;
