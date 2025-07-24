@@ -181,7 +181,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         if (ret == Status::OK) {
             MEDIA_LOG_I("Track:" PUBLIC_LOG_D32 " eos [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
                 trackId, trackDfxInfoMap_[trackId].lastPts,
-                trackDfxInfoMap_[trackId].lastDurantion, trackDfxInfoMap_[trackId].lastPos);
+                trackDfxInfoMap_[trackId].lastDuration, trackDfxInfoMap_[trackId].lastPos);
             cacheQueue_.Pop(trackId);
         }
         return ret;

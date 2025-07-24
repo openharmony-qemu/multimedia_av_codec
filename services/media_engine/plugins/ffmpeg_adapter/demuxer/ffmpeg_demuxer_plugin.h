@@ -174,11 +174,12 @@ private:
     Status AddPacketToCacheQueue(AVPacket *pkt);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
+    Status BufferIsValid(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
-    Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, int32_t writeSize);
+    Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, uint32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     bool NeedCombineFrame(uint32_t trackId);
@@ -280,8 +281,15 @@ private:
         int frameIndex = 0; // for each track
         int64_t lastPts;
         int64_t lastPos;
-        int64_t lastDurantion;
+        int64_t lastDuration;
+        bool dumpFirstInfo = false;
     };
+    enum Stage : int32_t {
+        FIRST_READ = 0,
+        FILE_END   = 1,
+    };
+    void UpdateLastPacketInfo(int32_t trackId, int64_t pts, int64_t pos, int64_t duration);
+    void DumpPacketInfo(int32_t trackId, Stage stage);
     struct DumpParam {
         DumpMode mode;
         uint8_t* buf;

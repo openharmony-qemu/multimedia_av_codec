@@ -32,7 +32,7 @@ std::map<VideoStreamType, DestroyFunc> MultiStreamParserManager::destroyFuncMap_
 
 MultiStreamParserManager::~MultiStreamParserManager()
 {
-    for (auto streamInfo : streamMap_) {
+    for (auto &streamInfo : streamMap_) {
         VideoStreamType videoStreamType = (streamInfo.second).type;
         StreamParser* streamParser = (streamInfo.second).parser;
         if (streamParser && destroyFuncMap_.count(videoStreamType) > 0) {
@@ -55,7 +55,7 @@ Status MultiStreamParserManager::Create(uint32_t trackId, VideoStreamType videoS
     if (streamMap_.count(trackId) > 0 && streamMap_[trackId].parser != nullptr) {
         MEDIA_LOG_W("Parser change, %{public}d->%{public}d", streamMap_[trackId].type, videoStreamType);
         if (destroyFuncMap_.count(videoStreamType) > 0) {
-            destroyFuncMap_[videoStreamType](streamParser);
+            destroyFuncMap_[videoStreamType](streamMap_[trackId].parser);
         }
         streamMap_[trackId].parser = nullptr;
     }
