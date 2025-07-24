@@ -15,7 +15,7 @@
 import("//build/config/features.gni")
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
-module_output_path = "av_codec/av_codec"
+module_output_path = "av_codec/AVCodec_Audio"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
 ##############################fuzztest##########################################
