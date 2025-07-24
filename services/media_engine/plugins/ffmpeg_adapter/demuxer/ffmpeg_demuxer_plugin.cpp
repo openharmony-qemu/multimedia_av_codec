@@ -67,7 +67,10 @@ const int FLV_READ_SIZE_LIMIT_FACTOR = 2;
 const int FLV_READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2;
 const char* PLUGIN_NAME_PREFIX = "avdemux_";
 const char* PLUGIN_NAME_MP3 = "mp3";
+const char* PLUGIN_NAME_MPEGPS = "mpeg";
 const uint8_t START_CODE[] = {0x00, 0x00, 0x01};
+const int32_t MPEGPS_START_CODE_SIZE = 4;
+const uint8_t MPEGPS_START_CODE[] = {0x00, 0x00, 0x01, 0xBA};
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -2410,6 +2413,37 @@ int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dat
     return confidence;
 }
 
+bool CheckMPEGPSStartCode(std::shared_ptr<DataSource> &dataSource)
+{
+    FALSE_RETURN_V_MSG_E(dataSource != nullptr, false, "DataSource is nullptr");
+    std::vector<uint8_t> buff(MPEGPS_START_CODE_SIZE);
+    auto bufferInfo = std::make_shared<Buffer>();
+    auto bufData = bufferInfo->WrapMemory(buff.data(), MPEGPS_START_CODE_SIZE, MPEGPS_START_CODE_SIZE);
+    FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr, false, "Alloc buffer failed");
+
+    auto ret = dataSource->ReadAt(0, bufferInfo, MPEGPS_START_CODE_SIZE);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, false, "Read data failed");
+    for (int32_t i = 0; i < MPEGPS_START_CODE_SIZE; i++) {
+        if (buff[i] != MPEGPS_START_CODE[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+int SniffMPEGPS(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
+{
+    int psScore = SniffWithSize(pluginName, dataSource, DEFAULT_SNIFF_SIZE);
+    if (psScore >= DEF_PROBE_SCORE_LIMIT) {
+        std::string mp3PluginName = std::string(PLUGIN_NAME_PREFIX) + std::string(PLUGIN_NAME_MP3);
+        int mp3Score = SniffWithSize(mp3PluginName, dataSource, DEFAULT_SNIFF_SIZE);
+        if (mp3Score >= DEF_PROBE_SCORE_LIMIT && !CheckMPEGPSStartCode(dataSource)) {
+            return 0;
+        }
+    }
+    return psScore;
+}
+
 void ReplaceDelimiter(const std::string& delmiters, char newDelimiter, std::string& str)
 {
     MEDIA_LOG_D("Reset from [" PUBLIC_LOG_S "]", str.c_str());
@@ -2455,7 +2489,11 @@ Status RegisterPlugins(const std::shared_ptr<Register>& reg)
             return std::make_shared<FFmpegDemuxerPlugin>(name);
         };
         regInfo.SetCreator(func);
-        regInfo.SetSniffer(Sniff);
+        if (regInfo.name.find(PLUGIN_NAME_MPEGPS) != std::string::npos) {
+            regInfo.SetSniffer(SniffMPEGPS);
+        } else {
+            regInfo.SetSniffer(Sniff);
+        }
         auto ret = reg->AddPlugin(regInfo);
         if (ret != Status::OK) {
             MEDIA_LOG_E("Add plugin failed, err=" PUBLIC_LOG_D32, static_cast<int>(ret));
