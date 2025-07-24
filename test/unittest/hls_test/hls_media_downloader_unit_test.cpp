@@ -1934,6 +1934,8 @@ HWTEST_F(HlsMediaDownloaderUnitTest, PLAYLIST_DOWNLOADER_005, TestSize.Level1)
     downloader->GetSeekable();
     EXPECT_EQ(downloader->playlistDownloader_->IsLive(), true);
     EXPECT_NE(downloader->playlistDownloader_->updateTask_, nullptr);
+    downloader->Close(true);
+    downloader = nullptr;
     delete sourceCallback;
 }
 }
