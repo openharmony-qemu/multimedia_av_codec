@@ -125,6 +125,7 @@ ohos_unittest("sei_parser_filter_unittest") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "safwk:system_ability_fwk",
+    "ffrt:libffrt",
   ]
 
   if (av_codec_support_drm) {
