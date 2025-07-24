@@ -41,6 +41,7 @@ constexpr uint8_t THREE = 3;
 constexpr uint8_t TWO = 3;
 constexpr uint8_t FILE_END = -1;
 constexpr uint8_t LOOP_END = 0;
+constexpr uint32_t FIVE = 5;
 VEncNdkInnerSample *enc_sample = nullptr;
 int32_t g_picWidth;
 int32_t g_picHeight;
@@ -171,6 +172,39 @@ int32_t VEncNdkInnerSample::CreateByName(const std::string &name)
     venc_ = VideoEncoderFactory::CreateByName(name);
     enc_sample = this;
     return venc_ == nullptr ? AVCS_ERR_INVALID_OPERATION : AVCS_ERR_OK;
+}
+
+int32_t VEncNdkInnerSample::ConfigureVideoEncoderSqr()
+{
+    Format format;
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
+    if (MODE_ENABLE) {
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, DEFAULT_BITRATE_MODE);
+    }
+    if (SETBIRATE) {
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
+    }
+    if (QUALITY_ENABLE) {
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, DEFAULT_QUALITY);
+    }
+    if (B_ENABLE) {
+        format.PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, DEFAULT_BFRAME);
+    }
+    if (GOPMODE_ENABLE) {
+        format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, DEFAULT_GOP_MODE);
+    }
+    if (MAXBITE_ENABLE) {
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, DEFAULT_MAX_BITERATE);
+    }
+    if (FACTOR_ENABLE) {
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, DEFAULT_SQR_FACTOR);
+    }
+    if (MAXBFRAMES_ENABLE) {
+        format.PutIntValue(Media::Tag::VIDEO_ENCODER_MAX_B_FRAME, DEFAULT_MAX_B_FRAMES);
+    }
+    return venc_->Configure(format);
 }
 
 int32_t VEncNdkInnerSample::Configure()
@@ -924,6 +958,10 @@ void VEncNdkInnerSample::InputFuncSurface()
             }
             break;
         }
+        if (inputFrameCount == FIVE && !isParamSet && enableParameter) {
+            SetParameter();
+            isParamSet = true;
+        }
         inputFrameCount++;
         err = InputProcess(nativeBuffer, ohNativeWindowBuffer);
         if (err != 0) {
@@ -1061,9 +1099,12 @@ void VEncNdkInnerSample::InputFunc()
             } else if (ret == -1) {
                 continue;
             }
-
             if (CheckResult(isRandomEosSuccess, pushResult) == -1) {
                 break;
+            }
+            if (frameCount == FIVE && !isParamSet && enableParameter) {
+                SetParameter();
+                isParamSet = true;
             }
             frameCount++;
         }
@@ -1071,6 +1112,21 @@ void VEncNdkInnerSample::InputFunc()
             usleep(FRAME_INTERVAL);
         }
     }
+}
+
+int32_t VEncNdkInnerSample::SetParameter()
+{
+    Format format;
+    if (SETBIRATE_RUN) {
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE_RUN);
+    }
+    if (MAXBITE_ENABLE_RUN) {
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, DEFAULT_MAX_BITERATE_RUN);
+    }
+    if (FACTOR_ENABLE_RUN) {
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, DEFAULT_SQR_FACTOR_RUN);
+    }
+    return venc_->SetParameter(format);
 }
 
 void VEncNdkInnerSample::SyncInputFunc()
