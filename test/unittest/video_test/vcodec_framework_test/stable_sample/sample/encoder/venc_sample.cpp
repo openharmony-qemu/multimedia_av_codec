@@ -483,7 +483,7 @@ int32_t VideoEncSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(addr != nullptr || isSurfaceMode_, AV_ERR_UNKNOWN, "out buffer is nullptr");
 
-    if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
+    if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
         UNITTEST_INFO_LOG("out frame:%d, in frame:%d", frameOutputCount_.load(), frameInputCount_.load());
         signal_->isOutEos_ = true;
         signal_->eosCond_.notify_all();
