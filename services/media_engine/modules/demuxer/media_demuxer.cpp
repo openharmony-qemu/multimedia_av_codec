@@ -3564,7 +3564,7 @@ Status MediaDemuxer::HandlePushBuffer(int32_t trackId, std::shared_ptr<AVBuffer>
     if (config.size() > 0) {
         int32_t size = dstBuffer->memory_->GetSize();
         std::vector<uint8_t> memory;
-        memory.reserve(static_cast<size_t>(size) + config.size())
+        memory.reserve(static_cast<size_t>(size) + config.size());
         dstBuffer->memory_->Read(memory.data(), size, 0);
         bool hasXps = false;
         if (size >= static_cast<int32_t>(config.size())) {
