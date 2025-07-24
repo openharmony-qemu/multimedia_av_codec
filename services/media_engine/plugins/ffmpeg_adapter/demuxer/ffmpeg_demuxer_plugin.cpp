@@ -103,6 +103,7 @@ std::mutex g_mtx;
 
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource);
 int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dataSource, int probSize);
+int SniffMPEGPS(const std::string& pluginName, std::shared_ptr<DataSource> dataSource);
 
 Status RegisterPlugins(const std::shared_ptr<Register>& reg);
 
