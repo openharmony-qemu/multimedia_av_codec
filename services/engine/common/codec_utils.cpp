@@ -23,6 +23,7 @@ namespace Codec {
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CODEC_UTILS"};
 constexpr uint32_t INDEX_ARRAY = 2;
+constexpr uint32_t WAIT_FENCE_MS = 1000;
 std::map<VideoPixelFormat, AVPixelFormat> g_pixelFormatMap = {
     {VideoPixelFormat::YUVI420, AV_PIX_FMT_YUV420P},
     {VideoPixelFormat::NV12, AV_PIX_FMT_NV12},
@@ -186,7 +187,8 @@ int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct Surface
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
     AVCODEC_SYNC_TRACE;
     if (surfaceInfo.surfaceFence != nullptr) {
-        surfaceInfo.surfaceFence->Wait(100); // 100ms
+        int32_t waitRes = surfaceInfo.surfaceFence->Wait(WAIT_FENCE_MS);
+        EXPECT_AND_LOGD(waitRes != 0, "wait fence time out, cost more than %{public}u ms", WAIT_FENCE_MS);
     }
     uint32_t yScaleLineSize = static_cast<uint32_t>(surfaceInfo.scaleLineSize[0]);
     if (IsYuvFormat(pixFmt)) {
