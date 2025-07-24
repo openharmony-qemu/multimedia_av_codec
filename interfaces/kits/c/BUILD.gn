@@ -14,7 +14,8 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-group("capi_packages") {
+ohos_shared_headers("capi_packages") {
+  include_dirs = [ "$av_codec_root_dir/interfaces/kits/c" ]
   deps = []
   if (av_codec_support_capi) {
     deps += [
@@ -30,6 +31,8 @@ group("capi_packages") {
       "$av_codec_root_dir/interfaces/kits/c:native_media_venc",
     ]
   }
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
 }
 
 config("av_codec_capi_header_config") {
