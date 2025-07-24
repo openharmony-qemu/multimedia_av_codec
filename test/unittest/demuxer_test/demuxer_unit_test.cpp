@@ -89,7 +89,6 @@ string g_commentTest1100Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Co
 string g_commentTest1200Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Comment_1200.mp4");
 string g_commentTest1300Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Comment_1300.mp4");
 string g_wavAlawPath = TEST_FILE_PATH + string("audio/wav_48000_1_pcm_alaw.wav");
-string g_mpegpsMp3Path = TEST_FILE_PATH + string("271838_03_full_wm_320.mp3");
 } // namespace
 
 void DemuxerUnitTest::SetUpTestCase(void)
