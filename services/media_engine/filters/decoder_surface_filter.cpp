@@ -1610,11 +1610,11 @@ Status DecoderSurfaceFilter::SetMediaMuted(bool isMuted, bool hasInitialized)
     return Status::OK;
 }
 
-Status DecoderSurfaceFilter::DoReleaseOnMuted(bool needRelease)
+Status DecoderSurfaceFilter::DoReleaseOnMuted(bool isNeedRelease)
 {
     MEDIA_LOG_I("DecoderSurfaceFilter::DoReleaseOnMuted enter");
     hasReceivedReleaseEvent_ = true;
-    FALSE_RETURN_V_MSG(!isDecoderReleasedForMute_ && needRelease && isVideoMuted_.load(), Status::OK,
+    FALSE_RETURN_V_MSG(!isDecoderReleasedForMute_ && isNeedRelease && isVideoMuted_.load(), Status::OK,
         "Do not need to release video decoder");
     auto ret = DoRelease();
     return ret;

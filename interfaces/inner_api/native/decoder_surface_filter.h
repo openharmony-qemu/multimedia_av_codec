@@ -126,7 +126,7 @@ public:
     void NotifyPause();
     void NotifyMemoryExchange(bool exchangeFlag);
     Status SetMediaMuted(bool isMuted, bool hasInitialized);
-    Status DoReleaseOnMuted(bool needRelease) override;
+    Status DoReleaseOnMuted(bool isNeedRelease) override;
     Status DoReInitAndStart() override;
 
 protected:

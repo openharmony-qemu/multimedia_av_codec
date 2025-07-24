@@ -2191,7 +2191,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
             return false;
         }
     }
-    
+
     AVBufferConfig avBufferConfig;
     if (isTranscoderMode_ && isSkippingAudioDecAndEnc_ && queueIndex == audioTrackId_) {
         avBufferConfig.memoryType = MemoryType::SHARED_MEMORY;
@@ -3562,11 +3562,12 @@ Status MediaDemuxer::HandlePushBuffer(int32_t trackId, std::shared_ptr<AVBuffer>
     std::vector<uint8_t> config;
     mediaMetaData_.trackMetas[videoTrackId_]->GetData(Tag::MEDIA_CODEC_CONFIG, config);
     if (config.size() > 0) {
-        int64_t size = dstBuffer->memory_->GetSize();
-        std::vector<uint8_t> memory = std::vector<uint8_t>(size + config.size());
+        int32_t size = dstBuffer->memory_->GetSize();
+        std::vector<uint8_t> memory;
+        memory.reserve(static_cast<size_t>(size) + config.size())
         dstBuffer->memory_->Read(memory.data(), size, 0);
         bool hasXps = false;
-        if (size >= config.size()) {
+        if (size >= static_cast<int32_t>(config.size())) {
             hasXps = memcmp(config.data(), memory.data(), config.size()) == 0;
         } else {
             hasXps = false;
@@ -3946,11 +3947,10 @@ void MediaDemuxer::NotifyResumeUnMute()
 void MediaDemuxer::HandleVideoSampleQueue()
 {
     Status ret = sampleQueueMap_[videoTrackId_]->AddQueueSize(SAMPLE_QUEUE_ADD_SIZE_ON_MUTE);
-    if (ret != Status::OK) {
-        std::shared_ptr<AVBuffer> dstBuffer;
-        sampleQueueMap_[videoTrackId_]->AcquireBuffer(dstBuffer);
-        sampleQueueMap_[videoTrackId_]->ReleaseBuffer(dstBuffer);
-    }
+    FALSE_RETURN_NOLOG(ret != Status::OK);
+    std::shared_ptr<AVBuffer> dstBuffer;
+    sampleQueueMap_[videoTrackId_]->AcquireBuffer(dstBuffer);
+    sampleQueueMap_[videoTrackId_]->ReleaseBuffer(dstBuffer);
 }
 } // namespace Media
 } // namespace OHOS
