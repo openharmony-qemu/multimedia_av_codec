@@ -1621,7 +1621,9 @@ Status FFmpegDemuxerPlugin::SetFirstFrame(AVPacket* pkt, bool isConvert)
         }
     }
     firstFrameMap_[pkt->stream_index] = firstFrame;
-    seekCalibMap_[pkt->stream_index] = pkt->pts - pkt->dts;
+    if (pkt->pts != AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE && pkt->pts >= 0 && pkt->dts >= 0) {
+        seekCalibMap_[pkt->stream_index] = pkt->pts - pkt->dts;
+    }
     return Status::OK;
 }
 
