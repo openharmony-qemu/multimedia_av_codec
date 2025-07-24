@@ -89,6 +89,7 @@ string g_commentTest1100Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Co
 string g_commentTest1200Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Comment_1200.mp4");
 string g_commentTest1300Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Comment_1300.mp4");
 string g_wavAlawPath = TEST_FILE_PATH + string("audio/wav_48000_1_pcm_alaw.wav");
+string g_mpegpsMp3Path = TEST_FILE_PATH + string("271838_03_full_wm_320.mp3");
 } // namespace
 
 void DemuxerUnitTest::SetUpTestCase(void)
@@ -3429,5 +3430,35 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1807, TestSize.Level1)
     ASSERT_NE(sharedMem_, nullptr);
     SeekTest(toPtsList, seekModes, {videoVals, audioVals});
     ASSERT_TRUE(seekTestFlag_);
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_1806
+ * @tc.desc: copy current sample to buffer(trp)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1808, TestSize.Level1)
+{
+    InitResource(g_mpegpsMp3Path, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    ASSERT_NE(demuxer_->SelectTrackByID(1), AV_ERR_OK);
+    ASSERT_NE(demuxer_->SelectTrackByID(2), AV_ERR_OK);
+    ASSERT_NE(demuxer_->SelectTrackByID(3), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 5579);
+    RemoveValue();
+    ASSERT_EQ(demuxer_->Destroy(), AV_ERR_OK);
 }
 } // namespace
