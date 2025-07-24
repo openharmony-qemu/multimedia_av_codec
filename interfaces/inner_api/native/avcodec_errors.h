@@ -35,7 +35,7 @@ typedef enum AVCodecServiceErrCode : ErrCode {
     AVCS_ERR_NO_MEMORY = AVCS_ERR_OFFSET + ENOMEM,         // no memory
     AVCS_ERR_INVALID_OPERATION = AVCS_ERR_OFFSET + ENOSYS, // opertation not be permitted
     AVCS_ERR_INVALID_VAL = AVCS_ERR_OFFSET + EINVAL,       // invalid argument
-    AVCS_ERR_UNKNOWN = AVCS_ERR_OFFSET + 0x200,            // unkown error.
+    AVCS_ERR_UNKNOWN = AVCS_ERR_OFFSET + 0x200,            // unknown error.
     AVCS_ERR_SERVICE_DIED,                                 // avcodec service died
     AVCS_ERR_INVALID_STATE,                                // the state is not support this operation.
     AVCS_ERR_UNSUPPORT,                                    // unsupport interface.
