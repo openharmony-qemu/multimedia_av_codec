@@ -138,6 +138,10 @@ static const std::vector<AVMediaType> g_streamMediaTypeVec = {
     AVMEDIA_TYPE_AUXILIARY
 };
 
+static const std::unordered_map<std::string, PluginSnifferFunc> g_pluginSnifferMap = {
+    {std::string(PLUGIN_NAME_MPEGPS), SniffMPEGPS},
+};
+
 bool HaveValidParser(const AVCodecID codecId)
 {
     return g_streamParserMap.count(codecId) != 0;
@@ -2448,6 +2452,15 @@ int SniffMPEGPS(const std::string& pluginName, std::shared_ptr<DataSource> dataS
     return psScore;
 }
 
+static PluginSnifferFunc FindSniffer(const std::string& pluginName)
+{
+    if (g_pluginSnifferMap.find(pluginName) != g_pluginSnifferMap.end()) {
+        return g_pluginSnifferMap.at(pluginName);
+    }
+
+    return Sniff;
+}
+
 void ReplaceDelimiter(const std::string& delmiters, char newDelimiter, std::string& str)
 {
     MEDIA_LOG_D("Reset from [" PUBLIC_LOG_S "]", str.c_str());
@@ -2493,11 +2506,7 @@ Status RegisterPlugins(const std::shared_ptr<Register>& reg)
             return std::make_shared<FFmpegDemuxerPlugin>(name);
         };
         regInfo.SetCreator(func);
-        if (regInfo.name.find(PLUGIN_NAME_MPEGPS) != std::string::npos) {
-            regInfo.SetSniffer(SniffMPEGPS);
-        } else {
-            regInfo.SetSniffer(Sniff);
-        }
+        regInfo.SetSniffer(FindSniffer(plugin->name));
         auto ret = reg->AddPlugin(regInfo);
         if (ret != Status::OK) {
             MEDIA_LOG_E("Add plugin failed, err=" PUBLIC_LOG_D32, static_cast<int>(ret));
