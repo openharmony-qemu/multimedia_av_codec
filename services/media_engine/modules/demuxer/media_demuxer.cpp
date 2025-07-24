@@ -2953,8 +2953,6 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         }
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
-            FALSE_RETURN(Any::IsSameTypeWith<int32_t>(event.param));
-            MEDIA_LOG_E("OnEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
             eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, event.param});
             break;
         }
