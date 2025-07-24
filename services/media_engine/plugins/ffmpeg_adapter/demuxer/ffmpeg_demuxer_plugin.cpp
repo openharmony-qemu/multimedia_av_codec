@@ -2384,6 +2384,8 @@ int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& 
 
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 {
+    FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
+    FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "DataSource is nullptr");
     return SniffWithSize(pluginName, dataSource, DEFAULT_SNIFF_SIZE);
 }
 
@@ -2433,10 +2435,12 @@ bool CheckMPEGPSStartCode(std::shared_ptr<DataSource> &dataSource)
 
 int SniffMPEGPS(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 {
-    int psScore = SniffWithSize(pluginName, dataSource, DEFAULT_SNIFF_SIZE);
+    FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
+    FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "DataSource is nullptr");
+    int32_t psScore = SniffWithSize(pluginName, dataSource, DEFAULT_SNIFF_SIZE);
     if (psScore >= DEF_PROBE_SCORE_LIMIT) {
         std::string mp3PluginName = std::string(PLUGIN_NAME_PREFIX) + std::string(PLUGIN_NAME_MP3);
-        int mp3Score = SniffWithSize(mp3PluginName, dataSource, DEFAULT_SNIFF_SIZE);
+        int32_t mp3Score = SniffWithSize(mp3PluginName, dataSource, DEFAULT_SNIFF_SIZE);
         if (mp3Score >= DEF_PROBE_SCORE_LIMIT && !CheckMPEGPSStartCode(dataSource)) {
             return 0;
         }
