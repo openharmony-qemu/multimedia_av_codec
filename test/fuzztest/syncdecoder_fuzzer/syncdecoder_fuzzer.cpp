@@ -101,7 +101,7 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
     g_vDecSample->enbleSyncMode = 1;
     g_vDecSample->enbleBlankFrame = fdp.ConsumeIntegral<int>();
     g_vDecSample->syncInputWaitTime = fdp.ConsumeIntegral<int64_t>();
-    g_vDecSample->syncOutputWaitTime = fdp.ConsumeIntegral<int64_t>();
+    g_vDecSample->syncOutputWaitTime = 1;
     g_vDecSample->renderTimestampNs = fdp.ConsumeIntegral<int64_t>();
     g_vDecSample->isRenderAttime = fdp.ConsumeBool();
     int32_t ret = g_vDecSample->CreateVideoDecoder(g_codeName);
