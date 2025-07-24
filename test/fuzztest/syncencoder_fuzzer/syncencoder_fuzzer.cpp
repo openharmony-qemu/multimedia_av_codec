@@ -92,7 +92,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     g_vEncSample->enbleBFrameMode = fdp.ConsumeIntegral<int32_t>();
     g_vEncSample->enbleSyncMode = 1;
     g_vEncSample->syncInputWaitTime = fdp.ConsumeIntegral<int64_t>();
-    g_vEncSample->syncOutputWaitTime = fdp.ConsumeIntegral<int64_t>();
+    g_vEncSample->syncOutputWaitTime = 1;
     g_vEncSample->enableRepeat = fdp.ConsumeBool();
     g_vEncSample->setMaxCount = fdp.ConsumeBool();
     g_vEncSample->defaultKeyFrameInterval = fdp.ConsumeIntegral<uint32_t>();
@@ -102,10 +102,10 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
         ReleaseSample();
         return false;
     }
+    g_vEncSample->ConfigureVideoEncoder();
     if (g_vEncSample->surfInput) {
         g_vEncSample->CreateSurface();
     }
-    g_vEncSample->ConfigureVideoEncoder();
     if (g_vEncSample->Start() != 0) {
         ReleaseSample();
         return false;
