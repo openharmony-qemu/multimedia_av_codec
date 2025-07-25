@@ -144,6 +144,7 @@ private:
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);
     int64_t GetStreamDuration(const AVStream& avStream);
 
+    bool FrameReady(Status ret);
     int SelectSeekTrack() const;
     Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
     void SyncSeekThread();
@@ -242,18 +243,19 @@ private:
     std::map<int32_t, std::vector<int32_t>> referenceIdsMap_ {};
     
     Status ParseVideoFirstFrames();
-    Status SetFirstFrame(AVPacket* pkt, bool isConvert = true);
-    bool FirstFrameValid(uint32_t trackIndex);
-    std::map<int32_t, AVPacket *> firstFrameMap_ {};
+    bool AllVideoFirstFramesReady();
+    Status SetVideoFirstFrame(AVPacket* pkt, bool isConvert = true);
+    bool VideoFirstFrameValid(uint32_t trackIndex);
+    std::map<int32_t, AVPacket *> videoFirstFrameMap_ {};
     std::unordered_map<int32_t, int64_t> seekCalibMap_ {};
     bool TrackIsChecked(const uint32_t trackId);
     std::vector<uint32_t> checkedTrackIds_ {};
+    void ClearUnselectTrackCache();
+    bool needClear_ = true;
 
     std::shared_ptr<MultiStreamParserManager> streamParsers_ {nullptr};
 
     void ParseHEVCMetadataInfo(const AVStream& avStream, Meta &format);
-    AVPacket *firstFrame_ = nullptr;
-
     std::atomic<bool> parserState_ = true;
     IOContext parserRefIoContext_;
     std::shared_ptr<AVFormatContext> parserRefCtx_{nullptr};

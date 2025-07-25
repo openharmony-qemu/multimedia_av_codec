@@ -776,7 +776,7 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         }
     }
     FileType fileType = GetFileTypeByName(avFormatContext);
-    if (fileType == FileType::MP4 || fileType == FileType::MOV) {
+    if (IsMpeg4File(fileType)) {
         ParseOrientationFromMatrix(avStream, format);
     }
 
@@ -1225,6 +1225,11 @@ bool FFmpegFormatHelper::IsAudioType(const AVStream &avStream)
     AVCodecID codecId = avStream.codecpar->codec_id;
     return avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO ||
         (g_codecIdToMime.count(codecId) > 0 && g_codecIdToMime[codecId].find("audio") != std::string::npos);
+}
+
+bool FFmpegFormatHelper::IsMpeg4File(FileType filetype)
+{
+    return filetype == FileType::MP4 || filetype == FileType::MOV;
 }
 } // namespace Ffmpeg
 } // namespace Plugins

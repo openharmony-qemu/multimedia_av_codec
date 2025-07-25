@@ -124,23 +124,6 @@ int64_t ConvertTimeFromFFmpeg(int64_t pts, AVRational base)
     return out;
 }
 
-int64_t ConvertPts(int64_t pts, int64_t startTime)
-{
-    int64_t inputPts;
-    if (startTime >= 0 && (pts < INT64_MIN + startTime)) {
-        inputPts = AV_NOPTS_VALUE;
-        MEDIA_LOG_D("pts is anomalous, pts: " PUBLIC_LOG_D64, pts);
-        return inputPts;
-    } else if (startTime < 0 && (pts > INT64_MAX + startTime)) {
-        inputPts = AV_NOPTS_VALUE;
-        MEDIA_LOG_D("pts is anomalous, pts: " PUBLIC_LOG_D64, pts);
-        return inputPts;
-    }
-    inputPts = pts - startTime;
-
-    return inputPts;
-}
-
 int64_t ConvertTimeToFFmpeg(int64_t timestampNs, AVRational base)
 {
     int64_t result;
@@ -167,23 +150,6 @@ int64_t ConvertTimeToFFmpegByUs(int64_t timestampUs, AVRational base)
     MEDIA_LOG_D("Base: [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "], time convert ["
         PUBLIC_LOG_D64 "]->[" PUBLIC_LOG_D64 "].", base.num, base.den, timestampUs, result);
     return result;
-}
-
-std::string_view ConvertFFmpegMediaTypeToString(AVMediaType mediaType)
-{
-    static const std::unordered_map<AVMediaType, std::string_view> table = {
-        {AVMediaType::AVMEDIA_TYPE_VIDEO, "video"},
-        {AVMediaType::AVMEDIA_TYPE_AUDIO, "audio"},
-        {AVMediaType::AVMEDIA_TYPE_DATA, "data"},
-        {AVMediaType::AVMEDIA_TYPE_SUBTITLE, "subtitle"},
-        {AVMediaType::AVMEDIA_TYPE_ATTACHMENT, "attachment"},
-        {AVMediaType::AVMEDIA_TYPE_TIMEDMETA, "timedmetadata"}
-    };
-    auto it = table.find(mediaType);
-    if (it == table.end()) {
-        return "unknow";
-    }
-    return it->second;
 }
 
 bool StartWith(const char* name, const char* chars)
@@ -392,38 +358,6 @@ std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate,
     }
 
     return codecConfig;
-}
-
-void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
-{
-    (void)avcl;
-    char buf[500] = {0}; // 500
-    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, fmt, vl);
-    if (ret < 0) {
-        return;
-    }
-    switch (level) {
-        case AV_LOG_WARNING:
-            MEDIA_LOG_D("[FFLogW] " PUBLIC_LOG_S, buf);
-            break;
-        case AV_LOG_ERROR:
-            MEDIA_LOG_E("[FFLogE] " PUBLIC_LOG_S, buf);
-            break;
-        case AV_LOG_FATAL:
-            MEDIA_LOG_E("[FFLogF] " PUBLIC_LOG_S, buf);
-            break;
-        case AV_LOG_PANIC:
-            MEDIA_LOG_E("[FFLogP] " PUBLIC_LOG_S, buf);
-            break;
-        case AV_LOG_INFO:
-            MEDIA_LOG_D("[FFLogI] " PUBLIC_LOG_S, buf);
-            break;
-        case AV_LOG_DEBUG:
-            MEDIA_LOG_D("[FFLogD] " PUBLIC_LOG_S, buf);
-            break;
-        default:
-            break;
-    }
 }
 
 int FindNaluSpliter(int size, const uint8_t* data)
