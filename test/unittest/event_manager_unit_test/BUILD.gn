@@ -46,7 +46,9 @@ av_codec_capi_external_deps = [
   "av_codec:native_media_vdec",
   "av_codec:native_media_venc",
   "bounds_checking_function:libsec_static",
+  "cJSON:cjson",
   "c_utils:utils",
+  "config_policy:configpolicy_util",
   "graphic_2d:libgraphic_utils",
   "graphic_2d:librender_service_client",
   "graphic_surface:surface",
@@ -54,17 +56,21 @@ av_codec_capi_external_deps = [
   "hilog:libhilog",
   "hisysevent:libhisysevent",
   "hitrace:hitrace_meter",
+  "hiview:libucollection_client",
   "init:libbegetutil",
   "ipc:ipc_single",
   "media_foundation:media_foundation",
   "media_foundation:native_media_core",
   "openssl:libcrypto_shared",
+  "samgr:samgr_proxy",
 ]
 
 av_codec_inner_external_deps = [
   "av_codec:av_codec_client",
   "bounds_checking_function:libsec_static",
+  "cJSON:cjson",
   "c_utils:utils",
+  "config_policy:configpolicy_util",
   "eventhandler:libeventhandler",
   "graphic_2d:libgraphic_utils",
   "graphic_2d:librender_service_base",
@@ -74,11 +80,13 @@ av_codec_inner_external_deps = [
   "hilog:libhilog",
   "hisysevent:libhisysevent",
   "hitrace:hitrace_meter",
+  "hiview:libucollection_client",
   "init:libbegetutil",
   "ipc:ipc_single",
   "media_foundation:media_foundation",
   "media_foundation:native_media_core",
   "openssl:libcrypto_shared",
+  "samgr:samgr_proxy",
 ]
 
 group("event_manager_coverage_unit_test") {
