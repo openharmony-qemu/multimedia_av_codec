@@ -1740,7 +1740,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
             ret = SetVideoFirstFrame(pkt, false);
         }
         if (ret != Status::OK) {
-            FreeAVPacket(pkt);
+            pkt = nullptr;
             MEDIA_LOG_E("Set first frame failed, track " PUBLIC_LOG_D32, trackId);
             return ret;
         }
