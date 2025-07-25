@@ -40,6 +40,27 @@ codeclist_unittest_cflags = [
   "-Dprotected=public",
 ]
 
+av_codec_capi_external_deps = [
+  "av_codec:av_codec_client",
+  "av_codec:capi_packages",
+  "av_codec:native_media_vdec",
+  "av_codec:native_media_venc",
+  "bounds_checking_function:libsec_static",
+  "c_utils:utils",
+  "graphic_2d:libgraphic_utils",
+  "graphic_2d:librender_service_client",
+  "graphic_surface:surface",
+  "graphic_surface:sync_fence",
+  "hilog:libhilog",
+  "hisysevent:libhisysevent",
+  "hitrace:hitrace_meter",
+  "init:libbegetutil",
+  "ipc:ipc_single",
+  "media_foundation:media_foundation",
+  "media_foundation:native_media_core",
+  "openssl:libcrypto_shared",
+]
+
 av_codec_inner_external_deps = [
   "av_codec:av_codec_client",
   "bounds_checking_function:libsec_static",
@@ -113,7 +134,7 @@ ohos_unittest("instance_memory_calculator_coverage_unit_test") {
   cflags = codeclist_unittest_cflags
   cflags_cc = cflags
   configs = [
-    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
   ]
 
   include_dirs = [
@@ -132,16 +153,13 @@ ohos_unittest("instance_memory_calculator_coverage_unit_test") {
     "./instance_memory_calculator_coverage_unit_test.cpp",
   ]
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
-
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
   ]
 
-  external_deps = av_codec_inner_external_deps
+  external_deps = av_codec_capi_external_deps
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
