@@ -18,7 +18,7 @@ module_output_path = "av_codec/av_codec"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
 ##############################fuzztest##########################################
-ohos_fuzztest("SyncDecoderFuzzeTest") {
+ohos_fuzztest("SyncDecoderFuzzTest") {
   module_out_path = module_output_path
   fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/syncdecoder_fuzzer"
   include_dirs = [
@@ -66,6 +66,6 @@ group("fuzztest") {
 
   deps += [
     # deps file
-    ":SyncDecoderFuzzeTest",  #引用测试套
+    ":SyncDecoderFuzzTest",  #引用测试套
   ]
 }
