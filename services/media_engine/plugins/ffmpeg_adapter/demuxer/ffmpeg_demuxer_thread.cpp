@@ -256,12 +256,15 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
         }
         pkt = nullptr;
     }
-    threadState_ = NOT_STARTED;
     {
         std::lock_guard<std::mutex> readLock(readSampleMutex_);
         readCacheCv_.notify_one();
     }
-    seekWaitCv_.notify_one();
+    {
+        std::lock_guard<std::mutex> seekWaitLock(seekWaitMutex_);
+        threadState_ = NOT_STARTED;
+        seekWaitCv_.notify_one();
+    }
     MEDIA_LOG_I("Read loop end");
 }
 
@@ -273,8 +276,11 @@ bool FFmpegDemuxerPlugin::NeedWaitForRead()
 void FFmpegDemuxerPlugin::HandleReadWait()
 {
     std::unique_lock<std::mutex> readLock(ioContext_.invokerTypeMutex);
-    threadState_ = WAITING;
-    seekWaitCv_.notify_one();
+    {
+        std::unique_lock<std::mutex> seekWaitLock(seekWaitMutex_);
+        threadState_ = WAITING;
+        seekWaitCv_.notify_one();
+    }
     readLoopCv_.wait(readLock, [this]() {
         return (threadReady_) || (ioContext_.invokerType == InvokerType::DESTORY) ||
                (!cacheQueue_.HasCache(trackId_) && !isPauseReadPacket_);
