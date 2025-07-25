@@ -755,7 +755,8 @@ void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std:
     }
 
     if (FFmpegFormatHelper::IsVideoType(*avStream) && avStream->codecpar->codec_id != AV_CODEC_ID_H264 &&
-        VideoFirstFrameValid(avStream->index) && samplePacket->pkts[0]->dts == videoFirstFrameMap_[avStream->index]->dts) {
+        VideoFirstFrameValid(avStream->index) &&
+        samplePacket->pkts[0]->dts == videoFirstFrameMap_[avStream->index]->dts) {
         if (streamParsers_ != nullptr) {
             streamParsers_->ResetXPSSendStatus(avStream->index);
         }
@@ -1710,7 +1711,6 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
             pkt = av_packet_alloc();
             FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");
         }
-
         std::unique_lock<std::mutex> sLock(syncMutex_);
         int ffmpegRet = av_read_frame(formatContext_.get(), pkt);
         sLock.unlock();
@@ -1724,12 +1724,9 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_NULL_POINTER,
             "Stream " PUBLIC_LOG_D32 " is invalid", trackId);
         ret = AddPacketToCacheQueue(pkt);
-        if (ret != Status::OK) {
-            return ret;
-        }
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add to cache failed");
         bool isSpecialStreamType = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
-        bool isSyncFrame = IsSyncFrame(stream, pkt, formatContext_);
-        if (!isSpecialStreamType && (TrackIsChecked(trackId) || !isSyncFrame)) {
+        if (!isSpecialStreamType && (TrackIsChecked(trackId) || !IsSyncFrame(stream, pkt, formatContext_))) {
             pkt = nullptr;
             continue;
         }
@@ -2001,7 +1998,7 @@ void FFmpegDemuxerPlugin::ClearUnselectTrackCache()
         }
         trackMtx_.erase(trackIndex);
         trackDfxInfoMap_.erase(trackIndex);
-        if(cacheQueue_.RemoveTrackQueue(trackIndex) != Status::OK) {
+        if (cacheQueue_.RemoveTrackQueue(trackIndex) != Status::OK) {
             MEDIA_LOG_W("Reset track cache failed: " PUBLIC_LOG_U32, trackIndex);
         }
     }
