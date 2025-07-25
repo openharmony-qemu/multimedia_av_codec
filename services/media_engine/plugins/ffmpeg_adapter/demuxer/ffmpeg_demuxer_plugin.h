@@ -219,6 +219,7 @@ private:
     int64_t relativePTSToIndexLeftDiff_ = INT64_MAX;
     int64_t relativePTSToIndexTempDiff_ = INT64_MAX;
     Status InitIoContext();
+    void InitIoContextInDemuxer(const std::shared_ptr<DataSource>& source);
     Status ParserRefInit();
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
     Status SelectProGopId();

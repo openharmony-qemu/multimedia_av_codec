@@ -1231,16 +1231,8 @@ void FFmpegDemuxerPlugin::NotifyInitializationCompleted()
     }
 }
 
-Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)
+void FFmpegDemuxerPlugin::InitIoContextInDemuxer(const std::shared_ptr<DataSource>& source)
 {
-    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
-        "AVFormatContext has been initialized");
-    FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
-    if (ioContext_.invokerType != InvokerType::INIT) {
-        std::lock_guard<std::mutex> initLock(ioContext_.invokerTypeMutex);
-        ioContext_.invokerType = InvokerType::INIT;
-    }
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
     ioContext_.eos = false;
@@ -1252,12 +1244,29 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         ioContext_.fileSize = -1;
     }
     MEDIA_LOG_I("FileSize: " PUBLIC_LOG_U64 ", seekable: " PUBLIC_LOG_D32, ioContext_.fileSize, seekable_);
+}
+
+Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)
+{
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
+        "AVFormatContext has been initialized");
+    FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
+    if (ioContext_.invokerType != InvokerType::INIT) {
+        std::lock_guard<std::mutex> initLock(ioContext_.invokerTypeMutex);
+        ioContext_.invokerType = InvokerType::INIT;
+    }
+    InitIoContextInDemuxer(source);
     {
         std::lock_guard<std::mutex> glock(g_mtx);
         pluginImpl_ = g_pluginInputFormat[pluginName_];
     }
     FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT, "No match inputformat");
     formatContext_ = InitAVFormatContext(&ioContext_);
+    if (!ioContext_.retry && formatContext_ == nullptr) {
+        MEDIA_LOG_E("AVFormatContext is nullptr");
+        return Status::ERROR_UNKNOWN;
+    }
     fileType_ = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
     InitParser();
 
@@ -1267,12 +1276,10 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     SetAVReadFrameLimit();
 
     // check param
-    if (ioContext_.retry) {
-        if ((formatContext_ && !HasCodecParameters()) || formatContext_ == nullptr) {
-            ResetParam();
-            MEDIA_LOG_E("SetDataSource failed cause not enough data");
-            return Status::ERROR_NOT_ENOUGH_DATA;
-        }
+    if (ioContext_.retry && ((formatContext_ && !HasCodecParameters()) || formatContext_ == nullptr)) {
+        ResetParam();
+        MEDIA_LOG_E("SetDataSource failed cause not enough data");
+        return Status::ERROR_NOT_ENOUGH_DATA;
     }
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
 
