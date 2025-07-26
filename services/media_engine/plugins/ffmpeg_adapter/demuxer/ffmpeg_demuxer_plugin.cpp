@@ -1714,7 +1714,10 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
     if (fileType_ == FileType::MPEGTS || FFmpegFormatHelper::IsMpeg4File(fileType_) || fileType_ == FileType::FLV) {
         extraType = true;
     }
-    while (!AllVideoFirstFramesReady() && (!streamParsers_->AllParserInited() || extraType)) {
+    // Finish for extraType: get all stream
+    // Finish: read all video or init all parser
+    while ((extraType && checkedTrackIds_.size() < formatContext_->nb_streams) ||
+           (!extraType && !AllVideoFirstFramesReady() && !streamParsers_->AllParserInited())) {
         FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, "ParseVideoFirstFrames interrupt");
         if (pkt == nullptr) {
             pkt = av_packet_alloc();
