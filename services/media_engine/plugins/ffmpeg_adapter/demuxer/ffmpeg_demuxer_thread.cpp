@@ -408,6 +408,7 @@ void FFmpegDemuxerPlugin::ReleaseFFmpegReadLoop()
         readThread_->join();
     }
     readThread_ = nullptr;
+    readLoopStatus_ = Status::OK; // Reset readLoopStatus_ to OK after destroy
 }
 
 Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout)
