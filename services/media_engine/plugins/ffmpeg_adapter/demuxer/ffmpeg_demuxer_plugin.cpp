@@ -1263,7 +1263,11 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     }
     FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT, "No match inputformat");
     formatContext_ = InitAVFormatContext(&ioContext_);
-    if (!ioContext_.retry && formatContext_ == nullptr) {
+    if (formatContext_ == nullptr) {
+        if (ioContext_.retry) {
+            MEDIA_LOG_E("SetDataSource failed cause not enough data");
+            return Status::ERROR_NOT_ENOUGH_DATA;
+        }
         MEDIA_LOG_E("AVFormatContext is nullptr");
         return Status::ERROR_UNKNOWN;
     }
@@ -1276,13 +1280,11 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     SetAVReadFrameLimit();
 
     // check param
-    if (ioContext_.retry && ((formatContext_ && !HasCodecParameters()) || formatContext_ == nullptr)) {
+    if (ioContext_.retry && !HasCodecParameters()) {
         ResetParam();
         MEDIA_LOG_E("SetDataSource failed cause not enough data");
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
-
     NotifyInitializationCompleted();
     MEDIA_LOG_I("Out");
     cachelimitSize_ = DEFAULT_CACHE_LIMIT;
