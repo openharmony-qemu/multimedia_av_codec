@@ -111,7 +111,7 @@ ohos_unittest("decoder_filter_unit_test") {
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
     "ffrt:libffrt",
-    "av_codec:av_codec_media_engine_modules",
+    "av_codec:av_codec_media_engine_filters",
   ]
 
   if (av_codec_support_drm) {
