@@ -26,7 +26,7 @@ const std::map<AVCodecServiceErrCode, std::string> AVCS_ERRCODE_INFOS = {
     {AVCS_ERR_NO_MEMORY,                             "no memory"},
     {AVCS_ERR_INVALID_OPERATION,                     "operation not be permitted"},
     {AVCS_ERR_INVALID_VAL,                           "invalid argument"},
-    {AVCS_ERR_UNKNOWN,                               "unkown error"},
+    {AVCS_ERR_UNKNOWN,                               "unknown error"},
     {AVCS_ERR_SERVICE_DIED,                          "avcodec service died"},
     {AVCS_ERR_CREATE_AVCODEC_STUB_FAILED,            "create avcodec sub service failed"},
     {AVCS_ERR_INVALID_STATE,                         "the state is not support this operation"},
@@ -247,7 +247,7 @@ std::string ErrorMessageNoMemory(const std::string &param1, const std::string &p
 std::string ErrorMessageOperateNotPermit(const std::string &param1, const std::string &param2)
 {
     (void)param2;
-    std::string message = "The operate " + param1 + " failed due to not permit in current state.";
+    std::string message = "The operation " + param1 + " failed due to not permit in current state.";
     return message;
 }
 
@@ -260,7 +260,7 @@ std::string ErrorMessageIO(const std::string &param1, const std::string &param2)
 
 std::string ErrorMessageTimeout(const std::string &param1, const std::string &param2)
 {
-    std::string message = "Timeout happend when " + param1 + " due to " + param2 + ".";
+    std::string message = "Timeout happened when " + param1 + " due to " + param2 + ".";
     return message;
 }
 
@@ -285,7 +285,7 @@ std::string AVCSErrorToString(AVCodecServiceErrCode code)
         return AVCS_ERRCODE_INFOS.at(code);
     }
 
-    return "unkown error";
+    return "unknown error";
 }
 
 std::string OHAVErrCodeToString(OH_AVErrCode code)
@@ -294,7 +294,7 @@ std::string OHAVErrCodeToString(OH_AVErrCode code)
         return OHAVCODECERRCODE_INFOS.at(code);
     }
 
-    return "unkown error";
+    return "unknown error";
 }
 
 std::string AVCSErrorToOHAVErrCodeString(AVCodecServiceErrCode code)
@@ -306,7 +306,7 @@ std::string AVCSErrorToOHAVErrCodeString(AVCodecServiceErrCode code)
         }
     }
 
-    return "unkown error";
+    return "unknown error";
 }
 
 OH_AVErrCode AVCSErrorToOHAVErrCode(AVCodecServiceErrCode code)

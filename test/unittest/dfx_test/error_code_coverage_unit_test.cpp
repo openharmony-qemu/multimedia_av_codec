@@ -23,7 +23,7 @@ using namespace OHOS::MediaAVCodec;
 
 namespace {
     constexpr int32_t INVALID_VALUE = -1;
-    const std::string UNKOWN_ERROR = "unkown error";
+    const std::string UNKOWN_ERROR = "unknown error";
 };
 
 namespace OHOS::MediaAVCodec {
