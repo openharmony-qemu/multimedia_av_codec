@@ -72,6 +72,7 @@ public:
     static bool IsImageTrack(const AVStream &avStream);
     static bool IsVideoType(const AVStream &avStream);
     static bool IsAudioType(const AVStream &avStream);
+    static bool IsMpeg4File(FileType filetype);
 private:
     FFmpegFormatHelper() = delete;
     ~FFmpegFormatHelper() = delete;
