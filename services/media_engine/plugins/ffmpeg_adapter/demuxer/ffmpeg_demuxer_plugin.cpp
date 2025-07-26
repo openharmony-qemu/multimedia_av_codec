@@ -1866,8 +1866,9 @@ void FFmpegDemuxerPlugin::SyncSeekThread()
     }
     if (readThread_ != nullptr && threadState_ == READING) {
         MEDIA_LOG_I("Seek notify read thread to stop");
-        readCbCv_.notify_all();
         std::unique_lock<std::mutex> waitLock(seekWaitMutex_);
+        ioContext_.readCbReady = true;
+        readCbCv_.notify_all();
         seekWaitCv_.wait(waitLock, [this] { return threadState_ == WAITING || threadState_ == NOT_STARTED; });
     }
 }
@@ -1904,6 +1905,10 @@ Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, int
     formatContext_->pb->error = 0;
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
         "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ret).c_str());
+    if (readLoopStatus_ != Status::OK) {
+        MEDIA_LOG_E("Read loop status is not OK, release thread");
+        ReleaseFFmpegReadLoop();
+    }
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
