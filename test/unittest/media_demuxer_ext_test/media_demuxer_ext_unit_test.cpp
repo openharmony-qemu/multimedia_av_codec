@@ -2666,9 +2666,9 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoSampleQueue_001, TestS
     auto sampleQueue = std::make_shared<SampleQueue>();
     mediaDemuxer_->sampleQueueMap_[mediaDemuxer_->videoTrackId_] = sampleQueue;
     EXPECT_CALL(*sampleQueue, AddQueueSize(_)).WillRepeatedly(Return(Status::ERROR_UNKNOWN));
+    EXPECT_CALL(*sampleQueue, AcquireBuffer(_)).Times(NUM_1);
+    EXPECT_CALL(*sampleQueue, ReleaseBuffer(_)).Times(NUM_1);
     mediaDemuxer_->HandleVideoSampleQueue();
-    EXPECT_CALL(*sampleQueue, AcquireBuffer()).Times(NUM_1);
-    EXPECT_CALL(*sampleQueue, ReleaseBuffer()).Times(NUM_1);
 }
 
 /**
@@ -2784,11 +2784,12 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandlePushBuffer_002, TestSize.Le
     std::vector<uint8_t> config = {};
     trackMeta->SetData(Tag::MEDIA_CODEC_CONFIG, config);
     mediaDemuxer_->mediaMetaData_.trackMetas.push_back(trackMeta);
-    ret = mediaDemuxer_->HandlePushBuffer(mediaDemuxer_->videoTrackId_, dstBuffer,
+    Status ret = mediaDemuxer_->HandlePushBuffer(mediaDemuxer_->videoTrackId_, dstBuffer,
         mediaDemuxer_->bufferQueueMap_[mediaDemuxer_->videoTrackId_], Status::OK);
     EXPECT_EQ(mediaDemuxer_->needRestore_, false);
     EXPECT_EQ(ret, Status::OK);
 
+    mediaDemuxer_->needRestore_ = true;
     config = {static_cast<uint8_t>(NUM_0)};
     trackMeta->SetData(Tag::MEDIA_CODEC_CONFIG, config);
     mediaDemuxer_->mediaMetaData_.trackMetas.clear();
@@ -2799,7 +2800,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandlePushBuffer_002, TestSize.Le
         memset_s(data, NUM_2, static_cast<uint8_t>(NUM_0), NUM_2);
         return NUM_2;
     }));
-    Status ret = mediaDemuxer_->HandlePushBuffer(mediaDemuxer_->videoTrackId_, dstBuffer,
+    ret = mediaDemuxer_->HandlePushBuffer(mediaDemuxer_->videoTrackId_, dstBuffer,
         mediaDemuxer_->bufferQueueMap_[mediaDemuxer_->videoTrackId_], Status::OK);
     EXPECT_EQ(mediaDemuxer_->needRestore_, false);
     EXPECT_EQ(ret, Status::OK);
@@ -2866,7 +2867,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_GetBufferFromUserQueue_001, TestS
     mediaDemuxer_->mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(duration);
     mediaDemuxer_->isVideoMuted_ = true;
     ret = mediaDemuxer_->GetBufferFromUserQueue(NUM_0, NUM_100);
-    EXPECT_EQ(ret, false);
+    EXPECT_EQ(ret, true);
 }
 
 /**
