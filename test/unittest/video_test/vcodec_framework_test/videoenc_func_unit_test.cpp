@@ -126,7 +126,14 @@ bool TEST_SUIT::ReadCustomDataToAVBuffer(const std::string &fileName, std::share
     // read data
     int32_t dstWidthStride = surfaceBuffer->GetStride();
     uint8_t *dstAddr = (uint8_t *)surfaceBuffer->GetVirAddr();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(dstAddr != nullptr, false, "dst is nullptr");
+    if (dstAddr == nullptr) {
+        if (in) {
+            free(in);
+            in = nullptr;
+        }
+        return false;
+    }
+
     const int32_t srcWidthStride = width << 2;
     uint8_t *inStream = in;
     for (uint32_t i = 0; i < height; ++i) {
