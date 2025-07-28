@@ -2897,7 +2897,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandlePushBuffer_003, TestSize.Le
     mediaDemuxer_->mediaMetaData_.trackMetas.push_back(trackMeta);
     dstBuffer->memory_ = std::make_shared<AVMemory>();
     EXPECT_CALL(*(dstBuffer->memory_), GetSize()).WillOnce(Return(NUM_2));
-    EXPECT_CALL(*(dstBuffer->memory_), Read(_, _, _)).WillOnce(Invoke([](uint8_t *data, int32_t size, int32_t offset){
+    EXPECT_CALL(*(dstBuffer->memory_), Read(_, _, _)).WillOnce(Invoke([] (uint8_t *data, int32_t size, int32_t offset) {
         memset_s(data, NUM_2, static_cast<uint8_t>(NUM_0), NUM_2);
         return NUM_2;
     }));
