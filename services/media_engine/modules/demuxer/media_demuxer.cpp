@@ -1204,9 +1204,8 @@ Status MediaDemuxer::StartTaskWithSampleQueue(int32_t trackId)
         taskMap_[trackId]->Start();
     }
     if (sampleConsumerTaskMap_[trackId] != nullptr && !sampleConsumerTaskMap_[trackId]->IsTaskRunning()) {
-        if (trackId != videoTrackId_ || !isVideoMuted_ || needReleaseVideoDecoder_) {
-            sampleConsumerTaskMap_[trackId]->Start();
-        }
+        FALSE_RETURN_V(trackId != videoTrackId_ || !isVideoMuted_ || needReleaseVideoDecoder_, Status::OK);
+        sampleConsumerTaskMap_[trackId]->Start();
     }
     return Status::OK;
 }
@@ -2202,7 +2201,9 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
     if (GetEnableSampleQueueFlag()) {
         ret = sampleQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
         REQUEST_BUFFER_TIMEOUT);
-        if (ret != Status::OK && isVideoMuted_ && queueIndex == videoTrackId_ && !needReleaseVideoDecoder_) {
+        bool needHandleSampleQueue = ret != Status::OK && isVideoMuted_ &&
+            queueIndex == videoTrackId_ && !needReleaseVideoDecoder_;
+        if (needHandleSampleQueue) {
             HandleVideoSampleQueue();
             ret = sampleQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
                                                              REQUEST_BUFFER_TIMEOUT);
@@ -2433,9 +2434,9 @@ void MediaDemuxer::StartTaskInner(int32_t trackId)
     if (GetEnableSampleQueueFlag()) {
         auto sampleConsumerTaskIt = sampleConsumerTaskMap_.find(trackId);
         if (sampleConsumerTaskIt != sampleConsumerTaskMap_.end() && sampleConsumerTaskIt->second != nullptr) {
-            if (trackId != videoTrackId_ || !isVideoMuted_) {
-                sampleConsumerTaskIt->second->Start();
-            }
+            FALSE_RETURN_MSG(trackId != videoTrackId_ || !isVideoMuted_ || needReleaseVideoDecoder_,
+                "sampleConsumerV is pause on mute, do not need to start");
+            sampleConsumerTaskIt->second->Start();
         } else {
             MEDIA_LOG_W("Track " PUBLIC_LOG_D32 " sampleConsumerTask is not exist", trackId);
         }
@@ -3543,7 +3544,6 @@ Status MediaDemuxer::HandlePushBuffer(int32_t trackId, std::shared_ptr<AVBuffer>
         int64_t mediaTime = (duration > 0 && syncCenter_ != nullptr) ?
             syncCenter_->GetMediaTimeNow() : lastAudioPtsInMute_;
         if (dstBuffer->pts_ > mediaTime) {
-            bufferQueue->PushBuffer(dstBuffer, status == Status::OK);
             return Status::ERROR_UNKNOWN;
         }
         return ret;
@@ -3564,7 +3564,7 @@ Status MediaDemuxer::HandlePushBuffer(int32_t trackId, std::shared_ptr<AVBuffer>
     if (config.size() > 0) {
         int32_t size = dstBuffer->memory_->GetSize();
         std::vector<uint8_t> memory;
-        memory.reserve(static_cast<size_t>(size) + config.size());
+        memory.resize(static_cast<size_t>(size) + config.size());
         dstBuffer->memory_->Read(memory.data(), size, 0);
         bool hasXps = false;
         if (size >= static_cast<int32_t>(config.size())) {
@@ -3950,6 +3950,7 @@ void MediaDemuxer::HandleVideoSampleQueue()
     FALSE_RETURN_NOLOG(ret != Status::OK);
     std::shared_ptr<AVBuffer> dstBuffer;
     sampleQueueMap_[videoTrackId_]->AcquireBuffer(dstBuffer);
+    FALSE_RETURN_NOLOG(ret == Status::OK);
     sampleQueueMap_[videoTrackId_]->ReleaseBuffer(dstBuffer);
 }
 } // namespace Media
