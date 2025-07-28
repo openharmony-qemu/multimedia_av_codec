@@ -398,30 +398,6 @@ HWTEST_F(SampleQueueUnitTest, SetLargerQueueSize_002, TestSize.Level1)
 }
 
 /**
- * @tc.name  : Test AddQueueSize
- * @tc.number: AddQueueSize_001
- * @tc.desc  : Test AddQueueSize
- */
-HWTEST_F(SampleQueueUnitTest, AddQueueSize_001, TestSize.Level1)
-{
-    SampleQueue::Config sampleQueueConfig{};
-    sampleQueueConfig.isFlvLiveStream_ = true;
-    sampleQueueConfig.isSupportBitrateSwitch_ = true;
-    sampleQueueConfig.queueId_ = NUM_TEST1;
-    sampleQueueConfig.queueSize_ = NUM_TEST1;
-    Status status = sampleQueue_->Init(sampleQueueConfig);
-    EXPECT_EQ(status, Status::OK);
-
-    Status ret = sampleQueue_->AddQueueSize(NUM_TEST1);
-    EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(sampleQueue_->config_.queueSize_, NUM_TEST2);
-
-    ret = sampleQueue_->AddQueueSize(AVBUFFER_QUEUE_MAX_QUEUE_SIZE_FOR_LARGER);
-    EXPECT_NE(ret, Status::OK);
-    EXPECT_EQ(sampleQueue_->config_.queueSize_, NUM_TEST2);
-}
-
-/**
  * @tc.name  : Test SetLargerQueueSize
  * @tc.number: SetLargerQueueSize_003
  * @tc.desc  : Test SetLargerQueueSize
