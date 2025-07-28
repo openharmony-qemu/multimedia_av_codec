@@ -34,7 +34,6 @@ public:
     MOCK_METHOD(uint64_t, GetUniqueId, (), ());
     MOCK_METHOD(bool, WriteToMessageParcel, (MessageParcel& parcel), ());
     MOCK_METHOD(bool, ReadFromMessageParcel, (MessageParcel& parcel, bool isSurfaceBuffer), ());
-    MOCK_METHOD(Status, Clone, (std::shared_ptr<AVBuffer> buffer, std::shared_ptr<AVBuffer> dstBuffer), ());
     static std::shared_ptr<AVBuffer> CreateAVBuffer(const AVBufferConfig &config)
     {
         return std::make_shared<AVBuffer>();
@@ -51,6 +50,10 @@ public:
     static std::shared_ptr<AVBuffer> CreateAVBuffer(sptr<SurfaceBuffer> surfaceBuffer)
     {
         return std::make_shared<AVBuffer>();
+    }
+    static Status Clone(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr<AVBuffer>& dstBuffer)
+    {
+        return Status::OK;
     }
 protected:
     using MetaData = std::vector<uint8_t>;
