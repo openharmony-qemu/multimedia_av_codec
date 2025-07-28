@@ -34,6 +34,7 @@ public:
     MOCK_METHOD(uint64_t, GetUniqueId, (), ());
     MOCK_METHOD(bool, WriteToMessageParcel, (MessageParcel& parcel), ());
     MOCK_METHOD(bool, ReadFromMessageParcel, (MessageParcel& parcel, bool isSurfaceBuffer), ());
+    MOCK_METHOD(Status, Clone, (std::shared<AVBuffer> buffer, std::shared<AVBuffer> dstBuffer), ());
     static std::shared_ptr<AVBuffer> CreateAVBuffer(const AVBufferConfig &config)
     {
         return std::make_shared<AVBuffer>();
