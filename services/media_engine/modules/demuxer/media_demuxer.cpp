@@ -63,7 +63,7 @@ static constexpr int32_t SKIP_NEXT_OPEN_GOP_CNT = 2;
 constexpr uint32_t THREAD_PRIORITY_41 = 7;
 constexpr uint32_t MAX_VIDEO_LEAD_TIME_ON_MUTE_US = 34000; // Maximum video frame advance time during video mute
 constexpr uint32_t SAMPLE_QUEUE_SIZE_ON_MUTE = 50; // After video mute, sampleSize increases to 50
-constexpr uint32_t SAMPLE_QUEUE_ADD_SIZE_ON_MUTE = 20; // When samplequeue is full on mute, add samplesize 20
+constexpr uint32_t SAMPLE_QUEUE_ADD_SIZE_ON_MUTE = 20; // When samplequeue is full on mute, samplequeue size add 20
 std::map<OHOS::Media::TrackType, OHOS::Media::StreamType> TRACK_TO_STREAM_MAP = {
     {OHOS::Media::TrackType::TRACK_VIDEO, OHOS::Media::StreamType::VIDEO},
     {OHOS::Media::TrackType::TRACK_AUDIO, OHOS::Media::StreamType::AUDIO},
