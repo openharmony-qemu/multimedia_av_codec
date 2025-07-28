@@ -28,7 +28,9 @@ namespace Media {
 namespace Plugins {
 constexpr uint32_t CHANNELS = 2;
 constexpr uint32_t SAMPLE_RATE = 44100;
-constexpr uint32_t UNSUPPORTED_CHANNELS = 0;
+constexpr uint32_t UNSUPPORTED_CHANNELS_MIN = 0;
+constexpr uint32_t UNSUPPORTED_CHANNELS_MAX = 256;
+constexpr uint32_t UNSUPPORTED_MAX_INPUT_SIZE = 80 * 1024 * 1024 + 1;
 constexpr uint32_t UNSUPPORTED_SAMPLE_RATE = 0;
 constexpr int32_t MAX_INPUT_SIZE = 4096;
 constexpr int32_t MIN_INPUT_SIZE = 16;
@@ -143,7 +145,7 @@ HWTEST_F(RawDecoderUnitTest, GetMetaData_004, TestSize.Level1)
 
 HWTEST_F(RawDecoderUnitTest, CheckFormat_001, TestSize.Level1)
 {
-    meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(UNSUPPORTED_CHANNELS); // check channels fail
+    meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(UNSUPPORTED_CHANNELS_MIN); // check channels fail
     meta_->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
     meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(SAMPLE_FORMAT);
     meta_->Set<Tag::AUDIO_RAW_SAMPLE_FORMAT>(RAW_SAMPLE_FORMAT);
@@ -177,6 +179,15 @@ HWTEST_F(RawDecoderUnitTest, CheckFormat_004, TestSize.Level1)
     EXPECT_NE(Status::OK, decoder_->SetParameter(meta_));
 }
 
+HWTEST_F(RawDecoderUnitTest, CheckFormat_005, TestSize.Level1)
+{
+    meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(UNSUPPORTED_CHANNELS_MAX); // check channels fail
+    meta_->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
+    meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(SAMPLE_FORMAT);
+    meta_->Set<Tag::AUDIO_RAW_SAMPLE_FORMAT>(RAW_SAMPLE_FORMAT);
+    EXPECT_NE(Status::OK, decoder_->SetParameter(meta_));
+}
+
 HWTEST_F(RawDecoderUnitTest, SetParameter_001, TestSize.Level1)
 {
     meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNELS);
@@ -195,6 +206,16 @@ HWTEST_F(RawDecoderUnitTest, SetParameter_002, TestSize.Level1)
     meta_->Set<Tag::AUDIO_RAW_SAMPLE_FORMAT>(RAW_SAMPLE_FORMAT);
     meta_->Set<Tag::AUDIO_MAX_INPUT_SIZE>(MIN_INPUT_SIZE);
     EXPECT_EQ(Status::OK, decoder_->SetParameter(meta_));
+}
+
+HWTEST_F(RawDecoderUnitTest, SetParameter_003, TestSize.Level1)
+{
+    meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNELS);
+    meta_->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
+    meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(SAMPLE_FORMAT);
+    meta_->Set<Tag::AUDIO_RAW_SAMPLE_FORMAT>(RAW_SAMPLE_FORMAT);
+    meta_->Set<Tag::AUDIO_MAX_INPUT_SIZE>(UNSUPPORTED_MAX_INPUT_SIZE);
+    EXPECT_NE(Status::OK, decoder_->SetParameter(meta_));
 }
 
 HWTEST_F(RawDecoderUnitTest, GetFormatBytes_001, TestSize.Level1)
