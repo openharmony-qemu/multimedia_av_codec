@@ -16,6 +16,8 @@
 #ifndef MEDIA_AVCODEC_CODEC_KEY_H
 #define MEDIA_AVCODEC_CODEC_KEY_H
 #include <string_view>
+#include <string>
+#include <unordered_set>
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -60,6 +62,40 @@ public:
     static constexpr std::string_view VIDEO_DECODER_VVC_NAME = "OH.Media.Codec.Decoder.Video.VVC";
     static constexpr std::string_view VIDEO_DECODER_RV30_NAME = "OH.Media.Codec.Decoder.Video.Rv30";
     static constexpr std::string_view VIDEO_DECODER_RV40_NAME = "OH.Media.Codec.Decoder.Video.Rv40";
+
+    static const std::unordered_set<std::string_view> &GetAudioCodecOuterSupportTable()
+    {
+        static const std::unordered_set<std::string_view> OUTER_SUPPORT_TABLE = {
+            AUDIO_DECODER_AAC_NAME,
+            AUDIO_ENCODER_AAC_NAME,
+            AUDIO_DECODER_FLAC_NAME,
+            AUDIO_ENCODER_FLAC_NAME,
+            AUDIO_DECODER_VORBIS_NAME,
+            AUDIO_DECODER_AMRNB_NAME,
+            AUDIO_DECODER_MP3_NAME,
+            AUDIO_ENCODER_MP3_NAME,
+            AUDIO_DECODER_AMRWB_NAME,
+            AUDIO_DECODER_G711MU_NAME,
+            AUDIO_ENCODER_G711MU_NAME,
+            AUDIO_DECODER_G711A_NAME,
+            AUDIO_DECODER_APE_NAME,
+            AUDIO_DECODER_RAW_NAME,
+#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
+            AUDIO_ENCODER_VENDOR_AAC_NAME,
+            AUDIO_DECODER_OPUS_NAME,
+            AUDIO_ENCODER_OPUS_NAME,
+            AUDIO_DECODER_VIVID_NAME,
+            AUDIO_ENCODER_AMRNB_NAME,
+            AUDIO_ENCODER_AMRWB_NAME
+#endif
+        };
+        return OUTER_SUPPORT_TABLE;
+    }
+
+    static bool CheckAudioCodecNameSupportOuter(const std::string &name)
+    {
+        return GetAudioCodecOuterSupportTable().count(name);
+    }
 
 private:
     AVCodecCodecName() = delete;
