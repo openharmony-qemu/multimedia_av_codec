@@ -2760,6 +2760,16 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandlePushBuffer_001, TestSize.Le
     ret = mediaDemuxer_->HandlePushBuffer(mediaDemuxer_->videoTrackId_, dstBuffer,
         mediaDemuxer_->bufferQueueMap_[NUM_0], Status::OK);
     EXPECT_EQ(ret, Status::OK);
+
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    mediaDemuxer_->needReleaseVideoDecoder_ = true;
+    ret = mediaDemuxer_->HandlePushBuffer(NUM_0, dstBuffer, mediaDemuxer_->bufferQueueMap_[NUM_0], Status::OK);
+    EXPECT_EQ(ret, Status::OK);
+
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    mediaDemuxer_->needReleaseVideoDecoder_ = false;
+    ret = mediaDemuxer_->HandlePushBuffer(NUM_0, dstBuffer, mediaDemuxer_->bufferQueueMap_[NUM_0], Status::OK);
+    EXPECT_EQ(ret, Status::OK);
 }
 
 /**
