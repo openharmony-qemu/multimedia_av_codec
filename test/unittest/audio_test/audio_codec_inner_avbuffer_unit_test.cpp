@@ -41,6 +41,7 @@ constexpr std::string_view OUTPUT_PCM_FILE_PATH = "/data/test/media/mp3_2c_44100
 constexpr int32_t INPUT_FRAME_BYTES = 2 * 1024 * 4;
 constexpr int32_t TIME_OUT_MS = 8;
 constexpr int64_t MILLISECOUND_TO_SECOND = 1000;
+constexpr int64_t CHANGE_PLUGIN_INTERVAL_MS = 1;
 
 typedef enum OH_AVCodecBufferFlags {
     AVCODEC_BUFFER_FLAGS_NONE = 0,
@@ -120,11 +121,31 @@ int32_t AudioDecInnerAvBuffer::RunCase()
     fileSize_ = GetFileSize(INPUT_FILE_PATH.data());
     inputFile_ = std::make_unique<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
     outputFile_ = std::make_unique<std::ofstream>(OUTPUT_PCM_FILE_PATH, std::ios::binary);
+
+    if (enableAsyncChangePluginTest_) {
+        isChangePluginThreadRunning_ = true;
+        changePluginThread_ = std::make_unique<std::thread>([this] {
+            constexpr bool isEncoder = false;
+            while (isChangePluginThreadRunning_) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(CHANGE_PLUGIN_INTERVAL_MS));
+                audioCodec_->ChangePlugin("audio/mpeg", isEncoder, meta_);
+            }
+        });
+    }
+
     if (!enableSync) {
         InputFunc();
     } else {
         SyncFunc();
     }
+
+    if (changePluginThread_ && changePluginThread_->joinable()) {
+        isChangePluginThreadRunning_ = false;
+        enableAsyncChangePluginTest_ = false;
+        changePluginThread_->join();
+        changePluginThread_.reset();
+    }
+
     inputFile_->close();
     outputFile_->close();
     return ret;
@@ -290,6 +311,11 @@ void AudioDecInnerAvBuffer::SyncOutputFunc()
         }
         audioCodec_->ReleaseOutputBuffer(outputBuffer);
     }
+}
+
+void AudioDecInnerAvBuffer::EnableAsyncChangePluginTest()
+{
+    enableAsyncChangePluginTest_ = true;
 }
 
 AudioCodecConsumerListener::AudioCodecConsumerListener(AudioDecInnerAvBuffer *demo)
@@ -574,6 +600,20 @@ HWTEST_F(AVCodecAudioCodecUnitTest, OnOutputFormatChanged_001, TestSize.Level1)
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(48000); // supported but unexpected sampleRate
     meta->Set<Tag::MEDIA_BITRATE>(60000); // BITRATE is 60000
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audioDec->RunCase());
+}
+
+HWTEST_F(AVCodecAudioCodecUnitTest, AsyncChangePluginWhileDecode_001, TestSize.Level1)
+{
+    auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
+    auto& meta = audioDec->GetAudioMeta();
+    meta = std::make_shared<Media::Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_CHANNEL_LAYOUT>(Media::Plugins::AudioChannelLayout::STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(44100); // expected sampleRate
+    meta->Set<Tag::MEDIA_BITRATE>(60000); // BITRATE is 60000
+    audioDec->EnableAsyncChangePluginTest();
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audioDec->RunCase());
 }
 } // namespace MediaAVCodec
