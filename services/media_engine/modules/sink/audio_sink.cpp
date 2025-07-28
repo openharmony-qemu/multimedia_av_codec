@@ -53,6 +53,12 @@ const int64_t MICROSECONDS_CONVERT_UNITS = 1000;
 
 int64_t GetAudioLatencyFixDelay()
 {
+    constexpr int64_t defaultOffset = -1;
+    const std::string audioLatencyOffsetKey = "const.multimedia.audio.latency_offset";
+    static int64_t audioLatencyOffset = OHOS::system::GetIntParameter(audioLatencyOffsetKey, defaultOffset);
+    MEDIA_LOG_I("audio.latency_offset, pid:%{public}d , offset: %{public}ld", getprocpid(), audioLatencyOffset);
+    FALSE_RETURN_V_NOLOG(audioLatencyOffset < 0, audioLatencyOffset * HST_USECOND);
+
     constexpr uint64_t defaultValue = 120 * HST_USECOND;
     static uint64_t fixDelay = OHOS::system::GetUintParameter("debug.media_service.audio_sync_fix_delay", defaultValue);
     MEDIA_LOG_I("audio_sync_fix_delay, pid:%{public}d, fixdelay: " PUBLIC_LOG_U64, getprocpid(), fixDelay);
