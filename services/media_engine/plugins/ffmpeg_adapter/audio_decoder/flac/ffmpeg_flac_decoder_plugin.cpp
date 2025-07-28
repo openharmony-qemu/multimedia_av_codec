@@ -62,8 +62,14 @@ Status FFmpegFlacDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
 {
     int32_t channelCount;
     int32_t sampleRate;
-    format->GetData(Tag::AUDIO_CHANNEL_COUNT, channelCount);
-    format->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
+    if (!format->GetData(Tag::AUDIO_CHANNEL_COUNT, channelCount)) {
+        AVCODEC_LOGE("init failed, because get channelCount failed.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    if (!format->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate)) {
+        AVCODEC_LOGE("init failed, because get sampleRate failed.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
 
     if (!CheckSampleRate(sampleRate)) {
         AVCODEC_LOGE("init failed, because sampleRate=%{public}d not in table.", sampleRate);
