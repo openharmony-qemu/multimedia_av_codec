@@ -358,7 +358,7 @@ HWTEST_F(SampleQueueUnitTest, Clear_001, TestSize.Level1)
  */
 HWTEST_F(SampleQueueUnitTest, SetLargerQueueSize_001, TestSize.Level1)
 {
-SampleQueue::Config sampleQueueConfig{};
+    SampleQueue::Config sampleQueueConfig{};
     sampleQueueConfig.isFlvLiveStream_ = true;
     sampleQueueConfig.isSupportBitrateSwitch_ = true;
     sampleQueueConfig.queueId_ = NUM_TEST1;
