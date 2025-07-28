@@ -2703,12 +2703,17 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_001, TestSize.Le
     videoSample->pts_ = NUM_0;
     mediaDemuxer_->bufferMap_[0] = videoSample;
     mediaDemuxer_->sampleQueueMap_[0] = std::make_shared<SampleQueue>();
-
     auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
     mediaDemuxer_->eventReceiver_ = mockEventReceiver;
 
     mediaDemuxer_->isVideoMuted_ = true;
     videoSample->flag_ = static_cast<uint32_t>(Plugins::AVBufferFlag::NONE);
+    mediaDemuxer_->HandleVideoTrack(NUM_0);
+    EXPECT_EQ(mediaDemuxer_->lastVideoPts_, NUM_0);
+
+    mediaDemuxer_->isVideoMuted_ = true;
+    videoSample->flag_ = static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME);
+    mediaDemuxer_->needReleaseVideoDecoder_ = false;
     mediaDemuxer_->HandleVideoTrack(NUM_0);
     EXPECT_EQ(mediaDemuxer_->lastVideoPts_, NUM_0);
 }
@@ -2719,28 +2724,6 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_001, TestSize.Le
  * @tc.type: FUNC
  */
 HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_002, TestSize.Level1)
-{
-    mediaDemuxer_->videoTrackId_ = NUM_0;
-    std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
-    videoSample->pts_ = NUM_0;
-    mediaDemuxer_->bufferMap_[0] = videoSample;
-    mediaDemuxer_->sampleQueueMap_[0] = std::make_shared<SampleQueue>();
-    auto mockEventReceiver = std::make_shared<StrictMock<MockEventReceiver>>();
-    mediaDemuxer_->eventReceiver_ = mockEventReceiver;
-
-    mediaDemuxer_->isVideoMuted_ = true;
-    videoSample->flag_ = static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME);
-    mediaDemuxer_->needReleaseVideoDecoder_ = false;
-    mediaDemuxer_->HandleVideoTrack(NUM_0);
-    EXPECT_EQ(mediaDemuxer_->lastVideoPts_, NUM_0);
-}
-
-/**
- * @tc.name: MediaDemuxerExt_HandleVideoTrack_003
- * @tc.desc: test HandleVideoTrack
- * @tc.type: FUNC
- */
-HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_003, TestSize.Level1)
 {
     mediaDemuxer_->videoTrackId_ = NUM_0;
     std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
@@ -2766,11 +2749,11 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_003, TestSize.Le
 }
 
 /**
- * @tc.name: MediaDemuxerExt_HandleVideoTrack_004
+ * @tc.name: MediaDemuxerExt_HandleVideoTrack_003
  * @tc.desc: test HandleVideoTrack
  * @tc.type: FUNC
  */
-HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_004, TestSize.Level1)
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleVideoTrack_003, TestSize.Level1)
 {
     mediaDemuxer_->videoTrackId_ = NUM_0;
     std::shared_ptr<AVBuffer> videoSample = std::make_shared<AVBuffer>();
