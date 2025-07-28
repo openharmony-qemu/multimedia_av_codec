@@ -118,7 +118,6 @@ protected:
         return std::make_shared<AVMemory>();
     }
 };
-using AVMemoryMock = AVMemory;
 }
 }
 #endif // MOCK_AVBUFFER_H

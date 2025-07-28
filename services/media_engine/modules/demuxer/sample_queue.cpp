@@ -119,15 +119,6 @@ Status SampleQueue::AddQueueSize(uint32_t size)
     return Status::OK;
 }
 
-Status SampleQueue::AddQueueSize(uint32_t size)
-{
-    Status status = sampleBufferQueue_->SetLargerQueueSize(config_.queueSize_ + size);
-    FALSE_RETURN_V(status == Status::OK, status);
-    config_.queueSize_ = config_.queueSize_ + size;
-    MEDIA_LOG_I("sampleBufferQueue size is add to " PUBLIC_LOG_U32, config_.queueSize_);
-    return Status::OK;
-}
-
 Status SampleQueue::AttachBuffer()
 {
     for (uint32_t i = 0; i < config_.queueSize_; i++) {
