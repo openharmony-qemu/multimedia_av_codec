@@ -77,10 +77,7 @@ Status SampleQueue::Init(const Config& config)
     config_.queueName_ = "SampleQueue_" + std::to_string(config_.queueId_);
     sampleBufferQueue_ = AVBufferQueue::Create(config_.queueSize_, MemoryType::VIRTUAL_MEMORY, config_.queueName_);
     FALSE_RETURN_V_MSG_E(sampleBufferQueue_ != nullptr, Status::ERROR_NO_MEMORY, "AVBufferQueue::Create failed");
-    if (config_.isNeedSetLarge_) {
-        config_.queueSize_ = MAX_SAMPLE_QUEUE_SIZE_ON_MUTE;
-        sampleBufferQueue_->SetLargerQueueSize(config_.queueSize_);
-    } else if (config_.isFlvLiveStream_) {
+    if (config_.isFlvLiveStream_) {
         config_.queueSize_ = MAX_SAMPLE_QUEUE_SIZE;
         sampleBufferQueue_->SetLargerQueueSize(config_.queueSize_);
     }
@@ -103,13 +100,22 @@ Status SampleQueue::Init(const Config& config)
 
 Status SampleQueue::SetLargerQueueSize(uint32_t size)
 {
-    if (size > config_.queueSize_) {
+    if (size != config_.queueSize_) {
         Status status = sampleBufferQueue_->SetLargerQueueSize(size);
         FALSE_RETURN_V_MSG_E(status == Status::OK, status, "SetLargerQueueSize failed status=" PUBLIC_LOG_D32,
             static_cast<int32_t>(status));
         MEDIA_LOG_I("sampleBufferQueue size is change to " PUBLIC_LOG_U32, size);
         config_.queueSize_ = size;
     }
+    return Status::OK;
+}
+
+Status SampleQueue::AddQueueSize(uint32_t size)
+{
+    Status status = sampleBufferQueue_->SetLargerQueueSize(config_.queueSize_ + size);
+    FALSE_RETURN_V(status == Status::OK, status);
+    config_.queueSize_ = config_.queueSize_ + size;
+    MEDIA_LOG_I("sampleBufferQueue size is add to " PUBLIC_LOG_U32, config_.queueSize_);
     return Status::OK;
 }
 
@@ -617,6 +623,11 @@ std::string SampleQueue::StringifyMeta(std::shared_ptr<Meta> &meta)
         }
     }
     return dumpStream.str();
+}
+
+bool SampleQueue::IsEmpty()
+{
+    return sampleBufferQueueConsumer_->GetFilledBufferSize() == 0;
 }
 } // namespace Media
 } // namespace OHOS

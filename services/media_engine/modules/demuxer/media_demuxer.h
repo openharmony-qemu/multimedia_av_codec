@@ -181,7 +181,7 @@ public:
     Status GetCurrentCacheSize(uint32_t trackIndex, uint32_t& size); // Interface for AVDemuxer
     Status StopBufferring(bool isAppBackground);
     
-    void SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted, bool keepDecodingOnMute);
+    void SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted);
     void HandleDecoderErrorFrame(int64_t pts);
     inline bool IsVideoMuted() const
     {
@@ -348,6 +348,7 @@ private:
                             sptr<AVBufferQueueProducer>& bufferQueue, Status status);
     void HandleSeek(int32_t trackId);
     void RecordErrorCount(int32_t queueIndex, Status ret);
+    void HandleVideoSampleQueue();
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
@@ -472,7 +473,6 @@ private:
     bool needReleaseVideoDecoder_ = false;
     bool needRestore_ {false};
     bool hasSetLargeSize_ {false};
-    bool isNeedSetLarge_ {false};
 
     uint32_t timeout_ = {10}; // 10 represents 10ms. Optimization can consider dynamic adjustment.
     bool enableAsyncDemuxer_ = true;
