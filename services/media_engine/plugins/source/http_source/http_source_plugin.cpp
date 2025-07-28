@@ -535,7 +535,7 @@ bool HttpSourcePlugin::CheckIsM3U8Uri()
     std::string leafNameSuffix = uriMain.substr(pos + 1);
     pos = leafNameSuffix.rfind('.');
     if (pos != std::string::npos) {     // 找到资源格式
-        std::string suffix = uriMain.substr(pos + 1);
+        std::string suffix = leafNameSuffix.substr(pos + 1);
         if (suffix == LOWER_M3U8) {
             return true;
         }
