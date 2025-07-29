@@ -3955,7 +3955,7 @@ void MediaDemuxer::HandleVideoSampleQueue()
     Status ret = sampleQueueMap_[videoTrackId_]->AddQueueSize(SAMPLE_QUEUE_ADD_SIZE_ON_MUTE);
     FALSE_RETURN_NOLOG(ret != Status::OK);
     std::shared_ptr<AVBuffer> dstBuffer;
-    sampleQueueMap_[videoTrackId_]->AcquireBuffer(dstBuffer);
+    ret = sampleQueueMap_[videoTrackId_]->AcquireBuffer(dstBuffer);
     FALSE_RETURN_NOLOG(ret == Status::OK);
     sampleQueueMap_[videoTrackId_]->ReleaseBuffer(dstBuffer);
 }
