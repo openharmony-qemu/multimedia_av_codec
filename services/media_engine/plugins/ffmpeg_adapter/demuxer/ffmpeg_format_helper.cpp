@@ -631,6 +631,7 @@ void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, s
                 std::string str = std::string(valPtr->value + VALUE_PREFIX_LEN);
                 int len = str.length() / 2;
                 std::vector<uint8_t> data(len, 0);
+                
                 for (int i = 0; i < len; i++) {
                     data[i] = (uint8_t)HexCharToValue(str[i * 2]) << 4 | (uint8_t)HexCharToValue(str[i * 2 + 1]);
                 }
