@@ -141,7 +141,7 @@ inline void ResetAudioRendererParams(OHOS::AudioStandard::AudioRendererParams &p
     param.channelCount = OHOS::AudioStandard::MONO;
     param.encodingType = ENCODING_INVALID;
 }
-constexpr int32_t CALLBACK_BUFFER_DURATION_IN_MILLISECONDS = 20;
+constexpr int32_t CALLBACK_BUFFER_DURATION_IN_MILLISECONDS = 40;
 } // namespace
 
 namespace OHOS {
