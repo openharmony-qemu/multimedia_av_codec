@@ -494,7 +494,7 @@ static void SetToFormatIfConvertSuccess(Meta& format, const TagType& tag, std::s
         }
         case ValueType::BUFFER: {
             std::vector<uint8_t> buffer;
-            if (ConvertHexStrToBuffer(valueStr, buffer)) { 
+            if (ConvertHexStrToBuffer(valueStr, buffer)) {
                 format.SetData(tag, buffer);
                 convertSuccess = true;
             }
