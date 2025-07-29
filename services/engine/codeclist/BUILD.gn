@@ -66,6 +66,14 @@ ohos_static_library("av_codec_engine_codeclist") {
     "media_foundation:media_foundation",
   ]
 
+  if (av_codec_enable_special_codec) {
+    external_deps = [
+      "drivers_interface_audiocodec:libaudiocodec_aac_proxy_1.0",
+      "hdf_core:libhdi",
+      "hdf_core:libhdi_utils",
+    ]
+  }
+
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
