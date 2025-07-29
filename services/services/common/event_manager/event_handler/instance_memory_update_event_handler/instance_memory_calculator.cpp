@@ -49,7 +49,7 @@ struct CalculatorParameter {
     bool enablePostProcessing = false;
 };
 
-struct CalculatorParamterHash {
+struct CalculatorParameterHash {
     std::size_t operator()(const CalculatorParameter &param) const
     {
         return  (std::hash<int32_t>()(static_cast<int32_t>(param.codecType))         << 0) ^ // 0: Hash offset
@@ -61,7 +61,7 @@ struct CalculatorParamterHash {
     }
 };
 
-struct CalculatorParamterEqual {
+struct CalculatorParameterEqual {
     bool operator()(const CalculatorParameter &lhs, const CalculatorParameter &rhs) const
     {
         return (lhs.codecType            == rhs.codecType           ) &&
@@ -512,7 +512,7 @@ uint32_t SoftwareEncoderH264RGBA(uint32_t blockSize)
 }
 
 const std::unordered_map<CalculatorParameter, uint32_t (*)(uint32_t),
-                         CalculatorParamterHash, CalculatorParamterEqual> CALCULATOR_MAP = {
+                         CalculatorParameterHash, CalculatorParameterEqual> CALCULATOR_MAP = {
     {HARDWARE_DECODER_HEVC_10BIT_YUV420_PARAMETER, HardwareDecoderHevc10BitYUV420},
     {HARDWARE_DECODER_HEVC_YUV420_POSTPROCESSING_PARAMETER, HardwareDecoderHevcYUV420PostProcessing},
     {HARDWARE_DECODER_VVC_10BIT_YUV420_PARAMETER, HardwareDecoderVvc10BitYUV420},

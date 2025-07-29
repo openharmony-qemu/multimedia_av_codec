@@ -115,6 +115,37 @@ bool DemuxerUnitTest::CheckCache(
 namespace {
 #ifdef DEMUXER_INNER_UNIT_TEST
 /**
+ * @tc.name: Demuxer_GetCurrentCacheSize_0001
+ * @tc.desc: Clear unselect track cache, push when initing
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_0001, TestSize.Level1)
+{
+    InitResource(g_movPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_TRUE(SetInitValue());
+    selectedTrackIds_.erase(selectedTrackIds_.begin());
+    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    int32_t ret = AV_ERR_OK;
+    for (int32_t i = 0; i < 5; ++i) { // read track1 5 times, then select track0
+        ret = demuxer_->ReadSample(1, sharedMem_, &info_, flag_);
+        ASSERT_EQ(ret, AV_ERR_OK);
+    }
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    ret = demuxer_->ReadSample(1, sharedMem_, &info_, flag_);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    uint32_t cacheSize = 0;
+    ret = demuxer_->GetCurrentCacheSize(0, cacheSize);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    ASSERT_EQ(cacheSize, 448);
+    ret = demuxer_->GetCurrentCacheSize(1, cacheSize);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    ASSERT_EQ(cacheSize, 0);
+}
+
+/**
  * @tc.name: Demuxer_GetCurrentCacheSize_1000
  * @tc.desc: GetCurrentCacheSize when reading
  * @tc.type: FUNC

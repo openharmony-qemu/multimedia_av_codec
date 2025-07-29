@@ -140,6 +140,14 @@ int DemuxerSample::CreateDemuxer()
 
 void DemuxerSample::GetAndSetFormat(const char *setLanguage, Params params)
 {
+    const char *stringVal;
+    OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal);
+    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_CLOSEST_SYNC);
+    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_PREVIOUS_SYNC);
+    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_NEXT_SYNC);
+    for (int32_t index = 0; index < gTrackCount; index++) {
+        OH_AVDemuxer_UnselectTrackByID(demuxer, index);
+    }
     int64_t duration = 0;
     OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_DURATION, &duration);
     float currentHeight = 0;
@@ -195,6 +203,13 @@ void DemuxerSample::RunNormalDemuxer(uint32_t createSize, const char *uri, const
                 OH_AVFormat_Destroy(trackFormat);
                 trackFormat = nullptr;
             }
+            const char *trackRefType = nullptr;
+            const char *trackdescription = nullptr;
+            int32_t *trackIds = nullptr;
+            size_t bufferSize;
+            OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_TRACK_REFERENCE_TYPE, &trackRefType);
+            OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_TRACK_DESCRIPTION, &trackdescription);
+            OH_AVFormat_GetIntBuffer(trackFormat, OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, &bufferSize);
             ret = OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr);
             if (ret != 0) {
                 gReadEnd = true;
@@ -205,12 +220,6 @@ void DemuxerSample::RunNormalDemuxer(uint32_t createSize, const char *uri, const
                 break;
             }
         }
-    }
-    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_CLOSEST_SYNC);
-    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_PREVIOUS_SYNC);
-    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_NEXT_SYNC);
-    for (int32_t index = 0; index < gTrackCount; index++) {
-        OH_AVDemuxer_UnselectTrackByID(demuxer, index);
     }
     GetAndSetFormat(setLanguage, params);
     uriSource = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
@@ -247,6 +256,13 @@ void DemuxerSample::RunNormalDemuxerApi11(uint32_t createSize, const char *uri, 
                 OH_AVFormat_Destroy(trackFormat);
                 trackFormat = nullptr;
             }
+            const char *trackRefType = nullptr;
+            const char *trackdescription = nullptr;
+            int32_t *trackIds = nullptr;
+            size_t bufferSize;
+            OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_TRACK_REFERENCE_TYPE, &trackRefType);
+            OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_TRACK_DESCRIPTION, &trackdescription);
+            OH_AVFormat_GetIntBuffer(trackFormat, OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, &bufferSize);
             ret = OH_AVDemuxer_ReadSampleBuffer(demuxer, index, buffer);
             if (ret != 0) {
                 gReadEnd = true;
@@ -255,13 +271,6 @@ void DemuxerSample::RunNormalDemuxerApi11(uint32_t createSize, const char *uri, 
             OH_AVBuffer_GetBufferAttr(buffer, &attr);
             SetFileValue(attr, gReadEnd, keyCount);
         }
-    }
-    cout << "---keyCount---" << keyCount << endl;
-    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_CLOSEST_SYNC);
-    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_PREVIOUS_SYNC);
-    OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_NEXT_SYNC);
-    for (int32_t index = 0; index < gTrackCount; index++) {
-        OH_AVDemuxer_UnselectTrackByID(demuxer, index);
     }
     GetAndSetFormat(setLanguage, params);
     uriSource = OH_AVSource_CreateWithURI(const_cast<char *>(uri));

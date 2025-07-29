@@ -144,6 +144,7 @@ private:
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);
     int64_t GetStreamDuration(const AVStream& avStream);
 
+    bool FrameReady(Status ret);
     int SelectSeekTrack() const;
     Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
     void SyncSeekThread();
@@ -174,11 +175,12 @@ private:
     Status AddPacketToCacheQueue(AVPacket *pkt);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
+    Status BufferIsValid(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
-    Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, int32_t writeSize);
+    Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, uint32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     bool NeedCombineFrame(uint32_t trackId);
@@ -217,6 +219,7 @@ private:
     int64_t relativePTSToIndexLeftDiff_ = INT64_MAX;
     int64_t relativePTSToIndexTempDiff_ = INT64_MAX;
     Status InitIoContext();
+    void InitIoContextInDemuxer(const std::shared_ptr<DataSource>& source);
     Status ParserRefInit();
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
     Status SelectProGopId();
@@ -241,18 +244,19 @@ private:
     std::map<int32_t, std::vector<int32_t>> referenceIdsMap_ {};
     
     Status ParseVideoFirstFrames();
-    Status SetFirstFrame(AVPacket* pkt, bool isConvert = true);
-    bool FirstFrameValid(uint32_t trackIndex);
-    std::map<int32_t, AVPacket *> firstFrameMap_ {};
+    bool AllVideoFirstFramesReady();
+    Status SetVideoFirstFrame(AVPacket* pkt, bool isConvert = true);
+    bool VideoFirstFrameValid(uint32_t trackIndex);
+    std::map<int32_t, AVPacket *> videoFirstFrameMap_ {};
     std::unordered_map<int32_t, int64_t> seekCalibMap_ {};
     bool TrackIsChecked(const uint32_t trackId);
     std::vector<uint32_t> checkedTrackIds_ {};
+    void ClearUnselectTrackCache();
+    bool needClear_ = true;
 
     std::shared_ptr<MultiStreamParserManager> streamParsers_ {nullptr};
 
     void ParseHEVCMetadataInfo(const AVStream& avStream, Meta &format);
-    AVPacket *firstFrame_ = nullptr;
-
     std::atomic<bool> parserState_ = true;
     IOContext parserRefIoContext_;
     std::shared_ptr<AVFormatContext> parserRefCtx_{nullptr};
@@ -280,8 +284,15 @@ private:
         int frameIndex = 0; // for each track
         int64_t lastPts;
         int64_t lastPos;
-        int64_t lastDurantion;
+        int64_t lastDuration;
+        bool dumpFirstInfo = false;
     };
+    enum Stage : int32_t {
+        FIRST_READ = 0,
+        FILE_END   = 1,
+    };
+    void UpdateLastPacketInfo(int32_t trackId, int64_t pts, int64_t pos, int64_t duration);
+    void DumpPacketInfo(int32_t trackId, Stage stage);
     struct DumpParam {
         DumpMode mode;
         uint8_t* buf;

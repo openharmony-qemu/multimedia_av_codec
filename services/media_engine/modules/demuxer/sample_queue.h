@@ -43,7 +43,7 @@ enum class SelectBitrateStatus : uint32_t {
 class SampleQueue : public std::enable_shared_from_this<SampleQueue> {
 public:
     static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE = 1;
-    static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE_ON_MUTE = 50;
+    static constexpr uint32_t MAX_SAMPLE_QUEUE_SIZE_ON_MUTE = 150;
     static constexpr uint32_t DEFAULT_SAMPLE_QUEUE_SIZE = 1;
     static constexpr uint32_t MAX_SAMPLE_BUFFER_CAP = 10 * 1024 * 1024;
     static constexpr uint32_t DEFAULT_VIDEO_SAMPLE_BUFFER_CAP = 256 * 1024;
@@ -89,6 +89,8 @@ public:
     Status AcquireBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
     Status ReleaseBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
     Status SetLargerQueueSize(uint32_t size);
+    bool IsEmpty();
+    Status AddQueueSize(uint32_t size);
     
 private:
 

@@ -40,10 +40,8 @@ bool Mime2CodecId(const std::string &mime, AVCodecID &codecId);
 bool Raw2CodecId(AudioSampleFormat sampleFormat, AVCodecID &codecId);
 std::string AVStrError(int errnum);
 int64_t ConvertTimeFromFFmpeg(int64_t pts, AVRational base);
-int64_t ConvertPts(int64_t pts, int64_t startTime);
 int64_t ConvertTimeToFFmpeg(int64_t timestampNs, AVRational base);
 int64_t ConvertTimeToFFmpegByUs(int64_t timestampUs, AVRational base);
-std::string_view ConvertFFmpegMediaTypeToString(AVMediaType mediaType);
 bool StartWith(const char* name, const char* chars);
 uint32_t ConvertFlagsFromFFmpeg(const AVPacket& pkt, bool memoryNotEnough);
 int64_t CalculateTimeByFrameIndex(AVStream* avStream, int keyFrameIdx);
@@ -57,7 +55,6 @@ std::pair<bool, AVColorTransferCharacteristic> ColorTransfer2AVColorTransfer(Tra
 std::pair<bool, AVColorSpace> ColorMatrix2AVColorSpace(MatrixCoefficient matrix);
 
 std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate, int32_t channels);
-void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl);
 void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
 bool IsInputFormatSupported(const char* name);
 int64_t AvTime2Us(int64_t hTime);

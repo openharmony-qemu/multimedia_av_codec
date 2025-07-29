@@ -106,6 +106,30 @@ void FfmpegBaseCodec::TearDown(void)
     }
 }
 
+HWTEST_F(FfmpegBaseCodec, FlacCheckFormat_001, TestSize.Level1)
+{
+    EXPECT_EQ(Status::OK, flacEnc_->Init());
+    meta_->Set<Tag::AUDIO_SAMPLE_RATE>(FLAC_ENCODER_SAMPLE_RATE);
+    meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    meta_->Set<Tag::MEDIA_BITRATE>(FLAC_BIT_RATE);
+    meta_->Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(AudioSampleFormat::SAMPLE_S16LE);
+    meta_->Set<Tag::AUDIO_FLAC_COMPLIANCE_LEVEL>(COMPLIANCE_LEVEL);
+    meta_->Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
+    EXPECT_EQ(Status::ERROR_INVALID_PARAMETER, flacEnc_->SetParameter(meta_));
+}
+
+HWTEST_F(FfmpegBaseCodec, FlacCheckFormat_002, TestSize.Level1)
+{
+    EXPECT_EQ(Status::OK, flacEnc_->Init());
+    meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(FLAC_CHANNELS);
+    meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    meta_->Set<Tag::MEDIA_BITRATE>(FLAC_BIT_RATE);
+    meta_->Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(AudioSampleFormat::SAMPLE_S16LE);
+    meta_->Set<Tag::AUDIO_FLAC_COMPLIANCE_LEVEL>(COMPLIANCE_LEVEL);
+    meta_->Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
+    EXPECT_EQ(Status::ERROR_INVALID_PARAMETER, flacEnc_->SetParameter(meta_));
+}
+
 HWTEST_F(FfmpegBaseCodec, ProcessSendData_001, TestSize.Level1)
 {
     EXPECT_EQ(Status::OK, flacEnc_->Init());

@@ -865,7 +865,7 @@ HWTEST_F(DemuxerFilterUnitTest, SetMediaMuted, TestSize.Level1)
     auto demuxer = std::make_shared<MediaDemuxerMock>();
     demuxerFilter->demuxer_ = demuxer;
     Status ret = Status::OK;
-    ret = demuxerFilter->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, true, false);
+    ret = demuxerFilter->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, true);
     ASSERT_EQ(ret, Status::OK);
 }
 

@@ -31,6 +31,8 @@ using namespace OHOS::Media;
 OH_AVCapability *cap = nullptr;
 constexpr int32_t ONE = 1;
 constexpr int32_t TWO = 2;
+string g_codeName = "";
+VEncSyncSample *vEncSample = nullptr;
 
 void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
 {
@@ -50,6 +52,20 @@ string GetCodeName(const char* mimeName, OH_AVCodecCategory category)
     return OH_AVCapability_GetName(cap);
 }
 
+void ReleaseSample()
+{
+    delete vEncSample;
+    vEncSample = nullptr;
+}
+
+void CodecType()
+{
+    if (vEncSample->codecType == ONE) {
+        g_codeName = GetCodeName(OH_AVCODEC_MIMETYPE_VIDEO_AVC, HARDWARE);
+    } else if (vEncSample->codecType == TWO) {
+        g_codeName = GetCodeName(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, HARDWARE);
+    }
+}
 
 namespace OHOS {
 bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
@@ -60,42 +76,46 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     std::string filename = "/data/test/corpus-EncoderSyncFuzzTest";
     SaveCorpus(data, size, filename);
     FuzzedDataProvider fdp(data, size);
-    string codeName = "";
     int data1 = fdp.ConsumeIntegral<int32_t>();
-    bool data2 = fdp.ConsumeBool();
-    VEncSyncSample *vEncSample = new VEncSyncSample();
+    vEncSample = new VEncSyncSample();
     vEncSample->codecType = fdp.ConsumeIntegralInRange<int32_t>(ONE, TWO);
-    if (vEncSample->codecType == ONE) {
-        codeName = GetCodeName(OH_AVCODEC_MIMETYPE_VIDEO_AVC, HARDWARE);
-    } else if (vEncSample->codecType == TWO) {
-        codeName = GetCodeName(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, HARDWARE);
-    }
-    if (codeName == "") {
+    CodecType();
+    if (g_codeName == "") {
         return false;
     }
     vEncSample->fuzzData = data;
     vEncSample->fuzzSize = size;
-    vEncSample->surfInput = data2;
+    vEncSample->surfInput = fdp.ConsumeBool();
     vEncSample->fuzzMode = true;
     vEncSample->enbleSyncMode = fdp.ConsumeIntegral<int32_t>();
     vEncSample->syncInputWaitTime = fdp.ConsumeIntegral<int64_t>();
-    vEncSample->syncOutputWaitTime = fdp.ConsumeIntegral<int64_t>();
+    vEncSample->syncOutputWaitTime = 1;
     int32_t intval = fdp.ConsumeIntegral<uint32_t>();
-    int32_t ret = vEncSample->CreateVideoEncoder(codeName.c_str());
+    int32_t ret = vEncSample->CreateVideoEncoder(g_codeName.c_str());
     if (ret != 0) {
-        delete vEncSample;
-        vEncSample = nullptr;
+        ReleaseSample();
         return true;
     }
-    if (vEncSample->enbleSyncMode == 0) {
-        vEncSample->SetVideoEncoderCallback();
-    }
     vEncSample->ConfigureVideoEncoderFuzz(intval);
-    vEncSample->StartVideoEncoder();
+    if (vEncSample->surfInput) {
+        vEncSample->CreateSurface();
+    }
+    if (vEncSample->enbleSyncMode == 0) {
+        ReleaseSample();
+        return false;
+    }
+    if (vEncSample->Start() != 0) {
+        ReleaseSample();
+        return false;
+    }
+    if (vEncSample->surfInput) {
+        vEncSample->InputFuncSurfaceFuzz();
+    } else {
+        vEncSample->SyncInputFuncFuzz();
+    }
+    vEncSample->SyncOutputFuncFuzz();
     vEncSample->SetParameter(data1);
-    vEncSample->WaitForEOS();
-    delete vEncSample;
-    vEncSample = nullptr;
+    ReleaseSample();
     return true;
 }
 } // namespace OHOS

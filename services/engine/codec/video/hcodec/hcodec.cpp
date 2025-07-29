@@ -876,7 +876,7 @@ uint32_t HCodec::UserFlagToOmxFlag(AVCodecBufferFlag userFlag)
     if (userFlag & AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         flags |= OMX_BUFFERFLAG_CODECCONFIG;
     }
-    if (userFlag & AVCODEC_BUFFER_FLAG_MUL_FRAME) {
+    if (isLpp_ && (userFlag & AVCODEC_BUFFER_FLAG_MUL_FRAME)) {
         flags |= OMX_BUFFERFLAG_MULTI_FRAME;
     }
     return flags;

@@ -53,36 +53,44 @@ void CodecBufferCircular::SetConverter(std::shared_ptr<BufferConverter> &convert
 
 int32_t CodecBufferCircular::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
 {
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(CanEnableAsyncMode(), AVCS_ERR_INVALID_OPERATION, "Can not enable async mode");
+    std::scoped_lock lock(inMutex_, outMutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(CanEnableMode<MODE_ASYNC>(), AVCS_ERR_INVALID_OPERATION,
+                                      "Can not enable async mode");
+    EnableMode<MODE_ASYNC>();
     callback_ = callback;
-    EnableAsyncMode();
     return AVCS_ERR_OK;
 }
 
 int32_t CodecBufferCircular::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 {
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(CanEnableAsyncMode(), AVCS_ERR_INVALID_OPERATION, "Can not enable async mode");
+    std::scoped_lock lock(inMutex_, outMutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(CanEnableMode<MODE_ASYNC>(), AVCS_ERR_INVALID_OPERATION,
+                                      "Can not enable async mode");
+    EnableMode<MODE_ASYNC>();
     mediaCb_ = callback;
-    EnableAsyncMode();
     return AVCS_ERR_OK;
 }
 
 int32_t CodecBufferCircular::SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback)
 {
+    std::scoped_lock lock(inMutex_, outMutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(attrCb_ == nullptr, AVCS_ERR_INVALID_STATE,
                                       "Already set parameter with atrribute callback");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(CanEnableAsyncMode(), AVCS_ERR_INVALID_OPERATION, "Can not enable async mode");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(CanEnableMode<MODE_ASYNC>(), AVCS_ERR_INVALID_OPERATION,
+                                      "Can not enable async mode");
+    EnableMode<MODE_ASYNC>();
     paramCb_ = callback;
-    EnableAsyncMode();
     return AVCS_ERR_OK;
 }
 
 int32_t CodecBufferCircular::SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback)
 {
+    std::scoped_lock lock(inMutex_, outMutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(paramCb_ == nullptr, AVCS_ERR_INVALID_STATE, "Already set parameter callback");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(CanEnableAsyncMode(), AVCS_ERR_INVALID_OPERATION, "Can not enable async mode");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(CanEnableMode<MODE_ASYNC>(), AVCS_ERR_INVALID_OPERATION,
+                                      "Can not enable async mode");
+    EnableMode<MODE_ASYNC>();
     attrCb_ = callback;
-    EnableAsyncMode();
     return AVCS_ERR_OK;
 }
 
@@ -103,36 +111,27 @@ void CodecBufferCircular::SetIsRunning(bool isRunning)
 bool CodecBufferCircular::CanEnableSyncMode()
 {
     std::scoped_lock lock(inMutex_, outMutex_);
-    if (!(flag_ & FLAG_SYNC_ASYNC_CONFIGURED)) {
-        return true;
-    }
-    return (flag_ & FLAG_IS_SYNC);
+    return CanEnableMode<MODE_SYNC>();
 }
 
 bool CodecBufferCircular::CanEnableAsyncMode()
 {
     std::scoped_lock lock(inMutex_, outMutex_);
-    if (!(flag_ & FLAG_SYNC_ASYNC_CONFIGURED)) {
-        return true;
-    }
-    return !(flag_ & FLAG_IS_SYNC);
+    return CanEnableMode<MODE_ASYNC>();
 }
 
 void CodecBufferCircular::EnableSyncMode()
 {
     std::scoped_lock lock(inMutex_, outMutex_);
-    CHECK_AND_RETURN_LOG_WITH_TAG(!(flag_ & FLAG_SYNC_ASYNC_CONFIGURED) || (flag_ & FLAG_IS_SYNC),
-                                  "Can not enable sync mode");
-    flag_ |= FLAG_IS_SYNC;
-    flag_ |= FLAG_SYNC_ASYNC_CONFIGURED;
+    CHECK_AND_RETURN_LOG_WITH_TAG(CanEnableMode<MODE_ASYNC>(), "Can not enable sync mode");
+    EnableMode<MODE_SYNC>();
 }
 
 void CodecBufferCircular::EnableAsyncMode()
 {
     std::scoped_lock lock(inMutex_, outMutex_);
-    CHECK_AND_RETURN_LOG_WITH_TAG(!(flag_ & FLAG_SYNC_ASYNC_CONFIGURED) || !(flag_ & FLAG_IS_SYNC),
-                                  "Can not enable async mode");
-    flag_ |= FLAG_SYNC_ASYNC_CONFIGURED;
+    CHECK_AND_RETURN_LOG_WITH_TAG(CanEnableMode<MODE_SYNC>(), "Can not enable async mode");
+    EnableMode<MODE_ASYNC>();
 }
 
 bool CodecBufferCircular::IsSyncMode()
@@ -405,7 +404,7 @@ void CodecBufferCircular::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBu
         mediaCb_->OnOutputBufferBinded(bufferMap);
     }
 }
- 
+
 void CodecBufferCircular::OnOutputBufferUnbinded()
 {
     if (!IsSyncMode() && (mediaCb_ != nullptr)) {
@@ -419,32 +418,41 @@ void CodecBufferCircular::AsyncOnError(AVCodecErrorType errorType, int32_t error
     if (errorType == AVCODEC_ERROR_FRAMEAORK_FAILED) {
         return;
     }
+    std::shared_ptr<MediaCodecCallback> mediaCb = nullptr;
+    std::shared_ptr<AVCodecCallback> callback = nullptr;
+    {
+        std::scoped_lock lock(inMutex_, outMutex_);
+        mediaCb = mediaCb_;
+        callback = callback_;
+    }
     // AVBuffer callback
-    if (mediaCb_ != nullptr) {
-        mediaCb_->OnError(errorType, errorCode);
+    if (mediaCb != nullptr) {
+        mediaCb->OnError(errorType, errorCode);
         return;
     }
     // Api9 callback
-    if (callback_ != nullptr) {
-        callback_->OnError(errorType, errorCode);
+    if (callback != nullptr) {
+        callback->OnError(errorType, errorCode);
         return;
     }
 }
 
 void CodecBufferCircular::AsyncOnOutputFormatChanged(const Format &format)
 {
-    {
-        std::lock_guard<std::mutex> lock(outMutex_);
-        ClearOutputBufferOwnedByCodec();
-    }
+    std::unique_lock<std::mutex> lock(outMutex_);
+    ClearOutputBufferOwnedByCodec();
     // AVBuffer callback
-    if (mediaCb_ != nullptr) {
-        mediaCb_->OnOutputFormatChanged(format);
+    auto mediaCb = mediaCb_;
+    if (mediaCb != nullptr) {
+        lock.unlock();
+        mediaCb->OnOutputFormatChanged(format);
         return;
     }
     // Api9 callback
-    if (callback_ != nullptr) {
-        callback_->OnOutputFormatChanged(format);
+    auto callback = callback_;
+    if (callback != nullptr) {
+        lock.unlock();
+        callback->OnOutputFormatChanged(format);
         return;
     }
 }
@@ -462,36 +470,40 @@ void CodecBufferCircular::AsyncOnInputBufferAvailable(uint32_t index, std::share
     BufferItem &item = iter->second;
     item.owner = OWNED_BY_USER;
     // Encoder parameter with attribute callback
-    if (attrCb_ != nullptr) {
+    auto attrCb = attrCb_;
+    if (attrCb != nullptr) {
         auto attribute = GetAttribute(iter);
         auto parameter = GetParameter(iter);
         lock.unlock();
-        attrCb_->OnInputParameterWithAttrAvailable(index, attribute, parameter);
+        attrCb->OnInputParameterWithAttrAvailable(index, attribute, parameter);
         return;
     }
     // Encoder parameter callback
-    if (paramCb_ != nullptr) {
+    auto paramCb = paramCb_;
+    if (paramCb != nullptr) {
         auto parameter = GetParameter(iter);
         lock.unlock();
-        paramCb_->OnInputParameterAvailable(index, parameter);
+        paramCb->OnInputParameterAvailable(index, parameter);
         return;
     }
     // AVBuffer callback
-    if (mediaCb_ != nullptr) {
+    auto mediaCb = mediaCb_;
+    if (mediaCb != nullptr) {
         item.buffer->pts_ = 0;
         lock.unlock();
-        mediaCb_->OnInputBufferAvailable(index, item.buffer);
+        mediaCb->OnInputBufferAvailable(index, item.buffer);
         return;
     }
     // Api9 callback
-    if (callback_ != nullptr) {
+    auto callback = callback_;
+    if (callback != nullptr) {
         item.buffer->pts_ = 0;
         ConvertToSharedMemory(item.buffer, item.memory);
         if (converter_ != nullptr) {
             converter_->SetInputBufferFormat(item.buffer);
         }
         lock.unlock();
-        callback_->OnInputBufferAvailable(index, item.memory);
+        callback->OnInputBufferAvailable(index, item.memory);
         return;
     }
 }
@@ -509,13 +521,15 @@ void CodecBufferCircular::AsyncOnOutputBufferAvailable(uint32_t index, std::shar
     BufferItem &item = iter->second;
     item.owner = OWNED_BY_USER;
     // AVBuffer callback
-    if (mediaCb_ != nullptr) {
+    auto mediaCb = mediaCb_;
+    if (mediaCb != nullptr) {
         lock.unlock();
-        mediaCb_->OnOutputBufferAvailable(index, item.buffer);
+        mediaCb->OnOutputBufferAvailable(index, item.buffer);
         return;
     }
     // Api9 callback
-    if (callback_ != nullptr) {
+    auto callback = callback_;
+    if (callback != nullptr) {
         ConvertToSharedMemory(item.buffer, item.memory);
         if (converter_ != nullptr) {
             converter_->SetOutputBufferFormat(item.buffer);
@@ -529,7 +543,7 @@ void CodecBufferCircular::AsyncOnOutputBufferAvailable(uint32_t index, std::shar
             info.size = item.buffer->memory_->GetSize();
         }
         lock.unlock();
-        callback_->OnOutputBufferAvailable(index, info, flag, item.memory);
+        callback->OnOutputBufferAvailable(index, info, flag, item.memory);
         return;
     }
 }
@@ -554,7 +568,9 @@ void CodecBufferCircular::ConvertToSharedMemory(const std::shared_ptr<AVBuffer> 
     } else {
         std::string name = std::string("SharedMem_") + std::to_string(buffer->GetUniqueId());
         memory = AVSharedMemoryBase::CreateFromLocal(capacity, Flags::FLAGS_READ_WRITE, name);
-        CHECK_AND_RETURN_LOG_WITH_TAG(memory != nullptr, "Create shared memory from local failed");
+        if (memory == nullptr) {
+            AVCODEC_LOGW_WITH_TAG("Create shared memory from local failed");
+        }
     }
 }
 

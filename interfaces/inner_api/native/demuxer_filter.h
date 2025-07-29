@@ -135,7 +135,7 @@ public:
     void RestartAndClearBuffer();
     bool IsFlvLive();
     Status StopBufferring(bool isAppBackground);
-    Status SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted, bool keepDecodingOnMute);
+    Status SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted);
     void HandleDecoderErrorFrame(int64_t pts);
     bool IsVideoMuted();
     Status NotifyResumeUnMute();

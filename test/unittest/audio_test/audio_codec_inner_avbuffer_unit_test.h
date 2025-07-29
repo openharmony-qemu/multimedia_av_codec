@@ -50,6 +50,7 @@ public:
     void OutputFunc();
     void SyncFunc();
     void SyncOutputFunc();
+    void EnableAsyncChangePluginTest();
     std::shared_ptr<AVCodecAudioCodec>& GetAudioCodec()
     {
         return audioCodec_;
@@ -80,6 +81,10 @@ private:
     sptr<Media::AVBufferQueueProducer> mediaCodecProducer_;
     std::unique_ptr<std::ifstream> inputFile_;
     std::unique_ptr<std::ofstream> outputFile_;
+
+    bool enableAsyncChangePluginTest_ = false;
+    bool isChangePluginThreadRunning_ = false;
+    std::unique_ptr<std::thread> changePluginThread_;
 };
 
 class AudioCodecConsumerListener : public OHOS::Media::IConsumerListener {

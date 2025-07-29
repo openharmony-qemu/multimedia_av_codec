@@ -100,6 +100,8 @@ std::string HCodec::OnGetHidumperInfo()
     }
     s << "        " << "----------------------------" << endl;
     s << "        " << "------------OUTPUT----------" << endl;
+    s << "        " << "eos:" << outputPortEos_ << ", fbd:" << record_[OMX_DirOutput].frameCntTotal_
+      << ", bufferCapacity:" << getbufferCapacity(outputBufferPool_) << endl;
     for (const BufferInfo& info : outputBufferPool_) {
         int fd = info.surfaceBuffer == nullptr ? -1 : info.surfaceBuffer->GetFileDescriptor();
         int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
@@ -203,8 +205,8 @@ void HCodec::UpdateHoldCnt(const TimePoint& now, OMX_DIRTYPE port, BufferOwner o
         return;
     }
     TotalEvent& holdCnt = record.holdCntInterval_[owner];
-    holdCnt.eventCnt += holdUs;
-    holdCnt.eventSum += (holdUs * record.currOwner_[owner]);
+    holdCnt.eventCnt += static_cast<uint64_t>(holdUs);
+    holdCnt.eventSum += (static_cast<uint64_t>(holdUs) * record.currOwner_[owner]);
 }
 
 // now, this buffer is gonna change to new owner
@@ -220,7 +222,7 @@ void HCodec::UpdateHoldTime(const TimePoint& now, const BufferInfo& info, Buffer
     BufferOwner oldOwner = info.owner;
     TotalEvent& oldOwnerHoldTime = record.holdTimeInterval_[oldOwner];
     oldOwnerHoldTime.eventCnt++;
-    oldOwnerHoldTime.eventSum += holdUs;
+    oldOwnerHoldTime.eventSum += static_cast<uint64_t>(holdUs);
     if (debugMode_) {
         std::array<int, OWNER_CNT> currOwner = record.currOwner_;
         currOwner[oldOwner]--;
@@ -320,7 +322,7 @@ void HCodec::UpdateOutputRecord(const TimePoint& now, const BufferInfo& info)
         record.ResetInterval(now);
         return;
     }
-    onePtsInToOutTotalCostUs_ += fromInToOut;
+    onePtsInToOutTotalCostUs_ += static_cast<uint64_t>(fromInToOut);
     double oneFrameCostMs = fromInToOut / US_TO_MS;
     double averageCostMs = onePtsInToOutTotalCostUs_ / US_TO_MS / record.frameCntInterval_;
 

@@ -179,15 +179,14 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     if (samplePacket->isEOS) {
         ret = SetEosSample(sample);
         if (ret == Status::OK) {
-            MEDIA_LOG_I("Track:" PUBLIC_LOG_D32 " eos [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
-                trackId, trackDfxInfoMap_[trackId].lastPts,
-                trackDfxInfoMap_[trackId].lastDurantion, trackDfxInfoMap_[trackId].lastPos);
+            DumpPacketInfo(trackId, Stage::FILE_END);
             cacheQueue_.Pop(trackId);
         }
         return ret;
     }
 
     ret = ConvertAVPacketToSample(sample, samplePacket);
+    DumpPacketInfo(trackId, Stage::FIRST_READ);
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
         return Status::OK;
     } else if (ret == Status::OK) {
@@ -256,12 +255,15 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
         }
         pkt = nullptr;
     }
-    threadState_ = NOT_STARTED;
     {
         std::lock_guard<std::mutex> readLock(readSampleMutex_);
         readCacheCv_.notify_one();
     }
-    seekWaitCv_.notify_one();
+    {
+        std::lock_guard<std::mutex> seekWaitLock(seekWaitMutex_);
+        threadState_ = NOT_STARTED;
+        seekWaitCv_.notify_one();
+    }
     MEDIA_LOG_I("Read loop end");
 }
 
@@ -273,8 +275,11 @@ bool FFmpegDemuxerPlugin::NeedWaitForRead()
 void FFmpegDemuxerPlugin::HandleReadWait()
 {
     std::unique_lock<std::mutex> readLock(ioContext_.invokerTypeMutex);
-    threadState_ = WAITING;
-    seekWaitCv_.notify_one();
+    {
+        std::unique_lock<std::mutex> seekWaitLock(seekWaitMutex_);
+        threadState_ = WAITING;
+        seekWaitCv_.notify_one();
+    }
     readLoopCv_.wait(readLock, [this]() {
         return (threadReady_) || (ioContext_.invokerType == InvokerType::DESTORY) ||
                (!cacheQueue_.HasCache(trackId_) && !isPauseReadPacket_);
@@ -402,6 +407,7 @@ void FFmpegDemuxerPlugin::ReleaseFFmpegReadLoop()
         readThread_->join();
     }
     readThread_ = nullptr;
+    readLoopStatus_ = Status::OK; // Reset readLoopStatus_ to OK after destroy
 }
 
 Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout)
