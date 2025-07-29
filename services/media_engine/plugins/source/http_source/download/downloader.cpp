@@ -126,7 +126,7 @@ Seekable DownloadRequest::IsChunked(bool isInterruptNeeded)
         return Seekable::INVALID;
     }
     if (headerInfo_.isChunked) {
-        return Seekable::UNSEEKABLE;
+        return GetFileContentLength() == LIVE_CONTENT_LENGTH ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
     } else {
         return Seekable::SEEKABLE;
     }
