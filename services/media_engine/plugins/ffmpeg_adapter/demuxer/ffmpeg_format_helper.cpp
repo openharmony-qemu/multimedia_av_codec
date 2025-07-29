@@ -601,6 +601,20 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
     SetToFormatIfConvertSuccess(format, Tag::MEDIA_LONGITUDE, (++numbers)->str(), ValueType::FLOAT);
 }
 
+static uint8_t HexCharToValue(char c)
+{
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    }
+    if (c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
+    }
+    if (c >= 'A' && c <= 'F') {
+        return c - 'A' + 10;
+    }
+    return 0;
+}
+
 void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format)
 {
     MEDIA_LOG_D("Parse user data info");
@@ -612,7 +626,17 @@ void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, s
                 MEDIA_LOG_D("Parse user data info " PUBLIC_LOG_S " failed, value too short", valPtr->key);
                 continue;
             }
-            if (StartWith(valPtr->value, "00000001")) { // string
+            if (StartWith(valPtr->value, "00000000")) { // reserved
+                MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: reserved", (valPtr->key + KEY_PREFIX_LEN));
+                std::string str = std::string(valPtr->value + VALUE_PREFIX_LEN);
+                int len = str.length() / 2;
+                std::vector<uint8_t> data(len, 0);
+                for (int i = 0; i < len; i++) {
+                    data[i] = (uint8_t)HexCharToValue(str[i * 2]) << 4 | (uint8_t)HexCharToValue(str[i * 2 + 1]);
+                }
+                format->SetData(valPtr->key + KEY_PREFIX_LEN, data);
+            }
+            else if (StartWith(valPtr->value, "00000001")) { // string
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: string", (valPtr->key + KEY_PREFIX_LEN));
                 format->SetData(valPtr->key + KEY_PREFIX_LEN, std::string(valPtr->value + VALUE_PREFIX_LEN));
             } else if (StartWith(valPtr->value, "00000017")) { // float
