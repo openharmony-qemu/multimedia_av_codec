@@ -66,6 +66,11 @@ const unsigned char MASK_C0 = 0xC0;
 const int32_t MIN_BYTES = 2;
 const int32_t MAX_BYTES = 6;
 
+const int32_t POS_1 = 1;
+const int32_t VALUE_2 = 2;
+const int32_t VALUE_4 = 4;
+const int32_t VALUE_10 = 10;
+
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
     {AVMEDIA_TYPE_AUDIO, MediaType::AUDIO},
@@ -420,7 +425,8 @@ std::string ConvertArrayToString(const int* array, size_t size)
 
 enum ValueType {
     INT32 = 0,
-    FLOAT = 1
+    FLOAT = 1,
+    BUFFER = 2
 };
 
 template <typename T>
@@ -436,6 +442,34 @@ bool StringConverterFloat(const std::string &str, float &result)
     errno = 0;
     result = std::strtof(str.c_str(), &end);
     return end != str.c_str() && *end == '\0' && errno == 0;
+}
+
+static uint8_t HexCharToValue(char c)
+{
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    }
+    if (c >= 'a' && c <= 'f') {
+        return c - 'a' + VALUE_10;
+    }
+    if (c >= 'A' && c <= 'F') {
+        return c - 'A' + VALUE_10;
+    }
+    return 0;
+}
+
+static bool ConvertHexStrToBuffer(const std::string hexStr, std::vector<uint8_t> &buffer)
+{
+    if (hexStr.empty() || hexStr.size() % VALUE_2 != 0) {
+        return false;
+    }
+    int len = hexStr.size() / VALUE_2;
+    buffer.resize(len);
+    for (int i = 0; i < len; i++) {
+        buffer[i] = (uint8_t)(HexCharToValue(hexStr[i * VALUE_2]) << VALUE_4) |
+            (uint8_t)(HexCharToValue(hexStr[i * VALUE_2 + POS_1]));
+    }
+    return true;
 }
 
 static void SetToFormatIfConvertSuccess(Meta& format, const TagType& tag, std::string valueStr, ValueType valueType)
@@ -454,6 +488,14 @@ static void SetToFormatIfConvertSuccess(Meta& format, const TagType& tag, std::s
             float floatValue = -1;
             if (StringConverterFloat(valueStr, floatValue)) {
                 format.SetData<float>(tag, floatValue);
+                convertSuccess = true;
+            }
+            break;
+        }
+        case ValueType::BUFFER: {
+            std::vector<uint8_t> buffer;
+            if (ConvertHexStrToBuffer(valueStr, buffer)) { 
+                format.SetData(tag, buffer);
                 convertSuccess = true;
             }
             break;
@@ -601,20 +643,6 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
     SetToFormatIfConvertSuccess(format, Tag::MEDIA_LONGITUDE, (++numbers)->str(), ValueType::FLOAT);
 }
 
-static uint8_t HexCharToValue(char c)
-{
-    if (c >= '0' && c <= '9') {
-        return c - '0';
-    }
-    if (c >= 'a' && c <= 'f') {
-        return c - 'a' + 10;
-    }
-    if (c >= 'A' && c <= 'F') {
-        return c - 'A' + 10;
-    }
-    return 0;
-}
-
 void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format)
 {
     MEDIA_LOG_D("Parse user data info");
@@ -628,15 +656,9 @@ void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, s
             }
             if (StartWith(valPtr->value, "00000000")) { // reserved
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: reserved", (valPtr->key + KEY_PREFIX_LEN));
-                std::string str = std::string(valPtr->value + VALUE_PREFIX_LEN);
-                int len = str.length() / 2;
-                std::vector<uint8_t> data(len, 0);
-                for (int i = 0; i < len; i++) {
-                    data[i] = (uint8_t)HexCharToValue(str[i * 2]) << 4 | (uint8_t)HexCharToValue(str[i * 2 + 1]);
-                }
-                format->SetData(valPtr->key + KEY_PREFIX_LEN, data);
-            }
-            else if (StartWith(valPtr->value, "00000001")) { // string
+                SetToFormatIfConvertSuccess(
+                    *format, valPtr->key + KEY_PREFIX_LEN, valPtr->value + VALUE_PREFIX_LEN, ValueType::BUFFER);
+            } else if (StartWith(valPtr->value, "00000001")) { // string
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: string", (valPtr->key + KEY_PREFIX_LEN));
                 format->SetData(valPtr->key + KEY_PREFIX_LEN, std::string(valPtr->value + VALUE_PREFIX_LEN));
             } else if (StartWith(valPtr->value, "00000017")) { // float
