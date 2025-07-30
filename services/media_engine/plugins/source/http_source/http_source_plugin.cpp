@@ -369,6 +369,7 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
     MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::SeekTo");
     MEDIA_LOG_I("SeekTo enter, offset = " PUBLIC_LOG_U64, offset);
     MEDIA_LOG_I("SeekTo enter, content length = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
+    FALSE_RETURN_V(downloader_->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
     if (offset > downloader_->GetContentLength() && downloader_->GetContentLength() != 0) {
         MEDIA_LOG_I("SeekTo enter fail, offset = " PUBLIC_LOG_U64, offset);
         MEDIA_LOG_I("SeekTo enter fail, content = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
