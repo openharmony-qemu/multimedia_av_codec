@@ -3447,7 +3447,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetReservedBuffer_1000, TestSize.Level0)
     auto userformat = source_->GetUserData();
     ASSERT_TRUE(userformat->GetBuffer("com.openharmony.suruoyan", &metaBuffer, bufferLen));
     std::vector<uint8_t> metaVec(metaBuffer, metaBuffer + bufferLen);
-    std::vector<uint8_t> expVec = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 16, 17, 18, 19, 20, 100, 200, 255};
+    std::vector<uint8_t> expVec = 
+        {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 16, 17, 18, 19, 20, 100, 200, 255};
     ASSERT_TRUE(metaVec == expVec);
 }
 
