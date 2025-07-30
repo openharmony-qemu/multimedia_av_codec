@@ -17,11 +17,6 @@
 #include "avcodec_mime_type.h"
 #include "avcodec_codec_name.h"
 #include "hdi_codec.h"
-
-#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
-#include "v1_0/iaac.h"
-#endif
-
 #include <fstream>
 
 namespace OHOS {
@@ -116,6 +111,8 @@ const std::vector<int32_t> AUDIO_AC3_SAMPLE_RATE = {32000, 44100, 48000};
 constexpr int MAX_BIT_RATE_G711MU_DECODER = 64000;
 constexpr int MAX_BIT_RATE_G711MU_ENCODER = 64000;
 constexpr int MAX_BIT_RATE_G711A_DECODER = 64000;
+
+const std::string VENDOR_AAC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libaudiocodec_aac_proxy_1.0.z.so";
 
 static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sampleRate)
 {
@@ -405,9 +402,9 @@ CapabilityData AudioCodeclistInfo::GetL2hcDecoderCapability()
 
 CapabilityData AudioCodeclistInfo::GetVendorAacEncoderCapability()
 {
+    std::unique_ptr<std::ifstream> libFile = std::make_unique<std::ifstream>(VENDOR_AAC_LIB_PATH, std::ios::binary);
     CapabilityData audioAacCapability;
-    IAac *ins = IAacGetInstance("full_enc", true);
-    if (!ins) {
+    if (!libFile->is_open()) {
         audioAacCapability.codecName = "";
         audioAacCapability.mimeType = "";
         audioAacCapability.maxInstance = 0;
@@ -418,7 +415,7 @@ CapabilityData AudioCodeclistInfo::GetVendorAacEncoderCapability()
         audioAacCapability.sampleRate = {0};
         return audioAacCapability;
     }
-    IAacReleaseInstance("full_enc", ins, true);
+    libFile->close();
     audioAacCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_VENDOR_AAC_NAME;
     audioAacCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
     audioAacCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC;

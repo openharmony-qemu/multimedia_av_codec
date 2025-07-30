@@ -333,14 +333,6 @@ ohos_shared_library("av_codec_client") {
     external_deps += [ "drm_framework:drm_framework" ]
   }
 
-  if (av_codec_enable_special_codec) {
-    external_deps = [
-      "drivers_interface_audiocodec:libaudiocodec_aac_proxy_1.0",
-      "hdf_core:libhdi",
-      "hdf_core:libhdi_utils",
-    ]
-  }
-
   innerapi_tags = [
     "platformsdk",
     "sasdk",
