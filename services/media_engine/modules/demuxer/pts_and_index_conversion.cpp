@@ -32,6 +32,8 @@ namespace Media {
 const uint32_t BOX_HEAD_SIZE = 8;
 const uint32_t PTS_AND_INDEX_CONVERSION_MAX_FRAMES = 36000;
 const uint32_t BOX_HEAD_LARGE_SIZE = 16;
+constexpr size_t UINT32_BYTES = sizeof(uint32_t);
+constexpr size_t UINT32_BITS = sizeof(uint32_t) * 8;
 TimeAndIndexConversion::TimeAndIndexConversion()
     : source_(std::make_shared<Source>())
 {
@@ -135,7 +137,9 @@ void TimeAndIndexConversion::ReadLargeSize(std::shared_ptr<Buffer> buffer, uint6
     FALSE_RETURN_MSG(ptr != nullptr, "ReadLargeSize failed due to nullptr");
     size_t size = memory->GetSize();
     FALSE_RETURN_MSG(size >= sizeof(uint64_t), "Not enough data in buffer to read large size");
-    largeSize = ntohl(*reinterpret_cast<const uint64_t*>(ptr));
+    uint32_t high = ntohl(*reinterpret_cast<const uint32_t*>(ptr));
+    uint32_t low  = ntohl(*reinterpret_cast<const uint32_t*>(ptr + UINT32_BYTES));
+    largeSize = (static_cast<uint64_t>(high) << UINT32_BITS) | low;
     offset_ -= BOX_HEAD_SIZE;
 }
 
