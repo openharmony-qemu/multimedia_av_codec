@@ -125,6 +125,8 @@ int DemuxerSample::CreateDemuxer()
         fd = 0;
         return -1;
     }
+    OH_AVFormat *metadataFormat = OH_AVSource_GetCustomMetadataFormat(source);
+    OH_AVFormat_Destroy(metadataFormat);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     if (!demuxer) {
         OH_AVSource_Destroy(source);

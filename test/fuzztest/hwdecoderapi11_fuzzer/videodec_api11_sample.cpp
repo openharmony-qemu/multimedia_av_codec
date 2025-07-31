@@ -177,7 +177,9 @@ int32_t VDecApi11FuzzSample::CreateVideoDecoder()
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     string codecName = OH_AVCapability_GetName(cap);
     vdec_ = OH_VideoDecoder_CreateByName("aabbcc");
+    bool isValid = false;
     if (vdec_) {
+        OH_VideoDecoder_IsValid(vdec_, &isValid);
         OH_VideoDecoder_Destroy(vdec_);
         vdec_ = nullptr;
     }
@@ -187,6 +189,7 @@ int32_t VDecApi11FuzzSample::CreateVideoDecoder()
         tmpDec = nullptr;
     }
     tmpDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    OH_VideoDecoder_IsValid(vdec_, &isValid);
     if (tmpDec) {
         OH_VideoDecoder_Destroy(tmpDec);
         tmpDec = nullptr;
