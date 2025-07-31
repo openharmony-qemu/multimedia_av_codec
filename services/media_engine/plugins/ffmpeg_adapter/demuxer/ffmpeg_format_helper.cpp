@@ -449,11 +449,9 @@ static int8_t HexCharToValue(char c)
 {
     if (c >= '0' && c <= '9') {
         return c - '0';
-    }
-    else if (c >= 'a' && c <= 'f') {
+    } else if (c >= 'a' && c <= 'f') {
         return c - 'a' + VALUE_10;
-    }
-    else if (c >= 'A' && c <= 'F') {
+    } else if (c >= 'A' && c <= 'F') {
         return c - 'A' + VALUE_10;
     }
     return INVALID_VAL;
