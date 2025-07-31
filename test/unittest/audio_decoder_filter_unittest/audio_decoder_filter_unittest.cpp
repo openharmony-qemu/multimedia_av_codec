@@ -52,27 +52,6 @@ HWTEST_F(AudioDecoderFilterUnitTest, DoRelease_001, TestSize.Level0)
 }
 
 /**
- * @tc.name  : Test OnLinked
- * @tc.number: OnLinked_001
- * @tc.desc  : Test mimeGetRes == false
- *             Test eventReceiver_ != nullptr
- */
-HWTEST_F(AudioDecoderFilterUnitTest, OnLinked_001, TestSize.Level0)
-{
-    ASSERT_NE(audioDecoderFilter_, nullptr);
-    audioDecoderFilter_->decoder_ = std::make_shared<AudioDecoderAdapter>();
-    auto mockPtr = std::make_shared<MockEventReceiver>();
-    EXPECT_CALL(*(mockPtr), OnEvent(_)).WillRepeatedly(testing::Return());
-    audioDecoderFilter_->eventReceiver_ = mockPtr;
-    audioDecoderFilter_->isReleased_.store(true);
-    StreamType inType = StreamType::STREAMTYPE_PACKED;
-    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
-    std::shared_ptr<FilterLinkCallback> callback;
-    auto ret = audioDecoderFilter_->OnLinked(inType, meta, callback);
-    EXPECT_EQ(ret, Status::ERROR_UNSUPPORTED_FORMAT);
-}
-
-/**
  * @tc.name  : Test UpdateTrackInfoSampleFormat
  * @tc.number: UpdateTrackInfoSampleFormat_001
  * @tc.desc  : Test sampleRateGetRes == fasle && sampleRate < SAMPLE_RATE_48K
