@@ -72,6 +72,7 @@ string g_srt = TEST_FILE_PATH + string("subtitle.srt");
 string g_drmSm4cPath = TEST_FILE_PATH + string("drm/sm4c.ts");
 string g_vttPath = TEST_FILE_PATH + string("webvtt_test.vtt");
 string g_vttPath2 = TEST_FILE_PATH + string("webvtt_test2.vtt");
+string g_vttMp4Path = TEST_FILE_PATH + string("webvtt.mp4");
 string g_ptsConversionPath = TEST_FILE_PATH + string("camera_info_parser.mp4");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
 string g_rmvbPath = TEST_FILE_PATH + string("rv40_cook.rmvb");
@@ -458,6 +459,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1020, TestSize.Level1)
     ASSERT_NE(demuxer_->SelectTrackByID(3), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_NE(demuxer_->SelectTrackByID(-1), AV_ERR_OK);
+    ASSERT_NE(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(1), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(3), AV_ERR_OK);
@@ -2097,6 +2099,39 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3003, TestSize.Level1)
     printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
 
     ASSERT_EQ(frames_[0], 10);
+    RemoveValue();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_3013
+ * @tc.desc: copy current sample to buffer(vtt, zh)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3013, TestSize.Level1)
+{
+    InitResource(g_vttMp4Path, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    for (int i = 0; i < nbStreams_; i++) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(i), AV_ERR_OK);
+    }
+
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+
+    ASSERT_EQ(frames_[0], 604);
+    ASSERT_EQ(keyFrames_[0], 61);
+    ASSERT_EQ(frames_[1], 434);
+    ASSERT_EQ(keyFrames_[1], 434);
+    ASSERT_EQ(frames_[2], 9);
+    ASSERT_EQ(keyFrames_[2], 9);
     RemoveValue();
 }
 #endif

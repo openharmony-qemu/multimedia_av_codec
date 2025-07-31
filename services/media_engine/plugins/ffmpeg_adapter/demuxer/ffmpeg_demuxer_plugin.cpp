@@ -51,7 +51,6 @@ const uint32_t DEFAULT_READ_SIZE = 4096;
 const uint32_t DEFAULT_SNIFF_SIZE = 4096 * 4;
 const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const int32_t DEF_PROBE_SCORE_LIMIT = 50;
-const uint32_t STR_MAX_LEN = 4;
 const uint32_t RANK_MAX = 100;
 const int32_t NAL_START_CODE_SIZE = 4;
 const uint32_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
@@ -2588,14 +2587,6 @@ Status RegisterPlugins(const std::shared_ptr<Register>& reg)
             continue;
         }
         MEDIA_LOG_D("Check ffmpeg demuxer " PUBLIC_LOG_S "[" PUBLIC_LOG_S "]", plugin->name, plugin->long_name);
-        if (plugin->long_name != nullptr &&
-            !strncmp(plugin->long_name, "pcm ", STR_MAX_LEN)) {
-            continue;
-        }
-        if (!IsInputFormatSupported(plugin->name)) {
-            continue;
-        }
-
         std::string pluginName = "avdemux_" + std::string(plugin->name);
         ReplaceDelimiter(".,|-<> ", '_', pluginName);
 

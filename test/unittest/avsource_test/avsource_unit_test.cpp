@@ -69,6 +69,7 @@ string g_audioVividPath2 = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.ts");
 string g_flvPath = TEST_FILE_PATH + string("h264.flv");
 string g_filePath;
 string g_mp4InfoPath = TEST_FILE_PATH + string("camera_info_parser.mp4");
+string g_mp4UnsupportTypeInfoPath = TEST_FILE_PATH + string("unsupport_type.mp4");
 string g_mp4PreRecordPath = TEST_FILE_PATH + string("pre_record_parser.mp4");
 string g_apePath = TEST_FILE_PATH + string("ape_test.ape");
 string g_apeUri = TEST_URI_PATH + string("ape_test.ape");
@@ -2108,6 +2109,22 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1502, TestSize.Level1)
     ASSERT_EQ(preRecordPts, "1737169487_1737169506_1737169516"); // test user string data preRecordPts
 }
 
+/**
+ * @tc.name: AVSource_GetFormat_1503
+ * @tc.desc: get camera info, unsupport type
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1503, TestSize.Level1)
+{
+    fd_ = OpenFile(g_mp4UnsupportTypeInfoPath);
+    size_ = GetFileSize(g_mp4UnsupportTypeInfoPath);
+    printf("---- %s ------\n", g_mp4UnsupportTypeInfoPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetUserData();
+    ASSERT_NE(format_, nullptr);
+    printf("[User Meta]: %s\n", format_->DumpInfo());
+}
 /**
  * @tc.name: AVSource_GetFormat_3000
  * @tc.desc: get format when the file is srt
