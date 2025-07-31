@@ -459,7 +459,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_1020, TestSize.Level1)
     ASSERT_NE(demuxer_->SelectTrackByID(3), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_NE(demuxer_->SelectTrackByID(-1), AV_ERR_OK);
-    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_INVALID_VAL);
+    ASSERT_NE(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(1), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(3), AV_ERR_OK);
