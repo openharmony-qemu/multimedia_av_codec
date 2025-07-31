@@ -290,7 +290,7 @@ int32_t CodecServer::Configure(const Format &format)
 
     if (framerateCalculator_) {
         auto framerate = 0.0;
-        format.GetIntValue(Tag::VIDEO_FRAME_RATE, framerate);
+        format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, framerate);
         framerateCalculator_->SetConfiguredFramerate(framerate);
     }
 
