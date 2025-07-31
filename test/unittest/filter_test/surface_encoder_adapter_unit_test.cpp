@@ -457,8 +457,27 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckFrames_300, T
     int64_t checkFramesPauseTime = 200;
     surfaceEncoderAdapter_->lastBufferTime_ = 0;
     surfaceEncoderAdapter_->pauseResumeQueue_.push_back(std::make_pair(100, StateCode::PAUSE));
+    surfaceEncoderAdapter_->pauseResumeQueue_.push_back(std::make_pair(150, StateCode::RESUME));
     surfaceEncoderAdapter_->CheckFrames(currentPts, checkFramesPauseTime);
-    ASSERT_EQ(checkFramesPauseTime, 200 + (0 - 100));
+    ASSERT_EQ(checkFramesPauseTime, 200 - (500 - 150));
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_CheckFrames_500
+ * @tc.desc: CheckFrames
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckFrames_500, TestSize.Level1)
+{
+    int64_t currentPts = 500;
+    int64_t checkFramesPauseTime = 200;
+    surfaceEncoderAdapter_->lastBufferTime_ = 0;
+    surfaceEncoderAdapter_->pauseResumeQueue_.push_back(std::make_pair(100, StateCode::PAUSE));
+    surfaceEncoderAdapter_->pauseResumeQueue_.push_back(std::make_pair(150, StateCode::RESUME));
+    surfaceEncoderAdapter_->pauseResumeQueue_.push_back(std::make_pair(200, StateCode::PAUSE));
+    surfaceEncoderAdapter_->pauseResumeQueue_.push_back(std::make_pair(250, StateCode::RESUME));
+    surfaceEncoderAdapter_->CheckFrames(currentPts, checkFramesPauseTime);
+    ASSERT_EQ(checkFramesPauseTime, 200 - (500 - 250));
 }
 
 /**
