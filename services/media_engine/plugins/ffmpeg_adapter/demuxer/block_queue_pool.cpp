@@ -357,7 +357,7 @@ bool BlockQueuePool::InnerQueueIsFull(uint32_t queueIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", queue " PUBLIC_LOG_U32, name_.c_str(), queueIndex);
-    if (quePool_.count(queueIndex) > 0 && quePool_[queueIndex].blockQue == nullptr) {
+    if (quePool_.count(queueIndex) <= 0 || quePool_[queueIndex].blockQue == nullptr) {
         MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
         return true;
     }
