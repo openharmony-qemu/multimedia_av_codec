@@ -34,6 +34,8 @@ public:
     void OnFrameConsumed();
     void OnStopped();
     bool CheckAndResetFramerate();
+    void SetConfiguredFramerate(double framerate);
+    bool SetFramerate2ConfiguredFramerate();
 
 private:
     enum class Status {
@@ -48,6 +50,7 @@ private:
     std::atomic<Status> status_ = Status::INITIALIZED;
     std::function<void(double)> resetFramerateHandler_;
     std::atomic<uint32_t> frameCount_{0};
+    double configuredFramerate_{60.0};
     double lastFramerate_{1.0};
     uint8_t decreseCheckTimes_{0};
     std::chrono::steady_clock::time_point lastAdjustmentTime_{};
