@@ -270,11 +270,16 @@ int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode, int6
     }
 }
 
+bool IsSupportedTrackType(const AVStream& avStream)
+{
+    return (std::find(g_streamMediaTypeVec.cbegin(), g_streamMediaTypeVec.cend(),
+        avStream.codecpar->codec_type) != g_streamMediaTypeVec.cend());
+}
+
 bool IsSupportedTrack(const AVStream& avStream)
 {
     FALSE_RETURN_V_MSG_E(avStream.codecpar != nullptr, false, "Codecpar is nullptr");
-    if (std::find(g_streamMediaTypeVec.cbegin(), g_streamMediaTypeVec.cend(),
-        avStream.codecpar->codec_type) == g_streamMediaTypeVec.cend()) {
+    if (!IsSupportedTrackType(avStream)) {
         MEDIA_LOG_E("Unsupport track type: " PUBLIC_LOG_D32, avStream.codecpar->codec_type);
         return false;
     }
@@ -1682,6 +1687,20 @@ static bool IsSyncFrameCheckNeeded(std::shared_ptr<AVFormatContext> formatContex
     return true;
 }
 
+bool FFmpegDemuxerPlugin::AllSupportTrackFramesReady()
+{
+    for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        AVStream* stream = formatContext_->streams[trackIndex];
+        if (stream == nullptr || stream->codecpar == nullptr || !IsSupportedTrackType(*stream)) {
+            continue;
+        }
+        if (!TrackIsChecked(trackIndex)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool FFmpegDemuxerPlugin::AllVideoFirstFramesReady()
 {
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
@@ -1716,9 +1735,9 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
     if (fileType_ == FileType::MPEGTS || FFmpegFormatHelper::IsMpeg4File(fileType_) || fileType_ == FileType::FLV) {
         extraType = true;
     }
-    // Finish for extraType: get all stream
+    // Finish for extraType: get all support stream
     // Finish: read all video or init all parser
-    while ((extraType && checkedTrackIds_.size() < formatContext_->nb_streams) ||
+    while ((extraType && !AllSupportTrackFramesReady()) ||
            (!extraType && !AllVideoFirstFramesReady() && !streamParsers_->AllParserInited())) {
         FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, "ParseVideoFirstFrames interrupt");
         if (pkt == nullptr) {
