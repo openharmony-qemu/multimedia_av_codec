@@ -417,26 +417,6 @@ void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID
     }
 }
 
-bool IsInputFormatSupported(const char* name)
-{
-    MEDIA_LOG_D("Check support " PUBLIC_LOG_S " or not.", name);
-    if (!strcmp(name, "audio_device") || StartWith(name, "image") ||
-        !strcmp(name, "mjpeg") || !strcmp(name, "redir") || StartWith(name, "u8") ||
-        StartWith(name, "u16") || StartWith(name, "u24") ||
-        StartWith(name, "u32") ||
-        StartWith(name, "s8") || StartWith(name, "s16") ||
-        StartWith(name, "s24") ||
-        StartWith(name, "s32") || StartWith(name, "f32") ||
-        StartWith(name, "f64") ||
-        !strcmp(name, "mulaw") || !strcmp(name, "alaw")) {
-        return false;
-    }
-    if (!strcmp(name, "sdp") || !strcmp(name, "rtsp") || !strcmp(name, "applehttp")) {
-        return false;
-    }
-    return true;
-}
-
 int64_t AvTime2Us(int64_t hTime)
 {
     return hTime / AV_CODEC_USECOND;

@@ -56,7 +56,6 @@ std::pair<bool, AVColorSpace> ColorMatrix2AVColorSpace(MatrixCoefficient matrix)
 
 std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate, int32_t channels);
 void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
-bool IsInputFormatSupported(const char* name);
 int64_t AvTime2Us(int64_t hTime);
 
 struct FlacCodecConfig {
