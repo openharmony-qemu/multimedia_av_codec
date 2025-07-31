@@ -32,6 +32,7 @@ constexpr double DEFAULT_FRAME_RATE = 30.0;
 constexpr uint32_t SPS_SIZE = 0x19;
 constexpr uint32_t PPS_SIZE = 0x05;
 constexpr uint32_t START_CODE_SIZE = 4;
+constexpr uint32_t UINT32_SIZE = 32;
 constexpr uint8_t SPS[SPS_SIZE + START_CODE_SIZE] = {0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x00, 0x28, 0xAC,
                                                      0xB4, 0x03, 0xC0, 0x11, 0x3F, 0x2E, 0x02, 0x20, 0x00,
                                                      0x00, 0x03, 0x00, 0x20, 0x00, 0x00, 0x07, 0x81, 0xE3,
@@ -106,7 +107,7 @@ bool HwdecoderApi11FuzzTest(const uint8_t *data, size_t size)
         g_vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
         g_vDecSample->enbleBlankFrame = fdp.ConsumeIntegral<int>();
         g_vDecSample->renderTimestampNs = fdp.ConsumeIntegral<int64_t>();
-        g_vDecSample->isRenderAttime = fdp.ConsumeBool();
+        g_vDecSample->isRenderAttime = (data0 << (UINT32_SIZE - 1));
         int32_t ret = g_vDecSample->CreateVideoDecoder();
         if (ret != 0) {
             delete g_vDecSample;
