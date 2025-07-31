@@ -74,6 +74,7 @@ size_t BlockQueuePool::GetCacheSize(uint32_t trackIndex)
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     size_t size = 0;
+    FALSE_RETURN_V_NOLOG(HasQueue(trackIndex), size);
     for (auto queIndex : queMap_[trackIndex]) {
         if (quePool_[queIndex].blockQue == nullptr) {
             MEDIA_LOG_D("Block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
@@ -93,6 +94,7 @@ uint32_t BlockQueuePool::GetCacheDataSize(uint32_t trackIndex)
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     uint32_t dataSize = 0;
+    FALSE_RETURN_V_NOLOG(HasQueue(trackIndex), dataSize);
     for (auto queIndex : queMap_[trackIndex]) {
         if (static_cast<uint64_t>(dataSize) + static_cast<uint64_t>(quePool_[queIndex].dataSize) > UINT32_MAX) {
             MEDIA_LOG_D("DataSize(" PUBLIC_LOG_U64 ") is out of uint32",
@@ -110,6 +112,7 @@ bool BlockQueuePool::HasCache(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
+    FALSE_RETURN_V_NOLOG(HasQueue(trackIndex), false);
     for (auto queIndex : queMap_[trackIndex]) {
         if (quePool_[queIndex].blockQue == nullptr) {
             MEDIA_LOG_D("Block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
@@ -186,6 +189,9 @@ bool BlockQueuePool::SetInfo(std::shared_ptr<SamplePacket> block)
 void BlockQueuePool::FreeQueue(uint32_t queueIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
+    if (quePool_.count(queueIndex) == 0) {
+        return;
+    }
     ResetQueue(queueIndex);
     quePool_[queueIndex].blockQue = nullptr;
 }
@@ -351,7 +357,7 @@ bool BlockQueuePool::InnerQueueIsFull(uint32_t queueIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", queue " PUBLIC_LOG_U32, name_.c_str(), queueIndex);
-    if (quePool_[queueIndex].blockQue == nullptr) {
+    if (quePool_.count(queueIndex) > 0 && quePool_[queueIndex].blockQue == nullptr) {
         MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
         return true;
     }
