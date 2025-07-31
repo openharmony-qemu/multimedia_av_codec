@@ -66,6 +66,7 @@ const unsigned char MASK_C0 = 0xC0;
 const int32_t MIN_BYTES = 2;
 const int32_t MAX_BYTES = 6;
 
+const int32_t INVALID_VAL = -1;
 const int32_t POS_1 = 1;
 const int32_t VALUE_2 = 2;
 const int32_t VALUE_4 = 4;
@@ -444,18 +445,18 @@ bool StringConverterFloat(const std::string &str, float &result)
     return end != str.c_str() && *end == '\0' && errno == 0;
 }
 
-static uint8_t HexCharToValue(char c)
+static int8_t HexCharToValue(char c)
 {
     if (c >= '0' && c <= '9') {
         return c - '0';
     }
-    if (c >= 'a' && c <= 'f') {
+    else if (c >= 'a' && c <= 'f') {
         return c - 'a' + VALUE_10;
     }
-    if (c >= 'A' && c <= 'F') {
+    else if (c >= 'A' && c <= 'F') {
         return c - 'A' + VALUE_10;
     }
-    return 0;
+    return INVALID_VAL;
 }
 
 static bool ConvertHexStrToBuffer(const std::string hexStr, std::vector<uint8_t> &buffer)
@@ -466,8 +467,11 @@ static bool ConvertHexStrToBuffer(const std::string hexStr, std::vector<uint8_t>
     int len = hexStr.size() / VALUE_2;
     buffer.resize(len);
     for (int i = 0; i < len; i++) {
-        buffer[i] = (uint8_t)(HexCharToValue(hexStr[i * VALUE_2]) << VALUE_4) |
-            (uint8_t)(HexCharToValue(hexStr[i * VALUE_2 + POS_1]));
+        int8_t high = HexCharToValue(hexStr[i * VALUE_2]);
+        int8_t low = HexCharToValue(hexStr[i * VALUE_2 + POS_1]);
+        FALSE_RETURN_V_MSG_E(high >= 0 && low >= 0, false,
+            "invalid hexChar" PUBLIC_LOG_U8 " " PUBLIC_LOG_U8, hexStr[i * VALUE_2], hexStr[i * VALUE_2 + POS_1]);
+        buffer[i] = (static_cast<uint8_t>(high) << VALUE_4) | static_cast<uint8_t>(low);
     }
     return true;
 }
