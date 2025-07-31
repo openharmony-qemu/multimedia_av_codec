@@ -672,23 +672,23 @@ void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnOutputBufferAvailable(uint32
                                                                           std::shared_ptr<AVBuffer> buffer)
 {
     std::shared_ptr<AVBuffer> outputBuffer;
-    if (!impl_->isSyncMode_.load() && impl_->callback_) {
-        Media::Status ret = impl_->implConsumer_->AcquireBuffer(outputBuffer);
-        if (ret != Media::Status::OK) {
-            AVCODEC_LOGE("Consumer AcquireBuffer fail,ret=%{public}d", ret);
-            return;
-        }
-        {
-            std::unique_lock lock(impl_->outputMutex_);
-            impl_->outputBufferObjMap_[impl_->indexOutput_] = outputBuffer;
-        }
-        impl_->callback_->OnOutputBufferAvailable(impl_->indexOutput_, outputBuffer);
-        impl_->indexOutput_ = (impl_->indexOutput_ >= MAX_INDEX) ? 0 : ++impl_->indexOutput_;
-    }
-
     if (!impl_->isSyncMode_.load()) {
+        if (impl_->callback_) {
+            Media::Status ret = impl_->implConsumer_->AcquireBuffer(outputBuffer);
+            if (ret != Media::Status::OK) {
+                AVCODEC_LOGE("Consumer AcquireBuffer fail,ret=%{public}d", ret);
+                return;
+            }
+            {
+                std::unique_lock lock(impl_->outputMutex_);
+                impl_->outputBufferObjMap_[impl_->indexOutput_] = outputBuffer;
+            }
+            impl_->callback_->OnOutputBufferAvailable(impl_->indexOutput_, outputBuffer);
+            impl_->indexOutput_ = (impl_->indexOutput_ >= MAX_INDEX) ? 0 : ++impl_->indexOutput_;
+        }
         return;
     }
+
     AVCODEC_SYNC_TRACE;
     Media::Status ret = impl_->implConsumer_->AcquireBuffer(outputBuffer);
     if (ret != Media::Status::OK) {
