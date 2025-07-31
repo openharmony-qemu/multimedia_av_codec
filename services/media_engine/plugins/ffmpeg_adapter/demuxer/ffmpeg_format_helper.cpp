@@ -947,7 +947,7 @@ void FFmpegFormatHelper::ParseAudioApeTrackInfo(const AVStream& avStream, Meta &
                     "Parse sample per frame failed");
                 format.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(static_cast<int32_t>(samplePerFrame));
             } else {
-                MEDIA_LOG_W("error frameSize " PUBLIC_LOG_S, meta->value);
+                MEDIA_LOG_W("error sample per frame " PUBLIC_LOG_S, meta->value);
             }
         }
     }

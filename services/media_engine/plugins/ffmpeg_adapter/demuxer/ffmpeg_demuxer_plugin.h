@@ -245,6 +245,7 @@ private:
     
     Status ParseVideoFirstFrames();
     bool AllVideoFirstFramesReady();
+    bool AllSupportTrackFramesReady();
     Status SetVideoFirstFrame(AVPacket* pkt, bool isConvert = true);
     bool VideoFirstFrameValid(uint32_t trackIndex);
     std::map<int32_t, AVPacket *> videoFirstFrameMap_ {};

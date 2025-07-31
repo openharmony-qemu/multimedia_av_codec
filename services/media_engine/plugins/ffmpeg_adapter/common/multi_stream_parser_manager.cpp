@@ -54,8 +54,8 @@ Status MultiStreamParserManager::Create(uint32_t trackId, VideoStreamType videoS
         videoStreamType);
     if (streamMap_.count(trackId) > 0 && streamMap_[trackId].parser != nullptr) {
         MEDIA_LOG_W("Parser change, %{public}d->%{public}d", streamMap_[trackId].type, videoStreamType);
-        if (destroyFuncMap_.count(videoStreamType) > 0) {
-            destroyFuncMap_[videoStreamType](streamMap_[trackId].parser);
+        if (destroyFuncMap_.count(streamMap_[trackId].type) > 0) {
+            destroyFuncMap_[streamMap_[trackId].type](streamMap_[trackId].parser);
         }
         streamMap_[trackId].parser = nullptr;
     }
