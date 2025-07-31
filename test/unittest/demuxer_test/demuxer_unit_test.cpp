@@ -2111,7 +2111,9 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3013, TestSize.Level1)
 {
     InitResource(g_vttMp4Path, LOCAL);
     ASSERT_TRUE(initStatus_);
-    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    for (int i = 0; i < nbStreams_; i++) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(i), AV_ERR_OK);
+    }
 
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
