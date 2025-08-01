@@ -866,7 +866,7 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
                 break;
         }
     } else {
-        MEDIA_LOG_D("Parse rotate info from display matrix failed, set rotation as dafault 0");
+        MEDIA_LOG_D("Parse rotate info from display matrix failed, set rotation as default 0");
         format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
     }
 }
@@ -885,7 +885,7 @@ void FFmpegFormatHelper::ParseOrientationFromMatrix(const AVStream& avStream, Me
     int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, NULL);
     if (displayMatrix) {
         PrintMatrixToLog(displayMatrix, "displayMatrix");
-        int convertedMatrix[CONVERT_MATRIX_SIZE];
+        int convertedMatrix[CONVERT_MATRIX_SIZE] = {0, 0, 0, 0};
         std::transform(&displayMatrix[0], &displayMatrix[0] + 1, // 0 is displayMatrix index, 1 is copy lenth
                        &convertedMatrix[0], ConvFp); // 0 is convertedMatrix index
         std::transform(&displayMatrix[1], &displayMatrix[1] + 1, // 1 is displayMatrix index, 1 is copy lenth
