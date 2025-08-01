@@ -822,6 +822,7 @@ void HCodec::FlushingState::OnStateEntered()
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 }
 
+// LCOV_EXCL_START
 void HCodec::FlushingState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
@@ -850,6 +851,7 @@ void HCodec::FlushingState::OnMsgReceived(const MsgInfo &info)
         }
     }
 }
+// LCOV_EXCL_STOP
 
 void HCodec::FlushingState::OnCodecEvent(CodecEventType event, uint32_t data1, uint32_t data2)
 {

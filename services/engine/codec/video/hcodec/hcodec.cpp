@@ -29,11 +29,23 @@
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
 #include "hcodec_utils.h"
+#include <sys/ioctl.h>
+#include <linux/dma-buf.h>
+#define DMA_BUF_SET_TYPE	_IOW(DMA_BUF_BASE, 2, const char *)
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace CodecHDI;
 using namespace Media;
+
+void HCodec::SetCallerToBuffer(int fd)
+{
+    const char* type = isEncoder_ ? "hwEncoder" : "hwDecoder";
+    ioctl(fd, DMA_BUF_SET_TYPE, type);
+ 
+    string& appName = caller_.app.processName;
+    ioctl(fd, DMA_BUF_SET_NAME_A, appName.c_str());
+}
 
 std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
 {
@@ -747,6 +759,7 @@ int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
             HLOGE("Failed to UseBuffer on %s port", (portIndex == OMX_DirInput ? "input" : "output"));
             return AVCS_ERR_INVALID_VAL;
         }
+        SetCallerToBuffer(surfaceBuffer->GetFileDescriptor());
         BufferInfo bufInfo((portIndex == OMX_DirInput), BufferOwner::OWNED_BY_US, record_);
         bufInfo.surfaceBuffer  = surfaceBuffer;
         bufInfo.avBuffer       = avBuffer;
