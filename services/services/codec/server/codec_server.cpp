@@ -288,6 +288,12 @@ int32_t CodecServer::Configure(const Format &format)
         CodecScenarioInit(config);
     }
 
+    if (framerateCalculator_) {
+        auto framerate = 0.0;
+        format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, framerate);
+        framerateCalculator_->SetConfiguredFramerate(framerate);
+    }
+
     int32_t ret = codecBase_->Configure(config);
     if (ret != AVCS_ERR_OK) {
         StatusChanged(ERROR);
@@ -1832,6 +1838,9 @@ int32_t CodecServer::NotifyResume()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (framerateCalculator_) {
+        framerateCalculator_->SetFramerate2ConfiguredFramerate();
+    }
     return codecBase_->NotifyResume();
 }
 } // namespace MediaAVCodec

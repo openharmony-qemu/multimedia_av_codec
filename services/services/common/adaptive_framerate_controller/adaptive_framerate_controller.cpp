@@ -58,12 +58,15 @@ bool FramerateCalculator::CheckAndResetFramerate()
     auto actualFramerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
     auto fluctuationFramerate = std::abs(actualFramerate - lastFramerate_);
     if (!(fluctuationFramerate > 5 && (fluctuationFramerate / lastFramerate_ > 0.1))) { // 5/0.1: reset threshold
+        if (decreseCheckTimes_ != MAX_DECREASE_CHECK_TIMES) {
+            decreseCheckTimes_ = MAX_DECREASE_CHECK_TIMES;
+        }
         return false;
     }
     auto resetFramerate = actualFramerate;
     if (actualFramerate > lastFramerate_) {
         decreseCheckTimes_ = MAX_DECREASE_CHECK_TIMES;
-        resetFramerate *= 2.0; // 2.0: increase factor
+        resetFramerate *= 2.5; // 2.5: increase factor
     } else if (decreseCheckTimes_ > 0) {
         decreseCheckTimes_--;
         return false;
@@ -78,6 +81,19 @@ bool FramerateCalculator::CheckAndResetFramerate()
         lastFramerate_, resetFramerate, actualFramerate, direction);
 
     lastFramerate_ = resetFramerate;
+    return true;
+}
+
+void FramerateCalculator::SetConfiguredFramerate(double framerate)
+{
+    if (framerate >= 1.0) { // 1.0: minimum framerate
+        configuredFramerate_ = framerate;
+    }
+}
+
+bool FramerateCalculator::SetFramerate2ConfiguredFramerate()
+{
+    resetFramerateHandler_(configuredFramerate_);
     return true;
 }
 
@@ -119,11 +135,11 @@ void AdaptiveFramerateController::Remove(int32_t instanceId)
         if (!calculators_.empty() || !looper_) {
             return;
         }
+        isRunning_ = false;
+        condition_.notify_all();
     }
 
     std::lock_guard<std::mutex> looperReleaseLock(looperReleaseMutex_);
-    isRunning_ = false;
-    condition_.notify_all();
     if (looper_ && looper_->joinable()) {
         looper_->join();
         looper_.reset();
@@ -133,6 +149,7 @@ void AdaptiveFramerateController::Remove(int32_t instanceId)
 void AdaptiveFramerateController::Loop()
 {
     using namespace std::chrono_literals;
+    pthread_setname_np(pthread_self(), "OS_AFC_Loop");
     constexpr auto checkInterval = 1s;
     while (isRunning_) {
         std::unique_lock<std::mutex> lock(calculatorsMutex_);
