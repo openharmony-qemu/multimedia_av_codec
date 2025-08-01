@@ -28,14 +28,14 @@ bool HwvvcdecoderServerFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
-    FuzzedDataProvider fdp(data,size);
+    FuzzedDataProvider fdp(data, size);
     VDecServerSample *vDecSample = new VDecServerSample();
     vDecSample->fuzzData = data;
     vDecSample->fuzzSize = size;
-    int32_t  lengthMin =176;
+    int32_t  lengthMin = 176;
     int32_t  lengthMax = 4096;
     int32_t  frameRateMin = 1;
-    int32_t  frameRateMax =1000;
+    int32_t  frameRateMax = 1000;
     vDecSample->defaultWidth = std::clamp(fdp.ConsumeIntegral<int32_t>(), lengthMin, lengthMax);
     vDecSample->defaultHeight = std::clamp(fdp.ConsumeIntegral<int32_t>(), lengthMin, lengthMax);
     vDecSample->defaultFrameRate = std::clamp(fdp.ConsumeIntegral<int32_t>(), frameRateMin, frameRateMax);

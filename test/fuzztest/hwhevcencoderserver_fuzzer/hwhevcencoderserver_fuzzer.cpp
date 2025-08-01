@@ -28,7 +28,7 @@ bool HwhevcencoderServerFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
-    FuzzedDataProvider fdp(data,size);
+    FuzzedDataProvider fdp(data, size);
     VEncServerSample *vEncSample = new VEncServerSample();
     vEncSample->fuzzData = data;
     vEncSample->fuzzSize = size;

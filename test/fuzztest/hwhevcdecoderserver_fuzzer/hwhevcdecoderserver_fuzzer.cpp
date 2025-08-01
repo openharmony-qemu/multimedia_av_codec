@@ -28,7 +28,7 @@ bool HwhevcdecoderServerFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
-    FuzzedDataProvider fdp(data,size);
+    FuzzedDataProvider fdp(data, size);
     VDecServerSample *vDecSample = new VDecServerSample();
     vDecSample->fuzzData = data;
     vDecSample->fuzzSize = size;
