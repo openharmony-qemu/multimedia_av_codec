@@ -1845,11 +1845,12 @@ void HlsMediaDownloader::UpdateWaterLineAbove()
 
 void HlsMediaDownloader::HandleCachedDuration()
 {
-    if (currentBitRate_ <= 0 || callback_ == nullptr) {
+    auto tmpBitRate = currentBitRate_;
+    if (tmpBitRate <= 0 || callback_ == nullptr) {
         return;
     }
     cachedDuration_ = static_cast<uint64_t>((static_cast<int64_t>(GetTotalTsBuffersize()) *
-        BYTES_TO_BIT * SECOND_TO_MILLISECONDS) / static_cast<int64_t>(currentBitRate_));
+        BYTES_TO_BIT * SECOND_TO_MILLISECONDS) / static_cast<int64_t>(tmpBitRate));
     if ((cachedDuration_ > lastDurationReacord_ &&
         cachedDuration_ - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLISECONDS) ||
         (lastDurationReacord_ > cachedDuration_ &&
