@@ -805,13 +805,10 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         MEDIA_LOG_D("Reset info failed");
     }
     Status ret = ConvertPacketToAnnexb(sample, tempPkt, samplePacket);
-    if (ret != Status::OK) {
-        if (tempPkt->size != samplePacket->pkts[0]->size) {
-            FreeAVPacket(tempPkt);
-        }
-        MEDIA_LOG_E("Convert annexb failed");
-        return ret;
+    if (ret != Status::OK && tempPkt->size != samplePacket->pkts[0]->size) {
+        FreeAVPacket(tempPkt);
     }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert annexb failed");
     if (cacheQueue_.SetInfo(samplePacket) == false) {
         MEDIA_LOG_D("Set info failed");
     }
@@ -828,13 +825,10 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
 
     sample->flag_ = ConvertFlagsFromFFmpeg(*tempPkt, (copySize != static_cast<uint32_t>(tempPkt->size)));
     ret = WriteBuffer(sample, tempPkt->data + samplePacket->offset, copySize);
-    if (ret != Status::OK) {
-        if (tempPkt->size != samplePacket->pkts[0]->size) {
-            FreeAVPacket(tempPkt);
-        }
-        MEDIA_LOG_E("Write buffer failed");
-        return ret;
+    if (ret != Status::OK && tempPkt->size != samplePacket->pkts[0]->size) {
+        FreeAVPacket(tempPkt);
     }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Write buffer failed");
 
     if (!samplePacket->isEOS) {
         UpdateLastPacketInfo(tempPkt->stream_index, sample->pts_, tempPkt->pos, sample->duration_);
