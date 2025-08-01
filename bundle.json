@@ -89,8 +89,7 @@
           "bundle_framework",
           "openmax",
           "memory_utils",
-          "config_policy",
-          "ffrt"
+          "config_policy"
         ],
         "third_party": []
       },

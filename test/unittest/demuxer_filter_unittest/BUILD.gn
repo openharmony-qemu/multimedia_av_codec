@@ -127,7 +127,6 @@ ohos_unittest("demuxer_filter_unittest") {
     "media_foundation:native_media_core",
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
-    "ffrt:libffrt"
   ]
 
   if (av_codec_support_drm) {
