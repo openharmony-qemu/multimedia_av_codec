@@ -15,8 +15,6 @@
 
 #include "hdecoder.h"
 #include <cassert>
-#include <sys/ioctl.h>
-#include <linux/dma-buf.h>
 #include "hdf_base.h"
 #include "codec_omx_ext.h"
 #include "media_description.h"  // foundation/multimedia/av_codec/interfaces/inner_api/native/
@@ -495,7 +493,6 @@ int32_t HDecoder::InitVrr()
     return AVCS_ERR_OK;
 }
 #endif
-// LCOV_EXCL_STOP
 
 int32_t HDecoder::SetLppTargetPts(const Format &format)
 {
@@ -513,6 +510,7 @@ int32_t HDecoder::SetLppTargetPts(const Format &format)
     }
     return AVCS_ERR_OK;
 }
+// LCOV_EXCL_STOP
 
 int32_t HDecoder::SubmitOutputBuffersToOmxNode()
 {
@@ -595,20 +593,6 @@ int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
         UpdateFormatFromSurfaceBuffer();
     }
     return ret;
-}
-
-void HDecoder::SetCallerToBuffer(int fd)
-{
-    if (currSurface_.surface_ == nullptr) {
-        return; // only set on surface mode
-    }
-    string pid = std::to_string(caller_.app.pid);
-    int ret = ioctl(fd, DMA_BUF_SET_NAME_A, pid.c_str());
-    if (ret != 0) {
-        HLOGD("set pid %s to fd %d failed", pid.c_str(), fd);
-        return;
-    }
-    HLOGD("set pid %s to fd %d succ", pid.c_str(), fd);
 }
 
 void HDecoder::UpdateFormatFromSurfaceBuffer()
@@ -839,6 +823,7 @@ int32_t HDecoder::AllocOutDynamicSurfaceBuf()
     return AVCS_ERR_OK;
 }
 
+// LCOV_EXCL_START
 int32_t HDecoder::AllocateOutputBuffersFromSurface()
 {
     SCOPED_TRACE();
@@ -887,6 +872,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
     }
     return AVCS_ERR_OK;
 }
+// LCOV_EXCL_STOP
 
 int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
 {

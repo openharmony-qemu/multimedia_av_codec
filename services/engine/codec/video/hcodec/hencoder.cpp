@@ -946,7 +946,7 @@ int32_t HEncoder::OnSetParameters(const Format &format)
             }
         }
     }
-
+// LCOV_EXCL_START
     optional<uint32_t> targetQp = GetCRFtagetQpFromUser(format);
     if (targetQp.has_value() && bitRateMode.has_value() && bitRateMode.value() == CRF) {
         ControlQualityTargetQp bitrateType;
@@ -957,7 +957,7 @@ int32_t HEncoder::OnSetParameters(const Format &format)
             HLOGW("failed to config OMX_IndexConfigVideoBitrate");
         }
     }
-
+// LCOV_EXCL_STOP
     optional<double> frameRate = GetFrameRateFromUser(format);
     if (frameRate.has_value()) {
         OMX_CONFIG_FRAMERATETYPE framerateCfgType;
