@@ -66,6 +66,12 @@ const unsigned char MASK_C0 = 0xC0;
 const int32_t MIN_BYTES = 2;
 const int32_t MAX_BYTES = 6;
 
+const int32_t INVALID_VAL = -1;
+const int32_t POS_1 = 1;
+const int32_t VALUE_2 = 2;
+const int32_t VALUE_4 = 4;
+const int32_t VALUE_10 = 10;
+
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
     {AVMEDIA_TYPE_AUDIO, MediaType::AUDIO},
@@ -420,7 +426,8 @@ std::string ConvertArrayToString(const int* array, size_t size)
 
 enum ValueType {
     INT32 = 0,
-    FLOAT = 1
+    FLOAT = 1,
+    BUFFER = 2
 };
 
 template <typename T>
@@ -436,6 +443,35 @@ bool StringConverterFloat(const std::string &str, float &result)
     errno = 0;
     result = std::strtof(str.c_str(), &end);
     return end != str.c_str() && *end == '\0' && errno == 0;
+}
+
+static int8_t HexCharToValue(char c)
+{
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    } else if (c >= 'a' && c <= 'f') {
+        return c - 'a' + VALUE_10;
+    } else if (c >= 'A' && c <= 'F') {
+        return c - 'A' + VALUE_10;
+    }
+    return INVALID_VAL;
+}
+
+static bool ConvertHexStrToBuffer(const std::string hexStr, std::vector<uint8_t> &buffer)
+{
+    if (hexStr.empty() || hexStr.size() % VALUE_2 != 0) {
+        return false;
+    }
+    int len = hexStr.size() / VALUE_2;
+    buffer.resize(len);
+    for (int i = 0; i < len; i++) {
+        int8_t high = HexCharToValue(hexStr[i * VALUE_2]);
+        int8_t low = HexCharToValue(hexStr[i * VALUE_2 + POS_1]);
+        FALSE_RETURN_V_MSG_E(high >= 0 && low >= 0, false,
+            "invalid hexChar" PUBLIC_LOG_U8 " " PUBLIC_LOG_U8, hexStr[i * VALUE_2], hexStr[i * VALUE_2 + POS_1]);
+        buffer[i] = (static_cast<uint8_t>(high) << VALUE_4) | static_cast<uint8_t>(low);
+    }
+    return true;
 }
 
 static void SetToFormatIfConvertSuccess(Meta& format, const TagType& tag, std::string valueStr, ValueType valueType)
@@ -454,6 +490,14 @@ static void SetToFormatIfConvertSuccess(Meta& format, const TagType& tag, std::s
             float floatValue = -1;
             if (StringConverterFloat(valueStr, floatValue)) {
                 format.SetData<float>(tag, floatValue);
+                convertSuccess = true;
+            }
+            break;
+        }
+        case ValueType::BUFFER: {
+            std::vector<uint8_t> buffer;
+            if (ConvertHexStrToBuffer(valueStr, buffer)) {
+                format.SetData(tag, buffer);
                 convertSuccess = true;
             }
             break;
@@ -612,7 +656,11 @@ void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, s
                 MEDIA_LOG_D("Parse user data info " PUBLIC_LOG_S " failed, value too short", valPtr->key);
                 continue;
             }
-            if (StartWith(valPtr->value, "00000001")) { // string
+            if (StartWith(valPtr->value, "00000000")) { // reserved
+                MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: reserved", (valPtr->key + KEY_PREFIX_LEN));
+                SetToFormatIfConvertSuccess(
+                    *format, valPtr->key + KEY_PREFIX_LEN, valPtr->value + VALUE_PREFIX_LEN, ValueType::BUFFER);
+            } else if (StartWith(valPtr->value, "00000001")) { // string
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: string", (valPtr->key + KEY_PREFIX_LEN));
                 format->SetData(valPtr->key + KEY_PREFIX_LEN, std::string(valPtr->value + VALUE_PREFIX_LEN));
             } else if (StartWith(valPtr->value, "00000017")) { // float

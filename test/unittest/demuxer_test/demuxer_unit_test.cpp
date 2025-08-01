@@ -90,6 +90,7 @@ string g_commentTest1100Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Co
 string g_commentTest1200Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Comment_1200.mp4");
 string g_commentTest1300Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Comment_1300.mp4");
 string g_wavAlawPath = TEST_FILE_PATH + string("audio/wav_48000_1_pcm_alaw.wav");
+string g_reservedMp4Path = TEST_FILE_PATH + string("reserved_buffer_test.mp4");
 } // namespace
 
 void DemuxerUnitTest::SetUpTestCase(void)
@@ -3465,4 +3466,25 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1807, TestSize.Level1)
     SeekTest(toPtsList, seekModes, {videoVals, audioVals});
     ASSERT_TRUE(seekTestFlag_);
 }
+
+/**
+ * @tc.number    : Demuxer_GetReservedBuffer_1000
+ * @tc.name      : demux MP4 muxed by avmuxer,check user reserved buffer
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_GetReservedBuffer_1000, TestSize.Level0)
+{
+    InitResource(g_reservedMp4Path, LOCAL);
+    ASSERT_TRUE(initStatus_);
+    std::string stringVal = "";
+    uint8_t *metaBuffer = nullptr;
+    size_t bufferLen = 0;
+    auto userformat = source_->GetUserData();
+    ASSERT_TRUE(userformat->GetBuffer("com.openharmony.test", &metaBuffer, bufferLen));
+    std::vector<uint8_t> metaVec(metaBuffer, metaBuffer + bufferLen);
+    std::vector<uint8_t> expVec =
+        {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 16, 17, 18, 19, 20, 100, 200, 255};
+    ASSERT_TRUE(metaVec == expVec);
+}
+
 } // namespace
