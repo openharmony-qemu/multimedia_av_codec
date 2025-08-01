@@ -321,6 +321,11 @@ bool MediaSyncManager::CheckFirstMediaTimeAfterSeek(int64_t& mediaTime)
     return true;
 }
 
+void MediaSyncManager::UpdataPausedMediaTime(int32_t pausedMediaTime)
+{
+    pausedMediaTime_ = pausedMediaTime;
+}
+
 int64_t MediaSyncManager::GetMaxMediaProgress()
 {
     FALSE_RETURN_V_NOLOG(currentSyncerPriority_ != IMediaSynchronizer::AUDIO_SINK,
