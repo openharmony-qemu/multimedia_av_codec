@@ -680,7 +680,7 @@ AVPacket* FFmpegDemuxerPlugin::CombinePackets(std::shared_ptr<SamplePacket> samp
                     PUBLIC_LOG_D32, totalSize, offset, pkt->size);
                 break;
             }
-            ret = memcpy_s(tempPkt->data + offset, pkt->size, pkt->data, pkt->size);
+            ret = memcpy_s(tempPkt->data + offset, tempPkt->size - offset, pkt->data, pkt->size);
             if (ret != EOK) {
                 copySuccess = false;
                 MEDIA_LOG_E("Memcpy failed, ret:" PUBLIC_LOG_D32, ret);
@@ -779,6 +779,8 @@ Status FFmpegDemuxerPlugin::BufferIsValid(std::shared_ptr<AVBuffer> sample, std:
     MEDIA_LOG_D("Convert packet info for track " PUBLIC_LOG_D32, samplePacket->pkts[0]->stream_index);
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr && sample->meta_ != nullptr,
         Status::ERROR_INVALID_OPERATION, "Input sample is nullptr");
+    FALSE_RETURN_V_MSG_E(sample->memory_->GetCapacity() >= 0, Status::ERROR_INVALID_DATA,
+        "Invalid capability[%{public}d]", sample->memory_->GetCapacity());
     return Status::OK;
 }
 
@@ -803,7 +805,13 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         MEDIA_LOG_D("Reset info failed");
     }
     Status ret = ConvertPacketToAnnexb(sample, tempPkt, samplePacket);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert annexb failed");
+    if (ret != Status::OK) {
+        if (tempPkt->size != samplePacket->pkts[0]->size) {
+            FreeAVPacket(tempPkt);
+        }
+        MEDIA_LOG_E("Convert annexb failed");
+        return ret;
+    }
     if (cacheQueue_.SetInfo(samplePacket) == false) {
         MEDIA_LOG_D("Set info failed");
     }
@@ -812,8 +820,6 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     FALSE_RETURN_V_MSG_E(tempPkt->size >= 0 && static_cast<uint32_t>(tempPkt->size) >= samplePacket->offset,
         Status::ERROR_INVALID_DATA, "Invalid size[%{public}d] offset[%{public}u]", tempPkt->size, samplePacket->offset);
     uint32_t remainSize = static_cast<uint32_t>(tempPkt->size) - samplePacket->offset;
-    FALSE_RETURN_V_MSG_E(sample->memory_->GetCapacity() >= 0, Status::ERROR_INVALID_DATA,
-        "Invalid capability[%{public}d]", sample->memory_->GetCapacity());
     uint32_t capability = static_cast<uint32_t>(sample->memory_->GetCapacity());
     uint32_t copySize = remainSize < capability ? remainSize : capability;
     MEDIA_LOG_D("Convert size [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32 "]",
@@ -822,7 +828,13 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
 
     sample->flag_ = ConvertFlagsFromFFmpeg(*tempPkt, (copySize != static_cast<uint32_t>(tempPkt->size)));
     ret = WriteBuffer(sample, tempPkt->data + samplePacket->offset, copySize);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Write buffer failed");
+    if (ret != Status::OK) {
+        if (tempPkt->size != samplePacket->pkts[0]->size) {
+            FreeAVPacket(tempPkt);
+        }
+        MEDIA_LOG_E("Write buffer failed");
+        return ret;
+    }
 
     if (!samplePacket->isEOS) {
         UpdateLastPacketInfo(tempPkt->stream_index, sample->pts_, tempPkt->pos, sample->duration_);
@@ -1648,7 +1660,7 @@ Status FFmpegDemuxerPlugin::SetVideoFirstFrame(AVPacket* pkt, bool isConvert)
         FreeAVPacket(firstFrame);
         return Status::ERROR_INVALID_DATA;
     }
-    auto ret = memcpy_s(firstFrame->data, pkt->size, pkt->data, pkt->size);
+    auto ret = memcpy_s(firstFrame->data, firstFrame->size, pkt->data, pkt->size);
     if (ret != EOK) {
         MEDIA_LOG_E("Memcpy failed, ret:" PUBLIC_LOG_D32, ret);
         FreeAVPacket(firstFrame);
