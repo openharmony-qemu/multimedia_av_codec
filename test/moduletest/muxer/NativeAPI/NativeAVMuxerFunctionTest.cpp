@@ -206,7 +206,7 @@ void WriteTrackSample(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int audioTrack
             OH_AVMemory_Destroy(avMemBuffer);
             avMemBuffer = nullptr;
         }
-    } while (readRet)
+    } while (readRet);
 }
 
 void WriteTrackSampleShort(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int audioTrackIndex,
@@ -256,7 +256,7 @@ void WriteTrackSampleShort(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int audio
             OH_AVMemory_Destroy(avMemBuffer);
             avMemBuffer = nullptr;
         }
-    }while (readRet)
+    } while (readRet);
 }
 
 int32_t AddAudioTrackByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t inputFile)
@@ -408,7 +408,7 @@ void WriteTrackSampleByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int audioT
             OH_AVMemory_Destroy(avMemBuffer);
             avMemBuffer = nullptr;
         }
-    } while (readRet)
+    } while (readRet);
 }
 
 void RunMuxer(const string testcaseName, int threadId, OH_AVOutputFormat format)
@@ -514,7 +514,7 @@ void WriteSingleTrackSample(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int trac
             break;
         }
         FreeBuffer(avMemBuffer);
-    } while (ret > 0)
+    } while (ret > 0);
     FreeBuffer(avMemBuffer);
 }
 
@@ -523,13 +523,13 @@ void WriteTrackCover(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int coverTrackI
     printf("WriteTrackCover\n");
     OH_AVCodecBufferAttr info;
     memset_s(&info, sizeof(info), 0, sizeof(info));
-    stat fileStat;
+    struct stat fileStat;
     fstat(fdInput, &fileStat);
     info.size = fileStat.st_size;
     OH_AVMemory* avMemBuffer = OH_AVMemory_Create(info.size);
     uint8_t* data = OH_AVMemory_GetAddr(avMemBuffer);
 
-    int ret = read(fdInput, static_cast<void *>data, info.size);
+    int ret = read(fdInput, static_cast<void *>(data), info.size);
     if (ret <= 0) {
         OH_AVMemory_Destroy(avMemBuffer);
         return;
@@ -1051,4 +1051,41 @@ HWTEST_F(NativeAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_011, Tes
         close(fd);
         delete muxerDemo;
     }
+}
+
+HWTEST_F(NativeAVMuxerFunctionTest, UserMetaData_001, TestSize.Level1)
+{
+    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    string fileName = "muxer_output";
+    int32_t fd = muxerDemo->GetFdByName(AV_OUTPUT_FORMAT_MPEG_4, fileName);
+    int32_t inputFile;
+    int32_t audioTrackId;
+    int32_t videoTrackId;
+    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, AV_OUTPUT_FORMAT_MPEG_4);
+
+    inputFile = open("avDataMpegMpeg4.bin", O_RDONLY);
+    audioTrackId = AddAudioTrackByFd(muxerDemo, handle, inputFile);
+    videoTrackId = AddVideoTrackByFd(muxerDemo, handle, inputFile);
+
+    OH_AVFormat *format1 = OH_AVFormat_Create();
+    OH_AVFormat_SetStringValue(format1, OH_MD_KEY_CREATION_TIME, "2025-7-19T14:58:33:000000Z");
+    OH_AVMuxer_SetFormat(handle, format1);
+
+    EXPECT_EQ(muxerDemo->NativeStart(handle), 0);
+
+    WriteTrackSampleByFd(muxerDemo, handle, audioTrackId, videoTrackId, inputFile);
+
+    OH_AVFormat *format2 = OH_AVFormat_Create();
+    char testKey[] = "com.openharmony.test";
+    uint8_t testData[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+        0, 16, 17, 18, 19, 20, 100, 200, 255};
+    OH_AVFormat_SetBuffer(format2, testKey, testData, sizeof(testData));
+    OH_AVMuxer_SetFormat(handle, format2);
+
+    EXPECT_EQ(muxerDemo->NativeStop(handle), 0);
+    EXPECT_EQ(muxerDemo->NativeDestroy(handle), 0);
+
+    close(inputFile);
+    close(fd);
+    delete muxerDemo;
 }

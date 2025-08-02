@@ -409,6 +409,7 @@ Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
         int32_t dataInt = 0;
         float dataFloat = 0.0f;
         std::string dataStr = "";
+        std::vector<uint8_t> dataBinary;
         if (userMeta->GetData(k, dataInt)) {
             value = "00000043";
             value += std::to_string(dataInt);
@@ -423,6 +424,11 @@ Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
                 return Status::ERROR_INVALID_DATA;
             }
             value += dataStr;
+        } else if (userMeta->GetData(k, dataBinary)) {
+            value = "00000000";
+            std::string converted = hex_encode(dataBinary);
+            value += converted;
+            MEDIA_LOG_D("data binary key:%{public}s, encoded len:%{public}ld", k.c_str(), converted.size());
         } else {
             MEDIA_LOG_E("the value type of meta key %{public}s is not supported!", k.c_str());
             continue;

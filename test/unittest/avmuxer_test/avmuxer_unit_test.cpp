@@ -2680,6 +2680,63 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_005, TestSize.Level0)
 }
 
 /**
+ * @tc.name: Muxer_SetFormat_UserKey_006
+ * @tc.desc: Muxer set format with user key(include buffer)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_006, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    uint8_t testData[] = {1,2,3,4,5,6,7,8,9,10};
+    ASSERT_EQ(sizeof(testData), 10);
+    audioParams->PutBuffer("com.openharmony.test", testData, sizeof(testData));
+
+    int32_t ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_UserKey_007
+ * @tc.desc: Muxer set format with user key(more than max size)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_007, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+
+    // more than max size
+    const size_t maxSize = 1024 * 1024;
+    uint8_t* testData = new uint8_t[maxSize + 10];
+    bool retBool = audioParams->PutBuffer("com.openharmony.test", testData, maxSize + 10);
+    ASSERT_EQ(retBool, false);
+    delete[] testData;
+
+    // max size
+    const size_t maxSize2 = 1024 * 1024;
+    uint8_t* testData2 = new uint8_t[maxSize2];
+    bool retBool2 = audioParams->PutBuffer("com.openharmony.test", testData2, maxSize2);
+    ASSERT_EQ(retBool2, true);
+    delete[] testData2;
+
+    int32_t ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 0);
+}
+
+/**
  * @tc.name: Muxer_SetFormat_DefinedKey_And_UserKey_001
  * @tc.desc: Muxer set format with user key(true keys)
  * @tc.type: FUNC
