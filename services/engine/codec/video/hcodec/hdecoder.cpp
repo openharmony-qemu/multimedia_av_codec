@@ -180,14 +180,15 @@ int32_t HDecoder::UpdateOutPortFormat()
 
     uint32_t w = def.format.video.nFrameWidth;
     uint32_t h = def.format.video.nFrameHeight;
+    bool isNeedUseDecResolution = static_cast<bool>(reinterpret_cast<uintptr_t>(def.format.video.pNativeRender));
 
     // save into member variable
     OHOS::Rect damage{};
     GetCropFromOmx(w, h, damage);
     outBufferCnt_ = def.nBufferCountActual;
     requestCfg_.timeout = 0; // never wait when request
-    requestCfg_.width = damage.w;
-    requestCfg_.height = damage.h;
+    requestCfg_.width = isNeedUseDecResolution ? def.format.video.nFrameWidth : damage.w;
+    requestCfg_.height = isNeedUseDecResolution ? def.format.video.nFrameHeight : damage.h;
     requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
     requestCfg_.format = configuredFmt_.graphicFmt;
     requestCfg_.usage = GetProducerUsage();
@@ -209,7 +210,8 @@ int32_t HDecoder::UpdateOutPortFormat()
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(configuredFmt_.innerFmt));
     outputFormat_->PutIntValue("IS_VENDOR", 1);
-    HLOGI("output format: %s", outputFormat_->Stringify().c_str());
+    HLOGI("needUseDecReso %d, Request Reso %dx%d, output format: %s",
+          isNeedUseDecResolution, requestCfg_.width, requestCfg_.height, outputFormat_->Stringify().c_str());
     return AVCS_ERR_OK;
 }
 
@@ -569,6 +571,7 @@ bool HDecoder::ReadyToStart()
     }
     if (currSurface_.surface_) {
         HLOGI("surface mode");
+        requestCfg_.usage = GetProducerUsage();
         cfgedConsumerUsage = currSurface_.surface_->GetDefaultUsage();
         SetTransform();
         SetScaleMode();
@@ -604,10 +607,6 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
     if (surfaceBuffer == nullptr) {
         return;
     }
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, surfaceBuffer->GetWidth());
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, surfaceBuffer->GetHeight());
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, surfaceBuffer->GetWidth());
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, surfaceBuffer->GetHeight());
     int32_t stride = surfaceBuffer->GetStride();
     if (stride <= 0) {
         HLOGW("invalid stride %d", stride);
