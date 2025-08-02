@@ -2694,7 +2694,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_006, TestSize.Level0)
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
-    uint8_t testData[] = {1,2,3,4,5,6,7,8,9,10};
+    uint8_t testData[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     ASSERT_EQ(sizeof(testData), 10);
     audioParams->PutBuffer("com.openharmony.test", testData, sizeof(testData));
 

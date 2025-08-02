@@ -426,9 +426,8 @@ Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
             value += dataStr;
         } else if (userMeta->GetData(k, dataBinary)) {
             value = "00000000";
-            std::string converted = hex_encode(dataBinary);
+            std::string converted = hexEncode(dataBinary);
             value += converted;
-            MEDIA_LOG_D("data binary key:%{public}s, encoded len:%{public}ld", k.c_str(), converted.size());
         } else {
             MEDIA_LOG_E("the value type of meta key %{public}s is not supported!", k.c_str());
             continue;
