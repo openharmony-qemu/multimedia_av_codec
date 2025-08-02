@@ -51,11 +51,13 @@ std::string UriJoin(std::string& baseUrl, const std::string& uri)
         auto pos = baseUrl.find('/', strlen("https://"));
         return baseUrl.substr(0, pos) + uri;
     } else {
-        std::string::size_type pos = baseUrl.rfind('/');
+        std::string::size_type pos = baseUrl.find('?');
+        std::string uriMain = (pos != std::string::npos) ? baseUrl.substr(0, pos) : baseUrl;
+        pos = uriMain.rfind('/');
         if (pos == std::string::npos) {
             return uri;
         }
-        return baseUrl.substr(0, pos + 1) + uri;
+        return uriMain.substr(0, pos + 1) + uri;
     }
 }
 }
@@ -368,6 +370,7 @@ double M3U8::GetDuration() const
         duration += file->duration_;
     }
 
+    MEDIA_LOG_I("duration = " PUBLIC_LOG_F ", files num " PUBLIC_LOG_ZU, duration, files_.size());
     return duration;
 }
 
