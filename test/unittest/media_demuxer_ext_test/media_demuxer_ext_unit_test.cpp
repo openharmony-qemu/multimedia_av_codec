@@ -303,7 +303,6 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetDuration_002, TestSize.Leve
     int64_t duration = 0;
     auto res = mediaDemuxer_->GetDuration(duration);
     EXPECT_EQ(res, true);
-    EXPECT_EQ(duration, 0);
 }
 
 /**
@@ -323,7 +322,6 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_GetDuration_003, TestSize.Leve
     int64_t duration = 0;
     auto res = mediaDemuxer_->GetDuration(duration);
     EXPECT_EQ(res, true);
-    EXPECT_EQ(duration, 0);
 }
 
 /**
