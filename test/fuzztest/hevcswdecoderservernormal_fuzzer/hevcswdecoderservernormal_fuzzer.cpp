@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,17 +15,13 @@
 #include <cstddef>
 #include <cstdint>
 #include "hevcserverdec_sample.h"
+#include <fuzzer/FuzzedDataProvider.h>
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "swdecoderservernormal_fuzzer"
 const size_t EXPECT_SIZE = 6;
-const size_t WIDTH_SIZE = 1;
-const size_t HEIGHT_SIZE = 2;
-const size_t FRAME_RATE_SIZE = 3;
-const size_t ROTATION_SIZE = 4;
-const size_t PIXELFORMAT_SIZE = 5;
 
 namespace OHOS {
 bool SwdecoderServerNormalFuzzTest(const uint8_t *data, size_t size)
@@ -33,12 +29,17 @@ bool SwdecoderServerNormalFuzzTest(const uint8_t *data, size_t size)
     if (size < EXPECT_SIZE) {
         return false;
     }
+    FuzzedDataProvider fdp(data, size);
     VDecServerSample *vDecSample = new VDecServerSample();
-    vDecSample->defaultWidth = data[size - WIDTH_SIZE];
-    vDecSample->defaultHeight = data[size - HEIGHT_SIZE];
-    vDecSample->defaultFrameRate = data[size - FRAME_RATE_SIZE];
-    vDecSample->defaultRotation = data[size - ROTATION_SIZE];
-    vDecSample->defaultPixelFormat = data[size - PIXELFORMAT_SIZE];
+    vDecSample->defaultWidth = std::clamp(fdp.ConsumeIntegral<uint32_t>(), 176u, 4096u);
+    vDecSample->defaultHeight = std::clamp(fdp.ConsumeIntegral<uint32_t>(), 176u, 4096u);
+    vDecSample->defaultFrameRate = std::clamp(fdp.ConsumeIntegral<uint32_t>(), 1u, 1000u);
+    std::vector<uint32_t> rotations = {0, 90, 180, 270};
+    size_t index = fdp.ConsumeIntegralInRange<uint32_t>(0, rotations.size() - 1);
+    vDecSample->defaultRotation = rotations[index];
+    std::vector<uint32_t> pixelFormats = {1, 2, 3, 4, 5};
+    size_t pfIndex = fdp.ConsumeIntegralInRange<uint32_t>(0, pixelFormats.size() - 1);
+    vDecSample->defaultPixelFormat = pixelFormats[pfIndex];
     if (vDecSample->defaultRotation % 2 == 0) { // 2
         vDecSample->inpDir = "/data/test/media/720_1280_25_avcc.h265";
     } else {

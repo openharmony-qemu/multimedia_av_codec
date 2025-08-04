@@ -67,12 +67,14 @@ bool EncoderInnerFuzzTest(const uint8_t *data, size_t size)
     vEncSample->videoCoordinateWidth = bufferConfig.width;
     vEncSample->videoCoordinateHeight = bufferConfig.height;
 
-    vEncSample->CreateByName(gCodecName);
-    vEncSample->SetCallback();
-    vEncSample->Configure();
-    vEncSample->SetCustomBuffer(bufferConfig, const_cast<uint8_t*>(data), size);
-    vEncSample->StartVideoEncoder();
-    vEncSample->WaitForEOS();
+    int32_t err = vEncSample->CreateByName(gCodecName);
+    if (err == AVCS_ERR_OK) {
+        vEncSample->SetCallback();
+        vEncSample->Configure();
+        vEncSample->SetCustomBuffer(bufferConfig, const_cast<uint8_t*>(data), size);
+        vEncSample->StartVideoEncoder();
+        vEncSample->WaitForEOS();
+    }
     delete vEncSample;
     return true;
 }

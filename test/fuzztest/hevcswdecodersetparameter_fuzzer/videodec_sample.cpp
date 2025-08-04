@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,31 +23,8 @@ namespace {
 const string MIME_TYPE = "video/hevc";
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
-
-constexpr int32_t EIGHT = 8;
-constexpr int32_t SIXTEEN = 16;
-constexpr int32_t TWENTY_FOUR = 24;
-constexpr uint8_t SEI = 6;
-constexpr uint8_t SPS = 7;
-constexpr uint8_t PPS = 8;
-constexpr uint32_t START_CODE_SIZE = 4;
-constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
 VDecFuzzSample *g_decSample = nullptr;
-constexpr uint8_t H264_NALU_TYPE = 0x1f;
-
 bool g_fuzzError = false;
-
-void clearIntqueue(std::queue<uint32_t> &q)
-{
-    std::queue<uint32_t> empty;
-    swap(empty, q);
-}
-
-void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
-{
-    std::queue<OH_AVCodecBufferAttr> empty;
-    swap(empty, q);
-}
 
 void clearAvBufferQueue(std::queue<OH_AVMemory *> &q)
 {
@@ -160,39 +137,10 @@ int32_t VDecFuzzSample::ConfigureVideoDecoder()
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, defaultWidth);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, defaultHeight);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, defaultFrameRate);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, defaultRotation);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, defaultPixelFormat);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
     int ret = OH_VideoDecoder_Configure(vdec_, format);
     OH_AVFormat_Destroy(format);
     return ret;
-}
-
-int32_t VDecFuzzSample::RunVideoDec(string codeName)
-{
-    int err = CreateVideoDecoder(codeName);
-    if (err != AV_ERR_OK) {
-        cout << "Failed to create video decoder" << endl;
-        return err;
-    }
-    err = ConfigureVideoDecoder();
-    if (err != AV_ERR_OK) {
-        cout << "Failed to configure video decoder" << endl;
-        Release();
-        return err;
-    }
-    err = SetVideoDecoderCallback();
-    if (err != AV_ERR_OK) {
-        cout << "Failed to setCallback" << endl;
-        Release();
-        return err;
-    }
-    err = StartVideoDecoder();
-    if (err != AV_ERR_OK) {
-        cout << "Failed to start video decoder" << endl;
-        Release();
-        return err;
-    }
-    return err;
 }
 
 int32_t VDecFuzzSample::SetVideoDecoderCallback()
@@ -218,19 +166,6 @@ void VDecFuzzSample::ReleaseInFile()
         }
         inFile_.reset();
         inFile_ = nullptr;
-    }
-}
-
-void VDecFuzzSample::StopInloop()
-{
-    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
-        unique_lock<mutex> lock(signal_->inMutex_);
-        clearIntqueue(signal_->inIdxQueue_);
-        signal_->inCond_.notify_all();
-        lock.unlock();
-
-        inputLoop_->join();
-        inputLoop_.reset();
     }
 }
 
@@ -261,7 +196,9 @@ int32_t VDecFuzzSample::StartVideoDecoder()
         return AV_ERR_UNKNOWN;
     }
 
-    inputLoop_ = make_unique<thread>(&VDecFuzzSample::InputFuncAVCC, this);
+    inputLoop_ = make_unique<std::thread>([this]() {
+        this->InputFuncFUZZ(fuzzData, fuzzSize);
+    });
     if (inputLoop_ == nullptr) {
         cout << "Failed to create input loop" << endl;
         isRunning_.store(false);
@@ -286,116 +223,6 @@ void VDecFuzzSample::WaitForEOS()
     }
 }
 
-void VDecFuzzSample::CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, OH_AVCodecBufferAttr &attr)
-{
-    switch (frameBuffer[START_CODE_SIZE] & H264_NALU_TYPE) {
-        case SPS:
-        case PPS:
-        case SEI:
-            if (memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE) != EOK) {
-                cout << "Fatal: memory copy failed" << endl;
-            }
-            attr.pts = GetSystemTimeUs();
-            attr.size = bufferSize + START_CODE_SIZE;
-            attr.offset = 0;
-            attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
-            break;
-        default: {
-            if (memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE) != EOK) {
-                cout << "Fatal: memory copy failed" << endl;
-            }
-            attr.pts = GetSystemTimeUs();
-            attr.size = bufferSize + START_CODE_SIZE;
-            attr.offset = 0;
-            attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
-        }
-    }
-}
-
-int32_t VDecFuzzSample::ReadData(uint32_t index, OH_AVMemory *buffer)
-{
-    uint8_t ch[4] = {};
-    (void)inFile_->read(reinterpret_cast<char *>(ch), START_CODE_SIZE);
-    if (repeatRun && inFile_->eof()) {
-        inFile_->clear();
-        inFile_->seekg(0, ios::beg);
-        cout << "repeat" << endl;
-        return 0;
-    } else if (inFile_->eof()) {
-        SetEOS(index);
-        return 1;
-    }
-    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) |
-    ((ch[1] & 0xFF) << SIXTEEN) | ((ch[0] & 0xFF) << TWENTY_FOUR));
-    return SendData(bufferSize, index, buffer);
-}
-
-uint32_t VDecFuzzSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVMemory *buffer)
-{
-    OH_AVCodecBufferAttr attr;
-    uint8_t *frameBuffer = new uint8_t[bufferSize + START_CODE_SIZE];
-    (void)inFile_->read(reinterpret_cast<char *>(frameBuffer + START_CODE_SIZE), bufferSize);
-    CopyStartCode(frameBuffer, bufferSize, attr);
-    int32_t size = OH_AVMemory_GetSize(buffer);
-    if (size < attr.size) {
-        delete[] frameBuffer;
-        cout << "ERROR:AVMemory not enough, buffer size" << attr.size << "   AVMemory Size " << size << endl;
-        isRunning_.store(false);
-        return 1;
-    }
-    uint8_t *bufferAddr = OH_AVMemory_GetAddr(buffer);
-    if (memcpy_s(bufferAddr, size, frameBuffer, attr.size) != EOK) {
-        delete[] frameBuffer;
-        cout << "Fatal: memcpy fail" << endl;
-        isRunning_.store(false);
-        return 1;
-    }
-    delete[] frameBuffer;
-    int32_t ret = OH_VideoDecoder_PushInputData(vdec_, index, attr);
-    if (ret != AV_ERR_OK) {
-        errCount++;
-        cout << "push input data failed, error:" << ret << endl;
-    }
-    frameCount_ = frameCount_ + 1;
-    if (inFile_->eof()) {
-        isRunning_.store(false);
-    }
-    return 0;
-}
-
-void VDecFuzzSample::InputFuncAVCC()
-{
-    frameCount_ = 1;
-    errCount = 0;
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
-        unique_lock<mutex> lock(signal_->inMutex_);
-        signal_->inCond_.wait(lock, [this]() {
-            if (!isRunning_.load()) {
-                cout << "quit signal" << endl;
-                return true;
-            }
-            return signal_->inIdxQueue_.size() > 0;
-        });
-        if (!isRunning_.load()) {
-            break;
-        }
-        uint32_t index = signal_->inIdxQueue_.front();
-        auto buffer = signal_->inBufferQueue_.front();
-        signal_->inIdxQueue_.pop();
-        signal_->inBufferQueue_.pop();
-        lock.unlock();
-        if (!inFile_->eof()) {
-            int ret = ReadData(index, buffer);
-            if (ret == 1) {
-                break;
-            }
-        }
-    }
-}
-
 OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
 {
     uint32_t index;
@@ -411,57 +238,21 @@ OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
     index = signal_->inIdxQueue_.front();
     auto buffer = signal_->inBufferQueue_.front();
     lock.unlock();
-    int32_t bufferSize = OH_AVMemory_GetSize(buffer);
     uint8_t *bufferAddr = OH_AVMemory_GetAddr(buffer);
 
-    if (memcpy_s(bufferAddr, bufferSize, data, size) != EOK) {
+    if (memcpy_s(bufferAddr, fuzzSize, fuzzData, fuzzSize) != EOK) {
         cout << "Fatal: memcpy fail" << endl;
         return AV_ERR_NO_MEMORY;
     }
     OH_AVCodecBufferAttr attr;
     attr.pts = GetSystemTimeUs();
-    attr.size = bufferSize;
+    attr.size = fuzzSize;
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
     OH_AVErrCode ret = OH_VideoDecoder_PushInputData(vdec_, index, attr);
     signal_->inIdxQueue_.pop();
     signal_->inBufferQueue_.pop();
     return ret;
-}
-
-void VDecFuzzSample::SetEOS(uint32_t index)
-{
-    OH_AVCodecBufferAttr attr;
-    attr.pts = 0;
-    attr.size = 0;
-    attr.offset = 0;
-    attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-    int32_t res = OH_VideoDecoder_PushInputData(vdec_, index, attr);
-    cout << "OH_VideoDecoder_PushInputData    EOS   res: " << res << endl;
-}
-
-int32_t VDecFuzzSample::Flush()
-{
-    unique_lock<mutex> inLock(signal_->inMutex_);
-    clearIntqueue(signal_->inIdxQueue_);
-    signal_->inCond_.notify_all();
-    inLock.unlock();
-    unique_lock<mutex> outLock(signal_->outMutex_);
-    clearIntqueue(signal_->outIdxQueue_);
-    clearBufferqueue(signal_->attrQueue_);
-    signal_->outCond_.notify_all();
-    isRunning_.store(false);
-    outLock.unlock();
-
-    return OH_VideoDecoder_Flush(vdec_);
-}
-
-int32_t VDecFuzzSample::Reset()
-{
-    isRunning_.store(false);
-    StopInloop();
-    ReleaseInFile();
-    return OH_VideoDecoder_Reset(vdec_);
 }
 
 int32_t VDecFuzzSample::Release()
@@ -476,25 +267,6 @@ int32_t VDecFuzzSample::Release()
         clearAvBufferQueue(signal_->outBufferQueue_);
         delete signal_;
         signal_ = nullptr;
-    }
-    return ret;
-}
-
-int32_t VDecFuzzSample::Stop()
-{
-    StopInloop();
-    clearIntqueue(signal_->outIdxQueue_);
-    clearBufferqueue(signal_->attrQueue_);
-    ReleaseInFile();
-    return OH_VideoDecoder_Stop(vdec_);
-}
-
-int32_t VDecFuzzSample::Start()
-{
-    int32_t ret = 0;
-    ret = OH_VideoDecoder_Start(vdec_);
-    if (ret == AV_ERR_OK) {
-        isRunning_.store(true);
     }
     return ret;
 }
