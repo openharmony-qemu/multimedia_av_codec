@@ -458,12 +458,13 @@ bool HlsPlayListDownloader::ReadFmp4Header(uint8_t* buffer, uint32_t& readLen, u
 
 void HlsPlayListDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
 {
-    if (master_ && !master_->isFmp4_) {
+    if (currentVariant_ == nullptr || master_ == nullptr) {
         return;
     }
-    if (currentVariant_ == nullptr) {
+    if (!master_->isFmp4_) {
         return;
     }
+
     for (const auto &stream : master_->variants_) {
         StreamInfo streamInfo;
         streamInfo.streamId = static_cast<int32_t>(stream->streamId_);
