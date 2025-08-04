@@ -1079,4 +1079,54 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW263_FUNC_0040, TestSize.Level
         ASSERT_EQ(FRAMESIZE90, vDecSample->outFrameCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_DECODE_SW263_BLANK_FRAME_0010
+ * @tc.name      : config OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, decoder h263
+ * @tc.desc      : function test
+ */
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_SW263_BLANK_FRAME_0010, TestSize.Level2)
+{
+    if (cap_263 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/20x20.h263";
+        vDecSample->DEFAULT_WIDTH = 20;
+        vDecSample->DEFAULT_HEIGHT = 20;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleBlankFrame = 1;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.H263"));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+        ASSERT_EQ(FRAMESIZE75, vDecSample->outFrameCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SW263_BLANK_FRAME_0020
+ * @tc.name      : config OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, decoder h263, surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_SW263_BLANK_FRAME_0020, TestSize.Level2)
+{
+    if (cap_263 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/20x20.h263";
+        vDecSample->DEFAULT_WIDTH = 20;
+        vDecSample->DEFAULT_HEIGHT = 20;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->enbleBlankFrame = 1;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.H263"));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+        ASSERT_EQ(FRAMESIZE75, vDecSample->outFrameCount);
+    }
+}
 } // namespace

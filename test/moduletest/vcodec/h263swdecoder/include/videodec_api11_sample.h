@@ -85,6 +85,7 @@ public:
     uint32_t expectCropRight = 0;
     bool outputYuvSurface = false;
     int32_t enbleSyncMode = 0;
+    int enbleBlankFrame = 0;
     int64_t syncInputWaitTime = -1;
     int64_t syncOutputWaitTime = -1;
     bool queryOutputBufferEOS = false;

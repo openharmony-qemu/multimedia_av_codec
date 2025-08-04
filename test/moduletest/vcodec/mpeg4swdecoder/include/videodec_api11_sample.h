@@ -164,6 +164,7 @@ int32_t SyncOutputFuncEos(OH_AVCodecBufferAttr attr, uint32_t index);
     bool outputCallbackStop = false;
     bool useHDRSource = false;
     int32_t DEFAULT_PROFILE = MPEG4_PROFILE_SIMPLE;
+    int enbleBlankFrame = 0;
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;

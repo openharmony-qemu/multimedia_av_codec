@@ -1268,4 +1268,50 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWMPEG4_FUNC_0040, TestSize.Le
         ASSERT_EQ(0, vDecSample->errCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_MPEG4SWDEC_BLANK_FRAME_0010
+ * @tc.name      : config OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, decoder mpeg4
+ * @tc.desc      : function test
+ */
+HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_BLANK_FRAME_0010, TestSize.Level2)
+{
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleBlankFrame = 1;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_MPEG4SWDEC_BLANK_FRAME_0020
+ * @tc.name      :  config OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, decoder mpeg4, surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_BLANK_FRAME_0020, TestSize.Level2)
+{
+    if (cap_mpeg4 != nullptr) {
+            auto vDecSample = make_shared<VDecAPI11Sample>();
+            vDecSample->INP_DIR = INP_DIR_1080_30;
+            vDecSample->DEFAULT_WIDTH = 1920;
+            vDecSample->DEFAULT_HEIGHT = 1080;
+            vDecSample->DEFAULT_FRAME_RATE = 30;
+            vDecSample->enbleBlankFrame = 1;
+            vDecSample->SF_OUTPUT = true;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+            ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());
+            ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+            vDecSample->WaitForEOS();
+            ASSERT_EQ(0, vDecSample->errCount);
+    }
+}
 } // namespace

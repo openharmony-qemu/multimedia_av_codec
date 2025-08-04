@@ -164,6 +164,7 @@ public:
     bool outputCallbackStop = false;
     bool useHDRSource = false;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
+    int enbleBlankFrame = 0;
 private:
     std::unique_ptr<uint8_t[]> prereadBuffer_;
     std::unique_ptr<std::vector<uint8_t>> mpegUnit_;
