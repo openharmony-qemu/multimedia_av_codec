@@ -2305,9 +2305,15 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
 
     if (GetEnableSampleQueueFlag()) {
         AutoLock lock(mapMutex_);
+        MEDIA_LOG_I("change TrackType: " PUBLIC_LOG_D32 ", TrackId " PUBLIC_LOG_D32 " >> " PUBLIC_LOG_D32,
+            static_cast<int32_t>(type), currentTrackId, newTrackId);
+        FALSE_RETURN_V_MSG_E(newTrackId != currentTrackId, true, "newTrackId equals currentTrackId");
         sampleQueueMap_.insert(
             std::pair<int32_t, std::shared_ptr<SampleQueue>>(newTrackId, sampleQueueMap_[currentTrackId]));
         sampleQueueMap_.erase(currentTrackId);
+        bool hasSampleQueue = sampleQueueMap_.find(newTrackId) != sampleQueueMap_.end()
+            && sampleQueueMap_[newTrackId] != nullptr;
+        FALSE_RETURN_V_MSG_E(hasSampleQueue == true, false, "sampleQueueMap_ in newTrackId is null");
         sampleQueueMap_[newTrackId]->UpdateQueueId(newTrackId);
     }
     MEDIA_LOG_I("Out");
