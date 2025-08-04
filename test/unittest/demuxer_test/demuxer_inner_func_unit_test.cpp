@@ -140,6 +140,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_0001, TestSize.Level1)
     ret = demuxer_->GetCurrentCacheSize(0, cacheSize);
     ASSERT_EQ(ret, AV_ERR_OK);
     ASSERT_EQ(cacheSize, 448);
+    cacheSize = 5000;
     ret = demuxer_->GetCurrentCacheSize(1, cacheSize);
     ASSERT_EQ(ret, AV_ERR_OK);
     ASSERT_EQ(cacheSize, 0);
