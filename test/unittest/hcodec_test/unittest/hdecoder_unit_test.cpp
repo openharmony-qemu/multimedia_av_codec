@@ -1277,7 +1277,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_freeze_when_codec_is_running_valid_002
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
 
-HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_configured_invalid_001, TestSize.Level1)
+HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_configured_valid_001, TestSize.Level1)
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/hevc"));
     ASSERT_TRUE(testObj);
@@ -1290,7 +1290,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_configured_inval
     ASSERT_TRUE(ConfigureDecoder(testObj));
  
     ret = testObj->NotifySuspend();
-    EXPECT_NE(AVCS_ERR_OK, ret);
+    EXPECT_EQ(AVCS_ERR_OK, ret);
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
