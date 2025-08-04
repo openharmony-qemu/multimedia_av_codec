@@ -1276,19 +1276,17 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWMPEG4_FUNC_0040, TestSize.Le
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_BLANK_FRAME_0010, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr) {
-        if (!access("/system/lib64/media/", 0)) {
-            auto vDecSample = make_shared<VDecAPI11Sample>();
-            vDecSample->INP_DIR = INP_DIR_1080_30;
-            vDecSample->DEFAULT_WIDTH = 1920;
-            vDecSample->DEFAULT_HEIGHT = 1080;
-            vDecSample->DEFAULT_FRAME_RATE = 30;
-            vDecSample->enbleBlankFrame = 1;
-            vDecSample->SF_OUTPUT = false;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
-            vDecSample->WaitForEOS();
-            ASSERT_EQ(0, vDecSample->errCount);
-        }
+    if (cap_mpeg4 != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleBlankFrame = 1;
+        vDecSample->SF_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg4));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
     }
 }
 
@@ -1299,8 +1297,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_BLANK_FRAME_0010, TestSize.Leve
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_BLANK_FRAME_0020, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr) {
-        if (!access("/system/lib64/media/", 0)) {
+    if (cap_mpeg4 != nullptr && !access("/system/lib64/media/", 0)) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
             vDecSample->DEFAULT_WIDTH = 1920;
@@ -1315,7 +1312,6 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_BLANK_FRAME_0020, TestSize.Leve
             ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
             vDecSample->WaitForEOS();
             ASSERT_EQ(0, vDecSample->errCount);
-        }
     }
 }
 } // namespace
