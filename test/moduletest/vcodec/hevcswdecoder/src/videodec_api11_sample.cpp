@@ -342,6 +342,7 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV21);
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, enbleSyncMode);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, enbleBlankFrame);
     int ret = OH_VideoDecoder_Configure(vdec_, format);
     OH_AVFormat_Destroy(format);
     return ret;
@@ -587,11 +588,11 @@ int32_t VDecAPI11Sample::StartVideoDecoder()
         return ret;
     }
     if (enbleSyncMode == 0) {
-        StartDecoder();
+        ret = StartDecoder();
     } else {
-        StartSyncDecoder();
+        ret = StartSyncDecoder();
     }
-    return AV_ERR_OK;
+    return ret;
 }
 
 void VDecAPI11Sample::testAPI()

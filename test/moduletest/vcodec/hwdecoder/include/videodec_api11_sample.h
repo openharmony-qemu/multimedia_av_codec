@@ -171,6 +171,7 @@ public:
     int32_t maxInputSize = 0;
     int64_t end_time = 0;
     int32_t FLUSH_COUNTS = 0;
+    int enbleBlankFrame = 0;
     bool autoSwitchSurface = false;
     std::atomic<bool> isFlushing_ { false };
     int32_t switchSurfaceFlag = 0;
