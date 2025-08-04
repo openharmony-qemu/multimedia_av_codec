@@ -1276,7 +1276,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWMPEG4_FUNC_0040, TestSize.Le
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_BLANK_FRAME_0010, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_mpeg4 != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1297,7 +1297,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_BLANK_FRAME_0010, TestSize.Leve
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_BLANK_FRAME_0020, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_mpeg4 != nullptr) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
             vDecSample->DEFAULT_WIDTH = 1920;
