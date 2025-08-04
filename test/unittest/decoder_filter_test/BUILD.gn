@@ -110,7 +110,6 @@ ohos_unittest("decoder_filter_unit_test") {
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
-    "ffrt:libffrt",
     "av_codec:av_codec_media_engine_filters",
   ]
 
