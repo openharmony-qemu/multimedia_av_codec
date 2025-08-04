@@ -30,12 +30,15 @@ namespace MediaAVCodec {
 class FramerateCalculator : public std::enable_shared_from_this<FramerateCalculator>,
                             public AVCodecDfxComponent {
 public:
-    FramerateCalculator(int32_t instanceId, std::function<void(double)> &&resetFramerateHandler);
+    FramerateCalculator(int32_t instanceId, uint8_t delayCheckTimes,
+                        std::function<void(double)> &&resetFramerateHandler);
     void OnFrameConsumed();
     void OnStopped();
     bool CheckAndResetFramerate();
     void SetConfiguredFramerate(double framerate);
     bool SetFramerate2ConfiguredFramerate();
+
+    constexpr static uint8_t MAX_DECODER_DELAY_CHECK_TIMES = 5;
 
 private:
     enum class Status {
@@ -52,6 +55,7 @@ private:
     std::atomic<uint32_t> frameCount_{0};
     double configuredFramerate_{60.0};
     double lastFramerate_{1.0};
+    uint8_t delayCheckTimes_{0};
     uint8_t decreseCheckTimes_{0};
     std::chrono::steady_clock::time_point lastAdjustmentTime_{};
 };
@@ -68,7 +72,7 @@ private:
     std::unordered_map<int32_t, std::weak_ptr<FramerateCalculator>> calculators_;
     std::mutex calculatorsMutex_;
     std::unique_ptr<std::thread> looper_;
-    std::mutex looperReleaseMutex_;
+    std::mutex looperMutex_;
     std::condition_variable condition_;
     std::atomic<bool> isRunning_ = false;
 };

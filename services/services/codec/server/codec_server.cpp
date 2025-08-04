@@ -849,6 +849,7 @@ void CodecServer::InitFramerateCalculator(Meta &callerInfo)
 {
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
         framerateCalculator_ = std::make_shared<FramerateCalculator>(instanceId_,
+            codecType_ == AVCODEC_TYPE_VIDEO_ENCODER ? 0 : FramerateCalculator::MAX_DECODER_DELAY_CHECK_TIMES,
             [weakCodecBase = std::weak_ptr<CodecBase>(codecBase_), codecType = codecType_](double framerate) {
                 auto codecBase = weakCodecBase.lock();
                 if (!codecBase) {
