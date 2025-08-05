@@ -165,7 +165,6 @@ Status AudioMp3EncoderPlugin::Init()
         AVCODEC_LOGE("AudioMp3EncoderPlugin LAME initialization error");
         return Status::ERROR_UNKNOWN;
     }
-
     if (lameMp3Buffer == nullptr) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin lameMp3Buffer allocation failed");
         return Status::ERROR_UNKNOWN;
@@ -242,6 +241,10 @@ Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outpu
     }
     {
         std::lock_guard<std::mutex> lock(avMutex_);
+        if (outputBuffer->flag_ & BUFFER_FLAG_EOS) {
+            dataCallback_->OnOutputBufferDone(outputBuffer);
+            return Status::END_OF_STREAM;
+        }
         auto memory = outputBuffer->memory_;
 
         if (outputSize_ == 0) {

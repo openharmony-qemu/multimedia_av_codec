@@ -260,13 +260,14 @@ void AudioVividCodeCapiDecoderUnitTest::OutputFunc()
             break;
         }
         pcmOutputFile_.write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)), data->buffer_->memory_->GetSize());
+        signal_->outBufferQueue_.pop();
+        signal_->outQueue_.pop();
         if (data->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS) {
             cout << "decode eos" << endl;
             isRunning_.store(false);
             signal_->startCond_.notify_all();
+            break;
         }
-        signal_->outBufferQueue_.pop();
-        signal_->outQueue_.pop();
         EXPECT_EQ(AV_ERR_OK, OH_AudioCodec_FreeOutputBuffer(audioDec_, index));
     }
     pcmOutputFile_.close();
