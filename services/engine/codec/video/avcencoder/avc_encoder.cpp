@@ -65,6 +65,8 @@ constexpr int32_t DEFAULT_VIDEO_INTERVAL_TIME = 2000;
 constexpr int32_t DEFAULT_VIDEO_IFRAME_INTERVAL = 60;
 constexpr int32_t DEFAULT_VIDEO_BITRATE = 6000000;
 constexpr double DEFAULT_VIDEO_FRAMERATE = 30.0;
+constexpr int32_t VIDEO_ALIGN_SIZE = 16;
+constexpr uint32_t VIDEO_PIX_DEPTH_RGBA = 4;
 
 constexpr struct {
     const std::string_view codecName;
@@ -892,10 +894,6 @@ int32_t AvcEncoder::Start()
                              "Start codec failed: not in Configured or Flushed state");
 
     if (!isBufferAllocated_) {
-        for (int32_t i = 0; i < AV_NUM_DATA_POINTERS; i++) {
-            scaleData_[i] = nullptr;
-            scaleLineSize_[i] = 0;
-        }
         int32_t ret = AllocateBuffers();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start codec failed: cannot allocate buffers");
         isBufferAllocated_ = true;
@@ -930,24 +928,11 @@ bool AvcEncoder::IsActive() const
     return state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS;
 }
 
-void AvcEncoder::ResetData()
-{
-    if (scaleData_[0] != nullptr) {
-        av_free(scaleData_[0]);
-        scale_.reset();
-        for (int32_t i = 0; i < AV_NUM_DATA_POINTERS; i++) {
-            scaleData_[i] = nullptr;
-            scaleLineSize_[i] = 0;
-        }
-    }
-}
-
 void AvcEncoder::ResetBuffers()
 {
     inputAvailQue_->Clear();
     codecAvailQue_->Clear();
     freeList_.clear();
-    ResetData();
 }
 
 int32_t AvcEncoder::Stop()
@@ -1047,7 +1032,6 @@ void AvcEncoder::ReleaseBuffers()
     buffers_[INDEX_OUTPUT].clear();
     oLock.unlock();
 
-    ResetData();
     isBufferAllocated_ = false;
 }
 
