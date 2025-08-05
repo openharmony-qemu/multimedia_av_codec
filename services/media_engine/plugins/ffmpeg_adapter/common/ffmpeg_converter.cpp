@@ -20,7 +20,6 @@
 #include "common/log.h"
 #include "ffmpeg_converter.h"
 namespace {
-constexpr int US_PER_SECOND = 1000000;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "FFmpegConverter"};
 }
 namespace OHOS {
