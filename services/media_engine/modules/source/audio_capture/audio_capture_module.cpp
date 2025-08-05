@@ -23,6 +23,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "HiStreamer" };
 static constexpr uint64_t AUDIO_NS_PER_SECOND = 1000000000;
+static constexpr uint64_t AUDIO_CAPTURE_READ_FRAME_TIME = 20000000; // 20000000 ns 20ms
 }
 
 namespace OHOS {
@@ -388,12 +389,9 @@ void AudioCaptureModule::GetAudioTime(int64_t &audioDataTime, bool isFirstFrame)
         audioDataTime = static_cast<int64_t>(timestamp.time.tv_sec) * AUDIO_NS_PER_SECOND
             + static_cast<int64_t>(timestamp.time.tv_nsec);
 
-        if (isFirstFrame && options_.streamInfo.samplingRate != 0) {
-            uint64_t readPos = timestamp.framePosition;
-            audioDataTime -= static_cast<int64_t>((readPos - lastReadPos_) * AUDIO_NS_PER_SECOND) /
-                static_cast<int64_t>(options_.streamInfo.samplingRate);
+        if (isFirstFrame) {
+            audioDataTime -= AUDIO_CAPTURE_READ_FRAME_TIME;
         }
-        lastReadPos_ = timestamp.framePosition;
     }
 }
 
