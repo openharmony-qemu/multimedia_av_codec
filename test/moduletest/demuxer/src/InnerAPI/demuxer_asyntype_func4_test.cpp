@@ -1724,7 +1724,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc4Test, DEMUXER_ASYN_INNER_MPG_FUNC_0241, TestSi
 {
     indexVid = 0;
     int64_t realtime = 0;
-    int64_t seekTime = 19666667;
+    int64_t seekTime = 1966667;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG, TEST_FILE_URI_MPEG_1, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
