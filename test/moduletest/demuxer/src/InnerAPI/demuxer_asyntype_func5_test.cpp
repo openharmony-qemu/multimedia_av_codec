@@ -186,8 +186,8 @@ bool DemuxerAsynTypeInnerFunc5Test::CreateBufferSize()
         return false;
     }
     return true;
-
 }
+
 bool DemuxerAsynTypeInnerFunc5Test::CreateDataSource(const std::string &filePath)
 {
     mediaSource_ = std::make_shared<MediaSource>(filePath);
@@ -203,7 +203,6 @@ bool DemuxerAsynTypeInnerFunc5Test::CreateDataSource(const std::string &filePath
     dataSourceImpl_ = std::make_shared<DataSourceImpl>(realStreamDemuxer_, streamId_);
     dataSourceImpl_->stream_ = realStreamDemuxer_;
     realSource_->NotifyInitSuccess();
-
     return true;
 }
 
@@ -225,7 +224,6 @@ bool DemuxerAsynTypeInnerFunc5Test::CreateDemuxerPluginByName(const std::string&
         return false;
     }
     realStreamDemuxer_->SetDemuxerState(streamId_, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
-
     return true;
 }
 

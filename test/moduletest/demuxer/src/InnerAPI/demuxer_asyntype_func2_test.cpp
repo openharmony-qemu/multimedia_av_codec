@@ -183,8 +183,8 @@ bool DemuxerAsynTypeInnerFunc2Test::CreateBufferSize()
         return false;
     }
     return true;
-
 }
+
 bool DemuxerAsynTypeInnerFunc2Test::CreateDataSource(const std::string &filePath)
 {
     mediaSource_ = std::make_shared<MediaSource>(filePath);
@@ -200,7 +200,6 @@ bool DemuxerAsynTypeInnerFunc2Test::CreateDataSource(const std::string &filePath
     dataSourceImpl_ = std::make_shared<DataSourceImpl>(realStreamDemuxer_, streamId_);
     dataSourceImpl_->stream_ = realStreamDemuxer_;
     realSource_->NotifyInitSuccess();
-
     return true;
 }
 
@@ -222,7 +221,6 @@ bool DemuxerAsynTypeInnerFunc2Test::CreateDemuxerPluginByName(const std::string&
         return false;
     }
     realStreamDemuxer_->SetDemuxerState(streamId_, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
-
     return true;
 }
 
@@ -402,7 +400,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc2Test, DEMUXER_ASYN_INNER_MP4_FUNC_0263, TestSi
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_CLOSEST_SYNC, realtime), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetLastPTSByTrackId(indexVid, pts), Status::ERROR_NOT_EXISTED);
-    uint32_t timeout = 1000; 
+    uint32_t timeout = 1000;
     while (!isVideoEosFlagForSave) {
         ASSERT_EQ(demuxerPlugin->ReadSample(indexVid, avBuf_, timeout), Status::OK);
         GetFrameNum(indexVid);
