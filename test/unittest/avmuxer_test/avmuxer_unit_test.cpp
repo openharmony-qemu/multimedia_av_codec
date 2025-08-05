@@ -2737,6 +2737,41 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_007, TestSize.Level0)
 }
 
 /**
+ * @tc.name: Muxer_SetFormat_UserKey_008
+ * @tc.desc: Muxer set format with user key(complete)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFormat_UserKey_007, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+    videoParams->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
+    int32_t videoTrackId = -1;
+    int32_t ret = avmuxer_->AddTrack(videoTrackId, videoParams);
+    ASSERT_EQ(ret, AV_ERR_OK);
+
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    uint8_t testData[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    ASSERT_EQ(sizeof(testData), 10);
+    audioParams->PutBuffer("com.openharmony.test", testData, sizeof(testData));
+
+    ret = avmuxer_->SetFormat(audioParams);
+    ASSERT_EQ(ret, 0);
+
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+    ASSERT_EQ(avmuxer_->Destroy(), 0);
+}
+
+/**
  * @tc.name: Muxer_SetFormat_DefinedKey_And_UserKey_001
  * @tc.desc: Muxer set format with user key(true keys)
  * @tc.type: FUNC

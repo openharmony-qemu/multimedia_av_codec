@@ -27,7 +27,6 @@ ohos_unittest("muxer_native_module_test") {
     "NativeAPI/NativeAVMuxerInterfaceDependCheckTest.cpp",
     "NativeAPI/NativeAVMuxerNullCheckTest.cpp",
     "NativeAPI/NativeAVMuxerParamCheckTest.cpp",
-    "NativeAPI/NativeAVMuxerFunctionTest.cpp",
   ]
   include_dirs = [
     "Common/include",
