@@ -606,6 +606,18 @@ void FlacCodecConfig::UpdatePerFrame(uint8_t* data, size_t size)
     }
     mIsUpdateExtraData = false;
 }
+
+std::string hexEncode(const std::vector<uint8_t>& data)
+{
+    static const char hexDigits[] = "0123456789ABCDEF";
+    std::string result;
+    result.reserve(data.size() * 2); // extend data size 2
+    for (unsigned char c : data) {
+        result.push_back(hexDigits[(c >> 4) & 0xF]); // shift right by 4
+        result.push_back(hexDigits[c & 0xF]);
+    }
+    return result;
+}
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

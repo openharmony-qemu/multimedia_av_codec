@@ -104,6 +104,10 @@ static void CopyMetaData(const TagType &tag, std::shared_ptr<Meta> &fromMeta, st
         double value = 0.0;
         fromMeta->GetData(tag, value);
         toMeta->SetData(tag, value);
+    } else if (type == AnyValueType::VECTOR_UINT8) {
+        std::vector<uint8_t> value;
+        fromMeta->GetData(tag, value);
+        toMeta->SetData(tag, value);
     }
 }
 
