@@ -1848,6 +1848,10 @@ void HevcDecLog(UINT32 channelId, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pMsg, 
     va_list args;
     int32_t maxSize = 1024; // 1024 max size of one log
     std::vector<char> buf(maxSize);
+    if (buf.empty()) {
+        AVCODEC_LOGE("HevcDecLog buffer is empty!");
+        return;
+    }
     va_start(args, reinterpret_cast<const char*>(pMsg));
     int32_t size = vsnprintf_s(buf.data(), buf.size(), buf.size()-1, reinterpret_cast<const char*>(pMsg), args);
     va_end(args);
