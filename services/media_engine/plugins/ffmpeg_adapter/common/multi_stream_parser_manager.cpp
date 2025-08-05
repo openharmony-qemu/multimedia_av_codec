@@ -235,12 +235,6 @@ void MultiStreamParserManager::ParseAnnexbExtraData(uint32_t trackId, const uint
     FALSE_RETURN_MSG(ParserIsInited(trackId), "Stream parser is invalid");
     streamMap_[trackId].parser->ParseAnnexbExtraData(sample, size);
 }
-
-std::vector<uint8_t> MultiStreamParserManager::GetLogInfo(uint32_t trackId)
-{
-    FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), {}, "Stream parser is invalid");
-    return streamMap_[trackId].parser->GetLogInfo();
-}
 } // namespace Plugins
 } // namespace Media
 } // namespace OHOS

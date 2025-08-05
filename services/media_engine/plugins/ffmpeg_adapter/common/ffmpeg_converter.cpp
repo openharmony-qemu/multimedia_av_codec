@@ -358,17 +358,6 @@ AVSampleFormat FFMpegConverter::ConvertOHAudioFormatToFFMpeg(AudioSampleFormat s
     return ite->first;
 }
 
-AudioChannelLayout FFMpegConverter::ConvertFFToOHAudioChannelLayout(uint64_t ffChannelLayout)
-{
-    auto ite = std::find_if(g_toFFMPEGChannelLayout.begin(), g_toFFMPEGChannelLayout.end(),
-                            [&ffChannelLayout](const auto &item) -> bool { return item.second == ffChannelLayout; });
-    if (ite == g_toFFMPEGChannelLayout.end()) {
-        MEDIA_LOG_W("Failed: " PUBLIC_LOG_U64, ffChannelLayout);
-        return AudioChannelLayout::MONO;
-    }
-    return ite->first;
-}
-
 AudioChannelLayout FFMpegConverter::GetDefaultChannelLayout(int channels)
 {
     AudioChannelLayout layout = AudioChannelLayout::MONO;
@@ -412,22 +401,6 @@ std::string_view FFMpegConverter::ConvertOHAudioChannelLayoutToString(AudioChann
         return g_ChannelLayoutToString[0].second;
     }
     return ite->second;
-}
-
-int64_t FFMpegConverter::ConvertAudioPtsToUs(int64_t pts, AVRational base)
-{
-    if (pts == AV_NOPTS_VALUE) {
-        return -1;
-    }
-    AVRational us = {1, US_PER_SECOND};
-    return av_rescale_q(pts, base, us);
-}
-
-std::string FFMpegConverter::AVStrError(int errnum)
-{
-    char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
-    av_strerror(errnum, errbuf, AV_ERROR_MAX_STRING_SIZE);
-    return std::string(errbuf);
 }
 
 AudioChannelLayout FFMpegConverter::ConvertAudioVividToOHAudioChannelLayout(uint64_t ffChannelLayout, int channels)
