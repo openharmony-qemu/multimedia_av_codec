@@ -1290,7 +1290,9 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_configured_valid
     ASSERT_TRUE(ConfigureDecoder(testObj));
  
     ret = testObj->NotifySuspend();
-    ret = testObj->Release();  
+
+    ret = testObj->Release();
+    EXPECT_EQ(AVCS_ERR_OK, ret);  
 }
  
 HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_flush_valid_001, TestSize.Level1)
@@ -1312,7 +1314,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_flush_valid_001,
     EXPECT_EQ(AVCS_ERR_OK, ret);
  
     ret = testObj->NotifySuspend();
-    
+
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
@@ -1334,8 +1336,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_running_valid_00
  
     ret = testObj->NotifySuspend();
 
-    ret = testObj->NotifyResume();
-    
+    ret = testObj->NotifyResume(); 
  
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
