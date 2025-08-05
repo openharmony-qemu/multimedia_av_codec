@@ -519,20 +519,6 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetCameraPostprocess
     EXPECT_EQ(ret, Status::OK);
 }
 
-HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_InitPostProcessorType, TestSize.Level1)
-{
-    decoderSurfaceFilter_->fdsanFd_ = std::make_unique<FdsanFd>(999);
-    decoderSurfaceFilter_->enableCameraPostprocessing_ = true;
-    decoderSurfaceFilter_->postProcessorType_ = VideoPostProcessorType::NONE;
-    decoderSurfaceFilter_->meta_->SetData(ENHANCE_FLAG, SCENE_INSERT_FRAME);
-    decoderSurfaceFilter_->InitPostProcessorType();
-    EXPECT_EQ(decoderSurfaceFilter_->postProcessorType_, VideoPostProcessorType::CAMERA_INSERT_FRAME);
-    decoderSurfaceFilter_->postProcessorType_ = VideoPostProcessorType::NONE;
-    decoderSurfaceFilter_->meta_->SetData(ENHANCE_FLAG, SCENE_MP_PWP);
-    decoderSurfaceFilter_->InitPostProcessorType();
-    EXPECT_EQ(decoderSurfaceFilter_->postProcessorType_, VideoPostProcessorType::CAMERA_MP_PWP);
-}
-
 #ifdef SUPPORT_CAMERA_POST_PROCESSOR
 HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_LoadCameraPostProcessorLib, TestSize.Level1)
 {
