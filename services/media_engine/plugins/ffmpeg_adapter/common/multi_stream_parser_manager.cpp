@@ -52,13 +52,6 @@ Status MultiStreamParserManager::Create(uint32_t trackId, VideoStreamType videoS
     StreamParser* streamParser = createFuncMap_[videoStreamType]();
     FALSE_RETURN_V_MSG_E(streamParser != nullptr, Status::ERROR_UNKNOWN, "Create failed:" PUBLIC_LOG_D32,
         videoStreamType);
-    if (streamMap_.count(trackId) > 0 && streamMap_[trackId].parser != nullptr) {
-        MEDIA_LOG_W("Parser change, %{public}d->%{public}d", streamMap_[trackId].type, videoStreamType);
-        if (destroyFuncMap_.count(streamMap_[trackId].type) > 0) {
-            destroyFuncMap_[streamMap_[trackId].type](streamMap_[trackId].parser);
-        }
-        streamMap_[trackId].parser = nullptr;
-    }
     streamMap_[trackId].type = videoStreamType;
     streamMap_[trackId].parser = streamParser;
     streamMap_[trackId].inited = false;
