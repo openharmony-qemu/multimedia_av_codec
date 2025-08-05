@@ -1795,6 +1795,7 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0251, TestSiz
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_1), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_2), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
@@ -1829,6 +1830,7 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0261, TestSiz
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_1), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_2), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
