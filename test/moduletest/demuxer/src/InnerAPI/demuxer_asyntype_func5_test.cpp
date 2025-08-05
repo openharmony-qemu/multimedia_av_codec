@@ -625,7 +625,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc5Test, DEMUXER_ASYN_INNER_MOV_FUNC_0240, TestSi
     ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
-        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::ERROR_UNKNOWN);
+        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::ERROR_OUT_OF_RANGE);
 }
 
 /**
@@ -943,7 +943,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc5Test, DEMUXER_ASYN_INNER_MOV_FUNC_0241, TestSi
     ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
-        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::ERROR_UNKNOWN);
+        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::ERROR_OUT_OF_RANGE);
 }
 
 /**
@@ -1104,7 +1104,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc5Test, DEMUXER_ASYN_INNER_MOV_FUNC_0242, TestSi
     ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
-        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::ERROR_UNKNOWN);
+        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::ERROR_OUT_OF_RANGE);
 }
 
 /**
@@ -1265,7 +1265,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc5Test, DEMUXER_ASYN_INNER_MOV_FUNC_0243, TestSi
     ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
-        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::ERROR_UNKNOWN);
+        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::ERROR_OUT_OF_RANGE);
 }
 
 /**
@@ -1427,7 +1427,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc5Test, DEMUXER_ASYN_INNER_MOV_FUNC_0244, TestSi
     ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
-        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::ERROR_UNKNOWN);
+        indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::ERROR_OUT_OF_RANGE);
 }
 
 /**
