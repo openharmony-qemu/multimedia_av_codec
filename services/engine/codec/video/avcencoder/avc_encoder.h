@@ -30,7 +30,7 @@
 #include "avcodec_common.h"
 #include "avcodec_info.h"
 #include "block_queue.h"
-#include "codec_utils.h"
+#include "avcodec_errors.h"
 #include "codecbase.h"
 #include "media_description.h"
 #include "fsurface_memory.h"
@@ -183,7 +183,6 @@ private:
     int32_t AllocateBuffers();
     void InitBuffers();
     void ResetBuffers();
-    void ResetData();
     void ReleaseBuffers();
     void StopThread();
     void ReleaseResource();
@@ -240,9 +239,6 @@ private:
     int32_t inputBufferSize_ = 0;
     int32_t outputBufferSize_ = 0;
 
-    uint8_t *scaleData_[AV_NUM_DATA_POINTERS] = {nullptr};
-    int32_t scaleLineSize_[AV_NUM_DATA_POINTERS] = {0};
-    std::shared_ptr<Scale> scale_ = nullptr;
     VideoPixelFormat srcPixelFmt_ = VideoPixelFormat::UNKNOWN;
     VideoPixelFormat encodePixelFmt_ = VideoPixelFormat::NV21;
     std::vector<std::shared_ptr<FBuffer>> buffers_[2];
