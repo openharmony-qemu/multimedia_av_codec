@@ -70,7 +70,7 @@ Status MediaSyncManager::SetPlaybackRate(float rate)
     OHOS::Media::AutoLock lock(clockMutex_);
     MEDIA_LOG_I_SHORT("set play rate " PUBLIC_LOG_F, rate);
     int64_t currentClockTime = GetSystemClock();
-    int64_t currentMediaTime = std::(GetMediaTime(currentClockTime), GetMaxMediaProgress());
+    int64_t currentMediaTime = std::min(GetMediaTime(currentClockTime), GetMaxMediaProgress());
     if (currentMediaTime != HST_TIME_NONE) {
         SimpleUpdateTimeAnchor(currentClockTime, currentMediaTime);
     }
@@ -158,7 +158,7 @@ Status MediaSyncManager::Pause()
     OHOS::Media::AutoLock lock(clockMutex_);
     FALSE_RETURN_V_NOLOG(clockState_ != State::PAUSED, Status::OK);
     pausedClockTime_ = GetSystemClock();
-    pausedMediaTime_ = std::(GetMediaTime(pausedClockTime_), GetMaxMediaProgress());
+    pausedMediaTime_ = std::min(GetMediaTime(pausedClockTime_), GetMaxMediaProgress());
     MEDIA_LOG_I("pause with clockTime " PUBLIC_LOG_D64 ", mediaTime " PUBLIC_LOG_D64,
         pausedClockTime_, pausedMediaTime_);
     clockState_ = State::PAUSED;
