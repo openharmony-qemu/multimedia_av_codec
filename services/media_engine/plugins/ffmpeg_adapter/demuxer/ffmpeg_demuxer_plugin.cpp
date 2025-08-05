@@ -528,6 +528,8 @@ void FFmpegDemuxerPlugin::ResetParam()
     checkedTrackIds_.clear();
     pluginImpl_.reset();
     formatContext_.reset();
+
+    streamParsers_.reset();
     for (auto item : avbsfContexts_) {
         item.second.reset();
     }

@@ -52,13 +52,6 @@ Status MultiStreamParserManager::Create(uint32_t trackId, VideoStreamType videoS
     StreamParser* streamParser = createFuncMap_[videoStreamType]();
     FALSE_RETURN_V_MSG_E(streamParser != nullptr, Status::ERROR_UNKNOWN, "Create failed:" PUBLIC_LOG_D32,
         videoStreamType);
-    if (streamMap_.count(trackId) > 0 && streamMap_[trackId].parser != nullptr) {
-        MEDIA_LOG_W("Parser change, %{public}d->%{public}d", streamMap_[trackId].type, videoStreamType);
-        if (destroyFuncMap_.count(streamMap_[trackId].type) > 0) {
-            destroyFuncMap_[streamMap_[trackId].type](streamMap_[trackId].parser);
-        }
-        streamMap_[trackId].parser = nullptr;
-    }
     streamMap_[trackId].type = videoStreamType;
     streamMap_[trackId].parser = streamParser;
     streamMap_[trackId].inited = false;
@@ -234,12 +227,6 @@ void MultiStreamParserManager::ParseAnnexbExtraData(uint32_t trackId, const uint
 {
     FALSE_RETURN_MSG(ParserIsInited(trackId), "Stream parser is invalid");
     streamMap_[trackId].parser->ParseAnnexbExtraData(sample, size);
-}
-
-std::vector<uint8_t> MultiStreamParserManager::GetLogInfo(uint32_t trackId)
-{
-    FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), {}, "Stream parser is invalid");
-    return streamMap_[trackId].parser->GetLogInfo();
 }
 } // namespace Plugins
 } // namespace Media
