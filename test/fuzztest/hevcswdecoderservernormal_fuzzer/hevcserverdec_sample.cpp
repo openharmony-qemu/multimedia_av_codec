@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -143,7 +143,16 @@ int32_t VDecServerSample::SetOutputSurface()
 
 int32_t VDecServerSample::InitDecoder()
 {
-    int32_t err = ConfigServerDecoder();
+    int32_t err;
+    Media::Meta codecInfo;
+    int32_t instanceid = 0;
+    codecInfo.SetData("av_codec_event_info_instance_id", instanceid);
+    err = codec_->Init(codecInfo);
+    if (err != AVCS_ERR_OK) {
+        cout << "decoder Init failed!" << endl;
+        return err;
+    }
+    err = ConfigServerDecoder();
     if (err != AVCS_ERR_OK) {
         cout << "ConfigServerDecoder failed" << endl;
         return err;

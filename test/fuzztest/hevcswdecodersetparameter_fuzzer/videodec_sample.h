@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -58,8 +58,10 @@ public:
     const char *outDir = "/data/test/media/VDecTest.yuv";
     uint32_t defaultWidth = 1920;
     uint32_t defaultHeight = 1080;
-    uint32_t defaultFrameRate = 30;
+    double defaultFrameRate = 30.0;
     uint32_t defaultRotation = 0;
+    const uint8_t *fuzzData;
+    size_t fuzzSize;
     
     uint32_t defaultPixelFormat = 1;
     uint32_t frameCount_ = 0;
@@ -69,14 +71,6 @@ public:
                                         "DC", "7B", "C5", "26", "D1", "9A", "CA", "00", "DE", "FC", "C8", "4E", "34",
                                         "C5", "9A", "43", "59", "85", "DC", "AC", "97", "A3", "FB", "23", "51"};
 
-    int32_t Start();
-    int32_t Stop();
-    int32_t Flush();
-    int32_t Reset();
-    void SetEOS(uint32_t index);
-    uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVMemory *buffer);
-    void CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, OH_AVCodecBufferAttr &attr);
-    int32_t ReadData(uint32_t index, OH_AVMemory *buffer);
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
     int32_t StartVideoDecoder();
@@ -85,13 +79,8 @@ public:
     int32_t SetVideoDecoderCallback();
     int32_t Release();
     int32_t SetParameter(OH_AVFormat *format);
-    void OutputFunc();
-    void WriteOutputFrame(uint32_t index, OH_AVMemory *buffer, OH_AVCodecBufferAttr attr, FILE *outFile);
-    void InputFuncAVCC();
     OH_AVErrCode InputFuncFUZZ(const uint8_t *data, size_t size);
-    void ReleaseSignal();
     void ReleaseInFile();
-    void StopInloop();
     VDecSignal *signal_;
     uint32_t errCount = 0;
     uint32_t outCount = 0;

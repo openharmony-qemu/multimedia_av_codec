@@ -26,7 +26,6 @@ namespace {
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
 constexpr uint32_t FRAME_INTERVAL = 16666;
-constexpr uint32_t MAX_PIXEL_FMT = 5;
 constexpr uint8_t RGBA_SIZE = 4;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
 constexpr uint32_t DOUBLE = 2;
@@ -154,65 +153,6 @@ int32_t VEncNdkFuzzSample::ConfigureVideoEncoder()
     return ret;
 }
 
-int32_t VEncNdkFuzzSample::ConfigureVideoEncoderTemporal(int32_t temporalGopSize)
-{
-    OH_AVFormat *format = OH_AVFormat_Create();
-    if (format == nullptr) {
-        cout << "Fatal: Failed to create format" << endl;
-        return AV_ERR_UNKNOWN;
-    }
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, defaultWidth);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, defaultHeight);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
-    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, defaultFrameRate);
-    (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, defaultBitrate);
-
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, defaultKeyFrameInterval);
-
-    if (temporalConfig) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
-            ADJACENT_REFERENCE);
-    }
-    if (temporalEnable) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
-    }
-    if (temporalJumpMode) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, JUMP_REFERENCE);
-    }
-    int ret = OH_VideoEncoder_Configure(venc_, format);
-    OH_AVFormat_Destroy(format);
-    return ret;
-}
-
-int32_t VEncNdkFuzzSample::ConfigureVideoEncoderFuzz(int32_t data)
-{
-    OH_AVFormat *format = OH_AVFormat_Create();
-    if (format == nullptr) {
-        cout << "Fatal: Failed to create format" << endl;
-        return AV_ERR_UNKNOWN;
-    }
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, data);
-    defaultWidth = data;
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, data);
-    defaultHeight = data;
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, data % MAX_PIXEL_FMT);
-    double frameRate = data;
-    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, frameRate);
-
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_RANGE_FLAG, data);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_COLOR_PRIMARIES, data);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_TRANSFER_CHARACTERISTICS, data);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MATRIX_COEFFICIENTS, data);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, data);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, data);
-    OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, data);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, data);
-    int ret = OH_VideoEncoder_Configure(venc_, format);
-    OH_AVFormat_Destroy(format);
-    return ret;
-}
-
 int32_t VEncNdkFuzzSample::SetVideoEncoderCallback()
 {
     signal_ = new VEncSignal();
@@ -228,21 +168,6 @@ int32_t VEncNdkFuzzSample::SetVideoEncoderCallback()
     return OH_VideoEncoder_SetCallback(venc_, cb_, static_cast<void *>(signal_));
 }
 
-int32_t VEncNdkFuzzSample::StateEos()
-{
-    unique_lock<mutex> lock(signal_->inMutex_);
-    signal_->inCond_.wait(lock, [this]() { return signal_->inIdxQueue_.size() > 0; });
-    uint32_t index = signal_->inIdxQueue_.front();
-    signal_->inIdxQueue_.pop();
-    signal_->inBufferQueue_.pop();
-    lock.unlock();
-    OH_AVCodecBufferAttr attr;
-    attr.pts = 0;
-    attr.size = 0;
-    attr.offset = 0;
-    attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-    return OH_VideoEncoder_PushInputData(venc_, index, attr);
-}
 void VEncNdkFuzzSample::ReleaseInFile()
 {
     if (inFile_ != nullptr) {
@@ -252,39 +177,6 @@ void VEncNdkFuzzSample::ReleaseInFile()
         inFile_.reset();
         inFile_ = nullptr;
     }
-}
-
-void VEncNdkFuzzSample::StopInloop()
-{
-    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
-        unique_lock<mutex> lock(signal_->inMutex_);
-        clearIntqueue(signal_->inIdxQueue_);
-        isRunning_.store(false);
-        signal_->inCond_.notify_all();
-        lock.unlock();
-
-        inputLoop_->join();
-        inputLoop_ = nullptr;
-    }
-}
-
-void VEncNdkFuzzSample::TestApi()
-{
-    OH_VideoEncoder_GetSurface(venc_, &nativeWindow);
-    OH_VideoEncoder_Prepare(venc_);
-    OH_VideoEncoder_GetInputDescription(venc_);
-    OH_VideoEncoder_Start(venc_);
-    OH_AVFormat *format = OH_AVFormat_Create();
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_REQUEST_I_FRAME, 1);
-    OH_VideoEncoder_SetParameter(venc_, format);
-    OH_VideoEncoder_NotifyEndOfStream(venc_);
-    OH_VideoEncoder_GetOutputDescription(venc_);
-    OH_AVFormat_Destroy(format);
-    OH_VideoEncoder_Flush(venc_);
-    bool isValid = false;
-    OH_VideoEncoder_IsValid(venc_, &isValid);
-    OH_VideoEncoder_Stop(venc_);
-    OH_VideoEncoder_Reset(venc_);
 }
 
 int32_t VEncNdkFuzzSample::CreateSurface()
@@ -819,77 +711,6 @@ void VEncNdkFuzzSample::InputFunc()
     }
 }
 
-int32_t VEncNdkFuzzSample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
-{
-    if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
-        cout << "attr.flags == AVCODEC_BUFFER_FLAGS_EOS" << endl;
-        unique_lock<mutex> inLock(signal_->inMutex_);
-        isRunning_.store(false);
-        signal_->inCond_.notify_all();
-        signal_->outCond_.notify_all();
-        inLock.unlock();
-        return -1;
-    }
-    if (attr.flags == AVCODEC_BUFFER_FLAGS_CODEC_DATA) {
-        cout << "enc AVCODEC_BUFFER_FLAGS_CODEC_DATA" << attr.pts << endl;
-    }
-    outCount = outCount + 1;
-    return 0;
-}
-
-void VEncNdkFuzzSample::OutputFuncFail()
-{
-    cout << "errCount > 0" << endl;
-    unique_lock<mutex> inLock(signal_->inMutex_);
-    isRunning_.store(false);
-    signal_->inCond_.notify_all();
-    signal_->outCond_.notify_all();
-    inLock.unlock();
-    (void)Stop();
-    Release();
-}
-
-void VEncNdkFuzzSample::OutputFunc()
-{
-    bool enableOutput = true;
-    while (enableOutput) {
-        if (!isRunning_.load()) {
-            enableOutput = false;
-            break;
-        }
-        OH_AVCodecBufferAttr attr;
-        uint32_t index;
-        unique_lock<mutex> lock(signal_->outMutex_);
-        signal_->outCond_.wait(lock, [this]() {
-            if (!isRunning_.load()) {
-                return true;
-            }
-            return signal_->outIdxQueue_.size() > 0 && !isFlushing_.load();
-        });
-        if (!isRunning_.load()) {
-            break;
-        }
-        index = signal_->outIdxQueue_.front();
-        attr = signal_->attrQueue_.front();
-        signal_->outBufferQueue_.pop();
-        signal_->outIdxQueue_.pop();
-        signal_->attrQueue_.pop();
-        lock.unlock();
-        if (CheckAttrFlag(attr) == -1) {
-            break;
-        }
-
-        if (OH_VideoEncoder_FreeOutputData(venc_, index) != AV_ERR_OK) {
-            cout << "Fatal: ReleaseOutputBuffer fail" << endl;
-            errCount = errCount + 1;
-        }
-        if (errCount > 0) {
-            OutputFuncFail();
-            break;
-        }
-    }
-}
-
 int32_t VEncNdkFuzzSample::Flush()
 {
     isFlushing_.store(true);
@@ -927,20 +748,6 @@ int32_t VEncNdkFuzzSample::Release()
         signal_ = nullptr;
     }
     return ret;
-}
-
-int32_t VEncNdkFuzzSample::Stop()
-{
-    StopInloop();
-    clearIntqueue(signal_->outIdxQueue_);
-    clearBufferqueue(signal_->attrQueue_);
-    ReleaseInFile();
-    return OH_VideoEncoder_Stop(venc_);
-}
-
-int32_t VEncNdkFuzzSample::Start()
-{
-    return OH_VideoEncoder_Start(venc_);
 }
 
 void VEncNdkFuzzSample::StopOutloop()

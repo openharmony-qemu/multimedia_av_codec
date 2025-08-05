@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -31,9 +31,6 @@ bool SwdecoderServerSurfaceFuzzTest(const uint8_t *data, size_t size)
     vDecSample->fuzzData = data;
     vDecSample->fuzzSize = size;
     vDecSample->RunVideoServerSurfaceDecoder();
-    vDecSample->Flush();
-    vDecSample->Stop();
-    vDecSample->Reset();
     vDecSample->WaitForEos();
     delete vDecSample;
     return false;

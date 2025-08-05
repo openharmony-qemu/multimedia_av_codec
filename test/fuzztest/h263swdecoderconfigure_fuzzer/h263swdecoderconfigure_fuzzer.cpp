@@ -25,6 +25,15 @@ using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "h263swdecoderconfigure_fuzzer"
 const size_t EXPECT_SIZE = 6;
 namespace OHOS {
+void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
+{
+    std::ofstream file(filename, std::ios::out | std::ios::binary);
+    if (file.is_open()) {
+        file.write(reinterpret_cast<const char*>(data), size);
+        file.close();
+    }
+}
+
 bool H263SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < EXPECT_SIZE) {
@@ -33,13 +42,22 @@ bool H263SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     bool result = false;
     FuzzedDataProvider fdp(data, size);
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
-    vDecSample->inpDir = "/data/test/media/profile0_level10_I_128x96.h263";
-    vDecSample->defaultWidth = fdp.ConsumeIntegral<int32_t>();
-    vDecSample->defaultHeight = fdp.ConsumeIntegral<int32_t>();
-    vDecSample->defaultFrameRate = fdp.ConsumeIntegral<int32_t>();
-    vDecSample->defaultRotation = fdp.ConsumeIntegral<int32_t>();
-    vDecSample->defaultPixelFormat = fdp.ConsumeIntegral<int32_t>();
-    vDecSample->enbleBlankFrame = fdp.ConsumeIntegral<int>();
+    std::string filename = "/data/test/corpus-EncoderAPI11H265BFrame10BitFuzzTest";
+    SaveCorpus(data, size, filename);
+    vDecSample->inpDir = filename.c_str();
+    int32_t lengthMin = 176;
+    int32_t lengthMax = 4096;
+    int32_t frameRateMin = 1;
+    int32_t frameRateMax = 1000;
+    vDecSample->defaultWidth = std::clamp(fdp.ConsumeIntegral<int32_t>(), lengthMin, lengthMax);
+    vDecSample->defaultHeight = std::clamp(fdp.ConsumeIntegral<int32_t>(), lengthMin, lengthMax);
+    vDecSample->defaultFrameRate = std::clamp(fdp.ConsumeIntegral<int32_t>(), frameRateMin, frameRateMax);
+    std::vector<int32_t> rotations = {0, 90, 180, 270};
+    size_t index = fdp.ConsumeIntegralInRange<size_t>(0, rotations.size() - 1);
+    vDecSample->defaultRotation = rotations[index];
+    std::vector<int32_t> pixelFormats = {1, 2, 3, 4, 5};
+    size_t pfIndex = fdp.ConsumeIntegralInRange<size_t>(0, pixelFormats.size() - 1);
+    vDecSample->defaultPixelFormat = pixelFormats[pfIndex];
     size_t maxSize = std::numeric_limits<size_t>::max();
     vDecSample->randomName = fdp.ConsumeRandomLengthString(maxSize);
     vDecSample->randomMime = fdp.ConsumeRandomLengthString(maxSize);
