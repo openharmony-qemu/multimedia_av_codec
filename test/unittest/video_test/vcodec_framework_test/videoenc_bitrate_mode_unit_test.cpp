@@ -19,13 +19,12 @@
 #include "codeclist_mock.h"
 #include "venc_async_sample.h"
 #include "venc_sync_sample.h"
-#include "native_avmagic.h"
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videoenc_capi_mock.h"
-#define VideoEncoderBitrateModeTest VideoEncBFrameCapiTest
+#define TEST_SUIT VideoEncBitrateModeCapiTest
 #else
-#define VideoEncoderBitrateModeTest VideoEncBFrameInnerTest
+#define TEST_SUIT VideoEncBitrateModeInnerTest
 #endif
 
 using namespace std;
@@ -36,7 +35,7 @@ using namespace OHOS::MediaAVCodec::VCodecTestParam;
 using namespace OHOS::Media;
 
 namespace {
-class VideoEncoderBitrateModeTest : public testing::TestWithParam<int32_t> {
+class TEST_SUIT : public testing::TestWithParam<int32_t> {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
@@ -46,7 +45,7 @@ public:
     bool CreateVideoCodecByName(const std::string &decName);
     void CreateByNameWithParam(int32_t param);
     void SetFormatWithBitrateMode(int32_t bitrateMode);
-    void PrepareSource(int32_t param);
+    void PrepareSource();
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
@@ -56,18 +55,24 @@ protected:
     std::shared_ptr<VEncCallbackTestExt> vencCallbackExt_ = nullptr;
     std::shared_ptr<VEncParamCallbackTest> vencParamCallback_ = nullptr;
     std::shared_ptr<VEncParamWithAttrCallbackTest> vencParamWithAttrCallback_ = nullptr;
+
+private:
+    int32_t default_bitrate = 1000000;
+    int32_t default_max_bitrate = 20000000;
+    int32_t default_quality = 30;
+    int32_t default_sqr_factor = 30;
 };
 
-void VideoEncoderBitrateModeTest::SetUpTestCase(void)
+void TEST_SUIT::SetUpTestCase(void)
 {
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_HEVC).data(), true,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_HEVC).data() << " can not found!" << std::endl;
 }
 
-void VideoEncoderBitrateModeTest::TearDownTestCase(void) {}
+void TEST_SUIT::TearDownTestCase(void) {}
 
-void VideoEncoderBitrateModeTest::SetUp(void)
+void TEST_SUIT::SetUp(void)
 {
     std::shared_ptr<VEncSignal> vencSignal = std::make_shared<VEncSignal>();
     vencCallback_ = std::make_shared<VEncCallbackTest>(vencSignal);
@@ -89,7 +94,7 @@ void VideoEncoderBitrateModeTest::SetUp(void)
     ASSERT_NE(nullptr, format_);
 }
 
-void VideoEncoderBitrateModeTest::TearDown(void)
+void TEST_SUIT::TearDown(void)
 {
     if (format_ != nullptr) {
         format_->Destroy();
@@ -97,7 +102,7 @@ void VideoEncoderBitrateModeTest::TearDown(void)
     videoEnc_ = nullptr;
 }
 
-bool VideoEncoderBitrateModeTest::CreateVideoCodecByName(const std::string &name)
+bool TEST_SUIT::CreateVideoCodecByName(const std::string &name)
 {
     if (videoEnc_->isAVBufferMode_) {
         if (videoEnc_->CreateVideoEncMockByName(name) == false ||
@@ -112,7 +117,7 @@ bool VideoEncoderBitrateModeTest::CreateVideoCodecByName(const std::string &name
     return true;
 }
 
-void VideoEncoderBitrateModeTest::CreateByNameWithParam(int32_t param)
+void TEST_SUIT::CreateByNameWithParam(int32_t param)
 {
     std::string codecName = "";
     switch (param) {
@@ -134,7 +139,7 @@ void VideoEncoderBitrateModeTest::CreateByNameWithParam(int32_t param)
     ASSERT_TRUE(CreateVideoCodecByName(codecName));
 }
 
-void VideoEncoderBitrateModeTest::PrepareSource(int32_t param)
+void TEST_SUIT::PrepareSource()
 {
     const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
     string prefix = "/data/test/media/";
@@ -144,34 +149,138 @@ void VideoEncoderBitrateModeTest::PrepareSource(int32_t param)
     videoEnc_->SetOutPath(prefix + fileName);
 }
 
-void VideoEncoderBitrateModeTest::SetFormatWithBitrateMode(int32_t bitrateMode)
+void TEST_SUIT::SetFormatWithBitrateMode(int32_t bitrateMode)
 {
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-    if (OH_AVCapability_IsEncoderBitrateModeSupported(capability_, static_cast<OH_BitrateMode>(bitrateMode))) {
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format_, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode));
+    if (capability_->IsEncoderBitrateModeSupported(static_cast<OH_BitrateMode>(bitrateMode))) {
+        format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
     } else {
         std::cout << "BitrateMode: " << bitrateMode << " not supported\n";
     }
 }
 
 INSTANTIATE_TEST_SUITE_P(,
-                         VideoEncoderBitrateModeTest,
-                         testing::Combine(
-                             testing::Values(CBR, VBR, CQ, SQR) // 码控模式
-                         ));
+                         TEST_SUIT,
+                         testing::Values(BITRATE_MODE_CBR, BITRATE_MODE_VBR, BITRATE_MODE_CQ, BITRATE_MODE_SQR)
+                         );
 
 /**.
  * @tc.name: VideoHevcEnc_001
- * @tc.desc: video hevc enc and set parameters.
+ * @tc.desc: video hevc enc.
  * @tc.type: FUNC
  */
-HWTEST_P(VideoEncoderBitrateModeTest, VideoHevcEnc_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoHevcEnc_001, TestSize.Level1)
 {
     CreateByNameWithParam(HW_HEVC);
     SetFormatWithBitrateMode(GetParam());
     PrepareSource();
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    videoEnc_->WaitForEos();
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
+}
+
+/**.
+ * @tc.name: VideoHevcEnc_002
+ * @tc.desc: video hevc enc with SQR_Factor.
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoHevcEnc_002, TestSize.Level1)
+{
+    CreateByNameWithParam(HW_HEVC);
+    SetFormatWithBitrateMode(GetParam());
+    PrepareSource();
+    format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    videoEnc_->WaitForEos();
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
+}
+
+/**.
+ * @tc.name: VideoHevcEnc_003
+ * @tc.desc: video hevc enc with error SQR_Factor.
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoHevcEnc_003, TestSize.Level1)
+{
+    CreateByNameWithParam(HW_HEVC);
+    SetFormatWithBitrateMode(GetParam());
+    PrepareSource();
+    default_sqr_factor = -1;
+    format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    videoEnc_->WaitForEos();
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
+}
+
+/**.
+ * @tc.name: VideoHevcEnc_004
+ * @tc.desc: video hevc enc with bitrate.
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoHevcEnc_004, TestSize.Level1)
+{
+    CreateByNameWithParam(HW_HEVC);
+    SetFormatWithBitrateMode(GetParam());
+    PrepareSource();
+    format_->PutDoubleValue(OH_MD_KEY_BITRATE, default_bitrate);
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    videoEnc_->WaitForEos();
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
+}
+
+/**.
+ * @tc.name: VideoHevcEnc_005
+ * @tc.desc: video hevc enc with error bitrate.
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoHevcEnc_005, TestSize.Level1)
+{
+    CreateByNameWithParam(HW_HEVC);
+    SetFormatWithBitrateMode(GetParam());
+    PrepareSource();
+    default_bitrate = -1;
+    format_->PutDoubleValue(OH_MD_KEY_BITRATE, default_bitrate);
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    videoEnc_->WaitForEos();
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
+}
+
+/**.
+ * @tc.name: VideoHevcEnc_006
+ * @tc.desc: video hevc enc with max_bitrate.
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoHevcEnc_006, TestSize.Level1)
+{
+    CreateByNameWithParam(HW_HEVC);
+    SetFormatWithBitrateMode(GetParam());
+    PrepareSource();
+    format_->PutDoubleValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    videoEnc_->WaitForEos();
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
+}
+
+/**.
+ * @tc.name: VideoHevcEnc_007
+ * @tc.desc: video hevc enc with error max_bitrate.
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoHevcEnc_007, TestSize.Level1)
+{
+    CreateByNameWithParam(HW_HEVC);
+    SetFormatWithBitrateMode(GetParam());
+    PrepareSource();
+    default_max_bitrate = -1;
+    format_->PutDoubleValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     videoEnc_->WaitForEos();
