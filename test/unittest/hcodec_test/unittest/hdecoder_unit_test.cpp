@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.ret = testObj->NotifyResume();
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1336,8 +1336,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_running_valid_00
  
     ret = testObj->NotifySuspend();
 
-    ret = testObj->NotifyResume(); 
- 
+    ret = testObj->NotifyResume();
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
