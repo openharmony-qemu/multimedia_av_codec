@@ -272,7 +272,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0140, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
     while (!isAudioEosFlagForSave) {
@@ -297,7 +297,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0150, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
@@ -322,7 +322,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0160, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
     while (!isAudioEosFlagForSave) {
         ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
@@ -346,7 +346,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0170, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
@@ -385,7 +385,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0190, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
     while (!isAudioEosFlagForSave) {
@@ -412,7 +412,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0200, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     while (true) {
         if (readCount >= readPos) {
             ASSERT_EQ(demuxerPlugin->SeekTo(
@@ -439,7 +439,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0210, TestSi
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_APE, TEST_FILE_URI_APE, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
 }
@@ -459,7 +459,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0220, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realtime), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetLastPTSByTrackId(indexAud, pts), Status::ERROR_NOT_EXISTED);
@@ -480,7 +480,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0230, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_CLOSEST_SYNC, realtime), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetLastPTSByTrackId(indexAud, pts), Status::ERROR_NOT_EXISTED);
@@ -498,7 +498,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0240, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::ERROR_INVALID_OPERATION);
 }
@@ -517,7 +517,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0250, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::ERROR_INVALID_OPERATION);
 }
@@ -536,7 +536,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0260, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::ERROR_INVALID_OPERATION);
 }
@@ -555,7 +555,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0270, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::ERROR_INVALID_OPERATION);
 }
@@ -573,7 +573,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0280, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_), Status::ERROR_INVALID_OPERATION);
 }
@@ -592,7 +592,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0290, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size), Status::ERROR_INVALID_OPERATION);
 }
@@ -611,7 +611,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0300, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_), Status::ERROR_INVALID_OPERATION);
 }
@@ -630,7 +630,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0310, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size), Status::ERROR_INVALID_OPERATION);
 }
@@ -640,14 +640,14 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_APE_FUNC_0310, TestSi
  * @tc.name      : ReadSample全流程
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0070, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0070, TestSize.Level0)
 {
     indexAud = 0;
     uint32_t timeout = 10000;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_SRT, TEST_FILE_URI_SRT, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(CreateBufferSize(), true);
     while (!isAudioEosFlagForSave) {
         ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
@@ -660,14 +660,14 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0070, TestSi
  * @tc.name      : ReadSample,一条轨，timeout = 0
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0080, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0080, TestSize.Level0)
 {
     indexAud = 0;
     uint32_t timeout = 0;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_SRT, TEST_FILE_URI_SRT, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(CreateBufferSize(), true);
     int64_t pts = 0;
     if (demuxerPlugin->GetLastPTSByTrackId(indexAud, pts) == Status::OK) {
@@ -681,14 +681,14 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0080, TestSi
  * @tc.name      : read , timeout > 1帧读取时间
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0090, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0090, TestSize.Level0)
 {
     indexAud = 0;
     uint32_t timeout = 10000;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_SRT, TEST_FILE_URI_SRT, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(CreateBufferSize(), true);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
 }
@@ -707,7 +707,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0100, TestSi
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_SRT, TEST_FILE_URI_SRT, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(CreateBufferSize(), true);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::OK);
     ASSERT_EQ(size, sizenum);
@@ -726,7 +726,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0110, TestSi
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_SRT, TEST_FILE_URI_SRT, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(CreateBufferSize(), true);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::ERROR_UNKNOWN);
 }
@@ -758,7 +758,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0130, TestSi
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_SRT, TEST_FILE_URI_SRT, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetLastPTSByTrackId(indexAud, pts), Status::ERROR_INVALID_PARAMETER);
 }
 
@@ -775,7 +775,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0140, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
     while (!isAudioEosFlagForSave) {
@@ -800,7 +800,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0150, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
@@ -825,7 +825,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0160, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
     while (!isAudioEosFlagForSave) {
         ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
@@ -849,7 +849,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0170, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
@@ -888,7 +888,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0190, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
     while (!isAudioEosFlagForSave) {
@@ -915,7 +915,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0200, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     while (true) {
         if (readCount >= readPos) {
             ASSERT_EQ(demuxerPlugin->SeekTo(
@@ -942,7 +942,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0210, TestSi
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_SRT, TEST_FILE_URI_SRT, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
 }
@@ -962,7 +962,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0220, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realtime), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetLastPTSByTrackId(indexAud, pts), Status::ERROR_NOT_EXISTED);
@@ -983,7 +983,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0230, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_CLOSEST_SYNC, realtime), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetLastPTSByTrackId(indexAud, pts), Status::ERROR_NOT_EXISTED);
@@ -1001,7 +1001,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0240, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::ERROR_INVALID_OPERATION);
 }
@@ -1020,7 +1020,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0250, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::ERROR_INVALID_OPERATION);
 }
@@ -1039,7 +1039,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0260, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::ERROR_INVALID_OPERATION);
 }
@@ -1058,7 +1058,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0270, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::ERROR_INVALID_OPERATION);
 }
@@ -1076,7 +1076,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0280, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_), Status::ERROR_INVALID_OPERATION);
 }
@@ -1095,7 +1095,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0290, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size), Status::ERROR_INVALID_OPERATION);
 }
@@ -1114,7 +1114,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0300, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_), Status::ERROR_INVALID_OPERATION);
 }
@@ -1133,7 +1133,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0310, TestSi
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size), Status::ERROR_INVALID_OPERATION);
 }
@@ -1143,14 +1143,14 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_SRT_FUNC_0310, TestSi
  * @tc.name      : ReadSample全流程
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0070, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0070, TestSize.Level0)
 {
     indexAud = 0;
     uint32_t timeout = 10000;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_WEBVTT, TEST_FILE_URI_WEBVTT, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(CreateBufferSize(), true);
     while (!isAudioEosFlagForSave) {
         ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
@@ -1163,14 +1163,14 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0070, Tes
  * @tc.name      : ReadSample,一条轨，timeout = 0
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0080, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0080, TestSize.Level0)
 {
     indexAud = 0;
     uint32_t timeout = 0;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_WEBVTT, TEST_FILE_URI_WEBVTT, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(CreateBufferSize(), true);
     int64_t pts = 0;
     if (demuxerPlugin->GetLastPTSByTrackId(indexAud, pts) == Status::OK) {
@@ -1184,14 +1184,14 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0080, Tes
  * @tc.name      : read , timeout > 1帧读取时间
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0090, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0090, TestSize.Level0)
 {
     indexAud = 0;
     uint32_t timeout = 10000;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_WEBVTT, TEST_FILE_URI_WEBVTT, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(CreateBufferSize(), true);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
 }
@@ -1210,7 +1210,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0100, Tes
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_WEBVTT, TEST_FILE_URI_WEBVTT, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(CreateBufferSize(), true);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::OK);
     ASSERT_EQ(size, sizenum);
@@ -1229,7 +1229,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0110, Tes
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_WEBVTT, TEST_FILE_URI_WEBVTT, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(CreateBufferSize(), true);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::ERROR_UNKNOWN);
 }
@@ -1261,7 +1261,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0130, Tes
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_WEBVTT, TEST_FILE_URI_WEBVTT, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetLastPTSByTrackId(indexAud, pts), Status::ERROR_INVALID_PARAMETER);
 }
 
@@ -1278,7 +1278,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0140, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
     while (!isAudioEosFlagForSave) {
@@ -1303,7 +1303,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0150, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
@@ -1328,7 +1328,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0160, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
     while (!isAudioEosFlagForSave) {
         ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
@@ -1352,7 +1352,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0170, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
@@ -1391,7 +1391,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0190, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
     while (!isAudioEosFlagForSave) {
@@ -1418,7 +1418,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0200, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     while (true) {
         if (readCount >= readPos) {
             ASSERT_EQ(demuxerPlugin->SeekTo(
@@ -1445,7 +1445,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0210, Tes
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_WEBVTT, TEST_FILE_URI_WEBVTT, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
 }
@@ -1465,7 +1465,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0220, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realtime), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetLastPTSByTrackId(indexAud, pts), Status::ERROR_NOT_EXISTED);
@@ -1486,7 +1486,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0230, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexAud, seekTime / THOUSAND, Plugins::SeekMode::SEEK_CLOSEST_SYNC, realtime), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetLastPTSByTrackId(indexAud, pts), Status::ERROR_NOT_EXISTED);
@@ -1504,7 +1504,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0240, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::ERROR_INVALID_OPERATION);
 }
@@ -1523,7 +1523,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0250, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::ERROR_INVALID_OPERATION);
 }
@@ -1542,7 +1542,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0260, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::ERROR_INVALID_OPERATION);
 }
@@ -1561,7 +1561,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0270, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::ERROR_INVALID_OPERATION);
 }
@@ -1579,7 +1579,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0280, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_), Status::ERROR_INVALID_OPERATION);
 }
@@ -1598,7 +1598,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0290, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size), Status::ERROR_INVALID_OPERATION);
 }
@@ -1617,7 +1617,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0300, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_), Status::ERROR_INVALID_OPERATION);
 }
@@ -1636,7 +1636,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc8Test, DEMUXER_ASYN_INNER_WEBVTT_FUNC_0310, Tes
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(TRACKNUM_0), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexAud, size), Status::ERROR_INVALID_OPERATION);
 }

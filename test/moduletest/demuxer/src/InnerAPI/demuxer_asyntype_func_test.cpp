@@ -328,7 +328,7 @@ void DemuxerAsynTypeInnerFuncTest::GetMetaTrackFrame(int32_t i)
  * @tc.name      : ReadSample全流程
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_FLV_FUNC_0070, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_FLV_FUNC_0070, TestSize.Level0)
 {
     uint32_t timeout = 10000;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV_1, DEF_PROB_SIZE), true);
@@ -354,7 +354,7 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_FLV_FUNC_0070, TestSiz
  * @tc.name      : ReadSample,一条轨，timeout = 0
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_FLV_FUNC_0080, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_FLV_FUNC_0080, TestSize.Level0)
 {
     indexVid = 0;
     uint32_t timeout = 0;
@@ -375,7 +375,7 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_FLV_FUNC_0080, TestSiz
  * @tc.name      : read , timeout > 1帧读取时间
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_FLV_FUNC_0090, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_FLV_FUNC_0090, TestSize.Level0)
 {
     indexVid = 0;
     uint32_t timeout = 10000;
@@ -996,7 +996,7 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_FLV_FUNC_0340, TestSiz
  * @tc.name      : ReadSample全流程
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0070, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0070, TestSize.Level0)
 {
     uint32_t timeout = 10000;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4, DEF_PROB_SIZE), true);
@@ -1022,7 +1022,7 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0070, TestSiz
  * @tc.name      : ReadSample,一条轨，timeout = 0
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0080, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0080, TestSize.Level0)
 {
     indexVid = 0;
     uint32_t timeout = 0;
@@ -1043,7 +1043,7 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0080, TestSiz
  * @tc.name      : read , timeout > 1帧读取时间
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0090, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0090, TestSize.Level0)
 {
     indexVid = 0;
     uint32_t timeout = 10000;
@@ -1664,7 +1664,7 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0340, TestSiz
  * @tc.name      : ReadSample全流程
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0071, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0071, TestSize.Level0)
 {
     uint32_t timeout = 10000;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4_1, DEF_PROB_SIZE), true);
@@ -1694,7 +1694,7 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0071, TestSiz
  * @tc.name      : ReadSample,一条轨，timeout = 0
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0081, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0081, TestSize.Level0)
 {
     indexVid = 0;
     uint32_t timeout = 0;
@@ -1715,7 +1715,7 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0081, TestSiz
  * @tc.name      : read , timeout > 1帧读取时间
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0091, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0091, TestSize.Level0)
 {
     indexVid = 0;
     uint32_t timeout = 10000;
@@ -1855,7 +1855,7 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0261, TestSiz
  * @tc.name      : ReadSample全流程
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0072, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0072, TestSize.Level0)
 {
     uint32_t timeout = 10000;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4_2, DEF_PROB_SIZE), true);
@@ -1884,7 +1884,7 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0072, TestSiz
  * @tc.name      : ReadSample,一条轨，timeout = 0
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0082, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0082, TestSize.Level0)
 {
     indexVid = 0;
     uint32_t timeout = 0;
@@ -1905,7 +1905,7 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0082, TestSiz
  * @tc.name      : read , timeout > 1帧读取时间
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0092, TestSize.Level1)
+HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0092, TestSize.Level0)
 {
     indexVid = 0;
     uint32_t timeout = 10000;
