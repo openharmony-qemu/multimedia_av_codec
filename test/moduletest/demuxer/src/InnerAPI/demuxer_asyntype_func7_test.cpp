@@ -95,6 +95,7 @@ constexpr uint32_t READFRAME_1500 = 1500;
 constexpr uint32_t READFRAME_1481 = 1481;
 constexpr uint32_t READFRAME_1491 = 1491;
 constexpr uint32_t READFRAME_8 = 8;
+constexpr int32_t TRACKNUM_0 = 0;
 static const std::string DEMUXER_PLUGIN_NAME_AAC = "avdemux_aac";
 static const std::string DEMUXER_PLUGIN_NAME_AMR = "avdemux_amr";
 static const std::string DEMUXER_PLUGIN_NAME_APE = "avdemux_ape";
