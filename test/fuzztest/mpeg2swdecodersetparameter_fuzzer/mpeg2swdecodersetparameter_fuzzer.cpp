@@ -38,10 +38,26 @@ bool ChangeBinaryInData(const uint8_t *data, size_t size)
         vDecSample->defaultHeight = DEFAULT_HEIGHT;
         vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
         vDecSample->isSurfMode = true;
-        vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG2");
-        vDecSample->ConfigureVideoDecoder();
-        vDecSample->SetVideoDecoderCallback();
-        vDecSample->Start();
+        if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG2") != 0) {
+            delete vDecSample;
+            vDecSample = nullptr;
+            return false;
+        }
+        if (vDecSample->ConfigureVideoDecoder() != 0) {
+            delete vDecSample;
+            vDecSample = nullptr;
+            return false;            
+        }
+        if (vDecSample->SetVideoDecoderCallback() != 0) {
+            delete vDecSample;
+            vDecSample = nullptr;
+            return false;             
+        }
+        if (vDecSample->Start() != 0) {
+            delete vDecSample;
+            vDecSample = nullptr;
+            return false;            
+        }
     }
     OH_AVFormat *format = OH_AVFormat_CreateVideoFormat("avdec_mpeg2", DEFAULT_WIDTH, DEFAULT_HEIGHT);
     FuzzedDataProvider fdp(data, size);
@@ -60,6 +76,8 @@ bool ChangeBinaryInData(const uint8_t *data, size_t size)
     vDecSample->SetParameter(format);
 
     OH_AVFormat_Destroy(format);
+    delete vDecSample;
+    vDecSample = nullptr;
     return true;
 }
 } // namespace OHOS

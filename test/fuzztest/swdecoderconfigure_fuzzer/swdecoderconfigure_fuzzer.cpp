@@ -46,13 +46,30 @@ bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     size_t maxSize = std::numeric_limits<size_t>::max();
     vDecSample->randomName = fdp.ConsumeRandomLengthString(maxSize);
     vDecSample->randomMime = fdp.ConsumeRandomLengthString(maxSize);
-    vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC");
-    vDecSample->ConfigureVideoDecoder();
-    vDecSample->SetVideoDecoderCallback();
-    vDecSample->StartVideoDecoder();
+    if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC") != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;
+    }
+    if (vDecSample->ConfigureVideoDecoder() != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;        
+    }
+    if (vDecSample->SetVideoDecoderCallback() != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;         
+    }
+    if (vDecSample->StartVideoDecoder() != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;         
+    }
     vDecSample->WaitForEOS();
     vDecSample->Release();
     delete vDecSample;
+    vDecSample = nullptr;
     return result;
 }
 } // namespace OHOS

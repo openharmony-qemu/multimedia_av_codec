@@ -58,6 +58,7 @@ VEncServerSample::~VEncServerSample()
         SetParameter();
         codec_->Stop();
         codec_->Release();
+        codec_ = nullptr;
     }
     if (signal_ != nullptr) {
         delete signal_;

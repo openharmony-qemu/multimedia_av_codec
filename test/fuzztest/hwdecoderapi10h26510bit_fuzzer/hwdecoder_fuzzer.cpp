@@ -95,19 +95,31 @@ bool HwdecoderFuzzTest(const uint8_t *data, size_t size)
             g_vDecSample = nullptr;
             return true;
         }
-        g_vDecSample->ConfigureVideoDecoder();
-        g_vDecSample->SetVideoDecoderCallback();
-        g_vDecSample->Start();
+        if (g_vDecSample->ConfigureVideoDecoder() != 0) {
+            delete g_vDecSample;
+            g_vDecSample = nullptr;
+            return true;            
+        }
+        if (g_vDecSample->SetVideoDecoderCallback() != 0) {
+            delete g_vDecSample;
+            g_vDecSample = nullptr;
+            return true;              
+        }
+        if (g_vDecSample->Start() != 0) {
+            delete g_vDecSample;
+            g_vDecSample = nullptr;
+            return true;              
+        }
         g_vDecSample->InputFuncFUZZ(SPS, SPS_SIZE + START_CODE_SIZE);
         g_vDecSample->InputFuncFUZZ(PPS, PPS_SIZE + START_CODE_SIZE);
+        g_vDecSample->InputFuncFUZZ(data, size);
+        g_vDecSample->SetParameter(data0);
+        g_vDecSample->Flush();
+        g_vDecSample->Stop();
+        g_vDecSample->Reset();
+        delete g_vDecSample;
+        g_vDecSample = nullptr;
     }
-    g_vDecSample->InputFuncFUZZ(data, size);
-    g_vDecSample->SetParameter(data0);
-    g_vDecSample->Flush();
-    g_vDecSample->Stop();
-    g_vDecSample->Reset();
-    delete g_vDecSample;
-    g_vDecSample = nullptr;
     return true;
 }
 } // namespace OHOS

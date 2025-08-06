@@ -64,7 +64,11 @@ bool HwdecoderInnerFuzzTest(const uint8_t *data, size_t size)
         vDecSample = nullptr;
         return false;
     }
-    vDecSample->SetCallback();
+    if (vDecSample->SetCallback() != 0) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;        
+    }
     if (vDecSample->sfOutput) {
         vDecSample->SetOutputSurface();
     }

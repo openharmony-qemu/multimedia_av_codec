@@ -53,10 +53,11 @@ string GetCodeName(const char* mimeName, OH_AVCodecCategory category)
     return OH_AVCapability_GetName(cap);
 }
 
-void ReleaseSample()
+bool ReleaseSample()
 {
     delete g_vEncSample;
     g_vEncSample = nullptr;
+    return false; 
 }
 
 void CodeType()
@@ -99,16 +100,16 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     g_vEncSample->DEFAULT_BITRATE_MODE = fdp.ConsumeIntegral<uint32_t>();
     g_vEncSample->defaultQuality = fdp.ConsumeIntegral<uint32_t>();
     if (g_vEncSample->CreateVideoEncoder(g_codeName.c_str()) != 0) {
-        ReleaseSample();
-        return false;
+        return ReleaseSample();
     }
-    g_vEncSample->ConfigureVideoEncoder();
+    if (g_vEncSample->ConfigureVideoEncoder() != 0) {
+        return ReleaseSample(); 
+    }
     if (g_vEncSample->surfInput) {
         g_vEncSample->CreateSurface();
     }
     if (g_vEncSample->Start() != 0) {
-        ReleaseSample();
-        return false;
+        return ReleaseSample();
     }
     if (g_vEncSample->surfInput) {
         g_vEncSample->InputFuncSurfaceFuzz();
@@ -117,8 +118,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     }
     g_vEncSample->SyncOutputFuncFuzz();
     g_vEncSample->SetParameter(data1);
-    ReleaseSample();
-    return true;
+    return ReleaseSample();
 }
 } // namespace OHOS
 

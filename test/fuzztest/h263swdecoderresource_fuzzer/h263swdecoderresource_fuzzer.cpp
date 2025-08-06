@@ -47,7 +47,10 @@ bool H263SwdecoderFuzzTest(const uint8_t *data, size_t size)
         vDecSample->defaultWidth = std::clamp(fdp.ConsumeIntegral<uint32_t>(), 176u, 4096u);
         vDecSample->defaultHeight = std::clamp(fdp.ConsumeIntegral<uint32_t>(), 176u, 4096u);
         vDecSample->defaultFrameRate = std::clamp(fdp.ConsumeFloatingPoint<double>(), frameRateMin, frameRateMax);
-        vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.H263");
+        if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.H263") != 0) {
+            Release();
+            return false;            
+        }
         int32_t ret = vDecSample->ConfigureVideoDecoder();
         if (ret != 0) {
             Release();

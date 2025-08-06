@@ -42,9 +42,15 @@ void RunNormalEncoder()
     if (ret != 0) {
         return;
     }
-    vEncSample->SetVideoEncoderCallback();
-    vEncSample->ConfigureVideoEncoder();
-    vEncSample->StartVideoEncoder();
+    if (vEncSample->SetVideoEncoderCallback() != 0) {
+        return;
+    }
+    if (vEncSample->ConfigureVideoEncoder() != 0) {
+        return;
+    }
+    if (vEncSample->StartVideoEncoder() != 0) {
+        return;
+    }
     vEncSample->WaitForEOS();
 
     auto vEncSampleSurf = make_unique<VEncNdkFuzzSample>();
@@ -53,9 +59,15 @@ void RunNormalEncoder()
     if (ret != 0) {
         return;
     }
-    vEncSampleSurf->SetVideoEncoderCallback();
-    vEncSampleSurf->ConfigureVideoEncoder();
-    vEncSampleSurf->StartVideoEncoder();
+    if (vEncSampleSurf->SetVideoEncoderCallback() != 0) {
+        return;
+    }
+    if (vEncSampleSurf->ConfigureVideoEncoder() != 0) {
+        return;
+    }
+    if (vEncSampleSurf->StartVideoEncoder() != 0) {
+        return;
+    }
     vEncSampleSurf->WaitForEOS();
 }
 
@@ -83,14 +95,28 @@ bool EncoderAPI10FuzzTest(const uint8_t *data, size_t size)
     int32_t ret = vEncSample->CreateVideoEncoder();
     if (ret != 0) {
         delete vEncSample;
+        vEncSample = nullptr;
         return false;
     }
-    vEncSample->SetVideoEncoderCallback();
-    vEncSample->ConfigureVideoEncoder();
-    vEncSample->StartVideoEncoder();
+    if (vEncSample->SetVideoEncoderCallback() != 0) {
+        delete vEncSample;
+        vEncSample = nullptr;
+        return false;
+    }
+    if (vEncSample->ConfigureVideoEncoder() != 0) {
+        delete vEncSample;
+        vEncSample = nullptr;
+        return false;        
+    }
+    if (vEncSample->StartVideoEncoder() != 0) {
+        delete vEncSample;
+        vEncSample = nullptr;
+        return false;         
+    }
     vEncSample->SetParameterFuzz(data1);
     vEncSample->WaitForEOS();
     delete vEncSample;
+    vEncSample = nullptr;
     return true;
 }
 } // namespace OHOS
