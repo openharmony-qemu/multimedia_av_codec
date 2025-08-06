@@ -39,25 +39,25 @@ bool ChangeBinaryInData(const uint8_t *data, size_t size)
         vDecSample->defaultWidth = DEFAULT_WIDTH;
         vDecSample->defaultHeight = DEFAULT_HEIGHT;
         vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-        if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG2") != 0) {
-            delete vDecSample;
-            vDecSample = nullptr;
-            return false;            
-        }
-        if (vDecSample->ConfigureVideoDecoder() != 0) {
+        if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG2") != AV_ERR_OK) {
             delete vDecSample;
             vDecSample = nullptr;
             return false;
         }
-        if (vDecSample->SetVideoDecoderCallback() != 0) {
+        if (vDecSample->ConfigureVideoDecoder() != AV_ERR_OK) {
             delete vDecSample;
             vDecSample = nullptr;
-            return false;            
+            return false;
         }
-        if (vDecSample->Start() != 0) {
+        if (vDecSample->SetVideoDecoderCallback() != AV_ERR_OK) {
             delete vDecSample;
             vDecSample = nullptr;
-            return false;              
+            return false;
+        }
+        if (vDecSample->Start() != AV_ERR_OK) {
+            delete vDecSample;
+            vDecSample = nullptr;
+            return false;
         }
     }
     OH_AVErrCode ret = vDecSample->InputFuncFUZZ(data, size);
@@ -71,7 +71,7 @@ bool ChangeBinaryInData(const uint8_t *data, size_t size)
         return false;
     }
     delete vDecSample;
-    vDecSample = nullptr;    
+    vDecSample = nullptr;
     return true;
 }
 } // namespace OHOS

@@ -56,7 +56,7 @@ bool ReleaseSample()
 {
     delete vEncSample;
     vEncSample = nullptr;
-    return true;  
+    return true;
 }
 
 void CodecType()
@@ -93,19 +93,19 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     vEncSample->syncOutputWaitTime = 1;
     int32_t intval = fdp.ConsumeIntegral<uint32_t>();
     int32_t ret = vEncSample->CreateVideoEncoder(g_codeName.c_str());
-    if (ret != 0) {
+    if (ret != AV_ERR_OK) {
         return ReleaseSample();
     }
-    if (vEncSample->ConfigureVideoEncoderFuzz(intval) != 0) {
+    if (vEncSample->ConfigureVideoEncoderFuzz(intval) != AV_ERR_OK) {
         return ReleaseSample();
     }
     if (vEncSample->surfInput) {
         vEncSample->CreateSurface();
     }
     if (vEncSample->enbleSyncMode == 0) {
-        return ReleaseSample();     
+        return ReleaseSample();
     }
-    if (vEncSample->Start() != 0) {
+    if (vEncSample->Start() != AV_ERR_OK) {
         return ReleaseSample();
     }
     if (vEncSample->surfInput) {

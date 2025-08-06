@@ -105,20 +105,20 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
     g_vDecSample->renderTimestampNs = fdp.ConsumeIntegral<int64_t>();
     g_vDecSample->isRenderAttime = fdp.ConsumeBool();
     int32_t ret = g_vDecSample->CreateVideoDecoder(g_codeName);
-    if (ret != 0) {
+    if (ret != AV_ERR_OK) {
         delete g_vDecSample;
         g_vDecSample = nullptr;
         return false;
     }
-    if (g_vDecSample->ConfigureVideoDecoder() != 0) {
+    if (g_vDecSample->ConfigureVideoDecoder() !=AV_ERR_OK) {
         delete g_vDecSample;
         g_vDecSample = nullptr;
-        return false;        
+        return false;
     }
     if (g_vDecSample->sfOutput) {
         g_vDecSample->DecodeSetSurface();
     }
-    if (g_vDecSample->Start() != 0) {
+    if (g_vDecSample->Start() != AV_ERR_OK) {
         delete g_vDecSample;
         g_vDecSample = nullptr;
         return false;

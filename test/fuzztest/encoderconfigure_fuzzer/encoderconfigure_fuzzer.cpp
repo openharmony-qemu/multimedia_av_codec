@@ -38,20 +38,20 @@ void RunNormalEncoder()
         vEncSample = nullptr;
         return;
     }
-    if (vEncSample->SetVideoEncoderCallback() != 0) {
+    if (vEncSample->SetVideoEncoderCallback() != AV_ERR_OK) {
         delete vEncSample;
         vEncSample = nullptr;
-        return;        
+        return;
     }
-    if (vEncSample->ConfigureVideoEncoder() != 0) {
+    if (vEncSample->ConfigureVideoEncoder() != AV_ERR_OK) {
         delete vEncSample;
         vEncSample = nullptr;
-        return;        
+        return;
     }
-    if (vEncSample->StartVideoEncoder() != 0) {
+    if (vEncSample->StartVideoEncoder() != AV_ERR_OK) {
         delete vEncSample;
         vEncSample = nullptr;
-        return;        
+        return;
     }
     vEncSample->WaitForEOS();
     delete vEncSample;
@@ -80,21 +80,21 @@ bool EncoderConfigureFuzzTest(const uint8_t *data, size_t size)
         vEncSample = nullptr;
         return true;
     }
-    if (vEncSample->SetVideoEncoderCallback() != 0) {
+    if (vEncSample->SetVideoEncoderCallback() != AV_ERR_OK) {
         delete vEncSample;
         vEncSample = nullptr;
-        return true;        
+        return true;
     }
     vEncSample->fuzzMode = true;
-    if (vEncSample->ConfigureVideoEncoderFuzz(intval) != 0) {
+    if (vEncSample->ConfigureVideoEncoderFuzz(intval) != AV_ERR_OK) {
         delete vEncSample;
         vEncSample = nullptr;
-        return true;         
+        return true;
     }
-    if (vEncSample->StartVideoEncoder() != 0) {
+    if (vEncSample->StartVideoEncoder() != AV_ERR_OK) {
         delete vEncSample;
         vEncSample = nullptr;
-        return true;          
+        return true;
     }
     vEncSample->WaitForEOS();
     delete vEncSample;

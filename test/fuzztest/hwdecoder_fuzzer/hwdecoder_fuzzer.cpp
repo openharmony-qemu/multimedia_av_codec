@@ -90,24 +90,24 @@ bool HwdecoderFuzzTest(const uint8_t *data, size_t size)
         g_vDecSample->defaultWidth = fdp.ConsumeIntegral<int32_t>();
         g_vDecSample->defaultHeight = fdp.ConsumeIntegral<int32_t>();
         int32_t ret = g_vDecSample->CreateVideoDecoder();
-        if (ret != 0) {
+        if (ret != AV_ERR_OK) {
             delete g_vDecSample;
             g_vDecSample = nullptr;
             return true;
         }
         ret = g_vDecSample->ConfigureVideoDecoder();
-        if (ret != 0) {
+        if (ret != AV_ERR_OK) {
             delete g_vDecSample;
             g_vDecSample = nullptr;
             return true;
         }
-        if (g_vDecSample->SetVideoDecoderCallback() != 0) {
+        if (g_vDecSample->SetVideoDecoderCallback() != AV_ERR_OK) {
             delete g_vDecSample;
             g_vDecSample = nullptr;
-            return true;            
+            return true;
         }
         ret = g_vDecSample->Start();
-        if (ret != 0) {
+        if (ret != AV_ERR_OK) {
             delete g_vDecSample;
             g_vDecSample = nullptr;
             return true;

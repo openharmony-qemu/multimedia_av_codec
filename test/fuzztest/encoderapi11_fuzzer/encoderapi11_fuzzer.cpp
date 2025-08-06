@@ -44,13 +44,13 @@ void RunNormalEncoder()
     if (ret != 0) {
         return;
     }
-    if (vEncSample->SetVideoEncoderCallback() != 0) {
+    if (vEncSample->SetVideoEncoderCallback() != AV_ERR_OK) {
         return;
     }
-    if (vEncSample->ConfigureVideoEncoder() != 0) {
+    if (vEncSample->ConfigureVideoEncoder() != AV_ERR_OK) {
         return;
     }
-    if (vEncSample->StartVideoEncoder() != 0) {
+    if (vEncSample->StartVideoEncoder() != AV_ERR_OK) {
         return;
     }
     vEncSample->WaitForEOS();
@@ -61,13 +61,13 @@ void RunNormalEncoder()
     if (ret != 0) {
         return;
     }
-    if (vEncSampleSurf->SetVideoEncoderCallback() != 0) {
+    if (vEncSampleSurf->SetVideoEncoderCallback() != AV_ERR_OK) {
         return;
     }
-    if (vEncSampleSurf->ConfigureVideoEncoder() != 0) {
+    if (vEncSampleSurf->ConfigureVideoEncoder() != AV_ERR_OK) {
         return;
     }
-    if (vEncSampleSurf->StartVideoEncoder() != 0) {
+    if (vEncSampleSurf->StartVideoEncoder() != AV_ERR_OK) {
         return;
     }
     vEncSampleSurf->WaitForEOS();
@@ -117,16 +117,16 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     g_vEncSample->defaultQuality = fdp.ConsumeIntegral<uint32_t>();
     g_vEncSample->defaultFrameAfter = fdp.ConsumeIntegral<int32_t>();
     g_vEncSample->defaultMaxCount = fdp.ConsumeIntegral<int32_t>();
-    if (g_vEncSample->CreateVideoEncoder() != 0) {
+    if (g_vEncSample->CreateVideoEncoder() != AV_ERR_OK) {
         return ReleaseSample();
     }
-    if (g_vEncSample->SetVideoEncoderCallback() != 0) {
-        return ReleaseSample();        
-    }
-    if (g_vEncSample->ConfigureVideoEncoder() != 0) {
+    if (g_vEncSample->SetVideoEncoderCallback() != AV_ERR_OK) {
         return ReleaseSample();
     }
-    if (g_vEncSample->StartVideoEncoder() != 0) {
+    if (g_vEncSample->ConfigureVideoEncoder() != AV_ERR_OK) {
+        return ReleaseSample();
+    }
+    if (g_vEncSample->StartVideoEncoder() != AV_ERR_OK) {
         return ReleaseSample();
     }
     g_vEncSample->SetParameter(data1);

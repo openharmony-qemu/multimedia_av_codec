@@ -32,7 +32,7 @@ bool ReleaseSample()
 {
     delete g_vEncSample;
     g_vEncSample = nullptr;
-    return false;    
+    return false;
 }
 
 namespace OHOS {
@@ -73,20 +73,20 @@ bool EncoderInnerFuzzTest(const uint8_t *data, size_t size)
     g_vEncSample->videoCoordinateY = (g_vEncSample->defaultHeight - bufferConfig.height) / doubleValue;
     g_vEncSample->videoCoordinateWidth = bufferConfig.width;
     g_vEncSample->videoCoordinateHeight = bufferConfig.height;
-    if (g_vEncSample->CreateByName(gCodecName) != 0) {
-        return ReleaseSample();      
+    if (g_vEncSample->CreateByName(gCodecName) != AV_ERR_OK) {
+        return ReleaseSample();
     }
-    if (g_vEncSample->SetCallback() != 0) {
-        return ReleaseSample();        
+    if (g_vEncSample->SetCallback() != AV_ERR_OK) {
+        return ReleaseSample();
     }
-    if (g_vEncSample->Configure() != 0) {
-        return ReleaseSample();        
+    if (g_vEncSample->Configure() != AV_ERR_OK) {
+        return ReleaseSample();
     }
-    if (g_vEncSample->SetCustomBuffer(bufferConfig, const_cast<uint8_t*>(data), size) != 0) {
-        return ReleaseSample();         
+    if (g_vEncSample->SetCustomBuffer(bufferConfig, const_cast<uint8_t*>(data), size) != AV_ERR_OK) {
+        return ReleaseSample();
     }
-    if (g_vEncSample->StartVideoEncoder() != 0) {
-        return ReleaseSample();        
+    if (g_vEncSample->StartVideoEncoder() != AV_ERR_OK) {
+        return ReleaseSample();
     }
     g_vEncSample->WaitForEOS();
     return ReleaseSample();

@@ -53,28 +53,28 @@ bool HwdecoderInnerFuzzTest(const uint8_t *data, size_t size)
     }
     vDecSample->sfOutput = fdp.ConsumeBool();
     int32_t ret = vDecSample->CreateByName(codecName);
-    if (ret != 0) {
+    if (ret != AV_ERR_OK) {
         delete vDecSample;
         vDecSample = nullptr;
         return false;
     }
     ret = vDecSample->Configure();
-    if (ret != 0) {
+    if (ret != AV_ERR_OK) {
         delete vDecSample;
         vDecSample = nullptr;
         return false;
     }
-    if (vDecSample->SetCallback() != 0) {
+    if (vDecSample->SetCallback() != AV_ERR_OK) {
         delete vDecSample;
         vDecSample = nullptr;
-        return false;        
+        return false;
     }
     if (vDecSample->sfOutput) {
         vDecSample->SetOutputSurface();
     }
     vDecSample->Prepare();
     ret = vDecSample->Start();
-    if (ret != 0) {
+    if (ret != AV_ERR_OK) {
         delete vDecSample;
         vDecSample = nullptr;
         return true;

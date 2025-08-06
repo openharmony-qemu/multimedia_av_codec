@@ -62,25 +62,25 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         vDecSample->defaultHeight = DEFAULT_HEIGHT;
         vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
         vDecSample->isSurfMode = true;
-        if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC") != 0) {
+        if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC") != AV_ERR_OK) {
             delete vDecSample;
             vDecSample = nullptr;
             return false;
         }
-        if (vDecSample->ConfigureVideoDecoder() != 0) {
+        if (vDecSample->ConfigureVideoDecoder() != AV_ERR_OK) {
             delete vDecSample;
             vDecSample = nullptr;
-            return false;            
+            return false;
         }
-        if (vDecSample->SetVideoDecoderCallback() != 0) {
+        if (vDecSample->SetVideoDecoderCallback() != AV_ERR_OK) {
             delete vDecSample;
             vDecSample = nullptr;
-            return false;               
+            return false;
         }
         if (vDecSample->Start() != 0) {
             delete vDecSample;
             vDecSample = nullptr;
-            return false;            
+            return false;
         }
     }
 

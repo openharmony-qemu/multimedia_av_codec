@@ -68,25 +68,25 @@ bool H263SwdecoderFuzzTest(const uint8_t *data, size_t size)
         vDecSample->defaultHeight = DEFAULT_HEIGHT;
         vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
         vDecSample->isSurfMode = true;
-        if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.H263") != 0) {
+        if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.H263") != AV_ERR_OK) {
             delete vDecSample;
             vDecSample = nullptr;
             return false;
         }
-        if (vDecSample->ConfigureVideoDecoder() != 0) {
+        if (vDecSample->ConfigureVideoDecoder() != AV_ERR_OK) {
             delete vDecSample;
             vDecSample = nullptr;
-            return false;            
+            return false;
         }
-        if (vDecSample->SetVideoDecoderCallback() != 0) {
+        if (vDecSample->SetVideoDecoderCallback() != AV_ERR_OK) {
             delete vDecSample;
             vDecSample = nullptr;
-            return false;             
+            return false;
         }
-        if (vDecSample->Start() != 0) {
+        if (vDecSample->Start() != AV_ERR_OK) {
             delete vDecSample;
             vDecSample = nullptr;
-            return false;             
+            return false;
         }
     }
 

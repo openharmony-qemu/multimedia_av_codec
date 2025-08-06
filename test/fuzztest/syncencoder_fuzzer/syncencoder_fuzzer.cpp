@@ -57,7 +57,7 @@ bool ReleaseSample()
 {
     delete g_vEncSample;
     g_vEncSample = nullptr;
-    return false; 
+    return false;
 }
 
 void CodeType()
@@ -99,16 +99,16 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     g_vEncSample->defaultKeyFrameInterval = fdp.ConsumeIntegral<uint32_t>();
     g_vEncSample->DEFAULT_BITRATE_MODE = fdp.ConsumeIntegral<uint32_t>();
     g_vEncSample->defaultQuality = fdp.ConsumeIntegral<uint32_t>();
-    if (g_vEncSample->CreateVideoEncoder(g_codeName.c_str()) != 0) {
+    if (g_vEncSample->CreateVideoEncoder(g_codeName.c_str()) != AV_ERR_OK) {
         return ReleaseSample();
     }
-    if (g_vEncSample->ConfigureVideoEncoder() != 0) {
-        return ReleaseSample(); 
+    if (g_vEncSample->ConfigureVideoEncoder() != AV_ERR_OK) {
+        return ReleaseSample();
     }
     if (g_vEncSample->surfInput) {
         g_vEncSample->CreateSurface();
     }
-    if (g_vEncSample->Start() != 0) {
+    if (g_vEncSample->Start() != AV_ERR_OK) {
         return ReleaseSample();
     }
     if (g_vEncSample->surfInput) {

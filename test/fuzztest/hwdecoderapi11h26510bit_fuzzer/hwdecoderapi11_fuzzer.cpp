@@ -55,7 +55,7 @@ void RunNormalDecoder()
     vDecSample->defaultHeight = DEFAULT_HEIGHT;
     vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
     int32_t ret = vDecSample->CreateVideoDecoder();
-    if (ret != 0) {
+    if (ret != AV_ERR_OK) {
         delete vDecSample;
         vDecSample = nullptr;
         return;
@@ -72,7 +72,7 @@ void RunNormalDecoder()
     vDecSample->defaultHeight = DEFAULT_HEIGHT;
     vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
     ret = vDecSample->CreateVideoDecoder();
-    if (ret != 0) {
+    if (ret != AV_ERR_OK) {
         delete vDecSample;
         vDecSample = nullptr;
         return;
@@ -106,25 +106,25 @@ bool HwdecoderApi11FuzzTest(const uint8_t *data, size_t size)
         g_vDecSample->renderTimestampNs = fdp.ConsumeIntegral<int64_t>();
         g_vDecSample->isRenderAttime = fdp.ConsumeBool();
         int32_t ret = g_vDecSample->CreateVideoDecoder();
-        if (ret != 0) {
+        if (ret != AV_ERR_OK) {
             delete g_vDecSample;
             g_vDecSample = nullptr;
             return true;
         }
-        if (g_vDecSample->ConfigureVideoDecoder() != 0) {
+        if (g_vDecSample->ConfigureVideoDecoder() != AV_ERR_OK) {
             delete g_vDecSample;
             g_vDecSample = nullptr;
-            return true;            
+            return true;
         }
-        if (g_vDecSample->SetVideoDecoderCallback() != 0) {
+        if (g_vDecSample->SetVideoDecoderCallback() != AV_ERR_OK) {
             delete g_vDecSample;
             g_vDecSample = nullptr;
-            return true;            
+            return true;
         }
-        if (g_vDecSample->Start() != 0) {
+        if (g_vDecSample->Start() != AV_ERR_OK) {
             delete g_vDecSample;
             g_vDecSample = nullptr;
-            return true;             
+            return true;
         }
         g_vDecSample->InputFuncFUZZ(SPS, SPS_SIZE + START_CODE_SIZE);
         g_vDecSample->InputFuncFUZZ(PPS, PPS_SIZE + START_CODE_SIZE);

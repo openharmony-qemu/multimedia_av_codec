@@ -61,19 +61,19 @@ bool H263SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     size_t maxSize = std::numeric_limits<size_t>::max();
     vDecSample->randomName = fdp.ConsumeRandomLengthString(maxSize);
     vDecSample->randomMime = fdp.ConsumeRandomLengthString(maxSize);
-    if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.H263") != 0) {
-        delete vDecSample;
-        return false;      
-    }
-    if (vDecSample->ConfigureVideoDecoder() != 0) {
+    if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.H263") != AV_ERR_OK) {
         delete vDecSample;
         return false;
     }
-    if (vDecSample->SetVideoDecoderCallback() != 0) {
+    if (vDecSample->ConfigureVideoDecoder() != AV_ERR_OK) {
         delete vDecSample;
         return false;
     }
-    if (vDecSample->StartVideoDecoder() != 0) {
+    if (vDecSample->SetVideoDecoderCallback() != AV_ERR_OK) {
+        delete vDecSample;
+        return false;
+    }
+    if (vDecSample->StartVideoDecoder() != AV_ERR_OK) {
         delete vDecSample;
         return false;
     }
