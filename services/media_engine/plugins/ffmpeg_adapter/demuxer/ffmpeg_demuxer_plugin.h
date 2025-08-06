@@ -340,7 +340,7 @@ private:
     std::mutex fFmpegReadLoopMutex_;
     uint32_t trackId_ = 0;
     ThreadState threadState_ {ThreadState::NOT_STARTED};
-    Status readLoopStatus_ = {Status::OK};
+    std::atomic<Status> readLoopStatus_ = {Status::OK};
     bool isPauseReadPacket_ = false;
     std::unordered_map<int, int> readModeMap_; // 0 mean sync read, 1 mean async read
     std::mutex seekWaitMutex_;
