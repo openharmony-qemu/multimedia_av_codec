@@ -47,27 +47,28 @@ config("av_codec_capi_header_config") {
   if (av_codec_support_drm) {
     defines += [ "SUPPORT_DRM" ]
   }
-  cflags = [
-    "-fno-exceptions",
-    "-Wall",
-    "-fno-common",
-    "-fstack-protector-all",
-    "-FPIC",
-    "-FS",
-    "-O2",
-    "-D_FORTIFY_SOURCE=2",
-    "-Wformat=2",
-    "-Wdate-time",
-  ]
+  cflags = [ ]
 
   cflags_cc = [
-    "-std=c++17",
     "-fno-rtti",
   ]
 }
 
 config("av_codec_capi_compile_config") {
-  cflags = [ "-Wshadow" ]
+  cflags = [ 
+    "-std=c++17",
+    "-fstack-protector-all",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-fno-common",
+    "-fno-exceptions",
+    "-Wall",
+    "-Wdate-time",
+    "-Wformat=2",
+    "-Wshadow",
+  ]
 }
 
 config("av_cenc_info_capi_config") {
