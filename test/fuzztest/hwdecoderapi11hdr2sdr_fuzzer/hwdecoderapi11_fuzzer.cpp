@@ -68,6 +68,13 @@ void RunNormalDecoder()
     delete vDecSample;
 }
 
+bool ReleaseSample()
+{
+    delete g_vDecSample;
+    g_vDecSample = nullptr;
+    return true;
+}
+
 bool g_needRunNormalDecoder = true;
 bool HwdecoderApi11FuzzTest(const uint8_t *data, size_t size)
 {
@@ -90,24 +97,16 @@ bool HwdecoderApi11FuzzTest(const uint8_t *data, size_t size)
         g_vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
         int32_t ret = g_vDecSample->CreateVideoDecoder();
         if (ret != AV_ERR_OK) {
-            delete g_vDecSample;
-            g_vDecSample = nullptr;
-            return true;
+            return ReleaseSample();
         }
         if (g_vDecSample->ConfigureVideoDecoder() != AV_ERR_OK) {
-            delete g_vDecSample;
-            g_vDecSample = nullptr;
-            return true;
+            return ReleaseSample();
         }
         if (g_vDecSample->SetVideoDecoderCallback() != AV_ERR_OK) {
-            delete g_vDecSample;
-            g_vDecSample = nullptr;
-            return true;
+            return ReleaseSample();
         }
         if (g_vDecSample->Start() != AV_ERR_OK) {
-            delete g_vDecSample;
-            g_vDecSample = nullptr;
-            return true;
+            return ReleaseSample();
         }
         g_vDecSample->InputFuncFUZZ(SPS, SPS_SIZE + START_CODE_SIZE);
         g_vDecSample->InputFuncFUZZ(PPS, PPS_SIZE + START_CODE_SIZE);

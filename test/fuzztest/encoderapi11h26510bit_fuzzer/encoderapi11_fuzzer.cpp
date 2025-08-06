@@ -113,7 +113,7 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     g_vEncSample->defaultQuality = fdp.ConsumeIntegral<uint32_t>();
     g_vEncSample->defaultFrameAfter = fdp.ConsumeIntegral<int32_t>();
     g_vEncSample->defaultMaxCount = fdp.ConsumeIntegral<int32_t>();
-   if (g_vEncSample->CreateVideoEncoder() != AV_ERR_OK) {
+    if (g_vEncSample->CreateVideoEncoder() != AV_ERR_OK) {
         return ReleaseSample();
     }
     if (g_vEncSample->SetVideoEncoderCallback() != AV_ERR_OK) {

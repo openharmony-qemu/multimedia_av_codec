@@ -22,6 +22,7 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "hwdecoderinner_fuzzer"
+VDecNdkInnerFuzzSample *g_vDecSample = nullptr;
 
 namespace OHOS {
 void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
@@ -31,6 +32,13 @@ void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
         file.write(reinterpret_cast<const char*>(data), size);
         file.close();
     }
+}
+
+bool ReleaseSample()
+{
+    delete g_vDecSample;
+    g_vDecSample = nullptr;
+    return true;
 }
 
 bool HwdecoderInnerFuzzTest(const uint8_t *data, size_t size)
@@ -46,46 +54,36 @@ bool HwdecoderInnerFuzzTest(const uint8_t *data, size_t size)
     }
     string codecName = OH_AVCapability_GetName(cap);
     FuzzedDataProvider fdp(data, size);
-    VDecNdkInnerFuzzSample *vDecSample = new VDecNdkInnerFuzzSample();
-    vDecSample->isP3Full = fdp.ConsumeBool();
-    if (vDecSample->isP3Full) {
-        vDecSample->defaultColorspace = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_FULL);
+    g_vDecSample = new VDecNdkInnerFuzzSample();
+    g_vDecSample->isP3Full = fdp.ConsumeBool();
+    if (g_vDecSample->isP3Full) {
+        g_vDecSample->defaultColorspace = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_FULL);
     }
-    vDecSample->sfOutput = fdp.ConsumeBool();
-    int32_t ret = vDecSample->CreateByName(codecName);
+    g_vDecSample->sfOutput = fdp.ConsumeBool();
+    int32_t ret = g_vDecSample->CreateByName(codecName);
     if (ret != AV_ERR_OK) {
-        delete vDecSample;
-        vDecSample = nullptr;
-        return false;
+        return ReleaseSample();
     }
-    ret = vDecSample->Configure();
+    ret = g_vDecSample->Configure();
     if (ret != AV_ERR_OK) {
-        delete vDecSample;
-        vDecSample = nullptr;
-        return false;
+        return ReleaseSample();
     }
-    if (vDecSample->SetCallback() != AV_ERR_OK) {
-        delete vDecSample;
-        vDecSample = nullptr;
-        return false;
+    if (g_vDecSample->SetCallback() != AV_ERR_OK) {
+        return ReleaseSample();
     }
-    if (vDecSample->sfOutput) {
-        vDecSample->SetOutputSurface();
+    if (g_vDecSample->sfOutput) {
+        g_vDecSample->SetOutputSurface();
     }
-    vDecSample->Prepare();
-    ret = vDecSample->Start();
+    g_vDecSample->Prepare();
+    ret = g_vDecSample->Start();
     if (ret != AV_ERR_OK) {
-        delete vDecSample;
-        vDecSample = nullptr;
-        return true;
+        return ReleaseSample();
     }
-    vDecSample->InputFuncFUZZ(data, size);
-    vDecSample->Flush();
-    vDecSample->Stop();
-    vDecSample->Reset();
-    delete vDecSample;
-    vDecSample = nullptr;
-    return true;
+    g_vDecSample->InputFuncFUZZ(data, size);
+    g_vDecSample->Flush();
+    g_vDecSample->Stop();
+    g_vDecSample->Reset();
+    return ReleaseSample();
 }
 } // namespace OHOS
 
