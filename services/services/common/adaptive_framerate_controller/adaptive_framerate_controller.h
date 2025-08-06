@@ -30,15 +30,13 @@ namespace MediaAVCodec {
 class FramerateCalculator : public std::enable_shared_from_this<FramerateCalculator>,
                             public AVCodecDfxComponent {
 public:
-    FramerateCalculator(int32_t instanceId, uint8_t delayCheckTimes,
+    FramerateCalculator(int32_t instanceId, bool isDecoder,
                         std::function<void(double)> &&resetFramerateHandler);
     void OnFrameConsumed();
     void OnStopped();
     bool CheckAndResetFramerate();
     void SetConfiguredFramerate(double framerate);
     bool SetFramerate2ConfiguredFramerate();
-
-    constexpr static uint8_t MAX_DECODER_DELAY_CHECK_TIMES = 5;
 
 private:
     enum class Status {
@@ -50,14 +48,15 @@ private:
     void UnregisterFromAFC();
 
     int32_t instanceId_;
+    bool isDecoder_ = true;
     std::atomic<Status> status_ = Status::INITIALIZED;
-    std::function<void(double)> resetFramerateHandler_;
     std::atomic<uint32_t> frameCount_{0};
     double configuredFramerate_{60.0};
-    double lastFramerate_{1.0};
-    uint8_t delayCheckTimes_{0};
+    std::atomic<double> lastFramerate_{1.0};
+    uint8_t increseCheckTimes_{0};
     uint8_t decreseCheckTimes_{0};
     std::chrono::steady_clock::time_point lastAdjustmentTime_{};
+    std::function<void(double)> resetFramerateHandler_;
 };
 
 class AdaptiveFramerateController {

@@ -70,6 +70,14 @@ std::string CreateVideoLogTag(const OHOS::Media::Meta &meta);
         }                                                                                                              \
     } while (0)
 
+#define CHECK_AND_RETURN_RET_LOGD_WITH_TAG(cond, ret, fmt, ...)                                                        \
+    do {                                                                                                               \
+        if (!(cond)) {                                                                                                 \
+            AVCODEC_LOGD_WITH_TAG(fmt, ##__VA_ARGS__);                                                                 \
+            return ret;                                                                                                \
+        }                                                                                                              \
+    } while (0)
+
 #define EXPECT_AND_LOGW_WITH_TAG(cond, fmt, ...)                                                                       \
     do {                                                                                                               \
         if ((cond)) {                                                                                                  \

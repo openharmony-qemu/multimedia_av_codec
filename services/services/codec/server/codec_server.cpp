@@ -290,8 +290,9 @@ int32_t CodecServer::Configure(const Format &format)
 
     if (framerateCalculator_) {
         auto framerate = 0.0;
-        format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, framerate);
-        framerateCalculator_->SetConfiguredFramerate(framerate);
+        if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, framerate)) {
+            framerateCalculator_->SetConfiguredFramerate(framerate);
+        }
     }
 
     int32_t ret = codecBase_->Configure(config);
@@ -849,7 +850,7 @@ void CodecServer::InitFramerateCalculator(Meta &callerInfo)
 {
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
         framerateCalculator_ = std::make_shared<FramerateCalculator>(instanceId_,
-            codecType_ == AVCODEC_TYPE_VIDEO_ENCODER ? 0 : FramerateCalculator::MAX_DECODER_DELAY_CHECK_TIMES,
+            codecType_ == AVCODEC_TYPE_VIDEO_DECODER,
             [weakCodecBase = std::weak_ptr<CodecBase>(codecBase_), codecType = codecType_](double framerate) {
                 auto codecBase = weakCodecBase.lock();
                 if (!codecBase) {
@@ -886,6 +887,13 @@ int32_t CodecServer::SetParameter(const Format &format)
         CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Failed to get codec format");
         ret = CodecParamChecker::CheckParameterValid(format, oldFormat, codecName_, scenario_);
         CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "Params in format is not valid");
+    }
+
+    if (framerateCalculator_) {
+        auto framerate = 0.0;
+        if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, framerate)) {
+            framerateCalculator_->SetConfiguredFramerate(framerate);
+        }
     }
 
     return codecBase_->SetParameter(format);
