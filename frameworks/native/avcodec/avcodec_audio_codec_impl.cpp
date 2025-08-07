@@ -19,6 +19,7 @@
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
 #include "avcodec_codec_name.h"
+#include "avcodec_mime_type.h"
 #include "codec_server.h"
 #include "qos.h"
 
@@ -51,6 +52,15 @@ void AudioCodecConsumerListener::OnBufferAvailable()
 int32_t AVCodecAudioCodecImpl::Init(AVCodecType type, bool isMimeType, const std::string &name)
 {
     AVCODEC_SYNC_TRACE;
+
+    bool enableOuter = isMimeType
+                           ? AVCodecMimeType::CheckAudioCodecMimeSupportOuter(name, type == AVCODEC_TYPE_AUDIO_ENCODER)
+                           : AVCodecCodecName::CheckAudioCodecNameSupportOuter(name);
+    if (!enableOuter) {
+        AVCODEC_LOGW("AVCodecAudioCodecImpl: %{public}s not support", name.c_str());
+        return AVCS_ERR_UNSUPPORT;
+    }
+
     Format format;
     codecService_ = CodecServer::Create();
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_UNKNOWN, "failed to create codec service");
