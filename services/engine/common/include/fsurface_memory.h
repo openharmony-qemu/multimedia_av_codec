@@ -61,7 +61,7 @@ public:
         isAttached = false;
     }
     ~FSurfaceMemory();
-    int32_t AllocSurfaceBuffer(int32_t &width, int32_t &height);
+    int32_t AllocSurfaceBuffer(int32_t width, int32_t height);
     void ReleaseSurfaceBuffer();
     sptr<SurfaceBuffer> GetSurfaceBuffer();
     int32_t GetSurfaceBufferStride();
@@ -74,7 +74,7 @@ public:
 private:
     void SetSurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, Owner toChangeOwner);
     int32_t RequestSurfaceBuffer();
-    void SetCallerToBuffer(int32_t &w, int32_t &h);
+    void SetCallerToBuffer(int32_t w, int32_t h);
     CallerInfo decInfo_;
     sptr<SurfaceBuffer> surfaceBuffer_ = nullptr;
     sptr<SyncFence> fence_ = nullptr;
