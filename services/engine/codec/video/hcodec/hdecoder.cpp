@@ -854,7 +854,9 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         int32_t hdfRet = compNode_->UseBuffer(OMX_DirOutput, *omxBuffer, *outBuffer);
         IF_TRUE_RETURN_VAL_WITH_MSG(hdfRet != HDF_SUCCESS, AVCS_ERR_NO_MEMORY, "Failed to UseBuffer with output port");
 
-        SetCallerToBuffer(surfaceBuffer->GetFileDescriptor());
+        SetCallerToBuffer(surfaceBuffer->GetFileDescriptor(),
+                          static_cast<uint32_t>(surfaceBuffer->GetWidth()),
+                          static_cast<uint32_t>(surfaceBuffer->GetHeight()));
         outBuffer->fenceFd = -1;
         BufferInfo info(false, BufferOwner::OWNED_BY_US, record_);
         info.surfaceBuffer = surfaceBuffer;
@@ -1023,7 +1025,9 @@ void HDecoder::DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::v
         nullSlot->needDealWithCache = (requestCfg_.usage & BUFFER_USAGE_MEM_MMZ_CACHE);
         HLOGI("bufferId=%u, seq=%u", nullSlot->bufferId, buffer->GetSeqNum());
     }
-    SetCallerToBuffer(buffer->GetFileDescriptor());
+    SetCallerToBuffer(buffer->GetFileDescriptor(),
+                      static_cast<uint32_t>(buffer->GetWidth()),
+                      static_cast<uint32_t>(buffer->GetHeight()));
     WrapSurfaceBufferToSlot(*nullSlot, buffer, 0, 0);
     if (nullSlot == outputBufferPool_.begin()) {
         UpdateFormatFromSurfaceBuffer();

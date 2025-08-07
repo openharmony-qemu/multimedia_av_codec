@@ -38,13 +38,13 @@ using namespace std;
 using namespace CodecHDI;
 using namespace Media;
 
-void HCodec::SetCallerToBuffer(int fd)
+void HCodec::SetCallerToBuffer(int fd, uint32_t w, uint32_t h)
 {
-    const char* type = isEncoder_ ? "hwEncoder" : "hwDecoder";
+    const char* type = isEncoder_ ? "hw-video-encoder" : "hw-video-decoder";
     ioctl(fd, DMA_BUF_SET_TYPE, type);
  
-    string& appName = caller_.app.processName;
-    ioctl(fd, DMA_BUF_SET_NAME_A, appName.c_str());
+    string bufName = to_string(w) + 'x' + to_string(h) + '-' + mime_ + '-' + to_string(componentId_);
+    ioctl(fd, DMA_BUF_SET_NAME_A, bufName.c_str());
 }
 
 std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
@@ -354,21 +354,20 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
     LOGI(">> debug mode = %d, dump mode = %s(%lu)",
         debugMode_, dumpModeStr.c_str(), dumpMode_);
 
-    string isEncoderStr = isEncoder ? "enc." : "dec.";
     switch (static_cast<int>(codingType_)) {
         case OMX_VIDEO_CodingAVC:
-            shortName_ = isEncoderStr + "avc";
+            mime_ = "avc";
             break;
         case CODEC_OMX_VIDEO_CodingHEVC:
-            shortName_ = isEncoderStr + "hevc";
+            mime_ = "hevc";
             break;
         case CODEC_OMX_VIDEO_CodingVVC:
-            shortName_ = isEncoderStr + "vvc";
+            mime_ = "vvc";
             break;
         default:
-            shortName_ = isEncoderStr;
             break;
     };
+    shortName_ = (isEncoder ? "enc." : "dec.") + mime_;
     isSecure_ = IsSecureMode(caps_.compName);
     if (isSecure_) {
         shortName_ += ".secure";
@@ -672,7 +671,7 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
             HLOGE("CreateAVBuffer failed");
             return AVCS_ERR_NO_MEMORY;
         }
-        SetCallerToBuffer(outBuffer->fd);
+        SetCallerToBuffer(outBuffer->fd, def.format.video.nFrameWidth, def.format.video.nFrameHeight);
         BufferInfo bufInfo((portIndex == OMX_DirInput), BufferOwner::OWNED_BY_US, record_);
         bufInfo.surfaceBuffer  = nullptr;
         bufInfo.avBuffer       = avBuffer;
@@ -759,7 +758,9 @@ int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
             HLOGE("Failed to UseBuffer on %s port", (portIndex == OMX_DirInput ? "input" : "output"));
             return AVCS_ERR_INVALID_VAL;
         }
-        SetCallerToBuffer(surfaceBuffer->GetFileDescriptor());
+        SetCallerToBuffer(surfaceBuffer->GetFileDescriptor(),
+                          static_cast<uint32_t>(surfaceBuffer->GetWidth()),
+                          static_cast<uint32_t>(surfaceBuffer->GetHeight()));
         BufferInfo bufInfo((portIndex == OMX_DirInput), BufferOwner::OWNED_BY_US, record_);
         bufInfo.surfaceBuffer  = surfaceBuffer;
         bufInfo.avBuffer       = avBuffer;

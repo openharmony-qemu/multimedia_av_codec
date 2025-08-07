@@ -266,7 +266,7 @@ protected:
     // start
     virtual bool ReadyToStart() = 0;
     virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) = 0;
-    void SetCallerToBuffer(int fd);
+    void SetCallerToBuffer(int fd, uint32_t w, uint32_t h);
     virtual void UpdateFormatFromSurfaceBuffer() = 0;
     int32_t GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex);
@@ -397,6 +397,7 @@ protected:
     OMX_VIDEO_CODINGTYPE codingType_;
     bool isEncoder_;
     bool isSecure_ = false;
+    std::string mime_;
     std::string shortName_;
     uint32_t componentId_ = 0;
     std::string compUniqueStr_;
