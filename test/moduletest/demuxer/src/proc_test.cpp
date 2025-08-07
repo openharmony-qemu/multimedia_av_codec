@@ -1766,9 +1766,6 @@ HWTEST_F(DemuxerProcNdkTest, VIDEO_DEMUXER_VVC_0100, TestSize.Level0)
         trackFormat = OH_AVSource_GetTrackFormat(source, 0);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-        if (videoIsEnd) {
-            continue;
-        }
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
         OH_AVFormat_Destroy(trackFormat);
