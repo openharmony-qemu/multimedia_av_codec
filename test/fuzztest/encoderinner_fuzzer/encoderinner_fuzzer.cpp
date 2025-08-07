@@ -26,57 +26,70 @@ using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "encoderinner_fuzzer"
 
+VEncNdkInnerFuzzSample *g_vEncSample = nullptr;
+
+bool ReleaseSample()
+{
+    delete g_vEncSample;
+    g_vEncSample = nullptr;
+    return false;
+}
+
 namespace OHOS {
+BufferRequestConfig bufferConfig = {
+    .width = 128,
+    .height = 72,
+    .strideAlignment = 0x8,
+    .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+    .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+    .timeout = 0,
+};
+
 bool EncoderInnerFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < sizeof(int32_t)) {
         return false;
     }
-    VEncNdkInnerFuzzSample *vEncSample = new VEncNdkInnerFuzzSample();
+    g_vEncSample = new VEncNdkInnerFuzzSample();
     string gCodecMime = "video/avc";
     string gCodecName = "";
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(gCodecMime.c_str(), true, HARDWARE);
     if (cap == nullptr) {
-        delete vEncSample;
-        return false;
+        return ReleaseSample();
     }
     const char *tmpCodecName = OH_AVCapability_GetName(cap);
     if (strcmp(tmpCodecName, "") == 0) {
-        delete vEncSample;
-        return false;
+        return ReleaseSample();
     }
     gCodecName = tmpCodecName;
-    if (!vEncSample->GetWaterMarkCapability(gCodecMime)) {
-        delete vEncSample;
-        return false;
+    if (!g_vEncSample->GetWaterMarkCapability(gCodecMime)) {
+        return ReleaseSample();
     }
-    BufferRequestConfig bufferConfig = {
-        .width = 128,
-        .height = 72,
-        .strideAlignment = 0x8,
-        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
-        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
-        .timeout = 0,
-    };
-    vEncSample->inpDir = "/data/test/corpus/1280_720_nv.yuv";
-    vEncSample->surfaceInput = true;
-    vEncSample->enableWaterMark = true;
+    g_vEncSample->inpDir = "/data/test/corpus/1280_720_nv.yuv";
+    g_vEncSample->surfaceInput = true;
+    g_vEncSample->enableWaterMark = true;
     constexpr uint32_t doubleValue = 2;
-    vEncSample->videoCoordinateX = (vEncSample->defaultWidth - bufferConfig.width) / doubleValue;
-    vEncSample->videoCoordinateY = (vEncSample->defaultHeight - bufferConfig.height) / doubleValue;
-    vEncSample->videoCoordinateWidth = bufferConfig.width;
-    vEncSample->videoCoordinateHeight = bufferConfig.height;
-
-    int32_t err = vEncSample->CreateByName(gCodecName);
-    if (err == AVCS_ERR_OK) {
-        vEncSample->SetCallback();
-        vEncSample->Configure();
-        vEncSample->SetCustomBuffer(bufferConfig, const_cast<uint8_t*>(data), size);
-        vEncSample->StartVideoEncoder();
-        vEncSample->WaitForEOS();
+    g_vEncSample->videoCoordinateX = (g_vEncSample->defaultWidth - bufferConfig.width) / doubleValue;
+    g_vEncSample->videoCoordinateY = (g_vEncSample->defaultHeight - bufferConfig.height) / doubleValue;
+    g_vEncSample->videoCoordinateWidth = bufferConfig.width;
+    g_vEncSample->videoCoordinateHeight = bufferConfig.height;
+    if (g_vEncSample->CreateByName(gCodecName) != AV_ERR_OK) {
+        return ReleaseSample();
     }
-    delete vEncSample;
-    return true;
+    if (g_vEncSample->SetCallback() != AV_ERR_OK) {
+        return ReleaseSample();
+    }
+    if (g_vEncSample->Configure() != AV_ERR_OK) {
+        return ReleaseSample();
+    }
+    if (g_vEncSample->SetCustomBuffer(bufferConfig, const_cast<uint8_t*>(data), size) != AV_ERR_OK) {
+        return ReleaseSample();
+    }
+    if (g_vEncSample->StartVideoEncoder() != AV_ERR_OK) {
+        return ReleaseSample();
+    }
+    g_vEncSample->WaitForEOS();
+    return ReleaseSample();
 }
 } // namespace OHOS
 

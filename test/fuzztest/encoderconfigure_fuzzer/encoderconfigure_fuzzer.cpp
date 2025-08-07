@@ -35,11 +35,24 @@ void RunNormalEncoder()
     int32_t ret = vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
     if (ret != 0) {
         delete vEncSample;
+        vEncSample = nullptr;
         return;
     }
-    vEncSample->SetVideoEncoderCallback();
-    vEncSample->ConfigureVideoEncoder();
-    vEncSample->StartVideoEncoder();
+    if (vEncSample->SetVideoEncoderCallback() != AV_ERR_OK) {
+        delete vEncSample;
+        vEncSample = nullptr;
+        return;
+    }
+    if (vEncSample->ConfigureVideoEncoder() != AV_ERR_OK) {
+        delete vEncSample;
+        vEncSample = nullptr;
+        return;
+    }
+    if (vEncSample->StartVideoEncoder() != AV_ERR_OK) {
+        delete vEncSample;
+        vEncSample = nullptr;
+        return;
+    }
     vEncSample->WaitForEOS();
     delete vEncSample;
 }
@@ -64,14 +77,28 @@ bool EncoderConfigureFuzzTest(const uint8_t *data, size_t size)
     int32_t ret = vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
     if (ret != 0) {
         delete vEncSample;
+        vEncSample = nullptr;
         return true;
     }
-    vEncSample->SetVideoEncoderCallback();
+    if (vEncSample->SetVideoEncoderCallback() != AV_ERR_OK) {
+        delete vEncSample;
+        vEncSample = nullptr;
+        return true;
+    }
     vEncSample->fuzzMode = true;
-    vEncSample->ConfigureVideoEncoderFuzz(intval);
-    vEncSample->StartVideoEncoder();
+    if (vEncSample->ConfigureVideoEncoderFuzz(intval) != AV_ERR_OK) {
+        delete vEncSample;
+        vEncSample = nullptr;
+        return true;
+    }
+    if (vEncSample->StartVideoEncoder() != AV_ERR_OK) {
+        delete vEncSample;
+        vEncSample = nullptr;
+        return true;
+    }
     vEncSample->WaitForEOS();
     delete vEncSample;
+    vEncSample = nullptr;
     return result;
 }
 } // namespace OHOS

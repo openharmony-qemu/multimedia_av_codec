@@ -111,15 +111,18 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     int32_t ret = g_vDecSample->CreateVideoDecoder(g_codeName);
-    if (ret != 0) {
+    if (ret != AV_ERR_OK) {
         ReleaseSample();
         return false;
     }
-    g_vDecSample->ConfigureVideoDecoder();
-    if (g_vDecSample->sfOutput) {
-    g_vDecSample->DecodeSetSurface();
+    if (g_vDecSample->ConfigureVideoDecoder() != AV_ERR_OK) {
+        ReleaseSample();
+        return false;
     }
-    if (g_vDecSample->Start() != 0) {
+    if (g_vDecSample->sfOutput) {
+        g_vDecSample->DecodeSetSurface();
+    }
+    if (g_vDecSample->Start() != AV_ERR_OK) {
         ReleaseSample();
         return false;
     }

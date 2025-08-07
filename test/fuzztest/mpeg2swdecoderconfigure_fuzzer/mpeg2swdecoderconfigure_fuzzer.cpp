@@ -47,10 +47,22 @@ bool Mpeg2SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     std::vector<int32_t> pixelFormats = {1, 2, 3, 4, 5};
     size_t pfIndex = fdp.ConsumeIntegralInRange<size_t>(0, pixelFormats.size() - 1);
     vDecSample->defaultPixelFormat = pixelFormats[pfIndex];
-    vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG2");
-    vDecSample->ConfigureVideoDecoder();
-    vDecSample->SetVideoDecoderCallback();
-    vDecSample->StartVideoDecoder();
+    if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG2") != AV_ERR_OK) {
+        delete vDecSample;
+        return false;
+    }
+    if (vDecSample->ConfigureVideoDecoder() != AV_ERR_OK) {
+        delete vDecSample;
+        return false;
+    }
+    if (vDecSample->SetVideoDecoderCallback() != AV_ERR_OK) {
+        delete vDecSample;
+        return false;
+    }
+    if (vDecSample->StartVideoDecoder() != AV_ERR_OK) {
+        delete vDecSample;
+        return false;
+    }
     vDecSample->WaitForEOS();
     vDecSample->Release();
     delete vDecSample;
