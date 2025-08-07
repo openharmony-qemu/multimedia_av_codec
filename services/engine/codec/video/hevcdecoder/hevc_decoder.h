@@ -175,6 +175,7 @@ private:
     bool disableDmaSwap_ = false;
     int pid_ = -1;
 
+    CallerInfo hevcDecInfo_;
     int32_t instanceId_ = -1;
     std::string decName_;
     std::string codecName_;
