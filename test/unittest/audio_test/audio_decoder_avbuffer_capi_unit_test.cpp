@@ -3518,7 +3518,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_OuterSupportMimeTest_01, T
 
     const bool isEncoder = false;
     for (const auto &mime : allMimeTable) {
-        auto audioDec = OH_AudioCodec_CreateByMime((mime.data()), isEncoder);
+        auto audioDec = OH_AudioCodec_CreateByMime(mime.data(), isEncoder);
         if (AVCodecMimeType::CheckAudioCodecMimeSupportOuter(mime.data(), isEncoder)) {
             EXPECT_NE(nullptr, audioDec);
             if (audioDec == nullptr) {
@@ -3538,49 +3538,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_OuterSupportMimeTest_01, T
 }
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_OuterSupportCodecNameTest_01, TestSize.Level1)
-{
-    const vector<std::string_view> allCodecNameTable = {
-        AVCodecCodecName::AUDIO_DECODER_MP3_NAME,
-        AVCodecCodecName::AUDIO_DECODER_AAC_NAME,
-        AVCodecCodecName::AUDIO_DECODER_OPUS_NAME,
-        AVCodecCodecName::AUDIO_DECODER_API9_AAC_NAME,
-        AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME,
-        AVCodecCodecName::AUDIO_DECODER_FLAC_NAME,
-        AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME,
-        AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME,
-        AVCodecCodecName::AUDIO_DECODER_VIVID_NAME,
-        AVCodecCodecName::AUDIO_DECODER_G711MU_NAME,
-        AVCodecCodecName::AUDIO_DECODER_G711A_NAME,
-        AVCodecCodecName::AUDIO_DECODER_APE_NAME,
-        AVCodecCodecName::AUDIO_DECODER_L2HC_NAME,
-        AVCodecCodecName::AUDIO_DECODER_LBVC_NAME,
-        AVCodecCodecName::AUDIO_DECODER_COOK_NAME,
-        AVCodecCodecName::AUDIO_DECODER_AC3_NAME,
-        AVCodecCodecName::AUDIO_DECODER_RAW_NAME
-    };
-
-    for (const auto &name : allCodecNameTable) {
-        auto audioDec = OH_AudioCodec_CreateByName((name.data()));
-        if (AVCodecCodecName::CheckAudioCodecNameSupportOuter(name.data())) {
-            EXPECT_NE(nullptr, audioDec);
-            if (audioDec == nullptr) {
-                cout << "create " << name << " failed" << endl;
-            }
-        } else {
-            EXPECT_EQ(nullptr, audioDec);
-            if (audioDec != nullptr) {
-                cout << "limit " << name << " failed" << endl;
-            }
-        }
-
-        if (audioDec != nullptr) {
-            OH_AudioCodec_Destroy(audioDec);
-        }
-    }
-}
-
-HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_OuterSupportCodecName_From_OH_AVCodec_GetCapability_Test_01,
-    TestSize.Level1)
 {
     const vector<std::string_view> allMimeTable = {
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
@@ -3605,7 +3562,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_OuterSupportCodecName_From
     for (const auto &mime : allMimeTable) {
         auto capability = OH_AVCodec_GetCapability(mime.data(), isEncoder);
         const char *name = OH_AVCapability_GetName(capability);
-        auto audioDec = OH_AudioCodec_CreateByName((name));
+        auto audioDec = OH_AudioCodec_CreateByName(name);
         if (AVCodecCodecName::CheckAudioCodecNameSupportOuter(name)) {
             EXPECT_NE(nullptr, audioDec);
             if (audioDec == nullptr) {
