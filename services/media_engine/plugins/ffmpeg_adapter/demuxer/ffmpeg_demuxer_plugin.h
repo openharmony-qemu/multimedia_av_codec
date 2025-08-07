@@ -90,6 +90,7 @@ public:
     void SetInterruptState(bool isInterruptNeeded) override;
     Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
         const int32_t probSize) override;
+    Status SetAsyncReadThreadPriority(const uint32_t newPriority, const std::string &strBundleName) override;
 private:
     enum ThreadState : unsigned int {
         NOT_STARTED,
@@ -347,6 +348,11 @@ private:
     std::condition_variable seekWaitCv_;
     std::atomic<bool> threadReady_ {false};
     std::unordered_map<uint32_t, Meta> streamInitialParam_;
+
+    bool isAsyncReadThreadPrioritySet_ = false;
+    std::atomic<uint32_t> asyncReadThreadPriority_ = {0};
+    std::string bundleName_ = "";
+    void UpdateAsyncReadThreadPriority();
 };
 
 typedef struct DtsFinder {
