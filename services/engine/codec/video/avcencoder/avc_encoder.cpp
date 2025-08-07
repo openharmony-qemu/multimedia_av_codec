@@ -1533,12 +1533,13 @@ int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &out
 
     ret = avcEncoderFrameFunc_(avcEncoder_, &inArgs, &outArgs);
     sLock.unlock();
-    if (ret == 0) {
+
+    if (isSendEos_) {
+        outputAVBuffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
+    } else if (ret == 0) {
         outputAVBuffer->memory_->SetSize(outArgs.bytes);
         outputAVBuffer->pts_ = static_cast<int64_t>(outArgs.timestamp);
         outputAVBuffer->flag_ = AvcFrameTypeToBufferFlag(outArgs.encodedFrameType);
-    } else if (isSendEos_) {
-        outputAVBuffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
     } else {
         outputAVBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
         AVCODEC_LOGE("Cannot send frame to encodec: %{public}d", ret);
