@@ -174,6 +174,7 @@ private:
     int32_t outputBufferCnt_ = 0;
     // INIT
     std::shared_ptr<AVCodec> avCodec_ = nullptr;
+    CallerInfo fDecInfo_;
     // Config
     std::shared_ptr<AVCodecContext> avCodecContext_ = nullptr;
     // Start

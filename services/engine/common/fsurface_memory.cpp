@@ -14,12 +14,16 @@
  */
 
 #include <memory>
+#include <sstream>
+#include <sys/ioctl.h>
+#include <linux/dma-buf.h>
 #include "securec.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "fsurface_memory.h"
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AvCodec-FSurfaceMemory"};
+#define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
 }
 namespace OHOS {
 namespace MediaAVCodec {
@@ -28,7 +32,7 @@ FSurfaceMemory::~FSurfaceMemory()
     ReleaseSurfaceBuffer();
 }
 
-int32_t FSurfaceMemory::AllocSurfaceBuffer()
+int32_t FSurfaceMemory::AllocSurfaceBuffer(int32_t width, int32_t height)
 {
     CHECK_AND_RETURN_RET_LOG(sInfo_->surface != nullptr, AVCS_ERR_UNKNOWN, "Surface is nullptr!");
     CHECK_AND_RETURN_RET_LOG(!isAttached, AVCS_ERR_UNKNOWN, "Only support when not attach!");
@@ -39,6 +43,7 @@ int32_t FSurfaceMemory::AllocSurfaceBuffer()
     CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, err, "Alloc surface buffer failed, GSERROR=%{public}d", err);
     SetSurfaceBuffer(surfaceBuffer, Owner::OWNED_BY_CODEC);
     isAttached = false;
+    SetCallerToBuffer(width, height);
     AVCODEC_LOGI("Alloc surface buffer success seq=%{public}u", surfaceBuffer_->GetSeqNum());
     return AVCS_ERR_OK;
 }
@@ -103,6 +108,25 @@ int32_t FSurfaceMemory::GetSize() const
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, -1, "Surface buffer is nullptr!");
     uint32_t size = surfaceBuffer_->GetSize();
     return static_cast<int32_t>(size);
+}
+
+void FSurfaceMemory::SetCallerToBuffer(int32_t w, int32_t h)
+{
+    CHECK_AND_RETURN_LOG(surfaceBuffer_ != nullptr, "Surface buffer is nullptr!");
+    int32_t fd = surfaceBuffer_->GetFileDescriptor();
+    CHECK_AND_RETURN_LOG(fd > 0, "Invalid fd %{public}d, surfacebuf(%{public}u)", fd, surfaceBuffer_->GetSeqNum());
+    std::string type = "sw-video-decoder";
+    std::string mime(decInfo_.mimeType);
+    std::vector<std::string> splitMime;
+    std::string token;
+    std::istringstream iss(mime);
+    while (std::getline(iss, token, '/')) {
+        splitMime.push_back(token);
+    }
+    mime = splitMime[1];
+    std::string name = std::to_string(w) + "x" + std::to_string(h) + "-" + mime + "-" + decInfo_.instanceId;
+    ioctl(fd, DMA_BUF_SET_TYPE, type.c_str());
+    ioctl(fd, DMA_BUF_SET_NAME_A, name.c_str());
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

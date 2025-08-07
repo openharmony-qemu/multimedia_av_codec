@@ -113,7 +113,15 @@ HevcDecoder::HevcDecoder(const std::string &name) : codecName_(name), state_(Sta
 
 int32_t HevcDecoder::Init(Meta &callerInfo)
 {
+    if (callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, hevcDecInfo_.pid) &&
+        callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, hevcDecInfo_.processName)) {
+        hevcDecInfo_.calledByAvcodec = false;
+    } else if (callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, hevcDecInfo_.pid) &&
+               callerInfo.GetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, hevcDecInfo_.processName)) {
+        hevcDecInfo_.calledByAvcodec = true;
+    }
     callerInfo.GetData("av_codec_event_info_instance_id", instanceId_);
+    hevcDecInfo_.instanceId = std::to_string(instanceId_);
     decName_ = "hevcdecoder_[" + std::to_string(instanceId_) + "]";
     AVCODEC_LOGI("HevcDecoder codec name: %{public}s", decName_.c_str());
     return AVCS_ERR_OK;
@@ -190,6 +198,7 @@ int32_t HevcDecoder::Initialize()
     }
     format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mime);
     format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecName_);
+    hevcDecInfo_.mimeType = mime;
     sendTask_ = std::make_shared<TaskThread>("SendFrame");
     sendTask_->RegisterHandler([this] { SendFrame(); });
 
@@ -851,9 +860,9 @@ int32_t HevcDecoder::AllocateOutputBuffersFromSurface(int32_t bufferCnt)
     requestSurfaceBufferQue_->SetActive(true);
     StartRequestSurfaceBufferThread();
     for (int32_t i = 0; i < bufferCnt; i++) {
-        std::shared_ptr<FSurfaceMemory> surfaceMemory = std::make_shared<FSurfaceMemory>(&sInfo_);
+        std::shared_ptr<FSurfaceMemory> surfaceMemory = std::make_shared<FSurfaceMemory>(&sInfo_, hevcDecInfo_);
         CHECK_AND_RETURN_RET_LOG(surfaceMemory != nullptr, AVCS_ERR_UNKNOWN, "Creata surface memory failed!");
-        ret = surfaceMemory->AllocSurfaceBuffer();
+        ret = surfaceMemory->AllocSurfaceBuffer(width_, height_);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Alloc surface buffer failed!");
         std::shared_ptr<HBuffer> buf = std::make_shared<HBuffer>();
         CHECK_AND_RETURN_RET_LOG(buf != nullptr, AVCS_ERR_UNKNOWN, "Creata output buffer failed!");
@@ -936,7 +945,7 @@ int32_t HevcDecoder::UpdateSurfaceMemory(uint32_t index)
             surfaceMemory->isAttached = false;
         }
         surfaceMemory->ReleaseSurfaceBuffer();
-        int32_t ret = surfaceMemory->AllocSurfaceBuffer();
+        int32_t ret = surfaceMemory->AllocSurfaceBuffer(width_, height_);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Alloc surface buffer failed!");
         sptr<SurfaceBuffer> newSurfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         CHECK_AND_RETURN_RET_LOG(newSurfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Alloc surface buffer failed!");
