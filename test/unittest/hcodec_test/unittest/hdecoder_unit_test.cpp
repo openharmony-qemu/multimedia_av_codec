@@ -1333,9 +1333,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_running_valid_00
     EXPECT_EQ(AVCS_ERR_OK, ret);
  
     ret = testObj->NotifySuspend();
-
     ret = testObj->NotifyResume();
-
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
@@ -1362,9 +1360,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_frozen_valid_001
         EXPECT_EQ(AVCS_ERR_OK, ret);
  
         ret = testObj->NotifySuspend();
-
         ret = testObj->NotifyResume();
-
         ret = testObj->NotifyMemoryWriteBack();
         EXPECT_EQ(AVCS_ERR_OK, ret);
     }
@@ -1395,7 +1391,6 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_frozen_valid_002
         EXPECT_EQ(AVCS_ERR_OK, ret);
  
         ret = testObj->NotifySuspend();
-
         ret = testObj->NotifyMemoryWriteBack();
         EXPECT_EQ(AVCS_ERR_OK, ret);
  
