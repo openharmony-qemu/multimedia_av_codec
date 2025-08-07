@@ -58,7 +58,7 @@ bool FramerateCalculator::CheckAndResetFramerate()
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastAdjustmentTime_).count();
     lastAdjustmentTime_ = now;
     CHECK_AND_RETURN_RET_LOGD_WITH_TAG(elapsedTime > (CHECK_INTERVAL / 2).count(), false,
-        "Elapsed time is invalid: %{public}" PRId64 ", cannot calculate framerate", elapsedTime);
+        "Elapsed time is invalid, cannot calculate framerate");
 
     auto actualFramerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
     auto fluctuationFramerate = std::abs(actualFramerate - lastFramerate_);
