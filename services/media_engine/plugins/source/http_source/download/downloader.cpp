@@ -1133,7 +1133,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     if (!strncmp(key, "location", strlen("location"))) {
         FALSE_RETURN_V(next != nullptr, size * nitems);
         char* headTrim = StringTrim(next);
-        MEDIA_LOG_I("redirect: " PUBLIC_LOG_S, location);
+        MEDIA_LOG_I("redirect: " PUBLIC_LOG_S, headTrim);
         mediaDownloader->currentRequest_->location_ = headTrim;
     }
 
