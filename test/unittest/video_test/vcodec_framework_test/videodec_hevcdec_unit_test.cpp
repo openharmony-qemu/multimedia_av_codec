@@ -68,6 +68,51 @@ string GetTestName()
 }
 
 /**.
+ * @tc.name: VideoDecoder_hevcdecoder_Create_001
+ * @tc.desc: 1. create 64 hevcdecoder instances success;
+ *           2. create more instances fail;
+ */
+HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_001, TestSize.Level1, VideoDecSample::threadNum_)
+{
+    std::vector<std::shared_ptr<VideoDecSample>> decoderList;
+    int32_t instanceNum = 64; // 64: max instance num
+    for (int i = 0; i < instanceNum; i++) {
+        auto vdec = make_shared<VideoDecSample>();
+        auto signal = make_shared<VCodecSignal>(vdec);
+        vdec->frameCount_ = 30; // 30: input frame num
+        vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+        vdec->inPath_ = "720_1280_25_avcc.h265";
+        vdec->sampleWidth_ = 720;
+        vdec->sampleHeight_ = 1280;
+        vdec->dumpKey_ = "hevcdecoder.dump";
+        vdec->dumpValue_ = "0";
+        EXPECT_EQ(vdec->Create(), true);
+        decoderList.push_back(vdec);
+        struct OH_AVCodecCallback cb;
+        cb.onError = OnErrorVoid;
+        cb.onStreamChanged = OnStreamChangedVoid;
+        cb.onNeedInputBuffer = InBufferHandle;
+        cb.onNewOutputBuffer = OutBufferHandle;
+        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    }
+    for (int i = 0; i < instanceNum; i++) {
+        auto vdec = make_shared<VideoDecSample>();
+        vdec->frameCount_ = 30; // 30: input frame num
+        vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+        vdec->inPath_ = "720_1280_25_avcc.h265";
+        vdec->sampleWidth_ = 720;
+        vdec->sampleHeight_ = 1280;
+        vdec->dumpKey_ = "hevcdecoder.dump";
+        vdec->dumpValue_ = "0";
+        EXPECT_EQ(vdec->Create(), false);
+    }
+    for (int i = 0; i < instanceNum; i++) {
+        auto vdec = decoderList[i];
+        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+    }
+}
+
+/**.
  * @tc.name: VideoDecoder_hevcdecoder_Release_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;

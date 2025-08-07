@@ -95,12 +95,15 @@ HevcDecoder::HevcDecoder(const std::string &name) : codecName_(name), state_(Sta
         handle_ = dlopen(HEVC_DEC_LIB_PATH, RTLD_LAZY);
         if (handle_ == nullptr) {
             AVCODEC_LOGE("Load codec failed: %{public}s", HEVC_DEC_LIB_PATH);
+            isValid_ = false;
+            return;
         }
         HevcFuncMatch();
         AVCODEC_LOGI("Num %{public}u HevcDecoder entered, state: Uninitialized", decInstanceID_);
     } else {
         AVCODEC_LOGE("HevcDecoder already has %{public}d instances, cannot has more instances", VIDEO_INSTANCE_SIZE);
-        state_ = State::ERROR;
+        isValid_ = false;
+        return;
     }
 
     initParams_.logFxn = nullptr;
