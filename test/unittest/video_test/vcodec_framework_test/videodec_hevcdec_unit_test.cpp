@@ -88,10 +88,15 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_001, TestSize.Lev
         vdec->dumpValue_ = "0";
         EXPECT_EQ(vdec->Create(), true);
         decoderList.push_back(vdec);
+        struct OH_AVCodecCallback cb;
+        cb.onError = OnErrorVoid;
+        cb.onStreamChanged = OnStreamChangedVoid;
+        cb.onNeedInputBuffer = InBufferHandle;
+        cb.onNewOutputBuffer = OutBufferHandle;
+        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
     }
     for (int i = 0; i < instanceNum; i++) {
         auto vdec = make_shared<VideoDecSample>();
-        auto signal = make_shared<VCodecSignal>(vdec);
         vdec->frameCount_ = 30; // 30: input frame num
         vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
         vdec->inPath_ = "720_1280_25_avcc.h265";
@@ -102,7 +107,8 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_001, TestSize.Lev
         EXPECT_EQ(vdec->Create(), false);
     }
     for (int i = 0; i < instanceNum; i++) {
-        EXPECT_EQ(decoderList[i]->Release(), AV_ERR_OK) << SAMPLE_ID;
+        auto vdec = decoderList[i];
+        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
     }
 }
 
