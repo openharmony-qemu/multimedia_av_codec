@@ -247,6 +247,49 @@ static int32_t AVSourceReadAt(OH_AVBuffer *data, int32_t length, int64_t pos)
     return length;
 }
 
+static int32_t AVSourceReadAtExt(OH_AVBuffer *data, int32_t length, int64_t pos, void* userData)
+{
+    if (data == nullptr || userData == nullptr) {
+        printf("AVSourceReadAtExt : data or userData is nullptr!\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    std::ifstream* infile = reinterpret_cast<std::ifstream*>(userData);
+    if (!infile->is_open()) {
+        printf("AVSourceReadAtExt: file not open!\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    infile->seekg(0, std::ios::end);
+    int64_t fileSize = infile->tellg();
+    if (pos >= fileSize) {
+        printf("AVSourceReadAtExt: pos over file size\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_EOF;
+    }
+
+    if (pos + length > fileSize) {
+        length = fileSize - pos;
+    }
+
+    infile->seekg(pos, std::ios::beg);
+    if (length <= 0) {
+        printf("AVSourceReadAt : raed length less than zero!\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+    char* buffer = new char[length];
+    infile->read(buffer, length);
+
+    errno_t result = memcpy_s(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)),
+        OH_AVBuffer_GetCapacity(data), buffer, length);
+    delete[] buffer;
+    if (result != 0) {
+        printf("memcpy_s failed!");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    return length;
+}
+
 void AVSourceUnitTest::CheckAuxlAvc()
 {
     checkPass_ = false;
@@ -421,49 +464,6 @@ void AVSourceUnitTest::CheckAuxlAac()
     ASSERT_EQ(trackDesc, "com.openharmony.audiomode.auxiliary");
     format_->Destroy();
     checkPass_ = true;
-}
-
-static int32_t AVSourceReadAtExt(OH_AVBuffer *data, int32_t length, int64_t pos, void* userData)
-{
-    if (data == nullptr || userData == nullptr) {
-        printf("AVSourceReadAtExt : data or userData is nullptr!\n");
-        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
-    }
-
-    std::ifstream* infile = reinterpret_cast<std::ifstream*>(userData);
-    if (!infile->is_open()) {
-        printf("AVSourceReadAtExt: file not open!\n");
-        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
-    }
-
-    infile->seekg(0, std::ios::end);
-    int64_t fileSize = infile->tellg();
-    if (pos >= fileSize) {
-        printf("AVSourceReadAtExt: pos over file size\n");
-        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_EOF;
-    }
-
-    if (pos + length > fileSize) {
-        length = fileSize - pos;
-    }
-
-    infile->seekg(pos, std::ios::beg);
-    if (length <= 0) {
-        printf("AVSourceReadAt : raed length less than zero!\n");
-        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
-    }
-    char* buffer = new char[length];
-    infile->read(buffer, length);
-
-    errno_t result = memcpy_s(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)),
-        OH_AVBuffer_GetCapacity(data), buffer, length);
-    delete[] buffer;
-    if (result != 0) {
-        printf("memcpy_s failed!");
-        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
-    }
-
-    return length;
 }
 
 /**********************************source FD**************************************/
@@ -3064,5 +3064,4 @@ HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSourceExt_1000, TestSize
     delete infile1;
     delete infile2;
 }
-
 } // namespace
