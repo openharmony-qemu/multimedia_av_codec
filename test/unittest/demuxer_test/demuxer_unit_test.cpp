@@ -173,6 +173,10 @@ bool DemuxerUnitTest::isEOS(map<uint32_t, bool>& countFlag)
 
 bool DemuxerUnitTest::SetInitValue()
 {
+    if (source_ == nullptr) {
+        printf("source_ is nullptr\n");
+        return false;
+    }
     for (int i = 0; i < nbStreams_; i++) {
         string codecMime = "";
         int32_t trackType = -1;
