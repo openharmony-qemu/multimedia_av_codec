@@ -235,6 +235,7 @@ private:
     BlockQueuePool cacheQueue_;
     MediaInfo mediaInfo_;
     FileType fileType_ = FileType::UNKNOW;
+
     std::shared_ptr<AVInputFormat> pluginImpl_ {nullptr};
     std::shared_ptr<AVFormatContext> formatContext_ {nullptr};
     std::map<uint32_t, std::shared_ptr<AVBSFContext>> avbsfContexts_ {};

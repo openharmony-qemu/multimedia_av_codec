@@ -180,6 +180,10 @@ bool DemuxerUnitTest::SetInitValue()
             format_->Destroy();
             format_ = nullptr;
         }
+        if (source_ == nullptr) {
+            printf("source_ is nullptr\n");
+            return false;
+        }
         format_ = source_->GetTrackFormat(i);
         if (format_ == nullptr) {
             return false;
