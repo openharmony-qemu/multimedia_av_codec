@@ -28,7 +28,7 @@ int32_t GetHevcDecoderCapabilityList(std::vector<CapabilityData> &caps)
 void CreateHevcDecoderByName(const std::string &name, std::shared_ptr<CodecBase> &codec)
 {
     sptr<HevcDecoder> hevcDecoder = new (std::nothrow) HevcDecoder(name);
-    if (hevcDecoder == nullptr) {
+    if (hevcDecoder == nullptr || !hevcDecoder->IsValid()) {
         codec = nullptr;
         return;
     }

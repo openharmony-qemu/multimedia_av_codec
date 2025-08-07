@@ -69,6 +69,7 @@ public:
     int32_t NotifyMemoryRecycle() override;
     int32_t NotifyMemoryWriteBack() override;
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
+    bool IsValid() const { return isValid_; }
 
     struct HBuffer {
     public:
@@ -195,6 +196,7 @@ private:
     static std::vector<uint32_t> decInstanceIDSet_;
     static std::vector<uint32_t> freeIDSet_;
 
+    bool isValid_ = true;
     Format format_;
     int32_t width_ = 0;
     int32_t height_ = 0;
