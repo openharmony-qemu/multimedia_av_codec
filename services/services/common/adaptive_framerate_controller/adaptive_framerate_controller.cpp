@@ -22,6 +22,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 auto afcEnable = OHOS::system::GetBoolParameter("OHOS.MediaAVCodec.AFC.Enable", true);
 using namespace std::chrono_literals;
 constexpr auto CHECK_INTERVAL = 1000ms;
+constexpr auto CHECK_INTERVAL_FILTER = (CHECK_INTERVAL / 2).count(); // CHECK_INTERVAL / 2: filter out short intervals
 constexpr uint8_t MAX_INCREASE_CHECK_TIMES = 2;
 constexpr uint8_t MAX_DECREASE_CHECK_TIMES = 2;
 } // namespace
@@ -57,7 +58,7 @@ bool FramerateCalculator::CheckAndResetFramerate()
     auto now = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastAdjustmentTime_).count();
     lastAdjustmentTime_ = now;
-    CHECK_AND_RETURN_RET_LOGD_WITH_TAG(elapsedTime > (CHECK_INTERVAL / 2).count(), false,
+    CHECK_AND_RETURN_RET_LOGD_WITH_TAG(elapsedTime > CHECK_INTERVAL_FILTER, false,
         "Elapsed time is invalid, cannot calculate framerate");
 
     auto actualFramerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
