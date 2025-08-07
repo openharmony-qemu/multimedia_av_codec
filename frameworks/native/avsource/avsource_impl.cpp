@@ -85,7 +85,6 @@ int32_t AVSourceImpl::InitWithURI(const std::string &uri)
 
     CHECK_AND_RETURN_RET_LOG(mediaDemuxer == nullptr, AVCS_ERR_INVALID_OPERATION, "Has been used by demuxer");
     mediaDemuxer = std::make_shared<MediaDemuxer>();
-    mediaDemuxer->SetPlayerId("AVSource_URI");
     CHECK_AND_RETURN_RET_LOG(mediaDemuxer != nullptr, AVCS_ERR_INVALID_OPERATION, "Create mediaDemuxer failed");
 
     std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(uri);
@@ -126,7 +125,6 @@ int32_t AVSourceImpl::InitWithDataSource(const std::shared_ptr<Media::IMediaData
 
     CHECK_AND_RETURN_RET_LOG(mediaDemuxer == nullptr, AVCS_ERR_INVALID_OPERATION, "Has been used by demuxer");
     mediaDemuxer = std::make_shared<MediaDemuxer>();
-    mediaDemuxer->SetPlayerId("AVSource_Data");
     CHECK_AND_RETURN_RET_LOG(mediaDemuxer != nullptr, AVCS_ERR_INVALID_OPERATION, "Create mediaDemuxer failed");
 
     std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(dataSource);
