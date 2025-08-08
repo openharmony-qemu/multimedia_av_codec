@@ -361,6 +361,7 @@ Status AudioCaptureModule::Read(uint8_t *cacheAudioData, size_t expectedLen)
         FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "Audio capture is null");
         FALSE_RETURN_V_MSG_E(audioCapturer_->GetStatus() == AudioStandard::CAPTURER_RUNNING,
             Status::ERROR_AGAIN, "Audio capture Status error");
+        FALSE_RETURN_V_MSG_E(cacheAudioData != nullptr, Status::ERROR_UNKNOWN, "cacheAudioData is null");
 
         size = audioCapturer_->Read(*cacheAudioData, expectedLen, true);
     }
@@ -375,7 +376,7 @@ Status AudioCaptureModule::Read(uint8_t *cacheAudioData, size_t expectedLen)
 
 void AudioCaptureModule::GetAudioTime(int64_t &audioDataTime, bool isFirstFrame)
 {
-    MEDIA_LOG_I("AudioCaptureModule GetAudioTime");
+    MEDIA_LOG_D("AudioCaptureModule GetAudioTime");
     bool ret = true;
     {
         AutoLock lock(captureMutex_);
@@ -388,6 +389,7 @@ void AudioCaptureModule::GetAudioTime(int64_t &audioDataTime, bool isFirstFrame)
 
         audioDataTime = static_cast<int64_t>(timestamp.time.tv_sec) * AUDIO_NS_PER_SECOND
             + static_cast<int64_t>(timestamp.time.tv_nsec);
+        MEDIA_LOG_D("GetTimeStampInfo audioDataTime: " PUBLIC_LOG_D64, audioDataTime);
 
         if (isFirstFrame) {
             audioDataTime -= AUDIO_CAPTURE_READ_FRAME_TIME;
