@@ -30,7 +30,8 @@ namespace MediaAVCodec {
 class FramerateCalculator : public std::enable_shared_from_this<FramerateCalculator>,
                             public AVCodecDfxComponent {
 public:
-    FramerateCalculator(int32_t instanceId, std::function<void(double)> &&resetFramerateHandler);
+    FramerateCalculator(int32_t instanceId, bool isDecoder,
+                        std::function<void(double)> &&resetFramerateHandler);
     void OnFrameConsumed();
     void OnStopped();
     bool CheckAndResetFramerate();
@@ -47,13 +48,15 @@ private:
     void UnregisterFromAFC();
 
     int32_t instanceId_;
+    bool isDecoder_ = true;
     std::atomic<Status> status_ = Status::INITIALIZED;
-    std::function<void(double)> resetFramerateHandler_;
     std::atomic<uint32_t> frameCount_{0};
     double configuredFramerate_{60.0};
-    double lastFramerate_{1.0};
+    std::atomic<double> lastFramerate_{1.0};
+    uint8_t increseCheckTimes_{0};
     uint8_t decreseCheckTimes_{0};
     std::chrono::steady_clock::time_point lastAdjustmentTime_{};
+    std::function<void(double)> resetFramerateHandler_;
 };
 
 class AdaptiveFramerateController {
@@ -68,7 +71,7 @@ private:
     std::unordered_map<int32_t, std::weak_ptr<FramerateCalculator>> calculators_;
     std::mutex calculatorsMutex_;
     std::unique_ptr<std::thread> looper_;
-    std::mutex looperReleaseMutex_;
+    std::mutex looperMutex_;
     std::condition_variable condition_;
     std::atomic<bool> isRunning_ = false;
 };

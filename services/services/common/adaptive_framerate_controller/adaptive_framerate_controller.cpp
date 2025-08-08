@@ -20,13 +20,17 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AFC"};
 auto afcEnable = OHOS::system::GetBoolParameter("OHOS.MediaAVCodec.AFC.Enable", true);
-constexpr uint8_t MAX_DECREASE_CHECK_TIMES = 3;
+using namespace std::chrono_literals;
+constexpr auto CHECK_INTERVAL = 1000ms;
+constexpr auto CHECK_INTERVAL_FILTER = (CHECK_INTERVAL / 2).count(); // CHECK_INTERVAL / 2: filter out short intervals
+constexpr uint8_t MAX_INCREASE_CHECK_TIMES = 2;
+constexpr uint8_t MAX_DECREASE_CHECK_TIMES = 2;
 } // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
-FramerateCalculator::FramerateCalculator(int32_t instanceId, std::function<void(double)> &&resetFramerateHandler)
-    : instanceId_(instanceId), resetFramerateHandler_(std::move(resetFramerateHandler)) {}
+FramerateCalculator::FramerateCalculator(int32_t instanceId, bool isDecoder, std::function<void(double)> &&handler)
+    : instanceId_(instanceId), isDecoder_(isDecoder), resetFramerateHandler_(std::move(handler)) {}
 
 void FramerateCalculator::OnFrameConsumed()
 {
@@ -44,6 +48,7 @@ void FramerateCalculator::OnFrameConsumed()
 void FramerateCalculator::OnStopped()
 {
     status_ = Status::STOPPED;
+    frameCount_ = 0;
     UnregisterFromAFC();
 }
 
@@ -53,7 +58,8 @@ bool FramerateCalculator::CheckAndResetFramerate()
     auto now = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastAdjustmentTime_).count();
     lastAdjustmentTime_ = now;
-    CHECK_AND_RETURN_RET_LOGW_WITH_TAG(elapsedTime > 0, false, "Elapsed time is invalid, cannot calculate framerate");
+    CHECK_AND_RETURN_RET_LOGD_WITH_TAG(elapsedTime > CHECK_INTERVAL_FILTER, false,
+        "Elapsed time is invalid, cannot calculate framerate");
 
     auto actualFramerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
     auto fluctuationFramerate = std::abs(actualFramerate - lastFramerate_);
@@ -61,14 +67,27 @@ bool FramerateCalculator::CheckAndResetFramerate()
         if (decreseCheckTimes_ != MAX_DECREASE_CHECK_TIMES) {
             decreseCheckTimes_ = MAX_DECREASE_CHECK_TIMES;
         }
+        if (isDecoder_ && increseCheckTimes_ != MAX_INCREASE_CHECK_TIMES) {
+            increseCheckTimes_ = MAX_INCREASE_CHECK_TIMES;
+        }
         return false;
     }
     auto resetFramerate = actualFramerate;
     if (actualFramerate > lastFramerate_) {
         decreseCheckTimes_ = MAX_DECREASE_CHECK_TIMES;
-        resetFramerate *= 2.5; // 2.5: increase factor
+        if (actualFramerate <= configuredFramerate_) {
+            resetFramerate = configuredFramerate_;
+        } else if (increseCheckTimes_ > 0) {
+            increseCheckTimes_--;
+            return false;
+        } else {
+            resetFramerate *= 2.5; // 2.5: increase factor
+        }
     } else if (decreseCheckTimes_ > 0) {
         decreseCheckTimes_--;
+        if (isDecoder_) {
+            increseCheckTimes_ = MAX_INCREASE_CHECK_TIMES;
+        }
         return false;
     }
     if (resetFramerate < 1.0) { // 1.0: minimum framerate
@@ -78,8 +97,7 @@ bool FramerateCalculator::CheckAndResetFramerate()
 
     char direction = (resetFramerate > lastFramerate_) ? '+' : '-';
     AVCODEC_LOGD_WITH_TAG("Reset framerate: %{public}.2f -> %{public}.2ffps(%{public}.2f) %{public}c",
-        lastFramerate_, resetFramerate, actualFramerate, direction);
-
+        lastFramerate_.load(), resetFramerate, actualFramerate, direction);
     lastFramerate_ = resetFramerate;
     return true;
 }
@@ -88,6 +106,7 @@ void FramerateCalculator::SetConfiguredFramerate(double framerate)
 {
     if (framerate >= 1.0) { // 1.0: minimum framerate
         configuredFramerate_ = framerate;
+        lastFramerate_ = configuredFramerate_;
     }
 }
 
@@ -117,13 +136,18 @@ AdaptiveFramerateController &AdaptiveFramerateController::GetInstance()
 
 void AdaptiveFramerateController::Add(int32_t intanceId, std::shared_ptr<FramerateCalculator> calculator)
 {
-    std::lock_guard<std::mutex> lock(calculatorsMutex_);
-    calculators_[intanceId] = calculator;
-    if (!isRunning_) {
-        isRunning_ = true;
-        if (!looper_) {
-            looper_ = std::make_unique<std::thread>(&AdaptiveFramerateController::Loop, this);
+    {
+        std::unique_lock<std::mutex> lock(calculatorsMutex_);
+        calculators_[intanceId] = calculator;
+        if (isRunning_) {
+            return;
         }
+        isRunning_ = true;
+    }
+
+    std::lock_guard<std::mutex> looperLock(looperMutex_);
+    if (!looper_) {
+        looper_ = std::make_unique<std::thread>(&AdaptiveFramerateController::Loop, this);
     }
 }
 
@@ -132,14 +156,14 @@ void AdaptiveFramerateController::Remove(int32_t instanceId)
     {
         std::lock_guard<std::mutex> calculatorsLock(calculatorsMutex_);
         calculators_.erase(instanceId);
-        if (!calculators_.empty() || !looper_) {
+        if (!calculators_.empty()) {
             return;
         }
         isRunning_ = false;
         condition_.notify_all();
     }
 
-    std::lock_guard<std::mutex> looperReleaseLock(looperReleaseMutex_);
+    std::lock_guard<std::mutex> looperLock(looperMutex_);
     if (looper_ && looper_->joinable()) {
         looper_->join();
         looper_.reset();
@@ -148,12 +172,10 @@ void AdaptiveFramerateController::Remove(int32_t instanceId)
 
 void AdaptiveFramerateController::Loop()
 {
-    using namespace std::chrono_literals;
     pthread_setname_np(pthread_self(), "OS_AFC_Loop");
-    constexpr auto checkInterval = 1s;
-    while (isRunning_) {
+    while (true) {
         std::unique_lock<std::mutex> lock(calculatorsMutex_);
-        condition_.wait_for(lock, checkInterval, [this]() { return !isRunning_; });
+        condition_.wait_for(lock, CHECK_INTERVAL, [this]() { return !isRunning_; });
         if (!isRunning_) {
             break;
         }
