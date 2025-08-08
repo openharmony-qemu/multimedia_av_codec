@@ -246,7 +246,6 @@ Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outpu
             return Status::END_OF_STREAM;
         }
         auto memory = outputBuffer->memory_;
-
         if (outputSize_ == 0) {
             AVCODEC_LOGD("AudioMp3EncoderPlugin lame outputSize of this frame is 0.");
             return Status::ERROR_NOT_ENOUGH_DATA;

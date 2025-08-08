@@ -108,13 +108,6 @@ public:
         }
     }
 
-    void ProcessInputBuffer() override
-    {
-        if (mediaCodec_ != nullptr) {
-            mediaCodec_->ProcessInputBuffer();
-        }
-    }
-
     int32_t Start() override
     {
         return StatusToAVCodecServiceErrCode(static_cast<Media::Status>(mediaCodec_->Start()));
