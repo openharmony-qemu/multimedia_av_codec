@@ -1493,6 +1493,19 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GET_STREAM_INFO_001, TestSize.Level1)
     EXPECT_EQ(downloader->GetStreamInfo(streams), Status::OK);
     downloader->playlistDownloader_ = nullptr;
     EXPECT_EQ(downloader->GetStreamInfo(streams), Status::OK);
+    std::shared_ptr<HlsPlayListDownloader> playlist = std::make_shared<HlsPlayListDownloader>();
+    downloader->playlistDownloader_ = playlist;
+    playlist->currentVariant_ = std::make_shared<M3U8VariantStream>("example_name", "example_uri", nullptr);
+    playlist->master_ = std::make_shared<M3U8MasterPlaylist>("example_playlist", "example_uri", 0,
+    std::map<std::string, std::string>(),
+    [](DownloadStatus status, std::shared_ptr<Downloader>& dl, std::shared_ptr<DownloadRequest>& req) {});
+    playlist->master_->isFmp4_ = false;
+    EXPECT_EQ(downloader->GetStreamInfo(streams), Status::OK);
+    playlist->currentVariant_ = nullptr;
+    EXPECT_EQ(downloader->GetStreamInfo(streams), Status::OK);
+    playlist->master_ = nullptr;
+    EXPECT_EQ(downloader->GetStreamInfo(streams), Status::OK);
+    downloader->playlistDownloader_ = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, IS_HLS_FMP4_001, TestSize.Level1)
