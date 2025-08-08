@@ -237,10 +237,5 @@ int32_t AudioDecoderAdapter::SetAudioDecryptionConfig(
     return audiocodec_->SetAudioDecryptionConfig(keySession, svpFlag);
 }
 
-void AudioDecoderAdapter::ProcessInputBuffer()
-{
-    FALSE_RETURN_MSG(audiocodec_ != nullptr, "ProcessInputBuffer audiocodec_ is nullptr");
-    audiocodec_->ProcessInputBuffer();
-}
 }  // namespace Media
 }  // namespace OHOS
