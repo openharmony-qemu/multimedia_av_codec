@@ -2514,6 +2514,8 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
             return HandleTrackEos(trackId);
         }
         FALSE_GOON_NOEXEC(isAutoMaintainPts_, HandleAutoMaintainPts(trackId, bufferMap_[trackId]));
+        lastVideoPts_ = trackId == videoTrackId_ ? bufferMap_[trackId]->pts_ : lastVideoPts_;
+        lastAudioPtsInMute_ = trackId == audioTrackId_ ? bufferMap_[trackId]->pts_ : lastAudioPtsInMute_;
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
         if (fileType_ == FileType::AVI && trackId == videoTrackId_) {
             SetOutputBufferPts(bufferMap_[trackId]);
@@ -3542,7 +3544,8 @@ int64_t MediaDemuxer::SampleConsumerLoop(int32_t trackId)
         status = HandlePushBuffer(trackId, dstBuffer, bufferQueue, status);
         CHECK_AND_BREAK_LOG(status == Status::OK, "PushBuffer to bufferQueue failed " PUBLIC_LOG_D32, trackId);
     } while (0);
-    uint32_t retryTime = hasSetLargeSize_ && !isVideoMuted_ ? NEXT_DELAY_TIME_US : SAMPLE_LOOP_RETRY_TIME_US;
+    uint32_t retryTime = hasSetLargeSize_ && !isVideoMuted_ && trackId == videoTrackId_ ?
+                                NEXT_DELAY_TIME_US : SAMPLE_LOOP_RETRY_TIME_US;
     return status == Status::OK ? retryTime : SAMPLE_LOOP_DELAY_TIME_US;
 }
 
