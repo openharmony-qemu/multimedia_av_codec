@@ -166,6 +166,7 @@ Status DemuxerFilter::SetTranscoderMode()
     Status status = demuxer_->SetTranscoderMode();
     FALSE_RETURN_V(status == Status::OK, status);
     isTransCoderMode_ = true;
+    demuxer_->SetEnableOnlineFdCache(false);
     return status;
 }
 
