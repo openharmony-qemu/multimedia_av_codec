@@ -2504,10 +2504,7 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
             return Status::OK;
         }
     }
-    
-    if (trackId == audioTrackId_) {
-        lastAudioPtsInMute_ = bufferMap_[trackId]->pts_;
-    }
+
     HandleSeek(trackId);
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (bufferMap_[trackId]->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) {
