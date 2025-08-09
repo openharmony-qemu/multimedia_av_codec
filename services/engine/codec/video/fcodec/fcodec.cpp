@@ -442,6 +442,7 @@ void FCodec::ResetBuffers()
     if (sInfo_.surface != nullptr) {
         renderAvailQue_->Clear();
         requestSurfaceBufferQue_->Clear();
+        std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
         renderSurfaceBufferMap_.clear();
     }
     ResetData();
@@ -1005,13 +1006,15 @@ void FCodec::ReleaseBuffers()
     synIndex_ = std::nullopt;
     iLock.unlock();
 
-    std::unique_lock<std::mutex> oLock(outputMutex_);
     codecAvailQue_->Clear();
     if (sInfo_.surface != nullptr) {
         StopRequestSurfaceBufferThread();
         renderAvailQue_->Clear();
         requestSurfaceBufferQue_->Clear();
+        std::unique_lock<std::mutex> mLock(renderBufferMapMutex_);
         renderSurfaceBufferMap_.clear();
+        mLock.unlock();
+        std::lock_guard<std::mutex> oLock(outputMutex_);
         for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
             std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][i];
             if (outputBuffer->owner_ == Owner::OWNED_BY_CODEC) {
@@ -1023,6 +1026,7 @@ void FCodec::ReleaseBuffers()
         sInfo_.surface->CleanCache();
         AVCODEC_LOGI("surface cleancache success");
     }
+    std::unique_lock<std::mutex> oLock(outputMutex_);
     buffers_[INDEX_OUTPUT].clear();
     outAVBuffer4Surface_.clear();
     outputBufferCnt_ = 0;
@@ -1366,7 +1370,10 @@ int32_t FCodec::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemor
         AVCODEC_LOGW("Failed to update surface memory: %{public}d", res);
         return AVCS_ERR_UNKNOWN;
     }
-    renderSurfaceBufferMap_[index] = std::make_pair(surfaceBuffer, flushConfig);
+    {
+        std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
+        renderSurfaceBufferMap_[index] = std::make_pair(surfaceBuffer, flushConfig);
+    }
     renderAvailQue_->Push(index);
     return AVCS_ERR_OK;
 }
@@ -1512,6 +1519,7 @@ int32_t FCodec::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, u
 
 void FCodec::RequestBufferFromConsumer()
 {
+    std::unique_lock<std::mutex> sLock(surfaceMutex_);
     auto index = renderAvailQue_->Front();
     RequestSurfaceBufferOnce(index);
     std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
@@ -1539,7 +1547,9 @@ void FCodec::RequestBufferFromConsumer()
     }
     buffers_[INDEX_OUTPUT][curIndex]->owner_ = Owner::OWNED_BY_CODEC;
     codecAvailQue_->Push(curIndex);
+    sLock.unlock();
     if (renderSurfaceBufferMap_.count(curIndex)) {
+        std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
         renderSurfaceBufferMap_.erase(curIndex);
     }
     AVCODEC_LOGD("Request output buffer success, index = %{public}u, queSize=%{public}zu, i=%{public}d", curIndex,
@@ -1549,10 +1559,11 @@ void FCodec::RequestBufferFromConsumer()
 GSError FCodec::BufferReleasedByConsumer(uint64_t surfaceId)
 {
     CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING || state_ == State::EOS, GSERROR_NO_PERMISSION, "In valid state");
-    std::lock_guard<std::mutex> sLock(surfaceMutex_);
+    std::unique_lock<std::mutex> sLock(surfaceMutex_);
     CHECK_AND_RETURN_RET_LOG(renderAvailQue_->Size() > 0, GSERROR_NO_BUFFER, "No available buffer");
     CHECK_AND_RETURN_RET_LOG(surfaceId == sInfo_.surface->GetUniqueId(), GSERROR_INVALID_ARGUMENTS,
                              "Ignore callback from old surface");
+    sLock.unlock();
     RequestBufferFromConsumer();
     return GSERROR_OK;
 }

@@ -207,6 +207,7 @@ private:
     std::mutex surfaceMutex_;
     std::mutex formatMutex_;
     std::mutex requestBufferMutex_;
+    std::mutex renderBufferMapMutex_;
     std::condition_variable requestBufferCV_;
     std::condition_variable requestBufferOnceDoneCV_;
     std::condition_variable sendCv_;
