@@ -323,32 +323,60 @@ void MetaDataFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 void MetaDataFilter::OnBufferAvailable()
 {
     MediaAVCodec::AVCodecTrace trace("MetaDataFilter::OnBufferAvailable");
-    sptr<SurfaceBuffer> buffer;
-    sptr<SyncFence> fence;
+    sptr<SurfaceBuffer> inputBuffer;
     int64_t timestamp;
     int32_t bufferSize = 0;
-    OHOS::Rect damage;
-    FALSE_RETURN_MSG(inputSurface_ != nullptr, "inputSurface_ is nullptr");
-    GSError ret = inputSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
-    FALSE_RETURN(ret == GSERROR_OK && buffer != nullptr);
-    constexpr uint32_t waitForEver = -1;
-    (void)fence->Wait(waitForEver);
-    if (isStop_) {
-        inputSurface_->ReleaseBuffer(buffer, -1);
+
+    // Get and validate the input buffer
+    if (!AcquireInputBuffer(inputBuffer, timestamp, bufferSize)) {
+        MEDIA_LOG_E("AcquireInputBuffer fail");
         return;
     }
+
+    // Process and push output buffer
+    if (!ProcessAndPushOutputBuffer(inputBuffer, timestamp, bufferSize)) {
+        MEDIA_LOG_E("ProcessAndPushOutputBuffer fail");
+    }
+
+    // Release the buffer
+    inputSurface_->ReleaseBuffer(inputBuffer, -1);
+}
+
+bool MetaDataFilter::AcquireInputBuffer(sptr<SurfaceBuffer>& buffer, int64_t& timestamp, int32_t& bufferSize)
+{
+    FALSE_RETURN_V_MSG(inputSurface_ != nullptr, false, "inputSurface_ is nullptr");
+
+    sptr<SyncFence> fence;
+    OHOS::Rect damage;
+    GSError ret = inputSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
+    FALSE_RETURN_V_MSG(ret == GSERROR_OK && buffer != nullptr, false, "AcquireBuffer fail");
+
+    constexpr uint32_t waitForEver = -1;
+    (void)fence->Wait(waitForEver);
+
+    if (isStop_) {
+        inputSurface_->ReleaseBuffer(buffer, -1);
+        return false;
+    }
+
     auto extraData = buffer->GetExtraData();
     if (extraData) {
         extraData->ExtraGet("timeStamp", timestamp);
         extraData->ExtraGet("dataSize", bufferSize);
     }
-    MEDIA_LOG_D("timestamp: " PUBLIC_LOG_D64 ", dataSize: " PUBLIC_LOG_D32, timestamp, bufferSize);
+
+    MEDIA_LOG_D("Input buffer timestamp:%{public}lld, size:%{public}d", timestamp, bufferSize);
+
     if (timestamp == 0 || timestamp <= latestBufferTime_) {
         MEDIA_LOG_E("timestamp invalid.");
         inputSurface_->ReleaseBuffer(buffer, -1);
-        return;
+        return false;
     }
+    return true;
+}
 
+bool MetaDataFilter::ProcessAndPushOutputBuffer(sptr<SurfaceBuffer>& buffer, int64_t timestamp, int32_t bufferSize)
+{
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
     avBufferConfig.size = bufferSize;
@@ -356,22 +384,18 @@ void MetaDataFilter::OnBufferAvailable()
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     int32_t timeOutMs = 100;
     Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, timeOutMs);
-    if (status != Status::OK) {
-        MEDIA_LOG_E("RequestBuffer fail.");
-        inputSurface_->ReleaseBuffer(buffer, -1);
-        return;
-    }
+
+    FALSE_RETURN_V_MSG(status == Status::OK, false, "RequestBuffer fail.");
+
     std::shared_ptr<AVMemory> &bufferMem = emptyOutputBuffer->memory_;
-    if (emptyOutputBuffer->memory_ == nullptr) {
-        MEDIA_LOG_I("emptyOutputBuffer->memory_ is nullptr.");
-        inputSurface_->ReleaseBuffer(buffer, -1);
-        return;
-    }
+    FALSE_RETURN_V_MSG(emptyOutputBuffer->memory_ != nullptr, false, "emptyOutputBuffer->memory_ is nullptr.");
+
     bufferMem->Write((const uint8_t *)buffer->GetVirAddr(), bufferSize, 0);
     UpdateBufferConfig(emptyOutputBuffer, timestamp);
+
     status = outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
-    FALSE_LOG_MSG(status == Status::OK, "PushBuffer fail");
-    inputSurface_->ReleaseBuffer(buffer, -1);
+    FALSE_RETURN_V_MSG(status == Status::OK, false, "PushBuffer fail");
+    return true;
 }
 
 void MetaDataFilter::UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, int64_t timestamp)
