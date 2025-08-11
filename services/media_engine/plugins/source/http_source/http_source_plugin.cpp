@@ -94,7 +94,7 @@ Status HttpSourcePlugin::Deinit()
 Status HttpSourcePlugin::Prepare()
 {
     MEDIA_LOG_D("Prepare enter.");
-    if (delayReady) {
+    if (delayReady_) {
         return Status::ERROR_DELAY_READY;
     }
     return Status::OK;
@@ -233,15 +233,17 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     if (uri_.find(".mpd") != std::string::npos) {
         downloader_ = std::make_shared<DownloadMonitor>(
                       std::make_shared<DashMediaDownloader>(loaderCombinations_));
-        delayReady = false;
+        delayReady_= false;
     } else if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
+        bool useDefaultBuf = true;
         uint32_t expectDuration = DEFAULT_EXPECT_DURATION;
         if (playStrategy != nullptr && playStrategy->duration > 0) {
             expectDuration = playStrategy->duration;
+            useDefaultBuf = false;
         }
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>
-                      (expectDuration, httpHeader_, loaderCombinations_));
-        delayReady = false;
+                      (expectDuration, useDefaultBuf, httpHeader_, loaderCombinations_));
+        delayReady_ = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
         InitHttpSource(source);
     }

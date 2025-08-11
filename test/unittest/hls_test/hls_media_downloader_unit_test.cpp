@@ -56,7 +56,7 @@ void HlsMediaDownloaderUnitTest::TearDownTestCase(void)
 void HlsMediaDownloaderUnitTest ::SetUp(void)
 {
     header_ = std::map<std::string, std::string>();
-    hlsMediaDownloader = new HlsMediaDownloader(MAX_CACHE_BUFFER_SIZE, header_, nullptr);
+    hlsMediaDownloader = new HlsMediaDownloader(MAX_CACHE_BUFFER_SIZE, true, header_, nullptr);
 }
 
 void HlsMediaDownloaderUnitTest ::TearDown(void)
@@ -319,7 +319,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SAVE_HEADER_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_001, TestSize.Level1)
 {
-    HlsMediaDownloader *downloader = new HlsMediaDownloader(1000, header_, nullptr);
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(1000, true, header_, nullptr);
     EXPECT_EQ(downloader->expectDuration_, static_cast<uint64_t>(19));
     delete downloader;
     downloader = nullptr;
@@ -327,7 +327,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_002, TestSize.Level1)
 {
-    HlsMediaDownloader *downloader = new HlsMediaDownloader(10, header_, nullptr);
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(10, false, header_, nullptr);
     EXPECT_EQ(downloader->expectDuration_, static_cast<uint64_t>(10));
     delete downloader;
     downloader = nullptr;
@@ -335,7 +335,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_002, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_PAUSE, TestSize.Level1)
 {
-    HlsMediaDownloader *downloader = new HlsMediaDownloader(10, header_, nullptr);
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
     EXPECT_TRUE(downloader);
@@ -350,7 +350,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_PAUSE, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -366,7 +366,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, HandleFfmpegReadback_001, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -403,7 +403,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, HandleFfmpegReadback_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckPlaylist_001, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -431,7 +431,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, CheckPlaylist_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, SeekToTsForRead_001, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -458,7 +458,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SeekToTsForRead_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, ReportVideoSizeChange_001, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     downloader->ReportVideoSizeChange();
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
@@ -487,7 +487,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, ReportVideoSizeChange_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, DownloadRecordHistory_001, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -511,7 +511,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, DownloadRecordHistory_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckRiseBufferSize_001, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -541,7 +541,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, CheckRiseBufferSize_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadRateAndSpeed, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -567,7 +567,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadRateAndSpeed, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_001, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -590,7 +590,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CALLBACK, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -632,7 +632,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CALLBACK, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CALLBACK1, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -657,7 +657,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CALLBACK1, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/1080_3M/video_1080.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -685,7 +685,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport_5M, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/1080_3M/video_1080.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -714,7 +714,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport_5M, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport_5M_default, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/1080_3M/video_1080.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -747,7 +747,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport_5M_default, TestSize.Le
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_read_all, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -773,7 +773,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_read_all, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_Read_Live, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720_live.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -799,7 +799,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_Read_Live, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_Encrypted, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -823,7 +823,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_Encrypted, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_Encrypted_session_key, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode_session_key.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -966,7 +966,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, StopBufferring, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_MAX_M3U8, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720_5K.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -1014,7 +1014,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_SelectBR, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_WRITE_RINGBUFFER_001, TestSize.Level1)
 {
-    HlsMediaDownloader *downloader = new HlsMediaDownloader(MAX_CACHE_BUFFER_SIZE, header_, nullptr);
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(MAX_CACHE_BUFFER_SIZE, true, header_, nullptr);
     downloader->OnWriteCacheBuffer(0);
     downloader->OnWriteCacheBuffer(0);
     EXPECT_EQ(downloader->bufferedDuration_, 0);
@@ -1038,7 +1038,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_WRITE_RINGBUFFER_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, RISE_BUFFER_001, TestSize.Level1)
 {
-    HlsMediaDownloader *downloader = new HlsMediaDownloader(MAX_CACHE_BUFFER_SIZE, header_, nullptr);
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(MAX_CACHE_BUFFER_SIZE, true, header_, nullptr);
     downloader->totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
     downloader->RiseBufferSize();
     EXPECT_EQ(downloader->totalBufferSize_, MAX_CACHE_BUFFER_SIZE);
@@ -1048,7 +1048,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, RISE_BUFFER_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, RISE_BUFFER_002, TestSize.Level1)
 {
-    HlsMediaDownloader *downloader = new HlsMediaDownloader(MAX_CACHE_BUFFER_SIZE, header_, nullptr);
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(MAX_CACHE_BUFFER_SIZE, true, header_, nullptr);
     downloader->totalBufferSize_ = RING_BUFFER_SIZE;
     downloader->RiseBufferSize();
     EXPECT_EQ(downloader->totalBufferSize_, 6 * 1024 * 1024);
@@ -1058,7 +1058,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, RISE_BUFFER_002, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, DOWN_BUFFER_001, TestSize.Level1)
 {
-    HlsMediaDownloader *downloader = new HlsMediaDownloader(MAX_CACHE_BUFFER_SIZE, header_, nullptr);
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(MAX_CACHE_BUFFER_SIZE, false, header_, nullptr);
     downloader->totalBufferSize_ = 10 * 1024 * 1024;
     downloader->DownBufferSize();
     EXPECT_EQ(downloader->totalBufferSize_, 9 * 1024 * 1024);
@@ -1068,7 +1068,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, DOWN_BUFFER_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, DOWN_BUFFER_002, TestSize.Level1)
 {
-    HlsMediaDownloader *downloader = new HlsMediaDownloader(MAX_CACHE_BUFFER_SIZE, header_, nullptr);
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(MAX_CACHE_BUFFER_SIZE, true, header_, nullptr);
     downloader->totalBufferSize_ = RING_BUFFER_SIZE;
     downloader->DownBufferSize();
     EXPECT_EQ(downloader->totalBufferSize_, RING_BUFFER_SIZE);
@@ -1078,7 +1078,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, DOWN_BUFFER_002, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, GET_PLAYBACK_INFO_001, TestSize.Level1)
 {
-    HlsMediaDownloader *downloader = new HlsMediaDownloader(10, header_, nullptr);
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
     PlaybackInfo playbackInfo;
@@ -1094,7 +1094,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GET_PLAYBACK_INFO_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, GET_PLAYBACK_INFO_002, TestSize.Level1)
 {
-    HlsMediaDownloader *downloader = new HlsMediaDownloader(10, header_, nullptr);
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
     downloader->totalDownloadDuringTime_ = 1000;
@@ -1118,7 +1118,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GET_PLAYBACK_INFO_002, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, SET_INITIAL_BUFFERSIZE_001, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1138,7 +1138,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SET_INITIAL_BUFFERSIZE_001, TestSize.Level1
 
 HWTEST_F(HlsMediaDownloaderUnitTest, SET_PLAY_STRATEGY_001, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1156,7 +1156,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SET_PLAY_STRATEGY_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, NOTIFY_INIT_SUCCESS_001, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1174,7 +1174,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, NOTIFY_INIT_SUCCESS_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, IS_CACHED_INIT_SIZE_READY_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1198,7 +1198,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, IS_CACHED_INIT_SIZE_READY_001, TestSize.Lev
 HWTEST_F(HlsMediaDownloaderUnitTest, HANDLE_WATER_LINE_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1217,7 +1217,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, HANDLE_WATER_LINE_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1238,7 +1238,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1
 HWTEST_F(HlsMediaDownloaderUnitTest, IS_NEED_BUFFER_FOR_PLAYING_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        false, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1284,7 +1284,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, UpdateWaterLineAbove_003, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, read, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -1309,7 +1309,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, read, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckPlaylist, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -1341,7 +1341,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, CheckPlaylist, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckPlaylist_1, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -1381,7 +1381,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, CheckPlaylist_1, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, ReadDelegate, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -1405,7 +1405,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, ReadDelegate, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, SaveCacheBufferDataNotblock, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -1428,7 +1428,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SaveCacheBufferDataNotblock, TestSize.Level
 
 HWTEST_F(HlsMediaDownloaderUnitTest, SaveCacheBufferDataNotblock_1, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -1452,7 +1452,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SaveCacheBufferDataNotblock_1, TestSize.Lev
 
 HWTEST_F(HlsMediaDownloaderUnitTest, SaveCacheBufferDataNotblock_3, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -1477,7 +1477,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SaveCacheBufferDataNotblock_3, TestSize.Lev
 HWTEST_F(HlsMediaDownloaderUnitTest, GET_STREAM_INFO_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1511,7 +1511,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GET_STREAM_INFO_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, IS_HLS_FMP4_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1525,7 +1525,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, IS_HLS_FMP4_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, HANDLE_SEEK_READY_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1550,7 +1550,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, HANDLE_SEEK_READY_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, REMOVE_FMP4_PADDING_DATA_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1586,7 +1586,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, REMOVE_FMP4_PADDING_DATA_001, TestSize.Leve
 HWTEST_F(HlsMediaDownloaderUnitTest, READ_HEADER_DATA_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1620,7 +1620,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, READ_HEADER_DATA_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, IS_PURE_BYTE_RANGE_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1639,7 +1639,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, IS_PURE_BYTE_RANGE_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, PUT_REQUEST_INTO_DOWNLOADER_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1665,7 +1665,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, PUT_REQUEST_INTO_DOWNLOADER_001, TestSize.L
 HWTEST_F(HlsMediaDownloaderUnitTest, HANDLE_FFMPEG_READ_BACK_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        false, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1687,7 +1687,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, HANDLE_FFMPEG_READ_BACK_001, TestSize.Level
 HWTEST_F(HlsMediaDownloaderUnitTest, READ_DELEGATE_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1736,7 +1736,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, READ_DELEGATE_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, PREPARE_TO_SEEK_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1760,7 +1760,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, PREPARE_TO_SEEK_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, SEEK_TO_TIME_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1786,7 +1786,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SEEK_TO_TIME_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, ON_PLAYLIST_CHANGED_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        false, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1814,7 +1814,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, ON_PLAYLIST_CHANGED_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, UPDATE_MASTER_PLAYLIST_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-        header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1830,7 +1830,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, UPDATE_MASTER_PLAYLIST_001, TestSize.Level1
 HWTEST_F(HlsMediaDownloaderUnitTest, PLAYLIST_DOWNLOADER_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-    header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1844,7 +1844,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, PLAYLIST_DOWNLOADER_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, PLAYLIST_DOWNLOADER_002, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-    header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1865,7 +1865,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, PLAYLIST_DOWNLOADER_002, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, PLAYLIST_DOWNLOADER_003, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-    header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1888,7 +1888,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, PLAYLIST_DOWNLOADER_003, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, PLAYLIST_DOWNLOADER_004, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-    header_, nullptr);
+        true, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
@@ -1908,7 +1908,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, PLAYLIST_DOWNLOADER_004, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, STOP_BUFFERING_001, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, header_, nullptr);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_, nullptr);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -1927,7 +1927,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, STOP_BUFFERING_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, PLAYLIST_DOWNLOADER_005, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE,
-    header_, nullptr);
+        false, header_, nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                             std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);

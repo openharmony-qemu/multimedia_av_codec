@@ -265,14 +265,14 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_M3U8_SetDemuxerState, TestSize.Leve
 
 HWTEST_F(HttpSourcePluginUnitTest, Prepare_IsTrue, TestSize.Level1)
 {
-    httpSourcePlugin->delayReady = true;
+    httpSourcePlugin->delayReady_ = true;
     Status status = httpSourcePlugin->Prepare();
     EXPECT_EQ(status, Status::ERROR_DELAY_READY);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, Prepare_IsFalse, TestSize.Level1)
 {
-    httpSourcePlugin->delayReady = false;
+    httpSourcePlugin->delayReady_ = false;
     Status status = httpSourcePlugin->Prepare();
     EXPECT_EQ(status, Status::OK);
 }
