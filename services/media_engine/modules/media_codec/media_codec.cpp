@@ -14,6 +14,10 @@
  */
 #include "media_codec.h"
 #include <shared_mutex>
+#include <iostream>
+#include <sstream>
+#include <ctime>
+#include <fstream>
 #include "avcodec_common.h"
 #include "common/log.h"
 #include "osal/task/autolock.h"
@@ -24,6 +28,8 @@
 #include "bundle_mgr_interface.h"
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
+#include "param_wrapper.h"
+
 #ifdef SUPPORT_DRM
 #include "imedia_key_session_service.h"
 #endif
@@ -40,6 +46,7 @@ constexpr uint32_t INVALID_API_VERSION = 0;
 constexpr uint32_t API_VERSION_MOD = 1000;
 const std::string DUMP_PARAM = "a";
 const std::string DUMP_FILE_NAME = "player_audio_decoder_output.pcm";
+const std::string DUMP_IO_LABLE = "sys.media.AVCodec.dump.enable";
 } // namespace
 
 namespace OHOS {
@@ -104,6 +111,7 @@ int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
 {
     AutoLock lock(stateMutex_);
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Init");
+    OHOS::system::GetStringParameter(DUMP_IO_LABLE, dumpIOEnable, "false");
     MEDIA_LOG_I("Init enter, mime: " PUBLIC_LOG_S, mime.c_str());
     if (state_ != CodecState::UNINITIALIZED) {
         MEDIA_LOG_E("Init failed, state = %{public}s .", StateToString(state_).data());
@@ -134,6 +142,7 @@ int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
 int32_t MediaCodec::Init(const std::string &name)
 {
     AutoLock lock(stateMutex_);
+    OHOS::system::GetStringParameter(DUMP_IO_LABLE, dumpIOEnable, "false");
     MEDIA_LOG_I("Init enter, name: " PUBLIC_LOG_S, name.c_str());
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Init");
     if (state_ != CodecState::UNINITIALIZED) {
@@ -167,11 +176,41 @@ std::shared_ptr<Plugins::CodecPlugin> MediaCodec::CreatePlugin(const std::string
     return std::reinterpret_pointer_cast<Plugins::CodecPlugin>(plugin);
 }
 
+void MediaCodec::IODump(const std::shared_ptr<Meta> &meta)
+{
+    std::time_t t = std::time(nullptr);
+    std::tm tm = *std::localtime(&t);
+
+    std::ostringstream common;
+    common << "/data/media/";
+    common << std::put_time(&tm, "%H%M%S");
+    common << "_" << reinterpret_cast<void*>(this);
+
+    int32_t channels = 0;
+    int32_t sampleRate = 0;
+    meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
+    common << "_" << sampleRate;
+    meta->GetData(Tag::AUDIO_CHANNEL_COUNT, channels);
+    common << "_" << channels;
+
+    std::ostringstream inputStr;
+    std::ostringstream outputStr;
+    inputStr << common.str() << "_input.bin";
+    outputStr << common.str() << "_output.bin";
+
+    dumpDataInputFs_ = std::make_shared<std::ofstream>(inputStr.str(), std::ios::binary);
+    dumpDataOutputFs_ = std::make_shared<std::ofstream>(outputStr.str(), std::ios::binary);
+}
+
 int32_t MediaCodec::Configure(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("MediaCodec::configure in");
     AutoLock lock(stateMutex_);
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Configure");
+    if (dumpIOEnable == "true") {
+        IODump(meta);
+        MEDIA_LOG_I("IODump in");
+    }
     FALSE_RETURN_V(state_ == CodecState::INITIALIZED, (int32_t)Status::ERROR_INVALID_STATE);
     auto ret = codecPlugin_->SetParameter(meta);
     FALSE_RETURN_V(ret == Status::OK, (int32_t)ret);
@@ -502,6 +541,14 @@ int32_t MediaCodec::Release()
     codecPlugin_ = nullptr;
     ResetBufferStatusInfo();
     ClearBufferQueue();
+    if (dumpDataInputFs_->is_open()) {
+        dumpDataInputFs_->flush();
+        dumpDataInputFs_->close();
+    }
+    if (dumpDataOutputFs_->is_open()) {
+        dumpDataOutputFs_->flush();
+        dumpDataOutputFs_->close();
+    }
     state_ = CodecState::UNINITIALIZED;
     return (int32_t)ret;
 }
@@ -948,6 +995,13 @@ void MediaCodec::OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer)
     MediaAVCodec::AVCodecTrace trace(("MediaCodec::OnInputBufferDone:") +
         std::to_string(inputBuffer->flag_) + "," + std::to_string(inputBuffer->pts_) +
         "," + std::to_string(inputBuffer->duration_));
+    if (dumpIOEnable == "true" && dumpDataInputFs_) {
+        if (dumpDataInputFs_->is_open() && inputBuffer->memory_->GetAddr()) {
+            MEDIA_LOG_DD("dumpIOE writing");
+            dumpDataInputFs_->write(reinterpret_cast<const char*>(inputBuffer->memory_->GetAddr() +
+                                    inputBuffer->memory_->GetOffset()), inputBuffer->memory_->GetSize());
+        }
+    }
     Status ret = inputBufferQueueConsumer_->ReleaseBuffer(inputBuffer);
     MEDIA_LOG_DD("0x%{public}06" PRIXPTR " OnInputBufferDone, buffer->pts:" PUBLIC_LOG_D64,
         FAKE_POINTER(this), inputBuffer->pts_);
@@ -962,6 +1016,13 @@ void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffe
         "," + std::to_string(outputBuffer->duration_));
     if (isDump_) {
         DumpAVBufferToFile(DUMP_PARAM, dumpPrefix_ + DUMP_FILE_NAME, outputBuffer);
+    }
+    if (dumpIOEnable == "true" && dumpDataOutputFs_) {
+        if (dumpDataOutputFs_->is_open() && outputBuffer->memory_->GetAddr()) {
+            MEDIA_LOG_DD("dumpIOE writing");
+            dumpDataOutputFs_->write(reinterpret_cast<const char*>(outputBuffer->memory_->GetAddr() +
+                                     outputBuffer->memory_->GetOffset()), outputBuffer->memory_->GetSize());
+        }
     }
     Status ret = outputBufferQueueProducer_->PushBuffer(outputBuffer, true);
     auto realPtr = mediaCodecCallback_.lock();

@@ -184,6 +184,9 @@ private:
     void HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingNeeded, Status &ret);
 
     void ResetBufferStatusInfo();
+
+    void IODump(const std::shared_ptr<Meta> &meta);
+
     Status CodePluginInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer);
     Status CodePluginOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer);
 
@@ -206,6 +209,7 @@ private:
     std::string dumpPrefix_ = "";
     int32_t outputBufferCapacity_;
     std::string codecPluginName_;
+    std::string dumpIOEnable;
 
     std::atomic<uint32_t> inputBufferEosStatus_ {0};
     std::atomic<bool> isOutputBufferAvailable_ {true};
@@ -215,6 +219,8 @@ private:
     std::vector<std::shared_ptr<AVBuffer>> outputBufferVector_;
     Mutex stateMutex_;
     Mutex codecPluginMutex_;
+    std::shared_ptr<std::ofstream> dumpDataOutputFs_;
+    std::shared_ptr<std::ofstream> dumpDataInputFs_;
 };
 } // namespace Media
 } // namespace OHOS
