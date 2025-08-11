@@ -122,8 +122,8 @@ void FSurfaceMemory::SetCallerToBuffer(int32_t w, int32_t h)
     while (std::getline(iss, token, '/')) {
         splitMime.push_back(token);
     }
-    if (splitMime.size() > 0) {
-        mime = splitMime[splitMime.size() - 1];
+    if (!splitMime.empty()) {
+        mime = splitMime.back();
     }
     std::string name = std::to_string(w) + "x" + std::to_string(h) + "-" + mime + "-" + decInfo_.instanceId;
     ioctl(fd, DMA_BUF_SET_TYPE, type.c_str());
