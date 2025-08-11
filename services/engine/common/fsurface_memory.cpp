@@ -34,7 +34,6 @@ FSurfaceMemory::~FSurfaceMemory()
 
 int32_t FSurfaceMemory::AllocSurfaceBuffer(int32_t width, int32_t height)
 {
-    CHECK_AND_RETURN_RET_LOG(sInfo_->surface != nullptr, AVCS_ERR_UNKNOWN, "Surface is nullptr!");
     CHECK_AND_RETURN_RET_LOG(!isAttached, AVCS_ERR_UNKNOWN, "Only support when not attach!");
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ == nullptr, AVCS_ERR_UNKNOWN, "Surface buffer is not nullptr!");
     sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
@@ -123,7 +122,9 @@ void FSurfaceMemory::SetCallerToBuffer(int32_t w, int32_t h)
     while (std::getline(iss, token, '/')) {
         splitMime.push_back(token);
     }
-    mime = splitMime[1];
+    if (splitMime.size() > 0) {
+        mime = splitMime[splitMime.size() - 1];
+    }
     std::string name = std::to_string(w) + "x" + std::to_string(h) + "-" + mime + "-" + decInfo_.instanceId;
     ioctl(fd, DMA_BUF_SET_TYPE, type.c_str());
     ioctl(fd, DMA_BUF_SET_NAME_A, name.c_str());

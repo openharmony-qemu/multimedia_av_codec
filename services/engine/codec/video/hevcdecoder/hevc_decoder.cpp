@@ -808,17 +808,18 @@ int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set surface cfg failed!");
     int32_t valBufferCnt = 0;
     for (int i = 0; i < bufferCnt; i++) {
+        std::shared_ptr<FSurfaceMemory> surfaceMemory = std::make_shared<FSurfaceMemory>(&sInfo_, hevcDecInfo_);
+        CHECK_AND_RETURN_RET_LOG(surfaceMemory != nullptr, AVCS_ERR_UNKNOWN, "Creata surface memory failed!");
+        ret = surfaceMemory->AllocSurfaceBuffer(width_, height_);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Alloc surface buffer failed!");
         std::shared_ptr<HBuffer> buf = std::make_shared<HBuffer>();
-        buf->width = width_;
+        CHECK_AND_RETURN_RET_LOG(buf != nullptr, AVCS_ERR_UNKNOWN, "Creata output buffer failed!");
+        buf->sMemory = surfaceMemory;
         buf->height = height_;
-        std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSurfaceAllocator(sInfo_.requestConfig);
-        CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}d allocator is nullptr", i);
-        buf->avBuffer = AVBuffer::CreateAVBuffer(allocator, 0);
-        if (buf->avBuffer != nullptr) {
-            AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d", i,
-                         buf->avBuffer->memory_->GetCapacity());
-        }
-        CHECK_AND_CONTINUE_LOG(buf->avBuffer != nullptr, "Allocate output buffer failed, index=%{public}d", i);
+        buf->width = width_;
+        buf->avBuffer = AVBuffer::CreateAVBuffer(buf->sMemory->GetBase(), buf->sMemory->GetSize());
+        AVCODEC_LOGI("Allocate output buffer success, index=%{public}d, size=%{public}d, stride=%{public}d", i,
+                     buf->sMemory->GetSize(), buf->sMemory->GetSurfaceBufferStride());
         buffers_[INDEX_OUTPUT].emplace_back(buf);
         valBufferCnt++;
     }
@@ -995,7 +996,7 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
                                  "Update buffer failed");
     }
     if (!format_.ContainKey(OHOS::Media::Tag::VIDEO_STRIDE) || formatChanged) {
-        int32_t stride = GetSurfaceBufferStride(buffers_[INDEX_OUTPUT][index]);
+        int32_t stride = buffers_[INDEX_OUTPUT][index]->sMemory->GetSurfaceBufferStride();
         CHECK_AND_RETURN_RET_LOG(stride > 0, AVCS_ERR_NO_MEMORY, "get GetSurfaceBufferStride failed");
         format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, stride);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
@@ -1010,21 +1011,6 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         callback_->OnOutputFormatChanged(format_);
     }
     return AVCS_ERR_OK;
-}
-
-int32_t HevcDecoder::GetSurfaceBufferStride(const std::shared_ptr<HBuffer> &frameBuffer)
-{
-    int32_t surfaceBufferStride = 0;
-    if (sInfo_.surface == nullptr) {
-        auto surfaceBuffer = frameBuffer->avBuffer->memory_->GetSurfaceBuffer();
-        CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, -1, "surfaceBuffer is nullptr");
-        auto bufferHandle = surfaceBuffer->GetBufferHandle();
-        CHECK_AND_RETURN_RET_LOG(bufferHandle != nullptr, -1, "fail to get bufferHandle");
-        surfaceBufferStride = bufferHandle->stride;
-    } else {
-        surfaceBufferStride = frameBuffer->sMemory->GetSurfaceBufferStride();
-    }
-    return surfaceBufferStride;
 }
 
 void HevcDecoder::ReleaseBuffers()
@@ -1201,7 +1187,7 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
     struct SurfaceInfo surfaceInfo;
     surfaceInfo.scaleData = scaleData_;
     surfaceInfo.scaleLineSize = scaleLineSize_;
-    int32_t surfaceStride = GetSurfaceBufferStride(frameBuffer);
+    int32_t surfaceStride = frameBuffer->sMemory->GetSurfaceBufferStride();
     CHECK_AND_RETURN_RET_LOG(surfaceStride > 0, AVCS_ERR_INVALID_VAL, "get GetSurfaceBufferStride failed");
     surfaceInfo.surfaceStride = static_cast<uint32_t>(surfaceStride);
     if (sInfo_.surface) {
