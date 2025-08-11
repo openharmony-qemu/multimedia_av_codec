@@ -594,6 +594,7 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(isValidState, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                                       GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(surface != nullptr, AVCS_ERR_NO_MEMORY, "Surface is nullptr");
     GSError gsRet;
     if (isLpp_) {
         gsRet = surface->SetSurfaceSourceType(OHSurfaceSource::OH_SURFACE_SOURCE_LOWPOWERVIDEO);

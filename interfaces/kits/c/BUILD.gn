@@ -47,8 +47,6 @@ config("av_codec_capi_header_config") {
   if (av_codec_support_drm) {
     defines += [ "SUPPORT_DRM" ]
   }
-  cflags = [ ]
-
   cflags_cc = [
     "-fno-rtti",
   ]
