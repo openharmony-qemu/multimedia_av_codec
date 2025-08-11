@@ -481,13 +481,13 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetAsyncReadThreadPriority_0001, TestSiz
     ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
     OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
-    ASSERT_EQ(demuxerPlugin_0>SetAsyncReadThreadPriority(THREAD_PRIORITY_41, "demuxer_plugin_unit_test"), Status::OK);
-    ASSERT_EQ(demuxerPlugin_0>SetAsyncReadThreadPriority(THREAD_PRIORITY_41, "demuxer_plugin_unit_test"),
+    ASSERT_EQ(demuxerPlugin_->SetAsyncReadThreadPriority(THREAD_PRIORITY_41, "demuxer_plugin_unit_test"), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SetAsyncReadThreadPriority(THREAD_PRIORITY_41, "demuxer_plugin_unit_test"),
                                                          Status::ERROR_WRONG_STATE);
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
-    ASSERT_EQ(demuxerPlugin_0>SetAsyncReadThreadPriority(THREAD_PRIORITY_41, "demuxer_plugin_unit_test"),
+    ASSERT_EQ(demuxerPlugin_->SetAsyncReadThreadPriority(THREAD_PRIORITY_41, "demuxer_plugin_unit_test"),
                                                          Status::ERROR_WRONG_STATE);
 }
 
@@ -508,7 +508,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetAsyncReadThreadPriority_0002, TestSiz
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
-    ASSERT_EQ(demuxerPlugin_0>SetAsyncReadThreadPriority(THREAD_PRIORITY_41, "demuxer_plugin_unit_test"),
+    ASSERT_EQ(demuxerPlugin_->SetAsyncReadThreadPriority(THREAD_PRIORITY_41, "demuxer_plugin_unit_test"),
                                                          Status::ERROR_WRONG_STATE);
 }
 
