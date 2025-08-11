@@ -332,6 +332,8 @@ group("av_codec_fuzz_test") {
       "fuzztest/h263swdecoderserver_fuzzer:H263SwdecoderServerFuzzTest",
       "fuzztest/h263swdecodersetparameter_fuzzer:H263SwdecoderSetParameterFuzzTest",
       "fuzztest/hdrmuxer_fuzzer:HdrMuxerFuzzTest",
+      "fuzztest/hevchwencoderapi11_fuzzer:HevcHwEncoderApi11FuzzTest",
+      "fuzztest/hevchwencodersetparameter_fuzzer:HevcHwEncoderSetParamFuzzTest",
       "fuzztest/hevcswdecoderconfigure_fuzzer:HevcSwdecoderConfigureFuzzTest",
       "fuzztest/hevcswdecoderserver_fuzzer:HevcSwdecoderServerFuzzTest",
       "fuzztest/hevcswdecoderservermemrecycle_fuzzer:HevcSwdecoderServerMemrecycleFuzzTest",
