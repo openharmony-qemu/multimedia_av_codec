@@ -177,6 +177,7 @@ void DemuxerAsynInnerFuncTest::GetFrameNum(int32_t i)
 
 void DemuxerAsynInnerFuncTest::ThreadTask(std::shared_ptr<Plugins::DemuxerPlugin> demuxerPlugin, uint32_t timeout)
 {
+    int64_t realtime = 0;
     while (!isAudioEosFlagForSave || !isVideoEosFlagForSave) {
         for (int32_t i = 0; i < 2; i++) {
             if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
@@ -186,7 +187,7 @@ void DemuxerAsynInnerFuncTest::ThreadTask(std::shared_ptr<Plugins::DemuxerPlugin
             GetFrameNum(i);
             if (isVideoEosFlagForSave && isAudioEosFlagForSave) {
                 ASSERT_EQ(demuxerPlugin->SeekTo(indexVid, TIME_0 / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC,
-                    0), Status::OK);
+                    realtime), Status::OK);
             }
         }
     }
