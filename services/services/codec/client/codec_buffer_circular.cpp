@@ -123,14 +123,14 @@ bool CodecBufferCircular::CanEnableAsyncMode()
 void CodecBufferCircular::EnableSyncMode()
 {
     std::scoped_lock lock(inMutex_, outMutex_);
-    CHECK_AND_RETURN_LOG_WITH_TAG(CanEnableMode<MODE_ASYNC>(), "Can not enable sync mode");
+    CHECK_AND_RETURN_LOG_WITH_TAG(CanEnableMode<MODE_SYNC>(), "Can not enable sync mode");
     EnableMode<MODE_SYNC>();
 }
 
 void CodecBufferCircular::EnableAsyncMode()
 {
     std::scoped_lock lock(inMutex_, outMutex_);
-    CHECK_AND_RETURN_LOG_WITH_TAG(CanEnableMode<MODE_SYNC>(), "Can not enable async mode");
+    CHECK_AND_RETURN_LOG_WITH_TAG(CanEnableMode<MODE_ASYNC>(), "Can not enable async mode");
     EnableMode<MODE_ASYNC>();
 }
 
