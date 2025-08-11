@@ -490,6 +490,10 @@ Status FFmpegDemuxerPlugin::GetLastPTSByTrackId(uint32_t trackId, int64_t &lastP
 Status FFmpegDemuxerPlugin::SetAsyncReadThreadPriority(const uint32_t newPriority, const std::string &strBundleName)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    if (threadState_ != ThreadState::NOT_STARTED && readThread_ != nullptr) {
+        MEDIA_LOG_W("Async read thread is running, cannot set priority now");
+        return Status::ERROR_WRONG_STATE;
+    }
     if (isAsyncReadThreadPrioritySet_) {
         MEDIA_LOG_W("Async read thread priority has been set, cannot set again");
         return Status::ERROR_WRONG_STATE;
