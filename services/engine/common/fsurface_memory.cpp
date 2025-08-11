@@ -34,6 +34,7 @@ FSurfaceMemory::~FSurfaceMemory()
 
 int32_t FSurfaceMemory::AllocSurfaceBuffer(int32_t width, int32_t height)
 {
+    CHECK_AND_RETURN_RET_LOG(sInfo_->surface != nullptr, AVCS_ERR_UNKNOWN, "Surface is nullptr!");
     CHECK_AND_RETURN_RET_LOG(!isAttached, AVCS_ERR_UNKNOWN, "Only support when not attach!");
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ == nullptr, AVCS_ERR_UNKNOWN, "Surface buffer is not nullptr!");
     sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();

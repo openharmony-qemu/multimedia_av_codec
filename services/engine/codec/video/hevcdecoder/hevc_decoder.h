@@ -146,6 +146,7 @@ private:
     int32_t SwitchBetweenSurface(const sptr<Surface> &newSurface);
     int32_t RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, uint32_t index);
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, uint32_t index);
+    int32_t GetSurfaceBufferStride(const std::shared_ptr<HBuffer> &frameBuffer);
     int32_t SetSurfaceCfg();
     int32_t Attach(sptr<SurfaceBuffer> surfaceBuffer);
     int32_t Detach(sptr<SurfaceBuffer> surfaceBuffer);
@@ -165,6 +166,7 @@ private:
     void StartRequestSurfaceBufferThread();
     void StopRequestSurfaceBufferThread();
     bool RequestSurfaceBufferOnce(uint32_t index);
+    void SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer);
 
     // for memory recycle
     int32_t FreezeBuffers(State curState);
