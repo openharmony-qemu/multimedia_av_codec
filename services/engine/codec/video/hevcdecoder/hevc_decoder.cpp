@@ -35,6 +35,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 namespace {
+#define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "HevcDecoderLoader"};
 const char *HEVC_DEC_LIB_PATH = "libhevcdec_ohos.z.so";
 const char *HEVC_DEC_CREATE_FUNC_NAME = "HEVC_CreateDecoder";
