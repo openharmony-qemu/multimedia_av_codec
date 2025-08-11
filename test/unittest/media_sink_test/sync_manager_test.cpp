@@ -526,6 +526,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_001, TestSize.Level0)
 HWTEST_F(TestSyncManager, GetMediaTimeNow_002, TestSize.Level0)
 {
     MediaSyncManager mediaSyncManager;
+    mediaSyncManager.audioRenderPts_ = 100;
     mediaSyncManager.isSeeking_ = false;
     mediaSyncManager.lastReportMediaTime_ = 100;
     mediaSyncManager.pausedMediaTime_ = 120;
@@ -556,6 +557,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_004, TestSize.Level0)
 {
     MediaSyncManager mediaSyncManager;
     int64_t lastReportMediaTime_ = 110;
+    mediaSyncManager.audioRenderPts_ = 100;
     mediaSyncManager.isSeeking_ = false;
     mediaSyncManager.clockState_ = MediaSyncManager::State::RESUMED;
     mediaSyncManager.lastReportMediaTime_ = lastReportMediaTime_;
@@ -577,6 +579,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_005, TestSize.Level0)
 {
     MediaSyncManager mediaSyncManager;
     int64_t lastReportMediaTime_ = 110;
+    mediaSyncManager.audioRenderPts_ = 100;
     mediaSyncManager.isSeeking_ = false;
     mediaSyncManager.clockState_ = MediaSyncManager::State::RESUMED;
     mediaSyncManager.lastReportMediaTime_ = lastReportMediaTime_;
@@ -598,6 +601,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_006, TestSize.Level0)
 {
     MediaSyncManager mediaSyncManager;
     int64_t lastReportMediaTime_ = 110;
+    mediaSyncManager.audioRenderPts_ = 100;
     mediaSyncManager.isSeeking_ = false;
     mediaSyncManager.clockState_ = MediaSyncManager::State::RESUMED;
     mediaSyncManager.lastReportMediaTime_ = lastReportMediaTime_;
@@ -616,6 +620,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_006, TestSize.Level0)
 
 HWTEST_F(TestSyncManager, GetMediaTimeNow_007, TestSize.Level0)
 {
+    syncManager_->audioRenderPts_ = 100;
     syncManager_->isSeeking_ = false;
     syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
     syncManager_->pausedMediaTime_ = 50;
@@ -628,6 +633,7 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_007, TestSize.Level0)
 
 HWTEST_F(TestSyncManager, GetMediaTimeNow_008, TestSize.Level0)
 {
+    syncManager_->audioRenderPts_ = 100;
     syncManager_->isSeeking_ = false;
     syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
     syncManager_->pausedMediaTime_ = 100;
@@ -635,6 +641,28 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_008, TestSize.Level0)
     syncManager_->currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
     syncManager_->currentAnchorMediaTime_ = 50;
     EXPECT_EQ(syncManager_->GetMediaTimeNow(), 50);
+}
+
+HWTEST_F(TestSyncManager, GetMediaTimeNow_009, TestSize.Level0)
+{
+    syncManager_->isSeeking_ = false;
+    syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
+    syncManager_->pausedMediaTime_ = 100;
+    syncManager_->firstMediaTimeAfterSeek_ = 150;
+    syncManager_->currentAnchorMediaTime_ = 50;
+    syncManager_->audioRenderPts_ = HST_TIME_NONE;
+    EXPECT_EQ(syncManager_->GetMediaTimeNow(), HST_TIME_NONE);
+}
+
+HWTEST_F(TestSyncManager, GetMediaTimeNow_010, TestSize.Level0)
+{
+    syncManager_->isSeeking_ = false;
+    syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
+    syncManager_->pausedMediaTime_ = 100;
+    syncManager_->firstMediaTimeAfterSeek_ = 150;
+    syncManager_->currentAnchorMediaTime_ = 50;
+    syncManager_->audioRenderPts_ = 0;
+    EXPECT_EQ(syncManager_->GetMediaTimeNow(), HST_TIME_NONE);
 }
 
 HWTEST_F(TestSyncManager, SetLastAudioBufferDuration_001, TestSize.Level0)

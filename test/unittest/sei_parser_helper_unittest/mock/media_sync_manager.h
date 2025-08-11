@@ -60,6 +60,7 @@ public:
     MOCK_METHOD(Status, Reset, (), (override));
     MOCK_METHOD(void, SetLastVideoBufferAbsPts, (int64_t lastVideoBufferAbsPts), (override));
     MOCK_METHOD(int64_t, GetLastVideoBufferAbsPts, (), (const, override));
+    MOCK_METHOD(void, SetAudioRenderPts, (int64_t audioRenderPts), (override));
     MOCK_METHOD(Status, Pause, (), ());
     MOCK_METHOD(Status, Resume, (), ());
     MOCK_METHOD(Status, Seek, (int64_t mediaTime, bool isClosest), ());

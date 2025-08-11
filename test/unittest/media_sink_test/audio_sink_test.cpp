@@ -19,6 +19,7 @@
 #include "filter/filter.h"
 #include "common/log.h"
 #include "sink/media_synchronous_sink.h"
+#include "media_sync_center_mock.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioSinkTest" };
@@ -1398,6 +1399,106 @@ HWTEST(TestAudioSink, audio_sink_ChangeTrackForFormatChange_001, TestSize.Level1
     audioSink->hasPluginCreateTaskFinished_ = true;
     auto ret = audioSink->ChangeTrackForFormatChange();
     ASSERT_TRUE(ret == Status::ERROR_NULL_POINTER);
+}
+
+HWTEST(TestAudioSink, IsTimeAnchorNeedUpdate_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->SetSyncCenter(nullptr);
+
+    bool result = audioSink->IsTimeAnchorNeedUpdate();
+    EXPECT_FALSE(result);
+}
+
+HWTEST(TestAudioSink, IsTimeAnchorNeedUpdate_002, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    auto mockSyncCenter = std::make_shared<MockMediaSyncCenter>();
+    audioSink->SetSyncCenter(mockSyncCenter);
+    audioSink->forceUpdateTimeAnchorNextTime_ = false;
+    audioSink->innerSynchroizer_->lastReportedClockTime_ = -1;
+    audioSink->innerSynchroizer_->currentRenderPTS_ = 100;
+    mockSyncCenter->returnInt64Queue_.push(1);
+
+    bool result = audioSink->IsTimeAnchorNeedUpdate();
+    EXPECT_TRUE(result);
+}
+
+HWTEST(TestAudioSink, IsTimeAnchorNeedUpdate_003, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    auto mockSyncCenter = std::make_shared<MockMediaSyncCenter>();
+    audioSink->SetSyncCenter(mockSyncCenter);
+    audioSink->forceUpdateTimeAnchorNextTime_ = false;
+    audioSink->innerSynchroizer_->lastReportedClockTime_ = 0;
+    audioSink->innerSynchroizer_->currentRenderPTS_ = 100;
+    mockSyncCenter->returnInt64Queue_.push(200000);
+
+    bool result = audioSink->IsTimeAnchorNeedUpdate();
+    EXPECT_TRUE(result);
+}
+
+HWTEST(TestAudioSink, IsTimeAnchorNeedUpdate_004, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    auto mockSyncCenter = std::make_shared<MockMediaSyncCenter>();
+    audioSink->SetSyncCenter(mockSyncCenter);
+    audioSink->forceUpdateTimeAnchorNextTime_ = false;
+    audioSink->innerSynchroizer_->lastReportedClockTime_ = 0;
+    audioSink->innerSynchroizer_->currentRenderPTS_ = 0;
+    mockSyncCenter->returnInt64Queue_.push(20000);
+
+    bool result = audioSink->IsTimeAnchorNeedUpdate();
+    EXPECT_TRUE(result);
+}
+
+HWTEST(TestAudioSink, IsTimeAnchorNeedUpdate_005, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    auto mockSyncCenter = std::make_shared<MockMediaSyncCenter>();
+    audioSink->SetSyncCenter(mockSyncCenter);
+    audioSink->forceUpdateTimeAnchorNextTime_ = false;
+    audioSink->innerSynchroizer_->lastReportedClockTime_ = 0;
+    audioSink->innerSynchroizer_->currentRenderPTS_ = 100;
+    mockSyncCenter->returnInt64Queue_.push(100000);
+
+    bool result = audioSink->IsTimeAnchorNeedUpdate();
+    EXPECT_FALSE(result);
+}
+
+HWTEST(TestAudioSink, IsTimeAnchorNeedUpdate_006, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    auto mockSyncCenter = std::make_shared<MockMediaSyncCenter>();
+    audioSink->SetSyncCenter(mockSyncCenter);
+    audioSink->forceUpdateTimeAnchorNextTime_ = false;
+    audioSink->innerSynchroizer_->lastReportedClockTime_ = 0;
+    audioSink->innerSynchroizer_->currentRenderPTS_ = 0;
+    mockSyncCenter->returnInt64Queue_.push(10000);
+
+    bool result = audioSink->IsTimeAnchorNeedUpdate();
+    EXPECT_FALSE(result);
+}
+
+HWTEST(TestAudioSink, IsTimeAnchorNeedUpdate_007, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    auto mockSyncCenter = std::make_shared<MockMediaSyncCenter>();
+    audioSink->SetSyncCenter(mockSyncCenter);
+    audioSink->forceUpdateTimeAnchorNextTime_ = true;
+    audioSink->innerSynchroizer_->lastReportedClockTime_ = 0;
+    audioSink->innerSynchroizer_->currentRenderPTS_ = 100;
+    mockSyncCenter->returnInt64Queue_.push(1);
+
+    bool result = audioSink->IsTimeAnchorNeedUpdate();
+    EXPECT_TRUE(result);
 }
 } // namespace Test
 } // namespace Media
