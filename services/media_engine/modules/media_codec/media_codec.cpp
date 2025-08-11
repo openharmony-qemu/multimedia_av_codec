@@ -176,7 +176,8 @@ std::shared_ptr<Plugins::CodecPlugin> MediaCodec::CreatePlugin(const std::string
     return std::reinterpret_pointer_cast<Plugins::CodecPlugin>(plugin);
 }
 
-void MediaCodec::IODump(const std::shared_ptr<Meta> &meta) {
+void MediaCodec::IODump(const std::shared_ptr<Meta> &meta)
+{
     std::time_t t = std::time(nullptr);
     std::tm tm = *std::localtime(&t);
 
@@ -186,9 +187,9 @@ void MediaCodec::IODump(const std::shared_ptr<Meta> &meta) {
     common << "_" << reinterpret_cast<void*>(this);
 
     int32_t channels = 0;
-    int32_t sample_rate = 0;
-    meta->GetData(Tag::AUDIO_SAMPLE_RATE, sample_rate);
-    common << "_" << sample_rate;
+    int32_t sampleRate = 0;
+    meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
+    common << "_" << sampleRate;
     meta->GetData(Tag::AUDIO_CHANNEL_COUNT, channels);
     common << "_" << channels;
 
@@ -1020,7 +1021,7 @@ void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffe
         if (dumpDataOutputFs_->is_open() && outputBuffer->memory_->GetAddr()) {
             MEDIA_LOG_DD("dumpIOE writing");
             dumpDataOutputFs_->write(reinterpret_cast<const char*>(outputBuffer->memory_->GetAddr() +
-                                    outputBuffer->memory_->GetOffset()),outputBuffer->memory_->GetSize());
+                                     outputBuffer->memory_->GetOffset()), outputBuffer->memory_->GetSize());
         }
     }
     Status ret = outputBufferQueueProducer_->PushBuffer(outputBuffer, true);
