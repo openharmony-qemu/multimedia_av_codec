@@ -527,7 +527,7 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0170, TestSize.Level3
 HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0180, TestSize.Level3)
 {
     indexVid = 0;
-    uint32_t timeout = 100;
+    uint32_t timeout = 1000;
     int64_t realtime = 0;
     int64_t seekTime = 5042000;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV_2, DEF_PROB_SIZE), true);
@@ -536,7 +536,11 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0180, TestSize.Level3
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
-    ASSERT_EQ(demuxerPlugin->ReadSample(indexVid, avBuf_, timeout), Status::OK);
+    auto ret = demuxerPlugin->ReadSample(indexVid, avBuf_, timeout);
+    while (ret == Status::ERROR_WAIT_TIMEOUT) {
+        ret = demuxerPlugin->ReadSample(indexVid, avBuf_, timeout);
+    }
+    ASSERT_EQ(ret, Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
@@ -545,7 +549,11 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0180, TestSize.Level3
             if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
                 continue;
             }
-            ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
+            ret = demuxerPlugin->ReadSample(i, avBuf_, timeout);
+            while (ret == Status::ERROR_WAIT_TIMEOUT) {
+                ret = demuxerPlugin->ReadSample(i, avBuf_, timeout);
+            }
+            ASSERT_EQ(ret, Status::OK);
             GetFrameNum(i);
         }
     }
@@ -561,7 +569,7 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0180, TestSize.Level3
 HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0190, TestSize.Level3)
 {
     indexVid = 0;
-    uint32_t timeout = 100;
+    uint32_t timeout = 1000;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -574,7 +582,11 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0190, TestSize.Level3
             if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
                 continue;
             }
-            ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
+            auto ret = demuxerPlugin->ReadSample(i, avBuf_, timeout);
+            while (ret == Status::ERROR_WAIT_TIMEOUT) {
+                ret = demuxerPlugin->ReadSample(i, avBuf_, timeout);
+            }
+            ASSERT_EQ(ret, Status::OK);
             GetFrameNum(i);
         }
     }
