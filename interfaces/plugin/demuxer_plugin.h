@@ -243,7 +243,7 @@ struct DemuxerPlugin : public PluginBase {
      * @brief Set the priority of the asynchronous read thread.
      *
      * The function is only valid when the thread is not in the RUNNING state.
-     * 
+     *
      * The specified bundleName must also have the relevant permissions.
      *
      * @param newPriority Indicates the new priority of the asynchronous read thread.
