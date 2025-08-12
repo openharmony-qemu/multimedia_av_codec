@@ -1279,6 +1279,11 @@ bool FFmpegFormatHelper::IsMpeg4File(FileType filetype)
 {
     return filetype == FileType::MP4 || filetype == FileType::MOV;
 }
+
+bool FFmpegFormatHelper::IsValidCodecId(const AVCodecID &codecId)
+{
+    return (g_codecIdToMime.count(codecId) > 0) || (IsPCMStream(codecId));
+}
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

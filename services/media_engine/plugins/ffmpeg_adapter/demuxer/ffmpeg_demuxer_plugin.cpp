@@ -1722,11 +1722,26 @@ bool FFmpegDemuxerPlugin::AllVideoFirstFramesReady()
     return true;
 }
 
+/*
+return true:
+  unsupport track
+  support track:
+    packet with key FLAG
+    packet without key FLAG:
+      HEVC + TS/PS file
+      HEVC + IsHevcSyncFrame pass
+return false:
+  support track + without key FLAG + not hevc track
+  support track + without key FLAG + hevc track + not ts/ps + IsHevcSyncFrame fail
+*/
 static bool IsSyncFrame(AVStream *stream, AVPacket *pkt, std::shared_ptr<AVFormatContext> formatContext)
 {
-    FALSE_RETURN_V_MSG_E(stream != nullptr, false, "stream is nullptr");
+    FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, false, "stream is nullptr");
     FALSE_RETURN_V_MSG_E(pkt != nullptr, false, "pkt is nullptr");
     FALSE_RETURN_V_MSG_E(formatContext != nullptr, false, "AVFormatContext is nullptr");
+    if (!FFmpegFormatHelper::IsValidCodecId(stream->codecpar->codec_id)) {
+        return true;
+    }
     return (static_cast<uint32_t>(pkt->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY) ||
             (stream->codecpar->codec_id == AV_CODEC_ID_HEVC &&
                 (!IsSyncFrameCheckNeeded(formatContext) || IsHevcSyncFrame(pkt->data, pkt->size))));
