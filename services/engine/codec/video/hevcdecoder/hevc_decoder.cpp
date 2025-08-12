@@ -27,11 +27,15 @@
 #include "hevc_decoder.h"
 #include <fstream>
 #include <cstdarg>
+#include <sstream>
+#include <sys/ioctl.h>
+#include <linux/dma-buf.h>
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 namespace {
+#define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "HevcDecoderLoader"};
 const char *HEVC_DEC_LIB_PATH = "libhevcdec_ohos.z.so";
 const char *HEVC_DEC_CREATE_FUNC_NAME = "HEVC_CreateDecoder";
@@ -819,6 +823,7 @@ int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
                          buf->avBuffer->memory_->GetCapacity());
         }
         CHECK_AND_CONTINUE_LOG(buf->avBuffer != nullptr, "Allocate output buffer failed, index=%{public}d", i);
+        SetCallerToBuffer(buf->avBuffer->memory_->GetSurfaceBuffer());
         buffers_[INDEX_OUTPUT].emplace_back(buf);
         valBufferCnt++;
     }
@@ -918,6 +923,7 @@ int32_t HevcDecoder::UpdateOutputBuffer(uint32_t index)
                                  "Buffer allocate failed, index=%{public}d", index);
         AVCODEC_LOGI("update output buffer success: index=%{public}d, size=%{public}d", index,
                      outputBuffer->avBuffer->memory_->GetCapacity());
+        SetCallerToBuffer(outputBuffer->avBuffer->memory_->GetSurfaceBuffer());
 
         outputBuffer->owner_ = Owner::OWNED_BY_CODEC;
         outputBuffer->width = width_;
@@ -1853,6 +1859,28 @@ int32_t HevcDecoder::SwapInBuffers(bool isOutputBuffer)
         hBuffer->hasSwapedOut = false;
     }
     return AVCS_ERR_OK;
+}
+
+void HevcDecoder::SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer)
+{
+    CHECK_AND_RETURN_LOG(surfaceBuffer != nullptr, "Surface buffer is nullptr!");
+    int32_t fd = surfaceBuffer->GetFileDescriptor();
+    CHECK_AND_RETURN_LOG(fd > 0, "Invalid fd %{public}d, surfacebuf(%{public}u)", fd, surfaceBuffer->GetSeqNum());
+    std::string type = "sw-video-decoder";
+    std::string mime(hevcDecInfo_.mimeType);
+    std::vector<std::string> splitMime;
+    std::string token;
+    std::istringstream iss(mime);
+    while (std::getline(iss, token, '/')) {
+        splitMime.push_back(token);
+    }
+    if (!splitMime.empty()) {
+        mime = splitMime.back();
+    }
+    std::string name =
+        std::to_string(width_) + "x" + std::to_string(height_) + "-" + mime + "-" + hevcDecInfo_.instanceId;
+    ioctl(fd, DMA_BUF_SET_TYPE, type.c_str());
+    ioctl(fd, DMA_BUF_SET_NAME_A, name.c_str());
 }
 
 void HevcDecLog(UINT32 channelId, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pMsg, ...)

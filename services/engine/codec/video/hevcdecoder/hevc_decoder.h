@@ -166,6 +166,7 @@ private:
     void StartRequestSurfaceBufferThread();
     void StopRequestSurfaceBufferThread();
     bool RequestSurfaceBufferOnce(uint32_t index);
+    void SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer);
 
     // for memory recycle
     int32_t FreezeBuffers(State curState);
