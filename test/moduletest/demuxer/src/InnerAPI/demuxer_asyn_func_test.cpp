@@ -73,6 +73,7 @@ private:
 static const int DEF_PROB_SIZE = 16 * 1024;
 constexpr int32_t THOUSAND = 1000.0;
 constexpr int32_t TIME_0 = 0;
+constexpr int32_t TRACKNUM_2 = 2;
 static const std::string DEMUXER_PLUGIN_NAME_FLV = "avdemux_flv";
 
 
@@ -179,7 +180,7 @@ void DemuxerAsynInnerFuncTest::ThreadTask(std::shared_ptr<Plugins::DemuxerPlugin
 {
     int64_t realtime = 0;
     while (!isAudioEosFlagForSave || !isVideoEosFlagForSave) {
-        for (int32_t i = 0; i < 2; i++) {
+        for (int32_t i = 0; i < TRACKNUM_2; i++) {
             if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
                 continue;
             }
