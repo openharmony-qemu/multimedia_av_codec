@@ -69,6 +69,7 @@ public:
     static void ParseHevcInfo(const AVFormatContext& avFormatContext, HevcParseFormat parse, Meta &format);
     static FileType GetFileTypeByName(const AVFormatContext& avFormatContext);
     static bool IsVideoCodecId(const AVCodecID &codecId);
+    static bool IsValidCodecId(const AVCodecID &codecId);
 private:
     FFmpegFormatHelper() = delete;
     ~FFmpegFormatHelper() = delete;
