@@ -238,6 +238,18 @@ struct DemuxerPlugin : public PluginBase {
     virtual bool GetProbeSize(int32_t &offset, int32_t &size) { return false; };
     virtual Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
         const int32_t probSize) = 0;
+
+    /**
+     * @brief Set the priority of the asynchronous read thread.
+     *
+     * The function is valid only after RUNNING state.
+     * 
+     * The specified bundleName must also have the relevant permissions.
+     *
+     * @param newPriority Indicates the new priority of the asynchronous read thread.
+     * @param strBundleName Indicates the bundle name of the application that calls this interface.
+     * @return Execution Status
+     */
     virtual Status SetAsyncReadThreadPriority(const uint32_t newPriority, const std::string &strBundleName) = 0;
 };
 
