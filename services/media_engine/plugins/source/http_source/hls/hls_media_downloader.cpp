@@ -78,17 +78,26 @@ constexpr uint64_t MAX_EXPECT_DURATION = 19;
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
 //   fragment --- one item in play list, download media data according to the fragment address.
-HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, const std::map<std::string, std::string>& httpHeader,
+HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, bool useDefinedDuration,
+    const std::map<std::string, std::string>& httpHeader,
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
-    expectDuration_ = static_cast<uint64_t>(expectBufferDuration);
-    expectDuration_ = std::min(expectDuration_, MAX_EXPECT_DURATION);
-    userDefinedBufferDuration_ = true;
-    totalBufferSize_ = expectDuration_ * CURRENT_BIT_RATE;
+    if (useDefinedDuration) {
+        userDefinedBufferDuration_ = useDefinedDuration;
+        expectDuration_ = static_cast<uint64_t>(expectBufferDuration);
+        expectDuration_ = std::min(expectDuration_, MAX_EXPECT_DURATION);
+        totalBufferSize_ = expectDuration_ * CURRENT_BIT_RATE;
+    } else {
+        cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+        cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
+        isBuffering_ = true;
+        bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+        totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
+    }
     httpHeader_ = httpHeader;
     timeoutInterval_ = MAX_BUFFERING_TIME_OUT;
-    MEDIA_LOG_I("HLS user define buffer duration.");
-    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
+    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU " useDefinedDuration:" PUBLIC_LOG_D32,
+        totalBufferSize_, useDefinedDuration);
     HlsInit(sourceLoader);
 }
 
@@ -1583,8 +1592,8 @@ bool HlsMediaDownloader::CheckPulldownBufferSize()
 void HlsMediaDownloader::RiseBufferSize()
 {
     if (totalBufferSize_ >= MAX_BUFFER_SIZE) {
-        MEDIA_LOG_I("HLS increasing buffer size failed, already reach the max buffer size: "
-        PUBLIC_LOG_D64 ", current buffer size: " PUBLIC_LOG_ZU, MAX_BUFFER_SIZE, totalBufferSize_);
+        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "HLS increasing buffer size failed, already reach the max buffer "
+        "size: " PUBLIC_LOG_D64 ", current buffer size: " PUBLIC_LOG_ZU, MAX_BUFFER_SIZE, totalBufferSize_);
         return;
     }
     size_t tmpBufferSize = totalBufferSize_ + 1 * 1024 * 1024;
