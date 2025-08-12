@@ -78,7 +78,8 @@ constexpr uint64_t MAX_EXPECT_DURATION = 19;
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
 //   fragment --- one item in play list, download media data according to the fragment address.
-HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, bool useDefaultBuf, const std::map<std::string, std::string>& httpHeader,
+HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, bool useDefaultBuf,
+    const std::map<std::string, std::string>& httpHeader,
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
     expectDuration_ = static_cast<uint64_t>(expectBufferDuration);

@@ -233,7 +233,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     if (uri_.find(".mpd") != std::string::npos) {
         downloader_ = std::make_shared<DownloadMonitor>(
                       std::make_shared<DashMediaDownloader>(loaderCombinations_));
-        delayReady_= false;
+        delayReady_ = false;
     } else if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
         bool useDefaultBuf = true;
         uint32_t expectDuration = DEFAULT_EXPECT_DURATION;
