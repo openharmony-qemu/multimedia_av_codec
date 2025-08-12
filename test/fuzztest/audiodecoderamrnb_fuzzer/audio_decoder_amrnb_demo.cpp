@@ -434,7 +434,6 @@ void ADecBufferDemo::InputFunc()
         if (isFirstFrame_) {
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
             ret = OH_AudioCodec_PushInputBuffer(audioDec_, index);
-            isFirstFrame_ = false;
         } else {
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_NONE;
             ret = OH_AudioCodec_PushInputBuffer(audioDec_, index);

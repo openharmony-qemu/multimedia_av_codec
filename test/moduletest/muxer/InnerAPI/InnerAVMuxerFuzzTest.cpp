@@ -191,6 +191,7 @@ HWTEST_F(InnerAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_004, TestSize.Lev
     trackId = muxerDemo->InnerAddTrack(trackIndex, mediaParams);
 
     ret = muxerDemo->InnerStart();
+	ASSERT_EQ(AVCS_ERR_OK, ret);
 
     for (int i = 0; i < FUZZ_TEST_NUM; i++) {
         cout << "current run time is: " << i << endl;
