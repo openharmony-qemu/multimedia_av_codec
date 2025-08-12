@@ -143,6 +143,11 @@ void MockMediaSyncCenter::SetLastVideoBufferPts(int64_t bufferPts)
     (void)bufferPts;
     setLastVideoBufferPtsTimes_++;
 }
+
+void MockMediaSyncCenter::SetAudioRenderPts(int64_t audioRenderPts)
+{
+    (void)audioRenderPts;
+}
 }  // namespace Test
 }  // namespace Media
 }  // namespace OHOS

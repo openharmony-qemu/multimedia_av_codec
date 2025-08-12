@@ -114,6 +114,8 @@ struct IMediaSyncCenter {
     virtual double GetInitialVideoFrameRate() = 0;
 
     virtual int64_t GetLastVideoBufferAbsPts() const = 0;
+
+    virtual void SetAudioRenderPts(int64_t audioRenderPts) = 0;
 };
 } // namespace Pipeline
 } // namespace Media

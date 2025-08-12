@@ -62,6 +62,7 @@ public:
     void SetMediaStartPts(int64_t startPts) override;
     void SetLastAudioBufferDuration(int64_t durationUs) override;
     void SetLastVideoBufferPts(int64_t bufferPts) override;
+    void SetAudioRenderPts(int64_t audioRenderPts) override;
     Status SetPlaybackRate(float rate) override;
 
     void SetInitialVideoFrameRate(double frameRate);
@@ -156,6 +157,7 @@ private:
     int8_t currentRangeEndPriority_ {IMediaSynchronizer::NONE};
 
     int64_t lastVideoBufferAbsPts_ {HST_TIME_NONE};
+    int64_t audioRenderPts_ {HST_TIME_NONE};
 };
 } // namespace Pipeline
 } // namespace Media

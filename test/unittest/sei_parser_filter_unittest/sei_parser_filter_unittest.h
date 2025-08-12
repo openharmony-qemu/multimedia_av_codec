@@ -123,6 +123,7 @@ public:
     MOCK_METHOD(void, SetLastVideoBufferAbsPts, (int64_t lastVideoBufferAbsPts), (override));
     MOCK_METHOD(double, GetInitialVideoFrameRate, (), (override));
     MOCK_METHOD(int64_t, GetLastVideoBufferAbsPts, (), (const, override));
+    MOCK_METHOD(void, SetAudioRenderPts, (int64_t audioRenderPts), (override));
 };
 
 class MockEventReceiver : public EventReceiver {
