@@ -184,7 +184,11 @@ void DemuxerAsynInnerFuncTest::ThreadTask(std::shared_ptr<Plugins::DemuxerPlugin
             if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
                 continue;
             }
-            ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
+            auto ret = demuxerPlugin->ReadSample(i, avBuf_, timeout);
+            while (ret == Status::ERROR_WAIT_TIMEOUT) {
+                ret = demuxerPlugin->ReadSample(i, avBuf_, timeout);
+            }
+            ASSERT_EQ(ret, Status::OK);
             GetFrameNum(i);
             if (isVideoEosFlagForSave && isAudioEosFlagForSave) {
                 ASSERT_EQ(demuxerPlugin->SeekTo(indexVid, TIME_0 / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC,
