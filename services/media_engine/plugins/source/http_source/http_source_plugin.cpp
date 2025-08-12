@@ -235,11 +235,11 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
                       std::make_shared<DashMediaDownloader>(loaderCombinations_));
         delayReady_ = false;
     } else if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
-        bool useDefinedDuration = true;
+        bool useDefinedDuration = true;  // 允许自动调节缓冲区大小
         uint32_t expectDuration = DEFAULT_EXPECT_DURATION;
         if (playStrategy != nullptr && playStrategy->duration > 0) {
             expectDuration = playStrategy->duration;
-            useDefinedDuration = false;
+            useDefinedDuration = false;  // 以用户配置为准
         }
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>
                       (expectDuration, useDefinedDuration, httpHeader_, loaderCombinations_));
