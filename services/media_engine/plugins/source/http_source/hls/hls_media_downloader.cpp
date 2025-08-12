@@ -82,12 +82,12 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, bool useDefined
     const std::map<std::string, std::string>& httpHeader,
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
-    if(useDefinedDuration){
+    if (useDefinedDuration) {
         userDefinedBufferDuration_ = useDefinedDuration;
         expectDuration_ = static_cast<uint64_t>(expectBufferDuration);
         expectDuration_ = std::min(expectDuration_, MAX_EXPECT_DURATION);
         totalBufferSize_ = expectDuration_ * CURRENT_BIT_RATE;
-    }else{
+    } else {
         cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
         cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
         isBuffering_ = true;
@@ -96,8 +96,8 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, bool useDefined
     }
     httpHeader_ = httpHeader;
     timeoutInterval_ = MAX_BUFFERING_TIME_OUT;
-    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU " userDefindDuration:" PUBLIC_LOG_D32,
-        totalBufferSize_, userDefindDuration);
+    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU " useDefinedDuration:" PUBLIC_LOG_D32,
+        totalBufferSize_, useDefinedDuration);
     HlsInit(sourceLoader);
 }
 
