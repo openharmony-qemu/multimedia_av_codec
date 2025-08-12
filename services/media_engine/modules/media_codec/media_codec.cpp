@@ -541,11 +541,11 @@ int32_t MediaCodec::Release()
     codecPlugin_ = nullptr;
     ResetBufferStatusInfo();
     ClearBufferQueue();
-    if (dumpDataInputFs_->is_open()) {
+    if (dumpDataInputFs_ != nullptr && dumpDataInputFs_->is_open()) {
         dumpDataInputFs_->flush();
         dumpDataInputFs_->close();
     }
-    if (dumpDataOutputFs_->is_open()) {
+    if (dumpDataOutputFs_ != nullptr && dumpDataOutputFs_->is_open()) {
         dumpDataOutputFs_->flush();
         dumpDataOutputFs_->close();
     }
