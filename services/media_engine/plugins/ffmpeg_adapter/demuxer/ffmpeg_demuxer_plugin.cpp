@@ -1562,7 +1562,7 @@ static bool IsSyncFrameCheckNeeded(std::shared_ptr<AVFormatContext> formatContex
     return true;
 }
 
-/* 
+/*
 return true:
   unsupport track
   support track:
