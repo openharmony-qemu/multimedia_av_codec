@@ -351,7 +351,7 @@ private:
 
     std::atomic<bool> isAsyncReadThreadPrioritySet_ = false;
     std::atomic<uint32_t> asyncReadThreadPriority_ = {0};
-    std::atomic<std::string> bundleName_ = "";
+    std::string bundleName_ = "";
     void UpdateAsyncReadThreadPriority();
 };
 
