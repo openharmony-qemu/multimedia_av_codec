@@ -43,11 +43,11 @@ int32_t g_width = 3840;
 int32_t g_height = 2160;
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC};
-static const string aigc_test_str1 = "{Label:value1,ContentProducer:value2,ProduceID:value3,ReservedCode1:value4,"\
+static const string AIGC_TEST_STR1 = "{Label:value1,ContentProducer:value2,ProduceID:value3,ReservedCode1:value4,"\
     "ContentPropagator:value5,PropagateID:value6,ReservedCode2:value7}";
-static const string aigc_test_str2 = "'{Label:value1,ContentProducer:value2,ProduceID:value3,ReservedCode1:value4,"\
+static const string AIGC_TEST_STR2 = "'{Label:value1,ContentProducer:value2,ProduceID:value3,ReservedCode1:value4,"\
     "ContentPropagator:value5,PropagateID:value6,ReservedCode2:value7}'";
-static const string aigc_test_str3 = "{\"Label\":\"value1\",\"ContentProducer\":\"value2\",\"ProduceID\":\"value3\","\
+static const string AIGC_TEST_STR3 = "{\"Label\":\"value1\",\"ContentProducer\":\"value2\",\"ProduceID\":\"value3\","\
     "\"ReservedCode1\":\"value4\",\"ContentPropagator\":\"value5\",\"PropagateID\":\"value6\",\"ReservedCode2\":"\
     "\"value7\"}";
 
@@ -98,13 +98,13 @@ string g_commentTest1200Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Co
 string g_commentTest1300Path = TEST_FILE_PATH + string("audio/Muxer_SetFormat_Comment_1300.mp4");
 string g_wavAlawPath = TEST_FILE_PATH + string("audio/wav_48000_1_pcm_alaw.wav");
 string g_reservedMp4Path = TEST_FILE_PATH + string("reserved_buffer_test.mp4");
-string g_AIGCStrMp4Path = TEST_FILE_PATH + string("aigc_str.mp4");
-string g_AIGCStrM4aPath = TEST_FILE_PATH + string("aigc_str.m4a");
-string g_AIGCStrM4vPath = TEST_FILE_PATH + string("aigc_str.m4v");
-string g_AIGCStrMovPath = TEST_FILE_PATH + string("aigc_str.mov");
-string g_AIGCStrFlvPath = TEST_FILE_PATH + string("aigc_str.flv");
-string g_AIGCStrMkvPath = TEST_FILE_PATH + string("aigc_str.mkv");
-string g_AIGCStrAviPath = TEST_FILE_PATH + string("aigc_str.avi");
+string g_aigcStrMp4Path = TEST_FILE_PATH + string("aigc_str.mp4");
+string g_aigcStrM4aPath = TEST_FILE_PATH + string("aigc_str.m4a");
+string g_aigcStrM4vPath = TEST_FILE_PATH + string("aigc_str.m4v");
+string g_aigcStrMovPath = TEST_FILE_PATH + string("aigc_str.mov");
+string g_aigcStrFlvPath = TEST_FILE_PATH + string("aigc_str.flv");
+string g_aigcStrMkvPath = TEST_FILE_PATH + string("aigc_str.mkv");
+string g_aigcStrAviPath = TEST_FILE_PATH + string("aigc_str.avi");
 } // namespace
 
 void DemuxerUnitTest::SetUpTestCase(void)
@@ -3512,13 +3512,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetReservedBuffer_1000, TestSize.Level0)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1000, TestSize.Level0)
 {
-    InitResource(g_AIGCStrMp4Path, LOCAL);
+    InitResource(g_aigcStrMp4Path, LOCAL);
     ASSERT_TRUE(initStatus_);
     std::string stringVal = "";
     auto userformat = source_->GetSourceFormat();
     ASSERT_TRUE(userformat->GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
-    ASSERT_TRUE(aigc_test_str2 == stringVal);
+    ASSERT_TRUE(AIGC_TEST_STR2 == stringVal);
 }
 
 /**
@@ -3528,13 +3528,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1000, TestSize.Level0)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1100, TestSize.Level0)
 {
-    InitResource(g_AIGCStrM4aPath, LOCAL);
+    InitResource(g_aigcStrM4aPath, LOCAL);
     ASSERT_TRUE(initStatus_);
     std::string stringVal = "";
     auto userformat = source_->GetSourceFormat();
     ASSERT_TRUE(userformat->GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
-    ASSERT_TRUE(aigc_test_str1 == stringVal);
+    ASSERT_TRUE(AIGC_TEST_STR1 == stringVal);
 }
 
 /**
@@ -3544,13 +3544,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1100, TestSize.Level0)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1200, TestSize.Level0)
 {
-    InitResource(g_AIGCStrM4vPath, LOCAL);
+    InitResource(g_aigcStrM4vPath, LOCAL);
     ASSERT_TRUE(initStatus_);
     std::string stringVal = "";
     auto userformat = source_->GetSourceFormat();
     ASSERT_TRUE(userformat->GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
-    ASSERT_TRUE(aigc_test_str1 == stringVal);
+    ASSERT_TRUE(AIGC_TEST_STR1 == stringVal);
 }
 
 /**
@@ -3560,13 +3560,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1200, TestSize.Level0)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1300, TestSize.Level0)
 {
-    InitResource(g_AIGCStrMovPath, LOCAL);
+    InitResource(g_aigcStrMovPath, LOCAL);
     ASSERT_TRUE(initStatus_);
     std::string stringVal = "";
     auto userformat = source_->GetSourceFormat();
     ASSERT_TRUE(userformat->GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
-    ASSERT_TRUE(aigc_test_str1 == stringVal);
+    ASSERT_TRUE(AIGC_TEST_STR1 == stringVal);
 }
 
 /**
@@ -3576,13 +3576,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1300, TestSize.Level0)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1400, TestSize.Level0)
 {
-    InitResource(g_AIGCStrFlvPath, LOCAL);
+    InitResource(g_aigcStrFlvPath, LOCAL);
     ASSERT_TRUE(initStatus_);
     std::string stringVal = "";
     auto userformat = source_->GetSourceFormat();
     ASSERT_TRUE(userformat->GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
-    ASSERT_TRUE(aigc_test_str2 == stringVal);
+    ASSERT_TRUE(AIGC_TEST_STR2 == stringVal);
 }
 
 /**
@@ -3592,13 +3592,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1400, TestSize.Level0)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1500, TestSize.Level0)
 {
-    InitResource(g_AIGCStrMkvPath, LOCAL);
+    InitResource(g_aigcStrMkvPath, LOCAL);
     ASSERT_TRUE(initStatus_);
     std::string stringVal = "";
     auto userformat = source_->GetSourceFormat();
     ASSERT_TRUE(userformat->GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
-    ASSERT_TRUE(aigc_test_str2 == stringVal);
+    ASSERT_TRUE(AIGC_TEST_STR2 == stringVal);
 }
 
 /**
@@ -3608,13 +3608,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1500, TestSize.Level0)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1600, TestSize.Level0)
 {
-    InitResource(g_AIGCStrAviPath, LOCAL);
+    InitResource(g_aigcStrAviPath, LOCAL);
     ASSERT_TRUE(initStatus_);
     std::string stringVal = "";
     auto userformat = source_->GetSourceFormat();
     ASSERT_TRUE(userformat->GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
-    ASSERT_TRUE(aigc_test_str3 == stringVal);
+    ASSERT_TRUE(AIGC_TEST_STR3 == stringVal);
 }
 
 } // namespace
