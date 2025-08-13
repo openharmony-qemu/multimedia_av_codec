@@ -43,8 +43,13 @@ int32_t g_width = 3840;
 int32_t g_height = 2160;
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC};
-static const string aigc_test_str1 = "";
-static const string aigc_test_str2 = "";
+static const string aigc_test_str1 = "{Label:value1,ContentProducer:value2,ProduceID:value3,ReservedCode1:value4,"\
+    "ContentPropagator:value5,PropagateID:value6,ReservedCode2:value7}";
+static const string aigc_test_str2 = "'{Label:value1,ContentProducer:value2,ProduceID:value3,ReservedCode1:value4,"\
+    "ContentPropagator:value5,PropagateID:value6,ReservedCode2:value7}'";
+static const string aigc_test_str3 = "{\"Label\":\"value1\",\"ContentProducer\":\"value2\",\"ProduceID\":\"value3\","\
+    "\"ReservedCode1\":\"value4\",\"ContentPropagator\":\"value5\",\"PropagateID\":\"value6\",\"ReservedCode2\":"\
+    "\"value7\"}";
 
 string g_mp4Path = TEST_FILE_PATH + string("test_264_B_Gop25_4sec_cover.mp4");
 string g_mp4Path2 = TEST_FILE_PATH + string("test_mpeg2_B_Gop25_4sec.mp4");
@@ -3512,7 +3517,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1000, TestSize.Level0)
     std::string stringVal = "";
     auto userformat = source_->GetSourceFormat();
     ASSERT_TRUE(userformat->GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
-    ASSERT_TRUE(aigc_test_str1 == stringVal);
+    printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
+    ASSERT_TRUE(aigc_test_str2 == stringVal);
 }
 
 /**
@@ -3527,7 +3533,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1100, TestSize.Level0)
     std::string stringVal = "";
     auto userformat = source_->GetSourceFormat();
     ASSERT_TRUE(userformat->GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
-    ASSERT_TRUE(aigc_test_str2 == stringVal);
+    printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
+    ASSERT_TRUE(aigc_test_str1 == stringVal);
 }
 
 /**
@@ -3542,7 +3549,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1200, TestSize.Level0)
     std::string stringVal = "";
     auto userformat = source_->GetSourceFormat();
     ASSERT_TRUE(userformat->GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
-    ASSERT_TRUE(aigc_test_str2 == stringVal);
+    printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
+    ASSERT_TRUE(aigc_test_str1 == stringVal);
 }
 
 /**
@@ -3557,7 +3565,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1300, TestSize.Level0)
     std::string stringVal = "";
     auto userformat = source_->GetSourceFormat();
     ASSERT_TRUE(userformat->GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
-    ASSERT_TRUE(aigc_test_str2 == stringVal);
+    printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
+    ASSERT_TRUE(aigc_test_str1 == stringVal);
 }
 
 /**
@@ -3572,7 +3581,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1400, TestSize.Level0)
     std::string stringVal = "";
     auto userformat = source_->GetSourceFormat();
     ASSERT_TRUE(userformat->GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
-    ASSERT_TRUE(aigc_test_str1 == stringVal);
+    printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
+    ASSERT_TRUE(aigc_test_str2 == stringVal);
 }
 
 /**
@@ -3587,7 +3597,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1500, TestSize.Level0)
     std::string stringVal = "";
     auto userformat = source_->GetSourceFormat();
     ASSERT_TRUE(userformat->GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
-    ASSERT_TRUE(aigc_test_str1 == stringVal);
+    printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
+    ASSERT_TRUE(aigc_test_str2 == stringVal);
 }
 
 /**
@@ -3602,6 +3613,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetAIGCString_1600, TestSize.Level0)
     std::string stringVal = "";
     auto userformat = source_->GetSourceFormat();
     ASSERT_TRUE(userformat->GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
     ASSERT_TRUE(aigc_test_str3 == stringVal);
 }
 
