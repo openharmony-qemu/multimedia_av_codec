@@ -15,6 +15,7 @@
 #include "ffmpeg_convert.h"
 #include "common/log.h"
 #include "securec.h"
+#include "avcodec_log.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "FfmpegConvert" };
@@ -39,17 +40,11 @@ Status Resample::Init(const ResamplePara &resamplePara)
         av_samples_fill_arrays(tmp, nullptr, resampleCache_.data(), resamplePara_.channels,
                                resamplePara_.destSamplesPerFrame, resamplePara_.destFmt, 0);
         auto swrContext = swr_alloc();
-        if (swrContext == nullptr) {
-            MEDIA_LOG_E("cannot allocate swr context");
-            return Status::ERROR_NO_MEMORY;
-        }
+        CHECK_AND_RETURN_RET_LOG(swrContext != nullptr, Status::ERROR_NO_MEMORY, "cannot allocate swr context");
         int32_t error = swr_alloc_set_opts2(&swrContext, &resamplePara_.channelLayout, resamplePara_.destFmt,
                                             resamplePara_.sampleRate, &resamplePara_.channelLayout,
                                             resamplePara_.srcFfFmt, resamplePara_.sampleRate, 0, nullptr);
-        if (error < 0) {
-            MEDIA_LOG_E("swr init error");
-            return Status::ERROR_UNKNOWN;
-        }
+        CHECK_AND_RETURN_RET_LOG(error >= 0, Status::ERROR_UNKNOWN, "swr init error");
         if (swr_init(swrContext) != 0) {
             MEDIA_LOG_E("swr init error");
             swr_free(&swrContext);
@@ -70,17 +65,11 @@ Status Resample::InitSwrContext(const ResamplePara &resamplePara)
 {
     resamplePara_ = resamplePara;
     auto swrContext = swr_alloc();
-    if (swrContext == nullptr) {
-        MEDIA_LOG_E("cannot allocate swr context");
-        return Status::ERROR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(swrContext != nullptr, Status::ERROR_NO_MEMORY, "cannot allocate swr context");
     int32_t error =
         swr_alloc_set_opts2(&swrContext, &resamplePara_.channelLayout, resamplePara_.destFmt, resamplePara_.sampleRate,
                             &resamplePara_.channelLayout, resamplePara_.srcFfFmt, resamplePara_.sampleRate, 0, nullptr);
-    if (error < 0) {
-        MEDIA_LOG_E("swr init error");
-        return Status::ERROR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG(error >= 0, Status::ERROR_UNKNOWN, "swr init error");
     if (swr_init(swrContext) != 0) {
         MEDIA_LOG_E("swr init error");
         swr_free(&swrContext);
@@ -175,25 +164,19 @@ static std::string AVStrError(int errnum)
 
 Status Resample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame)
 {
-    if (outputFrame == nullptr || inputFrame == nullptr) {
-        MEDIA_LOG_E("Frame null pointer");
-        return Status::ERROR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG((outputFrame != nullptr) && (inputFrame != nullptr), Status::ERROR_NO_MEMORY,
+                             "Frame null pointer");
 
     int planar = av_sample_fmt_is_planar(static_cast<AVSampleFormat>(inputFrame->format));
     if (planar) {
         for (auto i = 0; i < inputFrame->channels; i++) {
-            if (inputFrame->extended_data[i] == nullptr) {
-                MEDIA_LOG_E("this is a planar audio, inputFrame->channels: %{public}d, "
-                            "but inputFrame->extended_data[%{public}d] is nullptr", inputFrame->channels, i);
-                return Status::ERROR_NO_MEMORY;
-            }
+            CHECK_AND_RETURN_RET_LOG(inputFrame->extended_data[i] != nullptr, Status::ERROR_NO_MEMORY,
+                                     "this is a planar audio, inputFrame->channels: %{public}d, "
+                                     "but inputFrame->extended_data[%{public}d] is nullptr", inputFrame->channels, i);
         }
     } else {
-        if (inputFrame->extended_data[0] == nullptr) {
-            MEDIA_LOG_E("inputFrame->extended_data[0] is nullptr");
-            return Status::ERROR_NO_MEMORY;
-        }
+        CHECK_AND_RETURN_RET_LOG(inputFrame->extended_data[0] != nullptr, Status::ERROR_NO_MEMORY,
+                                 "inputFrame->extended_data[0] is nullptr");
     }
 
     outputFrame->ch_layout = resamplePara_.channelLayout;
@@ -201,10 +184,8 @@ Status Resample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame)
     outputFrame->sample_rate = static_cast<int>(resamplePara_.sampleRate);
 
     auto ret = swr_convert_frame(swrCtx_.get(), outputFrame, inputFrame);
-    if (ret < 0) {
-        MEDIA_LOG_E("convert frame failed, %{public}s", AVStrError(ret).c_str());
-        return Status::ERROR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, Status::ERROR_UNKNOWN, "convert frame failed, %{public}s",
+                             AVStrError(ret).c_str());
     return Status::OK;
 }
 
