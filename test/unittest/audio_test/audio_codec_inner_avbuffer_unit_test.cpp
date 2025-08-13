@@ -25,7 +25,9 @@
 #include "meta/audio_types.h"
 #include "avcodec_audio_codec.h"
 #include "avcodec_codec_name.h"
+#include "avcodec_mime_type.h"
 #include "avcodec_errors.h"
+#include "avcodec_list.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -33,15 +35,19 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
 namespace {
-const string CODEC_MP3_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_MP3_NAME);
 constexpr uint32_t CHANNEL_COUNT_STEREO = 2;
 constexpr uint32_t SAMPLE_RATE = 48000;
 constexpr std::string_view INPUT_FILE_PATH = "/data/test/media/mp3_2c_44100hz_60k.dat";
 constexpr std::string_view OUTPUT_PCM_FILE_PATH = "/data/test/media/mp3_2c_44100hz_60k.pcm";
+constexpr std::string_view INPUT_AC3_FILE_PATH = "/data/test/media/voice_ac3.dat";
+constexpr std::string_view OUTPUT_AC3_PCM_FILE_PATH = "/data/test/media/voice_ac3.pcm";
 constexpr int32_t INPUT_FRAME_BYTES = 2 * 1024 * 4;
 constexpr int32_t TIME_OUT_MS = 8;
 constexpr int64_t MILLISECOUND_TO_SECOND = 1000;
+constexpr std::string_view MP3_CODEC_NAME = AVCodecCodecName::AUDIO_DECODER_MP3_NAME;
+constexpr std::string_view AC3_CODEC_NAME = AVCodecCodecName::AUDIO_DECODER_AC3_NAME;
 constexpr int64_t CHANGE_PLUGIN_INTERVAL_MS = 1;
+constexpr uint32_t MAX_MIME_LENGTH = 255;
 
 typedef enum OH_AVCodecBufferFlags {
     AVCODEC_BUFFER_FLAGS_NONE = 0,
@@ -54,10 +60,33 @@ typedef enum OH_AVCodecBufferFlags {
     /* Indicates that the Buffer contains Codec-Specific-Data */
     AVCODEC_BUFFER_FLAGS_CODEC_DATA = 1 << 3,
 } OH_AVCodecBufferFlags;
-} // namespace
+}  // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
+static std::string GetCapabilityName(const char *mime, bool isEncoder)
+{
+    if (mime == nullptr) {
+        std::cout << "Get capability failed: mime is nullptr" << std::endl;
+        return "";
+    }
+    if (strlen(mime) == 0 || strlen(mime) > MAX_MIME_LENGTH) {
+        std::cout << "Get capability failed: invalid mime strlen, " << strlen(mime) << std::endl;
+        return "";
+    }
+    std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
+    if (codeclist == nullptr) {
+        std::cout << "Get capability failed: CreateAVCodecList failed" << std::endl;
+        return "";
+    }
+    CapabilityData *capabilityData = codeclist->GetCapability(mime, isEncoder, AVCodecCategory::AVCODEC_NONE);
+    if (capabilityData == nullptr) {
+        std::cout << "Get capability failed: cannot find matched capability" << std::endl;
+        return "";
+    }
+    return capabilityData->codecName;
+}
+
 static int32_t GetFileSize(const std::string &filePath)
 {
     std::ifstream file(filePath, std::ios::binary | std::ios::ate);
@@ -92,21 +121,22 @@ void AVCodecAudioCodecUnitTest::TearDown(void)
     cout << "[TearDown]: over!!!" << endl;
 }
 
-int32_t AudioDecInnerAvBuffer::RunCase()
+int32_t AudioDecInnerAvBuffer::RunCase(
+    const std::string_view &codecName, const std::string_view &inputPath, const std::string_view &outputPath)
 {
     int32_t ret = AVCodecServiceErrCode::AVCS_ERR_OK;
     innerBufferQueue_ = Media::AVBufferQueue::Create(4, Media::MemoryType::SHARED_MEMORY, "InnerDemo");  // 4
-    audioCodec_ = AudioCodecFactory::CreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
-    DEMO_CHECK_AND_RETURN_RET_LOG(audioCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
-                                  "audioCodec_ is null");
+    audioCodec_ = AudioCodecFactory::CreateByName(codecName.data());
+    DEMO_CHECK_AND_RETURN_RET_LOG(
+        audioCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN, "audioCodec_ is null");
     bool enableSync = false;
     meta_->GetData(Tag::AV_CODEC_ENABLE_SYNC_MODE, enableSync);
-    audioCodec_->Configure(meta_);
+    EXPECT_EQ(static_cast<int32_t>(AVCS_ERR_OK), audioCodec_->Configure(meta_));
 
     if (!enableSync) {
         audioCodec_->SetOutputBufferQueue(innerBufferQueue_->GetProducer());
     }
-    audioCodec_->Prepare();
+    EXPECT_EQ(static_cast<int32_t>(AVCS_ERR_OK), audioCodec_->Prepare());
 
     if (!enableSync) {
         implConsumer_ = innerBufferQueue_->GetConsumer();
@@ -115,12 +145,12 @@ int32_t AudioDecInnerAvBuffer::RunCase()
         mediaCodecProducer_ = audioCodec_->GetInputBufferQueue();
     }
 
-    audioCodec_->Start();
+    EXPECT_EQ(static_cast<int32_t>(AVCS_ERR_OK), audioCodec_->Start());
     isRunning_.store(true);
 
-    fileSize_ = GetFileSize(INPUT_FILE_PATH.data());
-    inputFile_ = std::make_unique<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
-    outputFile_ = std::make_unique<std::ofstream>(OUTPUT_PCM_FILE_PATH, std::ios::binary);
+    fileSize_ = GetFileSize(inputPath.data());
+    inputFile_ = std::make_unique<std::ifstream>(inputPath, std::ios::binary);
+    outputFile_ = std::make_unique<std::ofstream>(outputPath, std::ios::binary);
 
     if (enableAsyncChangePluginTest_) {
         isChangePluginThreadRunning_ = true;
@@ -138,6 +168,7 @@ int32_t AudioDecInnerAvBuffer::RunCase()
     } else {
         SyncFunc();
     }
+    EXPECT_GT(outputSize_, 0);
 
     if (changePluginThread_ && changePluginThread_->joinable()) {
         isChangePluginThreadRunning_ = false;
@@ -159,8 +190,8 @@ int32_t AudioDecInnerAvBuffer::GetInputBufferSize()
     DEMO_CHECK_AND_RETURN_RET_LOG(bufferConfig != nullptr, capacity, "bufferConfig is nullptr");
     int32_t ret = audioCodec_->GetOutputFormat(bufferConfig);
     DEMO_CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, capacity, "GetOutputFormat fail");
-    DEMO_CHECK_AND_RETURN_RET_LOG(bufferConfig->Get<Media::Tag::AUDIO_MAX_INPUT_SIZE>(capacity),
-        capacity, "get max input buffer size fail");
+    DEMO_CHECK_AND_RETURN_RET_LOG(
+        bufferConfig->Get<Media::Tag::AUDIO_MAX_INPUT_SIZE>(capacity), capacity, "get max input buffer size fail");
     return capacity;
 }
 
@@ -191,7 +222,7 @@ void AudioDecInnerAvBuffer::InputFunc()
             sumReadSize += inputFile_->gcount();
             std::cout << "InputFunc, INPUT_FRAME_BYTES:" << INPUT_FRAME_BYTES << " flag:" << inputBuffer->flag_
                       << " sumReadSize:" << sumReadSize << " fileSize_:" << fileSize_
-                      << " process:" << 100 * sumReadSize / fileSize_ << "%" << std::endl;    // 100
+                      << " process:" << 100 * sumReadSize / fileSize_ << "%" << std::endl;  // 100
             std::cout << "end buffer\n";
             break;
         }
@@ -208,7 +239,7 @@ void AudioDecInnerAvBuffer::InputFunc()
         mediaCodecProducer_->PushBuffer(inputBuffer, true);
         std::cout << "InputFunc, INPUT_FRAME_BYTES:" << INPUT_FRAME_BYTES << " flag:" << inputBuffer->flag_
                   << " sumReadSize:" << sumReadSize << " fileSize_:" << fileSize_
-                  << " process:" << 100 * sumReadSize / fileSize_ << "%" << std::endl;   // 100
+                  << " process:" << 100 * sumReadSize / fileSize_ << "%" << std::endl;  // 100
     }
 }
 
@@ -228,8 +259,9 @@ void AudioDecInnerAvBuffer::OutputFunc()
             std::cout << "OutputFunc OH_AVBuffer is nullptr" << std::endl;
             continue;
         }
-        outputFile_->write(reinterpret_cast<char *>(outputBuffer->memory_->GetAddr()),
-                           outputBuffer->memory_->GetSize());
+        outputFile_->write(
+            reinterpret_cast<char *>(outputBuffer->memory_->GetAddr()), outputBuffer->memory_->GetSize());
+        outputSize_ += outputBuffer->memory_->GetSize();
         if (outputBuffer->flag_ == AVCODEC_BUFFER_FLAGS_EOS || outputBuffer->memory_->GetSize() == 0) {
             std::cout << "out eos" << std::endl;
             isRunning_.store(false);
@@ -305,6 +337,7 @@ void AudioDecInnerAvBuffer::SyncOutputFunc()
         sumWriteSize += outputBuffer->memory_->GetSize();
         outputFile_->write(
             reinterpret_cast<char *>(outputBuffer->memory_->GetAddr()), outputBuffer->memory_->GetSize());
+        outputSize_ += outputBuffer->memory_->GetSize();
         if (outputBuffer->flag_ == AVCODEC_BUFFER_FLAGS_EOS || outputBuffer->memory_->GetSize() == 0) {
             std::cout << "out eos" << std::endl;
             isRunning_.store(false);
@@ -355,16 +388,16 @@ void AVCodecInnerCallback::OnOutputBufferAvailable(uint32_t index, std::shared_p
 HWTEST_F(AVCodecAudioCodecUnitTest, Stop_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& dec = audioDec->GetAudioCodec();
-    auto& meta = audioDec->GetAudioMeta();
-    dec = AudioCodecFactory::CreateByName(CODEC_MP3_NAME);
+    auto &dec = audioDec->GetAudioCodec();
+    auto &meta = audioDec->GetAudioMeta();
+    dec = AudioCodecFactory::CreateByName(MP3_CODEC_NAME.data());
     EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Stop());
 
     meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Configure(meta));
-    auto& innerBufferQueue = audioDec->GetInnerBufferQueue();
+    auto &innerBufferQueue = audioDec->GetInnerBufferQueue();
     innerBufferQueue = Media::AVBufferQueue::Create(4, Media::MemoryType::SHARED_MEMORY, "AVBufferInnerUT");  // 4
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->SetOutputBufferQueue(innerBufferQueue->GetProducer()));
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Prepare());
@@ -378,14 +411,14 @@ HWTEST_F(AVCodecAudioCodecUnitTest, Stop_001, TestSize.Level1)
 HWTEST_F(AVCodecAudioCodecUnitTest, Flush_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& dec = audioDec->GetAudioCodec();
-    auto& meta = audioDec->GetAudioMeta();
-    dec = AudioCodecFactory::CreateByName(CODEC_MP3_NAME);
+    auto &dec = audioDec->GetAudioCodec();
+    auto &meta = audioDec->GetAudioMeta();
+    dec = AudioCodecFactory::CreateByName(MP3_CODEC_NAME.data());
     meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Configure(meta));
-    auto& innerBufferQueue = audioDec->GetInnerBufferQueue();
+    auto &innerBufferQueue = audioDec->GetInnerBufferQueue();
     innerBufferQueue = Media::AVBufferQueue::Create(4, Media::MemoryType::SHARED_MEMORY, "AVBufferInnerUT");  // 4
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->SetOutputBufferQueue(innerBufferQueue->GetProducer()));
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Prepare());
@@ -396,30 +429,30 @@ HWTEST_F(AVCodecAudioCodecUnitTest, Flush_001, TestSize.Level1)
 HWTEST_F(AVCodecAudioCodecUnitTest, Reset_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& dec = audioDec->GetAudioCodec();
-    dec = AudioCodecFactory::CreateByName(CODEC_MP3_NAME);
+    auto &dec = audioDec->GetAudioCodec();
+    dec = AudioCodecFactory::CreateByName(MP3_CODEC_NAME.data());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Reset());
 }
 
 HWTEST_F(AVCodecAudioCodecUnitTest, Release_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& dec = audioDec->GetAudioCodec();
-    dec = AudioCodecFactory::CreateByName(CODEC_MP3_NAME);
+    auto &dec = audioDec->GetAudioCodec();
+    dec = AudioCodecFactory::CreateByName(MP3_CODEC_NAME.data());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Release());
 }
 
 HWTEST_F(AVCodecAudioCodecUnitTest, NotifyEos_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& dec = audioDec->GetAudioCodec();
-    auto& meta = audioDec->GetAudioMeta();
-    dec = AudioCodecFactory::CreateByName(CODEC_MP3_NAME);
+    auto &dec = audioDec->GetAudioCodec();
+    auto &meta = audioDec->GetAudioMeta();
+    dec = AudioCodecFactory::CreateByName(MP3_CODEC_NAME.data());
     meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Configure(meta));
-    auto& innerBufferQueue = audioDec->GetInnerBufferQueue();
+    auto &innerBufferQueue = audioDec->GetInnerBufferQueue();
     innerBufferQueue = Media::AVBufferQueue::Create(4, Media::MemoryType::SHARED_MEMORY, "AVBufferInnerUT");  // 4
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->SetOutputBufferQueue(innerBufferQueue->GetProducer()));
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Prepare());
@@ -430,14 +463,14 @@ HWTEST_F(AVCodecAudioCodecUnitTest, NotifyEos_001, TestSize.Level1)
 HWTEST_F(AVCodecAudioCodecUnitTest, SetParameter_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& dec = audioDec->GetAudioCodec();
-    auto& meta = audioDec->GetAudioMeta();
-    dec = AudioCodecFactory::CreateByName(CODEC_MP3_NAME);
+    auto &dec = audioDec->GetAudioCodec();
+    auto &meta = audioDec->GetAudioMeta();
+    dec = AudioCodecFactory::CreateByName(MP3_CODEC_NAME.data());
     meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Configure(meta));
-    auto& innerBufferQueue = audioDec->GetInnerBufferQueue();
+    auto &innerBufferQueue = audioDec->GetInnerBufferQueue();
     innerBufferQueue = Media::AVBufferQueue::Create(4, Media::MemoryType::SHARED_MEMORY, "AVBufferInnerUT");  // 4
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->SetOutputBufferQueue(innerBufferQueue->GetProducer()));
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Prepare());
@@ -448,9 +481,9 @@ HWTEST_F(AVCodecAudioCodecUnitTest, SetParameter_001, TestSize.Level1)
 HWTEST_F(AVCodecAudioCodecUnitTest, ChangePlugin_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& dec = audioDec->GetAudioCodec();
-    auto& meta = audioDec->GetAudioMeta();
-    dec = AudioCodecFactory::CreateByName(CODEC_MP3_NAME);
+    auto &dec = audioDec->GetAudioCodec();
+    auto &meta = audioDec->GetAudioMeta();
+    dec = AudioCodecFactory::CreateByName(MP3_CODEC_NAME.data());
     meta = std::make_shared<Media::Meta>();
     std::string mime;
     meta->GetData(Tag::MIME_TYPE, mime);
@@ -464,9 +497,9 @@ HWTEST_F(AVCodecAudioCodecUnitTest, ChangePlugin_001, TestSize.Level1)
 HWTEST_F(AVCodecAudioCodecUnitTest, SetDataCallback_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& dec = audioDec->GetAudioCodec();
-    auto& meta = audioDec->GetAudioMeta();
-    dec = AudioCodecFactory::CreateByName(CODEC_MP3_NAME);
+    auto &dec = audioDec->GetAudioCodec();
+    auto &meta = audioDec->GetAudioMeta();
+    dec = AudioCodecFactory::CreateByName(MP3_CODEC_NAME.data());
     meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
@@ -478,14 +511,14 @@ HWTEST_F(AVCodecAudioCodecUnitTest, SetDataCallback_001, TestSize.Level1)
 HWTEST_F(AVCodecAudioCodecUnitTest, ProcessInputBuffer_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& dec = audioDec->GetAudioCodec();
-    auto& meta = audioDec->GetAudioMeta();
-    dec = AudioCodecFactory::CreateByName(CODEC_MP3_NAME);
+    auto &dec = audioDec->GetAudioCodec();
+    auto &meta = audioDec->GetAudioMeta();
+    dec = AudioCodecFactory::CreateByName(MP3_CODEC_NAME.data());
     meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Configure(meta));
-    auto& innerBufferQueue = audioDec->GetInnerBufferQueue();
+    auto &innerBufferQueue = audioDec->GetInnerBufferQueue();
     innerBufferQueue = Media::AVBufferQueue::Create(4, Media::MemoryType::SHARED_MEMORY, "AVBufferInnerUT");  // 4
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->SetOutputBufferQueue(innerBufferQueue->GetProducer()));
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Prepare());
@@ -495,14 +528,14 @@ HWTEST_F(AVCodecAudioCodecUnitTest, ProcessInputBuffer_001, TestSize.Level1)
 HWTEST_F(AVCodecAudioCodecUnitTest, SetDumpInfo_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& dec = audioDec->GetAudioCodec();
-    auto& meta = audioDec->GetAudioMeta();
-    dec = AudioCodecFactory::CreateByName(CODEC_MP3_NAME);
+    auto &dec = audioDec->GetAudioCodec();
+    auto &meta = audioDec->GetAudioMeta();
+    dec = AudioCodecFactory::CreateByName(MP3_CODEC_NAME.data());
     meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Configure(meta));
-    auto& innerBufferQueue = audioDec->GetInnerBufferQueue();
+    auto &innerBufferQueue = audioDec->GetInnerBufferQueue();
     innerBufferQueue = Media::AVBufferQueue::Create(4, Media::MemoryType::SHARED_MEMORY, "AVBufferInnerUT");  // 4
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->SetOutputBufferQueue(innerBufferQueue->GetProducer()));
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Prepare());
@@ -515,9 +548,9 @@ HWTEST_F(AVCodecAudioCodecUnitTest, SetDumpInfo_001, TestSize.Level1)
 HWTEST_F(AVCodecAudioCodecUnitTest, GetInputBufferQueueConsumer_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& dec = audioDec->GetAudioCodec();
-    auto& meta = audioDec->GetAudioMeta();
-    dec = AudioCodecFactory::CreateByName(CODEC_MP3_NAME);
+    auto &dec = audioDec->GetAudioCodec();
+    auto &meta = audioDec->GetAudioMeta();
+    dec = AudioCodecFactory::CreateByName(MP3_CODEC_NAME.data());
     meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
@@ -529,9 +562,9 @@ HWTEST_F(AVCodecAudioCodecUnitTest, GetInputBufferQueueConsumer_001, TestSize.Le
 HWTEST_F(AVCodecAudioCodecUnitTest, GetOutputBufferQueueProducer_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& dec = audioDec->GetAudioCodec();
-    auto& meta = audioDec->GetAudioMeta();
-    dec = AudioCodecFactory::CreateByName(CODEC_MP3_NAME);
+    auto &dec = audioDec->GetAudioCodec();
+    auto &meta = audioDec->GetAudioMeta();
+    dec = AudioCodecFactory::CreateByName(MP3_CODEC_NAME.data());
     meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
@@ -543,19 +576,19 @@ HWTEST_F(AVCodecAudioCodecUnitTest, GetOutputBufferQueueProducer_001, TestSize.L
 HWTEST_F(AVCodecAudioCodecUnitTest, ProcessInputBufferInner_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& innerBufferQueue = audioDec->GetInnerBufferQueue();
+    auto &innerBufferQueue = audioDec->GetInnerBufferQueue();
     innerBufferQueue = Media::AVBufferQueue::Create(4, Media::MemoryType::SHARED_MEMORY, "AVBufferInnerUT");  // 4
-    auto& dec = audioDec->GetAudioCodec();
-    auto& meta = audioDec->GetAudioMeta();
-    dec = AudioCodecFactory::CreateByName(CODEC_MP3_NAME);
+    auto &dec = audioDec->GetAudioCodec();
+    auto &meta = audioDec->GetAudioMeta();
+    dec = AudioCodecFactory::CreateByName(MP3_CODEC_NAME.data());
     meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Configure(meta));
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->SetOutputBufferQueue(innerBufferQueue->GetProducer()));
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, dec->Prepare());
-    
-    auto& implConsumer = audioDec->GetImplConsumer();
+
+    auto &implConsumer = audioDec->GetImplConsumer();
     implConsumer = innerBufferQueue->GetConsumer();
     bool isTriggeredByOutport = true;
     bool isFlushed = true;
@@ -563,58 +596,195 @@ HWTEST_F(AVCodecAudioCodecUnitTest, ProcessInputBufferInner_001, TestSize.Level1
     dec->ProcessInputBufferInner(isTriggeredByOutport, isFlushed, bufferStatus);
 }
 
-HWTEST_F(AVCodecAudioCodecUnitTest, AudioDecode_001, TestSize.Level1)
+HWTEST_F(AVCodecAudioCodecUnitTest, AudioDecode_MP3, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& meta = audioDec->GetAudioMeta();
+    auto &meta = audioDec->GetAudioMeta();
     meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_CHANNEL_LAYOUT>(Media::Plugins::AudioChannelLayout::STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
-    meta->Set<Tag::AUDIO_SAMPLE_RATE>(44100); // expected sampleRate
-    meta->Set<Tag::MEDIA_BITRATE>(60000); // BITRATE is 60000
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audioDec->RunCase());
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(44100);  // expected sampleRate
+    meta->Set<Tag::MEDIA_BITRATE>(60000);      // BITRATE is 60000
+    EXPECT_EQ(
+        AVCodecServiceErrCode::AVCS_ERR_OK, audioDec->RunCase(MP3_CODEC_NAME, INPUT_FILE_PATH, OUTPUT_PCM_FILE_PATH));
+}
+
+HWTEST_F(AVCodecAudioCodecUnitTest, AudioDecode_AC3, TestSize.Level1)
+{
+    auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
+    auto &meta = audioDec->GetAudioMeta();
+    meta = std::make_shared<Media::Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_CHANNEL_LAYOUT>(Media::Plugins::AudioChannelLayout::STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(44100);  // expected sampleRate
+    meta->Set<Tag::MEDIA_BITRATE>(60000);      // BITRATE is 60000
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK,
+        audioDec->RunCase(AC3_CODEC_NAME, INPUT_AC3_FILE_PATH, OUTPUT_AC3_PCM_FILE_PATH));
 }
 
 HWTEST_F(AVCodecAudioCodecUnitTest, AudioSyncDecode_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& meta = audioDec->GetAudioMeta();
+    auto &meta = audioDec->GetAudioMeta();
     meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_CHANNEL_LAYOUT>(Media::Plugins::AudioChannelLayout::STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
-    meta->Set<Tag::AUDIO_SAMPLE_RATE>(44100); // expected sampleRate
-    meta->Set<Tag::MEDIA_BITRATE>(60000); // BITRATE is 60000
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(44100);  // expected sampleRate
+    meta->Set<Tag::MEDIA_BITRATE>(60000);      // BITRATE is 60000
     meta->Set<Tag::AV_CODEC_ENABLE_SYNC_MODE>(true);
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audioDec->RunCase());
+    EXPECT_EQ(
+        AVCodecServiceErrCode::AVCS_ERR_OK, audioDec->RunCase(MP3_CODEC_NAME, INPUT_FILE_PATH, OUTPUT_PCM_FILE_PATH));
 }
 
 HWTEST_F(AVCodecAudioCodecUnitTest, OnOutputFormatChanged_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& meta = audioDec->GetAudioMeta();
+    auto &meta = audioDec->GetAudioMeta();
     meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_CHANNEL_LAYOUT>(Media::Plugins::AudioChannelLayout::STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
-    meta->Set<Tag::AUDIO_SAMPLE_RATE>(48000); // supported but unexpected sampleRate
-    meta->Set<Tag::MEDIA_BITRATE>(60000); // BITRATE is 60000
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audioDec->RunCase());
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(48000);  // supported but unexpected sampleRate
+    meta->Set<Tag::MEDIA_BITRATE>(60000);      // BITRATE is 60000
+    EXPECT_EQ(
+        AVCodecServiceErrCode::AVCS_ERR_OK, audioDec->RunCase(MP3_CODEC_NAME, INPUT_FILE_PATH, OUTPUT_PCM_FILE_PATH));
 }
 
 HWTEST_F(AVCodecAudioCodecUnitTest, AsyncChangePluginWhileDecode_001, TestSize.Level1)
 {
     auto audioDec = std::make_shared<AudioDecInnerAvBuffer>();
-    auto& meta = audioDec->GetAudioMeta();
+    auto &meta = audioDec->GetAudioMeta();
     meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_CHANNEL_LAYOUT>(Media::Plugins::AudioChannelLayout::STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
-    meta->Set<Tag::AUDIO_SAMPLE_RATE>(44100); // expected sampleRate
-    meta->Set<Tag::MEDIA_BITRATE>(60000); // BITRATE is 60000
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(44100);  // expected sampleRate
+    meta->Set<Tag::MEDIA_BITRATE>(60000);      // BITRATE is 60000
     audioDec->EnableAsyncChangePluginTest();
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audioDec->RunCase());
+    EXPECT_EQ(
+        AVCodecServiceErrCode::AVCS_ERR_OK, audioDec->RunCase(MP3_CODEC_NAME, INPUT_FILE_PATH, OUTPUT_PCM_FILE_PATH));
 }
-} // namespace MediaAVCodec
-} // namespace OHOS
+
+HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateDecoderByMimeType, TestSize.Level1)
+{
+    const vector<std::string_view> allMimeTable = {AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_FLAC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VORBIS,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_MPEG,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRWB,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VIVID,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711MU,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711A,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_L2HC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AC3,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_RAW};
+
+    const bool isEncoder = false;
+    for (const auto &mime : allMimeTable) {
+        auto audioDec = AudioCodecFactory::CreateByMime(mime.data(), isEncoder);
+        EXPECT_NE(nullptr, audioDec);
+        if (audioDec == nullptr) {
+            std::cout << "create " << mime << " failed" << std::endl;
+        } else {
+            audioDec->Release();
+        }
+    }
+}
+
+HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateDecoderByCodecName, TestSize.Level1)
+{
+    const vector<std::string_view> allMimeTable = {AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_FLAC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VORBIS,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_MPEG,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRWB,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VIVID,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711MU,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711A,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_L2HC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AC3,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_RAW};
+
+    const bool isEncoder = false;
+    for (const auto &mime : allMimeTable) {
+        const std::string name = GetCapabilityName(mime.data(), isEncoder);
+        if (name.empty()) {
+            std::cout << name << "without Capability" << std::endl;
+            continue;
+        }
+        auto audioDec = AudioCodecFactory::CreateByName(name.c_str());
+        EXPECT_NE(nullptr, audioDec);
+        if (audioDec == nullptr) {
+            std::cout << "create " << name << " failed" << std::endl;
+        } else {
+            audioDec->Release();
+        }
+    }
+}
+
+HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateEncoderByMimeType, TestSize.Level1)
+{
+    const vector<std::string_view> allMimeTable = {AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_FLAC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711MU,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_MPEG,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRWB,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_L2HC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC};
+
+    const bool isEncoder = true;
+    for (const auto &mime : allMimeTable) {
+        auto audioEnc = AudioCodecFactory::CreateByMime(mime.data(), isEncoder);
+        EXPECT_NE(nullptr, audioEnc);
+        if (audioEnc == nullptr) {
+            std::cout << "create " << mime << " failed" << std::endl;
+        } else {
+            audioEnc->Release();
+        }
+    }
+}
+
+HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateEncoderByCodecName, TestSize.Level1)
+{
+    const vector<std::string_view> allMimeTable = {AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_FLAC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711MU,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_MPEG,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRWB,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_L2HC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC};
+
+    const bool isEncoder = true;
+    for (const auto &mime : allMimeTable) {
+        const std::string name = GetCapabilityName(mime.data(), isEncoder);
+        if (name.empty()) {
+            std::cout << name << "without Capability" << std::endl;
+            continue;
+        }
+        auto audioEnc = AudioCodecFactory::CreateByName(name.c_str());
+        EXPECT_NE(nullptr, audioEnc);
+        if (audioEnc == nullptr) {
+            std::cout << "create " << name << " failed" << std::endl;
+        } else {
+            audioEnc->Release();
+        }
+    }
+}
+
+}  // namespace MediaAVCodec
+}  // namespace OHOS
