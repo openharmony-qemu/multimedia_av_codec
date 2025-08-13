@@ -46,7 +46,6 @@ namespace Media {
 const int32_t TRY_READ_SLEEP_TIME = 10;  //ms
 const int32_t TRY_READ_TIMES = 10;
 constexpr int64_t SOURCE_READ_WARNING_MS = 100;
-constexpr uint64_t LIVE_CONTENT_LENGTH = 2147483646;
 StreamDemuxer::StreamDemuxer() : position_(0)
 {
     MEDIA_LOG_I("VodStreamDemuxer called");
@@ -380,9 +379,6 @@ Status StreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::sh
     // Under the current specifications, change buffer->streamID only in the scenario of switching tracks.
     FALSE_RETURN_V_NOLOG(!IsDash() || buffer == nullptr || buffer->streamID == streamID, Status::END_OF_STREAM);
 
-    if (mediaDataSize_ == LIVE_CONTENT_LENGTH) {
-        return Status::OK;
-    }
     MEDIA_LOG_W("Demuxer parse DEMUXER_STATE_PARSE_HEADER, getRange_ failed, ret = " PUBLIC_LOG_D32, ret);
     return ret;
 }
