@@ -670,7 +670,8 @@ HWTEST_F(AVCodecAudioCodecUnitTest, AsyncChangePluginWhileDecode_001, TestSize.L
 
 HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateDecoderByMimeType, TestSize.Level1)
 {
-    const vector<std::string_view> allMimeTable = {AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
+    const vector<std::string_view> allMimeTable = {
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_FLAC,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VORBIS,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB,
@@ -684,10 +685,16 @@ HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateDecoderByMimeType, TestSize.Level
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AC3,
-        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_RAW};
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_RAW
+    };
 
     const bool isEncoder = false;
     for (const auto &mime : allMimeTable) {
+        const std::string name = GetCapabilityName(mime.data(), isEncoder);
+        if (name.empty()) {
+            std::cout << "without capability:" << mime << std::endl;
+            continue;
+        }
         auto audioDec = AudioCodecFactory::CreateByMime(mime.data(), isEncoder);
         EXPECT_NE(nullptr, audioDec);
         if (audioDec == nullptr) {
@@ -700,7 +707,8 @@ HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateDecoderByMimeType, TestSize.Level
 
 HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateDecoderByCodecName, TestSize.Level1)
 {
-    const vector<std::string_view> allMimeTable = {AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
+    const vector<std::string_view> allMimeTable = {
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_FLAC,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VORBIS,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB,
@@ -714,13 +722,14 @@ HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateDecoderByCodecName, TestSize.Leve
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AC3,
-        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_RAW};
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_RAW
+    };
 
     const bool isEncoder = false;
     for (const auto &mime : allMimeTable) {
         const std::string name = GetCapabilityName(mime.data(), isEncoder);
         if (name.empty()) {
-            std::cout << name << "without Capability" << std::endl;
+            std::cout << "without capability:" << mime << std::endl;
             continue;
         }
         auto audioDec = AudioCodecFactory::CreateByName(name.c_str());
@@ -735,7 +744,8 @@ HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateDecoderByCodecName, TestSize.Leve
 
 HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateEncoderByMimeType, TestSize.Level1)
 {
-    const vector<std::string_view> allMimeTable = {AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
+    const vector<std::string_view> allMimeTable = {
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_FLAC,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711MU,
@@ -743,10 +753,16 @@ HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateEncoderByMimeType, TestSize.Level
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRWB,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_L2HC,
-        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC};
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC
+    };
 
     const bool isEncoder = true;
     for (const auto &mime : allMimeTable) {
+        const std::string name = GetCapabilityName(mime.data(), isEncoder);
+        if (name.empty()) {
+            std::cout << "without capability:" << mime << std::endl;
+            continue;
+        }
         auto audioEnc = AudioCodecFactory::CreateByMime(mime.data(), isEncoder);
         EXPECT_NE(nullptr, audioEnc);
         if (audioEnc == nullptr) {
@@ -759,7 +775,8 @@ HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateEncoderByMimeType, TestSize.Level
 
 HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateEncoderByCodecName, TestSize.Level1)
 {
-    const vector<std::string_view> allMimeTable = {AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
+    const vector<std::string_view> allMimeTable = {
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_FLAC,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711MU,
@@ -767,13 +784,14 @@ HWTEST_F(AVCodecAudioCodecUnitTest, CheckCreateEncoderByCodecName, TestSize.Leve
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRWB,
         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_L2HC,
-        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC};
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC
+    };
 
     const bool isEncoder = true;
     for (const auto &mime : allMimeTable) {
         const std::string name = GetCapabilityName(mime.data(), isEncoder);
         if (name.empty()) {
-            std::cout << name << "without Capability" << std::endl;
+            std::cout << "without capability:" << mime << std::endl;
             continue;
         }
         auto audioEnc = AudioCodecFactory::CreateByName(name.c_str());

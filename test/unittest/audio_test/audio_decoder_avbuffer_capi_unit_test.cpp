@@ -3518,6 +3518,12 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_OuterSupportMimeTest_01, T
 
     const bool isEncoder = false;
     for (const auto &mime : allMimeTable) {
+        auto capability = OH_AVCodec_GetCapability(mime.data(), isEncoder);
+        const char *name = OH_AVCapability_GetName(capability);
+        if (name == nullptr) {
+            cout << "without capaility:" << mime << endl;
+            continue;
+        }
         auto audioDec = OH_AudioCodec_CreateByMime(mime.data(), isEncoder);
         if (AVCodecMimeType::CheckAudioCodecMimeSupportOuter(mime.data(), isEncoder)) {
             EXPECT_NE(nullptr, audioDec);
