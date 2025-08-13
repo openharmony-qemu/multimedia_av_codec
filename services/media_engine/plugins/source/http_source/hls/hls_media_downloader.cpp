@@ -78,12 +78,12 @@ constexpr uint64_t MAX_EXPECT_DURATION = 19;
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
 //   fragment --- one item in play list, download media data according to the fragment address.
-HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, bool useDefinedDuration,
+HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, bool userDefinedDuration,
     const std::map<std::string, std::string>& httpHeader,
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
-    if (useDefinedDuration) {
-        userDefinedBufferDuration_ = useDefinedDuration;
+    if (userDefinedDuration) {
+        userDefinedBufferDuration_ = userDefinedDuration;
         expectDuration_ = static_cast<uint64_t>(expectBufferDuration);
         expectDuration_ = std::min(expectDuration_, MAX_EXPECT_DURATION);
         totalBufferSize_ = expectDuration_ * CURRENT_BIT_RATE;
@@ -96,8 +96,8 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, bool useDefined
     }
     httpHeader_ = httpHeader;
     timeoutInterval_ = MAX_BUFFERING_TIME_OUT;
-    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU " useDefinedDuration:" PUBLIC_LOG_D32,
-        totalBufferSize_, useDefinedDuration);
+    MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU " userDefinedDuration:" PUBLIC_LOG_D32,
+        totalBufferSize_, userDefinedDuration);
     HlsInit(sourceLoader);
 }
 
