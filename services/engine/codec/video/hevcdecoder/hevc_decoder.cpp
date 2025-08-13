@@ -1401,14 +1401,15 @@ int32_t HevcDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
     uint64_t surfaceId = surface->GetUniqueId();
     wptr<HevcDecoder> wp = this;
     bool ret =
-        SurfaceTools::GetInstance().RegisterReleaseListener(instanceId_, surface, [wp, surfaceId](sptr<SurfaceBuffer> &) {
-            sptr<HevcDecoder> codec = wp.promote();
-            if (!codec) {
-                AVCODEC_LOGD("decoder is gone");
-                return GSERROR_OK;
-            }
-            return codec->BufferReleasedByConsumer(surfaceId);
-        });
+        SurfaceTools::GetInstance().RegisterReleaseListener(instanceId_, surface,
+            [wp, surfaceId](sptr<SurfaceBuffer> &) {
+                sptr<HevcDecoder> codec = wp.promote();
+                if (!codec) {
+                    AVCODEC_LOGD("decoder is gone");
+                    return GSERROR_OK;
+                }
+                return codec->BufferReleasedByConsumer(surfaceId);
+            });
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_UNKNOWN, "surface(%" PRIu64 ") register listener failed", surfaceId);
     StartRequestSurfaceBufferThread();
     return AVCS_ERR_OK;

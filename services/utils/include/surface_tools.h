@@ -26,10 +26,10 @@ namespace MediaAVCodec {
 class SurfaceTools {
 public:
     static SurfaceTools &GetInstance();
-    bool RegisterReleaseListener(sint32_t instanceId, sptr<Surface> surface, OnReleaseFunc callback,
+    bool RegisterReleaseListener(int32_t instanceId, sptr<Surface> surface, OnReleaseFunc callback,
         OHSurfaceSource type = OH_SURFACE_SOURCE_VIDEO);
-    void CleanCache(sint32_t instanceId, sptr<Surface> surface, bool cleanAll);
-    void ReleaseSurface(sint32_t instanceId, sptr<Surface> surface, bool cleanAll, bool abadon = false);
+    void CleanCache(int32_t instanceId, sptr<Surface> surface, bool cleanAll);
+    void ReleaseSurface(int32_t instanceId, sptr<Surface> surface, bool cleanAll, bool abadon = false);
 
 private:
     std::mutex mutex_;
