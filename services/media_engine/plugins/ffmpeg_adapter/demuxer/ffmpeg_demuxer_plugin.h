@@ -349,9 +349,9 @@ private:
     std::atomic<bool> threadReady_ {false};
     std::unordered_map<uint32_t, Meta> streamInitialParam_;
 
-    bool isAsyncReadThreadPrioritySet_ = false;
+    std::atomic<bool> isAsyncReadThreadPrioritySet_ = false;
     std::atomic<uint32_t> asyncReadThreadPriority_ = {0};
-    std::string bundleName_ = "";
+    std::atomic<std::string> bundleName_ = "";
     void UpdateAsyncReadThreadPriority();
 };
 
