@@ -416,12 +416,8 @@ int32_t CodecServer::Stop()
         return (retCodec == AVCS_ERR_OK) ? retPostProcessing : retCodec;
     }
     if (isSurfaceMode_ && codecType_ == AVCODEC_TYPE_VIDEO_DECODER && pushBlankBufferOnShutdown_) {
-        std::optional<std::pair<std::string, int32_t>> pInfo =
-            SurfaceTools::GetInstance().GetCurProducerInfo(surfaceId_);
-        if (pInfo != std::nullopt) {
-            SurfaceTools::GetInstance().CleanCache(pInfo.value().first,
-                SurfaceUtils::GetInstance()->GetSurface(surfaceId_), true);
-        }
+        SurfaceTools::GetInstance().CleanCache(instanceId_,
+            SurfaceUtils::GetInstance()->GetSurface(surfaceId_), true);
     }
     StatusChanged(CONFIGURED);
     OnInstanceMemoryResetEvent();
@@ -527,12 +523,8 @@ int32_t CodecServer::Release()
     }
     int32_t ret = codecBase_->Release();
     if (isSurfaceMode_ && codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
-        std::optional<std::pair<std::string, int32_t>> pInfo =
-            SurfaceTools::GetInstance().GetCurProducerInfo(surfaceId_);
-        if (pInfo != std::nullopt) {
-            SurfaceTools::GetInstance().ReleaseSurface(pInfo.value().first,
-                SurfaceUtils::GetInstance()->GetSurface(surfaceId_), pushBlankBufferOnShutdown_, true);
-        }
+        SurfaceTools::GetInstance().ReleaseSurface(instanceId_,
+            SurfaceUtils::GetInstance()->GetSurface(surfaceId_), pushBlankBufferOnShutdown_, true);
     }
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     codecBase_ = nullptr;
