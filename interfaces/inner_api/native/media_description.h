@@ -305,6 +305,10 @@ public:
     static constexpr std::string_view MD_KEY_TRACK_DESCRIPTION = "track_description";
     static constexpr std::string_view MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL =
         "video_encoder_enable_pts_based_ratecontrol";
+    /**
+     * key for AIGC info, the value type is string
+     */
+    static constexpr std::string_view MD_KEY_AIGC = "AIGC";
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;
