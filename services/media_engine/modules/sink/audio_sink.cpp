@@ -143,7 +143,7 @@ void AudioSink::HandleAudioRenderRequestPost()
     FALSE_RETURN_NOLOG(!availOutputBuffers_.empty());
     auto cacheBuffer = availOutputBuffers_.front();
     FALSE_RETURN(cacheBuffer != nullptr);
-    FALSE_RETURN(IsEosBuffer(cacheBuffer));
+    FALSE_RETURN_NOLOG(IsEosBuffer(cacheBuffer));
     availOutputBuffers_.pop();
     HandleEosBuffer(cacheBuffer);
 }
