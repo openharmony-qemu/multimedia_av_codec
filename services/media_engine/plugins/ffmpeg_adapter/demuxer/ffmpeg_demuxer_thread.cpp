@@ -237,7 +237,7 @@ Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t t
 
 void FFmpegDemuxerPlugin::FFmpegReadLoop()
 {
-    if (isAsyncReadThreadPrioritySet_) {
+    if (isAsyncReadThreadPrioritySet_.load()) {
         UpdateAsyncReadThreadPriority();
     }
     threadState_ = READING;
@@ -511,7 +511,7 @@ void FFmpegDemuxerPlugin::UpdateAsyncReadThreadPriority()
     MEDIA_LOG_I("Update async read thread priority to " PUBLIC_LOG_U32 " for bundle: " PUBLIC_LOG_S,
         asyncReadThreadPriority_.load(), bundleName_.c_str());
     std::unordered_map<std::string, std::string> mapPayload;
-    mapPayload["bundleName"] = bundleName_;
+    mapPayload["bundleName"] = bundleName_.load();
     mapPayload["pid"] = std::to_string(getpid());
     mapPayload[std::to_string(gettid())] = std::to_string(asyncReadThreadPriority_.load());
     OHOS::ResourceSchedule::ResSchedClient::GetInstance().ReportData(RES_TYPE, RES_VALUE, mapPayload);
