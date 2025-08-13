@@ -135,9 +135,12 @@ BackGroundEventHandler &BackGroundEventHandler::GetInstance()
 
 void BackGroundEventHandler::NotifyFreeze(InstanceId instanceId)
 {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    if (!mutex_.try_lock()) {
+        return;
+    }
     auto codecInstance = AVCodecServerManager::GetInstance().GetCodecInstanceByInstanceId(instanceId);
     if (codecInstance == std::nullopt) {
+        mutex_.unlock();
         return;
     }
     auto &callerPid = codecInstance->second.caller.pid;
@@ -145,6 +148,7 @@ void BackGroundEventHandler::NotifyFreeze(InstanceId instanceId)
     auto &actualPid = forwardPid == MediaAVCodec::INVALID_PID ? callerPid : forwardPid;
     MemoryRecycleHandler(memoryRecycleList_, actualPid, codecInstance.value());
     SuspendHandler(suspendList_, actualPid, codecInstance.value());
+    mutex_.unlock();
 }
 
 void BackGroundEventHandler::NotifyFreeze(const std::vector<pid_t> &pidList)
@@ -161,9 +165,12 @@ void BackGroundEventHandler::NotifyFreeze(const std::vector<pid_t> &pidList)
 
 void BackGroundEventHandler::NotifyActive(InstanceId instanceId)
 {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    if (!mutex_.try_lock()) {
+        return;
+    }
     auto codecInstance = AVCodecServerManager::GetInstance().GetCodecInstanceByInstanceId(instanceId);
     if (codecInstance == std::nullopt) {
+        mutex_.unlock();
         return;
     }
     auto &callerPid = codecInstance->second.caller.pid;
@@ -171,6 +178,7 @@ void BackGroundEventHandler::NotifyActive(InstanceId instanceId)
     auto &actualPid = forwardPid == MediaAVCodec::INVALID_PID ? callerPid : forwardPid;
     MemoryWriteBackHandler(memoryRecycleList_, actualPid, codecInstance.value());
     ResumeHandler(suspendList_, actualPid, codecInstance.value());
+    mutex_.unlock();
 }
 
 void BackGroundEventHandler::NotifyActive(const std::vector<pid_t> &pidList)
