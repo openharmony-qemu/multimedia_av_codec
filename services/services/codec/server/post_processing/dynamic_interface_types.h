@@ -32,8 +32,6 @@ using DynamicDestroyFunc = void(*)(DynamicColorSpaceConverterHandle*);
 using DynamicSetCallbackFunc = int32_t(*)(DynamicColorSpaceConverterHandle*, void*, void*);
 using DynamicSetOutputSurfaceFunc = int32_t(*)(DynamicColorSpaceConverterHandle*, void*);
 using DynamicCreateInputSurfaceFunc = int32_t(*)(DynamicColorSpaceConverterHandle*, void*);
-using DynamicSetParameterFunc = int32_t(*)(DynamicColorSpaceConverterHandle*, void*);
-using DynamicGetParameterFunc = int32_t(*)(DynamicColorSpaceConverterHandle*, void*);
 using DynamicConfigureFunc = int32_t(*)(DynamicColorSpaceConverterHandle*, void*);
 using DynamicPrepareFunc = int32_t(*)(DynamicColorSpaceConverterHandle*);
 using DynamicStartFunc = int32_t(*)(DynamicColorSpaceConverterHandle*);
@@ -44,6 +42,7 @@ using DynamicReleaseFunc = int32_t(*)(DynamicColorSpaceConverterHandle*);
 using DynamicReleaseOutputBufferFunc = int32_t(*)(DynamicColorSpaceConverterHandle*, uint32_t, bool);
 using DynamicGetOutputFormatFunc = int32_t(*)(DynamicColorSpaceConverterHandle*, void*);
 using DynamicOnProducerBufferReleasedFunc = int32_t(*)(DynamicColorSpaceConverterHandle*);
+using DynamicNotifyEos = int32_t(*)(DynamicColorSpaceConverterHandle*);
 
 // function pointer types array
 using DynamicInterfaceFuncTypes = TypeArray<
@@ -53,8 +52,6 @@ using DynamicInterfaceFuncTypes = TypeArray<
     DynamicSetCallbackFunc,
     DynamicSetOutputSurfaceFunc,
     DynamicCreateInputSurfaceFunc,
-    DynamicSetParameterFunc,
-    DynamicGetParameterFunc,
     DynamicConfigureFunc,
     DynamicPrepareFunc,
     DynamicStartFunc,
@@ -64,7 +61,8 @@ using DynamicInterfaceFuncTypes = TypeArray<
     DynamicReleaseFunc,
     DynamicReleaseOutputBufferFunc,
     DynamicGetOutputFormatFunc,
-    DynamicOnProducerBufferReleasedFunc
+    DynamicOnProducerBufferReleasedFunc,
+    DynamicNotifyEos
 >;
 
 // function symbols
@@ -75,8 +73,6 @@ constexpr const char* DYNAMIC_INTERFACE_SYMBOLS[]{
     "ColorSpaceConvertVideoSetCallback",
     "ColorSpaceConvertVideoSetOutputSurface",
     "ColorSpaceConvertVideoCreateInputSurface",
-    "ColorSpaceConvertVideoSetParameter",
-    "ColorSpaceConvertVideoGetParameter",
     "ColorSpaceConvertVideoConfigure",
     "ColorSpaceConvertVideoPrepare",
     "ColorSpaceConvertVideoStart",
@@ -87,6 +83,7 @@ constexpr const char* DYNAMIC_INTERFACE_SYMBOLS[]{
     "ColorSpaceConvertVideoReleaseOutputBuffer",
     "ColorSpaceConvertVideoGetOutputFormat",
     "ColorSpaceConvertVideoOnProducerBufferReleased",
+    "ColorSpaceConvertVideoNotifyEos"
 };
 
 // function name enumeration
@@ -97,8 +94,6 @@ enum class DynamicInterfaceName : size_t {
     SET_CALLBACK,
     SET_OUTPUT_SURFACE,
     CREATE_INPUT_SURFACE,
-    SET_PARAMETER,
-    GET_PARAMETER,
     CONFIGURE,
     PREPARE,
     START,
@@ -109,6 +104,7 @@ enum class DynamicInterfaceName : size_t {
     RELEASE_OUPUT_BUFFER,
     GET_OUTPUT_FORMAT,
     ON_PRODUCER_BUFFER_RELEASED,
+    NOTIFY_EOS,
 };
 
 // dynamic interface helper types

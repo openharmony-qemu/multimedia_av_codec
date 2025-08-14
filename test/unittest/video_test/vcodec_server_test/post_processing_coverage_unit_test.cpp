@@ -162,7 +162,6 @@ HWTEST_F(CodecServerUnitTest, StopPostProcessing_Valid_Test_002, TestSize.Level1
     server_->postProcessing_ = nullptr;
     server_->decodedBufferInfoQueue_ = bufferInfoQueue;
     server_->postProcessingInputBufferInfoQueue_ = postprocessingBufferInfoQueue;
-    server_->postProcessingOutputBufferInfoQueue_ = postprocessingBufferInfoQueue;
     int32_t ret = server_->StopPostProcessing();
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
@@ -181,7 +180,6 @@ HWTEST_F(CodecServerUnitTest, FlushPostProcessing_Invalid_Test_001, TestSize.Lev
     server_->postProcessingTask_ = std::make_unique<TaskThread>(DEFAULT_TASK_NAME);
     server_->decodedBufferInfoQueue_ = bufferInfoQueue;
     server_->postProcessingInputBufferInfoQueue_ = postprocessingBufferInfoQueue;
-    server_->postProcessingOutputBufferInfoQueue_ = postprocessingBufferInfoQueue;
     int32_t ret = server_->FlushPostProcessing();
     EXPECT_NE(ret, AVCS_ERR_OK);
 }
@@ -198,7 +196,6 @@ HWTEST_F(CodecServerUnitTest, FlushPostProcessing_Invalid_Test_002, TestSize.Lev
     server_->postProcessingTask_ = nullptr;
     server_->decodedBufferInfoQueue_ = nullptr;
     server_->postProcessingInputBufferInfoQueue_ = nullptr;
-    server_->postProcessingOutputBufferInfoQueue_ = nullptr;
     int32_t ret = server_->FlushPostProcessing();
     EXPECT_NE(ret, AVCS_ERR_OK);
 }
@@ -240,7 +237,6 @@ HWTEST_F(CodecServerUnitTest, StartPostProcessingTask_Valid_Test_001, TestSize.L
     server_->postProcessingTask_ = nullptr;
     server_->decodedBufferInfoQueue_ = bufferInfoQueue;
     server_->postProcessingInputBufferInfoQueue_ = postprocessingBufferInfoQueue;
-    server_->postProcessingOutputBufferInfoQueue_ = postprocessingBufferInfoQueue;
     server_->StartPostProcessingTask();
     EXPECT_NE(server_->postProcessingTask_, nullptr);
 }
@@ -256,7 +252,6 @@ HWTEST_F(CodecServerUnitTest, StartPostProcessingTask_Valid_Test_002, TestSize.L
     server_->postProcessingTask_ = std::make_unique<TaskThread>(DEFAULT_TASK_NAME);
     server_->decodedBufferInfoQueue_ = nullptr;
     server_->postProcessingInputBufferInfoQueue_ = nullptr;
-    server_->postProcessingOutputBufferInfoQueue_ = nullptr;
     server_->StartPostProcessingTask();
 }
 
@@ -272,11 +267,9 @@ HWTEST_F(CodecServerUnitTest, DeactivatePostProcessingQueue_Valid_Test_001, Test
         std::make_shared<CodecServer::PostProcessingBufferInfoQueue>(POST_PROCESSING_LOCK_FREE_QUEUE_NAME);
     server_->decodedBufferInfoQueue_ = bufferInfoQueue;
     server_->postProcessingInputBufferInfoQueue_ = postprocessingBufferInfoQueue;
-    server_->postProcessingOutputBufferInfoQueue_ = postprocessingBufferInfoQueue;
     server_->DeactivatePostProcessingQueue();
     EXPECT_EQ(server_->decodedBufferInfoQueue_->active_, false);
     EXPECT_EQ(server_->postProcessingInputBufferInfoQueue_->active_, false);
-    EXPECT_EQ(server_->postProcessingOutputBufferInfoQueue_->active_, false);
 }
 
 /**
@@ -292,12 +285,10 @@ HWTEST_F(CodecServerUnitTest, CleanPostProcessingResource_Valid_Test_001, TestSi
     server_->postProcessingTask_ = std::make_unique<TaskThread>(DEFAULT_TASK_NAME);
     server_->decodedBufferInfoQueue_ = bufferInfoQueue;
     server_->postProcessingInputBufferInfoQueue_ = postprocessingBufferInfoQueue;
-    server_->postProcessingOutputBufferInfoQueue_ = postprocessingBufferInfoQueue;
     server_->CleanPostProcessingResource();
     EXPECT_EQ(server_->postProcessingTask_, nullptr);
     EXPECT_EQ(server_->decodedBufferInfoQueue_, nullptr);
     EXPECT_EQ(server_->postProcessingInputBufferInfoQueue_, nullptr);
-    EXPECT_EQ(server_->postProcessingOutputBufferInfoQueue_, nullptr);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
