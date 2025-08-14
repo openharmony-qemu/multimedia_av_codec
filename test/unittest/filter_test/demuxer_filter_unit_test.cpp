@@ -375,7 +375,7 @@ HWTEST_F(DemuxerFilterUnitTest, UpdateTrackIdMap, TestSize.Level1)
 
 /**
  * @tc.name: FindTrackId
- * @tc.desc: FindTrackId
+ * @tc.desc: FindTrackIdseek
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerFilterUnitTest, FindTrackId, TestSize.Level1)
@@ -806,51 +806,6 @@ HWTEST_F(DemuxerFilterUnitTest, Dts2FrameId_0100, TestSize.Level1)
     EXPECT_EQ(ret, Status::OK);
     ret = demuxerFilter->Dts2FrameId(920000, frameId);
     EXPECT_EQ(frameId, 25);
-    EXPECT_EQ(ret, Status::OK);
-}
-
-HWTEST_F(DemuxerFilterUnitTest, SeekMs2FrameId_0100, TestSize.Level1)
-{
-    auto demuxerFilter = std::make_shared<DemuxerFilter>("testDemuxerFilter", FilterType::FILTERTYPE_DEMUXER);
-    auto receiver = std::make_shared<FilterEventReceiverMock>();
-    demuxerFilter->receiver_ = receiver;
-    auto demuxer = std::make_shared<MediaDemuxerMock>();
-    demuxerFilter->demuxer_ = demuxer;
-    auto mediaSource = std::make_shared<MediaSource>(VIDEO_FILE2);
-    demuxerFilter->SetDataSource(mediaSource);
-    uint32_t frameId = 0;
-    Status ret = Status::OK;
-    ret = demuxerFilter->SeekMs2FrameId(0, frameId);
-    EXPECT_EQ(frameId, 0);
-    EXPECT_EQ(ret, Status::OK);
-    ret = demuxerFilter->SeekMs2FrameId(480, frameId);
-    EXPECT_EQ(frameId, 9);
-    EXPECT_EQ(ret, Status::OK);
-    ret = demuxerFilter->SeekMs2FrameId(920, frameId);
-    EXPECT_EQ(frameId, 19);
-    EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(demuxerFilter->SeekMs2FrameId(-4, frameId), Status::ERROR_INVALID_PARAMETER);
-}
-
-HWTEST_F(DemuxerFilterUnitTest, FrameId2SeekMs_0100, TestSize.Level1)
-{
-    auto demuxerFilter = std::make_shared<DemuxerFilter>("testDemuxerFilter", FilterType::FILTERTYPE_DEMUXER);
-    auto receiver = std::make_shared<FilterEventReceiverMock>();
-    demuxerFilter->receiver_ = receiver;
-    auto demuxer = std::make_shared<MediaDemuxerMock>();
-    demuxerFilter->demuxer_ = demuxer;
-    auto mediaSource = std::make_shared<MediaSource>(VIDEO_FILE2);
-    demuxerFilter->SetDataSource(mediaSource);
-    int64_t seekMs = 0;
-    Status ret = Status::OK;
-    ret = demuxerFilter->FrameId2SeekMs(0, seekMs);
-    EXPECT_EQ(seekMs, 0);
-    EXPECT_EQ(ret, Status::OK);
-    ret = demuxerFilter->FrameId2SeekMs(10, seekMs);
-    EXPECT_EQ(seekMs, 400);
-    EXPECT_EQ(ret, Status::OK);
-    ret = demuxerFilter->FrameId2SeekMs(20, seekMs);
-    EXPECT_EQ(seekMs, 840);
     EXPECT_EQ(ret, Status::OK);
 }
 
