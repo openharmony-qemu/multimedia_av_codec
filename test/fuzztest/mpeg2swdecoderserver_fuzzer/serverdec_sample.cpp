@@ -88,8 +88,14 @@ void VDecServerSample::RunVideoServerDecoder()
         cout << "Create failed" << endl;
         return;
     }
-    Media::Meta meta{};
-    int32_t err = codec_->Init(meta);
+    Media::Meta codecInfo;
+    int32_t instanceid = 0;
+    codecInfo.SetData("av_codec_event_info_instance_id", instanceid);
+    int32_t err = codec_->Init(codecInfo);
+    if (err != AVCS_ERR_OK) {
+        cout << "decoder Init failed!" << endl;
+        return;
+    }    
     err = ConfigServerDecoder();
     if (err != AVCS_ERR_OK) {
         cout << "ConfigServerDecoder failed" << endl;
