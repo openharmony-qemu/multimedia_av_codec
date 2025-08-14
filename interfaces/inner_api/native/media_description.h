@@ -308,7 +308,7 @@ public:
     /**
      * key for AIGC info, the value type is string
      */
-    static constexpr std::string_view MD_KEY_AIGC = "AIGC";
+    static constexpr std::string_view MD_KEY_AIGC = "aigc";
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;
