@@ -1705,11 +1705,11 @@ void CodecServer::PostProcessingTask()
     std::shared_ptr<DecodedBufferInfo> info{nullptr};
     auto ret = decodedBufferInfoQueue_->PopWait(info);
     CHECK_AND_RETURN_LOG_WITH_TAG(ret == QueueResult::OK, "Get data failed, %{public}s",
-                                    QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
+                                  QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
     CHECK_AND_RETURN_LOG_WITH_TAG(info && info->buffer, "Invalid data");
     ret = postProcessingInputBufferInfoQueue_->PushWait(info);
     CHECK_AND_RETURN_LOG_WITH_TAG(ret == QueueResult::OK, "Push data failed, %{public}s",
-                                    QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
+                                  QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
     if (info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
         AVCODEC_LOGI_WITH_TAG("Catch EOS frame, notify post processing eos");
         postProcessing_->NotifyEos();
