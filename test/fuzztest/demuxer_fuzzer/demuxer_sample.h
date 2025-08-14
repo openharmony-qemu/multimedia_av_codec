@@ -54,6 +54,7 @@ private:
     bool gReadEnd = false;
     int fd;
     OH_AVFormat *sourceFormat;
+    OH_AVFormat *userFormat;
     OH_AVFormat *format;
     OH_AVFormat *audioFormat;
     OH_AVFormat *videoFormat;
