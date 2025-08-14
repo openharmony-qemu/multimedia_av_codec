@@ -327,9 +327,17 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_002, TestSize.Level1)
 {
-    HlsMediaDownloader *downloader = new HlsMediaDownloader(10, false, header_, nullptr);
-    EXPECT_EQ(downloader->expectDuration_, static_cast<uint64_t>(10));
-    delete downloader;
+    bool userDefinedDuration = true;
+    const int expectBufDuration = 10; // 10s
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(expectBufDuration,
+        userDefinedDuration, header_, nullptr);
+    EXPECT_EQ(downloader->expectDuration_, static_cast<uint64_t>(userDefinedDuration));
+    downloader = nullptr;
+
+    userDefinedDuration = false;
+    downloader = std::make_shared<HlsMediaDownloader>(expectBufDuration,
+        userDefinedDuration, header_, nullptr);
+    EXPECT_EQ(downloader->expectDuration_, 0);
     downloader = nullptr;
 }
 
