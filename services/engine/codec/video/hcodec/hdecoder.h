@@ -156,7 +156,7 @@ private:
     private:
         std::optional<GraphicTransformType> originalTransform_;
         std::string compUniqueStr_;
-        int32_t instanceId_ = -1; 
+        int32_t instanceId_;
     } currSurface_;
 
     std::list<SurfaceBufferItem> freeList_;

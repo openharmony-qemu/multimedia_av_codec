@@ -1187,7 +1187,8 @@ void HDecoder::OnEnterUninitializedState()
 }
 
 HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface, std::string codecId, int32_t instanceId)
-    : surface_(surface), originalTransform_(surface->GetTransform()), compUniqueStr_(codecId), instanceId_(instanceId) {}
+    : surface_(surface), originalTransform_(surface->GetTransform()), compUniqueStr_(codecId),
+      instanceId_(instanceId) {}
 
 void HDecoder::SurfaceItem::Release(bool cleanAll)
 {
