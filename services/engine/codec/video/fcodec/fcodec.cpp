@@ -450,7 +450,6 @@ void FCodec::ResetBuffers()
     std::unique_lock<std::mutex> iLock(inputMutex_);
     synIndex_ = std::nullopt;
     iLock.unlock();
-    codecAvailQue_->Clear();
     if (sInfo_.surface == nullptr) {
         codecAvailQue_->Clear();
     }
