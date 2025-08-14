@@ -187,6 +187,12 @@ GSError DynamicController::OnProducerBufferReleased([[maybe_unused]] sptr<Surfac
     return static_cast<GSError>(ret);
 }
 
+int32_t DynamicController::NotifyEosImpl()
+{
+    auto ret = interface_.Invoke<DynamicInterfaceName::NOTIFY_EOS>(instance_);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Notify EOS for video processing failed.");
+    return AVCS_ERR_OK;
+}
 } // namespace PostProcessing
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -48,6 +48,7 @@ public:
     int32_t ResetImpl();
     int32_t ReleaseImpl();
     int32_t ReleaseOutputBufferImpl(uint32_t index, bool render);
+    int32_t NotifyEosImpl();
 
 private:
     GSError OnProducerBufferReleased(sptr<SurfaceBuffer> &buffer);

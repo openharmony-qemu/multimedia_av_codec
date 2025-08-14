@@ -125,6 +125,11 @@ public:
     {
         return This()->ReleaseOutputBufferImpl(index, render);
     }
+
+    int32_t NotifyEos()
+    {
+        return This()->NotifyEosImpl();
+    }
 private:
     T* This()
     {
