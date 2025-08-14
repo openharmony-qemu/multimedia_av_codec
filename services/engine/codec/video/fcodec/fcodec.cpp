@@ -505,7 +505,7 @@ int32_t FCodec::Flush()
     CHECK_AND_RETURN_RET_LOG((state_ == State::RUNNING || state_ == State::EOS), AVCS_ERR_INVALID_STATE,
                              "%{public}s Flush codec failed: not in running or Eos state", decName_.c_str());
     state_ = State::FLUSHING;
-    AVCODEC_LOGI("%{public}s step into FLUSHING status");
+    AVCODEC_LOGI("%{public}s step into FLUSHING status", decName_.c_str());
     std::unique_lock<std::mutex> sLock(sendMutex_);
     sendCv_.notify_one();
     sLock.unlock();
