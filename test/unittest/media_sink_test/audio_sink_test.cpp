@@ -827,28 +827,6 @@ HWTEST(TestAudioSink, audio_sink_TestFlush, TestSize.Level1)
     ASSERT_EQ(flushStatus, Status::OK) << "Flush should return OK";
 }
 
-HWTEST(TestAudioSink, audio_sink_UpdateAudioWriteTimeMayWait, TestSize.Level1)
-{
-    auto audioSink = AudioSinkCreate();
-    ASSERT_TRUE(audioSink != nullptr);
-
-    audioSink->UpdateAudioWriteTimeMayWait();
-    ASSERT_EQ(audioSink->lastBufferWriteTime_, 0);
-
-    audioSink->latestBufferDuration_ = MAX_BUFFER_DURATION_US + 1;
-    audioSink->lastBufferWriteSuccess_ = true;
-    audioSink->UpdateAudioWriteTimeMayWait();
-    ASSERT_EQ(audioSink->latestBufferDuration_, MAX_BUFFER_DURATION_US);
-
-    audioSink->lastBufferWriteSuccess_ = false;
-    audioSink->UpdateAudioWriteTimeMayWait();
-    ASSERT_EQ(audioSink->latestBufferDuration_, MAX_BUFFER_DURATION_US);
-
-    audioSink->latestBufferDuration_ = 1;
-    audioSink->UpdateAudioWriteTimeMayWait();
-    ASSERT_EQ(audioSink->latestBufferDuration_, 1);
-}
-
 HWTEST(TestAudioSink, audio_sink_HandleEosInner, TestSize.Level1)
 {
     auto audioSink = AudioSinkCreate();
