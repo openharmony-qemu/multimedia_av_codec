@@ -110,17 +110,17 @@ ohos_unittest("instance_memory_update_event_coverage_unit_test") {
 
   include_dirs = [
     "./",
-    "$av_codec_root_dir/frameworks/native/capi/common",
-    "$av_codec_root_dir/interfaces/kits/c",
-    "$av_codec_root_dir/services/include",
-    "$av_codec_root_dir/services/services/common/event_manager/event_handler/instance_memory_update_event_handler",
-    "$av_codec_root_dir/services/services/sa_avcodec/server/include",
-    "$av_codec_root_dir/services/dfx/include",
-    "$av_codec_root_dir/services/services/sa_avcodec",
-    "$av_codec_root_dir/services/services/sa_avcodec/ipc",
-    "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler/",
     "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/include",
+    "$av_codec_root_dir/frameworks/native/capi/common",
+    "$av_codec_root_dir/interfaces/kits/c",
+    "$av_codec_root_dir/services/dfx/include",
+    "$av_codec_root_dir/services/include",
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler/",
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler/instance_memory_update_event_handler",
+    "$av_codec_root_dir/services/services/sa_avcodec",
+    "$av_codec_root_dir/services/services/sa_avcodec/ipc",
+    "$av_codec_root_dir/services/services/sa_avcodec/server/include",
   ]
   defines = av_codec_defines
 
