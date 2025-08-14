@@ -31,7 +31,7 @@
 #include "osal/filesystem/file_system.h"
 #include "file_fd_source_plugin.h"
 #include "common/media_core.h"
-#include<algorithm>
+#include <algorithm>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "FileFdSourcePlugin" };
