@@ -213,6 +213,7 @@ bool FFmpegDemuxerPlugin::ShouldWaitForRead(uint32_t trackId)
 Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t timeout)
 {
     if (ShouldWaitForRead(trackId)) {
+        isWaitingForReadThread_.store(true);
         if (threadState_ == READING) {
             std::lock_guard<std::mutex> readLock(readPacketMutex_);
             ioContext_.readCbReady = true;
@@ -225,7 +226,6 @@ Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t t
         }
         {
             std::unique_lock<std::mutex> readLock(readSampleMutex_);
-            isWaitingForReadThread_.store(true);
             if (!readCacheCv_.wait_for(readLock, std::chrono::milliseconds(timeout),
                 [this, trackId] { return !ShouldWaitForRead(trackId);})) {
                 isWaitingForReadThread_.store(false);
