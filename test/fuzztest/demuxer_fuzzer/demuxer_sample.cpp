@@ -42,7 +42,7 @@ typedef struct DRM_MediaKeySystemInfo {
     DRM_PsshInfo psshInfo[MAX_PSSH_INFO_COUNT];
 } DRM_MediaKeySystemInfo;
 
-static const std::string g_userMetaKey = "com.openharmony.test";
+static const std::string USER_META_KEY_TEST = "com.openharmony.test";
 
 DemuxerSample::~DemuxerSample()
 {
