@@ -89,7 +89,7 @@ void VDecServerSample::RunVideoServerDecoder()
         return;
     }
     Media::Meta meta{};
-    int32_t err = codec_->Init(meta);    
+    int32_t err = codec_->Init(meta);
     err = ConfigServerDecoder();
     if (err != AVCS_ERR_OK) {
         cout << "ConfigServerDecoder failed" << endl;
