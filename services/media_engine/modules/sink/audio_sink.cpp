@@ -41,7 +41,6 @@ constexpr int64_t OVERTIME_WARNING_MS = 50;
 constexpr int64_t FORMAT_CHANGE_MS = 100;
 constexpr int64_t BUFFER_CONSUME_MS = 50;
 constexpr int64_t FIX_DELAY_MS_AUDIO_VIVID = 80;
-constexpr int64_t ANCHOR_UPDATE_PERIOD_US_FIRST_STAGE = 20000;
 }
 
 namespace OHOS {
@@ -901,11 +900,6 @@ int64_t AudioSink::AudioDataSynchroizer::GetBufferDuration() const
     return bufferDuration_;
 }
 
-int64_t AudioSink::AudioDataSynchroizer::GetCurrentRenderPts() const
-{
-    return currentRenderPTS_;
-}
-
 void AudioSink::AudioDataSynchroizer::UpdateReportTime(int64_t nowClockTime)
 {
     lastReportedClockTime_ = nowClockTime;
@@ -933,12 +927,9 @@ bool AudioSink::IsTimeAnchorNeedUpdate()
     int64_t nowCt = syncCenter->GetClockTimeNow();
     bool needUpdate = forceUpdateTimeAnchorNextTime_ ||
         (lastAnchorClockTime == HST_TIME_NONE) ||
-        (nowCt - lastAnchorClockTime >= ANCHOR_UPDATE_PERIOD_US) ||
-        (innerSynchroizer_->GetCurrentRenderPts() == 0 &&
-        (nowCt - lastAnchorClockTime >= ANCHOR_UPDATE_PERIOD_US_FIRST_STAGE));
+        (nowCt - lastAnchorClockTime >= ANCHOR_UPDATE_PERIOD_US);
     FALSE_RETURN_V_MSG_D(needUpdate, false, "No need to update time anchor this time.");
     UpdateRenderInfo();
-    syncCenter->SetAudioRenderPts(innerSynchroizer_->GetCurrentRenderPts());
     int64_t latency = innerSynchroizer_->CalculateAudioLatency();
     MEDIA_LOG_DD("Calculate latency = " PUBLIC_LOG_U64, latency);
     int64_t lastBufferPTS = innerSynchroizer_->GetLastBufferPTS();

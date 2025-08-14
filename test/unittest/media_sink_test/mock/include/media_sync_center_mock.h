@@ -43,7 +43,6 @@ public:
     void SetMediaStartPts(int64_t startPts) override;
     int64_t GetMediaStartPts() override;
     void SetLastVideoBufferPts(int64_t bufferPts) override;
-    void SetAudioRenderPts(int64_t audioRenderPts) override;
 public:
     bool returnBool_{false};
     std::queue<int64_t> returnInt64Queue_{};
