@@ -72,6 +72,7 @@ av_codec_inner_external_deps = [
   "c_utils:utils",
   "config_policy:configpolicy_util",
   "eventhandler:libeventhandler",
+  "googletest:gmock_main",
   "graphic_2d:libgraphic_utils",
   "graphic_2d:librender_service_base",
   "graphic_2d:librender_service_client",
@@ -108,17 +109,31 @@ ohos_unittest("instance_memory_update_event_coverage_unit_test") {
   ]
 
   include_dirs = [
+    "./",
+    "$av_codec_root_dir/frameworks/native/capi/common",
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/include",
-    "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/services/services/common/event_manager/event_handler/instance_memory_update_event_handler",
     "$av_codec_root_dir/services/services/sa_avcodec/server/include",
-    "$av_codec_root_dir/frameworks/native/capi/common",
+    "$av_codec_root_dir/services/dfx/include",
+    "$av_codec_root_dir/services/services/sa_avcodec",
+    "$av_codec_root_dir/services/services/sa_avcodec/ipc",
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler/",
+    "$av_codec_root_dir/test/unittest/common",
+    "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/include",
   ]
   defines = av_codec_defines
 
   sources = [
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler"+
+    "/background_event_handler/background_event_handler.cpp",
     "$av_codec_root_dir/services/services/common/event_manager/event_handler/instance_memory_update_event_handler/instance_memory_update_event_handler.cpp",
+    "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/avcodec_service_stub_mock.cpp",
+    "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/codec_service_stub_mock.cpp",
+    "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/codeclist_service_stub_mock.cpp",
+    "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/mem_mgr_client_mock.cpp",
+    "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/system_ability_mock.cpp",
+    "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
     "./instance_memory_update_event_coverage_unit_test.cpp",
   ]

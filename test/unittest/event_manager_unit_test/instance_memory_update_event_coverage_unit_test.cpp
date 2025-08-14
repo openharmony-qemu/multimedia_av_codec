@@ -20,26 +20,44 @@
 #include <string>
 #include <vector>
 #include "avcodec_errors.h"
+#include "avcodec_server.h"
+#include "avcodec_server_manager.h"
+#include "codec_service_stub.h"
+#include "codeclist_service_stub.h"
 #include "instance_memory_update_event_handler.h"
+#include "iservice_registry.h"
+#include "mem_mgr_client.h"
+#include "system_ability.h"
+#include "system_ability_definition.h"
+
 #define TEST_SUIT InstanceMemoryCoverageUintTest
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
+using namespace OHOS::Memory;
 using namespace testing;
 using namespace testing::ext;
 
 namespace OHOS {
 namespace MediaAVCodec {
 constexpr int32_t MEMORY_LEAK_UPLOAD_TIMEOUT = 180; // seconds
+constexpr uint32_t DEFAULT_MEMORY = 100*1024;
 class TEST_SUIT : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
     void SetUp(void);
     void TearDown(void);
+    std::shared_ptr<AVCodecServer> CreateAVCodecServer();
+    sptr<IRemoteObject> CreateCodecServiceStub(std::shared_ptr<AVCodecServer> &server);
 
+    std::shared_ptr<SystemAbilityMock> saMock_ = nullptr;
+    std::shared_ptr<AVCodecServiceStubMock> avcodecStubMock_ = nullptr;
+    std::shared_ptr<CodecServiceStubMock> codecStubMock_ = nullptr;
     std::shared_ptr<InstanceMemoryUpdateEventHandler> instanceMemoryHandler_ = nullptr;
+private:
+    std::vector<std::pair<AVCodecServerManager::StubType, sptr<IRemoteObject>>> stubList_;
 };
 
 void TEST_SUIT::SetUpTestCase(void) {}
@@ -48,12 +66,57 @@ void TEST_SUIT::TearDownTestCase(void) {}
 
 void TEST_SUIT::SetUp(void)
 {
+    saMock_ = std::make_shared<SystemAbilityMock>();
+    SystemAbility::RegisterMock(saMock_);
+    avcodecStubMock_ = std::make_shared<AVCodecServiceStubMock>();
+    AVCodecServiceStub::RegisterMock(avcodecStubMock_);
+    codecStubMock_ = std::make_shared<CodecServiceStubMock>();
+    CodecServiceStub::RegisterMock(codecStubMock_);
     instanceMemoryHandler_ = std::make_shared<InstanceMemoryUpdateEventHandler>();
 }
 
 void TEST_SUIT::TearDown(void)
 {
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    for (auto &val : stubList_) {
+        manager.DestroyStubObject(val.first, val.second);
+    }
+    stubList_.clear();
+    saMock_ = nullptr;
+    avcodecStubMock_ = nullptr;
+    codecStubMock_ = nullptr;
     instanceMemoryHandler_ = nullptr;
+}
+
+std::shared_ptr<AVCodecServer> TEST_SUIT::CreateAVCodecServer()
+{
+    std::shared_ptr<AVCodecServer> server = nullptr;
+    EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
+    EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
+    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
+    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
+
+    server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
+    EXPECT_NE(server, nullptr);
+    return server;
+}
+
+sptr<IRemoteObject> TEST_SUIT::CreateCodecServiceStub(std::shared_ptr<AVCodecServer> &server)
+{
+    EXPECT_NE(server, nullptr);
+    if (server == nullptr) {
+        return nullptr;
+    }
+    sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
+    sptr<IRemoteObject> codecStub = nullptr;
+    EXPECT_CALL(*avcodecStubMock_, SetDeathListener(listener)).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecStubMock_, Create()).Times(AtLeast(1)).WillOnce(Return(new CodecServiceStub()));
+    EXPECT_CALL(*codecStubMock_, CodecServiceStubDtor()).Times(AtLeast(1));
+    int32_t ret = server->GetSubSystemAbility(IStandardAVCodecService::AVCODEC_CODEC, listener, codecStub);
+    EXPECT_NE(codecStub, nullptr);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    stubList_.emplace_back(AVCodecServerManager::StubType::CODEC, codecStub);
+    return codecStub;
 }
 
 /**
@@ -62,9 +125,12 @@ void TEST_SUIT::TearDown(void)
  */
 HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_001, TestSize.Level1)
 {
+    auto server = CreateAVCodecServer();
+    (void)CreateCodecServiceStub(server);
     pid_t pid = getpid();
     instanceMemoryHandler_->appMemoryThreshold_ = 0;
     instanceMemoryHandler_->timerMap_.clear();
+    instanceMemoryHandler_->UpdateInstanceMemory(0, DEFAULT_MEMORY);
     instanceMemoryHandler_->appMemoryExceedThresholdList_.clear();
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
 }
@@ -88,11 +154,14 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_002, TestSize
  */
 HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_003, TestSize.Level1)
 {
+    auto server = CreateAVCodecServer();
+    (void)CreateCodecServiceStub(server);
     pid_t pid = getpid();
     auto timeName = std::string("Pid_") + std::to_string(pid) + " memory exceeded threshold";
     instanceMemoryHandler_->timerMap_.emplace(
         pid, std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT, nullptr));
     instanceMemoryHandler_->appMemoryThreshold_ = 0;
+    instanceMemoryHandler_->UpdateInstanceMemory(0, DEFAULT_MEMORY);
     instanceMemoryHandler_->appMemoryExceedThresholdList_.clear();
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
 }
@@ -118,9 +187,12 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_004, TestSize
  */
 HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_005, TestSize.Level1)
 {
+    auto server = CreateAVCodecServer();
+    (void)CreateCodecServiceStub(server);
     pid_t pid = getpid();
     instanceMemoryHandler_->appMemoryThreshold_ = 0;
     instanceMemoryHandler_->timerMap_.clear();
+    instanceMemoryHandler_->UpdateInstanceMemory(0, DEFAULT_MEMORY);
     instanceMemoryHandler_->appMemoryExceedThresholdList_.emplace(pid);
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
 }
@@ -144,11 +216,14 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_006, TestSize
  */
 HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_007, TestSize.Level1)
 {
+    auto server = CreateAVCodecServer();
+    (void)CreateCodecServiceStub(server);
     pid_t pid = getpid();
     auto timeName = std::string("Pid_") + std::to_string(pid) + " memory exceeded threshold";
     instanceMemoryHandler_->timerMap_.emplace(
         pid, std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT, nullptr));
     instanceMemoryHandler_->appMemoryThreshold_ = 0;
+    instanceMemoryHandler_->UpdateInstanceMemory(0, DEFAULT_MEMORY);
     instanceMemoryHandler_->appMemoryExceedThresholdList_.emplace(pid);
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
 }
