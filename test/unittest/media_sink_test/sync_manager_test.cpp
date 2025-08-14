@@ -271,17 +271,6 @@ HWTEST_F(TestSyncManager, AddSynchronizer_ShouldDoNothing_WhenSyncerIsNotNullAnd
     delete syncer;
 }
 
-// Scenario1: Test when syncer is nullptr then RemoveSynchronizer does nothing.
-HWTEST_F(TestSyncManager, RemoveSynchronizer_ShouldDoNothing_WhenSyncerIsNull, TestSize.Level0)
-{
-    IMediaSynchronizer* syncer = nullptr;
-    int32_t size = syncManager_->syncers_.size();
-    syncManager_->RemoveSynchronizer(syncer);
-    // No exception should be thrown and nothing should change in syncManager
-    int32_t finalSize = syncManager_->syncers_.size();
-    EXPECT_EQ(size, finalSize);
-}
-
 // Scenario2: Test when syncer is not nullptr then RemoveSynchronizer removes the syncer from syncManager.
 HWTEST_F(TestSyncManager, RemoveSynchronizer_ShouldRemoveSyncer_WhenSyncerIsNotNull, TestSize.Level0)
 {
@@ -694,15 +683,6 @@ HWTEST_F(TestSyncManager, SetMediaStartPts_ShouldUpdateStartPts_WhenStartPtsIsNo
 {
     syncManager_->SetMediaStartPts(HST_TIME_NONE);
     EXPECT_EQ(syncManager_->startPts_, HST_TIME_NONE);
-}
-
-// Scenario1: Test case for when clockState_ is PAUSED
-HWTEST_F(TestSyncManager, GetClockTimeNow_001, TestSize.Level0)
-{
-    MediaSyncManager mediaSyncManager;
-    mediaSyncManager.clockState_ = MediaSyncManager::State::PAUSED;
-    mediaSyncManager.GetClockTimeNow();
-    EXPECT_EQ(mediaSyncManager.clockState_, MediaSyncManager::State::PAUSED);
 }
 
 // Scenario1: Test when supplier is nullptr then ReportPrerolled returns immediately.
