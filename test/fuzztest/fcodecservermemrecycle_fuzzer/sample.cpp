@@ -143,7 +143,9 @@ void VDecServerSample::PrepareDecoder()
         cout << "Create failed" << endl;
         return;
     }
-    int32_t err = ConfigServerDecoder();
+    Media::Meta meta{};
+    int32_t err = codec_->Init(meta);
+    err = ConfigServerDecoder();
     if (err != AVCS_ERR_OK) {
         cout << "ConfigServerDecoder failed" << endl;
         return;
