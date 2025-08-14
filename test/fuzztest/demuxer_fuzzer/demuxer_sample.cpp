@@ -183,7 +183,7 @@ void DemuxerSample::GetAndSetFormat(const char *setLanguage, Params params)
     }
     uint8_t *metaBuffer = nullptr;
     size_t bufferLen = 0;
-    OH_AVFormat_GetBuffer(userFormat, g_userMetaKey.c_str(), &metaBuffer, &bufferLen);
+    OH_AVFormat_GetBuffer(userFormat, USER_META_KEY_TEST.c_str(), &metaBuffer, &bufferLen);
 }
 
 void DemuxerSample::RunNormalDemuxer(uint32_t createSize, const char *uri, const char *setLanguage, Params params)
