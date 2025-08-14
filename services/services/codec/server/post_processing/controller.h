@@ -71,16 +71,6 @@ public:
         return This()->CreateInputSurfaceImpl(surface);
     }
 
-    int32_t SetParameter(Media::Format& parameter)
-    {
-        return This()->SetParameterImpl(parameter);
-    }
-
-    int32_t GetParameter(Media::Format& parameter)
-    {
-        return This()->GetParameterImpl(parameter);
-    }
-
     int32_t Configure(Media::Format& config)
     {
         return This()->ConfigureImpl(config);

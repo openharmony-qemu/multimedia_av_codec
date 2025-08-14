@@ -98,22 +98,6 @@ int32_t DynamicController::CreateInputSurfaceImpl(sptr<Surface>& surface)
     return AVCS_ERR_OK;
 }
 
-int32_t DynamicController::SetParameterImpl(Media::Format& parameter)
-{
-    void* parameterPtr = static_cast<void*>(&parameter);
-    auto ret = interface_.Invoke<DynamicInterfaceName::CREATE_INPUT_SURFACE>(instance_, parameterPtr);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Set parameter for VPE failed.");
-    return AVCS_ERR_OK;
-}
-
-int32_t DynamicController::GetParameterImpl(Media::Format& parameter)
-{
-    void* parameterPtr = static_cast<void*>(&parameter);
-    auto ret = interface_.Invoke<DynamicInterfaceName::CREATE_INPUT_SURFACE>(instance_, parameterPtr);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Get parameter for VPE failed.");
-    return AVCS_ERR_OK;
-}
-
 int32_t DynamicController::ConfigureImpl(Media::Format& config)
 {
     void* configPtr = static_cast<void*>(&config);
