@@ -375,7 +375,7 @@ HWTEST_F(DemuxerFilterUnitTest, UpdateTrackIdMap, TestSize.Level1)
 
 /**
  * @tc.name: FindTrackId
- * @tc.desc: FindTrackIdseek
+ * @tc.desc: FindTrackId
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerFilterUnitTest, FindTrackId, TestSize.Level1)
