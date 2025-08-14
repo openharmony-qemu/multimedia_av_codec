@@ -419,6 +419,14 @@ void FCodec::InitBuffers()
         }
         return;
     }
+    // for surface mode on FlUSHED
+    std::lock_guard<std::mutex> sLock(surfaceMutex_);
+    for (uint32_t i = 0u; i < buffers_[INDEX_OUTPUT].size(); i++) {
+        if (buffers_[INDEX_OUTPUT][i]->owner_ == Owner::OWNED_BY_USER) {
+            buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
+            codecAvailQue_->Push(i);
+        }
+    }
 }
 
 void FCodec::ResetData()
@@ -443,14 +451,7 @@ void FCodec::ResetBuffers()
     synIndex_ = std::nullopt;
     iLock.unlock();
     codecAvailQue_->Clear();
-    if (sInfo_.surface != nullptr) {
-        for (uint32_t i = 0u; i < buffers_[INDEX_OUTPUT].size(); i++) {
-            if (buffers_[INDEX_OUTPUT][i]->owner_ == Owner::OWNED_BY_USER) {
-                buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
-                codecAvailQue_->Push(i);
-            }
-        }
-    } else {
+    if (sInfo_.surface == nullptr) {
         codecAvailQue_->Clear();
     }
     ResetData();
