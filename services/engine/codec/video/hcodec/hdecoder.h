@@ -150,12 +150,13 @@ private:
 
     struct SurfaceItem {
         SurfaceItem() = default;
-        explicit SurfaceItem(const sptr<Surface> &surface, std::string codecId);
+        explicit SurfaceItem(const sptr<Surface> &surface, std::string codecId, int32_t instanceId);
         void Release(bool cleanAll = false);
         sptr<Surface> surface_;
     private:
         std::optional<GraphicTransformType> originalTransform_;
         std::string compUniqueStr_;
+        int32_t instanceId_ = -1; 
     } currSurface_;
 
     std::list<SurfaceBufferItem> freeList_;

@@ -304,7 +304,7 @@ int32_t HDecoder::OnSetOutputSurfaceWhenCfg(const sptr<Surface> &surface)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
-    currSurface_ = SurfaceItem(surface, compUniqueStr_);
+    currSurface_ = SurfaceItem(surface, compUniqueStr_, instanceId_);
     HLOGI("set surface(%" PRIu64 ")(%s) succ", surface->GetUniqueId(), surface->GetName().c_str());
     return AVCS_ERR_OK;
 }
@@ -1186,8 +1186,8 @@ void HDecoder::OnEnterUninitializedState()
     cfgedConsumerUsage = 0;
 }
 
-HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface, std::string codecId)
-    : surface_(surface), originalTransform_(surface->GetTransform()), compUniqueStr_(codecId) {}
+HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface, std::string codecId, int32_t instanceId)
+    : surface_(surface), originalTransform_(surface->GetTransform()), compUniqueStr_(codecId), instanceId_(instanceId) {}
 
 void HDecoder::SurfaceItem::Release(bool cleanAll)
 {
@@ -1308,7 +1308,7 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     ClassifyOutputBufferOwners(ownedByUs, ownedBySurfaceFlushTime2BufferIndex);
 
     SurfaceItem oldSurface = currSurface_;
-    currSurface_ = SurfaceItem(newSurface, compUniqueStr_);
+    currSurface_ = SurfaceItem(newSurface, compUniqueStr_, instanceId_);
     CombineConsumerUsage();
     // if owned by old surface, we need to transfer them to new surface
     for (auto [flushTime, i] : ownedBySurfaceFlushTime2BufferIndex) {
