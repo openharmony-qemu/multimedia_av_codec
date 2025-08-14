@@ -398,6 +398,45 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HDR_Function_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: VideoDecoder_HDR_METADATA_Function_001
+ * @tc.desc: video decodec hdr metadata function test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_HDR_METADATA_Function_001, TestSize.Level1)
+{
+    capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), false,
+                                                                AVCodecCategory::AVCODEC_HARDWARE);
+    std::string codecName = capability_->GetName();
+    if (codecName != "OMX.rk.video_decoder.hevc") {
+        std::cout << "CodecName: " << codecName << "\n";
+        ASSERT_TRUE(CreateVideoCodecByName(codecName));
+
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+
+        VCodecTestCode param = VCodecTestCode::HW_HDR;
+        std::string sourcePath = decSourcePathMap_.at(param);
+        videoDec_->SetSourceType(false);
+        videoDec_->testParam_ = param;
+        std::cout << "SourcePath: " << sourcePath << std::endl;
+        videoDec_->SetSource(sourcePath);
+        const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+        string prefix = "/data/test/media/";
+        string fileName = testInfo_->name();
+        auto check = [](char it) { return it == '/'; };
+        (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
+        videoDec_->SetOutPath(prefix + fileName);
+
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+        sleep(1);
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+        EXPECT_EQ(0, vdecSignal_->errorNum);
+    }
+}
+
+/**
  * @tc.name: VideoDecoder_SetDecryptionConfig_001
  * @tc.desc: video decodec set decryption config function test
  * @tc.type: FUNC

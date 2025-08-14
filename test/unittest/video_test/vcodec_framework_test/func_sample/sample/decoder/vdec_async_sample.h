@@ -103,6 +103,8 @@ private:
     std::shared_ptr<AvccReader> avccReader_ = nullptr;
     std::shared_ptr<MpegReader> mpegReader_ = nullptr;
     std::shared_ptr<H263Reader> h263Reader_ = nullptr;
+    std::shared_ptr<std::ifstream> dynamicMetadataFile_ = nullptr;
+    std::shared_ptr<std::ifstream> staticMetadataFile_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

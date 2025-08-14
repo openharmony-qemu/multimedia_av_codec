@@ -18,7 +18,7 @@
 
 #include "avbuffer_mock.h"
 #include "buffer/avbuffer.h"
-
+#include "common_mock.h"
 namespace OHOS {
 namespace MediaAVCodec {
 class AVBufferInnerMock : public AVBufferMock {
@@ -31,7 +31,7 @@ public:
     int32_t SetBufferAttr(const OH_AVCodecBufferAttr &attr) override;
     std::shared_ptr<FormatMock> GetParameter() override;
     int32_t SetParameter(const std::shared_ptr<FormatMock> &format) override;
-    sptr<SurfaceBuffer> GetNativeBuffer() override;
+    sptr<SurfaceBufferMock> GetNativeBuffer() override;
     int32_t Destroy() override;
     std::shared_ptr<AVBuffer> &GetAVBuffer();
 private:
