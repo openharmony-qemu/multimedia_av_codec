@@ -225,16 +225,16 @@ Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t t
         }
         {
             std::unique_lock<std::mutex> readLock(readSampleMutex_);
-            isWaitingForReadThread_.exchange(true);
+            isWaitingForReadThread_.store(true);
             if (!readCacheCv_.wait_for(readLock, std::chrono::milliseconds(timeout),
                 [this, trackId] { return !ShouldWaitForRead(trackId);})) {
-                isWaitingForReadThread_.exchange(false);
+                isWaitingForReadThread_.store(false);
                 FALSE_RETURN_V_MSG_E(readLoopStatus_ == Status::OK, readLoopStatus_, "read thread abnoraml end");
                 return Status::ERROR_WAIT_TIMEOUT;
             }
         }
     }
-    isWaitingForReadThread_.exchange(false);
+    isWaitingForReadThread_.store(false);
     return Status::OK;
 }
 
