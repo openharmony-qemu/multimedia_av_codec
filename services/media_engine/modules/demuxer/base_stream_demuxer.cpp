@@ -43,18 +43,18 @@ namespace Media {
 
 BaseStreamDemuxer::BaseStreamDemuxer()
 {
-    MEDIA_LOG_D_SHORT("BaseStreamDemuxer called");
+    MEDIA_LOG_D("BaseStreamDemuxer called");
     seekable_ = Plugins::Seekable::UNSEEKABLE;
 }
 
 BaseStreamDemuxer::~BaseStreamDemuxer()
 {
-    MEDIA_LOG_D_SHORT("~BaseStreamDemuxer called");
+    MEDIA_LOG_D("~BaseStreamDemuxer called");
 }
 
 void BaseStreamDemuxer::SetSource(const std::shared_ptr<Source>& source)
 {
-    MEDIA_LOG_D_SHORT("BaseStreamDemuxer::SetSource");
+    MEDIA_LOG_D("BaseStreamDemuxer::SetSource");
     source_ = source;
     source_->GetSize(mediaDataSize_);
     seekable_ = source_->GetSeekable();
@@ -77,13 +77,13 @@ void BaseStreamDemuxer::SetSourceType(SourceType type)
 std::string BaseStreamDemuxer::SnifferMediaType(int32_t streamID)
 {
     MediaAVCodec::AVCodecTrace trace("BaseStreamDemuxer::SnifferMediaType");
-    MEDIA_LOG_I_SHORT("BaseStreamDemuxer::SnifferMediaType called");
+    MEDIA_LOG_D("BaseStreamDemuxer::SnifferMediaType called");
     typeFinder_ = std::make_shared<TypeFinder>();
     typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_, streamID);
     std::string type = typeFinder_->FindMediaType();
     std::unique_lock<std::mutex> lock(typeFinderMutex_);
     typeFinder_ = nullptr;
-    MEDIA_LOG_D_SHORT("SnifferMediaType result type: " PUBLIC_LOG_S, type.c_str());
+    MEDIA_LOG_D("SnifferMediaType result type: " PUBLIC_LOG_S, type.c_str());
     return type;
 }
 
@@ -150,7 +150,7 @@ Status BaseStreamDemuxer::SetNewVideoStreamID(int32_t streamID)
 
 Status BaseStreamDemuxer::SetNewAudioStreamID(int32_t streamID)
 {
-    MEDIA_LOG_I("SetNewAudioStreamID id: " PUBLIC_LOG_D32, streamID);
+    MEDIA_LOG_D_SHORT("SetNewAudioStreamID id: " PUBLIC_LOG_D32, streamID);
     SetChangeFlag(false);
     newAudioStreamID_.store(streamID);
     return Status::OK;

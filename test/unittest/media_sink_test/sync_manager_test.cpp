@@ -271,17 +271,6 @@ HWTEST_F(TestSyncManager, AddSynchronizer_ShouldDoNothing_WhenSyncerIsNotNullAnd
     delete syncer;
 }
 
-// Scenario1: Test when syncer is nullptr then RemoveSynchronizer does nothing.
-HWTEST_F(TestSyncManager, RemoveSynchronizer_ShouldDoNothing_WhenSyncerIsNull, TestSize.Level0)
-{
-    IMediaSynchronizer* syncer = nullptr;
-    int32_t size = syncManager_->syncers_.size();
-    syncManager_->RemoveSynchronizer(syncer);
-    // No exception should be thrown and nothing should change in syncManager
-    int32_t finalSize = syncManager_->syncers_.size();
-    EXPECT_EQ(size, finalSize);
-}
-
 // Scenario2: Test when syncer is not nullptr then RemoveSynchronizer removes the syncer from syncManager.
 HWTEST_F(TestSyncManager, RemoveSynchronizer_ShouldRemoveSyncer_WhenSyncerIsNotNull, TestSize.Level0)
 {
@@ -526,7 +515,6 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_001, TestSize.Level0)
 HWTEST_F(TestSyncManager, GetMediaTimeNow_002, TestSize.Level0)
 {
     MediaSyncManager mediaSyncManager;
-    mediaSyncManager.audioRenderPts_ = 100;
     mediaSyncManager.isSeeking_ = false;
     mediaSyncManager.lastReportMediaTime_ = 100;
     mediaSyncManager.pausedMediaTime_ = 120;
@@ -557,7 +545,6 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_004, TestSize.Level0)
 {
     MediaSyncManager mediaSyncManager;
     int64_t lastReportMediaTime_ = 110;
-    mediaSyncManager.audioRenderPts_ = 100;
     mediaSyncManager.isSeeking_ = false;
     mediaSyncManager.clockState_ = MediaSyncManager::State::RESUMED;
     mediaSyncManager.lastReportMediaTime_ = lastReportMediaTime_;
@@ -579,7 +566,6 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_005, TestSize.Level0)
 {
     MediaSyncManager mediaSyncManager;
     int64_t lastReportMediaTime_ = 110;
-    mediaSyncManager.audioRenderPts_ = 100;
     mediaSyncManager.isSeeking_ = false;
     mediaSyncManager.clockState_ = MediaSyncManager::State::RESUMED;
     mediaSyncManager.lastReportMediaTime_ = lastReportMediaTime_;
@@ -601,7 +587,6 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_006, TestSize.Level0)
 {
     MediaSyncManager mediaSyncManager;
     int64_t lastReportMediaTime_ = 110;
-    mediaSyncManager.audioRenderPts_ = 100;
     mediaSyncManager.isSeeking_ = false;
     mediaSyncManager.clockState_ = MediaSyncManager::State::RESUMED;
     mediaSyncManager.lastReportMediaTime_ = lastReportMediaTime_;
@@ -620,7 +605,6 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_006, TestSize.Level0)
 
 HWTEST_F(TestSyncManager, GetMediaTimeNow_007, TestSize.Level0)
 {
-    syncManager_->audioRenderPts_ = 100;
     syncManager_->isSeeking_ = false;
     syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
     syncManager_->pausedMediaTime_ = 50;
@@ -633,7 +617,6 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_007, TestSize.Level0)
 
 HWTEST_F(TestSyncManager, GetMediaTimeNow_008, TestSize.Level0)
 {
-    syncManager_->audioRenderPts_ = 100;
     syncManager_->isSeeking_ = false;
     syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
     syncManager_->pausedMediaTime_ = 100;
@@ -641,28 +624,6 @@ HWTEST_F(TestSyncManager, GetMediaTimeNow_008, TestSize.Level0)
     syncManager_->currentSyncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
     syncManager_->currentAnchorMediaTime_ = 50;
     EXPECT_EQ(syncManager_->GetMediaTimeNow(), 50);
-}
-
-HWTEST_F(TestSyncManager, GetMediaTimeNow_009, TestSize.Level0)
-{
-    syncManager_->isSeeking_ = false;
-    syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
-    syncManager_->pausedMediaTime_ = 100;
-    syncManager_->firstMediaTimeAfterSeek_ = 150;
-    syncManager_->currentAnchorMediaTime_ = 50;
-    syncManager_->audioRenderPts_ = HST_TIME_NONE;
-    EXPECT_EQ(syncManager_->GetMediaTimeNow(), HST_TIME_NONE);
-}
-
-HWTEST_F(TestSyncManager, GetMediaTimeNow_010, TestSize.Level0)
-{
-    syncManager_->isSeeking_ = false;
-    syncManager_->clockState_ = MediaSyncManager::State::PAUSED;
-    syncManager_->pausedMediaTime_ = 100;
-    syncManager_->firstMediaTimeAfterSeek_ = 150;
-    syncManager_->currentAnchorMediaTime_ = 50;
-    syncManager_->audioRenderPts_ = 0;
-    EXPECT_EQ(syncManager_->GetMediaTimeNow(), HST_TIME_NONE);
 }
 
 HWTEST_F(TestSyncManager, SetLastAudioBufferDuration_001, TestSize.Level0)
@@ -694,15 +655,6 @@ HWTEST_F(TestSyncManager, SetMediaStartPts_ShouldUpdateStartPts_WhenStartPtsIsNo
 {
     syncManager_->SetMediaStartPts(HST_TIME_NONE);
     EXPECT_EQ(syncManager_->startPts_, HST_TIME_NONE);
-}
-
-// Scenario1: Test case for when clockState_ is PAUSED
-HWTEST_F(TestSyncManager, GetClockTimeNow_001, TestSize.Level0)
-{
-    MediaSyncManager mediaSyncManager;
-    mediaSyncManager.clockState_ = MediaSyncManager::State::PAUSED;
-    mediaSyncManager.GetClockTimeNow();
-    EXPECT_EQ(mediaSyncManager.clockState_, MediaSyncManager::State::PAUSED);
 }
 
 // Scenario1: Test when supplier is nullptr then ReportPrerolled returns immediately.

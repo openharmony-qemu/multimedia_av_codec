@@ -197,7 +197,6 @@ Status MediaSyncManager::Reset()
     isFrameAfterSeeked_ = false;
     lastReportMediaTime_ = HST_TIME_NONE;
     firstMediaTimeAfterSeek_ = HST_TIME_NONE;
-    audioRenderPts_ = HST_TIME_NONE;
     return Status::OK;
 }
 
@@ -360,10 +359,6 @@ int64_t MediaSyncManager::GetMediaTimeNow()
     for (const auto &func : setMediaTimeFuncs) {
         FALSE_RETURN_V_NOLOG(func(this, currentMediaTime), currentMediaTime);
     }
-    if (audioRenderPts_ == HST_TIME_NONE || audioRenderPts_ == 0) {
-        MEDIA_LOG_I("do not report progress when audio render pts is null");
-        return HST_TIME_NONE;
-    }
     currentMediaTime = BoundMediaProgress(currentMediaTime);
     lastReportMediaTime_ = currentMediaTime;
     MEDIA_LOG_D_SHORT("GetMediaTimeNow currentMediaTime: %{public}" PRId64, currentMediaTime);
@@ -490,11 +485,6 @@ int64_t MediaSyncManager::GetLastVideoBufferAbsPts() const
 {
     MEDIA_LOG_D("GetLastVideoBufferAbsPts" PUBLIC_LOG_D64, lastVideoBufferAbsPts_);
     return lastVideoBufferAbsPts_;
-}
-
-void MediaSyncManager::SetAudioRenderPts(int64_t audioRenderPts)
-{
-    audioRenderPts_ = audioRenderPts;
 }
 } // namespace Pipeline
 } // namespace Media

@@ -55,7 +55,7 @@ constexpr size_t MIN_BUFFER_SIZE = 5 * 1024 * 1024;
 
 class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback {
 public:
-    explicit HlsMediaDownloader(int expectBufferDuration, bool useDefinedDuration,
+    explicit HlsMediaDownloader(int expectBufferDuration, bool userDefinedDuration,
         const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>(),
         std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     explicit HlsMediaDownloader(std::string mimeType,

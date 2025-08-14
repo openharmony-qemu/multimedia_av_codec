@@ -45,7 +45,8 @@ class AudioDecInnerAvBuffer {
 public:
     AudioDecInnerAvBuffer() = default;
     virtual ~AudioDecInnerAvBuffer() = default;
-    int32_t RunCase();
+    int32_t RunCase(
+        const std::string_view &codecName, const std::string_view &inputPath, const std::string_view &outputPath);
     void InputFunc();
     void OutputFunc();
     void SyncFunc();
@@ -85,6 +86,8 @@ private:
     bool enableAsyncChangePluginTest_ = false;
     bool isChangePluginThreadRunning_ = false;
     std::unique_ptr<std::thread> changePluginThread_;
+
+    size_t outputSize_ = 0;
 };
 
 class AudioCodecConsumerListener : public OHOS::Media::IConsumerListener {

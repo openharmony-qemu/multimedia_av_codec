@@ -29,6 +29,9 @@
 #include "ffmpeg_demuxer_plugin.h"
 #include "meta/format.h"
 #include "syspara/parameters.h"
+#include "qos.h"
+#include "res_type.h"
+#include "res_sched_client.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegDemuxerThread" };
@@ -42,6 +45,8 @@ const int32_t AV_READ_PACKET_READ_ERROR = -1;
 const int32_t AV_READ_PACKET_READ_AGAIN = -2;
 const int32_t AV_READ_PACKET_RETRY_UPPER_LIMIT = 9;
 const int32_t AV_READ_PACKET_SLEEP_TIME = 50;
+constexpr uint32_t RES_TYPE = OHOS::ResourceSchedule::ResType::RES_TYPE_THREAD_QOS_CHANGE;
+constexpr uint32_t RES_VALUE = 0;
 
 std::condition_variable FFmpegDemuxerPlugin::readCbCv_;
 std::mutex FFmpegDemuxerPlugin::readPacketMutex_;
@@ -232,6 +237,9 @@ Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t t
 
 void FFmpegDemuxerPlugin::FFmpegReadLoop()
 {
+    if (isAsyncReadThreadPrioritySet_.load()) {
+        UpdateAsyncReadThreadPriority();
+    }
     threadState_ = READING;
     AVPacket *pkt = nullptr;
     bool continueRead = true;
@@ -477,6 +485,36 @@ Status FFmpegDemuxerPlugin::GetLastPTSByTrackId(uint32_t trackId, int64_t &lastP
         MEDIA_LOG_E("Get last pts failed");
     }
     return ret;
+}
+
+Status FFmpegDemuxerPlugin::SetAsyncReadThreadPriority(const uint32_t newPriority, const std::string &strBundleName)
+{
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    if (threadState_ != ThreadState::NOT_STARTED && readThread_ != nullptr) {
+        MEDIA_LOG_W("Async read thread is running, cannot set priority now");
+        return Status::ERROR_WRONG_STATE;
+    }
+    if (isAsyncReadThreadPrioritySet_) {
+        MEDIA_LOG_W("Async read thread priority has been set, cannot set again");
+        return Status::ERROR_WRONG_STATE;
+    }
+    isAsyncReadThreadPrioritySet_ = true;
+    asyncReadThreadPriority_ = newPriority;
+    bundleName_ = strBundleName;
+    MEDIA_LOG_I("Set async read thread priority to " PUBLIC_LOG_U32 " for bundle: %s",
+        asyncReadThreadPriority_.load(), bundleName_.c_str());
+    return Status::OK;
+}
+
+void FFmpegDemuxerPlugin::UpdateAsyncReadThreadPriority()
+{
+    MEDIA_LOG_I("Update async read thread priority to " PUBLIC_LOG_U32 " for bundle: " PUBLIC_LOG_S,
+        asyncReadThreadPriority_.load(), bundleName_.c_str());
+    std::unordered_map<std::string, std::string> mapPayload;
+    mapPayload["bundleName"] = bundleName_;
+    mapPayload["pid"] = std::to_string(getpid());
+    mapPayload[std::to_string(gettid())] = std::to_string(asyncReadThreadPriority_.load());
+    OHOS::ResourceSchedule::ResSchedClient::GetInstance().ReportData(RES_TYPE, RES_VALUE, mapPayload);
 }
 } // namespace Ffmpeg
 } // namespace Plugins

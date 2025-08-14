@@ -67,7 +67,7 @@ Source::~Source()
 
 void Source::SetCallback(Callback* callback)
 {
-    MEDIA_LOG_I("SetCallback entered.");
+    MEDIA_LOG_D("SetCallback entered.");
     FALSE_RETURN_MSG(callback != nullptr, "callback is nullptr");
     FALSE_RETURN_MSG(mediaDemuxerCallback_ != nullptr, "mediaDemuxerCallback is nullptr");
     mediaDemuxerCallback_->SetCallbackWrap(callback);
@@ -90,7 +90,7 @@ bool Source::IsFlvLiveStream() const
 Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
 {
     MediaAVCodec::AVCodecTrace trace("Source::SetSource");
-    MEDIA_LOG_I("SetSource enter.");
+    MEDIA_LOG_D("SetSource enter.");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "SetSource Invalid source");
 
     ClearData();
@@ -106,9 +106,8 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
     if (plugin_ != nullptr) {
         seekToTimeFlag_ = plugin_->IsSeekToTimeSupported();
     }
-    MEDIA_LOG_I("SetSource seekToTimeFlag_: " PUBLIC_LOG_D32, seekToTimeFlag_);
-
-    MEDIA_LOG_I("SetSource exit.");
+    MEDIA_LOG_D("SetSource seekToTimeFlag_: " PUBLIC_LOG_D32, seekToTimeFlag_);
+    MEDIA_LOG_D("SetSource exit.");
     return Status::OK;
 }
 
@@ -146,14 +145,14 @@ void Source::SetDemuxerState(int32_t streamId)
 std::string Source::GetContentType()
 {
     FALSE_RETURN_V(plugin_ != nullptr, "");
-    MEDIA_LOG_I("In");
+    MEDIA_LOG_D("In");
     return plugin_->GetContentType();
 }
 
 Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
 {
     MediaAVCodec::AVCodecTrace trace("Source::InitPlugin");
-    MEDIA_LOG_I("InitPlugin enter");
+    MEDIA_LOG_D("InitPlugin enter");
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "InitPlugin, Source plugin is nullptr");
 
     Status ret = plugin_->Init();
@@ -163,7 +162,7 @@ Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
     plugin_->SetEnableOnlineFdCache(isEnableFdCache_);
     ret = plugin_->SetSource(source);
 
-    MEDIA_LOG_I("InitPlugin exit");
+    MEDIA_LOG_D("InitPlugin exit");
     return ret;
 }
 
@@ -229,7 +228,7 @@ Status Source::AutoSelectBitRate(uint32_t bitRate)
 
 Status Source::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
-    MEDIA_LOG_I("SetCurrentBitRate");
+    MEDIA_LOG_D("SetCurrentBitRate");
     if (plugin_ == nullptr) {
         MEDIA_LOG_E("SetCurrentBitRate failed, plugin_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;
@@ -344,7 +343,7 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         MEDIA_LOG_D("Onevent cached duration.");
         mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::EVENT_BUFFER_PROGRESS) {
-        MEDIA_LOG_I("buffer percent update.");
+        MEDIA_LOG_D("buffer percent update.");
         mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::INITIAL_BUFFER_SUCCESS) {
         MEDIA_LOG_I("initial buffer success.");
@@ -467,7 +466,7 @@ Status Source::GetStreamInfo(std::vector<StreamInfo>& streams)
         "GetStreamInfo, Source plugin is nullptr");
     Status ret = plugin_->GetStreamInfo(streams);
     if (ret == Status::OK && streams.size() == 0) {
-        MEDIA_LOG_I("GetStreamInfo empty, MIX Stream");
+        MEDIA_LOG_D("GetStreamInfo empty, MIX Stream");
         Plugins::StreamInfo info;
         info.streamId = 0;
         info.bitRate = 0;
@@ -475,7 +474,7 @@ Status Source::GetStreamInfo(std::vector<StreamInfo>& streams)
         streams.push_back(info);
     }
     for (auto& iter : streams) {
-        MEDIA_LOG_I("Source GetStreamInfo id = " PUBLIC_LOG_D32 " type = " PUBLIC_LOG_D32,
+        MEDIA_LOG_D("Source GetStreamInfo id = " PUBLIC_LOG_D32 " type = " PUBLIC_LOG_D32,
             iter.streamId, iter.type);
     }
     return ret;

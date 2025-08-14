@@ -64,7 +64,6 @@ public:
     MOCK_METHOD(Status, Seek, (int64_t mediaTime, bool isClosest), ());
     MOCK_METHOD(Status, Stop, (), ());
     MOCK_METHOD(bool, InSeeking, (), ());
-    MOCK_METHOD(void, SetAudioRenderPts, (int64_t audioRenderPts), ());
     std::atomic<bool> isFrameAfterSeeked_ {false};
 };
 } // namespace Pipeline

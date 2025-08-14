@@ -509,7 +509,7 @@ HWTEST_F(HwEncReliNdkTest, LTR_FUNC_019, TestSize.Level3)
 }
 
 /**
- * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0030
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_RELI_0010
  * @tc.name      : repeatedly surface change encode to call for 12 hours
  * @tc.desc      : function test
  */

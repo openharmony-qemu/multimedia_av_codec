@@ -42,6 +42,8 @@ typedef struct DRM_MediaKeySystemInfo {
     DRM_PsshInfo psshInfo[MAX_PSSH_INFO_COUNT];
 } DRM_MediaKeySystemInfo;
 
+static const std::string USER_META_KEY_TEST = "com.openharmony.test";
+
 DemuxerSample::~DemuxerSample()
 {
     if (fd > 0) {
@@ -174,6 +176,14 @@ void DemuxerSample::GetAndSetFormat(const char *setLanguage, Params params)
     audioFormat = OH_AVFormat_CreateAudioFormat(OH_AVCODEC_MIMETYPE_AUDIO_AAC, params.sampleRate, params.channelCount);
     videoFormat = OH_AVFormat_CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC,
         params.setVideoWidth, params.setVideoHeight);
+
+    userFormat = OH_AVSource_GetCustomMetadataFormat(source);
+    if (userFormat == nullptr) {
+        return;
+    }
+    uint8_t *metaBuffer = nullptr;
+    size_t bufferLen = 0;
+    OH_AVFormat_GetBuffer(userFormat, USER_META_KEY_TEST.c_str(), &metaBuffer, &bufferLen);
 }
 
 void DemuxerSample::RunNormalDemuxer(uint32_t createSize, const char *uri, const char *setLanguage, Params params)

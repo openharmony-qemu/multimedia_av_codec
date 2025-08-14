@@ -119,7 +119,7 @@ bool DataSourceImpl::IsDash()
 
 DemuxerPluginManager::DemuxerPluginManager()
 {
-    MEDIA_LOG_I("DemuxerPluginManager called");
+    MEDIA_LOG_D("DemuxerPluginManager called");
 }
 
 DemuxerPluginManager::~DemuxerPluginManager()
@@ -220,7 +220,7 @@ void DemuxerPluginManager::InitSubtitleTrack(const StreamInfo& info)
 
 Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& streams)
 {
-    MEDIA_LOG_D("InitDefaultPlay begin");
+    MEDIA_LOG_D("InitDefaultPlay Begin");
     for (const auto& iter : streams) {
         FALSE_RETURN_V_MSG_E(iter.streamId >= 0, Status::ERROR_INVALID_PARAMETER,
             "Invalid streamId, id = " PUBLIC_LOG_D32, iter.streamId);
@@ -236,7 +236,7 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
             streamInfoMap_[streamIndex].activated = true;
             streamInfoMap_[streamIndex].type = MIXED;
             curAudioStreamID_ = -1;
-            MEDIA_LOG_I("InitDefaultPlay MIX");
+            MEDIA_LOG_D("InitDefaultPlay MIX");
             break;
         } else if (iter.type == AUDIO) {
             InitAudioTrack(iter);
@@ -248,7 +248,7 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
             MEDIA_LOG_W("streaminfo invalid type");
         }
     }
-    MEDIA_LOG_D("InitDefaultPlay end");
+    MEDIA_LOG_D("InitDefaultPlay End");
     return Status::OK;
 }
 
@@ -299,7 +299,7 @@ Status DemuxerPluginManager::LoadDemuxerPlugin(int32_t streamID, std::shared_ptr
         ScopedTimer timer("SnifferMediaType", SNIFF_WARNING_MS);
         type = streamDemuxer->SnifferMediaType(streamID);
         if (!type.empty() && pluginName_.empty()) {
-            MEDIA_LOG_I("PluginName: " PUBLIC_LOG_S, type.c_str());
+            MEDIA_LOG_D("PluginName: " PUBLIC_LOG_S, type.c_str());
             pluginName_ = type;
         }
     }
@@ -325,7 +325,7 @@ Status DemuxerPluginManager::LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemu
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "LoadDemuxerPlugin audio plugin failed.");
     }
     if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID) {
-        MEDIA_LOG_I("LoadCurrentAllPlugin video plugin");
+        MEDIA_LOG_D("LoadCurrentAllPlugin video plugin");
         Status ret = LoadDemuxerPlugin(curVideoStreamID_, streamDemuxer);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "LoadDemuxerPlugin video plugin failed.");
     }
@@ -362,12 +362,12 @@ Status DemuxerPluginManager::LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStrea
 
 void DemuxerPluginManager::AddMediaInfo(int32_t streamID, Plugins::MediaInfo& mediaInfo)
 {
-    MEDIA_LOG_I("AddMediaInfo enter");
+    MEDIA_LOG_D("AddMediaInfo enter");
     AddGeneral(streamInfoMap_[streamID], mediaInfo.general);
     for (uint32_t index = 0; index < streamInfoMap_[streamID].mediaInfo.tracks.size(); index++) {
         auto trackMeta = streamInfoMap_[streamID].mediaInfo.tracks[index];
         mediaInfo.tracks.push_back(trackMeta);
-        MEDIA_LOG_I("AddMediaInfo streamID = " PUBLIC_LOG_D32 " index = " PUBLIC_LOG_D32, streamID, index);
+        MEDIA_LOG_D("AddMediaInfo streamID = " PUBLIC_LOG_D32 " index = " PUBLIC_LOG_D32, streamID, index);
         AddTrackMapInfo(streamID, index);
     }
     return;
@@ -397,7 +397,7 @@ void DemuxerPluginManager::UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t ne
 {
     temp2TrackInfoMap_[oldTrackId].streamID = trackInfoMap_[newTrackId].streamID;
     if (newInnerTrackIndex == -1) {
-        MEDIA_LOG_I("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32
+        MEDIA_LOG_D("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32
             " innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, trackInfoMap_[newTrackId].innerTrackIndex);
         temp2TrackInfoMap_[oldTrackId].innerTrackIndex = trackInfoMap_[newTrackId].innerTrackIndex;
     } else {
@@ -484,7 +484,7 @@ Status DemuxerPluginManager::AddGeneral(const MediaStreamInfo& info, Meta& forma
 
 bool DemuxerPluginManager::CheckTrackIsActive(int32_t trackId)
 {
-    MEDIA_LOG_I("CheckTrackIsActive enter");
+    MEDIA_LOG_D("CheckTrackIsActive enter");
     auto iter = trackInfoMap_.find(trackId);
     if (iter != trackInfoMap_.end()) {
         int32_t streamId = iter->second.streamID;
@@ -538,7 +538,7 @@ bool DemuxerPluginManager::CreatePlugin(std::string pluginName, int32_t id)
         MEDIA_LOG_E("CreatePlugin " PUBLIC_LOG_S " failed.", pluginName.c_str());
         return false;
     }
-    MEDIA_LOG_I("CreatePlugin " PUBLIC_LOG_S " success, id " PUBLIC_LOG_D32, pluginName.c_str(), id);
+    MEDIA_LOG_D("CreatePlugin " PUBLIC_LOG_S " success, id " PUBLIC_LOG_D32, pluginName.c_str(), id);
     streamInfoMap_[id].pluginName = pluginName;
     return true;
 }
@@ -556,7 +556,7 @@ bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamD
             FALSE_RETURN_V(CreatePlugin(pluginName, id), false);
         }
     }
-    MEDIA_LOG_I("InitPlugin, " PUBLIC_LOG_S " used, id " PUBLIC_LOG_D32, pluginName.c_str(), id);
+    MEDIA_LOG_D("InitPlugin, " PUBLIC_LOG_S " used, id " PUBLIC_LOG_D32, pluginName.c_str(), id);
     streamDemuxer->SetDemuxerState(id, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
     streamDemuxer->SetIsDash(isDash_);
 
@@ -849,7 +849,7 @@ Status DemuxerPluginManager::Start()
 
 Status DemuxerPluginManager::Pause()
 {
-    MEDIA_LOG_W("DemuxerPluginManager Pause");
+    MEDIA_LOG_D("DemuxerPluginManager Pause");
     if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->Pause();
         if (ret != Status::OK) {

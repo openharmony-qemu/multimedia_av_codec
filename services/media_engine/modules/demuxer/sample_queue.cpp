@@ -200,7 +200,7 @@ Status SampleQueue::AcquireBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
     } else {
         FALSE_RETURN_V(sampleBufferQueueConsumer_ != nullptr, Status::ERROR_NULL_POINT_BUFFER);
         Status ret = sampleBufferQueueConsumer_->AcquireBuffer(sampleBuffer);
-        FALSE_RETURN_V(ret == Status::OK, ret);
+        FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
         MEDIA_LOG_DD(PUBLIC_LOG_S " bufferId: " PUBLIC_LOG_U64 ", pts: " PUBLIC_LOG_D64
                                  " GetCacheDuration= " PUBLIC_LOG_U64 " GetFilledBufferSize= " PUBLIC_LOG_U32,
             config_.queueName_.c_str(),
