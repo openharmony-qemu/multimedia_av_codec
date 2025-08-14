@@ -95,7 +95,7 @@ void VDecServerSample::RunVideoServerDecoder()
     if (err != AVCS_ERR_OK) {
         cout << "decoder Init failed!" << endl;
         return;
-    }    
+    }
     err = ConfigServerDecoder();
     if (err != AVCS_ERR_OK) {
         cout << "ConfigServerDecoder failed" << endl;
