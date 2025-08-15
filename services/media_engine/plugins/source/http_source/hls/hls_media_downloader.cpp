@@ -499,7 +499,7 @@ bool HlsMediaDownloader::CheckDataIntegrity()
     } else {
         uint64_t head = SpliceOffset(readTsIndex_, 0);
         uint64_t hasRead = readOffset_ >= head ? readOffset_ - head : 0;
-        uint64_t bufferSize = tsStorageInfo_[readTsIndex_].first >= hasRead ?
+        size_t bufferSize = tsStorageInfo_[readTsIndex_].first >= hasRead ?
             tsStorageInfo_[readTsIndex_].first - hasRead : 0;
         return bufferSize == GetBufferSize();
     }
