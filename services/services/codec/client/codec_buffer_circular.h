@@ -113,14 +113,17 @@ private:
     static const std::string &OwnerToString(BufferOwner owner);
     void PrintCaches(bool isOutput);
     void ClearOutputBufferOwnedByCodec();
+    bool HasFlag(const CodecCircularFlag flag);
+    void AddFlag(const CodecCircularFlag flag);
+    void RemoveFlag(const CodecCircularFlag flag);
 
     template <ModeType mode>
     inline bool CanEnableMode()
     {
-        bool isUnconfigured = !(flag_ & FLAG_SYNC_ASYNC_CONFIGURED);
-        bool modeMatched = !(flag_ & FLAG_IS_SYNC);
+        bool isUnconfigured = !(flags_ & FLAG_SYNC_ASYNC_CONFIGURED);
+        bool modeMatched = !(flags_ & FLAG_IS_SYNC);
         if constexpr (mode == MODE_SYNC) {
-            modeMatched = (flag_ & FLAG_IS_SYNC);
+            modeMatched = (flags_ & FLAG_IS_SYNC);
         }
         return isUnconfigured || modeMatched;
     }
@@ -129,16 +132,16 @@ private:
     inline void EnableMode()
     {
         if constexpr (mode == MODE_SYNC) {
-            flag_ |= FLAG_IS_SYNC;
+            flags_ |= FLAG_IS_SYNC;
         }
-        flag_ |= FLAG_SYNC_ASYNC_CONFIGURED;
+        flags_ |= FLAG_SYNC_ASYNC_CONFIGURED;
     }
 
     BufferCache inCache_;
     BufferCache outCache_;
     std::mutex inMutex_;
     std::mutex outMutex_;
-    std::atomic<uint8_t> flag_ = FLAG_NONE;
+    std::atomic<uint8_t> flags_ = FLAG_NONE;
 
     // Async mode
     void AsyncOnError(AVCodecErrorType errorType, int32_t errorCode);
