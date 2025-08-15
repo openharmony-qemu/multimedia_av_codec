@@ -1313,7 +1313,6 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1800, TestSize.Level2)
         vDecSample->SF_OUTPUT = false;
         vDecSample->outputYuvFlag = true;
         vDecSample->NocaleHash = true;
-        vDecSample->GET_STRIDE = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());

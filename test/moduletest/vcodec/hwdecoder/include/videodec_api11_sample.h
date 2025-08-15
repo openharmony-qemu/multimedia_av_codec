@@ -107,7 +107,6 @@ public:
     bool getOutputBufferIndexNoExisted = false;
     bool abnormalIndexValue = false;
     bool isCheckFlush = false;
-    bool GET_STRIDE = false;
     int32_t Start();
     int32_t Stop();
     int32_t Flush();
