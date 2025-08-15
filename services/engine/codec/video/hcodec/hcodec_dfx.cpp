@@ -121,6 +121,15 @@ void HCodec::UpdateOwner()
     UpdateOwner(OMX_DirOutput);
 }
 
+void HCodec::FaultEventWrite(const string& faultType, const std::string& msg)
+{
+    HiSysEventWrite(HISYSEVENT_DOMAIN_HCODEC, "FAULT",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
+                    "MODULE", "HardwareDecoder",
+                    "FAULTTYPE", faultType,
+                    "MSG", msg);
+}
+
 void HCodec::UpdateOwner(OMX_DIRTYPE port)
 {
     std::array<int, OWNER_CNT>& arr = record_[port].currOwner_;
