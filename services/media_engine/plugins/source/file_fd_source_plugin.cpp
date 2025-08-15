@@ -390,7 +390,7 @@ void FileFdSourcePlugin::CacheDataLoop()
     int64_t curTime = steadyClock_.ElapsedMilliseconds();
     GetCurrentSpeed(curTime);
     int64_t lastSize = GetLastSize(cachePosition_.load());
-    size_t bufferSize = lastSize < 0 ? PER_CACHE_SIZE : min(PER_CACHE_SIZE, static_cast<size_t>(lastSize));
+    size_t bufferSize = lastSize < 0 ? PER_CACHE_SIZE : std::min(PER_CACHE_SIZE, static_cast<size_t>(lastSize));
     char* cacheBuffer = new char[bufferSize];
     if (cacheBuffer == nullptr) {
         MEDIA_LOG_E("CacheData memory is not enough bufferSize " PUBLIC_LOG_ZU, bufferSize);
