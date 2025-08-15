@@ -400,6 +400,10 @@ void FCodec::InitBuffers()
     inputAvailQue_->SetActive(true);
     codecAvailQue_->SetActive(true);
     if (sInfo_.surface != nullptr) {
+        if (state_ == State::CONFIGURED) {
+            renderAvailQue_->SetActive(true);
+            requestSurfaceBufferQue_->SetActive(true);
+        }
         std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
         renderSurfaceBufferMap_.clear();
     }
