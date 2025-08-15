@@ -242,6 +242,7 @@ protected:
     void PrintStatistic(const TimePoint& now, OMX_DIRTYPE port);
     void UpdateInputRecord(const TimePoint& now, const BufferInfo& info);
     void UpdateOutputRecord(const TimePoint& now, const BufferInfo& info);
+    void FaultEventWrite(const std::string& faultType, const std::string& msg);
 
     // configure
     virtual int32_t OnConfigure(const Format &format) = 0;
@@ -620,6 +621,7 @@ private:
     static constexpr uint32_t ONE_SECONDS_IN_US = 1'000'000;
     static constexpr uint32_t FIVE_SECONDS_IN_MS = 5'000;
     static constexpr double HIGH_FPS = 120.0;
+    static constexpr char HISYSEVENT_DOMAIN_HCODEC[] = "AV_CODEC";
 
     std::shared_ptr<UninitializedState> uninitializedState_;
     std::shared_ptr<InitializedState> initializedState_;
