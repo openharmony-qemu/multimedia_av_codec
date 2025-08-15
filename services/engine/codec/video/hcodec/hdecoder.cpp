@@ -15,6 +15,7 @@
 
 #include "hdecoder.h"
 #include <cassert>
+#include <sstream>
 #include "hdf_base.h"
 #include "codec_omx_ext.h"
 #include "media_description.h"  // foundation/multimedia/av_codec/interfaces/inner_api/native/
@@ -689,6 +690,10 @@ void HDecoder::ProcAVBufferToUser(shared_ptr<AVBuffer> avBuffer, shared_ptr<Code
                 IF_TRUE_RETURN_VOID(inputStreamError == nullptr);
                 meta->SetData(OHOS::Media::Tag::VIDEO_DECODER_INPUT_STREAM_ERROR, *inputStreamError);
                 HLOGI("inputStreamError: %d, pts: %" PRId64" ", *inputStreamError, omxBuffer->pts);
+                std::stringstream sysEventMsg;
+                sysEventMsg << "[" << caller_.app.processName << "]" << compUniqueStr_;
+                sysEventMsg << "PTS: " << omxBuffer->pts;
+                FaultEventWrite("INPUT_STREAM_ERROR", sysEventMsg.str());
                 break;
             }
             default:

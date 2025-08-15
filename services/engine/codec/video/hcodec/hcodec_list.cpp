@@ -49,7 +49,7 @@ public:
 static bool DecideMode(bool supportPassthrough, bool isSecure)
 {
 #ifdef BUILD_ENG_VERSION
-    string mode = OHOS::system::GetParameter("persist.hcodec.usePassthrough", "");
+    string mode = OHOS::system::GetParameter("hcodec.usePassthrough", "");
     if (mode == "1") {
         LOGI("force passthrough");
         return true;
