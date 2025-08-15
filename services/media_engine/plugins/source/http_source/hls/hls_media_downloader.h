@@ -96,7 +96,7 @@ public:
     std::pair<int32_t, int32_t> GetDownloadInfo() override;
     void ReportVideoSizeChange();
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
-    uint64_t GetBufferSize() const override;
+    size_t GetBufferSize() const override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
     bool GetReadTimeOut(bool isDelay) override;

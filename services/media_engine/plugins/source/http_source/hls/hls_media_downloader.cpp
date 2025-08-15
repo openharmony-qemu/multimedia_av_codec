@@ -767,7 +767,7 @@ void HlsMediaDownloader::PrepareToSeek()
 
 bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
 {
-    MEDIA_LOG_I("HLS Seek: buffer size " PUBLIC_LOG_D64 ", seekTime " PUBLIC_LOG_D64 " mode: " PUBLIC_LOG_D32,
+    MEDIA_LOG_I("HLS Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64 " mode: " PUBLIC_LOG_D32,
         GetBufferSize(), seekTime, mode);
     AutoLock lock(switchMutex_);
     FALSE_RETURN_V(playlistDownloader_ != nullptr, false);
@@ -1201,7 +1201,7 @@ void HlsMediaDownloader::DownloadReport()
             std::shared_ptr<RecordData> recordBuff = std::make_shared<RecordData>();
             double downloadRate = CalculateCurrentDownloadSpeed();
             recordBuff->downloadRate = downloadRate;
-            uint64_t remainingBuffer = GetBufferSize();
+            size_t remainingBuffer = GetBufferSize();
             MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64
                 " KByte", static_cast<int32_t>(downloadRate / KILO), static_cast<uint64_t>(remainingBuffer / KILO));
             MediaAVCodec::AVCodecTrace trace("HlsMediaDownloader::DownloadReport, download speed: " +
@@ -1741,7 +1741,7 @@ void HlsMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     playbackInfo.isDownloading = isDownloadFinish_ ? false : true;
     if (recordData_ != nullptr) {
         playbackInfo.downloadRate = static_cast<int64_t>(recordData_->downloadRate);
-        uint64_t remainingBuffer = GetBufferSize();
+        size_t remainingBuffer = GetBufferSize();
         uint64_t bufferDuration = 0;
         if (readBitrate_ > 0) {
             bufferDuration = static_cast<uint64_t>(remainingBuffer) / readBitrate_;
@@ -1944,9 +1944,9 @@ float HlsMediaDownloader::GetCacheDuration(float ratio)
     return DEFAULT_CACHE_TIME;
 }
 
-uint64_t HlsMediaDownloader::GetBufferSize() const
+size_t HlsMediaDownloader::GetBufferSize() const
 {
-    uint64_t bufferSize = 0;
+    size_t bufferSize = 0;
     if (cacheMediaBuffer_ != nullptr) {
         bufferSize = cacheMediaBuffer_->GetBufferSize(readOffset_);
     }
