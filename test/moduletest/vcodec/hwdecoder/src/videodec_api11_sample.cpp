@@ -1146,12 +1146,13 @@ int32_t VDecAPI11Sample::SyncOutputFuncEos(uint32_t &last_index, uint32_t &outFr
 void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index)
 {
     if (!SF_OUTPUT) {
+        GetStride();
         uint8_t *bufferAddr = OH_AVBuffer_GetAddr(buffer);
         int32_t size = OH_AVBuffer_GetCapacity(buffer);
         uint32_t cropSize = (picWidth_ * picHeight_ * THREE) >> 1;
         uint8_t *cropBuffer = new uint8_t[cropSize];
         uint8_t *copyPos = cropBuffer;
-        if (size >= cropSize) {
+        if (size >= cropSize && !NocaleHash) {
             //copy y
             for (int32_t i = 0; i < picHeight_; i++) {
                 memcpy_s(copyPos, picWidth_, bufferAddr, picWidth_);
@@ -1166,8 +1167,8 @@ void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index)
                 copyPos += picWidth_;
             }
             SHA512_Update(&g_c, cropBuffer, cropSize);
-            delete[] cropBuffer;
         }
+        delete[] cropBuffer;
         if (OH_VideoDecoder_FreeOutputBuffer(vdec_, index) != AV_ERR_OK) {
             cout << "Fatal: ReleaseOutputBuffer fail" << endl;
             errCount = errCount + 1;
