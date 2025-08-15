@@ -158,13 +158,13 @@ HlsMediaDownloader::~HlsMediaDownloader()
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsMediaDownloader dtor out", FAKE_POINTER(this));
 }
 
-size_t SpliceOffset(uint32_t tsIndex, uint32_t offset32)
+uint64_t SpliceOffset(uint32_t tsIndex, uint32_t offset32)
 {
     uint64_t offset64 = 0;
     offset64 = tsIndex;
     offset64 = (offset64 << 32); // 32
     offset64 |= offset32;
-    return static_cast<size_t>(offset64);
+    return offset64;
 }
 
 std::string HlsMediaDownloader::GetContentType()
@@ -632,11 +632,11 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
     }
     if (tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
         tsStorageInfo_[readTsIndex_].second == true) {
-        size_t tsEndOffset = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first);
+        uint64_t tsEndOffset = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first);
         if (readOffset_ >= tsEndOffset) {
             RemoveFmp4PaddingData(buff, readDataInfo);
-            cacheMediaBuffer_->ClearFragmentBeforeOffset(SpliceOffset(readTsIndex_, 0));
             readTsIndex_++;
+            cacheMediaBuffer_->ClearFragmentBeforeOffset(SpliceOffset(readTsIndex_, 0));
             readOffset_ = SpliceOffset(readTsIndex_, 0);
             if (playlistDownloader_->IsHlsFmp4() && tsStreamIdInfo_.find(readTsIndex_) != tsStreamIdInfo_.end() &&
                 readDataInfo.streamId_ > 0 &&
@@ -1961,7 +1961,7 @@ size_t HlsMediaDownloader::GetCrossTsBuffersize()
     }
     bufferSize = cacheMediaBuffer_->GetBufferSize(readOffset_);
     if (!backPlayList_.empty() && readTsIndex_ < backPlayList_.size() - 1) {
-        size_t nextTsOffset = SpliceOffset(readTsIndex_ + 1, 0);
+        uint64_t nextTsOffset = SpliceOffset(readTsIndex_ + 1, 0);
         size_t nextTsBuffersize = cacheMediaBuffer_->GetBufferSize(nextTsOffset);
         bufferSize += nextTsBuffersize;
     }
@@ -1989,7 +1989,7 @@ bool HlsMediaDownloader::IsCachedInitSizeReady(int32_t wantInitSize)
         if (tsStorageInfo_.find(i) == tsStorageInfo_.end()) {
             break;
         } else {
-            size_t currentTsStart = SpliceOffset(i, 0);
+            uint64_t currentTsStart = SpliceOffset(i, 0);
             bufferSize += cacheMediaBuffer_->GetBufferSize(currentTsStart);
             if (bufferSize >= static_cast<size_t>(wantInitSize)) {
                 return true;
