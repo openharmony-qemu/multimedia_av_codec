@@ -68,8 +68,8 @@ public:
     sptr<SyncFence> GetFence();
     uint8_t *GetBase() const;
     int32_t GetSize() const;
-    bool isAttached = false;
-    Owner owner = Owner::OWNED_BY_US;
+    std::atomic<bool> isAttached = false;
+    std::atomic<Owner> owner = Owner::OWNED_BY_US;
 
 private:
     void SetSurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, Owner toChangeOwner);
