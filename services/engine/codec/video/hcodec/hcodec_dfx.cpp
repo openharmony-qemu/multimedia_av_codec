@@ -19,6 +19,7 @@
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
 #include "hcodec_utils.h"
+#include "hisysevent.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
