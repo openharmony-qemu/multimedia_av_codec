@@ -1146,6 +1146,9 @@ int32_t VDecAPI11Sample::SyncOutputFuncEos(uint32_t &last_index, uint32_t &outFr
 void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index)
 {
     if (!SF_OUTPUT) {
+        if (GET_STRIDE) {
+            GetStride();
+        }
         uint8_t *bufferAddr = OH_AVBuffer_GetAddr(buffer);
         int32_t size = OH_AVBuffer_GetCapacity(buffer);
         uint32_t cropSize = (picWidth_ * picHeight_ * THREE) >> 1;
