@@ -56,9 +56,12 @@ public:
     std::shared_ptr<AVCodecServiceStubMock> avcodecStubMock_ = nullptr;
     std::shared_ptr<CodecServiceStubMock> codecStubMock_ = nullptr;
     std::shared_ptr<InstanceMemoryUpdateEventHandler> instanceMemoryHandler_ = nullptr;
+    static int32_t instanceId_;
 private:
     std::vector<std::pair<AVCodecServerManager::StubType, sptr<IRemoteObject>>> stubList_;
 };
+
+int32_t TEST_SUIT::instanceId_ = 0;
 
 void TEST_SUIT::SetUpTestCase(void) {}
 
@@ -130,9 +133,10 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_001, TestSize
     pid_t pid = getpid();
     instanceMemoryHandler_->appMemoryThreshold_ = 0;
     instanceMemoryHandler_->timerMap_.clear();
-    instanceMemoryHandler_->UpdateInstanceMemory(0, DEFAULT_MEMORY);
+    instanceMemoryHandler_->UpdateInstanceMemory(instanceId_, DEFAULT_MEMORY);
     instanceMemoryHandler_->appMemoryExceedThresholdList_.clear();
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
+    instanceId_++;
 }
 
 /**
@@ -161,9 +165,10 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_003, TestSize
     instanceMemoryHandler_->timerMap_.emplace(
         pid, std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT, nullptr));
     instanceMemoryHandler_->appMemoryThreshold_ = 0;
-    instanceMemoryHandler_->UpdateInstanceMemory(0, DEFAULT_MEMORY);
+    instanceMemoryHandler_->UpdateInstanceMemory(instanceId_, DEFAULT_MEMORY);
     instanceMemoryHandler_->appMemoryExceedThresholdList_.clear();
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
+    instanceId_++;
 }
 
 /**
@@ -192,9 +197,10 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_005, TestSize
     pid_t pid = getpid();
     instanceMemoryHandler_->appMemoryThreshold_ = 0;
     instanceMemoryHandler_->timerMap_.clear();
-    instanceMemoryHandler_->UpdateInstanceMemory(0, DEFAULT_MEMORY);
+    instanceMemoryHandler_->UpdateInstanceMemory(instanceId_, DEFAULT_MEMORY);
     instanceMemoryHandler_->appMemoryExceedThresholdList_.emplace(pid);
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
+    instanceId_++;
 }
 
 /**
@@ -223,9 +229,10 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_007, TestSize
     instanceMemoryHandler_->timerMap_.emplace(
         pid, std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT, nullptr));
     instanceMemoryHandler_->appMemoryThreshold_ = 0;
-    instanceMemoryHandler_->UpdateInstanceMemory(0, DEFAULT_MEMORY);
+    instanceMemoryHandler_->UpdateInstanceMemory(instanceId_, DEFAULT_MEMORY);
     instanceMemoryHandler_->appMemoryExceedThresholdList_.emplace(pid);
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
+    instanceId_++;
 }
 
 /**
