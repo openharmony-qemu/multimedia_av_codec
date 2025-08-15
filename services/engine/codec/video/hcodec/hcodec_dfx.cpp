@@ -215,7 +215,8 @@ void HCodec::UpdateHoldCnt(const TimePoint& now, OMX_DIRTYPE port, BufferOwner o
     }
     TotalEvent& holdCnt = record.holdCntInterval_[owner];
     holdCnt.eventCnt += static_cast<uint64_t>(holdUs);
-    holdCnt.eventSum += (static_cast<uint64_t>(holdUs) * record.currOwner_[owner]);
+    holdCnt.eventSum += (static_cast<uint64_t>(holdUs) *
+                         static_cast<uint64_t>(record.currOwner_[owner]));
 }
 
 // now, this buffer is gonna change to new owner
