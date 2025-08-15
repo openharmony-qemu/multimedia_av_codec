@@ -19,13 +19,14 @@
 #include "common_mock.h"
 #include "native_avcodec_base.h"
 #include "native_buffer.h"
+#include "native_avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 class SurfaceBufferCapiMock : public SurfaceBufferMock {
 public:
-    explicit SurfaceBufferCapiMock(sptr<AVBufferMock> &avBufferMock) {
-        OH_NativeBuffer *nativeBuffer_ = OH_AVBuffer_GetNativeBuffer(avBufferMock->GetAVBuffer());
+    explicit SurfaceBufferCapiMock(std::shared_ptr<AVBufferMock> &avBufferMock) {
+        OH_NativeBuffer *nativeBuffer_ = OH_AVBuffer_GetNativeBuffer(avBufferMock->GetNativeBuffer());
     }
     SurfaceBufferCapiMock() = default;
     ~SurfaceBufferCapiMock();

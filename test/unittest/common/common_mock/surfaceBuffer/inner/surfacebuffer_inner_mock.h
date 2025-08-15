@@ -23,7 +23,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 class SurfaceBufferInnerMock : public SurfaceBufferMock {
 public:
-    explicit SurfaceBufferInnerMock(sptr<AVBufferMock> &avBufferMock) {
+    explicit SurfaceBufferInnerMock(std::shared_ptr<AVBufferMock> &avBufferMock) {
         sptr<SurfaceBuffer> surfaceBuffer_ = avBufferMock->GetNativeBuffer();
     }
     SurfaceBufferInnerMock() = default;

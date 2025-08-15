@@ -17,25 +17,26 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-std::shared_ptr<SurfaceBufferMock> SurfaceBufferMockFactory::CreateSurfaceBuffer(sptr<AVBufferMock> &avBufferMock)
+std::shared_ptr<SurfaceBufferMock> SurfaceBufferMockFactory::CreateSurfaceBuffer(
+    std::shared_ptr<AVBufferMock> &avBufferMock)
 {
     return std::make_shared<SurfaceBufferCapiMock>(avBufferMock);
 }
 
 SurfaceBufferCapiMock::~SurfaceBufferCapiMock()
 {
-    if (nativeWindowBuffer != nullptr) {
-        OH_NativeWindow_DestroyNativeWindow(nativeWindowBuffer);
-        nativeWindowBuffer = nullptr;
+    if (nativeBuffer_ != nullptr) {
+        OH_NativeBuffer_Unreference(nativeBuffer_);
+        nativeBuffer_ = nullptr;
     }
 }
 
 bool SurfaceBufferCapiMock::GetHDRDynamicMetadata(std::vector<uint8_t> &meta)
 {
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(nativeBuffer_ != nullptr, nullptr, "nativeBuffer_ is nullptr!");
-    int size = 0;
-    uint8_t **metadata;
-    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_DYNAMIC_METADATA, size, metadata) != 0) {
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(nativeBuffer_ != nullptr, false, "nativeBuffer_ is nullptr!");
+    int32_t size = 0;
+    uint8_t **metadata = nullptr;
+    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_DYNAMIC_METADATA, &size, metadata) != 0) {
         return false;
     }
     meta.resize(size);
@@ -50,10 +51,10 @@ bool SurfaceBufferCapiMock::GetHDRDynamicMetadata(std::vector<uint8_t> &meta)
 
 bool SurfaceBufferCapiMock::GetHDRStaticMetadata(std::vector<uint8_t> &meta)
 {
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(nativeBuffer_ != nullptr, nullptr, "nativeBuffer_ is nullptr!");
-    int size = 0;
-    uint8_t **metadata;
-    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_STATIC_METADATA, size, metadata) != 0) {
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(nativeBuffer_ != nullptr, false, "nativeBuffer_ is nullptr!");
+    int32_t size = 0;
+    uint8_t **metadata = nullptr;
+    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_STATIC_METADATA, &size, metadata) != 0) {
         return false;
     }
     meta.resize(size);

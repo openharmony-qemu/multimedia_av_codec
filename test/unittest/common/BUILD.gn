@@ -59,7 +59,7 @@ ohos_static_library("av_codec_capi_unit_test") {
     "./common_mock/avmemory/capi/avmemory_capi_mock.cpp",
     "./common_mock/avmemory/capi/avmemory_capi_mock_factory.cpp",
     "./common_mock/surface/capi/surface_capi_mock.cpp",
-    "./common_mock/surface/capi/surfacebuffer_capi_mock.cpp",
+    "./common_mock/surfaceBuffer/capi/surfacebuffer_capi_mock.cpp",
   ]
 
   public_deps = [
@@ -135,7 +135,7 @@ ohos_source_set("av_codec_inner_unit_test") {
     "./common_mock/avmemory/inner/avmemory_inner_mock.cpp",
     "./common_mock/avmemory/inner/avmemory_inner_mock_factory.cpp",
     "./common_mock/surface/inner/surface_inner_mock.cpp",
-    "./common_mock/surface/capi/surfacebuffer_inner_mock.cpp",
+    "./common_mock/surfaceBuffer/inner/surfacebuffer_inner_mock.cpp",
   ]
 
   public_deps = [ "$av_codec_root_dir/services/utils:av_codec_service_utils" ]

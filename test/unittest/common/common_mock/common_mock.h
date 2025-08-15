@@ -23,6 +23,7 @@
 #include "native_avcodec_base.h"
 #include "nocopyable.h"
 #include "surface.h"
+#include "avbuffer_mock.h"
 
 using AVBuffer = OHOS::Media::AVBuffer;
 using Status = OHOS::Media::Status;
@@ -45,13 +46,6 @@ public:
     virtual int32_t Destory() = 0;
 };
 
-class SurfaceBufferMock : public NoCopyable {
-public:
-    virtual ~SurfaceBufferMock() = default;
-    virtual bool GetHDRDynamicMetadata(std::vector<uint8_t> &meta) = 0;
-    virtual bool GetHDRStaticMetadata(std::vector<uint8_t> &meta) = 0;
-};
-
 class __attribute__((visibility("default"))) SurfaceMockFactory {
 public:
     static std::shared_ptr<SurfaceMock> CreateSurface(sptr<Surface> &surface);
@@ -67,14 +61,6 @@ public:
 private:
     AVMemoryMockFactory() = delete;
     ~AVMemoryMockFactory() = delete;
-};
-class __attribute__((visibility("default"))) SurfaceBufferMockFactory {
-public:
-    static std::shared_ptr<SurfaceBufferMock> CreateSurfaceBuffer(sptr<AVBufferMock> &avBufferMock);
-
-private:
-    SurfaceBufferMockFactory() = delete;
-    ~SurfaceBufferMockFactory() = delete;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

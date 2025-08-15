@@ -833,14 +833,16 @@ bool VideoDecAsyncSample::CompareMetadata(std::shared_ptr<AVBufferMock> buffer)
     if (testParam_ == VCodecTestParam::HW_HDR) {
         // No.frameOutputCount_
         dynamicMetadataFromFile.resize(g_hdrVividDynamicMeta[frameOutputCount_]);
-        dynamicMetadataFile_->read(&dynamicMetadataFromFile[0], g_hdrVividDynamicMeta[frameOutputCount_]);
+        dynamicMetadataFile_->read(static_cast<char*>(dynamicMetadataFromFile.data()),
+            g_hdrVividDynamicMeta[frameOutputCount_]);
         staticMetadataFromFile.resize(xxx);
-        staticMetadataFromFile->read(&staticMetadataFromFile[0], xxx);
+        staticMetadataFile_->read(static_cast<char*>(staticMetadataFromFile.data()), xxx);
     } else if (testParam_ == HW_HDR_HLG_FULL) {
         dynamicMetadataFromFile.resize(g_hdrHlgdDynamicMeta[frameOutputCount_]);
-        dynamicMetadataFile_->read(&dynamicMetadataFromFile[0], g_hdrHlgdDynamicMeta[frameOutputCount_]);
+        dynamicMetadataFile_->read(static_cast<char*>(dynamicMetadataFromFile.data()),
+            g_hdrHlgdDynamicMeta[frameOutputCount_]);
         staticMetadataFromFile.resize(xxx);
-        staticMetadataFromFile->read(&staticMetadataFromFile[0], xxx);
+        staticMetadataFile_->read(static_cast<char*>(staticMetadataFromFile.data()), xxx);
     }
 
     // meta from buffer

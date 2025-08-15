@@ -18,7 +18,8 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-std::shared_ptr<SurfaceBufferMock> SurfaceBufferMockFactory::CreateSurfaceBuffer(sptr<AVBufferMock> &avBufferMock)
+std::shared_ptr<SurfaceBufferMock> SurfaceBufferMockFactory::CreateSurfaceBuffer(
+    std::shared_ptr<AVBufferMock> &avBufferMock)
 {
     return std::make_shared<SurfaceBufferInnerMock>(avBufferMock);
 }
@@ -27,7 +28,7 @@ SurfaceBufferInnerMock::~SurfaceBufferInnerMock() {}
 
 bool SurfaceBufferInnerMock::GetHDRDynamicMetadata(std::vector<uint8_t> &meta)
 {
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, nullptr, "surfaceBuffer_ is nullptr!");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, false, "surfaceBuffer_ is nullptr!");
     if (surfaceBuffer_->GetMetadata(ATTRKEY_HDR_DYNAMIC_METADATA, meta) == 0) {
         return true;
     } else {
@@ -37,7 +38,7 @@ bool SurfaceBufferInnerMock::GetHDRDynamicMetadata(std::vector<uint8_t> &meta)
 
 bool SurfaceBufferInnerMock::GetHDRStaticMetadata(std::vector<uint8_t> &meta)
 {
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, nullptr, "surfaceBuffer_ is nullptr!");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, false, "surfaceBuffer_ is nullptr!");
     if (surfaceBuffer_->GetMetadata(ATTRKEY_HDR_STATIC_METADATA, meta) == 0) {
         return true;
     } else {
