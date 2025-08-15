@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "demuxer_sample.h"
+#include "media_description.h"
 #include <cstddef>
 #include <cstdint>
 #include <fcntl.h>
@@ -160,6 +161,8 @@ void DemuxerSample::GetAndSetFormat(const char *setLanguage, Params params)
     OH_AVFormat_GetDoubleValue(sourceFormat, OH_MD_KEY_FRAME_RATE, &frameRate);
     const char* language = nullptr;
     OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_LANGUAGE, &language);
+    const char* aigc = nullptr;
+    OH_AVFormat_GetStringValue(sourceFormat, MediaAVCodec::MediaDescriptionKey::MD_KEY_AIGC.data(), &aigc);
     uint8_t *codecConfig = nullptr;
     size_t bufferSize;
     OH_AVFormat_GetBuffer(sourceFormat, OH_MD_KEY_CODEC_CONFIG, &codecConfig, &bufferSize);
