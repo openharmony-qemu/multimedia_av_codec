@@ -475,14 +475,14 @@ bool CacheMediaChunkBufferImpl::Seek(uint64_t offset)
     return false;
 }
 
-size_t CacheMediaChunkBufferImpl::GetBufferSize(uint64_t offset)
+uint64_t CacheMediaChunkBufferImpl::GetBufferSize(uint64_t offset)
 {
     std::lock_guard lock(mutex_);
     auto readPos = GetOffsetFragmentCache(readPos_, offset, LeftBoundedRightOpenComp);
-    size_t bufferSize = 0;
+    uint64_t bufferSize = 0;
     while (readPos != fragmentCacheBuffer_.end()) {
         uint64_t nextOffsetBegin = readPos->offsetBegin + static_cast<uint64_t>(readPos->dataLength);
-        bufferSize = static_cast<size_t>(nextOffsetBegin > offset ? nextOffsetBegin - offset : 0);
+        bufferSize = nextOffsetBegin > offset ? nextOffsetBegin - offset : 0;
         readPos++;
         if (readPos == fragmentCacheBuffer_.end() || nextOffsetBegin != readPos->offsetBegin) {
             break;
@@ -1245,7 +1245,7 @@ bool CacheMediaChunkBuffer::Seek(uint64_t offset)
     return impl_->Seek(offset);
 }
 
-size_t CacheMediaChunkBuffer::GetBufferSize(uint64_t offset)
+uint64_t CacheMediaChunkBuffer::GetBufferSize(uint64_t offset)
 {
     return impl_->GetBufferSize(offset);
 }
