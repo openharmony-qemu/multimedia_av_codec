@@ -107,9 +107,8 @@ int32_t FCodec::Init(Meta &callerInfo)
         fDecInfo_.calledByAvcodec = true;
     }
     callerInfo.GetData("av_codec_event_info_instance_id", instanceId_);
-    fDecInfo_.instanceId = std::to_string(instanceId_);
-    decName_ = "fdecoder_[" + std::to_string(instanceId_) + "]";
-    AVCODEC_LOGI("current codec name: %{public}s", decName_.c_str());
+    int32_t ret = Initialize();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Failed to initialize");
     return AVCS_ERR_OK;
 }
 
@@ -148,6 +147,9 @@ void FCodec::OpenDumpFile()
 int32_t FCodec::Initialize()
 {
     AVCODEC_SYNC_TRACE;
+    fDecInfo_.instanceId = std::to_string(instanceId_);
+    decName_ = "fdecoder_[" + std::to_string(instanceId_) + "]";
+    AVCODEC_LOGI("current codec name: %{public}s", decName_.c_str());
     CHECK_AND_RETURN_RET_LOG(!codecName_.empty(), AVCS_ERR_INVALID_VAL, "Init codec failed:  empty name");
     pid_ = getpid();
     std::string fcodecName;
@@ -294,10 +296,6 @@ int32_t FCodec::SetCodecExtradata(const Format &format)
 int32_t FCodec::Configure(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    if (state_ == State::UNINITIALIZED) {
-        int32_t ret = Initialize();
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Init codec failed");
-    }
     CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED), AVCS_ERR_INVALID_STATE,
                              "Configure codec failed: not in Initialized state");
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_VIDEO_WIDTH);
