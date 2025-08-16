@@ -443,7 +443,7 @@ Status AudioSinkFilter::SetAudioHapticsSyncId(int32_t syncId)
 
 Status AudioSinkFilter::SetLoudnessGain(float loudnessGain)
 {
-    MEDIA_LOG_I("set loudnessGain " PUBLIC_LOG ".3f", volume);
+    MEDIA_LOG_I("set loudnessGain " PUBLIC_LOG ".3f", loudnessGain);
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->SetLoudnessGain(loudnessGain);
 }
