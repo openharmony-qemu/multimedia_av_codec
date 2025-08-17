@@ -399,7 +399,7 @@ void FCodec::InitBuffers()
 {
     inputAvailQue_->SetActive(true);
     codecAvailQue_->SetActive(true);
-    if (sInfo_.surface != nullptr && state_ == State::CONFIGURED) {
+    if (sInfo_.surface != nullptr) {
         renderAvailQue_->SetActive(true);
         requestSurfaceBufferQue_->SetActive(true);
     }
@@ -444,7 +444,7 @@ void FCodec::ResetData()
     }
 }
 
-void FCodec::ResetBuffers()
+void FCodec::FlushBuffers()
 {
     inputAvailQue_->Clear();
     std::unique_lock<std::mutex> iLock(inputMutex_);
@@ -518,7 +518,7 @@ int32_t FCodec::Flush()
 
     avcodec_flush_buffers(avCodecContext_.get());
     ResetContext(true);
-    ResetBuffers();
+    FlushBuffers();
     state_ = State::FLUSHED;
     AVCODEC_LOGI("%{public}s Flush codec successful, state: Flushed", decName_.c_str());
     return AVCS_ERR_OK;
@@ -1521,6 +1521,8 @@ int32_t FCodec::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, u
 
 GSError FCodec::BufferReleasedByConsumer(uint64_t surfaceId)
 {
+    CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING || state_ == State::EOS || state_ == State::FLUSHING ||
+                             state_ == State::FLUSHED, GSERROR_NO_PERMISSION, "Invalid state");
     std::unique_lock<std::mutex> sLock(surfaceMutex_);
     CHECK_AND_RETURN_RET_LOG(renderAvailQue_->Size() > 0, GSERROR_NO_BUFFER, "No available buffer");
     CHECK_AND_RETURN_RET_LOG(surfaceId == sInfo_.surface->GetUniqueId(), GSERROR_INVALID_ARGUMENTS,
@@ -1624,7 +1626,7 @@ int32_t FCodec::SetOutputSurface(sptr<Surface> surface)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret,
                              "surface(%{public}" PRIu64 ") register listener to surface failed, GSError=%{public}d",
                              sInfo_.surface->GetUniqueId(), ret);
-    AVCODEC_LOGI("Set surface(%{public}" PRIu64 ") success.", surfaceId);
+    AVCODEC_LOGI("%{public}s Set surface(%{public}" PRIu64 ") success.", decName_.c_str, surfaceId);
     return AVCS_ERR_OK;
 }
 

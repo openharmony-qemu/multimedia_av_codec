@@ -102,7 +102,7 @@ private:
     void CalculateBufferSize();
     int32_t AllocateBuffers();
     void InitBuffers();
-    void ResetBuffers();
+    void FlushBuffers();
     void ResetData();
     void ReleaseBuffers();
     void StopThread();
