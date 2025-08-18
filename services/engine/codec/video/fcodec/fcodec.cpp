@@ -1626,7 +1626,7 @@ int32_t FCodec::SetOutputSurface(sptr<Surface> surface)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret,
                              "surface(%{public}" PRIu64 ") register listener to surface failed, GSError=%{public}d",
                              sInfo_.surface->GetUniqueId(), ret);
-    AVCODEC_LOGI("%{public}s Set surface(%{public}" PRIu64 ") success.", decName_.c_str, surfaceId);
+    AVCODEC_LOGI("%{public}s Set surface(%{public}" PRIu64 ") success.", decName_.c_str(), surfaceId);
     return AVCS_ERR_OK;
 }
 
