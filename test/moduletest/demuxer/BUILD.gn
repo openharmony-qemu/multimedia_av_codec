@@ -78,6 +78,7 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/avifunc_test.cpp",
       "./src/func2_test.cpp",
       "./src/func3_test.cpp",
+      "./src/func4_test.cpp",
       "./src/func_test.cpp",
       "./src/movfunc_test.cpp",
       "./src/randomseek_test.cpp",
