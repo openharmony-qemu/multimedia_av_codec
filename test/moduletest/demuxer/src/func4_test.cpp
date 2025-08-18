@@ -52,6 +52,9 @@ static OH_AVFormat *metaFormat = nullptr;
 static int32_t g_trackCount;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
+constexpr int  FIFTY = 50;
+constexpr int  THREE = 3;
+constexpr int  TWO = 2;
 void DemuxerFunc4NdkTest::SetUpTestCase() {}
 void DemuxerFunc4NdkTest::TearDownTestCase() {}
 void DemuxerFunc4NdkTest::SetUp()
@@ -121,14 +124,14 @@ void GetMetaInfo(string metaKeyAdd, string metaKey)
     int32_t extraSize = 30;
     uint8_t *codecConfig = nullptr;
     size_t bufferSize;
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < FIFTY; i++) {
         metaKey.append(metaKeyAdd);
         ASSERT_TRUE(OH_AVFormat_GetBuffer(metaFormat, metaKey.c_str(), &codecConfig, &bufferSize));
         ASSERT_EQ(bufferSize, extraSize);
         for (int j = 0; j < bufferSize; j++) {
-            ASSERT_EQ(3, codecConfig[j]);
+            ASSERT_EQ(THREE, codecConfig[j]);
         }
-        extraSize = extraSize + 2;
+        extraSize = extraSize + TWO;
     }
 }
 
