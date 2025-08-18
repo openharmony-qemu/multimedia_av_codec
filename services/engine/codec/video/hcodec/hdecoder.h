@@ -150,7 +150,7 @@ private:
 
     struct SurfaceItem {
         SurfaceItem() = default;
-        explicit SurfaceItem(const sptr<Surface> &surface, std::string codecId, int32_t instanceId);
+        SurfaceItem(const sptr<Surface> &surface, std::string codecId, int32_t instanceId);
         void Release(bool cleanAll = false);
         sptr<Surface> surface_;
     private:

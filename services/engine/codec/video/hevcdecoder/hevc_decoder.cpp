@@ -1405,7 +1405,7 @@ int32_t HevcDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
             [wp, surfaceId](sptr<SurfaceBuffer> &) {
                 sptr<HevcDecoder> codec = wp.promote();
                 if (!codec) {
-                    AVCODEC_LOGD("decoder is gone");
+                    AVCODEC_LOGD("decoder is nullptr");
                     return GSERROR_OK;
                 }
                 return codec->BufferReleasedByConsumer(surfaceId);

@@ -1583,7 +1583,7 @@ int32_t FCodec::RegisterListenerToSurface(const sptr<Surface> &surface)
             [wp, surfaceId](sptr<SurfaceBuffer> &) {
                 sptr<FCodec> codec = wp.promote();
                 if (!codec) {
-                    AVCODEC_LOGD("decoder is gone");
+                    AVCODEC_LOGD("decoder is nullptr");
                     return GSERROR_OK;
                 }
                 return codec->BufferReleasedByConsumer(surfaceId);
