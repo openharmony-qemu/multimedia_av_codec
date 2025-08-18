@@ -172,6 +172,7 @@ ohos_unittest("instance_memory_calculator_coverage_unit_test") {
 
   sources = [
     "$av_codec_root_dir/services/services/common/event_manager/event_handler/instance_memory_update_event_handler/instance_memory_calculator.cpp",
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler/instance_memory_update_event_handler/instance_memory_update_event_handler.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
     "./instance_memory_calculator_coverage_unit_test.cpp",
   ]
