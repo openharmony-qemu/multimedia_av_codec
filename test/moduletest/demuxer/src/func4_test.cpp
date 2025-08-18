@@ -12,21 +12,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "gtest/gtest.h"
-
 #include <cstdio>
 #include <cmath>
 #include <fcntl.h>
 #include <iostream>
 #include <string>
 #include <thread>
-
+#include "gtest/gtest.h"
 #include "native_avcodec_base.h"
 #include "native_avdemuxer.h"
 #include "native_avformat.h"
 #include "native_avsource.h"
 #include "native_avmemory.h"
+
 namespace OHOS {
 namespace Media {
 class DemuxerFunc4NdkTest : public testing::Test {
