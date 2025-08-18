@@ -116,6 +116,22 @@ static int64_t GetFileSize(const char *fileName)
     return fileSize;
 }
 
+void GetMetaInfo(string metaKeyAdd, string metaKey)
+{
+    int32_t extraSize = 30;
+    uint8_t *codecConfig = nullptr;
+    size_t bufferSize;
+    for (int i = 0; i < 50; i++) {
+        metaKey.append(metaKeyAdd);
+        ASSERT_TRUE(OH_AVFormat_GetBuffer(metaFormat, metaKey.c_str(), &codecConfig, &bufferSize));
+        ASSERT_EQ(bufferSize, extraSize);
+        for (int j = 0; j < bufferSize; j++) {
+            ASSERT_EQ(3, codecConfig[j]);
+        }
+        extraSize = extraSize + 2;
+    }
+}
+
 /**
  * @tc.number    : DEMUXER_META_0110
  * @tc.name      : demuxer meta info, get value with right key
@@ -303,21 +319,10 @@ HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_META_0160, TestSize.Level2)
         ASSERT_TRUE(OH_AVFormat_GetIntValue(metaFormat, metaKey.c_str(), &metaIntValue));
         ASSERT_EQ(metaIntValue, metaIntVal);
     }
-
+    
     metaKeyAdd = "a";
     metaKey = "com.openharmony.bufferval.";
-    int32_t extraSize = 30;
-    uint8_t *codecConfig = nullptr;
-    size_t bufferSize;
-    for (int i = 0; i < 50; i++) {
-        metaKey.append(metaKeyAdd);
-        ASSERT_TRUE(OH_AVFormat_GetBuffer(metaFormat, metaKey.c_str(), &codecConfig, &bufferSize));
-        ASSERT_EQ(bufferSize, extraSize);
-        for (int j = 0; j < bufferSize; j++) {
-            ASSERT_EQ(3, codecConfig[j]);
-        }
-        extraSize = extraSize + 2;
-    }
+    GetMetaInfo(metaKeyAdd, metaKey);
     close(fd);
     fd = -1;
 }
@@ -365,7 +370,7 @@ HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_META_0180, TestSize.Level1)
     ASSERT_NE(metaFormat, nullptr);
     uint8_t *codecConfig = nullptr;
     size_t bufferSize;
-    ASSERT_FALSE(OH_AVFormat_GetBuffer(metaFormat, "com.openharmony.buffervalval", &codecConfig, &bufferSize)); 
+    ASSERT_FALSE(OH_AVFormat_GetBuffer(metaFormat, "com.openharmony.buffervalval", &codecConfig, &bufferSize));
     close(fd);
     fd = -1;
 }
@@ -408,7 +413,7 @@ HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_META_0190, TestSize.Level1)
  */
 HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_META_0200, TestSize.Level1)
 {
-    const char *file = "/data/test/media/audio/metaval_01.m4a";  
+    const char *file = "/data/test/media/audio/metaval_01.m4a";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << fd << "---------" << size << endl;
@@ -513,18 +518,7 @@ HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_META_0220, TestSize.Level2)
     }
     metaKeyAdd = "a";
     metaKey = "com.openharmony.bufferval.";
-    int32_t extraSize = 30;
-    uint8_t *codecConfig = nullptr;
-    size_t bufferSize;
-    for (int i = 0; i < 50; i++) {
-        metaKey.append(metaKeyAdd);
-        ASSERT_TRUE(OH_AVFormat_GetBuffer(metaFormat, metaKey.c_str(), &codecConfig, &bufferSize));
-        ASSERT_EQ(bufferSize, extraSize);
-        for (int j = 0; j < bufferSize; j++) {
-            ASSERT_EQ(3, codecConfig[j]);
-        }
-        extraSize = extraSize + 2;
-    }
+    GetMetaInfo(metaKeyAdd, metaKey);
     close(fd);
     fd = -1;
 }
