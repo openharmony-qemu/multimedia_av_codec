@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "demuxer_sample.h"
+#include "media_description.h"
 #include <cstddef>
 #include <cstdint>
 #include <fcntl.h>
@@ -41,6 +42,8 @@ typedef struct DRM_MediaKeySystemInfo {
     uint32_t psshCount;
     DRM_PsshInfo psshInfo[MAX_PSSH_INFO_COUNT];
 } DRM_MediaKeySystemInfo;
+
+static const std::string USER_META_KEY_TEST = "com.openharmony.test";
 
 DemuxerSample::~DemuxerSample()
 {
@@ -158,6 +161,8 @@ void DemuxerSample::GetAndSetFormat(const char *setLanguage, Params params)
     OH_AVFormat_GetDoubleValue(sourceFormat, OH_MD_KEY_FRAME_RATE, &frameRate);
     const char* language = nullptr;
     OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_LANGUAGE, &language);
+    const char* aigc = nullptr;
+    OH_AVFormat_GetStringValue(sourceFormat, MediaAVCodec::MediaDescriptionKey::MD_KEY_AIGC.data(), &aigc);
     uint8_t *codecConfig = nullptr;
     size_t bufferSize;
     OH_AVFormat_GetBuffer(sourceFormat, OH_MD_KEY_CODEC_CONFIG, &codecConfig, &bufferSize);
@@ -174,6 +179,14 @@ void DemuxerSample::GetAndSetFormat(const char *setLanguage, Params params)
     audioFormat = OH_AVFormat_CreateAudioFormat(OH_AVCODEC_MIMETYPE_AUDIO_AAC, params.sampleRate, params.channelCount);
     videoFormat = OH_AVFormat_CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC,
         params.setVideoWidth, params.setVideoHeight);
+
+    userFormat = OH_AVSource_GetCustomMetadataFormat(source);
+    if (userFormat == nullptr) {
+        return;
+    }
+    uint8_t *metaBuffer = nullptr;
+    size_t bufferLen = 0;
+    OH_AVFormat_GetBuffer(userFormat, USER_META_KEY_TEST.c_str(), &metaBuffer, &bufferLen);
 }
 
 void DemuxerSample::RunNormalDemuxer(uint32_t createSize, const char *uri, const char *setLanguage, Params params)

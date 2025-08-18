@@ -128,13 +128,13 @@ FileFdSourcePlugin::FileFdSourcePlugin(std::string name)
 
 FileFdSourcePlugin::~FileFdSourcePlugin()
 {
-    MEDIA_LOG_I("~FileFdSourcePlugin in.");
+    MEDIA_LOG_D("~FileFdSourcePlugin in.");
     steadyClock_.Reset();
     SetInterruptState(true);
-    MEDIA_LOG_I("~FileFdSourcePlugin isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
+    MEDIA_LOG_D("~FileFdSourcePlugin isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
     FALSE_RETURN_MSG(downloadTask_ != nullptr, "~FileFdSourcePlugin out.");
     downloadTask_->Stop();
-    MEDIA_LOG_I("~FileFdSourcePlugin out.");
+    MEDIA_LOG_D("~FileFdSourcePlugin out.");
 }
 
 Status FileFdSourcePlugin::SetCallback(Callback* cb)

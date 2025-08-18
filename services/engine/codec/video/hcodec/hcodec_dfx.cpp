@@ -19,6 +19,7 @@
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
 #include "hcodec_utils.h"
+#include "hisysevent.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -121,6 +122,15 @@ void HCodec::UpdateOwner()
     UpdateOwner(OMX_DirOutput);
 }
 
+void HCodec::FaultEventWrite(const string& faultType, const std::string& msg)
+{
+    HiSysEventWrite(HISYSEVENT_DOMAIN_HCODEC, "FAULT",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
+                    "MODULE", "HardwareDecoder",
+                    "FAULTTYPE", faultType,
+                    "MSG", msg);
+}
+
 void HCodec::UpdateOwner(OMX_DIRTYPE port)
 {
     std::array<int, OWNER_CNT>& arr = record_[port].currOwner_;
@@ -206,7 +216,8 @@ void HCodec::UpdateHoldCnt(const TimePoint& now, OMX_DIRTYPE port, BufferOwner o
     }
     TotalEvent& holdCnt = record.holdCntInterval_[owner];
     holdCnt.eventCnt += static_cast<uint64_t>(holdUs);
-    holdCnt.eventSum += (static_cast<uint64_t>(holdUs) * record.currOwner_[owner]);
+    holdCnt.eventSum += (static_cast<uint64_t>(holdUs) *
+                         static_cast<uint64_t>(record.currOwner_[owner]));
 }
 
 // now, this buffer is gonna change to new owner

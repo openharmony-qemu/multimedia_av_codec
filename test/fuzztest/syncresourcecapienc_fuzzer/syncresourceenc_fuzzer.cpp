@@ -52,6 +52,9 @@ bool VideoEncoderFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     SetSync();
+    FuzzedDataProvider fdp(data, size);
+    uint32_t rangeFlag = fdp.ConsumeIntegral<uint32_t>();
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, rangeFlag);
     videoEnc->Configure(format);
     videoEnc->Prepare();
     videoEnc->Start();

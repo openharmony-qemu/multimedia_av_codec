@@ -1061,7 +1061,7 @@ int32_t AudioServerSinkPlugin::WriteAudioVivid(const std::shared_ptr<OHOS::Media
 
 Status AudioServerSinkPlugin::Flush()
 {
-    MEDIA_LOG_I_SHORT("Flush entered.");
+    MEDIA_LOG_D_SHORT("Flush entered.");
     DrainCacheData(false);
     if (audioRenderer_ == nullptr) {
         return Status::ERROR_WRONG_STATE;

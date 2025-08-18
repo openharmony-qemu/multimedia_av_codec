@@ -207,6 +207,17 @@ public:
         CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "GetOutputFormat failed");
         return;
     }
+
+    int32_t NotifyEos()
+    {
+        CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
+        CHECK_AND_RETURN_RET_LOG(state_.Get() == State::RUNNING, AVCS_ERR_INVALID_STATE,
+            "Invalid post processing state: %{public}s", state_.Name());
+
+        int32_t ret = controller_->NotifyEos();
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "NotifyEos failed");
+        return AVCS_ERR_OK;
+    }
 private:
     int32_t Init(const Format& format)
     {

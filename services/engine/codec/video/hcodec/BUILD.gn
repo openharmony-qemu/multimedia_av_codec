@@ -75,6 +75,7 @@ ohos_shared_library("hcodec") {
     "hdf_core:libhdf_utils",
     "hdf_core:libhdi",
     "hilog:libhilog",
+    "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",

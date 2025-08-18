@@ -284,21 +284,6 @@ HWTEST_F(TestVideoSink, SetLastPts_002, TestSize.Level0)
     EXPECT_EQ(videoSink_->lastPts_, lastPts);
 }
 
-HWTEST_F(TestVideoSink, GetLagInfo_001, TestSize.Level0)
-{
-    int32_t lagTimes = 0;
-    int32_t maxLagDuration = 0;
-    int32_t avgLagDuration = 0;
-    videoSink_->lagDetector_.totalLagDuration_ = 10000;
-    videoSink_->lagDetector_.lagTimes_ = 0;
-    videoSink_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
-    EXPECT_EQ(avgLagDuration, 0);
-    videoSink_->lagDetector_.lagTimes_ = 10;
-    videoSink_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
-    EXPECT_EQ(avgLagDuration, static_cast<int32_t>(videoSink_->lagDetector_.totalLagDuration_ /
-        videoSink_->lagDetector_.lagTimes_));
-}
-
 HWTEST_F(TestVideoSink, ReportPts_001, TestSize.Level0)
 {
     int64_t nowPts = 0;

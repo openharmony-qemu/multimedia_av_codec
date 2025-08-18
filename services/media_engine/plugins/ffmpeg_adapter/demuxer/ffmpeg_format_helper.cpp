@@ -173,7 +173,8 @@ static std::map<std::string, TagType> g_formatToString = {
     {"lyrics",        Tag::MEDIA_LYRICS},
     {"author",        Tag::MEDIA_AUTHOR},
     {"composer",      Tag::MEDIA_COMPOSER},
-    {"creation_time", Tag::MEDIA_CREATION_TIME}
+    {"creation_time", Tag::MEDIA_CREATION_TIME},
+    {"aigc",          Tag::MEDIA_AIGC}
 };
 
 std::vector<TagType> g_supportSourceFormat = {
@@ -190,7 +191,8 @@ std::vector<TagType> g_supportSourceFormat = {
     Tag::MEDIA_LYRICS,
     Tag::MEDIA_AUTHOR,
     Tag::MEDIA_COMPOSER,
-    Tag::MEDIA_CREATION_TIME
+    Tag::MEDIA_CREATION_TIME,
+    Tag::MEDIA_AIGC
 };
 
 std::vector<std::string> SplitByChar(const char* str, const char* pattern)
@@ -1278,6 +1280,11 @@ bool FFmpegFormatHelper::IsAudioType(const AVStream &avStream)
 bool FFmpegFormatHelper::IsMpeg4File(FileType filetype)
 {
     return filetype == FileType::MP4 || filetype == FileType::MOV;
+}
+
+bool FFmpegFormatHelper::IsValidCodecId(const AVCodecID &codecId)
+{
+    return (g_codecIdToMime.count(codecId) > 0) || (IsPCMStream(codecId));
 }
 } // namespace Ffmpeg
 } // namespace Plugins

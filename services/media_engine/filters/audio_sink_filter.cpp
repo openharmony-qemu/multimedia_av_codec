@@ -219,11 +219,11 @@ Status AudioSinkFilter::UnFreezeAudioSink()
 
 Status AudioSinkFilter::DoFlush()
 {
-    MEDIA_LOG_I("audio sink flush start");
+    MEDIA_LOG_D("audio sink flush start");
     if (audioSink_ != nullptr) {
         audioSink_->Flush();
     }
-    MEDIA_LOG_I("audio sink flush end");
+    MEDIA_LOG_D("audio sink flush end");
     return Status::OK;
 }
 

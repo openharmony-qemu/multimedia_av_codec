@@ -71,16 +71,6 @@ public:
         return This()->CreateInputSurfaceImpl(surface);
     }
 
-    int32_t SetParameter(Media::Format& parameter)
-    {
-        return This()->SetParameterImpl(parameter);
-    }
-
-    int32_t GetParameter(Media::Format& parameter)
-    {
-        return This()->GetParameterImpl(parameter);
-    }
-
     int32_t Configure(Media::Format& config)
     {
         return This()->ConfigureImpl(config);
@@ -124,6 +114,11 @@ public:
     int32_t ReleaseOutputBuffer(uint32_t index, bool render)
     {
         return This()->ReleaseOutputBufferImpl(index, render);
+    }
+
+    int32_t NotifyEos()
+    {
+        return This()->NotifyEosImpl();
     }
 private:
     T* This()
