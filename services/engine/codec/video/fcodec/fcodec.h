@@ -102,7 +102,7 @@ private:
     void CalculateBufferSize();
     int32_t AllocateBuffers();
     void InitBuffers();
-    void ResetBuffers();
+    void FlushBuffers();
     void ResetData();
     void ReleaseBuffers();
     void StopThread();
@@ -144,7 +144,6 @@ private:
     int32_t Detach(sptr<SurfaceBuffer> surfaceBuffer);
     void CombineConsumerUsage();
     // surface listener callback
-    void RequestBufferFromConsumer();
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
     int32_t RegisterListenerToSurface(const sptr<Surface> &surface);
     void UnRegisterListenerToSurface(const sptr<Surface> &surface);
