@@ -229,6 +229,7 @@ private:
     std::mutex decRunMutex_;
     std::mutex surfaceMutex_;
     std::mutex requestBufferMutex_;
+    std::mutex renderBufferMapMutex_;
     std::condition_variable requestBufferCV_;
     std::condition_variable requestBufferOnceDoneCV_;
     std::shared_ptr<MediaCodecCallback> callback_;
