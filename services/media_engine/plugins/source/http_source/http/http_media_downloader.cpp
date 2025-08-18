@@ -845,7 +845,7 @@ bool HttpMediaDownloader::HandleSeekHit(int64_t offset)
 
     if (writeOffset_ != downloadOffset && cacheMediaBuffer_->GetBufferSize(offset) < changeDownloadPosThreshold) {
         MEDIA_LOG_I("HTTP HandleSeekHit ChangeDownloadPos, writeOffset_: " PUBLIC_LOG_ZU " downloadOffset: "
-            PUBLIC_LOG_ZU " bufferSize: " PUBLIC_LOG_ZU, writeOffset_, downloadOffset,
+            PUBLIC_LOG_ZU " bufferSize: " PUBLIC_LOG_U64, writeOffset_, downloadOffset,
             cacheMediaBuffer_->GetBufferSize(offset));
         return ChangeDownloadPos(true);
     } else {

@@ -85,7 +85,7 @@ public:
     size_t Read(void* ptr, uint64_t offset, size_t readSize);
     virtual size_t Write(void* ptr, uint64_t inOffset, size_t inWriteSize);
     bool Seek(uint64_t offset);
-    size_t GetBufferSize(uint64_t offset);
+    uint64_t GetBufferSize(uint64_t offset);
     uint64_t GetNextBufferOffset(uint64_t offset);
     void Dump(uint64_t param);
     bool Check();
@@ -202,7 +202,7 @@ public:
     virtual size_t Read(void* ptr, uint64_t offset, size_t readSize) = 0;
     virtual size_t Write(void* ptr, uint64_t offset, size_t writeSize) = 0;
     virtual bool Seek(uint64_t offset) = 0;
-    virtual size_t GetBufferSize(uint64_t offset) = 0;
+    virtual uint64_t GetBufferSize(uint64_t offset) = 0;
     virtual uint64_t GetNextBufferOffset(uint64_t offset) = 0;
     virtual void Clear() = 0;
     virtual void SetReadBlocking(bool isReadBlockingAllowed) = 0;
@@ -229,7 +229,7 @@ public:
     size_t Read(void* ptr, uint64_t offset, size_t readSize) override;
     size_t Write(void* ptr, uint64_t offset, size_t writeSize) override;
     bool Seek(uint64_t offset) override;
-    size_t GetBufferSize(uint64_t offset) override;
+    uint64_t GetBufferSize(uint64_t offset) override;
     uint64_t GetNextBufferOffset(uint64_t offset) override;
     void Clear() override;
     void SetReadBlocking(bool isReadBlockingAllowed) override;
