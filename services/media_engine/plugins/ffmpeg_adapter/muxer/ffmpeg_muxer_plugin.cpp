@@ -382,6 +382,7 @@ Status FFmpegMuxerPlugin::SetMetaData(std::shared_ptr<Meta> param)
         {Tag::MEDIA_AUTHOR, "author"},
         {Tag::MEDIA_COMPOSER, "composer"},
         {Tag::MEDIA_CREATION_TIME, "creation_time"},
+        {Tag::MEDIA_AIGC, "AIGC"},
     };
     av_dict_set(&formatContext_->metadata, "creation_time", "now", 0);
     for (auto& key: table) {
