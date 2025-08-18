@@ -15,18 +15,18 @@
 
 #include "gtest/gtest.h"
 
+#include <cstdio>
+#include <cmath>
+#include <fcntl.h>
+#include <iostream>
+#include <string>
+#include <thread>
+
 #include "native_avcodec_base.h"
 #include "native_avdemuxer.h"
 #include "native_avformat.h"
 #include "native_avsource.h"
 #include "native_avmemory.h"
-
-#include <iostream>
-#include <cstdio>
-#include <string>
-#include <fcntl.h>
-#include <cmath>
-#include <thread>
 namespace OHOS {
 namespace Media {
 class DemuxerFunc4NdkTest : public testing::Test {
