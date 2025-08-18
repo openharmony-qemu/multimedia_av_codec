@@ -166,6 +166,7 @@ Status DemuxerFilter::SetTranscoderMode()
     Status status = demuxer_->SetTranscoderMode();
     FALSE_RETURN_V(status == Status::OK, status);
     isTransCoderMode_ = true;
+    demuxer_->SetEnableOnlineFdCache(false);
     return status;
 }
 
@@ -1054,11 +1055,11 @@ Status DemuxerFilter::StopBufferring(bool isAppBackground)
     return demuxer_->StopBufferring(isAppBackground);
 }
 
-Status DemuxerFilter::SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted, bool keepDecodingOnMute)
+Status DemuxerFilter::SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted)
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     if (mediaType == OHOS::Media::MediaType::MEDIA_TYPE_VID) {
-        demuxer_->SetMediaMuted(mediaType, isMuted, keepDecodingOnMute);
+        demuxer_->SetMediaMuted(mediaType, isMuted);
         isVideoMuted_ = isMuted;
     }
     return Status::OK;

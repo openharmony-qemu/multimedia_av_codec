@@ -281,18 +281,16 @@ bool HttpMediaDownloader::HandleBuffering()
     if (IsNeedBufferForPlaying()) {
         return false;
     }
-    if (!isBuffering_ || downloadRequest_->IsChunkedVod()) {
+    if (!isBuffering_ || downloadRequest_ == nullptr || downloadRequest_->IsChunkedVod()) {
         bufferingTime_ = 0;
         return false;
     }
-    size_t fileRemain = 0;
-    if (downloadRequest_ != nullptr) {
-        size_t fileContenLen = downloadRequest_->GetFileContentLength();
-        if (fileContenLen > readOffset_) {
-            fileRemain = fileContenLen - readOffset_;
-            waterLineAbove_ = std::min(fileRemain, waterLineAbove_);
-        }
+    size_t fileContenLen = downloadRequest_->GetFileContentLength();
+    if (fileContenLen > readOffset_) {
+        size_t fileRemain = fileContenLen - readOffset_;
+        waterLineAbove_ = std::min(fileRemain, waterLineAbove_);
     }
+
     UpdateWaterLineAbove();
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
     HandleWaterline();
@@ -435,6 +433,7 @@ bool HttpMediaDownloader::StartBuffering(unsigned int& wantReadLength)
 
 Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
+    FALSE_RETURN_V(downloadRequest_ != nullptr, Status::ERROR_UNKNOWN);
     size_t fileContentLength = downloadRequest_->GetFileContentLength();
     uint64_t mediaOffset = ringBuffer_->GetMediaOffset();
     if (fileContentLength > mediaOffset) {
@@ -445,9 +444,7 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
     readDataInfo.realReadLength_ = 0;
     wantedReadLength_ = static_cast<size_t>(readDataInfo.wantReadLength_);
     while (ringBuffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
-        if (downloadRequest_ != nullptr) {
-            readDataInfo.isEos_ = downloadRequest_->IsEos();
-        }
+        readDataInfo.isEos_ = downloadRequest_->IsEos();
         if (readDataInfo.isEos_) {
             return CheckIsEosRingBuffer(buff, readDataInfo);
         }

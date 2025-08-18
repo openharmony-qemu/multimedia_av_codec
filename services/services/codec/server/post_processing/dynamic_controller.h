@@ -37,8 +37,6 @@ public:
     int32_t SetCallbackImpl(void* callback, void* userData);
     int32_t SetOutputSurfaceImpl(sptr<Surface> surface);
     int32_t CreateInputSurfaceImpl(sptr<Surface>& surface);
-    int32_t SetParameterImpl(Media::Format& parameter);
-    int32_t GetParameterImpl(Media::Format& parameter);
     int32_t ConfigureImpl(Media::Format& config);
     int32_t PrepareImpl();
     int32_t StartImpl();
@@ -48,6 +46,7 @@ public:
     int32_t ResetImpl();
     int32_t ReleaseImpl();
     int32_t ReleaseOutputBufferImpl(uint32_t index, bool render);
+    int32_t NotifyEosImpl();
 
 private:
     GSError OnProducerBufferReleased(sptr<SurfaceBuffer> &buffer);

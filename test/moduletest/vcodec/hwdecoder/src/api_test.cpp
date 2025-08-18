@@ -2190,4 +2190,122 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ATTIME_API_0010, TestSize.Level1)
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->errCount);
 }
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_API_0010
+ * @tc.name      : QueryInputBuffer OH_AVCodec is nullptr
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_DECODE_SYNC_API_0010, TestSize.Level2)
+{
+    uint32_t index;
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_QueryInputBuffer(nullptr, &index, -1));
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_API_0020
+ * @tc.name      : QueryInputBuffer timeoutUs is INT64_MAX
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_DECODE_SYNC_API_0020, TestSize.Level2)
+{
+    uint32_t index;
+    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(nullptr, vdec_);
+    format = OH_AVFormat_Create();
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, 1);
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Prepare(vdec_));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_QueryInputBuffer(vdec_, &index, INT64_MAX));
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_API_0030
+ * @tc.name      : QueryInputBuffer timeoutUs is INT64_MIN
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_DECODE_SYNC_API_0030, TestSize.Level2)
+{
+    uint32_t index;
+    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(nullptr, vdec_);
+    format = OH_AVFormat_Create();
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, 1);
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Prepare(vdec_));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_QueryInputBuffer(vdec_, &index, INT64_MIN));
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_API_0040
+ * @tc.name      : GetInputBuffer OH_AVCodec is nullptr
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_DECODE_SYNC_API_0040, TestSize.Level2)
+{
+    ASSERT_EQ(nullptr, OH_VideoDecoder_GetInputBuffer(nullptr, 1));
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_API_0050
+ * @tc.name      : QueryOutputBuffer OH_AVCodec is nullptr
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_DECODE_SYNC_API_0050, TestSize.Level2)
+{
+    uint32_t index;
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_QueryOutputBuffer(nullptr, &index, -1));
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_API_0060
+ * @tc.name      : QueryOutputBuffer timeoutUs is INT64_MAX
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_DECODE_SYNC_API_0060, TestSize.Level2)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->enbleSyncMode = 1;
+    vDecSample->syncOutputWaitTime = INT64_MAX;
+    vDecSample->INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_API_0070
+ * @tc.name      : QueryOutputBuffer timeoutUs is INT64_MIN
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_DECODE_SYNC_API_0070, TestSize.Level2)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->enbleSyncMode = 1;
+    vDecSample->syncOutputWaitTime = INT64_MIN;
+    vDecSample->INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_SYNC_API_0080
+ * @tc.name      : GetOutputBuffer OH_AVCodec is nullptr
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_DECODE_SYNC_API_0080, TestSize.Level2)
+{
+    ASSERT_EQ(nullptr, OH_VideoDecoder_GetOutputBuffer(nullptr, 1));
+}
 } // namespace

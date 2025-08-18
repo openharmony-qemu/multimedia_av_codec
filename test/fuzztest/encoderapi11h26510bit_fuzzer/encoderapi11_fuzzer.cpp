@@ -27,6 +27,8 @@ using namespace OHOS;
 using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "encoderapi11_fuzzer"
 
+VEncAPI11FuzzSample *g_vEncSample = nullptr;
+
 void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
 {
     std::ofstream file(filename, std::ios::out | std::ios::binary);
@@ -42,9 +44,15 @@ void RunNormalEncoder()
     if (ret != 0) {
         return;
     }
-    vEncSample->SetVideoEncoderCallback();
-    vEncSample->ConfigureVideoEncoder();
-    vEncSample->StartVideoEncoder();
+    if (vEncSample->SetVideoEncoderCallback() != AV_ERR_OK) {
+        return;
+    }
+    if (vEncSample->ConfigureVideoEncoder() != AV_ERR_OK) {
+        return;
+    }
+    if (vEncSample->StartVideoEncoder() != AV_ERR_OK) {
+        return;
+    }
     vEncSample->WaitForEOS();
 
     auto vEncSampleSurf = make_unique<VEncAPI11FuzzSample>();
@@ -53,10 +61,23 @@ void RunNormalEncoder()
     if (ret != 0) {
         return;
     }
-    vEncSampleSurf->SetVideoEncoderCallback();
-    vEncSampleSurf->ConfigureVideoEncoder();
-    vEncSampleSurf->StartVideoEncoder();
+    if (vEncSampleSurf->SetVideoEncoderCallback() != AV_ERR_OK) {
+        return;
+    }
+    if (vEncSampleSurf->ConfigureVideoEncoder() != AV_ERR_OK) {
+        return;
+    }
+    if (vEncSampleSurf->StartVideoEncoder() != AV_ERR_OK) {
+        return;
+    }
     vEncSampleSurf->WaitForEOS();
+}
+
+bool ReleaseSample()
+{
+    delete g_vEncSample;
+    g_vEncSample = nullptr;
+    return true;
 }
 
 bool g_needRunNormalEncoder = true;
@@ -72,39 +93,41 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
         g_needRunNormalEncoder = false;
         RunNormalEncoder();
     }
-    bool result = false;
     FuzzedDataProvider fdp(data, size);
     int data1 = fdp.ConsumeIntegral<int32_t>();
     bool data2 = fdp.ConsumeBool();
-    VEncAPI11FuzzSample *vEncSample = new VEncAPI11FuzzSample();
-    vEncSample->fuzzMode = true;
-    vEncSample->fuzzData = data;
-    vEncSample->fuzzSize = size;
-    vEncSample->surfInput = data2;
-    vEncSample->enableRepeat = fdp.ConsumeBool();
-    vEncSample->setMaxCount = fdp.ConsumeBool();
-    vEncSample->defaultRangeFlag = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->defaultColorPrimaries = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->defaultTransferCharacteristics = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->defaultMatarixCoefficients = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->defaultKeyFrameInterval = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->defaultBitrateMode = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->defaultBitRate = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->defaultQuality = fdp.ConsumeIntegral<uint32_t>();
-    vEncSample->defaultFrameAfter = fdp.ConsumeIntegral<int32_t>();
-    vEncSample->defaultMaxCount = fdp.ConsumeIntegral<int32_t>();
-    int32_t ret = vEncSample->CreateVideoEncoder();
-    if (ret != 0) {
-        delete vEncSample;
-        return true;
+    g_vEncSample = new VEncAPI11FuzzSample();
+    g_vEncSample->fuzzMode = true;
+    g_vEncSample->fuzzData = data;
+    g_vEncSample->fuzzSize = size;
+    g_vEncSample->surfInput = data2;
+    g_vEncSample->enableRepeat = fdp.ConsumeBool();
+    g_vEncSample->setMaxCount = fdp.ConsumeBool();
+    g_vEncSample->defaultRangeFlag = fdp.ConsumeIntegral<uint32_t>();
+    g_vEncSample->defaultColorPrimaries = fdp.ConsumeIntegral<uint32_t>();
+    g_vEncSample->defaultTransferCharacteristics = fdp.ConsumeIntegral<uint32_t>();
+    g_vEncSample->defaultMatarixCoefficients = fdp.ConsumeIntegral<uint32_t>();
+    g_vEncSample->defaultKeyFrameInterval = fdp.ConsumeIntegral<uint32_t>();
+    g_vEncSample->defaultBitrateMode = fdp.ConsumeIntegral<uint32_t>();
+    g_vEncSample->defaultBitRate = fdp.ConsumeIntegral<uint32_t>();
+    g_vEncSample->defaultQuality = fdp.ConsumeIntegral<uint32_t>();
+    g_vEncSample->defaultFrameAfter = fdp.ConsumeIntegral<int32_t>();
+    g_vEncSample->defaultMaxCount = fdp.ConsumeIntegral<int32_t>();
+    if (g_vEncSample->CreateVideoEncoder() != AV_ERR_OK) {
+        return ReleaseSample();
     }
-    vEncSample->SetVideoEncoderCallback();
-    vEncSample->ConfigureVideoEncoder();
-    vEncSample->StartVideoEncoder();
-    vEncSample->SetParameter(data1);
-    vEncSample->WaitForEOS();
-    delete vEncSample;
-    return result;
+    if (g_vEncSample->SetVideoEncoderCallback() != AV_ERR_OK) {
+        return ReleaseSample();
+    }
+    if (g_vEncSample->ConfigureVideoEncoder() != AV_ERR_OK) {
+        return ReleaseSample();
+    }
+    if (g_vEncSample->StartVideoEncoder() != AV_ERR_OK) {
+        return ReleaseSample();
+    }
+    g_vEncSample->SetParameter(data1);
+    g_vEncSample->WaitForEOS();
+    return ReleaseSample();
 }
 } // namespace OHOS
 

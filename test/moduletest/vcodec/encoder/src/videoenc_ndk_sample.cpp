@@ -846,7 +846,7 @@ void VEncNdkSample::OutputFunc()
         } else {
             fwrite(OH_AVMemory_GetAddr(buffer), 1, size, outFile);
         }
-
+        
         if (OH_VideoEncoder_FreeOutputData(venc_, index) != AV_ERR_OK) {
             cout << "Fatal: ReleaseOutputBuffer fail" << endl;
             errCount = errCount + 1;

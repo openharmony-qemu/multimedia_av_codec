@@ -43,7 +43,6 @@ constexpr uint32_t BIT_RATE_96000 = 96000;
 constexpr uint32_t SAMPLE_RATE_8000 = 8000;
 constexpr uint32_t SAMPLE_RATE_16000 = 16000;
 constexpr uint32_t SAMPLE_RATE = 44100;
-constexpr uint32_t FRAME_DURATION_US = 33000;
 constexpr int32_t SAMPLE_FORMAT_S16 = AudioSampleFormat::SAMPLE_S16LE;
 constexpr int32_t SAMPLE_FORMAT_S32 = AudioSampleFormat::SAMPLE_S32LE;
 constexpr int32_t BIT_PER_CODE_COUNT = 16;
@@ -379,21 +378,7 @@ void AudioBufferAacEncDemo::HandleEOS(const uint32_t &index)
 
 void AudioBufferAacEncDemo::InputFunc()
 {
-    size_t frameBytes = 1152;
-    if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        size_t opussize = 960;
-        frameBytes = opussize;
-    } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU || audioType_ == AudioBufferFormatType::TYPE_AMRNB) {
-        size_t gmusize = 320;
-        frameBytes = gmusize;
-    } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC || audioType_ == AudioBufferFormatType::TYPE_AMRWB) {
-        size_t lbvcsize = 640;
-        frameBytes = lbvcsize;
-    } else if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
-        size_t aacsize = 1024;
-        frameBytes = aacsize;
-    }
-    size_t currentSize = inputdatasize < frameBytes ? inputdatasize : frameBytes;
+    size_t frameBytes = 640; // 640
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
@@ -403,23 +388,28 @@ void AudioBufferAacEncDemo::InputFunc()
         uint32_t index = signal_->inQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
-        strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), currentSize, inputdata.c_str(), currentSize);
+        size_t currentSize = inputdatasize < frameBytes ? inputdatasize : frameBytes;
+        if (currentSize == 0) {
+            buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
+            OH_AudioCodec_PushInputBuffer(audioEnc_, index);
+            break;
+        }
+        std::string currentStr = inputdata.substr(inputOffset, currentSize);
+        int ret;
+        strncpy_s(reinterpret_cast<char*>(OH_AVBuffer_GetAddr(buffer)), currentSize, currentStr.c_str(), currentSize);
         buffer->buffer_->memory_->SetSize(currentSize);
-        int32_t ret = AVCS_ERR_OK;
         if (isFirstFrame_) {
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
             ret = OH_AudioCodec_PushInputBuffer(audioEnc_, index);
             isFirstFrame_ = false;
         } else {
-            buffer->buffer_->memory_->SetSize(1);
-            buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
-            HandleEOS(index);
-            isRunning_.store(false);
-            break;
+            buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_NONE;
+            ret = OH_AudioCodec_PushInputBuffer(audioEnc_, index);
         }
-        timeStamp_ += FRAME_DURATION_US;
         signal_->inQueue_.pop();
         signal_->inBufferQueue_.pop();
+        inputdatasize -= currentSize;
+        inputOffset += currentSize;
         frameCount_++;
         if (ret != AVCS_ERR_OK) {
             isRunning_.store(false);

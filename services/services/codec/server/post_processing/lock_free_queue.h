@@ -21,6 +21,7 @@
 #include <mutex>
 #include <memory>
 #include <type_traits>
+#include <chrono>
 #include "post_processing_utils.h"
 
 
@@ -80,9 +81,9 @@ public:
             currentTail = tail_.load();
             newTail = (currentTail + 1) % queueSize_;
             // when queue is full, wait until at least 1 data is popped
-            if (newTail == head_.load()) {
+            while (newTail == head_.load() && active_.load()) {
                 lock.lock();
-                canPushCv_.wait(lock, [&newTail, this]() { return newTail != head_.load() || !active_.load(); });
+                canPushCv_.wait_for(lock, cvWaitTimeout_);
                 lock.unlock();
             }
             if (!active_.load()) {
@@ -114,9 +115,9 @@ public:
             currentHead = head_.load();
             newHead = (currentHead + 1) % queueSize_;
             // when queue is empty, wait until at least 1 data is pushed.
-            if (currentHead == tail_.load()) {
+            while (currentHead == tail_.load() && active_.load()) {
                 lock.lock();
-                canPopCv_.wait(lock, [&currentHead, this]() { return currentHead != tail_.load() || !active_.load(); });
+                canPopCv_.wait_for(lock, cvWaitTimeout_);
                 lock.unlock();
             }
             if (!active_.load()) {
@@ -182,12 +183,10 @@ private:
     std::condition_variable canPushCv_;
     std::condition_variable canPopCv_;
     std::string name_;
+    static constexpr std::chrono::milliseconds cvWaitTimeout_{200};
     static constexpr HiviewDFX::HiLogLabel LABEL{LogLabel("LockFreeQueue")};
 };
-
-
 } // namespace MediaAVCodec
 } // namespace OHOS
-
 #endif // AVCODEC_LOCK_FREE_QUEUE_H
 

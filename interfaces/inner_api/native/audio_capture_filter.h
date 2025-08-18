@@ -16,6 +16,7 @@
 #define FILTERS_AUDIO_CAPTURE_FILTER_H
 
 #include <deque>
+#include <mutex>
 #include "filter/filter.h"
 #include "common/status.h"
 #include "osal/task/task.h"
@@ -73,8 +74,11 @@ private:
     void GetCurrentTime(int64_t &currentTime);
     void CalculateAVTime();
     void FillLostFrame(int32_t lostCount);
-    void RecordCachedData();
+    void RecordCachedData(int32_t recordFrameNum);
     void RecordAudioFrame();
+    int32_t FillLostFrameNum();
+    void RecordOneAudioFrame(uint64_t bufferSize);
+    std::shared_ptr<uint8_t> AllocateAudioDataBuffer(uint64_t bufferSize);
     std::shared_ptr<AudioCaptureModule::AudioCaptureModule> audioCaptureModule_{nullptr};
     sptr<AVBufferQueueProducer> outputBufferQueue_;
     AudioStandard::SourceType sourceType_ = AudioStandard::SourceType::SOURCE_TYPE_INVALID;
@@ -90,6 +94,7 @@ private:
     int32_t appUid_ {0};
     int32_t appPid_ {0};
     bool withVideo_ {true};
+    bool hasCalculateAVTime_ {false};
     int64_t startTime_ {0};
     int64_t pauseTime_ {0};
     int64_t stopTime_ {0};
@@ -97,6 +102,7 @@ private:
     std::atomic<int64_t> firstAudioFramePts_{-1};
     std::atomic<int64_t> firstVideoFramePts_{-1};
     std::deque<std::shared_ptr<uint8_t>> cachedAudioDataDeque_;
+    std::mutex cachedAudioDataMutex_;
 };
 } // namespace Pipeline
 } // namespace Media

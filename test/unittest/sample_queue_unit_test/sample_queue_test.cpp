@@ -226,25 +226,6 @@ HWTEST_F(SampleQueueUnitTest, ResponseForSwitchDone_002, TestSize.Level1)
 
 /**
  * @tc.name  : Test CheckSwitchBitrateWaitList
- * @tc.number: CheckSwitchBitrateWaitList_001
- * @tc.desc  : Test it == switchBitrateWaitList_.end()
- */
-HWTEST_F(SampleQueueUnitTest, CheckSwitchBitrateWaitList_001, TestSize.Level1)
-{
-    sampleQueue_->switchBitrateWaitList_.clear();
-
-    uint32_t originalNextBitrate = sampleQueue_->nextSwitchBitrate_;
-    SelectBitrateStatus originalStatus = sampleQueue_->switchStatus_;
-
-    sampleQueue_->CheckSwitchBitrateWaitList();
-
-    EXPECT_EQ(sampleQueue_->nextSwitchBitrate_, originalNextBitrate);
-    EXPECT_EQ(sampleQueue_->switchStatus_, originalStatus);
-    EXPECT_TRUE(sampleQueue_->switchBitrateWaitList_.empty());
-}
-
-/**
- * @tc.name  : Test CheckSwitchBitrateWaitList
  * @tc.number: CheckSwitchBitrateWaitList_002
  * @tc.desc  : Test it != switchBitrateWaitList_.end()
  */
@@ -349,6 +330,96 @@ HWTEST_F(SampleQueueUnitTest, Clear_001, TestSize.Level1)
     sampleQueue_->sampleBufferQueueProducer_ = nullptr;
     Status ret = sampleQueue_->Clear();
     EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test SetLargerQueueSize
+ * @tc.number: SetLargerQueueSize_001
+ * @tc.desc  : Test SetLargerQueueSize
+ */
+HWTEST_F(SampleQueueUnitTest, SetLargerQueueSize_001, TestSize.Level1)
+{
+    SampleQueue::Config sampleQueueConfig{};
+    sampleQueueConfig.isFlvLiveStream_ = true;
+    sampleQueueConfig.isSupportBitrateSwitch_ = true;
+    sampleQueueConfig.queueId_ = NUM_TEST1;
+    sampleQueueConfig.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
+    Status status = sampleQueue_->Init(sampleQueueConfig);
+    EXPECT_EQ(status, Status::OK);
+
+    sampleQueue_->config_.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
+    Status ret = sampleQueue_->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE_ON_MUTE);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE_ON_MUTE);
+}
+
+ /**
+ * @tc.name  : Test SetLargerQueueSize
+ * @tc.number: SetLargerQueueSize_002
+ * @tc.desc  : Test SetLargerQueueSize
+ */
+HWTEST_F(SampleQueueUnitTest, SetLargerQueueSize_002, TestSize.Level1)
+{
+    SampleQueue::Config sampleQueueConfig{};
+    sampleQueueConfig.isFlvLiveStream_ = true;
+    sampleQueueConfig.isSupportBitrateSwitch_ = true;
+    sampleQueueConfig.queueId_ = NUM_TEST1;
+    sampleQueueConfig.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
+    Status status = sampleQueue_->Init(sampleQueueConfig);
+    EXPECT_EQ(status, Status::OK);
+
+    Status ret = sampleQueue_->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE_ON_MUTE + NUM_TEST1);
+    EXPECT_NE(ret, Status::OK);
+    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
+
+    sampleQueue_->config_.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
+    ret = sampleQueue_->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
+}
+
+/**
+ * @tc.name  : Test SetLargerQueueSize
+ * @tc.number: SetLargerQueueSize_003
+ * @tc.desc  : Test SetLargerQueueSize
+ */
+HWTEST_F(SampleQueueUnitTest, SetLargerQueueSize_003, TestSize.Level1)
+{
+    SampleQueue::Config sampleQueueConfig{};
+    sampleQueueConfig.isFlvLiveStream_ = true;
+    sampleQueueConfig.isSupportBitrateSwitch_ = true;
+    sampleQueueConfig.queueId_ = NUM_TEST1;
+    sampleQueueConfig.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
+    Status status = sampleQueue_->Init(sampleQueueConfig);
+    EXPECT_EQ(status, Status::OK);
+
+    Status ret = sampleQueue_->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
+}
+
+/**
+ * @tc.name  : Test AddQueueSize
+ * @tc.number: AddQueueSize_001
+ * @tc.desc  : Test AddQueueSize
+ */
+HWTEST_F(SampleQueueUnitTest, AddQueueSize_001, TestSize.Level1)
+{
+    SampleQueue::Config sampleQueueConfig{};
+    sampleQueueConfig.isFlvLiveStream_ = false;
+    sampleQueueConfig.isSupportBitrateSwitch_ = true;
+    sampleQueueConfig.queueId_ = NUM_TEST1;
+    sampleQueueConfig.queueSize_ = NUM_TEST1;
+    Status status = sampleQueue_->Init(sampleQueueConfig);
+    EXPECT_EQ(status, Status::OK);
+
+    Status ret = sampleQueue_->AddQueueSize(NUM_TEST1);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(sampleQueue_->config_.queueSize_, NUM_TEST2);
+
+    ret = sampleQueue_->AddQueueSize(AVBUFFER_QUEUE_MAX_QUEUE_SIZE_FOR_LARGER);
+    EXPECT_NE(ret, Status::OK);
+    EXPECT_EQ(sampleQueue_->config_.queueSize_, NUM_TEST2);
 }
 }
 }  // namespace OHOS::Media

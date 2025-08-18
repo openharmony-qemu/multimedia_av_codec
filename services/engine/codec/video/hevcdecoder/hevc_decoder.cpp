@@ -27,11 +27,15 @@
 #include "hevc_decoder.h"
 #include <fstream>
 #include <cstdarg>
+#include <sstream>
+#include <sys/ioctl.h>
+#include <linux/dma-buf.h>
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 namespace {
+#define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "HevcDecoderLoader"};
 const char *HEVC_DEC_LIB_PATH = "libhevcdec_ohos.z.so";
 const char *HEVC_DEC_CREATE_FUNC_NAME = "HEVC_CreateDecoder";
@@ -95,12 +99,15 @@ HevcDecoder::HevcDecoder(const std::string &name) : codecName_(name), state_(Sta
         handle_ = dlopen(HEVC_DEC_LIB_PATH, RTLD_LAZY);
         if (handle_ == nullptr) {
             AVCODEC_LOGE("Load codec failed: %{public}s", HEVC_DEC_LIB_PATH);
+            isValid_ = false;
+            return;
         }
         HevcFuncMatch();
         AVCODEC_LOGI("Num %{public}u HevcDecoder entered, state: Uninitialized", decInstanceID_);
     } else {
         AVCODEC_LOGE("HevcDecoder already has %{public}d instances, cannot has more instances", VIDEO_INSTANCE_SIZE);
-        state_ = State::ERROR;
+        isValid_ = false;
+        return;
     }
 
     initParams_.logFxn = nullptr;
@@ -110,7 +117,15 @@ HevcDecoder::HevcDecoder(const std::string &name) : codecName_(name), state_(Sta
 
 int32_t HevcDecoder::Init(Meta &callerInfo)
 {
+    if (callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, hevcDecInfo_.pid) &&
+        callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, hevcDecInfo_.processName)) {
+        hevcDecInfo_.calledByAvcodec = false;
+    } else if (callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, hevcDecInfo_.pid) &&
+               callerInfo.GetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, hevcDecInfo_.processName)) {
+        hevcDecInfo_.calledByAvcodec = true;
+    }
     callerInfo.GetData("av_codec_event_info_instance_id", instanceId_);
+    hevcDecInfo_.instanceId = std::to_string(instanceId_);
     decName_ = "hevcdecoder_[" + std::to_string(instanceId_) + "]";
     AVCODEC_LOGI("HevcDecoder codec name: %{public}s", decName_.c_str());
     return AVCS_ERR_OK;
@@ -187,6 +202,7 @@ int32_t HevcDecoder::Initialize()
     }
     format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mime);
     format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecName_);
+    hevcDecInfo_.mimeType = mime;
     sendTask_ = std::make_shared<TaskThread>("SendFrame");
     sendTask_->RegisterHandler([this] { SendFrame(); });
 
@@ -357,11 +373,11 @@ int32_t HevcDecoder::Start()
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start codec failed: cannot allocate buffers");
         isBufferAllocated_ = true;
     }
-    state_ = State::RUNNING;
     InitBuffers();
     isSendEos_ = false;
     sendTask_->Start();
-    AVCODEC_LOGI("Start codec successful, state: Running");
+    state_ = State::RUNNING;
+    AVCODEC_LOGI("%{public}s Start codec successful, state: Running", decName_.c_str());
     return AVCS_ERR_OK;
 }
 
@@ -373,21 +389,30 @@ void HevcDecoder::InitBuffers()
         renderAvailQue_->SetActive(true);
         requestSurfaceBufferQue_->SetActive(true);
     }
+    CHECK_AND_RETURN_LOG(buffers_[INDEX_INPUT].size() > 0, "Input buffers is null!");
     if (buffers_[INDEX_INPUT].size() > 0) {
         for (uint32_t i = 0; i < buffers_[INDEX_INPUT].size(); i++) {
             buffers_[INDEX_INPUT][i]->owner_ = Owner::OWNED_BY_USER;
             callback_->OnInputBufferAvailable(i, buffers_[INDEX_INPUT][i]->avBuffer);
-            AVCODEC_LOGI("OnInputBufferAvailable frame index = %{public}d, owner = %{public}d", i,
-                         buffers_[INDEX_INPUT][i]->owner_.load());
+            AVCODEC_LOGI("%{public}s OnInputBufferAvailable frame index = %{public}u, owner = %{public}d",
+                         decName_.c_str(), i, buffers_[INDEX_INPUT][i]->owner_.load());
         }
     }
-    if (buffers_[INDEX_OUTPUT].size() <= 0) {
+    CHECK_AND_RETURN_LOG(buffers_[INDEX_OUTPUT].size() > 0, "Output buffers is null!");
+    InitHevcParams();
+    if (sInfo_.surface == nullptr || state_ == State::CONFIGURED) {
+        for (uint32_t i = 0u; i < buffers_[INDEX_OUTPUT].size(); i++) {
+            buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
+            codecAvailQue_->Push(i);
+        }
         return;
     }
-    InitHevcParams();
+    std::lock_guard<std::mutex> sLock(surfaceMutex_);
     for (uint32_t i = 0u; i < buffers_[INDEX_OUTPUT].size(); i++) {
-        buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
-        codecAvailQue_->Push(i);
+        if (buffers_[INDEX_OUTPUT][i]->owner_ != Owner::OWNED_BY_SURFACE) {
+            buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
+            codecAvailQue_->Push(i);
+        }
     }
 }
 
@@ -425,11 +450,6 @@ void HevcDecoder::ResetBuffers()
 {
     inputAvailQue_->Clear();
     codecAvailQue_->Clear();
-    if (sInfo_.surface != nullptr) {
-        renderAvailQue_->Clear();
-        requestSurfaceBufferQue_->Clear();
-        renderSurfaceBufferMap_.clear();
-    }
     ResetData();
 }
 
@@ -490,16 +510,12 @@ int32_t HevcDecoder::Flush()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG((state_ == State::RUNNING || state_ == State::EOS), AVCS_ERR_INVALID_STATE,
-                             "Flush codec failed: not in running or Eos state");
+                             "%{public}s Flush codec failed: not in running or Eos state", decName_.c_str());
     state_ = State::FLUSHING;
+    AVCODEC_LOGI("%{public}s step into FLUSHING status", decName_.c_str());
     inputAvailQue_->SetActive(false, false);
-    codecAvailQue_->SetActive(false, false);
     sendTask_->Pause();
-
-    if (sInfo_.surface != nullptr) {
-        renderAvailQue_->SetActive(false, false);
-        requestSurfaceBufferQue_->SetActive(false, false);
-    }
+    codecAvailQue_->SetActive(false, false);
 
     ResetBuffers();
     int32_t ret = 0;
@@ -507,7 +523,7 @@ int32_t HevcDecoder::Flush()
         ret = hevcDecoderFlushFrameFunc_(hevcSDecoder_, &hevcDecoderOutpusArgs_);
     }
     state_ = State::FLUSHED;
-    AVCODEC_LOGI("Flush codec successful, state: Flushed");
+    AVCODEC_LOGI("%{public}s Flush codec successful, state: Flushed", decName_.c_str());
     return AVCS_ERR_OK;
 }
 
@@ -799,6 +815,7 @@ int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
                          buf->avBuffer->memory_->GetCapacity());
         }
         CHECK_AND_CONTINUE_LOG(buf->avBuffer != nullptr, "Allocate output buffer failed, index=%{public}d", i);
+        SetCallerToBuffer(buf->avBuffer->memory_->GetSurfaceBuffer());
         buffers_[INDEX_OUTPUT].emplace_back(buf);
         valBufferCnt++;
     }
@@ -840,10 +857,15 @@ int32_t HevcDecoder::AllocateOutputBuffersFromSurface(int32_t bufferCnt)
     requestSurfaceBufferQue_->SetActive(true);
     StartRequestSurfaceBufferThread();
     for (int32_t i = 0; i < bufferCnt; i++) {
-        std::shared_ptr<FSurfaceMemory> surfaceMemory = std::make_shared<FSurfaceMemory>(&sInfo_);
+        std::shared_ptr<FSurfaceMemory> surfaceMemory = std::make_shared<FSurfaceMemory>(&sInfo_, hevcDecInfo_);
         CHECK_AND_RETURN_RET_LOG(surfaceMemory != nullptr, AVCS_ERR_UNKNOWN, "Creata surface memory failed!");
-        ret = surfaceMemory->AllocSurfaceBuffer();
+        ret = surfaceMemory->AllocSurfaceBuffer(width_, height_);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Alloc surface buffer failed!");
+        sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
+        CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "surface buf(%{public}u) is null.", i);
+        ret = Attach(surfaceBuffer);
+        CHECK_AND_CONTINUE_LOG(ret == AVCS_ERR_OK, "surface buf(%{public}u) attach to surface failed.", i);
+        surfaceMemory->isAttached = true;
         std::shared_ptr<HBuffer> buf = std::make_shared<HBuffer>();
         CHECK_AND_RETURN_RET_LOG(buf != nullptr, AVCS_ERR_UNKNOWN, "Creata output buffer failed!");
         buf->sMemory = surfaceMemory;
@@ -898,6 +920,7 @@ int32_t HevcDecoder::UpdateOutputBuffer(uint32_t index)
                                  "Buffer allocate failed, index=%{public}d", index);
         AVCODEC_LOGI("update output buffer success: index=%{public}d, size=%{public}d", index,
                      outputBuffer->avBuffer->memory_->GetCapacity());
+        SetCallerToBuffer(outputBuffer->avBuffer->memory_->GetSurfaceBuffer());
 
         outputBuffer->owner_ = Owner::OWNED_BY_CODEC;
         outputBuffer->width = width_;
@@ -926,7 +949,7 @@ int32_t HevcDecoder::UpdateSurfaceMemory(uint32_t index)
             surfaceMemory->isAttached = false;
         }
         surfaceMemory->ReleaseSurfaceBuffer();
-        int32_t ret = surfaceMemory->AllocSurfaceBuffer();
+        int32_t ret = surfaceMemory->AllocSurfaceBuffer(width_, height_);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Alloc surface buffer failed!");
         sptr<SurfaceBuffer> newSurfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         CHECK_AND_RETURN_RET_LOG(newSurfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Alloc surface buffer failed!");
@@ -1025,6 +1048,7 @@ void HevcDecoder::ReleaseBuffers()
         StopRequestSurfaceBufferThread();
         renderAvailQue_->Clear();
         requestSurfaceBufferQue_->Clear();
+        std::unique_lock<std::mutex> mLock(renderBufferMapMutex_);
         renderSurfaceBufferMap_.clear();
         for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
             std::shared_ptr<HBuffer> outputBuffer = buffers_[INDEX_OUTPUT][i];
@@ -1065,7 +1089,7 @@ void HevcDecoder::SendFrame()
 {
     if (state_ == State::STOPPING || state_ == State::FLUSHING) {
         return;
-    } else if (state_ != State::RUNNING || isSendEos_) {
+    } else if (state_ != State::RUNNING || isSendEos_ || codecAvailQue_->Size() == 0u) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
@@ -1460,6 +1484,7 @@ int32_t HevcDecoder::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surface
         return AVCS_ERR_UNKNOWN;
     }
     renderSurfaceBufferMap_[index] = std::make_pair(surfaceBuffer, flushConfig);
+    renderAvailQue_->Push(index);
     return AVCS_ERR_OK;
 }
 
@@ -1483,7 +1508,6 @@ int32_t HevcDecoder::RenderOutputBuffer(uint32_t index)
             AVCODEC_LOGD("Flush surface memory(index=%{public}u) successful.", index);
         }
         frameBuffer->owner_ = Owner::OWNED_BY_SURFACE;
-        renderAvailQue_->Push(index);
         AVCODEC_LOGD("render output buffer with index, index=%{public}u", index);
         return AVCS_ERR_OK;
     } else {
@@ -1836,11 +1860,37 @@ int32_t HevcDecoder::SwapInBuffers(bool isOutputBuffer)
     return AVCS_ERR_OK;
 }
 
+void HevcDecoder::SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer)
+{
+    CHECK_AND_RETURN_LOG(surfaceBuffer != nullptr, "Surface buffer is nullptr!");
+    int32_t fd = surfaceBuffer->GetFileDescriptor();
+    CHECK_AND_RETURN_LOG(fd > 0, "Invalid fd %{public}d, surfacebuf(%{public}u)", fd, surfaceBuffer->GetSeqNum());
+    std::string type = "sw-video-decoder";
+    std::string mime(hevcDecInfo_.mimeType);
+    std::vector<std::string> splitMime;
+    std::string token;
+    std::istringstream iss(mime);
+    while (std::getline(iss, token, '/')) {
+        splitMime.push_back(token);
+    }
+    if (!splitMime.empty()) {
+        mime = splitMime.back();
+    }
+    std::string name =
+        std::to_string(width_) + "x" + std::to_string(height_) + "-" + mime + "-" + hevcDecInfo_.instanceId;
+    ioctl(fd, DMA_BUF_SET_TYPE, type.c_str());
+    ioctl(fd, DMA_BUF_SET_NAME_A, name.c_str());
+}
+
 void HevcDecLog(UINT32 channelId, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pMsg, ...)
 {
     va_list args;
     int32_t maxSize = 1024; // 1024 max size of one log
     std::vector<char> buf(maxSize);
+    if (buf.empty()) {
+        AVCODEC_LOGE("HevcDecLog buffer is empty!");
+        return;
+    }
     va_start(args, reinterpret_cast<const char*>(pMsg));
     int32_t size = vsnprintf_s(buf.data(), buf.size(), buf.size()-1, reinterpret_cast<const char*>(pMsg), args);
     va_end(args);

@@ -86,6 +86,12 @@ private:
         OWNED_BY_CLIENT = 1,
         OWNED_BY_USER = 2,
     } BufferOwner;
+
+    typedef enum : uint8_t {
+        MODE_ASYNC,
+        MODE_SYNC,
+    } ModeType;
+
     typedef struct BufferItem {
         std::shared_ptr<AVBuffer> buffer = nullptr;
         std::shared_ptr<AVSharedMemory> memory = nullptr;
@@ -107,12 +113,35 @@ private:
     static const std::string &OwnerToString(BufferOwner owner);
     void PrintCaches(bool isOutput);
     void ClearOutputBufferOwnedByCodec();
+    bool HasFlag(const CodecCircularFlag flag);
+    void AddFlag(const CodecCircularFlag flag);
+    void RemoveFlag(const CodecCircularFlag flag);
+
+    template <ModeType mode>
+    inline bool CanEnableMode()
+    {
+        bool isUnconfigured = !(flags_ & FLAG_SYNC_ASYNC_CONFIGURED);
+        bool modeMatched = !(flags_ & FLAG_IS_SYNC);
+        if constexpr (mode == MODE_SYNC) {
+            modeMatched = (flags_ & FLAG_IS_SYNC);
+        }
+        return isUnconfigured || modeMatched;
+    }
+
+    template <ModeType mode>
+    inline void EnableMode()
+    {
+        if constexpr (mode == MODE_SYNC) {
+            flags_ |= FLAG_IS_SYNC;
+        }
+        flags_ |= FLAG_SYNC_ASYNC_CONFIGURED;
+    }
 
     BufferCache inCache_;
     BufferCache outCache_;
     std::mutex inMutex_;
     std::mutex outMutex_;
-    std::atomic<uint8_t> flag_ = FLAG_NONE;
+    std::atomic<uint8_t> flags_ = FLAG_NONE;
 
     // Async mode
     void AsyncOnError(AVCodecErrorType errorType, int32_t errorCode);

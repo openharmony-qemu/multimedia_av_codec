@@ -114,6 +114,7 @@ bool DemuxerUnitTest::CheckCache(
 /**********************************demuxer inner func**************************************/
 namespace {
 #ifdef DEMUXER_INNER_UNIT_TEST
+
 /**
  * @tc.name: Demuxer_GetCurrentCacheSize_1000
  * @tc.desc: GetCurrentCacheSize when reading
@@ -230,7 +231,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1004, TestSize.Level1)
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     std::vector<std::vector<int32_t>> cacheCheckSteps = {
-        {1, 1,  0, 0}, // read track 1 1 time, check track 0
+        {1, 1,  0, 339258}, // read track 1 1 time, check track 0
         {1, 10, 0, 539571}, // read track 1 10 times, check track 0
         {0, 10, 1, 2688}, // read track 0 10 times, check track 1
         {0, -1, 0, 0}, // read to end

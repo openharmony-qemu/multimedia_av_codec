@@ -83,12 +83,30 @@ bool EncoderSetparameterFuzzTest(const uint8_t *data, size_t size)
         vEncSample->fuzzMode = true;
         OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
         string tmpCodecName = OH_AVCapability_GetName(cap);
-        vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
-        vEncSample->SetVideoEncoderCallback();
-        vEncSample->ConfigureVideoEncoder();
-        vEncSample->Start();
+        if (vEncSample->CreateVideoEncoder(tmpCodecName.c_str()) != AV_ERR_OK) {
+            delete vEncSample;
+            vEncSample = nullptr;
+            return false;
+        }
+        if (vEncSample->SetVideoEncoderCallback() != AV_ERR_OK) {
+            delete vEncSample;
+            vEncSample = nullptr;
+            return false;
+        }
+        if (vEncSample->ConfigureVideoEncoder() != AV_ERR_OK) {
+            delete vEncSample;
+            vEncSample = nullptr;
+            return false;
+        }
+        if (vEncSample->Start() != AV_ERR_OK) {
+            delete vEncSample;
+            vEncSample = nullptr;
+            return false;
+        }
     }
     SetRandomValue(data, size);
+    delete vEncSample;
+    vEncSample = nullptr;
     return true;
 }
 } // namespace OHOS

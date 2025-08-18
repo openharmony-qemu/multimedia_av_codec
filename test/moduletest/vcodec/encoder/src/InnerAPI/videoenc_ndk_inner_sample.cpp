@@ -34,10 +34,15 @@ constexpr int64_t NANOS_IN_MICRO = 1000L;
 constexpr uint32_t FRAME_INTERVAL = 16666;
 constexpr uint32_t MAX_PIXEL_FMT = 5;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
+constexpr uint32_t MILLION = 1000000;
 std::random_device rd;
 constexpr uint8_t RGBA_SIZE = 4;
+constexpr uint8_t THREE = 3;
+constexpr uint8_t TWO = 3;
 constexpr uint8_t FILE_END = -1;
 constexpr uint8_t LOOP_END = 0;
+constexpr uint32_t FIVE = 5;
+VEncNdkInnerSample *enc_sample = nullptr;
 int32_t g_picWidth;
 int32_t g_picHeight;
 int32_t g_keyWidth;
@@ -71,6 +76,15 @@ VEncInnerCallback::VEncInnerCallback(std::shared_ptr<VEncInnerSignal> signal) : 
 
 void VEncInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
+    if (enc_sample == nullptr) {
+        return;
+    }
+    if (errorCode == AVCS_ERR_INPUT_DATA_ERROR) {
+        enc_sample->errCount += 1;
+        enc_sample->isRunning_.store(false);
+        enc_sample->signal_->inCond_.notify_all();
+        enc_sample->signal_->outCond_.notify_all();
+    }
     cout << "Error errorType:" << errorType << " errorCode:" << errorCode << endl;
 }
 
@@ -149,13 +163,48 @@ int64_t VEncNdkInnerSample::GetSystemTimeUs()
 int32_t VEncNdkInnerSample::CreateByMime(const std::string &mime)
 {
     venc_ = VideoEncoderFactory::CreateByMime(mime);
+    enc_sample = this;
     return venc_ == nullptr ? AVCS_ERR_INVALID_OPERATION : AVCS_ERR_OK;
 }
 
 int32_t VEncNdkInnerSample::CreateByName(const std::string &name)
 {
     venc_ = VideoEncoderFactory::CreateByName(name);
+    enc_sample = this;
     return venc_ == nullptr ? AVCS_ERR_INVALID_OPERATION : AVCS_ERR_OK;
+}
+
+int32_t VEncNdkInnerSample::ConfigureVideoEncoderSqr()
+{
+    Format format;
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
+    if (MODE_ENABLE) {
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, DEFAULT_BITRATE_MODE);
+    }
+    if (SETBIRATE) {
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
+    }
+    if (QUALITY_ENABLE) {
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, DEFAULT_QUALITY);
+    }
+    if (B_ENABLE) {
+        format.PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, DEFAULT_BFRAME);
+    }
+    if (GOPMODE_ENABLE) {
+        format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, DEFAULT_GOP_MODE);
+    }
+    if (MAXBITE_ENABLE) {
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, DEFAULT_MAX_BITERATE);
+    }
+    if (FACTOR_ENABLE) {
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, DEFAULT_SQR_FACTOR);
+    }
+    if (MAXBFRAMES_ENABLE) {
+        format.PutIntValue(Media::Tag::VIDEO_ENCODER_MAX_B_FRAME, DEFAULT_MAX_B_FRAMES);
+    }
+    return venc_->Configure(format);
 }
 
 int32_t VEncNdkInnerSample::Configure()
@@ -163,7 +212,7 @@ int32_t VEncNdkInnerSample::Configure()
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
     if (configMain10) {
@@ -180,6 +229,12 @@ int32_t VEncNdkInnerSample::Configure()
     }
     if (isDiscardFrame) {
         format.PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_KEY_I_FRAME_INTERVAL);
+    }
+    format.PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, enbleSyncMode);
+    if (enbleBFrameMode) {
+        format.PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enbleBFrameMode);
+        format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
+            static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_H3B_MODE));
     }
     return venc_->Configure(format);
 }
@@ -275,6 +330,7 @@ int32_t VEncNdkInnerSample::Release()
 
 int32_t VEncNdkInnerSample::CreateInputSurface()
 {
+    int32_t ret = 0;
     sptr<Surface> surface = venc_->CreateInputSurface();
     if (surface == nullptr) {
         cout << "CreateInputSurface fail" << endl;
@@ -286,8 +342,12 @@ int32_t VEncNdkInnerSample::CreateInputSurface()
         cout << "CreateNativeWindowFromSurface failed!" << endl;
         return AVCS_ERR_INVALID_VAL;
     }
-
-    int32_t ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    if (DEFAULT_PIX_FMT == static_cast<int32_t>(VideoPixelFormat::RGBA1010102)) {
+        ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_FORMAT, NATIVEBUFFER_PIXEL_FMT_RGBA_1010102);
+    } else {
+        ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    }
+    
     if (ret != AVCS_ERR_OK) {
         cout << "NativeWindowHandleOpt SET_FORMAT fail" << endl;
         return ret;
@@ -376,22 +436,36 @@ int32_t VEncNdkInnerSample::StartVideoEncoder()
         return AVCS_ERR_UNKNOWN;
     }
     readMultiFilesFunc();
+    if (VideoEncoder() != AVCS_ERR_OK) {
+        return AVCS_ERR_UNKNOWN;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t VEncNdkInnerSample::VideoEncoder()
+{
     if (surfaceInput) {
         inputLoop_ = make_unique<thread>(&VEncNdkInnerSample::InputFuncSurface, this);
         inputParamLoop_ = isSetParamCallback_ ? make_unique<thread>(&VEncNdkInnerSample::InputParamLoopFunc,
          this):nullptr;
     } else {
-        inputLoop_ = make_unique<thread>(&VEncNdkInnerSample::InputFunc, this);
+        if (enbleSyncMode == 0) {
+            inputLoop_ = make_unique<thread>(&VEncNdkInnerSample::InputFunc, this);
+        } else {
+            inputLoop_ = make_unique<thread>(&VEncNdkInnerSample::SyncInputFunc, this);
+        }
     }
-
     if (inputLoop_ == nullptr) {
         isRunning_.store(false);
         venc_->Stop();
         ReleaseInFile();
         return AVCS_ERR_UNKNOWN;
     }
-    
-    outputLoop_ = make_unique<thread>(&VEncNdkInnerSample::OutputFunc, this);
+    if (enbleSyncMode == 0) {
+        outputLoop_ = make_unique<thread>(&VEncNdkInnerSample::OutputFunc, this);
+    } else {
+        outputLoop_ = make_unique<thread>(&VEncNdkInnerSample::SyncOutputFunc, this);
+    }
     if (outputLoop_ == nullptr) {
         isRunning_.store(false);
         venc_->Stop();
@@ -439,7 +513,13 @@ int32_t VEncNdkInnerSample::testApi()
 int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer, uint32_t index, int32_t &result)
 {
     int32_t res = -2;
-    uint32_t yuvSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * 3 / 2;
+    uint32_t yuvSize = 0;
+    if (DEFAULT_PIX_FMT == static_cast<int32_t>(VideoPixelFormat::RGBA1010102) ||
+        DEFAULT_PIX_FMT == static_cast<int32_t>(VideoPixelFormat::RGBA)) {
+        yuvSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * RGBA_SIZE;
+    } else {
+        yuvSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE / TWO;
+    }
     uint8_t *fileBuffer = buffer->GetBase();
     if (fileBuffer == nullptr) {
         cout << "Fatal: no memory" << endl;
@@ -478,9 +558,62 @@ int32_t VEncNdkInnerSample::PushData(std::shared_ptr<AVSharedMemory> buffer, uin
         venc_->SetParameter(format);
     }
     result = venc_->QueueInputBuffer(index, info, flag);
-    unique_lock<mutex> lock(signal_->inMutex_);
-    signal_->inIdxQueue_.pop();
-    signal_->inBufferQueue_.pop();
+    if (enbleSyncMode == 0) {
+        unique_lock<mutex> lock(signal_->inMutex_);
+        signal_->inIdxQueue_.pop();
+        signal_->inBufferQueue_.pop();
+    }
+
+    return res;
+}
+
+int32_t VEncNdkInnerSample::SyncPushData(std::shared_ptr<AVBuffer> buffer, uint32_t index, int32_t &result)
+{
+    int32_t res = -2;
+    uint32_t yuvSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * 3 / 2;
+    uint8_t *fileBuffer = buffer->memory_->GetAddr();
+    if (fileBuffer == nullptr) {
+        cout << "Fatal: no memory" << endl;
+        return -1;
+    }
+    (void)inFile_->read((char *)fileBuffer, yuvSize);
+
+    if (repeatRun && inFile_->eof()) {
+        inFile_->clear();
+        inFile_->seekg(0, ios::beg);
+        encodeCount++;
+        cout << "repeat" << "  encodeCount:" << encodeCount << endl;
+        return -1;
+    }
+
+    if (inFile_->eof()) {
+        SetEOS(index);
+        return 0;
+    }
+
+    AVCodecBufferInfo info;
+    info.presentationTimeUs = GetSystemTimeUs();
+    info.size = yuvSize;
+    info.offset = 0;
+    AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
+
+    int32_t size = buffer->memory_->GetCapacity();
+    if (size < (int32_t)yuvSize) {
+        cout << "bufferSize smaller than yuv size" << endl;
+        return -1;
+    }
+
+    if (enableForceIDR && (frameCount % IDR_FRAME_INTERVAL == 0)) {
+        Format format;
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_REQUEST_I_FRAME, 1);
+        venc_->SetParameter(format);
+    }
+    result = venc_->QueueInputBuffer(index, info, flag);
+    if (enbleSyncMode == 0) {
+        unique_lock<mutex> lock(signal_->inMutex_);
+        signal_->inIdxQueue_.pop();
+        signal_->inBufferQueue_.pop();
+    }
 
     return res;
 }
@@ -514,13 +647,15 @@ int32_t VEncNdkInnerSample::CheckResult(bool isRandomEosSuccess, int32_t pushRes
 
 int32_t VEncNdkInnerSample::CheckFlag(AVCodecBufferFlag flag)
 {
-    if (flag == AVCODEC_BUFFER_FLAG_EOS) {
+    if (flag & AVCODEC_BUFFER_FLAG_EOS) {
         cout << "flag == AVCODEC_BUFFER_FLAG_EOS" << endl;
-        unique_lock<mutex> inLock(signal_->inMutex_);
-        isRunning_.store(false);
-        signal_->inCond_.notify_all();
-        signal_->outCond_.notify_all();
-        inLock.unlock();
+        if (enbleSyncMode == 0) {
+            unique_lock<mutex> inLock(signal_->inMutex_);
+            isRunning_.store(false);
+            signal_->inCond_.notify_all();
+            signal_->outCond_.notify_all();
+            inLock.unlock();
+        }
         return -1;
     }
 
@@ -765,9 +900,11 @@ void VEncNdkInnerSample::SetEOS(uint32_t index)
 
     int32_t res = venc_->QueueInputBuffer(index, info, flag);
     cout << "QueueInputBuffer EOS res: " << res << endl;
-    unique_lock<mutex> lock(signal_->inMutex_);
-    signal_->inIdxQueue_.pop();
-    signal_->inBufferQueue_.pop();
+    if (enbleSyncMode == 0) {
+        unique_lock<mutex> lock(signal_->inMutex_);
+        signal_->inIdxQueue_.pop();
+        signal_->inBufferQueue_.pop();
+    }
 }
 
 void VEncNdkInnerSample::WaitForEOS()
@@ -787,6 +924,9 @@ void VEncNdkInnerSample::InputFuncSurface()
 {
     int32_t readFileIndex = 0;
     while (true) {
+        if (!isRunning_.load()) {
+            break;
+        }
         OHNativeWindowBuffer *ohNativeWindowBuffer = nullptr;
         OH_NativeBuffer *nativeBuffer = nullptr;
         uint8_t *dst = nullptr;
@@ -804,12 +944,23 @@ void VEncNdkInnerSample::InputFuncSurface()
                 OH_NativeWindow_NativeWindowAbortBuffer(nativeWindow, ohNativeWindowBuffer);
                 continue;
             }
-        } else if (!ReadOneFrameYUV420SP(dst)) {
+        } else if (DEFAULT_PIX_FMT == static_cast<int32_t>(VideoPixelFormat::NV12) && !ReadOneFrameYUV420SP(dst)) {
             err = venc_->NotifyEos();
             if (err != 0) {
                 cout << "OH_VideoEncoder_NotifyEndOfStream failed" << endl;
             }
             break;
+        } else if (DEFAULT_PIX_FMT == static_cast<int32_t>(VideoPixelFormat::RGBA1010102) &&
+            !ReadOneFrameRGBA8888(dst)) {
+            err = venc_->NotifyEos();
+            if (err != 0) {
+                cout << "OH_VideoEncoder_NotifyEndOfStream failed" << endl;
+            }
+            break;
+        }
+        if (inputFrameCount == FIVE && !isParamSet && enableParameter) {
+            SetParameter();
+            isParamSet = true;
         }
         inputFrameCount++;
         err = InputProcess(nativeBuffer, ohNativeWindowBuffer);
@@ -948,8 +1099,67 @@ void VEncNdkInnerSample::InputFunc()
             } else if (ret == -1) {
                 continue;
             }
+            if (CheckResult(isRandomEosSuccess, pushResult) == -1) {
+                break;
+            }
+            if (frameCount == FIVE && !isParamSet && enableParameter) {
+                SetParameter();
+                isParamSet = true;
+            }
+            frameCount++;
+        }
+        if (sleepOnFPS) {
+            usleep(FRAME_INTERVAL);
+        }
+    }
+}
+
+int32_t VEncNdkInnerSample::SetParameter()
+{
+    Format format;
+    if (SETBIRATE_RUN) {
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE_RUN);
+    }
+    if (MAXBITE_ENABLE_RUN) {
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, DEFAULT_MAX_BITERATE_RUN);
+    }
+    if (FACTOR_ENABLE_RUN) {
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, DEFAULT_SQR_FACTOR_RUN);
+    }
+    return venc_->SetParameter(format);
+}
+
+void VEncNdkInnerSample::SyncInputFunc()
+{
+    errCount = 0;
+    while (isRunning_.load()) {
+        uint32_t index;
+        if (venc_->QueryInputBuffer(index, syncInputWaitTime) != AVCS_ERR_OK) {
+            cout << "QueryInputBuffer faile" << endl;
+            continue;
+        }
+        std::shared_ptr<AVBuffer> buffer = venc_->GetInputBuffer(index);
+        if (buffer == nullptr) {
+            cout << "GetInputBuffer fail" << endl;
+            errCount = errCount + 1;
+            continue;
+        }
+        if (!inFile_->eof()) {
+            bool isRandomEosSuccess = RandomEOS(index);
+            if (isRandomEosSuccess) {
+                continue;
+            }
+            int32_t pushResult = 0;
+            int32_t ret = SyncPushData(buffer, index, pushResult);
+            if (ret == 0) {
+                isRunning_.store(false);
+                break;
+            } else if (ret == -1) {
+                continue;
+            }
 
             if (CheckResult(isRandomEosSuccess, pushResult) == -1) {
+                isRunning_.store(false);
                 break;
             }
             frameCount++;
@@ -1013,6 +1223,67 @@ void VEncNdkInnerSample::OutputFunc()
         }
     }
     (void)fclose(outFile);
+}
+
+void VEncNdkInnerSample::SyncOutputFunc()
+{
+    FILE *outFile = fopen(OUT_DIR, "wb");
+
+    while (isRunning_.load()) {
+        uint32_t index = 0;
+        cout << "QueryOutputBuffer start" << endl;
+        if (venc_->QueryOutputBuffer(index, syncOutputWaitTime) != AVCS_ERR_OK) {
+            cout << "QueryOutputBuffer fail" << endl;
+            continue;
+        }
+        cout << "QueryOutputBuffer succ" << endl;
+        std::shared_ptr<AVBuffer> buffer = venc_->GetOutputBuffer(index);
+        if (buffer == nullptr) {
+            cout << "GetOutputBuffer fail" << endl;
+            errCount = errCount + 1;
+            continue;
+        }
+        AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(buffer->flag_);
+        if (SyncOutputFuncEos(flag, index) != AVCS_ERR_OK) {
+            isRunning_.store(false);
+            break;
+        }
+        int size = buffer->memory_->GetSize();
+        if (outFile == nullptr) {
+            cout << "dump data fail" << endl;
+        } else {
+            fwrite(buffer->memory_->GetAddr(), 1, size, outFile);
+        }
+
+        if (venc_->ReleaseOutputBuffer(index) != AVCS_ERR_OK) {
+            cout << "Fatal: ReleaseOutputBuffer fail" << endl;
+            errCount = errCount + 1;
+        }
+        if (errCount > 0) {
+            OutputFuncFail();
+            isRunning_.store(false);
+            break;
+        }
+    }
+    (void)fclose(outFile);
+}
+
+int32_t VEncNdkInnerSample::SyncOutputFuncEos(AVCodecBufferFlag flag, uint32_t index)
+{
+    if (CheckFlag(flag) == -1) {
+        if (queryInputBufferEOS) {
+            venc_->QueryInputBuffer(index, 0);
+            venc_->QueryInputBuffer(index, MILLION);
+            venc_->QueryInputBuffer(index, -1);
+        }
+        if (queryOutputBufferEOS) {
+            venc_->QueryOutputBuffer(index, 0);
+            venc_->QueryOutputBuffer(index, MILLION);
+            venc_->QueryOutputBuffer(index, -1);
+        }
+        return AVCS_ERR_UNKNOWN;
+    }
+    return AV_ERR_OK;
 }
 
 void VEncNdkInnerSample::OutputFuncFail()

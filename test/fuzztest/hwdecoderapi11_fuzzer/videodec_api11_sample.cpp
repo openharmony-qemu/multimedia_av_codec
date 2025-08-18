@@ -141,6 +141,7 @@ int32_t VDecApi11FuzzSample::ConfigureVideoDecoder()
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, defaultFrameRate);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, 0);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, enbleBlankFrame);
     int ret = OH_VideoDecoder_Configure(vdec_, format);
     OH_AVFormat_Destroy(format);
     if (isSurfMode) {
@@ -176,7 +177,9 @@ int32_t VDecApi11FuzzSample::CreateVideoDecoder()
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     string codecName = OH_AVCapability_GetName(cap);
     vdec_ = OH_VideoDecoder_CreateByName("aabbcc");
+    bool isValid = false;
     if (vdec_) {
+        OH_VideoDecoder_IsValid(vdec_, &isValid);
         OH_VideoDecoder_Destroy(vdec_);
         vdec_ = nullptr;
     }
@@ -186,6 +189,7 @@ int32_t VDecApi11FuzzSample::CreateVideoDecoder()
         tmpDec = nullptr;
     }
     tmpDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    OH_VideoDecoder_IsValid(vdec_, &isValid);
     if (tmpDec) {
         OH_VideoDecoder_Destroy(tmpDec);
         tmpDec = nullptr;

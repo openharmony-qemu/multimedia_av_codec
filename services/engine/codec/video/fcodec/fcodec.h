@@ -102,7 +102,7 @@ private:
     void CalculateBufferSize();
     int32_t AllocateBuffers();
     void InitBuffers();
-    void ResetBuffers();
+    void FlushBuffers();
     void ResetData();
     void ReleaseBuffers();
     void StopThread();
@@ -144,7 +144,6 @@ private:
     int32_t Detach(sptr<SurfaceBuffer> surfaceBuffer);
     void CombineConsumerUsage();
     // surface listener callback
-    void RequestBufferFromConsumer();
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
     int32_t RegisterListenerToSurface(const sptr<Surface> &surface);
     void UnRegisterListenerToSurface(const sptr<Surface> &surface);
@@ -174,6 +173,7 @@ private:
     int32_t outputBufferCnt_ = 0;
     // INIT
     std::shared_ptr<AVCodec> avCodec_ = nullptr;
+    CallerInfo fDecInfo_;
     // Config
     std::shared_ptr<AVCodecContext> avCodecContext_ = nullptr;
     // Start
@@ -206,6 +206,7 @@ private:
     std::mutex surfaceMutex_;
     std::mutex formatMutex_;
     std::mutex requestBufferMutex_;
+    std::mutex renderBufferMapMutex_;
     std::condition_variable requestBufferCV_;
     std::condition_variable requestBufferOnceDoneCV_;
     std::condition_variable sendCv_;

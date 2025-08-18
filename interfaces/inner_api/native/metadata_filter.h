@@ -70,6 +70,11 @@ protected:
 
 private:
     void UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, int64_t timestamp);
+    bool AcquireInputBuffer(sptr<SurfaceBuffer>& buffer, int64_t& timestamp,
+        int32_t& bufferSize);
+    bool ProcessAndPushOutputBuffer(sptr<SurfaceBuffer>& buffer, int64_t timestamp,
+        int32_t bufferSize);
+
     static constexpr uint32_t METASURFACE_USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE |
                                                   BUFFER_USAGE_MEM_DMA;
     std::string name_;

@@ -141,7 +141,7 @@ inline void ResetAudioRendererParams(OHOS::AudioStandard::AudioRendererParams &p
     param.channelCount = OHOS::AudioStandard::MONO;
     param.encodingType = ENCODING_INVALID;
 }
-constexpr int32_t CALLBACK_BUFFER_DURATION_IN_MILLISECONDS = 20;
+constexpr int32_t CALLBACK_BUFFER_DURATION_IN_MILLISECONDS = 40;
 } // namespace
 
 namespace OHOS {
@@ -1061,7 +1061,7 @@ int32_t AudioServerSinkPlugin::WriteAudioVivid(const std::shared_ptr<OHOS::Media
 
 Status AudioServerSinkPlugin::Flush()
 {
-    MEDIA_LOG_I_SHORT("Flush entered.");
+    MEDIA_LOG_D_SHORT("Flush entered.");
     DrainCacheData(false);
     if (audioRenderer_ == nullptr) {
         return Status::ERROR_WRONG_STATE;

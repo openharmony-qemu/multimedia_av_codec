@@ -32,22 +32,37 @@ bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     }
     bool result = false;
     FuzzedDataProvider fdp(data, size);
-    int consumeWidth = fdp.ConsumeIntegral<int32_t>();
-    int consumeHeight = fdp.ConsumeIntegral<int32_t>();
-    int consumeFrameRate = fdp.ConsumeIntegral<int32_t>();
-    int consumeRotation  = fdp.ConsumeIntegral<int32_t>();
-    int consumePixelFormat = fdp.ConsumeIntegral<int32_t>();
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
     vDecSample->inpDir = "/data/test/media/1280_720_30.m4v";
-    vDecSample->defaultWidth = consumeWidth;
-    vDecSample->defaultHeight = consumeHeight;
-    vDecSample->defaultFrameRate = consumeFrameRate;
-    vDecSample->defaultRotation = consumeRotation ;
-    vDecSample->defaultPixelFormat = consumePixelFormat;
-    vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG4");
-    vDecSample->ConfigureVideoDecoder();
-    vDecSample->SetVideoDecoderCallback();
-    vDecSample->StartVideoDecoder();
+    int32_t lengthMin = 176;
+    int32_t lengthMax = 4096;
+    int32_t frameRateMin = 1;
+    int32_t frameRateMax = 1000;
+    vDecSample->defaultWidth = std::clamp(fdp.ConsumeIntegral<int32_t>(), lengthMin, lengthMax);
+    vDecSample->defaultHeight = std::clamp(fdp.ConsumeIntegral<int32_t>(), lengthMin, lengthMax);
+    vDecSample->defaultFrameRate = std::clamp(fdp.ConsumeIntegral<int32_t>(), frameRateMin, frameRateMax);
+    std::vector<int32_t> rotations = {0, 90, 180, 270};
+    size_t index = fdp.ConsumeIntegralInRange<size_t>(0, rotations.size() - 1);
+    vDecSample->defaultRotation = rotations[index];
+    std::vector<int32_t> pixelFormats = {1, 2, 3, 4, 5};
+    size_t pfIndex = fdp.ConsumeIntegralInRange<size_t>(0, pixelFormats.size() - 1);
+    vDecSample->defaultPixelFormat = pixelFormats[pfIndex];
+    if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG4") != AV_ERR_OK) {
+        delete vDecSample;
+        return false;
+    }
+    if (vDecSample->ConfigureVideoDecoder() != AV_ERR_OK) {
+        delete vDecSample;
+        return false;
+    }
+    if (vDecSample->SetVideoDecoderCallback() != AV_ERR_OK) {
+        delete vDecSample;
+        return false;
+    }
+    if (vDecSample->StartVideoDecoder() != AV_ERR_OK) {
+        delete vDecSample;
+        return false;
+    }
     vDecSample->WaitForEOS();
     vDecSample->Release();
     delete vDecSample;

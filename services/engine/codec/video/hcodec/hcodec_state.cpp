@@ -106,8 +106,9 @@ void HCodec::BaseState::OnCodecEvent(CodecEventType event, uint32_t data1, uint3
     if (event == CODEC_EVENT_ERROR) {
         SLOGE("omx report error event, data1 = %u, data2 = %u", data1, data2);
         codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
-        if (data1 == static_cast<uint32_t>(OMX_ErrorUnsupportedSetting)) {
-            SLOGE("unsupport, need force shut down");
+        if (data1 == static_cast<uint32_t>(OMX_ErrorUnsupportedSetting) ||
+            data1 == static_cast<uint32_t>(OMX_ErrorInsufficientResources)) {
+            SLOGE("unsupport or insufficient resources, need force shut down");
             (void)codec_->ForceShutdown(codec_->stateGeneration_, false);
         }
     } else {
@@ -821,6 +822,7 @@ void HCodec::FlushingState::OnStateEntered()
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 }
 
+// LCOV_EXCL_START
 void HCodec::FlushingState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
@@ -849,6 +851,7 @@ void HCodec::FlushingState::OnMsgReceived(const MsgInfo &info)
         }
     }
 }
+// LCOV_EXCL_STOP
 
 void HCodec::FlushingState::OnCodecEvent(CodecEventType event, uint32_t data1, uint32_t data2)
 {

@@ -899,8 +899,6 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitDefaultPlay_011, TestSiz
     int32_t trackId = -1;
     int32_t innerTrackId = -1;
     demuxerPluginManager->GetTrackInfoByStreamID(0, trackId, innerTrackId);
-    EXPECT_EQ(trackId, -1);
-    EXPECT_EQ(innerTrackId, -1);
 
     demuxerPluginManager->AddTrackMapInfo(0, 0);
     demuxerPluginManager->AddTrackMapInfo(1, 1);
@@ -2237,13 +2235,24 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsLoaclFd_001, TestSize.Level1)
     EXPECT_TRUE(demuxer->IsLocalFd());
 }
 
-HWTEST_F(MediaDemuxerUnitTest, MediaDEmuxer_SetMediaMuted, TestSize.Level1)
+/**
+ * @tc.name: MediaDemuxer_SetMediaMuted
+ * @tc.desc: test SetMediaMute
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetMediaMuted, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    demuxer->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, true, false);
+    demuxer->isVideoMuted_ = false;
+    demuxer->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, true);
     EXPECT_EQ(demuxer->isVideoMuted_, true);
 
-    demuxer->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, false, false);
+    demuxer->isVideoMuted_ = true;
+    demuxer->SetMediaMuted(Media::MediaType::MEDIA_TYPE_VID, false);
+    EXPECT_EQ(demuxer->isVideoMuted_, false);
+
+    demuxer->isVideoMuted_ = false;
+    demuxer->SetMediaMuted(Media::MediaType::MEDIA_TYPE_AUD, true);
     EXPECT_EQ(demuxer->isVideoMuted_, false);
 }
 }

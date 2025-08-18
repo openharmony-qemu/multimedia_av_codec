@@ -96,8 +96,8 @@ constexpr int MIN_BIT_RATE_VIVID_DECODER = 16000;
 constexpr int MAX_BIT_RATE_VIVID_DECODER = 3075000;
 constexpr int MAX_CHANNEL_COUNT_VIVID = 16;
 const std::vector<int32_t> AUDIO_L2HC_SAMPLE_RATE = {44100, 48000, 88200, 96000, 176400, 192000};
-constexpr int MIN_BITRATE_L2HC = 40000;
-constexpr int MAX_BITRATE_L2HC = 60000000;
+constexpr int MIN_BITRATE_L2HC = 160000;
+constexpr int MAX_BITRATE_L2HC = 10000000;
 constexpr int MAX_CHANNEL_COUNT_L2HC = 12;
 constexpr int MAX_SUPPORT_L2HC_VERSION = 4;
 #endif
@@ -112,12 +112,13 @@ constexpr int MAX_BIT_RATE_G711MU_DECODER = 64000;
 constexpr int MAX_BIT_RATE_G711MU_ENCODER = 64000;
 constexpr int MAX_BIT_RATE_G711A_DECODER = 64000;
 
-const std::string VENDOR_AAC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libaac_enc.z.so";
+const std::string VENDOR_AAC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libaudiocodec_aac_proxy_1.0.z.so";
 
 static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sampleRate)
 {
     std::vector<Range> sampleRateRange;
-    for (auto i = 0; i < sampleRate.size(); i++) {
+    uint32_t sampleRateSize = sampleRate.size();
+    for (uint32_t i = 0; i < sampleRateSize; i++) {
         sampleRateRange.push_back(Range(sampleRate[i], sampleRate[i]));
     }
     return sampleRateRange;

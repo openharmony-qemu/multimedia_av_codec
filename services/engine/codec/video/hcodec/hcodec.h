@@ -242,6 +242,7 @@ protected:
     void PrintStatistic(const TimePoint& now, OMX_DIRTYPE port);
     void UpdateInputRecord(const TimePoint& now, const BufferInfo& info);
     void UpdateOutputRecord(const TimePoint& now, const BufferInfo& info);
+    void FaultEventWrite(const std::string& faultType, const std::string& msg);
 
     // configure
     virtual int32_t OnConfigure(const Format &format) = 0;
@@ -266,7 +267,7 @@ protected:
     // start
     virtual bool ReadyToStart() = 0;
     virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) = 0;
-    virtual void SetCallerToBuffer(int fd) {}
+    void SetCallerToBuffer(int fd, uint32_t w, uint32_t h);
     virtual void UpdateFormatFromSurfaceBuffer() = 0;
     int32_t GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex);
@@ -397,6 +398,7 @@ protected:
     OMX_VIDEO_CODINGTYPE codingType_;
     bool isEncoder_;
     bool isSecure_ = false;
+    std::string mime_;
     std::string shortName_;
     uint32_t componentId_ = 0;
     std::string compUniqueStr_;
@@ -619,6 +621,7 @@ private:
     static constexpr uint32_t ONE_SECONDS_IN_US = 1'000'000;
     static constexpr uint32_t FIVE_SECONDS_IN_MS = 5'000;
     static constexpr double HIGH_FPS = 120.0;
+    static constexpr char HISYSEVENT_DOMAIN_HCODEC[] = "AV_CODEC";
 
     std::shared_ptr<UninitializedState> uninitializedState_;
     std::shared_ptr<InitializedState> initializedState_;

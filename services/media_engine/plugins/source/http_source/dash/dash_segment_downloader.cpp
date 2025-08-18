@@ -389,12 +389,13 @@ void DashSegmentDownloader::CalculateBitRate(size_t fragmentSize, double duratio
 
 void DashSegmentDownloader::HandleCachedDuration()
 {
-    if (realTimeBitBate_ <= 0) {
+    auto tmpBitRate = realTimeBitBate_;
+    if (tmpBitRate <= 0) {
         return;
     }
 
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(buffer_->GetSize()) *
-        BYTES_TO_BIT * SECOND_TO_MILLISECONDS) / realTimeBitBate_);
+        BYTES_TO_BIT * SECOND_TO_MILLISECONDS) / tmpBitRate);
     if ((cachedDuration > lastDurationRecord_ &&
          cachedDuration - lastDurationRecord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
         (lastDurationRecord_ > cachedDuration &&

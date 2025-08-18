@@ -35,6 +35,14 @@ enum class Owner {
     OWNED_BY_SURFACE,
 };
 
+struct CallerInfo {
+    int32_t pid = -1;
+    std::string instanceId = "";
+    std::string processName = "";
+    std::string_view mimeType = "";
+    bool calledByAvcodec = true;
+};
+
 struct SurfaceControl {
     sptr<Surface> surface = nullptr;
     BufferRequestConfig requestConfig = {.width = 0,
@@ -48,24 +56,26 @@ struct SurfaceControl {
 
 class FSurfaceMemory {
 public:
-    FSurfaceMemory(SurfaceControl *sInfo) : sInfo_(sInfo)
+    FSurfaceMemory(SurfaceControl *sInfo, CallerInfo &decInfo) : decInfo_(decInfo), sInfo_(sInfo)
     {
         isAttached = false;
     }
     ~FSurfaceMemory();
-    int32_t AllocSurfaceBuffer();
+    int32_t AllocSurfaceBuffer(int32_t width, int32_t height);
     void ReleaseSurfaceBuffer();
     sptr<SurfaceBuffer> GetSurfaceBuffer();
     int32_t GetSurfaceBufferStride();
     sptr<SyncFence> GetFence();
     uint8_t *GetBase() const;
     int32_t GetSize() const;
-    bool isAttached = false;
-    Owner owner = Owner::OWNED_BY_US;
+    std::atomic<bool> isAttached = false;
+    std::atomic<Owner> owner = Owner::OWNED_BY_US;
 
 private:
     void SetSurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, Owner toChangeOwner);
     int32_t RequestSurfaceBuffer();
+    void SetCallerToBuffer(int32_t w, int32_t h);
+    CallerInfo decInfo_;
     sptr<SurfaceBuffer> surfaceBuffer_ = nullptr;
     sptr<SyncFence> fence_ = nullptr;
     int32_t stride_ = 0;

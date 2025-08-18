@@ -53,6 +53,7 @@ public:
 private:
     std::shared_ptr<MediaDemuxer> mediaDemuxer_ = nullptr;
     std::string sourceUri_;
+    std::shared_mutex mutex_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

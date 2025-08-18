@@ -124,23 +124,6 @@ int64_t ConvertTimeFromFFmpeg(int64_t pts, AVRational base)
     return out;
 }
 
-int64_t ConvertPts(int64_t pts, int64_t startTime)
-{
-    int64_t inputPts;
-    if (startTime >= 0 && (pts < INT64_MIN + startTime)) {
-        inputPts = AV_NOPTS_VALUE;
-        MEDIA_LOG_D("pts is anomalous, pts: " PUBLIC_LOG_D64, pts);
-        return inputPts;
-    } else if (startTime < 0 && (pts > INT64_MAX + startTime)) {
-        inputPts = AV_NOPTS_VALUE;
-        MEDIA_LOG_D("pts is anomalous, pts: " PUBLIC_LOG_D64, pts);
-        return inputPts;
-    }
-    inputPts = pts - startTime;
-
-    return inputPts;
-}
-
 int64_t ConvertTimeToFFmpeg(int64_t timestampNs, AVRational base)
 {
     int64_t result;
@@ -167,23 +150,6 @@ int64_t ConvertTimeToFFmpegByUs(int64_t timestampUs, AVRational base)
     MEDIA_LOG_D("Base: [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "], time convert ["
         PUBLIC_LOG_D64 "]->[" PUBLIC_LOG_D64 "].", base.num, base.den, timestampUs, result);
     return result;
-}
-
-std::string_view ConvertFFmpegMediaTypeToString(AVMediaType mediaType)
-{
-    static const std::unordered_map<AVMediaType, std::string_view> table = {
-        {AVMediaType::AVMEDIA_TYPE_VIDEO, "video"},
-        {AVMediaType::AVMEDIA_TYPE_AUDIO, "audio"},
-        {AVMediaType::AVMEDIA_TYPE_DATA, "data"},
-        {AVMediaType::AVMEDIA_TYPE_SUBTITLE, "subtitle"},
-        {AVMediaType::AVMEDIA_TYPE_ATTACHMENT, "attachment"},
-        {AVMediaType::AVMEDIA_TYPE_TIMEDMETA, "timedmetadata"}
-    };
-    auto it = table.find(mediaType);
-    if (it == table.end()) {
-        return "unknow";
-    }
-    return it->second;
 }
 
 bool StartWith(const char* name, const char* chars)
@@ -394,38 +360,6 @@ std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate,
     return codecConfig;
 }
 
-void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
-{
-    (void)avcl;
-    char buf[500] = {0}; // 500
-    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, fmt, vl);
-    if (ret < 0) {
-        return;
-    }
-    switch (level) {
-        case AV_LOG_WARNING:
-            MEDIA_LOG_D("[FFLogW] " PUBLIC_LOG_S, buf);
-            break;
-        case AV_LOG_ERROR:
-            MEDIA_LOG_E("[FFLogE] " PUBLIC_LOG_S, buf);
-            break;
-        case AV_LOG_FATAL:
-            MEDIA_LOG_E("[FFLogF] " PUBLIC_LOG_S, buf);
-            break;
-        case AV_LOG_PANIC:
-            MEDIA_LOG_E("[FFLogP] " PUBLIC_LOG_S, buf);
-            break;
-        case AV_LOG_INFO:
-            MEDIA_LOG_D("[FFLogI] " PUBLIC_LOG_S, buf);
-            break;
-        case AV_LOG_DEBUG:
-            MEDIA_LOG_D("[FFLogD] " PUBLIC_LOG_S, buf);
-            break;
-        default:
-            break;
-    }
-}
-
 int FindNaluSpliter(int size, const uint8_t* data)
 {
     int naluPos = -1;
@@ -481,26 +415,6 @@ void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID
     if (canDrop) {
         sample->meta_->SetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, true);
     }
-}
-
-bool IsInputFormatSupported(const char* name)
-{
-    MEDIA_LOG_D("Check support " PUBLIC_LOG_S " or not.", name);
-    if (!strcmp(name, "audio_device") || StartWith(name, "image") ||
-        !strcmp(name, "mjpeg") || !strcmp(name, "redir") || StartWith(name, "u8") ||
-        StartWith(name, "u16") || StartWith(name, "u24") ||
-        StartWith(name, "u32") ||
-        StartWith(name, "s8") || StartWith(name, "s16") ||
-        StartWith(name, "s24") ||
-        StartWith(name, "s32") || StartWith(name, "f32") ||
-        StartWith(name, "f64") ||
-        !strcmp(name, "mulaw") || !strcmp(name, "alaw")) {
-        return false;
-    }
-    if (!strcmp(name, "sdp") || !strcmp(name, "rtsp") || !strcmp(name, "applehttp")) {
-        return false;
-    }
-    return true;
 }
 
 int64_t AvTime2Us(int64_t hTime)
@@ -583,7 +497,7 @@ bool FlacCodecConfig::Update()
 
 void FlacCodecConfig::UpdateNewConfig(uint8_t *data, size_t size)
 {
-    if (size != mCodecConfig.size() || size < FLAC_CODEC_CONFIG_SIZE) {
+    if (size != mCodecConfig.size() || size < FLAC_CODEC_CONFIG_SIZE || data == nullptr) {
         MEDIA_LOG_E("UpdateNewConfig failed! curSize:%{public}zu, size:%{public}zu", mCodecConfig.size(), size);
         return;
     }
@@ -611,7 +525,10 @@ void FlacCodecConfig::UpdateNewConfig(uint8_t *data, size_t size)
         mChannels = tmpChannels;
         mBitPerSample = tmpBitPerSample;
     }
-    memcpy_s(mCodecConfig.data(), mCodecConfig.size(), data, size);
+    if (memcpy_s(mCodecConfig.data(), mCodecConfig.size(), data, size) != EOK) {
+        MEDIA_LOG_E("flac UpdateNewConfig memcpy_s failed!");
+        return;
+    }
     mIsUpdateExtraData = true;
 }
 
@@ -650,7 +567,7 @@ void FlacCodecConfig::UpdatePerFrame(uint8_t* data, size_t size)
     constexpr uint32_t index3 = 3;
     constexpr uint32_t index6 = 6;
     constexpr uint32_t index7 = 7;
-    if (size < minSize) {
+    if (size < minSize || data == nullptr) {
         return;
     }
     if (data[0] != 0xff || (data[1] & 0xf8) != 0xf8) {  // flac frame head
@@ -688,6 +605,18 @@ void FlacCodecConfig::UpdatePerFrame(uint8_t* data, size_t size)
         mMinFrameSize = size;
     }
     mIsUpdateExtraData = false;
+}
+
+std::string hexEncode(const std::vector<uint8_t>& data)
+{
+    static const char hexDigits[] = "0123456789ABCDEF";
+    std::string result;
+    result.reserve(data.size() * 2); // extend data size 2
+    for (unsigned char c : data) {
+        result.push_back(hexDigits[(c >> 4) & 0xF]); // shift right by 4
+        result.push_back(hexDigits[c & 0xF]);
+    }
+    return result;
 }
 } // namespace Ffmpeg
 } // namespace Plugins

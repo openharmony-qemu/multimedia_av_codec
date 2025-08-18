@@ -15,8 +15,7 @@
 
 #include "hdecoder.h"
 #include <cassert>
-#include <sys/ioctl.h>
-#include <linux/dma-buf.h>
+#include <sstream>
 #include "hdf_base.h"
 #include "codec_omx_ext.h"
 #include "media_description.h"  // foundation/multimedia/av_codec/interfaces/inner_api/native/
@@ -182,14 +181,15 @@ int32_t HDecoder::UpdateOutPortFormat()
 
     uint32_t w = def.format.video.nFrameWidth;
     uint32_t h = def.format.video.nFrameHeight;
+    bool isNeedUseDecResolution = static_cast<bool>(reinterpret_cast<uintptr_t>(def.format.video.pNativeRender));
 
     // save into member variable
     OHOS::Rect damage{};
     GetCropFromOmx(w, h, damage);
     outBufferCnt_ = def.nBufferCountActual;
     requestCfg_.timeout = 0; // never wait when request
-    requestCfg_.width = damage.w;
-    requestCfg_.height = damage.h;
+    requestCfg_.width = isNeedUseDecResolution ? def.format.video.nFrameWidth : damage.w;
+    requestCfg_.height = isNeedUseDecResolution ? def.format.video.nFrameHeight : damage.h;
     requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
     requestCfg_.format = configuredFmt_.graphicFmt;
     requestCfg_.usage = GetProducerUsage();
@@ -211,7 +211,8 @@ int32_t HDecoder::UpdateOutPortFormat()
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(configuredFmt_.innerFmt));
     outputFormat_->PutIntValue("IS_VENDOR", 1);
-    HLOGI("output format: %s", outputFormat_->Stringify().c_str());
+    HLOGI("needUseDecReso %d, Request Reso %dx%d, output format: %s",
+          isNeedUseDecResolution, requestCfg_.width, requestCfg_.height, outputFormat_->Stringify().c_str());
     return AVCS_ERR_OK;
 }
 
@@ -331,6 +332,7 @@ int32_t HDecoder::OnSetParameters(const Format &format)
         codecRate_ = frameRate.value();
     }
     (void)SetVrrEnable(format);
+    (void)SetLppTargetPts(format);
     return AVCS_ERR_OK;
 }
 
@@ -494,6 +496,23 @@ int32_t HDecoder::InitVrr()
     return AVCS_ERR_OK;
 }
 #endif
+
+int32_t HDecoder::SetLppTargetPts(const Format &format)
+{
+    int64_t targetPts = 0;
+    if (!format.GetLongValue("video_seek_pts", targetPts)) {
+        return AVCS_ERR_OK;
+    }
+    HLOGI("SetLppTargetPts targePts = %lld", targetPts);
+    LppTargetPtsParam param;
+    InitOMXParamExt(param);
+    param.targetPts = targetPts;
+    if (!SetParameter(OMX_IndexParamLppTargetPts, param)) {
+        HLOGI("SetLppTargetPts failed");
+        return AVCS_ERR_INVALID_OPERATION;
+    }
+    return AVCS_ERR_OK;
+}
 // LCOV_EXCL_STOP
 
 int32_t HDecoder::SubmitOutputBuffersToOmxNode()
@@ -553,6 +572,7 @@ bool HDecoder::ReadyToStart()
     }
     if (currSurface_.surface_) {
         HLOGI("surface mode");
+        requestCfg_.usage = GetProducerUsage();
         cfgedConsumerUsage = currSurface_.surface_->GetDefaultUsage();
         SetTransform();
         SetScaleMode();
@@ -579,20 +599,6 @@ int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
     return ret;
 }
 
-void HDecoder::SetCallerToBuffer(int fd)
-{
-    if (currSurface_.surface_ == nullptr) {
-        return; // only set on surface mode
-    }
-    string pid = std::to_string(caller_.app.pid);
-    int ret = ioctl(fd, DMA_BUF_SET_NAME_A, pid.c_str());
-    if (ret != 0) {
-        HLOGD("set pid %s to fd %d failed", pid.c_str(), fd);
-        return;
-    }
-    HLOGD("set pid %s to fd %d succ", pid.c_str(), fd);
-}
-
 void HDecoder::UpdateFormatFromSurfaceBuffer()
 {
     if (outputBufferPool_.empty()) {
@@ -602,10 +608,6 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
     if (surfaceBuffer == nullptr) {
         return;
     }
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, surfaceBuffer->GetWidth());
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, surfaceBuffer->GetHeight());
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, surfaceBuffer->GetWidth());
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, surfaceBuffer->GetHeight());
     int32_t stride = surfaceBuffer->GetStride();
     if (stride <= 0) {
         HLOGW("invalid stride %d", stride);
@@ -688,6 +690,10 @@ void HDecoder::ProcAVBufferToUser(shared_ptr<AVBuffer> avBuffer, shared_ptr<Code
                 IF_TRUE_RETURN_VOID(inputStreamError == nullptr);
                 meta->SetData(OHOS::Media::Tag::VIDEO_DECODER_INPUT_STREAM_ERROR, *inputStreamError);
                 HLOGI("inputStreamError: %d, pts: %" PRId64" ", *inputStreamError, omxBuffer->pts);
+                std::stringstream sysEventMsg;
+                sysEventMsg << "[" << caller_.app.processName << "]" << compUniqueStr_;
+                sysEventMsg << "PTS: " << omxBuffer->pts;
+                FaultEventWrite("INPUT_STREAM_ERROR", sysEventMsg.str());
                 break;
             }
             default:
@@ -821,6 +827,7 @@ int32_t HDecoder::AllocOutDynamicSurfaceBuf()
     return AVCS_ERR_OK;
 }
 
+// LCOV_EXCL_START
 int32_t HDecoder::AllocateOutputBuffersFromSurface()
 {
     SCOPED_TRACE();
@@ -832,7 +839,6 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
     outputBufferPool_.clear();
     CombineConsumerUsage();
     std::map<uint32_t, sptr<SurfaceBuffer>> bufferMap;
-    HLOGI("LowPowerPlayer outBufferCnt_: %u", outBufferCnt_);
     for (uint32_t i = 0; i < outBufferCnt_; ++i) {
         sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
         IF_TRUE_RETURN_VAL(surfaceBuffer == nullptr, AVCS_ERR_UNKNOWN);
@@ -853,7 +859,9 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         int32_t hdfRet = compNode_->UseBuffer(OMX_DirOutput, *omxBuffer, *outBuffer);
         IF_TRUE_RETURN_VAL_WITH_MSG(hdfRet != HDF_SUCCESS, AVCS_ERR_NO_MEMORY, "Failed to UseBuffer with output port");
 
-        SetCallerToBuffer(surfaceBuffer->GetFileDescriptor());
+        SetCallerToBuffer(surfaceBuffer->GetFileDescriptor(),
+                          static_cast<uint32_t>(surfaceBuffer->GetWidth()),
+                          static_cast<uint32_t>(surfaceBuffer->GetHeight()));
         outBuffer->fenceFd = -1;
         BufferInfo info(false, BufferOwner::OWNED_BY_US, record_);
         info.surfaceBuffer = surfaceBuffer;
@@ -870,6 +878,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
     }
     return AVCS_ERR_OK;
 }
+// LCOV_EXCL_STOP
 
 int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
 {
@@ -886,7 +895,7 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
         param->SetValue("surfaceId", surfaceId);
         codec->SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, param);
         return GSERROR_OK;
-    }, instanceId_);
+    }, instanceId_, (isLpp_ ? OH_SURFACE_SOURCE_LOWPOWERVIDEO : OH_SURFACE_SOURCE_VIDEO));
     if (!ret) {
         HLOGE("surface(%" PRIu64 "), RegisterReleaseListener failed", surfaceId);
         return AVCS_ERR_UNKNOWN;
@@ -1021,7 +1030,9 @@ void HDecoder::DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::v
         nullSlot->needDealWithCache = (requestCfg_.usage & BUFFER_USAGE_MEM_MMZ_CACHE);
         HLOGI("bufferId=%u, seq=%u", nullSlot->bufferId, buffer->GetSeqNum());
     }
-    SetCallerToBuffer(buffer->GetFileDescriptor());
+    SetCallerToBuffer(buffer->GetFileDescriptor(),
+                      static_cast<uint32_t>(buffer->GetWidth()),
+                      static_cast<uint32_t>(buffer->GetHeight()));
     WrapSurfaceBufferToSlot(*nullSlot, buffer, 0, 0);
     if (nullSlot == outputBufferPool_.begin()) {
         UpdateFormatFromSurfaceBuffer();

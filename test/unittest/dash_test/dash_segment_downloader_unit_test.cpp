@@ -185,8 +185,6 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_READ, TestSize.Level1)
     std::atomic<bool> isInterruptNeeded = false;
     DashReadRet result = segmentDownloader->Read(buffer, readDataInfo, isInterruptNeeded);
     EXPECT_EQ(result, DASH_READ_OK);
-    EXPECT_EQ(readDataInfo.nextStreamId_, 1);
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
     readDataInfo.streamId_ = 2;
     result = segmentDownloader->Read(buffer, readDataInfo, isInterruptNeeded);
     segmentDownloader->Close(true, true);

@@ -37,7 +37,7 @@ std::shared_ptr<CodecBase> HevcDecoderLoader::CreateByName(const std::string &na
         std::lock_guard<std::mutex> lock(loader.mutex_);
         CHECK_AND_RETURN_RET_LOG(loader.Init() == AVCS_ERR_OK, nullptr, "Create codec by name failed: init error");
         noDeleterPtr = loader.Create(name).get();
-        CHECK_AND_RETURN_RET_LOG(noDeleterPtr != nullptr, nullptr, "Create hevcdecoder by name failed: no memory");
+        CHECK_AND_RETURN_RET_LOG(noDeleterPtr != nullptr, nullptr, "Create hevcdecoder by name failed");
         ++(loader.hevcDecoderCount_);
     }
     auto deleter = [&loader](CodecBase *ptr) {

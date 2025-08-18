@@ -16,6 +16,8 @@
 #ifndef MEDIA_AVCODEC_MIME_TYPE_H
 #define MEDIA_AVCODEC_MIME_TYPE_H
 #include <string_view>
+#include <string>
+#include <unordered_set>
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -41,6 +43,7 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_APE = "audio/x-ape";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_COOK = "audio/cook";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_AC3 = "audio/ac3";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_RAW = "audio/raw";
 
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_AVC = "video/avc";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_MPEG4 = "video/mp4v-es";
@@ -53,10 +56,48 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_IMAGE_BMP = "image/bmp";
 
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_VVC = "video/vvc";
+
+    static const std::unordered_set<std::string_view> &GetAudioCodecOuterSupportTable(bool isEncoder)
+    {
+        static const std::unordered_set<std::string_view> ENCODE_OUTER_SUPPORT_TABLE = {
+            MEDIA_MIMETYPE_AUDIO_AAC,
+            MEDIA_MIMETYPE_AUDIO_FLAC,
+            MEDIA_MIMETYPE_AUDIO_G711MU,
+            MEDIA_MIMETYPE_AUDIO_MPEG,
+#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
+            MEDIA_MIMETYPE_AUDIO_OPUS,
+            MEDIA_MIMETYPE_AUDIO_AMRNB,
+            MEDIA_MIMETYPE_AUDIO_AMRWB
+#endif
+        };
+        static const std::unordered_set<std::string_view> DECODE_OUTER_SUPPORT_TABLE = {
+            MEDIA_MIMETYPE_AUDIO_AAC,
+            MEDIA_MIMETYPE_AUDIO_FLAC,
+            MEDIA_MIMETYPE_AUDIO_G711MU,
+            MEDIA_MIMETYPE_AUDIO_G711A,
+            MEDIA_MIMETYPE_AUDIO_RAW,
+            MEDIA_MIMETYPE_AUDIO_VORBIS,
+            MEDIA_MIMETYPE_AUDIO_MPEG,
+            MEDIA_MIMETYPE_AUDIO_AMRNB,
+            MEDIA_MIMETYPE_AUDIO_AMRWB,
+            MEDIA_MIMETYPE_AUDIO_APE,
+#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
+            MEDIA_MIMETYPE_AUDIO_OPUS,
+            MEDIA_MIMETYPE_AUDIO_VIVID
+#endif
+        };
+        return isEncoder ? ENCODE_OUTER_SUPPORT_TABLE : DECODE_OUTER_SUPPORT_TABLE;
+    }
+
+    static bool CheckAudioCodecMimeSupportOuter(const std::string &mime, bool isEncoder)
+    {
+        return GetAudioCodecOuterSupportTable(isEncoder).count(mime);
+    }
+
 private:
     AVCodecMimeType() = delete;
     ~AVCodecMimeType() = delete;
 };
-} // namespace MediaAVCodec
-} // namespace OHOS
-#endif // MEDIA_AVCODEC_MIME_TYPE_H
+}  // namespace MediaAVCodec
+}  // namespace OHOS
+#endif  // MEDIA_AVCODEC_MIME_TYPE_H

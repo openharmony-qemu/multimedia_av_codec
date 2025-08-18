@@ -70,6 +70,13 @@ void RunNormalDecoder()
     delete vDecSample;
 }
 
+bool ReleaseSample()
+{
+    delete g_vDecSample;
+    g_vDecSample = nullptr;
+    return true;
+}
+
 bool g_needRunNormalDecoder = true;
 namespace OHOS {
 bool HwdecoderFuzzTest(const uint8_t *data, size_t size)
@@ -90,34 +97,30 @@ bool HwdecoderFuzzTest(const uint8_t *data, size_t size)
         g_vDecSample->defaultWidth = fdp.ConsumeIntegral<int32_t>();
         g_vDecSample->defaultHeight = fdp.ConsumeIntegral<int32_t>();
         int32_t ret = g_vDecSample->CreateVideoDecoder();
-        if (ret != 0) {
-            delete g_vDecSample;
-            g_vDecSample = nullptr;
-            return true;
+        if (ret != AV_ERR_OK) {
+            return ReleaseSample();
         }
         ret = g_vDecSample->ConfigureVideoDecoder();
-        if (ret != 0) {
-            delete g_vDecSample;
-            g_vDecSample = nullptr;
-            return true;
+        if (ret != AV_ERR_OK) {
+            return ReleaseSample();
         }
-        g_vDecSample->SetVideoDecoderCallback();
+        if (g_vDecSample->SetVideoDecoderCallback() != AV_ERR_OK) {
+            return ReleaseSample();
+        }
         ret = g_vDecSample->Start();
-        if (ret != 0) {
-            delete g_vDecSample;
-            g_vDecSample = nullptr;
-            return true;
+        if (ret != AV_ERR_OK) {
+            return ReleaseSample();
         }
         g_vDecSample->InputFuncFUZZ(SPS, SPS_SIZE + START_CODE_SIZE);
         g_vDecSample->InputFuncFUZZ(PPS, PPS_SIZE + START_CODE_SIZE);
+        g_vDecSample->InputFuncFUZZ(data, size);
+        g_vDecSample->SetParameter(data0);
+        g_vDecSample->Flush();
+        g_vDecSample->Stop();
+        g_vDecSample->Reset();
+        delete g_vDecSample;
+        g_vDecSample = nullptr;
     }
-    g_vDecSample->InputFuncFUZZ(data, size);
-    g_vDecSample->SetParameter(data0);
-    g_vDecSample->Flush();
-    g_vDecSample->Stop();
-    g_vDecSample->Reset();
-    delete g_vDecSample;
-    g_vDecSample = nullptr;
     return true;
 }
 } // namespace OHOS

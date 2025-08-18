@@ -180,6 +180,10 @@ public:
         size = NUMBER_CACHE; // cache for 5000000
         return true;
     }
+    Status SetAsyncReadThreadPriority(const uint32_t newPriority, const std::string &strBundleName) override
+    {
+        return mapStatus_[name_];
+    }
 private:
     std::map<std::string, Status> mapStatus_;
     std::string name_;

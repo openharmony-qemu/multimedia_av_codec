@@ -60,8 +60,6 @@ public:
 
     void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus);
 
-    void ProcessInputBuffer();
-
     int32_t NotifyEos();
 
     Status Init(bool isMimeType, const std::string &name);

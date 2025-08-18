@@ -102,7 +102,16 @@ void FCodecServerSample::RunFCodecDecoder()
         cout << "Create failed" << endl;
         return;
     }
-    int32_t err = Configure();
+    int32_t err;
+    Media::Meta codecInfo;
+    int32_t instanceid = 0;
+    codecInfo.SetData("av_codec_event_info_instance_id", instanceid);
+    err = fcodec_->Init(codecInfo);
+    if (err != AVCS_ERR_OK) {
+        cout << "decoder Init failed!" << endl;
+        return;
+    }
+    err = Configure();
     if (err != AVCS_ERR_OK) {
         cout << "Configure failed" << endl;
         return;

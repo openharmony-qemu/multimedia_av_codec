@@ -27,7 +27,7 @@ constexpr int64_t MICRO_IN_SECOND = 1000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
 constexpr uint8_t MPEG2_FRAME_HEAD[] = {0x00, 0x00, 0x01, 0x00};
 constexpr uint8_t MPEG2_SEQUENCE_HEAD[] = {0x00, 0x00, 0x01, 0xb3};
-
+constexpr uint32_t MILLION = 1000000;
 constexpr int32_t THREE = 3;
 constexpr int32_t TEN = 10;
 constexpr int32_t START_CODE_SIZE = 4;
@@ -225,11 +225,13 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     originalHeight = DEFAULT_HEIGHT;
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, defualtPixelFormat);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     if (useHDRSource) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_PROFILE);
     }
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, enbleSyncMode);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, enbleBlankFrame);
     int ret = OH_VideoDecoder_Configure(vdec_, format);
     OH_AVFormat_Destroy(format);
     return ret;
@@ -427,6 +429,58 @@ int32_t VDecAPI11Sample::StartVideoDecoder()
     return AV_ERR_OK;
 }
 
+int32_t VDecAPI11Sample::StartSyncVideoDecoder()
+{
+    isRunning_.store(true);
+    int ret = OH_VideoDecoder_Start(vdec_);
+    if (ret != AV_ERR_OK) {
+        cout << "Failed to start codec" << endl;
+        isRunning_.store(false);
+        ReleaseInFile();
+        Release();
+        return ret;
+    }
+    inFile_ = make_unique<ifstream>();
+    prereadBuffer_ = std::make_unique<uint8_t []>(PREREAD_BUFFER_SIZE + START_CODE_SIZE);
+    mpegUnit_ = std::make_unique<std::vector<uint8_t>>(MAX_WIDTH * MAX_HEIGHT << 1);
+    if (inFile_ == nullptr) {
+        isRunning_.store(false);
+        (void)OH_VideoDecoder_Stop(vdec_);
+        return AV_ERR_UNKNOWN;
+    }
+    inFile_->open(INP_DIR, ios::in | ios::binary);
+    if (!inFile_->is_open()) {
+        cout << "failed open file " << INP_DIR << endl;
+        isRunning_.store(false);
+        (void)OH_VideoDecoder_Stop(vdec_);
+        inFile_->close();
+        inFile_.reset();
+        inFile_ = nullptr;
+        return AV_ERR_UNKNOWN;
+    }
+    signal_ = new VDecAPI11Signal();
+    inputLoop_ = make_unique<thread>(&VDecAPI11Sample::SyncInputFunc, this);
+    if (inputLoop_ == nullptr) {
+        cout << "Failed to create input loop" << endl;
+        isRunning_.store(false);
+        (void)OH_VideoDecoder_Stop(vdec_);
+        ReleaseInFile();
+        return AV_ERR_UNKNOWN;
+    }
+    outputLoop_ = make_unique<thread>(&VDecAPI11Sample::SyncOutputFunc, this);
+    if (outputLoop_ == nullptr) {
+        cout << "Failed to create output loop" << endl;
+        isRunning_.store(false);
+        (void)OH_VideoDecoder_Stop(vdec_);
+        ReleaseInFile();
+        StopInloop();
+        Release();
+        return AV_ERR_UNKNOWN;
+    }
+
+    return AV_ERR_OK;
+}
+
 void VDecAPI11Sample::testAPI()
 {
     cs[0] = Surface::CreateSurfaceAsConsumer();
@@ -569,6 +623,37 @@ void VDecAPI11Sample::InputFuncTest()
         signal_->inBufferQueue_.pop();
         lock.unlock();
 
+        int ret = PushData(index, buffer);
+        if (ret == 1) {
+            flag = false;
+            break;
+        }
+
+        if (sleepOnFPS) {
+            usleep(MICRO_IN_SECOND / (int32_t)DEFAULT_FRAME_RATE);
+        }
+    }
+}
+
+void VDecAPI11Sample::SyncInputFunc()
+{
+    bool flag = true;
+    while (flag) {
+        if (!isRunning_.load()) {
+            flag = false;
+            break;
+        }
+        uint32_t index;
+        if (OH_VideoDecoder_QueryInputBuffer(vdec_, &index, syncInputWaitTime) != AV_ERR_OK) {
+            cout << "OH_VideoDecoder_QueryInputBuffer fail" << endl;
+            continue;
+        }
+        OH_AVBuffer *buffer = OH_VideoDecoder_GetInputBuffer(vdec_, index);
+        if (buffer == nullptr) {
+            cout << "OH_VideoDecoder_GetInputBuffer fail" << endl;
+            errCount = errCount + 1;
+            continue;
+        }
         int ret = PushData(index, buffer);
         if (ret == 1) {
             flag = false;
@@ -814,6 +899,70 @@ void VDecAPI11Sample::OutputFuncTest()
     }
 }
 
+void VDecAPI11Sample::SyncOutputFunc()
+{
+    FILE *outFile = nullptr;
+    if (outputYuvFlag) {
+        outFile = fopen(OUT_DIR, "wb");
+    }
+    SHA512_Init(&g_c);
+    bool flag = true;
+    while (flag) {
+        if (!isRunning_.load()) {
+            flag = false;
+            break;
+        }
+        OH_AVCodecBufferAttr attr;
+        uint32_t index = 0;
+        if (OH_VideoDecoder_QueryOutputBuffer(vdec_, &index, syncOutputWaitTime) != AV_ERR_OK) {
+            cout << "OH_VideoDecoder_QueryOutputBuffer fail" << endl;
+            continue;
+        }
+        OH_AVBuffer *buffer = OH_VideoDecoder_GetOutputBuffer(vdec_, index);
+        if (buffer == nullptr) {
+            cout << "OH_VideoDecoder_GetOutputBuffer fail" << endl;
+            errCount = errCount + 1;
+            continue;
+        }
+        if (OH_AVBuffer_GetBufferAttr(buffer, &attr) != AV_ERR_OK) {
+            errCount = errCount + 1;
+        }
+        if (SyncOutputFuncEos(attr, index) != AV_ERR_OK) {
+            flag = false;
+            break;
+        }
+        ProcessOutputData(buffer, index, attr.size);
+        if (outFile != nullptr) {
+            fwrite(OH_AVBuffer_GetAddr(buffer), 1, attr.size, outFile);
+        }
+        if (errCount > 0) {
+            flag = false;
+            break;
+        }
+    }
+    if (outFile) {
+        (void)fclose(outFile);
+    }
+}
+
+int32_t VDecAPI11Sample::SyncOutputFuncEos(OH_AVCodecBufferAttr attr, uint32_t index)
+{
+    if (CheckAttrFlag(attr) == -1) {
+        if (queryInputBufferEOS) {
+            OH_VideoDecoder_QueryInputBuffer(vdec_, &index, 0);
+            OH_VideoDecoder_QueryInputBuffer(vdec_, &index, MILLION);
+            OH_VideoDecoder_QueryInputBuffer(vdec_, &index, -1);
+        }
+        if (queryOutputBufferEOS) {
+            OH_VideoDecoder_QueryOutputBuffer(vdec_, &index, 0);
+            OH_VideoDecoder_QueryOutputBuffer(vdec_, &index, MILLION);
+            OH_VideoDecoder_QueryOutputBuffer(vdec_, &index, -1);
+        }
+        return AV_ERR_UNKNOWN;
+    }
+    return AV_ERR_OK;
+}
+
 void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index, int32_t size)
 {
     if (!SF_OUTPUT) {
@@ -971,4 +1120,10 @@ int32_t VDecAPI11Sample::RepeatCallSetSurface()
         }
     }
     return AV_ERR_OK;
+}
+
+int32_t VDecAPI11Sample::DecodeSetSurface()
+{
+    CreateSurface();
+    return OH_VideoDecoder_SetSurface(vdec_, nativeWindow[0]);
 }

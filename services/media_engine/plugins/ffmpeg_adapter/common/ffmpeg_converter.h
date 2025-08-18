@@ -48,13 +48,10 @@ public:
     static AudioSampleFormat ConvertFFMpegAVCodecIdToOHAudioFormat(AVCodecID codecId);
     static AudioSampleFormat ConvertFFMpegToOHAudioFormat(AVSampleFormat ffSampleFormat);
     static AVSampleFormat ConvertOHAudioFormatToFFMpeg(AudioSampleFormat sampleFormat);
-    static AudioChannelLayout ConvertFFToOHAudioChannelLayout(uint64_t ffChannelLayout);
     static AudioChannelLayout GetDefaultChannelLayout(int channels);
     static AudioChannelLayout ConvertFFToOHAudioChannelLayoutV2(uint64_t ffChannelLayout, int channels);
     static uint64_t ConvertOHAudioChannelLayoutToFFMpeg(AudioChannelLayout channelLayout);
     static std::string_view ConvertOHAudioChannelLayoutToString(AudioChannelLayout layout);
-    static int64_t ConvertAudioPtsToUs(int64_t pts, AVRational base);
-    static std::string AVStrError(int errnum);
     static AudioChannelLayout ConvertAudioVividToOHAudioChannelLayout(uint64_t ffChannelLayout, int channels);
 private:
     FFMpegConverter() = delete;

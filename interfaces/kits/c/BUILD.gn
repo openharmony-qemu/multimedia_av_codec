@@ -14,7 +14,8 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-group("capi_packages") {
+ohos_shared_headers("capi_packages") {
+  include_dirs = [ "$av_codec_root_dir/interfaces/kits/c" ]
   deps = []
   if (av_codec_support_capi) {
     deps += [
@@ -30,6 +31,8 @@ group("capi_packages") {
       "$av_codec_root_dir/interfaces/kits/c:native_media_venc",
     ]
   }
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
 }
 
 config("av_codec_capi_header_config") {
@@ -44,27 +47,26 @@ config("av_codec_capi_header_config") {
   if (av_codec_support_drm) {
     defines += [ "SUPPORT_DRM" ]
   }
-  cflags = [
-    "-fno-exceptions",
-    "-Wall",
-    "-fno-common",
-    "-fstack-protector-all",
-    "-FPIC",
-    "-FS",
-    "-O2",
-    "-D_FORTIFY_SOURCE=2",
-    "-Wformat=2",
-    "-Wdate-time",
-  ]
-
   cflags_cc = [
-    "-std=c++17",
     "-fno-rtti",
   ]
 }
 
 config("av_codec_capi_compile_config") {
-  cflags = [ "-Wshadow" ]
+  cflags = [ 
+    "-std=c++17",
+    "-fstack-protector-all",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-fno-common",
+    "-fno-exceptions",
+    "-Wall",
+    "-Wdate-time",
+    "-Wformat=2",
+    "-Wshadow",
+  ]
 }
 
 config("av_cenc_info_capi_config") {

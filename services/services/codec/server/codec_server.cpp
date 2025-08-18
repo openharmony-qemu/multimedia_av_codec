@@ -288,6 +288,13 @@ int32_t CodecServer::Configure(const Format &format)
         CodecScenarioInit(config);
     }
 
+    if (framerateCalculator_) {
+        auto framerate = 0.0;
+        if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, framerate)) {
+            framerateCalculator_->SetConfiguredFramerate(framerate);
+        }
+    }
+
     int32_t ret = codecBase_->Configure(config);
     if (ret != AVCS_ERR_OK) {
         StatusChanged(ERROR);
@@ -401,21 +408,20 @@ int32_t CodecServer::Stop()
         temporalScalability_->SetBlockQueueActive();
         inputParamTask_->Stop();
     }
-    if (isSurfaceMode_ && pushBlankBufferOnShutdown_) {
-        std::optional<std::pair<std::string, int32_t>> pInfo =
-            SurfaceTools::GetInstance().GetCurProducerInfo(surfaceId_);
-        if (pInfo != std::nullopt) {
-            SurfaceTools::GetInstance().CleanCache(pInfo.value().first,
-                SurfaceUtils::GetInstance()->GetSurface(surfaceId_), true);
-        }
-    }
-
     int32_t retPostProcessing = StopPostProcessing();
     int32_t retCodec = codecBase_->Stop();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     if ((retPostProcessing + retCodec) != AVCS_ERR_OK) {
         StatusChanged(ERROR);
         return (retCodec == AVCS_ERR_OK) ? retPostProcessing : retCodec;
+    }
+    if (isSurfaceMode_ && codecType_ == AVCODEC_TYPE_VIDEO_DECODER && pushBlankBufferOnShutdown_) {
+        std::optional<std::pair<std::string, int32_t>> pInfo =
+            SurfaceTools::GetInstance().GetCurProducerInfo(surfaceId_);
+        if (pInfo != std::nullopt) {
+            SurfaceTools::GetInstance().CleanCache(pInfo.value().first,
+                SurfaceUtils::GetInstance()->GetSurface(surfaceId_), true);
+        }
     }
     StatusChanged(CONFIGURED);
     OnInstanceMemoryResetEvent();
@@ -519,15 +525,15 @@ int32_t CodecServer::Release()
         }
         temporalScalability_ = nullptr;
     }
-    if (isSurfaceMode_ && pushBlankBufferOnShutdown_) {
+    int32_t ret = codecBase_->Release();
+    if (isSurfaceMode_ && codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
         std::optional<std::pair<std::string, int32_t>> pInfo =
             SurfaceTools::GetInstance().GetCurProducerInfo(surfaceId_);
         if (pInfo != std::nullopt) {
-            SurfaceTools::GetInstance().CleanCache(pInfo.value().first,
-                SurfaceUtils::GetInstance()->GetSurface(surfaceId_), true);
+            SurfaceTools::GetInstance().ReleaseSurface(pInfo.value().first,
+                SurfaceUtils::GetInstance()->GetSurface(surfaceId_), pushBlankBufferOnShutdown_, true);
         }
     }
-    int32_t ret = codecBase_->Release();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     codecBase_ = nullptr;
     shareBufCallback_ = nullptr;
@@ -589,6 +595,7 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(isValidState, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                                       GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(surface != nullptr, AVCS_ERR_NO_MEMORY, "Surface is nullptr");
     GSError gsRet;
     if (isLpp_) {
         gsRet = surface->SetSurfaceSourceType(OHSurfaceSource::OH_SURFACE_SOURCE_LOWPOWERVIDEO);
@@ -844,6 +851,7 @@ void CodecServer::InitFramerateCalculator(Meta &callerInfo)
 {
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
         framerateCalculator_ = std::make_shared<FramerateCalculator>(instanceId_,
+            codecType_ == AVCODEC_TYPE_VIDEO_DECODER,
             [weakCodecBase = std::weak_ptr<CodecBase>(codecBase_), codecType = codecType_](double framerate) {
                 auto codecBase = weakCodecBase.lock();
                 if (!codecBase) {
@@ -880,6 +888,13 @@ int32_t CodecServer::SetParameter(const Format &format)
         CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Failed to get codec format");
         ret = CodecParamChecker::CheckParameterValid(format, oldFormat, codecName_, scenario_);
         CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "Params in format is not valid");
+    }
+
+    if (framerateCalculator_) {
+        auto framerate = 0.0;
+        if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, framerate)) {
+            framerateCalculator_->SetConfiguredFramerate(framerate);
+        }
     }
 
     return codecBase_->SetParameter(format);
@@ -1468,13 +1483,6 @@ int32_t CodecServer::PreparePostProcessing()
                                           "Create post processing input buffer info queue failed");
     }
 
-    if (postProcessingOutputBufferInfoQueue_ == nullptr) {
-        postProcessingOutputBufferInfoQueue_ =
-            PostProcessingBufferInfoQueue::Create("PostProcessingOutputBufferInfoQueue");
-        CHECK_AND_RETURN_RET_LOG_WITH_TAG(postProcessingOutputBufferInfoQueue_, AVCS_ERR_NO_MEMORY,
-                                          "Create post processing output buffer info queue failed");
-    }
-
     ret = postProcessing_->Prepare();
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "Prepare post processing failed");
 
@@ -1518,13 +1526,7 @@ int32_t CodecServer::StopPostProcessing()
     if (postProcessingInputBufferInfoQueue_) {
         postProcessingInputBufferInfoQueue_->Clear();
     }
-    if (postProcessingOutputBufferInfoQueue_) {
-        postProcessingOutputBufferInfoQueue_->Clear();
-    }
 
-    decodedFrameCount_.store(0);
-    processedFrameCount_.store(0);
-    decoderIsEOS_.store(false);
     return AVCS_ERR_OK;
 }
 
@@ -1544,14 +1546,6 @@ int32_t CodecServer::FlushPostProcessing()
     if (postProcessingInputBufferInfoQueue_) {
         postProcessingInputBufferInfoQueue_->Clear();
     }
-    if (postProcessingOutputBufferInfoQueue_) {
-        postProcessingOutputBufferInfoQueue_->Clear();
-    }
-
-    AVCODEC_LOGD_WITH_TAG("reset frame count");
-    decodedFrameCount_.store(0);
-    processedFrameCount_.store(0);
-    decoderIsEOS_.store(false);
 
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "Flush post processing failed");
     AVCODEC_LOGI_WITH_TAG("Post processing is flushed");
@@ -1599,16 +1593,6 @@ int32_t CodecServer::ReleasePostProcessing()
 int32_t CodecServer::ReleaseOutputBufferOfPostProcessing(uint32_t index, bool render)
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(postProcessing_, AVCS_ERR_UNKNOWN, "Post processing is null");
-    if (index == std::numeric_limits<uint32_t>::max()) {
-        AVCODEC_LOGD_WITH_TAG("EOS is got");
-        return AVCS_ERR_OK;
-    }
-    std::shared_ptr<DecodedBufferInfo> info{nullptr};
-    CHECK_AND_RETURN_RET_LOG(postProcessingOutputBufferInfoQueue_, AVCS_ERR_UNKNOWN, "Queue is null");
-    auto ret = postProcessingOutputBufferInfoQueue_->PopWait(info);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == QueueResult::OK, AVCS_ERR_UNKNOWN, "Failed to get data, %{public}s",
-                                      QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(info && info->buffer, AVCS_ERR_UNKNOWN, "Data is null");
     return postProcessing_->ReleaseOutputBuffer(index, render);
 }
 
@@ -1643,26 +1627,25 @@ void CodecServer::PostProcessingOnError(int32_t errorCode)
     videoCb_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, ret);
 }
 
-void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_unused]] int32_t flag)
+void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, int32_t flag)
 {
     std::lock_guard<std::shared_mutex> lock(cbMutex_);
     if (videoCb_ == nullptr) {
         AVCODEC_LOGD_WITH_TAG("Missing video callback");
         return;
     }
-    CHECK_AND_RETURN_LOG_WITH_TAG(postProcessingInputBufferInfoQueue_ && postProcessingOutputBufferInfoQueue_,
-                                  "Queue is null");
+    CHECK_AND_RETURN_LOG_WITH_TAG(postProcessingInputBufferInfoQueue_, "Queue is null");
     std::shared_ptr<DecodedBufferInfo> info{nullptr};
     auto ret = postProcessingInputBufferInfoQueue_->PopWait(info);
     CHECK_AND_RETURN_LOG_WITH_TAG(ret == QueueResult::OK, "Get data failed, %{public}s",
                                   QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
     CHECK_AND_RETURN_LOG_WITH_TAG(info && info->buffer, "Invalid data");
     info->index = index;
-    ret = postProcessingOutputBufferInfoQueue_->PushWait(info);
-    CHECK_AND_RETURN_LOG_WITH_TAG(ret == QueueResult::OK, "Push data failed, %{public}s",
-                                  QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
+    if (flag == 1) { // 1: EOS flag
+        info->buffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
+        AVCODEC_LOGI_WITH_TAG("Catch EOS frame");
+    }
     videoCb_->OnOutputBufferAvailable(index, info->buffer);
-    processedFrameCount_++;
 }
 
 void CodecServer::PostProcessingOnOutputFormatChanged(const Format& format)
@@ -1711,9 +1694,6 @@ int32_t CodecServer::StartPostProcessingTask()
     if (postProcessingInputBufferInfoQueue_) {
         postProcessingInputBufferInfoQueue_->Activate();
     }
-    if (postProcessingOutputBufferInfoQueue_) {
-        postProcessingOutputBufferInfoQueue_->Activate();
-    }
     postProcessingTask_->Start();
 
     return AVCS_ERR_OK;
@@ -1722,49 +1702,19 @@ int32_t CodecServer::StartPostProcessingTask()
 void CodecServer::PostProcessingTask()
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(decodedBufferInfoQueue_ && postProcessingInputBufferInfoQueue_, "Queue is null");
-    if (decoderIsEOS_.load() == false) {
-        std::shared_ptr<DecodedBufferInfo> info{nullptr};
-        auto ret = decodedBufferInfoQueue_->PopWait(info);
-        CHECK_AND_RETURN_LOG_WITH_TAG(ret == QueueResult::OK, "Get data failed, %{public}s",
-                                      QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
-        CHECK_AND_RETURN_LOG_WITH_TAG(info && info->buffer, "Invalid data");
-        ret = postProcessingInputBufferInfoQueue_->PushWait(info);
-        CHECK_AND_RETURN_LOG_WITH_TAG(ret == QueueResult::OK, "Push data failed, %{public}s",
-                                      QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
-        decodedFrameCount_++;
-        AVCODEC_LOGD_WITH_TAG("Decoded frame count = %{public}" PRIu64, decodedFrameCount_.load());
-        if (info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
-            AVCODEC_LOGI_WITH_TAG("index = %{public}u, EOS flag", info->index);
-            decoderIsEOS_.store(true);
-        } else {
-            (void)ReleaseOutputBufferOfCodec(info->index, true);
-            return;
-        }
+    std::shared_ptr<DecodedBufferInfo> info{nullptr};
+    auto ret = decodedBufferInfoQueue_->PopWait(info);
+    CHECK_AND_RETURN_LOG_WITH_TAG(ret == QueueResult::OK, "Get data failed, %{public}s",
+                                  QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
+    CHECK_AND_RETURN_LOG_WITH_TAG(info && info->buffer, "Invalid data");
+    ret = postProcessingInputBufferInfoQueue_->PushWait(info);
+    CHECK_AND_RETURN_LOG_WITH_TAG(ret == QueueResult::OK, "Push data failed, %{public}s",
+                                  QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
+    if (info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        AVCODEC_LOGI_WITH_TAG("Catch EOS frame, notify post processing eos");
+        postProcessing_->NotifyEos();
     }
-
-    if (decodedFrameCount_.load() == processedFrameCount_.load() + 1) {
-        std::shared_ptr<DecodedBufferInfo> eosInfo{nullptr};
-        auto eosRet = postProcessingInputBufferInfoQueue_->PopWait(eosInfo);
-        CHECK_AND_RETURN_LOG_WITH_TAG(eosRet == QueueResult::OK, "Get data failed, %{public}s",
-                                      QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(eosRet)]);
-        CHECK_AND_RETURN_LOG_WITH_TAG(eosInfo && eosInfo->buffer, "Invalid data");
-        if (eosInfo->buffer->flag_ != AVCODEC_BUFFER_FLAG_EOS) {
-            AVCODEC_LOGE("The cache info is not EOS frame");
-            std::this_thread::sleep_for(std::chrono::seconds(1)); // 1: sleep for 1s
-            return;
-        }
-        AVCODEC_LOGD_WITH_TAG("EOS flag got, frame count = %{public}" PRIu64, decodedFrameCount_.load());
-        processedFrameCount_++;
-        std::lock_guard<std::shared_mutex> lock(cbMutex_);
-        if (videoCb_ == nullptr) {
-            AVCODEC_LOGD_WITH_TAG("Missing video callback");
-        } else {
-            videoCb_->OnOutputBufferAvailable(std::numeric_limits<uint32_t>::max(), eosInfo->buffer);
-            return;
-        }
-    } else {
-        std::this_thread::sleep_for(std::chrono::milliseconds(20)); // 20: sleep for 20ms
-    }
+    (void)ReleaseOutputBufferOfCodec(info->index, true);
 }
 
 void CodecServer::DeactivatePostProcessingQueue()
@@ -1774,9 +1724,6 @@ void CodecServer::DeactivatePostProcessingQueue()
     }
     if (postProcessingInputBufferInfoQueue_) {
         postProcessingInputBufferInfoQueue_->Deactivate();
-    }
-    if (postProcessingOutputBufferInfoQueue_) {
-        postProcessingOutputBufferInfoQueue_->Deactivate();
     }
 }
 
@@ -1792,13 +1739,6 @@ void CodecServer::CleanPostProcessingResource()
     if (postProcessingInputBufferInfoQueue_) {
         postProcessingInputBufferInfoQueue_.reset();
     }
-    if (postProcessingOutputBufferInfoQueue_) {
-        postProcessingOutputBufferInfoQueue_.reset();
-    }
-
-    decodedFrameCount_.store(0);
-    processedFrameCount_.store(0);
-    decoderIsEOS_.store(false);
 }
 
 int32_t CodecServer::NotifyMemoryRecycle()
@@ -1833,6 +1773,9 @@ int32_t CodecServer::NotifyResume()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (framerateCalculator_) {
+        framerateCalculator_->SetFramerate2ConfiguredFramerate();
+    }
     return codecBase_->NotifyResume();
 }
 } // namespace MediaAVCodec
