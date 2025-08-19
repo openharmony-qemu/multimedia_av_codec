@@ -1069,7 +1069,7 @@ typedef enum OH_H263Profile {
 } OH_H263Profile;
 
 /**
- * @brief HEVC Profile.
+ * @brief HEVC Profile
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  */

@@ -108,8 +108,8 @@ ohos_unittest("codec_server_coverage_unit_test") {
   deps = [
     ":av_codec_engine_codeclist_mock",  # av_codec_engine_codeclist_mock
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "$av_codec_root_dir/services/services/common/adaptive_framerate_controller:adaptive_framerate_controller",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
+    "$av_codec_root_dir/services/services/common/adaptive_framerate_controller:adaptive_framerate_controller",
   ]
 
   external_deps = [

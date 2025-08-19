@@ -345,11 +345,8 @@ void CodecListenerStub::OnOutputBufferUnbinded(MessageParcel &data)
 {
     AVCODEC_LOGI("LowPowerPlayer CodecListenerStub OnOutputBufferUnbinded Enter");
     std::shared_ptr<MediaCodecCallback> mediaCb = callback_.lock();
-    if (mediaCb != nullptr) {
-        AVCODEC_LOGI("LowPowerPlayer CodecListenerStub OnOutputBufferUnbinded mediaCb Not Null");
-        mediaCb->OnOutputBufferUnbinded();
-        return;
-    }
+    CHECK_AND_RETURN_RET_LOG(mediaCb != nullptr, "mediaCb is nullptr");
+    mediaCb->OnOutputBufferUnbinded();
 }
 
 void CodecListenerStub::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
