@@ -351,8 +351,6 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
     dumpMode_ = static_cast<DumpMode>(strtoul(dumpModeStr.c_str(), nullptr, 2)); // 2 is binary
     disableDmaSwap_ = OHOS::system::GetBoolParameter("hcodec.dmaswap.disable", false);
     pid_ = getpid();
-    LOGI(">> debug mode = %d, dump mode = %s(%lu)",
-        debugMode_, dumpModeStr.c_str(), dumpMode_);
 
     switch (static_cast<int>(codingType_)) {
         case OMX_VIDEO_CodingAVC:
@@ -367,11 +365,7 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
         default:
             break;
     };
-    shortName_ = (isEncoder ? "enc." : "dec.") + mime_;
     isSecure_ = IsSecureMode(caps_.compName);
-    if (isSecure_) {
-        shortName_ += ".secure";
-    }
 
     uninitializedState_ = make_shared<UninitializedState>(this);
     initializedState_ = make_shared<InitializedState>(this);
@@ -989,7 +983,7 @@ int32_t HCodec::OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info)
             if (eos) {
                 inputPortEos_ = true;
             }
-            return NotifyOmxToEmptyThisInBuffer(*info);
+            return InBufUsToOmx(*info);
         }
         default: {
             HLOGE("SHOULD NEVER BE HERE");
@@ -1015,7 +1009,7 @@ void HCodec::OnSignalEndOfInputStream(const MsgInfo &msg)
     ReplyErrorCode(msg.id, AVCS_ERR_UNSUPPORT);
 }
 
-int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
+int32_t HCodec::InBufUsToOmx(BufferInfo& info)
 {
     SCOPED_TRACE_FMT("id: %u, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
     if (!gotFirstInput_) {
@@ -1091,7 +1085,7 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
                 (void)VrrPrediction(info);
             }
 #endif
-            NotifyUserOutBufferAvaliable(info);
+            OutBufUsToUser(info);
             if (eos) {
                 outputPortEos_ = true;
             }
@@ -1106,7 +1100,7 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
     }
 }
 
-void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
+void HCodec::OutBufUsToUser(BufferInfo &info)
 {
     SCOPED_TRACE_FMT("id: %u, pts: %" PRId64, info.bufferId, info.omxBuffer->pts);
     if (!gotFirstOutput_) {
@@ -1443,11 +1437,11 @@ int32_t HCodec::OnAllocateComponent()
         PrintAllCaller();
         return AVCS_ERR_UNKNOWN;
     }
-    compUniqueStr_ = "[" + to_string(componentId_) + "][" + shortName_ + "]";
-    record_[OMX_DirInput].ownerTraceTag_ = { compUniqueStr_ + "in_us", compUniqueStr_ + "in_user",
-                       compUniqueStr_ + "in_omx", compUniqueStr_ + "in_surface"};
-    record_[OMX_DirOutput].ownerTraceTag_ = { compUniqueStr_ + "out_us", compUniqueStr_ + "out_user",
-                        compUniqueStr_ + "out_omx", compUniqueStr_ + "out_surface"};
+    compUniqueStr_ = to_string(componentId_) + (isEncoder_ ? "_e" : "_d");
+    record_[OMX_DirInput].ownerTraceTag_ = { "[" + compUniqueStr_ + "]in_us", "[" + compUniqueStr_ + "]in_user",
+        "[" + compUniqueStr_ + "]in_omx", "[" + compUniqueStr_ + "]in_surface"};
+    record_[OMX_DirOutput].ownerTraceTag_ = { "[" + compUniqueStr_ + "]out_us", "[" + compUniqueStr_ + "]out_user",
+        "[" + compUniqueStr_ + "]out_omx", "[" + compUniqueStr_ + "]out_surface"};
     HLOGI("create omx node %s succ", caps_.compName.c_str());
     PrintCaller();
     return AVCS_ERR_OK;
