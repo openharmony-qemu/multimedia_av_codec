@@ -160,7 +160,7 @@ int32_t AVMuxerUnitTest::WriteSample(sptr<AVBufferQueueProducer> bqProducer,
     return -1;
 }
 
-void AVMuxerUnitTest::AuxiliaryWriteSample(std::string inputFilePath, int32_t trackId)
+void AVMuxerUnitTest::TrackWriteSample(std::string inputFilePath, int32_t trackId)
 {
     inputFile_ = std::make_shared<std::ifstream>(inputFilePath, std::ios::binary);
 
@@ -2293,9 +2293,9 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Video_Auxiliary, TestSize.Level0) {
 
     ASSERT_EQ(avmuxer_->Start(), 0);
 
-    AuxiliaryWriteSample(INPUT_FILE_PATH, trackId);
-    AuxiliaryWriteSample(INPUT_FILE_PATH, trackIdDepth);
-    AuxiliaryWriteSample(INPUT_FILE_PATH, trackIdPrey);
+    TrackWriteSample(INPUT_FILE_PATH, trackId);
+    TrackWriteSample(INPUT_FILE_PATH, trackIdDepth);
+    TrackWriteSample(INPUT_FILE_PATH, trackIdPrey);
 
     ASSERT_EQ(avmuxer_->Stop(), 0);
 }
@@ -2352,8 +2352,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Audio_Auxiliary, TestSize.Level0) {
     ASSERT_EQ(avmuxer_->Start(), 0);
 
     std::string inputFilePath = "/data/test/media/aac_2c_44100hz_199k.dat";
-    AuxiliaryWriteSample(inputFilePath, trackId);
-    AuxiliaryWriteSample(inputFilePath, trackIdAudio);
+    TrackWriteSample(inputFilePath, trackId);
+    TrackWriteSample(inputFilePath, trackIdAudio);
 
     ASSERT_EQ(avmuxer_->Stop(), 0);
 }
@@ -3349,6 +3349,88 @@ HWTEST_F(AVMuxerUnitTest, Muxer_MP4_001, TestSize.Level0)
     ASSERT_EQ(ret, 0);
     ASSERT_EQ(avmuxer->Stop(), 0);
     close(fd);
+}
+
+/**
+ * @tc.name: Muxer_MP4_AIGC_001
+ * @tc.desc: Muxer mux mp4 include AIGC info
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_MP4_AIGC_001, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_MP4_AIGC_001.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
+    metaData->PutStringValue(Tag::MEDIA_AIGC, "AIGC_test_string");
+    EXPECT_EQ(avmuxer_->SetFormat(metaData), 0);
+}
+
+/**
+ * @tc.name: Muxer_MP4_AIGC_002
+ * @tc.desc: Muxer mux mp4 include AIGC info
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_MP4_AIGC_002, TestSize.Level0)
+{
+    int32_t audioTrackId = -1;
+    int32_t videoTrackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_MP4_AIGC_002.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    // 添加音频轨
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 199000); // 199000 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 1024); // 1024 frame size
+    audioParams->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
+    audioParams->PutIntValue(OH_MD_KEY_AAC_IS_ADTS, 0);
+    ASSERT_EQ(avmuxer_->AddTrack(audioTrackId, audioParams), 0);
+
+    // 添加视频轨
+    std::shared_ptr<FormatMock> videoParams = FormatMockFactory::CreateFormat();
+    videoParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    videoParams->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
+    videoParams->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
+    ASSERT_EQ(avmuxer_->AddTrack(videoTrackId, videoParams), 0);
+
+    // 添加metadata
+    std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
+    metaData->PutStringValue(Tag::MEDIA_CREATION_TIME, "2025-08-14T00:01:02.000000Z");
+    metaData->PutStringValue(Tag::MEDIA_AIGC, "'{Label:value1}'");
+    metaData->PutIntValue("fast_start", static_cast<int32_t>(1)); // 1 moov 前置
+    metaData->PutStringValue(Tag::MEDIA_COMMENT, "comment_test_str_metadata");
+    EXPECT_EQ(avmuxer_->SetFormat(metaData), 0);
+
+    // 添加userdata
+    std::shared_ptr<FormatMock> userMeta = FormatMockFactory::CreateFormat();
+    userMeta->PutIntValue("com.openharmony.version", 5); // 5 test version
+    userMeta->PutStringValue("com.openharmony.model", "LNA-AL00");
+    userMeta->PutFloatValue("com.openharmony.capture.fps", 30.00f); // 30.00f test capture fps
+    EXPECT_EQ(avmuxer_->SetFormat(userMeta), 0);
+
+    // start
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    // audio write sample
+    std::string inputFilePath = "/data/test/media/aac_44100_2.dat";
+    TrackWriteSample(inputFilePath, audioTrackId);
+
+    // video write sample
+    TrackWriteSample(INPUT_FILE_PATH, videoTrackId);
+
+    ASSERT_EQ(avmuxer_->Stop(), 0);
 }
 #endif
 } // namespace

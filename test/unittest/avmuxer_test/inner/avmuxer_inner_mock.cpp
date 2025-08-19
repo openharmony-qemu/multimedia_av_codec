@@ -100,6 +100,7 @@ int AVMuxerInnerMock::SetFormat(std::shared_ptr<FormatMock> &format)
 {
     if (muxer_ != nullptr) {
         auto formatMock = std::static_pointer_cast<AVFormatInnerMock>(format);
+        muxer_->SetUserMeta(formatMock->GetFormat().GetMeta());
         return muxer_->SetParameter(formatMock->GetFormat().GetMeta());
     }
     return AV_ERR_UNKNOWN;
