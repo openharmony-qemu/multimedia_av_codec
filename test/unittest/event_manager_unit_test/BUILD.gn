@@ -133,7 +133,7 @@ ohos_unittest("instance_memory_update_event_coverage_unit_test") {
     "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/codeclist_service_stub_mock.cpp",
     "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/mem_mgr_client_mock.cpp",
     "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/system_ability_mock.cpp",
-    "$event_handler_dir/instance_memory_update_event_handler/background_event_handler.cpp",
+    "$event_handler_dir/background_event_handler.cpp",
     "$event_handler_dir/instance_memory_update_event_handler/instance_memory_update_event_handler.cpp",
     "./instance_memory_update_event_coverage_unit_test.cpp",
   ]
