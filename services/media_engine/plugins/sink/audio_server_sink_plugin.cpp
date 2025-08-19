@@ -1390,7 +1390,7 @@ void AudioServerSinkPlugin::ApplyAudioHapticsSyncId()
 Status AudioServerSinkPlugin::SetLoudnessGain(float loudnessGain)
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN,
-     "SetLoudnessGain audioRender_ is nullptr");
+        "SetLoudnessGain audioRender_ is nullptr");
     int32_t ret = audioRenderer_->SetLoudnessGain(loudnessGain);
     FALSE_RETURN_V_MSG_E(ret == OHOS::AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
         "set loudnessGain failed with code " PUBLIC_LOG_D32, ret);
