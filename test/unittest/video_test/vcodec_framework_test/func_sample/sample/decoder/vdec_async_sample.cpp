@@ -849,10 +849,10 @@ bool VideoDecAsyncSample::CompareMetadata(std::shared_ptr<AVBufferMock> buffer)
     std::shared_ptr<SurfaceBufferMock> surfaceBufferMock = SurfaceBufferMockFactory::CreateSurfaceBuffer(buffer);
     std::vector<uint8_t> dynamicMetadataFromBuffer;
     ret = surfaceBufferMock->GetHDRDynamicMetadata(dynamicMetadataFromBuffer);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, false, "Fatal: GetHDRDynamicMetadata fail");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, false, "Fatal: GetHDRDynamicMetadata fail");
     std::vector<uint8_t> staticMetadataFromBuffer;
     ret = surfaceBufferMock->GetHDRStaticMetadata(staticMetadataFromBuffer);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, false, "Fatal: GetHDRStaticMetadata fail");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, false, "Fatal: GetHDRStaticMetadata fail");
 
     // 比较
     if (staticMetadataFromBuffer != staticMetadataFromFile || dynamicMetadataFromBuffer != dynamicMetadataFromFile) {
