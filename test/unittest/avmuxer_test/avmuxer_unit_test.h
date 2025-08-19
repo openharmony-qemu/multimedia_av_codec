@@ -41,7 +41,7 @@ public:
     int32_t WriteSample(sptr<Media::AVBufferQueueProducer> bqProducer,
         std::shared_ptr<std::ifstream> file, bool &eosFlag);
     
-    void AuxiliaryWriteSample(std::string inputFilePath, int32_t trackId);
+    void TrackWriteSample(std::string inputFilePath, int32_t trackId);
 
 protected:
     std::shared_ptr<AVMuxerSample> avmuxer_ {nullptr};
