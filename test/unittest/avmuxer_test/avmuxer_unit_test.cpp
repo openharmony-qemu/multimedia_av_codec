@@ -3424,7 +3424,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_MP4_AIGC_002, TestSize.Level0)
     ASSERT_EQ(avmuxer_->Start(), 0);
 
     // audio write sample
-    std::string inputFilePath = "/data/test/media/aac_2c_44100hz_199k.dat";
+    std::string inputFilePath = "/data/test/media/aac_44100_2.dat";
     TrackWriteSample(inputFilePath, audioTrackId);
 
     // video write sample
