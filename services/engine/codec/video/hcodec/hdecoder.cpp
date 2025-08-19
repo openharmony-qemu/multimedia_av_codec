@@ -515,7 +515,7 @@ int32_t HDecoder::SetLppTargetPts(const Format &format)
 }
 // LCOV_EXCL_STOP
 
-int32_t HDecoder::SubmitOutputBuffersToOmxNode()
+int32_t HDecoder::SubmitOutBufToOmx()
 {
     for (BufferInfo& info : outputBufferPool_) {
         if (info.owner != BufferOwner::OWNED_BY_US) {
@@ -594,12 +594,12 @@ int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
         ret = (currSurface_.surface_ ? AllocateOutputBuffersFromSurface() : AllocateAvSurfaceBuffers(portIndex));
     }
     if (ret == AVCS_ERR_OK) {
-        UpdateFormatFromSurfaceBuffer();
+        UpdateFmtFromSurfaceBuffer();
     }
     return ret;
 }
 
-void HDecoder::UpdateFormatFromSurfaceBuffer()
+void HDecoder::UpdateFmtFromSurfaceBuffer()
 {
     if (outputBufferPool_.empty()) {
         return;
@@ -715,7 +715,7 @@ int32_t HDecoder::SubmitAllBuffersOwnedByUs()
         HLOGI("buffer is already circulating, no need to do again");
         return AVCS_ERR_OK;
     }
-    int32_t ret = SubmitOutputBuffersToOmxNode();
+    int32_t ret = SubmitOutBufToOmx();
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
@@ -1022,20 +1022,20 @@ void HDecoder::DynamicModeSubmitBufferToSlot(std::vector<BufferInfo>::iterator n
 void HDecoder::DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::vector<BufferInfo>::iterator nullSlot)
 {
     if (currSurface_.surface_) {
-        HLOGI("generation=%d, bufferId=%u, seq=%u", currGeneration_, nullSlot->bufferId, buffer->GetSeqNum());
+        HLOGD("generation=%d, bufferId=%u, seq=%u", currGeneration_, nullSlot->bufferId, buffer->GetSeqNum());
     } else {
         std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(buffer);
         IF_TRUE_RETURN_VOID_WITH_MSG(avBuffer == nullptr || avBuffer->memory_ == nullptr, "CreateAVBuffer failed");
         nullSlot->avBuffer = avBuffer;
         nullSlot->needDealWithCache = (requestCfg_.usage & BUFFER_USAGE_MEM_MMZ_CACHE);
-        HLOGI("bufferId=%u, seq=%u", nullSlot->bufferId, buffer->GetSeqNum());
+        HLOGD("bufferId=%u, seq=%u", nullSlot->bufferId, buffer->GetSeqNum());
     }
     SetCallerToBuffer(buffer->GetFileDescriptor(),
                       static_cast<uint32_t>(buffer->GetWidth()),
                       static_cast<uint32_t>(buffer->GetHeight()));
     WrapSurfaceBufferToSlot(*nullSlot, buffer, 0, 0);
     if (nullSlot == outputBufferPool_.begin()) {
-        UpdateFormatFromSurfaceBuffer();
+        UpdateFmtFromSurfaceBuffer();
     }
     NotifyOmxToFillThisOutBuffer(*nullSlot);
     nullSlot->omxBuffer->bufferhandle = nullptr;

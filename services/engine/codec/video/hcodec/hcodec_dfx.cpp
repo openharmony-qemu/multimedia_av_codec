@@ -87,7 +87,7 @@ std::string HCodec::OnGetHidumperInfo()
         return pool.front().avBuffer->memory_->GetCapacity();
     };
 
-    s << "        " << compUniqueStr_ << "[" << currState_->GetName() << "]" << endl;
+    s << "        " << "[" << compUniqueStr_ << "][" << currState_->GetName() << "]" << endl;
     s << "        " << "------------INPUT-----------" << endl;
     s << "        " << "eos:" << inputPortEos_ << ", etb:" << record_[OMX_DirInput].frameCntTotal_
       << ", bufferCapacity:" << getbufferCapacity(inputBufferPool_) << endl;

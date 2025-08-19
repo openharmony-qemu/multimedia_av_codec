@@ -994,7 +994,7 @@ int32_t HEncoder::OnSetParameters(const Format &format)
     return AVCS_ERR_OK;
 }
 
-int32_t HEncoder::SubmitOutputBuffersToOmxNode()
+int32_t HEncoder::SubmitOutBufToOmx()
 {
     for (BufferInfo &info : outputBufferPool_) {
         if (info.owner == BufferOwner::OWNED_BY_US) {
@@ -1033,13 +1033,13 @@ int32_t HEncoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
     } else {
         int32_t ret = AllocateAvSurfaceBuffers(portIndex);
         if (ret == AVCS_ERR_OK) {
-            UpdateFormatFromSurfaceBuffer();
+            UpdateFmtFromSurfaceBuffer();
         }
         return ret;
     }
 }
 
-void HEncoder::UpdateFormatFromSurfaceBuffer()
+void HEncoder::UpdateFmtFromSurfaceBuffer()
 {
     if (inputBufferPool_.empty()) {
         return;
@@ -1076,7 +1076,7 @@ int32_t HEncoder::SubmitAllBuffersOwnedByUs()
         HLOGI("buffer is already circulating, no need to do again");
         return AVCS_ERR_OK;
     }
-    int32_t ret = SubmitOutputBuffersToOmxNode();
+    int32_t ret = SubmitOutBufToOmx();
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
@@ -1742,7 +1742,7 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         info.omxBuffer->bufferhandle = nullptr;
         info.omxBuffer->filledLen = 0;
         info.surfaceBuffer = nullptr;
-        NotifyOmxToEmptyThisInBuffer(info);
+        InBufUsToOmx(info);
         return;
     }
     if (!WaitFence(entry.item->fence)) {
@@ -1753,7 +1753,7 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
     encodingBuffers_[info.bufferId] = entry;
     if (enableSurfaceModeInputCb_) {
         info.avBuffer->pts_ = entry.pts;
-        NotifyUserToFillThisInBuffer(info);
+        InBufUsToOmx(info);
     } else {
         CheckPts(info.omxBuffer->pts);
         int32_t err = InBufUsToOmx(info);
