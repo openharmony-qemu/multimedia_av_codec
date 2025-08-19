@@ -673,7 +673,6 @@ Status DemuxerFilter::SelectTrack(int32_t trackId)
 
 std::vector<std::shared_ptr<Meta>> DemuxerFilter::GetStreamMetaInfo() const
 {
-    FALSE_RETURN_V_NOLOG(!isTransCoderMode_, demuxer_->GetStreamMetaInfo());
     auto trackMetas = demuxer_->GetStreamMetaInfo();
     trackMetas.erase(std::remove_if(trackMetas.begin(), trackMetas.end(),
         [](const std::shared_ptr<Meta> &trackMeta) {
