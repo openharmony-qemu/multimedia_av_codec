@@ -42,7 +42,7 @@ using namespace testing::ext;
 namespace OHOS {
 namespace MediaAVCodec {
 constexpr int32_t MEMORY_LEAK_UPLOAD_TIMEOUT = 180; // seconds
-constexpr uint32_t DEFAULT_MEMORY = 100*1024;
+constexpr uint32_t DEFAULT_MEMORY = 100 * 1024;
 class TEST_SUIT : public testing::Test {
 public:
     static void SetUpTestCase(void);
@@ -57,6 +57,7 @@ public:
     std::shared_ptr<CodecServiceStubMock> codecStubMock_ = nullptr;
     std::shared_ptr<InstanceMemoryUpdateEventHandler> instanceMemoryHandler_ = nullptr;
     static int32_t instanceId_;
+
 private:
     std::vector<std::pair<AVCodecServerManager::StubType, sptr<IRemoteObject>>> stubList_;
 };

@@ -37,8 +37,8 @@ public:
     static void TearDownTestCase(void){};
     void SetUp(void);
     void TearDown(void);
-    void UpdateMetaData(int32_t pixelFormat, int32_t bitDepth, int32_t codecType, int32_t isHardware,
-        bool enablePostProcessing);
+    void UpdateMetaData(int32_t pixelFormat, int32_t bitDepth, AVCodecType codecType, int32_t isHardware,
+                        bool enablePostProcessing);
 
     std::shared_ptr<Meta> meta_ = nullptr;
     std::shared_ptr<InstanceMemoryUpdateEventHandler> instanceMemoryHandler_ = nullptr;
@@ -60,8 +60,8 @@ void TEST_SUIT::TearDown(void)
     meta_->Clear();
 }
 
-void TEST_SUIT::UpdateMetaData(int32_t pixelFormat, int32_t bitDepth, int32_t codecType, int32_t isHardware,
-    bool enablePostProcessing)
+void TEST_SUIT::UpdateMetaData(int32_t pixelFormat, int32_t bitDepth, AVCodecType codecType, int32_t isHardware,
+                               bool enablePostProcessing)
 {
     SetMetaData(*meta_, Media::Tag::VIDEO_PIXEL_FORMAT, pixelFormat);
     SetMetaData(*meta_, EventInfoExtentedKey::BIT_DEPTH.data(), bitDepth);
@@ -444,9 +444,9 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_002, TestSize.Level3)
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "NV12");
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
-    uint32_t blockCount = 5000;
+    uint32_t blockCount = 6000;
     auto instanceMemory = calculator.value()(blockCount);
-    constexpr int32_t INSTANCE_MEMORY = 32078;
+    constexpr int32_t INSTANCE_MEMORY = 34783;
     EXPECT_EQ(instanceMemory, INSTANCE_MEMORY);
 }
 
@@ -520,9 +520,9 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_002, TestSize.Level3)
     meta_->SetData(EventInfoExtentedKey::PIXEL_FORMAT_STRING.data(), "RGBA");
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
-    uint32_t blockCount = 5000;
+    uint32_t blockCount = 6000;
     auto instanceMemory = calculator.value()(blockCount);
-    constexpr int32_t INSTANCE_MEMORY = 38734;
+    constexpr int32_t INSTANCE_MEMORY = 42631;
     EXPECT_EQ(instanceMemory, INSTANCE_MEMORY);
 }
 
