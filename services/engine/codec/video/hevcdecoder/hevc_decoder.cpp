@@ -123,6 +123,8 @@ int32_t HevcDecoder::Init(Meta &callerInfo)
         hevcDecInfo_.calledByAvcodec = true;
     }
     callerInfo.GetData("av_codec_event_info_instance_id", instanceId_);
+    int32_t ret = Initialize();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Failed to initialize");
     hevcDecInfo_.instanceId = std::to_string(instanceId_);
     decName_ = "hevcdecoder_[" + std::to_string(instanceId_) + "]";
     AVCODEC_LOGI("HevcDecoder codec name: %{public}s", decName_.c_str());
@@ -190,6 +192,8 @@ HevcDecoder::~HevcDecoder()
 int32_t HevcDecoder::Initialize()
 {
     AVCODEC_SYNC_TRACE;
+    decName_ = "hevcdecoder_["+ std::to_string(instanceId_) + "]";
+    AVCODEC_LOGI("current codec name: %{public}s", decName_.c_str());
     CHECK_AND_RETURN_RET_LOG(!codecName_.empty(), AVCS_ERR_INVALID_VAL, "Init codec failed:  empty name");
     std::string_view mime;
     for (uint32_t i = 0; i < SUPPORT_HEVC_DECODER_NUM; ++i) {
@@ -301,10 +305,6 @@ void HevcDecoder::ConfigureSurface(const Format &format, const std::string_view 
 int32_t HevcDecoder::Configure(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    if (state_ == State::UNINITIALIZED) {
-        int32_t ret = Initialize();
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Init codec failed");
-    }
     CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED), AVCS_ERR_INVALID_STATE,
                              "Configure codec failed:  not in Initialized state");
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_VIDEO_WIDTH);
