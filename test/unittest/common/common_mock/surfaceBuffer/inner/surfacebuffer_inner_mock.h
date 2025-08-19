@@ -16,7 +16,7 @@
 #ifndef SURFACEBUFFER_INNER_MOCK_H
 #define SURFACEBUFFER_INNER_MOCK_H
 
-#include "common_mock.h"
+#include "surfaceBuffer_mock.h"
 #include "surface_buffer.h"
 
 namespace OHOS {

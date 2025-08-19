@@ -23,7 +23,6 @@
 #include "native_avcodec_base.h"
 #include "nocopyable.h"
 #include "surface.h"
-#include "avbuffer_mock.h"
 
 using AVBuffer = OHOS::Media::AVBuffer;
 using Status = OHOS::Media::Status;

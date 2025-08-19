@@ -19,6 +19,7 @@
 #include <string>
 #include <map>
 #include "avbuffer_mock.h"
+#include "surfaceBuffer_mock.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"

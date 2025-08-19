@@ -82,6 +82,7 @@ private:
     int32_t CreateMpegReader();
     int32_t CreateH263Reader();
     int32_t CreateReader(const std::string& inPath);
+    bool CompareMetadata(std::shared_ptr<AVBufferMock> buffer);
     std::shared_ptr<VideoDecMock> videoDec_ = nullptr;
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::ofstream> outFile_;

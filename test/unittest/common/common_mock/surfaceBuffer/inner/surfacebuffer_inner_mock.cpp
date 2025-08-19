@@ -29,7 +29,7 @@ SurfaceBufferInnerMock::~SurfaceBufferInnerMock() {}
 bool SurfaceBufferInnerMock::GetHDRDynamicMetadata(std::vector<uint8_t> &meta)
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, false, "surfaceBuffer_ is nullptr!");
-    if (surfaceBuffer_->GetMetadata(ATTRKEY_HDR_DYNAMIC_METADATA, meta) == 0) {
+    if (surfaceBuffer_->GetMetadata(5, meta) == 0) {
         return true;
     } else {
         return false;
@@ -39,7 +39,7 @@ bool SurfaceBufferInnerMock::GetHDRDynamicMetadata(std::vector<uint8_t> &meta)
 bool SurfaceBufferInnerMock::GetHDRStaticMetadata(std::vector<uint8_t> &meta)
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, false, "surfaceBuffer_ is nullptr!");
-    if (surfaceBuffer_->GetMetadata(ATTRKEY_HDR_STATIC_METADATA, meta) == 0) {
+    if (surfaceBuffer_->GetMetadata(4, meta) == 0) {
         return true;
     } else {
         return false;

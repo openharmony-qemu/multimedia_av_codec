@@ -17,15 +17,9 @@
 #define SURFACEBUFFER_MOCK_H
 
 #include <string>
-#include "native_avbuffer.h"
+#include "avbuffer_mock.h"
 #include "nocopyable.h"
 #include "unittest_log.h"
-using AVBuffer = OHOS::Media::AVBuffer;
-using Status = OHOS::Media::Status;
-using MemoryFlag = OHOS::Media::MemoryFlag;
-using MemoryType = OHOS::Media::MemoryType;
-using AVAllocatorFactory = OHOS::Media::AVAllocatorFactory;
-using AVAllocator = OHOS::Media::AVAllocator;
 namespace OHOS {
 namespace MediaAVCodec {
 
