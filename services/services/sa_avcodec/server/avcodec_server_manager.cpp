@@ -299,6 +299,7 @@ void AVCodecServerManager::NotifyProcessStatus(const int32_t status)
 
 void AVCodecServerManager::SetMemMgrStatus(const bool isStarted)
 {
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     memMgrStarted_ = isStarted;
 }
 

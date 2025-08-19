@@ -28,7 +28,7 @@ Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register> &reg)
     CodecPluginDef definition;
     definition.name = std::string(OHOS::MediaAVCodec::AVCodecCodecName::AUDIO_DECODER_RAW_NAME);
     definition.pluginType = PluginType::AUDIO_DECODER;
-    definition.rank = 100;  // 100
+    definition.rank = 100;  // 100:rank
     definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
         return std::make_shared<AudioRawDecoderPlugin>(name);
     });
@@ -64,6 +64,9 @@ constexpr int32_t BYTE_LENGHT_S24 = 3;
 constexpr int32_t BYTE_LENGHT_S32_F32 = 4;
 constexpr int32_t BYTE_LENGHT_DOUBLE = 8;
 constexpr int32_t BYTE_LENGHT_DOUBLE_INDEX = 7;
+constexpr int32_t MAX_CHANNELS = 255;
+constexpr int32_t MAX_INPUT_SIZE_LIMIT = 80 * 1024 * 1024;  // 80 MB
+
 static std::vector<AudioSampleFormat> supportedSampleFormats = {
     AudioSampleFormat::SAMPLE_S16BE,
     AudioSampleFormat::SAMPLE_S24BE,
@@ -72,6 +75,7 @@ static std::vector<AudioSampleFormat> supportedSampleFormats = {
     AudioSampleFormat::SAMPLE_F64BE
 };
 
+// current support convert big-endian to little-endian map
 static std::unordered_map<AudioSampleFormat, AudioSampleFormat> formatMap = {
     {AudioSampleFormat::SAMPLE_S16BE, AudioSampleFormat::SAMPLE_S16LE},
     {AudioSampleFormat::SAMPLE_S24BE, AudioSampleFormat::SAMPLE_S24LE},
@@ -164,6 +168,12 @@ Status AudioRawDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramete
     int32_t bytesSize = GetFormatBytes(srcSampleFormat_);
     int32_t desBytesSize = GetFormatBytes(audioSampleFormat_);
     if (format_->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_)) {
+        if (maxInputSize_ > MAX_INPUT_SIZE_LIMIT) {
+            AVCODEC_LOGE(
+                "maxInputSize:%{public}d is over %{public}d,not supported", maxInputSize_, MAX_INPUT_SIZE_LIMIT);
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+
         if (maxInputSize_ < channels_ * AUDIO_FRAME_LENGHT_DEFAULT * bytesSize) {
             maxInputSize_ = channels_ * AUDIO_FRAME_LENGHT_DEFAULT * bytesSize;
         }
@@ -184,18 +194,22 @@ int32_t AudioRawDecoderPlugin::GetFormatBytes(AudioSampleFormat format)
     int32_t bytesSize = BYTE_LENGHT_S16;
     switch (format) {
         case AudioSampleFormat::SAMPLE_S16BE:
+        /* fall-through */
         case AudioSampleFormat::SAMPLE_S16LE:
             bytesSize = BYTE_LENGHT_S16;
             break;
         case AudioSampleFormat::SAMPLE_S24BE:
+        /* fall-through */
         case AudioSampleFormat::SAMPLE_S24LE:
             bytesSize = BYTE_LENGHT_S24;
             break;
         case AudioSampleFormat::SAMPLE_S32BE:
+        /* fall-through */
         case AudioSampleFormat::SAMPLE_S32LE:
             bytesSize = BYTE_LENGHT_S32_F32;
             break;
         case AudioSampleFormat::SAMPLE_F32BE:
+        /* fall-through */
         case AudioSampleFormat::SAMPLE_F32LE:
             bytesSize = BYTE_LENGHT_S32_F32;
             break;
@@ -362,7 +376,7 @@ Status AudioRawDecoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
 
 bool AudioRawDecoderPlugin::CheckFormat()
 {
-    if (channels_ <= 0) {
+    if (channels_ <= 0 || channels_ > MAX_CHANNELS) {
         AVCODEC_LOGE("channels:%{public}d not supported", channels_);
         return false;
     }

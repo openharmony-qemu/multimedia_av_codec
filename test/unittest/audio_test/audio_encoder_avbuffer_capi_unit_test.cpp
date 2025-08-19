@@ -39,6 +39,7 @@
 #include "common/native_mfmagic.h"
 #include "native_avcodec_audiocodec.h"
 #include "native_audio_channel_layout.h"
+#include "native_avcapability.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -1476,6 +1477,98 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_normalcase_g711mu, TestSiz
 
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_outer_support_mime_check, TestSize.Level1)
+{
+    const vector<std::string_view> allMimeTable = {
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_FLAC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711MU,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711A,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_RAW,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VORBIS,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_MPEG,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VIVID,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRWB,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_L2HC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_COOK,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AC3,
+    };
+
+    const bool isEncoder = true;
+    for (const auto &mime : allMimeTable) {
+        auto capability = OH_AVCodec_GetCapability(mime.data(), isEncoder);
+        const char *name = OH_AVCapability_GetName(capability);
+        if (name == nullptr) {
+            cout << "without capaility:" << mime << endl;
+            continue;
+        }
+        auto audioEnc = OH_AudioCodec_CreateByMime(mime.data(), isEncoder);
+        if (AVCodecMimeType::CheckAudioCodecMimeSupportOuter(mime.data(), isEncoder)) {
+            EXPECT_NE(nullptr, audioEnc);
+            if (audioEnc == nullptr) {
+                cout << "create " << mime << " failed" << endl;
+            }
+        } else {
+            EXPECT_EQ(nullptr, audioEnc);
+            if (audioEnc != nullptr) {
+                cout << "limit " << mime << " failed" << endl;
+            }
+        }
+
+        if (audioEnc != nullptr) {
+            OH_AudioCodec_Destroy(audioEnc);
+        }
+    }
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_outer_support_codec_name_check, TestSize.Level1)
+{
+    const vector<std::string_view> allMimeTable = {
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_FLAC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711MU,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711A,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_RAW,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VORBIS,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_MPEG,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VIVID,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRWB,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_L2HC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_COOK,
+        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AC3,
+    };
+
+    const bool isEncoder = true;
+    for (const auto &mime : allMimeTable) {
+        auto capability = OH_AVCodec_GetCapability(mime.data(), isEncoder);
+        const char *name = OH_AVCapability_GetName(capability);
+        auto audioEnc = OH_AudioCodec_CreateByName(name);
+        if (AVCodecCodecName::CheckAudioCodecNameSupportOuter(name)) {
+            EXPECT_NE(nullptr, audioEnc);
+            if (audioEnc == nullptr) {
+                cout << "create " << name << " failed" << endl;
+            }
+        } else {
+            EXPECT_EQ(nullptr, audioEnc);
+            if (audioEnc != nullptr) {
+                cout << "limit " << name << " failed" << endl;
+            }
+        }
+
+        if (audioEnc != nullptr) {
+            OH_AudioCodec_Destroy(audioEnc);
+        }
+    }
 }
 }
 }

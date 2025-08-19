@@ -119,8 +119,9 @@ int16_t AudioG711aDecoderPlugin::G711aLawDecode(uint8_t aLawValue)
 Status AudioG711aDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& inputBuffer)
 {
     auto memory = inputBuffer->memory_;
+    CHECK_AND_RETURN_RET_LOG(memory != nullptr, Status::ERROR_NO_MEMORY, "inputBuffer is nullptr");
     int32_t size = memory->GetSize();
-    CHECK_AND_RETURN_RET_LOG(memory != nullptr && size >= 0, Status::ERROR_UNKNOWN,
+    CHECK_AND_RETURN_RET_LOG(size >= 0, Status::ERROR_UNKNOWN,
         "SendBuffer buffer size < 0. size : %{public}d", size);
     if (size > memory->GetCapacity()) {
         AVCODEC_LOGE("send input buffer > allocate size. size : %{public}d, allocate size : %{public}d",

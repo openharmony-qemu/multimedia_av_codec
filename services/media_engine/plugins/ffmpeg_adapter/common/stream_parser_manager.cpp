@@ -57,19 +57,12 @@ bool StreamParserManager::Init(VideoStreamType videoStreamType)
     std::string streamParserPath;
     if (videoStreamType == VideoStreamType::HEVC) {
         streamParserPath = HEVC_LIB_PATH;
-    } else if (videoStreamType == VideoStreamType::VVC) {
-        streamParserPath = VVC_LIB_PATH;
-    } else {
-        MEDIA_LOG_E("Unsupport stream parser type");
-        return false;
     }
     if (handlerMap_.count(videoStreamType) == 0) {
         handlerMap_[videoStreamType] = LoadPluginFile(streamParserPath);
     }
-    if (!CheckSymbol(handlerMap_[videoStreamType], videoStreamType)) {
-        MEDIA_LOG_E("Load stream parser failed");
-        return false;
-    }
+    FALSE_RETURN_V_MSG_E(CheckSymbol(handlerMap_[videoStreamType], videoStreamType), false,
+                         "Load stream parser failed");
     return true;
 }
 
@@ -190,9 +183,7 @@ void StreamParserManager::ResetXPSSendStatus()
 void *StreamParserManager::LoadPluginFile(const std::string &path)
 {
     auto ptr = ::dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
-    if (ptr == nullptr) {
-        MEDIA_LOG_E("Dlopen failed due to %{public}s", ::dlerror());
-    }
+    FALSE_RETURN_V_MSG_E(ptr != nullptr, ptr, "Dlopen failed due to %{public}s", ::dlerror());
     return ptr;
 }
 

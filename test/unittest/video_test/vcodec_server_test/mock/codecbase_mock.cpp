@@ -19,10 +19,8 @@
 #include "hevc_decoder_loader.h"
 #include "hcodec_loader.h"
 #include "avc_encoder_loader.h"
-#define PRINT_HILOG
 #include "unittest_log.h"
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "CodecBaseMock"};
 std::mutex g_mutex;
 std::weak_ptr<OHOS::MediaAVCodec::CodecBaseMock> g_mockObject;
 } // namespace

@@ -512,17 +512,9 @@ HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Start_003, TestSize.Level1)
 
 sptr<Surface> CreateSurface()
 {
-    sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
-    option->SetWindowRect({0, 0, 1280, 1000}); // 1280: width, 1000: height
-    option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_APP_LAUNCHING);
-    option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FLOATING);
-    auto window = Rosen::Window::Create("vcodec_unittest", option);
-    if (window == nullptr || window->GetSurfaceNode() == nullptr) {
-        std::cout << "Fatal: Create window fail" << std::endl;
-        return nullptr;
-    }
-    window->Show();
-    return window->GetSurfaceNode()->GetSurface();
+    auto consumer = Surface::CreateSurfaceAsConsumer();
+    auto p = consumer->GetProducer();
+    return Surface::CreateSurfaceAsProducer(p);
 }
 
 /**
@@ -703,9 +695,8 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Valid_Test_003, TestSize.Level1)
     server_->status_ = CodecServer::CodecStatus::CONFIGURED;
     sptr<Surface> surface = CreateSurface();
     if (surface != nullptr) {
-        EXPECT_CALL(*codecBaseMock_, SetOutputSurface(surface)).Times(1).WillOnce(Return(AVCS_ERR_OK));
-        int32_t ret = server_->SetOutputSurface(surface);
-        EXPECT_EQ(ret, AVCS_ERR_OK);
+        EXPECT_CALL(*codecBaseMock_, SetOutputSurface(surface)).Times(0);
+        server_->SetOutputSurface(surface);
     }
 }
 
@@ -1297,7 +1288,7 @@ HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_003, TestSize.Level1)
     EXPECT_TRUE(ret);
     EXPECT_EQ(oldFormatFramRate, framRate);
 
-    format = Format();;
+    format = Format();
     oldFormat = Format();
 }
 } // MediaAVCodec

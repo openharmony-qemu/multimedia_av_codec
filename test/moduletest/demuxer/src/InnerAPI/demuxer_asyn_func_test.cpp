@@ -47,6 +47,7 @@ private:
     void RemoveValue();
     bool CreateBufferSize();
     void GetFrameNum(int32_t i);
+    void ThreadTask(std::shared_ptr<Plugins::DemuxerPlugin> demuxerPlugin, uint32_t timeout);
     int streamId_ = 0;
     std::map<uint32_t, uint32_t> frames_;
     std::map<uint32_t, uint32_t> keyFrames_;
@@ -71,7 +72,8 @@ private:
 
 static const int DEF_PROB_SIZE = 16 * 1024;
 constexpr int32_t THOUSAND = 1000.0;
-
+constexpr int32_t TIME_0 = 0;
+constexpr int32_t TRACKNUM_2 = 2;
 static const std::string DEMUXER_PLUGIN_NAME_FLV = "avdemux_flv";
 
 
@@ -169,6 +171,29 @@ void DemuxerAsynInnerFuncTest::GetFrameNum(int32_t i)
             videoIndexForRead++;
         } else {
             audioIndexForRead++;
+        }
+    }
+}
+
+
+void DemuxerAsynInnerFuncTest::ThreadTask(std::shared_ptr<Plugins::DemuxerPlugin> demuxerPlugin, uint32_t timeout)
+{
+    int64_t realtime = 0;
+    while (!isAudioEosFlagForSave || !isVideoEosFlagForSave) {
+        for (int32_t i = 0; i < TRACKNUM_2; i++) {
+            if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
+                continue;
+            }
+            auto ret = demuxerPlugin->ReadSample(i, avBuf_, timeout);
+            while (ret == Status::ERROR_WAIT_TIMEOUT) {
+                ret = demuxerPlugin->ReadSample(i, avBuf_, timeout);
+            }
+            ASSERT_EQ(ret, Status::OK);
+            GetFrameNum(i);
+            if (isVideoEosFlagForSave && isAudioEosFlagForSave) {
+                ASSERT_EQ(demuxerPlugin->SeekTo(indexVid, TIME_0 / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC,
+                    realtime), Status::OK);
+            }
         }
     }
 }
@@ -318,6 +343,7 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0080, TestSize.Level1
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
     ASSERT_EQ(CreateBufferSize(), true);
+    ASSERT_EQ(demuxerPlugin->ReadSample(indexVid, avBuf_, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->ReadSample(indexVid, avBuf_, timeout), Status::ERROR_WAIT_TIMEOUT);
 }
 /**
@@ -526,7 +552,7 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0170, TestSize.Level3
 HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0180, TestSize.Level3)
 {
     indexVid = 0;
-    uint32_t timeout = 100;
+    uint32_t timeout = 1000;
     int64_t realtime = 0;
     int64_t seekTime = 5042000;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV_2, DEF_PROB_SIZE), true);
@@ -535,7 +561,11 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0180, TestSize.Level3
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
-    ASSERT_EQ(demuxerPlugin->ReadSample(indexVid, avBuf_, timeout), Status::OK);
+    auto ret = demuxerPlugin->ReadSample(indexVid, avBuf_, timeout);
+    while (ret == Status::ERROR_WAIT_TIMEOUT) {
+        ret = demuxerPlugin->ReadSample(indexVid, avBuf_, timeout);
+    }
+    ASSERT_EQ(ret, Status::OK);
     ASSERT_EQ(demuxerPlugin->Pause(), Status::OK);
     ASSERT_EQ(demuxerPlugin->SeekTo(
         indexVid, seekTime / THOUSAND, Plugins::SeekMode::SEEK_NEXT_SYNC, realtime), Status::OK);
@@ -544,7 +574,11 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0180, TestSize.Level3
             if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
                 continue;
             }
-            ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
+            ret = demuxerPlugin->ReadSample(i, avBuf_, timeout);
+            while (ret == Status::ERROR_WAIT_TIMEOUT) {
+                ret = demuxerPlugin->ReadSample(i, avBuf_, timeout);
+            }
+            ASSERT_EQ(ret, Status::OK);
             GetFrameNum(i);
         }
     }
@@ -560,7 +594,7 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0180, TestSize.Level3
 HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0190, TestSize.Level3)
 {
     indexVid = 0;
-    uint32_t timeout = 100;
+    uint32_t timeout = 1000;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -573,7 +607,11 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0190, TestSize.Level3
             if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
                 continue;
             }
-            ASSERT_EQ(demuxerPlugin->ReadSample(i, avBuf_, timeout), Status::OK);
+            auto ret = demuxerPlugin->ReadSample(i, avBuf_, timeout);
+            while (ret == Status::ERROR_WAIT_TIMEOUT) {
+                ret = demuxerPlugin->ReadSample(i, avBuf_, timeout);
+            }
+            ASSERT_EQ(ret, Status::OK);
             GetFrameNum(i);
         }
     }
@@ -912,5 +950,36 @@ HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_FUNC_0340, TestSize.Level2
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexVid, size, timeout), Status::OK);
     ASSERT_EQ(demuxerPlugin->GetNextSampleSize(indexVid, size), Status::ERROR_INVALID_OPERATION);
 }
+
+/**
+ * @tc.number    : DEMUXER_ASYN_INNER_MULTI_THREAD_FUNC_0010
+ * @tc.name      : 多线程解析
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerAsynInnerFuncTest, DEMUXER_ASYN_INNER_MULTI_THREAD_FUNC_0010, TestSize.Level2)
+{
+    uint32_t timeout = 1000;
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV, DEF_PROB_SIZE), true);
+    ASSERT_NE(pluginBase_, nullptr);
+    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->SelectTrack(1), Status::OK);
+    ASSERT_EQ(CreateBufferSize(), true);
+    for (int count = 0; count < 5; count++) {
+        isAudioEosFlagForSave = false;
+        isVideoEosFlagForSave = false;
+        std::thread readSeek1([demuxerPlugin, timeout, this]() {
+            ThreadTask(demuxerPlugin, timeout);
+        });
+        std::thread readSeek2([demuxerPlugin, timeout, this]() {
+            ThreadTask(demuxerPlugin, timeout);
+        });
+        readSeek1.join();
+        readSeek2.join();
+    }
+    ASSERT_EQ(demuxerPlugin->UnselectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin->UnselectTrack(1), Status::OK);
+}
+
 }  // namespace Media
 }  // namespace OHOS

@@ -126,6 +126,8 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
+    "resource_schedule_service:ressched_client",
+    "samgr:samgr_proxy",
   ]
 
   relative_install_dir = "media/media_plugins"

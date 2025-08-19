@@ -321,24 +321,43 @@ void VideoCaptureFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 void VideoCaptureFilter::OnBufferAvailable()
 {
     MEDIA_LOG_I("OnBufferAvailable");
-    sptr<SurfaceBuffer> buffer;
-    sptr<SyncFence> fence;
+    sptr<SurfaceBuffer> inputBuffer;
     int64_t timestamp;
     int32_t bufferSize = 0;
     int32_t isKeyFrame = 0;
-    OHOS::Rect damage;
-    FALSE_RETURN_MSG(inputSurface_ != nullptr, "inputSurface_ is nullptr");
-    GSError ret = inputSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
-    if (ret != GSERROR_OK || buffer == nullptr) {
-        MEDIA_LOG_E("AcquireBuffer failed");
+
+    // Get and validate the input buffer
+    if (!AcquireInputBuffer(inputBuffer, timestamp, bufferSize, isKeyFrame)) {
+        MEDIA_LOG_E("AcquireInputBuffer fail");
         return;
     }
+
+    // Process and push output buffer
+    if (!ProcessAndPushOutputBuffer(inputBuffer, timestamp, bufferSize, isKeyFrame)) {
+        MEDIA_LOG_E("ProcessAndPushOutputBuffer fail");
+    }
+    
+    // Release the buffer
+    inputSurface_->ReleaseBuffer(inputBuffer, -1);
+}
+
+bool VideoCaptureFilter::AcquireInputBuffer(sptr<SurfaceBuffer>& buffer, int64_t &timestamp,
+    int32_t& bufferSize, int32_t& isKeyFrame)
+{
+    FALSE_RETURN_V_MSG(inputSurface_ != nullptr, false, "inputSurface_ is nullptr");
+    sptr<SyncFence> fence;
+    OHOS::Rect damage;
+    GSError ret = inputSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
+    FALSE_RETURN_V_MSG(ret == GSERROR_OK && buffer != nullptr, false, "AcquireBuffer fail");
+
     constexpr uint32_t waitForEver = -1;
     (void)fence->Wait(waitForEver);
+
     if (isStop_) {
         inputSurface_->ReleaseBuffer(buffer, -1);
-        return;
+        return false;
     }
+
     auto extraData = buffer->GetExtraData();
     if (extraData) {
         extraData->ExtraGet("timeStamp", timestamp);
@@ -346,6 +365,12 @@ void VideoCaptureFilter::OnBufferAvailable()
         extraData->ExtraGet("isKeyFrame", isKeyFrame);
     }
 
+    return true;
+}
+
+bool VideoCaptureFilter::ProcessAndPushOutputBuffer(sptr<SurfaceBuffer>& buffer, int64_t timestamp,
+    int32_t bufferSize, int32_t isKeyFrame)
+{
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
     avBufferConfig.size = bufferSize;
@@ -353,23 +378,18 @@ void VideoCaptureFilter::OnBufferAvailable()
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     int32_t timeOutMs = 100;
     Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, timeOutMs);
-    if (status != Status::OK) {
-        MEDIA_LOG_E("RequestBuffer fail.");
-        inputSurface_->ReleaseBuffer(buffer, -1);
-        return;
-    }
+    
+    FALSE_RETURN_V_MSG(status == Status::OK, false, "RequestBuffer fail.");
+
     std::shared_ptr<AVMemory> &bufferMem = emptyOutputBuffer->memory_;
-    if (emptyOutputBuffer->memory_ == nullptr) {
-        MEDIA_LOG_I("emptyOutputBuffer->memory_ is nullptr.");
-        inputSurface_->ReleaseBuffer(buffer, -1);
-        return;
-    }
+    FALSE_RETURN_V_MSG(emptyOutputBuffer->memory_ != nullptr, false, "emptyOutputBuffer->memory_ is nullptr.");
+
     emptyOutputBuffer->flag_ = isKeyFrame != 0 ? static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME) : 0;
     bufferMem->Write((const uint8_t *)buffer->GetVirAddr(), bufferSize, 0);
     UpdateBufferConfig(emptyOutputBuffer, timestamp);
     status = outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
-    FALSE_LOG_MSG(status == Status::OK, "PushBuffer fail");
-    inputSurface_->ReleaseBuffer(buffer, -1);
+    FALSE_RETURN_V_MSG(status == Status::OK, false, "PushBuffer fail");
+    return true;
 }
 
 void VideoCaptureFilter::UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, int64_t timestamp)

@@ -111,13 +111,16 @@ public:
     int32_t GetOutputFormat(Format &format);
     int32_t ReleaseOutputBuffer(uint32_t index);
     int32_t SetParameter(const Format &format);
+    int32_t SetParameter();
     int32_t SetCallback();
     int32_t SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallback> cb);
     int32_t GetInputFormat(Format &format);
-
+    int32_t SyncOutputFuncEos(AVCodecBufferFlag flag, uint32_t index);
     int32_t StartVideoEncoder();
+    int32_t VideoEncoder();
     int32_t testApi();
     int32_t PushData(std::shared_ptr<AVSharedMemory> buffer, uint32_t index, int32_t &result);
+    int32_t SyncPushData(std::shared_ptr<AVBuffer> buffer, uint32_t index, int32_t &result);
     int32_t OpenFileFail();
     int32_t CheckResult(bool isRandomEosSuccess, int32_t pushResult);
     int32_t CheckFlag(AVCodecBufferFlag flag);
@@ -138,17 +141,20 @@ public:
     void InputParamLoopFunc();
     void InputFuncSurface();
     void InputFunc();
+    void SyncInputFunc();
     void OutputFunc();
+    void SyncOutputFunc();
     void OutputFuncFail();
     void FlushBuffer();
     void StopInloop();
     void StopOutloop();
     void ReleaseInFile();
     void InputEnableRepeatSleep();
-    void PushRandomDiscardIndex(uint32_t count, uint32_t min, uint32_t max);
+    void PushRandomDiscardIndex(uint32_t count, uint32_t max, uint32_t min);
     bool IsFrameDiscard(uint32_t index);
     bool CheckOutputFrameCount();
     void readMultiFilesFunc();
+    int32_t ConfigureVideoEncoderSqr();
     int32_t SetCustomBuffer(BufferRequestConfig bufferRequestConfig);
     bool ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer);
     bool GetWaterMarkCapability(std::string codecMimeType);
@@ -165,6 +171,11 @@ public:
     uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;  // 1200 测试用例
     uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
     uint32_t DEFAULT_KEY_I_FRAME_INTERVAL = 333; // 1300 测试用例，1000、333
+    int32_t DEFAULT_PIX_FMT = static_cast<int32_t>(VideoPixelFormat::NV12);
+    int32_t DEFAULT_SQR_FACTOR = 30;
+    int64_t DEFAULT_MAX_BITERATE = 4000000;
+    int32_t DEFAULT_SQR_FACTOR_RUN = 30;
+    int64_t DEFAULT_MAX_BITERATE_RUN = 4000000;
 
     uint32_t errCount = 0;
     uint32_t outCount = 0;
@@ -182,6 +193,8 @@ public:
     int32_t DEFAULT_FRAME_AFTER = 1;
     int32_t DEFAULT_MAX_COUNT = 1;
     uint32_t DEFAULT_KEY_I_INTERVAL = 10;
+    int32_t DEFAULT_BFRAME = 1;
+    uint32_t DEFAULT_GOP_MODE = 1;
     int32_t discardInterval = -1;
     bool isDiscardFrame = false;
     std::vector<int32_t> discardFrameIndex;
@@ -191,10 +204,14 @@ public:
     int32_t inputFrameCount = 0;
     bool setMaxCount = false;
     bool enableWaterMark = false;
+    bool enbleBFrameMode = false;
     int32_t videoCoordinateX = 100;
     int32_t videoCoordinateY = 100;
     int32_t videoCoordinateWidth = 400;
     int32_t videoCoordinateHeight = 400;
+    int32_t DEFAULT_QUALITY = 32;
+    int32_t DEFAULT_BITRATE_RUN = 5000000;
+    int32_t DEFAULT_MAX_B_FRAMES = 3;
     std::vector<std::string> fileDirs;
     std::vector<fileInfo> fileInfos;
     bool readMultiFiles = false;
@@ -203,15 +220,32 @@ public:
     bool configMain10 = false;
     bool setFormat8Bit = false;
     bool setFormat10Bit = false;
-    
-private:
+    bool enableParameter = false;
+    bool isParamSet = false;
+    bool MODE_ENABLE = false;
+    bool SETBIRATE = false;
+    bool QUALITY_ENABLE = false;
+    bool B_ENABLE = false;
+    bool FACTOR_ENABLE = false;
+    bool MAXBITE_ENABLE = false;
+    bool FACTOR_ENABLE_RUN = false;
+    bool MAXBITE_ENABLE_RUN = false;
+    bool SETBIRATE_RUN = false;
+    bool GOPMODE_ENABLE = false;
+    bool MAXBFRAMES_ENABLE = false;
+    int32_t enbleSyncMode = 0;
+    int64_t syncInputWaitTime = -1;
+    int64_t syncOutputWaitTime = -1;
+    bool queryOutputBufferEOS = false;
+    bool queryInputBufferEOS = false;
     std::atomic<bool> isRunning_ { false };
+    std::shared_ptr<VEncInnerSignal> signal_;
+private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> inputParamLoop_;
     std::unique_ptr<std::thread> outputLoop_;
     std::shared_ptr<AVCodecVideoEncoder> venc_;
-    std::shared_ptr<VEncInnerSignal> signal_;
     std::shared_ptr<VEncInnerCallback> cb_;
     int stride_;
     OHNativeWindow *nativeWindow;

@@ -268,6 +268,10 @@ bool AudioCodecWorker::HandInputBuffer(int32_t &ret)
     }
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "handle input buffer. index:%{public}u", inputIndex);
     auto inputBuffer = GetInputBufferInfo(inputIndex);
+    if (inputBuffer == nullptr) {
+        AVCODEC_LOGE("inputBuffer is nullptr");
+        return false;
+    }
     bool isEos = inputBuffer->CheckIsEos();
     ret = codec_->ProcessSendData(inputBuffer);
     inputBuffer_->ReleaseBuffer(inputIndex);

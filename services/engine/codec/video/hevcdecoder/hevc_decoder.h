@@ -69,6 +69,7 @@ public:
     int32_t NotifyMemoryRecycle() override;
     int32_t NotifyMemoryWriteBack() override;
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
+    bool IsValid() const { return isValid_; }
 
     struct HBuffer {
     public:
@@ -165,6 +166,7 @@ private:
     void StartRequestSurfaceBufferThread();
     void StopRequestSurfaceBufferThread();
     bool RequestSurfaceBufferOnce(uint32_t index);
+    void SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer);
 
     // for memory recycle
     int32_t FreezeBuffers(State curState);
@@ -175,6 +177,7 @@ private:
     bool disableDmaSwap_ = false;
     int pid_ = -1;
 
+    CallerInfo hevcDecInfo_;
     int32_t instanceId_ = -1;
     std::string decName_;
     std::string codecName_;
@@ -195,6 +198,7 @@ private:
     static std::vector<uint32_t> decInstanceIDSet_;
     static std::vector<uint32_t> freeIDSet_;
 
+    bool isValid_ = true;
     Format format_;
     int32_t width_ = 0;
     int32_t height_ = 0;
@@ -225,6 +229,7 @@ private:
     std::mutex decRunMutex_;
     std::mutex surfaceMutex_;
     std::mutex requestBufferMutex_;
+    std::mutex renderBufferMapMutex_;
     std::condition_variable requestBufferCV_;
     std::condition_variable requestBufferOnceDoneCV_;
     std::shared_ptr<MediaCodecCallback> callback_;

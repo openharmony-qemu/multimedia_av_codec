@@ -19,6 +19,7 @@
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
 #include "avcodec_codec_name.h"
+#include "avcodec_mime_type.h"
 #include "codec_server.h"
 #include "qos.h"
 
@@ -51,6 +52,15 @@ void AudioCodecConsumerListener::OnBufferAvailable()
 int32_t AVCodecAudioCodecImpl::Init(AVCodecType type, bool isMimeType, const std::string &name)
 {
     AVCODEC_SYNC_TRACE;
+
+    bool enableOuter = isMimeType
+                           ? AVCodecMimeType::CheckAudioCodecMimeSupportOuter(name, type == AVCODEC_TYPE_AUDIO_ENCODER)
+                           : AVCodecCodecName::CheckAudioCodecNameSupportOuter(name);
+    if (!enableOuter) {
+        AVCODEC_LOGW("AVCodecAudioCodecImpl: %{public}s not support", name.c_str());
+        return AVCS_ERR_UNSUPPORT;
+    }
+
     Format format;
     codecService_ = CodecServer::Create();
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_UNKNOWN, "failed to create codec service");
@@ -364,6 +374,10 @@ void AVCodecAudioCodecImpl::ProduceInputBuffer()
         callback_->OnInputBufferAvailable(indexInput_, emptyBuffer);
         indexInput_ = (indexInput_ >= MAX_INDEX) ? 0 : ++indexInput_;
     }
+    if (!isRunning_) {
+        AVCODEC_LOGI("ProduceInputBuffer exit");
+        return;
+    }
 
     inputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),
                              [this] { return ((mediaCodecProducer_->GetQueueSize() > 0) || !isRunning_); });
@@ -400,6 +414,10 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
             break;
         }
         inputCondition_.notify_all();
+    }
+    if (!isRunning_) {
+        AVCODEC_LOGI("ConsumerOutputBuffer exit");
+        return;
     }
     std::unique_lock lock2(outputMutex_2);
     outputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),
@@ -453,6 +471,9 @@ void AVCodecAudioCodecImpl::ClearInputBuffer()
 void AVCodecAudioCodecImpl::StopTaskAsync()
 {
     isRunning_ = false;
+    // stop input/output thread faster
+    ClearCache();
+    ReturnInputBuffer();
     {
         std::lock_guard lock(inputMutex2_);
         inputCondition_.notify_one();
@@ -472,6 +493,9 @@ void AVCodecAudioCodecImpl::StopTaskAsync()
 void AVCodecAudioCodecImpl::PauseTaskAsync()
 {
     isRunning_ = false;
+    // stop input/output thread faster
+    ClearCache();
+    ReturnInputBuffer();
     {
         std::lock_guard lock(inputMutex2_);
         inputCondition_.notify_one();
@@ -658,23 +682,23 @@ void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnOutputBufferAvailable(uint32
                                                                           std::shared_ptr<AVBuffer> buffer)
 {
     std::shared_ptr<AVBuffer> outputBuffer;
-    if (!impl_->isSyncMode_.load() && impl_->callback_) {
-        Media::Status ret = impl_->implConsumer_->AcquireBuffer(outputBuffer);
-        if (ret != Media::Status::OK) {
-            AVCODEC_LOGE("Consumer AcquireBuffer fail,ret=%{public}d", ret);
-            return;
-        }
-        {
-            std::unique_lock lock(impl_->outputMutex_);
-            impl_->outputBufferObjMap_[impl_->indexOutput_] = outputBuffer;
-        }
-        impl_->callback_->OnOutputBufferAvailable(impl_->indexOutput_, outputBuffer);
-        impl_->indexOutput_ = (impl_->indexOutput_ >= MAX_INDEX) ? 0 : ++impl_->indexOutput_;
-    }
-
     if (!impl_->isSyncMode_.load()) {
+        if (impl_->callback_) {
+            Media::Status ret = impl_->implConsumer_->AcquireBuffer(outputBuffer);
+            if (ret != Media::Status::OK) {
+                AVCODEC_LOGE("Consumer AcquireBuffer fail,ret=%{public}d", ret);
+                return;
+            }
+            {
+                std::unique_lock lock(impl_->outputMutex_);
+                impl_->outputBufferObjMap_[impl_->indexOutput_] = outputBuffer;
+            }
+            impl_->callback_->OnOutputBufferAvailable(impl_->indexOutput_, outputBuffer);
+            impl_->indexOutput_ = (impl_->indexOutput_ >= MAX_INDEX) ? 0 : ++impl_->indexOutput_;
+        }
         return;
     }
+
     AVCODEC_SYNC_TRACE;
     Media::Status ret = impl_->implConsumer_->AcquireBuffer(outputBuffer);
     if (ret != Media::Status::OK) {

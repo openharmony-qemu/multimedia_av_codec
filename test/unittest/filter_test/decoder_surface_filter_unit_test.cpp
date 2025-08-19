@@ -1084,23 +1084,33 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, RenderNextOutput_002, TestSize.Level1)
 
 /**
  * @tc.name: SetMediaMuted
- * @tc.desc: Test render at time
+ * @tc.desc: Test SetMediaMuted
  * @tc.type: FUNC
  */
 HWTEST_F(DecoderSurfaceFilterUnitTest, SetMediaMuted, TestSize.Level1)
 {
     Status ret = Status::OK;
     decoderSurfaceFilter_->videoSink_ = std::make_shared<VideoSink>();
+    decoderSurfaceFilter_->isVideoMuted_ = false;
     ret = decoderSurfaceFilter_->SetMediaMuted(true, true);
     EXPECT_EQ(ret, Status::OK);
 
+    decoderSurfaceFilter_->isVideoMuted_ = false;
     ret = decoderSurfaceFilter_->SetMediaMuted(false, true);
+    EXPECT_EQ(ret, Status::OK);
+
+    decoderSurfaceFilter_->isVideoMuted_ = true;
+    ret = decoderSurfaceFilter_->SetMediaMuted(false, true);
+    EXPECT_EQ(ret, Status::OK);
+
+    decoderSurfaceFilter_->isVideoMuted_ = true;
+    ret = decoderSurfaceFilter_->SetMediaMuted(true, true);
     EXPECT_EQ(ret, Status::OK);
 }
 
 /**
  * @tc.name: DoReleaseOnMuted
- * @tc.desc: Test render at time
+ * @tc.desc: Test DoReleaseOnMuted
  * @tc.type: FUNC
  */
 HWTEST_F(DecoderSurfaceFilterUnitTest, DoReleaseOnMuted, TestSize.Level1)
@@ -1108,23 +1118,50 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DoReleaseOnMuted, TestSize.Level1)
     Status ret = Status::OK;
     auto videoDecoderMock = std::make_shared<VideoDecoderAdapterMock>();
     decoderSurfaceFilter_->videoDecoder_ = videoDecoderMock;
-    ret = decoderSurfaceFilter_->DoReleaseOnMuted();
+    decoderSurfaceFilter_->isDecoderReleasedForMute_ = true;
+    decoderSurfaceFilter_->isVideoMuted_ = true;
+    ret = decoderSurfaceFilter_->DoReleaseOnMuted(true);
+    EXPECT_EQ(ret, Status::OK);
+
+    decoderSurfaceFilter_->isDecoderReleasedForMute_ = false;
+    decoderSurfaceFilter_->isVideoMuted_ = false;
+    ret = decoderSurfaceFilter_->DoReleaseOnMuted(true);
+    EXPECT_EQ(ret, Status::OK);
+
+    decoderSurfaceFilter_->isDecoderReleasedForMute_ = false;
+    decoderSurfaceFilter_->isVideoMuted_ = true;
+    ret = decoderSurfaceFilter_->DoReleaseOnMuted(true);
     EXPECT_EQ(ret, Status::OK);
 }
 
 /**
- * @tc.name: DoReInitAndStart
- * @tc.desc: Test render at time
+ * @tc.name: DoReInitAndStart_001
+ * @tc.desc: Test DoReInitAndStart_001
  * @tc.type: FUNC
  */
-HWTEST_F(DecoderSurfaceFilterUnitTest, DoReInitAndStart, TestSize.Level1)
+HWTEST_F(DecoderSurfaceFilterUnitTest, DoReInitAndStart_001, TestSize.Level1)
 {
     Status ret = Status::OK;
     auto videoDecoderMock = std::make_shared<VideoDecoderAdapterMock>();
     decoderSurfaceFilter_->videoDecoder_ = videoDecoderMock;
+
+    decoderSurfaceFilter_->hasReceivedReleaseEvent_ = false;
+    decoderSurfaceFilter_->eventReceiver_ = nullptr;
+    ret = decoderSurfaceFilter_->DoReInitAndStart();
+    EXPECT_EQ(ret, Status::OK);
+
+    decoderSurfaceFilter_->hasReceivedReleaseEvent_ = false;
+    auto eventReceiverMock = std::make_shared<EventReceiverMock>();
+    decoderSurfaceFilter_->eventReceiver_ = eventReceiverMock;
+    ret = decoderSurfaceFilter_->DoReInitAndStart();
+    EXPECT_EQ(ret, Status::OK);
+
+    decoderSurfaceFilter_->hasReceivedReleaseEvent_ = true;
+    decoderSurfaceFilter_->isDecoderReleasedForMute_ = true;
     ret = decoderSurfaceFilter_->DoReInitAndStart();
     EXPECT_NE(ret, Status::OK);
 
+    decoderSurfaceFilter_->hasReceivedReleaseEvent_ = true;
     decoderSurfaceFilter_->isDecoderReleasedForMute_ = false;
     ret = decoderSurfaceFilter_->DoReInitAndStart();
     EXPECT_NE(ret, Status::OK);

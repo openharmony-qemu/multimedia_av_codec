@@ -29,7 +29,7 @@ constexpr int32_t MAX_BYTES_PER_SAMPLE = 4;
 constexpr int32_t SAMPLES = 9216;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
-constexpr int32_t EXPAND_SIZE = 2;
+constexpr int32_t EXPAND_SIZE = 4;
 constexpr int32_t MIN_SAMPLE_RATE = 8000;
 constexpr int32_t MAX_SAMPLE_RATE = 384000;
 } // namespace
@@ -62,8 +62,14 @@ Status FFmpegFlacDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
 {
     int32_t channelCount;
     int32_t sampleRate;
-    format->GetData(Tag::AUDIO_CHANNEL_COUNT, channelCount);
-    format->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
+    if (!format->GetData(Tag::AUDIO_CHANNEL_COUNT, channelCount)) {
+        AVCODEC_LOGE("init failed, because get channelCount failed.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    if (!format->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate)) {
+        AVCODEC_LOGE("init failed, because get sampleRate failed.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
 
     if (!CheckSampleRate(sampleRate)) {
         AVCODEC_LOGE("init failed, because sampleRate=%{public}d not in table.", sampleRate);
@@ -183,9 +189,7 @@ int32_t FFmpegFlacDecoderPlugin::GetInputBufferSize()
 int32_t FFmpegFlacDecoderPlugin::GetOutputBufferSize()
 {
     int32_t outputBufferSize = SAMPLES * channels * MAX_BYTES_PER_SAMPLE;
-    if (sampleFormat_ == AudioSampleFormat::SAMPLE_S32LE || sampleFormat_ == AudioSampleFormat::SAMPLE_F32LE) {
-        outputBufferSize *= EXPAND_SIZE; // max outputBufferSize needs to be expanded at 32bit
-    }
+    outputBufferSize *= EXPAND_SIZE;
     return outputBufferSize;
 }
 } // namespace Ffmpeg

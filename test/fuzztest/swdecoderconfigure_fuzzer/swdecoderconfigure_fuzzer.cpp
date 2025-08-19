@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,21 +34,42 @@ bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
     vDecSample->inpDir = "/data/test/media/1280_720_30_10Mb.h264";
-    vDecSample->defaultWidth = fdp.ConsumeIntegral<uint32_t>();
-    vDecSample->defaultHeight = fdp.ConsumeIntegral<uint32_t>();
-    vDecSample->defaultFrameRate = fdp.ConsumeIntegral<uint32_t>();
-    vDecSample->defaultRotation = fdp.ConsumeIntegral<uint32_t>();
-    vDecSample->defaultPixelFormat = fdp.ConsumeIntegral<uint32_t>();
+    vDecSample->defaultWidth = std::clamp(fdp.ConsumeIntegral<uint32_t>(), 176u, 4096u);
+    vDecSample->defaultHeight = std::clamp(fdp.ConsumeIntegral<uint32_t>(), 176u, 4096u);
+    vDecSample->defaultFrameRate = std::clamp(fdp.ConsumeIntegral<uint32_t>(), 1u, 1000u);
+    std::vector<uint32_t> rotations = {0, 90, 180, 270};
+    size_t index = fdp.ConsumeIntegralInRange<uint32_t>(0, rotations.size() - 1);
+    vDecSample->defaultRotation = rotations[index];
+    std::vector<uint32_t> pixelFormats = {1, 2, 3, 4, 5};
+    size_t pfIndex = fdp.ConsumeIntegralInRange<uint32_t>(0, pixelFormats.size() - 1);
+    vDecSample->defaultPixelFormat = pixelFormats[pfIndex];
     size_t maxSize = std::numeric_limits<size_t>::max();
     vDecSample->randomName = fdp.ConsumeRandomLengthString(maxSize);
     vDecSample->randomMime = fdp.ConsumeRandomLengthString(maxSize);
-    vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC");
-    vDecSample->ConfigureVideoDecoder();
-    vDecSample->SetVideoDecoderCallback();
-    vDecSample->StartVideoDecoder();
+    if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC") != AV_ERR_OK) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;
+    }
+    if (vDecSample->ConfigureVideoDecoder() != AV_ERR_OK) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;
+    }
+    if (vDecSample->SetVideoDecoderCallback() != AV_ERR_OK) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;
+    }
+    if (vDecSample->StartVideoDecoder() != AV_ERR_OK) {
+        delete vDecSample;
+        vDecSample = nullptr;
+        return false;
+    }
     vDecSample->WaitForEOS();
     vDecSample->Release();
     delete vDecSample;
+    vDecSample = nullptr;
     return result;
 }
 } // namespace OHOS

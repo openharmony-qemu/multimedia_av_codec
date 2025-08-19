@@ -54,6 +54,9 @@ bool VideoDecoderFuzzTest(const uint8_t *data, size_t size)
     SetSync();
     videoDec->SetSource(sourcePath);
     videoDec->SetOutPath(outPath);
+    FuzzedDataProvider fdp(data, size);
+    uint32_t rangeFlag = fdp.ConsumeIntegral<uint32_t>();
+    format->PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, rangeFlag);
     videoDec->Configure(format);
     videoDec->Prepare();
     videoDec->Start();

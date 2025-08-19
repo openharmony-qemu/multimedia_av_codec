@@ -64,7 +64,7 @@ int32_t AudioCodecAdapter::SetCallback(const std::shared_ptr<AVCodecCallback> &c
 int32_t AudioCodecAdapter::Init(Media::Meta &callerInfo)
 {
     if (state_ != CodecState::RELEASED) {
-        AVCODEC_LOGE("Configure failed, state = %{public}s .", stateToString(state_).data());
+        AVCODEC_LOGE("Init failed, state = %{public}s .", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
     
@@ -73,7 +73,7 @@ int32_t AudioCodecAdapter::Init(Media::Meta &callerInfo)
     CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, ret, "unknown error.");
 
     if (state_ != CodecState::INITIALIZED) {
-        AVCODEC_LOGE("Configure failed, state =%{public}s", stateToString(state_).data());
+        AVCODEC_LOGE("Init failed, state =%{public}s", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;

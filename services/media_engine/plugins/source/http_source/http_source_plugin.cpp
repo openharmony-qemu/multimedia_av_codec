@@ -33,6 +33,7 @@ constexpr int DEFAULT_EXPECT_DURATION = 19;
 constexpr int ERROR_COUNT = 5;
 const std::string LOWER_M3U8 = "m3u8";
 const std::string DASH_SUFFIX = ".mpd";
+const std::string EQUAL_M3U8 = "=" + LOWER_M3U8;
 
 }
 
@@ -93,7 +94,7 @@ Status HttpSourcePlugin::Deinit()
 Status HttpSourcePlugin::Prepare()
 {
     MEDIA_LOG_D("Prepare enter.");
-    if (delayReady) {
+    if (delayReady_) {
         return Status::ERROR_DELAY_READY;
     }
     return Status::OK;
@@ -232,15 +233,17 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     if (uri_.find(".mpd") != std::string::npos) {
         downloader_ = std::make_shared<DownloadMonitor>(
                       std::make_shared<DashMediaDownloader>(loaderCombinations_));
-        delayReady = false;
+        delayReady_ = false;
     } else if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
+        bool userDefinedDuration = false;  // 允许自动调节缓冲区大小
         uint32_t expectDuration = DEFAULT_EXPECT_DURATION;
         if (playStrategy != nullptr && playStrategy->duration > 0) {
             expectDuration = playStrategy->duration;
+            userDefinedDuration = true;  // 以用户配置为准，不许调节
         }
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>
-                      (expectDuration, httpHeader_, loaderCombinations_));
-        delayReady = false;
+                      (expectDuration, userDefinedDuration, httpHeader_, loaderCombinations_));
+        delayReady_ = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
         InitHttpSource(source);
     }
@@ -521,9 +524,35 @@ bool HttpSourcePlugin::CheckIsM3U8Uri()
     }
     std::string uri = uri_;
     std::transform(uri.begin(), uri.end(), uri.begin(), ::tolower);
-    if (uri.find(LOWER_M3U8) != std::string::npos) {
-        return true;
+
+    std::string::size_type pos = uri.find('?');
+    std::string uriMain = (pos != std::string::npos) ? uri.substr(0, pos) : uri;
+    std::string uriParam = (pos != std::string::npos) ? uri.substr(pos + 1) : "";
+    pos = uriMain.rfind('/');
+    if (pos == std::string::npos) {
+        return false;
     }
+
+    // 现网的很多hls链接是非.m3u8关键字，举例：http://xxx/xxxx?autotype=m3u8; http://xxx/aaa.doplaylist?auto=m3u8
+    // 优先判断资源类型(.和?中间的字符串，姑且称资源类型)；参数携带为次。如果不携带资源类型，还走原来的逻辑
+    std::string leafNameSuffix = uriMain.substr(pos + 1);
+    pos = leafNameSuffix.rfind('.');
+    if (pos != std::string::npos) {     // 找到资源格式
+        std::string suffix = leafNameSuffix.substr(pos + 1);
+        if (suffix == LOWER_M3U8) {
+            return true;
+        }
+        if (!uriParam.empty()) {
+            if (uriParam.find(EQUAL_M3U8) != std::string::npos) {
+                return true;
+            }
+        }
+    } else {    // 没有标明资源格式，按原先规则里找；当前未从param后面找=m3u8
+        if (uri.find(LOWER_M3U8) != std::string::npos) {
+            return true;
+        }
+    }
+    
     return false;
 }
 

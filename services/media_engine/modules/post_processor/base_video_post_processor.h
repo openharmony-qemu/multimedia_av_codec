@@ -40,6 +40,7 @@ enum VideoPostProcessorType {
     NONE,
     SUPER_RESOLUTION,
     CAMERA_INSERT_FRAME,
+    CAMERA_MP_PWP,
 };
 
 class BaseVideoPostProcessor {
@@ -85,6 +86,11 @@ public:
     virtual Status SetFd(int32_t fd)
     {
         (void)fd;
+        return Status::OK;
+    }
+    virtual Status SetCameraPostProcessing(bool isOpen)
+    {
+        (void)isOpen;
         return Status::OK;
     }
     virtual void SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode)

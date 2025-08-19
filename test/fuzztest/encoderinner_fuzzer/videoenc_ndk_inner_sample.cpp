@@ -1099,22 +1099,6 @@ void VEncNdkInnerFuzzSample::ReleaseInFile()
     }
 }
 
-void VEncNdkInnerFuzzSample::PushRandomDiscardIndex(uint32_t count, uint32_t max, uint32_t min)
-{
-    cout << "random farame index :";
-    while (discardFrameIndex.size() < count) {
-        uint32_t num = 0;
-        if (max != 0) {
-            num = g_rd() % max + min;
-        }
-        if (find(discardFrameIndex.begin(), discardFrameIndex.end(), num) == discardFrameIndex.end()) {
-            cout << num << ",";
-            discardFrameIndex.push_back(num);
-        }
-        cout << endl;
-    }
-}
-
 bool VEncNdkInnerFuzzSample::IsFrameDiscard(uint32_t index)
 {
     if (!isDiscardFrame) {

@@ -69,6 +69,7 @@ string g_audioVividPath2 = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.ts");
 string g_flvPath = TEST_FILE_PATH + string("h264.flv");
 string g_filePath;
 string g_mp4InfoPath = TEST_FILE_PATH + string("camera_info_parser.mp4");
+string g_mp4UnsupportTypeInfoPath = TEST_FILE_PATH + string("unsupport_type.mp4");
 string g_mp4PreRecordPath = TEST_FILE_PATH + string("pre_record_parser.mp4");
 string g_apePath = TEST_FILE_PATH + string("ape_test.ape");
 string g_apeUri = TEST_URI_PATH + string("ape_test.ape");
@@ -234,6 +235,49 @@ static int32_t AVSourceReadAt(OH_AVBuffer *data, int32_t length, int64_t pos)
     char* buffer = new char[length];
     infile.read(buffer, length);
     infile.close();
+
+    errno_t result = memcpy_s(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)),
+        OH_AVBuffer_GetCapacity(data), buffer, length);
+    delete[] buffer;
+    if (result != 0) {
+        printf("memcpy_s failed!");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    return length;
+}
+
+static int32_t AVSourceReadAtExt(OH_AVBuffer *data, int32_t length, int64_t pos, void* userData)
+{
+    if (data == nullptr || userData == nullptr) {
+        printf("AVSourceReadAtExt : data or userData is nullptr!\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    std::ifstream* infile = reinterpret_cast<std::ifstream*>(userData);
+    if (!infile->is_open()) {
+        printf("AVSourceReadAtExt: file not open!\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    infile->seekg(0, std::ios::end);
+    int64_t fileSize = infile->tellg();
+    if (pos >= fileSize) {
+        printf("AVSourceReadAtExt: pos over file size\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_EOF;
+    }
+
+    if (pos + length > fileSize) {
+        length = fileSize - pos;
+    }
+
+    infile->seekg(pos, std::ios::beg);
+    if (length <= 0) {
+        printf("AVSourceReadAt : raed length less than zero!\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+    char* buffer = new char[length];
+    infile->read(buffer, length);
 
     errno_t result = memcpy_s(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)),
         OH_AVBuffer_GetCapacity(data), buffer, length);
@@ -420,49 +464,6 @@ void AVSourceUnitTest::CheckAuxlAac()
     ASSERT_EQ(trackDesc, "com.openharmony.audiomode.auxiliary");
     format_->Destroy();
     checkPass_ = true;
-}
-
-static int32_t AVSourceReadAtExt(OH_AVBuffer *data, int32_t length, int64_t pos, void* userData)
-{
-    if (data == nullptr || userData == nullptr) {
-        printf("AVSourceReadAtExt : data or userData is nullptr!\n");
-        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
-    }
-
-    std::ifstream* infile = reinterpret_cast<std::ifstream*>(userData);
-    if (!infile->is_open()) {
-        printf("AVSourceReadAtExt: file not open!\n");
-        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
-    }
-
-    infile->seekg(0, std::ios::end);
-    int64_t fileSize = infile->tellg();
-    if (pos >= fileSize) {
-        printf("AVSourceReadAtExt: pos over file size\n");
-        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_EOF;
-    }
-
-    if (pos + length > fileSize) {
-        length = fileSize - pos;
-    }
-
-    infile->seekg(pos, std::ios::beg);
-    if (length <= 0) {
-        printf("AVSourceReadAt : raed length less than zero!\n");
-        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
-    }
-    char* buffer = new char[length];
-    infile->read(buffer, length);
-
-    errno_t result = memcpy_s(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)),
-        OH_AVBuffer_GetCapacity(data), buffer, length);
-    delete[] buffer;
-    if (result != 0) {
-        printf("memcpy_s failed!");
-        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
-    }
-
-    return length;
 }
 
 /**********************************source FD**************************************/
@@ -2109,6 +2110,22 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1502, TestSize.Level1)
 }
 
 /**
+ * @tc.name: AVSource_GetFormat_1503
+ * @tc.desc: get camera info, unsupport type
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1503, TestSize.Level1)
+{
+    fd_ = OpenFile(g_mp4UnsupportTypeInfoPath);
+    size_ = GetFileSize(g_mp4UnsupportTypeInfoPath);
+    printf("---- %s ------\n", g_mp4UnsupportTypeInfoPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetUserData();
+    ASSERT_NE(format_, nullptr);
+    printf("[User Meta]: %s\n", format_->DumpInfo());
+}
+/**
  * @tc.name: AVSource_GetFormat_3000
  * @tc.desc: get format when the file is srt
  * @tc.type: FUNC
@@ -3047,5 +3064,4 @@ HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSourceExt_1000, TestSize
     delete infile1;
     delete infile2;
 }
-
 } // namespace

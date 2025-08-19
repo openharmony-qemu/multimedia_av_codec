@@ -91,6 +91,7 @@ private:
     int64_t timeStamp_ = 0;
     uint32_t frameCount_ = 0;
     size_t inputdatasize = 0;
+    size_t inputOffset = 0;
     std::string inputdata;
     AudioBufferFormatType audioType_ = AudioBufferFormatType::TYPE_AAC;
 };

@@ -51,6 +51,10 @@ public:
     {
         return std::make_shared<AVBuffer>();
     }
+    static Status Clone(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr<AVBuffer>& dstBuffer)
+    {
+        return Status::OK;
+    }
 protected:
     using MetaData = std::vector<uint8_t>;
     int64_t pts_;

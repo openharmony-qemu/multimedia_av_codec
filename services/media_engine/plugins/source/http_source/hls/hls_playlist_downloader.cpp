@@ -458,12 +458,13 @@ bool HlsPlayListDownloader::ReadFmp4Header(uint8_t* buffer, uint32_t& readLen, u
 
 void HlsPlayListDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
 {
-    if (master_ && !master_->isFmp4_) {
+    if (currentVariant_ == nullptr || master_ == nullptr) {
         return;
     }
-    if (currentVariant_ == nullptr) {
+    if (!master_->isFmp4_) {
         return;
     }
+
     for (const auto &stream : master_->variants_) {
         StreamInfo streamInfo;
         streamInfo.streamId = static_cast<int32_t>(stream->streamId_);
@@ -502,6 +503,7 @@ void HlsPlayListDownloader::ReOpen(void)
     master_ = nullptr;
     currentVariant_ = nullptr;
     isLiveUpdateTaskStarted_ = false;
+    retryStartTime_ = 0; // 重置重试时间
 
     // 从异常流程过来，允许重新开始下发请求
     if (downloader_ != nullptr) {

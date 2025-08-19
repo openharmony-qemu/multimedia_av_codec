@@ -121,6 +121,7 @@ private:
     void AddStopPts();
     bool AddPauseResumePts(int64_t currentPts);
     void HandleWaitforStop();
+    void Clear();
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoEncoder> codecServer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
@@ -165,6 +166,7 @@ private:
     int32_t videoFrameRate_{-1};
     std::deque<std::pair<int64_t, StateCode>> pauseResumePts_;
     bool enableBFrame_ {false};
+    bool hasReceivedEOS_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

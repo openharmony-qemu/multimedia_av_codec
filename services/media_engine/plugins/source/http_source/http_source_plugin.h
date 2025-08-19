@@ -90,7 +90,7 @@ private:
     Callback* callback_ {};
     std::shared_ptr<MediaDownloader> downloader_;
     Mutex mutex_ {};
-    bool delayReady {true};
+    bool delayReady_ {true};
     std::string uri_ {};
     std::map<std::string, std::string> httpHeader_ {};
     std::string mimeType_ {};

@@ -22,7 +22,6 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioSinkTest" };
-constexpr int64_t MAX_BUFFER_DURATION_US = 200000; // Max buffer duration is 200 ms
 constexpr int64_t WARNING_TIME_MS = 60;
 }
 
@@ -826,28 +825,6 @@ HWTEST(TestAudioSink, audio_sink_TestFlush, TestSize.Level1)
     ASSERT_EQ(flushStatus, Status::OK) << "Flush should return OK";
 }
 
-HWTEST(TestAudioSink, audio_sink_UpdateAudioWriteTimeMayWait, TestSize.Level1)
-{
-    auto audioSink = AudioSinkCreate();
-    ASSERT_TRUE(audioSink != nullptr);
-
-    audioSink->UpdateAudioWriteTimeMayWait();
-    ASSERT_EQ(audioSink->lastBufferWriteTime_, 0);
-
-    audioSink->latestBufferDuration_ = MAX_BUFFER_DURATION_US + 1;
-    audioSink->lastBufferWriteSuccess_ = true;
-    audioSink->UpdateAudioWriteTimeMayWait();
-    ASSERT_EQ(audioSink->latestBufferDuration_, MAX_BUFFER_DURATION_US);
-
-    audioSink->lastBufferWriteSuccess_ = false;
-    audioSink->UpdateAudioWriteTimeMayWait();
-    ASSERT_EQ(audioSink->latestBufferDuration_, MAX_BUFFER_DURATION_US);
-
-    audioSink->latestBufferDuration_ = 1;
-    audioSink->UpdateAudioWriteTimeMayWait();
-    ASSERT_EQ(audioSink->latestBufferDuration_, 1);
-}
-
 HWTEST(TestAudioSink, audio_sink_HandleEosInner, TestSize.Level1)
 {
     auto audioSink = AudioSinkCreate();
@@ -1352,6 +1329,52 @@ HWTEST(TestAudioSink, UpdateLastBufferPTS_001, TestSize.Level1)
     float speed = 2;
     innerSynchroizer->UpdateLastBufferPTS(bufferOffset, speed);
     EXPECT_EQ(innerSynchroizer->lastBufferPTS_, tempPTS);
+}
+
+HWTEST(TestAudioSink, audio_sink_SetAudioSinkPluginParameters_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    auto ret = audioSink->SetAudioSinkPluginParameters(audioSink->plugin_);
+    ASSERT_TRUE(ret == Status::OK);
+}
+
+HWTEST(TestAudioSink, audio_sink_PreCreateAndStartNewPlugin_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->volume_ = 0;
+    audioSink->speed_  = -1;
+    audioSink->effectMode_ = -1;
+    audioSink->state_  = Pipeline::FilterState::RUNNING;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    auto plugin = audioSink->PreCreateAndStartNewPlugin(meta, nullptr);
+    ASSERT_TRUE(plugin != nullptr);
+}
+
+HWTEST(TestAudioSink, audio_sink_HandleFormatChange_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->volume_ = 0;
+    audioSink->speed_  = -1;
+    audioSink->effectMode_ = -1;
+    audioSink->state_  = Pipeline::FilterState::RUNNING;
+    std::shared_ptr<TestAudioSinkMock> plugin = std::make_shared<TestAudioSinkMock>("test");
+    audioSink->plugin_ = plugin;
+    audioSink->SetThreadGroupId("HiPlayer_1");
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    auto ret = audioSink->HandleFormatChange(meta, nullptr);
+    ASSERT_TRUE(ret == Status::OK);
+}
+
+HWTEST(TestAudioSink, audio_sink_ChangeTrackForFormatChange_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->SetThreadGroupId("HiPlayer_1");
+    audioSink->hasPluginCreateTaskFinished_ = true;
+    auto ret = audioSink->ChangeTrackForFormatChange();
+    ASSERT_TRUE(ret == Status::ERROR_NULL_POINTER);
 }
 } // namespace Test
 } // namespace Media

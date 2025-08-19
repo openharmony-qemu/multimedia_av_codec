@@ -98,22 +98,6 @@ int32_t DynamicController::CreateInputSurfaceImpl(sptr<Surface>& surface)
     return AVCS_ERR_OK;
 }
 
-int32_t DynamicController::SetParameterImpl(Media::Format& parameter)
-{
-    void* parameterPtr = static_cast<void*>(&parameter);
-    auto ret = interface_.Invoke<DynamicInterfaceName::CREATE_INPUT_SURFACE>(instance_, parameterPtr);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Set parameter for VPE failed.");
-    return AVCS_ERR_OK;
-}
-
-int32_t DynamicController::GetParameterImpl(Media::Format& parameter)
-{
-    void* parameterPtr = static_cast<void*>(&parameter);
-    auto ret = interface_.Invoke<DynamicInterfaceName::CREATE_INPUT_SURFACE>(instance_, parameterPtr);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Get parameter for VPE failed.");
-    return AVCS_ERR_OK;
-}
-
 int32_t DynamicController::ConfigureImpl(Media::Format& config)
 {
     void* configPtr = static_cast<void*>(&config);
@@ -187,6 +171,12 @@ GSError DynamicController::OnProducerBufferReleased([[maybe_unused]] sptr<Surfac
     return static_cast<GSError>(ret);
 }
 
+int32_t DynamicController::NotifyEosImpl()
+{
+    auto ret = interface_.Invoke<DynamicInterfaceName::NOTIFY_EOS>(instance_);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Notify EOS for video processing failed.");
+    return AVCS_ERR_OK;
+}
 } // namespace PostProcessing
 } // namespace MediaAVCodec
 } // namespace OHOS

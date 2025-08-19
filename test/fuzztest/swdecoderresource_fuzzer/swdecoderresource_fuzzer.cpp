@@ -39,10 +39,26 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         vDecSample->defaultWidth = DEFAULT_WIDTH;
         vDecSample->defaultHeight = DEFAULT_HEIGHT;
         vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-        vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC");
-        vDecSample->ConfigureVideoDecoder();
-        vDecSample->SetVideoDecoderCallback();
-        vDecSample->Start();
+        if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC") != AV_ERR_OK) {
+            delete vDecSample;
+            vDecSample = nullptr;
+            return false;
+        }
+        if (vDecSample->ConfigureVideoDecoder() != AV_ERR_OK) {
+            delete vDecSample;
+            vDecSample = nullptr;
+            return false;
+        }
+        if (vDecSample->SetVideoDecoderCallback() != AV_ERR_OK) {
+            delete vDecSample;
+            vDecSample = nullptr;
+            return false;
+        }
+        if (vDecSample->Start() !=AV_ERR_OK) {
+            delete vDecSample;
+            vDecSample = nullptr;
+            return false;
+        }
     }
     OH_AVErrCode ret = vDecSample->InputFuncFUZZ(data, size);
     if (ret != AV_ERR_OK) {
@@ -54,6 +70,8 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         vDecSample = nullptr;
         return false;
     }
+    delete vDecSample;
+    vDecSample = nullptr;
     return true;
 }
 } // namespace OHOS

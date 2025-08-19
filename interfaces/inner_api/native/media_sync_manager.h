@@ -76,6 +76,9 @@ public:
 
     // return isSeeking_
     bool InSeeking();
+
+    void UpdataPausedMediaTime(int32_t pausedMediaTime);
+
     // notified when leaving seeking，that is, isSeeking_ is set to false
     std::condition_variable seekCond_;
 

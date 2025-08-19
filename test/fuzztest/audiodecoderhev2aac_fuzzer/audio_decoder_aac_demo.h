@@ -96,6 +96,7 @@ private:
     uint32_t frameCount_ = 0;
     AudioBufferFormatType audioType_;
     size_t inputdatasize = 0;
+    size_t inputOffset = 0;
     std::string inputdata;
 };
 } // namespace AudioBufferDemo

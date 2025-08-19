@@ -86,6 +86,8 @@ public:
     MOCK_METHOD(Status, AcquireBuffer, (std::shared_ptr<AVBuffer>& sampleBuffer), ());
     MOCK_METHOD(Status, ReleaseBuffer, (std::shared_ptr<AVBuffer>& sampleBuffer), ());
     MOCK_METHOD(Status, SetLargerQueueSize, (uint32_t size), ());
+    MOCK_METHOD(bool, IsEmpty, (), ());
+    MOCK_METHOD(Status, AddQueueSize, (uint32_t size), ());
 
     Config config_{};
     std::weak_ptr<SampleQueueCallback> sampleQueueCb_;

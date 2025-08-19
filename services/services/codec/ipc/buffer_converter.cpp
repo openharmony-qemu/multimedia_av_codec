@@ -129,7 +129,7 @@ int32_t ConvertYUV420P(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t c
     return dstSize;
 }
 
-int32_t ConverteRGBA8888(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t capacity)
+int32_t ConvertRGBA8888(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t capacity)
 {
     AVCodecRect &dstRect = rects[0];
     AVCodecRect &srcRect = rects[1];
@@ -334,7 +334,7 @@ void BufferConverter::SetPixFormat(const VideoPixelFormat pixelFormat)
             func_ = ConvertYUV420SP;
             break;
         case VideoPixelFormat::RGBA:
-            func_ = ConverteRGBA8888;
+            func_ = ConvertRGBA8888;
             break;
         default:
             AVCODEC_LOGE_WITH_TAG("Invalid video pix format:%{public}d", static_cast<int32_t>(pixelFormat));

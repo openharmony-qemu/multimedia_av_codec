@@ -432,6 +432,26 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_1600, TestSize.Level1)
 }
 
 /**
+ * @tc.number    : VIDEO_ENCODE_FUNCTION_1800
+ * @tc.name      : encode h265 buffer
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_1800, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkSample>();
+    vEncSample->INP_DIR = INP_DIR_720;
+    vEncSample->DEFAULT_WIDTH = 1280;
+    vEncSample->DEFAULT_HEIGHT = 720;
+    vEncSample->DEFAULT_FRAME_RATE = 30;
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+    vEncSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+}
+
+/**
  * @tc.number    : VIDEO_ENCODE_FUNCTION_1700
  * @tc.name      : input frame after EOS
  * @tc.desc      : function test
@@ -445,26 +465,6 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_1700, TestSize.Level1)
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->enable_random_eos = true;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
-}
-
-/**
- * @tc.number    : VIDEO_ENCODE_FUNCTION_1800
- * @tc.name      : encode h265 buffer
- * @tc.desc      : function test
- */
-HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_1800, TestSize.Level1)
-{
-    auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());

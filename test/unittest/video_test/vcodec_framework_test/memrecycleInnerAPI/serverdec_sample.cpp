@@ -397,7 +397,13 @@ int32_t VDecNdkInnerSample::RunFcodecVideoDecoder(const std::string &codeName)
         cout << "Failed to Create video decoder" << endl;
         return AVCS_ERR_UNKNOWN;
     }
-
+    Media::Meta codecInfo;
+    ret = vdec_->Init(codecInfo);
+    if (ret != AVCS_ERR_OK) {
+        cout << "Failed to init video decoder" << endl;
+        Release();
+        return ret;
+    }
     ret = Configure();
     if (ret != AVCS_ERR_OK) {
         cout << "Failed to configure video decoder" << endl;
@@ -471,7 +477,13 @@ int32_t VDecNdkInnerSample::RunFcodecErrorVideoDecoder(const std::string &codeNa
         cout << "Failed to Create video decoder" << endl;
         return AVCS_ERR_UNKNOWN;
     }
-
+    Media::Meta codecInfo;
+    ret = vdec_->Init(codecInfo);
+    if (ret != AVCS_ERR_OK) {
+        cout << "Failed to init video decoder" << endl;
+        Release();
+        return ret;
+    }
     ret = Configure();
     if (ret != AVCS_ERR_OK) {
         cout << "Failed to configure video decoder" << endl;

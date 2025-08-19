@@ -60,7 +60,6 @@ private:
     // start
     bool UseHandleOnOutputPort(bool isDynamic);
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
-    void SetCallerToBuffer(int fd) override;
     void UpdateFormatFromSurfaceBuffer() override;
     int32_t AllocOutDynamicSurfaceBuf();
     int32_t AllocateOutputBuffersFromSurface();
@@ -77,6 +76,7 @@ private:
     void ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer) override;
     void ProcAVBufferToUser(std::shared_ptr<AVBuffer> avBuffer,
         std::shared_ptr<CodecHDI::OmxCodecBuffer> omxBuffer) override;
+
     void OnReleaseOutputBuffer(const BufferInfo &info) override;
     void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
@@ -133,6 +133,9 @@ private:
     bool vrrDynamicSwitch_ = false;
     Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle* vrrHandle_ = nullptr;
 #endif
+
+    // Lpp target pts
+    int32_t SetLppTargetPts(const Format &format);
     // freeze
     int32_t FreezeBuffers() override;
     int32_t ActiveBuffers() override;

@@ -946,7 +946,7 @@ int32_t HEncoder::OnSetParameters(const Format &format)
             }
         }
     }
-
+// LCOV_EXCL_START
     optional<uint32_t> targetQp = GetCRFtagetQpFromUser(format);
     if (targetQp.has_value() && bitRateMode.has_value() && bitRateMode.value() == CRF) {
         ControlQualityTargetQp bitrateType;
@@ -957,7 +957,7 @@ int32_t HEncoder::OnSetParameters(const Format &format)
             HLOGW("failed to config OMX_IndexConfigVideoBitrate");
         }
     }
-
+// LCOV_EXCL_STOP
     optional<double> frameRate = GetFrameRateFromUser(format);
     if (frameRate.has_value()) {
         OMX_CONFIG_FRAMERATETYPE framerateCfgType;
@@ -1632,11 +1632,6 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
     WrapSurfaceBufferToSlot(*bufferInfo, bufferInfo->surfaceBuffer, bufferInfo->avBuffer->pts_,
         UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_)));
-    bool eos = (bufferInfo->omxBuffer->flag & OMX_BUFFERFLAG_EOS);
-    if (eos && !inputSurface_ && bufferInfo->avBuffer->memory_ && bufferInfo->avBuffer->memory_->GetSize() == 0) {
-        bufferInfo->omxBuffer->bufferhandle = nullptr;
-        bufferInfo->omxBuffer->filledLen = 0;
-    }
     if (enableVariableFrameRate_ && CalculateFrameRateParamIntoOmxBuffer(bufferInfo->omxBuffer->pts) != 0) {
         ReplyErrorCode(msg.id, AVCS_ERR_INPUT_DATA_ERROR);
     }

@@ -70,7 +70,7 @@ Status MediaSyncManager::SetPlaybackRate(float rate)
     OHOS::Media::AutoLock lock(clockMutex_);
     MEDIA_LOG_I_SHORT("set play rate " PUBLIC_LOG_F, rate);
     int64_t currentClockTime = GetSystemClock();
-    int64_t currentMediaTime = GetMediaTime(currentClockTime);
+    int64_t currentMediaTime = std::min(GetMediaTime(currentClockTime), GetMaxMediaProgress());
     if (currentMediaTime != HST_TIME_NONE) {
         SimpleUpdateTimeAnchor(currentClockTime, currentMediaTime);
     }
@@ -158,7 +158,7 @@ Status MediaSyncManager::Pause()
     OHOS::Media::AutoLock lock(clockMutex_);
     FALSE_RETURN_V_NOLOG(clockState_ != State::PAUSED, Status::OK);
     pausedClockTime_ = GetSystemClock();
-    pausedMediaTime_ = GetMediaTime(pausedClockTime_);
+    pausedMediaTime_ = std::min(GetMediaTime(pausedClockTime_), GetMaxMediaProgress());
     MEDIA_LOG_I("pause with clockTime " PUBLIC_LOG_D64 ", mediaTime " PUBLIC_LOG_D64,
         pausedClockTime_, pausedMediaTime_);
     clockState_ = State::PAUSED;
@@ -319,6 +319,11 @@ bool MediaSyncManager::CheckFirstMediaTimeAfterSeek(int64_t& mediaTime)
     MEDIA_LOG_W_SHORT("audio has not been rendered since seek");
     mediaTime = firstMediaTimeAfterSeek_;
     return true;
+}
+
+void MediaSyncManager::UpdataPausedMediaTime(int32_t pausedMediaTime)
+{
+    pausedMediaTime_ = pausedMediaTime;
 }
 
 int64_t MediaSyncManager::GetMaxMediaProgress()

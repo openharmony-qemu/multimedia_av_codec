@@ -65,6 +65,7 @@ inline void CodecServerUnitTest::SetUp(void)
 
 inline void CodecServerUnitTest::TearDown(void)
 {
+    server_->Release();
     server_ = nullptr;
     codecBaseMock_ = nullptr;
     validFormat_ = Format();

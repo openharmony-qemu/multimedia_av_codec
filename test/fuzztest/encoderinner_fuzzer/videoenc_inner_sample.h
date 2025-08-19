@@ -145,7 +145,6 @@ public:
     void StopOutloop();
     void ReleaseInFile();
     void InputEnableRepeatSleep();
-    void PushRandomDiscardIndex(uint32_t count, uint32_t min, uint32_t max);
     bool IsFrameDiscard(uint32_t index);
     bool CheckOutputFrameCount();
     int32_t ReadMultiFilesFunc();

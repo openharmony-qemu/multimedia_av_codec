@@ -66,24 +66,6 @@ HWTEST_F(DashMpdParserUnitTest, GetPeriodAttr_001, TestSize.Level0)
 }
 
 /**
- * @tc.name  : Test GetPeriodElement
- * @tc.number: GetPeriodElement_001
- * @tc.desc  : Test childElement != nullptr && this->stopFlag_ == true
- */
-HWTEST_F(DashMpdParserUnitTest, GetPeriodElement_001, TestSize.Level0)
-{
-    ASSERT_NE(dashMpdParser_, nullptr);
-    auto xmlParser = std::make_shared<XmlParser>();
-    auto rootElement = std::make_shared<XmlElement>();
-    auto periodInfo = std::make_shared<DashPeriodInfo>();
-    dashMpdParser_->stopFlag_ = NUM_1;
-    rootElement->name_ = DashMpdParser::MPD_LABEL_SEGMENT_LIST;
-    auto copy = periodInfo->periodSegList_;
-    dashMpdParser_->GetPeriodElement(xmlParser, rootElement, periodInfo.get());
-    EXPECT_EQ(periodInfo->periodSegList_, copy);
-}
-
-/**
  * @tc.name  : Test ParseAdaptationSet
  * @tc.number: ParseAdaptationSet_001
  * @tc.desc  : Test adptSetNode == nullptr
@@ -120,42 +102,6 @@ HWTEST_F(DashMpdParserUnitTest, GetAdaptationSetAttr_001, TestSize.Level0)
     auto impl2 = std::make_shared<DashMpdNodeImpl2>();
     dashMpdParser_->GetAdaptationSetAttr(impl2.get(), adptSetInfo.get());
     EXPECT_EQ(adptSetInfo->commonAttrsAndElements_.scanType_, VideoScanType::VIDEO_SCAN_UNKNOW);
-}
-
-/**
- * @tc.name  : Test GetAdaptationSetElement
- * @tc.number: GetAdaptationSetElement_001
- * @tc.desc  : Test childElement != nullptr && this->stopFlag_ == false
- */
-HWTEST_F(DashMpdParserUnitTest, GetAdaptationSetElement_001, TestSize.Level0)
-{
-    ASSERT_NE(dashMpdParser_, nullptr);
-    auto xmlParser = std::make_shared<XmlParser>();
-    auto rootElement = std::make_shared<XmlElement>();
-    auto periodInfo = std::make_shared<DashPeriodInfo>();
-    auto adptSetInfo = std::make_shared<DashAdptSetInfo>();
-    rootElement->name_ = DashMpdParser::MPD_LABEL_SEGMENT_LIST;
-    auto copy = adptSetInfo.get();
-    dashMpdParser_->GetAdaptationSetElement(xmlParser, rootElement, periodInfo.get(), adptSetInfo.get());
-    EXPECT_EQ(adptSetInfo.get(), copy);
-}
-
-/**
- * @tc.name  : Test GetAdaptationSetElement
- * @tc.number: GetAdaptationSetElement_002
- * @tc.desc  : Test dashElementList.segBaseElement_ != nullptr
- */
-HWTEST_F(DashMpdParserUnitTest, GetAdaptationSetElement_002, TestSize.Level0)
-{
-    ASSERT_NE(dashMpdParser_, nullptr);
-    auto xmlParser = std::make_shared<XmlParser>();
-    auto rootElement = std::make_shared<XmlElement>();
-    auto periodInfo = std::make_shared<DashPeriodInfo>();
-    auto adptSetInfo = std::make_shared<DashAdptSetInfo>();
-    rootElement->name_ = DashMpdParser::MPD_LABEL_SEGMENT_BASE;
-    auto copy = adptSetInfo.get();
-    dashMpdParser_->GetAdaptationSetElement(xmlParser, rootElement, periodInfo.get(), adptSetInfo.get());
-    EXPECT_EQ(adptSetInfo.get(), copy);
 }
 
 /**

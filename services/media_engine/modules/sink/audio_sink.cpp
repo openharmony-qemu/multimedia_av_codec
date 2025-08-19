@@ -53,6 +53,12 @@ const int64_t MICROSECONDS_CONVERT_UNITS = 1000;
 
 int64_t GetAudioLatencyFixDelay()
 {
+    constexpr int64_t defaultOffset = -1;
+    const std::string audioLatencyOffsetKey = "const.multimedia.audio.latency_offset";
+    static int64_t audioLatencyOffset = OHOS::system::GetIntParameter(audioLatencyOffsetKey, defaultOffset);
+    MEDIA_LOG_I("audio.latency_offset, pid:%{public}d , offset: " PUBLIC_LOG_D64, getprocpid(), audioLatencyOffset);
+    FALSE_RETURN_V_NOLOG(audioLatencyOffset < 0, audioLatencyOffset * HST_USECOND);
+
     constexpr uint64_t defaultValue = 120 * HST_USECOND;
     static uint64_t fixDelay = OHOS::system::GetUintParameter("debug.media_service.audio_sync_fix_delay", defaultValue);
     MEDIA_LOG_I("audio_sync_fix_delay, pid:%{public}d, fixdelay: " PUBLIC_LOG_U64, getprocpid(), fixDelay);
@@ -136,7 +142,7 @@ void AudioSink::HandleAudioRenderRequestPost()
     FALSE_RETURN_NOLOG(!availOutputBuffers_.empty());
     auto cacheBuffer = availOutputBuffers_.front();
     FALSE_RETURN(cacheBuffer != nullptr);
-    FALSE_RETURN(IsEosBuffer(cacheBuffer));
+    FALSE_RETURN_NOLOG(IsEosBuffer(cacheBuffer));
     availOutputBuffers_.pop();
     HandleEosBuffer(cacheBuffer);
 }
@@ -175,33 +181,36 @@ bool AudioSink::IsInputBufferDataEnough(int32_t size, bool isAudioVivid)
 Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {
     state_ = Pipeline::FilterState::INITIALIZED;
-    Status ret = InitAudioSinkPlugin(meta, receiver);
+    Status ret = InitAudioSinkPlugin(meta, receiver, plugin_);
     FALSE_RETURN_V(ret == Status::OK, ret);
     ret = InitAudioSinkInfo(meta);
     FALSE_RETURN_V(ret == Status::OK, ret);
     return Status::OK;
 }
 
-Status AudioSink::InitAudioSinkPlugin(std::shared_ptr<Meta>& meta,
-    const std::shared_ptr<Pipeline::EventReceiver>& receiver)
+Status AudioSink::InitAudioSinkPlugin(const std::shared_ptr<Meta>& meta,
+    const std::shared_ptr<Pipeline::EventReceiver>& receiver,
+    const std::shared_ptr<Plugins::AudioSinkPlugin>& plugin)
 {
-    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    FALSE_RETURN_V(plugin != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(meta != nullptr, Status::ERROR_NULL_POINTER);
     meta->SetData(Tag::APP_PID, appPid_);
     meta->SetData(Tag::APP_UID, appUid_);
-    plugin_->SetEventReceiver(receiver);
-    plugin_->SetParameter(meta);
+    plugin->SetEventReceiver(receiver);
+    plugin->SetParameter(meta);
     {
         ScopedTimer timer("InitAudioSinkPlugin", INIT_PLUGIN_WARNING_MS);
-        plugin_->Init();
+        plugin->Init();
     }
     if (isRenderCallbackMode_) {
-        audioSinkDataCallback_ = std::make_shared<AudioSinkDataCallbackImpl>(shared_from_this());
-        Status ret = plugin_->SetRequestDataCallback(audioSinkDataCallback_);
+        if (audioSinkDataCallback_ == nullptr) {
+            audioSinkDataCallback_ = std::make_shared<AudioSinkDataCallbackImpl>(shared_from_this());
+        }
+        Status ret = plugin->SetRequestDataCallback(audioSinkDataCallback_);
         isRenderCallbackMode_ = ret == Status::OK ? true : false;
     }
-    plugin_->Prepare();
-    plugin_->SetMuted(isMuted_);
+    plugin->Prepare();
+    plugin->SetMuted(isMuted_);
     return Status::OK;
 }
 
@@ -403,6 +412,20 @@ Status AudioSink::Flush()
     return Status::OK;
 }
 
+void AudioSink::FlushForChangeTrack()
+{
+    MEDIA_LOG_D("do audioSink flush for change track");
+    underrunDetector_.Reset();
+    lagDetector_.Reset();
+
+    {
+        AutoLock lock(eosMutex_);
+        eosInterruptType_ = EosInterruptState::NONE;
+        eosDraining_ = false;
+    }
+    ResetInfo();
+}
+
 Status AudioSink::Release()
 {
     underrunDetector_.Reset();
@@ -519,6 +542,7 @@ void AudioSink::UpdateAudioWriteTimeMayWait()
 void AudioSink::SetThreadGroupId(const std::string& groupId)
 {
     eosTask_ = std::make_unique<Task>("OS_EOSa", groupId, TaskType::AUDIO, TaskPriority::HIGH, false);
+    changeTrackTask_ = std::make_unique<Task>("CHANGE_TRACK", groupId, TaskType::AUDIO, TaskPriority::HIGH, false);
 }
 
 void AudioSink::HandleEosInner(bool drain)
@@ -1483,6 +1507,29 @@ void AudioSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCe
     MediaSynchronousSink::Init();
 }
 
+Status AudioSink::ChangeTrackForFormatChange()
+{
+    MEDIA_LOG_I("ChangeTrackForFormatChange.");
+    std::lock_guard<std::mutex> lock(pluginMutex_);
+    std::shared_ptr<Plugins::AudioSinkPlugin> plugin = std::move(plugin_);
+    FALSE_RETURN_V(plugin != nullptr && changeTrackTask_ != nullptr, Status::ERROR_NULL_POINTER);
+    changeTrackTask_->SubmitJobOnce([plugin] {
+        plugin->Stop();
+        plugin->Deinit();
+    });
+
+    std::unique_lock<std::mutex> preCreateLock(preCreatePluginMutex_);
+    preCreatePluginCond_.wait(preCreateLock,
+        [this]() { return isInterruptNeeded_ || hasPluginCreateTaskFinished_.load(); });
+    hasPluginCreateTaskFinished_ = false;
+    FALSE_RETURN_V(newPlugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    plugin_ = std::move(newPlugin_);
+
+    forceUpdateTimeAnchorNextTime_ = true;
+
+    return Status::OK;
+}
+
 Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {
     MEDIA_LOG_I("GetAudioEffectMode ChangeTrack. ");
@@ -1495,13 +1542,13 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
     plugin_ = CreatePlugin();
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     Status ret = Status::OK;
-    ret = InitAudioSinkPlugin(meta, receiver);
+    ret = InitAudioSinkPlugin(meta, receiver, plugin_);
     FALSE_RETURN_V(ret == Status::OK, ret);
 
     ret = InitAudioSinkInfo(meta);
     FALSE_RETURN_V(ret == Status::OK, ret);
 
-    ret = SetAudioSinkPluginParameters();
+    ret = SetAudioSinkPluginParameters(plugin_);
     FALSE_RETURN_V(ret == Status::OK, ret);
 
     forceUpdateTimeAnchorNextTime_ = true;
@@ -1517,9 +1564,19 @@ Status AudioSink::HandleFormatChange(std::shared_ptr<Meta>& meta,
     FALSE_RETURN_V_NOLOG(meta && plugin_ && plugin_->IsFormatSupported(meta), Status::ERROR_INVALID_PARAMETER);
     WaitForAllBufferConsumed();
     FALSE_RETURN_V_MSG(!isInterruptNeeded_, Status::OK, "Abandon format change operation becaused of interruption");
+    FALSE_RETURN_V(changeTrackTask_ != nullptr, Status::ERROR_NULL_POINTER);
+    std::weak_ptr<AudioSink> weakPtr(shared_from_this());
+    changeTrackTask_->SubmitJobOnce([weakPtr, meta, receiver] {
+        auto strongPtr = weakPtr.lock();
+        FALSE_RETURN(strongPtr != nullptr);
+        std::unique_lock<std::mutex> preCreateLock(strongPtr->preCreatePluginMutex_);
+        strongPtr->newPlugin_ = strongPtr->PreCreateAndStartNewPlugin(meta, receiver);
+        strongPtr->hasPluginCreateTaskFinished_ = true;
+        strongPtr->preCreatePluginCond_.notify_one();
+    });
     plugin_->Drain();
-    Flush();
-    return ChangeTrack(meta, receiver);
+    FlushForChangeTrack();
+    return ChangeTrackForFormatChange();
 }
 
 void AudioSink::WaitForAllBufferConsumed()
@@ -1532,21 +1589,21 @@ void AudioSink::WaitForAllBufferConsumed()
         [this]() { return isInterruptNeeded_ || (swapOutputBuffers_.empty() && availOutputBuffers_.empty()); });
 }
 
-Status AudioSink::SetAudioSinkPluginParameters()
+Status AudioSink::SetAudioSinkPluginParameters(const std::shared_ptr<Plugins::AudioSinkPlugin>& plugin)
 {
-    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    FALSE_RETURN_V(plugin != nullptr, Status::ERROR_NULL_POINTER);
     Status ret = Status::OK;
     if (volume_ >= 0) {
-        plugin_->SetVolume(volume_);
+        plugin->SetVolume(volume_);
     }
     if (speed_ >= 0) {
-        plugin_->SetSpeed(speed_);
+        plugin->SetSpeed(speed_);
     }
     if (effectMode_ >= 0) {
-        plugin_->SetAudioEffectMode(effectMode_);
+        plugin->SetAudioEffectMode(effectMode_);
     }
     if (state_ == Pipeline::FilterState::RUNNING) {
-        ret = plugin_->Start();
+        ret = plugin->Start();
     }
     return ret;
 }
@@ -1611,6 +1668,21 @@ Status AudioSink::SetLoudnessGain(float loudnessGain)
         return Status::ERROR_NULL_POINTER;
     }
     return plugin_->SetLoudnessGain(loudnessGain);
+}
+
+std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::PreCreateAndStartNewPlugin(const std::shared_ptr<Meta>& meta,
+    const std::shared_ptr<Pipeline::EventReceiver>& receiver)
+{
+    MEDIA_LOG_I("AudioSink PreCreateAndStartNewPlugin.");
+    auto plugin = CreatePlugin();
+    FALSE_RETURN_V(plugin != nullptr, nullptr);
+    Status ret = Status::OK;
+    ret = InitAudioSinkPlugin(meta, receiver, plugin);
+    FALSE_RETURN_V(ret == Status::OK, nullptr);
+
+    ret = SetAudioSinkPluginParameters(plugin);
+    FALSE_RETURN_V(ret == Status::OK, nullptr);
+    return plugin;
 }
 } // namespace MEDIA
 } // namespace OHOS

@@ -349,8 +349,10 @@ Status SurfaceEncoderAdapter::Start()
         SetFaultEvent("SurfaceEncoderAdapter::Start, CodecServer is null");
         return Status::ERROR_UNKNOWN;
     }
+    Clear();
     int32_t ret;
     isThreadExit_ = false;
+    hasReceivedEOS_ = false;
     if (releaseBufferTask_) {
         releaseBufferTask_->Start();
     }
@@ -499,15 +501,7 @@ Status SurfaceEncoderAdapter::Reset()
         return Status::OK;
     }
     int32_t ret = codecServer_->Reset();
-    startBufferTime_ = -1;
-    stopTime_ = -1;
-    pauseTime_ = -1;
-    resumeTime_ = -1;
-    totalPauseTime_ = 0;
-    isStart_ = false;
-    isStartKeyFramePts_ = false;
-    pauseResumeQueue_.clear();
-    pauseResumePts_.clear();
+    Clear();
     if (ret == 0) {
         curState_ = ProcessStateCode::IDLE;
         return Status::OK;
@@ -642,6 +636,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     releaseBufferCondition_.notify_all();
     if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
         MEDIA_LOG_I("EOS received, ready to stop.");
+        hasReceivedEOS_ = true;
         std::unique_lock<std::mutex> lock(stopMutex_);
         stopCondition_.notify_all();
     }
@@ -907,6 +902,10 @@ void SurfaceEncoderAdapter::HandleWaitforStop()
 {
     // Determine whether to end directly or wait STOP_TIME_OUT_MS
     std::unique_lock<std::mutex> lock(stopMutex_);
+    if (hasReceivedEOS_) {
+        MEDIA_LOG_I("SurfaceEncoderAdapter::HandleWaitforStop, EOS has received, directly stop");
+        return;
+    }
     std::cv_status waitStatus = stopCondition_.wait_for(lock, std::chrono::milliseconds(STOP_TIME_OUT_MS));
     // Waiting timeout with no video frame received
     if (waitStatus == std::cv_status::timeout && currentKeyFramePts_ == -1) {
@@ -914,6 +913,26 @@ void SurfaceEncoderAdapter::HandleWaitforStop()
         encoderAdapterCallback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL,
                                          AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED);
     }
+}
+
+void SurfaceEncoderAdapter::Clear()
+{
+    MEDIA_LOG_I("SurfaceEncoderAdapter::Clear enter");
+    startBufferTime_ = -1;
+    stopTime_ = -1;
+    pauseTime_ = -1;
+    resumeTime_ = -1;
+    totalPauseTime_ = 0;
+    isStart_ = false;
+    isResume_ = false;
+    isStartKeyFramePts_ = false;
+    pauseResumeQueue_.clear();
+    pauseResumePts_.clear();
+    totalPauseTimeQueue_ = {0};
+    checkFramesPauseTime_ = 0;
+    currentPts_ = -1;
+    currentKeyFramePts_ = -1;
+    preKeyFramePts_ = -1;
 }
 
 bool SurfaceEncoderAdapter::GetIsTransCoderMode()

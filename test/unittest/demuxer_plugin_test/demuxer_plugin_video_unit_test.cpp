@@ -40,6 +40,7 @@ using namespace OHOS::Media::Plugins;
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC};
 const int32_t DEFAULT_TIMEOUT = 100; // 100ms
+constexpr uint32_t THREAD_PRIORITY_41 = 7;
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 static const string TEST_RELATIVE_PATH = "/data/test/media/";
@@ -71,6 +72,7 @@ string g_mpegTsPath2 = string("/data/test/media/hevc_aac_1920x1080_g30_30fps.ts"
 string g_mpegTsPath3 = string("/data/test/media/h264_ac3.mts");
 string g_mpegTsPath4 = string("/data/test/media/test_mpeg2_Gop25_4sec.ts");
 string g_mpegTsPath5 = string("/data/test/media/test_mpeg4_Gop25_4sec.ts");
+string g_mpegTsPath6 = string("/data/test/media/hevc_aac_3840x2160_30frames.ts");
 // AVI
 string g_aviPath1 = string("/data/test/media/h264_aac.avi");
 string g_aviPath2 = string("/data/test/media/h264_mp3.avi");
@@ -463,6 +465,51 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0001, TestSize.Level1)
     ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
     OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
+}
+
+/**
+ * @tc.name: Demuxer_SetAsyncReadThreadPriority_0001
+ * @tc.desc: Test SetAsyncReadThreadPriority
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetAsyncReadThreadPriority_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_flv";
+    InitResource(g_flvPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_NE(demuxerPlugin_, nullptr); // 检查插件是否初始化成功
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
+    ASSERT_EQ(demuxerPlugin_->SetAsyncReadThreadPriority(THREAD_PRIORITY_41, "demuxer_plugin_unit_test"), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SetAsyncReadThreadPriority(THREAD_PRIORITY_41, "demuxer_plugin_unit_test"),
+                                                         Status::ERROR_WRONG_STATE);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SetAsyncReadThreadPriority(THREAD_PRIORITY_41, "demuxer_plugin_unit_test"),
+                                                         Status::ERROR_WRONG_STATE);
+}
+
+/**
+ * @tc.name: Demuxer_SetAsyncReadThreadPriority_0002
+ * @tc.desc: Test SetAsyncReadThreadPriority
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetAsyncReadThreadPriority_0002, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_flv";
+    InitResource(g_flvPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_NE(demuxerPlugin_, nullptr); // 检查插件是否初始化成功
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SetAsyncReadThreadPriority(THREAD_PRIORITY_41, "demuxer_plugin_unit_test"),
+                                                         Status::ERROR_WRONG_STATE);
 }
 
 /**
@@ -1089,6 +1136,22 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0005, TestSize.Level1
 }
 
 /**
+ * @tc.name: Demuxer_ReadSample_MPEG_TS_0006
+ * @tc.desc: Copy current sample to buffer (MPEG-TS)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_MPEG_TS_0006, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mpegts";
+    std::string filePath = g_mpegTsPath6;
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        CheckAllFrames({30}, {1}, {0});
+    }
+}
+
+/**
  * @tc.name: Demuxer_ReadSample_AVI_0001
  * @tc.desc: Copy current sample to buffer (AVI)
  * @tc.type: FUNC
@@ -1584,6 +1647,22 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0005, Tes
 }
 
 /**
+ * @tc.name: Demuxer_ReadSample_WeakNetwork_MPEG_TS_0006
+ * @tc.desc: Copy current sample to buffer (MPEG-TS)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WeakNetwork_MPEG_TS_0006, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mpegts";
+    std::string filePath = g_mpegTsPath6;
+    InitWeakNetworkDemuxerPlugin(filePath, pluginName, 2560656, 3);
+    ASSERT_TRUE(initStatus_);
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        CheckAllFrames({30}, {1}, {0});
+    }
+}
+
+/**
  * @tc.name: Demuxer_ReadSample_WeakNetwork_AVI_0001
  * @tc.desc: Copy current sample to buffer (AVI)
  * @tc.type: FUNC
@@ -2076,6 +2155,22 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0005, TestSize.Le
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({103, 155}, {9, 155}, {0, 12, 24, 36, 48, 60, 72, 84, 96});
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_URI_MPEG_TS_0006
+ * @tc.desc: Copy current sample to buffer (MPEG-TS)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_MPEG_TS_0006, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mpegts";
+    std::string filePath = g_mpegTsPath6;
+    InitResourceURI(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        CheckAllFrames({30}, {1}, {0});
+    }
 }
 
 /**

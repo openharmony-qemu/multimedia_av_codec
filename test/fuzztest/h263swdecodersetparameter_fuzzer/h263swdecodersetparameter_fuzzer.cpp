@@ -26,24 +26,12 @@ static VDecFuzzSample *vDecSample = nullptr;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
-namespace OHOS {
-bool H263SwdecoderFuzzTest(const uint8_t *data, size_t size)
+
+OH_AVFormat *format = nullptr;
+
+void SetFormatValue(const uint8_t *data, size_t size)
 {
-    if (size < sizeof(int64_t)) {
-        return false;
-    }
-    if (!vDecSample) {
-        vDecSample = new VDecFuzzSample();
-        vDecSample->defaultWidth = DEFAULT_WIDTH;
-        vDecSample->defaultHeight = DEFAULT_HEIGHT;
-        vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
-        vDecSample->isSurfMode = true;
-        vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.H263");
-        vDecSample->ConfigureVideoDecoder();
-        vDecSample->SetVideoDecoderCallback();
-        vDecSample->Start();
-    }
-    OH_AVFormat *format = OH_AVFormat_CreateVideoFormat("video/h263", DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    format = OH_AVFormat_CreateVideoFormat("video/h263", DEFAULT_WIDTH, DEFAULT_HEIGHT);
     FuzzedDataProvider fdp(data, size);
     int intData0 = fdp.ConsumeIntegral<int32_t>();
     int intData1 = fdp.ConsumeIntegral<int32_t>();
@@ -67,10 +55,46 @@ bool H263SwdecoderFuzzTest(const uint8_t *data, size_t size)
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, intData8);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, longData);
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, doubleData);
+}
+namespace OHOS {
+bool H263SwdecoderFuzzTest(const uint8_t *data, size_t size)
+{
+    if (size < sizeof(int64_t)) {
+        return false;
+    }
+    if (!vDecSample) {
+        vDecSample = new VDecFuzzSample();
+        vDecSample->defaultWidth = DEFAULT_WIDTH;
+        vDecSample->defaultHeight = DEFAULT_HEIGHT;
+        vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
+        vDecSample->isSurfMode = true;
+        if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.H263") != AV_ERR_OK) {
+            delete vDecSample;
+            vDecSample = nullptr;
+            return false;
+        }
+        if (vDecSample->ConfigureVideoDecoder() != AV_ERR_OK) {
+            delete vDecSample;
+            vDecSample = nullptr;
+            return false;
+        }
+        if (vDecSample->SetVideoDecoderCallback() != AV_ERR_OK) {
+            delete vDecSample;
+            vDecSample = nullptr;
+            return false;
+        }
+        if (vDecSample->Start() != AV_ERR_OK) {
+            delete vDecSample;
+            vDecSample = nullptr;
+            return false;
+        }
+    }
 
+    SetFormatValue(data, size);
     vDecSample->SetParameter(format);
-
     OH_AVFormat_Destroy(format);
+    delete vDecSample;
+    vDecSample = nullptr;
     return true;
 }
 } // namespace OHOS

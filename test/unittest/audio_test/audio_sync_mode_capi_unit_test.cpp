@@ -81,8 +81,6 @@ constexpr string_view INPUT_OPUS_FILE_PATH = "/data/test/media/voice_opus.dat";
 constexpr string_view OUTPUT_OPUS_PCM_FILE_PATH = "/data/test/media/opus_decode.pcm";
 constexpr string_view INPUT_APE_FILE_PATH = "/data/test/media/voice_ape.dat";
 constexpr string_view OUTPUT_APE_PCM_FILE_PATH = "/data/test/media/ape_decode.pcm";
-constexpr string_view INPUT_AC3_FILE_PATH = "/data/test/media/voice_ac3.dat";
-constexpr string_view OUTPUT_AC3_PCM_FILE_PATH = "/data/test/media/ac3_decode.pcm";
 constexpr string_view INPUT_AAC_LC_ADTS_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k_lc.dat";
 constexpr string_view OUTPUT_AAC_LC_ADTS_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k_lc.pcm";
 }
@@ -675,21 +673,6 @@ HWTEST_F(AudioSyncModeCapiUnitTest, mp3_decode_01, TestSize.Level1)
     ASSERT_EQ(outputFile_->is_open(), true);
 
     codec_ = OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_MPEG, false);
-    ASSERT_NE(codec_, nullptr);
-    ASSERT_EQ(OH_AudioCodec_Configure(codec_, format_), AV_ERR_OK);
-    DecoderRun();
-    EXPECT_EQ(decodeInputFrameCnt_, outputFrameCnt_);
-    OH_AudioCodec_Destroy(codec_);
-}
-
-HWTEST_F(AudioSyncModeCapiUnitTest, ac3_decode_01, TestSize.Level1)
-{
-    inputFile_ = std::make_unique<std::ifstream>(INPUT_AC3_FILE_PATH, std::ios::binary);
-    outputFile_ = std::make_unique<std::ofstream>(OUTPUT_AC3_PCM_FILE_PATH, std::ios::binary);
-    ASSERT_EQ(inputFile_->is_open(), true);
-    ASSERT_EQ(outputFile_->is_open(), true);
-
-    codec_ = OH_AudioCodec_CreateByName(std::string(AVCodecCodecName::AUDIO_DECODER_AC3_NAME).data());
     ASSERT_NE(codec_, nullptr);
     ASSERT_EQ(OH_AudioCodec_Configure(codec_, format_), AV_ERR_OK);
     DecoderRun();

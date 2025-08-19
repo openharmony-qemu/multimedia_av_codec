@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,31 +34,37 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     }
     if (!g_vDecSample) {
         g_vDecSample = new VDecFuzzSample();
+        g_vDecSample->fuzzData = data;
+        g_vDecSample->fuzzSize = size;
         g_vDecSample->defaultWidth = DEFAULT_WIDTH;
         g_vDecSample->defaultHeight = DEFAULT_HEIGHT;
         g_vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
         g_vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.HEVC");
         g_vDecSample->ConfigureVideoDecoder();
         g_vDecSample->SetVideoDecoderCallback();
-        g_vDecSample->Start();
+        g_vDecSample->StartVideoDecoder();
+
+        OH_AVFormat *format = OH_AVFormat_CreateVideoFormat("video/hevc", DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        FuzzedDataProvider fdp(data, size);
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, fdp.ConsumeIntegral<int32_t>());
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, fdp.ConsumeIntegral<int32_t>());
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, fdp.ConsumeIntegral<int32_t>());
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, fdp.ConsumeIntegral<int32_t>());
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, fdp.ConsumeIntegral<int32_t>());
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, fdp.ConsumeIntegral<int32_t>());
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, fdp.ConsumeIntegral<int32_t>());
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, fdp.ConsumeIntegral<int32_t>());
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, fdp.ConsumeIntegral<int32_t>());
+        OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, fdp.ConsumeIntegral<int64_t>());
+        OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, fdp.ConsumeFloatingPoint<double>());
+
+        g_vDecSample->SetParameter(format);
+        OH_AVFormat_Destroy(format);
+
+        g_vDecSample->WaitForEOS();
+        delete g_vDecSample;
+        g_vDecSample = nullptr;
     }
-    OH_AVFormat *format = OH_AVFormat_CreateVideoFormat("video/hevc", DEFAULT_WIDTH, DEFAULT_HEIGHT);
-    FuzzedDataProvider fdp(data, size);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, fdp.ConsumeIntegral<int32_t>());
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, fdp.ConsumeIntegral<int32_t>());
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, fdp.ConsumeIntegral<int32_t>());
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, fdp.ConsumeIntegral<int32_t>());
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, fdp.ConsumeIntegral<int32_t>());
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, fdp.ConsumeIntegral<int32_t>());
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, fdp.ConsumeIntegral<int32_t>());
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, fdp.ConsumeIntegral<int32_t>());
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, fdp.ConsumeIntegral<int32_t>());
-    OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, fdp.ConsumeIntegral<int64_t>());
-    OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, fdp.ConsumeFloatingPoint<double>());
-
-    g_vDecSample->SetParameter(format);
-
-    OH_AVFormat_Destroy(format);
     return true;
 }
 } // namespace OHOS

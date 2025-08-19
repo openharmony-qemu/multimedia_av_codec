@@ -212,12 +212,8 @@ private:
     using PostProcessingBufferInfoQueue = LockFreeQueue<std::shared_ptr<DecodedBufferInfo>, 8>; // 8: QueueSize
     std::shared_ptr<DecodedBufferInfoQueue> decodedBufferInfoQueue_{nullptr};
     std::shared_ptr<PostProcessingBufferInfoQueue> postProcessingInputBufferInfoQueue_{nullptr};
-    std::shared_ptr<PostProcessingBufferInfoQueue> postProcessingOutputBufferInfoQueue_{nullptr};
     std::unique_ptr<TaskThread> postProcessingTask_{nullptr};
     Format outputFormatChanged_;
-    std::atomic<uint64_t> decodedFrameCount_{0};
-    std::atomic<uint64_t> processedFrameCount_{0};
-    std::atomic<bool> decoderIsEOS_{false};
     std::shared_ptr<AVCodecCallback> shareBufCallback_ = nullptr;
     std::shared_ptr<MediaCodecCallback> avBufCallback_ = nullptr;
     std::shared_ptr<FramerateCalculator> framerateCalculator_ = nullptr;
