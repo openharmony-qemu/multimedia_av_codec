@@ -268,7 +268,7 @@ protected:
     virtual bool ReadyToStart() = 0;
     virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) = 0;
     void SetCallerToBuffer(int fd, uint32_t w, uint32_t h);
-    virtual void UpdateFormatFromSurfaceBuffer() = 0;
+    virtual void UpdateFmtFromSurfaceBuffer() = 0;
     int32_t GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex);
     int32_t AllocateAvLinearBuffers(OMX_DIRTYPE portIndex);
@@ -279,7 +279,7 @@ protected:
     std::shared_ptr<CodecHDI::OmxCodecBuffer> DynamicSurfaceBufferToOmxBuffer();
 
     virtual int32_t SubmitAllBuffersOwnedByUs() = 0;
-    virtual int32_t SubmitOutputBuffersToOmxNode() { return AVCS_ERR_UNSUPPORT; }
+    virtual int32_t SubmitOutBufToOmx() { return AVCS_ERR_UNSUPPORT; }
     BufferInfo* FindBufferInfoByID(OMX_DIRTYPE portIndex, uint32_t bufferId);
     std::optional<size_t> FindBufferIndexByID(OMX_DIRTYPE portIndex, uint32_t bufferId);
     virtual void OnGetBufferFromSurface(const ParamSP& param) = 0;
@@ -294,7 +294,7 @@ protected:
     virtual void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode);
     int32_t OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info);
     virtual void OnSignalEndOfInputStream(const MsgInfo &msg);
-    int32_t NotifyOmxToEmptyThisInBuffer(BufferInfo& info);
+    int32_t InBufUsToOmx(BufferInfo& info);
     virtual void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) = 0;
     virtual void RepeatIfNecessary(const ParamSP& param) {}
     bool CheckBufPixFmt(const sptr<SurfaceBuffer>& buffer);
@@ -305,7 +305,7 @@ protected:
     int32_t NotifyOmxToFillThisOutBuffer(BufferInfo &info);
     void OnOMXFillBufferDone(const CodecHDI::OmxCodecBuffer& omxBuffer, BufferOperationMode mode);
     void OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx);
-    void NotifyUserOutBufferAvaliable(BufferInfo &info);
+    void OutBufUsToUser(BufferInfo &info);
     void OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
     void OnReleaseOutputBuffer(uint32_t bufferId, BufferOperationMode mode);
     virtual void OnReleaseOutputBuffer(const BufferInfo &info) {}
@@ -399,7 +399,6 @@ protected:
     bool isEncoder_;
     bool isSecure_ = false;
     std::string mime_;
-    std::string shortName_;
     uint32_t componentId_ = 0;
     std::string compUniqueStr_;
     int32_t instanceId_ = -1;
@@ -489,7 +488,7 @@ private:
     };
 
     struct UninitializedState : BaseState {
-        explicit UninitializedState(HCodec *codec) : BaseState(codec, "Uninitialized") {}
+        explicit UninitializedState(HCodec *codec) : BaseState(codec, "Uninit") {}
     private:
         void OnStateEntered() override;
         void OnMsgReceived(const MsgInfo &info) override;
@@ -497,7 +496,7 @@ private:
     };
 
     struct InitializedState : BaseState {
-        explicit InitializedState(HCodec *codec) : BaseState(codec, "Initialized") {}
+        explicit InitializedState(HCodec *codec) : BaseState(codec, "Init") {}
     private:
         void OnStateEntered() override;
         void ProcessShutDownFromRunning();
@@ -509,7 +508,7 @@ private:
     };
 
     struct StartingState : BaseState {
-        explicit StartingState(HCodec *codec) : BaseState(codec, "Starting") {}
+        explicit StartingState(HCodec *codec) : BaseState(codec, "Start") {}
     private:
         void OnStateEntered() override;
         void OnStateExited() override;
@@ -522,7 +521,7 @@ private:
     };
 
     struct RunningState : BaseState {
-        explicit RunningState(HCodec *codec) : BaseState(codec, "Running", RESUBMIT_BUFFER, RESUBMIT_BUFFER) {}
+        explicit RunningState(HCodec *codec) : BaseState(codec, "Run", RESUBMIT_BUFFER, RESUBMIT_BUFFER) {}
     private:
         void OnStateEntered() override;
         void OnMsgReceived(const MsgInfo &info) override;
@@ -534,7 +533,7 @@ private:
 
     struct OutputPortChangedState : BaseState {
         explicit OutputPortChangedState(HCodec *codec)
-            : BaseState(codec, "OutputPortChanged", RESUBMIT_BUFFER, FREE_BUFFER) {}
+            : BaseState(codec, "OutChange", RESUBMIT_BUFFER, FREE_BUFFER) {}
     private:
         void OnStateEntered() override;
         void OnMsgReceived(const MsgInfo &info) override;
@@ -547,7 +546,7 @@ private:
     };
 
     struct FlushingState : BaseState {
-        explicit FlushingState(HCodec *codec) : BaseState(codec, "Flushing") {}
+        explicit FlushingState(HCodec *codec) : BaseState(codec, "Flush") {}
     private:
         void OnStateEntered() override;
         void OnMsgReceived(const MsgInfo &info) override;
@@ -560,7 +559,7 @@ private:
     };
 
     struct StoppingState : BaseState {
-        explicit StoppingState(HCodec *codec) : BaseState(codec, "Stopping"),
+        explicit StoppingState(HCodec *codec) : BaseState(codec, "Stop"),
             omxNodeInIdleState_(false),
             omxNodeIsChangingToLoadedState_(false) {}
     private:

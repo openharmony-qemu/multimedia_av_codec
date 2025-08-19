@@ -19,9 +19,9 @@
 namespace OHOS::MediaAVCodec {
 
 #define SCOPED_TRACE() \
-    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "hcodec%s %s", compUniqueStr_.c_str(), __func__)
+    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "[hcodec][%s]%s", compUniqueStr_.c_str(), __func__)
 #define SCOPED_TRACE_FMT(fmt, ...) \
-    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "hcodec%s %s " fmt, compUniqueStr_.c_str(), __func__, ##__VA_ARGS__)
+    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "[hcodec][%s]%s " fmt, compUniqueStr_.c_str(), __func__, ##__VA_ARGS__)
 
 struct FuncTracker {
     explicit FuncTracker(std::string value);
@@ -29,7 +29,7 @@ struct FuncTracker {
 private:
     std::string value_;
 };
-#define FUNC_TRACKER() FuncTracker tracker(compUniqueStr_ + __func__)
+#define FUNC_TRACKER() FuncTracker tracker("[" + compUniqueStr_ + " " + __func__ + "]")
 
 }
 #endif

@@ -98,7 +98,7 @@ inline constexpr const char* StrLevel(LogLevel level)
 
 #define PLOGI(...) RE_FORMAT(LOG_INFO, __VA_ARGS__)
 
-#define LOG(level, s, ...) RE_FORMAT(level, "[%s %d] " s, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define LOG(level, s, ...) RE_FORMAT(level, "[%s] " s, __FUNCTION__, ##__VA_ARGS__)
 #define LOGE(...) LOG(LOG_ERROR, __VA_ARGS__)
 #define LOGW(...) LOG(LOG_WARN, __VA_ARGS__)
 #define LOGI(...) LOG(LOG_INFO, __VA_ARGS__)
@@ -106,8 +106,8 @@ inline constexpr const char* StrLevel(LogLevel level)
 
 // for test
 #define TLOG(level, s, ...) do { \
-    RE_FORMAT(level, "[%s %d] " s, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
-    printf("%s: [%s %d] " s "\n", StrLevel(level), __FUNCTION__, __LINE__, ##__VA_ARGS__); \
+    RE_FORMAT(level, "[%s] " s, __FUNCTION__, ##__VA_ARGS__); \
+    printf("%s: [%s] " s "\n", StrLevel(level), __FUNCTION__, ##__VA_ARGS__); \
 } while (0)
 #define TLOGE(...) TLOG(LOG_ERROR, __VA_ARGS__)
 #define TLOGW(...) TLOG(LOG_WARN, __VA_ARGS__)
@@ -115,16 +115,16 @@ inline constexpr const char* StrLevel(LogLevel level)
 #define TLOGD(...) TLOG(LOG_DEBUG, __VA_ARGS__)
 
 // for HCodec
-#define HLOG(level, s, ...) RE_FORMAT(level, "%s[%s][%s %d] " s, \
-    compUniqueStr_.c_str(), currState_->GetName().c_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define HLOG(level, s, ...) RE_FORMAT(level, "[%s %s %s] " s, \
+    compUniqueStr_.c_str(), currState_->GetName().c_str(), __FUNCTION__, ##__VA_ARGS__)
 #define HLOGE(...) HLOG(LOG_ERROR, __VA_ARGS__)
 #define HLOGW(...) HLOG(LOG_WARN, __VA_ARGS__)
 #define HLOGI(...) HLOG(LOG_INFO, __VA_ARGS__)
 #define HLOGD(...) HLOG(LOG_DEBUG, __VA_ARGS__)
 
 // for HCodec inner state
-#define SLOG(level, s, ...) RE_FORMAT(level, "%s[%s][%s %d] " s, \
-    codec_->compUniqueStr_.c_str(), stateName_.c_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define SLOG(level, s, ...) RE_FORMAT(level, "[%s %s %s] " s, \
+    codec_->compUniqueStr_.c_str(), stateName_.c_str(), __FUNCTION__, ##__VA_ARGS__)
 #define SLOGE(...) SLOG(LOG_ERROR, __VA_ARGS__)
 #define SLOGW(...) SLOG(LOG_WARN, __VA_ARGS__)
 #define SLOGI(...) SLOG(LOG_INFO, __VA_ARGS__)

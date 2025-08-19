@@ -236,7 +236,7 @@ void HCodec::InitializedState::ProcessShutDownFromRunning()
     if (!codec_->isShutDownFromRunning_) {
         return;
     }
-    SLOGI("we are doing shutdown from running/portchange/flush -> stopping -> initialized");
+    SLOGI(">>");
     bool keepComponentAllocated = codec_->keepComponentAllocated_;
     if (keepComponentAllocated) {
         if (codec_->configFormat_ == nullptr) {
@@ -334,7 +334,7 @@ void HCodec::InitializedState::OnStart(const MsgInfo &info)
         ReplyErrorCode(info.id, AVCS_ERR_INVALID_OPERATION);
         return;
     }
-    SLOGI("begin to set omx to idle");
+    SLOGI("set omx to idle");
     int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_IDLE, {});
     if (ret == HDF_SUCCESS) {
         codec_->ReplyToSyncMsgLater(info);
@@ -434,7 +434,7 @@ void HCodec::StartingState::OnCodecEvent(CodecEventType event, uint32_t data1, u
         return;
     }
     if (data2 == (uint32_t)CODEC_STATE_IDLE) {
-        SLOGI("omx now idle, begin to set omx to executing");
+        SLOGI("now idle, set omx to executing");
         int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_EXECUTING, {});
         if (ret != HDF_SUCCESS) {
             SLOGE("set omx to executing failed, ret=%d", ret);
@@ -568,7 +568,7 @@ void HCodec::RunningState::OnCodecEvent(CodecEventType event, uint32_t data1, ui
                 return;
             }
             if (data2 == 0 || data2 == OMX_IndexParamPortDefinition) {
-                SLOGI("output port settings changed, begin to ask omx to disable out port");
+                SLOGI("output port settings changed, disable out port");
                 codec_->UpdateOutPortFormat();
                 int32_t ret = codec_->compNode_->SendCommand(
                     CODEC_COMMAND_PORT_DISABLE, OMX_DirOutput, {});
@@ -600,7 +600,7 @@ void HCodec::RunningState::OnShutDown(const MsgInfo &info)
     codec_->keepComponentAllocated_ = (info.type == MsgWhat::STOP);
     codec_->isBufferCirculating_ = false;
     codec_->PrintAllBufferInfo();
-    SLOGI("receive %s msg, begin to set omx to idle", info.type == MsgWhat::RELEASE ? "release" : "stop");
+    SLOGI("receive %s msg, set omx to idle", info.type == MsgWhat::RELEASE ? "release" : "stop");
     int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_IDLE, {});
     if (ret == HDF_SUCCESS) {
         codec_->ReplyToSyncMsgLater(info);
@@ -763,9 +763,8 @@ void HCodec::OutputPortChangedState::HandleOutputPortDisabled()
     }
 
     if (ret == AVCS_ERR_OK) {
-        SLOGI("begin to ask omx to enable out port");
+        SLOGI("enable out port");
         if (codec_->isLpp_) {
-            SLOGI("OutputPortChangedState, LowPowerPlayer unbind outputbuffer");
             codec_->callback_->OnOutputBufferUnbinded();
         }
         int32_t err = codec_->compNode_->SendCommand(CODEC_COMMAND_PORT_ENABLE, OMX_DirOutput, {});
@@ -786,7 +785,7 @@ void HCodec::OutputPortChangedState::HandleOutputPortDisabled()
 void HCodec::OutputPortChangedState::HandleOutputPortEnabled()
 {
     if (codec_->isBufferCirculating_) {
-        codec_->SubmitOutputBuffersToOmxNode();
+        codec_->SubmitOutBufToOmx();
     }
     codec_->outPortHasChanged_ = true;
     SLOGI("output format changed: %s", codec_->outputFormat_->Stringify().c_str());
@@ -951,7 +950,7 @@ void HCodec::StoppingState::OnStateEntered()
     omxNodeIsChangingToLoadedState_ = false;
     codec_->ReclaimBuffer(OMX_DirInput, BufferOwner::OWNED_BY_USER);
     codec_->ReclaimBuffer(OMX_DirOutput, BufferOwner::OWNED_BY_USER);
-    SLOGI("all buffer owned by user are now owned by us");
+    SLOGD("all buffer owned by user are now owned by us");
 
     ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("generation", codec_->stateGeneration_);
@@ -1016,7 +1015,7 @@ void HCodec::StoppingState::ChangeStateIfWeOwnAllBuffers()
 void HCodec::StoppingState::ChangeOmxNodeToLoadedState(bool forceToFreeBuffer)
 {
     if (!omxNodeIsChangingToLoadedState_) {
-        SLOGI("begin to set omx to loaded");
+        SLOGI("set omx to loaded");
         int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_LOADED, {});
         if (ret == HDF_SUCCESS) {
             omxNodeIsChangingToLoadedState_ = true;
