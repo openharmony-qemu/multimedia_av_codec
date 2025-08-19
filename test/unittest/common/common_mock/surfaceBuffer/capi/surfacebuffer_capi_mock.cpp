@@ -35,14 +35,14 @@ bool SurfaceBufferCapiMock::GetHDRDynamicMetadata(std::vector<uint8_t> &meta)
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(nativeBuffer_ != nullptr, false, "nativeBuffer_ is nullptr!");
     int32_t size = 0;
-    uint8_t **metadata = nullptr;
-    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_DYNAMIC_METADATA, &size, metadata) != 0) {
+    uint8_t *metadata = nullptr;
+    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_DYNAMIC_METADATA, &size, &metadata) != 0) {
         return false;
     }
     meta.resize(size);
-    int32_t ret = memcpy_s(&meta[0], size, *metadata, size);
-    delete[] *metadata;
-    *metadata = nullptr;
+    int32_t ret = memcpy_s(&meta[0], size, metadata, size);
+    delete[] metadata;
+    metadata = nullptr;
     if (ret == 0) {
         return true;
     }
@@ -53,14 +53,14 @@ bool SurfaceBufferCapiMock::GetHDRStaticMetadata(std::vector<uint8_t> &meta)
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(nativeBuffer_ != nullptr, false, "nativeBuffer_ is nullptr!");
     int32_t size = 0;
-    uint8_t **metadata = nullptr;
-    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_STATIC_METADATA, &size, metadata) != 0) {
+    uint8_t *metadata = nullptr;
+    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_STATIC_METADATA, &size, &metadata) != 0) {
         return false;
     }
     meta.resize(size);
-    int32_t ret = memcpy_s(&meta[0], size, *metadata, size);
-    delete[] *metadata;
-    *metadata = nullptr;
+    int32_t ret = memcpy_s(&meta[0], size, metadata, size);
+    delete[] metadata;
+    metadata = nullptr;
     if (ret == 0) {
         return true;
     }
