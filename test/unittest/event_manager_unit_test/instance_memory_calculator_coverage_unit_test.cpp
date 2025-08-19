@@ -84,7 +84,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevc10BitYUV420_TEST_001, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 1000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -101,7 +101,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevc10BitYUV420_TEST_002, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 5000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -118,7 +118,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevc10BitYUV420_TEST_003, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 10000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -135,7 +135,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevc10BitYUV420_TEST_004, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 50000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -152,7 +152,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevcYUV420PostProcessing_TEST_001, TestSize.L
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 1000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -169,7 +169,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevcYUV420PostProcessing_TEST_002, TestSize.L
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 5000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -186,7 +186,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevcYUV420PostProcessing_TEST_003, TestSize.L
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 10000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -203,7 +203,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderHevcYUV420PostProcessing_TEST_004, TestSize.L
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 10000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -220,7 +220,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderVvc10BitYUV420_TEST_001, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 1000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -237,7 +237,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderVvc10BitYUV420_TEST_002, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 5000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -254,7 +254,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderVvc10BitYUV420_TEST_003, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 10000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -271,7 +271,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderVvc10BitYUV420_TEST_004, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 50000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -288,7 +288,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderVvcYUV420_TEST_001, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 1000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -305,7 +305,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderVvcYUV420_TEST_002, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 5000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -322,7 +322,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderVvcYUV420_TEST_003, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 10000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -339,7 +339,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderVvcYUV420_TEST_004, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 50000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -356,7 +356,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderYUV420_TEST_001, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 1000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -373,7 +373,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderYUV420_TEST_002, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 5000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -390,7 +390,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderYUV420_TEST_003, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 10000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -407,7 +407,7 @@ HWTEST_F(TEST_SUIT, HardwareDecoderYUV420_TEST_004, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 50000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -424,7 +424,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_001, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 1000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -441,7 +441,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_002, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 5000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -458,7 +458,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_003, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 10000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -475,7 +475,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_004, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 50000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -492,7 +492,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_001, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 1000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -509,7 +509,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_002, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 5000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -526,7 +526,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_003, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 10000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 /**
@@ -543,7 +543,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_004, TestSize.Level3)
     auto calculator = instanceMemoryHandler_->GetCalculator(*meta_);
     EXPECT_NE(calculator, std::nullopt);
     uint32_t blockCount = 50000;
-    auto instanceMemory = calculator.value(blockCount);
+    auto instanceMemory = calculator.value()(blockCount);
 }
 
 } // namespace
