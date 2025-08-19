@@ -1756,7 +1756,7 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         NotifyUserToFillThisInBuffer(info);
     } else {
         CheckPts(info.omxBuffer->pts);
-        int32_t err = NotifyOmxToEmptyThisInBuffer(info);
+        int32_t err = InBufUsToOmx(info);
         if (err != AVCS_ERR_OK) {
             ResetSlot(info);
             callback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_INPUT_DATA_ERROR);
