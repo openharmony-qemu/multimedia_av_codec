@@ -1057,6 +1057,11 @@ bool FFmpegFormatHelper::IsVideoCodecId(const AVCodecID &codecId)
     }
     return StartWith(std::string(g_codecIdToMime[codecId]).c_str(), "video/");
 }
+
+bool FFmpegFormatHelper::IsValidCodecId(const AVCodecID &codecId)
+{
+    return (g_codecIdToMime.count(codecId) > 0) || (IsPCMStream(codecId));
+}
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media
