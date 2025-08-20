@@ -500,7 +500,7 @@ Status FFmpegDemuxerPlugin::BoostReadThreadPriority()
 
 void FFmpegDemuxerPlugin::UpdateAsyncReadThreadPriority()
 {
-    int ret = SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+    auto ret = SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     if (ret != 0) {
         MEDIA_LOG_E("Set thread qos failed, ret = " PUBLIC_LOG_D32, ret);
     } else {
