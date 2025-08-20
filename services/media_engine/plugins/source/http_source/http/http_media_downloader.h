@@ -242,7 +242,7 @@ private:
     double bufferDurationForPlaying_ {0};
     uint64_t waterlineForPlaying_ {0};
     std::atomic<bool> isDemuxerInitSuccess_ {false};
-	std::atomic<bool> isTimeoutErrorNotified_ {false};
+    std::atomic<bool> isTimeoutErrorNotified_ {false};
     size_t timeoutInterval_ = 0;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_;
     std::atomic<bool> isNeedResume_ {false};

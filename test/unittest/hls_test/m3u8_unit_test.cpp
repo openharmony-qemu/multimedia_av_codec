@@ -604,8 +604,8 @@ HWTEST_F(M3u8UnitTest, SetInterruptState_001, TestSize.Level1)
     m3u8->keyUri_ = std::make_shared<std::string>(url);
     m3u8->DownloadKey();
     m3u8->DownloadMap(url, 0, 0);
-    EXPECT_NE(m3u8->downloadHeaderRequest_ , nullptr);
-    EXPECT_NE(m3u8->downloadRequest_  , nullptr);
+    EXPECT_NE(m3u8->downloadHeaderRequest_, nullptr);
+    EXPECT_NE(m3u8->downloadRequest_, nullptr);
     std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", url);
     master->StartParsing();
     auto stream = std::make_shared<M3U8VariantStream>("test", url,

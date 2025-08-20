@@ -47,7 +47,7 @@ public:
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
-    bool SeekToPos(int64_t offset, bool& SeekToPos) override;
+    bool SeekToPos(int64_t offset, bool& isSeekHIt) override;
     void Pause() override;
     void Resume() override;
     size_t GetContentLength() const override;
