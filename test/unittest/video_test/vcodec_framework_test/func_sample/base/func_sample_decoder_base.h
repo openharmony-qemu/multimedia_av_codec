@@ -59,6 +59,32 @@ inline constexpr uint8_t SHA_H263[SHA512_DIGEST_LENGTH] = {
     0x66, 0x9c, 0x58, 0x41, 0x6f, 0xad, 0xdd, 0xa9, 0x68, 0x1e, 0x76, 0xf2, 0x6e, 0x8e, 0x5b, 0xe5,
     0xe2, 0xc6, 0x5f, 0x5f, 0xab, 0xca, 0xc2, 0x5e, 0x8e, 0x77, 0xe6, 0xad, 0x59, 0x63, 0x40, 0x6b};
 
+std::map <int32_t, int32[]> g_hdrDynamicMetaSize = {
+    {HW_HDR, {59, 59, 59, 59, 59}},
+    {HW_HDR_HLG_FULL, {53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53,
+        53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53,
+        53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53,
+        53, 53, 53, 53, 53}}
+};
+
+std::map <int32_t, int32[]> g_hdrStaticMetaSize = {
+    {HW_HDR, {48, 48, 48, 48, 48}},
+    {HW_HDR_HLG_FULL, {48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+        48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+        48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+        48, 48, 48, 48, 48}}
+};
+
+const std::map<int32_t, std::string> g_hdrDynamicMeta = {
+    {HW_HDR, "/data/test/media/720_1280_25_avcc_hdr_dynamic_meta.bin"},
+    {HW_HDR_HLG_FULL, "/data/test/media/1920_1440_30_avcc_hdr_dynamic_meta.bin"}
+};
+
+const std::map<int32_t, std::string> g_hdrStaticMeta = {
+    {HW_HDR, "/data/test/media/720_1280_25_avcc_hdr_static_meta_size.bin"},
+    {HW_HDR_HLG_FULL, "/data/test/media/1920_1440_30_avcc_hdr_static_meta.bin"}
+};
+
 inline uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
 inline std::atomic<uint32_t> g_shaBufferCount = 0;
 inline SHA512_CTX g_ctxTest;

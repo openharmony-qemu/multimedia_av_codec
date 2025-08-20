@@ -818,9 +818,9 @@ bool VideoDecAsyncSample::CompareMetadata(std::shared_ptr<AVBufferMock> buffer)
     }
     int ret;
     if (frameOutputCount_ == 0) {
-        dynamicMetadataFile_ = std::make_unique<std::ifstream>("/data/test/media/xxx",
+        dynamicMetadataFile_ = std::make_unique<std::ifstream>(g_hdrDynamicMeta.at(testParam_),
             std::ios::binary | std::ios::in); 
-        staticMetadataFile_ = std::make_unique<std::ifstream>("/data/test/media/xxx",
+        staticMetadataFile_ = std::make_unique<std::ifstream>(g_hdrStaticMeta.at(testParam_),
             std::ios::binary | std::ios::in);
         if (!dynamicMetadataFile_ || !staticMetadataFile_) {
             return true;
@@ -830,20 +830,14 @@ bool VideoDecAsyncSample::CompareMetadata(std::shared_ptr<AVBufferMock> buffer)
     // meta from file
     std::vector<uint8_t> dynamicMetadataFromFile;
     std::vector<uint8_t> staticMetadataFromFile;
-    if (testParam_ == VCodecTestParam::HW_HDR) {
-        // No.frameOutputCount_
-        dynamicMetadataFromFile.resize(g_hdrVividDynamicMeta[frameOutputCount_]);
-        dynamicMetadataFile_->read(reinterpret_cast<char*>(dynamicMetadataFromFile.data()),
-            g_hdrVividDynamicMeta[frameOutputCount_]);
-        staticMetadataFromFile.resize(xxx);
-        staticMetadataFile_->read(reinterpret_cast<char*>(staticMetadataFromFile.data()), xxx);
-    } else if (testParam_ == HW_HDR_HLG_FULL) {
-        dynamicMetadataFromFile.resize(g_hdrHlgdDynamicMeta[frameOutputCount_]);
-        dynamicMetadataFile_->read(reinterpret_cast<char*>(dynamicMetadataFromFile.data()),
-            g_hdrHlgdDynamicMeta[frameOutputCount_]);
-        staticMetadataFromFile.resize(xxx);
-        staticMetadataFile_->read(reinterpret_cast<char*>(staticMetadataFromFile.data()), xxx);
-    }
+
+    // No.frameOutputCount_
+    dynamicMetadataFromFile.resize(g_hdrDynamicMeta.at(testParam_)[frameOutputCount_]);
+    dynamicMetadataFile_->read(reinterpret_cast<char*>(dynamicMetadataFromFile.data()),
+        g_hdrDynamicMeta.at(testParam_)[frameOutputCount_]);
+    staticMetadataFromFile.resize(g_hdrDynamicMeta.at(testParam_)[frameOutputCount_]);
+    staticMetadataFile_->read(reinterpret_cast<char*>(staticMetadataFromFile.data()),
+        g_hdrStaticMeta.at(testParam_)[frameOutputCount_]);
 
     // meta from buffer
     std::shared_ptr<SurfaceBufferMock> surfaceBufferMock = SurfaceBufferMockFactory::CreateSurfaceBuffer(buffer);
@@ -856,7 +850,7 @@ bool VideoDecAsyncSample::CompareMetadata(std::shared_ptr<AVBufferMock> buffer)
 
     // 比较
     if (staticMetadataFromBuffer != staticMetadataFromFile || dynamicMetadataFromBuffer != dynamicMetadataFromFile) {
-       signal_->errorNum++;
+        signal_->errorNum++;
         return false;
     }
     return true;
