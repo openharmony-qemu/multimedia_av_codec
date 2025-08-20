@@ -220,7 +220,7 @@ private:
     void RequestData();
     void HandlePlayingFinish();
     void HandleRetOK();
-    void HandleRespenseCb(int32_t clientCode, int32_t serverCode, Status& ret);
+    void HandleResponseCb(int32_t clientCode, int32_t serverCode, Status& ret);
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
     static bool HandleContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);

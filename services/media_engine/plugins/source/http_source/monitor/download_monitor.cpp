@@ -143,7 +143,7 @@ Status DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     return ret;
 }
 
-bool DownloadMonitor::SeekToPos(int64_t offset, bool& isSeekHit)
+bool DownloadMonitor::SeekToPos(int64_t offset, bool& isSeekHIt)
 {
     isPlaying_ = true;
     bool isSeekHit = false;

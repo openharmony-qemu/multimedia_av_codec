@@ -1007,7 +1007,7 @@ void CacheMediaChunkBufferImpl::DumpInner(uint64_t param)
         if (fragment.accessPos != fragment.chunks.end()) {
             auto &chunkInfo = *fragment.accessPos;
             MEDIA_LOG_D("cacheBuff   access offset: " PUBLIC_LOG_D64 ", len: " PUBLIC_LOG_U32,
-                chunkInfo->offest, chunkInfo->dataLength);
+                chunkInfo->offset, chunkInfo->dataLength);
         } else {
             MEDIA_LOG_D("cacheBuff   access ended");
         }
