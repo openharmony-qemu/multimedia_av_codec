@@ -1946,6 +1946,12 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.pixFormat = {
             static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
             static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
+        capsData.graphicPixFormat = {
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P),
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP),
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP),
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888)
+        };
         if (capsData.mimeType == "video/mpeg2") {
             capaArray.emplace_back(capsData);
             GetMpeg2CapProf(capaArray);

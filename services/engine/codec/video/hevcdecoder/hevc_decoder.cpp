@@ -1732,6 +1732,12 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.blockSize.height = VIDEO_ALIGN_SIZE;
         capsData.pixFormat = {static_cast<int32_t>(VideoPixelFormat::NV12),
             static_cast<int32_t>(VideoPixelFormat::NV21)};
+        capsData.graphicPixFormat = {
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP),
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP),
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010),
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010)
+        };
         capsData.profiles = {static_cast<int32_t>(HEVC_PROFILE_MAIN), static_cast<int32_t>(HEVC_PROFILE_MAIN_10)};
 
         std::vector<int32_t> levels;

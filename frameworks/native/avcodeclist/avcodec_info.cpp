@@ -101,6 +101,15 @@ std::vector<int32_t> VideoCaps::GetSupportedFormats()
     return pixFormat;
 }
 
+std::vector<int32_t> VideoCaps::GetSupportedGraphicFormats()
+{
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, std::vector<int32_t>(), "data is null");
+    std::vector<int32_t> graphicPixFormat = data_->graphicPixFormat;
+    CHECK_AND_RETURN_RET_LOG(graphicPixFormat.size() != 0, graphicPixFormat,
+        "GetSupportedGraphicFormats failed: format is null");
+    return graphicPixFormat;
+}
+
 int32_t VideoCaps::GetSupportedHeightAlignment()
 {
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, 1, "data is null");

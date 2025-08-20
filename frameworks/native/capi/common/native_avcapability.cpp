@@ -376,6 +376,38 @@ OH_AVErrCode OH_AVCapability_GetVideoSupportedPixelFormats(OH_AVCapability *capa
     return AV_ERR_OK;
 }
 
+OH_AVErrCode OH_AVCapability_GetVideoSupportedGraphicPixelFormats(OH_AVCapability *capability,
+                                                                  const int32_t **graphicPixelFormats,
+                                                                  uint32_t *graphicPixelFormatNum)
+{
+    CHECK_AND_RETURN_RET_LOG(graphicPixelFormats != nullptr && graphicPixelFormatNum != nullptr, AV_ERR_INVALID_VAL,
+                             "Get video supported graphic pixel formats failed: null input");
+    *graphicPixelFormats = nullptr;
+    *graphicPixelFormatNum = 0;
+    CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
+        AV_ERR_INVALID_VAL, "Invalid parameter");
+    CapabilityData *capData = capability->capabilityData_;
+    if (!AVCodecInfo::isVideo(capData->codecType)) {
+        AVCODEC_LOGW("The capability provided is not expected, should be the video capability");
+    }
+    std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capData);
+    const auto &vec = codecInfo->GetSupportedGraphicFormats();
+    if (vec.size() == 0) {
+        return AV_ERR_OK;
+    }
+    std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
+    CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, AV_ERR_UNKNOWN,
+        "Get video supported graphic pixel formats failed: CreateAVCodecList failed");
+    size_t vecSize = vec.size() * sizeof(int32_t);
+    int32_t *buf = static_cast<int32_t *>(codeclist->NewBuffer(vecSize));
+    CHECK_AND_RETURN_RET_LOG(buf != nullptr, AV_ERR_NO_MEMORY, "new buffer failed");
+    errno_t ret = memcpy_s(buf, vecSize, vec.data(), vecSize);
+    CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_UNKNOWN, "memcpy_s failed");
+    *pixFormats = buf;
+    *pixFormatNum = vec.size();
+    return AV_ERR_OK;
+}
+
 OH_AVErrCode OH_AVCapability_GetVideoWidthAlignment(OH_AVCapability *capability, int32_t *widthAlignment)
 {
     CHECK_AND_RETURN_RET_LOG(widthAlignment != nullptr, AV_ERR_INVALID_VAL,
