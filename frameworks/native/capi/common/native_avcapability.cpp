@@ -403,8 +403,8 @@ OH_AVErrCode OH_AVCapability_GetVideoSupportedGraphicPixelFormats(OH_AVCapabilit
     CHECK_AND_RETURN_RET_LOG(buf != nullptr, AV_ERR_NO_MEMORY, "new buffer failed");
     errno_t ret = memcpy_s(buf, vecSize, vec.data(), vecSize);
     CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_UNKNOWN, "memcpy_s failed");
-    *pixFormats = buf;
-    *pixFormatNum = vec.size();
+    *graphicPixelFormats = buf;
+    *graphicPixelFormatNum = vec.size();
     return AV_ERR_OK;
 }
 
