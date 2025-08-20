@@ -493,7 +493,7 @@ Status FFmpegDemuxerPlugin::BoostReadThreadPriority()
         MEDIA_LOG_W("Async read thread priority has been set, cannot set again");
         return Status::ERROR_WRONG_STATE;
     }
-    isAsyncReadThreadPrioritySet_ = true;
+    isAsyncReadThreadPrioritySet_.store(true);
     MEDIA_LOG_I("Boost read thread priority to user interactive");
     return Status::OK;
 }
