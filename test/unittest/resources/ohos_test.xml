@@ -55,6 +55,7 @@
             <option name="push" value="muxer_res/wav_pcm_44100_hexadecagonal_s16le.pcm -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/wav_pcm_44100_stereodownmix_s16le.pcm -> /data/test/media" src="res"/>
             <option name="push" value="muxer_res/flac_48000_1_s16le.dat -> /data/test/media" src="res"/>
+            <option name="push" value="muxer_res/aac_44100_2.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
