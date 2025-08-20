@@ -240,13 +240,12 @@ struct DemuxerPlugin : public PluginBase {
         const int32_t probSize) = 0;
 
     /**
-     * @brief Set the priority level for the asynchronous read thread.
+     * @brief Boosts the asynchronous read thread priority.
      *
-     * The function is only valid when the thread is not in the RUNNING state.
+     * Elevates thread priority if called with proper permissions and when thread is not RUNNING.
+     * By default, the thread operates at normal priority.
      *
-     * The caller must possess required permissions to successfully invoke this interface.
-     *
-     * @return Execution Status
+     * @return Execution status
      */
     virtual Status BoostReadThreadPriority() = 0;
 };
