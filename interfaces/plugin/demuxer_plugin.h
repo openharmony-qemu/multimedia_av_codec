@@ -24,7 +24,6 @@
 #include "plugin/plugin_definition.h"
 #include "plugin/plugin_info.h"
 #include "common/media_core.h"
-#include "qos.h"
 
 namespace OHOS {
 namespace Media {
@@ -247,10 +246,9 @@ struct DemuxerPlugin : public PluginBase {
      *
      * The caller must possess required permissions to successfully invoke this interface.
      *
-     * @param level The QoS priority level to assign to the asynchronous read thread.
      * @return Execution Status
      */
-    virtual Status SetAsyncReadThreadPriority(OHOS::QOS::QosLevel level) = 0;
+    virtual Status BoostReadThreadPriority() = 0;
 };
 
 /// Demuxer plugin api major number.

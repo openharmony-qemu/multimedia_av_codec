@@ -482,7 +482,7 @@ Status FFmpegDemuxerPlugin::GetLastPTSByTrackId(uint32_t trackId, int64_t &lastP
     return ret;
 }
 
-Status FFmpegDemuxerPlugin::SetAsyncReadThreadPriority(OHOS::QOS::QosLevel level)
+Status FFmpegDemuxerPlugin::BoostReadThreadPriority()
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     if (threadState_ != ThreadState::NOT_STARTED && readThread_ != nullptr) {
@@ -494,18 +494,17 @@ Status FFmpegDemuxerPlugin::SetAsyncReadThreadPriority(OHOS::QOS::QosLevel level
         return Status::ERROR_WRONG_STATE;
     }
     isAsyncReadThreadPrioritySet_ = true;
-    asyncReadThreadPriority_ = level;
-    MEDIA_LOG_I("Set async read thread priority to " PUBLIC_LOG_U32, static_cast<uint32_t>(level));
+    MEDIA_LOG_I("Boost read thread priority to user interactive");
     return Status::OK;
 }
 
 void FFmpegDemuxerPlugin::UpdateAsyncReadThreadPriority()
 {
-    int ret = SetThreadQos(asyncReadThreadPriority_.load());
+    int ret = SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     if (ret != 0) {
         MEDIA_LOG_E("Set thread qos failed, ret = " PUBLIC_LOG_D32, ret);
     } else {
-        MEDIA_LOG_I("Set thread qos success, level = " PUBLIC_LOG_U32, asyncReadThreadPriority_.load());
+        MEDIA_LOG_I("Set thread qos success, level = " PUBLIC_LOG_U32, OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     }
 }
 } // namespace Ffmpeg

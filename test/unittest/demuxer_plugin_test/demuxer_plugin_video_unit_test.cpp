@@ -467,11 +467,11 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_0001, TestSize.Level1)
 }
 
 /**
- * @tc.name: Demuxer_SetAsyncReadThreadPriority_0001
- * @tc.desc: Test SetAsyncReadThreadPriority
+ * @tc.name: Demuxer_BoostReadThreadPriority_0001
+ * @tc.desc: Test BoostReadThreadPriority
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetAsyncReadThreadPriority_0001, TestSize.Level1)
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_BoostReadThreadPriority_0001, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
     InitResource(g_flvPath, pluginName);
@@ -480,22 +480,20 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetAsyncReadThreadPriority_0001, TestSiz
     ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
     ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
     OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
-    ASSERT_EQ(demuxerPlugin_->SetAsyncReadThreadPriority(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE), Status::OK);
-    ASSERT_EQ(demuxerPlugin_->SetAsyncReadThreadPriority(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE),
-                                                         Status::ERROR_WRONG_STATE);
+    ASSERT_EQ(demuxerPlugin_->BoostReadThreadPriority(), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->BoostReadThreadPriority(), Status::ERROR_WRONG_STATE);
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
-    ASSERT_EQ(demuxerPlugin_->SetAsyncReadThreadPriority(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE),
-                                                         Status::ERROR_WRONG_STATE);
+    ASSERT_EQ(demuxerPlugin_->BoostReadThreadPriority(), Status::ERROR_WRONG_STATE);
 }
 
 /**
- * @tc.name: Demuxer_SetAsyncReadThreadPriority_0002
- * @tc.desc: Test SetAsyncReadThreadPriority
+ * @tc.name: Demuxer_BoostReadThreadPriority_0002
+ * @tc.desc: Test BoostReadThreadPriority
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetAsyncReadThreadPriority_0002, TestSize.Level1)
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_BoostReadThreadPriority_0002, TestSize.Level1)
 {
     std::string pluginName = "avdemux_flv";
     InitResource(g_flvPath, pluginName);
@@ -507,8 +505,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetAsyncReadThreadPriority_0002, TestSiz
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, 100), Status::OK);
-    ASSERT_EQ(demuxerPlugin_->SetAsyncReadThreadPriority(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE),
-                                                         Status::ERROR_WRONG_STATE);
+    ASSERT_EQ(demuxerPlugin_->BoostReadThreadPriority(), Status::ERROR_WRONG_STATE);
 }
 
 /**

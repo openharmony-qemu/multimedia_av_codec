@@ -91,7 +91,7 @@ public:
     void SetInterruptState(bool isInterruptNeeded) override;
     Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
         const int32_t probSize) override;
-    Status SetAsyncReadThreadPriority(OHOS::QOS::QosLevel level) override;
+    Status BoostReadThreadPriority() override;
 private:
     enum ThreadState : unsigned int {
         NOT_STARTED,
@@ -351,7 +351,6 @@ private:
     std::unordered_map<uint32_t, Meta> streamInitialParam_;
 
     std::atomic<bool> isAsyncReadThreadPrioritySet_ = false;
-    std::atomic<OHOS::QOS::QosLevel> asyncReadThreadPriority_ = {OHOS::QOS::QosLevel::QOS_DEFAULT};
     void UpdateAsyncReadThreadPriority();
 };
 

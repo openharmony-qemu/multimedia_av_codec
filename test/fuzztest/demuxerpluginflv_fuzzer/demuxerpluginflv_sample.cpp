@@ -126,7 +126,7 @@ void DemuxerPluginFlvTest::OperateDemuxerPlugin(MediaInfo& mediaInfo, size_t buf
     for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
         demuxerPlugin_->SelectTrack(idx);
     }
-    demuxerPlugin_->SetAsyncReadThreadPriority(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+    demuxerPlugin_->BoostReadThreadPriority();
     for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
         demuxerPlugin_->ReadSample(idx, buffer.mediaAVBuffer, INTERFACE_TIMEOUT);
         demuxerPlugin_->ReadSample(idx, buffer.mediaAVBuffer);

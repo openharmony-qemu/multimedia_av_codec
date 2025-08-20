@@ -18,7 +18,6 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "qos.h"
 
 namespace OHOS {
 namespace Media {
@@ -67,7 +66,7 @@ public:
     
     MOCK_METHOD2(GetCurrentCacheSize, Status(uint32_t, uint32_t&));
     MOCK_METHOD2(GetProbeSize, bool(int32_t&, int32_t&));
-    MOCK_METHOD1(SetAsyncReadThreadPriority, Status(OHOS::QOS::QosLevel level));
+    MOCK_METHOD0(BoostReadThreadPriority, Status());
 private:
     std::string name_ {};
 };
