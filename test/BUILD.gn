@@ -105,6 +105,7 @@ group("av_codec_unit_test") {
         "unittest/demuxer_test:demuxer_inner_unit_test",
         "unittest/demuxer_unit_test:demuxer_unit_test",
         "unittest/dfx_test:av_codec_dfx_test",
+        "unittest/event_manager_unit_test:event_manager_coverage_unit_test",
         "unittest/filter_test:filter_unit_test",
         "unittest/hls_test:hls_media_downloader_unit_test",
         "unittest/hls_test:hls_playlist_downloader_unit_test",
