@@ -28,6 +28,7 @@
 #include "demuxer_plugin_manager.h"
 #include "plugin/plugin_manager_v2.h"
 #include "ffmpeg_demuxer_plugin.h"
+#include "qos.h"
 
 using MediaAVBuffer = OHOS::Media::AVBuffer;
 namespace OHOS {

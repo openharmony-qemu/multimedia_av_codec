@@ -22,6 +22,7 @@
 #include "source/source.h"
 #include "common/media_source.h"
 #include "buffer/avbuffer_queue.h"
+#include "qos.h"
 
 namespace OHOS {
 namespace Media {
@@ -180,7 +181,7 @@ public:
         size = NUMBER_CACHE; // cache for 5000000
         return true;
     }
-    Status SetAsyncReadThreadPriority(const uint32_t newPriority, const std::string &strBundleName) override
+    Status SetAsyncReadThreadPriority(OHOS::QOS::QosLevel level) override
     {
         return mapStatus_[name_];
     }

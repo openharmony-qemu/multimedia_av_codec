@@ -24,6 +24,7 @@
 #include "plugin/plugin_definition.h"
 #include "plugin/plugin_info.h"
 #include "common/media_core.h"
+#include "qos.h"
 
 namespace OHOS {
 namespace Media {
@@ -240,17 +241,16 @@ struct DemuxerPlugin : public PluginBase {
         const int32_t probSize) = 0;
 
     /**
-     * @brief Set the priority of the asynchronous read thread.
+     * @brief Set the priority level for the asynchronous read thread.
      *
      * The function is only valid when the thread is not in the RUNNING state.
      *
-     * The specified bundleName must also have the relevant permissions.
+     * The caller must possess required permissions to successfully invoke this interface.
      *
-     * @param newPriority Indicates the new priority of the asynchronous read thread.
-     * @param strBundleName Indicates the bundle name of the application that calls this interface.
+     * @param level The QoS priority level to assign to the asynchronous read thread.
      * @return Execution Status
      */
-    virtual Status SetAsyncReadThreadPriority(const uint32_t newPriority, const std::string &strBundleName) = 0;
+    virtual Status SetAsyncReadThreadPriority(OHOS::QOS::QosLevel level) = 0;
 };
 
 /// Demuxer plugin api major number.

@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include "ffmpeg_demuxer_plugin.h"
+#include "qos.h"
 
 #define DEFAULT_BUFFSIZE (3840 * 2160 * 3)
 using MediaAVBuffer = OHOS::Media::AVBuffer;

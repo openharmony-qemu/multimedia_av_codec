@@ -29,9 +29,6 @@
 #include "ffmpeg_demuxer_plugin.h"
 #include "meta/format.h"
 #include "syspara/parameters.h"
-#include "qos.h"
-#include "res_type.h"
-#include "res_sched_client.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegDemuxerThread" };
@@ -45,8 +42,6 @@ const int32_t AV_READ_PACKET_READ_ERROR = -1;
 const int32_t AV_READ_PACKET_READ_AGAIN = -2;
 const int32_t AV_READ_PACKET_RETRY_UPPER_LIMIT = 9;
 const int32_t AV_READ_PACKET_SLEEP_TIME = 50;
-constexpr uint32_t RES_TYPE = OHOS::ResourceSchedule::ResType::RES_TYPE_THREAD_QOS_CHANGE;
-constexpr uint32_t RES_VALUE = 0;
 
 std::condition_variable FFmpegDemuxerPlugin::readCbCv_;
 std::mutex FFmpegDemuxerPlugin::readPacketMutex_;
@@ -487,7 +482,7 @@ Status FFmpegDemuxerPlugin::GetLastPTSByTrackId(uint32_t trackId, int64_t &lastP
     return ret;
 }
 
-Status FFmpegDemuxerPlugin::SetAsyncReadThreadPriority(const uint32_t newPriority, const std::string &strBundleName)
+Status FFmpegDemuxerPlugin::SetAsyncReadThreadPriority(OHOS::QOS::QosLevel level)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     if (threadState_ != ThreadState::NOT_STARTED && readThread_ != nullptr) {
@@ -499,22 +494,19 @@ Status FFmpegDemuxerPlugin::SetAsyncReadThreadPriority(const uint32_t newPriorit
         return Status::ERROR_WRONG_STATE;
     }
     isAsyncReadThreadPrioritySet_ = true;
-    asyncReadThreadPriority_ = newPriority;
-    bundleName_ = strBundleName;
-    MEDIA_LOG_I("Set async read thread priority to " PUBLIC_LOG_U32 " for bundle: %s",
-        asyncReadThreadPriority_.load(), bundleName_.c_str());
+    asyncReadThreadPriority_ = level;
+    MEDIA_LOG_I("Set async read thread priority to " PUBLIC_LOG_U32, static_cast<uint32_t>(level));
     return Status::OK;
 }
 
 void FFmpegDemuxerPlugin::UpdateAsyncReadThreadPriority()
 {
-    MEDIA_LOG_I("Update async read thread priority to " PUBLIC_LOG_U32 " for bundle: " PUBLIC_LOG_S,
-        asyncReadThreadPriority_.load(), bundleName_.c_str());
-    std::unordered_map<std::string, std::string> mapPayload;
-    mapPayload["bundleName"] = bundleName_;
-    mapPayload["pid"] = std::to_string(getpid());
-    mapPayload[std::to_string(gettid())] = std::to_string(asyncReadThreadPriority_.load());
-    OHOS::ResourceSchedule::ResSchedClient::GetInstance().ReportData(RES_TYPE, RES_VALUE, mapPayload);
+    int ret = SetThreadQos(asyncReadThreadPriority_.load());
+    if (ret != 0) {
+        MEDIA_LOG_E("Set thread qos failed, ret = " PUBLIC_LOG_D32, ret);
+    } else {
+        MEDIA_LOG_I("Set thread qos success, level = " PUBLIC_LOG_U32, asyncReadThreadPriority_.load());
+    }
 }
 } // namespace Ffmpeg
 } // namespace Plugins
