@@ -47,7 +47,7 @@ public:
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
-    bool SeekToPos(int64_t offset) override;
+    bool SeekToPos(int64_t offset, bool& SeekToPos) override;
     void Pause() override;
     void Resume() override;
     size_t GetContentLength() const override;
@@ -88,8 +88,8 @@ public:
     uint64_t GetCachedDuration() override;
     void RestartAndClearBuffer() override;
     bool IsFlvLive() override;
-    uint64_t GetMemorySize() override;
     bool IsHlsFmp4() override;
+    uint64_t GetMemorySize() override;
     std::string GetContentType() override;
     std::string GetCurUrl() override;
 

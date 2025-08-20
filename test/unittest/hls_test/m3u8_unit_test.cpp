@@ -595,4 +595,27 @@ HWTEST_F(M3u8UnitTest, IS_NEAR_TO_INIT_RESOLUTION_001, TestSize.Level1)
     EXPECT_EQ(master->IsNearToInitResolution(choosedStream, nullptr), false);
     EXPECT_EQ(master->IsNearToInitResolution(nullptr, nullptr), false);
 }
+
+HWTEST_F(M3u8UnitTest, SetInterruptState_001, TestSize.Level1)
+{
+    std::string url = "http://example.com/test.m3u8";
+    auto m3u8 = std::make_shared<M3U8>(testUri, "");
+    m3u8->uri_ = url;
+    m3u8->keyUri_ = std::make_shared<std::string>(url);
+    m3u8->DownloadKey();
+    m3u8->DownloadMap(url, 0, 0);
+    EXPECT_NE(m3u8->downloadHeaderRequest_ , nullptr);
+    EXPECT_NE(m3u8->downloadRequest_  , nullptr);
+    std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", url);
+    master->StartParsing();
+    auto stream = std::make_shared<M3U8VariantStream>("test", url,
+    std::make_shared<M3U8>(url, "test"));
+    master->defaultVariant_ = stream;
+    master->defaultVariant_->m3u8_ = nullptr;
+    master->SetInterruptState(true);
+    EXPECT_NE(master->defaultVariant_, nullptr);
+    master->defaultVariant_ = nullptr;
+    master->SetInterruptState(true);
+    EXPECT_EQ(master->defaultVariant_, nullptr);
+}
 }

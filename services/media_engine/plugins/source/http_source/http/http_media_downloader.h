@@ -45,7 +45,7 @@ public:
     void Pause() override;
     void Resume() override;
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
-    bool SeekToPos(int64_t offset) override;
+    bool SeekToPos(int64_t offset, bool& isSeekHit) override;
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
     Seekable GetSeekable() const override;
@@ -94,18 +94,18 @@ public:
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
     void NotifyInitSuccess() override;
+    uint64_t GetCachedDuration() override;
+    void RestartAndClearBuffer() override;
+    bool IsFlvLive() override;
     void SetStartPts(int64_t startPts) override;
     void SetExtraCache(uint64_t cacheDuration) override;
     bool SelectBitRate(uint32_t bitRate) override;
     bool AutoSelectBitRate(uint32_t bitRate) override;
     void SetMediaStreams(const MediaStreamList& mediaStreams) override;
-    uint64_t GetCachedDuration() override;
-    void RestartAndClearBuffer() override;
-    bool IsFlvLive() override;
-    uint64_t GetMemorySize() override;
     std::string GetContentType() override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void ClearBuffer() override;
+    uint64_t GetMemorySize() override;
     std::string GetCurUrl() override;
 
 private:
@@ -121,7 +121,7 @@ private:
     Status ReadCacheBufferLoop(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SeekRingBuffer(int64_t offset);
-    bool SeekCacheBuffer(int64_t offset);
+    bool SeekCacheBuffer(int64_t offset, bool& isSeekHit);
     void InitRingBuffer(uint32_t expectBufferDuration);
     void InitCacheBuffer(uint32_t expectBufferDuration);
 
@@ -154,6 +154,7 @@ private:
     bool IsNearToInitResolution(const std::shared_ptr<PlayMediaStream> &choosedStream,
         const std::shared_ptr<PlayMediaStream> &currentStream);
     uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
+    bool CheckLoopTimeout(int64_t startLoopTime);
     bool CheckAutoSelectBitrate();
     bool IsAutoSelectConditionOk();
     void WaitCacheBufferInit();
@@ -241,24 +242,24 @@ private:
     double bufferDurationForPlaying_ {0};
     uint64_t waterlineForPlaying_ {0};
     std::atomic<bool> isDemuxerInitSuccess_ {false};
-	
+	std::atomic<bool> isTimeoutErrorNotified_ {false};
     size_t timeoutInterval_ = 0;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_;
+    std::atomic<bool> isNeedResume_ {false};
+    size_t totalConsumeSize_ {0};
+    FairMutex savedataMutex_ {};
+    bool isCacheBufferInited_ {false};
+    ConditionVariable sleepCond_;
+    FairMutex sleepMutex_;
+    uint64_t cachedDuration_ {0};
+    std::atomic<bool> isAllowResume_ {false};
     int64_t flvStartPts_ {0};
     uint64_t extraCache_ {0};
     MediaStreamList playMediaStreams_;
     std::atomic<bool> isSelectingBitrate_ {false};
     std::shared_ptr<PlayMediaStream> defaultStream_ {nullptr};
     uint32_t initResolution_ {0};
-    std::atomic<bool> isTimeoutErrorNotified_ {false};
-    std::atomic<bool> isNeedResume_ {false};
-    size_t totalConsumeSize_ {0};
-    FairMutex savedataMutex_ {};
-    uint64_t cachedDuration_ {0};
-    std::atomic<bool> isAllowResume_ {false};
-    bool isCacheBufferInited_ {false};
-    ConditionVariable sleepCond_;
-    FairMutex sleepMutex_;
+    SteadyClock loopInterruptClock_;
     std::atomic<bool> isAutoSelectBitrate_ {true};
     std::deque<uint32_t> downloadSpeeds_;
     uint32_t videoBitrate_ {0};
