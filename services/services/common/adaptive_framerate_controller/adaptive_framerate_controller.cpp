@@ -137,15 +137,18 @@ AdaptiveFramerateController &AdaptiveFramerateController::GetInstance()
 void AdaptiveFramerateController::Add(int32_t intanceId, std::shared_ptr<FramerateCalculator> calculator)
 {
     {
-        std::unique_lock<std::mutex> lock(calculatorsMutex_);
+        std::lock_guard<std::mutex> calculatorsLock(calculatorsMutex_);
         calculators_[intanceId] = calculator;
         if (isRunning_) {
             return;
         }
-        isRunning_ = true;
     }
 
     std::lock_guard<std::mutex> looperLock(looperMutex_);
+    {
+        std::lock_guard<std::mutex> signalLock(signalMutex_);
+        isRunning_ = true;
+    }
     if (!looper_) {
         looper_ = std::make_unique<std::thread>(&AdaptiveFramerateController::Loop, this);
     }
@@ -159,26 +162,30 @@ void AdaptiveFramerateController::Remove(int32_t instanceId)
         if (!calculators_.empty()) {
             return;
         }
-        isRunning_ = false;
-        condition_.notify_all();
     }
 
     std::lock_guard<std::mutex> looperLock(looperMutex_);
+    {
+        std::lock_guard<std::mutex> signalLock(signalMutex_);
+        isRunning_ = false;
+        condition_.notify_all();
+    }
     if (looper_ && looper_->joinable()) {
         looper_->join();
-        looper_.reset();
     }
+    looper_.reset();
 }
 
 void AdaptiveFramerateController::Loop()
 {
     pthread_setname_np(pthread_self(), "OS_AFC_Loop");
     while (true) {
-        std::unique_lock<std::mutex> lock(calculatorsMutex_);
-        condition_.wait_for(lock, CHECK_INTERVAL, [this]() { return !isRunning_; });
+        std::unique_lock<std::mutex> signalLock(signalMutex_);
+        condition_.wait_for(signalLock, CHECK_INTERVAL, [this]() { return !isRunning_; });
         if (!isRunning_) {
             break;
         }
+        std::lock_guard<std::mutex> calculatorsLock(calculatorsMutex_);
         for (auto it = calculators_.begin(); it != calculators_.end();) {
             auto calculator = it->second.lock();
             if (!calculator) {

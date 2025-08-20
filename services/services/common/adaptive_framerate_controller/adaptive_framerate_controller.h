@@ -72,6 +72,7 @@ private:
     std::mutex calculatorsMutex_;
     std::unique_ptr<std::thread> looper_;
     std::mutex looperMutex_;
+    std::mutex signalMutex_;
     std::condition_variable condition_;
     std::atomic<bool> isRunning_ = false;
 };
