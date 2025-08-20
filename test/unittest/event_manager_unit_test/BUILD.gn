@@ -130,7 +130,7 @@ ohos_unittest("instance_memory_calculator_coverage_unit_test") {
   cflags = codeclist_unittest_cflags
   cflags_cc = cflags
   configs = [
-    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test_config",
   ]
 
   include_dirs = [
