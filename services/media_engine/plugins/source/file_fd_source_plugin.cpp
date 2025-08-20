@@ -31,6 +31,7 @@
 #include "osal/filesystem/file_system.h"
 #include "file_fd_source_plugin.h"
 #include "common/media_core.h"
+#include <algorithm>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "FileFdSourcePlugin" };
@@ -189,7 +190,8 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
 {
     std::shared_ptr<Memory> bufData = GetBufferPtr(buffer, expectedLen);
     FALSE_RETURN_V_MSG_E(bufData != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
-    expectedLen = std::min(static_cast<size_t>(GetLastSize(position_)), expectedLen);
+    int64_t lastSize = static_cast<size_t>(GetLastSize(position_));
+    expectedLen = lastSize < 0 ? expectedLen : std::min(static_cast<size_t>(lastSize), expectedLen);
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
     MEDIA_LOG_D("ReadLocal buffer pos: " PUBLIC_LOG_U64 " , len:" PUBLIC_LOG_ZU, position_.load(), expectedLen);
 
@@ -387,14 +389,8 @@ void FileFdSourcePlugin::CacheDataLoop()
 
     int64_t curTime = steadyClock_.ElapsedMilliseconds();
     GetCurrentSpeed(curTime);
-
-    size_t bufferSize = std::min(PER_CACHE_SIZE, static_cast<size_t>(GetLastSize(cachePosition_.load())));
-    if (bufferSize < 0) {
-        MEDIA_LOG_E("CacheData memory is not enough bufferSize " PUBLIC_LOG_ZU, bufferSize);
-        WaitForInterrupt(TEN_MILLISECOUNDS);
-        return;
-    }
-
+    int64_t lastSize = GetLastSize(cachePosition_.load());
+    size_t bufferSize = lastSize < 0 ? PER_CACHE_SIZE : std::min(PER_CACHE_SIZE, static_cast<size_t>(lastSize));
     char* cacheBuffer = new char[bufferSize];
     if (cacheBuffer == nullptr) {
         MEDIA_LOG_E("CacheData memory is not enough bufferSize " PUBLIC_LOG_ZU, bufferSize);
