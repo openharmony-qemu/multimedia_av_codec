@@ -41,31 +41,6 @@ codeclist_unittest_cflags = [
   "-Dprotected=public",
 ]
 
-av_codec_capi_external_deps = [
-  "av_codec:av_codec_client",
-  "av_codec:capi_packages",
-  "av_codec:native_media_vdec",
-  "av_codec:native_media_venc",
-  "bounds_checking_function:libsec_static",
-  "cJSON:cjson",
-  "c_utils:utils",
-  "config_policy:configpolicy_util",
-  "graphic_2d:libgraphic_utils",
-  "graphic_2d:librender_service_client",
-  "graphic_surface:surface",
-  "graphic_surface:sync_fence",
-  "hilog:libhilog",
-  "hisysevent:libhisysevent",
-  "hitrace:hitrace_meter",
-  "hiview:libucollection_client",
-  "init:libbegetutil",
-  "ipc:ipc_single",
-  "media_foundation:media_foundation",
-  "media_foundation:native_media_core",
-  "openssl:libcrypto_shared",
-  "samgr:samgr_proxy",
-]
-
 av_codec_inner_external_deps = [
   "av_codec:av_codec_client",
   "bounds_checking_function:libsec_static",
@@ -113,8 +88,6 @@ ohos_unittest("instance_memory_update_event_coverage_unit_test") {
     "./",
     "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/include",
-    "$av_codec_root_dir/frameworks/native/capi/common",
-    "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler/",
@@ -161,12 +134,10 @@ ohos_unittest("instance_memory_calculator_coverage_unit_test") {
   ]
 
   include_dirs = [
-    "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/services/services/common/event_manager/event_handler/instance_memory_update_event_handler",
     "$av_codec_root_dir/services/services/sa_avcodec/server/include",
-    "$av_codec_root_dir/frameworks/native/capi/common",
   ]
   defines = av_codec_defines
 
@@ -183,7 +154,7 @@ ohos_unittest("instance_memory_calculator_coverage_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
   ]
 
-  external_deps = av_codec_capi_external_deps
+  external_deps = av_codec_inner_external_deps
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
