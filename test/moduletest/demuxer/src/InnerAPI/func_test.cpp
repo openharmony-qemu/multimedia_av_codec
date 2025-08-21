@@ -54,7 +54,8 @@ string g_aigcMovPath = TEST_FILE_PATH + string("gb18030_aigc.mov");
 string g_aigcM4vPath = TEST_FILE_PATH + string("test_aigc.m4v");
 string g_aigcM4aPath = TEST_FILE_PATH + string("audio/M4A_48000_aigc.m4a");
 string g_aigcAviPath = TEST_FILE_PATH + string("profile0_level30_352x288_aigc.avi");
-
+string g_aigcMp4_256Path = TEST_FILE_PATH + string("aac_mpeg4_aigc_256.mp4");
+string g_aigcMp4_258Path = TEST_FILE_PATH + string("aac_mpeg4_aigc_258.mp4");
 string g_flvPath = TEST_FILE_PATH + string("aac_h264.flv");
 string g_mkvPath = TEST_FILE_PATH + string("aac_h265.mkv");
 string g_movPath = TEST_FILE_PATH + string("gb2312.mov");
