@@ -709,7 +709,8 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLISECONDS;
         if (readDuration > ZERO_THRESHOLD) {
             double readSpeed = readTotalBytes_ * BYTES_TO_BIT / readDuration;    // bps
-            readBitrate_ = static_cast<int32_t>(readSpeed);     // bps
+            int32_t temp = static_cast<int32_t>(readSpeed);
+            readBitrate_ = temp > 0 ? static_cast<uint64_t>(temp) : readBitrate_;
             MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
             " KByte", static_cast<int32_t>(readSpeed / KILO), static_cast<uint64_t>(GetBufferSize() / KILO));
             MediaAVCodec::AVCodecTrace trace("HlsMediaDownloader::Read, read speed: " +
@@ -1209,7 +1210,7 @@ void HlsMediaDownloader::DownloadReport()
             // Remaining playable time: s
             uint64_t bufferDuration = 0;
             if (readBitrate_ > 0) {
-                bufferDuration = bufferedDuration_ / readBitrate_;
+                bufferDuration = bufferedDuration_ / static_cast<uint64_t>(readBitrate_);
             } else {
                 bufferDuration = bufferedDuration_ / CURRENT_BIT_RATE;
             }
@@ -1744,7 +1745,7 @@ void HlsMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
         size_t remainingBuffer = GetBufferSize();
         uint64_t bufferDuration = 0;
         if (readBitrate_ > 0) {
-            bufferDuration = static_cast<uint64_t>(remainingBuffer) / readBitrate_;
+            bufferDuration = static_cast<uint64_t>(remainingBuffer) / static_cast<uint64_t>(readBitrate_);
         } else {
             bufferDuration = static_cast<uint64_t>(remainingBuffer) / CURRENT_BIT_RATE;
         }
@@ -1794,7 +1795,7 @@ Status HlsMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
         currentBitRate_ = -1; // -1
     } else {
         int32_t playlistBitrate = static_cast<int32_t>(playlistDownloader_->GetCurBitrate());
-        currentBitRate_ = std::max(playlistBitrate, bitRate);
+        currentBitRate_ = std::max(playlistBitrate, static_cast<int32_t>(bitRate));
         MEDIA_LOG_I("HLS playlistBitrate: " PUBLIC_LOG_D32 " currentBitRate: " PUBLIC_LOG_D32,
             playlistBitrate, currentBitRate_);
     }
@@ -1807,7 +1808,7 @@ Status HlsMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 
 void HlsMediaDownloader::CalculateBitRate(size_t fragmentSize, double duration)
 {
-    if (fragmentSize == 0 || duration == 0) {
+    if (fragmentSize == 0 || duration < ZERO_THRESHOLD) {
         return;
     }
     double divisorFragmentSize = (static_cast<double>(fragmentSize) / static_cast<double>(ONE_SECONDS))
@@ -2004,6 +2005,9 @@ bool HlsMediaDownloader::IsCachedInitSizeReady(int32_t wantInitSize)
 
 bool HlsMediaDownloader::GetPlayable()
 {
+    if (isBuffering_) {
+        return false;
+    }
     if (!isFirstFrameArrived_) {
         return false;
     }
@@ -2183,11 +2187,6 @@ uint64_t HlsMediaDownloader::GetCachedDuration()
     return cachedDuration_;
 }
 
-uint64_t HlsMediaDownloader::GetMemorySize()
-{
-    return memorySize_;
-}
-
 bool HlsMediaDownloader::CheckLoopTimeout(int64_t loopStartTime)
 {
     int64_t now = loopInterruptClock_.ElapsedSeconds();
@@ -2272,6 +2271,11 @@ size_t HlsMediaDownloader::GetTotalTsBuffersize()
     MEDIA_LOG_D("GetTotalTsBuffersize  readTsIndex_: " PUBLIC_LOG_U32 " tsIndex: "
         PUBLIC_LOG_U32 " offset: " PUBLIC_LOG_U64, readTsIndex_.load(), tsIndex, offset);
     return totalBufferSize;
+}
+
+uint64_t HlsMediaDownloader::GetMemorySize()
+{
+    return memorySize_;
 }
 }
 }

@@ -381,7 +381,8 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
         }
         FALSE_RETURN_V(offset <= downloader_->GetContentLength(), Status::ERROR_INVALID_PARAMETER);
     }
-    FALSE_RETURN_V(downloader_->SeekToPos(offset), Status::ERROR_UNKNOWN);
+    bool isSeekHit = false;
+    FALSE_RETURN_V(downloader_->SeekToPos(offset, isSeekHit), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
 
@@ -594,16 +595,16 @@ bool HttpSourcePlugin::IsFlvLive()
     return downloader_->IsFlvLive();
 }
 
-uint64_t HttpSourcePlugin::GetMemorySize()
-{
-    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader_ is nullptr");
-    return downloader_->GetMemorySize();
-}
-
 bool HttpSourcePlugin::IsHlsFmp4()
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
     return downloader_->IsHlsFmp4();
+}
+
+uint64_t HttpSourcePlugin::GetMemorySize()
+{
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader_ is nullptr");
+    return downloader_->GetMemorySize();
 }
 
 std::string HttpSourcePlugin::GetCurUrl()

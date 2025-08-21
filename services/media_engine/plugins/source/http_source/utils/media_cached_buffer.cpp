@@ -26,9 +26,6 @@
 
 namespace OHOS {
 namespace Media {
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
-}
 constexpr size_t CACHE_FRAGMENT_MAX_NUM_DEFAULT = 300; // Maximum number of fragment nodes
 constexpr size_t CACHE_FRAGMENT_MAX_NUM_LARGE = 10; // Maximum number of fragment nodes
 constexpr size_t CACHE_FRAGMENT_MIN_NUM_DEFAULT = 3; // Minimum number of fragment nodes
@@ -994,6 +991,33 @@ void CacheMediaChunkBufferImpl::Dump(uint64_t param)
 void CacheMediaChunkBufferImpl::DumpInner(uint64_t param)
 {
     (void)param;
+    MEDIA_LOG_D("cacheBuff total buffer size : " PUBLIC_LOG_U64, totalBuffSize_);
+    MEDIA_LOG_D("cacheBuff total chunk size  : " PUBLIC_LOG_U32, chunkSize_);
+    MEDIA_LOG_D("cacheBuff total chunk num   : " PUBLIC_LOG_U32, chunkMaxNum_);
+    MEDIA_LOG_D("cacheBuff total read size   : " PUBLIC_LOG_U64, totalReadSize_);
+    MEDIA_LOG_D("cacheBuff read size factor  : " PUBLIC_LOG_F, initReadSizeFactor_);
+    MEDIA_LOG_D("cacheBuff free chunk num    : " PUBLIC_LOG_ZU, freeChunks_.size());
+    MEDIA_LOG_D("cacheBuff fragment num      : " PUBLIC_LOG_ZU, fragmentCacheBuffer_.size());
+    for (auto const & fragment : fragmentCacheBuffer_) {
+        MEDIA_LOG_D("cacheBuff - fragment offset : " PUBLIC_LOG_U64, fragment.offsetBegin);
+        MEDIA_LOG_D("cacheBuff   fragment length : " PUBLIC_LOG_D64, fragment.dataLength);
+        MEDIA_LOG_D("cacheBuff   chunk num       : " PUBLIC_LOG_ZU, fragment.chunks.size());
+        MEDIA_LOG_D("cacheBuff   access length   : " PUBLIC_LOG_U64, fragment.accessLength);
+        MEDIA_LOG_D("cacheBuff   read size       : " PUBLIC_LOG_U64, fragment.totalReadSize);
+        if (fragment.accessPos != fragment.chunks.end()) {
+            auto &chunkInfo = *fragment.accessPos;
+            MEDIA_LOG_D("cacheBuff   access offset: " PUBLIC_LOG_D64 ", len: " PUBLIC_LOG_U32,
+                chunkInfo->offset, chunkInfo->dataLength);
+        } else {
+            MEDIA_LOG_D("cacheBuff   access ended");
+        }
+        if (!fragment.chunks.empty()) {
+            auto &chunkInfo = fragment.chunks.back();
+            MEDIA_LOG_D("cacheBuff   last chunk offset: " PUBLIC_LOG_D64 ", len: " PUBLIC_LOG_U32,
+                chunkInfo->offset, chunkInfo->dataLength);
+        }
+        MEDIA_LOG_D("cacheBuff ");
+    }
 }
 
 bool CacheMediaChunkBufferImpl::CheckLoopTimeout(int64_t loopStartTime)
@@ -1112,9 +1136,9 @@ bool CacheMediaChunkBufferImpl::ClearMiddleReadFragment(uint64_t minOffset, uint
         if (iter->accessLength <= chunkSize_) {
             continue;
         }
-        MEDIA_LOG_D("ClearMiddleReadFragment, minOffset " PUBLIC_LOG_U64 " maxOffset "
-            PUBLIC_LOG_U64 " offsetBegin: " PUBLIC_LOG_U64 " dataLength: " PUBLIC_LOG_U64 " accessLength "
-            PUBLIC_LOG_U64, minOffset, maxOffset, iter->offsetBegin, iter->dataLength, iter->accessLength);
+        MEDIA_LOG_D("ClearMiddleReadFragment, minOffset: " PUBLIC_LOG_U64 " maxOffset: "
+            PUBLIC_LOG_U64 " offsetBegin: " PUBLIC_LOG_U64 " dataLength: " PUBLIC_LOG_D64 " accessLength "
+            PUBLIC_LOG_D64, minOffset, maxOffset, iter->offsetBegin,  iter->dataLength, iter->accessLength);
         auto& fragment = *iter;
         uint32_t chunksSize = fragment.chunks.size();
         for (uint32_t i = 0; i < chunksSize; ++i) {
