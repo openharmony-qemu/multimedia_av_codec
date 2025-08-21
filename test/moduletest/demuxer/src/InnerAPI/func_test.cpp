@@ -24,6 +24,7 @@
 #include "buffer/avsharedmemorybase.h"
 #include "securec.h"
 #include "inner_demuxer_sample.h"
+#include "media_description.h"
 
 #include <iostream>
 #include <cstdio>
@@ -46,25 +47,32 @@ string g_singleHevcPath = TEST_FILE_PATH + string("single_60.mp4");
 string g_singleRkPath = TEST_FILE_PATH + string("single_rk.mp4");
 string g_xmPath = TEST_FILE_PATH + string("xm.mp4");
 string g_doubleVividPath = TEST_FILE_PATH + string("double_vivid.mp4");
-string g_AIGCMp4Path = TEST_FILE_PATH + string("aac_mpeg4_aigc.mp4");
-string g_AIGCFlvPath = TEST_FILE_PATH + string("aac_h265_aigc.flv");
-string g_AIGCMkvPath = TEST_FILE_PATH + string("aac_h265_aigc.mkv");
-string g_AIGCMovPath = TEST_FILE_PATH + string("gb18030_aigc.mov");
-string g_AIGCM4vPath = TEST_FILE_PATH + string("test_aigc.m4v");
-string g_AIGCM4aPath = TEST_FILE_PATH + string("audio/M4A_48000_aigc.m4a");
-string g_AIGCAviPath = TEST_FILE_PATH + string("profile0_level30_352x288_aigc.avi");
+string g_aigcMp4Path = TEST_FILE_PATH + string("aac_mpeg4_aigc.mp4");
+string g_aigcFlvPath = TEST_FILE_PATH + string("aac_h265_aigc.flv");
+string g_aigcMkvPath = TEST_FILE_PATH + string("aac_h265_aigc.mkv");
+string g_aigcMovPath = TEST_FILE_PATH + string("gb18030_aigc.mov");
+string g_aigcM4vPath = TEST_FILE_PATH + string("test_aigc.m4v");
+string g_aigcM4aPath = TEST_FILE_PATH + string("audio/M4A_48000_aigc.m4a");
+string g_aigcAviPath = TEST_FILE_PATH + string("profile0_level30_352x288_aigc.avi");
 
-string g_FlvPath = TEST_FILE_PATH + string("aac_h264.flv");
-string g_MkvPath = TEST_FILE_PATH + string("aac_h265.mkv");
-string g_MovPath = TEST_FILE_PATH + string("gb2312.mov");
-string g_M4vPath = TEST_FILE_PATH + string("test.m4v");
-string g_M4aPath = TEST_FILE_PATH + string("audio/gb18030.m4a");
-string g_AviPath = TEST_FILE_PATH + string("audio_2video.avi");
+string g_flvPath = TEST_FILE_PATH + string("aac_h264.flv");
+string g_mkvPath = TEST_FILE_PATH + string("aac_h265.mkv");
+string g_movPath = TEST_FILE_PATH + string("gb2312.mov");
+string g_m4vPath = TEST_FILE_PATH + string("test.m4v");
+string g_m4aPath = TEST_FILE_PATH + string("audio/gb18030.m4a");
+string g_aviPath = TEST_FILE_PATH + string("audio_2video.avi");
 static int32_t g_apeVersion = 73728;
-static const string AIGC_TEST_1 = "'{测Label1!:测Value1!,测2!ContentProducer:测!value2,测3!ProduceID:测!value3,测4!ReservedCode1:测!value4,测5!ContentPropagator:测!value5,测6!PropagateID:测!value6,测7!ReservedCode2:测!value7}'";
-static const string AIGC_TEST_2 = "{\"测Label1!\":\"测Value1!,测2!ContentProducer\":\"测!value2,测3!ProduceID\":\"测!value3,测4!ReservedCode1\":\"测!value4,测5!ContentPropagator\":\"测!value5,测6!PropagateID\":\"测!value6,测7!ReservedCode2\":\"测!value7\"}";
-static const string AIGC_TEST_3 = "'{测Label1!:测Value1!,测2!ContentProducer:测!value2,测3!ProduceID:测!value3,测4!ReservedCode1:测!value4,测5!ContentPropagator:测!value5,测6!PropagateID:测!value6,测7!ReservedCode2:测!value701234567890123456789012345678901234567890123456789}'";
-static const string AIGC_TEST_4 = "'{测Label1!:测Value1!,测2!ContentProducer:测!value2,测3!ProduceID:测!value3,测4!ReservedCode1:测!value4,测5!ContentPropagator:测!value5,测6!PropagateID:测!value6,测7!ReservedCode2:测!value70123456789012345678901234567890123456789012345678901}'";
+static const string AIGC_TEST_1 = "'{测Label1!:测Value1!,测2!ContentProducer:测!value2,测3!ProduceID:测!value3,"\
+    "测4!ReservedCode1:测!value4,测5!ContentPropagator:测!value5,测6!PropagateID:测!value6,测7!ReservedCode2:测!value7}'";
+static const string AIGC_TEST_2 = "{\"测Label1!\":\"测Value1!,测2!ContentProducer\":\"测!value2,测3!ProduceID\":\"测!value3,"\
+    "测4!ReservedCode1\":\"测!value4,测5!ContentPropagator\":\"测!value5,测6!PropagateID\":\"测!value6,"\
+    "测7!ReservedCode2\":\"测!value7\"}";
+static const string AIGC_TEST_3 = "'{测Label1!:测Value1!,测2!ContentProducer:测!value2,测3!ProduceID:测!value3,"\
+    "测4!ReservedCode1:测!value4,测5!ContentPropagator:测!value5,测6!PropagateID:测!value6,"\
+    "测7!ReservedCode2:测!value701234567890123456789012345678901234567890123456789}'";
+static const string AIGC_TEST_4 = "'{测Label1!:测Value1!,测2!ContentProducer:测!value2,测3!ProduceID:测!value3,"\
+    "测4!ReservedCode1:测!value4,测5!ContentPropagator:测!value5,测6!PropagateID:测!value6,"\
+    "测7!ReservedCode2:测!value70123456789012345678901234567890123456789012345678901}'";
 } // namespace
 
 namespace {
@@ -918,9 +926,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_APE_INNER_FUNC_0050, TestSize.Level1)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0010, TestSize.Level0)
 {
-    fd_ = open(g_AIGCMp4Path.c_str(), O_RDONLY);
+    fd_ = open(g_aigcMp4Path.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_AIGCMp4Path.c_str(), &fileStatus) == 0) {
+    if (stat(g_aigcMp4Path.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -932,7 +940,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0010, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_1, stringVal);
@@ -945,9 +953,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0010, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0020, TestSize.Level0)
 {
-    fd_ = open(g_AIGCFlvPath.c_str(), O_RDONLY);
+    fd_ = open(g_aigcFlvPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_AIGCFlvPath.c_str(), &fileStatus) == 0) {
+    if (stat(g_aigcFlvPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -959,7 +967,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0020, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_1, stringVal);
@@ -972,9 +980,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0020, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0030, TestSize.Level0)
 {
-    fd_ = open(g_AIGCMkvPath.c_str(), O_RDONLY);
+    fd_ = open(g_aigcMkvPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_AIGCMkvPath.c_str(), &fileStatus) == 0) {
+    if (stat(g_aigcMkvPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -986,7 +994,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0030, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_1, stringVal);
@@ -999,9 +1007,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0030, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0040, TestSize.Level0)
 {
-    fd_ = open(g_AIGCMovPath.c_str(), O_RDONLY);
+    fd_ = open(g_aigcMovPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_AIGCMovPath.c_str(), &fileStatus) == 0) {
+    if (stat(g_aigcMovPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -1013,7 +1021,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0040, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_1, stringVal);
@@ -1026,9 +1034,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0040, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0050, TestSize.Level0)
 {
-    fd_ = open(g_AIGCM4vPath.c_str(), O_RDONLY);
+    fd_ = open(g_aigcM4vPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_AIGCM4vPath.c_str(), &fileStatus) == 0) {
+    if (stat(g_aigcM4vPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -1040,7 +1048,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0050, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_1, stringVal);
@@ -1053,9 +1061,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0050, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0060, TestSize.Level0)
 {
-    fd_ = open(g_AIGCM4aPath.c_str(), O_RDONLY);
+    fd_ = open(g_aigcM4aPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_AIGCM4aPath.c_str(), &fileStatus) == 0) {
+    if (stat(g_aigcM4aPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -1067,7 +1075,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0060, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_1, stringVal);
@@ -1080,9 +1088,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0060, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0070, TestSize.Level0)
 {
-    fd_ = open(g_AIGCAviPath.c_str(), O_RDONLY);
+    fd_ = open(g_aigcAviPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_AIGCAviPath.c_str(), &fileStatus) == 0) {
+    if (stat(g_aigcAviPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -1094,7 +1102,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0070, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_4, stringVal);
@@ -1107,9 +1115,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0070, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0080, TestSize.Level0)
 {
-    fd_ = open(g_AIGCMp4_256Path.c_str(), O_RDONLY);
+    fd_ = open(g_aigcMp4_256Path.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_AIGCMp4_256Path.c_str(), &fileStatus) == 0) {
+    if (stat(g_aigcMp4_256Path.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -1121,7 +1129,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0080, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_2, stringVal);
@@ -1134,9 +1142,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0080, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0090, TestSize.Level0)
 {
-    fd_ = open(g_AIGCMp4_258Path.c_str(), O_RDONLY);
+    fd_ = open(g_aigcMp4_258Path.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_AIGCMp4_258Path.c_str(), &fileStatus) == 0) {
+    if (stat(g_aigcMp4_258Path.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -1148,7 +1156,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0090, TestSize.Level0)
     float longval = 0.0;
     int32_t intval;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     std::string stringVal = "";
     ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
@@ -1175,7 +1183,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0100, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
 }
@@ -1187,9 +1195,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0100, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0110, TestSize.Level0)
 {
-    fd_ = open(g_FlvPath.c_str(), O_RDONLY);
+    fd_ = open(g_flvPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_FlvPath.c_str(), &fileStatus) == 0) {
+    if (stat(g_flvPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -1200,7 +1208,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0110, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
 }
@@ -1212,9 +1220,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0110, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0120, TestSize.Level0)
 {
-    fd_ = open(g_MkvPath.c_str(), O_RDONLY);
+    fd_ = open(g_mkvPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_MkvPath.c_str(), &fileStatus) == 0) {
+    if (stat(g_mkvPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -1225,7 +1233,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0120, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
 }
@@ -1237,9 +1245,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0120, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0130, TestSize.Level0)
 {
-    fd_ = open(g_MovPath.c_str(), O_RDONLY);
+    fd_ = open(g_movPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_MovPath.c_str(), &fileStatus) == 0) {
+    if (stat(g_movPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -1250,7 +1258,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0130, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
 }
@@ -1262,9 +1270,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0130, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0140, TestSize.Level0)
 {
-    fd_ = open(g_M4vPath.c_str(), O_RDONLY);
+    fd_ = open(g_m4vPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_M4vPath.c_str(), &fileStatus) == 0) {
+    if (stat(g_m4vPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -1275,7 +1283,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0140, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
 }
@@ -1287,9 +1295,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0140, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0150, TestSize.Level0)
 {
-    fd_ = open(g_M4aPath.c_str(), O_RDONLY);
+    fd_ = open(g_m4aPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_M4aPath.c_str(), &fileStatus) == 0) {
+    if (stat(g_m4aPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -1300,7 +1308,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0150, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
 }
@@ -1312,9 +1320,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0150, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0160, TestSize.Level0)
 {
-    fd_ = open(g_AviPath.c_str(), O_RDONLY);
+    fd_ = open(g_aviPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_AviPath.c_str(), &fileStatus) == 0) {
+    if (stat(g_aviPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -1325,7 +1333,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0160, TestSize.Level0)
     float longval = 0.0;
     int32_t intval = 0;
     ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(source_format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
 }
