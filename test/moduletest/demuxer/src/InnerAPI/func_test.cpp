@@ -921,11 +921,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_APE_INNER_FUNC_0050, TestSize.Level1)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0010
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0010
  * @tc.name      : check Mp4 AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0010, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0010, TestSize.Level0)
 {
     fd_ = open(g_aigcMp4Path.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -948,11 +948,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0010, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0010
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0010
  * @tc.name      : check Flv AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0020, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0020, TestSize.Level1)
 {
     fd_ = open(g_aigcFlvPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -975,11 +975,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0020, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0030
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0030
  * @tc.name      : check Mkv AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0030, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0030, TestSize.Level1)
 {
     fd_ = open(g_aigcMkvPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -1002,11 +1002,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0030, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0040
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0040
  * @tc.name      : check Mov AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0040, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0040, TestSize.Level1)
 {
     fd_ = open(g_aigcMovPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -1029,11 +1029,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0040, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0050
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0050
  * @tc.name      : check M4v AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0050, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0050, TestSize.Level1)
 {
     fd_ = open(g_aigcM4vPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -1056,11 +1056,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0050, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0060
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0060
  * @tc.name      : check M4a AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0060, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0060, TestSize.Level1)
 {
     fd_ = open(g_aigcM4aPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -1083,11 +1083,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0060, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0070
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0070
  * @tc.name      : check Avi AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0070, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0070, TestSize.Level1)
 {
     fd_ = open(g_aigcAviPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -1110,11 +1110,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0070, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0080
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0080
  * @tc.name      : check Mp4_256 AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0080, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0080, TestSize.Level2)
 {
     fd_ = open(g_aigcMp4256Path.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -1137,11 +1137,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0080, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0090
- * @tc.name      : check Mp4 MaxAIGC info
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0090
+ * @tc.name      : check Mp4_258 AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0090, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0090, TestSize.Level2)
 {
     fd_ = open(g_aigcMp4258Path.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -1164,11 +1164,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0090, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0100
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0100
  * @tc.name      : Mp4 不含AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0100, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0100, TestSize.Level3)
 {
     fd_ = open(g_doubleHevcPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -1189,11 +1189,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0100, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0110
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0110
  * @tc.name      : Flv 不含AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0110, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0110, TestSize.Level3)
 {
     fd_ = open(g_flvPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -1214,11 +1214,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0110, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0120
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0120
  * @tc.name      : Mkv 不含AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0120, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0120, TestSize.Level3)
 {
     fd_ = open(g_mkvPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -1239,11 +1239,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0120, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0130
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0130
  * @tc.name      : Mov 不含AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0130, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0130, TestSize.Level3)
 {
     fd_ = open(g_movPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -1264,11 +1264,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0130, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0140
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0140
  * @tc.name      : M4v 不含AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0140, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0140, TestSize.Level3)
 {
     fd_ = open(g_m4vPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -1289,11 +1289,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0140, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0150
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0150
  * @tc.name      : M4a 不含AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0150, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0150, TestSize.Level3)
 {
     fd_ = open(g_m4aPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
@@ -1314,11 +1314,11 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0150, TestSize.Level0)
 }
 
 /**
- * @tc.number    : Demuxer_GetAIGCString_0160
+ * @tc.number    : DEMUXER_AIGC_INNER_FUNC_0160
  * @tc.name      : Avi 不含AIGC info
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0160, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0160, TestSize.Level3)
 {
     fd_ = open(g_aviPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
