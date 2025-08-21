@@ -63,17 +63,12 @@ group("av_codec_unit_test") {
         "unittest/audio_test:audio_sync_codec_adapter_unit_test",
         "unittest/audio_test:audio_codec_inner_unit_test",
         "unittest/avcenc_info_test:avcenc_info_capi_unit_test",
-        "unittest/avcodec_info_test:avcodec_info_unit_test",
         "unittest/avmuxer_test:avmuxer_capi_unit_test",
         "unittest/avmuxer_test:avmuxer_inner_unit_test",
         "unittest/avsource_test:avsource_capi_unit_test",
         "unittest/avsource_test:avsource_inner_unit_test",
         "unittest/calc_max_amplitude_unittest:calc_max_amplitude_unittest",
         "unittest/codec_capability_adapter_unittest:codec_capability_adapter_unittest",
-        "unittest/codec_param_checker_test:av_codec_param_checker_test",
-        "unittest/codeclist_test:codeclist_capi_unit_test",
-        "unittest/codeclist_test:codeclist_inner_unit_test",
-        "unittest/codeclist_test/coverage_unit_test:codeclist_coverage_unit_test",
         "unittest/dash_media_downloader_unittest:dash_media_downloader_unittest",
         "unittest/dash_mpd_downloader_unittest:dash_mpd_downloader_unittest",
         "unittest/dash_mpd_manager_unittest:dash_mpd_manager_unittest",
@@ -104,8 +99,6 @@ group("av_codec_unit_test") {
         "unittest/demuxer_test:demuxer_inner_buffer_unit_test",
         "unittest/demuxer_test:demuxer_inner_unit_test",
         "unittest/demuxer_unit_test:demuxer_unit_test",
-        "unittest/dfx_test:av_codec_dfx_test",
-        "unittest/event_manager_unit_test:event_manager_coverage_unit_test",
         "unittest/filter_test:filter_unit_test",
         "unittest/hls_test:hls_media_downloader_unit_test",
         "unittest/hls_test:hls_playlist_downloader_unit_test",
@@ -117,7 +110,6 @@ group("av_codec_unit_test") {
         "unittest/http_source_test:http_source_plugin_unittest",
         "unittest/http_source_test:xml_element_unittest",
         "unittest/http_source_test:xml_parser_unittest",
-        "unittest/key_type_test:av_codec_key_type_test",
         "unittest/media_demuxer_ext_test:media_demuxer_ext_unit_test",
         "unittest/media_demuxer_pts_functions_unittest:media_demuxer_pts_functions_unittest",
         "unittest/media_demuxer_test:media_demuxer_unit_test",
@@ -131,7 +123,6 @@ group("av_codec_unit_test") {
         "unittest/pts_and_index_conversion_test:pts_and_index_conversion_unit_test",
         "unittest/pts_and_index_conversion_unittest:pts_and_index_conversion_unittest",
         "unittest/reference_parser_test:reference_parser_inner_unit_test",
-        "unittest/sa_avcodec_test:sa_avcodec_unit_test",
         "unittest/sample_queue_test:sample_queue_unit_test",
         "unittest/sample_queue_unit_test:sample_queue_test",
         "unittest/sei_parser_filter_unittest:sei_parser_filter_unittest",
@@ -148,11 +139,6 @@ group("av_codec_unit_test") {
         "unittest/video_capture_filter_unittest:video_capture_filter_unittest",
         "unittest/video_resize_filter_test:video_resize_filter_test",
         "unittest/video_sink_unittest:video_sink_unittest",
-        "unittest/video_test/drm_decryptor_test:drm_decryptor_coverage_unit_test",
-        "unittest/video_test/fcodec_test:av_video_capi_unit_test",
-        "unittest/video_test/vcodec_framework_test:vcodec_framework_test",
-        "unittest/video_test/vcodec_server_test:codec_server_test",
-        "unittest/video_test/avcencoder_test:avc_codec_coverage_unit_test",
       ]
       if (av_codec_support_hcodec) {
         deps += [ "unittest/hcodec_test:hcodec_unit_test" ]
@@ -384,5 +370,30 @@ group("av_codec_fuzz_test") {
       "fuzztest/syncencoderconfig_fuzzer:SyncEncoderConfigFuzzTest",
       "fuzztest/hwdecoderinner_fuzzer:HwdecoderInnerFuzzTest",
     ]
+  }
+}
+
+group("video_codec_unit_test") {
+  testonly = true
+  deps = []
+  if (!use_libfuzzer) {
+    if (av_codec_support_test) {
+      deps += [
+        "unittest/video_test/avcodec_info_test:codeclist_avcodec_info_unit_test",
+        "unittest/video_test/codec_param_checker_test:video_codec_param_checker_test",
+        "unittest/video_test/codeclist_test:codeclist_capi_unit_test",
+        "unittest/video_test/codeclist_test:codeclist_inner_unit_test",
+        "unittest/video_test/codeclist_test/coverage_unit_test:codeclist_coverage_unit_test",
+        "unittest/video_test/dfx_test:video_codec_dfx_test",
+        "unittest/video_test/drm_decryptor_test:drm_decryptor_coverage_unit_test",
+        "unittest/video_test/event_manager_unit_test:video_event_manager_coverage_unit_test",
+        "unittest/video_test/fcodec_test:video_fcodec_capi_unit_test",
+        "unittest/video_test/key_type_test:video_codec_key_type_test",
+        "unittest/video_test/sa_avcodec_test:video_sa_avcodec_unit_test",
+        "unittest/video_test/vcodec_framework_test:vcodec_framework_test",
+        "unittest/video_test/vcodec_server_test:codec_server_test",
+        "unittest/video_test/avcencoder_test:avc_codec_coverage_unit_test",
+      ]
+    }
   }
 }

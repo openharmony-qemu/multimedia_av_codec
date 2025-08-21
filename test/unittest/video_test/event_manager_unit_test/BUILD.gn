@@ -66,16 +66,16 @@ av_codec_inner_external_deps = [
   "samgr:samgr_proxy",
 ]
 
-group("event_manager_coverage_unit_test") {
+group("video_event_manager_coverage_unit_test") {
   testonly = true
   deps = [
-    ":instance_memory_calculator_coverage_unit_test",
-    ":instance_memory_update_event_coverage_unit_test",
+    ":video_instance_memory_calc_cov_unit_test",
+    ":video_instance_memory_update_event_cov_unit_test",
   ]
 }
 
 ##################################################################################################################
-ohos_unittest("instance_memory_update_event_coverage_unit_test") {
+ohos_unittest("video_instance_memory_update_event_cov_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   cflags = codeclist_unittest_cflags
@@ -87,7 +87,7 @@ ohos_unittest("instance_memory_update_event_coverage_unit_test") {
   include_dirs = [
     "./",
     "$av_codec_root_dir/test/unittest/common",
-    "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/include",
+    "$av_codec_root_dir/test/unittest/video_test/sa_avcodec_test/mock/include",
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler/",
@@ -101,14 +101,14 @@ ohos_unittest("instance_memory_update_event_coverage_unit_test") {
   sources = [
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
-    "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/avcodec_service_stub_mock.cpp",
-    "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/codec_service_stub_mock.cpp",
-    "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/codeclist_service_stub_mock.cpp",
-    "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/mem_mgr_client_mock.cpp",
-    "$av_codec_root_dir/test/unittest/sa_avcodec_test/mock/system_ability_mock.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/sa_avcodec_test/mock/avcodec_service_stub_mock.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/sa_avcodec_test/mock/codec_service_stub_mock.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/sa_avcodec_test/mock/codeclist_service_stub_mock.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/sa_avcodec_test/mock/mem_mgr_client_mock.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/sa_avcodec_test/mock/system_ability_mock.cpp",
     "$event_handler_dir/background_event_handler/background_event_handler.cpp",
     "$event_handler_dir/instance_memory_update_event_handler/instance_memory_update_event_handler.cpp",
-    "./instance_memory_update_event_coverage_unit_test.cpp",
+    "./instance_memory_update_event_cov_unit_test.cpp",
   ]
 
   deps = [
@@ -124,7 +124,7 @@ ohos_unittest("instance_memory_update_event_coverage_unit_test") {
 }
 
 ##################################################################################################################
-ohos_unittest("instance_memory_calculator_coverage_unit_test") {
+ohos_unittest("video_instance_memory_calc_cov_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   cflags = codeclist_unittest_cflags
@@ -145,7 +145,7 @@ ohos_unittest("instance_memory_calculator_coverage_unit_test") {
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
     "$event_handler_dir/instance_memory_update_event_handler/instance_memory_calculator.cpp",
     "$event_handler_dir/instance_memory_update_event_handler/instance_memory_update_event_handler.cpp",
-    "./instance_memory_calculator_coverage_unit_test.cpp",
+    "./instance_memory_calc_cov_unit_test.cpp",
   ]
 
   deps = [

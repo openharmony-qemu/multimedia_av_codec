@@ -374,7 +374,7 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="av_video_capi_unit_test">
+    <target name="video_fcodec_capi_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/out_320_240_10s.h264 -> /data/test/media" src="res"/>
@@ -665,7 +665,7 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="sa_avcodec_unit_test">
+    <target name="video_sa_avcodec_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="shell" value="restorecon /data/test/media"/>

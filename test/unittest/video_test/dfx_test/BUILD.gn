@@ -14,30 +14,27 @@
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-ohos_unittest("av_codec_param_checker_test") {
+ohos_unittest("video_codec_dfx_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = "av_codec/AVCodec_Video/unittest"
 
   include_dirs = [
-    "./",
-    "$av_codec_root_dir/interfaces/kits/c",
+    "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/interfaces/inner_api/native",
   ]
 
   sources = [
-    "codec_param_checker_inner_test.cpp",
-    "codec_param_checker_test.cpp",
+    "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
+    "dump_utils_test.cpp",
+    "error_code_coverage_unit_test.cpp",
+    "xcollie_test.cpp",
   ]
 
-  deps = [
-    "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
-    "$av_codec_root_dir/interfaces/kits/c:capi_packages",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",
     "media_foundation:media_foundation",
-    "media_foundation:native_media_core",
   ]
 
   subsystem_name = "multimedia"
