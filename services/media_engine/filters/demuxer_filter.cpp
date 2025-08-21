@@ -1084,6 +1084,12 @@ Status DemuxerFilter::NotifyResumeUnMute()
     demuxer_->NotifyResumeUnMute();
     return Status::OK;
 }
+
+std::shared_ptr<Meta> DemuxerFilter::GetGlobalInfo()
+{
+    FALSE_RETURN_V(demuxer_ != nullptr, nullptr);
+    return demuxer_->GetUserMeta();
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

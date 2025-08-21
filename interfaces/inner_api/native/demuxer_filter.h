@@ -139,6 +139,7 @@ public:
     void HandleDecoderErrorFrame(int64_t pts);
     bool IsVideoMuted();
     Status NotifyResumeUnMute();
+    std::shared_ptr<Meta> GetGlobalInfo();
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
