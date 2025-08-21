@@ -148,6 +148,7 @@ const char *OH_MD_KEY_VIDEO_ENCODER_MAX_B_FRAMES = "video_encoder_max_b_frame";
 const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME = "video_encoder_enable_b_frame";
 const char *OH_MD_KEY_ENABLE_SYNC_MODE = "enable_sync_mode";
 const char *OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN = "video_decoder_blank_frame_on_shutdown";
+const char *OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT = "video_graphic_pixel_format";
 #ifdef __cplusplus
 }
 #endif
