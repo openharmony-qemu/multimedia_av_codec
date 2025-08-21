@@ -156,6 +156,7 @@ const std::map<int32_t, std::string> decSourcePathMap_ = {{HW_AVC, "/data/test/m
                                                           {HW_HEVC, "/data/test/media/720_1280_25_avcc.h265"},
                                                           {HW_HDR, "/data/test/media/720_1280_25_avcc.hdr.h265"},
                                                           {HW_HDR_HLG_FULL, "/data/test/media/1920_1440_30_avcc.h265"},
+                                                          {HW_HDR10, "/data/test/media/1600_900_avcc_hdr10.h265"},
                                                           {SW_AVC, "/data/test/media/720_1280_25_avcc.h264"},
                                                           {SW_MPEG2, "/data/test/media/mpeg2.m2v"},
                                                           {SW_MPEG4, "/data/test/media/mpeg4.m4v"},

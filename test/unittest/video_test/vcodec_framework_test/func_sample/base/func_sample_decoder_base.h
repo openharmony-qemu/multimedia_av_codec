@@ -72,7 +72,8 @@ inline std::map <int32_t, std::vector<int32_t>> g_hdrStaticMetaSize = {
     {VCodecTestParam::HW_HDR_HLG_FULL, {48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
         48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
         48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
-        48, 48, 48, 48, 48, 48, 48, 48, 48}}
+        48, 48, 48, 48, 48, 48, 48, 48, 48}},
+    {VCodecTestParam::HW_HDR10, {48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48}}
 };
 
 inline const std::map<int32_t, std::string> g_hdrDynamicMeta = {
@@ -82,7 +83,8 @@ inline const std::map<int32_t, std::string> g_hdrDynamicMeta = {
 
 inline const std::map<int32_t, std::string> g_hdrStaticMeta = {
     {VCodecTestParam::HW_HDR, "/data/test/media/720_1280_25_avcc_hdr_static_meta.bin"},
-    {VCodecTestParam::HW_HDR_HLG_FULL, "/data/test/media/1920_1440_30_avcc_hdr_static_meta.bin"}
+    {VCodecTestParam::HW_HDR_HLG_FULL, "/data/test/media/1920_1440_30_avcc_hdr_static_meta.bin"},
+    {VCodecTestParam::HW_HDR10, "/data/test/media/1600_900_avcc_hdr10_hdr_static_meta.bin"}
 };
 
 inline const std::map<int32_t, OH_NativeBuffer_MetadataType> g_hdrType = {
