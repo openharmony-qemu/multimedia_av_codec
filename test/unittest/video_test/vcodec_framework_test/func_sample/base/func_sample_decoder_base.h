@@ -89,7 +89,8 @@ inline const std::map<int32_t, std::string> g_hdrStaticMeta = {
 
 inline const std::map<int32_t, OH_NativeBuffer_MetadataType> g_hdrType = {
     {VCodecTestParam::HW_HDR, OH_VIDEO_HDR_VIVID},
-    {VCodecTestParam::HW_HDR_HLG_FULL, OH_VIDEO_HDR_VIVID}
+    {VCodecTestParam::HW_HDR_HLG_FULL, OH_VIDEO_HDR_VIVID},
+    {VCodecTestParam::HW_HDR10, OH_VIDEO_HDR_HDR10}
 };
 
 inline uint8_t g_mdTest[SHA512_DIGEST_LENGTH];

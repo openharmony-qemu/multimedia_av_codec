@@ -844,10 +844,14 @@ bool VideoDecAsyncSample::CompareHdrInfo(std::shared_ptr<AVBufferMock> buffer)
     }
     int ret;
     if (frameOutputCount_ == 0) {
-        dynamicMetadataFile_ = std::make_unique<std::ifstream>(g_hdrDynamicMeta.at(testParam_),
-            std::ios::binary | std::ios::in); 
-        staticMetadataFile_ = std::make_unique<std::ifstream>(g_hdrStaticMeta.at(testParam_),
-            std::ios::binary | std::ios::in);
+        if (g_hdrDynamicMeta.find(testParam_)) {
+            dynamicMetadataFile_ = std::make_unique<std::ifstream>(g_hdrDynamicMeta.at(testParam_),
+                std::ios::binary | std::ios::in); 
+        }
+        if (g_hdrStaticMeta.find(testParam_)) {
+            staticMetadataFile_ = std::make_unique<std::ifstream>(g_hdrStaticMeta.at(testParam_),
+                std::ios::binary | std::ios::in);
+        }
         if (!dynamicMetadataFile_ && !staticMetadataFile_) {
             return true;
         }
@@ -855,12 +859,16 @@ bool VideoDecAsyncSample::CompareHdrInfo(std::shared_ptr<AVBufferMock> buffer)
 
     // check meta
     std::shared_ptr<SurfaceBufferMock> surfaceBufferMock = SurfaceBufferMockFactory::CreateSurfaceBuffer(buffer);
-    ret = CompareMetadata(dynamicMetadataFile_,
-        g_hdrDynamicMetaSize.at(testParam_)[frameOutputCount_], surfaceBufferMock, true);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, false, "Fatal: GetHDRDynamicMetadata fail");
-    ret = CompareMetadata(staticMetadataFile_,
-        g_hdrStaticMetaSize.at(testParam_)[frameOutputCount_], surfaceBufferMock, false);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, false, "Fatal: GetHDRStaticMetadata fail");
+    if (g_hdrDynamicMetaSize.find(testParam_)) {
+        ret = CompareMetadata(dynamicMetadataFile_,
+            g_hdrDynamicMetaSize.at(testParam_)[frameOutputCount_], surfaceBufferMock, true);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, false, "Fatal: GetHDRDynamicMetadata fail");
+    }
+    if (g_hdrStaticMetaSize.find(testParam_)) {
+        ret = CompareMetadata(staticMetadataFile_,
+            g_hdrStaticMetaSize.at(testParam_)[frameOutputCount_], surfaceBufferMock, false);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, false, "Fatal: GetHDRStaticMetadata fail");
+    }
 
     // check hdr type
     int hdrType;
