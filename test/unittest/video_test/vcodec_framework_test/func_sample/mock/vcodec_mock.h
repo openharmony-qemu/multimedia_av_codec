@@ -143,7 +143,8 @@ private:
 
 namespace VCodecTestParam {
 
-enum VCodecTestCode : int32_t { HW_AVC, HW_HEVC, HW_HDR, HW_HDR_HLG_FULL, SW_AVC, SW_MPEG2, SW_MPEG4, SW_RV40, SW_H263};
+enum VCodecTestCode : int32_t { HW_AVC, HW_HEVC, HW_HDR, HW_HDR_HLG_FULL, HW_HDR10,
+    SW_AVC, SW_MPEG2, SW_MPEG4, SW_RV40, SW_H263};
 
 enum VCodecPixelFormat : int32_t {
     NV12 = 2,

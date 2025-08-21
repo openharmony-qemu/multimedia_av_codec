@@ -560,9 +560,35 @@ void VideoDecSyncSample::HandleEOSFrame()
     EXPECT_LE(frameOutputCount_, frameInputCount_);
 }
 
-bool VideoDecSyncSample::CompareMetadata(std::shared_ptr<AVBufferMock> buffer)
+bbool VideoDecSyncSample::CompareMetadata(std::shared_ptr<std::ifstream> file, int32_t size,
+    std::shared_ptr<SurfaceBufferMock> surfaceBufferMock, bool isDynamic)
 {
-    if (isSurfaceMode_ || (testParam_ != VCodecTestParam::HW_HDR && testParam_ != VCodecTestParam::HW_HDR_HLG_FULL)) {
+    if (!file->is_open()) {
+        return true;
+    }
+
+    std::vector<uint8_t> metadataFromFile;
+    metadataFromFile.resize(size);
+    file->read(reinterpret_cast<char*>(metadataFromFile.data()), size);
+
+    std::vector<uint8_t> metadataFromBuffer;
+    if (isDynamic) {
+        surfaceBufferMock->GetHDRDynamicMetadata(metadataFromBuffer);
+    } else {
+        surfaceBufferMock->GetHDRStaticMetadata(metadataFromBuffer);
+    }
+    // check meta
+    if (metadataFromBuffer != metadataFromFile) {
+        signal_->errorNum++;
+        return false;
+    }
+    return true;
+}
+
+bool VideoDecSyncSample::CompareHdrInfo(std::shared_ptr<AVBufferMock> buffer)
+{
+    if (isSurfaceMode_ || (testParam_ != VCodecTestParam::HW_HDR && testParam_ != VCodecTestParam::HW_HDR_HLG_FULL &&
+        testParam_ != VCodecTestParam::HW_HDR10)) {
         return true;
     }
     int ret;
@@ -571,40 +597,25 @@ bool VideoDecSyncSample::CompareMetadata(std::shared_ptr<AVBufferMock> buffer)
             std::ios::binary | std::ios::in); 
         staticMetadataFile_ = std::make_unique<std::ifstream>(g_hdrStaticMeta.at(testParam_),
             std::ios::binary | std::ios::in);
-        if (!dynamicMetadataFile_ || !staticMetadataFile_) {
+        if (!dynamicMetadataFile_ && !staticMetadataFile_) {
             return true;
         }
     }
 
-    // meta from file
-    std::vector<uint8_t> dynamicMetadataFromFile;
-    std::vector<uint8_t> staticMetadataFromFile;
-
-    // No.frameOutputCount_
-    dynamicMetadataFromFile.resize(g_hdrDynamicMetaSize.at(testParam_)[frameOutputCount_]);
-    dynamicMetadataFile_->read(reinterpret_cast<char*>(dynamicMetadataFromFile.data()),
-        g_hdrDynamicMetaSize.at(testParam_)[frameOutputCount_]);
-    staticMetadataFromFile.resize(g_hdrStaticMetaSize.at(testParam_)[frameOutputCount_]);
-    staticMetadataFile_->read(reinterpret_cast<char*>(staticMetadataFromFile.data()),
-        g_hdrStaticMetaSize.at(testParam_)[frameOutputCount_]);
-
-    // meta from buffer
+    // check meta
     std::shared_ptr<SurfaceBufferMock> surfaceBufferMock = SurfaceBufferMockFactory::CreateSurfaceBuffer(buffer);
-    std::vector<uint8_t> dynamicMetadataFromBuffer;
-    ret = surfaceBufferMock->GetHDRDynamicMetadata(dynamicMetadataFromBuffer);
+    ret = CompareMetadata(dynamicMetadataFile_,
+        g_hdrDynamicMetaSize.at(testParam_)[frameOutputCount_], surfaceBufferMock, true);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, false, "Fatal: GetHDRDynamicMetadata fail");
-    std::vector<uint8_t> staticMetadataFromBuffer;
-    ret = surfaceBufferMock->GetHDRStaticMetadata(staticMetadataFromBuffer);
+    ret = CompareMetadata(staticMetadataFile_,
+        g_hdrStaticMetaSize.at(testParam_)[frameOutputCount_], surfaceBufferMock, false);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, false, "Fatal: GetHDRStaticMetadata fail");
 
-    // check meta
-    if (staticMetadataFromBuffer != staticMetadataFromFile || dynamicMetadataFromBuffer != dynamicMetadataFromFile) {
-        signal_->errorNum++;
-        return false;
-    }
     // check hdr type
     int hdrType;
     if (!surfaceBufferMock->GetHDRMetadataType(hdrType) || hdrType != g_hdrType.at(testParam_)) {
+        signal_->errorNum++;
+        printf("Fatal: GetHDRMetadataType fail\n");
         return false;
     }
     return true;
@@ -640,7 +651,7 @@ int32_t VideoDecSyncSample::OutputLoopInnerExt()
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                           "Fatal: GetOutputBuffer fail, exit, index: %d", index);
         UpdateSHA(bufferAddr, size);
-        CompareMetadata(buffer);
+        CompareHdrInfo(buffer);
         ret = FreeOutputBuffer(index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
     } else if (attr.flags != AVCODEC_BUFFER_FLAG_EOS) {

@@ -811,7 +811,7 @@ void VideoDecAsyncSample::CheckFormatKey()
     format->Destroy();
 }
 
-bool CompareMetadata(std::shared_ptr<std::ifstream> file, int32_t size,
+bool VideoDecAsyncSample::CompareMetadata(std::shared_ptr<std::ifstream> file, int32_t size,
     std::shared_ptr<SurfaceBufferMock> surfaceBufferMock, bool isDynamic)
 {
     if (!file->is_open()) {
@@ -855,10 +855,10 @@ bool VideoDecAsyncSample::CompareHdrInfo(std::shared_ptr<AVBufferMock> buffer)
 
     // check meta
     std::shared_ptr<SurfaceBufferMock> surfaceBufferMock = SurfaceBufferMockFactory::CreateSurfaceBuffer(buffer);
-    ret = CompareMetadata(dynamicMetadataFile_, frameOutputCount_,
+    ret = CompareMetadata(dynamicMetadataFile_,
         g_hdrDynamicMetaSize.at(testParam_)[frameOutputCount_], surfaceBufferMock, true);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, false, "Fatal: GetHDRDynamicMetadata fail");
-    ret = CompareMetadata(staticMetadataFile_, frameOutputCount_,
+    ret = CompareMetadata(staticMetadataFile_,
         g_hdrStaticMetaSize.at(testParam_)[frameOutputCount_], surfaceBufferMock, false);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, false, "Fatal: GetHDRStaticMetadata fail");
 
@@ -893,7 +893,7 @@ int32_t VideoDecAsyncSample::OutputLoopInnerExt()
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                           "Fatal: GetOutputBuffer fail, exit, index: %d", index);
         UpdateSHA(bufferAddr, size);
-        CompareMetadata(buffer);
+        CompareHdrInfo(buffer);
         ret = FreeOutputBuffer(index);
 
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);

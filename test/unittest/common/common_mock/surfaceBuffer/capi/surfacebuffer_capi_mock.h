@@ -34,7 +34,7 @@ public:
 
     bool GetHDRDynamicMetadata(std::vector<uint8_t> &meta) override;
     bool GetHDRStaticMetadata(std::vector<uint8_t> &meta) override;
-    bool GetHDRMetadataType(int hdrType) override;
+    bool GetHDRMetadataType(int &hdrType) override;
 
 private:
     OH_NativeBuffer *nativeBuffer_ = nullptr;
