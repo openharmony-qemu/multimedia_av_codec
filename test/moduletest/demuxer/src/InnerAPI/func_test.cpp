@@ -65,9 +65,9 @@ string g_aviPath = TEST_FILE_PATH + string("audio_2video.avi");
 static int32_t g_apeVersion = 73728;
 static const string AIGC_TEST_1 = "'{测Label1!:测Value1!,测2!ContentProducer:测!value2,测3!ProduceID:测!value3,"\
     "测4!ReservedCode1:测!value4,测5!ContentPropagator:测!value5,测6!PropagateID:测!value6,测7!ReservedCode2:测!value7}'";
-static const string AIGC_TEST_2 = "{\"测Label1!\":\"测Value1!,测2!ContentProducer\":\"测!value2,测3!ProduceID\":\"测!value3,"\
-    "测4!ReservedCode1\":\"测!value4,测5!ContentPropagator\":\"测!value5,测6!PropagateID\":\"测!value6,"\
-    "测7!ReservedCode2\":\"测!value7\"}";
+static const string AIGC_TEST_2 = "{\"测Label1!\":\"测Value1!\",\"测2!ContentProducer\":\"测!value2\","\
+    "\"测3!ProduceID\":\"测!value3\",\"测4!ReservedCode1\":\"测!value4\",\"测5!ContentPropagator\":\"测!value5\","\
+    "\"测6!PropagateID\":\"测!value6\",\"测7!ReservedCode2\":\"测!value7\"}";
 static const string AIGC_TEST_3 = "'{测Label1!:测Value1!,测2!ContentProducer:测!value2,测3!ProduceID:测!value3,"\
     "测4!ReservedCode1:测!value4,测5!ContentPropagator:测!value5,测6!PropagateID:测!value6,"\
     "测7!ReservedCode2:测!value701234567890123456789012345678901234567890123456789}'";
@@ -1106,7 +1106,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0070, TestSize.Level0)
     ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
-    ASSERT_EQ(AIGC_TEST_4, stringVal);
+    ASSERT_EQ(AIGC_TEST_2, stringVal);
 }
 
 /**
@@ -1133,7 +1133,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0080, TestSize.Level0)
     ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
-    ASSERT_EQ(AIGC_TEST_2, stringVal);
+    ASSERT_EQ(AIGC_TEST_3, stringVal);
 }
 
 /**
@@ -1160,8 +1160,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, Demuxer_GetAIGCString_0090, TestSize.Level0)
     ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     std::string stringVal = "";
     ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
-    printf("AIGC key:%s\nvalue:%s\n", MediaDescriptionKey::MD_KEY_AIGC.data(), stringVal.c_str());
-    ASSERT_TRUE(AIGC_TEST_3, stringVal);
+    ASSERT_EQ(AIGC_TEST_4, stringVal);
 }
 
 /**
