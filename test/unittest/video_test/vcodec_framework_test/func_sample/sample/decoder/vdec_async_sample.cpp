@@ -855,7 +855,7 @@ bool VideoDecAsyncSample::CompareMetadata(std::shared_ptr<AVBufferMock> buffer)
     }
     // check hdr type
     int hdrType;
-    if (!surfaceBufferMock->GetHDRMetadataType(hdrType) || hdrType != g_hdrType[testParam_]) {
+    if (!surfaceBufferMock->GetHDRMetadataType(hdrType) || hdrType != g_hdrType.at(testParam_)) {
         return false;
     }
     return true;

@@ -48,9 +48,9 @@ bool SurfaceBufferInnerMock::GetHDRStaticMetadata(std::vector<uint8_t> &meta)
 
 bool SurfaceBufferInnerMock::GetHDRMetadataType(int &hdrType)
 {
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(nativeBuffer_ != nullptr, false, "nativeBuffer_ is nullptr!");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, false, "nativeBuffer_ is nullptr!");
     std::vector<uint8_t> hdrMetadataTypeVec;
-    auto ret = surfaceBuffer_->GetMetadata(ATTRKEY_HDR_METADATA_TYPE, hdrMetadataTypeVec);
+    auto ret = surfaceBuffer_->GetMetadata(3, hdrMetadataTypeVec);
     if (ret != 0) {
         return false;
     }
