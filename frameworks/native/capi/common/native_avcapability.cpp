@@ -376,14 +376,14 @@ OH_AVErrCode OH_AVCapability_GetVideoSupportedPixelFormats(OH_AVCapability *capa
     return AV_ERR_OK;
 }
 
-OH_AVErrCode OH_AVCapability_GetVideoSupportedGraphicPixelFormats(OH_AVCapability *capability,
-                                                                  const int32_t **graphicPixelFormats,
-                                                                  uint32_t *graphicPixelFormatNum)
+OH_AVErrCode OH_AVCapability_GetVideoSupportedNativeBufferFormats(OH_AVCapability *capability,
+                                                                  const int32_t **nativeBufferFormats,
+                                                                  uint32_t *nativeBufferFormatNum)
 {
-    CHECK_AND_RETURN_RET_LOG(graphicPixelFormats != nullptr && graphicPixelFormatNum != nullptr, AV_ERR_INVALID_VAL,
+    CHECK_AND_RETURN_RET_LOG(nativeBufferFormats != nullptr && nativeBufferFormatNum != nullptr, AV_ERR_INVALID_VAL,
                              "Get video supported graphic pixel formats failed: null input");
-    *graphicPixelFormats = nullptr;
-    *graphicPixelFormatNum = 0;
+    *nativeBufferFormats = nullptr;
+    *nativeBufferFormatNum = 0;
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
     CapabilityData *capData = capability->capabilityData_;
@@ -403,8 +403,8 @@ OH_AVErrCode OH_AVCapability_GetVideoSupportedGraphicPixelFormats(OH_AVCapabilit
     CHECK_AND_RETURN_RET_LOG(buf != nullptr, AV_ERR_NO_MEMORY, "new buffer failed");
     errno_t ret = memcpy_s(buf, vecSize, vec.data(), vecSize);
     CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_UNKNOWN, "memcpy_s failed");
-    *graphicPixelFormats = buf;
-    *graphicPixelFormatNum = vec.size();
+    *nativeBufferFormats = buf;
+    *nativeBufferFormatNum = vec.size();
     return AV_ERR_OK;
 }
 
