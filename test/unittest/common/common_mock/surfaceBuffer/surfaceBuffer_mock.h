@@ -28,6 +28,7 @@ public:
     virtual ~SurfaceBufferMock() = default;
     virtual bool GetHDRDynamicMetadata(std::vector<uint8_t> &meta) = 0;
     virtual bool GetHDRStaticMetadata(std::vector<uint8_t> &meta) = 0;
+    virtual bool GetHDRMetadataType(int hdrType) = 0;
 };
 
 class __attribute__((visibility("default"))) SurfaceBufferMockFactory {

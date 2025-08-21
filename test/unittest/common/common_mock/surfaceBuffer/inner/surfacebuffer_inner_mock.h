@@ -31,6 +31,7 @@ public:
 
     bool GetHDRDynamicMetadata(std::vector<uint8_t> &meta) override;
     bool GetHDRStaticMetadata(std::vector<uint8_t> &meta) override;
+    bool GetHDRMetadataType(int &hdrType) override;
 private:
     sptr<SurfaceBuffer> surfaceBuffer_ = nullptr;
 };

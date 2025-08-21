@@ -832,12 +832,12 @@ bool VideoDecAsyncSample::CompareMetadata(std::shared_ptr<AVBufferMock> buffer)
     std::vector<uint8_t> staticMetadataFromFile;
 
     // No.frameOutputCount_
-    dynamicMetadataFromFile.resize(g_hdrDynamicMeta.at(testParam_)[frameOutputCount_]);
+    dynamicMetadataFromFile.resize(g_hdrDynamicMetaSize.at(testParam_)[frameOutputCount_]);
     dynamicMetadataFile_->read(reinterpret_cast<char*>(dynamicMetadataFromFile.data()),
-        g_hdrDynamicMeta.at(testParam_)[frameOutputCount_]);
-    staticMetadataFromFile.resize(g_hdrDynamicMeta.at(testParam_)[frameOutputCount_]);
+        g_hdrDynamicMetaSize.at(testParam_)[frameOutputCount_]);
+    staticMetadataFromFile.resize(g_hdrStaticMetaSize.at(testParam_)[frameOutputCount_]);
     staticMetadataFile_->read(reinterpret_cast<char*>(staticMetadataFromFile.data()),
-        g_hdrStaticMeta.at(testParam_)[frameOutputCount_]);
+        g_hdrStaticMetaSize.at(testParam_)[frameOutputCount_]);
 
     // meta from buffer
     std::shared_ptr<SurfaceBufferMock> surfaceBufferMock = SurfaceBufferMockFactory::CreateSurfaceBuffer(buffer);
@@ -848,9 +848,14 @@ bool VideoDecAsyncSample::CompareMetadata(std::shared_ptr<AVBufferMock> buffer)
     ret = surfaceBufferMock->GetHDRStaticMetadata(staticMetadataFromBuffer);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, false, "Fatal: GetHDRStaticMetadata fail");
 
-    // 比较
+    // check meta
     if (staticMetadataFromBuffer != staticMetadataFromFile || dynamicMetadataFromBuffer != dynamicMetadataFromFile) {
         signal_->errorNum++;
+        return false;
+    }
+    // check hdr type
+    int hdrType;
+    if (!surfaceBufferMock->GetHDRMetadataType(hdrType) || hdrType != g_hdrType[testParam_]) {
         return false;
     }
     return true;

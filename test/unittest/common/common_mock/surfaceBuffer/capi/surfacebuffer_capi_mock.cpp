@@ -66,5 +66,23 @@ bool SurfaceBufferCapiMock::GetHDRStaticMetadata(std::vector<uint8_t> &meta)
     }
     return false;
 }
+
+bool SurfaceBufferCapiMock::GetHDRMetadataType(int &hdrType)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(nativeBuffer_ != nullptr, false, "nativeBuffer_ is nullptr!");
+    int32_t size = 0;
+    uint8_t *metadata = nullptr;
+    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_METADATA_TYPE, &size, &metadata) != 0) {
+        return false;
+    }
+
+    int32_t ret = memcpy_s(&hdrType, size, metadata, size);
+    delete[] metadata;
+    metadata = nullptr;
+    if (ret == 0) {
+        return true;
+    }
+    return false;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS
