@@ -1005,7 +1005,7 @@ std::pair<int64_t, int64_t> DashSegmentDownloader::GetDownloadRecordData()
     return recordData;
 }
 
-uint32_t DashSegmentDownloader::GetBufferSize() const
+uint64_t DashSegmentDownloader::GetBufferSize() const
 {
     if (buffer_ != nullptr) {
         return buffer_->GetSize();
@@ -1184,7 +1184,7 @@ bool DashSegmentDownloader::IsNeedBufferForPlaying()
         return false;
     }
     if (GetBufferSize() >= waterlineForPlaying_ || isAllSegmentFinished_.load()) {
-        MEDIA_LOG_I("Dash buffer duration for playing is enough, buffersize: " PUBLIC_LOG_U32 " waterLineAbove: "
+        MEDIA_LOG_I("Dash buffer duration for playing is enough, buffersize: " PUBLIC_LOG_U64 " waterLineAbove: "
                     PUBLIC_LOG_U64, GetBufferSize(), waterlineForPlaying_);
         isBuffering_.store(false);
         isDemuxerInitSuccess_.store(false);

@@ -96,7 +96,7 @@ public:
     std::pair<int32_t, int32_t> GetDownloadInfo() override;
     void ReportVideoSizeChange();
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
-    size_t GetBufferSize() const override;
+    uint64_t GetBufferSize() const override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
     bool GetReadTimeOut(bool isDelay) override;
@@ -164,7 +164,7 @@ private:
     uint32_t SaveCacheBufferData(uint8_t* data, uint32_t len, bool notBlock);
     uint32_t SaveCacheBufferDataNotblock(uint8_t* data, uint32_t len);
     bool ClearChunksOfFragment();
-    size_t GetCrossTsBuffersize();
+    uint64_t GetCrossTsBuffersize();
     bool IsCachedInitSizeReady(int32_t wantInitSize);
     void HandleWaterLine();
     bool CacheBufferFullLoop();
@@ -174,7 +174,7 @@ private:
     bool ReadHeaderData(unsigned char* buff, ReadDataInfo& readDataInfo);
     void HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos);
     void RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo);
-    size_t GetTotalTsBuffersize();
+    uint64_t GetTotalTsBuffersize();
     bool IsPureByteRange();
 
 private:
@@ -287,7 +287,7 @@ private:
     int32_t currentBitRate_ {0};
     int32_t fragmentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
-    int32_t lastCachedSize_ {0};
+    uint64_t lastCachedSize_ {0};
     std::atomic<bool> isBufferingStart_ {false};
     std::shared_ptr<CacheMediaChunkBufferImpl> cacheMediaBuffer_;
     uint64_t readOffset_ {0};

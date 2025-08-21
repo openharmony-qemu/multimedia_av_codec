@@ -53,7 +53,7 @@ public:
         (void)readDataInfo;
         return Status::OK;
     }
-    size_t GetBufferSize() const override
+    uint64_t GetBufferSize() const override
     {
         return 0;
     }
