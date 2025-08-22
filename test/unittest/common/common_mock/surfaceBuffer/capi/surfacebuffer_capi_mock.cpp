@@ -76,13 +76,13 @@ bool SurfaceBufferCapiMock::GetHDRMetadataType(int &hdrType)
         return false;
     }
 
-    int32_t ret = memcpy_s(&hdrType, size, metadata, size);
+    errno_t err = memcpy_s(&hdrType, size, metadata, size);
+    if (err != 0) {
+        return false;
+    }
     delete[] metadata;
     metadata = nullptr;
-    if (ret == 0) {
-        return true;
-    }
-    return false;
+    return true;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

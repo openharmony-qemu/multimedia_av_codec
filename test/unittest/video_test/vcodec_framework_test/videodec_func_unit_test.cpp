@@ -486,7 +486,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HDR_METADATA_Function_003, TestSize.Level1)
 {
     capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), false,
                                                                 AVCodecCategory::AVCODEC_HARDWARE);
-    std::string codecName = capability_->GetName(); 
+    std::string codecName = capability_->GetName();
     if (codecName != "OMX.rk.video_decoder.hevc") {
         std::cout << "CodecName: " << codecName << "\n";
         videoDec_->isAVBufferMode_ = true;

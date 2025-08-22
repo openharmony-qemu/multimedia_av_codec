@@ -595,7 +595,7 @@ bool VideoDecSyncSample::CompareHdrInfo(std::shared_ptr<AVBufferMock> buffer)
     if (frameOutputCount_ == 0) {
         if (g_hdrDynamicMeta.find(testParam_) != g_hdrDynamicMeta.end()) {
             dynamicMetadataFile_ = std::make_unique<std::ifstream>(g_hdrDynamicMeta.at(testParam_),
-                std::ios::binary | std::ios::in); 
+                std::ios::binary | std::ios::in);
         }
         if (g_hdrStaticMeta.find(testParam_) != g_hdrStaticMeta.end()) {
             staticMetadataFile_ = std::make_unique<std::ifstream>(g_hdrStaticMeta.at(testParam_),

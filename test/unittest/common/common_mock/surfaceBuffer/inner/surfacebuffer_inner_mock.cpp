@@ -29,7 +29,7 @@ SurfaceBufferInnerMock::~SurfaceBufferInnerMock() {}
 bool SurfaceBufferInnerMock::GetHDRDynamicMetadata(std::vector<uint8_t> &meta)
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, false, "surfaceBuffer_ is nullptr!");
-    if (surfaceBuffer_->GetMetadata(5, meta) == 0) {
+    if (surfaceBuffer_->GetMetadata(5, meta) == 0) { // 5: ATTRKEY_HDR_DYNAMIC_METADATA
         return true;
     } else {
         return false;
@@ -39,7 +39,7 @@ bool SurfaceBufferInnerMock::GetHDRDynamicMetadata(std::vector<uint8_t> &meta)
 bool SurfaceBufferInnerMock::GetHDRStaticMetadata(std::vector<uint8_t> &meta)
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, false, "surfaceBuffer_ is nullptr!");
-    if (surfaceBuffer_->GetMetadata(4, meta) == 0) {
+    if (surfaceBuffer_->GetMetadata(4, meta) == 0) { // 4: ATTRKEY_HDR_STATIC_METADATA
         return true;
     } else {
         return false;
@@ -50,11 +50,14 @@ bool SurfaceBufferInnerMock::GetHDRMetadataType(int &hdrType)
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, false, "nativeBuffer_ is nullptr!");
     std::vector<uint8_t> hdrMetadataTypeVec;
-    auto ret = surfaceBuffer_->GetMetadata(3, hdrMetadataTypeVec);
+    auto ret = surfaceBuffer_->GetMetadata(3, hdrMetadataTypeVec); // 3: ATTRKEY_HDR_METADATA_TYPE
     if (ret != 0) {
         return false;
     }
-    memcpy_s(&hdrType, 4, hdrMetadataTypeVec.data(), hdrMetadataTypeVec.size());
+    errno_t err = memcpy_s(&hdrType, 4, hdrMetadataTypeVec.data(), hdrMetadataTypeVec.size()); // 4: 类型大小
+    if (err != 0) {
+        return false;
+    }
     hdrType -=1;
     return true;
 }
