@@ -104,16 +104,18 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
         ioContext->offset += dataSize;
         return dataSize;
     }
-    if (ioContext->invokerType != READ) {
+    if (ioContext->invokerType != InvokerType::READ) {
         ioContext->retry = true;
-        ioContext->initErrorAgain = (ioContext->invokerType == INIT ? true : false);
+        ioContext->initErrorAgain = (ioContext->invokerType == InvokerType::INIT ? true : false);
         MEDIA_LOG_I("Read again, invokerType!=READ, offset:" PUBLIC_LOG_D64, ioContext->offset);
         return AV_READ_PACKET_READ_ERROR;
     }
     tryCount++;
     if (tryCount >= AV_READ_PACKET_RETRY_UPPER_LIMIT) {
         std::unique_lock<std::mutex> readLock(readPacketMutex_);
-        readCbCv_.wait(readLock, [ioContext]() {return ioContext->readCbReady;}); // Wait to be notified
+        readCbCv_.wait(readLock, [ioContext]() {
+            return (ioContext->readCbReady) || (ioContext->invokerType != InvokerType::READ);
+        }); // Wait to be notified
         ioContext->readCbReady = false; // Reset the flag
         tryCount = 0;
     } else {

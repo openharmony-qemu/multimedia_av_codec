@@ -102,6 +102,7 @@ private:
     enum InvokerType : unsigned int {
         INVOKER_NONE = 0,
         INIT,
+        FLUSH,
         READ,
         SEEK,
         DESTORY,
