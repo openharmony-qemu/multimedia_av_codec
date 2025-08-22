@@ -54,7 +54,7 @@ bool SurfaceBufferInnerMock::GetHDRMetadataType(int &hdrType)
     if (ret != 0) {
         return false;
     }
-    errno_t err = memcpy_s(&hdrType, 4, hdrMetadataTypeVec.data(), hdrMetadataTypeVec.size()); // 4: 类型大小
+    errno_t err = memcpy_s(&hdrType, sizeof(hdrType), hdrMetadataTypeVec.data(), hdrMetadataTypeVec.size());
     if (err != 0) {
         return false;
     }
