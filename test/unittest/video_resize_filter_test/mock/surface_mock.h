@@ -160,7 +160,6 @@ public:
     MOCK_METHOD(GSError, ProducerSurfaceLockBuffer, (BufferRequestConfig &config, Region region,
         sptr<SurfaceBuffer>& buffer), (override));
     MOCK_METHOD(GSError, ProducerSurfaceUnlockAndFlushBuffer, (), (override));
-    MOCK_METHOD(GSError, ReleaseBuffer, (uint32_t sequence, const sptr<SyncFence>& fence), (override));
 };
 } // namespace OHOS
 #endif // SURFACE_MOCK_H
