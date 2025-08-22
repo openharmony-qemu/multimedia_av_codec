@@ -170,9 +170,9 @@ int32_t FCodec::Initialize()
                                         [](void *ptr) {});
     CHECK_AND_RETURN_RET_LOG(avCodec_ != nullptr, AVCS_ERR_INVALID_VAL,
                              "Init codec failed:  cannot find codec with name %{public}s", codecName_.c_str());
-    sendTask_ = std::make_shared<TaskThread>("SendFrame_" + decName_);
+    sendTask_ = std::make_shared<TaskThread>("SendFrame");
     sendTask_->RegisterHandler([this] { SendFrame(); });
-    receiveTask_ = std::make_shared<TaskThread>("ReceiveFrame_" + decName_);
+    receiveTask_ = std::make_shared<TaskThread>("ReceiveFrame");
     receiveTask_->RegisterHandler([this] { ReceiveFrame(); });
 #ifdef BUILD_ENG_VERSION
     OpenDumpFile();
