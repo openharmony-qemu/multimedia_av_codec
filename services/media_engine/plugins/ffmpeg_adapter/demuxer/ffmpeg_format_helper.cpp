@@ -137,7 +137,8 @@ static std::map<std::string, TagType> g_formatToString = {
     {"lyrics",        Tag::MEDIA_LYRICS},
     {"author",        Tag::MEDIA_AUTHOR},
     {"composer",      Tag::MEDIA_COMPOSER},
-    {"creation_time", Tag::MEDIA_CREATION_TIME}
+    {"creation_time", Tag::MEDIA_CREATION_TIME},
+    {"aigc",          Tag::MEDIA_AIGC}
 };
 
 std::vector<TagType> g_supportSourceFormat = {
@@ -154,7 +155,8 @@ std::vector<TagType> g_supportSourceFormat = {
     Tag::MEDIA_LYRICS,
     Tag::MEDIA_AUTHOR,
     Tag::MEDIA_COMPOSER,
-    Tag::MEDIA_CREATION_TIME
+    Tag::MEDIA_CREATION_TIME,
+    Tag::MEDIA_AIGC
 };
 
 std::vector<std::string> SplitByChar(const char* str, const char* pattern)

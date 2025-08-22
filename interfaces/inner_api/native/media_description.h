@@ -284,6 +284,11 @@ public:
      * value, and only OH_COLORSPACE_BT709_LIMIT is valid.
      */
     static constexpr std::string_view MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE = "video_decoder_output_colorspace";
+
+    /**
+     * key for AIGC info, the value type is string
+     */
+    static constexpr std::string_view MD_KEY_AIGC = "aigc";
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;
