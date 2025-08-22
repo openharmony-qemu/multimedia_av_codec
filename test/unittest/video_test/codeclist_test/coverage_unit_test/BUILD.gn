@@ -125,8 +125,7 @@ ohos_unittest("codeclist_avcodec_info_coverage_unit_test") {
 
   sources = [ "./avcodec_info_coverage_unit_test.cpp" ]
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
 
   external_deps = [
     "c_utils:utils",
