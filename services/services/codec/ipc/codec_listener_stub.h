@@ -43,7 +43,7 @@ public:
     void OnOutputBufferUnbinded() override;
 
     void SetCallback(const std::shared_ptr<MediaCodecCallback> &callback);
-    bool OnRequestExtras(uint32_t code, MessageParcel &data);
+    int OnRequestExtras(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option);
     void Init();
     void ClearListenerCache();
     void FlushListenerCache();
