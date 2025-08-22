@@ -452,8 +452,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HDR_METADATA_Function_002, TestSize.Level1)
         videoDec_->isAVBufferMode_ = true;
         ASSERT_TRUE(CreateVideoCodecByName(codecName));
 
-        format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1600);
-        format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 900);
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1920);
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 1440);
         format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 
         VCodecTestCode param = VCodecTestCode::HW_HDR_HLG_FULL;
@@ -492,8 +492,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HDR_METADATA_Function_003, TestSize.Level1)
         videoDec_->isAVBufferMode_ = true;
         ASSERT_TRUE(CreateVideoCodecByName(codecName));
 
-        format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-        format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1600);
+        format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 900);
         format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 
         VCodecTestCode param = VCodecTestCode::HW_HDR10;
