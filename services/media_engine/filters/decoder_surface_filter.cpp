@@ -620,22 +620,24 @@ Status DecoderSurfaceFilter::DoPreroll()
 Status DecoderSurfaceFilter::DoWaitPrerollDone(bool render)
 {
     MEDIA_LOG_I("DoWaitPrerollDone enter.");
-    std::unique_lock<std::mutex> lock(prerollMutex_);
-    FALSE_RETURN_V(inPreroll_.load(), Status::OK);
-    if (prerollDone_.load() || isInterruptNeeded_.load()) {
-        MEDIA_LOG_I("Receive preroll frame before DoWaitPrerollDone.");
-    } else {
-        prerollDoneCond_.wait_for(lock, std::chrono::milliseconds(PREROLL_WAIT_TIME),
-            [this] () { return prerollDone_.load() || isInterruptNeeded_.load(); });
-    }
-    Filter::PauseFilterTask();
-    DoPause();
-    if (!prerollDone_.load()) {
-        MEDIA_LOG_E("No preroll frame received!");
-        inPreroll_.store(false);
-        prerollDone_.store(true);
-        eosNext_.store(false);
-        return Status::OK;
+    {
+        std::unique_lock<std::mutex> lock(prerollMutex_);
+        FALSE_RETURN_V(inPreroll_.load(), Status::OK);
+        if (prerollDone_.load() || isInterruptNeeded_.load()) {
+            MEDIA_LOG_I("Receive preroll frame before DoWaitPrerollDone.");
+        } else {
+            prerollDoneCond_.wait_for(lock, std::chrono::milliseconds(PREROLL_WAIT_TIME),
+                [this] () { return prerollDone_.load() || isInterruptNeeded_.load(); });
+        }
+        Filter::PauseFilterTask();
+        DoPause();
+        if (!prerollDone_.load()) {
+            MEDIA_LOG_E("No preroll frame received!");
+            inPreroll_.store(false);
+            prerollDone_.store(true);
+            eosNext_.store(false);
+            return Status::OK;
+        }
     }
     std::unique_lock<std::mutex> bufferLock(mutex_);
     if (render && !eosNext_.load() && !outputBuffers_.empty()) {
