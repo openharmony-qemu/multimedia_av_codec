@@ -52,7 +52,7 @@ avc_codec_coverage_unit_include_dirs = [
   "$av_codec_root_dir/services/engine/plugin/interface",
 ]
 
-ohos_unittest("avc_codec_coverage_unit_test") {
+ohos_unittest("video_avcencoder_coverage_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   cflags = av_codec_unittest_cflags
@@ -73,12 +73,9 @@ ohos_unittest("avc_codec_coverage_unit_test") {
   ]
 
   deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
     "$av_codec_root_dir/services/engine/common:av_codec_engine_common",
-  ]
-
-  public_deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
   ]
 

@@ -60,8 +60,7 @@ ohos_unittest("codeclist_capi_unit_test") {
     ]
   }
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
 
   external_deps = [
     "c_utils:utils",
@@ -99,8 +98,7 @@ ohos_unittest("codeclist_inner_unit_test") {
     ]
   }
 
-  public_deps =
-      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
 
   external_deps = [
     "c_utils:utils",

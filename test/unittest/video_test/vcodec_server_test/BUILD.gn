@@ -42,7 +42,7 @@ av_codec_unittest_cflags = [
 
 group("codec_server_test") {
   testonly = true
-  deps = [ ":codec_server_coverage_unit_test" ]
+  deps = [ ":video_codec_server_coverage_unit_test" ]
 }
 
 ##################################################################################################################
@@ -71,7 +71,7 @@ codec_server_coverage_include_dirs = [
   "$av_codec_root_dir/services/services/common/adaptive_framerate_controller",
 ]
 
-ohos_unittest("codec_server_coverage_unit_test") {
+ohos_unittest("video_codec_server_coverage_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   cflags = av_codec_unittest_cflags
