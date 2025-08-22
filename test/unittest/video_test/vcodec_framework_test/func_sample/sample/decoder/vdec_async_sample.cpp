@@ -814,7 +814,7 @@ void VideoDecAsyncSample::CheckFormatKey()
 bool VideoDecAsyncSample::CompareMetadata(std::shared_ptr<std::ifstream> file, int32_t size,
     std::shared_ptr<SurfaceBufferMock> surfaceBufferMock, bool isDynamic)
 {
-    if (!file->is_open()) {
+    if (!file || !file->is_open()) {
         return true;
     }
 
@@ -844,11 +844,11 @@ bool VideoDecAsyncSample::CompareHdrInfo(std::shared_ptr<AVBufferMock> buffer)
     }
     int ret;
     if (frameOutputCount_ == 0) {
-        if (g_hdrDynamicMeta.find(testParam_)) {
+        if (g_hdrDynamicMeta.find(testParam_) != g_hdrDynamicMeta.end()) {
             dynamicMetadataFile_ = std::make_unique<std::ifstream>(g_hdrDynamicMeta.at(testParam_),
                 std::ios::binary | std::ios::in); 
         }
-        if (g_hdrStaticMeta.find(testParam_)) {
+        if (g_hdrStaticMeta.find(testParam_) != g_hdrStaticMeta.end()) {
             staticMetadataFile_ = std::make_unique<std::ifstream>(g_hdrStaticMeta.at(testParam_),
                 std::ios::binary | std::ios::in);
         }
@@ -859,12 +859,12 @@ bool VideoDecAsyncSample::CompareHdrInfo(std::shared_ptr<AVBufferMock> buffer)
 
     // check meta
     std::shared_ptr<SurfaceBufferMock> surfaceBufferMock = SurfaceBufferMockFactory::CreateSurfaceBuffer(buffer);
-    if (g_hdrDynamicMetaSize.find(testParam_)) {
+    if (g_hdrDynamicMetaSize.find(testParam_) != g_hdrDynamicMetaSize.end()) {
         ret = CompareMetadata(dynamicMetadataFile_,
             g_hdrDynamicMetaSize.at(testParam_)[frameOutputCount_], surfaceBufferMock, true);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, false, "Fatal: GetHDRDynamicMetadata fail");
     }
-    if (g_hdrStaticMetaSize.find(testParam_)) {
+    if (g_hdrStaticMetaSize.find(testParam_) != g_hdrStaticMetaSize.end()) {
         ret = CompareMetadata(staticMetadataFile_,
             g_hdrStaticMetaSize.at(testParam_)[frameOutputCount_], surfaceBufferMock, false);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret, false, "Fatal: GetHDRStaticMetadata fail");
