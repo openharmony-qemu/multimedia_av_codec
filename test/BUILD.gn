@@ -392,7 +392,7 @@ group("video_codec_unit_test") {
         "unittest/video_test/sa_avcodec_test:video_sa_avcodec_unit_test",
         "unittest/video_test/vcodec_framework_test:vcodec_framework_test",
         "unittest/video_test/vcodec_server_test:codec_server_test",
-        "unittest/video_test/avcencoder_test:avc_codec_coverage_unit_test",
+        "unittest/video_test/avcencoder_test:video_avcencoder_coverage_unit_test",
       ]
     }
   }
