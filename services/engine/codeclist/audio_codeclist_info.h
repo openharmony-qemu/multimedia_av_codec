@@ -26,13 +26,11 @@ public:
     std::vector<CapabilityData> GetAudioCapabilities() const noexcept;
     CapabilityData GetMP3DecoderCapability();
     CapabilityData GetAacDecoderCapability();
-    CapabilityData GetOpusDecoderCapability();
     CapabilityData GetFlacDecoderCapability();
     CapabilityData GetVorbisDecoderCapability();
     CapabilityData GetAmrnbDecoderCapability();
     CapabilityData GetAmrwbDecoderCapability();
     CapabilityData GetAacEncoderCapability();
-    CapabilityData GetOpusEncoderCapability();
     CapabilityData GetFlacEncoderCapability();
     CapabilityData GetG711muEncoderCapability();
     CapabilityData GetG711muDecoderCapability();
@@ -50,6 +48,8 @@ public:
     CapabilityData GetAmrwbEncoderCapability();
     CapabilityData GetL2hcEncoderCapability();
     CapabilityData GetL2hcDecoderCapability();
+    CapabilityData GetOpusDecoderCapability();
+    CapabilityData GetOpusEncoderCapability();
 #endif
 #ifdef SUPPORT_CODEC_COOK
     CapabilityData GetCookDecoderCapability();
