@@ -3409,7 +3409,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_MP4_AIGC_002, TestSize.Level0)
     std::shared_ptr<FormatMock> metaData = FormatMockFactory::CreateFormat();
     metaData->PutStringValue(Tag::MEDIA_CREATION_TIME, "2025-08-14T00:01:02.000000Z");
     metaData->PutStringValue(Tag::MEDIA_AIGC, "'{Label:value1}'");
-    metaData->PutIntValue("fast_start", static_cast<int32_t>(1)); // 1 moov 前置
+    metaData->PutIntValue(Tag::MEDIA_ENABLE_MOOV_FRONT, static_cast<int32_t>(1)); // 1 moov 前置
     metaData->PutStringValue(Tag::MEDIA_COMMENT, "comment_test_str_metadata");
     EXPECT_EQ(avmuxer_->SetFormat(metaData), 0);
 
