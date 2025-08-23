@@ -843,16 +843,13 @@ void CodecServer::InitFramerateCalculator(Meta &callerInfo)
 {
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
         framerateCalculator_ = std::make_shared<FramerateCalculator>(instanceId_,
-            codecType_ == AVCODEC_TYPE_VIDEO_DECODER,
-            [weakCodecBase = std::weak_ptr<CodecBase>(codecBase_), codecType = codecType_](double framerate) {
+            [weakCodecBase = std::weak_ptr<CodecBase>(codecBase_)](double framerate) {
                 auto codecBase = weakCodecBase.lock();
                 if (!codecBase) {
                     return;
                 }
                 Format format;
-                auto key = codecType == AVCODEC_TYPE_VIDEO_ENCODER ?
-                    Tag::VIDEO_ENCODER_OPERATING_RATE : Tag::VIDEO_FRAME_RATE;
-                format.PutDoubleValue(key, framerate);
+                format.PutDoubleValue(Tag::VIDEO_OPERATING_RATE, framerate);
                 codecBase->SetParameter(format);
             }
         );

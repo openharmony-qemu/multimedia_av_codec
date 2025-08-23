@@ -321,16 +321,39 @@ int32_t HDecoder::OnSetParameters(const Format &format)
         return ret;
     }
     optional<double> frameRate = GetFrameRateFromUser(format);
-    if (frameRate.has_value()) {
-        OMX_PARAM_U32TYPE framerateCfgType;
-        InitOMXParam(framerateCfgType);
-        framerateCfgType.nPortIndex = OMX_DirInput;
-        framerateCfgType.nU32 = frameRate.value() * FRAME_RATE_COEFFICIENT;
-        if (!SetParameter(OMX_IndexCodecExtConfigOperatingRate, framerateCfgType, true)) {
-            HLOGW("failed to set frameRate %.f", frameRate.value());
+    optional<double> operatingRate = GetOperatingRateFromUser(format);
+    if (operatingRate.has_value() && frameRate.has_value()) {
+        double maxFramerate = std::max(operatingRate.value(), frameRate.value());
+        OMX_PARAM_U32TYPE maxFramerateCfgType;
+        InitOMXParam(maxFramerateCfgType);
+        maxFramerateCfgType.nPortIndex = OMX_DirInput;
+        maxFramerateCfgType.nU32 = static_cast<uint32_t>(maxFramerate * FRAME_RATE_COEFFICIENT);
+        if (!SetParameter(OMX_IndexCodecExtConfigOperatingRate, maxFramerateCfgType, true)) {
+            HLOGW("failed to set maxFramerate %.f", maxFramerate);
         }
         codecRate_ = frameRate.value();
+    } else {
+        if (operatingRate.has_value()) {
+            OMX_PARAM_U32TYPE operatingRateCfgType;
+            InitOMXParam(operatingRateCfgType);
+            operatingRateCfgType.nPortIndex = OMX_DirInput;
+            operatingRateCfgType.nU32 = static_cast<uint32_t>(operatingRate.value() * FRAME_RATE_COEFFICIENT);
+            if (!SetParameter(OMX_IndexCodecExtConfigOperatingRate, operatingRateCfgType, true)) {
+                HLOGW("failed to set operatingRate %.f", operatingRate.value());
+            }
+        }
+        if (frameRate.has_value()) {
+            OMX_PARAM_U32TYPE framerateCfgType;
+            InitOMXParam(framerateCfgType);
+            framerateCfgType.nPortIndex = OMX_DirInput;
+            framerateCfgType.nU32 = static_cast<uint32_t>(frameRate.value() * FRAME_RATE_COEFFICIENT);
+            if (!SetParameter(OMX_IndexCodecExtConfigOperatingRate, framerateCfgType, true)) {
+                HLOGW("failed to set frameRate %.f", frameRate.value());
+            }
+            codecRate_ = frameRate.value();
+        }
     }
+
     (void)SetVrrEnable(format);
     (void)SetLppTargetPts(format);
     return AVCS_ERR_OK;
