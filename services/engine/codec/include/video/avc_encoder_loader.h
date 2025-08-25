@@ -32,7 +32,6 @@ private:
     static AvcEncoderLoader &GetInstance();
 
     std::mutex mutex_;
-    int32_t avcEncoderCount_ = 0;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
