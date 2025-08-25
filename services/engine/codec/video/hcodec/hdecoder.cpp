@@ -322,14 +322,18 @@ int32_t HDecoder::OnSetParameters(const Format &format)
     }
     optional<double> frameRate = GetFrameRateFromUser(format);
     if (frameRate.has_value()) {
-        OMX_PARAM_U32TYPE framerateCfgType;
-        InitOMXParam(framerateCfgType);
-        framerateCfgType.nPortIndex = OMX_DirInput;
-        framerateCfgType.nU32 = frameRate.value() * FRAME_RATE_COEFFICIENT;
-        if (!SetParameter(OMX_IndexCodecExtConfigOperatingRate, framerateCfgType, true)) {
-            HLOGW("failed to set frameRate %.f", frameRate.value());
-        }
         codecRate_ = frameRate.value();
+    }
+    optional<double> operatingRate = GetOperatingRateFromUser(format);
+    if (operatingRate.has_value() || frameRate.has_value()) {
+        double maxFramerate = std::max(operatingRate.value_or(0.0), frameRate.value_or(0.0));
+        OMX_PARAM_U32TYPE maxFramerateCfgType;
+        InitOMXParam(maxFramerateCfgType);
+        maxFramerateCfgType.nPortIndex = OMX_DirInput;
+        maxFramerateCfgType.nU32 = static_cast<uint32_t>(maxFramerate * FRAME_RATE_COEFFICIENT);
+        if (!SetParameter(OMX_IndexCodecExtConfigOperatingRate, maxFramerateCfgType, true)) {
+            HLOGW("failed to set maxFramerate %.f", maxFramerate);
+        }
     }
     (void)SetVrrEnable(format);
     (void)SetLppTargetPts(format);

@@ -23,14 +23,15 @@ auto afcEnable = OHOS::system::GetBoolParameter("OHOS.MediaAVCodec.AFC.Enable", 
 using namespace std::chrono_literals;
 constexpr auto CHECK_INTERVAL = 1000ms;
 constexpr auto CHECK_INTERVAL_FILTER = (CHECK_INTERVAL / 2).count(); // CHECK_INTERVAL / 2: filter out short intervals
-constexpr uint8_t MAX_INCREASE_CHECK_TIMES = 2;
+constexpr double DEFAULT_FRAMERATE = 60;
+constexpr uint8_t MAX_INCREASE_CHECK_TIMES = 1;
 constexpr uint8_t MAX_DECREASE_CHECK_TIMES = 2;
 } // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
-FramerateCalculator::FramerateCalculator(int32_t instanceId, bool isDecoder, std::function<void(double)> &&handler)
-    : instanceId_(instanceId), isDecoder_(isDecoder), resetFramerateHandler_(std::move(handler)) {}
+FramerateCalculator::FramerateCalculator(int32_t instanceId, std::function<void(double)> &&handler)
+    : instanceId_(instanceId), resetFramerateHandler_(std::move(handler)) {}
 
 void FramerateCalculator::OnFrameConsumed()
 {
@@ -62,12 +63,15 @@ bool FramerateCalculator::CheckAndResetFramerate()
         "Elapsed time is invalid, cannot calculate framerate");
 
     auto actualFramerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
+    if (actualFramerate < DEFAULT_FRAMERATE && actualFramerate < configuredFramerate_) {
+        actualFramerate = std::min(DEFAULT_FRAMERATE, configuredFramerate_);
+    }
     auto fluctuationFramerate = std::abs(actualFramerate - lastFramerate_);
     if (!(fluctuationFramerate > 5 && (fluctuationFramerate / lastFramerate_ > 0.1))) { // 5/0.1: reset threshold
         if (decreseCheckTimes_ != MAX_DECREASE_CHECK_TIMES) {
             decreseCheckTimes_ = MAX_DECREASE_CHECK_TIMES;
         }
-        if (isDecoder_ && increseCheckTimes_ != MAX_INCREASE_CHECK_TIMES) {
+        if (increseCheckTimes_ != MAX_INCREASE_CHECK_TIMES) {
             increseCheckTimes_ = MAX_INCREASE_CHECK_TIMES;
         }
         return false;
@@ -85,13 +89,8 @@ bool FramerateCalculator::CheckAndResetFramerate()
         }
     } else if (decreseCheckTimes_ > 0) {
         decreseCheckTimes_--;
-        if (isDecoder_) {
-            increseCheckTimes_ = MAX_INCREASE_CHECK_TIMES;
-        }
+        increseCheckTimes_ = MAX_INCREASE_CHECK_TIMES;
         return false;
-    }
-    if (resetFramerate < 1.0) { // 1.0: minimum framerate
-        resetFramerate = 1.0;
     }
     resetFramerateHandler_(resetFramerate);
 

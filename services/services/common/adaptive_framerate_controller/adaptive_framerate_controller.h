@@ -30,8 +30,7 @@ namespace MediaAVCodec {
 class FramerateCalculator : public std::enable_shared_from_this<FramerateCalculator>,
                             public AVCodecDfxComponent {
 public:
-    FramerateCalculator(int32_t instanceId, bool isDecoder,
-                        std::function<void(double)> &&resetFramerateHandler);
+    FramerateCalculator(int32_t instanceId, std::function<void(double)> &&resetFramerateHandler);
     void OnFrameConsumed();
     void OnStopped();
     bool CheckAndResetFramerate();
@@ -48,13 +47,12 @@ private:
     void UnregisterFromAFC();
 
     int32_t instanceId_;
-    bool isDecoder_ = true;
     std::atomic<Status> status_ = Status::INITIALIZED;
     std::atomic<uint32_t> frameCount_{0};
     double configuredFramerate_{60.0};
     std::atomic<double> lastFramerate_{1.0};
-    uint8_t increseCheckTimes_{0};
-    uint8_t decreseCheckTimes_{0};
+    uint8_t increseCheckTimes_{1};
+    uint8_t decreseCheckTimes_{1};
     std::chrono::steady_clock::time_point lastAdjustmentTime_{};
     std::function<void(double)> resetFramerateHandler_;
 };
