@@ -55,6 +55,7 @@ public:
     virtual Range GetVideoFrameRateRangeForSize(int32_t width, int32_t height) = 0;
     virtual bool AreVideoSizeAndFrameRateSupported(int32_t width, int32_t height, int32_t frameRate) = 0;
     virtual std::vector<int32_t> GetVideoSupportedPixelFormats() = 0;
+    virtual std::vector<int32_t> GetVideoSupportedGraphicPixelFormats() = 0;
     virtual std::vector<int32_t> GetSupportedProfiles() = 0;
     virtual std::vector<int32_t> GetSupportedLevelsForProfile(int32_t profile) = 0;
     virtual bool AreProfileAndLevelSupported(int32_t profile, int32_t level) = 0;
@@ -140,7 +141,6 @@ constexpr int32_t ERROR_HEIGHT = 95;
 constexpr int32_t ERROR_VIDEO_AVC_PROFILE = -1;
 constexpr int32_t ERROR_LEVEL = -1;
 
-constexpr uint32_t MAX_VIDEO_BITRATE = 300000000;
 constexpr uint32_t MAX_AUDIO_BITRATE = 320000;
 constexpr uint32_t MIN_AUDIO_BITRATE = 32000;
 constexpr uint32_t MAX_AUDIO_BITRATE_AAC = 500000;
@@ -156,9 +156,16 @@ constexpr int AUDIO_SAMPLE_RATE_COUNT_VIVID = 5;
 constexpr int32_t STACK_BUF_OVERWRITE_MAX_BUF_SIZE = 100;
 constexpr int32_t STACK_BUF_OVERWRITE_TIMES = 1000;
 
-const std::vector<std::string> videoDecoderList = {std::string(CodecMimeType::VIDEO_AVC)};
+const std::vector<std::string> videoDecoderList = {
+    std::string(CodecMimeType::VIDEO_H263),  std::string(CodecMimeType::VIDEO_AVC),
+    std::string(CodecMimeType::VIDEO_MPEG2), std::string(CodecMimeType::VIDEO_HEVC),
+    std::string(CodecMimeType::VIDEO_MPEG4),
+};
 
-const std::vector<std::string> videoEncoderList = {std::string(CodecMimeType::VIDEO_AVC)};
+const std::vector<std::string> videoEncoderList = {
+    std::string(CodecMimeType::VIDEO_AVC),
+    std::string(CodecMimeType::VIDEO_HEVC),
+};
 
 const std::vector<std::string> audioDecoderList = {
     std::string(CodecMimeType::AUDIO_MPEG), std::string(CodecMimeType::AUDIO_AAC),

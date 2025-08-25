@@ -940,6 +940,19 @@ extern const char *OH_MD_KEY_ENABLE_SYNC_MODE;
 extern const char *OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN;
 
 /**
+ * @brief Key for querying native buffer pixel formats for video codec operations, value type is int32_t.
+ * The value represents pixel formats defined in {@link OH_NativeBuffer_Format}.
+ *
+ * This key serves two primary purposes:
+ * 1. Runtime decoder output: Get current output format via {@link OH_VideoDecoder_GetOutputDescription}
+ *    (or {@link OH_AVCodecOnStreamChanged} events)
+ * 2. Runtime encoder input: Get current input format via {@link OH_VideoEncoder_GetInputDescription}
+ *
+ * @since 22
+ */
+extern const char *OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT;
+
+/**
  * @brief Media type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
