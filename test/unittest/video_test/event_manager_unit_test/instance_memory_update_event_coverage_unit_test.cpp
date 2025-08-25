@@ -57,7 +57,7 @@ public:
     std::shared_ptr<CodecServiceStubMock> codecStubMock_ = nullptr;
     std::shared_ptr<InstanceMemoryUpdateEventHandler> instanceMemoryHandler_ = nullptr;
     static int32_t instanceId_;
-    bool existInstance_= false;
+    bool existInstance_ = false;
 
 private:
     std::vector<std::pair<AVCodecServerManager::StubType, sptr<IRemoteObject>>> stubList_;
