@@ -80,6 +80,7 @@ ohos_unittest("demuxer_capi_unit_test") {
       "./demuxer_unit_test.cpp",
       "./demuxer_uri_unit_test.cpp",
       "./demuxer_video_mpg_unit_test.cpp",
+      "./demuxer_ts_unit_test.cpp",
     ]
   }
 
@@ -162,6 +163,7 @@ ohos_unittest("demuxer_inner_unit_test") {
       "./demuxer_unit_test.cpp",
       "./demuxer_uri_unit_test.cpp",
       "./demuxer_video_mpg_unit_test.cpp",
+      "./demuxer_ts_unit_test.cpp",
       "./inner/demuxer_inner_base_mock.cpp",
       "./inner/demuxer_inner_memory_mock.cpp",
       "./inner/demuxer_inner_mock_factory.cpp",
@@ -229,6 +231,7 @@ ohos_unittest("demuxer_capi_buffer_unit_test") {
       "./demuxer_unit_test.cpp",
       "./demuxer_uri_unit_test.cpp",
       "./demuxer_video_mpg_unit_test.cpp",
+      "./demuxer_ts_unit_test.cpp",
     ]
   }
 
@@ -295,6 +298,7 @@ ohos_unittest("demuxer_inner_buffer_unit_test") {
       "./demuxer_unit_test.cpp",
       "./demuxer_uri_unit_test.cpp",
       "./demuxer_video_mpg_unit_test.cpp",
+      "./demuxer_ts_unit_test.cpp",
       "./inner/demuxer_inner_base_mock.cpp",
       "./inner/demuxer_inner_buffer_mock.cpp",
       "./inner/demuxer_inner_mock_factory.cpp",
