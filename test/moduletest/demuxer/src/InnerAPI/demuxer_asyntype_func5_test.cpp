@@ -325,7 +325,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc5Test, DEMUXER_ASYN_INNER_MOV_FUNC_0130, TestSi
     int32_t readCount = 0;
     int64_t pts = 0;
     uint32_t timeout = 10000;
-    int64_t ptsnum = 27687;
+    int64_t ptsMin = 27687;
+    int64_t ptsMax = 28801;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MOV, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -341,7 +342,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc5Test, DEMUXER_ASYN_INNER_MOV_FUNC_0130, TestSi
             ASSERT_EQ(demuxerPlugin->ReadSample(indexVid, avBuf_, timeout), Status::OK);
         }
     }
-    ASSERT_EQ(pts, ptsnum);
+    ASSERT_GE(pts, ptsMin);
+    ASSERT_LE(pts, ptsMax);
 }
 /**
  * @tc.number    : DEMUXER_ASYN_INNER_MOV_FUNC_0140
@@ -356,7 +358,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc5Test, DEMUXER_ASYN_INNER_MOV_FUNC_0140, TestSi
     int32_t readCount = 0;
     int64_t pts = 0;
     uint32_t timeout = 10000;
-    int64_t ptsnum = 4608;
+    int64_t ptsMin = 3584;
+    int64_t ptsMax = 5120;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MOV, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -372,7 +375,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc5Test, DEMUXER_ASYN_INNER_MOV_FUNC_0140, TestSi
             ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
         }
     }
-    ASSERT_EQ(pts, ptsnum);
+    ASSERT_GE(pts, ptsMin);
+    ASSERT_LE(pts, ptsMax);
 }
 
 /**

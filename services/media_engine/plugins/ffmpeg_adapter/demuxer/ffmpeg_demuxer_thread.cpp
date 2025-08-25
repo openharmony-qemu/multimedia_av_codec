@@ -168,6 +168,9 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         ioContext_.invokerType = InvokerType::READ;
     }
     trackId_ = trackId;
+    if (!cacheQueue_.HasCache(trackId) && timeout == 0) {
+        return Status::ERROR_WAIT_TIMEOUT;
+    }
     if (!readThread_) {
         readThread_ = std::make_unique<std::thread>(&FFmpegDemuxerPlugin::FFmpegReadLoop, this);
     }
@@ -210,6 +213,7 @@ bool FFmpegDemuxerPlugin::ShouldWaitForRead(uint32_t trackId)
 Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t timeout)
 {
     if (ShouldWaitForRead(trackId)) {
+        isWaitingForReadThread_.store(true);
         if (threadState_ == READING) {
             std::lock_guard<std::mutex> readLock(readPacketMutex_);
             ioContext_.readCbReady = true;
@@ -224,11 +228,13 @@ Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t t
             std::unique_lock<std::mutex> readLock(readSampleMutex_);
             if (!readCacheCv_.wait_for(readLock, std::chrono::milliseconds(timeout),
                 [this, trackId] { return !ShouldWaitForRead(trackId);})) {
+                isWaitingForReadThread_.store(false);
                 FALSE_RETURN_V_MSG_E(readLoopStatus_ == Status::OK, readLoopStatus_, "read thread abnoraml end");
                 return Status::ERROR_WAIT_TIMEOUT;
             }
         }
     }
+    isWaitingForReadThread_.store(false);
     return Status::OK;
 }
 
@@ -287,7 +293,8 @@ void FFmpegDemuxerPlugin::HandleReadWait()
     }
     readLoopCv_.wait(readLock, [this]() {
         return (threadReady_) || (ioContext_.invokerType == InvokerType::DESTORY) ||
-               (!cacheQueue_.HasCache(trackId_) && !isPauseReadPacket_);
+               (!cacheQueue_.HasCache(trackId_) && !isPauseReadPacket_) ||
+               (isWaitingForReadThread_.load() && cacheQueue_.GetCacheSize(trackId_) <= 1);
     });
     threadState_ = READING;
     threadReady_ = false;
@@ -431,6 +438,9 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
         ioContext_.invokerType = InvokerType::READ;
     }
     trackId_ = trackId;
+    if (!cacheQueue_.HasCache(trackId) && timeout == 0) {
+        return Status::ERROR_WAIT_TIMEOUT;
+    }
     if (!readThread_) {
         readThread_ = std::make_unique<std::thread>(&FFmpegDemuxerPlugin::FFmpegReadLoop, this);
     }
