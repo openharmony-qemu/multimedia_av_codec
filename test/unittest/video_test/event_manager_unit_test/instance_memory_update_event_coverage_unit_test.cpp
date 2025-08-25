@@ -57,6 +57,7 @@ public:
     std::shared_ptr<CodecServiceStubMock> codecStubMock_ = nullptr;
     std::shared_ptr<InstanceMemoryUpdateEventHandler> instanceMemoryHandler_ = nullptr;
     static int32_t instanceId_;
+    bool existInstance_= false;
 
 private:
     std::vector<std::pair<AVCodecServerManager::StubType, sptr<IRemoteObject>>> stubList_;
@@ -77,7 +78,7 @@ void TEST_SUIT::SetUp(void)
     codecStubMock_ = std::make_shared<CodecServiceStubMock>();
     CodecServiceStub::RegisterMock(codecStubMock_);
     instanceMemoryHandler_ = std::make_shared<InstanceMemoryUpdateEventHandler>();
-    instanceId_ = 0;
+    existInstance_ = false;
 }
 
 void TEST_SUIT::TearDown(void)
@@ -121,6 +122,7 @@ sptr<IRemoteObject> TEST_SUIT::CreateCodecServiceStub(std::shared_ptr<AVCodecSer
     EXPECT_NE(codecStub, nullptr);
     EXPECT_EQ(ret, AVCS_ERR_OK);
     stubList_.emplace_back(AVCodecServerManager::StubType::CODEC, codecStub);
+    existInstance_ = true;
     return codecStub;
 }
 
@@ -132,14 +134,14 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_001, TestSize
 {
     auto server = CreateAVCodecServer();
     (void)CreateCodecServiceStub(server);
-    instanceId_++;
     pid_t pid = getpid();
     instanceMemoryHandler_->appMemoryThreshold_ = 0;
     instanceMemoryHandler_->timerMap_.clear();
     instanceMemoryHandler_->UpdateInstanceMemory(instanceId_, DEFAULT_MEMORY);
     instanceMemoryHandler_->appMemoryExceedThresholdList_.clear();
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
-    EXPECT_EQ(instanceId_, 1);
+    instanceId_++;
+    EXPECT_TRUE(existInstance_);
 }
 
 /**
@@ -153,7 +155,7 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_002, TestSize
     instanceMemoryHandler_->timerMap_.clear();
     instanceMemoryHandler_->appMemoryExceedThresholdList_.clear();
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
-    EXPECT_EQ(instanceId_, 0);
+    EXPECT_FALSE(existInstance_);
 }
 
 /**
@@ -164,7 +166,6 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_003, TestSize
 {
     auto server = CreateAVCodecServer();
     (void)CreateCodecServiceStub(server);
-    instanceId_++;
     pid_t pid = getpid();
     auto timeName = std::string("Pid_") + std::to_string(pid) + " memory exceeded threshold";
     instanceMemoryHandler_->timerMap_.emplace(
@@ -173,7 +174,8 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_003, TestSize
     instanceMemoryHandler_->UpdateInstanceMemory(instanceId_, DEFAULT_MEMORY);
     instanceMemoryHandler_->appMemoryExceedThresholdList_.clear();
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
-    EXPECT_EQ(instanceId_, 1);
+    instanceId_++;
+    EXPECT_TRUE(existInstance_);
 }
 
 /**
@@ -189,7 +191,7 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_004, TestSize
     instanceMemoryHandler_->appMemoryThreshold_ = INT32_MAX;
     instanceMemoryHandler_->appMemoryExceedThresholdList_.clear();
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
-    EXPECT_EQ(instanceId_, 0);
+    EXPECT_FALSE(existInstance_);
 }
 
 /**
@@ -200,14 +202,14 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_005, TestSize
 {
     auto server = CreateAVCodecServer();
     (void)CreateCodecServiceStub(server);
-    instanceId_++;
     pid_t pid = getpid();
     instanceMemoryHandler_->appMemoryThreshold_ = 0;
     instanceMemoryHandler_->timerMap_.clear();
     instanceMemoryHandler_->UpdateInstanceMemory(instanceId_, DEFAULT_MEMORY);
     instanceMemoryHandler_->appMemoryExceedThresholdList_.emplace(pid);
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
-    EXPECT_EQ(instanceId_, 1);
+    instanceId_++;
+    EXPECT_TRUE(existInstance_);
 }
 
 /**
@@ -221,7 +223,7 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_006, TestSize
     instanceMemoryHandler_->timerMap_.clear();
     instanceMemoryHandler_->appMemoryExceedThresholdList_.emplace(pid);
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
-    EXPECT_EQ(instanceId_, 0);
+    EXPECT_FALSE(existInstance_);
 }
 
 /**
@@ -232,7 +234,6 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_007, TestSize
 {
     auto server = CreateAVCodecServer();
     (void)CreateCodecServiceStub(server);
-    instanceId_++;
     pid_t pid = getpid();
     auto timeName = std::string("Pid_") + std::to_string(pid) + " memory exceeded threshold";
     instanceMemoryHandler_->timerMap_.emplace(
@@ -241,7 +242,8 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_007, TestSize
     instanceMemoryHandler_->UpdateInstanceMemory(instanceId_, DEFAULT_MEMORY);
     instanceMemoryHandler_->appMemoryExceedThresholdList_.emplace(pid);
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
-    EXPECT_EQ(instanceId_, 1);
+    instanceId_++;
+    EXPECT_TRUE(existInstance_);
 }
 
 /**
@@ -257,7 +259,7 @@ HWTEST_F(TEST_SUIT, DeterminAppMemoryExceedThresholdAndReport_Test_008, TestSize
     instanceMemoryHandler_->appMemoryThreshold_ = INT32_MAX;
     instanceMemoryHandler_->appMemoryExceedThresholdList_.emplace(pid);
     instanceMemoryHandler_->DeterminAppMemoryExceedThresholdAndReport(pid, pid);
-    EXPECT_EQ(instanceId_, 0);
+    EXPECT_FALSE(existInstance_);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
