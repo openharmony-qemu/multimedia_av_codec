@@ -18,7 +18,7 @@
 
 #include "avbuffer_mock.h"
 #include "buffer/avbuffer.h"
-
+#include "common_mock.h"
 namespace OHOS {
 namespace MediaAVCodec {
 class AVBufferInnerMock : public AVBufferMock {

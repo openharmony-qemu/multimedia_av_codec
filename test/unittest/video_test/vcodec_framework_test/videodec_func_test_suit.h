@@ -90,6 +90,7 @@ protected:
     std::shared_ptr<OHOS::MediaAVCodec::FormatMock> format_ = nullptr;
     std::shared_ptr<OHOS::MediaAVCodec::VDecCallbackTest> vdecCallback_ = nullptr;
     std::shared_ptr<OHOS::MediaAVCodec::VDecCallbackTestExt> vdecCallbackExt_ = nullptr;
+    std::shared_ptr<OHOS::MediaAVCodec::VDecSignal> vdecSignal_ = nullptr;
 #ifdef VIDEODEC_CAPI_UNIT_TEST
     OH_AVCodec *codec_ = nullptr;
 #endif
@@ -99,14 +100,14 @@ void TEST_SUIT::TearDownTestCase(void) {}
 
 void TEST_SUIT::SetUp(void)
 {
-    std::shared_ptr<OHOS::MediaAVCodec::VDecSignal> vdecSignal = std::make_shared<OHOS::MediaAVCodec::VDecSignal>();
-    vdecCallback_ = std::make_shared<OHOS::MediaAVCodec::VDecCallbackTest>(vdecSignal);
+    vdecSignal_ = std::make_shared<OHOS::MediaAVCodec::VDecSignal>();
+    vdecCallback_ = std::make_shared<OHOS::MediaAVCodec::VDecCallbackTest>(vdecSignal_);
     ASSERT_NE(nullptr, vdecCallback_);
 
-    vdecCallbackExt_ = std::make_shared<OHOS::MediaAVCodec::VDecCallbackTestExt>(vdecSignal);
+    vdecCallbackExt_ = std::make_shared<OHOS::MediaAVCodec::VDecCallbackTestExt>(vdecSignal_);
     ASSERT_NE(nullptr, vdecCallbackExt_);
 
-    videoDec_ = std::make_shared<OHOS::MediaAVCodec::VideoDecSample>(vdecSignal);
+    videoDec_ = std::make_shared<OHOS::MediaAVCodec::VideoDecSample>(vdecSignal_);
     ASSERT_NE(nullptr, videoDec_);
 
     format_ = OHOS::MediaAVCodec::FormatMockFactory::CreateFormat();
