@@ -32,12 +32,14 @@ public:
     static bool Marshalling(MessageParcel &parcel, const std::map<int32_t, std::vector<int32_t>> &mapIntToVec);
     static bool Marshalling(MessageParcel &parcel, const std::map<int32_t, Format> &mapIntToFormat);
     static bool Marshalling(MessageParcel &parcel, const std::vector<Range> &audioSampleRateRanges);
+    static bool MarshallingInt32Vector(MessageParcel &parcel, CapabilityData &capabilityData);
 
     static bool Unmarshalling(MessageParcel &parcel, CapabilityData &capabilityData);
     static bool Unmarshalling(MessageParcel &parcel, std::map<ImgSize, Range> &mapSizeToRange);
     static bool Unmarshalling(MessageParcel &parcel, std::map<int32_t, std::vector<int32_t>> &mapIntToVec);
     static bool Unmarshalling(MessageParcel &parcel, std::map<int32_t, Format> &mapIntToFormat);
     static bool Unmarshalling(MessageParcel &parcel, std::vector<Range> &audioSampleRateRanges);
+    static bool UnmarshallingInt32Vector(MessageParcel &parcel, CapabilityData &capabilityData);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

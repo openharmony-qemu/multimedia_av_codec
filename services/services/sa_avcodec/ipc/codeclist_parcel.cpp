@@ -53,11 +53,8 @@ bool CodecListParcel::Marshalling(MessageParcel &parcel, CapabilityData &capabil
     (void)parcel.WriteInt32(capabilityData.blockPerSecond.maxVal);
     (void)parcel.WriteInt32(capabilityData.blockSize.width);
     (void)parcel.WriteInt32(capabilityData.blockSize.height);
-    (void)parcel.WriteInt32Vector(capabilityData.sampleRate);
-    (void)parcel.WriteInt32Vector(capabilityData.pixFormat);
-    (void)parcel.WriteInt32Vector(capabilityData.bitDepth);
-    (void)parcel.WriteInt32Vector(capabilityData.profiles);
-    (void)parcel.WriteInt32Vector(capabilityData.bitrateMode);
+    CHECK_AND_RETURN_RET_LOG(MarshallingInt32Vector(parcel, capabilityData), false,
+                             "failed to Marshalling int32 vector");
     (void)Marshalling(parcel, capabilityData.measuredFrameRate);
     (void)Marshalling(parcel, capabilityData.profileLevelsMap);
     (void)parcel.WriteBool(capabilityData.supportSwapWidthHeight);
@@ -72,6 +69,16 @@ bool CodecListParcel::Marshalling(MessageParcel &parcel, CapabilityData &capabil
     AVCODEC_LOGD("success to Marshalling capabilityDataArray");
 
     return true;
+}
+
+bool CodecListParcel::MarshallingInt32Vector(MessageParcel &parcel, CapabilityData &capabilityData)
+{
+    return parcel.WriteInt32Vector(capabilityData.sampleRate) &&
+           parcel.WriteInt32Vector(capabilityData.pixFormat) &&
+           parcel.WriteInt32Vector(capabilityData.graphicPixFormat) &&
+           parcel.WriteInt32Vector(capabilityData.bitDepth) &&
+           parcel.WriteInt32Vector(capabilityData.profiles) &&
+           parcel.WriteInt32Vector(capabilityData.bitrateMode);
 }
 
 bool CodecListParcel::Marshalling(MessageParcel &parcel, const std::map<ImgSize, Range> &mapSizeToRange)
@@ -146,11 +153,8 @@ bool CodecListParcel::Unmarshalling(MessageParcel &parcel, CapabilityData &capab
     capabilityData.blockPerSecond.maxVal = parcel.ReadInt32();
     capabilityData.blockSize.width = parcel.ReadInt32();
     capabilityData.blockSize.height = parcel.ReadInt32();
-    parcel.ReadInt32Vector(&capabilityData.sampleRate);
-    parcel.ReadInt32Vector(&capabilityData.pixFormat);
-    parcel.ReadInt32Vector(&capabilityData.bitDepth);
-    parcel.ReadInt32Vector(&capabilityData.profiles);
-    parcel.ReadInt32Vector(&capabilityData.bitrateMode);
+    CHECK_AND_RETURN_RET_LOG(UnmarshallingInt32Vector(parcel, capabilityData), false,
+                             "failed to Unmarshalling int32 vector");
     CHECK_AND_RETURN_RET_LOG(Unmarshalling(parcel, capabilityData.measuredFrameRate), false,
                              "failed to Unmarshalling measuredFrameRate vector");
     CHECK_AND_RETURN_RET_LOG(Unmarshalling(parcel, capabilityData.profileLevelsMap), false,
@@ -167,6 +171,16 @@ bool CodecListParcel::Unmarshalling(MessageParcel &parcel, CapabilityData &capab
     CHECK_AND_RETURN_RET_LOG(Unmarshalling(parcel, capabilityData.sampleRateRanges), false, "sampleRateRanges failed");
     AVCODEC_LOGD("success to Unmarshalling capabilityDataArray");
     return true;
+}
+
+bool CodecListParcel::UnmarshallingInt32Vector(MessageParcel &parcel, CapabilityData &capabilityData)
+{
+    return parcel.ReadInt32Vector(&capabilityData.sampleRate) &&
+           parcel.ReadInt32Vector(&capabilityData.pixFormat) &&
+           parcel.ReadInt32Vector(&capabilityData.graphicPixFormat) &&
+           parcel.ReadInt32Vector(&capabilityData.bitDepth) &&
+           parcel.ReadInt32Vector(&capabilityData.profiles) &&
+           parcel.ReadInt32Vector(&capabilityData.bitrateMode);
 }
 
 bool CodecListParcel::Unmarshalling(MessageParcel &parcel, std::map<ImgSize, Range> &mapSizeToRange)

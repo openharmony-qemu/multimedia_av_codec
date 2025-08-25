@@ -29,13 +29,12 @@ public:
 
 protected:
     std::shared_ptr<AVCodecList> avCodecList_ = nullptr;
-    void CheckAVDecH264(const std::shared_ptr<VideoCaps> &videoCaps) const;
     void CheckAVDecH263(const std::shared_ptr<VideoCaps> &videoCaps) const;
     void CheckAVDecMpeg2Video(const std::shared_ptr<VideoCaps> &videoCaps) const;
     void CheckAVDecMpeg4(const std::shared_ptr<VideoCaps> &videoCaps) const;
     void CheckAVDecAVC(const std::shared_ptr<VideoCaps> &videoCaps) const;
+    void CheckAVDecHEVC(const std::shared_ptr<VideoCaps> &videoCaps) const;
     void CheckAVEncAVC(const std::shared_ptr<VideoCaps> &videoCaps) const;
-    void CheckAVEncMpeg4(const std::shared_ptr<VideoCaps> &videoCaps) const;
     void CheckVideoCaps(const std::shared_ptr<VideoCaps> &videoCaps) const;
     void CheckVideoCapsArray(const std::vector<std::shared_ptr<VideoCaps>> &videoCapsArray) const;
     void CheckAVDecMP3(const std::shared_ptr<AudioCaps> &audioCaps) const;

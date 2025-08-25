@@ -337,6 +337,27 @@ std::vector<int32_t> CodecListCapiMock::GetVideoSupportedPixelFormats()
     return std::vector<int32_t>();
 }
 
+std::vector<int32_t> CodecListCapiMock::GetVideoSupportedGraphicPixelFormats()
+{
+    if (codeclist_ != nullptr) {
+        const int32_t *graphicFormats = nullptr;
+        uint32_t graphicFormatNum = 0;
+        int32_t ret =
+            OH_AVCapability_GetVideoSupportedNativeBufferFormats(codeclist_, &graphicFormats, &graphicFormatNum);
+        if (ret != AV_ERR_OK) {
+            std::cout << "OH_AVCapability_GetVideoSupportedNativeBufferFormats returns error: " << ret << std::endl;
+            return std::vector<int32_t>();
+        }
+
+        StackMemOverWrite();
+        std::vector<int32_t> retVector = std::vector<int32_t>(graphicFormats, graphicFormats + graphicFormatNum);
+        std::sort(retVector.begin(), retVector.end());
+        return retVector;
+    }
+    std::cout << "codeclist_ is nullptr" << std::endl;
+    return std::vector<int32_t>();
+}
+
 std::vector<int32_t> CodecListCapiMock::GetSupportedProfiles()
 {
     if (codeclist_ != nullptr) {

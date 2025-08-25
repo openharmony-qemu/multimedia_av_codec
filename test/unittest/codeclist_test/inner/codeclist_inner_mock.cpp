@@ -221,6 +221,18 @@ std::vector<int32_t> CodecListInnerMock::GetVideoSupportedPixelFormats()
     return std::vector<int32_t>();
 }
 
+std::vector<int32_t> CodecListInnerMock::GetVideoSupportedGraphicPixelFormats()
+{
+    if (codeclist_ != nullptr) {
+        std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capabilityData_);
+        auto ret = codecInfo->GetSupportedGraphicFormats();
+        std::sort(ret.begin(), ret.end());
+        return ret;
+    }
+    std::cout << "codeclist_ is nullptr" << std::endl;
+    return std::vector<int32_t>();
+}
+
 std::vector<int32_t> CodecListInnerMock::GetSupportedProfiles()
 {
     if (codeclist_ != nullptr && capabilityData_ != nullptr) {

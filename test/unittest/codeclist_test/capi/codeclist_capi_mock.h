@@ -47,6 +47,7 @@ public:
     Range GetVideoFrameRateRangeForSize(int32_t width, int32_t height) override;
     bool AreVideoSizeAndFrameRateSupported(int32_t width, int32_t height, int32_t frameRate) override;
     std::vector<int32_t> GetVideoSupportedPixelFormats() override;
+    std::vector<int32_t> GetVideoSupportedGraphicPixelFormats() override;
     std::vector<int32_t> GetSupportedProfiles() override;
     std::vector<int32_t> GetSupportedLevelsForProfile(int32_t profile) override;
     bool AreProfileAndLevelSupported(int32_t profile, int32_t level) override;

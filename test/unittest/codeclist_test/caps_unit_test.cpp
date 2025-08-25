@@ -103,8 +103,14 @@ std::vector<std::shared_ptr<VideoCaps>> CapsUnitTest::GetVideoDecoderCaps()
 {
     std::vector<std::shared_ptr<VideoCaps>> ret;
     for (auto it : videoDecoderList) {
-        CapabilityData *capabilityData = avCodecList_->GetCapability(it, false, AVCodecCategory::AVCODEC_NONE);
-        ret.push_back(std::make_shared<VideoCaps>(capabilityData));
+        CapabilityData *capabilityData = avCodecList_->GetCapability(it, false, AVCodecCategory::AVCODEC_HARDWARE);
+        if (capabilityData != 0) {
+            ret.push_back(std::make_shared<VideoCaps>(capabilityData));
+        }
+        capabilityData = avCodecList_->GetCapability(it, false, AVCodecCategory::AVCODEC_SOFTWARE);
+        if (capabilityData != 0) {
+            ret.push_back(std::make_shared<VideoCaps>(capabilityData));
+        }
     }
     return ret;
 }
@@ -114,8 +120,14 @@ std::vector<std::shared_ptr<VideoCaps>> CapsUnitTest::GetVideoEncoderCaps()
     std::vector<std::shared_ptr<VideoCaps>> ret;
     if (isHardIncluded_) {
         for (auto it : videoEncoderList) {
-            CapabilityData *capabilityData = avCodecList_->GetCapability(it, true, AVCodecCategory::AVCODEC_NONE);
-            ret.push_back(std::make_shared<VideoCaps>(capabilityData));
+            CapabilityData *capabilityData = avCodecList_->GetCapability(it, true, AVCodecCategory::AVCODEC_HARDWARE);
+            if (capabilityData != 0) {
+                ret.push_back(std::make_shared<VideoCaps>(capabilityData));
+            }
+            capabilityData = avCodecList_->GetCapability(it, true, AVCodecCategory::AVCODEC_SOFTWARE);
+            if (capabilityData != 0) {
+                ret.push_back(std::make_shared<VideoCaps>(capabilityData));
+            }
         }
     }
     return ret;
@@ -163,28 +175,36 @@ void CapsUnitTest::CheckVideoCaps(const std::shared_ptr<VideoCaps> &videoCaps) c
     cout << "video codecName is : " << codecName << endl;
     if (codecName.compare(AVCodecCodecName::VIDEO_DECODER_AVC_NAME) == 0) {
         CheckAVDecAVC(videoCaps);
+    } else if (codecName.compare(AVCodecCodecName::VIDEO_DECODER_HEVC_NAME) == 0) {
+        CheckAVDecHEVC(videoCaps);
+    } else if (codecName.compare(AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME) == 0) {
+        CheckAVDecMpeg2Video(videoCaps);
+    } else if (codecName.compare(AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME) == 0) {
+        CheckAVDecMpeg4(videoCaps);
+    } else if (codecName.compare(AVCodecCodecName::VIDEO_DECODER_H263_NAME) == 0) {
+        CheckAVDecH263(videoCaps);
     } else if (codecName.compare("OMX.hisi.video.encoder.avc") == 0) {
         CheckAVEncAVC(videoCaps);
     }
 }
 
-void CapsUnitTest::CheckAVDecH264(const std::shared_ptr<VideoCaps> &videoCaps) const
+void CapsUnitTest::CheckAVDecHEVC(const std::shared_ptr<VideoCaps> &videoCaps) const
 {
     std::shared_ptr<AVCodecInfo> videoCodecCaps = videoCaps->GetCodecInfo();
     EXPECT_EQ(AVCODEC_TYPE_VIDEO_DECODER, videoCodecCaps->GetType());
-    EXPECT_EQ(CodecMimeType::VIDEO_AVC, videoCodecCaps->GetMimeType());
+    EXPECT_EQ(CodecMimeType::VIDEO_HEVC, videoCodecCaps->GetMimeType());
     EXPECT_EQ(0, videoCodecCaps->IsHardwareAccelerated());
     EXPECT_EQ(1, videoCodecCaps->IsSoftwareOnly());
     EXPECT_EQ(0, videoCodecCaps->IsVendor());
     EXPECT_GE(1, videoCaps->GetSupportedBitrate().minVal);
-    EXPECT_LE(MAX_VIDEO_BITRATE, videoCaps->GetSupportedBitrate().maxVal);
+    EXPECT_LE(300000000, videoCaps->GetSupportedBitrate().maxVal); // 300000000: test value
     EXPECT_LE(0, videoCaps->GetSupportedWidthAlignment());
-    EXPECT_GE(DEFAULT_WIDTH_RANGE.minVal, videoCaps->GetSupportedWidth().minVal);
-    EXPECT_LE(DEFAULT_WIDTH_RANGE.maxVal, videoCaps->GetSupportedWidth().maxVal);
-    EXPECT_GE(DEFAULT_HEIGHT_RANGE.minVal, videoCaps->GetSupportedHeight().minVal);
-    EXPECT_LE(DEFAULT_HEIGHT_RANGE.maxVal, videoCaps->GetSupportedHeight().maxVal);
+    EXPECT_GE(2, videoCaps->GetSupportedWidth().minVal); // 2: test value
+    EXPECT_LE(4096, videoCaps->GetSupportedWidth().maxVal); // 4096: test value
+    EXPECT_GE(2, videoCaps->GetSupportedHeight().minVal); // 2: test value
+    EXPECT_LE(4096, videoCaps->GetSupportedHeight().maxVal); // 4096: test value
     EXPECT_GE(1, videoCaps->GetSupportedFrameRate().minVal);
-    EXPECT_LE(DEFAULT_FRAMERATE_RANGE.maxVal, videoCaps->GetSupportedFrameRate().maxVal);
+    EXPECT_LE(120, videoCaps->GetSupportedFrameRate().maxVal); // 120: test value
     EXPECT_LE(0, videoCaps->GetSupportedEncodeQuality().minVal);
     EXPECT_LE(0, videoCaps->GetSupportedEncodeQuality().maxVal);
     EXPECT_LE(0, videoCaps->GetSupportedQuality().minVal);
@@ -192,6 +212,7 @@ void CapsUnitTest::CheckAVDecH264(const std::shared_ptr<VideoCaps> &videoCaps) c
     EXPECT_LE(0, videoCaps->GetSupportedComplexity().minVal);
     EXPECT_LE(0, videoCaps->GetSupportedComplexity().maxVal);
     EXPECT_LT(0, videoCaps->GetSupportedFormats().size());
+    EXPECT_LT(0, videoCaps->GetSupportedGraphicFormats().size());
     EXPECT_LT(0, videoCaps->GetSupportedProfiles().size());
     EXPECT_LE(0, videoCaps->GetSupportedBitrateMode().size());
     EXPECT_LE(0, videoCaps->GetSupportedLevels().size());
@@ -209,15 +230,15 @@ void CapsUnitTest::CheckAVDecH263(const std::shared_ptr<VideoCaps> &videoCaps) c
     EXPECT_EQ(1, videoCodecCaps->IsSoftwareOnly());
     EXPECT_EQ(0, videoCodecCaps->IsVendor());
     EXPECT_GE(1, videoCaps->GetSupportedBitrate().minVal);
-    EXPECT_LE(MAX_VIDEO_BITRATE, videoCaps->GetSupportedBitrate().maxVal);
+    EXPECT_LE(300000000, videoCaps->GetSupportedBitrate().maxVal); // 300000000: test value
     EXPECT_LE(0, videoCaps->GetSupportedWidthAlignment());
     EXPECT_LE(0, videoCaps->GetSupportedHeightAlignment());
-    EXPECT_GE(DEFAULT_WIDTH_RANGE.minVal, videoCaps->GetSupportedWidth().minVal);
-    EXPECT_LE(DEFAULT_WIDTH_RANGE.maxVal, videoCaps->GetSupportedWidth().maxVal);
-    EXPECT_GE(DEFAULT_HEIGHT_RANGE.minVal, videoCaps->GetSupportedHeight().minVal);
-    EXPECT_LE(DEFAULT_HEIGHT_RANGE.maxVal, videoCaps->GetSupportedHeight().maxVal);
+    EXPECT_GE(20, videoCaps->GetSupportedWidth().minVal); // 20: test value
+    EXPECT_LE(2048, videoCaps->GetSupportedWidth().maxVal); // 2048: test value
+    EXPECT_GE(20, videoCaps->GetSupportedHeight().minVal); // 20: test value
+    EXPECT_LE(1152, videoCaps->GetSupportedHeight().maxVal); // 1152: test value
     EXPECT_GE(1, videoCaps->GetSupportedFrameRate().minVal);
-    EXPECT_LE(DEFAULT_FRAMERATE_RANGE.maxVal, videoCaps->GetSupportedFrameRate().maxVal);
+    EXPECT_LE(60, videoCaps->GetSupportedFrameRate().maxVal);
     EXPECT_LE(0, videoCaps->GetSupportedEncodeQuality().minVal);
     EXPECT_LE(0, videoCaps->GetSupportedEncodeQuality().maxVal);
     EXPECT_LE(0, videoCaps->GetSupportedQuality().minVal);
@@ -225,6 +246,7 @@ void CapsUnitTest::CheckAVDecH263(const std::shared_ptr<VideoCaps> &videoCaps) c
     EXPECT_LE(0, videoCaps->GetSupportedComplexity().minVal);
     EXPECT_LE(0, videoCaps->GetSupportedComplexity().maxVal);
     EXPECT_LT(0, videoCaps->GetSupportedFormats().size());
+    EXPECT_LT(0, videoCaps->GetSupportedGraphicFormats().size());
     EXPECT_LT(0, videoCaps->GetSupportedProfiles().size());
     EXPECT_LE(0, videoCaps->GetSupportedBitrateMode().size());
     EXPECT_LE(0, videoCaps->GetSupportedLevels().size());
@@ -242,15 +264,15 @@ void CapsUnitTest::CheckAVDecMpeg2Video(const std::shared_ptr<VideoCaps> &videoC
     EXPECT_EQ(1, videoCodecCaps->IsSoftwareOnly());
     EXPECT_EQ(0, videoCodecCaps->IsVendor());
     EXPECT_GE(1, videoCaps->GetSupportedBitrate().minVal);
-    EXPECT_LE(MAX_VIDEO_BITRATE, videoCaps->GetSupportedBitrate().maxVal);
+    EXPECT_LE(300000000, videoCaps->GetSupportedBitrate().maxVal); // 300000000: test value
     EXPECT_LE(0, videoCaps->GetSupportedWidthAlignment());
     EXPECT_LE(0, videoCaps->GetSupportedHeightAlignment());
-    EXPECT_GE(DEFAULT_WIDTH_RANGE.minVal, videoCaps->GetSupportedWidth().minVal);
-    EXPECT_LE(DEFAULT_WIDTH_RANGE.maxVal, videoCaps->GetSupportedWidth().maxVal);
-    EXPECT_GE(DEFAULT_HEIGHT_RANGE.minVal, videoCaps->GetSupportedHeight().minVal);
-    EXPECT_LE(DEFAULT_HEIGHT_RANGE.maxVal, videoCaps->GetSupportedHeight().maxVal);
+    EXPECT_GE(2, videoCaps->GetSupportedWidth().minVal); // 2: test value
+    EXPECT_LE(4096, videoCaps->GetSupportedWidth().maxVal); // 4096: test value
+    EXPECT_GE(2, videoCaps->GetSupportedHeight().minVal);
+    EXPECT_LE(4096, videoCaps->GetSupportedHeight().maxVal); // 4096: test value
     EXPECT_GE(1, videoCaps->GetSupportedFrameRate().minVal);
-    EXPECT_LE(DEFAULT_FRAMERATE_RANGE.maxVal, videoCaps->GetSupportedFrameRate().maxVal);
+    EXPECT_LE(60, videoCaps->GetSupportedFrameRate().maxVal); // 60: test value
     EXPECT_LE(0, videoCaps->GetSupportedEncodeQuality().minVal);
     EXPECT_LE(0, videoCaps->GetSupportedEncodeQuality().maxVal);
     EXPECT_LE(0, videoCaps->GetSupportedQuality().minVal);
@@ -258,11 +280,12 @@ void CapsUnitTest::CheckAVDecMpeg2Video(const std::shared_ptr<VideoCaps> &videoC
     EXPECT_LE(0, videoCaps->GetSupportedComplexity().minVal);
     EXPECT_LE(0, videoCaps->GetSupportedComplexity().maxVal);
     EXPECT_LT(0, videoCaps->GetSupportedFormats().size());
+    EXPECT_LT(0, videoCaps->GetSupportedGraphicFormats().size());
     EXPECT_LT(0, videoCaps->GetSupportedProfiles().size());
     EXPECT_LE(0, videoCaps->GetSupportedBitrateMode().size());
     EXPECT_LE(0, videoCaps->GetSupportedLevels().size());
     EXPECT_EQ(false, videoCaps->IsSupportDynamicIframe());
-    EXPECT_EQ(0, videoCaps->IsSizeAndRateSupported(videoCaps->GetSupportedWidth().minVal,
+    EXPECT_EQ(true, videoCaps->IsSizeAndRateSupported(videoCaps->GetSupportedWidth().minVal,
                                                    videoCaps->GetSupportedHeight().maxVal,
                                                    videoCaps->GetSupportedFrameRate().maxVal));
     EXPECT_EQ(false, videoCaps->IsSizeAndRateSupported(videoCaps->GetSupportedWidth().minVal - 1,
@@ -279,15 +302,15 @@ void CapsUnitTest::CheckAVDecMpeg4(const std::shared_ptr<VideoCaps> &videoCaps) 
     EXPECT_EQ(1, videoCodecCaps->IsSoftwareOnly());
     EXPECT_EQ(0, videoCodecCaps->IsVendor());
     EXPECT_GE(1, videoCaps->GetSupportedBitrate().minVal);
-    EXPECT_LE(MAX_VIDEO_BITRATE, videoCaps->GetSupportedBitrate().maxVal);
+    EXPECT_LE(300000000, videoCaps->GetSupportedBitrate().maxVal); // 300000000: test value
     EXPECT_LE(0, videoCaps->GetSupportedWidthAlignment());
     EXPECT_LE(0, videoCaps->GetSupportedHeightAlignment());
-    EXPECT_GE(DEFAULT_WIDTH_RANGE.minVal, videoCaps->GetSupportedWidth().minVal);
-    EXPECT_LE(DEFAULT_WIDTH_RANGE.maxVal, videoCaps->GetSupportedWidth().maxVal);
-    EXPECT_GE(DEFAULT_HEIGHT_RANGE.minVal, videoCaps->GetSupportedHeight().minVal);
-    EXPECT_LE(DEFAULT_HEIGHT_RANGE.maxVal, videoCaps->GetSupportedHeight().maxVal);
+    EXPECT_GE(2, videoCaps->GetSupportedWidth().minVal); // 2: test value
+    EXPECT_LE(4096, videoCaps->GetSupportedWidth().maxVal); // 4096: test value
+    EXPECT_GE(2, videoCaps->GetSupportedHeight().minVal); // 2: test value
+    EXPECT_LE(4096, videoCaps->GetSupportedHeight().maxVal); // 4096: test value
     EXPECT_GE(1, videoCaps->GetSupportedFrameRate().minVal);
-    EXPECT_LE(DEFAULT_FRAMERATE_RANGE.maxVal, videoCaps->GetSupportedFrameRate().maxVal);
+    EXPECT_LE(60, videoCaps->GetSupportedFrameRate().maxVal); // 60: test value
     EXPECT_LE(0, videoCaps->GetSupportedEncodeQuality().minVal);
     EXPECT_LE(0, videoCaps->GetSupportedEncodeQuality().maxVal);
     EXPECT_LE(0, videoCaps->GetSupportedQuality().minVal);
@@ -295,6 +318,7 @@ void CapsUnitTest::CheckAVDecMpeg4(const std::shared_ptr<VideoCaps> &videoCaps) 
     EXPECT_LE(0, videoCaps->GetSupportedComplexity().minVal);
     EXPECT_LE(0, videoCaps->GetSupportedComplexity().maxVal);
     EXPECT_LT(0, videoCaps->GetSupportedFormats().size());
+    EXPECT_LT(0, videoCaps->GetSupportedGraphicFormats().size());
     EXPECT_LT(0, videoCaps->GetSupportedProfiles().size());
     EXPECT_LE(0, videoCaps->GetSupportedBitrateMode().size());
     EXPECT_LE(0, videoCaps->GetSupportedLevels().size());
@@ -313,15 +337,15 @@ void CapsUnitTest::CheckAVDecAVC(const std::shared_ptr<VideoCaps> &videoCaps) co
     EXPECT_EQ(1, videoCodecCaps->IsSoftwareOnly());
     EXPECT_EQ(0, videoCodecCaps->IsVendor());
     EXPECT_GE(1, videoCaps->GetSupportedBitrate().minVal);
-    EXPECT_LE(MAX_VIDEO_BITRATE, videoCaps->GetSupportedBitrate().maxVal);
-    EXPECT_GE(DEFAULT_WIDTH_ALIGNMENT, videoCaps->GetSupportedWidthAlignment());
-    EXPECT_GE(DEFAULT_HEIGHT_ALIGNMENT, videoCaps->GetSupportedHeightAlignment());
-    EXPECT_GE(DEFAULT_WIDTH_RANGE.minVal, videoCaps->GetSupportedWidth().minVal);
-    EXPECT_LE(DEFAULT_WIDTH_RANGE.maxVal, videoCaps->GetSupportedWidth().maxVal);
-    EXPECT_GE(DEFAULT_HEIGHT_RANGE.minVal, videoCaps->GetSupportedHeight().minVal);
-    EXPECT_LE(DEFAULT_HEIGHT_RANGE.maxVal, videoCaps->GetSupportedHeight().maxVal);
-    EXPECT_GE(DEFAULT_FRAMERATE_RANGE.minVal, videoCaps->GetSupportedFrameRate().minVal);
-    EXPECT_LE(DEFAULT_FRAMERATE_RANGE.maxVal, videoCaps->GetSupportedFrameRate().maxVal);
+    EXPECT_LE(300000000, videoCaps->GetSupportedBitrate().maxVal); // 300000000: test value
+    EXPECT_GE(2, videoCaps->GetSupportedWidthAlignment()); // 2: test value
+    EXPECT_GE(2, videoCaps->GetSupportedHeightAlignment()); // 2: test value
+    EXPECT_GE(2, videoCaps->GetSupportedWidth().minVal); // 2: test value
+    EXPECT_LE(4096, videoCaps->GetSupportedWidth().maxVal); // 4096: test value
+    EXPECT_GE(2, videoCaps->GetSupportedHeight().minVal); // 2: test value
+    EXPECT_LE(4096, videoCaps->GetSupportedHeight().maxVal); // 4096: test value
+    EXPECT_GE(0, videoCaps->GetSupportedFrameRate().minVal);
+    EXPECT_LE(120, videoCaps->GetSupportedFrameRate().maxVal); // 120: test value
     EXPECT_LE(0, videoCaps->GetSupportedEncodeQuality().minVal);
     EXPECT_LE(0, videoCaps->GetSupportedEncodeQuality().maxVal);
     EXPECT_LE(0, videoCaps->GetSupportedQuality().minVal);
@@ -329,6 +353,7 @@ void CapsUnitTest::CheckAVDecAVC(const std::shared_ptr<VideoCaps> &videoCaps) co
     EXPECT_LE(0, videoCaps->GetSupportedComplexity().minVal);
     EXPECT_LE(0, videoCaps->GetSupportedComplexity().maxVal);
     EXPECT_LT(0, videoCaps->GetSupportedFormats().size());
+    EXPECT_LT(0, videoCaps->GetSupportedGraphicFormats().size());
     EXPECT_LT(0, videoCaps->GetSupportedProfiles().size());
     EXPECT_LE(0, videoCaps->GetSupportedBitrateMode().size());
     EXPECT_LE(0, videoCaps->GetSupportedLevels().size());
@@ -346,60 +371,30 @@ void CapsUnitTest::CheckAVEncAVC(const std::shared_ptr<VideoCaps> &videoCaps) co
     EXPECT_EQ(1, videoCodecCaps->IsHardwareAccelerated());
     EXPECT_EQ(0, videoCodecCaps->IsSoftwareOnly());
     EXPECT_EQ(1, videoCodecCaps->IsVendor());
-    EXPECT_GE(DEFAULT_BITRATE_RANGE_ENC.minVal, videoCaps->GetSupportedBitrate().minVal);
-    EXPECT_LE(DEFAULT_BITRATE_RANGE_ENC.maxVal, videoCaps->GetSupportedBitrate().maxVal);
-    EXPECT_GE(DEFAULT_ALIGNMENT_ENC, videoCaps->GetSupportedWidthAlignment());
-    EXPECT_GE(DEFAULT_ALIGNMENT_ENC, videoCaps->GetSupportedHeightAlignment());
-    EXPECT_GE(DEFAULT_WIDTH_RANGE_ENC.minVal, videoCaps->GetSupportedWidth().minVal);
-    EXPECT_LE(DEFAULT_WIDTH_RANGE_ENC.maxVal, videoCaps->GetSupportedWidth().maxVal);
-    EXPECT_GE(DEFAULT_HEIGHT_RANGE_ENC.minVal, videoCaps->GetSupportedHeight().minVal);
-    EXPECT_LE(DEFAULT_HEIGHT_RANGE_ENC.maxVal, videoCaps->GetSupportedHeight().maxVal);
+    EXPECT_GE(10000, videoCaps->GetSupportedBitrate().minVal); // 10000: test value
+    EXPECT_LE(100000000, videoCaps->GetSupportedBitrate().maxVal); // 100000000: test value
+    EXPECT_GE(4, videoCaps->GetSupportedWidthAlignment()); // 4: test value
+    EXPECT_GE(4, videoCaps->GetSupportedHeightAlignment()); // 4: test value
+    EXPECT_GE(144, videoCaps->GetSupportedWidth().minVal); // 144: test value
+    EXPECT_LE(4096, videoCaps->GetSupportedWidth().maxVal); // 4096: test value
+    EXPECT_GE(144, videoCaps->GetSupportedHeight().minVal); // 144: test value
+    EXPECT_LE(4096, videoCaps->GetSupportedHeight().maxVal); // 4096: test value
     EXPECT_GE(1, videoCaps->GetSupportedFrameRate().minVal);
-    EXPECT_LE(DEFAULT_FRAMERATE_RANGE.maxVal, videoCaps->GetSupportedFrameRate().maxVal);
-    EXPECT_GE(DEFAULT_VIDEO_QUALITY_RANGE.minVal, videoCaps->GetSupportedEncodeQuality().minVal);
-    EXPECT_LE(DEFAULT_VIDEO_QUALITY_RANGE.maxVal, videoCaps->GetSupportedEncodeQuality().maxVal);
-    EXPECT_LE(0, videoCaps->GetSupportedQuality().minVal);
-    EXPECT_LE(0, videoCaps->GetSupportedQuality().maxVal);
-    EXPECT_LE(0, videoCaps->GetSupportedComplexity().minVal);
-    EXPECT_LE(0, videoCaps->GetSupportedComplexity().maxVal);
-    EXPECT_TRUE(!videoCaps->GetSupportedFormats().empty());
-    EXPECT_LE(DEFAULT_BITRATEMODE_ENC, videoCaps->GetSupportedBitrateMode().size());
-    EXPECT_LE(0, videoCaps->GetSupportedLevels().size());
-    EXPECT_EQ(false, videoCaps->IsSupportDynamicIframe());
-    EXPECT_EQ(false, videoCaps->IsSizeAndRateSupported(videoCaps->GetSupportedWidth().minVal,
-                                                       videoCaps->GetSupportedHeight().maxVal,
-                                                       videoCaps->GetSupportedFrameRate().maxVal + 1));
-}
-
-void CapsUnitTest::CheckAVEncMpeg4(const std::shared_ptr<VideoCaps> &videoCaps) const
-{
-    std::shared_ptr<AVCodecInfo> videoCodecCaps = videoCaps->GetCodecInfo();
-    EXPECT_EQ(AVCODEC_TYPE_VIDEO_ENCODER, videoCodecCaps->GetType());
-    EXPECT_EQ(CodecMimeType::VIDEO_MPEG4, videoCodecCaps->GetMimeType());
-    EXPECT_EQ(0, videoCodecCaps->IsHardwareAccelerated());
-    EXPECT_EQ(1, videoCodecCaps->IsSoftwareOnly());
-    EXPECT_EQ(0, videoCodecCaps->IsVendor());
-    EXPECT_GE(1, videoCaps->GetSupportedBitrate().minVal);
-    EXPECT_LE(MAX_VIDEO_BITRATE, videoCaps->GetSupportedBitrate().maxVal);
-    EXPECT_GE(0, videoCaps->GetSupportedWidthAlignment());
-    EXPECT_GE(0, videoCaps->GetSupportedHeightAlignment());
-    EXPECT_GE(DEFAULT_WIDTH_RANGE.minVal, videoCaps->GetSupportedWidth().minVal);
-    EXPECT_LE(DEFAULT_WIDTH, videoCaps->GetSupportedWidth().maxVal);
-    EXPECT_GE(DEFAULT_HEIGHT_RANGE.minVal, videoCaps->GetSupportedHeight().minVal);
-    EXPECT_LE(DEFAULT_HEIGHT, videoCaps->GetSupportedHeight().maxVal);
-    EXPECT_GE(DEFAULT_FRAMERATE_RANGE.minVal, videoCaps->GetSupportedFrameRate().minVal);
-    EXPECT_LE(DEFAULT_FRAMERATE_RANGE.maxVal, videoCaps->GetSupportedFrameRate().maxVal);
-    EXPECT_LE(0, videoCaps->GetSupportedEncodeQuality().minVal);
-    EXPECT_LE(0, videoCaps->GetSupportedEncodeQuality().maxVal);
+    EXPECT_LE(120, videoCaps->GetSupportedFrameRate().maxVal); // 120: test value
+    EXPECT_GE(0, videoCaps->GetSupportedEncodeQuality().minVal);
+    EXPECT_LE(100, videoCaps->GetSupportedEncodeQuality().maxVal); // 100: test value
     EXPECT_LE(0, videoCaps->GetSupportedQuality().minVal);
     EXPECT_LE(0, videoCaps->GetSupportedQuality().maxVal);
     EXPECT_LE(0, videoCaps->GetSupportedComplexity().minVal);
     EXPECT_LE(0, videoCaps->GetSupportedComplexity().maxVal);
     EXPECT_LT(0, videoCaps->GetSupportedFormats().size());
-    EXPECT_LT(0, videoCaps->GetSupportedProfiles().size());
-    EXPECT_LT(0, videoCaps->GetSupportedBitrateMode().size());
+    EXPECT_LT(0, videoCaps->GetSupportedGraphicFormats().size());
+    EXPECT_LE(3, videoCaps->GetSupportedBitrateMode().size()); // 3: test value
     EXPECT_LE(0, videoCaps->GetSupportedLevels().size());
     EXPECT_EQ(false, videoCaps->IsSupportDynamicIframe());
+    EXPECT_EQ(false, videoCaps->IsSizeAndRateSupported(videoCaps->GetSupportedWidth().minVal,
+                                                       videoCaps->GetSupportedHeight().maxVal,
+                                                       videoCaps->GetSupportedFrameRate().maxVal + 1));
 }
 
 void CapsUnitTest::CheckAudioCapsArray(const std::vector<std::shared_ptr<AudioCaps>> &audioCapsArray) const
@@ -970,6 +965,11 @@ HWTEST_F(CapsUnitTest, AVCaps_NullvalToCapi_001, TestSize.Level1)
     const int32_t *pixFormats = nullptr;
     uint32_t pixFormatNum = -1;
     EXPECT_EQ(OH_AVCapability_GetVideoSupportedPixelFormats(nullptr, &pixFormats, &pixFormatNum), AV_ERR_INVALID_VAL);
+    EXPECT_EQ(pixFormats, nullptr);
+    EXPECT_EQ(pixFormatNum, 0);
+
+    EXPECT_EQ(OH_AVCapability_GetVideoSupportedNativeBufferFormats(nullptr, &pixFormats, &pixFormatNum),
+              AV_ERR_INVALID_VAL);
     EXPECT_EQ(pixFormats, nullptr);
     EXPECT_EQ(pixFormatNum, 0);
 
