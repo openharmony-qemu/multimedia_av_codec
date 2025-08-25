@@ -53,6 +53,8 @@ enum class CodecServiceInterfaceCode {
     SET_DECRYPT_CONFIG,
     RENDER_OUTPUT_BUFFER_AT_TIME,
     SET_CUSTOM_BUFFER,
+    GET_CHANNEL_ID,
+    SET_LPP_MODE,
     NOTIFY_MEMORY_EXCHANGE,
     NOTIFY_FREEZE,
     NOTIFY_ACTIVE,
@@ -60,8 +62,6 @@ enum class CodecServiceInterfaceCode {
     NOTIFY_MEMORY_WRITE_BACK,
     NOTIFY_SUSPEND,
     NOTIFY_RESUME,
-    GET_CHANNEL_ID,
-    SET_LPP_MODE
 };
 
 enum class AVCodecListServiceInterfaceCode {
