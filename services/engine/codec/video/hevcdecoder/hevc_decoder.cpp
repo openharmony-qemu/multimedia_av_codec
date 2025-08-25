@@ -285,6 +285,8 @@ void HevcDecoder::ConfigureSurface(const Format &format, const std::string_view 
             "Set parameter failed: pixel format value %{public}d invalid", val);
         outputPixelFmt_ = vpf;
         format_.PutIntValue(formatKey, val);
+        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
     } else if (formatKey == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
         VideoRotation sr = static_cast<VideoRotation>(val);
         CHECK_AND_RETURN_LOG(sr == VideoRotation::VIDEO_ROTATION_0 || sr == VideoRotation::VIDEO_ROTATION_90 ||
@@ -594,6 +596,7 @@ void HevcDecoder::SetSurfaceParameter(const Format &format, const std::string_vi
         } else {
             surfacePixelFmt = TranslateSurfaceFormat(vpf);
         }
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
         sInfo_.requestConfig.format = surfacePixelFmt;
     } else if (formatKey == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
@@ -712,9 +715,11 @@ int32_t HevcDecoder::SetSurfaceCfg()
     }
     int32_t val32 = 0;
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val32);
-    GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(static_cast<VideoPixelFormat>(val32));
+    outputPixelFmt_ = static_cast<VideoPixelFormat>(val32);
+    GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
     CHECK_AND_RETURN_RET_LOG(surfacePixelFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT, AVCS_ERR_UNSUPPORT,
                              "Failed to allocate output buffer: unsupported surface format");
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
     sInfo_.requestConfig.width = width_;
     sInfo_.requestConfig.height = height_;
     sInfo_.requestConfig.format = surfacePixelFmt;
@@ -985,6 +990,7 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
             } else {
                 sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010;
             }
+            format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, sInfo_.requestConfig.format);
             format_.PutIntValue("av_codec_event_info_bit_depth", 1); // format update key of bit depth
         }
         sLock.unlock();
@@ -1185,9 +1191,6 @@ int32_t HevcDecoder::DecodeFrameOnce()
 int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer)
 {
     VideoPixelFormat targetPixelFmt = outputPixelFmt_;
-    if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
-        targetPixelFmt = VideoPixelFormat::NV12;
-    }
     AVPixelFormat ffmpegFormat;
     if (bitDepth_ == BIT_DEPTH10BIT) {
         ffmpegFormat = AVPixelFormat::AV_PIX_FMT_P010LE;
@@ -1199,7 +1202,6 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale video frame failed: %{public}d", ret);
     isConverted_ = true;
 
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(targetPixelFmt));
     std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer->memory_;
     CHECK_AND_RETURN_RET_LOG(bufferMemory != nullptr, AVCS_ERR_INVALID_VAL, "bufferMemory is nullptr");
     bufferMemory->SetSize(0);
@@ -1732,6 +1734,12 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.blockSize.height = VIDEO_ALIGN_SIZE;
         capsData.pixFormat = {static_cast<int32_t>(VideoPixelFormat::NV12),
             static_cast<int32_t>(VideoPixelFormat::NV21)};
+        capsData.graphicPixFormat = {
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP),
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP),
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010),
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010)
+        };
         capsData.profiles = {static_cast<int32_t>(HEVC_PROFILE_MAIN), static_cast<int32_t>(HEVC_PROFILE_MAIN_10)};
 
         std::vector<int32_t> levels;

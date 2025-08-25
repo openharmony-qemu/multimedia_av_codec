@@ -171,6 +171,7 @@ struct CapabilityData {
     ImgSize blockSize;
     std::vector<int32_t> sampleRate;
     std::vector<int32_t> pixFormat;
+    std::vector<int32_t> graphicPixFormat;
     std::vector<int32_t> bitDepth;
     std::vector<int32_t> profiles;
     std::vector<int32_t> bitrateMode;
@@ -339,6 +340,13 @@ public:
      * @version 4.0
      */
     std::vector<int32_t> GetSupportedFormats();
+
+    /**
+     * @brief Get supported video graphic formats.
+     * @return Returns an array of supported graphic formats. For Details, see {@link GraphicPixelFormat}.
+     * @since 6.0
+     */
+    std::vector<int32_t> GetSupportedGraphicFormats();
 
     /**
      * @brief Get supported alignment of video height, only used for video codecs.
