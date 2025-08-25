@@ -254,6 +254,7 @@ Status VideoResizeFilter::DoPrepare()
         case FilterType::FILTERTYPE_VIDRESIZE:
             ret = filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                 StreamType::STREAMTYPE_RAW_VIDEO);
+            MEDIA_LOG_I("callback return ret = %{public}d"，ret);
             break;
         default:
             break;
