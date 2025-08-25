@@ -249,15 +249,16 @@ Status VideoResizeFilter::DoPrepare()
     if (filterCallback_ == nullptr) {
         return Status::ERROR_UNKNOWN;
     }
+    Status ret = Status::OK;
     switch (filterType_) {
         case FilterType::FILTERTYPE_VIDRESIZE:
-            filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+            ret = filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                 StreamType::STREAMTYPE_RAW_VIDEO);
             break;
         default:
             break;
     }
-    return Status::OK;
+    return ret;
 }
 
 Status VideoResizeFilter::DoStart()
