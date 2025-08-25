@@ -573,13 +573,12 @@ void FCodec::SetSurfaceParameter(const Format &format, const std::string_view &f
                              vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21,
                              "Set parameter failed: pixel format value %{public}d invalid", val);
         outputPixelFmt_ = vpf;
+        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(vpf);
         {
             std::lock_guard<std::mutex> lock(formatMutex_);
             format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val);
-            GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
             format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
         }
-        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(vpf);
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
         sInfo_.requestConfig.format = surfacePixelFmt;
     } else if (formatKey == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
