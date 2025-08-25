@@ -90,6 +90,10 @@ int32_t VDecServerSample::SetCallback()
 
 void VDecServerSample::RunVideoServerDecoder()
 {
+    signal_ = std::make_shared<VDecSignal>();
+    if (signal_ == nullptr) {
+        return;
+    }
     CreateHevcDecoderByName("OH.Media.Codec.Decoder.Video.HEVC", codec_);
     if (codec_ == nullptr) {
         cout << "Create failed" << endl;
@@ -98,11 +102,6 @@ void VDecServerSample::RunVideoServerDecoder()
     int32_t err = ConfigServerDecoder();
     if (err != AVCS_ERR_OK) {
         cout << "ConfigServerDecoder failed" << endl;
-        return;
-    }
-    signal_ = std::make_shared<VDecSignal>();
-    if (signal_ == nullptr) {
-        cout << "Failed to new VDecSignal" << endl;
         return;
     }
     err = SetCallback();
