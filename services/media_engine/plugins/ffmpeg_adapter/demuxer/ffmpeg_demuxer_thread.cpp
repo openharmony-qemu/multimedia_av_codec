@@ -171,6 +171,9 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         ioContext_.invokerType = InvokerType::READ;
     }
     trackId_ = trackId;
+    if (!cacheQueue_.HasCache(trackId) && timeout == 0) {
+        return Status::ERROR_WAIT_TIMEOUT;
+    }
     if (!readThread_) {
         readThread_ = std::make_unique<std::thread>(&FFmpegDemuxerPlugin::FFmpegReadLoop, this);
     }
@@ -293,7 +296,8 @@ void FFmpegDemuxerPlugin::HandleReadWait()
     }
     readLoopCv_.wait(readLock, [this]() {
         return (threadReady_) || (ioContext_.invokerType == InvokerType::DESTORY) ||
-               (!cacheQueue_.HasCache(trackId_) && !isPauseReadPacket_) || (isWaitingForReadThread_.load());
+               (!cacheQueue_.HasCache(trackId_) && !isPauseReadPacket_) ||
+               (isWaitingForReadThread_.load() && cacheQueue_.GetCacheSize(trackId_) <= 1);
     });
     threadState_ = READING;
     threadReady_ = false;
@@ -437,6 +441,9 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
         ioContext_.invokerType = InvokerType::READ;
     }
     trackId_ = trackId;
+    if (!cacheQueue_.HasCache(trackId) && timeout == 0) {
+        return Status::ERROR_WAIT_TIMEOUT;
+    }
     if (!readThread_) {
         readThread_ = std::make_unique<std::thread>(&FFmpegDemuxerPlugin::FFmpegReadLoop, this);
     }

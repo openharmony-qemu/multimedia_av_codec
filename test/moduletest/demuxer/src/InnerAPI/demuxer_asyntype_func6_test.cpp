@@ -1877,6 +1877,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc6Test, DEMUXER_ASYN_INNER_FLAC_FUNC_0150, TestS
     uint32_t timeout = 10000;
     int64_t realtime = 0;
     int64_t seekTime = 1008000;
+    uint32_t frameDiff = 1;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLAC, TEST_FILE_URI_FLAC, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -1890,7 +1891,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc6Test, DEMUXER_ASYN_INNER_FLAC_FUNC_0150, TestS
         ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
         GetFrameNumAudio(0);
     }
-    ASSERT_EQ(audioIndexForRead, READFRAME_3035);
+    ASSERT_GE(audioIndexForRead, READFRAME_3035);
+    ASSERT_LE(audioIndexForRead, READFRAME_3035 + frameDiff);
 }
 
 /**

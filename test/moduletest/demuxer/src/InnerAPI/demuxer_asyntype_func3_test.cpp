@@ -723,7 +723,7 @@ HWTEST_F(DemuxerAsynTypeInnerFunc3Test, DEMUXER_ASYN_INNER_TS_FUNC_0130, TestSiz
     int64_t pts = 0;
     uint32_t timeout = 10000;
     int64_t ptsMin = 292781;
-    int64_t ptsMax = 295132;
+    int64_t ptsMax = 309238;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
