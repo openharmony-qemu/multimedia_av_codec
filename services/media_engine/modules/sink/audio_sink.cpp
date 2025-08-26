@@ -1662,6 +1662,14 @@ Status AudioSink::SetAudioHapticsSyncId(int32_t syncId)
     return plugin_->SetAudioHapticsSyncId(syncId);
 }
 
+Status AudioSink::SetLoudnessGain(float loudnessGain)
+{
+    if (plugin_ == nullptr) {
+        return Status::ERROR_NULL_POINTER;
+    }
+    return plugin_->SetLoudnessGain(loudnessGain);
+}
+
 std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::PreCreateAndStartNewPlugin(const std::shared_ptr<Meta>& meta,
     const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {

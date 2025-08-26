@@ -108,6 +108,8 @@ public:
 
     void SetIsAudioDemuxDecodeAsync(bool isAudioDemuxDecodeAsync);
 
+    Status SetLoudnessGain(float loudnessGain);
+
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;

@@ -108,6 +108,7 @@ public:
     bool HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
     void HandleAudioRenderRequestPost();
     Status SetAudioHapticsSyncId(int32_t syncId);
+    Status SetLoudnessGain(float loudnessGain);
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;

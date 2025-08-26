@@ -440,6 +440,13 @@ Status AudioSinkFilter::SetAudioHapticsSyncId(int32_t syncId)
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->SetAudioHapticsSyncId(syncId);
 }
+
+Status AudioSinkFilter::SetLoudnessGain(float loudnessGain)
+{
+    MEDIA_LOG_I("set loudnessGain " PUBLIC_LOG ".3f", loudnessGain);
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->SetLoudnessGain(loudnessGain);
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

@@ -1386,6 +1386,17 @@ void AudioServerSinkPlugin::ApplyAudioHapticsSyncId()
     MEDIA_LOG_D("ApplyAHapSyncId " PUBLIC_LOG_D32, audioHapticsSyncId_);
     audioRenderer_->SetAudioHapticsSyncId(audioHapticsSyncId_);
 }
+
+Status AudioServerSinkPlugin::SetLoudnessGain(float loudnessGain)
+{
+    FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN,
+        "SetLoudnessGain audioRender_ is nullptr");
+    int32_t ret = audioRenderer_->SetLoudnessGain(loudnessGain);
+    FALSE_RETURN_V_MSG_E(ret == OHOS::AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
+        "set loudnessGain failed with code " PUBLIC_LOG_D32, ret);
+    MEDIA_LOG_I("SetLoudnessGain succ");
+    return Status::OK;
+}
 } // namespace Plugin
 } // namespace Media
 } // namespace OHOS
