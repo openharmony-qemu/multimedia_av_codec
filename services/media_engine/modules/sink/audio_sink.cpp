@@ -846,7 +846,7 @@ void AudioSink::AudioDataSynchroizer::UpdateLastBufferPTS(int64_t bufferOffset, 
     lastBufferOffset_ = bufferOffset;
     sumDuration_ += bufferDuration_;
     FALSE_RETURN_MSG(speed != 0, "speed is 0");
-    compensateDuration_ += bufferDuration_ - bufferDuration_ / speed;
+    compensateDuration_ += static_cast<int64_t>(bufferDuration_ - bufferDuration_ / speed);
 }
 
 void AudioSink::UpdateRenderInfo()
