@@ -169,7 +169,10 @@ Status VideoDecoderAdapter::Configure(const Format &format)
         MEDIA_LOG_I("Media file type " PUBLIC_LOG_D32, fileType_);
     }
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
-    int32_t ret = mediaCodec_->Configure(format);
+    Format formatCopy = format;
+    std::shared_ptr<Media::Meta> metaInfoCopy = const_cast<Format &>(formatCopy).GetMeta();
+    metaInfoCopy->Remove(std::string(MediaDescriptionKey::MD_KEY_CODEC_CONFIG));
+    int32_t ret = mediaCodec_->Configure(formatCopy);
     isConfigured_ = ret == AVCodecServiceErrCode::AVCS_ERR_OK;
     return isConfigured_ ? Status::OK : Status::ERROR_INVALID_DATA;
 }
