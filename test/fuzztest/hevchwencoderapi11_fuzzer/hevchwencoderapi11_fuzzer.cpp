@@ -39,7 +39,7 @@ bool ReleaseSample()
 namespace OHOS {
 bool HevcHwEncoderApiFuzzTest(FuzzedDataProvider &fdp)
 {
-    if (size < sizeof(int32_t)) {
+    if (fdp.remaining_bytes() < sizeof(int32_t)) {
         return false;
     }
     bool data2 = fdp.ConsumeBool();
@@ -78,7 +78,7 @@ bool HevcHwEncoderApiFuzzTest(FuzzedDataProvider &fdp)
 
 bool HevcHwEncoderRandRoiFuzzTest(FuzzedDataProvider &fdp)
 {
-    if (size < sizeof(int32_t)) {
+    if (fdp.remaining_bytes() < sizeof(int32_t)) {
         return false;
     }
     string data1 = fdp.ConsumeRandomLengthString(10);
