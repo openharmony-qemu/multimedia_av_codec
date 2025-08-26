@@ -28,7 +28,9 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-constexpr int PER_REQUEST_SIZE = 48 * 1024 * 10;
+constexpr int32_t PER_REQUEST_SIZE = 2 * 1024 * 1024;
+constexpr int32_t TWO_SECONDS = 2;
+constexpr int32_t BYTES_TO_BIT = 8;
 constexpr unsigned int SLEEP_TIME = 5;    // Sleep 5ms
 constexpr size_t RETRY_TIMES = 6000;  // Retry 6000 times
 constexpr size_t REQUEST_QUEUE_SIZE = 50;
@@ -258,6 +260,11 @@ void DownloadRequest::GetLocation(std::string& location) const
     location = location_;
 }
 
+void DownloadRequest::SetBitRateToRequestSize(const int32_t videoBitrate)
+{
+    bitRateToRequestSize_ = videoBitrate * TWO_SECONDS / BYTES_TO_BIT;
+}
+
 Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name))
 {
     shouldStartNextRequest = true;
@@ -476,7 +483,8 @@ bool Downloader::Seek(int64_t offset)
         currentRequest_->startPos_ = offset;
     }
     size_t temp = currentRequest_->GetFileContentLength() - static_cast<size_t>(currentRequest_->startPos_);
-    currentRequest_->requestSize_ = static_cast<int>(std::min(temp, static_cast<size_t>(PER_REQUEST_SIZE)));
+    currentRequest_->requestSize_ = static_cast<int>(std::min(temp,
+        static_cast<size_t>(std::max(currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE))));
     if (downloadRequestSize_ > 0) {
         currentRequest_->requestSize_ = std::min(currentRequest_->requestSize_,
             static_cast<int>(downloadRequestSize_));
@@ -584,7 +592,8 @@ bool Downloader::BeginDownload()
         currentRequest_->requestSize_ = FIRST_REQUEST_SIZE;
     } else {
         int64_t temp = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
-        currentRequest_->requestSize_ = static_cast<int>(std::min(temp, static_cast<int64_t>(PER_REQUEST_SIZE)));
+        currentRequest_->requestSize_ = static_cast<int>(std::min(temp,
+            static_cast<int64_t>(std::max(currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE))));
     }
     currentRequest_->isEos_ = false;
     currentRequest_->retryTimes_ = 0;
@@ -793,11 +802,8 @@ void Downloader::HandleRetOK()
         HandlePlayingFinish();
         return;
     }
-    if (remaining < PER_REQUEST_SIZE) {
-        currentRequest_->requestSize_ = remaining;
-    } else {
-        currentRequest_->requestSize_ = PER_REQUEST_SIZE;
-    }
+    currentRequest_->requestSize_ = static_cast<int>(std::min(remaining,
+        static_cast<int64_t>(std::max(currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE))));
 }
 
 void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
@@ -902,7 +908,8 @@ void Downloader::UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* heade
     mediaDownloader->currentRequest_->startPos_ = startPos;
     mediaDownloader->currentRequest_->shouldSaveData_ = true;
     mediaDownloader->currentRequest_->requestWholeFile_ = false;
-    mediaDownloader->currentRequest_->requestSize_ = PER_REQUEST_SIZE;
+    mediaDownloader->currentRequest_->requestSize_ =
+        static_cast<int>(std::max(mediaDownloader->currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE));
     mediaDownloader->currentRequest_->startTimePos_ = 0;
 }
 
@@ -930,7 +937,8 @@ void Downloader::UpdateRequestSize(Downloader* mediaDownloader)
     }
 
     mediaDownloader->currentRequest_->preRequestSize_ = mediaDownloader->currentRequest_->requestSize_;
-    mediaDownloader->currentRequest_->requestSize_ = remaining < PER_REQUEST_SIZE ? remaining : PER_REQUEST_SIZE;
+    mediaDownloader->currentRequest_->requestSize_ = static_cast<int>(std::min(remaining,
+        static_cast<int64_t>(std::max(mediaDownloader->currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE))));
 }
 
 size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam)
