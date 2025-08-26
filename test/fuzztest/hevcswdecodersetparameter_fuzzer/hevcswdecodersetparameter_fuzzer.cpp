@@ -39,7 +39,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         int32_t maxInputSize = fdp.ConsumeIntegral<int32_t>();
         int32_t width = fdp.ConsumeIntegral<int32_t>();
         int32_t height = fdp.ConsumeIntegral<int32_t>();
-        int32_t format = fdp.ConsumeIntegral<int32_t>();
+        int32_t pixFormat = fdp.ConsumeIntegral<int32_t>();
         int32_t biteMode = fdp.ConsumeIntegral<int32_t>();
         int32_t profile = fdp.ConsumeIntegral<int32_t>();
         int32_t frameInterval = fdp.ConsumeIntegral<int32_t>();
@@ -63,7 +63,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, maxInputSize);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, width);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, height);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, format);
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, pixFormat);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, biteMode);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, profile);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, frameInterval);
