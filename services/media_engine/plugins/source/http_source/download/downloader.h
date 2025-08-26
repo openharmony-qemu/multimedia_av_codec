@@ -149,6 +149,7 @@ public:
     void GetLocation(std::string& location) const;
     void SetRequestProtocolType(RequestProtocolType protocolType);
     void SetIsM3u8Request(bool isM3u8Request);
+    void SetBitRateToRequestSize(const int32_t videoBitrate);
     std::atomic<bool> isHeaderUpdated_ {false};
     std::atomic<bool> haveRedirectRetry_ {false};
 private:
@@ -188,6 +189,7 @@ private:
     bool isIndexM3u8Request_ {false};
     bool isAuthRequest_ {false};
     RequestProtocolType protocolType_ {RequestProtocolType::HTTP};
+    int32_t bitRateToRequestSize_ {0};
 };
 
 class Downloader {

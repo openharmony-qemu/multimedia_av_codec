@@ -1803,6 +1803,9 @@ Status HlsMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
         waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(currentBitRate_) /
             static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
     }
+    if (downloadRequest_) {
+        downloadRequest_->SetBitRateToRequestSize(currentBitRate_);
+    }
     return Status::OK;
 }
 
