@@ -1396,7 +1396,9 @@ Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
         videoBitrate_ = std::max(videoBitrate_, static_cast<uint32_t>(bitRate));
     }
     currentBitRate_ = static_cast<int32_t>(videoBitrate_);
-    downloadRequest_->SetBitRateToRequestSize(currentBitRate_);
+    if (downloadRequest_) {
+        downloadRequest_->SetBitRateToRequestSize(currentBitRate_);
+    }
     return Status::OK;
 }
 
