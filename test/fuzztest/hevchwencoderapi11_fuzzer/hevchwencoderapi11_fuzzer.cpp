@@ -29,15 +29,6 @@ using namespace OHOS::Media;
 
 VEncAPI11FuzzSample *g_vEncSample = nullptr;
 
-void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
-{
-    std::ofstream file(filename, std::ios::out | std::ios::binary);
-    if (file.is_open()) {
-        file.write(reinterpret_cast<const char*>(data), size);
-        file.close();
-    }
-}
-
 bool ReleaseSample()
 {
     delete g_vEncSample;
@@ -45,22 +36,19 @@ bool ReleaseSample()
     return true;
 }
 
-bool g_needRunNormalEncoder = true;
 namespace OHOS {
-bool HevcHwEncoderApiFuzzTest(const uint8_t *data, size_t size)
+bool HevcHwEncoderApiFuzzTest(FuzzedDataProvider &fdp)
 {
-    if (size < sizeof(int32_t)) {
+    if (fdp.remaining_bytes() < sizeof(int32_t)) {
         return false;
     }
-    std::string filename = "/data/test/corpus-EncoderAPI11FuzzTest";
-    SaveCorpus(data, size, filename);
-    FuzzedDataProvider fdp(data, size);
     bool data2 = fdp.ConsumeBool();
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
     int64_t maxBite = 100000000;
     int32_t sqrFactor = 32;
     g_vEncSample = new VEncAPI11FuzzSample();
-    g_vEncSample->fuzzData = data;
-    g_vEncSample->fuzzSize = size;
+    g_vEncSample->fuzzData = remaining_data.data();
+    g_vEncSample->fuzzSize = remaining_data.size();
     g_vEncSample->surfInput = data2;
     g_vEncSample->fuzzMode = true;
     g_vEncSample->bEnable = true;
@@ -88,19 +76,17 @@ bool HevcHwEncoderApiFuzzTest(const uint8_t *data, size_t size)
     return ReleaseSample();
 }
 
-bool HevcHwEncoderRandRoiFuzzTest(const uint8_t *data, size_t size)
+bool HevcHwEncoderRandRoiFuzzTest(FuzzedDataProvider &fdp)
 {
-    if (size < sizeof(int32_t)) {
+    if (fdp.remaining_bytes() < sizeof(int32_t)) {
         return false;
     }
-    std::string filename = "/data/test/corpus-EncoderAPI11FuzzTest";
-    SaveCorpus(data, size, filename);
-    FuzzedDataProvider fdp(data, size);
     string data1 = fdp.ConsumeRandomLengthString(10);
     bool data2 = fdp.ConsumeBool();
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
     g_vEncSample = new VEncAPI11FuzzSample();
-    g_vEncSample->fuzzData = data;
-    g_vEncSample->fuzzSize = size;
+    g_vEncSample->fuzzData = remaining_data.data();
+    g_vEncSample->fuzzSize = remaining_data.size();
     g_vEncSample->surfInput = data2;
     g_vEncSample->fuzzMode = true;
     g_vEncSample->roiInfo = data1.c_str();
@@ -127,7 +113,12 @@ bool HevcHwEncoderRandRoiFuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::HevcHwEncoderApiFuzzTest(data, size);
-    OHOS::HevcHwEncoderRandRoiFuzzTest(data, size);
+    FuzzedDataProvider fdp(data, size);
+    int32_t choose = fdp.ConsumeIntegral<int32_t>() % 2;
+    if (choose == 0) {
+        OHOS::HevcHwEncoderApiFuzzTest(fdp);
+    } else {
+        OHOS::HevcHwEncoderRandRoiFuzzTest(fdp);
+    }
     return 0;
 }

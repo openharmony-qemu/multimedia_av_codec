@@ -36,6 +36,9 @@ bool HevcSwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     vDecSample->kFormat = fdp.ConsumeIntegral<int32_t>();
     vDecSample->kRotation = fdp.ConsumeIntegral<int32_t>();
     vDecSample->kFormatRate = fdp.ConsumeIntegral<int32_t>();
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    vDecSample->fuzzData = remaining_data.data();
+    vDecSample->fuzzSize = remaining_data.size();
     vDecSample->RunVideoServerDecoder();
     vDecSample->WaitForEos();
 
