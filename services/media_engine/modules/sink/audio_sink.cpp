@@ -1691,6 +1691,7 @@ Status AudioSink::cacheBuffer()
     cacheBufferTask_->SubmitJobOnce([this] {
         FALSE_RETURN(!isEosBuffer_);
         FALSE_RETURN(!availOutputBuffers_.empty() && inputBufferQueue_ != nullptr);
+        std::lock_guard<std::mutex> lock(availBufferMutex_);
         while (availOutputBuffers_.size() > 0) {
             std::shared_ptr<AVBuffer> buffer = availOutputBuffers_.front();
             FALSE_RETURN(buffer != nullptr && buffer->memory_->GetSize() > 0);
