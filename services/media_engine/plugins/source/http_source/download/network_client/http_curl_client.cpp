@@ -242,12 +242,6 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
 Status HttpCurlClient::Close(bool isAsync)
 {
     MEDIA_LOG_I("Close client in");
-    {
-        AutoLock lock(mutex_);
-        if (easyHandle_) {
-            curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
-        }
-    }
     if (isAsync) {
         MEDIA_LOG_I("Close client Async out");
         return Status::OK;
@@ -269,9 +263,6 @@ Status HttpCurlClient::Deinit()
 {
     MEDIA_LOG_I("Deinit in");
     AutoLock lock(mutex_);
-    if (easyHandle_) {
-        curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
-    }
     if (easyHandle_) {
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
@@ -320,8 +311,10 @@ void HttpCurlClient::InitCurProxy(const std::string& url)
 
 void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeoutMs)
 {
-    curl_easy_setopt(easyHandle_, CURLOPT_URL, UrlParse(url).c_str());
-    curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 5); // 5
+    CURLcode ret = curl_easy_setopt(easyHandle_, CURLOPT_URL, UrlParse(url).c_str());
+    if (ret != CURLE_OK) { MEDIA_LOG_I("Curl error " PUBLIC_LOG_D32 " " PUBLIC_LOG_S, ret, curl_easy_strerror(ret)); }
+    ret = curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 5); // 5
+    if (ret != CURLE_OK) { MEDIA_LOG_I("Curl error " PUBLIC_LOG_D32 " " PUBLIC_LOG_S, ret, curl_easy_strerror(ret)); }
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
 #ifndef CA_DIR
@@ -339,8 +332,10 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeout
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
     int32_t timeout = timeoutMs > 0 ? timeoutMs / MILLS_TO_SECOND : DEFAULT_LOW_SPEED_TIME;
-    curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_LIMIT, DEFAULT_LOW_SPEED_LIMIT);
-    curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_TIME, timeout);
+    ret = curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_LIMIT, DEFAULT_LOW_SPEED_LIMIT);
+    if (ret != CURLE_OK) { MEDIA_LOG_I("Curl error " PUBLIC_LOG_D32 " " PUBLIC_LOG_S, ret, curl_easy_strerror(ret)); }
+    ret = curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_TIME, timeout);
+    if (ret != CURLE_OK) { MEDIA_LOG_I("Curl error " PUBLIC_LOG_D32 " " PUBLIC_LOG_S, ret, curl_easy_strerror(ret)); }
     InitCurProxy(url);
 }
 
@@ -395,7 +390,8 @@ Status HttpCurlClient::RequestData(long startPos, int len, const RequestInfo& re
         MEDIA_LOG_D("RequestData: startPos " PUBLIC_LOG_D32 ", len " PUBLIC_LOG_D32, static_cast<int>(startPos), len);
         CURLcode returnCode = curl_easy_perform(easyHandle_);
         if (returnCode != CURLE_OK) {
-            MEDIA_LOG_E("Curl error " PUBLIC_LOG_D32, returnCode);
+            MEDIA_LOG_E("RequestData: startPos " PUBLIC_LOG_D32 ", len " PUBLIC_LOG_D32 ". Curl error " PUBLIC_LOG_D32
+                " " PUBLIC_LOG_S, static_cast<int>(startPos), len, returnCode, curl_easy_strerror(returnCode));
             clientCode = returnCode;
             ret = Status::ERROR_CLIENT;
         } else {
