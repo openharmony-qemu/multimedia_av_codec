@@ -36,17 +36,29 @@ bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
+    FuzzedDataProvider fdp(data, size);
     int32_t fd = open(MP4_PATH, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if (fd < 0) {
         return false;
     }
-    int len = write(fd, data, size);
-    if (len <= EXPECT_SIZE) {
-        close(fd);
+    uint8_t *pstream = nullptr;
+    uint16_t framesize = fdp.ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
+    if (!pstream) {
+        std::cerr << "Memory alloction failed" << std::endl;
         return false;
     }
+    fdp.ConsumeData(pstream, framesize);
+    int len = write(fd, pstream, framesize);
+    if (len <= EXPECT_SIZE) {
+        close(fd);
+        free(pstream);
+        pstream = nullptr;        
+        return false;
+    }
+    free(pstream);
+    pstream = nullptr;
     close(fd);
-    FuzzedDataProvider fdp(data, size);
     int64_t pts = fdp.ConsumeIntegral<int64_t>();
     int64_t ptsForPtsIndex = fdp.ConsumeIntegral<int64_t>();
     int64_t frameIndex = fdp.ConsumeIntegral<int64_t>();

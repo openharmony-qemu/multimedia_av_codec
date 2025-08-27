@@ -95,6 +95,7 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
     g_vDecSample->syncOutputWaitTime = 1;
     g_vDecSample->renderTimestampNs = fdp.ConsumeIntegral<int64_t>();
     g_vDecSample->isRenderAttime = fdp.ConsumeBool();
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
     int32_t ret = g_vDecSample->CreateVideoDecoder(g_codeName);
     if (ret != AV_ERR_OK) {
         delete g_vDecSample;
@@ -114,7 +115,7 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
         g_vDecSample = nullptr;
         return false;
     }
-    g_vDecSample->SyncInputFuncFuzz(data, size);
+    g_vDecSample->SyncInputFuncFuzz(remaining_data.data(), remaining_data.size());
     g_vDecSample->SyncOutputFuncFuzz();
     g_vDecSample->SetParameter(data0, data1);
     g_vDecSample->Flush();

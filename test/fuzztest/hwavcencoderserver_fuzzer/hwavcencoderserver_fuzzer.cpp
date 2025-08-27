@@ -30,8 +30,6 @@ bool HwavcencoderServerFuzzTest(const uint8_t *data, size_t size)
     }
     FuzzedDataProvider fdp(data, size);
     VEncServerSample *vEncSample = new VEncServerSample();
-    vEncSample->fuzzData = data;
-    vEncSample->fuzzSize = size;
     int32_t  lengthMin = 176;
     int32_t  lengthMax = 4096;
     int32_t  frameRateMin = 1;
@@ -42,6 +40,9 @@ bool HwavcencoderServerFuzzTest(const uint8_t *data, size_t size)
     std::vector<int32_t> pixelFormats = { 1, 2, 3, 4, 5 };
     size_t pfIndex = fdp.ConsumeIntegralInRange<size_t>(0, pixelFormats.size() - 1);
     vEncSample->defaultPixelFormat = pixelFormats[pfIndex];
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    vEncSample->fuzzData = remaining_data.data();
+    vEncSample->fuzzSize = remaining_data.size();
     vEncSample->RunVideoServerDecoder();
     vEncSample->WaitForEos();
     delete vEncSample;

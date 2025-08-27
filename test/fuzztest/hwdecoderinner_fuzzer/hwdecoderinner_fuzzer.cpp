@@ -69,7 +69,8 @@ bool HwdecoderInnerFuzzTest(const uint8_t *data, size_t size)
     if (ret != AV_ERR_OK) {
         return ReleaseSample();
     }
-    g_vDecSample->InputFuncFUZZ(data, size);
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    g_vDecSample->InputFuncFUZZ(remaining_data.data(), remaining_data.size());
     g_vDecSample->Flush();
     g_vDecSample->Stop();
     g_vDecSample->Reset();

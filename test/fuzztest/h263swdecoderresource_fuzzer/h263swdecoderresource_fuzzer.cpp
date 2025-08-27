@@ -67,7 +67,8 @@ bool H263SwdecoderFuzzTest(const uint8_t *data, size_t size)
             return false;
         }
     }
-    OH_AVErrCode ret = vDecSample->InputFuncFUZZ(data, size);
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    OH_AVErrCode ret = vDecSample->InputFuncFUZZ(remaining_data.data(), remaining_data.size());
     if (ret != AV_ERR_OK) {
         vDecSample->Flush();
         vDecSample->Stop();

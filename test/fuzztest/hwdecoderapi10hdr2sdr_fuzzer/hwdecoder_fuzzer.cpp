@@ -66,6 +66,7 @@ bool HwdecoderFuzzTest(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     int data0 = fdp.ConsumeIntegral<int32_t>();
     int data1 = fdp.ConsumeIntegral<int32_t>();
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
     if (!g_vDecSample) {
         g_vDecSample = new VDecFuzzSample();
         g_vDecSample->isSurfMode = true;
@@ -94,7 +95,7 @@ bool HwdecoderFuzzTest(const uint8_t *data, size_t size)
         }
         g_vDecSample->InputFuncFUZZ(SPS, SPS_SIZE + START_CODE_SIZE);
         g_vDecSample->InputFuncFUZZ(PPS, PPS_SIZE + START_CODE_SIZE);
-        g_vDecSample->InputFuncFUZZ(data, size);
+        g_vDecSample->InputFuncFUZZ(remaining_data.data(), remaining_data.size());
         g_vDecSample->SetParameter(data0, data1);
         g_vDecSample->Flush();
         g_vDecSample->Stop();

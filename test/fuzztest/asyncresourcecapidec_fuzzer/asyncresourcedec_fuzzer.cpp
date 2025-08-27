@@ -105,8 +105,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     FuzzedDataProvider fdp(data, size);
-    int32_t choose = fdp.ConsumeIntegral<int32_t>() % 2;
-    if (choose == 0) {
+    bool choose = fdp.ConsumeBool();
+    if (choose) {
         VideoDecoderFuzzTest(&fdp);
     } else {
         VideoDecoderResourceFuzzTest(&fdp);

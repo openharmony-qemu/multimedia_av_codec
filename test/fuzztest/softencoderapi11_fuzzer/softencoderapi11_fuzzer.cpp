@@ -33,8 +33,10 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     }
     bool result = false;
     VEncAPI11FuzzSample *vEncSample = new VEncAPI11FuzzSample();
-    vEncSample->fuzzData = data;
-    vEncSample->fuzzSize = size;
+    FuzzedDataProvider fdp(data, size);
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    vEncSample->fuzzData = remaining_data.data();
+    vEncSample->fuzzSize = remaining_data.size();
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, SOFTWARE);
     string tmpCodecName = OH_AVCapability_GetName(cap);
     int32_t ret = vEncSample->CreateVideoEncoder(tmpCodecName.c_str());

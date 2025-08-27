@@ -87,6 +87,7 @@ bool HwdecoderFuzzTest(const uint8_t *data, size_t size)
         g_vDecSample = new VDecFuzzSample();
         g_vDecSample->defaultWidth = fdp.ConsumeIntegral<int32_t>();
         g_vDecSample->defaultHeight = fdp.ConsumeIntegral<int32_t>();
+        auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
         int32_t ret = g_vDecSample->CreateVideoDecoder();
         if (ret != AV_ERR_OK) {
             return ReleaseSample();
@@ -104,7 +105,7 @@ bool HwdecoderFuzzTest(const uint8_t *data, size_t size)
         }
         g_vDecSample->InputFuncFUZZ(SPS, SPS_SIZE + START_CODE_SIZE);
         g_vDecSample->InputFuncFUZZ(PPS, PPS_SIZE + START_CODE_SIZE);
-        g_vDecSample->InputFuncFUZZ(data, size);
+        g_vDecSample->InputFuncFUZZ(remaining_data.data(), remaining_data.size());
         g_vDecSample->SetParameter(data0, data1);
         g_vDecSample->Flush();
         g_vDecSample->Stop();

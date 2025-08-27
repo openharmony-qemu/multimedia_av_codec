@@ -97,6 +97,7 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
     g_vDecSample->syncOutputWaitTime = 1;
     g_vDecSample->renderTimestampNs = fdp.ConsumeIntegral<int64_t>();
     g_vDecSample->isRenderAttime = fdp.ConsumeBool();
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
     if (g_vDecSample->enbleSyncMode == 0) {
         ReleaseSample();
         return false;
@@ -117,7 +118,7 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
         ReleaseSample();
         return false;
     }
-    g_vDecSample->SyncInputFuncFuzz(data, size);
+    g_vDecSample->SyncInputFuncFuzz(remaining_data.data(), remaining_data.size());
     g_vDecSample->SyncOutputFuncFuzz();
     g_vDecSample->SetParameter(data0, data1);
     g_vDecSample->Flush();

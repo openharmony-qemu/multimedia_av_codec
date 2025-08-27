@@ -103,6 +103,7 @@ bool HwdecoderApi11FuzzTest(const uint8_t *data, size_t size)
         g_vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
         g_vDecSample->renderTimestampNs = fdp.ConsumeIntegral<int64_t>();
         g_vDecSample->isRenderAttime = fdp.ConsumeBool();
+        auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
         int32_t ret = g_vDecSample->CreateVideoDecoder();
         if (ret != AV_ERR_OK) {
             return ReleaseSample();
@@ -118,7 +119,7 @@ bool HwdecoderApi11FuzzTest(const uint8_t *data, size_t size)
         }
         g_vDecSample->InputFuncFUZZ(SPS, SPS_SIZE + START_CODE_SIZE);
         g_vDecSample->InputFuncFUZZ(PPS, PPS_SIZE + START_CODE_SIZE);
-        g_vDecSample->InputFuncFUZZ(data, size);
+        g_vDecSample->InputFuncFUZZ(remaining_data.data(), remaining_data.size());
         g_vDecSample->SetParameter(data0, data1);
         g_vDecSample->Flush();
         g_vDecSample->Stop();
