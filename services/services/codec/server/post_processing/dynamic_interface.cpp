@@ -53,7 +53,10 @@ bool DynamicInterface::OpenLibrary()
         AVCODEC_LOGI("VPE lib is already loaded.");
         return true;
     }
-    lib_ = dlopen(LIBRARY_PATH, RTLD_LAZY);
+    char canonicalPath[PATH_MAX] = {0};
+    CHECK_AND_RETURN_RET_LOGW(realpath(LIBRARY_PATH, canonicalPath) != nullptr,
+        UINT32_MAX, "VPE lib not exist");
+    lib_ = dlopen(canonicalPath, RTLD_LAZY);
     CHECK_AND_RETURN_RET_LOG(lib_ != nullptr, false, "Load VPE lib failed.");
     return true;
 }
