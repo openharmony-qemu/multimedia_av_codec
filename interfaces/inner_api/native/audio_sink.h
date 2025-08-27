@@ -109,6 +109,7 @@ public:
     void HandleAudioRenderRequestPost();
     Status SetAudioHapticsSyncId(int32_t syncId);
     Status SetLoudnessGain(float loudnessGain);
+    Status cacheBuffer();
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
@@ -326,6 +327,7 @@ private:
     MemoryType bufferMemoryType_ {MemoryType::UNKNOWN_MEMORY};
     int32_t maxCbDataSize_ {0};
     std::queue<std::shared_ptr<AVBuffer>> swapOutputBuffers_ {};
+    std::unique_ptr<Task> cacheBufferTask_ {nullptr};
 };
 }
 }

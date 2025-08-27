@@ -110,6 +110,8 @@ public:
 
     Status SetLoudnessGain(float loudnessGain);
 
+    Status cacheBuffer();
+
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;
