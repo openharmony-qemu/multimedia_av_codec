@@ -353,7 +353,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_009, TestSize.Level1)
 
 /**.
  * @tc.name: VideoHevcEnc_010
- * @tc.desc: video hevc enc with sqr、bitrate and quality.
+ * @tc.desc: video hevc enc with sqr, bitrate and quality.
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoHevcEnc_010, TestSize.Level1)
@@ -378,7 +378,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_010, TestSize.Level1)
 
 /**.
  * @tc.name: VideoHevcEnc_011
- * @tc.desc: video hevc enc with sqr、maxBitrate and quality.
+ * @tc.desc: video hevc enc with sqr, maxBitrate and quality.
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoHevcEnc_011, TestSize.Level1)
@@ -403,7 +403,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_011, TestSize.Level1)
 
 /**.
  * @tc.name: VideoHevcEnc_012
- * @tc.desc: video hevc enc with sqr、bitrate and maxBitrate.
+ * @tc.desc: video hevc enc with sqr, bitrate and maxBitrate.
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoHevcEnc_012, TestSize.Level1)
@@ -428,7 +428,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_012, TestSize.Level1)
 
 /**.
  * @tc.name: VideoHevcEnc_013
- * @tc.desc: video hevc enc with sqr、bitrate and error maxBitrate.
+ * @tc.desc: video hevc enc with sqr, bitrate and error maxBitrate.
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoHevcEnc_013, TestSize.Level1)
@@ -454,7 +454,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_013, TestSize.Level1)
 
 /**.
  * @tc.name: VideoHevcEnc_014
- * @tc.desc: video hevc enc setparameter with sqr、bitrate、maxBitrate and quality.
+ * @tc.desc: video hevc enc setparameter with sqr, bitrate, maxBitrate and quality.
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoHevcEnc_014, TestSize.Level1)
@@ -492,7 +492,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_014, TestSize.Level1)
 
 /**.
  * @tc.name: VideoHevcEnc_015
- * @tc.desc: video hevc enc setparameter with sqr、 bitrate、error maxBitrate and quality.
+ * @tc.desc: video hevc enc setparameter with sqr,  bitrate, error maxBitrate and quality.
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoHevcEnc_015, TestSize.Level1)
@@ -512,7 +512,6 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_015, TestSize.Level1)
         EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
         default_sqr_factor += 1;
         default_bitrate += 1;
-        default_quality += 1;
         default_max_bitrate = -1;
         format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
         format_->PutLongValue(OH_MD_KEY_BITRATE, default_bitrate);
@@ -531,7 +530,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_015, TestSize.Level1)
 
 /**.
  * @tc.name: VideoHevcEnc_016
- * @tc.desc: video hevc enc setparameter with error sqr、error bitrate、error maxBitrate and error quality.
+ * @tc.desc: video hevc enc setparameter with error sqr, error bitrate, error maxBitrate and error quality.
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoHevcEnc_016, TestSize.Level1)
