@@ -169,7 +169,7 @@ INSTANTIATE_TEST_SUITE_P(,
                                          BITRATE_MODE_CQ,
                                          BITRATE_MODE_SQR,
                                          BITRATE_MODE_MAX)
-                         );
+                        );
 
 /**.
  * @tc.name: VideoHevcEnc_001

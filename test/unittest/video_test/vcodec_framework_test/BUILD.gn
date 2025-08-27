@@ -115,11 +115,11 @@ group("vcodec_framework_test") {
         ":videoenc_bframe_capi_sync_unit_test",
         ":videoenc_bframe_inner_async_unit_test",
         ":videoenc_bframe_inner_sync_unit_test",
+        ":videoenc_bitrate_mode_capi_unit_test",
       ]
     }
     if (av_codec_support_hcodec) {
       deps += [
-        ":videoenc_bitrate_mode_capi_unit_test",
         ":videoenc_capi_async_unit_test",
         ":videoenc_capi_sync_unit_test",
         ":videoenc_format_capi_unit_test",
@@ -899,6 +899,7 @@ ohos_unittest("videoenc_bitrate_mode_capi_unit_test") {
     "./func_sample/mock",
     "./func_sample/mock/capi",
     "./func_sample/sample/encoder",
+    "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi",
     "$av_codec_root_dir/test/unittest/common/",
@@ -907,7 +908,7 @@ ohos_unittest("videoenc_bitrate_mode_capi_unit_test") {
 
   defines = [
     "VIDEOENC_CAPI_UNIT_TEST",
-    "VideoEncSample=VideoEncAsyncSample",
+    "VideoEncSample=VideoEncSyncSample",
   ]
   if (target_cpu == "arm64") {
     defines += [ "HMOS_TEST" ]
@@ -921,7 +922,7 @@ ohos_unittest("videoenc_bitrate_mode_capi_unit_test") {
     "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
     "./func_sample/mock/capi/videoenc_capi_mock.cpp",
-    "./func_sample/sample/encoder/venc_async_sample.cpp",
+    "./func_sample/sample/encoder/venc_sync_sample.cpp",
     "./videoenc_bitrate_mode_unit_test.cpp",
   ]
   deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
