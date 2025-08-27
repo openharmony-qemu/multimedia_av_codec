@@ -262,6 +262,7 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
     bool hasVideoFilter = false;
     bool hasInvalidVideo = false;
     bool hasInvalidAudio = false;
+    bool hasAudioTrack = false;
     FALSE_RETURN_V_MSG(callback_ != nullptr, Status::OK, "callback is nullptr");
     for (size_t index = 0; index < trackInfos.size(); index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
@@ -288,9 +289,13 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
         UpdateTrackIdMap(streamType, static_cast<int32_t>(index));
         FALSE_CONTINUE_NOLOG(streamType != StreamType::STREAMTYPE_ENCODED_VIDEO || !hasVideoFilter);
         hasVideoFilter |= (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO && isEnableReselectVideoTrack_);
+        FALSE_CONTINUE_NOLOG(mediaType != Plugins::MediaType::AUDIO || !hasAudioTrack);
         ret = callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
         FALSE_RETURN_V_MSG_E(ret == Status::OK || FaultDemuxerEventInfoWrite(streamType) != Status::OK, ret,
             "OnCallback Link Filter Fail.");
+        if (mediaType == Plugins::MediaType::AUDIO) {
+            hasAudioTrack = true;
+        }
         successNodeCount++;
     }
     bool isOnlyInvalidAVTrack = (hasInvalidVideo && !demuxer_->HasVideo())
