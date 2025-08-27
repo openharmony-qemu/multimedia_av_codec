@@ -44,7 +44,10 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         g_vDecSample->SetVideoDecoderCallback();
         g_vDecSample->Start();
     }
-    OH_AVErrCode ret = g_vDecSample->InputFuncFUZZ(data, size);
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    g_vDecSample->fuzzData = remaining_data.data();
+    g_vDecSample->fuzzSize = remaining_data.size();
+    OH_AVErrCode ret = g_vDecSample->InputFuncFUZZ(fuzzData, fuzzSize);
     if (ret != AV_ERR_OK) {
         g_vDecSample->Flush();
         g_vDecSample->Stop();
