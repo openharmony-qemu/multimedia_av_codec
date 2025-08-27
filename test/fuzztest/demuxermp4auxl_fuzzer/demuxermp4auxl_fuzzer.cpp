@@ -31,7 +31,7 @@ namespace OHOS {
 const char *FILE_PATH = "/data/test/fuzz_create.mp4";
 const int64_t EXPECT_SIZE = 36;
 
-bool CheckDataValidity(const uint8_t *data, size_t size)
+bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
 {
     if (size <= EXPECT_SIZE) {
         return false;
@@ -40,20 +40,32 @@ bool CheckDataValidity(const uint8_t *data, size_t size)
     if (fd < 0) {
         return false;
     }
-    int len = write(fd, data, size);
+    uint8_t *pstream = nullptr;
+    uint16_t framesize = fdp->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
+    if (!pstream) {
+        std::cerr << "Memory alloction failed" << std::endl;
+        return false;
+    }
+    fdp->ConsumeData(pstream, framesize);
+    int len = write(fd, pstream, framesize);
     if (len <= 0) {
         close(fd);
+        free(pstream);
+        pstream = nullptr;
         return false;
     }
     close(fd);
+    free(pstream);
+    pstream = nullptr;
     return true;
 }
 bool DemuxerFuzzTest(const uint8_t *data, size_t size)
 {
-    if (!CheckDataValidity(data, size)) {
+    FuzzedDataProvider fdp(data, size);
+    if (!CheckDataValidity(&fdp, size)) {
         return false;
     }
-    FuzzedDataProvider fdp(data, size);
     int64_t time = fdp.ConsumeIntegral<int64_t>();
     uint32_t createSize = fdp.ConsumeIntegral<uint32_t>();
     shared_ptr<DemuxerMp4AuxlSample> demuxerSample = make_shared<DemuxerMp4AuxlSample>();

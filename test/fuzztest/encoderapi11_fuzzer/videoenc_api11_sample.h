@@ -71,7 +71,7 @@ public:
     int32_t SetVideoEncoderCallback();
     int32_t CreateSurface();
     int32_t StartVideoEncoder();
-    int32_t SetParameter(int32_t data);
+    int32_t SetParameter(int32_t data, int32_t data1);
     void GetStride();
     void WaitForEOS();
     int32_t OpenFile();

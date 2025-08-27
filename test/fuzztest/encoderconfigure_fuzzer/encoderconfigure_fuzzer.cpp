@@ -69,7 +69,6 @@ bool EncoderConfigureFuzzTest(const uint8_t *data, size_t size)
     }
     FuzzedDataProvider fdp(data, size);
     bool result = false;
-    int32_t intval = fdp.ConsumeIntegral<uint32_t>();
     VEncFuzzSample *vEncSample = new VEncFuzzSample();
     vEncSample->inpDir = "/data/test/media/1280_720_nv.yuv";
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
@@ -86,7 +85,7 @@ bool EncoderConfigureFuzzTest(const uint8_t *data, size_t size)
         return true;
     }
     vEncSample->fuzzMode = true;
-    if (vEncSample->ConfigureVideoEncoderFuzz(intval) != AV_ERR_OK) {
+    if (vEncSample->ConfigureVideoEncoderFuzz(&fdp) != AV_ERR_OK) {
         delete vEncSample;
         vEncSample = nullptr;
         return true;

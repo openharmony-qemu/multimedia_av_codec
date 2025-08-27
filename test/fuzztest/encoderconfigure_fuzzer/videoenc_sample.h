@@ -26,6 +26,7 @@
 #include <queue>
 #include <string>
 #include <unordered_map>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "securec.h"
 #include "native_avcodec_videoencoder.h"
 #include "nocopyable.h"
@@ -67,7 +68,7 @@ public:
     uint32_t defaultKeyFrameInterval = 1000;
     int32_t CreateVideoEncoder(const char *codecName);
     int32_t ConfigureVideoEncoder();
-    int32_t ConfigureVideoEncoderFuzz(int32_t data);
+    int32_t ConfigureVideoEncoderFuzz(FuzzedDataProvider *fdp);
     int32_t SetVideoEncoderCallback();
     int32_t StartVideoEncoder();
     int32_t SetParameter(OH_AVFormat *format);

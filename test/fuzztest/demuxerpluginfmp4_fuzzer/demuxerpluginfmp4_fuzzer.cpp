@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "demuxerplugintype_sample.h"
 
 #define FUZZ_PROJECT_NAME "demuxerpluginfmp4_fuzzer"
@@ -32,7 +33,19 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t size)
     demuxerTest->demuxerPluginName_ = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     demuxerTest->videoHeightDefault_ = HEIGHT;
     demuxerTest->videoWidthDefault_ = WIDTH;
-    if (demuxerTest->InitWithData(data, size)) {
+    FuzzedDataProvider fdp(data, size);
+    uint8_t *pstream = nullptr;
+    uint16_t framesize = fdp.ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
+    if (!pstream) {
+        std::cerr << "Memory alloction failed" << std::endl;
+        return;
+    }
+    fdp.ConsumeData(pstream, framesize);
+    bool ret = demuxerTest->InitWithData(pstream, framesize);
+    free(pstream);
+    pstream = nullptr;
+    if (ret) {
         demuxerTest->RunDemuxerInterfaceFuzz();
     }
 }

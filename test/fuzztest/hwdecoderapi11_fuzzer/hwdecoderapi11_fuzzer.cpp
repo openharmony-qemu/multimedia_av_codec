@@ -42,14 +42,6 @@ bool g_isSurfMode = true;
 
 namespace OHOS {
 
-void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
-{
-    std::ofstream file(filename, std::ios::out | std::ios::binary);
-    if (file.is_open()) {
-        file.write(reinterpret_cast<const char*>(data), size);
-        file.close();
-    }
-}
 void RunNormalDecoder()
 {
     VDecApi11FuzzSample *vDecSample = new VDecApi11FuzzSample();
@@ -99,14 +91,13 @@ bool HwdecoderApi11FuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
-    std::string filename = "/data/test/corpus-HwdecoderApi11FuzzTest";
-    SaveCorpus(data, size, filename);
     if (g_needRunNormalDecoder) {
         g_needRunNormalDecoder = false;
         RunNormalDecoder();
     }
     FuzzedDataProvider fdp(data, size);
     int data0 = fdp.ConsumeIntegral<int32_t>();
+    int data1 = fdp.ConsumeIntegral<int32_t>();
     if (!g_vDecSample) {
         g_vDecSample = new VDecApi11FuzzSample();
         g_vDecSample->defaultWidth = DEFAULT_WIDTH;
@@ -131,7 +122,7 @@ bool HwdecoderApi11FuzzTest(const uint8_t *data, size_t size)
         g_vDecSample->InputFuncFUZZ(SPS, SPS_SIZE + START_CODE_SIZE);
         g_vDecSample->InputFuncFUZZ(PPS, PPS_SIZE + START_CODE_SIZE);
         g_vDecSample->InputFuncFUZZ(data, size);
-        g_vDecSample->SetParameter(data0);
+        g_vDecSample->SetParameter(data0, data1);
         g_vDecSample->Flush();
         g_vDecSample->Stop();
         g_vDecSample->Reset();

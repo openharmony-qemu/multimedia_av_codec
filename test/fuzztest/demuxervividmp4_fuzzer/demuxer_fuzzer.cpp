@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "securec.h"
 
 #include <iostream>
@@ -40,13 +41,25 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     if (fd < 0) {
         return false;
     }
-    int len = write(fd, data, size);
+    FuzzedDataProvider fdp(data, size);
+    uint8_t *pstream = nullptr;
+    uint16_t framesize = fdp.ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
+    if (!pstream) {
+        std::cerr << "Memory alloction failed" << std::endl;
+        return false;
+    }
+    fdp.ConsumeData(pstream, framesize);
+    int len = write(fd, pstream, framesize);
     if (len <= 0) {
         close(fd);
+        free(pstream);
+        pstream = nullptr;
         return false;
     }
     close(fd);
-
+    free(pstream);
+    pstream = nullptr;
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
     demuxerSample->filePath = MP4_PATH;
     demuxerSample->RunNormalDemuxer();

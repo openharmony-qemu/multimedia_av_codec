@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "demuxerpluginflv_sample.h"
 
 #define FUZZ_PROJECT_NAME "demuxerpluginflv_fuzzer"
@@ -26,7 +27,19 @@ namespace OHOS {
 void DemuxerPluginFlvFuzzWithFunc(const uint8_t *data, size_t size)
 {
     std::shared_ptr<DemuxerPluginFlvTest> demuxerTest = std::make_shared<DemuxerPluginFlvTest>();
-    if (demuxerTest->InitWithFlvData(data, size)) {
+    FuzzedDataProvider fdp(data, size);
+    uint8_t *pstream = nullptr;
+    uint16_t framesize = fdp.ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
+    if (!pstream) {
+        std::cerr << "Memory alloction failed" << std::endl;
+        return;
+    }
+    fdp.ConsumeData(pstream, framesize);
+    bool ret = demuxerTest->InitWithFlvData(pstream, framesize);
+    free(pstream);
+    pstream = nullptr;
+    if (ret) {
         demuxerTest->RunDemuxerInterfaceFuzz();
     }
 }

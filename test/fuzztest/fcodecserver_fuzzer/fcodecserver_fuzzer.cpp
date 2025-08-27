@@ -14,6 +14,7 @@
  */
 #include <cstddef>
 #include <cstdint>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "fcodec_sample.h"
 using namespace std;
 using namespace OHOS;
@@ -28,8 +29,10 @@ bool FCodecServerFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     FCodecServerSample *vDecSample = new FCodecServerSample();
-    vDecSample->fuzzData = data;
-    vDecSample->fuzzSize = size;
+    FuzzedDataProvider fdp(data, size);
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    vDecSample->fuzzData = remaining_data.data();
+    vDecSample->fuzzSize = remaining_data.size();
     vDecSample->RunFCodecDecoder();
     vDecSample->WaitForEos();
     delete vDecSample;

@@ -27,14 +27,6 @@ using namespace OHOS;
 using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "encoderapi11_fuzzer"
 
-void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
-{
-    std::ofstream file(filename, std::ios::out | std::ios::binary);
-    if (file.is_open()) {
-        file.write(reinterpret_cast<const char*>(data), size);
-        file.close();
-    }
-}
 void RunNormalEncoder()
 {
     auto vEncSample = make_unique<VEncAPI11FuzzSample>();
@@ -66,8 +58,6 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
-    std::string filename = "/data/test/corpus-EncoderAPI11H265BFrame10BitFuzzTest";
-    SaveCorpus(data, size, filename);
     if (g_needRunNormalEncoder) {
         g_needRunNormalEncoder = false;
         RunNormalEncoder();
@@ -76,10 +66,9 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     int data1 = fdp.ConsumeIntegral<int32_t>();
     bool data2 = fdp.ConsumeBool();
+    int data3 = fdp.ConsumeIntegral<int32_t>();
     VEncAPI11FuzzSample *vEncSample = new VEncAPI11FuzzSample();
     vEncSample->fuzzMode = true;
-    vEncSample->fuzzData = data;
-    vEncSample->fuzzSize = size;
     vEncSample->surfInput = data2;
     vEncSample->enableRepeat = fdp.ConsumeBool();
     vEncSample->setMaxCount = fdp.ConsumeBool();
@@ -93,6 +82,9 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     vEncSample->defaultQuality = fdp.ConsumeIntegral<uint32_t>();
     vEncSample->defaultFrameAfter = fdp.ConsumeIntegral<int32_t>();
     vEncSample->defaultMaxCount = fdp.ConsumeIntegral<int32_t>();
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    vEncSample->fuzzData = remaining_data.data();
+    vEncSample->fuzzSize = remaining_data.size();
     int32_t ret = vEncSample->CreateVideoEncoder();
     if (ret != 0) {
         delete vEncSample;
@@ -101,7 +93,7 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     vEncSample->SetVideoEncoderCallback();
     vEncSample->ConfigureVideoEncoder();
     vEncSample->StartVideoEncoder();
-    vEncSample->SetParameter(data1);
+    vEncSample->SetParameter(data1, data3);
     vEncSample->WaitForEOS();
     delete vEncSample;
     return result;

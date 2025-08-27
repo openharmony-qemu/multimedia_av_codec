@@ -29,14 +29,6 @@ using namespace OHOS::Media;
 
 VEncAPI11FuzzSample *g_vEncSample = nullptr;
 
-void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
-{
-    std::ofstream file(filename, std::ios::out | std::ios::binary);
-    if (file.is_open()) {
-        file.write(reinterpret_cast<const char*>(data), size);
-        file.close();
-    }
-}
 void RunNormalEncoder()
 {
     auto vEncSample = make_unique<VEncAPI11FuzzSample>();
@@ -87,8 +79,6 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
-    std::string filename = "/data/test/corpus-EncoderAPI11H2658BitFuzzTest";
-    SaveCorpus(data, size, filename);
     if (g_needRunNormalEncoder) {
         g_needRunNormalEncoder = false;
         RunNormalEncoder();
@@ -96,9 +86,8 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     int data1 = fdp.ConsumeIntegral<int32_t>();
     bool data2 = fdp.ConsumeBool();
+    int data3 = fdp.ConsumeIntegral<int32_t>();
     g_vEncSample = new VEncAPI11FuzzSample();
-    g_vEncSample->fuzzData = data;
-    g_vEncSample->fuzzSize = size;
     g_vEncSample->surfInput = data2;
     g_vEncSample->fuzzMode = true;
     g_vEncSample->enableRepeat = fdp.ConsumeBool();
@@ -113,6 +102,9 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     g_vEncSample->defaultQuality = fdp.ConsumeIntegral<uint32_t>();
     g_vEncSample->defaultFrameAfter = fdp.ConsumeIntegral<int32_t>();
     g_vEncSample->defaultMaxCount = fdp.ConsumeIntegral<int32_t>();
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    g_vEncSample->fuzzData = remaining_data.data();
+    g_vEncSample->fuzzSize = remaining_data.size();
     if (g_vEncSample->CreateVideoEncoder() != AV_ERR_OK) {
         return ReleaseSample();
     }
@@ -125,7 +117,7 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     if (g_vEncSample->StartVideoEncoder() != AV_ERR_OK) {
         return ReleaseSample();
     }
-    g_vEncSample->SetParameter(data1);
+    g_vEncSample->SetParameter(data1, data3);
     g_vEncSample->WaitForEOS();
     return ReleaseSample();
 }

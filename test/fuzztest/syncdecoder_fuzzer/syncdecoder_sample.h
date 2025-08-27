@@ -84,7 +84,7 @@ public:
     bool useHDRSource = false;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
     int32_t DecodeSetSurface();
-    void SetParameter(int32_t data);
+    void SetParameter(int32_t data, int32_t data1);
 private:
     std::unique_ptr<std::ifstream> inFile_;
     OH_AVCodec *vdec_;

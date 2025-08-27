@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "demuxerplugintype_sample.h"
 
 #define FUZZ_PROJECT_NAME "demuxerpluginmp3_fuzzer"
@@ -28,7 +29,19 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t size)
     std::shared_ptr<DemuxerPluginTypeTest> demuxerTest = std::make_shared<DemuxerPluginTypeTest>();
     demuxerTest->testFilePath_ = "/data/test/demuxerpluginmp3.mp3";
     demuxerTest->demuxerPluginName_ = "avdemux_mp3";
-    if (demuxerTest->InitWithData(data, size)) {
+    FuzzedDataProvider fdp(data, size);
+    uint8_t *pstream = nullptr;
+    uint16_t framesize = fdp.ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
+    if (!pstream) {
+        std::cerr << "Memory alloction failed" << std::endl;
+        return;
+    }
+    fdp.ConsumeData(pstream, framesize);
+    bool ret = demuxerTest->InitWithData(pstream, framesize);
+    free(pstream);
+    pstream = nullptr;
+    if (ret) {
         demuxerTest->RunDemuxerInterfaceFuzz();
     }
 }
