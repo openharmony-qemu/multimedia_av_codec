@@ -1726,7 +1726,7 @@ Status AudioSink::cacheBuffer()
         }
         MEDIA_LOG_I("cacheBuffer availOutputBuffers_ size:%{public}d, swapOutputBuffers_ size:%{public}d",
             static_cast<int>(availOutputBuffers_.size()), static_cast<int>(swapOutputBuffers_.size()));
-    });
+    }, BUFFER_CONSUME_MS * MICROSECONDS_CONVERT_UNITS, false);
     return Status::OK;
 }
 } // namespace MEDIA
