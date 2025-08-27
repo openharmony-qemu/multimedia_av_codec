@@ -872,7 +872,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, GetDownloadRecordData_001, TestSize.Leve
 HWTEST_F(DashSegmentDownloaderUnitTest, GetBufferSize_001, TestSize.Level1)
 {
     segmentDownloader_->buffer_.reset();
-    uint32_t size = segmentDownloader_->GetBufferSize();
+    uint64_t size = segmentDownloader_->GetBufferSize();
     EXPECT_EQ(size, 0);
 }
 

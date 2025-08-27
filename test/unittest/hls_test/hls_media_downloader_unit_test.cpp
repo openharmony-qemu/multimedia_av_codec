@@ -139,7 +139,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo5, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, GetBufferSize, TestSize.Level1)
 {
-    size_t actualSize = hlsMediaDownloader->GetBufferSize();
+    uint64_t actualSize = hlsMediaDownloader->GetBufferSize();
     EXPECT_EQ(actualSize, 0);
 }
 

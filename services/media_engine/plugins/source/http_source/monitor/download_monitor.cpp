@@ -371,7 +371,7 @@ void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     }
 }
 
-size_t DownloadMonitor::GetBufferSize() const
+uint64_t DownloadMonitor::GetBufferSize() const
 {
     FALSE_RETURN_V(downloader_ != nullptr, 0);
     return downloader_->GetBufferSize();

@@ -66,7 +66,7 @@ public:
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void SetDemuxerState(int32_t streamId) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
-    size_t GetBufferSize() const override;
+    uint64_t GetBufferSize() const override;
     bool GetPlayable() override;
     void SetAppUid(int32_t appUid) override;
     bool GetBufferingTimeOut() override;

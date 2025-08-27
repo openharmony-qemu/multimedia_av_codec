@@ -169,7 +169,7 @@ public:
     std::pair<int64_t, int64_t> GetDownloadRecordData();
     void SetAppUid(int32_t appUid);
     void SetInterruptState(bool isInterruptNeeded);
-    uint32_t GetBufferSize() const;
+    uint64_t GetBufferSize() const;
     bool GetBufferringStatus() const;
     uint32_t GetCachedPercent();
     bool IsAllSegmentFinished() const;

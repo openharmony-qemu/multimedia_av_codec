@@ -71,7 +71,7 @@ public:
     std::pair<int32_t, int32_t> GetDownloadInfo() override;
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
-    size_t GetBufferSize() const override;
+    uint64_t GetBufferSize() const override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
     bool GetReadTimeOut(bool isDelay) override;

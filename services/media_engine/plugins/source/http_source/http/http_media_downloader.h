@@ -68,7 +68,7 @@ public:
     void DownloadReport();
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void UpdateCachedPercent(BufferingInfoType infoType);
-    size_t GetBufferSize() const override;
+    uint64_t GetBufferSize() const override;
     bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
     bool GetReadTimeOut(bool isDelay) override;
@@ -130,7 +130,7 @@ private:
 
     bool HandleBuffering();
     bool StartBuffering(unsigned int& wantReadLength);
-    size_t GetCurrentBufferSize() const;
+    uint64_t GetCurrentBufferSize() const;
     bool HandleBreak();
     bool ChangeDownloadPos(bool isSeekHit);
     void UpdateWaterLineAbove();
@@ -215,7 +215,7 @@ private:
     uint64_t totalDownloadDuringTime_ {0};
     int32_t currentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
-    int32_t lastCachedSize_ {0};
+    uint64_t lastCachedSize_ {0};
     std::atomic<bool> isBufferingStart_ {false};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
 

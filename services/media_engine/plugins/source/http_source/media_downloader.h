@@ -53,7 +53,7 @@ public:
         MEDIA_LOG_E("SeekToPos is unimplemented.");
         return false;
     }
-    virtual size_t GetBufferSize() const = 0;
+    virtual uint64_t GetBufferSize() const = 0;
     virtual bool GetPlayable()
     {
         return false;
