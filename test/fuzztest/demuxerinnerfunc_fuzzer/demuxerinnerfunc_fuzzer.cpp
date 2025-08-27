@@ -33,7 +33,7 @@ void RunDemuxerInnerFuncSample(const uint8_t *data, size_t size)
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;
         return;
-    }    
+    }
     fdp.ConsumeData(pstream, framesize);
     bool ret = demuxer->Init(pstream, framesize);
     free(pstream);

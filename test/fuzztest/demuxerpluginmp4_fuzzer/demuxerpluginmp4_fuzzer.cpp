@@ -38,7 +38,7 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t size)
     fdp.ConsumeData(pstream, framesize);
     bool ret = demuxerTest->InitWithData(pstream, framesize);
     free(pstream);
-    pstream = nullptr;   
+    pstream = nullptr;
     if (ret) {
         demuxerTest->RunDemuxerInterfaceFuzz();
     }

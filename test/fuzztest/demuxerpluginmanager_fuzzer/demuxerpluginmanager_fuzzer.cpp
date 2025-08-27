@@ -83,12 +83,10 @@ bool DemuxerPluginManagerFuzzTest(const uint8_t *data, size_t size)
 
     std::shared_ptr<OHOS::Media::BaseStreamDemuxer> streamDemuxer =
         std::make_shared<StreamDemuxer>();
-        
     std::shared_ptr<MediaSource> mediaSource =
         std::make_shared<MediaSource>(MP4_PATH);
 
     std::shared_ptr<Source> source = std::make_shared<Source>();
-    
     auto res = source->SetSource(mediaSource);
     if (res != Status::OK) {
         return false;
@@ -109,7 +107,6 @@ bool DemuxerPluginManagerFuzzTest(const uint8_t *data, size_t size)
     videoInfo.videoHeight =  size - VIDEO_HEIGHT_SIZE;
     videoInfo.videoType = Media::Plugins::VideoType::VIDEO_TYPE_SDR;
     videoInfo.type = OHOS::Media::Plugins::StreamType::VIDEO;
-    
     Media::Plugins::StreamInfo audioInfo;
     audioInfo.streamId = (size - AUDIO_TRACK)  % TRACK_COUNT;
     audioInfo.bitRate = size - BITRATE;

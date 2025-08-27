@@ -54,12 +54,12 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     if (len <= 0) {
         close(fd);
         free(pstream);
-        pstream = nullptr;  
+        pstream = nullptr;
         return false;
     }
     close(fd);
     free(pstream);
-    pstream = nullptr;    
+    pstream = nullptr;
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
     demuxerSample->filePath = TS_PATH;
     demuxerSample->RunNormalDemuxerApi11();

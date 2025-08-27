@@ -53,7 +53,7 @@ bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
     if (len <= EXPECT_SIZE) {
         close(fd);
         free(pstream);
-        pstream = nullptr;        
+        pstream = nullptr;
         return false;
     }
     free(pstream);

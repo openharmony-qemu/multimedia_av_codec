@@ -55,7 +55,7 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
     if (len <= 0) {
         close(fd);
         free(pstream);
-        pstream = nullptr;        
+        pstream = nullptr;
         return false;
     }
     close(fd);

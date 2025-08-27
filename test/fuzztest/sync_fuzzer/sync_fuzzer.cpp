@@ -29,6 +29,11 @@ using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "sync_fuzzer"
 
+const int64_t ONE = 1;
+const int64_t TWO = 2;
+const int64_t ZERO =0;
+const int64_t FOUR = 4;
+
 bool VideoEncoderCapiFuzzTest(FuzzedDataProvider *fdp, size_t size)
 {
     if (size < sizeof(int64_t)) {
@@ -52,7 +57,7 @@ bool VideoEncoderCapiFuzzTest(FuzzedDataProvider *fdp, size_t size)
     bool flag3 = fdp->ConsumeBool();
     int64_t timeout3 = flag3 ? 1 : 0;
     bool flag4 = fdp->ConsumeBool();
-    int64_t timeout4 = flag4 ? 1 : 0;    
+    int64_t timeout4 = flag4 ? 1 : 0;
     OH_VideoEncoder_QueryInputBuffer(videoEnc, &index, timeout3);
     OH_VideoEncoder_QueryOutputBuffer(videoEnc, &index, timeout4);
     OH_VideoEncoder_GetInputBuffer(videoEnc, index);
@@ -193,12 +198,12 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     FuzzedDataProvider fdp(data, size);
-    int32_t choose = fdp.ConsumeIntegral<int32_t>() % 4;
-    if (choose == 0) {
+    int32_t choose = fdp.ConsumeIntegral<int32_t>() % FOUR;
+    if (choose == ZERO) {
         VideoEncoderCapiFuzzTest(&fdp, size);
-    } else if (choose == 1) {
+    } else if (choose == ONE) {
         VideoDecoderCapiFuzzTest(&fdp, size);
-    } else if (choose == 2) {
+    } else if (choose == TWO) {
         VideoEncoderInnerFuzzTest(&fdp, size);
     } else {
         VideoDecoderInnerFuzzTest(&fdp, size);

@@ -60,7 +60,7 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
     }
     close(fd);
     free(pstream);
-    pstream = nullptr;    
+    pstream = nullptr;
     return true;
 }
 bool DemuxerFuzzTest(const uint8_t *data, size_t size)
