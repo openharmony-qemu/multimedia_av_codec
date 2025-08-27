@@ -232,10 +232,16 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_004, TestSize.Level1)
     CreateByNameWithParam(HW_HEVC);
     SetFormatWithBitrateMode(GetParam());
     PrepareSource();
-    format_->PutDoubleValue(OH_MD_KEY_BITRATE, default_bitrate);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    videoEnc_->WaitForEos();
+    format_->PutLongValue(OH_MD_KEY_BITRATE, default_bitrate);
+    int32_t bitrateMode = -1;
+    format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (bitrateMode == BITRATE_MODE_CQ) {
+        EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+    } else {
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        videoEnc_->WaitForEos();
+    }
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 
@@ -250,10 +256,16 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_005, TestSize.Level1)
     SetFormatWithBitrateMode(GetParam());
     PrepareSource();
     default_bitrate = -1;
-    format_->PutDoubleValue(OH_MD_KEY_BITRATE, default_bitrate);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    videoEnc_->WaitForEos();
+    format_->PutLongValue(OH_MD_KEY_BITRATE, default_bitrate);
+    int32_t bitrateMode = -1;
+    format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (bitrateMode <= BITRATE_MODE_CQ) {
+        EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+    } else {
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        videoEnc_->WaitForEos();
+    }
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 
@@ -267,7 +279,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_006, TestSize.Level1)
     CreateByNameWithParam(HW_HEVC);
     SetFormatWithBitrateMode(GetParam());
     PrepareSource();
-    format_->PutDoubleValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
+    format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     videoEnc_->WaitForEos();
@@ -285,7 +297,7 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_007, TestSize.Level1)
     SetFormatWithBitrateMode(GetParam());
     PrepareSource();
     default_max_bitrate = -1;
-    format_->PutDoubleValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
+    format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     videoEnc_->WaitForEos();
@@ -303,9 +315,15 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_008, TestSize.Level1)
     SetFormatWithBitrateMode(GetParam());
     PrepareSource();
     format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    videoEnc_->WaitForEos();
+    int32_t bitrateMode = -1;
+    format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (bitrateMode >= BITRATE_MODE_CBR && bitrateMode <= BITRATE_MODE_VBR) {
+        EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+    } else {
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        videoEnc_->WaitForEos();
+    }
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 
@@ -321,9 +339,15 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_009, TestSize.Level1)
     PrepareSource();
     default_quality = -1;
     format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    videoEnc_->WaitForEos();
+    int32_t bitrateMode = -1;
+    format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (bitrateMode <= BITRATE_MODE_CQ) {
+        EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+    } else {
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        videoEnc_->WaitForEos();
+    }
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 
@@ -338,11 +362,17 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_010, TestSize.Level1)
     SetFormatWithBitrateMode(GetParam());
     PrepareSource();
     format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
-    format_->PutDoubleValue(OH_MD_KEY_BITRATE, default_bitrate);
+    format_->PutLongValue(OH_MD_KEY_BITRATE, default_bitrate);
     format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    videoEnc_->WaitForEos();
+    int32_t bitrateMode = -1;
+    format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (bitrateMode <= BITRATE_MODE_CQ) {
+        EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+    } else {
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        videoEnc_->WaitForEos();
+    }
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 
@@ -357,11 +387,17 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_011, TestSize.Level1)
     SetFormatWithBitrateMode(GetParam());
     PrepareSource();
     format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
-    format_->PutDoubleValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
+    format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
     format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    videoEnc_->WaitForEos();
+    int32_t bitrateMode = -1;
+    format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (bitrateMode >= BITRATE_MODE_CBR && bitrateMode <= BITRATE_MODE_VBR) {
+        EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+    } else {
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        videoEnc_->WaitForEos();
+    }
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 
@@ -376,11 +412,17 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_012, TestSize.Level1)
     SetFormatWithBitrateMode(GetParam());
     PrepareSource();
     format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
-    format_->PutDoubleValue(OH_MD_KEY_BITRATE, default_bitrate);
-    format_->PutDoubleValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    videoEnc_->WaitForEos();
+    format_->PutLongValue(OH_MD_KEY_BITRATE, default_bitrate);
+    format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
+    int32_t bitrateMode = -1;
+    format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (bitrateMode == BITRATE_MODE_CQ) {
+        EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+    } else {
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        videoEnc_->WaitForEos();
+    }
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 
@@ -396,11 +438,17 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_013, TestSize.Level1)
     PrepareSource();
     default_max_bitrate = -1;
     format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
-    format_->PutDoubleValue(OH_MD_KEY_BITRATE, default_bitrate);
-    format_->PutDoubleValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    videoEnc_->WaitForEos();
+    format_->PutLongValue(OH_MD_KEY_BITRATE, default_bitrate);
+    format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
+    int32_t bitrateMode = -1;
+    format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (bitrateMode == BITRATE_MODE_CQ) {
+        EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+    } else {
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        videoEnc_->WaitForEos();
+    }
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 
@@ -415,21 +463,30 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_014, TestSize.Level1)
     SetFormatWithBitrateMode(GetParam());
     PrepareSource();
     format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
-    format_->PutDoubleValue(OH_MD_KEY_BITRATE, default_bitrate);
-    format_->PutDoubleValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
-    format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    default_sqr_factor += 1;
-    default_bitrate += 1;
-    default_max_bitrate += 1;
-    default_quality += 1;
-    format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
-    format_->PutDoubleValue(OH_MD_KEY_BITRATE, default_bitrate);
-    format_->PutDoubleValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
-    format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->SetParameter(format_));
-    videoEnc_->WaitForEos();
+    format_->PutLongValue(OH_MD_KEY_BITRATE, default_bitrate);
+    format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
+    int32_t bitrateMode = -1;
+    format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (bitrateMode == BITRATE_MODE_CQ) {
+        EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+    } else {
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        default_sqr_factor += 1;
+        default_bitrate += 1;
+        default_max_bitrate += 1;
+        format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
+        format_->PutLongValue(OH_MD_KEY_BITRATE, default_bitrate);
+        format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->SetParameter(format_));
+        format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
+        if (bitrateMode == BITRATE_MODE_SQR) {
+            EXPECT_EQ(AV_ERR_OK, videoEnc_->SetParameter(format_));
+        } else {
+            EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->SetParameter(format_));
+        }
+        videoEnc_->WaitForEos();
+    }
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 
@@ -444,21 +501,31 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_015, TestSize.Level1)
     SetFormatWithBitrateMode(GetParam());
     PrepareSource();
     format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
-    format_->PutDoubleValue(OH_MD_KEY_BITRATE, default_bitrate);
-    format_->PutDoubleValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
-    format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    default_sqr_factor += 1;
-    default_bitrate += 1;
-    default_quality += 1;
-    default_max_bitrate = -1;
-    format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
-    format_->PutDoubleValue(OH_MD_KEY_BITRATE, default_bitrate);
-    format_->PutDoubleValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
-    format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->SetParameter(format_));
-    videoEnc_->WaitForEos();
+    format_->PutLongValue(OH_MD_KEY_BITRATE, default_bitrate);
+    format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
+    int32_t bitrateMode = -1;
+    format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (bitrateMode == BITRATE_MODE_CQ) {
+        EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+    } else {
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        default_sqr_factor += 1;
+        default_bitrate += 1;
+        default_quality += 1;
+        default_max_bitrate = -1;
+        format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
+        format_->PutLongValue(OH_MD_KEY_BITRATE, default_bitrate);
+        format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->SetParameter(format_));
+        format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
+        if (bitrateMode == BITRATE_MODE_SQR) {
+            EXPECT_EQ(AV_ERR_OK, videoEnc_->SetParameter(format_));
+        } else {
+            EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->SetParameter(format_));
+        }
+        videoEnc_->WaitForEos();
+    }
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 
@@ -473,21 +540,31 @@ HWTEST_P(TEST_SUIT, VideoHevcEnc_016, TestSize.Level1)
     SetFormatWithBitrateMode(GetParam());
     PrepareSource();
     format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
-    format_->PutDoubleValue(OH_MD_KEY_BITRATE, default_bitrate);
-    format_->PutDoubleValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
-    format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    default_sqr_factor = -1;
-    default_bitrate = -1;
-    default_max_bitrate = -1;
-    default_quality = -1;
-    format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
-    format_->PutDoubleValue(OH_MD_KEY_BITRATE, default_bitrate);
-    format_->PutDoubleValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
-    format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->SetParameter(format_));
-    videoEnc_->WaitForEos();
+    format_->PutLongValue(OH_MD_KEY_BITRATE, default_bitrate);
+    format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
+    int32_t bitrateMode = -1;
+    format_->GetIntValue(OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    if (bitrateMode == BITRATE_MODE_CQ) {
+        EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+    } else {
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+        EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+        default_sqr_factor = -1;
+        default_bitrate = -1;
+        default_max_bitrate = -1;
+        default_quality = -1;
+        format_->PutIntValue(OH_MD_KEY_SQR_FACTOR, default_sqr_factor);
+        format_->PutLongValue(OH_MD_KEY_BITRATE, default_bitrate);
+        format_->PutLongValue(OH_MD_KEY_MAX_BITRATE, default_max_bitrate);
+        if (bitrateMode == BITRATE_MODE_SQR) {
+            EXPECT_EQ(AV_ERR_OK, videoEnc_->SetParameter(format_));
+            format_->PutIntValue(OH_MD_KEY_QUALITY, default_quality);
+            EXPECT_EQ(AV_ERR_OK, videoEnc_->SetParameter(format_));
+        } else {
+            EXPECT_EQ(AV_ERR_INVALID_VAL, videoEnc_->SetParameter(format_));
+        }
+        videoEnc_->WaitForEos();
+    }
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 } // namespace
