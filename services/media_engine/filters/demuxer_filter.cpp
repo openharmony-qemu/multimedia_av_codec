@@ -294,7 +294,7 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
         FALSE_RETURN_V_MSG_E(ret == Status::OK || FaultDemuxerEventInfoWrite(streamType) != Status::OK, ret,
             "OnCallback Link Filter Fail.");
         if (mediaType == Plugins::MediaType::AUDIO) {
-            hasVideoFilter = true;
+            hasAudioTrack = true;
         }
         successNodeCount++;
     }
