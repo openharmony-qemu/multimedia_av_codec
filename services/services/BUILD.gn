@@ -118,7 +118,6 @@ ohos_shared_library("av_codec_service") {
   sources = [
     "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
     "$av_codec_root_dir/services/dfx/avcodec_dfx_component.cpp",
-    "common/avsharedmemory_ipc.cpp",
   ]
 
   if (av_codec_support_codec) {

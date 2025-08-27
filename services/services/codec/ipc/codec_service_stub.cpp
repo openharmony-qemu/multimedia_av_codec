@@ -21,7 +21,6 @@
 #include "avcodec_server_manager.h"
 #include "avcodec_trace.h"
 #include "avcodec_xcollie.h"
-#include "avsharedmemory_ipc.h"
 #include "codec_listener_proxy.h"
 #include "codec_server.h"
 #ifdef SUPPORT_DRM
