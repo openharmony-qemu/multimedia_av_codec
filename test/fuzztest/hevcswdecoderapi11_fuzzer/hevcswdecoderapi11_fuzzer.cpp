@@ -29,38 +29,35 @@ using namespace OHOS::Media;
 
 static VDecFuzzSample *g_vDecSample = nullptr;
 
-namespace OHOS
+namespace OHOS {
+bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
-    bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
-    {
-        FuzzedDataProvider fdp(data, size);
-        if (!g_vDecSample)
-        {
-            g_vDecSample = new VDecFuzzSample();
-            g_vDecSample->defaultWidth = fdp.ConsumeIntegral<uint32_t>();
-            g_vDecSample->defaultHeight = fdp.ConsumeIntegral<uint32_t>();
-            g_vDecSample->defaultFrameRate = fdp.ConsumeFloatingPoint<double>();
-            g_vDecSample->enbleBlankFrame = fdp.ConsumeIntegral<int>();
-            g_vDecSample->CreateVideoDecoder();
-            g_vDecSample->ConfigureVideoDecoder();
-            g_vDecSample->SetVideoDecoderCallback();
-            g_vDecSample->Start();
-        }
-        auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
-        OH_AVErrCode ret = g_vDecSample->InputFuncFUZZ(remaining_data.data(),
-                                                       remaining_data.size());
-        if (ret != AV_ERR_OK)
-        {
-            g_vDecSample->Flush();
-            g_vDecSample->Stop();
-            g_vDecSample->Reset();
-            g_vDecSample->Release();
-            delete g_vDecSample;
-            g_vDecSample = nullptr;
-            return false;
-        }
-        return true;
+    FuzzedDataProvider fdp(data, size);
+    if (!g_vDecSample) {
+        g_vDecSample = new VDecFuzzSample();
+        g_vDecSample->defaultWidth = fdp.ConsumeIntegral<uint32_t>();
+        g_vDecSample->defaultHeight = fdp.ConsumeIntegral<uint32_t>();
+        g_vDecSample->defaultFrameRate = fdp.ConsumeFloatingPoint<double>();
+        g_vDecSample->enbleBlankFrame = fdp.ConsumeIntegral<int>();
+        g_vDecSample->CreateVideoDecoder();
+        g_vDecSample->ConfigureVideoDecoder();
+        g_vDecSample->SetVideoDecoderCallback();
+        g_vDecSample->Start();
     }
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    OH_AVErrCode ret = g_vDecSample->InputFuncFUZZ(remaining_data.data(),
+                                                    remaining_data.size());
+    if (ret != AV_ERR_OK) {
+        g_vDecSample->Flush();
+        g_vDecSample->Stop();
+        g_vDecSample->Reset();
+        g_vDecSample->Release();
+        delete g_vDecSample;
+        g_vDecSample = nullptr;
+        return false;
+    }
+    return true;
+}
 } // namespace OHOS
 
 /* Fuzzer entry point */
