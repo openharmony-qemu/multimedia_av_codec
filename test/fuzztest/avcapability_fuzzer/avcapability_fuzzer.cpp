@@ -78,8 +78,8 @@ bool AvcapabilityFuzzTest(const uint8_t *data, size_t size)
     OH_AVCapability_GetVideoFrameRateRange(cap, &range);
     OH_AVCapability_GetVideoFrameRateRangeForSize(cap, fdp.ConsumeIntegral<int32_t>(), fdp.ConsumeIntegral<int32_t>(),
         &range);
-    OH_AVCapability_AreVideoSizeAndFrameRateSupported(cap, fdp.ConsumeIntegral<int32_t>(), fdp.ConsumeIntegral<int32_t>(),
-        frameRate);
+    OH_AVCapability_AreVideoSizeAndFrameRateSupported(cap, fdp.ConsumeIntegral<int32_t>(),
+        fdp.ConsumeIntegral<int32_t>(), frameRate);
     OH_AVCapability_IsFeatureSupported(cap, feature1);
     OH_AVCapability_GetFeatureProperties(cap, feature2);
     OH_AVCapability_GetAudioChannelCountRange(cap, &range);

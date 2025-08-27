@@ -218,9 +218,9 @@ bool AvcodecSuspend003FuzzTest(FuzzedDataProvider *fdp)
 }
 }
 
- /* Fuzzer entry point */
- extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
- {
+/* Fuzzer entry point */
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+{
     /* Run your code on data */
     FuzzedDataProvider fdp(data, size);
     int32_t choose = fdp.ConsumeIntegralInRange<int32_t>(ONE, THREE);
@@ -232,4 +232,4 @@ bool AvcodecSuspend003FuzzTest(FuzzedDataProvider *fdp)
         OHOS::AvcodecSuspend003FuzzTest(&fdp);
     }
     return 0;
- }
+}

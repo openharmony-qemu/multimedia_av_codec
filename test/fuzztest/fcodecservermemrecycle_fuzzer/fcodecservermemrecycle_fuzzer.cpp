@@ -22,6 +22,8 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "fcodecservermemrecycle_fuzzer"
 const size_t EXPECT_SIZE = 6;
+const int32_t ONE = 1;
+const int32_t FOUR = 4;
 
 namespace OHOS {
 bool FCodecServerMemrecycle(const uint8_t *data, size_t size)
@@ -34,7 +36,7 @@ bool FCodecServerMemrecycle(const uint8_t *data, size_t size)
     }
     VDecServerSample *vDecSample = new VDecServerSample();
     FuzzedDataProvider fdp(data, size);
-    vDecSample->defaultPixelFormat = fdp.ConsumeIntegralInRange<size_t>(1, 4);
+    vDecSample->defaultPixelFormat = fdp.ConsumeIntegralInRange<size_t>(ONE, FOUR);
     bool result = fdp.ConsumeBool();
     if (result) {
         vDecSample->isSurfMode = true;

@@ -31,7 +31,7 @@ using namespace OHOS::MediaAVCodec;
 
 const int64_t ONE = 1;
 const int64_t TWO = 2;
-const int64_t ZERO =0;
+const int64_t ZERO = 0;
 const int64_t FOUR = 4;
 
 bool VideoEncoderCapiFuzzTest(FuzzedDataProvider *fdp, size_t size)
