@@ -1686,11 +1686,12 @@ std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::PreCreateAndStartNewPlugin(
     return plugin;
 }
 
-Status AudioSink::cacheBuffer(){
+Status AudioSink::cacheBuffer()
+{
     cacheBufferTask_->SubmitJobOnce([this] {
         FALSE_RETURN(!isEosBuffer_);
         FALSE_RETURN(!availOutputBuffers_.empty() && inputBufferQueue_ != nullptr);
-        while(availOutputBuffers_.size() > 0) {
+        while (availOutputBuffers_.size() > 0) {
             std::shared_ptr<AVBuffer> buffer = availOutputBuffers_.front();
             FALSE_RETURN(buffer != nullptr && buffer->memory_->GetSize() > 0);
 
@@ -1701,7 +1702,7 @@ Status AudioSink::cacheBuffer(){
             std::shared_ptr<AVBuffer> swapBuffer = AVBuffer::CreateAVBuffer(avBufferConfig);
             FALSE_RETURN(swapBuffer != nullptr && swapBuffer->memory_ != nullptr);
             std::vector<uint8_t> metaData;
-            if(meta->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData) && metaData.size() > 0) {
+            if (meta->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData) && metaData.size() > 0) {
                 std::vector<uint8_t> swapMetaData;
                 swapMetaData = metaData;
                 swapBuffer->meta_->Set<Tag::OH_MD_KEY_AUDIO_VIVID_METADATA>(swapMetaData);
