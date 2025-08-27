@@ -858,6 +858,36 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_GetInFormat_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: Test_Codec_GetInFormat_002
+ * @tc.desc: codec get in format
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_GetInFormat_002, TestSize.Level1)
+{
+    format_ = Format();
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_VIDEO_WIDTH);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_VIDEO_HEIGHT);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+        static_cast<int32_t>(VideoPixelFormat::NV21));
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_VIDEO_FRAMERATE);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_REQUEST_I_FRAME, 1);
+    format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_VIDEO_BITRATE);
+
+    int32_t ret = avcEncoder_->SetParameter(format_);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    Format inFormat;
+    GraphicPixelFormat graphicPixFmt;
+    ret = avcEncoder_->GetInputFormat(inFormat);
+    inFormat.GetIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, *(int *)&graphicPixFmt);
+    EXPECT_EQ(graphicPixFmt, GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP);
+
+    avcEncoder_->srcPixelFmt_ = VideoPixelFormat::RGBA;
+    ret = avcEncoder_->GetInputFormat(inFormat);
+    inFormat.GetIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, *(int *)&graphicPixFmt);
+    EXPECT_EQ(graphicPixFmt, GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888);
+}
+
+/**
  * @tc.name: Test_Codec_GetCapability_001
  * @tc.desc: codec get capability
  */
@@ -869,6 +899,21 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_GetCapability_001, TestSize.Level1
     EXPECT_EQ(capsData.isVendor, false);
     int32_t ret = avcEncoder_->GetCodecCapability(capaArray);
     EXPECT_EQ(ret, AVCS_ERR_UNSUPPORT);
+}
+
+/**
+ * @tc.name: Test_Codec_GetCapability_002
+ * @tc.desc: codec get capability
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_GetCapability_002, TestSize.Level1)
+{
+    std::vector<CapabilityData> capaArray;
+    CapabilityData capsData;
+    avcEncoder_->GetCapabilityData(capsData, 0);
+    EXPECT_EQ(capsData.graphicPixFormat[0], static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P));
+    EXPECT_EQ(capsData.graphicPixFormat[1], static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP));
+    EXPECT_EQ(capsData.graphicPixFormat[2], static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP));
+    EXPECT_EQ(capsData.graphicPixFormat[3], static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888));
 }
 
 /**
