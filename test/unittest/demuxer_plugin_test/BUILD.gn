@@ -107,8 +107,6 @@ ohos_unittest("demuxer_plugin_unit_test") {
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
-    "resource_schedule_service:ressched_client",
-    "samgr:samgr_proxy",
   ]
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"

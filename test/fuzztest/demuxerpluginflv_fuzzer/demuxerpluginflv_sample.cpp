@@ -38,7 +38,6 @@ const int32_t VIDEO_HEIGHT_DEFAULT = 1280;
 const int32_t VIDEO_WIDTH_DEFAULT = 720;
 const uint32_t INTERFACE_TIMEOUT = 100;
 const int64_t SEEK_TIME_DEFAULT = 1000;
-constexpr uint32_t THREAD_PRIORITY_41 = 7;
 
 DemuxerPluginFlvTest::DemuxerPluginFlvTest() = default;
 
@@ -127,7 +126,7 @@ void DemuxerPluginFlvTest::OperateDemuxerPlugin(MediaInfo& mediaInfo, size_t buf
     for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
         demuxerPlugin_->SelectTrack(idx);
     }
-    demuxerPlugin_->SetAsyncReadThreadPriority(THREAD_PRIORITY_41, "DemuxerPluginFlvFuzzTest");
+    demuxerPlugin_->BoostReadThreadPriority();
     for (uint32_t idx = 0; idx < mediaInfo.tracks.size(); ++idx) {
         demuxerPlugin_->ReadSample(idx, buffer.mediaAVBuffer, INTERFACE_TIMEOUT);
         demuxerPlugin_->ReadSample(idx, buffer.mediaAVBuffer);

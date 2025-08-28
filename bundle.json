@@ -89,8 +89,7 @@
           "bundle_framework",
           "openmax",
           "memory_utils",
-          "config_policy",
-          "resource_schedule_service"
+          "config_policy"
         ],
         "third_party": []
       },

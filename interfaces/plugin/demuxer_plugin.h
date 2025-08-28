@@ -240,17 +240,14 @@ struct DemuxerPlugin : public PluginBase {
         const int32_t probSize) = 0;
 
     /**
-     * @brief Set the priority of the asynchronous read thread.
+     * @brief Boosts the asynchronous read thread priority.
      *
-     * The function is only valid when the thread is not in the RUNNING state.
+     * Elevates thread priority if called with proper permissions and when thread is not RUNNING.
+     * By default, the thread operates at normal priority.
      *
-     * The specified bundleName must also have the relevant permissions.
-     *
-     * @param newPriority Indicates the new priority of the asynchronous read thread.
-     * @param strBundleName Indicates the bundle name of the application that calls this interface.
-     * @return Execution Status
+     * @return Execution status
      */
-    virtual Status SetAsyncReadThreadPriority(const uint32_t newPriority, const std::string &strBundleName) = 0;
+    virtual Status BoostReadThreadPriority() = 0;
 };
 
 /// Demuxer plugin api major number.

@@ -29,6 +29,7 @@
 #include "multi_stream_parser_manager.h"
 #include "reference_parser_manager.h"
 #include "meta/meta.h"
+#include "qos.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -90,7 +91,7 @@ public:
     void SetInterruptState(bool isInterruptNeeded) override;
     Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
         const int32_t probSize) override;
-    Status SetAsyncReadThreadPriority(const uint32_t newPriority, const std::string &strBundleName) override;
+    Status BoostReadThreadPriority() override;
 private:
     enum ThreadState : unsigned int {
         NOT_STARTED,
@@ -101,6 +102,7 @@ private:
     enum InvokerType : unsigned int {
         INVOKER_NONE = 0,
         INIT,
+        FLUSH,
         READ,
         SEEK,
         DESTORY,
@@ -350,8 +352,6 @@ private:
     std::unordered_map<uint32_t, Meta> streamInitialParam_;
 
     std::atomic<bool> isAsyncReadThreadPrioritySet_ = false;
-    std::atomic<uint32_t> asyncReadThreadPriority_ = {0};
-    std::string bundleName_ = "";
     void UpdateAsyncReadThreadPriority();
 };
 

@@ -66,7 +66,7 @@ public:
     
     MOCK_METHOD2(GetCurrentCacheSize, Status(uint32_t, uint32_t&));
     MOCK_METHOD2(GetProbeSize, bool(int32_t&, int32_t&));
-    MOCK_METHOD2(SetAsyncReadThreadPriority, Status(const uint32_t, const std::string&));
+    MOCK_METHOD0(BoostReadThreadPriority, Status());
 private:
     std::string name_ {};
 };
