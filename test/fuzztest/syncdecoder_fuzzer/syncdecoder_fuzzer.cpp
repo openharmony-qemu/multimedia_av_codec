@@ -43,14 +43,6 @@ VDecSyncSample *g_vDecSample = nullptr;
 string g_codeName = "";
 
 namespace OHOS {
-void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
-{
-    std::ofstream file(filename, std::ios::out | std::ios::binary);
-    if (file.is_open()) {
-        file.write(reinterpret_cast<const char*>(data), size);
-        file.close();
-    }
-}
 
 string GetcodeName(const char* mimeName, OH_AVCodecCategory category)
 {
@@ -87,10 +79,9 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
-    std::string filename = "/data/test/corpus-SyncDecoderFuzzTest";
-    SaveCorpus(data, size, filename);
     FuzzedDataProvider fdp(data, size);
     int data0 = fdp.ConsumeIntegral<int32_t>();
+    int data1 = fdp.ConsumeIntegral<int32_t>();
     g_vDecSample = new VDecSyncSample();
     g_vDecSample->codecType = fdp.ConsumeIntegralInRange<int32_t>(ONE, EIGHT);
     CodepType();
@@ -104,6 +95,7 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
     g_vDecSample->syncOutputWaitTime = 1;
     g_vDecSample->renderTimestampNs = fdp.ConsumeIntegral<int64_t>();
     g_vDecSample->isRenderAttime = fdp.ConsumeBool();
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
     int32_t ret = g_vDecSample->CreateVideoDecoder(g_codeName);
     if (ret != AV_ERR_OK) {
         delete g_vDecSample;
@@ -123,9 +115,9 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
         g_vDecSample = nullptr;
         return false;
     }
-    g_vDecSample->SyncInputFuncFuzz(data, size);
+    g_vDecSample->SyncInputFuncFuzz(remaining_data.data(), remaining_data.size());
     g_vDecSample->SyncOutputFuncFuzz();
-    g_vDecSample->SetParameter(data0);
+    g_vDecSample->SetParameter(data0, data1);
     g_vDecSample->Flush();
     g_vDecSample->Stop();
     g_vDecSample->Reset();

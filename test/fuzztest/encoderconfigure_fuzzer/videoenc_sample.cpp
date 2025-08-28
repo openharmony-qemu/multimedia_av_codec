@@ -106,7 +106,7 @@ int32_t VEncFuzzSample::ConfigureVideoEncoder()
     return ret;
 }
 
-int32_t VEncFuzzSample::ConfigureVideoEncoderFuzz(int32_t data)
+int32_t VEncFuzzSample::ConfigureVideoEncoderFuzz(FuzzedDataProvider *fdp)
 {
     OH_VideoEncoder_Reset(venc_);
     OH_AVFormat *format = OH_AVFormat_Create();
@@ -114,22 +114,22 @@ int32_t VEncFuzzSample::ConfigureVideoEncoderFuzz(int32_t data)
         cout << "Fatal: Failed to create format" << endl;
         return AV_ERR_UNKNOWN;
     }
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, data);
-    defaultWidth = data;
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, data);
-    defaultHeight = data;
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, data % MAX_PIXEL_FMT);
-    double frameRate = data;
+    defaultWidth = fdp->ConsumeIntegral<uint32_t>();
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, defaultWidth);
+    defaultHeight = fdp->ConsumeIntegral<uint32_t>();
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, defaultHeight);
+    double frameRate = fdp->ConsumeFloatingPoint<double>();
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, (int)frameRate % MAX_PIXEL_FMT);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, frameRate);
 
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_RANGE_FLAG, data);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_COLOR_PRIMARIES, data);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_TRANSFER_CHARACTERISTICS, data);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MATRIX_COEFFICIENTS, data);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, data);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, data);
-    OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, data);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, data);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_RANGE_FLAG, fdp->ConsumeIntegral<uint32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_COLOR_PRIMARIES, fdp->ConsumeIntegral<uint32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_TRANSFER_CHARACTERISTICS, fdp->ConsumeIntegral<uint32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MATRIX_COEFFICIENTS, fdp->ConsumeIntegral<uint32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, fdp->ConsumeIntegral<uint32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, fdp->ConsumeIntegral<uint32_t>());
+    OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, fdp->ConsumeIntegral<uint32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, fdp->ConsumeIntegral<uint32_t>());
 
     int ret = OH_VideoEncoder_Configure(venc_, format);
     OH_AVFormat_Destroy(format);

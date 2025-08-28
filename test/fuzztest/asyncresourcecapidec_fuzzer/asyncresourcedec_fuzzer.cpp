@@ -40,7 +40,7 @@ void SetAsync()
     format->PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 0);
 }
 
-bool VideoDecoderFuzzTest(const uint8_t *data, size_t size)
+bool VideoDecoderFuzzTest(FuzzedDataProvider *fdp)
 {
     std::shared_ptr<OHOS::MediaAVCodec::VDecSignal> vdecSignal = std::make_shared<OHOS::MediaAVCodec::VDecSignal>();
     vdecCallback = std::make_shared<OHOS::MediaAVCodec::VDecCallbackTest>(vdecSignal);
@@ -57,8 +57,7 @@ bool VideoDecoderFuzzTest(const uint8_t *data, size_t size)
     SetAsync();
     videoDec->SetSource(sourcePath);
     videoDec->SetOutPath(outPath);
-    FuzzedDataProvider fdp(data, size);
-    uint32_t rangeFlag = fdp.ConsumeIntegral<uint32_t>();
+    uint32_t rangeFlag = fdp->ConsumeIntegral<uint32_t>();
     format->PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, rangeFlag);
     videoDec->Configure(format);
     videoDec->Prepare();
@@ -70,7 +69,7 @@ bool VideoDecoderFuzzTest(const uint8_t *data, size_t size)
     return true;
 }
 
-bool VideoDecoderResourceFuzzTest(const uint8_t *data, size_t size)
+bool VideoDecoderResourceFuzzTest(FuzzedDataProvider *fdp)
 {
     std::shared_ptr<OHOS::MediaAVCodec::VDecSignal> vdecSignal = std::make_shared<OHOS::MediaAVCodec::VDecSignal>();
     vdecCallback = std::make_shared<OHOS::MediaAVCodec::VDecCallbackTest>(vdecSignal);
@@ -88,7 +87,8 @@ bool VideoDecoderResourceFuzzTest(const uint8_t *data, size_t size)
     videoDec->Configure(format);
     videoDec->Prepare();
     videoDec->FuzzStart();
-    int ret = videoDec->InputFuncFUZZ(data, size);
+    auto remaining_data = fdp->ConsumeRemainingBytes<uint8_t>();
+    int ret = videoDec->InputFuncFUZZ(remaining_data.data(), remaining_data.size());
     if (ret != 0) {
         return false;
     }
@@ -104,7 +104,12 @@ bool VideoDecoderResourceFuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    VideoDecoderFuzzTest(data, size);
-    VideoDecoderResourceFuzzTest(data, size);
+    FuzzedDataProvider fdp(data, size);
+    bool choose = fdp.ConsumeBool();
+    if (choose) {
+        VideoDecoderFuzzTest(&fdp);
+    } else {
+        VideoDecoderResourceFuzzTest(&fdp);
+    }
     return 0;
 }

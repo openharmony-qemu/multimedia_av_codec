@@ -46,7 +46,7 @@ void EncPrepareSource()
     videoEnc->SetOutPath(prefix + fileName);
 }
 
-bool VideoEncoderFuzzTest(const uint8_t *data, size_t size)
+bool VideoEncoderFuzzTest(FuzzedDataProvider *fdp)
 {
     std::shared_ptr<VEncSignal> vencSignal = std::make_shared<VEncSignal>();
     vencCallback = std::make_shared<VEncCallbackTest>(vencSignal);
@@ -61,8 +61,7 @@ bool VideoEncoderFuzzTest(const uint8_t *data, size_t size)
     }
     videoEnc->SetCallback(vencCallback);
     SetAsync();
-    FuzzedDataProvider fdp(data, size);
-    uint32_t rangeFlag = fdp.ConsumeIntegral<uint32_t>();
+    uint32_t rangeFlag = fdp->ConsumeIntegral<uint32_t>();
     format->PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, rangeFlag);
     videoEnc->Configure(format);
     EncPrepareSource();
@@ -75,7 +74,7 @@ bool VideoEncoderFuzzTest(const uint8_t *data, size_t size)
     return true;
 }
 
-bool VideoEncoderResourceFuzzTest(const uint8_t *data, size_t size)
+bool VideoEncoderResourceFuzzTest(FuzzedDataProvider *fdp)
 {
     std::shared_ptr<OHOS::MediaAVCodec::VEncSignal> vencSignal = std::make_shared<OHOS::MediaAVCodec::VEncSignal>();
     vencCallback = std::make_shared<OHOS::MediaAVCodec::VEncCallbackTest>(vencSignal);
@@ -94,7 +93,8 @@ bool VideoEncoderResourceFuzzTest(const uint8_t *data, size_t size)
     EncPrepareSource();
     videoEnc->Prepare();
     videoEnc->FuzzStart();
-    int ret = videoEnc->InputFuncFUZZ(data, size);
+    auto remaining_data = fdp->ConsumeRemainingBytes<uint8_t>();
+    int ret = videoEnc->InputFuncFUZZ(remaining_data.data(), remaining_data.size());
     if (ret != 0) {
         return false;
     }
@@ -110,7 +110,12 @@ bool VideoEncoderResourceFuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    VideoEncoderFuzzTest(data, size);
-    VideoEncoderResourceFuzzTest(data, size);
+    FuzzedDataProvider fdp(data, size);
+    bool choose = fdp.ConsumeBool();
+    if (choose) {
+        VideoEncoderFuzzTest(&fdp);
+    } else {
+        VideoEncoderResourceFuzzTest(&fdp);
+    }
     return 0;
 }

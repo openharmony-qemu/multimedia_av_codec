@@ -13,8 +13,10 @@
  * limitations under the License.
  */
 
+#include <iostream>
 #include <unistd.h>
 #include <fcntl.h>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "native_avsource.h"
 #include "native_avformat.h"
 #include "native_avcodec_base.h"
@@ -25,7 +27,7 @@ namespace OHOS {
 const int64_t EXPECT_SIZE = 64;
 const char* TEST_FILE_PATH = "/data/test/demuxergetcommentdatafuzztest.mp4";
 
-bool CheckDataValidity(const uint8_t *data, size_t size)
+bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
 {
     if (size < EXPECT_SIZE) {
         return false;
@@ -34,18 +36,31 @@ bool CheckDataValidity(const uint8_t *data, size_t size)
     if (fd < 0) {
         return false;
     }
-    int len = write(fd, data, size);
+    uint8_t *pstream = nullptr;
+    uint16_t framesize = fdp->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
+    if (!pstream) {
+        std::cerr << "Memory alloction failed" << std::endl;
+        return false;
+    }
+    fdp->ConsumeData(pstream, framesize);
+    int len = write(fd, pstream, framesize);
     if (len <= 0) {
         close(fd);
+        free(pstream);
+        pstream = nullptr;
         return false;
     }
     close(fd);
+    free(pstream);
+    pstream = nullptr;
     return true;
 }
 
 void DemuxerGetCommentDataFuzzTest(const uint8_t *data, size_t size)
 {
-    if (!CheckDataValidity(data, size)) {
+    FuzzedDataProvider fdp(data, size);
+    if (!CheckDataValidity(&fdp, size)) {
         return;
     }
     const char* metaStringValue = nullptr;

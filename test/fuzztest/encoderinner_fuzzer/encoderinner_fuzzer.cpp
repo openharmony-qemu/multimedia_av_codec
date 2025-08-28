@@ -73,6 +73,8 @@ bool EncoderInnerFuzzTest(const uint8_t *data, size_t size)
     g_vEncSample->videoCoordinateY = (g_vEncSample->defaultHeight - bufferConfig.height) / doubleValue;
     g_vEncSample->videoCoordinateWidth = bufferConfig.width;
     g_vEncSample->videoCoordinateHeight = bufferConfig.height;
+    FuzzedDataProvider fdp(data, size);
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
     if (g_vEncSample->CreateByName(gCodecName) != AV_ERR_OK) {
         return ReleaseSample();
     }
@@ -82,7 +84,7 @@ bool EncoderInnerFuzzTest(const uint8_t *data, size_t size)
     if (g_vEncSample->Configure() != AV_ERR_OK) {
         return ReleaseSample();
     }
-    if (g_vEncSample->SetCustomBuffer(bufferConfig, const_cast<uint8_t*>(data), size) != AV_ERR_OK) {
+    if (g_vEncSample->SetCustomBuffer(bufferConfig, remaining_data.data(), remaining_data.size()) != AV_ERR_OK) {
         return ReleaseSample();
     }
     if (g_vEncSample->StartVideoEncoder() != AV_ERR_OK) {

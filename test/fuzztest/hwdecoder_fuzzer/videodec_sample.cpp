@@ -480,11 +480,11 @@ int32_t VDecFuzzSample::Start()
     return ret;
 }
 
-void VDecFuzzSample::SetParameter(int32_t data)
+void VDecFuzzSample::SetParameter(int32_t data, int32_t data1)
 {
     OH_AVFormat *format = OH_AVFormat_Create();
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, data);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, data);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, data1);
     OH_VideoDecoder_SetParameter(vdec_, format);
     OH_AVFormat_Destroy(format);
 }

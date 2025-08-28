@@ -25,14 +25,6 @@ using namespace OHOS::MediaAVCodec;
 VDecNdkInnerFuzzSample *g_vDecSample = nullptr;
 
 namespace OHOS {
-void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
-{
-    std::ofstream file(filename, std::ios::out | std::ios::binary);
-    if (file.is_open()) {
-        file.write(reinterpret_cast<const char*>(data), size);
-        file.close();
-    }
-}
 
 bool ReleaseSample()
 {
@@ -46,8 +38,6 @@ bool HwdecoderInnerFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
-    std::string filename = "/data/test/corpus-HwdecoderInnerFuzzTest";
-    SaveCorpus(data, size, filename);
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
     if (cap == nullptr) {
         return false;
@@ -79,7 +69,8 @@ bool HwdecoderInnerFuzzTest(const uint8_t *data, size_t size)
     if (ret != AV_ERR_OK) {
         return ReleaseSample();
     }
-    g_vDecSample->InputFuncFUZZ(data, size);
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    g_vDecSample->InputFuncFUZZ(remaining_data.data(), remaining_data.size());
     g_vDecSample->Flush();
     g_vDecSample->Stop();
     g_vDecSample->Reset();

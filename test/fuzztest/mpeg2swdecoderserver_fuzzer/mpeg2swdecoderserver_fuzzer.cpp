@@ -14,6 +14,7 @@
  */
 #include <cstddef>
 #include <cstdint>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "serverdec_sample.h"
 using namespace std;
 using namespace OHOS;
@@ -28,8 +29,10 @@ bool Mpeg2SwdecoderServerFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     VDecServerSample *vDecSample = new VDecServerSample();
-    vDecSample->fuzzData = data;
-    vDecSample->fuzzSize = size;
+    FuzzedDataProvider fdp(data, size);
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    vDecSample->fuzzData = remaining_data.data();
+    vDecSample->fuzzSize = remaining_data.size();
     vDecSample->RunVideoServerDecoder();
     vDecSample->WaitForEos();
     delete vDecSample;

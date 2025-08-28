@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "securec.h"
 
 #include <iostream>
@@ -40,7 +41,7 @@ const int64_t SELECT_TRACK = 4;
 const size_t VIDEO_HEIGHT_SIZE = 35;
 const size_t VIDEO_WIDTH_SIZE = 36;
 const size_t BITRATE = 37;
-bool CheckDataValidity(const uint8_t *data, size_t size)
+bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
 {
     if (size < EXPECT_SIZE) {
         return false;
@@ -49,18 +50,31 @@ bool CheckDataValidity(const uint8_t *data, size_t size)
     if (fd < 0) {
         return false;
     }
-    int len = write(fd, data, size - 36);
+    uint8_t *pstream = nullptr;
+    uint16_t framesize = fdp->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
+    if (!pstream) {
+        std::cerr << "Memory alloction failed" << std::endl;
+        return false;
+    }
+    fdp->ConsumeData(pstream, framesize);
+    int len = write(fd, pstream, framesize);
     if (len <= 0) {
         close(fd);
+        free(pstream);
+        pstream = nullptr;
         return false;
     }
     close(fd);
+    free(pstream);
+    pstream = nullptr;
     return true;
 }
 
 bool DemuxerPluginManagerFuzzTest(const uint8_t *data, size_t size)
 {
-    if (!CheckDataValidity(data, size)) {
+    FuzzedDataProvider fdp(data, size);
+    if (!CheckDataValidity(&fdp, size)) {
         return false;
     }
 
@@ -69,12 +83,10 @@ bool DemuxerPluginManagerFuzzTest(const uint8_t *data, size_t size)
 
     std::shared_ptr<OHOS::Media::BaseStreamDemuxer> streamDemuxer =
         std::make_shared<StreamDemuxer>();
-        
     std::shared_ptr<MediaSource> mediaSource =
         std::make_shared<MediaSource>(MP4_PATH);
 
     std::shared_ptr<Source> source = std::make_shared<Source>();
-    
     auto res = source->SetSource(mediaSource);
     if (res != Status::OK) {
         return false;
@@ -95,7 +107,6 @@ bool DemuxerPluginManagerFuzzTest(const uint8_t *data, size_t size)
     videoInfo.videoHeight =  size - VIDEO_HEIGHT_SIZE;
     videoInfo.videoType = Media::Plugins::VideoType::VIDEO_TYPE_SDR;
     videoInfo.type = OHOS::Media::Plugins::StreamType::VIDEO;
-    
     Media::Plugins::StreamInfo audioInfo;
     audioInfo.streamId = (size - AUDIO_TRACK)  % TRACK_COUNT;
     audioInfo.bitRate = size - BITRATE;

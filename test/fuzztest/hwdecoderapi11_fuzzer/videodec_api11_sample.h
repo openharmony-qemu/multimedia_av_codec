@@ -79,7 +79,7 @@ public:
     void StopInloop();
     int32_t PushData(uint32_t index, OH_AVBuffer *buffer);
     uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVBuffer *buffer);
-    void SetParameter(int32_t data);
+    void SetParameter(int32_t data, int32_t data1);
     OH_AVErrCode InputFuncFUZZ(const uint8_t *data, size_t size);
     void ReleaseSignal();
     VDecSignal *signal_;

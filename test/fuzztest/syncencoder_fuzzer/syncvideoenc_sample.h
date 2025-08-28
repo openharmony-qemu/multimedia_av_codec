@@ -71,7 +71,7 @@ public:
     int32_t Start();
     int32_t Stop();
     int32_t Release();
-    int32_t SetParameter(int32_t data);
+    int32_t SetParameter(int32_t data, int32_t data1);
     void SyncInputFuncFuzz();
     void InputFuncSurfaceFuzz();
     void SyncOutputFuncFuzz();

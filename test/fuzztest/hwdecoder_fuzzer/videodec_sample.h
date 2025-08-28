@@ -77,7 +77,7 @@ public:
     int32_t CreateVideoDecoder();
     int32_t SetVideoDecoderCallback();
     int32_t Release();
-    void SetParameter(int32_t data);
+    void SetParameter(int32_t data, int32_t data1);
     void InputFuncAVCC();
     OH_AVErrCode InputFuncFUZZ(const uint8_t *data, size_t size);
     void ReleaseSignal();
