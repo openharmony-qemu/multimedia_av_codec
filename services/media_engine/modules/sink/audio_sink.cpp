@@ -1685,6 +1685,7 @@ std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::PreCreateAndStartNewPlugin(
     return plugin;
 }
 
+// empty availOutputBuffers_ stroe to swapOutputBuffers_
 Status AudioSink::CacheBuffer()
 {
     FALSE_RETURN_V(!isEosBuffer_, Status::OK);
