@@ -228,7 +228,9 @@ void BackGroundEventHandler::ErasePid(pid_t pid)
 
 void BackGroundEventHandler::EraseInstance(InstanceId instanceId)
 {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    if (!mutex_.try_lock()) {
+        return;
+    }
     auto eraser = [instanceId](ObjectList &list, std::string_view name) {
         for (auto iter = list.begin(); iter != list.end();) {
             if (iter->second == instanceId) {
@@ -242,6 +244,7 @@ void BackGroundEventHandler::EraseInstance(InstanceId instanceId)
     };
     eraser(memoryRecycleList_, "MemoryRecycleList");
     eraser(suspendList_, "SuspendedList");
+    mutex_.unlock();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
