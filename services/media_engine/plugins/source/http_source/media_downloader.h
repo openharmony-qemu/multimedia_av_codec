@@ -48,7 +48,7 @@ public:
     virtual void Pause() = 0;
     virtual void Resume() = 0;
     virtual Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) = 0;
-    virtual bool SeekToPos(int64_t offset)
+    virtual bool SeekToPos(int64_t offset, bool& isSeekHit)
     {
         MEDIA_LOG_E("SeekToPos is unimplemented.");
         return false;
@@ -56,7 +56,7 @@ public:
     virtual size_t GetBufferSize() const = 0;
     virtual bool GetPlayable()
     {
-        return true;
+        return false;
     }
     virtual bool GetBufferingTimeOut() = 0;
     virtual size_t GetContentLength() const = 0;
@@ -171,6 +171,15 @@ public:
     }
 
     virtual void NotifyInitSuccess() {}
+    virtual uint64_t GetCachedDuration()
+    {
+        return 0;
+    }
+    virtual void RestartAndClearBuffer() {}
+    virtual bool IsFlvLive()
+    {
+        return false;
+    }
 
     virtual void SetStartPts(int64_t startPts)
     {
@@ -186,19 +195,6 @@ public:
     {
         MEDIA_LOG_W("SetMediaStreams is unimplemented.");
     }
-    virtual uint64_t GetCachedDuration()
-    {
-        return 0;
-    }
-    virtual void RestartAndClearBuffer() {}
-    virtual bool IsFlvLive()
-    {
-        return false;
-    }
-    virtual uint64_t GetMemorySize()
-    {
-        return 0;
-    }
     virtual std::string GetContentType()
     {
         return "";
@@ -211,6 +207,12 @@ public:
     {
         return false;
     }
+
+    virtual uint64_t GetMemorySize()
+    {
+        return 0;
+    }
+
     virtual std::string GetCurUrl()
     {
         return "";

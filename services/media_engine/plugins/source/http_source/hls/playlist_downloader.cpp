@@ -54,7 +54,7 @@ void PlayListDownloader::PlayListDownloaderInit()
     updateTask_->RegisterJob([this] {
         UpdateManifest();
         size_t updateTime = GetLiveUpdateGap();
-        if (updateTime > 0) {
+        if (updateTime > 0 && updateTime > static_cast<size_t>(PLAYLIST_UPDATE_RATE)) {
             return updateTime;
         }
         return static_cast<size_t>(PLAYLIST_UPDATE_RATE);

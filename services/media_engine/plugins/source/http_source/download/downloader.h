@@ -220,6 +220,7 @@ private:
     void RequestData();
     void HandlePlayingFinish();
     void HandleRetOK();
+    void HandleResponseCb(int32_t clientCode, int32_t serverCode, Status& ret);
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
     static bool HandleContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
@@ -272,7 +273,6 @@ private:
     std::shared_ptr<IMediaSourceLoadingRequest> loadingReques_;
     bool isNotBlock_ {false};
     std::string appPreviousRequestUrl_ {};
-    FairMutex deinitMutex_ {};
     std::string contentType_;
     bool isContentTypeUpdated_{false};
     ConditionVariable sleepCond_;
