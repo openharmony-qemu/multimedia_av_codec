@@ -34,7 +34,12 @@ std::shared_ptr<CodecBase> AvcEncoderLoader::CreateByName(const std::string &nam
 
     std::lock_guard<std::mutex> lock(loader.mutex_);
     CHECK_AND_RETURN_RET_LOG(loader.Init() == AVCS_ERR_OK, nullptr, "Create codec by name failed: init error");
-    return loader.Create(name);
+    std::shared_ptr<CodecBase> noDeletePtr = loader.Create(name);
+    if (noDeletePtr == nullptr) {
+        AVCODEC_LOGE("Loader create coder by name failed!");
+        loader.CloseLibrary();
+    }
+    return noDeletePtr;
 }
 
 int32_t AvcEncoderLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
@@ -43,11 +48,21 @@ int32_t AvcEncoderLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
 
     std::lock_guard<std::mutex> lock(loader.mutex_);
     CHECK_AND_RETURN_RET_LOG(loader.Init() == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Get capability failed: init error");
-    return loader.GetCaps(caps);
+    int32_t ret = loader.GetCaps(caps);
+    if (ret != AVCS_ERR_OK) {
+        AVCODEC_LOGE("Loader get caps failed!");
+        loader.CloseLibrary();
+    }
+    return ret;
 }
 
 AvcEncoderLoader::AvcEncoderLoader() : VideoCodecLoader(AVC_ENCODER_LIB_PATH,
     AVC_ENCODER_CREATE_FUNC_NAME, AVC_ENCODER_GETCAPS_FUNC_NAME) {}
+
+void AvcEncoderLoader::CloseLibrary()
+{
+    Close();
+}
 
 AvcEncoderLoader &AvcEncoderLoader::GetInstance()
 {
