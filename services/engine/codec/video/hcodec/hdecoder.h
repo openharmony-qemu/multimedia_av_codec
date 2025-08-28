@@ -60,12 +60,12 @@ private:
     // start
     bool UseHandleOnOutputPort(bool isDynamic);
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
-    void UpdateFormatFromSurfaceBuffer() override;
+    void UpdateFmtFromSurfaceBuffer() override;
     int32_t AllocOutDynamicSurfaceBuf();
     int32_t AllocateOutputBuffersFromSurface();
     int32_t ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
     int32_t SubmitAllBuffersOwnedByUs() override;
-    int32_t SubmitOutputBuffersToOmxNode() override;
+    int32_t SubmitOutBufToOmx() override;
     bool ReadyToStart() override;
 
     // input buffer circulation
