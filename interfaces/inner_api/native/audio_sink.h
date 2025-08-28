@@ -109,6 +109,7 @@ public:
     void HandleAudioRenderRequestPost();
     Status SetAudioHapticsSyncId(int32_t syncId);
     Status SetLoudnessGain(float loudnessGain);
+    Status CacheBuffer();
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
