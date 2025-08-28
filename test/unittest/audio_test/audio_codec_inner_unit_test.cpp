@@ -3,7 +3,7 @@
 #define private public
 #include "avcodec_audio_codec_inner_impl.h"
 #undef private
-#include "i_avcodec_service.h"
+#include "audio_codec_server.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
@@ -19,60 +19,57 @@ constexpr int32_t DEFAULT_BUFFER_SIZE = 4;
 namespace OHOS {
 namespace Media {
 
-class MockCodecService : public ICodecService {
+class MockCodecService : public AudioCodecServer {
 public:
     MOCK_METHOD(int32_t, Init,
-        (AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo, API_VERSION apiVersion),
-        (override));
-    MOCK_METHOD(int32_t, Configure, (const Format &format), (override));
-    MOCK_METHOD(int32_t, SetCustomBuffer, (std::shared_ptr<AVBuffer> buffer), (override));
-    MOCK_METHOD(int32_t, Start, (), (override));
-    MOCK_METHOD(int32_t, Stop, (), (override));
-    MOCK_METHOD(int32_t, Flush, (), (override));
-    MOCK_METHOD(int32_t, Reset, (), (override));
-    MOCK_METHOD(int32_t, Release, (), (override));
-    MOCK_METHOD(int32_t, NotifyEos, (), (override));
-    MOCK_METHOD(sptr<Surface>, CreateInputSurface, (), (override));
-    MOCK_METHOD(int32_t, SetOutputSurface, (sptr<Surface> surface), (override));
+        (AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo, API_VERSION apiVersion));
+    MOCK_METHOD(int32_t, Configure, (const Format &format));
+    MOCK_METHOD(int32_t, SetCustomBuffer, (std::shared_ptr<AVBuffer> buffer));
+    MOCK_METHOD(int32_t, Start, ());
+    MOCK_METHOD(int32_t, Stop, ());
+    MOCK_METHOD(int32_t, Flush, ());
+    MOCK_METHOD(int32_t, Reset, ());
+    MOCK_METHOD(int32_t, Release, ());
+    MOCK_METHOD(int32_t, NotifyEos, ());
+    MOCK_METHOD(sptr<Surface>, CreateInputSurface, ());
+    MOCK_METHOD(int32_t, SetOutputSurface, (sptr<Surface> surface));
     MOCK_METHOD(
-        int32_t, QueueInputBuffer, (uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag), (override));
-    MOCK_METHOD(int32_t, QueueInputBuffer, (uint32_t index), (override));
-    MOCK_METHOD(int32_t, QueueInputParameter, (uint32_t index), (override));
-    MOCK_METHOD(int32_t, GetOutputFormat, (Format & format), (override));
-    MOCK_METHOD(int32_t, ReleaseOutputBuffer, (uint32_t index, bool render), (override));
-    MOCK_METHOD(int32_t, RenderOutputBufferAtTime, (uint32_t index, int64_t renderTimestampNs), (override));
-    MOCK_METHOD(int32_t, SetParameter, (const Format &format), (override));
-    MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<AVCodecCallback> &callback), (override));
-    MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<MediaCodecCallback> &callback), (override));
-    MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<MediaCodecParameterCallback> &callback), (override));
+        int32_t, QueueInputBuffer, (uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag));
+    MOCK_METHOD(int32_t, QueueInputBuffer, (uint32_t index));
+    MOCK_METHOD(int32_t, QueueInputParameter, (uint32_t index));
+    MOCK_METHOD(int32_t, GetOutputFormat, (Format & format));
+    MOCK_METHOD(int32_t, ReleaseOutputBuffer, (uint32_t index, bool render));
+    MOCK_METHOD(int32_t, RenderOutputBufferAtTime, (uint32_t index, int64_t renderTimestampNs));
+    MOCK_METHOD(int32_t, SetParameter, (const Format &format));
+    MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<AVCodecCallback> &callback));
+    MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<MediaCodecCallback> &callback));
+    MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<MediaCodecParameterCallback> &callback));
     MOCK_METHOD(
-        int32_t, SetCallback, (const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback), (override));
-    MOCK_METHOD(int32_t, ChangePlugin, (const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta),
-        (override));
-    MOCK_METHOD(int32_t, SetCodecCallback, (const std::shared_ptr<MediaCodecCallback> &codecCallback), (override));
-    MOCK_METHOD(void, SetDumpInfo, (bool isDump, uint64_t instanceId), (override));
-    MOCK_METHOD(int32_t, GetInputFormat, (Format & format), (override));
+        int32_t, SetCallback, (const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback));
+    MOCK_METHOD(int32_t, ChangePlugin, (const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta));
+    MOCK_METHOD(int32_t, SetCodecCallback, (const std::shared_ptr<MediaCodecCallback> &codecCallback));
+    MOCK_METHOD(void, SetDumpInfo, (bool isDump, uint64_t instanceId));
+    MOCK_METHOD(int32_t, GetInputFormat, (Format & format));
     MOCK_METHOD(int32_t, SetDecryptConfig,
-        (const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag), (override));
-    MOCK_METHOD(int32_t, CreateCodecByName, (const std::string &name), (override));
-    MOCK_METHOD(int32_t, Configure, (const std::shared_ptr<Meta> &meta), (override));
-    MOCK_METHOD(int32_t, SetParameter, (const std::shared_ptr<Meta> &parameter), (override));
-    MOCK_METHOD(int32_t, GetOutputFormat, (std::shared_ptr<Meta> & parameter), (override));
-    MOCK_METHOD(int32_t, SetOutputBufferQueue, (const sptr<AVBufferQueueProducer> &bufferQueueProducer), (override));
-    MOCK_METHOD(int32_t, Prepare, (), (override));
-    MOCK_METHOD(sptr<AVBufferQueueProducer>, GetInputBufferQueue, (), (override));
-    MOCK_METHOD(void, ProcessInputBuffer, (), (override));
-    MOCK_METHOD(bool, CheckRunning, (), (override));
+        (const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag));
+    MOCK_METHOD(int32_t, CreateCodecByName, (const std::string &name));
+    MOCK_METHOD(int32_t, Configure, (const std::shared_ptr<Meta> &meta));
+    MOCK_METHOD(int32_t, SetParameter, (const std::shared_ptr<Meta> &parameter));
+    MOCK_METHOD(int32_t, GetOutputFormat, (std::shared_ptr<Meta> & parameter));
+    MOCK_METHOD(int32_t, SetOutputBufferQueue, (const sptr<AVBufferQueueProducer> &bufferQueueProducer));
+    MOCK_METHOD(int32_t, Prepare, ());
+    MOCK_METHOD(sptr<AVBufferQueueProducer>, GetInputBufferQueue, ());
+    MOCK_METHOD(void, ProcessInputBuffer, ());
+    MOCK_METHOD(bool, CheckRunning, ());
     MOCK_METHOD(int32_t, SetAudioDecryptionConfig,
-        (const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag), (override));
-    MOCK_METHOD(sptr<AVBufferQueueConsumer>, GetInputBufferQueueConsumer, (), (override));
-    MOCK_METHOD(sptr<AVBufferQueueProducer>, GetOutputBufferQueueProducer, (), (override));
+        (const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag));
+    MOCK_METHOD(sptr<AVBufferQueueConsumer>, GetInputBufferQueueConsumer, ());
+    MOCK_METHOD(sptr<AVBufferQueueProducer>, GetOutputBufferQueueProducer, ());
     MOCK_METHOD(
-        void, ProcessInputBufferInner, (bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus), (override));
+        void, ProcessInputBufferInner, (bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus));
 
     MOCK_METHOD(int32_t, GetChannelId, (int32_t & channelId));
     MOCK_METHOD(int32_t, SetLowPowerPlayerMode, (bool isLpp));
-    MOCK_METHOD(int32_t, NotifyMemoryExchange, (const bool exchangeFlag), (override));
 };
 
 class AudioCodecInnerTest : public ::testing::Test {
