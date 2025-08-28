@@ -17,7 +17,7 @@
 
 #include "avcodec_audio_codec.h"
 #include "nocopyable.h"
-#include "i_avcodec_service.h"
+#include "audio_codec_server.h"
 #include "drm_i_keysession_service.h"
 
 namespace OHOS {
@@ -117,7 +117,7 @@ private:
         size_t outputAvaliableNum_;
     };
 
-    std::shared_ptr<ICodecService> codecService_ = nullptr;
+    std::shared_ptr<AudioCodecServer> codecService_ = nullptr;
     std::shared_ptr<SyncCodecAdapter> syncCodecAdapter_ = nullptr;
 };
 } // namespace MediaAVCodec
