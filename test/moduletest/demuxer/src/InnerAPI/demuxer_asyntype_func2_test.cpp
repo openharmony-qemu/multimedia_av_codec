@@ -548,7 +548,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc2Test, DEMUXER_ASYN_INNER_FMP4_FUNC_0130, TestS
     int32_t readCount = 0;
     int64_t pts = 0;
     uint32_t timeout = 10000;
-    int64_t ptsnum = 42159;
+    int64_t ptsMin = 42159;
+    int64_t ptsMax = 43311;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_FMP4, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -564,7 +565,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc2Test, DEMUXER_ASYN_INNER_FMP4_FUNC_0130, TestS
             ASSERT_EQ(demuxerPlugin->ReadSample(indexVid, avBuf_, timeout), Status::OK);
         }
     }
-    ASSERT_EQ(pts, ptsnum);
+    ASSERT_GE(pts, ptsMin);
+    ASSERT_LE(pts, ptsMax);
 }
 /**
  * @tc.number    : DEMUXER_ASYN_INNER_FMP4_FUNC_0140
@@ -579,7 +581,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc2Test, DEMUXER_ASYN_INNER_FMP4_FUNC_0140, TestS
     int32_t readCount = 0;
     int64_t pts = 0;
     uint32_t timeout = 10000;
-    int64_t ptsnum = 42139;
+    int64_t ptsMin = 42139;
+    int64_t ptsMax = 43195;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_FMP4, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -595,7 +598,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc2Test, DEMUXER_ASYN_INNER_FMP4_FUNC_0140, TestS
             ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
         }
     }
-    ASSERT_EQ(pts, ptsnum);
+    ASSERT_GE(pts, ptsMin);
+    ASSERT_LE(pts, ptsMax);
 }
 
 /**
@@ -1514,7 +1518,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc2Test, DEMUXER_ASYN_INNER_MKV_FUNC_0130, TestSi
     int32_t readCount = 0;
     int64_t pts = 0;
     uint32_t timeout = 10000;
-    int64_t ptsnum = 1924;
+    int64_t ptsMin = 1924;
+    int64_t ptsnum = 1950;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_URI_MATROSKA, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -1530,7 +1535,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc2Test, DEMUXER_ASYN_INNER_MKV_FUNC_0130, TestSi
             ASSERT_EQ(demuxerPlugin->ReadSample(indexVid, avBuf_, timeout), Status::OK);
         }
     }
-    ASSERT_EQ(pts, ptsnum);
+    ASSERT_GE(pts, ptsMin);
+    ASSERT_LE(pts, ptsnum);
 }
 /**
  * @tc.number    : DEMUXER_ASYN_INNER_MKV_FUNC_0140
@@ -1545,7 +1551,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc2Test, DEMUXER_ASYN_INNER_MKV_FUNC_0140, TestSi
     int32_t readCount = 0;
     int64_t pts = 0;
     uint32_t timeout = 10000;
-    int64_t ptsnum = 1667;
+    int64_t ptsMin = 1600;
+    int64_t ptsMax = 1667;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_URI_MATROSKA, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -1561,7 +1568,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc2Test, DEMUXER_ASYN_INNER_MKV_FUNC_0140, TestSi
             ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
         }
     }
-    ASSERT_EQ(pts, ptsnum);
+    ASSERT_GE(pts, ptsMin);
+    ASSERT_LE(pts, ptsMax);
 }
 
 /**

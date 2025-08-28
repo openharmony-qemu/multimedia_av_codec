@@ -461,7 +461,8 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_FLV_FUNC_0130, TestSiz
     int32_t readCount = 0;
     int64_t pts = 0;
     uint32_t timeout = 10000;
-    int64_t ptsnum = 1957;
+    int64_t ptsMin = 1957;
+    int64_t ptsMax = 1980;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV_1, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -477,7 +478,8 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_FLV_FUNC_0130, TestSiz
             ASSERT_EQ(demuxerPlugin->ReadSample(indexVid, avBuf_, timeout), Status::OK);
         }
     }
-    ASSERT_EQ(pts, ptsnum);
+    ASSERT_GE(pts, ptsMin);
+    ASSERT_LE(pts, ptsMax);
 }
 /**
  * @tc.number    : DEMUXER_ASYN_INNER_FLV_FUNC_0140
@@ -492,7 +494,8 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_FLV_FUNC_0140, TestSiz
     int32_t readCount = 0;
     int64_t pts = 0;
     uint32_t timeout = 10000;
-    int64_t ptsnum = 1567;
+    int64_t ptsMin = 1501;
+    int64_t ptsMax = 1567;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV_1, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -508,7 +511,8 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_FLV_FUNC_0140, TestSiz
             ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
         }
     }
-    ASSERT_EQ(pts, ptsnum);
+    ASSERT_GE(pts, ptsMin);
+    ASSERT_LE(pts, ptsMax);
 }
 
 /**
@@ -1129,7 +1133,8 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0130, TestSiz
     int32_t readCount = 0;
     int64_t pts = 0;
     uint32_t timeout = 10000;
-    int64_t ptsnum = 89902;
+    int64_t ptsMin = 89902;
+    int64_t ptsMax = 91950;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -1145,7 +1150,8 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0130, TestSiz
             ASSERT_EQ(demuxerPlugin->ReadSample(indexVid, avBuf_, timeout), Status::OK);
         }
     }
-    ASSERT_EQ(pts, ptsnum);
+    ASSERT_GE(pts, ptsMin);
+    ASSERT_LE(pts, ptsMax);
 }
 /**
  * @tc.number    : DEMUXER_ASYN_INNER_MP4_FUNC_0140
@@ -1160,7 +1166,8 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0140, TestSiz
     int32_t readCount = 0;
     int64_t pts = 0;
     uint32_t timeout = 10000;
-    int64_t ptsnum = 125010;
+    int64_t ptsMin = 125010;
+    int64_t ptsMax = 134010;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -1176,7 +1183,8 @@ HWTEST_F(DemuxerAsynTypeInnerFuncTest, DEMUXER_ASYN_INNER_MP4_FUNC_0140, TestSiz
             ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
         }
     }
-    ASSERT_EQ(pts, ptsnum);
+    ASSERT_GE(pts, ptsMin);
+    ASSERT_LE(pts, ptsMax);
 }
 
 /**

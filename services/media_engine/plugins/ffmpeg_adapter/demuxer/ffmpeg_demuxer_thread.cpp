@@ -29,9 +29,6 @@
 #include "ffmpeg_demuxer_plugin.h"
 #include "meta/format.h"
 #include "syspara/parameters.h"
-#include "qos.h"
-#include "res_type.h"
-#include "res_sched_client.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegDemuxerThread" };
@@ -45,8 +42,6 @@ const int32_t AV_READ_PACKET_READ_ERROR = -1;
 const int32_t AV_READ_PACKET_READ_AGAIN = -2;
 const int32_t AV_READ_PACKET_RETRY_UPPER_LIMIT = 9;
 const int32_t AV_READ_PACKET_SLEEP_TIME = 50;
-constexpr uint32_t RES_TYPE = OHOS::ResourceSchedule::ResType::RES_TYPE_THREAD_QOS_CHANGE;
-constexpr uint32_t RES_VALUE = 0;
 
 std::condition_variable FFmpegDemuxerPlugin::readCbCv_;
 std::mutex FFmpegDemuxerPlugin::readPacketMutex_;
@@ -109,16 +104,18 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
         ioContext->offset += dataSize;
         return dataSize;
     }
-    if (ioContext->invokerType != READ) {
+    if (ioContext->invokerType != InvokerType::READ) {
         ioContext->retry = true;
-        ioContext->initErrorAgain = (ioContext->invokerType == INIT ? true : false);
+        ioContext->initErrorAgain = (ioContext->invokerType == InvokerType::INIT ? true : false);
         MEDIA_LOG_I("Read again, invokerType!=READ, offset:" PUBLIC_LOG_D64, ioContext->offset);
         return AV_READ_PACKET_READ_ERROR;
     }
     tryCount++;
     if (tryCount >= AV_READ_PACKET_RETRY_UPPER_LIMIT) {
         std::unique_lock<std::mutex> readLock(readPacketMutex_);
-        readCbCv_.wait(readLock, [ioContext]() {return ioContext->readCbReady;}); // Wait to be notified
+        readCbCv_.wait(readLock, [ioContext]() {
+            return (ioContext->readCbReady) || (ioContext->invokerType != InvokerType::READ);
+        }); // Wait to be notified
         ioContext->readCbReady = false; // Reset the flag
         tryCount = 0;
     } else {
@@ -171,6 +168,9 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         ioContext_.invokerType = InvokerType::READ;
     }
     trackId_ = trackId;
+    if (!cacheQueue_.HasCache(trackId) && timeout == 0) {
+        return Status::ERROR_WAIT_TIMEOUT;
+    }
     if (!readThread_) {
         readThread_ = std::make_unique<std::thread>(&FFmpegDemuxerPlugin::FFmpegReadLoop, this);
     }
@@ -213,6 +213,7 @@ bool FFmpegDemuxerPlugin::ShouldWaitForRead(uint32_t trackId)
 Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t timeout)
 {
     if (ShouldWaitForRead(trackId)) {
+        isWaitingForReadThread_.store(true);
         if (threadState_ == READING) {
             std::lock_guard<std::mutex> readLock(readPacketMutex_);
             ioContext_.readCbReady = true;
@@ -227,11 +228,13 @@ Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t t
             std::unique_lock<std::mutex> readLock(readSampleMutex_);
             if (!readCacheCv_.wait_for(readLock, std::chrono::milliseconds(timeout),
                 [this, trackId] { return !ShouldWaitForRead(trackId);})) {
+                isWaitingForReadThread_.store(false);
                 FALSE_RETURN_V_MSG_E(readLoopStatus_ == Status::OK, readLoopStatus_, "read thread abnoraml end");
                 return Status::ERROR_WAIT_TIMEOUT;
             }
         }
     }
+    isWaitingForReadThread_.store(false);
     return Status::OK;
 }
 
@@ -290,7 +293,8 @@ void FFmpegDemuxerPlugin::HandleReadWait()
     }
     readLoopCv_.wait(readLock, [this]() {
         return (threadReady_) || (ioContext_.invokerType == InvokerType::DESTORY) ||
-               (!cacheQueue_.HasCache(trackId_) && !isPauseReadPacket_);
+               (!cacheQueue_.HasCache(trackId_) && !isPauseReadPacket_) ||
+               (isWaitingForReadThread_.load() && cacheQueue_.GetCacheSize(trackId_) <= 1);
     });
     threadState_ = READING;
     threadReady_ = false;
@@ -434,6 +438,9 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
         ioContext_.invokerType = InvokerType::READ;
     }
     trackId_ = trackId;
+    if (!cacheQueue_.HasCache(trackId) && timeout == 0) {
+        return Status::ERROR_WAIT_TIMEOUT;
+    }
     if (!readThread_) {
         readThread_ = std::make_unique<std::thread>(&FFmpegDemuxerPlugin::FFmpegReadLoop, this);
     }
@@ -487,7 +494,7 @@ Status FFmpegDemuxerPlugin::GetLastPTSByTrackId(uint32_t trackId, int64_t &lastP
     return ret;
 }
 
-Status FFmpegDemuxerPlugin::SetAsyncReadThreadPriority(const uint32_t newPriority, const std::string &strBundleName)
+Status FFmpegDemuxerPlugin::BoostReadThreadPriority()
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     if (threadState_ != ThreadState::NOT_STARTED && readThread_ != nullptr) {
@@ -498,23 +505,19 @@ Status FFmpegDemuxerPlugin::SetAsyncReadThreadPriority(const uint32_t newPriorit
         MEDIA_LOG_W("Async read thread priority has been set, cannot set again");
         return Status::ERROR_WRONG_STATE;
     }
-    isAsyncReadThreadPrioritySet_ = true;
-    asyncReadThreadPriority_ = newPriority;
-    bundleName_ = strBundleName;
-    MEDIA_LOG_I("Set async read thread priority to " PUBLIC_LOG_U32 " for bundle: %s",
-        asyncReadThreadPriority_.load(), bundleName_.c_str());
+    isAsyncReadThreadPrioritySet_.store(true);
+    MEDIA_LOG_I("Boost read thread priority to user interactive");
     return Status::OK;
 }
 
 void FFmpegDemuxerPlugin::UpdateAsyncReadThreadPriority()
 {
-    MEDIA_LOG_I("Update async read thread priority to " PUBLIC_LOG_U32 " for bundle: " PUBLIC_LOG_S,
-        asyncReadThreadPriority_.load(), bundleName_.c_str());
-    std::unordered_map<std::string, std::string> mapPayload;
-    mapPayload["bundleName"] = bundleName_;
-    mapPayload["pid"] = std::to_string(getpid());
-    mapPayload[std::to_string(gettid())] = std::to_string(asyncReadThreadPriority_.load());
-    OHOS::ResourceSchedule::ResSchedClient::GetInstance().ReportData(RES_TYPE, RES_VALUE, mapPayload);
+    auto ret = SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+    if (ret != 0) {
+        MEDIA_LOG_E("Set thread qos failed, ret = " PUBLIC_LOG_D32, ret);
+    } else {
+        MEDIA_LOG_I("Set thread qos success, level = " PUBLIC_LOG_U32, OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+    }
 }
 } // namespace Ffmpeg
 } // namespace Plugins

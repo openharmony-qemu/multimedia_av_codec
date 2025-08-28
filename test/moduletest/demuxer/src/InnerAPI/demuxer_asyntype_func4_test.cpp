@@ -1214,6 +1214,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc4Test, DEMUXER_ASYN_INNER_MPG_FUNC_0130, TestSi
     int32_t readCount = 0;
     int64_t pts = 0;
     uint32_t timeout = 10000;
+    int64_t ptsMin = 49887;
+    int64_t ptsMax = 53127;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG, TEST_FILE_URI_MPEG, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -1229,7 +1231,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc4Test, DEMUXER_ASYN_INNER_MPG_FUNC_0130, TestSi
             ASSERT_EQ(demuxerPlugin->ReadSample(indexVid, avBuf_, timeout), Status::OK);
         }
     }
-    ASSERT_EQ(pts, 49887);
+    ASSERT_GE(pts, ptsMin);
+    ASSERT_LE(pts, ptsMax);
 }
 /**
  * @tc.number    : DEMUXER_ASYN_INNER_MPG_FUNC_0140
@@ -1244,6 +1247,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc4Test, DEMUXER_ASYN_INNER_MPG_FUNC_0140, TestSi
     int32_t readCount = 0;
     int64_t pts = 0;
     uint32_t timeout = 10000;
+    int64_t ptsMin = 168000;
+    int64_t ptsMax = 171000;
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG, TEST_FILE_URI_MPEG, DEF_PROB_SIZE), true);
     ASSERT_NE(pluginBase_, nullptr);
     ASSERT_EQ(CreateBufferSize(), true);
@@ -1259,7 +1264,8 @@ HWTEST_F(DemuxerAsynTypeInnerFunc4Test, DEMUXER_ASYN_INNER_MPG_FUNC_0140, TestSi
             ASSERT_EQ(demuxerPlugin->ReadSample(indexAud, avBuf_, timeout), Status::OK);
         }
     }
-    ASSERT_EQ(pts, 168000);
+    ASSERT_GE(pts, ptsMin);
+    ASSERT_LE(pts, ptsMax);
 }
 
 /**

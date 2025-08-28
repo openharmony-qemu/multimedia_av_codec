@@ -2011,6 +2011,10 @@ Status FFmpegDemuxerPlugin::Flush()
     Status ret = Status::OK;
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_I("In");
+    if (ioContext_.invokerType != InvokerType::FLUSH) {
+        std::lock_guard<std::mutex> seekLock(ioContext_.invokerTypeMutex);
+        ioContext_.invokerType = InvokerType::FLUSH;
+    }
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         ret = cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         ret = cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
