@@ -57,7 +57,7 @@ int32_t AudioFfmpegEncoderPlugin::PcmFillFrame(const std::shared_ptr<AudioBuffer
     auto memory = inputBuffer->GetBuffer();
     auto usedSize = inputBuffer->GetBufferAttr().size;
     auto frameSize = avCodecContext_->frame_size;
-    cachedFrame_->nb_samples = static_cast<int>(usedSize / channelsBytesPerSample_);
+    cachedFrame_->nb_samples = static_cast<int>(usedSize / static_cast<int>(channelsBytesPerSample_));
     AVCODEC_LOGI("sampleRate : %{public}d, frameSize : %{public}d", avCodecContext_->sample_rate, frameSize);
     if (cachedFrame_->nb_samples > frameSize) {
         AVCODEC_LOGE("cachedFrame_->nb_samples is greater than frameSize, please enter a correct frameBytes."
@@ -158,10 +158,10 @@ int32_t AudioFfmpegEncoderPlugin::ReceiveBuffer(std::shared_ptr<AudioBufferInfo>
 
 int32_t AudioFfmpegEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
-    uint32_t headerSize = 0;
+    int32_t headerSize = 0;
     auto memory = outBuffer->GetBuffer();
 
-    int32_t outputSize = static_cast<int32_t>(avPacket_->size + headerSize);
+    int32_t outputSize = static_cast<int32_t>(avPacket_->size) + headerSize;
     if (memory->GetSize() < outputSize) {
         AVCODEC_LOGW("Output buffer capacity is not enough");
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
@@ -174,7 +174,7 @@ int32_t AudioFfmpegEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AudioBufferI
     }
 
     auto attr = outBuffer->GetBufferAttr();
-    attr.size = static_cast<size_t>(avPacket_->size + headerSize);
+    attr.size = static_cast<int32_t>(avPacket_->size) + headerSize;
     prevPts_ += avPacket_->duration;
     attr.presentationTimeUs = FFMpegConverter::ConvertAudioPtsToUs(prevPts_, avCodecContext_->time_base);
     outBuffer->SetBufferAttr(attr);
