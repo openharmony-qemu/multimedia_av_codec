@@ -295,6 +295,11 @@ public:
      * are configured in stable quality rate control mode.
      */
     static constexpr std::string_view MD_KEY_VIDEO_ENCODER_SQR_FACTOR = "sqr_factor";
+
+    /**
+     * key for AIGC info, the value type is string
+     */
+    static constexpr std::string_view MD_KEY_AIGC = "aigc";
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;
