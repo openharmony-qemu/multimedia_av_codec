@@ -19,12 +19,14 @@
 #include <string>
 #include <thread>
 #include "audio_decoder_ape_demo.h"
+#include "audio_decoder_ape_new_demo.h"
 #define FUZZ_PROJECT_NAME "audiodecoderape_fuzzer"
 
 using namespace std;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec::AudioBufferDemo;
+using namespace OHOS::MediaAVCodec::AudioBufferNewDemo;
 
 namespace OHOS {
 
@@ -33,6 +35,9 @@ bool AudioDecoderAPEFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
+    // FUZZ ape new
+    ApeFuzzDemo* apeFuzzDemo = new ApeFuzzDemo();
+    apeFuzzDemo->DoApeParserWithParserAPI(data, size);
     // FUZZ ape
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("ape");
