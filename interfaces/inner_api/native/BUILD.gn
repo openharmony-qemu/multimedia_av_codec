@@ -257,11 +257,8 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/hdi_codec.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_factory.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_param_checker.cpp",
-      "$av_codec_root_dir/services/services/codec/server/codec_server.cpp",
-      "$av_codec_root_dir/services/services/codec/server/post_processing/dynamic_controller.cpp",
-      "$av_codec_root_dir/services/services/codec/server/post_processing/dynamic_interface.cpp",
+      "$av_codec_root_dir/services/services/codec/server/audio_codec_server.cpp",
       "$av_codec_root_dir/services/services/codec/server/post_processing/state_machine.cpp",
-      "$av_codec_root_dir/services/services/codec/server/temporal_scalability.cpp",
     ]
   }
   if (av_codec_support_demuxer) {
