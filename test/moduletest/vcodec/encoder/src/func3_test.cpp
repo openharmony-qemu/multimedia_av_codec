@@ -422,4 +422,112 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_BFRAME_SYNC_0120, TestSize.Level2)
         }
     }
 }
+
+/**
+ * @tc.number    : VIDEO_ENCODE_H264_FLUSH_0010
+ * @tc.name      : create-start-eos-flush-start-eos
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_H264_FLUSH_0010, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Flush());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_H265_FLUSH_0010
+ * @tc.name      : create-start-eos-flush-start-eos
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_H265_FLUSH_0010, TestSize.Level1)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Flush());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_H264_FLUSH_0020
+ * @tc.name      : create-start-eos-flush-start-eos,surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_H264_FLUSH_0020, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Flush());
+        vEncSample->isSurface = true;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_H265_FLUSH_0020
+ * @tc.name      : create-start-eos-flush-start-eos,surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_H265_FLUSH_0020, TestSize.Level1)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Flush());
+        vEncSample->isSurface = true;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
 } // namespace
