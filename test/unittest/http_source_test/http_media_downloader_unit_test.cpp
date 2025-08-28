@@ -223,9 +223,10 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL, TestSize.Level1)
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_SEEK, TestSize.Level1)
 {
     MP4httpMediaDownloader->GetSeekable();
-    bool result = MP4httpMediaDownloader->SeekToPos(100);
+    bool isSeekHit = false;
+    bool result = MP4httpMediaDownloader->SeekToPos(100, isSeekHit);
     EXPECT_TRUE(result);
-    result = MP4httpMediaDownloader->SeekToPos(10000000);
+    result = MP4httpMediaDownloader->SeekToPos(10000000, isSeekHit);
     EXPECT_TRUE(result);
 }
 
@@ -333,7 +334,8 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL_MP4_DOWNLOADINFO, TestSize.L
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_SEEK_FLV, TestSize.Level1)
 {
     FLVhttpMediaDownloader->GetSeekable();
-    bool result = FLVhttpMediaDownloader->SeekToPos(100);
+    bool isSeekHit = false;
+    bool result = FLVhttpMediaDownloader->SeekToPos(100, isSeekHit);
     FLVhttpMediaDownloader->SetReadBlockingFlag(true);
     EXPECT_TRUE(result);
 }
@@ -464,7 +466,8 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_FLC_SEEK, TestSize.Level1)
     httpMediaDownloader->downloadErrorState_ = true;
     httpMediaDownloader->Read(buff, readDataInfo);
     OSAL::SleepFor(1000);
-    httpMediaDownloader->SeekToPos(100 * 1024 * 1024);
+    bool isSeekHit = false;
+    httpMediaDownloader->SeekToPos(100 * 1024 * 1024, isSeekHit);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);

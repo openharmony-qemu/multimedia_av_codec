@@ -509,13 +509,6 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
         "not Retry, client null or isDestructor or isInterruptNeeded");
     if (isAppBackground_) {
         Pause(true);
-        {
-            AutoLock lk(deinitMutex_);
-            if (client_ != nullptr) {
-                client_->Deinit();
-                client_ = nullptr;
-            }
-        }
         MEDIA_LOG_I("Retry avoid, forground to background.");
         return true;
     }
@@ -683,6 +676,39 @@ void Downloader::HandleRedirect(Status& ret)
     }
 }
 
+void Downloader::HandleResponseCb(int32_t clientCode, int32_t serverCode, Status& ret)
+{
+    currentRequest_->clientError_ = clientCode;
+    currentRequest_->serverError_ = serverCode;
+
+    HandleRedirect(ret);
+
+    if (isDestructor_) {
+        return;
+    }
+    if (currentRequest_->preRequestSize_ == FIRST_REQUEST_SIZE && !currentRequest_->isFirstRangeRequestReady_
+        && currentRequest_->serverError_ == SERVER_RANGE_ERROR_CODE) {
+        MEDIA_LOG_I("first request is above filesize, need retry.");
+        currentRequest_->startPos_ = 0;
+        currentRequest_->requestSize_ = MIN_REQUEST_SIZE;
+        currentRequest_->isHeaderUpdated_ = false;
+        currentRequest_->isFirstRangeRequestReady_ = true;
+        currentRequest_->headerInfo_.fileContentLen = 0;
+        return;
+    }
+    if (ret == Status::OK) {
+        HandleRetOK();
+    } else {
+        PauseLoop(true);
+        MEDIA_LOG_E("Client request data failed. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32
+            ", request queue size: " PUBLIC_LOG_U64, static_cast<int32_t>(ret),
+            static_cast<int32_t>(clientCode), static_cast<int64_t>(requestQue_->Size()));
+        HandleRetErrorCode();
+        std::shared_ptr<Downloader> unused;
+        currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
+    }
+}
+
 void Downloader::RequestData()
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::HttpDownloadLoop, startPos: "
@@ -703,38 +729,14 @@ void Downloader::RequestData()
     }
 
     auto handleResponseCb = [this](int32_t clientCode, int32_t serverCode, Status ret) {
-        currentRequest_->clientError_ = clientCode;
-        currentRequest_->serverError_ = serverCode;
-
-        HandleRedirect(ret);
-
-        if (isDestructor_) {
-            return;
-        }
-        if (currentRequest_->preRequestSize_ == FIRST_REQUEST_SIZE && !currentRequest_->isFirstRangeRequestReady_
-            && currentRequest_->serverError_ == SERVER_RANGE_ERROR_CODE) {
-            MEDIA_LOG_I("first request is above filesize, need retry.");
-            currentRequest_->startPos_ = 0;
-            currentRequest_->requestSize_ = MIN_REQUEST_SIZE;
-            currentRequest_->isHeaderUpdated_ = false;
-            currentRequest_->isFirstRangeRequestReady_ = true;
-            currentRequest_->headerInfo_.fileContentLen = 0;
-            return;
-        }
-        if (ret == Status::OK) {
-            HandleRetOK();
-        } else {
-            PauseLoop(true);
-            MEDIA_LOG_E("Client request data failed. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32
-                ",request queue size: " PUBLIC_LOG_U64, static_cast<int32_t>(ret),
-                static_cast<int32_t>(clientCode), static_cast<int64_t>(requestQue_->Size()));
-            HandleRetErrorCode();
-            std::shared_ptr<Downloader> unused;
-            currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
-        }
+        HandleResponseCb(clientCode, serverCode, ret);
     };
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData enter.", FAKE_POINTER(this));
-    client_->RequestData(startPos, currentRequest_->requestSize_, sourceInfo, handleResponseCb);
+    int len = currentRequest_->requestSize_;
+    if (currentRequest_->requestWholeFile_) {
+        len = 0;
+    }
+    client_->RequestData(startPos, len, sourceInfo, handleResponseCb);
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData end.", FAKE_POINTER(this));
 }
 
@@ -910,7 +912,7 @@ void Downloader::HandleFileContentLen(HeaderInfo* header)
         if (header->contentLen > 0) {
             MEDIA_LOG_W("Unsupported range, use content length as content file length, contentLen: " PUBLIC_LOG_D32,
                 static_cast<int32_t>(header->contentLen));
-            header->fileContentLen = header->contentLen;
+            header->fileContentLen = static_cast<size_t>(header->contentLen);
         } else {
             MEDIA_LOG_D("fileContentLen and contentLen are both zero.");
         }
@@ -1181,12 +1183,15 @@ void Downloader::SetInterruptState(bool isInterruptNeeded)
         AutoLock lock(sleepMutex_);
         isInterruptNeeded_ = isInterruptNeeded;
     }
+    if (currentRequest_ != nullptr) {
+        currentRequest_->isInterruptNeeded_ = isInterruptNeeded;
+    }
     if (isInterruptNeeded) {
         MEDIA_LOG_I("SetInterruptState, Notify.");
         sleepCond_.NotifyOne();
     }
-    if (currentRequest_ != nullptr) {
-        currentRequest_->isInterruptNeeded_ = isInterruptNeeded;
+    if (sourceLoader_ != nullptr) {
+        client_->Close(false);
     }
     NotifyLoopPause();
 }
@@ -1232,21 +1237,19 @@ void Downloader::StopBufferring()
     MediaAVCodec::AVCodecTrace trace("Downloader::StopBufferring");
     FALSE_RETURN_MSG(task_ != nullptr && currentRequest_ != nullptr, "task or request is null");
     if (isAppBackground_) {
+        FALSE_RETURN_NOLOG(client_ != nullptr);
+        MEDIA_LOG_I("StopBufferring: is task not running.");
+        client_->Close(false);
+        client_->Deinit();
         {
-            AutoLock lk(deinitMutex_);
-            FALSE_RETURN_NOLOG(!task_->IsTaskRunning() && client_ != nullptr);
-            MEDIA_LOG_I("StopBufferring: is task not running.");
-            isClientClose_ = true;
-            client_->Close(false);
-            client_->Deinit();
+            AutoLock lk(operatorMutex_);
             client_ = nullptr;
         }
     } else {
         {
-            AutoLock lk(deinitMutex_);
-            if (isClientClose_ && client_ == nullptr) {
+            AutoLock lk(operatorMutex_);
+            if (client_ == nullptr) {
                 MEDIA_LOG_I("StopBufferring: restart task.");
-                isClientClose_ = false;
                 client_ = NetworkClient::GetInstance(&RxHeaderData, &RxBodyData, this);
                 client_->Init();
                 client_->Open(currentRequest_->url_, currentRequest_->httpHeader_,

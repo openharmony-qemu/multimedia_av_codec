@@ -72,8 +72,8 @@ public:
     uint64_t GetCachedDuration() override;
     void RestartAndClearBuffer() override;
     bool IsFlvLive() override;
-    uint64_t GetMemorySize() override;
     bool IsHlsFmp4() override;
+    uint64_t GetMemorySize() override;
     std::string GetContentType() override;
 
 private:
