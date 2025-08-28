@@ -20,7 +20,7 @@
 #include "avcodec_trace.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_mime_type.h"
-#include "codec_server.h"
+#include "audio_codec_server.h"
 #include "qos.h"
 
 namespace {
@@ -62,7 +62,7 @@ int32_t AVCodecAudioCodecImpl::Init(AVCodecType type, bool isMimeType, const std
     }
 
     Format format;
-    codecService_ = CodecServer::Create();
+    codecService_ = AudioCodecServer::Create();
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_UNKNOWN, "failed to create codec service");
 
     implBufferQueue_ = Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY,
