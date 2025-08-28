@@ -349,6 +349,7 @@ private:
     std::mutex seekWaitMutex_;
     std::condition_variable seekWaitCv_;
     std::atomic<bool> threadReady_ {false};
+    std::atomic<bool> isWaitingForReadThread_ {false};
     std::unordered_map<uint32_t, Meta> streamInitialParam_;
 
     std::atomic<bool> isAsyncReadThreadPrioritySet_ = false;
