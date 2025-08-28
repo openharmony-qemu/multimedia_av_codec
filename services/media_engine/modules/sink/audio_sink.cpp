@@ -1664,9 +1664,7 @@ Status AudioSink::SetAudioHapticsSyncId(int32_t syncId)
 
 Status AudioSink::SetLoudnessGain(float loudnessGain)
 {
-    if (plugin_ == nullptr) {
-        return Status::ERROR_NULL_POINTER;
-    }
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     return plugin_->SetLoudnessGain(loudnessGain);
 }
 
