@@ -16,7 +16,6 @@
 #include "codec_service_proxy.h"
 #include "avcodec_errors.h"
 #include "avcodec_parcel.h"
-#include "avsharedmemory_ipc.h"
 #ifdef SUPPORT_DRM
 #include "imedia_key_session_service.h"
 #endif
