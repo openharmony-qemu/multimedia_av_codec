@@ -458,7 +458,7 @@ int32_t VEncAPI11Sample::StartVideoEncoder()
 {
     isRunning_.store(true);
     int32_t ret = 0;
-    if (SURF_INPUT) {
+    if (SURF_INPUT && !isSurface) {
         ret = CreateSurface();
         if (ret != AV_ERR_OK) {
             return ret;

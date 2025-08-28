@@ -210,6 +210,7 @@ public:
     bool getOutputBufferIndexRepeated = false;
     bool noDestroy = false;
     std::atomic<bool> isRunning_ { false };
+    bool isSurface = false;
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
