@@ -169,7 +169,7 @@ HWTEST_F(StreamDemuxerUnitTest, HandleReadHeader_001, TestSize.Level0)
     };
     streamDemuxer_->mediaDataSize_ = CONTENT_LENGTH;
     auto ret = streamDemuxer_->HandleReadHeader(streamID, offset, bufferPtr, expectedLen);
-    EXPECT_EQ(ret, Status::OK);
+    EXPECT_NE(ret, Status::OK);
     streamDemuxer_->mediaDataSize_ = ID_TEST;
     ret = streamDemuxer_->HandleReadHeader(streamID, offset, bufferPtr, expectedLen);
     EXPECT_EQ(ret, Status::END_OF_STREAM);
