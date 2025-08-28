@@ -543,7 +543,6 @@ void AudioSink::SetThreadGroupId(const std::string& groupId)
 {
     eosTask_ = std::make_unique<Task>("OS_EOSa", groupId, TaskType::AUDIO, TaskPriority::HIGH, false);
     changeTrackTask_ = std::make_unique<Task>("CHANGE_TRACK", groupId, TaskType::AUDIO, TaskPriority::HIGH, false);
-    cacheBufferTask_ = std::make_unique<Task>("CACHE_BUFFER", groupId, TaskType::SINGLETON, TaskPriority::HIGH, false);
 }
 
 void AudioSink::HandleEosInner(bool drain)
