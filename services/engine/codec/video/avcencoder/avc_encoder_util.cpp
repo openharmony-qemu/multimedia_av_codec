@@ -93,6 +93,26 @@ VideoPixelFormat TranslateVideoPixelFormat(GraphicPixelFormat surfaceFormat)
     return VideoPixelFormat::UNKNOWN;
 }
 
+GraphicPixelFormat TranslateSurfacePixFormat(const VideoPixelFormat &pixelFormat)
+{
+    switch (pixelFormat) {
+        case VideoPixelFormat::YUVI420: {
+            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P;
+        }
+        case VideoPixelFormat::RGBA: {
+            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
+        }
+        case VideoPixelFormat::NV12: {
+            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+        }
+        case VideoPixelFormat::NV21: {
+            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+        }
+        default:
+            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT;
+    }
+}
+
 COLOR_MATRIX TranslateMatrix(MatrixCoefficient matrixFormat)
 {
     switch (matrixFormat) {
