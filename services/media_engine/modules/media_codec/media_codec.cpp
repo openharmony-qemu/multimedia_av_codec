@@ -179,6 +179,9 @@ std::shared_ptr<Plugins::CodecPlugin> MediaCodec::CreatePlugin(const std::string
 void MediaCodec::IODump(const std::shared_ptr<Meta> &meta)
 {
     std::time_t t = std::time(nullptr);
+    if (!std::localtime(&t)) {
+        return;
+    }
     std::tm tm = *std::localtime(&t);
 
     std::ostringstream common;
