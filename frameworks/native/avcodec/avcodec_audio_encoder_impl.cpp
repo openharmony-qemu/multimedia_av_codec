@@ -18,7 +18,7 @@
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
-#include "codec_server.h"
+#include "audio_codec_server.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AVCodecAudioEncoderImpl"};
@@ -52,7 +52,7 @@ int32_t AVCodecAudioEncoderImpl::Init(AVCodecType type, bool isMimeType, const s
 {
     AVCODEC_SYNC_TRACE;
     Format format;
-    codecService_ = CodecServer::Create();
+    codecService_ = AudioCodecServer::Create();
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_UNKNOWN, "failed to create codec service");
 
     return codecService_->Init(type, isMimeType, name, *format.GetMeta());

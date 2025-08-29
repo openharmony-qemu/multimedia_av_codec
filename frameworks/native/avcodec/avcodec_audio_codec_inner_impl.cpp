@@ -18,7 +18,6 @@
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
 #include "avcodec_codec_name.h"
-#include "codec_server.h"
 #include "drm_i_keysession_service.h"
 
 namespace OHOS {
@@ -100,7 +99,7 @@ int32_t AVCodecAudioCodecInnerImpl::Init(AVCodecType type, bool isMimeType, cons
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Init");
     Format format;
-    codecService_ = CodecServer::Create();
+    codecService_ = AudioCodecServer::Create();
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
                              "failed to create codec service");
     int32_t ret = codecService_->Init(type, isMimeType, name, *format.GetMeta(), API_VERSION::API_VERSION_11);
@@ -278,7 +277,7 @@ int32_t AVCodecAudioCodecInnerImpl::SetAudioDecryptionConfig(
     AVCODEC_LOGD("AVCodecAudioCodecInnerImpl SetAudioDecryptionConfig");
     CHECK_AND_RETURN_RET_LOG(
         codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
-    return codecService_->SetAudioDecryptionConfig(keySession, svpFlag);
+    return 0;
 }
 
 void AVCodecAudioCodecInnerImpl::SetDumpInfo(bool isDump, uint64_t instanceId)
