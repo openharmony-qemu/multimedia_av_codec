@@ -201,9 +201,7 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
                                       "inputBufferCache is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(outputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION,
                                       "outputBufferCache is nullptr");
-    if (OnRequestExtras(code, data)) {
-        return AVCS_ERR_OK;
-    }
+
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(syncMutex_ != nullptr, AVCS_ERR_INVALID_OPERATION, "sync mutex is nullptr");
     std::lock_guard<std::recursive_mutex> lock(*syncMutex_);
     if (!needListen_ || !CheckGeneration(data.ReadUint64())) {
@@ -235,25 +233,25 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
             return AVCS_ERR_OK;
         }
         default: {
-            AVCODEC_LOGE_WITH_TAG("Default case, please check codec listener stub");
-            return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
+            return OnRequestExtras(code, data, reply, option);
         }
     }
 }
 
-bool CodecListenerStub::OnRequestExtras(uint32_t code, MessageParcel &data)
+int CodecListenerStub::OnRequestExtras(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
 {
     switch (code) {
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_BINDED): {
             OnOutputBufferBinded(data);
-            return true;
+            return AVCS_ERR_OK;
         }
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_UN_BINDED): {
             OnOutputBufferUnbinded(data);
-            return true;
+            return AVCS_ERR_OK;
         }
         default: {
-            return false;
+            AVCODEC_LOGE_WITH_TAG("Default case, please check codec listener stub");
+            return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
         }
     }
 }
