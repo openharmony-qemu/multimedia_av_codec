@@ -23,7 +23,7 @@
 #include "fsurface_memory.h"
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AvCodec-FSurfaceMemory"};
-#define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
+#define DMA_BUF_SET_LEAK_TYPE _IOW(DMA_BUF_BASE, 5, const char *)
 }
 namespace OHOS {
 namespace MediaAVCodec {
@@ -127,7 +127,7 @@ void FSurfaceMemory::SetCallerToBuffer(int32_t w, int32_t h)
         mime = splitMime.back();
     }
     std::string name = std::to_string(w) + "x" + std::to_string(h) + "-" + mime + "-" + decInfo_.instanceId;
-    ioctl(fd, DMA_BUF_SET_TYPE, type.c_str());
+    ioctl(fd, DMA_BUF_SET_LEAK_TYPE, type.c_str());
     ioctl(fd, DMA_BUF_SET_NAME_A, name.c_str());
 }
 } // namespace MediaAVCodec
