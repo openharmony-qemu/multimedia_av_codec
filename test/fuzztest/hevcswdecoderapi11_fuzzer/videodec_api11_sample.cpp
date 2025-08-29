@@ -438,7 +438,7 @@ OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
     }
     OH_AVCodecBufferAttr attr;
     attr.pts = GetSystemTimeUs();
-    attr.size = bufferSize;
+    attr.size = size;
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
     OH_AVErrCode ret = OH_VideoDecoder_PushInputData(vdec_, index, attr);

@@ -20,38 +20,31 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "swdecoderservernormal_fuzzer"
-const size_t EXPECT_SIZE = 6;
-const size_t WIDTH_SIZE = 1;
-const size_t HEIGHT_SIZE = 2;
-const size_t FRAME_RATE_SIZE = 3;
-const size_t ROTATION_SIZE = 4;
-const size_t PIXELFORMAT_SIZE = 5;
+const size_t EXPECT_SIZE = 26;
 
 namespace OHOS {
 bool SwdecoderServerNormalFuzzTest(const uint8_t *data, size_t size)
 {
-    if (data == nullptr) {
-        return false;
-    }
     if (size < EXPECT_SIZE) {
         return false;
     }
+    FuzzedDataProvider fdp(data, size);
     VDecServerSample *vDecSample = new VDecServerSample();
-    vDecSample->defaultWidth = data[size - WIDTH_SIZE];
-    vDecSample->defaultHeight = data[size - HEIGHT_SIZE];
-    vDecSample->defaultFrameRate = data[size - FRAME_RATE_SIZE];
-    vDecSample->defaultRotation = data[size - ROTATION_SIZE];
-    vDecSample->defaultPixelFormat = data[size - PIXELFORMAT_SIZE];
-    if (vDecSample->defaultRotation % 2 == 0) { // 2
+    vDecSample->defaultWidth = fdp.ConsumeIntegral<uint32_t>();
+    vDecSample->defaultHeight = fdp.ConsumeIntegral<uint32_t>();
+    vDecSample->defaultFrameRate = fdp.ConsumeIntegral<uint32_t>();
+    vDecSample->defaultRotation = fdp.ConsumeIntegral<uint32_t>();
+    vDecSample->defaultPixelFormat = fdp.ConsumeIntegral<uint32_t>();
+    bool needRotation = fdp.ConsumeBool();
+    if (needRotation) {
         vDecSample->inpDir = "/data/test/media/720_1280_25_avcc.h265";
     } else {
         vDecSample->inpDir = "/data/test/media/720_1280_25_avcc.hdr.h265";
     }
-    if (vDecSample->defaultPixelFormat % 2 == 0) { // 2
-        vDecSample->isSurfMode = true;
-    } else {
-        vDecSample->isSurfMode = false;
-    }
+    vDecSample->isSurfMode = fdp.ConsumeBool();
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    vDecSample->fuzzData = remaining_data.data();
+    vDecSample->fuzzSize = remaining_data.size();
     vDecSample->RunVideoServerDecoder();
     vDecSample->NotifyMemoryRecycle();
     vDecSample->NotifyMemoryRecycle();

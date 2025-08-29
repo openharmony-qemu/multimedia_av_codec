@@ -356,11 +356,26 @@ int32_t VDecServerSample::SendData(uint32_t bufferSize, uint32_t index, std::sha
     return 0;
 }
 
+int32_t VDecServerSample::SendFuzzData(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    uint8_t *bufferAddr = buffer->memory_->GetAddr();
+    if (memcpy_s(bufferAddr, buffer->memory_->GetCapacity(), fuzzData, fuzzSize) != EOK) {
+        cout << "Fatal: memcpy fail" << endl;
+        isRunning_.store(false);
+        return 1;
+    }
+    buffer->pts_ = TIME;
+    buffer->flag_ = 0;
+    buffer->memory_->SetOffset(0);
+    buffer->memory_->SetSize(fuzzSize);
+    return codec_->QueueInputBuffer(index);
+}
+
 void VDecServerSample::InputFunc()
 {
     frameCount_ = 1;
     errCount = 0;
-    while (sendFrameIndex < MAX_SEND_FRAMES) {
+    while (true) {
         if (!isRunning_.load()) {
             break;
         }
@@ -380,6 +395,18 @@ void VDecServerSample::InputFunc()
         signal_->inIdxQueue_.pop();
         signal_->inBufferQueue_.pop();
         lock.unlock();
+        if (sendFrameIndex == MAX_SEND_FRAMES) {
+            int ret = SendFuzzData(index, buffer);
+            if (ret == 1) {
+                break;
+            }
+            sendFrameIndex++;
+            continue;
+        }
+        if (sendFrameIndex > MAX_SEND_FRAMES) {
+            SetEOS(index, buffer);
+            break;
+        }
         if (!inFile_->eof()) {
             int ret = ReadData(index, buffer);
             if (ret == 1) {

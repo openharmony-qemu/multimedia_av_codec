@@ -26,6 +26,7 @@ static VDecFuzzSample *g_vDecSample = nullptr;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
+const size_t EXPECT_SIZE = 64;
 namespace OHOS {
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
@@ -33,6 +34,9 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         return false;
     }
     if (!g_vDecSample) {
+        if (size < EXPECT_SIZE) {
+            return false;
+        }
         g_vDecSample = new VDecFuzzSample();
         FuzzedDataProvider fdp(data, size);
         int32_t bitrate = fdp.ConsumeIntegral<int32_t>();
