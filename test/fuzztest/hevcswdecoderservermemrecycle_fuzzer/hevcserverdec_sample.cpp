@@ -153,12 +153,6 @@ int32_t VDecServerSample::InitDecoder()
         cout << "SetCallback failed" << endl;
         return err;
     }
-    signal_ = std::make_shared<VDecSignal>();
-    if (signal_ == nullptr) {
-        cout << "Failed to new VDecSignal" << endl;
-        err = AVCS_ERR_NO_MEMORY;
-        return err;
-    }
     if (isSurfMode) {
         err = SetOutputSurface();
         if (err != AVCS_ERR_OK) {
@@ -171,6 +165,10 @@ int32_t VDecServerSample::InitDecoder()
 
 void VDecServerSample::RunVideoServerDecoder()
 {
+    signal_ = std::make_shared<VDecSignal>();
+    if (signal_ == nullptr) {
+        return;
+    }
     CreateHevcDecoderByName("OH.Media.Codec.Decoder.Video.HEVC", codec_);
     if (codec_ == nullptr) {
         cout << "Create failed" << endl;
