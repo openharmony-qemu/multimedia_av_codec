@@ -190,6 +190,11 @@ private:
     bool isAuthRequest_ {false};
     RequestProtocolType protocolType_ {RequestProtocolType::HTTP};
     int32_t bitRateToRequestSize_ {0};
+#ifdef SUPPORT_LIBCURL
+    bool hasHeadRequest_{true};
+#else
+    bool hasHeadRequest_{false};
+#endif
 };
 
 class Downloader {
