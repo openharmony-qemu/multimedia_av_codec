@@ -155,15 +155,8 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
             return Status::OK;
         }
         FALSE_RETURN_V_MSG(dataSrc_ != nullptr, Status::ERROR_WRONG_STATE, "dataSrc_ is nullptr!");
-        if (seekable_ == Plugins::Seekable::SEEKABLE) {
-            FALSE_RETURN_V(static_cast<int64_t>(offset_) <= size_, Status::END_OF_STREAM);
-            expectedLen = std::min(static_cast<size_t>(size_ - offset_), expectedLen);
-            expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
-            realLen = dataSrc_->ReadAt(static_cast<int64_t>(offset_), expectedLen, memory);
-        } else {
-            expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
-            realLen = dataSrc_->ReadAt(expectedLen, memory);
-        }
+        auto ret = ReadAt(memory, expectedLen, realLen);
+        FALSE_RETURN_V(ret == Status::OK, ret);
         FALSE_RETURN_V_MSG(realLen > MediaDataSourceError::SOURCE_ERROR_IO, Status::ERROR_UNKNOWN,
             "read data error! realLen:" PUBLIC_LOG_D32, realLen);
         FALSE_RETURN_V_MSG_W(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM, "eos reached!");
@@ -191,6 +184,20 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         ", retryTimes: " PUBLIC_LOG_U32, (buffer && buffer->GetMemory()) ?
         buffer->GetMemory()->GetSize() : -100, realLen, retryTimes_); // -100 invalid size
     FALSE_RETURN_V(realLen != 0, Status::ERROR_AGAIN);
+    return Status::OK;
+}
+
+Status DataStreamSourcePlugin::ReadAt(std::shared_ptr<AVSharedMemory> memory, size_t &expectedLen, int32_t &realLen)
+{
+    if (seekable_ == Plugins::Seekable::SEEKABLE) {
+        FALSE_RETURN_V(static_cast<int64_t>(offset_) <= size_, Status::END_OF_STREAM);
+        expectedLen = std::min(static_cast<size_t>(size_ - offset_), expectedLen);
+        expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
+        realLen = dataSrc_->ReadAt(static_cast<int64_t>(offset_), expectedLen, memory);
+    } else {
+        expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
+        realLen = dataSrc_->ReadAt(expectedLen, memory);
+    }
     return Status::OK;
 }
 

@@ -150,7 +150,7 @@ Status FileSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     MEDIA_LOG_D("IN");
     auto err = ParseFileName(source->GetSourceUri());
     if (err != Status::OK) {
-        MEDIA_LOG_E("Parse file name from uri fail, uri: %{private}s", source->GetSourceUri().c_str());
+        MEDIA_LOG_E("Parse file name from uri fail, uri: " PUBLIC_LOG_S, source->GetSourceUri().c_str());
         return err;
     }
     return OpenFile();
@@ -193,11 +193,7 @@ Status FileSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
         MEDIA_LOG_E("Read bufData GetWritableAddr fail");
         return Status::ERROR_NO_MEMORY;
     }
-    void* addr = bufData->GetWritableAddr(expectedLen);
-    if (addr == nullptr) {
-        return Status::ERROR_AGAIN;
-    }
-    auto size = std::fread(addr, sizeof(char), expectedLen, fp_);
+    auto size = std::fread(bufDataAddr, sizeof(char), expectedLen, fp_);
     bufData->UpdateDataSize(size);
     position_ += bufData->GetSize();
     MEDIA_LOG_DD("position_: " PUBLIC_LOG_U64 ", readSize: " PUBLIC_LOG_ZU, position_, bufData->GetSize());

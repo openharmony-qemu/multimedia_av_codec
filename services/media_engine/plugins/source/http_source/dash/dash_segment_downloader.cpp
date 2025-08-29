@@ -83,6 +83,7 @@ DashSegmentDownloader::DashSegmentDownloader(Callback *callback, int streamId, M
 
     downloadRequest_ = nullptr;
     mediaSegment_ = nullptr;
+    loopInterruptClock_.Reset();
     recordData_ = std::make_shared<RecordData>();
 }
 
@@ -500,8 +501,8 @@ bool DashSegmentDownloader::ReadInitSegment(uint8_t *buff, uint32_t wantReadLeng
         if (unReadSize > 0) {
             realReadLength = unReadSize > wantReadLength ? wantReadLength : unReadSize;
             std::string readStr = initSegment->content_.substr(initSegment->readIndex_);
-            CHECK_AND_RETURN_RET_LOG(wantReadLength <= VID_RING_BUFFER_SIZE, 1, "too large");
-            CHECK_AND_RETURN_RET_LOG(realReadLength <= VID_RING_BUFFER_SIZE, 1, "too large");
+            CHECK_AND_RETURN_RET_LOG(wantReadLength <= VID_RING_BUFFER_SIZE * BYTE_TO_BIT, 1, "too large");
+            CHECK_AND_RETURN_RET_LOG(realReadLength <= VID_RING_BUFFER_SIZE * BYTE_TO_BIT, 1, "too large");
             memcpy_s(buff, wantReadLength, readStr.c_str(), realReadLength);
             initSegment->readIndex_ += realReadLength;
             if (initSegment->readIndex_ == contentLen && initSegment->isDownloadFinish_) {
@@ -888,9 +889,16 @@ uint32_t DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len, bool notBl
         MEDIA_LOG_E("SaveData:error streamId:" PUBLIC_LOG_D32 ", len:" PUBLIC_LOG_D32, streamId_, len);
         return 0;
     }
+    UpdateMediaSegments(bufferTail, len);
+    return len;
+}
 
+void DashSegmentDownloader::UpdateMediaSegments(size_t bufferTail, uint32_t len)
+{
     std::lock_guard<std::mutex> lock(segmentMutex_);
+    int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
     for (const auto &mediaSegment: segmentList_) {
+        CheckLoopTimeout(loopStartTime);
         if (mediaSegment == nullptr || mediaSegment->isEos_) {
             continue;
         }
@@ -902,7 +910,6 @@ uint32_t DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len, bool notBl
         UpdateBufferSegment(mediaSegment, len);
         break;
     }
-    return len;
 }
 
 void DashSegmentDownloader::UpdateBufferSegment(const std::shared_ptr<DashBufferSegment> &mediaSegment, uint32_t len)
@@ -1033,11 +1040,11 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
     if (startPos >= 0 && endPos > 0) {
         requestWholeFile = false;
     }
-    RequestInfo mediaSouce;
-    mediaSouce.url = url;
-    mediaSouce.timeoutMs = HTTP_TIME_OUT_MS;
+    RequestInfo requestInfo;
+    requestInfo.url = url;
+    requestInfo.timeoutMs = HTTP_TIME_OUT_MS;
     downloadRequest_ = std::make_shared<DownloadRequest>(duration, dataSave_,
-                                                         realStatusCallback, mediaSouce, requestWholeFile);
+                                                         realStatusCallback, requestInfo, requestWholeFile);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest_->SetRequestProtocolType(RequestProtocolType::DASH);
     if (!requestWholeFile && (endPos > startPos)) {
@@ -1136,19 +1143,19 @@ std::shared_ptr<DashInitSegment> DashSegmentDownloader::GetDashInitSegment(int32
     return segment;
 }
 
-void DashSegmentDownloader::SetAppUid(int32_t appUid)
-{
-    if (downloader_) {
-        downloader_->SetAppUid(appUid);
-    }
-}
-
 void DashSegmentDownloader::SetInterruptState(bool isInterruptNeeded)
 {
     FALSE_RETURN(downloader_ != nullptr && buffer_ != nullptr);
     downloader_->SetInterruptState(isInterruptNeeded);
     if (isInterruptNeeded) {
         buffer_->SetActive(false);
+    }
+}
+
+void DashSegmentDownloader::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
     }
 }
 
@@ -1218,6 +1225,17 @@ bool DashSegmentDownloader::GetBufferingTimeOut()
         size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
         return now >= bufferingTime_ ? now - bufferingTime_ >= MAX_BUFFERING_TIME_OUT : false;
     }
+}
+
+bool DashSegmentDownloader::CheckLoopTimeout(int64_t startLoopTime)
+{
+    int64_t now = loopInterruptClock_.ElapsedSeconds();
+    int64_t loopDuration = now > startLoopTime ? now - startLoopTime : 0;
+    bool isLoopTimeOut = loopDuration > LOOP_TIMEOUT ? true : false;
+    if (isLoopTimeOut) {
+        MEDIA_LOG_E("loop timeout");
+    }
+    return isLoopTimeOut;
 }
 
 Status DashSegmentDownloader::StopBufferring(bool isAppBackground)

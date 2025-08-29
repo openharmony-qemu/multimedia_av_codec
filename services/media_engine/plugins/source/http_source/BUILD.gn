@@ -143,6 +143,7 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "media_foundation:media_foundation",
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
+    "netmanager_base:net_conn_manager_if",
   ]
 
   subsystem_name = "multimedia"

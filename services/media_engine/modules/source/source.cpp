@@ -133,6 +133,7 @@ Status Source::SetExtraCache(uint64_t cacheDuration)
 void Source::SetBundleName(const std::string& bundleName)
 {
     if (plugin_ != nullptr) {
+        MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
         plugin_->SetBundleName(bundleName);
     }
 }
@@ -543,12 +544,19 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
     return Status::ERROR_UNSUPPORTED_FORMAT;
 }
 
+bool Source::IsLocalFd()
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "IsLocalFd source plugin is nullptr");
+    return plugin_->IsLocalFd();
+}
+
 int64_t Source::GetDuration()
 {
-    FALSE_RETURN_V_MSG_W(seekToTimeFlag_, Plugins::HST_TIME_NONE, "Source GetDuration return -1 for isHls false.");
+    FALSE_RETURN_V_MSG_W(seekToTimeFlag_, Plugins::HST_TIME_NONE, "Source GetDuration return -1 for isHls false");
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, Plugins::HST_TIME_NONE, "Source GetDuration error, plugin_ is nullptr");
     int64_t duration;
     Status ret = plugin_->GetDuration(duration);
-    FALSE_RETURN_V_MSG_W(ret == Status::OK, Plugins::HST_TIME_NONE, "Source GetDuration from source plugin failed.");
+    FALSE_RETURN_V_MSG_W(ret == Status::OK, Plugins::HST_TIME_NONE, "Source GetDuration from source plugin failed");
     return duration;
 }
 
@@ -599,12 +607,6 @@ void Source::NotifyInitSuccess()
     plugin_->NotifyInitSuccess();
 }
 
-bool Source::IsLocalFd()
-{
-    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, false, "IsLocalFd source plugin is nullptr");
-    return plugin_->IsLocalFd();
-}
-
 uint64_t Source::GetCachedDuration()
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, 0, "plugin_ is nullptr");
@@ -623,16 +625,16 @@ bool Source::IsFlvLive()
     return plugin_->IsFlvLive();
 }
 
-uint64_t Source::GetMemorySize()
-{
-    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, 0, "plugin_ is nullptr");
-    return plugin_->GetMemorySize();
-}
-
 bool Source::IsHlsFmp4()
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");
     return plugin_->IsHlsFmp4();
+}
+
+uint64_t Source::GetMemorySize()
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, 0, "plugin_ is nullptr");
+    return plugin_->GetMemorySize();
 }
 
 Status Source::StopBufferring(bool isAppBackground)
