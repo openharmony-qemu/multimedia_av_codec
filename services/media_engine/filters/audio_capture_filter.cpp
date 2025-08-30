@@ -523,7 +523,7 @@ int32_t AudioCaptureFilter::FillLostFrameNum()
 {
     int64_t audioDataTime = 0;
     int32_t lostCount = 0;
-    int64_t cachedAudioDateTime = cachedAudioDataDeque_.size() * AUDIO_CAPTURE_READ_FRAME_TIME;
+    int64_t cachedAudioDateTime = static_cast<int64_t>(cachedAudioDataDeque_.size()) * AUDIO_CAPTURE_READ_FRAME_TIME;
     audioCaptureModule_->GetAudioTime(audioDataTime, false);
     if (audioDataTime > currentTime_ + cachedAudioDateTime
         && (audioDataTime - currentTime_ - cachedAudioDateTime) > static_cast<int64_t>(AUDIO_UNREGULAR_DELTA_TIME)
@@ -581,11 +581,18 @@ void AudioCaptureFilter::RecordCachedData(int32_t recordFrameNum)
     uint64_t bufferSize = 0;
     audioCaptureModule_->GetSize(bufferSize);
 
-    std::lock_guard<std::mutex> lock(cachedAudioDataMutex_);
-    MEDIA_LOG_I("cachedAudioDataList count: " PUBLIC_LOG_D32, static_cast<int32_t>(cachedAudioDataDeque_.size()));
-    while (!cachedAudioDataDeque_.empty() && outputBufferQueue_ && recordFrameNum > 0) {
-        auto tmpData = cachedAudioDataDeque_.front();
-        cachedAudioDataDeque_.pop_front();
+    std::deque<std::shared_ptr<uint8_t>> tempDataDeque;
+    {
+        std::lock_guard<std::mutex> lock(cachedAudioDataMutex_);
+        MEDIA_LOG_I("cachedAudioDataList count: " PUBLIC_LOG_D32, static_cast<int32_t>(cachedAudioDataDeque_.size()));
+        auto endIt = cachedAudioDataDeque_.begin()
+            + std::min(recordFrameNum, static_cast<int32_t>(cachedAudioDataDeque_.size()));
+        tempDataDeque.assign(cachedAudioDataDeque_.begin(), endIt);
+        cachedAudioDataDeque_.erase(cachedAudioDataDeque_.begin(), endIt);
+    }
+    while (!tempDataDeque.empty() && outputBufferQueue_ && recordFrameNum > 0) {
+        auto tmpData = tempDataDeque.front();
+        tempDataDeque.pop_front();
 
         std::shared_ptr<AVBuffer> buffer;
         AVBufferConfig avBufferConfig;
