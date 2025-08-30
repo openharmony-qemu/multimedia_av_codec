@@ -1172,7 +1172,7 @@ void FFmpegFormatHelper::ParseColorBoxInfo(const AVFormatContext& avFormatContex
         format.Set<Tag::VIDEO_COLOR_PRIMARIES>(colorPrimaries);
         format.Set<Tag::VIDEO_COLOR_RANGE>((bool)(parse.colorRange));
     } else {
-        MEIDA_LOG_D("Parse colorPri from xps failed");
+        MEDIA_LOG_D("Parse colorPri from xps failed");
     }
 
     TransferCharacteristic colorTrans = FFMpegConverter::ConvertFFMpegToOHColorTrans(
@@ -1180,7 +1180,7 @@ void FFmpegFormatHelper::ParseColorBoxInfo(const AVFormatContext& avFormatContex
     if (colorTrans != TransferCharacteristic::UNSPECIFIED) {
         format.Set<Tag::VIDEO_COLOR_TRC>(colorTrans);
     } else {
-        MEIDA_LOG_D("Parse colorTrc from xps failed");
+        MEDIA_LOG_D("Parse colorTrc from xps failed");
     }
 
     MatrixCoefficient colorMatrix = FFMpegConverter::ConvertFFMpegToOHColorMatrix(
@@ -1188,7 +1188,7 @@ void FFmpegFormatHelper::ParseColorBoxInfo(const AVFormatContext& avFormatContex
     if (colorMatrix != MatrixCoefficient::UNSPECIFIED) {
         format.Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(colorMatrix);
     } else {
-        MEIDA_LOG_D("Parse colorMatrix from xps failed");
+        MEDIA_LOG_D("Parse colorMatrix from xps failed");
     }
 
     ChromaLocation chromaLoc = FFMpegConverter::ConvertFFMpegToOHChromaLocation(
@@ -1196,7 +1196,7 @@ void FFmpegFormatHelper::ParseColorBoxInfo(const AVFormatContext& avFormatContex
     if (chromaLoc != ChromaLocation::UNSPECIFIED) {
         format.Set<Tag::VIDEO_CHROMA_LOCATION>(chromaLoc);
     } else {
-        MEIDA_LOG_D("Parse chromaLoc from xps failed");
+        MEDIA_LOG_D("Parse chromaLoc from xps failed");
     }
 }
 
