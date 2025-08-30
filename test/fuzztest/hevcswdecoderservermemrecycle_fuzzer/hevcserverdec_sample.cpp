@@ -384,10 +384,7 @@ void VDecServerSample::InputFunc()
 {
     frameCount_ = 1;
     errCount = 0;
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() {
             if (!isRunning_.load()) {

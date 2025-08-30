@@ -26,15 +26,11 @@
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
-const size_t EXPECT_SIZE = 20;
 static VDecFuzzSample *g_vDecSample = nullptr;
 
 namespace OHOS {
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
-    if (size < EXPECT_SIZE) {
-        return false;
-    }
     FuzzedDataProvider fdp(data, size);
     if (!g_vDecSample) {
         g_vDecSample = new VDecFuzzSample();
