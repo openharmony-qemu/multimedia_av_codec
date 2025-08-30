@@ -150,6 +150,7 @@ std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader
     if (iter != segmentDownloaders_.end()) {
         segmentDownloader = *iter;
     }
+
     return segmentDownloader;
 }
 
@@ -398,6 +399,9 @@ void DashMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
 void DashMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("Dash SetDownloadErrorState");
+    if (callback_) {
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "download"});
+    }
     downloadErrorState_ = true;
 }
 
@@ -1218,16 +1222,16 @@ bool DashMediaDownloader::GetPlayable()
     }
 }
 
+bool DashMediaDownloader::GetBufferingTimeOut()
+{
+    return false;
+}
+
 void DashMediaDownloader::SetAppUid(int32_t appUid)
 {
     for (size_t i = 0; i < segmentDownloaders_.size(); i++) {
         segmentDownloaders_[i]->SetAppUid(appUid);
     }
-}
-
-bool DashMediaDownloader::GetBufferingTimeOut()
-{
-    return false;
 }
 
 void DashMediaDownloader::NotifyInitSuccess()

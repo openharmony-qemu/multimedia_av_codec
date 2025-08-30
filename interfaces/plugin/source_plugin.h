@@ -232,9 +232,9 @@ public:
         return Status::OK;
     }
 
-    virtual Status SelectStream(int32_t streamID)
+    virtual bool IsLocalFd()
     {
-        return Status::OK;
+        return false;
     }
 
     virtual Status Pause()
@@ -246,7 +246,10 @@ public:
     {
         return Status::OK;
     }
-
+    virtual Status SelectStream(int32_t streamID)
+    {
+        return Status::OK;
+    }
     virtual void SetEnableOnlineFdCache(bool isEnableFdCache)
     {
         (void)isEnableFdCache;
@@ -275,10 +278,6 @@ public:
 
     virtual void NotifyInitSuccess() {}
 
-    virtual bool IsLocalFd()
-    {
-        return false;
-    }
     virtual uint64_t GetCachedDuration()
     {
         return 0;
@@ -288,10 +287,6 @@ public:
     {
         return false;
     }
-    virtual uint64_t GetMemorySize()
-    {
-        return 0;
-    }
     virtual std::string GetContentType()
     {
         return "";
@@ -299,6 +294,10 @@ public:
     virtual bool IsHlsFmp4()
     {
         return false;
+    }
+    virtual uint64_t GetMemorySize()
+    {
+        return 0;
     }
 };
 

@@ -128,13 +128,13 @@ FileFdSourcePlugin::FileFdSourcePlugin(std::string name)
 
 FileFdSourcePlugin::~FileFdSourcePlugin()
 {
-    MEDIA_LOG_D("~FileFdSourcePlugin in.");
+    MEDIA_LOG_I("~FileFdSourcePlugin in.");
     steadyClock_.Reset();
     SetInterruptState(true);
-    MEDIA_LOG_D("~FileFdSourcePlugin isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
+    MEDIA_LOG_I("~FileFdSourcePlugin isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
     FALSE_RETURN_MSG(downloadTask_ != nullptr, "~FileFdSourcePlugin out.");
     downloadTask_->Stop();
-    MEDIA_LOG_D("~FileFdSourcePlugin out.");
+    MEDIA_LOG_I("~FileFdSourcePlugin out.");
 }
 
 Status FileFdSourcePlugin::SetCallback(Callback* cb)
@@ -153,7 +153,7 @@ Status FileFdSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
         return err;
     }
     CheckFileType();
-    if (isCloudFile_) {
+    if (isCloudFile_ && isEnableFdCache_) {
         ringBuffer_ = std::make_shared<RingBuffer>(CACHE_SIZE);
         FALSE_RETURN_V_MSG_E(!(ringBuffer_ == nullptr || !ringBuffer_->Init()),
             Status::ERROR_NO_MEMORY, "memory is not enough ringBuffer_");
