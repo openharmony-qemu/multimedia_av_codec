@@ -26,6 +26,7 @@
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
+
 static VDecFuzzSample *g_vDecSample = nullptr;
 
 namespace OHOS {
