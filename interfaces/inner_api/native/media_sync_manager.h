@@ -84,6 +84,7 @@ public:
 
     void SetLastVideoBufferAbsPts(int64_t lastVideoBufferAbsPts) override;
     int64_t GetLastVideoBufferAbsPts() const override;
+    void ReportStreamEos();
 private:
     enum class State {
         RESUMED,
