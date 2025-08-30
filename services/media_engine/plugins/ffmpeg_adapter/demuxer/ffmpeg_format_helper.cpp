@@ -1164,7 +1164,7 @@ void FFmpegFormatHelper::ParseColorBoxInfo(const AVStream& avStream, Meta &forma
     format.Set<Tag::VIDEO_CHROMA_LOCATION>(chromaLoc);
 }
 
-void ParseColorBoxInfo(const AVFormatContext& avFormatContext, HevcParseFormat parse, Meta &format)
+void FFmpegFormatHelper::ParseColorBoxInfo(const AVFormatContext& avFormatContext, HevcParseFormat parse, Meta &format)
 {
     ColorPrimary colorPrimaries = FFMpegConverter::ConvertFFMpegToOHColorPrimaries(
         static_cast<AVColorPrimaries>(parse.colorPrimaries));
