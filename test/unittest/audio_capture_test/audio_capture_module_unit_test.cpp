@@ -137,7 +137,7 @@ public:
  * @tc.desc: create source with fd, mp4
  * @tc.type: FUNC
  */
-HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureInit_1000, TestSize.Level1)
+HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureInit_1000, TestSize.Level0)
 {
     audioCaptureModule_->SetAudioSource(AudioStandard::SourceType::SOURCE_TYPE_MIC);
     std::shared_ptr<Meta> audioCaptureFormat = std::make_shared<Meta>();
@@ -157,7 +157,7 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureInit_1000, TestSize.Level1)
     ASSERT_TRUE(ret == Status::OK);
 }
 
-HWTEST_F(AudioCaptureModuleUnitTest, AudioCapturePrepare_1000, TestSize.Level1)
+HWTEST_F(AudioCaptureModuleUnitTest, AudioCapturePrepare_1000, TestSize.Level0)
 {
     audioCaptureModule_->SetAudioSource(AudioStandard::SourceType::SOURCE_TYPE_MIC);
     std::shared_ptr<Meta> audioCaptureFormat = std::make_shared<Meta>();
@@ -179,7 +179,7 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCapturePrepare_1000, TestSize.Level1)
     ASSERT_TRUE(ret == Status::OK);
 }
 
-HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureStart_1000, TestSize.Level1)
+HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureStart_1000, TestSize.Level0)
 {
     audioCaptureModule_->SetAudioSource(AudioStandard::SourceType::SOURCE_TYPE_MIC);
     std::shared_ptr<Meta> audioCaptureFormat = std::make_shared<Meta>();
