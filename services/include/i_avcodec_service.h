@@ -32,7 +32,7 @@ namespace MediaAVCodec {
 class IAVCodecService {
 public:
     virtual ~IAVCodecService() = default;
-    
+
     /**
     * @brief Get freeze status message from suspend manager.
     *
