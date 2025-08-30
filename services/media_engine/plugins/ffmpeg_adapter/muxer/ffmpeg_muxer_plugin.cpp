@@ -286,6 +286,7 @@ Status FFmpegMuxerPlugin::SetParameter(const std::shared_ptr<Meta> &param)
 {
     Status ret = Status::NO_ERROR;
     int32_t dataInt = 0;
+    std::string dataStr;
     if (param->GetData("fast_start", dataInt) && dataInt == 1) {
         isFastStart_ = true;
         MEDIA_LOG_I("fast start for moov");
@@ -293,6 +294,10 @@ Status FFmpegMuxerPlugin::SetParameter(const std::shared_ptr<Meta> &param)
     if (param->GetData("use_timed_meta_track", dataInt) && dataInt == 1) {
         useTimedMetadata_ = true;
         MEDIA_LOG_I("use timed metadata track");
+    }
+    if (param->GetData(Tag::MEDIA_AIGC, dataStr) && dataStr.size() > 0) {
+        isAigc_ = true;
+        MEDIA_LOG_I("include aigc");
     }
     ret = SetRotation(param);
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter failed");
@@ -360,6 +365,7 @@ Status FFmpegMuxerPlugin::SetMetaData(std::shared_ptr<Meta> param)
         {Tag::MEDIA_AUTHOR, "author"},
         {Tag::MEDIA_COMPOSER, "composer"},
         {Tag::MEDIA_CREATION_TIME, "creation_time"},
+        {Tag::MEDIA_AIGC, "aigc"},
     };
     av_dict_set(&formatContext_->metadata, "creation_time", "now", 0);
     for (auto& key: table) {
@@ -831,6 +837,9 @@ Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const std::shared_ptr<Me
 void FFmpegMuxerPlugin::HandleOptions(std::string& optionName)
 {
     std::vector<std::string> options {};
+    if (isAigc_) {
+        options.push_back("aigc");
+    }
     if (canReadFile_ && isFastStart_) {
         options.push_back("faststart");
     }
