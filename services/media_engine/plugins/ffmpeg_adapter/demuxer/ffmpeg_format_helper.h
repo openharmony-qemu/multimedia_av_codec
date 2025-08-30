@@ -88,6 +88,7 @@ private:
     static void ParseAuxiliaryTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseHvccBoxInfo(const AVStream& avStream, Meta &format);
     static void ParseColorBoxInfo(const AVStream& avStream, Meta &format);
+    static void ParseColorBoxInfo(const AVFormatContext& avFormatContext, HevcParseFormat parse, Meta &format);
 
     static void ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format);
 
