@@ -143,7 +143,16 @@ int32_t VDecServerSample::SetOutputSurface()
 
 int32_t VDecServerSample::InitDecoder()
 {
-    int32_t err = ConfigServerDecoder();
+    int32_t err;
+    Media::Meta codecInfo;
+    int32_t instanceid = 0;
+    codecInfo.SetData("av_codec_event_info_instance_id", instanceid);
+    err = codec_->Init(codecInfo);
+    if (err != AVCS_ERR_OK) {
+        cout << "decoder Init failed!" << endl;
+        return err;
+    }
+    err = ConfigServerDecoder();
     if (err != AVCS_ERR_OK) {
         cout << "ConfigServerDecoder failed" << endl;
         return err;
@@ -364,7 +373,7 @@ int32_t VDecServerSample::SendFuzzData(uint32_t index, std::shared_ptr<AVBuffer>
         isRunning_.store(false);
         return 1;
     }
-    buffer->pts_ = TIME;
+    buffer->pts_ = GetSystemTimeUs();
     buffer->flag_ = 0;
     buffer->memory_->SetOffset(0);
     buffer->memory_->SetSize(fuzzSize);

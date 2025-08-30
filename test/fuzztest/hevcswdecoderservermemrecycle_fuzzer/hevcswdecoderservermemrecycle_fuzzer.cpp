@@ -15,6 +15,7 @@
 #include <cstddef>
 #include <cstdint>
 #include "hevcserverdec_sample.h"
+#include <fuzzer/FuzzedDataProvider.h>
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;

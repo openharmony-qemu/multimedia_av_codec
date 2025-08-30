@@ -40,7 +40,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         g_vDecSample = new VDecFuzzSample();
         g_vDecSample->defaultWidth = fdp.ConsumeIntegral<uint32_t>();
         g_vDecSample->defaultHeight = fdp.ConsumeIntegral<uint32_t>();
-        g_vDecSample->defaultFrameRate = fdp.ConsumeFloatingPoint<uint32_t>();
+        g_vDecSample->defaultFrameRate = fdp.ConsumeFloatingPoint<double>();
         g_vDecSample->enbleBlankFrame = fdp.ConsumeIntegral<int>();
         g_vDecSample->CreateVideoDecoder();
         g_vDecSample->ConfigureVideoDecoder();

@@ -375,7 +375,7 @@ int32_t VDecServerSample::SendFuzzData(uint32_t index, std::shared_ptr<AVBuffer>
         isRunning_.store(false);
         return 1;
     }
-    buffer->pts_ = TIME;
+    buffer->pts_ = GetSystemTimeUs();
     buffer->flag_ = 0;
     buffer->memory_->SetOffset(0);
     buffer->memory_->SetSize(fuzzSize);
@@ -406,7 +406,7 @@ void VDecServerSample::InputFunc()
         signal_->inIdxQueue_.pop();
         signal_->inBufferQueue_.pop();
         lock.unlock();
-        if (sendFrameIndex == MAX_SEND_FRAMES) {
+        if (sendFrameIndex == SEND_MAX_FRAMES) {
             int ret = SendFuzzData(index, buffer);
             if (ret == 1) {
                 break;
@@ -414,7 +414,7 @@ void VDecServerSample::InputFunc()
             sendFrameIndex++;
             continue;
         }
-        if (sendFrameIndex > MAX_SEND_FRAMES) {
+        if (sendFrameIndex > SEND_MAX_FRAMES) {
             SetEOS(index, buffer);
             break;
         }
