@@ -28,72 +28,61 @@ SurfaceTools &SurfaceTools::GetInstance()
     return instance;
 }
 
-bool SurfaceTools::RegisterReleaseListener(std::string producerName, sptr<Surface> surface, OnReleaseFunc callback,
-    int32_t instanceId, OHSurfaceSource type)
+bool SurfaceTools::RegisterReleaseListener(int32_t instanceId, sptr<Surface> surface, OnReleaseFunc callback,
+    OHSurfaceSource type)
 {
-    CHECK_AND_RETURN_RET_LOGW(!producerName.empty() && surface != nullptr, false, "Unexpected param");
+    CHECK_AND_RETURN_RET_LOGW(surface != nullptr, false, "Unexpected param");
 
     uint64_t id = surface->GetUniqueId();
     std::lock_guard<std::mutex> lock(mutex_);
     GSError err = surface->RegisterReleaseListener(callback);
     if (err != GSERROR_OK) {
-        AVCODEC_LOGE("Register Listener failed, GSError=%{public}d, producerName=%{public}s, id=%{public}" PRIu64,
-            err, producerName.c_str(), id);
+        AVCODEC_LOGE("Register Listener failed, GSError=%{public}d, instanceId=%{public}d, id=%{public}" PRIu64,
+            err, instanceId, id);
         return false;
     }
-    AVCODEC_LOGI("producerName=%{public}s register listener to surface id=%{public}" PRIu64,
-        producerName.c_str(), id);
+    AVCODEC_LOGI("instanceId=%{public}d register listener to surface id=%{public}" PRIu64,
+        instanceId, id);
     surface->SetSurfaceSourceType(type);
-    surfaceProducerMap_[id] = std::pair<std::string, int32_t>(producerName, instanceId);
+    surfaceProducerMap_[id] = instanceId;
     return true;
 }
 
-void SurfaceTools::CleanCache(std::string producerName, sptr<Surface> surface, bool cleanAll)
+void SurfaceTools::CleanCache(int32_t instanceId, sptr<Surface> surface, bool cleanAll)
 {
-    if (producerName.empty() || surface == nullptr) {
+    if (surface == nullptr) {
         return;
     }
     uint64_t id = surface->GetUniqueId();
     std::lock_guard<std::mutex> lock(mutex_);
     auto iter = surfaceProducerMap_.find(id);
-    if (iter != surfaceProducerMap_.end() && iter->second.first == producerName) {
+    if (iter != surfaceProducerMap_.end() && iter->second == instanceId) {
         surface->CleanCache(cleanAll);
-        AVCODEC_LOGI("producerName=%{public}s CleanCache to surface id=%{public}" PRIu64,
-            producerName.c_str(), id);
+        AVCODEC_LOGI("instanceId=%{public}d CleanCache to surface id=%{public}" PRIu64,
+            instanceId, id);
     }
 }
 
-void SurfaceTools::ReleaseSurface(std::string producerName, sptr<Surface> surface, bool cleanAll, bool abadon)
+void SurfaceTools::ReleaseSurface(int32_t instanceId, sptr<Surface> surface, bool cleanAll, bool abadon)
 {
-    if (producerName.empty() || surface == nullptr) {
+    if (surface == nullptr) {
         return;
     }
     uint64_t id = surface->GetUniqueId();
     std::lock_guard<std::mutex> lock(mutex_);
     auto iter = surfaceProducerMap_.find(id);
-    if (iter != surfaceProducerMap_.end() && iter->second.first == producerName) {
+    if (iter != surfaceProducerMap_.end() && iter->second == instanceId) {
         surface->CleanCache(cleanAll);
-        AVCODEC_LOGI("producerName=%{public}s CleanCache to surface id=%{public}" PRIu64,
-            producerName.c_str(), id);
+        AVCODEC_LOGI("instanceId=%{public}d CleanCache to surface id=%{public}" PRIu64,
+            instanceId, id);
         surface->UnRegisterReleaseListener();
-        AVCODEC_LOGI("producerName=%{public}s UnRegisterReleaseListener to surface id=%{public}" PRIu64,
-            producerName.c_str(), id);
+        AVCODEC_LOGI("instanceId=%{public}d UnRegisterReleaseListener to surface id=%{public}" PRIu64,
+            instanceId, id);
         surface->SetSurfaceSourceType(OHSurfaceSource::OH_SURFACE_SOURCE_DEFAULT);
         if (abadon) {
             surfaceProducerMap_.erase(iter);
         }
     }
-}
-
-std::optional<std::pair<std::string, int32_t>> SurfaceTools::GetCurProducerInfo(uint64_t surfaceId)
-{
-    std::optional<std::pair<std::string, int32_t>> info = std::nullopt;
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto iter = surfaceProducerMap_.find(surfaceId);
-    if (iter != surfaceProducerMap_.end()) {
-        info = iter->second;
-    }
-    return info;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
