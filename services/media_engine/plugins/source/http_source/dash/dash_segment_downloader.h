@@ -167,8 +167,8 @@ public:
     void GetIp(std::string& ip);
     bool GetDownloadFinishState();
     std::pair<int64_t, int64_t> GetDownloadRecordData();
-    void SetAppUid(int32_t appUid);
     void SetInterruptState(bool isInterruptNeeded);
+    void SetAppUid(int32_t appUid);
     uint32_t GetBufferSize() const;
     bool GetBufferringStatus() const;
     uint32_t GetCachedPercent();
@@ -209,6 +209,8 @@ private:
     void DoBufferingEndEvent();
     bool GetBufferingTimeOut();
     bool IsNeedBufferForPlaying();
+    void UpdateMediaSegments(size_t bufferTail, uint32_t len);
+    bool CheckLoopTimeout(int64_t startLoopTime);
 
 private:
     static constexpr uint32_t MIN_RETENTION_DURATION_MS = 5 * 1000;
@@ -265,6 +267,7 @@ private:
     std::atomic<bool> isDemuxerInitSuccess_ {false};
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     std::atomic<bool> canWrite_{true};
+    SteadyClock loopInterruptClock_;
 };
 }
 }
