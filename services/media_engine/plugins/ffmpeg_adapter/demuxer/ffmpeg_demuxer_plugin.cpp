@@ -1129,7 +1129,9 @@ AVIOContext* FFmpegDemuxerPlugin::AllocAVIOContext(int flags, IOContext *ioConte
     FALSE_RETURN_V_MSG_E(buffer != nullptr, nullptr, "Call av_malloc failed");
 
     AVIOContext* avioContext = avio_alloc_context(
-        buffer, DEFAULT_READ_SIZE, flags & AVIO_FLAG_WRITE, static_cast<void*>(ioContext),
+        buffer, DEFAULT_READ_SIZE,
+        static_cast<int>(static_cast<uint32_t>(flags) & static_cast<uint32_t>(AVIO_FLAG_WRITE)),
+        static_cast<void*>(ioContext),
         AVReadPacket, AVWritePacket, AVSeek);
     if (avioContext == nullptr) {
         MEDIA_LOG_E("Call avio_alloc_context failed");
