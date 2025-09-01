@@ -1223,9 +1223,9 @@ void HDecoder::SurfaceItem::Release(bool cleanAll)
         LOGI("release surface(%" PRIu64 ")", surface_->GetUniqueId());
         {
             std::shared_lock<std::shared_mutex> lk(g_cbMtx);
-             if (g_xperfCb) {
-                 g_xperfCb->EndToUse(surface_->GetUniqueId());
-             }
+            if (g_xperfCb) {
+                g_xperfCb->EndToUse(surface_->GetUniqueId());
+            }
         }
         if (originalTransform_.has_value()) {
             surface_->SetTransform(originalTransform_.value());
@@ -1401,7 +1401,7 @@ void HDecoder::ReportRenderFirstFrame()
              "#BUNDLE_NAME:" << caller_.app.processName <<
              "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
              "#FPS:" << codecRate_ <<
-             "#REPORT_INTERVAL:" << 300;
+             "#REPORT_INTERVAL:" << 300;  // 300ms
         string str = s.str();
         OHOS::HiviewDFX::XperfServiceClient::GetInstance().NotifyToXperf(
             OHOS::HiviewDFX::DomainId::AVCODEC, OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_FIRST_FRAME_START, str);
@@ -1514,7 +1514,7 @@ void HDecoder::GetJankReason(const TimePoint& now, OMX_DIRTYPE port,
         HLOGD("port=%d, owner %s, now %" PRId64 ", average %f",
             port, ownerStr, holdTotalTime[owner], holdTotalTimeAve);
         double increasePercent = (holdTotalTimeNow - holdTotalTimeAve) / holdTotalTimeAve;
-        if (increasePercent <= 0.2 || increasePercent <= maxPercent) {
+        if (increasePercent <= 0.2 || increasePercent <= maxPercent) { // 0.2: threshold
             continue;
         }
         HLOGD("port=%d, owner %s, increasePercent %f", port, ownerStr, increasePercent);
