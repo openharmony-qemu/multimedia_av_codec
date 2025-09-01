@@ -30,13 +30,10 @@ const size_t EXPECT_SIZE = 64;
 namespace OHOS {
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
-    if (size < sizeof(int64_t)) {
+    if (size < EXPECT_SIZE) {
         return false;
     }
     if (!g_vDecSample) {
-        if (size < EXPECT_SIZE) {
-            return false;
-        }
         g_vDecSample = new VDecFuzzSample();
         FuzzedDataProvider fdp(data, size);
         int32_t bitrate = fdp.ConsumeIntegral<int32_t>();
