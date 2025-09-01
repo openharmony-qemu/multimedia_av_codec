@@ -121,6 +121,7 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
   external_deps = [
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
+    "hicollie:libhicollie",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "init:libbegetutil",
