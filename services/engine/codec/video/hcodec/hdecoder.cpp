@@ -14,6 +14,9 @@
  */
 
 #include "hdecoder.h"
+#include <numeric>
+#include <limits>
+#include <sstream>
 #include <cassert>
 #include <sstream>
 #include "hdf_base.h"
@@ -32,6 +35,9 @@
 namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace CodecHDI;
+
+std::shared_mutex HDecoder::g_cbMtx;
+sptr<HDecoder::XperfCallback> HDecoder::g_xperfCb = nullptr;
 
 HDecoder::~HDecoder()
 {
@@ -904,6 +910,17 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
         HLOGE("surface(%" PRIu64 "), RegisterReleaseListener failed", surfaceId);
         return AVCS_ERR_UNKNOWN;
     }
+    std::unique_lock<std::shared_mutex> lk(g_cbMtx);
+    if (g_xperfCb == nullptr) {
+        g_xperfCb = sptr<XperfCallback>::MakeSptr();
+        int regret = OHOS::HiviewDFX::XperfServiceClient::GetInstance().RegisterVideoJank("avcodec", g_xperfCb);
+        if (regret != 0) {
+            g_xperfCb = nullptr;
+        }
+    }
+    if (g_xperfCb != nullptr) {
+        g_xperfCb->BeginToUse(surfaceId, weakThis);
+    }
     return AVCS_ERR_OK;
 }
 
@@ -1106,6 +1123,7 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
               currSurface_.surface_->GetUniqueId(), info.surfaceBuffer->GetSeqNum(), err);
         return AVCS_ERR_UNKNOWN;
     }
+    ReportRenderFirstFrame();
     ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE);
     return AVCS_ERR_OK;
 }
@@ -1203,6 +1221,12 @@ void HDecoder::SurfaceItem::Release(bool cleanAll)
 {
     if (surface_) {
         LOGI("release surface(%" PRIu64 ")", surface_->GetUniqueId());
+        {
+            std::shared_lock<std::shared_mutex> lk(g_cbMtx);
+            if (g_xperfCb) {
+                g_xperfCb->EndToUse(surface_->GetUniqueId());
+            }
+        }
         if (originalTransform_.has_value()) {
             surface_->SetTransform(originalTransform_.value());
             originalTransform_ = std::nullopt;
@@ -1366,5 +1390,141 @@ int32_t HDecoder::VrrPrediction(BufferInfo &info)
     return AVCS_ERR_OK;
 }
 #endif
+
+void HDecoder::ReportRenderFirstFrame()
+{
+    if (!currSurface_.firstFrameRendered_) {
+        currSurface_.firstFrameRendered_ = true;
+        std::stringstream s;
+        s << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
+             "#PID:" << caller_.app.pid <<
+             "#BUNDLE_NAME:" << caller_.app.processName <<
+             "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
+             "#FPS:" << codecRate_ <<
+             "#REPORT_INTERVAL:" << 300;  // 300ms
+        string str = s.str();
+        OHOS::HiviewDFX::XperfServiceClient::GetInstance().NotifyToXperf(
+            OHOS::HiviewDFX::DomainId::AVCODEC, OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_FIRST_FRAME_START, str);
+    }
+}
+ 
+void HDecoder::XperfCallback::BeginToUse(uint64_t surfaceId, std::weak_ptr<MsgToken> token)
+{
+    std::lock_guard<std::mutex> lk(mtx_);
+    surfaceIdToCodec_[surfaceId] = token;
+}
+ 
+void HDecoder::XperfCallback::EndToUse(uint64_t surfaceId)
+{
+    std::lock_guard<std::mutex> lk(mtx_);
+    surfaceIdToCodec_.erase(surfaceId);
+}
+ 
+ErrCode HDecoder::XperfCallback::OnVideoJankEvent(const std::string& msg)
+{
+    LOGD("msg=%s", msg.c_str());
+    std::string sub = "#UNIQUEID:";
+    auto pos = msg.find(sub);
+    if (pos == std::string::npos) {
+        LOGW("cannot find #UNIQUEID:");
+        return 0;
+    }
+    uint64_t surfaceId = strtoull(msg.substr(pos + sub.length()).c_str(), nullptr, 10);
+    std::lock_guard<std::mutex> lk(mtx_);
+    auto it = surfaceIdToCodec_.find(surfaceId);
+    if (it == surfaceIdToCodec_.end()) {
+        LOGW("cannot find surfaceId=%" PRIu64, surfaceId);
+        return 0;
+    }
+    std::shared_ptr<MsgToken> codec = it->second.lock();
+    if (codec == nullptr) {
+        LOGW("codec is gone");
+        return 0;
+    }
+    codec->SendAsyncMsg(MsgWhat::QUERY_JANK_REASON, nullptr);
+    return 0;
+}
+ 
+void HDecoder::OnQueryJankReason()
+{
+    HLOGI(">>");
+    if (currSurface_.surface_ == nullptr) {
+        return;
+    }
+    auto now = chrono::steady_clock::now();
+    double maxPercent = 0;
+    using namespace OHOS::HiviewDFX;
+    AvcodecFaultCode fault = AvcodecFaultCode::AVCODEC_NONE;
+    string reason = "unknown";
+    GetJankReason(now, OMX_DirInput, maxPercent, fault, reason);
+    GetJankReason(now, OMX_DirOutput, maxPercent, fault, reason);
+    HLOGI("reason %s", reason.c_str());
+    if (fault == AvcodecFaultCode::AVCODEC_NONE) {
+        return;
+    }
+    std::stringstream s;
+    s << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
+         "#PID:" << caller_.app.pid <<
+         "#BUNDLE_NAME:" << caller_.app.processName <<
+         "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
+         "#FAULT_ID:" << OHOS::HiviewDFX::DomainId::AVCODEC <<
+         "#FAULT_CODE:" << fault <<
+         "#JANK_REASON:" << reason;
+    string str = s.str();
+    OHOS::HiviewDFX::XperfServiceClient::GetInstance().NotifyToXperf(
+        OHOS::HiviewDFX::DomainId::AVCODEC, OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_JANK_REPORT, str);
+}
+ 
+void HDecoder::GetJankReason(const TimePoint& now, OMX_DIRTYPE port,
+    double& maxPercent, OHOS::HiviewDFX::AvcodecFaultCode& fault, std::string& reason)
+{
+    bool eos = (port == OMX_DirInput) ? inputPortEos_ : outputPortEos_;
+    if (eos) {
+        return;
+    }
+    IntervalAverage ave;
+    if (!CalculateInterval(now, port, ave)) {
+        return;
+    }
+    PrintAllBufferInfo(now, port);
+    string portStr = (port == OMX_DirInput) ? "input" : "output";
+    using namespace OHOS::HiviewDFX;
+    static std::array<AvcodecFaultCode, OWNER_CNT> inCode = { HCODEC_HOLD_INPUT_TOO_MORE, USER_HOLD_INPUT_TOO_MORE,
+        HAL_HOLD_INPUT_TOO_MORE, AVCODEC_NONE };
+    static std::array<AvcodecFaultCode, OWNER_CNT> outCode = { HCODEC_HOLD_OUTPUT_TOO_MORE, USER_HOLD_OUTPUT_TOO_MORE,
+        HAL_HOLD_OUTPUT_TOO_MORE, CONSUMER_HOLD_OUTPUT_TOO_MORE };
+    const std::array<AvcodecFaultCode, OWNER_CNT>& faultArr = (port == OMX_DirInput) ? inCode : outCode;
+    const vector<BufferInfo>& pool = (port == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
+    std::array<uint64_t, OWNER_CNT> holdTotalTime;
+    holdTotalTime.fill(0);
+    for (const BufferInfo& info : pool) {
+        int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
+        if (holdMs < 0) {
+            continue;
+        }
+        holdTotalTime[info.owner] += static_cast<uint64_t>(holdMs);
+    }
+    for (uint32_t owner = 0; owner < static_cast<uint32_t>(OWNER_CNT); owner++) {
+        const char* ownerStr = ToString(static_cast<BufferOwner>(owner));
+        double holdTotalTimeNow = static_cast<double>(holdTotalTime[owner]);
+        double holdTotalTimeAve = ave.holdCnt[owner] * ave.holdMs[owner];
+        if (holdTotalTimeNow <= holdTotalTimeAve) {
+            continue;
+        }
+        HLOGD("port=%d, owner %s, now %" PRId64 ", average %f",
+            port, ownerStr, holdTotalTime[owner], holdTotalTimeAve);
+        double increasePercent = (holdTotalTimeNow - holdTotalTimeAve) / holdTotalTimeAve;
+        if (increasePercent <= 0.2 || increasePercent <= maxPercent) { // 0.2: threshold
+            continue;
+        }
+        HLOGD("port=%d, owner %s, increasePercent %f", port, ownerStr, increasePercent);
+        maxPercent = increasePercent;
+        fault = faultArr[owner];
+        std::stringstream s;
+        s << ownerStr << " hold " << portStr << " too more";
+        reason = s.str();
+    }
+}
+
 // LCOV_EXCL_STOP
 } // namespace OHOS::MediaAVCodec
