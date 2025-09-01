@@ -1567,7 +1567,7 @@ GSError FCodec::BufferReleasedByConsumer(uint64_t surfaceId)
 void FCodec::UnRegisterListenerToSurface(const sptr<Surface> &surface)
 {
     CHECK_AND_RETURN_LOG(surface != nullptr, "Surface is null, not need to unregister listener.");
-    SurfaceTools::GetInstance().ReleaseSurface(decName_, surface, false);
+    SurfaceTools::GetInstance().ReleaseSurface(instanceId_, surface, false);
 }
 
 int32_t FCodec::RegisterListenerToSurface(const sptr<Surface> &surface)
@@ -1575,14 +1575,15 @@ int32_t FCodec::RegisterListenerToSurface(const sptr<Surface> &surface)
     uint64_t surfaceId = surface->GetUniqueId();
     wptr<FCodec> wp = this;
     bool ret =
-        SurfaceTools::GetInstance().RegisterReleaseListener(decName_, surface, [wp, surfaceId](sptr<SurfaceBuffer> &) {
-            sptr<FCodec> codec = wp.promote();
-            if (!codec) {
-                AVCODEC_LOGD("decoder is gone");
-                return GSERROR_OK;
-            }
-            return codec->BufferReleasedByConsumer(surfaceId);
-        }, instanceId_);
+        SurfaceTools::GetInstance().RegisterReleaseListener(instanceId_, surface,
+            [wp, surfaceId](sptr<SurfaceBuffer> &) {
+                sptr<FCodec> codec = wp.promote();
+                if (!codec) {
+                    AVCODEC_LOGD("decoder is nullptr");
+                    return GSERROR_OK;
+                }
+                return codec->BufferReleasedByConsumer(surfaceId);
+            });
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_UNKNOWN, "surface(%" PRIu64 ") register listener failed", surfaceId);
     StartRequestSurfaceBufferThread();
     return AVCS_ERR_OK;

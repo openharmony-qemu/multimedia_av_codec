@@ -144,9 +144,9 @@ const char *OH_MD_KEY_CREATION_TIME = "creation_time";
 const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS = "video_encoder_roi_params";
 const char *OH_MD_KEY_ENABLE_MOOV_FRONT = "fast_start";
 const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_PTS_BASED_RATECONTROL = "video_encoder_enable_pts_based_ratecontrol";
+const char *OH_MD_KEY_ENABLE_SYNC_MODE = "enable_sync_mode";
 const char *OH_MD_KEY_VIDEO_ENCODER_MAX_B_FRAMES = "video_encoder_max_b_frame";
 const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME = "video_encoder_enable_b_frame";
-const char *OH_MD_KEY_ENABLE_SYNC_MODE = "enable_sync_mode";
 const char *OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN = "video_decoder_blank_frame_on_shutdown";
 #ifdef __cplusplus
 }

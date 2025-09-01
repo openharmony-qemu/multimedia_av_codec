@@ -626,8 +626,8 @@ public:
     static constexpr std::string_view AUDIO_AC3 = "audio/ac3";
     static constexpr std::string_view AUDIO_VIVID = "audio/av3a";
     static constexpr std::string_view AUDIO_AVS3DA = "audio/av3a";
-    static constexpr std::string_view AUDIO_LBVC = "audio/lbvc";
     static constexpr std::string_view AUDIO_APE = "audio/x-ape";
+    static constexpr std::string_view AUDIO_LBVC = "audio/lbvc";
     static constexpr std::string_view IMAGE_JPG = "image/jpeg";
     static constexpr std::string_view IMAGE_PNG = "image/png";
     static constexpr std::string_view IMAGE_BMP = "image/bmp";

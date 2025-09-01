@@ -39,8 +39,8 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_G711MU = "audio/g711mu";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_G711A = "audio/g711a";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_L2HC = "audio/l2hc";
-    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_LBVC = "audio/lbvc";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_APE = "audio/x-ape";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_LBVC = "audio/lbvc";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_COOK = "audio/cook";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_AC3 = "audio/ac3";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_RAW = "audio/raw";
@@ -98,6 +98,6 @@ private:
     AVCodecMimeType() = delete;
     ~AVCodecMimeType() = delete;
 };
-}  // namespace MediaAVCodec
-}  // namespace OHOS
-#endif  // MEDIA_AVCODEC_MIME_TYPE_H
+} // namespace MediaAVCodec
+} // namespace OHOS
+#endif // MEDIA_AVCODEC_MIME_TYPE_H
