@@ -212,7 +212,7 @@ bool FFmpegDemuxerPlugin::ShouldWaitForRead(uint32_t trackId)
 
 Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t timeout)
 {
-    FALSE_RETURN_V_MSG_E(readThread_!= nullptr, Status::ERROR_UNKNOWN, "Read thread is nullptr");
+    FALSE_RETURN_V_MSG_E(readThread_ != nullptr, Status::ERROR_UNKNOWN, "Read thread is nullptr");
     if (ShouldWaitForRead(trackId)) {
         isWaitingForReadThread_.store(true);
         if (threadState_ == READING) {
