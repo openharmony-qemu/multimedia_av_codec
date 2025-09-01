@@ -62,7 +62,6 @@ ohos_shared_library("hevc_decoder") {
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "init:libbegetutil",
-    "ipc:ipc_single",
     "media_foundation:media_foundation",
   ]
 
