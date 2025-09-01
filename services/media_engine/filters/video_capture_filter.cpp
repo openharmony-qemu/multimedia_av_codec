@@ -103,6 +103,7 @@ VideoCaptureFilter::VideoCaptureFilter(std::string name, FilterType type): Filte
 VideoCaptureFilter::~VideoCaptureFilter()
 {
     MEDIA_LOG_I("video capture filter destroy");
+    inputSurface_->UnregisterConsumerListener();
 }
 
 Status VideoCaptureFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
