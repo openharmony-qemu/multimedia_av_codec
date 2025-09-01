@@ -38,7 +38,8 @@
 #include "ffmpeg_demuxer_plugin.h"
 #include "meta/format.h"
 #include "syspara/parameters.h"
-
+#include "xcollie/xcollie.h"
+#include "xcollie/xcollie_define.h"
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegDemuxerPlugin" };
 }
@@ -70,6 +71,7 @@ const char* PLUGIN_NAME_MPEGPS = "mpeg";
 const uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 const int32_t MPEGPS_START_CODE_SIZE = 4;
 const uint8_t MPEGPS_START_CODE[] = {0x00, 0x00, 0x01, 0xBA};
+const uint32_t SETTIMER_TIMEOUT = 5; // second
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -1268,6 +1270,8 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         std::lock_guard<std::mutex> initLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::INIT;
     }
+    auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_setdatasource", SETTIMER_TIMEOUT,
+        nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
     InitIoContextInDemuxer(source);
     {
         std::lock_guard<std::mutex> glock(g_mtx);
@@ -1305,6 +1309,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         ResetContext();
         ioContext_.initErrorAgain = false;
     }
+    HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return Status::OK;
 }
 
@@ -1971,6 +1976,7 @@ static bool IsEnableSeekTimeCalib(const std::shared_ptr<AVFormatContext> &format
 Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime)
 {
     (void) trackId;
+    Status ret = Status::OK;
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MediaAVCodec::AVCodecTrace trace("SeekTo");
 
@@ -1989,10 +1995,11 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         MEDIA_LOG_E("Get start time from track " PUBLIC_LOG_D32 " failed", trackIndex);
         return Status::ERROR_INVALID_OPERATION;
     }
-
+    auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_seek", SETTIMER_TIMEOUT,
+        nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
     if (IsEnableSeekTimeCalib(formatContext_) && seekCalibMap_.count(trackIndex) > 0) {
         int64_t calibTime = ffTime - seekCalibMap_[trackIndex];
-        auto ret = DoSeekInternal(trackIndex, seekTime, calibTime, mode, realSeekTime);
+        ret = DoSeekInternal(trackIndex, seekTime, calibTime, mode, realSeekTime);
         if (ret == Status::OK) {
             return ret;
         }
@@ -2002,8 +2009,9 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     if (IsUseFirstFrameDts(trackIndex, seekTime)) {
         ffTime = videoFirstFrameMap_[trackIndex]->dts;
     }
-    
-    return DoSeekInternal(trackIndex, seekTime, ffTime, mode, realSeekTime);
+    ret = DoSeekInternal(trackIndex, seekTime, ffTime, mode, realSeekTime);
+    HiviewDFX::XCollie::GetInstance().CancelTimer(id);
+    return ret;
 }
 
 Status FFmpegDemuxerPlugin::Flush()
@@ -2099,6 +2107,8 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     }
     readModeMap_[0] = 1;
     Status ret;
+    auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_read", SETTIMER_TIMEOUT,
+        nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
     if (NeedCombineFrame(trackId) && cacheQueue_.GetCacheSize(trackId) == 1) {
         ret = ReadPacketToCacheQueue(trackId);
     }
@@ -2108,6 +2118,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         bool frameReady = FrameReady(ret);
         FALSE_RETURN_V_MSG_E(frameReady, ret, "Read from ffmpeg failed");
     }
+    HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
     auto samplePacket = cacheQueue_.Front(trackId);
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER, "Cache packet is nullptr");
