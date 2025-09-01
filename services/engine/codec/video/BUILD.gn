@@ -57,6 +57,7 @@ ohos_static_library("av_codec_video_loader") {
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
+    "ipc:ipc_single",
     "media_foundation:media_foundation",
   ]
 
