@@ -103,6 +103,7 @@ protected:
         SUBMIT_DYNAMIC_IF_EOS,
         CHECK_IF_STUCK,
         FORCE_SHUTDOWN,
+        QUERY_JANK_REASON,
     };
 
     enum BufferOperationMode {
@@ -234,6 +235,7 @@ protected:
     void OnPrintAllBufferOwner(const MsgInfo& msg);
     void PrintAllBufferInfo();
     std::string OnGetHidumperInfo();
+    virtual void OnQueryJankReason() {}
 
     void PrintAllBufferInfo(const TimePoint& now, OMX_DIRTYPE port);
     void UpdateHoldCnt(const TimePoint& now, OMX_DIRTYPE port, BufferOwner owner);

@@ -35,6 +35,9 @@ void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
             codec_->PostReply(info.id, reply);
             return;
         }
+        case MsgWhat::QUERY_JANK_REASON:
+            codec_->OnQueryJankReason();
+            return;
         case MsgWhat::CODEC_EVENT: {
             OnCodecEvent(info);
             return;
