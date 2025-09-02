@@ -192,6 +192,12 @@
             <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
+    <target name="DemuxerM2tsAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
 	<target name="DemuxerM3u8FuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/"/>
@@ -252,6 +258,12 @@
             <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
+    <target name="DemuxerMtsAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
 	<target name="DemuxerOggFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/"/>
@@ -271,6 +283,12 @@
         </preparer>
 	</target>
     <target name="DemuxerSrtAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
+    <target name="DemuxerTrpAPI11FuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/"/>
             <option name="shell" value="restorecon /data/test/"/>
