@@ -21,7 +21,6 @@
 
 namespace {
 const std::string HEVC_LIB_PATH = "libav_codec_hevc_parser.z.so";
-const std::string VVC_LIB_PATH = "libav_codec_vvc_parser.z.so";
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "StreamParserManager" };
 }
 
@@ -182,7 +181,11 @@ void StreamParserManager::ResetXPSSendStatus()
 
 void *StreamParserManager::LoadPluginFile(const std::string &path)
 {
-    auto ptr = ::dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
+    char canonicalPath[PATH_MAX] = {0};
+    char *realPathRet = realpath(path.c_str(), canonicalPath);
+    FALSE_RETURN_V_MSG_E(realPathRet != nullptr, nullptr, "Failed to normalize path: %{public}s.", path.c_str());
+
+    void *ptr = ::dlopen(canonicalPath, RTLD_NOW | RTLD_LOCAL);
     FALSE_RETURN_V_MSG_E(ptr != nullptr, ptr, "Dlopen failed due to %{public}s", ::dlerror());
     return ptr;
 }
