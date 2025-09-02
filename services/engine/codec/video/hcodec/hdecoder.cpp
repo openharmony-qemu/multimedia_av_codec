@@ -194,8 +194,8 @@ int32_t HDecoder::UpdateOutPortFormat()
     GetCropFromOmx(w, h, damage);
     outBufferCnt_ = def.nBufferCountActual;
     requestCfg_.timeout = 0; // never wait when request
-    requestCfg_.width = isNeedUseDecResolution ? def.format.video.nFrameWidth : damage.w;
-    requestCfg_.height = isNeedUseDecResolution ? def.format.video.nFrameHeight : damage.h;
+    requestCfg_.width = isNeedUseDecResolution ?  static_cast<int32_t>(def.format.video.nFrameWidth) : damage.w;
+    requestCfg_.height = isNeedUseDecResolution ? static_cast<int32_t>(def.format.video.nFrameHeight) : damage.h;
     requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
     requestCfg_.format = configuredFmt_.graphicFmt;
     requestCfg_.usage = GetProducerUsage();
