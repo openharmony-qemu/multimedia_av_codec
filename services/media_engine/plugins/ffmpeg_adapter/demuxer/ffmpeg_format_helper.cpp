@@ -676,7 +676,8 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap[std::string(valPtr->value)]);
         }
     }
-    if (GetFileTypeByName(avFormatContext) == FileType::MP4) {
+    FileType fileType = GetFileTypeByName(avFormatContext);
+    if (fileType == FileType::MP4 || fileType == FileType::MOV) {
         ParseOrientationFromMatrix(avStream, format);
     }
 
