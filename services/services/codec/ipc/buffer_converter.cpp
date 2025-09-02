@@ -29,6 +29,7 @@ using GraphicPixelFormat = OHOS::GraphicPixelFormat;
 using VideoPixelFormat = OHOS::MediaAVCodec::VideoPixelFormat;
 constexpr int32_t OFFSET_2 = 0x02;
 constexpr int32_t OFFSET_3 = 0x03;
+constexpr int32_t OFFSET_4 = 0x04;
 constexpr int32_t OFFSET_15 = 0x0F;
 constexpr int32_t OFFSET_16 = 0x10;
 VideoPixelFormat TranslateSurfaceFormat(GraphicPixelFormat surfaceFormat)
@@ -59,7 +60,7 @@ int32_t ConvertYUV420SP(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t 
     AVCodecRect &dstRect = rects[0];
     AVCodecRect &srcRect = rects[1];
     AVCodecRect &rect = rects[2]; // 2: index
-    int32_t dstSize = (OFFSET_3 * dstRect.wStride * dstRect.hStride) >> 1;
+    int32_t dstSize = (OFFSET_3 * dstRect.wStride * dstRect.hStride) / OFFSET_2;
     int32_t ret;
     CHECK_AND_RETURN_RET_LOG(dstSize <= capacity, 0, "No memory. dstSize:%{public}d, capacity:%{public}d", dstSize,
                              capacity);
@@ -73,7 +74,7 @@ int32_t ConvertYUV420SP(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t 
     // padding
     dst += (dstRect.hStride - rect.hStride) * dstRect.wStride;
     src += (srcRect.hStride - rect.hStride) * srcRect.wStride;
-    rect.hStride >>= 1;
+    rect.hStride /= OFFSET_2;
     // UV
     for (int32_t i = 0; i < rect.hStride; ++i) {
         ret = memcpy_s(dst, dstRect.wStride, src, rect.wStride);
@@ -89,7 +90,7 @@ int32_t ConvertYUV420P(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t c
     AVCodecRect &dstRect = rects[0];
     AVCodecRect &srcRect = rects[1];
     AVCodecRect &rect = rects[2]; // 2: index
-    int32_t dstSize = (OFFSET_3 * dstRect.wStride * dstRect.hStride) >> 1;
+    int32_t dstSize = (OFFSET_3 * dstRect.wStride * dstRect.hStride) / OFFSET_2;
     int32_t ret;
     CHECK_AND_RETURN_RET_LOG(dstSize <= capacity, 0, "No memory. dstSize:%{public}d, capacity:%{public}d", dstSize,
                              capacity);
@@ -101,12 +102,12 @@ int32_t ConvertYUV420P(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t c
         src += srcRect.wStride;
     }
     // padding
-    const int32_t dstWidth = dstRect.wStride >> 1;
-    const int32_t srcWidth = srcRect.wStride >> 1;
+    const int32_t dstWidth = dstRect.wStride / OFFSET_2;
+    const int32_t srcWidth = srcRect.wStride / OFFSET_2;
     const int32_t dstPadding = (dstRect.hStride - rect.hStride) * dstRect.wStride;
     const int32_t srcPadding = (srcRect.hStride - rect.hStride) * srcRect.wStride;
-    rect.hStride >>= 1;
-    rect.wStride >>= 1;
+    rect.hStride /= OFFSET_2;
+    rect.wStride /= OFFSET_2;
     dst += dstPadding;
     src += srcPadding;
     // U
@@ -117,8 +118,8 @@ int32_t ConvertYUV420P(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t c
         src += srcWidth;
     }
     // padding
-    dst += dstPadding >> OFFSET_2;
-    src += srcPadding >> OFFSET_2;
+    dst += (dstPadding / OFFSET_4);
+    src += (srcPadding / OFFSET_4);
     // V
     for (int32_t i = 0; i < rect.hStride; ++i) {
         ret = memcpy_s(dst, dstWidth, src, rect.wStride);
@@ -344,24 +345,12 @@ void BufferConverter::SetPixFormat(const VideoPixelFormat pixelFormat)
 
 inline void BufferConverter::SetWidth(const int32_t width)
 {
-    rect_.wStride = width;
-    int32_t modVal = width & OFFSET_15;
-    if (modVal) {
-        usrRect_.wStride = width + OFFSET_16 - modVal;
-    } else {
-        usrRect_.wStride = width;
-    }
+    rect_.wStride = ((width + OFFSET_15) / OFFSET_16) * OFFSET_16;
 }
 
 inline void BufferConverter::SetHeight(const int32_t height)
 {
-    rect_.hStride = height;
-    int32_t modVal = height & OFFSET_15;
-    if (modVal) {
-        usrRect_.hStride = height + OFFSET_16 - modVal;
-    } else {
-        usrRect_.hStride = height;
-    }
+    rect_.hStride = ((height + OFFSET_15) / OFFSET_16) * OFFSET_16;
 }
 
 inline void BufferConverter::SetWidthStride(const int32_t wStride)
@@ -426,8 +415,7 @@ bool BufferConverter::SetRectValue(const int32_t width, const int32_t height, co
 
 inline int32_t BufferConverter::CalculateUserStride(const int32_t widthHeight)
 {
-    int32_t modVal = widthHeight & OFFSET_15;
-    return modVal ? (widthHeight + OFFSET_16 - modVal) : widthHeight;
+    return ((widthHeight + OFFSET_15) / OFFSET_16) * OFFSET_16;
 }
 
 int32_t BufferConverter::GetSliceHeightFromSurfaceBuffer(sptr<SurfaceBuffer> &surfaceBuffer) const
