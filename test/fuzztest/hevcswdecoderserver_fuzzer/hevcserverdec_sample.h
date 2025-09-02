@@ -52,6 +52,7 @@ public:
     void Flush();
     void Stop();
     void Reset();
+    void Start();
     void InputFunc();
     void WaitForEos();
     std::shared_ptr<VDecSignal> signal_;

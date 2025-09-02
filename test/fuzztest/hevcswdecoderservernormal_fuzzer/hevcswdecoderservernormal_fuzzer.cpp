@@ -14,14 +14,14 @@
  */
 #include <cstddef>
 #include <cstdint>
-#include "hevcserverdec_sample.h"
 #include <fuzzer/FuzzedDataProvider.h>
+#include "hevcserverdec_sample.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "swdecoderservernormal_fuzzer"
-const size_t EXPECT_SIZE = 6;
+const size_t EXPECT_SIZE = 26;
 
 namespace OHOS {
 bool SwdecoderServerNormalFuzzTest(const uint8_t *data, size_t size)
@@ -31,25 +31,25 @@ bool SwdecoderServerNormalFuzzTest(const uint8_t *data, size_t size)
     }
     FuzzedDataProvider fdp(data, size);
     VDecServerSample *vDecSample = new VDecServerSample();
-    vDecSample->defaultWidth = std::clamp(fdp.ConsumeIntegral<uint32_t>(), 176u, 4096u);
-    vDecSample->defaultHeight = std::clamp(fdp.ConsumeIntegral<uint32_t>(), 176u, 4096u);
-    vDecSample->defaultFrameRate = std::clamp(fdp.ConsumeIntegral<uint32_t>(), 1u, 1000u);
+    vDecSample->defaultWidth = std::clamp(fdp.ConsumeIntegral<uint32_t>(), 2u, 1920u);
+    vDecSample->defaultHeight = std::clamp(fdp.ConsumeIntegral<uint32_t>(), 2u, 1920u);
+    vDecSample->defaultFrameRate = std::clamp(fdp.ConsumeIntegral<uint32_t>(), 1u, 30u);
     std::vector<uint32_t> rotations = {0, 90, 180, 270};
     size_t index = fdp.ConsumeIntegralInRange<uint32_t>(0, rotations.size() - 1);
     vDecSample->defaultRotation = rotations[index];
     std::vector<uint32_t> pixelFormats = {1, 2, 3, 4, 5};
     size_t pfIndex = fdp.ConsumeIntegralInRange<uint32_t>(0, pixelFormats.size() - 1);
     vDecSample->defaultPixelFormat = pixelFormats[pfIndex];
-    if (vDecSample->defaultRotation % 2 == 0) { // 2
+    bool needRotation = fdp.ConsumeBool();
+    if (needRotation) {
         vDecSample->inpDir = "/data/test/media/720_1280_25_avcc.h265";
     } else {
         vDecSample->inpDir = "/data/test/media/720_1280_25_avcc.hdr.h265";
     }
-    if (vDecSample->defaultPixelFormat % 2 == 0) { // 2
-        vDecSample->isSurfMode = true;
-    } else {
-        vDecSample->isSurfMode = false;
-    }
+    vDecSample->isSurfMode = fdp.ConsumeBool();
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    vDecSample->fuzzData = remaining_data.data();
+    vDecSample->fuzzSize = remaining_data.size();
     vDecSample->RunVideoServerDecoder();
     vDecSample->WaitForEos();
     delete vDecSample;

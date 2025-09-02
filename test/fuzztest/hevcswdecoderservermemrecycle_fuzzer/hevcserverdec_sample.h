@@ -70,12 +70,14 @@ public:
     int32_t SetOutputSurface();
     int32_t InitDecoder();
     std::shared_ptr<VDecSignal> signal_;
-    bool repeatRun = false;
+    bool repeatRun = true;
     bool isSurfMode = false;
     int32_t sendFrameIndex = 0;
     std::atomic<bool> isEOS_ { false };
     std::vector<sptr<Surface>> cs_vector;
     std::vector<sptr<Surface>> ps_vector;
+    const uint8_t *fuzzData = nullptr;
+    size_t fuzzSize = 0;
 protected:
     std::shared_ptr<CodecBase> codec_;
     std::atomic<bool> isRunning_ { false };
@@ -99,6 +101,7 @@ private:
     void CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, std::shared_ptr<AVBuffer> buffer);
     int32_t ReadData(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     int32_t SendData(uint32_t bufferSize, uint32_t index, std::shared_ptr<AVBuffer> buffer);
+    int32_t SendFuzzData(uint32_t index, std::shared_ptr<AVBuffer> buffer);
 };
 
 class ConsumerListener : public IBufferConsumerListener {
