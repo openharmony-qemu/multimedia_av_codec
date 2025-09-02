@@ -14,10 +14,10 @@
  */
 #include <cstddef>
 #include <cstdint>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "native_avcodec_base.h"
 #include "native_avformat.h"
 #include "videodec_sample.h"
-#include <fuzzer/FuzzedDataProvider.h>
 #define FUZZ_PROJECT_NAME "hevcswdecodersetparameter_fuzzer"
 using namespace std;
 using namespace OHOS;
