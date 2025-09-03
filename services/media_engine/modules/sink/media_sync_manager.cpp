@@ -465,16 +465,20 @@ void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
     if (supplier == nullptr) {
         return;
     }
-    OHOS::Media::AutoLock lock(clockMutex_);
     if (IsSupplierValid(supplier) && supplier->GetPriority() >= currentSyncerPriority_) {
         currentSyncerPriority_ = IMediaSynchronizer::NONE;
-        if (isSeeking_) {
-            MEDIA_LOG_I_SHORT("reportEos leaving seeking_");
-            isSeeking_ = false;
-            seekCond_.notify_all();
-        }
     }
 }
+ 
+void MediaSyncManager::ReportStreamEos()
+{
+    OHOS::Media::AutoLock lock(clockMutex_);
+    FALSE_RETURN_NOLOG(isSeeking_);
+    MEDIA_LOG_I_SHORT("reportEos leaving seeking_");
+    isSeeking_ = false;
+    seekCond_.notify_all();
+}
+
 void MediaSyncManager::SetLastVideoBufferAbsPts(int64_t lastVideoBufferAbsPts)
 {
     MEDIA_LOG_D("SetLastVideoBufferAbsPts " PUBLIC_LOG_D64, lastVideoBufferAbsPts);
