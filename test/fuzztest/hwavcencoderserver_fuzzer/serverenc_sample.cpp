@@ -12,12 +12,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "serverenc_sample.h"
 #include <arpa/inet.h>
+#include <chrono>
+#include <iostream>
 #include <sys/time.h>
 #include <utility>
-#include "serverenc_sample.h"
-#include <iostream>
-#include <chrono>
+
+#ifdef HMOS_TEST
+#include "v1_0/ihmi_interface.h"
+static auto g_hmi = OHOS::HDI::Hmi::V1_0::IHmiInterface::Get(false);
+#endif
+
 using namespace OHOS;
 using namespace OHOS::HDI;
 using namespace OHOS::Media;
