@@ -64,7 +64,7 @@ HWTEST_F(AttributeUnitTest, HLS_TAGS_HexSequence_0001, TestSize.Level1)
     EXPECT_EQ(res.size(), 0);
 }
 
-HWTEST_F(AttributeUnitTest, HLS_TAGS_GetByteRange_0001, TestSize.Level1)
+HWTEST_F(AttributeUnitTest, HLS_TAGS_GetByteRange_0001, TestSize.Level0)
 {
     std::pair<std::size_t, std::size_t> range = attribute->GetByteRange();
     EXPECT_GE(range.first, 0);
@@ -78,7 +78,7 @@ HWTEST_F(AttributeUnitTest, HLS_TAGS_GetResolution_0001, TestSize.Level1)
     EXPECT_GE(sol.second, 0);
 }
 
-HWTEST_F(AttributeUnitTest, GetName, TestSize.Level1)
+HWTEST_F(AttributeUnitTest, GetName, TestSize.Level0)
 {
     Attribute attr("name", "value");
     EXPECT_EQ(attr.GetName(), "name");
