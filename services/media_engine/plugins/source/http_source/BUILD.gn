@@ -75,12 +75,6 @@ ohos_static_library("media_plugin_HttpSource_static") {
   branch_protector_ret = "pac_ret"
   sanitize = av_codec_sanitize
 
-  if (av_codec_support_libcurl) {
-    defines = [
-      "SUPPORT_LIBCURL",
-    ]
-  }
-
   configs = [
     ":http_source_plugin_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
