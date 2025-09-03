@@ -541,9 +541,8 @@ std::optional<double> HCodec::GetOperatingRateFromUser(const Format &format)
     return nullopt;
 }
 
-bool HCodec::CheckBufPixFmt(const sptr<SurfaceBuffer>& buffer)
+bool HCodec::CheckBufPixFmt(int32_t dispFmt)
 {
-    int32_t dispFmt = buffer->GetFormat();
     const std::vector<int32_t>& supportFmts = caps_.port.video.supportPixFmts;
     if (std::find(supportFmts.begin(), supportFmts.end(), dispFmt) == supportFmts.end()) {
         LOGE("unsupported buffer pixel format %d", dispFmt);
