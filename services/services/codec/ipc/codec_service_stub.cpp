@@ -444,7 +444,6 @@ int32_t CodecServiceStub::SetLowPowerPlayerMode(bool isLpp)
 
 int32_t CodecServiceStub::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
-    // shared lock in QueueInputBuffer(MessageParcel &data, MessageParcel &reply)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->QueueInputBuffer(index, info, flag);
 }
@@ -477,7 +476,6 @@ int32_t CodecServiceStub::ReleaseOutputBuffer(uint32_t index, bool render)
 
 int32_t CodecServiceStub::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
 {
-    // shared lock in RenderOutputBufferAtTime(MessageParcel &data, MessageParcel &reply)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->RenderOutputBufferAtTime(index, renderTimestampNs);
 }
