@@ -205,11 +205,7 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
     RequestInfo requestInfo;
     requestInfo.url = defaultStream_ != nullptr ? defaultStream_->url : url;
     requestInfo.httpHeader = httpHeader;
-#ifdef SUPPORT_LIBCURL
     downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
-#else
-    downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo, false, false);
-#endif
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloader_->Download(downloadRequest_, -1); // -1
     if (isRingBuffer_) {

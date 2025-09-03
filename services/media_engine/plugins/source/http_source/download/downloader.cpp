@@ -75,9 +75,9 @@ DownloadRequest::DownloadRequest(const std::string& url,
 }
 
 DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo requestInfo,
-                                 bool requestWholeFile, bool hasHeadRequest)
+                                 bool requestWholeFile)
     : saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)), requestInfo_(requestInfo),
-    requestWholeFile_(requestWholeFile), hasHeadRequest_(hasHeadRequest)
+    requestWholeFile_(requestWholeFile)
 {
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
     headerInfo_.fileContentLen = 0;
@@ -587,11 +587,7 @@ bool Downloader::BeginDownload()
         client_->Open(url, httpHeader, timeoutMs);
     }
 
-    if (!currentRequest_->hasHeadRequest_) {
-        currentRequest_->startPos_ = 0;
-        currentRequest_->requestSize_ = -1;
-        currentRequest_->hasHeadRequest_ = true;
-    } else if (currentRequest_->endPos_ <= 0) {
+    if (currentRequest_->endPos_ <= 0) {
         currentRequest_->startPos_ = 0;
         currentRequest_->requestSize_ = FIRST_REQUEST_SIZE;
     } else {
@@ -780,11 +776,6 @@ void Downloader::HandleRetOK()
 {
     if (currentRequest_->retryTimes_ > 0) {
         currentRequest_->retryTimes_ = 0;
-    }
-    if (currentRequest_->requestSize_ == -1) {
-        currentRequest_->requestSize_ = FIRST_REQUEST_SIZE;
-        currentRequest_->isHeaderUpdated_ = false;
-        return;
     }
     if (currentRequest_->headerInfo_.isChunked && requestQue_->Empty()) {
         currentRequest_->isEos_ = true;
@@ -1035,8 +1026,7 @@ bool Downloader::HandleContentRange(HeaderInfo* info, char* key, char* next, siz
         if (info->fileContentLen > 0 && info->fileContentLen != fileLen) {
             MEDIA_LOG_E("FileContentLen doesn't equal to fileLen");
         }
-        MEDIA_LOG_I("content-range %{public}zu, %{public}zu", info->fileContentLen, fileLen);
-        if (info->fileContentLen < fileLen) {
+        if (info->fileContentLen == 0) {
             info->fileContentLen = fileLen;
         }
     }
