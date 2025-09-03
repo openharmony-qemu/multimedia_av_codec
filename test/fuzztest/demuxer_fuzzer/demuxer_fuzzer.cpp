@@ -48,6 +48,7 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;
+        close(fd);        
         return false;
     }
     fdp->ConsumeData(pstream, framesize);
