@@ -354,7 +354,7 @@ std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate,
     } else {
         codecConfig = {0, 0, 0x56, 0xE5, 0};
         codecConfig[0] = ((profileVal + 1) << 0x03) | ((sampleRateIndex & 0x0F) >> 0x01);
-        codecConfig[1] = ((sampleRateIndex & 0x01) << 0x07) | ((static_cast<uint32_t>(channels) & 0x0F) << 0x03);
+        codecConfig[1] = ((sampleRateIndex & 0x01) << 0x07) | ((channels & 0x0F) << 0x03);
     }
 
     return codecConfig;
