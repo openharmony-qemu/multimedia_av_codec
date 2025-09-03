@@ -688,8 +688,6 @@ int32_t CodecServiceStub::SetLowPowerPlayerMode(MessageParcel &data, MessageParc
 
 int32_t CodecServiceStub::QueueInputBuffer(MessageParcel &data, MessageParcel &reply)
 {
-    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
-
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec listener is nullptr");
     uint32_t index = data.ReadUint32();
