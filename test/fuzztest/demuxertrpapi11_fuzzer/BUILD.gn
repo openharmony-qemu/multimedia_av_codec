@@ -38,8 +38,7 @@ ohos_fuzztest("DemuxerTrpAPI11FuzzTest") {
   ]
   external_deps = [
     "c_utils:utils",
-    "hilog:libhilog",
-    "ipc:ipc_single",
+    "hilog:libhilog", 
     "media_foundation:native_media_core",
     "window_manager:libwm",
   ]

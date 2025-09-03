@@ -16,12 +16,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include "securec.h"
 #include <fuzzer/FuzzedDataProvider.h>
 #include <iostream>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "demuxer_sample.h"
+#include "securec.h"
 
 #define FUZZ_PROJECT_NAME "demuxer_fuzzer"
 using namespace std;
@@ -48,6 +48,7 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;
+        close(fd);
         return false;
     }
     fdp->ConsumeData(pstream, framesize);
