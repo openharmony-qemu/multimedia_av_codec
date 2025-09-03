@@ -72,6 +72,8 @@ const int32_t VALUE_2 = 2;
 const int32_t VALUE_4 = 4;
 const int32_t VALUE_10 = 10;
 
+const size_t BRAND_CODE_LEN = 4; // 4 is brand code length
+
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
     {AVMEDIA_TYPE_AUDIO, MediaType::AUDIO},
@@ -1307,7 +1309,6 @@ bool FFmpegFormatHelper::IsValidCodecId(const AVCodecID &codecId)
 
 void FFmpegFormatHelper::ParseGltfInfo(const AVFormatContext& avFormatContext, Meta &format)
 {
-    constexpr size_t BRAND_CODE_LEN = 4; // 4 is brand code length
     FALSE_RETURN_MSG_W(avFormatContext.metadata != nullptr, "metadata is nullptr");
     auto compatibleBrands = av_dict_get(avFormatContext.metadata, "compatible_brands", NULL, 0);
     if (compatibleBrands != nullptr && compatibleBrands->value != nullptr) {
@@ -1328,7 +1329,7 @@ void FFmpegFormatHelper::ParseGltfInfo(const AVFormatContext& avFormatContext, M
         }
     }
     auto idatPos = av_dict_get(avFormatContext.metadata, "idat_pos", NULL, 0);
-    MEDIA_LOG_I("Valid glTF file and idat Pos: " PUBLIC_LOG_S , idatPos ? idatPos->value : "not found");
+    MEDIA_LOG_I("Valid glTF file and idat Pos: " PUBLIC_LOG_S, idatPos ? idatPos->value : "not found");
     if (idatPos && idatPos->value) {
         SetToFormatIfConvertSuccess(format, Tag::GLTF_OFFSET, idatPos->value, ValueType::INT64);
     }
