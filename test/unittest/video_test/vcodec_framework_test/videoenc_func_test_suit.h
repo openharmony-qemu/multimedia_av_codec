@@ -120,5 +120,5 @@ bool TEST_SUIT::CreateVideoCodecByName(const std::string &name)
     }
     return true;
 }
-} // VFTSUIT
+} // namespace VFTSUIT
 #endif //VIDEOENC_FUNC_TEST_SUIT_H

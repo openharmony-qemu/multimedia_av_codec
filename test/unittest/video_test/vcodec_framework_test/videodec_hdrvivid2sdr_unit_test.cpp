@@ -16,6 +16,9 @@
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include <unordered_map>
+#include "avcodec_log.h"
+#include "native_avcodec_base.h"
+#include "unittest_utils.h"
 #include "videodec_hdrvivid2sdr_unit_test.h"
 
 using namespace std;
@@ -26,20 +29,18 @@ using namespace testing::mt;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 using namespace TESTBASE;
 
-namespace HevcTestSuit{
-enum class ResourceType : int32_t{
-    SDR,
-    HDR,
-    HDR_HLG_FULL
-};
+namespace HevcTestSuit {
+enum class ResourceType : int32_t { SDR, HDR, HDR_HLG_FULL };
 
-const std::unordered_map <ResourceType, int32_t> RESOURCE_TESTCODE = {
+const std::unordered_map<ResourceType, int32_t> RESOURCE_TESTCODE = {
     {ResourceType::SDR, HW_HEVC},
     {ResourceType::HDR, HW_HDR},
-    {ResourceType::HDR_HLG_FULL, HW_HDR_HLG_FULL}
+    {ResourceType::HDR_HLG_FULL, HW_HDR_HLG_FULL},
 };
 
-class HdrVivid2SdrHevcTest : public HdrVivid2SdrBaseSuit, public testing::TestWithParam<std::tuple<std::string_view, ResourceType, AVCodecCategory>> {
+class HdrVivid2SdrHevcTest
+    : public HdrVivid2SdrBaseSuit,
+      public testing::TestWithParam<std::tuple<std::string_view, ResourceType, AVCodecCategory>> {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
@@ -48,13 +49,14 @@ public:
     void CreateByNameWithParam(std::string_view param);
     void PrepareSource(ResourceType param);
     void ConfigureHdrVivid2Sdr(int32_t testCode, ResourceType resourceType);
-    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(HdrVivid2SdrHevcTest)};
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK,
+                                                          STRINGFY(HdrVivid2SdrHevcTest)};
 };
 
 void HdrVivid2SdrHevcTest::SetUpTestCase(void)
 {
-    auto capability = CodecListMockFactory::GetCapabilityByCategory((
-        CodecMimeType::VIDEO_AVC).data(), false, AVCodecCategory::AVCODEC_HARDWARE);
+    auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
 }
 
@@ -91,8 +93,7 @@ void HdrVivid2SdrHevcTest::TearDown(void)
 void HdrVivid2SdrHevcTest::CreateByNameWithParam(std::string_view param)
 {
     std::string codecName = "";
-    if(param == CodecMimeType::VIDEO_HEVC)
-    {
+    if (param == CodecMimeType::VIDEO_HEVC) {
         capability_ = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_HEVC).data(), false,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     } else {
@@ -123,7 +124,8 @@ void HdrVivid2SdrHevcTest::PrepareSource(ResourceType param)
 }
 
 #ifdef HMOS_TEST
-void GetInitialParam(ResourceType resourceType, int32_t &initialWidth, int32_t &initialHeight, int32_t &initialColorSpace)
+void GetInitialParam(ResourceType resourceType, int32_t &initialWidth, int32_t &initialHeight,
+                     int32_t &initialColorSpace)
 {
     switch (resourceType) {
         case ResourceType::HDR:
@@ -181,19 +183,20 @@ void HdrVivid2SdrHevcTest::ConfigureHdrVivid2Sdr(int32_t mimeType, ResourceType 
     PrepareSource(resourceType);
     if (testCode == HW_HDR_HLG_FULL) {
         format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-            OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+                             OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
     } else {
         format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-            OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                             OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     }
 }
 #endif
 
-INSTANTIATE_TEST_SUITE_P(, HdrVivid2SdrHevcTest, testing::Values(
-    std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::SDR, AVCodecCategory::AVCODEC_HARDWARE),
-    std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::HDR, AVCodecCategory::AVCODEC_HARDWARE),
-    std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::HDR_HLG_FULL, AVCodecCategory::AVCODEC_HARDWARE)
-));
+INSTANTIATE_TEST_SUITE_P(
+    , HdrVivid2SdrHevcTest,
+    testing::Values(std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::SDR, AVCodecCategory::AVCODEC_HARDWARE),
+                    std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::HDR, AVCodecCategory::AVCODEC_HARDWARE),
+                    std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::HDR_HLG_FULL,
+                                    AVCodecCategory::AVCODEC_HARDWARE)));
 
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_0011
@@ -250,7 +253,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0031, TestSize.Level1)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     PrepareSource(resourceType);
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
     ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Start());
 }
@@ -273,8 +276,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0032, TestSize.Level1)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     PrepareSource(resourceType);
-    format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+    format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
     ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Start());
 }
@@ -316,7 +318,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0051, TestSize.Level1)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     PrepareSource(resourceType);
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Start());
@@ -340,8 +342,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0052, TestSize.Level1)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     PrepareSource(resourceType);
-    format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+    format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Start());
@@ -385,7 +386,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0071, TestSize.Level1)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     PrepareSource(resourceType);
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
     ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Prepare());
 }
@@ -408,8 +409,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0072, TestSize.Level1)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     PrepareSource(resourceType);
-    format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+    format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
     ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Prepare());
 }
@@ -468,7 +468,7 @@ HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0091, TestSize.Level1)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     PrepareSource(resourceType);
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
@@ -496,8 +496,7 @@ HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0092, TestSize.Level1)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_HLG_FULL);
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_HLG_FULL);
     PrepareSource(resourceType);
-    format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+    format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
@@ -545,7 +544,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0111, TestSize.Level1)
     SetNV12Format();
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
 }
 
@@ -566,7 +565,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0121, TestSize.Level1)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     PrepareSource(resourceType);
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
+                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format));
 }
 
@@ -587,7 +586,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0131, TestSize.Level1)
     SetNV21Format();
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Start());
 }
@@ -609,7 +608,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0141, TestSize.Level1)
     SetNV21Format();
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Start());
@@ -632,7 +631,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0151, TestSize.Level1)
     SetNV21Format();
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, videoDec_->Prepare());
 }
@@ -653,7 +652,7 @@ HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0161, TestSize.Level1)
     SetNV21Format();
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
@@ -678,7 +677,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0171, TestSize.Level1)
     SetNV21Format();
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
 }
 
@@ -777,7 +776,7 @@ HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0271, TestSize.Level1)
     if (resourceType != ResourceType::SDR) {
         std::string_view mimeType = std::get<0>(params);
         ConfigureHdrVivid2Sdr(mimeType, resourceType);
-        for (int i = 0; i < 3 ; i++) {
+        for (int i = 0; i < 3; i++) {
             ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
             ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
             ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
@@ -802,7 +801,7 @@ HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0281, TestSize.Level1)
     if (resourceType != ResourceType::SDR) {
         std::string_view mimeType = std::get<0>(params);
         ConfigureHdrVivid2Sdr(mimeType, resourceType);
-        for (int i = 0; i < 3 ; i++) {
+        for (int i = 0; i < 3; i++) {
             ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
             ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
             ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
@@ -828,7 +827,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0181, TestSize.Level1)
     SetRGBAFormat();
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_UNSUPPORT, videoDec_->Configure(format_));
 }
 
@@ -849,7 +848,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0191, TestSize.Level1)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     PrepareSource(resourceType);
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_UNSUPPORT, videoDec_->Configure(format));
 }
 
@@ -868,7 +867,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0201, TestSize.Level1)
     SetNV12Format();
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_UNSUPPORT, videoDec_->Configure(format_));
 }
 
@@ -887,7 +886,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0211, TestSize.Level1)
     SetRGBAFormat();
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
 }
 
@@ -908,7 +907,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0221, TestSize.Level1)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     PrepareSource(resourceType);
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
+                        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format));
 }
 
@@ -927,13 +926,13 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0231, TestSize.Level1)
     SetNV12Format();
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
 }
 #endif // HMOS_TEST
-} // HevcTestSuit
+} // namespace HevcTestSuit
 
-namespace AvcTestSuit{
+namespace AvcTestSuit {
 class HdrVivid2SdrAvcTest : public HdrVivid2SdrBaseSuit, public testing::TestWithParam<int32_t> {
 public:
     static void SetUpTestCase(void);
@@ -942,13 +941,14 @@ public:
     void TearDown(void);
     void CreateByNameWithParam(int32_t param);
     void PrepareSource(int32_t param);
-    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(HdrVivid2SdrAvcTest)};
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK,
+                                                          STRINGFY(HdrVivid2SdrAvcTest)};
 };
 
 void HdrVivid2SdrAvcTest::SetUpTestCase(void)
 {
-    auto capability = CodecListMockFactory::GetCapabilityByCategory((
-        CodecMimeType::VIDEO_AVC).data(), false, AVCodecCategory::AVCODEC_HARDWARE);
+    auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
 }
 
@@ -1057,7 +1057,7 @@ HWTEST_P(HdrVivid2SdrAvcTest, VideoDec_Avc_HRDVivid2SDR_003, TestSize.Level1)
     SetNV12Format();
     PrepareSource(GetParam());
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
 }
 
@@ -1071,8 +1071,7 @@ HWTEST_P(HdrVivid2SdrAvcTest, VideoDec_Avc_HRDVivid2SDR_004, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetNV12Format();
     PrepareSource(GetParam());
-    format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
 }
 
@@ -1087,10 +1086,10 @@ HWTEST_P(HdrVivid2SdrAvcTest, VideoDec_Avc_HRDVivid2SDR_005, TestSize.Level1)
     SetNV12Format();
     PrepareSource(GetParam());
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
 }
-}// AvcTestSuit
+} // namespace AvcTestSuit
 
 int main(int argc, char **argv)
 {

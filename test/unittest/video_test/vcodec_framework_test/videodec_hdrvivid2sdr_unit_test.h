@@ -15,11 +15,7 @@
 
 #ifndef VIDEODEC_HDRVIVID2SDR_UNIT_TEST_H
 #define VIDEODEC_HDRVIVID2SDR_UNIT_TEST_H
-#include "avcodec_log.h"
 #include "meta/meta_key.h"
-#include "native_avcodec_base.h"
-#include "native_avmagic.h"
-#include "unittest_utils.h"
 #include "videodec_capi_mock.h"
 
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
@@ -37,6 +33,7 @@ public:
     void SetNV12Format();
     void SetNV21Format();
     void SetRGBAFormat();
+
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
     std::shared_ptr<VideoDecSample> videoDec_ = nullptr;
@@ -81,5 +78,5 @@ void HdrVivid2SdrBaseSuit::SetRGBAFormat()
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::RGBA));
 }
-} // TESTBASE
-#endif //VIDEODEC_HDRVIVID2SDR_UNIT_TEST_H
+} // namespace TESTBASE
+#endif // VIDEODEC_HDRVIVID2SDR_UNIT_TEST_H
