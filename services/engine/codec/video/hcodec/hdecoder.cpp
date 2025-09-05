@@ -216,6 +216,7 @@ int32_t HDecoder::UpdateOutPortFormat()
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, damage.h);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(configuredFmt_.innerFmt));
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, configuredFmt_.graphicFmt);
     outputFormat_->PutIntValue("IS_VENDOR", 1);
     HLOGI("needUseDecReso %d, Request Reso %dx%d, output format: %s",
           isNeedUseDecResolution, requestCfg_.width, requestCfg_.height, outputFormat_->Stringify().c_str());

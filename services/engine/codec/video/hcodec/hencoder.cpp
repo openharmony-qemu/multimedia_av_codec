@@ -513,6 +513,7 @@ int32_t HEncoder::UpdateInPortFormat()
     inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h);
     inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(configuredFmt_.innerFmt));
+    inputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, configuredFmt_.graphicFmt);
     inputFormat_->PutIntValue("IS_VENDOR", 1);
     return AVCS_ERR_OK;
 }
@@ -1660,9 +1661,11 @@ bool HEncoder::GetOneBufferFromSurface()
     if (ret != GSERROR_OK || entry.item->buffer == nullptr) {
         return false;
     }
-    if (!CheckBufPixFmt(entry.item->buffer)) {
+    int32_t dispFmt = entry.item->buffer->GetFormat();
+    if (!CheckBufPixFmt(dispFmt)) {
         return false;
     }
+    inputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, dispFmt);
     entry.item->generation = ++currGeneration_;
     entry.item->surface = inputSurface_;
     avaliableBuffers_.push_back(entry);

@@ -113,7 +113,7 @@ HWTEST_F(HCodecListUnitTest, get_hcodec_capability_ok, TestSize.Level1)
             "maxInstance=%d; bitrate=%s; channels=%s; complexity=%s; " \
             "alignment=%s; width=%s; height=%s; frameRate=%s; " \
             "encodeQuality=%s; blockPerFrame=%s; blockPerSecond=%s; blockSize=%s; " \
-            "sampleRate=%s; pixFormat=%s; bitDepth=%s; profiles=%s; " \
+            "sampleRate=%s; pixFormat=%s; graphicPixFormat=%s; bitDepth=%s; profiles=%s; " \
             "bitrateMode=%s; profileLevelsMap=%s; measuredFrameRate=%s; " \
             "supportSwapWidthHeight=%d",
             one.codecName.c_str(), one.codecType, one.mimeType.c_str(), one.isVendor, one.maxInstance,
@@ -123,10 +123,10 @@ HWTEST_F(HCodecListUnitTest, get_hcodec_capability_ok, TestSize.Level1)
             GetPrintInfo(one.frameRate).c_str(), GetPrintInfo(one.encodeQuality).c_str(),
             GetPrintInfo(one.blockPerFrame).c_str(), GetPrintInfo(one.blockPerSecond).c_str(),
             GetPrintInfo(one.blockSize).c_str(), GetPrintInfo(one.sampleRate).c_str(),
-            GetPrintInfo(one.pixFormat).c_str(), GetPrintInfo(one.bitDepth).c_str(),
-            GetPrintInfo(one.profiles).c_str(), GetPrintInfo(one.bitrateMode).c_str(),
-            GetPrintInfo(one.profileLevelsMap).c_str(), GetPrintInfo(one.measuredFrameRate).c_str(),
-            one.supportSwapWidthHeight);
+            GetPrintInfo(one.pixFormat).c_str(), GetPrintInfo(one.graphicPixFormat).c_str(),
+            GetPrintInfo(one.bitDepth).c_str(), GetPrintInfo(one.profiles).c_str(),
+            GetPrintInfo(one.bitrateMode).c_str(), GetPrintInfo(one.profileLevelsMap).c_str(),
+            GetPrintInfo(one.measuredFrameRate).c_str(), one.supportSwapWidthHeight);
     }
 }
 
@@ -147,6 +147,7 @@ HWTEST_F(HCodecListUnitTest, check_param, TestSize.Level1)
             CheckRange(cap.width);
             CheckRange(cap.height);
             EXPECT_TRUE(!cap.pixFormat.empty());
+            EXPECT_TRUE(!cap.graphicPixFormat.empty());
             EXPECT_TRUE(!cap.profiles.empty());
             EXPECT_TRUE(!cap.profileLevelsMap.empty());
         }
