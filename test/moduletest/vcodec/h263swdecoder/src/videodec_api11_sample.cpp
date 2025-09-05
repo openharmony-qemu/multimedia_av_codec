@@ -1067,3 +1067,10 @@ int32_t VDecAPI11Sample::DecodeSetSurface()
     CreateSurface();
     return OH_VideoDecoder_SetSurface(vdec_, nativeWindow[0]);
 }
+
+void VDecAPI11Sample::FlushStatus()
+{
+    StopInloop();
+    StopOutloop();
+    Flush_buffer();
+}

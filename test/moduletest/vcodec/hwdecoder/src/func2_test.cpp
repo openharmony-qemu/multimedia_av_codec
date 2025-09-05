@@ -1232,4 +1232,151 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_H266_BLANK_FRAME_0030, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_FLUSH_0010
+ * @tc.name      : create-start-eos-flush-start-eos
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_H264_FLUSH_0010, TestSize.Level1)
+{
+    if (cap != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_720_30;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        vDecSample->FlushStatus();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_H265_FLUSH_0010
+ * @tc.name      : create-start-eos-flush-start-eos
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_H265_FLUSH_0010, TestSize.Level1)
+{
+    if (cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_20;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        vDecSample->FlushStatus();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_H266_FLUSH_0010
+ * @tc.name      : create-start-eos-flush-start-eos
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_H266_FLUSH_0010, TestSize.Level1)
+{
+    if (cap_vvc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_VVC_1080;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameVVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        vDecSample->FlushStatus();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_FLUSH_0020
+ * @tc.name      : create-start-eos-flush-start-eos,surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_H264_FLUSH_0020, TestSize.Level1)
+{
+    if (cap != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_720_30;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        vDecSample->FlushStatus();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_H265_FLUSH_0020
+ * @tc.name      : create-start-eos-flush-start-eos,surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_H265_FLUSH_0020, TestSize.Level1)
+{
+    if (cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_20;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        vDecSample->FlushStatus();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_H266_FLUSH_0020
+ * @tc.name      : create-start-eos-flush-start-eos,surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_H266_FLUSH_0020, TestSize.Level1)
+{
+    if (cap_vvc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_VVC_1080;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameVVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        vDecSample->FlushStatus();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
 } // namespace

@@ -1071,4 +1071,55 @@ HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_DECODE_BLANK_FRAME_0020, TestSize.Level2)
         ASSERT_EQ(0, vDecSample->errCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_SWDEC_MPEG2_FLUSH_0010
+ * @tc.name      : create-start-eos-flush-start-eos
+ * @tc.desc      : function test
+ */
+HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_SWDEC_MPEG2_FLUSH_0010, TestSize.Level1)
+{
+    if (cap_mpeg2 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_6;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg2));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        vDecSample->FlushStatus();
+        vDecSample->finishLastPush = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_MPEG2_FLUSH_0020
+ * @tc.name      : create-start-eos-flush-start-eos,surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_SWDEC_MPEG2_FLUSH_0020, TestSize.Level1)
+{
+    if (cap_mpeg2 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_6;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg2));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        vDecSample->FlushStatus();
+        vDecSample->finishLastPush = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
 }

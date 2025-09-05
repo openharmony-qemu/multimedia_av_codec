@@ -443,6 +443,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_H264_FLUSH_0010, TestSize.Level1)
         vEncSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
         ASSERT_EQ(AV_ERR_OK, vEncSample->Flush());
+        vEncSample->FlushStatus();
         ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
         vEncSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -469,6 +470,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_H265_FLUSH_0010, TestSize.Level1)
         vEncSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
         ASSERT_EQ(AV_ERR_OK, vEncSample->Flush());
+        vEncSample->FlushStatus();
         ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
         vEncSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -496,6 +498,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_H264_FLUSH_0020, TestSize.Level1)
         vEncSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
         ASSERT_EQ(AV_ERR_OK, vEncSample->Flush());
+        vEncSample->FlushStatus();
         vEncSample->isSurface = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
         vEncSample->WaitForEOS();
@@ -524,6 +527,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_H265_FLUSH_0020, TestSize.Level1)
         vEncSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
         ASSERT_EQ(AV_ERR_OK, vEncSample->Flush());
+        vEncSample->FlushStatus();
         vEncSample->isSurface = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
         vEncSample->WaitForEOS();

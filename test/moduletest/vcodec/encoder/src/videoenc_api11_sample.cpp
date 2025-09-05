@@ -1449,3 +1449,10 @@ int32_t VEncAPI11Sample::SetParameter(OH_AVFormat *format)
     }
     return AV_ERR_UNKNOWN;
 }
+
+void VEncAPI11Sample::FlushStatus()
+{
+    StopInloop();
+    StopOutloop();
+    Flush_buffer();
+}

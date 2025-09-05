@@ -143,6 +143,7 @@ int32_t SyncOutputFuncEos(OH_AVCodecBufferAttr attr, uint32_t index);
     void StopOutloop();
     bool IsRender();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
+    void FlushStatus();
     VDecAPI11Signal *signal_;
     uint32_t errCount = 0;
     uint32_t outCount = 0;
