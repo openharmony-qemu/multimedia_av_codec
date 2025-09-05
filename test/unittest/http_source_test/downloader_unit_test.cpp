@@ -1388,6 +1388,7 @@ HWTEST_F(DownloaderUnitTest, DROP_RETRY_DATA_001, TestSize.Level1)
     EXPECT_EQ(downloader1->DropRetryData(buffer, 500, downloader1.get()), 500);
     EXPECT_EQ(downloader1->DropRetryData(buffer, 500, downloader1.get()), 500);
 }
+
 class SourceCallback : public Plugins::Callback {
 public:
     void OnEvent(const Plugins::PluginEvent &event) override
@@ -1412,11 +1413,16 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_001, TestSize.Level1)
     downloader->GetHLSDiscontinuity();
     downloader->StopBufferring(true);
     int32_t serverCode = 0;
+    uint32_t bitRate = 2000;
     downloader->GetServerMediaServiceErrorCode(400, serverCode);
     downloader->GetServerMediaServiceErrorCode(101, serverCode);
     downloader->GetCachedDuration();
     downloader->RestartAndClearBuffer();
     downloader->IsFlvLive();
+    downloader->IsHlsFmp4();
+    downloader->GetContentType();
+    downloader->GetStartedStatus();
+    downloader->AutoSelectBitRate(bitRate);
     downloader->SetStartPts(1);
     downloader->SetExtraCache(1);
     downloader->GetMemorySize();
@@ -1473,6 +1479,69 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_002, TestSize.Level1)
     downloader->NotifyError(52, 0);
     downloader->NotifyError(0, 0);
     EXPECT_EQ(downloader->callback_, nullptr);
+}
+
+void ThreadFinishLoading(std::shared_ptr<NetworkClient> client, int64_t uuid, LoadingRequestError error)
+{
+    client->FinishLoading(uuid, error);
+}
+
+void ThreadRequestData(std::shared_ptr<NetworkClient> client, long startPos, int len, const RequestInfo& requestInfo,
+    HandleResponseCbFunc completeCb, int64_t uuid, LoadingRequestError error)
+{
+    std::thread threadFinishLoading(ThreadFinishLoading, client, uuid, error);
+    client->RequestData(startPos, len, requestInfo, completeCb);
+
+    if (threadFinishLoading.joinable()) {
+        threadFinishLoading.join();
+    }
+}
+
+HWTEST_F(DownloaderUnitTest, APP_CLIENT_001, TestSize.Level1)
+{
+    std::string testPath = "http://127.0.0.1:46666/test_cbr/710_1M/video_720.m3u8";
+    std::shared_ptr<SourceLoader> loader = std::make_shared<SourceLoader>();
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader =
+        std::make_shared<MediaSourceLoaderCombinations>(loader);
+    std::map<std::string, std::string> httpHeader;
+    RequestInfo requestInfo;
+    requestInfo.url = "http";
+    requestInfo.httpHeader = httpHeader;
+    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {};
+    auto saveData = [this] (uint8_t*&& data, uint32_t&& len, bool notblock) {
+        return len;
+    };
+    std::shared_ptr<Downloader> downloader2 = std::make_shared<Downloader>("test", sourceLoader);
+    downloader2->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
+    downloader2->appPreviousRequestUrl_ = testPath;
+    downloader2->OpenAppUri();
+    EXPECT_NE(downloader2->client_, nullptr);
+
+    uint32_t appUid = 3588;
+    int64_t uuid = 1;
+    std::string ipAddress = "address";
+    httpHeader["Content-Type"] = "application/json";
+    httpHeader["Authorization"] = "Bearer your_token_here";
+    downloader2->client_->RespondHeader(uuid, httpHeader, " ");
+    downloader2->client_->SetUuid(uuid);
+    downloader2->client_->SetAppUid(appUid);
+    downloader2->client_->GetIp(ipAddress);
+    downloader2->client_->GetRedirectUrl();
+    for (int i = 0; i < 101; i++) { httpHeader["key" + std::to_string(i)] = "value" + std::to_string(i); }
+    downloader2->client_->RespondHeader(uuid, httpHeader, " ");
+    std::vector<LoadingRequestError> errors = {
+        LoadingRequestError::LOADING_ERROR_SUCCESS,
+        LoadingRequestError::LOADING_ERROR_NOT_READY,
+    };
+
+    for (const auto& error : errors) {
+        std::thread threadRequestData(ThreadRequestData, downloader2->client_, 31819, 4096, requestInfo,
+            [](int32_t clientCode, int32_t serverCode, Status status) {}, uuid, error);
+        if (threadRequestData.joinable()) {
+            threadRequestData.join();
+        }
+    }
 }
 }
 }
