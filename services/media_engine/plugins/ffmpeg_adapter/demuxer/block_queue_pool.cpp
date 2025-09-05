@@ -151,16 +151,10 @@ bool BlockQueuePool::ResetInfo(std::shared_ptr<SamplePacket> block)
     uint32_t queIndex = block->queueIndex;
     FALSE_RETURN_V_MSG_E(quePool_.count(queIndex) > 0, false, "Index is invalid");
     for (auto pkt : block->pkts) {
-        if (pkt == nullptr) {
-            MEDIA_LOG_D("Pkt is nullptr, will find next");
-            continue;
-        }
-        uint32_t pktSize = static_cast<uint32_t>(pkt->size);
-        if (quePool_[queIndex].dataSize >= pktSize) {
-            quePool_[queIndex].dataSize -= pktSize;
-        } else {
-            quePool_[queIndex].dataSize = 0;
-        }
+        FALSE_CONTINUE_LOGD(pkt != nullptr, "Pkt is nullptr, will find next");
+        FALSE_CONTINUE_LOGD(pkt->size > 0, "Invalid pkt size: " PUBLIC_LOG_D32, pkt->size);
+        int64_t tempSize = static_cast<int64_t>(quePool_[queIndex].dataSize) - static_cast<int64_t>(pkt->size);
+        quePool_[queIndex].dataSize = static_cast<uint32_t>(std::max<int64_t>(tempSize, 0LL));
     }
     return true;
 }
@@ -172,10 +166,8 @@ bool BlockQueuePool::SetInfo(std::shared_ptr<SamplePacket> block)
     uint32_t queIndex = block->queueIndex;
     FALSE_RETURN_V_MSG_E(quePool_.count(queIndex) > 0, false, "Index is invalid");
     for (auto pkt : block->pkts) {
-        if (pkt == nullptr) {
-            MEDIA_LOG_D("Pkt is nullptr, will find next");
-            continue;
-        }
+        FALSE_CONTINUE_LOGD(pkt != nullptr, "Pkt is nullptr, will find next");
+        FALSE_CONTINUE_LOGD(pkt->size > 0, "Invalid pkt size: " PUBLIC_LOG_D32, pkt->size);
         uint32_t pktSize = static_cast<uint32_t>(pkt->size);
         if (quePool_[queIndex].dataSize <= UINT32_MAX - pktSize) {
             quePool_[queIndex].dataSize += pktSize;
@@ -224,9 +216,8 @@ bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> blo
     }
     sizeMap_[trackIndex] += 1;
     for (auto pkt : block->pkts) {
-        if (pkt == nullptr) {
-            continue;
-        }
+        FALSE_CONTINUE_LOGD(pkt != nullptr, "Pkt is nullptr, will find next");
+        FALSE_CONTINUE_LOGD(pkt->size > 0, "Invalid pkt size: " PUBLIC_LOG_D32, pkt->size);
         quePool_[pushIndex].dataSize += static_cast<uint32_t>(pkt->size);
         if (pkt->pts != AV_NOPTS_VALUE && pkt->pts > quePool_[pushIndex].maxPts) {
             quePool_[pushIndex].maxPts = pkt->pts;
@@ -261,10 +252,8 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
             continue;
         }
         for (auto pkt : block->pkts) {
-            if (pkt == nullptr) {
-                MEDIA_LOG_D("Pkt is nullptr, will find next");
-                continue;
-            }
+            FALSE_CONTINUE_LOGD(pkt != nullptr, "Pkt is nullptr, will find next");
+            FALSE_CONTINUE_LOGD(pkt->size > 0, "Invalid pkt size: " PUBLIC_LOG_D32, pkt->size);
             uint32_t pktSize = static_cast<uint32_t>(pkt->size);
             quePool_[queIndex].dataSize =
                 quePool_[queIndex].dataSize >= pktSize ? quePool_[queIndex].dataSize -= pktSize : 0;
