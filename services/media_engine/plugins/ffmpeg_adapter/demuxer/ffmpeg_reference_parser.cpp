@@ -262,7 +262,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
     int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
     if (ffmpegRet == AVERROR_EOF || result != Status::OK ||
         (parserCurGopId_ + 1 < iFramePosSize && curStreamId == IFramePos_[parserCurGopId_ + 1] - 1)) { // 处理完一个GOP
-        MEDIA_LOG_I("IFramePos: " PUBLIC_LOG_ZU ", processingIFrame: " PUBLIC_LOG_ZU ", curStreamId: " PUBLIC_LOG_U32
+        MEDIA_LOG_D("IFramePos: " PUBLIC_LOG_ZU ", processingIFrame: " PUBLIC_LOG_ZU ", curStreamId: " PUBLIC_LOG_U32
             ", curGopId: " PUBLIC_LOG_U32, IFramePos_.size(), processingIFrame_.size(), curStreamId, parserCurGopId_);
         processingIFrame_.remove(IFramePos_[parserCurGopId_]);
         if (processingIFrame_.size() == 0) {
