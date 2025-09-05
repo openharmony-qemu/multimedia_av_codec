@@ -24,7 +24,7 @@
 #include "codec_capability_adapter.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER,
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER,
                                                 "SurfaceDecoderAdapter" };
 constexpr uint32_t BUFFER_IS_EOS = 1;
 }

@@ -51,6 +51,7 @@ enum H264Level : int32_t {
 
 AVCodecBufferFlag AvcFrameTypeToBufferFlag(uint32_t frameType);
 VideoPixelFormat TranslateVideoPixelFormat(GraphicPixelFormat surfaceFormat);
+GraphicPixelFormat TranslateSurfacePixFormat(const VideoPixelFormat &pixelFormat);
 COLOR_FORMAT TranslateVideoFormatToAvc(const VideoPixelFormat &pixelFormat);
 COLOR_MATRIX TranslateMatrix(MatrixCoefficient matrixFormat);
 COLOR_RANGE TranslateRange(uint8_t range);

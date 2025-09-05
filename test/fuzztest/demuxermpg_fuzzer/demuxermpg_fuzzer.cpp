@@ -29,14 +29,12 @@ using namespace OHOS::Media;
 namespace OHOS {
 const char *MPG_PATH = "/data/test/fuzz_create.mpg";
 const int64_t EXPECT_SIZE = 36;
-const size_t URI_SIZE = 25;
 const size_t URI_BUFFER_SIZE = 21;
 const int64_t URI_COUNT = 20;
 const char FLAG = '\0';
-const size_t LANGUAGE_SIZE = 31;
 const size_t LANGUAGE_BUFFER_SIZE = 3;
 const size_t LANGUAGE_COUNT = 2;
-bool CheckDataValidity(const uint8_t *data, size_t size)
+bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
 {
     if (size <= EXPECT_SIZE) {
         return false;
@@ -45,24 +43,37 @@ bool CheckDataValidity(const uint8_t *data, size_t size)
     if (fd < 0) {
         return false;
     }
-    int len = write(fd, data, size);
-    if (len <= 0) {
+    uint8_t *pstream = nullptr;
+    uint16_t framesize = fdp->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
+    if (!pstream) {
+        std::cerr << "Memory alloction failed" << std::endl;
         close(fd);
         return false;
     }
+    fdp->ConsumeData(pstream, framesize);
+    int len = write(fd, pstream, framesize);
+    if (len <= 0) {
+        close(fd);
+        free(pstream);
+        pstream = nullptr;
+        return false;
+    }
     close(fd);
+    free(pstream);
+    pstream = nullptr;
     return true;
 }
 bool DemuxerFuzzTest(const uint8_t *data, size_t size)
 {
-    if (!CheckDataValidity(data, size)) {
+    FuzzedDataProvider fdp(data, size);
+    if (!CheckDataValidity(&fdp, size)) {
         return false;
     }
-    FuzzedDataProvider fdp(data, size);
     struct Params params;
     params.time = fdp.ConsumeIntegral<int64_t>();
     char *uri = new char[URI_BUFFER_SIZE];
-    if (memcpy_s(uri, URI_BUFFER_SIZE, data  + size - URI_SIZE, URI_COUNT) != 0) {
+    if (strncpy_s(uri, URI_BUFFER_SIZE, fdp.ConsumeBytesAsString(URI_COUNT).c_str(), URI_COUNT) != 0) {
         delete[] uri;
         return false;
     }
@@ -72,7 +83,8 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     params.setHeight = fdp.ConsumeIntegral<int64_t>();
     params.setFrameRate = fdp.ConsumeIntegral<int64_t>();
     char *setLanguage = new char[LANGUAGE_BUFFER_SIZE];
-    if (memcpy_s(setLanguage, LANGUAGE_BUFFER_SIZE, data + size - LANGUAGE_SIZE, LANGUAGE_COUNT) != 0) {
+    if (strncpy_s(setLanguage, LANGUAGE_BUFFER_SIZE, fdp.ConsumeBytesAsString(LANGUAGE_COUNT).c_str(),
+        LANGUAGE_COUNT) != 0) {
         delete[] uri;
         delete[] setLanguage;
         return false;

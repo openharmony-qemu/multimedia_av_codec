@@ -1085,6 +1085,9 @@ int32_t AvcEncoder::GetInputFormat(Format &format)
         static_cast<int>(bitrateMode_));
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(srcPixelFmt_));
+    GraphicPixelFormat srcGraphicPixelFmt = TranslateSurfacePixFormat(srcPixelFmt_);
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT,
+        static_cast<int32_t>(srcGraphicPixelFmt));
     if (srcPixelFmt_ == VideoPixelFormat::RGBA) {
         format.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, encWidth_ * RGBA_COLINC);
     } else {
@@ -1653,13 +1656,8 @@ int32_t AvcEncoder::CheckAvcEncLibStatus()
     return AVCS_ERR_OK;
 }
 
-void AvcEncoder::GetCapabilityData(CapabilityData &capsData, uint32_t index)
+void AvcEncoder::GetBaseCapabilityData(CapabilityData &capsData)
 {
-    capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[index].codecName);
-    capsData.mimeType = static_cast<std::string>(SUPPORT_VCODEC[index].mimeType);
-    capsData.codecType = SUPPORT_VCODEC[index].isEncoder ? AVCODEC_TYPE_VIDEO_ENCODER : AVCODEC_TYPE_VIDEO_DECODER;
-    capsData.isVendor = false;
-    capsData.maxInstance = VIDEO_INSTANCE_SIZE;
     capsData.alignment.width = VIDEO_ALIGNMENT_SIZE;
     capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
     capsData.width.minVal = VIDEO_MIN_SIZE;
@@ -1676,6 +1674,18 @@ void AvcEncoder::GetCapabilityData(CapabilityData &capsData, uint32_t index)
     capsData.blockPerSecond.maxVal = VIDEO_BLOCKPERSEC_SIZE;
     capsData.blockSize.width = VIDEO_ALIGN_SIZE;
     capsData.blockSize.height = VIDEO_ALIGN_SIZE;
+}
+
+void AvcEncoder::GetCapabilityData(CapabilityData &capsData, uint32_t index)
+{
+    capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[index].codecName);
+    capsData.mimeType = static_cast<std::string>(SUPPORT_VCODEC[index].mimeType);
+    capsData.codecType = SUPPORT_VCODEC[index].isEncoder ? AVCODEC_TYPE_VIDEO_ENCODER : AVCODEC_TYPE_VIDEO_DECODER;
+    capsData.isVendor = false;
+    capsData.maxInstance = VIDEO_INSTANCE_SIZE;
+
+    GetBaseCapabilityData(capsData);
+
     if (SUPPORT_VCODEC[index].isEncoder) {
         capsData.complexity.minVal = 1;
         capsData.complexity.maxVal = 1;
@@ -1685,6 +1695,12 @@ void AvcEncoder::GetCapabilityData(CapabilityData &capsData, uint32_t index)
     capsData.pixFormat = {
         static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
         static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)
+    };
+    capsData.graphicPixFormat = {
+        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P),
+        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP),
+        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP),
+        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888)
     };
     capsData.bitrateMode = {
         static_cast<int32_t>(VideoEncodeBitrateMode::CBR), static_cast<int32_t>(VideoEncodeBitrateMode::VBR),

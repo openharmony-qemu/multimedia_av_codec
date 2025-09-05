@@ -179,6 +179,9 @@ std::shared_ptr<Plugins::CodecPlugin> MediaCodec::CreatePlugin(const std::string
 void MediaCodec::IODump(const std::shared_ptr<Meta> &meta)
 {
     std::time_t t = std::time(nullptr);
+    if (!std::localtime(&t)) {
+        return;
+    }
     std::tm tm = *std::localtime(&t);
 
     std::ostringstream common;
@@ -514,6 +517,15 @@ int32_t MediaCodec::Reset()
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin reset failed");
     ClearInputBuffer();
     ResetBufferStatusInfo();
+    ClearBufferQueue();
+    if (dumpDataInputFs_ != nullptr && dumpDataInputFs_->is_open()) {
+        dumpDataInputFs_->flush();
+        dumpDataInputFs_->close();
+    }
+    if (dumpDataOutputFs_ != nullptr && dumpDataOutputFs_->is_open()) {
+        dumpDataOutputFs_->flush();
+        dumpDataOutputFs_->close();
+    }
     state_ = CodecState::INITIALIZED;
     return (int32_t)ret;
 }
@@ -1051,6 +1063,7 @@ void MediaCodec::ClearBufferQueue()
         outputBufferVector_.clear();
         outputBufferQueueProducer_->SetQueueSize(0);
     }
+    inputBufferQueue_ = nullptr;
 }
 
 void MediaCodec::ClearInputBuffer()

@@ -20,7 +20,6 @@
 #include "avcodec_errors.h"
 #include "avcodec_parcel.h"
 #include "avcodec_trace.h"
-#include "avsharedmemory_ipc.h"
 #include "buffer/avsharedmemorybase.h"
 #include "meta/meta.h"
 namespace {
@@ -201,6 +200,9 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
                                       "inputBufferCache is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(outputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION,
                                       "outputBufferCache is nullptr");
+    if (OnRequestExtras(code, data)) {
+        return AVCS_ERR_OK;
+    }
 
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(syncMutex_ != nullptr, AVCS_ERR_INVALID_OPERATION, "sync mutex is nullptr");
     std::lock_guard<std::recursive_mutex> lock(*syncMutex_);
@@ -233,25 +235,27 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
             return AVCS_ERR_OK;
         }
         default: {
-            return OnRequestExtras(code, data, reply, option);
+            AVCODEC_LOGE_WITH_TAG("Default case, please check codec listener stub");
+            return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
         }
     }
 }
 
-int CodecListenerStub::OnRequestExtras(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
+bool CodecListenerStub::OnRequestExtras(uint32_t code, MessageParcel &data)
 {
     switch (code) {
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_BINDED): {
+            (void)data.ReadUint64();
             OnOutputBufferBinded(data);
-            return AVCS_ERR_OK;
+            return true;
         }
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_UN_BINDED): {
+            (void)data.ReadUint64();
             OnOutputBufferUnbinded(data);
-            return AVCS_ERR_OK;
+            return true;
         }
         default: {
-            AVCODEC_LOGE_WITH_TAG("Default case, please check codec listener stub");
-            return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
+            return false;
         }
     }
 }

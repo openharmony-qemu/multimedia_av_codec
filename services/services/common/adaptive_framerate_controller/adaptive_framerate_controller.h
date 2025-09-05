@@ -30,7 +30,7 @@ namespace MediaAVCodec {
 class FramerateCalculator : public std::enable_shared_from_this<FramerateCalculator>,
                             public AVCodecDfxComponent {
 public:
-    FramerateCalculator(int32_t instanceId, std::function<void(double)> &&resetFramerateHandler);
+    FramerateCalculator(int32_t instanceId, std::function<void(double)> &&handler);
     void OnFrameConsumed();
     void OnStopped();
     bool CheckAndResetFramerate();

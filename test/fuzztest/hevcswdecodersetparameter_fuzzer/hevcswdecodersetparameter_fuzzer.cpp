@@ -14,10 +14,10 @@
  */
 #include <cstddef>
 #include <cstdint>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "native_avcodec_base.h"
 #include "native_avformat.h"
 #include "videodec_sample.h"
-#include <fuzzer/FuzzedDataProvider.h>
 #define FUZZ_PROJECT_NAME "hevcswdecodersetparameter_fuzzer"
 using namespace std;
 using namespace OHOS;
@@ -26,10 +26,11 @@ static VDecFuzzSample *g_vDecSample = nullptr;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
+const size_t EXPECT_SIZE = 64;
 namespace OHOS {
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
-    if (size < sizeof(int64_t)) {
+    if (size < EXPECT_SIZE) {
         return false;
     }
     if (!g_vDecSample) {

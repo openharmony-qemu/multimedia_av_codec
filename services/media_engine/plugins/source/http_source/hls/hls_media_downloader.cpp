@@ -1232,12 +1232,12 @@ void HlsMediaDownloader::DownloadReport()
 void HlsMediaDownloader::OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv)
 {
     keyLen_ = keyLen;
-    if (keyLen <= 0 || keyLen > DECRYPT_UNIT_LEN) {
+    if (keyLen <= 0) {
         return;
     }
     NZERO_LOG(memcpy_s(iv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN));
     NZERO_LOG(memcpy_s(initIv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memcpy_s(key_, DECRYPT_UNIT_LEN, key, keyLen));
+    NZERO_LOG(memcpy_s(key_, DECRYPT_UNIT_LEN, key, keyLen > DECRYPT_UNIT_LEN ? DECRYPT_UNIT_LEN : keyLen));
     AES_set_decrypt_key(key_, DECRYPT_COPY_LEN, &aesKey_);
 }
 

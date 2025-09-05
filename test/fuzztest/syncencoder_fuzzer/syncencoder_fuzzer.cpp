@@ -34,16 +34,6 @@ VEncSyncSample *g_vEncSample = nullptr;
 constexpr int32_t ONE = 1;
 constexpr int32_t TWO = 2;
 
-
-void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
-{
-    std::ofstream file(filename, std::ios::out | std::ios::binary);
-    if (file.is_open()) {
-        file.write(reinterpret_cast<const char*>(data), size);
-        file.close();
-    }
-}
-
 string GetCodeName(const char* mimeName, OH_AVCodecCategory category)
 {
     cap = OH_AVCodec_GetCapabilityByCategory(mimeName, true, category);
@@ -75,10 +65,9 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
-    std::string filename = "/data/test/corpus-EncoderSyncFuzzTest";
-    SaveCorpus(data, size, filename);
     FuzzedDataProvider fdp(data, size);
     int data1 = fdp.ConsumeIntegral<int32_t>();
+    int data2 = fdp.ConsumeIntegral<int32_t>();
     g_vEncSample = new VEncSyncSample();
     g_vEncSample->codecType = fdp.ConsumeIntegralInRange<int32_t>(ONE, TWO);
     CodeType();
@@ -86,8 +75,6 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     if (isRgba1010102) {
         g_vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_RGBA1010102;
     }
-    g_vEncSample->fuzzData = data;
-    g_vEncSample->fuzzSize = size;
     g_vEncSample->surfInput = fdp.ConsumeBool();
     g_vEncSample->fuzzMode = true;
     g_vEncSample->enbleBFrameMode = fdp.ConsumeIntegral<int32_t>();
@@ -99,6 +86,9 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     g_vEncSample->defaultKeyFrameInterval = fdp.ConsumeIntegral<uint32_t>();
     g_vEncSample->DEFAULT_BITRATE_MODE = fdp.ConsumeIntegral<uint32_t>();
     g_vEncSample->defaultQuality = fdp.ConsumeIntegral<uint32_t>();
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    g_vEncSample->fuzzData = remaining_data.data();
+    g_vEncSample->fuzzSize = remaining_data.size();
     if (g_vEncSample->CreateVideoEncoder(g_codeName.c_str()) != AV_ERR_OK) {
         return ReleaseSample();
     }
@@ -117,7 +107,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
         g_vEncSample->SyncInputFuncFuzz();
     }
     g_vEncSample->SyncOutputFuncFuzz();
-    g_vEncSample->SetParameter(data1);
+    g_vEncSample->SetParameter(data1, data2);
     return ReleaseSample();
 }
 } // namespace OHOS

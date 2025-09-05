@@ -34,15 +34,6 @@ constexpr int32_t TWO = 2;
 string g_codeName = "";
 VEncSyncSample *vEncSample = nullptr;
 
-void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
-{
-    std::ofstream file(filename, std::ios::out | std::ios::binary);
-    if (file.is_open()) {
-        file.write(reinterpret_cast<const char*>(data), size);
-        file.close();
-    }
-}
-
 string GetCodeName(const char* mimeName, OH_AVCodecCategory category)
 {
     cap = OH_AVCodec_GetCapabilityByCategory(mimeName, true, category);
@@ -74,18 +65,15 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
-    std::string filename = "/data/test/corpus-EncoderSyncFuzzTest";
-    SaveCorpus(data, size, filename);
     FuzzedDataProvider fdp(data, size);
     int data1 = fdp.ConsumeIntegral<int32_t>();
+    int data2 = fdp.ConsumeIntegral<int32_t>();
     vEncSample = new VEncSyncSample();
     vEncSample->codecType = fdp.ConsumeIntegralInRange<int32_t>(ONE, TWO);
     CodecType();
     if (g_codeName == "") {
         return false;
     }
-    vEncSample->fuzzData = data;
-    vEncSample->fuzzSize = size;
     vEncSample->surfInput = fdp.ConsumeBool();
     vEncSample->fuzzMode = true;
     vEncSample->enbleSyncMode = fdp.ConsumeIntegral<int32_t>();
@@ -93,6 +81,9 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     vEncSample->syncOutputWaitTime = 1;
     int32_t intval = fdp.ConsumeIntegral<uint32_t>();
     int32_t ret = vEncSample->CreateVideoEncoder(g_codeName.c_str());
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    vEncSample->fuzzData = remaining_data.data();
+    vEncSample->fuzzSize = remaining_data.size();
     if (ret != AV_ERR_OK) {
         return ReleaseSample();
     }
@@ -114,7 +105,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
         vEncSample->SyncInputFuncFuzz();
     }
     vEncSample->SyncOutputFuncFuzz();
-    vEncSample->SetParameter(data1);
+    vEncSample->SetParameter(data1, data2);
     return ReleaseSample();
 }
 } // namespace OHOS

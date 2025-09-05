@@ -464,7 +464,7 @@ static bool ConvertHexStrToBuffer(const std::string hexStr, std::vector<uint8_t>
     if (hexStr.empty() || hexStr.size() % VALUE_2 != 0) {
         return false;
     }
-    int len = hexStr.size() / VALUE_2;
+    int len = static_cast<int>(hexStr.size()) / VALUE_2;
     buffer.resize(len);
     for (int i = 0; i < len; i++) {
         int8_t high = HexCharToValue(hexStr[i * VALUE_2]);
@@ -1164,30 +1164,48 @@ void FFmpegFormatHelper::ParseColorBoxInfo(const AVStream& avStream, Meta &forma
     format.Set<Tag::VIDEO_CHROMA_LOCATION>(chromaLoc);
 }
 
+void FFmpegFormatHelper::ParseColorBoxInfo(const AVFormatContext& avFormatContext, HevcParseFormat parse, Meta &format)
+{
+    ColorPrimary colorPrimaries = FFMpegConverter::ConvertFFMpegToOHColorPrimaries(
+        static_cast<AVColorPrimaries>(parse.colorPrimaries));
+    if (colorPrimaries != ColorPrimary::UNSPECIFIED) {
+        format.Set<Tag::VIDEO_COLOR_PRIMARIES>(colorPrimaries);
+        format.Set<Tag::VIDEO_COLOR_RANGE>((bool)(parse.colorRange));
+    } else {
+        MEDIA_LOG_D("Parse colorPri from xps failed");
+    }
+
+    TransferCharacteristic colorTrans = FFMpegConverter::ConvertFFMpegToOHColorTrans(
+        static_cast<AVColorTransferCharacteristic>(parse.colorTransfer));
+    if (colorTrans != TransferCharacteristic::UNSPECIFIED) {
+        format.Set<Tag::VIDEO_COLOR_TRC>(colorTrans);
+    } else {
+        MEDIA_LOG_D("Parse colorTrc from xps failed");
+    }
+
+    MatrixCoefficient colorMatrix = FFMpegConverter::ConvertFFMpegToOHColorMatrix(
+        static_cast<AVColorSpace>(parse.colorMatrixCoeff));
+    if (colorMatrix != MatrixCoefficient::UNSPECIFIED) {
+        format.Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(colorMatrix);
+    } else {
+        MEDIA_LOG_D("Parse colorMatrix from xps failed");
+    }
+
+    ChromaLocation chromaLoc = FFMpegConverter::ConvertFFMpegToOHChromaLocation(
+        static_cast<AVChromaLocation>(parse.chromaLocation));
+    if (chromaLoc != ChromaLocation::UNSPECIFIED) {
+        format.Set<Tag::VIDEO_CHROMA_LOCATION>(chromaLoc);
+    } else {
+        MEDIA_LOG_D("Parse chromaLoc from xps failed");
+    }
+}
+
 void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, HevcParseFormat parse, Meta &format)
 {
     if (parse.isHdrVivid) {
         format.Set<Tag::VIDEO_IS_HDR_VIVID>(true);
     }
-
-    format.Set<Tag::VIDEO_COLOR_RANGE>((bool)(parse.colorRange));
-
-    ColorPrimary colorPrimaries = FFMpegConverter::ConvertFFMpegToOHColorPrimaries(
-        static_cast<AVColorPrimaries>(parse.colorPrimaries));
-    format.Set<Tag::VIDEO_COLOR_PRIMARIES>(colorPrimaries);
-
-    TransferCharacteristic colorTrans = FFMpegConverter::ConvertFFMpegToOHColorTrans(
-        static_cast<AVColorTransferCharacteristic>(parse.colorTransfer));
-    format.Set<Tag::VIDEO_COLOR_TRC>(colorTrans);
-
-    MatrixCoefficient colorMatrix = FFMpegConverter::ConvertFFMpegToOHColorMatrix(
-        static_cast<AVColorSpace>(parse.colorMatrixCoeff));
-    format.Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(colorMatrix);
-
-    ChromaLocation chromaLoc = FFMpegConverter::ConvertFFMpegToOHChromaLocation(
-        static_cast<AVChromaLocation>(parse.chromaLocation));
-    format.Set<Tag::VIDEO_CHROMA_LOCATION>(chromaLoc);
-
+    ParseColorBoxInfo(avFormatContext, parse, format);
     HEVCProfile profile = FFMpegConverter::ConvertFFMpegToOHHEVCProfile(static_cast<int>(parse.profile));
     if (profile != HEVCProfile::HEVC_PROFILE_UNKNOW) {
         format.Set<Tag::VIDEO_H265_PROFILE>(profile);

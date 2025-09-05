@@ -98,8 +98,10 @@ public:
     bool CanAutoSelectBitRate() override;
 
     bool IsSeekToTimeSupported();
+    bool IsLocalFd();
     int64_t GetDuration();
     Status SeekToTime(int64_t seekTime, SeekMode mode);
+    Status SeekTo(uint64_t offset);
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
     Status AutoSelectBitRate(uint32_t bitRate);
@@ -111,7 +113,6 @@ public:
     void SetDemuxerState(int32_t streamId);
     Status GetStreamInfo(std::vector<StreamInfo>& streams);
     Status Read(int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
-    Status SeekTo(uint64_t offset);
     void SetInterruptState(bool isInterruptNeeded);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
@@ -123,14 +124,13 @@ public:
     bool SetInitialBufferSize(int32_t offset, int32_t size);
     Status SetPerfRecEnabled(bool perfRecEnabled);
     void NotifyInitSuccess();
-    bool IsLocalFd();
-    bool IsFlvLiveStream() const;
     uint64_t GetCachedDuration();
     void RestartAndClearBuffer();
     bool IsFlvLive();
-    uint64_t GetMemorySize();
+    bool IsFlvLiveStream() const;
     std::string GetContentType();
     bool IsHlsFmp4();
+    uint64_t GetMemorySize();
     Status StopBufferring(bool isAppBackground);
 
 private:

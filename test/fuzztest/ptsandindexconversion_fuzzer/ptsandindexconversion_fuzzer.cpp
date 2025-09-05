@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "ptsandindexconversion_sample.h"
 
 #define FUZZ_PROJECT_NAME "ptsandindexconversion_fuzzer"
@@ -25,7 +26,9 @@ namespace OHOS {
 void PtsAndIndexConversionWithFunc(const uint8_t *data, size_t size)
 {
     std::shared_ptr<PtsAndIndexConversion> ptsandindexConversions = std::make_shared<PtsAndIndexConversion>();
-    if (ptsandindexConversions->Init(data, size)) {
+    FuzzedDataProvider fdp(data, size);
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    if (ptsandindexConversions->Init(remaining_data.data(), remaining_data.size())) {
         ptsandindexConversions->RunNormalTimeAndIndexConversions();
     }
 }

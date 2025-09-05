@@ -52,6 +52,8 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
     downloader.Open(testUrl, tmpHttpHeader);
     EXPECT_EQ(testUrl, downloader.GetUrl());
     EXPECT_EQ(nullptr, downloader.GetMaster());
+    EXPECT_EQ(nullptr, downloader.GetCurrentVariant());
+    EXPECT_EQ(nullptr, downloader.GetNewVariant());
 }
 
 HWTEST_F(HlsPlayListDownloaderUnitTest, GET_DURATION, TestSize.Level1)

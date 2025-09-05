@@ -19,7 +19,7 @@
 #include "avcodec_audio_codec.h"
 #include "nocopyable.h"
 #include "task_thread.h"
-#include "i_avcodec_service.h"
+#include "audio_codec_server.h"
 #include "meta/meta.h"
 #include "buffer/avbuffer.h"
 #include "buffer/avbuffer_queue.h"
@@ -110,7 +110,7 @@ private:
 private:
     std::atomic<bool> isRunning_ = false;
     std::atomic<bool> isSyncMode_ = false;
-    std::shared_ptr<ICodecService> codecService_ = nullptr;
+    std::shared_ptr<AudioCodecServer> codecService_ = nullptr;
     std::shared_ptr<Media::AVBufferQueue> implBufferQueue_;
     std::unique_ptr<TaskThread> inputTask_;
     std::unique_ptr<TaskThread> outputTask_;

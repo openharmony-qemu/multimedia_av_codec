@@ -49,9 +49,22 @@ static OH_AVFormat *trackFormat = nullptr;
 static OH_AVBuffer *avBuffer = nullptr;
 static OH_AVFormat *format = nullptr;
 static OH_AVFormat *metaFormat = nullptr;
+static bool g_isDataTrack = false;
+static bool g_aIsEnd = false;
+static bool g_vIsEnd = false;
+static bool g_initResult = false;
+static int g_trackType = 0;
+static int g_audioFrame = 0;
+static int g_videoFrame = 0;
+static int g_fd = 0;
+static int g_aKeyCount = 0;
+static int g_vKeyCount = 0;
 static int32_t g_trackCount;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
+constexpr int DATA_TRACK_NUM_ZERO = 0;
+constexpr int DATA_TRACK_NUM_TWO = 2;
+constexpr int DATA_TRACK_NUM_THREE = 3;
 constexpr int FLV_AUDIONUM_AAC = 5148;
 constexpr int FLV_AUDIONUM_HEVC_AAC = 210;
 constexpr int FLV_VIDEONUM_HEVC_AAC_ALL = 602;
@@ -163,11 +176,28 @@ static void InitFile(const char *file, int32_t trackNum, int &fd, bool &initResu
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(trackNum, g_trackCount);
     for (int32_t index = 0; index < g_trackCount; index++) {
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+        if (g_isDataTrack && index == DATA_TRACK_NUM_TWO) {
+            ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+        } else {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+        }
     }
     avBuffer = OH_AVBuffer_Create(size);
     ASSERT_NE(avBuffer, nullptr);
     initResult = true;
+}
+
+static void DataTrackParameterReset()
+{
+    g_aIsEnd = false;
+    g_vIsEnd = false;
+    g_initResult = false;
+    g_trackType = DATA_TRACK_NUM_ZERO;
+    g_audioFrame = DATA_TRACK_NUM_ZERO;
+    g_videoFrame = DATA_TRACK_NUM_ZERO;
+    g_fd = DATA_TRACK_NUM_ZERO;
+    g_aKeyCount = DATA_TRACK_NUM_ZERO;
+    g_vKeyCount = DATA_TRACK_NUM_ZERO;
 }
 
 static bool CheckVideoSyncFrame(int &vKeyCount, int32_t &gopCount, int32_t &count)
@@ -1724,4 +1754,55 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_COMMENT_0070, TestSize.Level0)
     float floatVal = 0.0;
     ASSERT_FALSE(OH_AVFormat_GetFloatValue(sourceFormat, OH_MD_KEY_COMMENT, &floatVal));
     ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_DATATRACK_0010
+ * @tc.name      : data_track类型 获取轨道和获取帧数
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_DATATRACK_0010, TestSize.Level0)
+{
+    g_isDataTrack = true;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/avc_aac_data_track.ts";
+    InitFile(file, DATA_TRACK_NUM_THREE, g_fd, g_initResult);
+    ASSERT_TRUE(g_initResult);
+    while (!g_aIsEnd || !g_vIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            if (index == DATA_TRACK_NUM_TWO) {
+                ASSERT_NE(trackFormat, nullptr);
+                ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &g_trackType));
+            } else {
+                ASSERT_NE(trackFormat, nullptr);
+                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &g_trackType));
+            }
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((g_aIsEnd && (g_trackType == MEDIA_TYPE_AUD)) || (g_vIsEnd && (g_trackType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            if (index == DATA_TRACK_NUM_TWO) {
+                ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            } else {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+                ASSERT_NE(avBuffer, nullptr);
+                ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            }
+            if (g_trackType == MEDIA_TYPE_AUD) {
+                SetAudioValue(bufferAttr, g_aIsEnd, g_audioFrame, g_aKeyCount);
+            }else if (g_trackType == MEDIA_TYPE_VID) {
+                SetVideoValue(bufferAttr, g_vIsEnd, g_videoFrame, g_vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(g_audioFrame, 940);
+    ASSERT_EQ(g_videoFrame, 300);
+    ASSERT_EQ(g_aKeyCount, 940);
+    ASSERT_EQ(g_vKeyCount, 2);
+    close(g_fd);
+    g_fd = -1;
+    g_isDataTrack = false;
+    DataTrackParameterReset();
 }

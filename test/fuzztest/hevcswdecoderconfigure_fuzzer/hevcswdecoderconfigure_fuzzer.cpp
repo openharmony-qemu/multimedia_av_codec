@@ -21,7 +21,7 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "hevcswdecoderconfigure_fuzzer"
-const size_t EXPECT_SIZE = 6;
+const size_t EXPECT_SIZE = 24;
 namespace OHOS {
 bool HevcSwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
@@ -29,7 +29,6 @@ bool HevcSwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     FuzzedDataProvider fdp(data, size);
-    bool result = false;
     VDecServerSample *vDecSample = new VDecServerSample();
     vDecSample->kWidth = fdp.ConsumeIntegral<int32_t>();
     vDecSample->kHeight = fdp.ConsumeIntegral<int32_t>();
@@ -43,7 +42,7 @@ bool HevcSwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     vDecSample->WaitForEos();
 
     delete vDecSample;
-    return result;
+    return true;
 }
 } // namespace OHOS
 

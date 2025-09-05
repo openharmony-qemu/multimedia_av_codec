@@ -29,11 +29,12 @@ std::shared_ptr<AVCodecVideoDecoder> VideoDecoderFactory::CreateByMime(const std
 {
     std::shared_ptr<AVCodecVideoDecoder> impl = nullptr;
     Format format;
-    
+
     int32_t ret = CreateByMime(mime, format, impl);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK || impl != nullptr, nullptr,
         "AVCodec video decoder impl init failed, %{public}s",
         AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
+
     return impl;
 }
 
@@ -276,12 +277,13 @@ int32_t AVCodecVideoDecoderImpl::SetDecryptConfig(const sptr<DrmStandard::IMedia
     AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     return codecClient_->SetDecryptConfig(keySessionProxy, svpFlag);
 }
+#endif
 
 int32_t AVCodecVideoDecoderImpl::GetChannelId(int32_t &channelId)
 {
     CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     return codecClient_->GetChannelId(channelId);
 }
 
@@ -289,11 +291,9 @@ int32_t AVCodecVideoDecoderImpl::SetLowPowerPlayerMode(bool isLpp)
 {
     CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
-    AVCODEC_SYNC_TRACE;
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     return codecClient_->SetLowPowerPlayerMode(isLpp);
 }
-
-#endif
 
 int32_t AVCodecVideoDecoderImpl::NotifyMemoryExchange(const bool exchangeFlag)
 {

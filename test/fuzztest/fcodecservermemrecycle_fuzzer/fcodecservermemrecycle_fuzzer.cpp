@@ -14,15 +14,16 @@
  */
 #include <cstddef>
 #include <cstdint>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "sample.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "fcodecservermemrecycle_fuzzer"
-const uint32_t SURFACE_BOUND = 2;
 const size_t EXPECT_SIZE = 6;
-const size_t PIXELFORMAT_SIZE = 5;
+const int32_t ONE = 1;
+const int32_t FOUR = 4;
 
 namespace OHOS {
 bool FCodecServerMemrecycle(const uint8_t *data, size_t size)
@@ -34,8 +35,10 @@ bool FCodecServerMemrecycle(const uint8_t *data, size_t size)
         return false;
     }
     VDecServerSample *vDecSample = new VDecServerSample();
-    vDecSample->defaultPixelFormat = data[size - PIXELFORMAT_SIZE];
-    if (vDecSample->defaultPixelFormat % SURFACE_BOUND == 0) {
+    FuzzedDataProvider fdp(data, size);
+    vDecSample->defaultPixelFormat = fdp.ConsumeIntegralInRange<size_t>(ONE, FOUR);
+    bool result = fdp.ConsumeBool();
+    if (result) {
         vDecSample->isSurfMode = true;
     } else {
         vDecSample->isSurfMode = false;

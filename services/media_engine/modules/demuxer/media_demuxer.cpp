@@ -1761,7 +1761,6 @@ Status MediaDemuxer::Pause()
     }
     if (source_) {
         source_->SetReadBlockingFlag(false); // Disable source read blocking to prevent pause all task blocking
-        source_->Pause();
     }
     if (inPreroll_.load()) {
         if (CheckTrackEnabledById(videoTrackId_)) {

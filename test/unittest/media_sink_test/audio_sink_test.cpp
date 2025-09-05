@@ -1376,6 +1376,65 @@ HWTEST(TestAudioSink, audio_sink_ChangeTrackForFormatChange_001, TestSize.Level1
     auto ret = audioSink->ChangeTrackForFormatChange();
     ASSERT_TRUE(ret == Status::ERROR_NULL_POINTER);
 }
+
+ /**
+ * @tc.name  : Test CacheBuffer
+ * @tc.number: CacheBuffer_001
+ * @tc.desc  : Test availOutputBuffers_.size() <= 0
+ */
+HWTEST(TestAudioSink, audio_sink_CacheBuffer_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    audioSink->Prepare();
+    auto ret = audioSink->CacheBuffer();
+    ASSERT_TRUE(ret == Status::OK);
+}
+
+ /**
+ * @tc.name  : Test CacheBuffer
+ * @tc.number: CacheBuffer_002
+ * @tc.desc  : Test availOutputBuffers_.size() > 0 && metaData.size() <= 0
+ */
+HWTEST(TestAudioSink, audio_sink_CacheBuffer_002, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    audioSink->Prepare();
+
+    AVBufferConfig config;
+    config.size = 9;
+    config.capacity = 9;
+    config.memoryType = MemoryType::VIRTUAL_MEMORY;
+    std::shared_ptr<OHOS::Media::AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
+    buffer->memory_->size_ = 10;
+    audioSink->availOutputBuffers_.push(buffer);
+    auto ret = audioSink->CacheBuffer();
+
+    ASSERT_TRUE(ret == Status::OK);
+}
+
+ /**
+ * @tc.name  : Test CacheBuffer
+ * @tc.number: CacheBuffer_003
+ * @tc.desc  : Test availOutputBuffers_.size() > 0 && metaData.size() > 0
+ */
+HWTEST(TestAudioSink, audio_sink_CacheBuffer_003, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    audioSink->Prepare();
+
+    AVBufferConfig config;
+    config.size = 9;
+    config.capacity = 9;
+    config.memoryType = MemoryType::VIRTUAL_MEMORY;
+    std::shared_ptr<OHOS::Media::AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
+    std::vector<uint8_t> metaData = {1, 2, 3, 4, 5};
+    buffer->meta_->Set<Tag::OH_MD_KEY_AUDIO_VIVID_METADATA>(metaData);
+    buffer->memory_->size_ = 10;
+    audioSink->availOutputBuffers_.push(buffer);
+    auto ret = audioSink->CacheBuffer();
+
+    ASSERT_TRUE(ret == Status::OK);
+}
 } // namespace Test
 } // namespace Media
 } // namespace OHOS

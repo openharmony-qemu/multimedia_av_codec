@@ -25,14 +25,6 @@ using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "h263swdecoderconfigure_fuzzer"
 const size_t EXPECT_SIZE = 6;
 namespace OHOS {
-void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
-{
-    std::ofstream file(filename, std::ios::out | std::ios::binary);
-    if (file.is_open()) {
-        file.write(reinterpret_cast<const char*>(data), size);
-        file.close();
-    }
-}
 
 bool H263SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
@@ -42,9 +34,6 @@ bool H263SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     bool result = false;
     FuzzedDataProvider fdp(data, size);
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
-    std::string filename = "/data/test/corpus-EncoderAPI11H265BFrame10BitFuzzTest";
-    SaveCorpus(data, size, filename);
-    vDecSample->inpDir = filename.c_str();
     int32_t lengthMin = 176;
     int32_t lengthMax = 4096;
     int32_t frameRateMin = 1;

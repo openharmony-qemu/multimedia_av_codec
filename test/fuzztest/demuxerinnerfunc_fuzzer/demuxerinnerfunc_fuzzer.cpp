@@ -26,8 +26,19 @@ namespace OHOS {
 void RunDemuxerInnerFuncSample(const uint8_t *data, size_t size)
 {
     std::shared_ptr<DemuxerInnerFuncSample> demuxer = std::make_shared<DemuxerInnerFuncSample>();
-    if (demuxer->Init(data, size)) {
-        FuzzedDataProvider fdp(data, size);
+    FuzzedDataProvider fdp(data, size);
+    uint8_t *pstream = nullptr;
+    uint16_t framesize = fdp.ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
+    if (!pstream) {
+        std::cerr << "Memory alloction failed" << std::endl;
+        return;
+    }
+    fdp.ConsumeData(pstream, framesize);
+    bool ret = demuxer->Init(pstream, framesize);
+    free(pstream);
+    pstream = nullptr;
+    if (ret) {
         uint32_t trackIndex = fdp.ConsumeIntegral<uint32_t>();
         demuxer->GetCurrentCacheSize(trackIndex);
     }

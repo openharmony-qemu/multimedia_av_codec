@@ -768,7 +768,7 @@ int32_t VEncNdkFuzzSample::SetParameter(OH_AVFormat *format)
     return AV_ERR_UNKNOWN;
 }
 
-int32_t VEncNdkFuzzSample::SetParameterFuzz(int32_t data)
+int32_t VEncNdkFuzzSample::SetParameterFuzz(int32_t data, int32_t data1)
 {
     if (venc_) {
         OH_AVFormat *format = OH_AVFormat_Create();
@@ -777,7 +777,7 @@ int32_t VEncNdkFuzzSample::SetParameterFuzz(int32_t data)
         }
         double frameRate = data;
         (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, frameRate);
-        OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, data);
+        OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, data1);
         int ret = OH_VideoEncoder_SetParameter(venc_, format);
         OH_AVFormat_Destroy(format);
         return ret;

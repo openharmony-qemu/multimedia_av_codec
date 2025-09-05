@@ -62,6 +62,7 @@ ohos_unittest("avsource_capi_unit_test") {
       "./avsource_hevc_unit_test.cpp",
       "./avsource_unit_test.cpp",
       "./avsource_uri_unit_test.cpp",
+      "./avsource_ts_unit_test.cpp",
       "./capi/avsource_capi_mock.cpp",
       "./capi/avsource_capi_mock_factory.cpp",
     ]
@@ -126,6 +127,7 @@ ohos_unittest("avsource_inner_unit_test") {
       "./avsource_hevc_unit_test.cpp",
       "./avsource_unit_test.cpp",
       "./avsource_uri_unit_test.cpp",
+      "./avsource_ts_unit_test.cpp",
       "./inner/avsource_inner_mock.cpp",
       "./inner/avsource_inner_mock_factory.cpp",
     ]

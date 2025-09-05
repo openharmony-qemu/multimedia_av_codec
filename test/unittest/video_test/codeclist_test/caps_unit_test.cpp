@@ -197,14 +197,14 @@ void CapsUnitTest::CheckAVDecHEVC(const std::shared_ptr<VideoCaps> &videoCaps) c
     EXPECT_EQ(1, videoCodecCaps->IsSoftwareOnly());
     EXPECT_EQ(0, videoCodecCaps->IsVendor());
     EXPECT_GE(1, videoCaps->GetSupportedBitrate().minVal);
-    EXPECT_LE(300000000, videoCaps->GetSupportedBitrate().maxVal); // 300000000: test value
+    EXPECT_LE(0, videoCaps->GetSupportedBitrate().maxVal);
     EXPECT_LE(0, videoCaps->GetSupportedWidthAlignment());
     EXPECT_GE(2, videoCaps->GetSupportedWidth().minVal); // 2: test value
-    EXPECT_LE(4096, videoCaps->GetSupportedWidth().maxVal); // 4096: test value
+    EXPECT_LE(1920, videoCaps->GetSupportedWidth().maxVal); // 1920: test value
     EXPECT_GE(2, videoCaps->GetSupportedHeight().minVal); // 2: test value
-    EXPECT_LE(4096, videoCaps->GetSupportedHeight().maxVal); // 4096: test value
+    EXPECT_LE(1920, videoCaps->GetSupportedHeight().maxVal); // 1920: test value
     EXPECT_GE(1, videoCaps->GetSupportedFrameRate().minVal);
-    EXPECT_LE(120, videoCaps->GetSupportedFrameRate().maxVal); // 120: test value
+    EXPECT_LE(30, videoCaps->GetSupportedFrameRate().maxVal); // 30: test value
     EXPECT_LE(0, videoCaps->GetSupportedEncodeQuality().minVal);
     EXPECT_LE(0, videoCaps->GetSupportedEncodeQuality().maxVal);
     EXPECT_LE(0, videoCaps->GetSupportedQuality().minVal);

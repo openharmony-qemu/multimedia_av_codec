@@ -115,6 +115,7 @@ group("vcodec_framework_test") {
         ":videoenc_bframe_capi_sync_unit_test",
         ":videoenc_bframe_inner_async_unit_test",
         ":videoenc_bframe_inner_sync_unit_test",
+        ":videoenc_bitrate_mode_capi_unit_test",
       ]
     }
     if (av_codec_support_hcodec) {
@@ -877,6 +878,52 @@ ohos_unittest("videoenc_format_capi_unit_test") {
     "./func_sample/mock/capi/videoenc_capi_mock.cpp",
     "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_format_unit_test.cpp",
+  ]
+  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  external_deps = av_codec_capi_external_deps
+
+  resource_config_file = resource_configuration_file
+}
+
+#################################################################################################################
+ohos_unittest("videoenc_bitrate_mode_capi_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  configs = [
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test_config",
+  ]
+  include_dirs = [
+    "./",
+    "./common/utils",
+    "./func_sample/base",
+    "./func_sample/mock",
+    "./func_sample/mock/capi",
+    "./func_sample/sample/encoder",
+    "$av_codec_root_dir/services/include",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi",
+    "$av_codec_root_dir/test/unittest/common/",
+    "$av_codec_root_dir/frameworks/native/capi/common",
+  ]
+
+  defines = [
+    "VIDEOENC_CAPI_UNIT_TEST",
+    "VideoEncSample=VideoEncSyncSample",
+  ]
+  if (target_cpu == "arm64") {
+    defines += [ "HMOS_TEST" ]
+  }
+
+  cflags = vcodec_unittest_cflags
+
+  sources = [
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi/codeclist_capi_mock.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
+    "./common/utils/unittest_utils.cpp",
+    "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
+    "./func_sample/mock/capi/videoenc_capi_mock.cpp",
+    "./func_sample/sample/encoder/venc_sync_sample.cpp",
+    "./videoenc_bitrate_mode_unit_test.cpp",
   ]
   deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
   external_deps = av_codec_capi_external_deps

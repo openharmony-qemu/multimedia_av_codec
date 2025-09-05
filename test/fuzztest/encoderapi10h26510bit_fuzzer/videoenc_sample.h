@@ -76,7 +76,7 @@ public:
     int32_t SetVideoEncoderCallback();
     int32_t CreateSurface();
     int32_t StartVideoEncoder();
-    int32_t SetParameterFuzz(int32_t data);
+    int32_t SetParameterFuzz(int32_t data, int32_t data1);
     int32_t SetParameter(OH_AVFormat *format);
     void SetForceIDR();
     void GetStride();

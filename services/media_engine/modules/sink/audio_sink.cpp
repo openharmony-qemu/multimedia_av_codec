@@ -1664,9 +1664,7 @@ Status AudioSink::SetAudioHapticsSyncId(int32_t syncId)
 
 Status AudioSink::SetLoudnessGain(float loudnessGain)
 {
-    if (plugin_ == nullptr) {
-        return Status::ERROR_NULL_POINTER;
-    }
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     return plugin_->SetLoudnessGain(loudnessGain);
 }
 
@@ -1683,6 +1681,51 @@ std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::PreCreateAndStartNewPlugin(
     ret = SetAudioSinkPluginParameters(plugin);
     FALSE_RETURN_V(ret == Status::OK, nullptr);
     return plugin;
+}
+
+// empty availOutputBuffers_ stroe to swapOutputBuffers_
+Status AudioSink::CacheBuffer()
+{
+    FALSE_RETURN_V(!isEosBuffer_, Status::OK);
+    FALSE_RETURN_V(inputBufferQueue_ != nullptr, Status::OK);
+    std::lock_guard<std::mutex> lock(availBufferMutex_);
+    while (availOutputBuffers_.size() > 0) {
+        std::shared_ptr<AVBuffer> buffer = availOutputBuffers_.front();
+        FALSE_RETURN_V(buffer != nullptr && buffer->memory_->GetSize() > 0, Status::OK);
+
+        std::shared_ptr<Meta> meta = buffer->meta_;
+        AVBufferConfig avBufferConfig;
+        avBufferConfig.capacity = static_cast<int32_t>(buffer->memory_->GetSize());
+        avBufferConfig.memoryType = bufferMemoryType_;
+        std::shared_ptr<AVBuffer> swapBuffer = AVBuffer::CreateAVBuffer(avBufferConfig);
+        FALSE_RETURN_V(swapBuffer != nullptr && swapBuffer->memory_ != nullptr, Status::ERROR_NO_MEMORY);
+        std::vector<uint8_t> metaData;
+        meta->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData);
+        if (metaData.size() > 0) {
+            std::vector<uint8_t> swapMetaData;
+            swapMetaData = metaData;
+            swapBuffer->meta_->Set<Tag::OH_MD_KEY_AUDIO_VIVID_METADATA>(swapMetaData);
+        }
+        swapBuffer->pts_ = buffer->pts_;
+        swapBuffer->dts_ = buffer->dts_;
+        swapBuffer->duration_ = buffer->duration_;
+        swapBuffer->flag_ = buffer->flag_;
+        FALSE_RETURN_V(swapBuffer->memory_->GetCapacity() >= buffer->memory_->GetSize(), Status::ERROR_NO_MEMORY);
+        errno_t res = memcpy_s(swapBuffer->memory_->GetAddr(),
+            swapBuffer->memory_->GetCapacity(),
+            buffer->memory_->GetAddr(),
+            buffer->memory_->GetSize());
+        FALSE_RETURN_V(res == EOK, Status::ERROR_NO_MEMORY);
+        swapBuffer->memory_->SetSize(buffer->memory_->GetSize());
+
+        availOutputBuffers_.pop();
+        swapOutputBuffers_.push(swapBuffer);
+        FALSE_RETURN_V(inputBufferQueueConsumer_ != nullptr, Status::ERROR_UNKNOWN);
+        inputBufferQueueConsumer_->ReleaseBuffer(buffer);
+    }
+    MEDIA_LOG_I("cacheBuffer availOutputBuffers_ size:%{public}d, swapOutputBuffers_ size:%{public}d",
+        static_cast<int>(availOutputBuffers_.size()), static_cast<int>(swapOutputBuffers_.size()));
+    return Status::OK;
 }
 } // namespace MEDIA
 } // namespace OHOS

@@ -94,6 +94,7 @@ public:
     };
 private:
     static int32_t CheckAvcEncLibStatus();
+    static void GetBaseCapabilityData(CapabilityData &capsData);
     static void GetCapabilityData(CapabilityData &capsData, uint32_t index);
     int32_t Initialize();
     int32_t ConfigureContext(const Format &format);
@@ -240,7 +241,6 @@ private:
     int32_t outputBufferSize_ = 0;
 
     VideoPixelFormat srcPixelFmt_ = VideoPixelFormat::UNKNOWN;
-    VideoPixelFormat encodePixelFmt_ = VideoPixelFormat::NV21;
     std::vector<std::shared_ptr<FBuffer>> buffers_[2];
     std::shared_ptr<AVBuffer> convertBuffer_ = nullptr;
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;

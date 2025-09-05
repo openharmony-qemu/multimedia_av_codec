@@ -17,7 +17,7 @@
 
 #include "avcodec_audio_decoder.h"
 #include "nocopyable.h"
-#include "i_avcodec_service.h"
+#include "audio_codec_server.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -41,7 +41,7 @@ public:
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name);
 
 private:
-    std::shared_ptr<ICodecService> codecService_ = nullptr;
+    std::shared_ptr<AudioCodecServer> codecService_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

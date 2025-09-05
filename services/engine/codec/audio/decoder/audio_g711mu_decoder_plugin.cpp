@@ -109,7 +109,7 @@ int32_t AudioG711muDecoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBuffer
             (sizeof(int16_t) * decodeResult_.size()));
         auto attr = outBuffer->GetBufferAttr();
         auto outSize = sizeof(int16_t) * decodeResult_.size();
-        attr.size = static_cast<size_t>(outSize);
+        attr.size = static_cast<int32_t>(outSize);
         outBuffer->SetBufferAttr(attr);
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;

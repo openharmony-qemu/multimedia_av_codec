@@ -447,6 +447,12 @@ Status AudioSinkFilter::SetLoudnessGain(float loudnessGain)
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->SetLoudnessGain(loudnessGain);
 }
+
+Status AudioSinkFilter::CacheBuffer()
+{
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->CacheBuffer();
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
