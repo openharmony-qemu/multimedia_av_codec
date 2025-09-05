@@ -59,6 +59,9 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     auto bufData = buffer->WrapMemory(buf, bufSize, 0);
     FALSE_RETURN_V_MSG_E(buffer->GetMemory() != nullptr, ret, "Memory is nullptr");
     MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
+    if (ioContext->isGetFirstEos.load() && ioContext->invokerType == InvokerType::READ) {
+        return HandleReadEOS(ioContext);
+    }
     int tryCount = 0;
     do {
         auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
@@ -128,6 +131,7 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
 int FFmpegDemuxerPlugin::HandleReadEOS(IOContext* ioContext)
 {
     MEDIA_LOG_I("Read end");
+    ioContext->isGetFirstEos.store(ioContext->invokerType == InvokerType::READ ? true : false);
     ioContext->eos = true;
     return AVERROR_EOF;
 }
