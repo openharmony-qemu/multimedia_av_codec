@@ -1929,7 +1929,7 @@ bool FFmpegDemuxerPlugin::IsUseFirstFrameDts(int trackIndex, int64_t seekTime)
 Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, int64_t ffTime,
     SeekMode mode, int64_t& realSeekTime)
 {
-    ioContext_.isGetFirstEos.store(flase);
+    ioContext_.isGetFirstEos.store(false);
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
     realSeekTime = ConvertTimeFromFFmpeg(ffTime, avStream->time_base);
