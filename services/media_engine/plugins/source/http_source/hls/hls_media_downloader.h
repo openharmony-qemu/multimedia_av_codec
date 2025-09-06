@@ -114,6 +114,7 @@ public:
     bool IsHlsFmp4() override;
     uint64_t GetMemorySize() override;
     std::string GetContentType() override;
+    bool IsHlsEnd() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
