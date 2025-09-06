@@ -17,7 +17,6 @@
 #define FFMPEG_FORMAT_HELPER_H
 
 #include <cstdint>
-#include <unordered_set>
 #include "meta/meta.h"
 #include "ffmpeg_utils.h"
 
