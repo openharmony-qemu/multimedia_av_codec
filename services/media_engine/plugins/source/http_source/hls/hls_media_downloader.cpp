@@ -2266,9 +2266,9 @@ void HlsMediaDownloader::HandleSeekReady(int32_t streamType, int32_t streamId, i
     seekReadyInfo.PutIntValue("currentStreamId", streamId);
     seekReadyInfo.PutIntValue("isEOS", isEos);
     seekReadyInfo.PutLongValue("seekStartTimePos", seekStartTimePos_);
-    MEDIA_LOG_D("StreamType: " PUBLIC_LOG_D32 " StreamId: " PUBLIC_LOG_D32 " isEOS: " 
+    MEDIA_LOG_D("StreamType: " PUBLIC_LOG_D32 " StreamId: " PUBLIC_LOG_D32 " isEOS: "
         PUBLIC_LOG_D32 " seekStartTimePos: " PUBLIC_LOG_D64,
-        streamType, streamId, isEos);
+        streamType, streamId, isEos, seekStartTimePos_);
     if (callback_ != nullptr) {
         callback_->OnEvent({PluginEventType::HLS_SEEK_READY, seekReadyInfo, "hls_seek_ready"});
     }
