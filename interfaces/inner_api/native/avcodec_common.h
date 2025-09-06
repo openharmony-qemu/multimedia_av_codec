@@ -18,13 +18,11 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <unordered_set>
 #include "av_common.h"
 #include "buffer/avbuffer.h"
 #include "meta/format.h"
 #include "meta/video_types.h"
 #include "meta/media_types.h"
-#include "avcodec_info.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -289,11 +287,6 @@ struct CUVVConfigBox {
     uint16_t cuva_version_map;
     uint16_t terminal_provide_code;
     uint16_t terminal_provide_oriented_code;
-};
-
-inline std::unordered_set<FileType> ptsManagedFileTypes = {
-    FileType::AVI,
-    FileType::MPEGPS
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

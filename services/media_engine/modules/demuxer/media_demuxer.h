@@ -188,6 +188,11 @@ public:
         return isVideoMuted_ || needRestore_;
     }
     void NotifyResumeUnMute();
+
+    std::unordered_set<FileType> ptsManagedFileTypes = {
+        FileType::AVI,
+        FileType::MPEGPS
+    };
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
