@@ -102,7 +102,6 @@ private:
     static void ConvertAv3aSampleFormat(const AVStream& avStream, Meta &format);
 };
 extern std::vector<TagType> g_supportSourceFormat;
-extern std::unordered_set<FileType> g_ptsManagedFileTypes;
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

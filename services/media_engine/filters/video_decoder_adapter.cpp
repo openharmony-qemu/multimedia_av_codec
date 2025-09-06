@@ -18,7 +18,6 @@
 #include <map>
 #include <unistd.h>
 #include <vector>
-#include <unordered_set>
 #include "avcodec_video_decoder.h"
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
@@ -30,20 +29,7 @@
 #include "meta/meta.h"
 #include "video_decoder_adapter.h"
 #include "avcodec_sysevent.h"
-
-namespace OHOS {
-namespace Media {
-namespace Plugins {
-namespace Ffmpeg {
-extern std::unordered_set<FileType> g_ptsManagedFileTypes;
-} // namespace Ffmpeg
-} // namespace Plugins
-} // namespace Media
-} // namespace OHOS
-#include "media_core.h"
-#include "scoped_timer.h"
-#include "sync_fence.h"
-
+#include "avcodec_common.h"
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "VideoDecoderAdapter" };
 }
@@ -327,8 +313,7 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
     std::unique_lock<std::mutex> lock(mutex_);
     std::shared_ptr<AVBuffer> tmpBuffer;
     if (inputBufferQueueConsumer_->AcquireBuffer(tmpBuffer) == Status::OK) {
-        if (OHOS::Media::Plugins::Ffmpeg::g_ptsManagedFileTypes.find(static_cast<FileType>(fileType_)) !=
-            OHOS::Media::Plugins::Ffmpeg::g_ptsManagedFileTypes.end()) {
+        if (ptsManagedFileTypes.find(static_cast<FileType>(fileType_)) != ptsManagedFileTypes.end()) {
             GetInputBufferDts(tmpBuffer);
         }
         FALSE_RETURN_MSG(tmpBuffer->meta_ != nullptr, "tmpBuffer is nullptr.");
@@ -439,8 +424,7 @@ void VideoDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_pt
         MEDIA_LOG_D_SHORT("OnOutputBufferAvailable start. buffer is nullptr, index: %{public}u", index);
     }
     FALSE_RETURN_MSG(buffer != nullptr, "buffer is nullptr");
-    if (OHOS::Media::Plugins::Ffmpeg::g_ptsManagedFileTypes.find(static_cast<FileType>(fileType_)) !=
-        OHOS::Media::Plugins::Ffmpeg::g_ptsManagedFileTypes.end()) {
+    if (ptsManagedFileTypes.find(static_cast<FileType>(fileType_)) != ptsManagedFileTypes.end()) {
         SetOutputBufferPts(buffer);
     }
     FALSE_RETURN_MSG(callback_ != nullptr, "callback_ is nullptr");

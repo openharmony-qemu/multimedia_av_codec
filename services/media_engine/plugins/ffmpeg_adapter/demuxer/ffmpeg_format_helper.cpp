@@ -195,11 +195,6 @@ std::vector<TagType> g_supportSourceFormat = {
     Tag::MEDIA_AIGC
 };
 
-std::unordered_set<FileType> g_ptsManagedFileTypes = {
-    FileType::AVI,
-    FileType::MPEGPS
-};
-
 std::vector<std::string> SplitByChar(const char* str, const char* pattern)
 {
     FALSE_RETURN_V_NOLOG(str != nullptr && pattern != nullptr, {});
