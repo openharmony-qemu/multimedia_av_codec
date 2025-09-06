@@ -26,6 +26,16 @@
 #include "media_types.h"
 #include "avcodec_sysevent.h"
 #include "scoped_timer.h"
+#include <unordered_set>
+namespace OHOS {
+namespace Media {
+namespace Plugins {
+namespace Ffmpeg {
+extern std::unordered_set<FileType> g_ptsManagedFileTypes;
+} // namespace Ffmpeg
+} // namespace Plugins
+} // namespace Media
+} // namespace OHOS
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DemuxerFilter" };
@@ -722,9 +732,10 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     nextFiltersMap_[outType].push_back(nextFilter_);
 
     meta->SetData(Tag::REGULAR_TRACK_ID, trackId);
-    if (fileType == FileType::AVI) {
-        MEDIA_LOG_I("File type is AVI " PUBLIC_LOG_D32, static_cast<int32_t>(FileType::AVI));
-        meta->SetData(Tag::MEDIA_FILE_TYPE, FileType::AVI);
+    if (OHOS::Media::Plugins::Ffmpeg::g_ptsManagedFileTypes.find(fileType) !=
+        OHOS::Media::Plugins::Ffmpeg::g_ptsManagedFileTypes.end()) {
+        MEDIA_LOG_I("File type needs PTS management: " PUBLIC_LOG_D32, static_cast<int32_t>(fileType));
+        meta->SetData(Tag::MEDIA_FILE_TYPE, fileType);
     }
     std::shared_ptr<Meta> userInfo = demuxer_->GetUserMeta();
     std::string enhanceflag;

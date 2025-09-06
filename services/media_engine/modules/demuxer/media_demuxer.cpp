@@ -18,6 +18,17 @@
 #include "media_demuxer.h"
 
 #include <algorithm>
+#include <unordered_set>
+
+namespace OHOS {
+namespace Media {
+namespace Plugins {
+namespace Ffmpeg {
+extern std::unordered_set<FileType> g_ptsManagedFileTypes;
+} // namespace Ffmpeg
+} // namespace Plugins
+} // namespace Media
+} // namespace OHOS
 #include <map>
 #include <memory>
 #include <iomanip>
@@ -2515,7 +2526,9 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
         lastVideoPts_ = trackId == videoTrackId_ ? bufferMap_[trackId]->pts_ : lastVideoPts_;
         lastAudioPtsInMute_ = trackId == audioTrackId_ ? bufferMap_[trackId]->pts_ : lastAudioPtsInMute_;
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
-        if (fileType_ == FileType::AVI && trackId == videoTrackId_) {
+        if (OHOS::Media::Plugins::Ffmpeg::g_ptsManagedFileTypes.find(fileType_) !=
+            OHOS::Media::Plugins::Ffmpeg::g_ptsManagedFileTypes.end() && 
+            trackId == videoTrackId_) {
             SetOutputBufferPts(bufferMap_[trackId]);
         }
         FALSE_GOON_NOEXEC(isTranscoderMode_, TranscoderUpdateOutputBufferPts(trackId, bufferMap_[trackId]));

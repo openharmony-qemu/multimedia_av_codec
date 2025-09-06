@@ -17,6 +17,7 @@
 #define FFMPEG_FORMAT_HELPER_H
 
 #include <cstdint>
+#include <unordered_set>
 #include "meta/meta.h"
 #include "ffmpeg_utils.h"
 
@@ -101,6 +102,7 @@ private:
     static void ConvertAv3aSampleFormat(const AVStream& avStream, Meta &format);
 };
 extern std::vector<TagType> g_supportSourceFormat;
+extern std::unordered_set<FileType> g_ptsManagedFileTypes;
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media
