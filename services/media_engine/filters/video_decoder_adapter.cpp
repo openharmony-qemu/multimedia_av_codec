@@ -18,7 +18,6 @@
 #include <map>
 #include <unistd.h>
 #include <vector>
-#include <unordered_set>
 #include "avcodec_video_decoder.h"
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
@@ -46,11 +45,6 @@ const std::string VIDEO_INPUT_BUFFER_QUEUE_NAME = "VideoDecoderInputBufferQueue"
 constexpr uint64_t DECODER_USAGE =
     BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
 static const int64_t CODEC_START_WARNING_MS = 50;
-
-std::unordered_set<FileType> ptsManagedFileTypes = {
-    FileType::AVI,
-    FileType::MPEGPS
-};
 
 VideoDecoderCallback::VideoDecoderCallback(std::shared_ptr<VideoDecoderAdapter> videoDecoder)
 {
