@@ -722,9 +722,9 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     nextFiltersMap_[outType].push_back(nextFilter_);
 
     meta->SetData(Tag::REGULAR_TRACK_ID, trackId);
-    if (fileType == FileType::AVI) {
-        MEDIA_LOG_I("File type is AVI " PUBLIC_LOG_D32, static_cast<int32_t>(FileType::AVI));
-        meta->SetData(Tag::MEDIA_FILE_TYPE, FileType::AVI);
+    if (ptsManagedFileTypes.find(fileType) != ptsManagedFileTypes.end()) {
+        MEDIA_LOG_I("File type needs PTS management: " PUBLIC_LOG_D32, static_cast<int32_t>(fileType));
+        meta->SetData(Tag::MEDIA_FILE_TYPE, fileType);
     }
     std::shared_ptr<Meta> userInfo = demuxer_->GetUserMeta();
     std::string enhanceflag;

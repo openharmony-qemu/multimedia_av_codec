@@ -32,6 +32,7 @@
 #include "media_core.h"
 #include "scoped_timer.h"
 #include "sync_fence.h"
+#include "media_demuxer.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "VideoDecoderAdapter" };
@@ -316,7 +317,7 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
     std::unique_lock<std::mutex> lock(mutex_);
     std::shared_ptr<AVBuffer> tmpBuffer;
     if (inputBufferQueueConsumer_->AcquireBuffer(tmpBuffer) == Status::OK) {
-        if (fileType_ == static_cast<int32_t>(FileType::AVI)) {
+        if (ptsManagedFileTypes.find(static_cast<FileType>(fileType_)) != ptsManagedFileTypes.end()) {
             GetInputBufferDts(tmpBuffer);
         }
         FALSE_RETURN_MSG(tmpBuffer->meta_ != nullptr, "tmpBuffer is nullptr.");
@@ -427,7 +428,7 @@ void VideoDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_pt
         MEDIA_LOG_D_SHORT("OnOutputBufferAvailable start. buffer is nullptr, index: %{public}u", index);
     }
     FALSE_RETURN_MSG(buffer != nullptr, "buffer is nullptr");
-    if (fileType_ == static_cast<int32_t>(FileType::AVI)) {
+    if (ptsManagedFileTypes.find(static_cast<FileType>(fileType_)) != ptsManagedFileTypes.end()) {
         SetOutputBufferPts(buffer);
     }
     FALSE_RETURN_MSG(callback_ != nullptr, "callback_ is nullptr");

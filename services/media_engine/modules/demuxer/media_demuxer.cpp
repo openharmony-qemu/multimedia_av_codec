@@ -125,6 +125,11 @@ enum SceneCode : int32_t {
     AV_META_SCENE_PARSE_REF_FOR_DRAGGING_PLAY = 3 // scene code of parser ref for dragging play is 3
 };
 
+std::unordered_set<FileType> ptsManagedFileTypes = {
+    FileType::AVI,
+    FileType::MPEGPS
+};
+
 class MediaDemuxer::AVBufferQueueProducerListener : public IRemoteStub<IProducerListener> {
 public:
     explicit AVBufferQueueProducerListener(int32_t trackId, std::shared_ptr<MediaDemuxer> demuxer,
@@ -2515,7 +2520,7 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
         lastVideoPts_ = trackId == videoTrackId_ ? bufferMap_[trackId]->pts_ : lastVideoPts_;
         lastAudioPtsInMute_ = trackId == audioTrackId_ ? bufferMap_[trackId]->pts_ : lastAudioPtsInMute_;
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
-        if (fileType_ == FileType::AVI && trackId == videoTrackId_) {
+        if (ptsManagedFileTypes.find(fileType_) != ptsManagedFileTypes.end() && trackId == videoTrackId_) {
             SetOutputBufferPts(bufferMap_[trackId]);
         }
         FALSE_GOON_NOEXEC(isTranscoderMode_, TranscoderUpdateOutputBufferPts(trackId, bufferMap_[trackId]));
