@@ -18,6 +18,7 @@
 #include <map>
 #include <unistd.h>
 #include <vector>
+#include <unordered_set>
 #include "avcodec_video_decoder.h"
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
