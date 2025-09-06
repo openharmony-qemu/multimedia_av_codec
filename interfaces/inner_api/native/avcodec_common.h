@@ -21,8 +21,6 @@
 #include "av_common.h"
 #include "buffer/avbuffer.h"
 #include "meta/format.h"
-#include "meta/video_types.h"
-#include "meta/media_types.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

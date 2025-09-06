@@ -32,7 +32,6 @@
 #include "media_core.h"
 #include "scoped_timer.h"
 #include "sync_fence.h"
-#include "avcodec_common.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "VideoDecoderAdapter" };

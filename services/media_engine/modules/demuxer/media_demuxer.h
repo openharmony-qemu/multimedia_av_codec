@@ -52,6 +52,8 @@ using MediaSyncManager = OHOS::Media::Pipeline::MediaSyncManager;
 using FileType = OHOS::Media::Plugins::FileType;
 using funcPreReadSample = std::function<int64_t(int32_t trackId)>;
 
+extern std::unordered_set<FileType> ptsManagedFileTypes;
+
 class AVBufferQueueProducer;
 enum class DemuxerTrackType : int32_t {
     VIDEO = 0,
@@ -188,11 +190,6 @@ public:
         return isVideoMuted_ || needRestore_;
     }
     void NotifyResumeUnMute();
-
-    std::unordered_set<FileType> ptsManagedFileTypes = {
-        FileType::AVI,
-        FileType::MPEGPS
-    };
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
