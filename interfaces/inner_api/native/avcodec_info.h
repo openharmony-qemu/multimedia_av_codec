@@ -945,6 +945,8 @@ enum FileType : int32_t {
     FILE_TYPE_MP4 = 101,
     FILE_TYPE_MPEGTS = 102,
     FILE_TYPE_MKV = 103,
+    FILE_TYPE_AVI = 104,
+    FILE_TYPE_MPEGPS = 105,
     FILE_TYPE_AMR = 201,
     FILE_TYPE_AAC = 202,
     FILE_TYPE_MP3 = 203,

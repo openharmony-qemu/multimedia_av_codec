@@ -49,7 +49,7 @@
 #include "param_wrapper.h"
 #include "parameters.h"
 #include "scope_guard.h"
-#include "syspara/parameters.h" 
+#include "syspara/parameters.h"
 
 namespace {
 const std::string DUMP_PARAM = "a";
