@@ -2520,7 +2520,7 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
         lastVideoPts_ = trackId == videoTrackId_ ? bufferMap_[trackId]->pts_ : lastVideoPts_;
         lastAudioPtsInMute_ = trackId == audioTrackId_ ? bufferMap_[trackId]->pts_ : lastAudioPtsInMute_;
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
-        if (ptsManagedFileTypes.find(fileType_) != ptsManagedFileTypes.end() &&trackId == videoTrackId_) {
+        if (ptsManagedFileTypes.find(fileType_) != ptsManagedFileTypes.end() && trackId == videoTrackId_) {
             SetOutputBufferPts(bufferMap_[trackId]);
         }
         FALSE_GOON_NOEXEC(isTranscoderMode_, TranscoderUpdateOutputBufferPts(trackId, bufferMap_[trackId]));
