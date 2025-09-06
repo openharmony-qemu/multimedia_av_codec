@@ -299,6 +299,10 @@ public:
     {
         return 0;
     }
+    virtual bool IsHlsEnd()
+    {
+        return false;
+    }
 };
 
 /// Source plugin api major number.
