@@ -55,7 +55,8 @@ ohos_fuzztest("HwavcencoderServerFuzzTest") {
   if (build_variant != "user") {
     defines += [ "BUILD_ENG_VERSION" ]
   }
-  if (target_cpu == "arm64") {
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.hdf_drivers_interface_hmi)) {
     defines += [ "HMOS_TEST" ]
     external_deps += [ "drivers_interface_hmi:libhmi_proxy_1.0" ]
   }
