@@ -53,7 +53,8 @@ enum SLEEP_TIME : int32_t {
 };
 constexpr size_t MIN_BUFFER_SIZE = 5 * 1024 * 1024;
 
-class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback {
+class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback,
+    public std::enable_shared_from_this<HlsMediaDownloader> {
 public:
     explicit HlsMediaDownloader(int expectBufferDuration, bool userDefinedDuration,
         const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>(),
@@ -176,6 +177,7 @@ private:
     void RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo);
     uint64_t GetTotalTsBuffersize();
     bool IsPureByteRange();
+    void SetDownloaderRequestCb(StatusCallbackFunc& statusCallback, DownloadDoneCbFunc& downloadDoneCallback);
 
 private:
     size_t totalBufferSize_ {0};

@@ -192,7 +192,7 @@ private:
     int32_t bitRateToRequestSize_ {0};
 };
 
-class Downloader {
+class Downloader : public std::enable_shared_from_this<Downloader> {
 public:
     explicit Downloader(const std::string& name) noexcept;
     explicit Downloader(const std::string& name, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader) noexcept;

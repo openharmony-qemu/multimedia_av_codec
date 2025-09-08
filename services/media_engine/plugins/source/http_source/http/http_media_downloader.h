@@ -35,7 +35,8 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-class HttpMediaDownloader : public MediaDownloader {
+class HttpMediaDownloader : public MediaDownloader,
+    public std::enable_shared_from_this<HttpMediaDownloader> {
 public:
     explicit HttpMediaDownloader(std::string url, uint32_t expectBufferDuration,
                                  std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);

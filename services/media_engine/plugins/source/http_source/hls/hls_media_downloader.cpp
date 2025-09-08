@@ -174,19 +174,32 @@ std::string HlsMediaDownloader::GetContentType()
     return downloader_->GetContentType();
 }
 
+void HlsMediaDownloader::SetDownloaderRequestCb(
+    StatusCallbackFunc& statusCallback, DownloadDoneCbFunc& downloadDoneCallback)
+{
+    std::weak_ptr<HlsMediaDownloader> weakThis = weak_from_this();
+    statusCallback = [weakThis] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                                        std::shared_ptr<DownloadRequest>& request) {
+        auto shareThis = weakThis.lock();
+        FALSE_RETURN_MSG(shareThis != nullptr, "hls statusCallback shareThis, is nullptr!");
+        shareThis->statusCallback_(status, shareThis->downloader_, std::forward<decltype(request)>(request));
+    };
+    downloadDoneCallback = [weakThis] (const std::string &url, const std::string& location) {
+        auto shareThis = weakThis.lock();
+        FALSE_RETURN_MSG(shareThis != nullptr, "hls downloadDoneCallback, shareThis is nullptr!");
+        shareThis->UpdateDownloadFinished(url, location);
+    };
+}
+
 void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
 {
     if (fragmentDownloadStart[playInfo.url_]) {
         writeTsIndex_ > 0 ? writeTsIndex_-- : 0;
         return;
     }
-    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                                        std::shared_ptr<DownloadRequest>& request) {
-        statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
-    };
-    auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {
-        UpdateDownloadFinished(url, location);
-    };
+    StatusCallbackFunc realStatusCallback = nullptr;
+    DownloadDoneCbFunc downloadDoneCallback = nullptr;
+    SetDownloaderRequestCb(realStatusCallback, downloadDoneCallback);
     RequestInfo requestInfo;
     requestInfo.url = playInfo.rangeUrl_.empty() ? playInfo.url_ : playInfo.rangeUrl_;
     requestInfo.httpHeader = httpHeader_;
