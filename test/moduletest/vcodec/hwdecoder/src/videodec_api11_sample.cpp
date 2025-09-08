@@ -1381,3 +1381,10 @@ int32_t VDecAPI11Sample::OpenFile()
     }
     return  AV_ERR_OK;
 }
+
+void VDecAPI11Sample::FlushStatus()
+{
+    StopInloop();
+    StopOutloop();
+    Flush_buffer();
+}

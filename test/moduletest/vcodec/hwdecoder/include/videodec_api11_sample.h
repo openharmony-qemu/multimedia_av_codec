@@ -157,6 +157,7 @@ public:
     bool IsRender();
     void RenderOutAtTime(uint32_t index);
     bool MdCompare(uint8_t source[]);
+    void FlushStatus();
     std::vector<uint8_t> LoadHashFile();
     VDecAPI11Signal *signal_;
     uint32_t errCount = 0;
