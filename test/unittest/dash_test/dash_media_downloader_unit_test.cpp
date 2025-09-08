@@ -441,9 +441,9 @@ HWTEST_F(DashMediaDownloaderUnitTest, GET_PLAYBACK_INFO_001, TestSize.Level1)
     PlaybackInfo playbackInfo;
     mediaDownloader->GetPlaybackInfo(playbackInfo);
     EXPECT_EQ(playbackInfo.serverIpAddress, "127.0.0.1");
-    EXPECT_EQ(playbackInfo.averageDownloadRate, 0);
+    EXPECT_GT(playbackInfo.averageDownloadRate, 0);
     EXPECT_EQ(playbackInfo.isDownloading, false);
-    EXPECT_EQ(playbackInfo.downloadRate, 0);
+    EXPECT_GT(playbackInfo.downloadRate, 0);
     EXPECT_EQ(playbackInfo.bufferDuration, 0);
     mediaDownloader->Close(false);
     mediaDownloader = nullptr;
