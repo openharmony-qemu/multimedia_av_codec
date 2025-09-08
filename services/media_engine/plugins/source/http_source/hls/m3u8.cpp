@@ -216,6 +216,7 @@ void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
     }
     if (length > 0 && length < DEFAULT_MAX_SIZE) {
         fmp4Header_ = new uint8_t[length + 1]; // 1
+        fmp4HeaderLen = length + 1;
     }
     DownloadMap(uri, offset, length);
     AutoLock lock(sleepMutex_);
