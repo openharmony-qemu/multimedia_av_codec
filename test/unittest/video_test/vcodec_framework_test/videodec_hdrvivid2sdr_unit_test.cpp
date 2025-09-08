@@ -48,7 +48,7 @@ public:
     void TearDown(void);
     void CreateByNameWithParam(std::string_view param);
     void PrepareSource(ResourceType param);
-    void ConfigureHdrVivid2Sdr(int32_t testCode, ResourceType resourceType);
+    void ConfigureHdrVivid2Sdr(std::string_view testCode, ResourceType resourceType);
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK,
                                                           STRINGFY(HdrVivid2SdrHevcTest)};
 };
@@ -175,7 +175,7 @@ void CheckFormatKey(std::shared_ptr<FormatMock> format, ResourceType resourceTyp
     EXPECT_EQ(colorSpace, initialColorSpace);
 }
 
-void HdrVivid2SdrHevcTest::ConfigureHdrVivid2Sdr(int32_t mimeType, ResourceType resourceType)
+void HdrVivid2SdrHevcTest::ConfigureHdrVivid2Sdr(std::string_view mimeType, ResourceType resourceType)
 {
     auto testCode = RESOURCE_TESTCODE.at(resourceType);
     CreateByNameWithParam(mimeType);
@@ -488,7 +488,6 @@ HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0091, TestSize.Level1)
  */
 HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0092, TestSize.Level1)
 {
-    auto params = GetParam();
     std::string_view mimeType = CodecMimeType::VIDEO_HEVC;
     ResourceType resourceType = ResourceType::HDR_HLG_FULL;
     CreateByNameWithParam(mimeType.data());
@@ -648,7 +647,7 @@ HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0161, TestSize.Level1)
 {
     std::string_view mimeType = CodecMimeType::VIDEO_HEVC;
     ResourceType resourceType = ResourceType::HDR;
-    CreateByNameWithParam(CodecMimeType::VIDEO_HEVC);
+    CreateByNameWithParam(mimeType);
     SetNV21Format();
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
