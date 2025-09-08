@@ -231,7 +231,7 @@ public:
                                  std::shared_ptr<AVSharedMemory> buffer) override;
 
 private:
-    std::shared_ptr<CodecServer> codec_ = nullptr;
+    std::weak_ptr<CodecServer> weakCodec_;
 };
 
 class VCodecBaseCallback : public MediaCodecCallback, public NoCopyable {
@@ -247,7 +247,7 @@ public:
     void OnOutputBufferUnbinded() override;
 
 private:
-    std::shared_ptr<CodecServer> codec_ = nullptr;
+    std::weak_ptr<CodecServer> weakCodec_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
