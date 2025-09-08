@@ -1288,7 +1288,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_H265_FLUSH_0010, TestSize.Level1)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_H266_FLUSH_0010, TestSize.Level1)
 {
-    if (cap_vvc != nullptr) {
+    if (g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_VVC_1080;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1362,7 +1362,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_H265_FLUSH_0020, TestSize.Level1)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_H266_FLUSH_0020, TestSize.Level1)
 {
-    if (cap_vvc != nullptr) {
+    if (g_codecNameVVC.find("hisi") != string::npos) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_VVC_1080;
         vDecSample->DEFAULT_WIDTH = 1920;
