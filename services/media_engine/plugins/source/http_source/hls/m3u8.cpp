@@ -33,6 +33,7 @@ constexpr uint32_t WAIT_KEY_SLEEP_TIME = 10;
 constexpr uint32_t MAX_DOWNLOAD_TIME = 500;
 constexpr uint64_t BAND_WIDTH_LIMIT = 3 * 1024 * 1024;
 constexpr uint32_t DEFAULT_HEADER_SIZE = 1 * 1024 * 1024;
+constexpr uint32_t DEFAULT_MAX_SIZE = 100 * 1024 * 1024;
 constexpr double SECOND_TO_MICROSECOND = 1000.0 * 1000.0;
 const char DRM_PSSH_TITLE[] = "data:text/plain;";
 
@@ -213,7 +214,7 @@ void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
     if (isHeaderReady_.load()) {
         return;
     }
-    if (length > 0) {
+    if (length > 0 && length < DEFAULT_MAX_SIZE) {
         fmp4Header_ = new uint8_t[length + 1]; // 1
     }
     DownloadMap(uri, offset, length);
@@ -273,9 +274,11 @@ uint32_t M3U8::SaveMapData(uint8_t* data, uint32_t len, bool notBlock)
     if (fmp4Header_ == nullptr && downloadHeaderRequest_) {
         uint32_t headerLen = downloadHeaderRequest_->GetFileContentLengthNoWait();
         headerLen = headerLen > 0 ? headerLen : DEFAULT_HEADER_SIZE; // 1MB
+        headerLen = std::min(headerLen, DEFAULT_MAX_SIZE);
         fmp4Header_ = new uint8_t[headerLen];
+        fmp4HeaderLen = headerLen;
     }
-    NZERO_RETURN_V(memcpy_s(fmp4Header_ + downloadHeaderLen_, len, data, len), 0);
+    NZERO_RETURN_V(memcpy_s(fmp4Header_ + downloadHeaderLen_, fmp4HeaderLen - downloadHeaderLen_, data, len), 0);
     downloadHeaderLen_ += len;
     return len;
 }
