@@ -144,7 +144,7 @@ HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR, TestSize.Level1)
     EXPECT_FALSE(m3u8.tagUpdatersMap_.empty());
 }
 
-HWTEST_F(M3u8UnitTest, TEST_EMPTY_URI, TestSize.Level1)
+HWTEST_F(M3u8UnitTest, TEST_EMPTY_URI, TestSize.Level0)
 {
     M3U8 m3u8("", "Test M3U8");
 
@@ -158,7 +158,7 @@ HWTEST_F(M3u8UnitTest, TEST_EMPTY_URI, TestSize.Level1)
     EXPECT_FALSE(m3u8.tagUpdatersMap_.empty());
 }
 
-HWTEST_F(M3u8UnitTest, TEST_EMPTY_NAME, TestSize.Level1)
+HWTEST_F(M3u8UnitTest, TEST_EMPTY_NAME, TestSize.Level0)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
 

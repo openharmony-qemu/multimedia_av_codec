@@ -141,7 +141,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_MPD_SetPlayStrategy, TestSize.Level1)
     EXPECT_TRUE(httpSourcePlugin);
 }
 
-HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level1)
+HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level0)
 {
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
     Plugins::Callback* sourceCallback = new SourceCallback();
@@ -155,7 +155,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level1)
     EXPECT_TRUE(httpSourcePlugin);
 }
 
-HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4_DumuxState, TestSize.Level1)
+HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4_DumuxState, TestSize.Level0)
 {
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
     Plugins::Callback* sourceCallback = new SourceCallback();
