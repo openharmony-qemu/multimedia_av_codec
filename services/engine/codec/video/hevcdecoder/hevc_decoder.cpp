@@ -125,9 +125,6 @@ int32_t HevcDecoder::Init(Meta &callerInfo)
     callerInfo.GetData("av_codec_event_info_instance_id", instanceId_);
     int32_t ret = Initialize();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Failed to initialize");
-    hevcDecInfo_.instanceId = std::to_string(instanceId_);
-    decName_ = "hevcdecoder_[" + std::to_string(instanceId_) + "]";
-    AVCODEC_LOGI("HevcDecoder codec name: %{public}s", decName_.c_str());
     return AVCS_ERR_OK;
 }
 
