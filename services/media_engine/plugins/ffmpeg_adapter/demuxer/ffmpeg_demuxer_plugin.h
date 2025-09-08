@@ -361,7 +361,7 @@ typedef struct DtsFinder {
     explicit DtsFinder(int64_t dts) : dts_(dts) { }
     bool operator ()(const std::map<int64_t, int64_t>::value_type &item)
     {
-        return dts_ == item.second || dts_ == item.second - 1;
+        return dts_ == item.second || dts_ == item.second - 1 || dts_ == item.second + 1;
     }
     int64_t dts_;
 } DtsFinder;
