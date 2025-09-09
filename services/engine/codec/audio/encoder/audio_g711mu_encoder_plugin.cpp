@@ -196,7 +196,7 @@ int32_t AudioG711muEncoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBuffer
                       (sizeof(uint8_t) * encodeResult_.size()));
         auto attr = outBuffer->GetBufferAttr();
         auto outSize = sizeof(uint8_t) * encodeResult_.size();
-        attr.size = reinterpret_cast<size_t>(outSize);
+        attr.size = static_cast<int32_t>(outSize);
         outBuffer->SetBufferAttr(attr);
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;

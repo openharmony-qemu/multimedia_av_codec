@@ -79,7 +79,7 @@ int32_t AudioResample::Convert(const uint8_t* srcBuffer, const size_t srcLength,
             tmpInput[i] = tmpInput[i-1] + lineSize;
         }
     }
-    int32_t samples = lineSize / av_get_bytes_per_sample(resamplePara_.srcFmt);
+    int32_t samples = static_cast<int32_t>(lineSize) / av_get_bytes_per_sample(resamplePara_.srcFmt);
     auto res = swr_convert(swrCtx_.get(), resampleChannelAddr_.data(), resamplePara_.destSamplesPerFrame,
                            tmpInput.data(), samples);
     if (res < 0) {
@@ -87,7 +87,7 @@ int32_t AudioResample::Convert(const uint8_t* srcBuffer, const size_t srcLength,
         destLength = 0;
     } else {
         destBuffer = resampleCache_.data();
-        destLength = static_cast<size_t>(res * av_get_bytes_per_sample(resamplePara_.destFmt) * resamplePara_.channels);
+        destLength = static_cast<size_t>(res * av_get_bytes_per_sample(resamplePara_.destFmt)) * resamplePara_.channels;
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }

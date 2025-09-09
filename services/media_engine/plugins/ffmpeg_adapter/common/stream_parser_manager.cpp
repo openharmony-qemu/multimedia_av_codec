@@ -21,8 +21,7 @@
 
 namespace {
 const std::string HEVC_LIB_PATH = "libav_codec_hevc_parser.z.so";
-const std::string VVC_LIB_PATH = "libav_codec_vvc_parser.z.so";
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "StreamParserManager" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "StreamParserManager" };
 }
 
 namespace OHOS {
@@ -54,10 +53,7 @@ bool StreamParserManager::Init(VideoStreamType videoStreamType)
         return true;
     }
 
-    std::string streamParserPath;
-    if (videoStreamType == VideoStreamType::HEVC) {
-        streamParserPath = HEVC_LIB_PATH;
-    }
+    std::string streamParserPath = HEVC_LIB_PATH;
     if (handlerMap_.count(videoStreamType) == 0) {
         handlerMap_[videoStreamType] = LoadPluginFile(streamParserPath);
     }
