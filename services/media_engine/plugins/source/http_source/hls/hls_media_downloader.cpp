@@ -448,6 +448,10 @@ bool HlsMediaDownloader::HandleCache()
 
 void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
 {
+    if (notNeedReadBack_.load()) {
+        ffmpegOffset_ = ffmpegOffset;
+        return;
+    }
     if (curStreamId_ > 0 && isNeedResetOffset_.load()) {
         ffmpegOffset_ = ffmpegOffset;
         return;
@@ -550,6 +554,11 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
     MEDIA_LOG_D("HLS Read in: wantReadLength " PUBLIC_LOG_D32 ", readOffset: " PUBLIC_LOG_U64 " readTsIndex: "
         PUBLIC_LOG_U32 " bufferSize: " PUBLIC_LOG_U64, readDataInfo.wantReadLength_, readOffset_,
         readTsIndex_.load(), GetCrossTsBuffersize());
+    if (isTsEnd_.load()) {
+        MEDIA_LOG_I("HLS READ TS END");
+        isTsEnd_.store(false);
+        return Status::END_OF_STREAM;
+    }
     readDataInfo.isEos_ = CheckReadStatus();
     if (readDataInfo.isEos_ && GetBufferSize() == 0 && readTsIndex_ + 1 == backPlayList_.size() &&
         tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
@@ -634,6 +643,10 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
         tsStorageInfo_[readTsIndex_].second == true) {
         uint64_t tsEndOffset = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first);
         if (readOffset_ >= tsEndOffset) {
+            if (GetHLSDiscontinuity()) {
+                isTsEnd_.store(true);
+                notNeedReadBack_.store(true);
+            }
             RemoveFmp4PaddingData(buff, readDataInfo);
             readTsIndex_++;
             cacheMediaBuffer_->ClearFragmentBeforeOffset(SpliceOffset(readTsIndex_, 0));
@@ -647,7 +660,8 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
                 return;
             }
         }
-        if (readDataInfo.realReadLength_ < readDataInfo.wantReadLength_ && readTsIndex_ != backPlayList_.size()) {
+        if (!GetHLSDiscontinuity() && readDataInfo.realReadLength_ < readDataInfo.wantReadLength_
+            && readTsIndex_ != backPlayList_.size()) {
             uint32_t crossFragLen = readDataInfo.wantReadLength_ - readDataInfo.realReadLength_;
             uint32_t crossReadLen = cacheMediaBuffer_->Read(buff + readDataInfo.realReadLength_, readOffset_,
                                                             crossFragLen);
@@ -793,6 +807,7 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
     HandleSeekReady(MediaAVCodec::MediaType::MEDIA_TYPE_VID, curStreamId_, CheckBreakCondition());
     MEDIA_LOG_I("HLS SeekToTime end\n");
     isSeekingFlag = false;
+    notNeedReadBack_.store(false);
     return true;
 }
 
@@ -1338,10 +1353,12 @@ int64_t HlsMediaDownloader::RequestNewTs(uint64_t seekTime, SeekMode mode, doubl
     } else {
         int64_t startTimePos = 0;
         double lastTotalDuration = totalDuration - hstTime;
-        if (static_cast<uint64_t>(lastTotalDuration) < seekTime) {
+        if (static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
             startTimePos = static_cast<int64_t>(seekTime) - static_cast<int64_t>(lastTotalDuration);
+            seekStartTimePos_ = lastTotalDuration;
             if (startTimePos > (int64_t)(hstTime / HALF_DIVIDE) && (&item != &backPlayList_.back())) { // 2
                 writeTsIndex_++;
+                seekStartTimePos_ = totalDuration;
                 MEDIA_LOG_I("writeTsIndex, RequestNewTs update writeTsIndex " PUBLIC_LOG_U32, writeTsIndex_);
                 return -1;
             }
@@ -2248,8 +2265,10 @@ void HlsMediaDownloader::HandleSeekReady(int32_t streamType, int32_t streamId, i
     seekReadyInfo.PutIntValue("currentStreamType", streamType);
     seekReadyInfo.PutIntValue("currentStreamId", streamId);
     seekReadyInfo.PutIntValue("isEOS", isEos);
-    MEDIA_LOG_D("StreamType: " PUBLIC_LOG_D32 " StreamId: " PUBLIC_LOG_D32 " isEOS: " PUBLIC_LOG_D32,
-        streamType, streamId, isEos);
+    seekReadyInfo.PutLongValue("seekStartTimePos", seekStartTimePos_);
+    MEDIA_LOG_D("StreamType: " PUBLIC_LOG_D32 " StreamId: " PUBLIC_LOG_D32 " isEOS: "
+        PUBLIC_LOG_D32 " seekStartTimePos: " PUBLIC_LOG_D64,
+        streamType, streamId, isEos, seekStartTimePos_);
     if (callback_ != nullptr) {
         callback_->OnEvent({PluginEventType::HLS_SEEK_READY, seekReadyInfo, "hls_seek_ready"});
     }
@@ -2279,6 +2298,16 @@ uint64_t HlsMediaDownloader::GetTotalTsBuffersize()
 uint64_t HlsMediaDownloader::GetMemorySize()
 {
     return memorySize_;
+}
+
+bool HlsMediaDownloader::IsHlsEnd()
+{
+    if (CheckReadStatus() && GetBufferSize() == 0 && readTsIndex_ + 1 == backPlayList_.size() &&
+        tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
+        tsStorageInfo_[readTsIndex_].second) {
+            return true;
+        }
+    return false;
 }
 }
 }

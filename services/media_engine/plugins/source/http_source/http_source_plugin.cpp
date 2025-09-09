@@ -630,6 +630,12 @@ std::string HttpSourcePlugin::GetCurUrl()
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader_ is nullptr");
     return downloader_->GetCurUrl();
 }
+
+bool HttpSourcePlugin::IsHlsEnd()
+{
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
+    return downloader_->IsHlsEnd();
+}
 }
 }
 }

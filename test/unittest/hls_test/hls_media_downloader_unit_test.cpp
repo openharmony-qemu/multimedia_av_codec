@@ -1724,6 +1724,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, READ_DELEGATE_001, TestSize.Level1)
     EXPECT_EQ(downloader->ReadDelegate(buffer, readDataInfo), Status::END_OF_STREAM);
     readDataInfo.wantReadLength_ = 4096;
     EXPECT_EQ(downloader->ReadDelegate(buffer, readDataInfo), Status::OK);
+    EXPECT_EQ(downloader->IsHlsEnd(), false);
     EXPECT_EQ(downloader->writeTsIndex_, 0);
 
     downloader->isBuffering_ = true;
@@ -1734,6 +1735,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, READ_DELEGATE_001, TestSize.Level1)
     downloader->readTsIndex_ = 1;
     downloader->tsStorageInfo_[downloader->readTsIndex_] = std::make_pair(0, true);
     EXPECT_EQ(downloader->ReadDelegate(buffer, readDataInfo), Status::END_OF_STREAM);
+    EXPECT_EQ(downloader->IsHlsEnd(), true);
 
     downloader->isInterruptNeeded_ = true;
     EXPECT_EQ(downloader->ReadDelegate(buffer, readDataInfo), Status::END_OF_STREAM);

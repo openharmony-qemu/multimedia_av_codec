@@ -114,6 +114,7 @@ public:
     bool IsHlsFmp4() override;
     uint64_t GetMemorySize() override;
     std::string GetContentType() override;
+    bool IsHlsEnd() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -324,6 +325,10 @@ private:
     std::atomic<bool> isNeedReadHeader_ {false};
     std::atomic<bool> isNeedResetOffset_ {false};
     uint64_t memorySize_ {0};
+
+    int64_t seekStartTimePos_ {0};
+    std::atomic<bool> isTsEnd_ {false};
+    std::atomic<bool> notNeedReadBack_ {false};
 };
 }
 }

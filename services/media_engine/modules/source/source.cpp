@@ -642,5 +642,11 @@ Status Source::StopBufferring(bool isAppBackground)
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_NULL_POINTER, "plugin_ is nullptr");
     return plugin_->StopBufferring(isAppBackground);
 }
+
+bool Source::IsHlsEnd()
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");
+    return plugin_->IsHlsEnd();
+}
 } // namespace Media
 } // namespace OHOS
