@@ -33,6 +33,9 @@ bool AudioDecoderAACFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
+    // FUZZ aac new
+    AacFuzzDemo* aacFuzzDemo = new AacFuzzDemo();
+    aacFuzzDemo->DoAacParserWithParserAPI(data, size);
     // FUZZ aac
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("aac");
