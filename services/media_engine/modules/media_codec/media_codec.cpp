@@ -179,11 +179,14 @@ std::shared_ptr<Plugins::CodecPlugin> MediaCodec::CreatePlugin(const std::string
 void MediaCodec::IODump(const std::shared_ptr<Meta> &meta)
 {
     std::time_t t = std::time(nullptr);
-    std::tm tm = *std::localtime(&t);
+    std::tm *tm = std::localtime(&t);
+    if (!tm) {
+        return;
+    }
 
     std::ostringstream common;
     common << "/data/media/";
-    common << std::put_time(&tm, "%H%M%S");
+    common << std::put_time(tm, "%H%M%S");
     common << "_" << reinterpret_cast<void*>(this);
 
     int32_t channels = 0;
@@ -514,6 +517,15 @@ int32_t MediaCodec::Reset()
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin reset failed");
     ClearInputBuffer();
     ResetBufferStatusInfo();
+    ClearBufferQueue();
+    if (dumpDataInputFs_ != nullptr && dumpDataInputFs_->is_open()) {
+        dumpDataInputFs_->flush();
+        dumpDataInputFs_->close();
+    }
+    if (dumpDataOutputFs_ != nullptr && dumpDataOutputFs_->is_open()) {
+        dumpDataOutputFs_->flush();
+        dumpDataOutputFs_->close();
+    }
     state_ = CodecState::INITIALIZED;
     return (int32_t)ret;
 }
@@ -1051,6 +1063,7 @@ void MediaCodec::ClearBufferQueue()
         outputBufferVector_.clear();
         outputBufferQueueProducer_->SetQueueSize(0);
     }
+    inputBufferQueue_ = nullptr;
 }
 
 void MediaCodec::ClearInputBuffer()

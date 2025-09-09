@@ -17,7 +17,6 @@
 #include <ctime>
 #include "avcodec_info.h"
 #include "avcodec_common.h"
-#include "codec_server.h"
 #include "meta/format.h"
 #include "media_description.h"
 #include "native_avcapability.h"
@@ -313,19 +312,7 @@ Status SurfaceEncoderAdapter::SetEncoderAdapterKeyFramePtsCallback(
 
 Status SurfaceEncoderAdapter::SetInputSurface(sptr<Surface> surface)
 {
-    MEDIA_LOG_I("GetInputSurface");
-    if (!codecServer_) {
-        SetFaultEvent("SurfaceEncoderAdapter::SetInputSurface, CodecServer is null");
-        return Status::ERROR_UNKNOWN;
-    }
-    MediaAVCodec::CodecServer *codecServerPtr = (MediaAVCodec::CodecServer *)(codecServer_.get());
-    int32_t ret = codecServerPtr->SetInputSurface(surface);
-    if (ret == 0) {
-        return Status::OK;
-    } else {
-        SetFaultEvent("SurfaceEncoderAdapter::SetInputSurface error", ret);
-        return Status::ERROR_UNKNOWN;
-    }
+    return Status::OK;
 }
 
 Status SurfaceEncoderAdapter::SetTransCoderMode()

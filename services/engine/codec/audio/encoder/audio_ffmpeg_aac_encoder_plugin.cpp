@@ -322,7 +322,7 @@ int32_t AudioFFMpegAacEncoderPlugin::InitContext(const Format &format)
     format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, avCodecContext_->sample_rate);
     format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, avCodecContext_->bit_rate);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize_);
-    avCodecContext_->channel_layout = srcLayout_;
+    avCodecContext_->channel_layout = static_cast<uint64_t>(srcLayout_);
     avCodecContext_->sample_fmt = srcFmt_;
 
     if (needResample_) {
@@ -530,7 +530,7 @@ int32_t AudioFFMpegAacEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AudioBuff
     }
 
     auto attr = outBuffer->GetBufferAttr();
-    attr.size = static_cast<size_t>(avPacket_->size + headerSize);
+    attr.size = static_cast<int32_t>(avPacket_->size + headerSize);
     prevPts_ += avPacket_->duration;
     attr.presentationTimeUs = FFMpegConverter::ConvertAudioPtsToUs(prevPts_, avCodecContext_->time_base);
     outBuffer->SetBufferAttr(attr);

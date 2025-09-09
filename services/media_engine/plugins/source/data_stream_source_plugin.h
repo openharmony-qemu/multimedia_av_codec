@@ -51,6 +51,7 @@ private:
     void WaitForRetry(uint32_t time);
     std::shared_ptr<AVSharedMemory> GetMemory();
     void ResetPool();
+    Status ReadAt(std::shared_ptr<AVSharedMemory> memory, size_t &expectedLen, int32_t &realLen);
     Plugins::Seekable seekable_ {Plugins::Seekable::INVALID};
     std::shared_ptr<IMediaDataSource> dataSrc_;
     std::shared_ptr<AVSharedMemoryPool> pool_;

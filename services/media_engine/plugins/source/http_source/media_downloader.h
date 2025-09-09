@@ -217,6 +217,11 @@ public:
     {
         return "";
     }
+
+    virtual bool IsHlsEnd()
+    {
+        return false;
+    }
 };
 }
 }

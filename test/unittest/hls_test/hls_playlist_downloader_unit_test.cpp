@@ -52,6 +52,8 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
     downloader.Open(testUrl, tmpHttpHeader);
     EXPECT_EQ(testUrl, downloader.GetUrl());
     EXPECT_EQ(nullptr, downloader.GetMaster());
+    EXPECT_EQ(nullptr, downloader.GetCurrentVariant());
+    EXPECT_EQ(nullptr, downloader.GetNewVariant());
 }
 
 HWTEST_F(HlsPlayListDownloaderUnitTest, GET_DURATION, TestSize.Level1)
@@ -106,7 +108,7 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, PARSE_MANIFEST_004, TestSize.Level1)
     EXPECT_FALSE(downloader.GetMaster()->isSimple_);
 }
 
-HWTEST_F(HlsPlayListDownloaderUnitTest, PARSE_MANIFEST_005, TestSize.Level1)
+HWTEST_F(HlsPlayListDownloaderUnitTest, PARSE_MANIFEST_005, TestSize.Level0)
 {
     HlsPlayListDownloader downloader;
     std::string testUrl = TEST_URI_PATH + "test_cbr/test_cbr.m3u8";
@@ -126,7 +128,7 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_CUR_BITRATE_001, TestSize.Level1)
     EXPECT_EQ(0, downloader.GetCurrentBitRate());
 }
 
-HWTEST_F(HlsPlayListDownloaderUnitTest, GET_CUR_BITRATE_002, TestSize.Level1)
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_CUR_BITRATE_002, TestSize.Level0)
 {
     HlsPlayListDownloader downloader;
     uint64_t bitRate = downloader.GetCurBitrate();

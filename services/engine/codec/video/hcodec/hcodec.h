@@ -103,6 +103,7 @@ protected:
         SUBMIT_DYNAMIC_IF_EOS,
         CHECK_IF_STUCK,
         FORCE_SHUTDOWN,
+        QUERY_JANK_REASON,
     };
 
     enum BufferOperationMode {
@@ -181,8 +182,8 @@ protected:
         uint64_t discardCntInterval_ = 0;       // 丢帧总数
         uint64_t waitFenceCostUsInterval_ = 0;  // 等fence的总耗时
         // 某一刻的瞬时值
-        std::array<int, OWNER_CNT> currOwner_;  // 此刻每个轮转方持有几个buffer
-        std::array<std::optional<TimePoint>, OWNER_CNT> lastOwnerChangeTime_;  // 每个轮转方最新一次轮转发生在哪个时刻
+        std::array<int, OWNER_CNT> currOwner_{};  // 此刻每个轮转方持有几个buffer
+        std::array<std::optional<TimePoint>, OWNER_CNT> lastOwnerChangeTime_{};  // 每个轮转方最新一次轮转发生在哪个时刻
         int64_t lastPts_ = -1;          // 最新的一帧的pts
     } record_[2]; // 2: port count
 
@@ -234,6 +235,7 @@ protected:
     void OnPrintAllBufferOwner(const MsgInfo& msg);
     void PrintAllBufferInfo();
     std::string OnGetHidumperInfo();
+    virtual void OnQueryJankReason() {}
 
     void PrintAllBufferInfo(const TimePoint& now, OMX_DIRTYPE port);
     void UpdateHoldCnt(const TimePoint& now, OMX_DIRTYPE port, BufferOwner owner);
@@ -298,7 +300,7 @@ protected:
     int32_t InBufUsToOmx(BufferInfo& info);
     virtual void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) = 0;
     virtual void RepeatIfNecessary(const ParamSP& param) {}
-    bool CheckBufPixFmt(const sptr<SurfaceBuffer>& buffer);
+    bool CheckBufPixFmt(int32_t dispFmt);
 
     // output buffer circulation
     virtual void DynamicModeSubmitBuffer() {}

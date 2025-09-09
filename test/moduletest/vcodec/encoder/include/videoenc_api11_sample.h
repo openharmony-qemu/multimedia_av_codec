@@ -154,6 +154,7 @@ public:
     OH_AVBuffer *GetInputBuffer(uint32_t index);
     OH_AVBuffer *GetOutputBuffer(uint32_t index);
     void SetConfigureEnc(OH_AVFormat *format);
+    void FlushStatus();
     VEncAPI11Signal *signal_;
     uint32_t errCount = 0;
     bool enableForceIDR = false;
@@ -210,6 +211,7 @@ public:
     bool getOutputBufferIndexRepeated = false;
     bool noDestroy = false;
     std::atomic<bool> isRunning_ { false };
+    bool isSurface = false;
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;

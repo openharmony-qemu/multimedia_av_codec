@@ -29,7 +29,6 @@ using namespace OHOS::MediaAVCodec;
 namespace OHOS {
 const char *MP4_PATH = "/data/test/fuzz_create.mp4";
 const int64_t EXPECT_SIZE = 7;
-const int64_t STRIDE = 7;
 
 bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
 {
@@ -62,12 +61,10 @@ bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
     int64_t pts = fdp.ConsumeIntegral<int64_t>();
     int64_t ptsForPtsIndex = fdp.ConsumeIntegral<int64_t>();
     int64_t frameIndex = fdp.ConsumeIntegral<int64_t>();
-    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
-    uint8_t *dataConver = remaining_data.data();
-    uint32_t *createSize = reinterpret_cast<uint32_t *>(dataConver + size - STRIDE);
+    uint32_t createSize = fdp.ConsumeIntegral<uint32_t>();
     shared_ptr<ParserSample> parserSample = make_shared<ParserSample>();
     parserSample->filePath = MP4_PATH;
-    parserSample->RunReferenceParser(pts, ptsForPtsIndex, frameIndex, *createSize);
+    parserSample->RunReferenceParser(pts, ptsForPtsIndex, frameIndex, createSize);
     int ret = remove(MP4_PATH);
     if (ret != 0) {
         return false;

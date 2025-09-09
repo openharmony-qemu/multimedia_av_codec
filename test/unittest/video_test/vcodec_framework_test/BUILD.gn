@@ -900,8 +900,8 @@ ohos_unittest("videoenc_bitrate_mode_capi_unit_test") {
     "./func_sample/mock/capi",
     "./func_sample/sample/encoder",
     "$av_codec_root_dir/services/include",
-    "$av_codec_root_dir/test/unittest/codeclist_test",
-    "$av_codec_root_dir/test/unittest/codeclist_test/capi",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi",
     "$av_codec_root_dir/test/unittest/common/",
     "$av_codec_root_dir/frameworks/native/capi/common",
   ]
@@ -917,8 +917,8 @@ ohos_unittest("videoenc_bitrate_mode_capi_unit_test") {
   cflags = vcodec_unittest_cflags
 
   sources = [
-    "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
-    "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi/codeclist_capi_mock.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
     "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/capi/vcodec_capi_mock_factory.cpp",
     "./func_sample/mock/capi/videoenc_capi_mock.cpp",

@@ -99,7 +99,16 @@ void VDecServerSample::RunVideoServerDecoder()
         cout << "Create failed" << endl;
         return;
     }
-    int32_t err = ConfigServerDecoder();
+    int32_t err;
+    Media::Meta codecInfo;
+    int32_t instanceid = 0;
+    codecInfo.SetData("av_codec_event_info_instance_id", instanceid);
+    err = codec_->Init(codecInfo);
+    if (err != AVCS_ERR_OK) {
+        cout << "decoder Init failed!" << endl;
+        return;
+    }
+    err = ConfigServerDecoder();
     if (err != AVCS_ERR_OK) {
         cout << "ConfigServerDecoder failed" << endl;
         return;
@@ -180,6 +189,24 @@ void VDecServerSample::GetOutputFormat()
         cout << "GetOutputFormat fail" << endl;
         isRunning_.store(false);
         signal_->inCond_.notify_all();
+    }
+}
+
+void VDecServerSample::Start()
+{
+    int32_t err = codec_->Start();
+    if (err != AVCS_ERR_OK) {
+        cout << "Start fail" << endl;
+        return;
+    }
+    isRunning_.store(true);
+    if (inputLoop_ && inputLoop_->joinable()) {
+        return;
+    }
+    inputLoop_ = make_unique<thread>(&VDecServerSample::InputFunc, this);
+    if (inputLoop_ == nullptr) {
+        cout << "Failed to create input loop" << endl;
+        isRunning_.store(false);
     }
 }
 

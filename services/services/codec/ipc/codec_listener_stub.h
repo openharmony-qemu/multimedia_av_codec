@@ -35,7 +35,7 @@ public:
     CodecListenerStub();
     virtual ~CodecListenerStub();
     int OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
-    int OnRequestExtras(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option);
+    bool OnRequestExtras(uint32_t code, MessageParcel &data);
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;

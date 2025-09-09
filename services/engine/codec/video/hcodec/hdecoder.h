@@ -21,6 +21,9 @@
 #ifdef USE_VIDEO_PROCESSING_ENGINE
 #include "video_refreshrate_prediction.h"
 #endif
+#include "xperf_service_action_type.h"
+#include "xperf_service_client.h"
+#include "video_jank_callback_stub.h"
 
 namespace OHOS::MediaAVCodec {
 class HDecoder : public HCodec {
@@ -67,6 +70,9 @@ private:
     int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutBufToOmx() override;
     bool ReadyToStart() override;
+    void OnQueryJankReason() override;
+    void GetJankReason(const TimePoint& now, OMX_DIRTYPE port,
+        double& maxPercent, OHOS::HiviewDFX::AvcodecFaultCode& fault, std::string& reason);
 
     // input buffer circulation
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
@@ -142,6 +148,22 @@ private:
     int32_t DecreaseFreq() override;
     int32_t RecoverFreq() override;
 
+    void ReportRenderFirstFrame();
+ 
+    class XperfCallback : public OHOS::HiviewDFX::VideoJankCallbackStub {
+    public:
+        void BeginToUse(uint64_t surfaceId, std::weak_ptr<MsgToken> token);
+        void EndToUse(uint64_t surfaceId);
+        ErrCode OnVideoJankEvent(const std::string& msg) override;
+ 
+    private:
+        std::mutex mtx_;
+        std::unordered_map<uint64_t, std::weak_ptr<MsgToken>> surfaceIdToCodec_;
+    };
+ 
+    static std::shared_mutex g_cbMtx;
+    static sptr<XperfCallback> g_xperfCb;
+
 private:
     static constexpr uint64_t SURFACE_MODE_PRODUCER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
     static constexpr uint64_t BUFFER_MODE_REQUEST_USAGE =
@@ -153,6 +175,7 @@ private:
         SurfaceItem(const sptr<Surface> &surface, std::string codecId, int32_t instanceId);
         void Release(bool cleanAll = false);
         sptr<Surface> surface_;
+        bool firstFrameRendered_ = false;
     private:
         std::optional<GraphicTransformType> originalTransform_;
         std::string compUniqueStr_;

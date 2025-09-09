@@ -53,7 +53,8 @@ enum SLEEP_TIME : int32_t {
 };
 constexpr size_t MIN_BUFFER_SIZE = 5 * 1024 * 1024;
 
-class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback {
+class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback,
+    public std::enable_shared_from_this<HlsMediaDownloader> {
 public:
     explicit HlsMediaDownloader(int expectBufferDuration, bool userDefinedDuration,
         const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>(),
@@ -114,6 +115,7 @@ public:
     bool IsHlsFmp4() override;
     uint64_t GetMemorySize() override;
     std::string GetContentType() override;
+    bool IsHlsEnd() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -176,6 +178,7 @@ private:
     void RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo);
     uint64_t GetTotalTsBuffersize();
     bool IsPureByteRange();
+    void SetDownloaderRequestCb(StatusCallbackFunc& statusCallback, DownloadDoneCbFunc& downloadDoneCallback);
 
 private:
     size_t totalBufferSize_ {0};
@@ -324,6 +327,10 @@ private:
     std::atomic<bool> isNeedReadHeader_ {false};
     std::atomic<bool> isNeedResetOffset_ {false};
     uint64_t memorySize_ {0};
+
+    int64_t seekStartTimePos_ {0};
+    std::atomic<bool> isTsEnd_ {false};
+    std::atomic<bool> notNeedReadBack_ {false};
 };
 }
 }

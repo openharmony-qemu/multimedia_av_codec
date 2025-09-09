@@ -143,6 +143,7 @@ int32_t SyncOutputFuncEos(OH_AVCodecBufferAttr attr, uint32_t index);
     void StopOutloop();
     bool IsRender();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
+    void FlushStatus();
     VDecAPI11Signal *signal_;
     uint32_t errCount = 0;
     uint32_t outCount = 0;
@@ -165,6 +166,7 @@ int32_t SyncOutputFuncEos(OH_AVCodecBufferAttr attr, uint32_t index);
     bool useHDRSource = false;
     int32_t DEFAULT_PROFILE = MPEG4_PROFILE_SIMPLE;
     int enbleBlankFrame = 0;
+    bool finishLastPush = false;
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
@@ -178,7 +180,6 @@ private:
     int64_t timeStamp_ { 0};
     int64_t lastRenderedTimeUs_ { 0 };
     bool isFirstFrame_ = true;
-    bool finishLastPush = false;
     uint32_t pPrereadBuffer_ = 0;
     uint32_t prereadBufferSize_ = 0;
     OHNativeWindow *nativeWindow[2] = {};

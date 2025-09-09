@@ -936,4 +936,54 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDECODE_BLANK_FRAME_0020, TestSize.Level2)
         ASSERT_EQ(0, vDecSample->errCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_FLUSH_0010
+ * @tc.name      : create-start-eos-flush-start-eos
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_H264_FLUSH_0010, TestSize.Level1)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameAvc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        vDecSample->FlushStatus();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_FLUSH_0020
+ * @tc.name      : create-start-eos-flush-start-eos,surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_H264_FLUSH_0020, TestSize.Level1)
+{
+    if (cap_avc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameAvc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        vDecSample->FlushStatus();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
 } // namespace

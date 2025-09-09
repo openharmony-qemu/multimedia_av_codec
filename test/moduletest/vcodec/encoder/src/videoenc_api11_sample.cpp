@@ -458,7 +458,7 @@ int32_t VEncAPI11Sample::StartVideoEncoder()
 {
     isRunning_.store(true);
     int32_t ret = 0;
-    if (SURF_INPUT) {
+    if (SURF_INPUT && !isSurface) {
         ret = CreateSurface();
         if (ret != AV_ERR_OK) {
             return ret;
@@ -1448,4 +1448,11 @@ int32_t VEncAPI11Sample::SetParameter(OH_AVFormat *format)
         return OH_VideoEncoder_SetParameter(venc_, format);
     }
     return AV_ERR_UNKNOWN;
+}
+
+void VEncAPI11Sample::FlushStatus()
+{
+    StopInloop();
+    StopOutloop();
+    Flush_buffer();
 }

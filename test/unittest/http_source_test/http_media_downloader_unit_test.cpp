@@ -151,7 +151,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport_MP4, TestSize.Level1)
     EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport_MP4_default, TestSize.Level1)
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport_MP4_default, TestSize.Level0)
 {
     std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
         std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 4, nullptr);
@@ -207,7 +207,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_mp4_read_all, TestSize.Level1)
 }
 
 
-HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL, TestSize.Level1)
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL, TestSize.Level0)
 {
     MP4httpMediaDownloader->GetSeekable();
     unsigned char buff[10];

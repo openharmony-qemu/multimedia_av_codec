@@ -49,6 +49,7 @@ ohos_fuzztest("AudioDecoderApeFuzzTest") {
   ]
   sources = [
     "audio_decoder_ape_demo.cpp",
+    "audio_decoder_ape_new_demo.cpp",
     "audiodecoderape_fuzzer.cpp",
   ]
 

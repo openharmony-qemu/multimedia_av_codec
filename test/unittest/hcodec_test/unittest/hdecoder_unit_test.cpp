@@ -1109,6 +1109,56 @@ HWTEST_F(HDecoderUserCallingUnitTest, get_input_buffer_ok, TestSize.Level1)
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
 
+/* ============================ GetInputFormat ============================ */
+HWTEST_F(HDecoderUserCallingUnitTest, get_input_format_ok, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+ 
+    ASSERT_TRUE(SetOutputSurfaceToDecoder(testObj));
+    ASSERT_TRUE(SetCallbackToDecoder(testObj));
+    ASSERT_TRUE(ConfigureDecoder(testObj));
+ 
+    int32_t ret = testObj->Start();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+ 
+    Format inputFormat;
+    ret = testObj->GetInputFormat(inputFormat);
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+    TLOGI("%s", inputFormat.Stringify().c_str());
+ 
+    ret = testObj->Release();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+}
+
+/* ============================ GetInputFormat ============================ */
+HWTEST_F(HDecoderUserCallingUnitTest, get_output_format_ok, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+ 
+    ASSERT_TRUE(SetOutputSurfaceToDecoder(testObj));
+    ASSERT_TRUE(SetCallbackToDecoder(testObj));
+    ASSERT_TRUE(ConfigureDecoder(testObj));
+ 
+    int32_t ret = testObj->Start();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+ 
+    Format outputFormat;
+    ret = testObj->GetOutputFormat(outputFormat);
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+    TLOGI("%s", outputFormat.Stringify().c_str());
+ 
+    ret = testObj->Release();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+}
+
 /* ============================ QueueInputBuffer ============================ */
 HWTEST_F(HDecoderUserCallingUnitTest, queue_input_buffer_invalid_index, TestSize.Level1)
 {

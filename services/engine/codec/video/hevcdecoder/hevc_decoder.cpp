@@ -100,14 +100,12 @@ HevcDecoder::HevcDecoder(const std::string &name) : codecName_(name), state_(Sta
         if (handle_ == nullptr) {
             AVCODEC_LOGE("Load codec failed: %{public}s", HEVC_DEC_LIB_PATH);
             isValid_ = false;
-            return;
         }
         HevcFuncMatch();
         AVCODEC_LOGI("Num %{public}u HevcDecoder entered, state: Uninitialized", decInstanceID_);
     } else {
         AVCODEC_LOGE("HevcDecoder already has %{public}d instances, cannot has more instances", VIDEO_INSTANCE_SIZE);
         isValid_ = false;
-        return;
     }
 
     initParams_.logFxn = nullptr;
@@ -127,9 +125,6 @@ int32_t HevcDecoder::Init(Meta &callerInfo)
     callerInfo.GetData("av_codec_event_info_instance_id", instanceId_);
     int32_t ret = Initialize();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Failed to initialize");
-    hevcDecInfo_.instanceId = std::to_string(instanceId_);
-    decName_ = "hevcdecoder_[" + std::to_string(instanceId_) + "]";
-    AVCODEC_LOGI("HevcDecoder codec name: %{public}s", decName_.c_str());
     return AVCS_ERR_OK;
 }
 

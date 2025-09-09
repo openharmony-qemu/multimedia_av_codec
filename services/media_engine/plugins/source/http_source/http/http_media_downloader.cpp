@@ -181,9 +181,12 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
             std::forward<decltype(notBlock)>(notBlock));
     };
     FALSE_RETURN_V(statusCallback_ != nullptr, false);
-    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+    std::weak_ptr<HttpMediaDownloader> weakThis = weak_from_this();
+    auto realStatusCallback = [weakThis] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                   std::shared_ptr<DownloadRequest>& request) {
-        statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
+        auto shareThis = weakThis.lock();
+        FALSE_RETURN_MSG(shareThis != nullptr, "HTTP statusCallback shareThis, is nullptr!");
+        shareThis->statusCallback_(status, shareThis->downloader_, std::forward<decltype(request)>(request));
     };
     auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {
         if (downloadRequest_ != nullptr && downloadRequest_->IsEos()

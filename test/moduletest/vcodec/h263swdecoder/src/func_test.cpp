@@ -1129,4 +1129,56 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_SW263_BLANK_FRAME_0020, TestSize.Lev
         ASSERT_EQ(FRAMESIZE75, vDecSample->outFrameCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_DECODE_H263_FLUSH_0010
+ * @tc.name      : create-start-eos-flush-start-eos
+ * @tc.desc      : function test
+ */
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_FLUSH_0010, TestSize.Level1)
+{
+    if (g_codecName263.find("H263") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/profile0_0_0.h263";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName263));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        vDecSample->FlushStatus();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_H263_FLUSH_0020
+ * @tc.name      : create-start-eos-flush-start-eos,surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_FLUSH_0020, TestSize.Level1)
+{
+    if (g_codecName263.find("H263") != string::npos) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/profile0_0_0.h263";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName263));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+        vDecSample->FlushStatus();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
 } // namespace

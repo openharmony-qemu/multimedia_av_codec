@@ -19,12 +19,14 @@
 #include <string>
 #include <thread>
 #include "audio_decoder_aac_demo.h"
+#include "audio_decoder_aac_new_demo.h"
 #define FUZZ_PROJECT_NAME "audiodecoderaac_fuzzer"
 
 using namespace std;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec::AudioBufferDemo;
+using namespace OHOS::MediaAVCodec::AudioBufferNewDemo;
 
 namespace OHOS {
 
@@ -33,6 +35,9 @@ bool AudioDecoderAACFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
+    // FUZZ aac new
+    AacFuzzDemo* aacFuzzDemo = new AacFuzzDemo();
+    aacFuzzDemo->DoAacParserWithParserAPI(data, size);
     // FUZZ aac
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("aac");

@@ -14,26 +14,50 @@
  */
 #include <cstddef>
 #include <cstdint>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "hevcserverdec_sample.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 #define FUZZ_PROJECT_NAME "swdecoderserver_fuzzer"
+const size_t EXPECT_SIZE = 8;
 
 namespace OHOS {
 bool SwdecoderServerFuzzTest(const uint8_t *data, size_t size)
 {
-    if (size < sizeof(int32_t)) {
+    if (size < EXPECT_SIZE) {
         return false;
     }
+    FuzzedDataProvider fdp(data, size);
+    bool needFlush = fdp.ConsumeBool();
+    bool needStop = fdp.ConsumeBool();
+    bool needReset = fdp.ConsumeBool();
+    bool needRestart = fdp.ConsumeBool();
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
     VDecServerSample *vDecSample = new VDecServerSample();
-    vDecSample->fuzzData = data;
-    vDecSample->fuzzSize = size;
+    vDecSample->fuzzData = remaining_data.data();
+    vDecSample->fuzzSize = remaining_data.size();
     vDecSample->RunVideoServerDecoder();
-    vDecSample->Flush();
-    vDecSample->Stop();
-    vDecSample->Reset();
+    if (needFlush) {
+        vDecSample->Flush();
+        if (needRestart) {
+            vDecSample->Start();
+        }
+    }
+    if (needStop) {
+        vDecSample->Stop();
+        if (needRestart) {
+            vDecSample->Start();
+        }
+    }
+    if (needReset) {
+        vDecSample->Reset();
+        if (needRestart) {
+            vDecSample->ConfigServerDecoder();
+            vDecSample->Start();
+        }
+    }
     vDecSample->WaitForEos();
     delete vDecSample;
     return false;

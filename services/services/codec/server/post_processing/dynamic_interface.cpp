@@ -17,10 +17,6 @@
 #include <dlfcn.h>
 #include "post_processing_utils.h"
 
-namespace {
-static constexpr const char* LIBRARY_PATH{"libvideoprocessingengine.z.so"};
-}
-
 namespace OHOS {
 namespace MediaAVCodec {
 namespace PostProcessing {
@@ -53,10 +49,7 @@ bool DynamicInterface::OpenLibrary()
         AVCODEC_LOGI("VPE lib is already loaded.");
         return true;
     }
-    char canonicalPath[PATH_MAX] = {0};
-    CHECK_AND_RETURN_RET_LOGW(realpath(LIBRARY_PATH, canonicalPath) != nullptr,
-        UINT32_MAX, "VPE lib not exist");
-    lib_ = dlopen(canonicalPath, RTLD_LAZY);
+    lib_ = dlopen("libvideoprocessingengine.z.so", RTLD_LAZY);
     CHECK_AND_RETURN_RET_LOG(lib_ != nullptr, false, "Load VPE lib failed.");
     return true;
 }

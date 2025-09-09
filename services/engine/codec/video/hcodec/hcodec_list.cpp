@@ -15,6 +15,7 @@
 
 #include "hcodec_list.h"
 #include <map>
+#include <set>
 #include <numeric>
 #include <algorithm>
 #include "syspara/parameters.h"
@@ -168,7 +169,7 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     userCap.blockPerFrame = {hdiVideoCap.blockCount.min, hdiVideoCap.blockCount.max};
     userCap.blockPerSecond = {hdiVideoCap.blocksPerSecond.min, hdiVideoCap.blocksPerSecond.max};
     userCap.blockSize = {hdiVideoCap.blockSize.width, hdiVideoCap.blockSize.height};
-    userCap.pixFormat = GetSupportedFormat(hdiVideoCap);
+    GetSupportedFormat(hdiVideoCap, userCap);
     userCap.bitrateMode = GetSupportedBitrateMode(hdiVideoCap);
     if (IsSupportSQR(userCap.bitrateMode)) {
         userCap.maxBitrate = {hdiCap.bitRate.min, hdiCap.bitRate.max};
@@ -222,18 +223,19 @@ bool HCodecList::IsSupportSQR(const vector<int32_t>& supportBitrateMode)
     return false;
 }
 
-vector<int32_t> HCodecList::GetSupportedFormat(const CodecVideoPortCap& hdiVideoCap)
+void HCodecList::GetSupportedFormat(const CodecVideoPortCap& hdiVideoCap, CapabilityData& userCap)
 {
-    vector<int32_t> vec;
-    for (int32_t fmt : hdiVideoCap.supportPixFmts) {
-        optional<VideoPixelFormat> innerFmt =
-            TypeConverter::DisplayFmtToInnerFmt(static_cast<GraphicPixelFormat>(fmt));
-        if (innerFmt.has_value() &&
-            find(vec.begin(), vec.end(), static_cast<int32_t>(innerFmt.value())) == vec.end()) {
-            vec.push_back(static_cast<int32_t>(innerFmt.value()));
+    std::set<int32_t> innerFormatSet;
+    std::set<int32_t> graphicFormatSet;
+    for (auto fmt : hdiVideoCap.supportPixFmts) {
+        optional<PixelFmt> pixelFmt = TypeConverter::GraphicFmtToFmt(static_cast<GraphicPixelFormat>(fmt));
+        if (pixelFmt.has_value()) {
+            innerFormatSet.insert(static_cast<int32_t>(pixelFmt->innerFmt));
+            graphicFormatSet.insert(static_cast<int32_t>(pixelFmt->graphicFmt));
         }
     }
-    return vec;
+    userCap.pixFormat = vector<int32_t>(innerFormatSet.begin(), innerFormatSet.end());
+    userCap.graphicPixFormat = vector<int32_t>(graphicFormatSet.begin(), graphicFormatSet.end());
 }
 
 map<ImgSize, Range> HCodecList::GetMeasuredFrameRate(const CodecVideoPortCap& hdiVideoCap)

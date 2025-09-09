@@ -518,6 +518,26 @@ void HttpSourcePlugin::WaitForBufferingEnd()
     downloader_->WaitForBufferingEnd();
 }
 
+static std::pair<std::string, std::string> SplitUri(const std::string& uri)
+{
+    /* RFC3986 Url可以划分成若干个组件，协议、主机、路径等。有一些字符（:/?#[]@）是用作分隔不同组件的，作为保留字符。
+        例如:冒号用于分隔协议和主机，/用于分隔主机和路径，?用于分隔路径和查询参数，百分号(%)制定特殊字符，#号指定书签，
+        &号分隔参数。当组件中的普通数据包含这些特殊字符时，需要对其进行编码。*/
+    std::string::size_type pos = uri.find_first_of('?');
+    if (pos != std::string::npos) {
+        return std::make_pair(uri.substr(0, pos), uri.substr(pos + 1));
+    }
+
+    // #作用是已给纯粹的客户端“锚点”，它不会被发送到客户端。因此#放在?之前的URL不符合规范的。
+    // 例如：http://1500005450.vod2.myqcloud.com/playlist_eof.m3u8#maxBufferSize=30000
+    pos = uri.find_first_of('#');
+    if (pos != std::string::npos) {
+        return std::make_pair(uri.substr(0, pos), "");
+    }
+
+    return std::make_pair(uri, "");
+}
+
 bool HttpSourcePlugin::CheckIsM3U8Uri()
 {
     if (uri_.empty()) {
@@ -526,25 +546,23 @@ bool HttpSourcePlugin::CheckIsM3U8Uri()
     std::string uri = uri_;
     std::transform(uri.begin(), uri.end(), uri.begin(), ::tolower);
 
-    std::string::size_type pos = uri.find('?');
-    std::string uriMain = (pos != std::string::npos) ? uri.substr(0, pos) : uri;
-    std::string uriParam = (pos != std::string::npos) ? uri.substr(pos + 1) : "";
-    pos = uriMain.rfind('/');
+    auto pairUri = SplitUri(uri);
+    std::string::size_type pos = pairUri.first.rfind('/');
     if (pos == std::string::npos) {
         return false;
     }
 
     // 现网的很多hls链接是非.m3u8关键字，举例：http://xxx/xxxx?autotype=m3u8; http://xxx/aaa.doplaylist?auto=m3u8
-    // 优先判断资源类型(.和?中间的字符串，姑且称资源类型)；参数携带为次。如果不携带资源类型，还走原来的逻辑
-    std::string leafNameSuffix = uriMain.substr(pos + 1);
+    // 优先判断资源类型(.和?#中间的字符串，姑且称资源类型)；参数携带为次。如果不携带资源类型，还走原来的逻辑
+    std::string leafNameSuffix = pairUri.first.substr(pos + 1);
     pos = leafNameSuffix.rfind('.');
     if (pos != std::string::npos) {     // 找到资源格式
         std::string suffix = leafNameSuffix.substr(pos + 1);
         if (suffix == LOWER_M3U8) {
             return true;
         }
-        if (!uriParam.empty()) {
-            if (uriParam.find(EQUAL_M3U8) != std::string::npos) {
+        if (!pairUri.second.empty()) {
+            if (pairUri.second.find(EQUAL_M3U8) != std::string::npos) {
                 return true;
             }
         }
@@ -611,6 +629,12 @@ std::string HttpSourcePlugin::GetCurUrl()
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader_ is nullptr");
     return downloader_->GetCurUrl();
+}
+
+bool HttpSourcePlugin::IsHlsEnd()
+{
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
+    return downloader_->IsHlsEnd();
 }
 }
 }

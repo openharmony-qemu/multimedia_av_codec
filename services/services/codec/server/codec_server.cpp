@@ -1162,19 +1162,19 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
     }
 }
 
-CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<CodecServer> &codec) : codec_(codec)
+CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<CodecServer> &codec) : weakCodec_(codec)
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
 CodecBaseCallback::~CodecBaseCallback()
 {
-    codec_ = nullptr;
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
 void CodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
+    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
     if (codec_ != nullptr) {
         codec_->OnError(errorType, errorCode);
     }
@@ -1182,6 +1182,7 @@ void CodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 
 void CodecBaseCallback::OnOutputFormatChanged(const Format &format)
 {
+    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
     if (codec_ != nullptr) {
         codec_->OnOutputFormatChanged(format);
     } else {
@@ -1191,6 +1192,7 @@ void CodecBaseCallback::OnOutputFormatChanged(const Format &format)
 
 void CodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
+    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
     if (codec_ != nullptr) {
         codec_->OnInputBufferAvailable(index, buffer);
     }
@@ -1199,24 +1201,25 @@ void CodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<A
 void CodecBaseCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                                 std::shared_ptr<AVSharedMemory> buffer)
 {
+    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
     if (codec_ != nullptr) {
         codec_->OnOutputBufferAvailable(index, info, flag, buffer);
     }
 }
 
-VCodecBaseCallback::VCodecBaseCallback(const std::shared_ptr<CodecServer> &codec) : codec_(codec)
+VCodecBaseCallback::VCodecBaseCallback(const std::shared_ptr<CodecServer> &codec) : weakCodec_(codec)
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
 VCodecBaseCallback::~VCodecBaseCallback()
 {
-    codec_ = nullptr;
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
 void VCodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
+    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
     if (codec_ != nullptr) {
         codec_->OnError(errorType, errorCode);
     }
@@ -1224,6 +1227,7 @@ void VCodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 
 void VCodecBaseCallback::OnOutputFormatChanged(const Format &format)
 {
+    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
     if (codec_ != nullptr) {
         codec_->OnOutputFormatChanged(format);
     } else {
@@ -1233,6 +1237,7 @@ void VCodecBaseCallback::OnOutputFormatChanged(const Format &format)
 
 void VCodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
     if (codec_ != nullptr) {
         codec_->OnInputBufferAvailable(index, buffer);
     }
@@ -1240,6 +1245,7 @@ void VCodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<
 
 void VCodecBaseCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
     if (codec_ != nullptr) {
         codec_->OnOutputBufferAvailable(index, buffer);
     }
@@ -1247,12 +1253,14 @@ void VCodecBaseCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr
 
 void VCodecBaseCallback::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
 {
+    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
     CHECK_AND_RETURN_LOG(codec_ != nullptr, "codec_ is nullptr!");
     codec_->OnOutputBufferBinded(bufferMap);
 }
  
 void VCodecBaseCallback::OnOutputBufferUnbinded()
 {
+    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
     CHECK_AND_RETURN_LOG(codec_ != nullptr, "codec_ is nullptr!");
     codec_->OnOutputBufferUnbinded();
 }

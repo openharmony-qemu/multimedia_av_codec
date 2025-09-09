@@ -131,6 +131,7 @@ struct M3U8 {
     std::atomic<bool> isHeaderReady_ {false};
     std::atomic<bool> isPureByteRange_ {false};
     uint32_t downloadHeaderLen_ {0};
+    uint32_t fmp4HeaderLen {0};
     std::shared_ptr<DownloadRequest> downloadHeaderRequest_;
     uint32_t offset_ {0};
     uint32_t length_ {0};
