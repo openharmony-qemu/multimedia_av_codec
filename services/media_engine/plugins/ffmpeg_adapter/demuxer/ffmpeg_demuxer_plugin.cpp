@@ -2301,13 +2301,13 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
     ptsCnt_ = 0;
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
     int32_t cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
-    int64_t minCttsDuration = INT64_MAX;
+    int32_t minCttsDuration = INT_MAX;
     for (uint32_t i = 0u; i < avStream->ctts_count; i++) {
         if (avStream->ctts_data[i].duration < minCttsDuration) {
             minCttsDuration = avStream->ctts_data[i].duration;
         }
     }
-    minCttsDuration = std::min(minCttsDuration, 0u);
+    minCttsDuration = std::min(minCttsDuration, 0);
     while (sttsIndex < avStream->stts_count && cttsIndex < avStream->ctts_count &&
             cttsCurNum >= 0 && sttsCurNum >= 0) {
         if (cttsCurNum == 0) {
@@ -2318,7 +2318,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
             cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
         }
         cttsCurNum--;
-        int64_t currentCttsDuration = static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration) + minCttsDuration;
+        int64_t currentCttsDuration = static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration + minCttsDuration);
         if ((INT64_MAX / 1000 / 1000) < // 1000 is used for converting pts to us
             ((dts + currentCttsDuration) /
             static_cast<int64_t>(avStream->time_scale))) {
@@ -2326,7 +2326,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
                 return Status::ERROR_INVALID_DATA;
         }
         double timeScaleRate = static_cast<double>(MS_TO_NS) / static_cast<double>(avStream->time_scale);
-        double ptsTemp = static_cast<double>(dts) + currentCttsDuration;
+        double ptsTemp = static_cast<double>(dts) + static_cast<double>(currentCttsDuration);
         pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
         if (mode == GET_ALL_FRAME_PTS) {
             if (ptsCnt_ >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
