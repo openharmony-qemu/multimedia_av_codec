@@ -651,6 +651,9 @@ Status FFmpegDemuxerPlugin::SetDrmCencInfo(
 bool FFmpegDemuxerPlugin::NeedCombineFrame(uint32_t trackId)
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, false, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(trackId < formatContext_->nb_streams, false, "TrackId out of range");
+    FALSE_RETURN_V_MSG_E(formatContext_->streams[trackId] != nullptr, false, "AVStream is nullptr");
+    FALSE_RETURN_V_MSG_E(formatContext_->streams[trackId]->codecpar != nullptr, false, "Codecpar is nullptr");
     return (fileType_ == FileType::MPEGTS && formatContext_->streams[trackId]->codecpar->codec_id == AV_CODEC_ID_HEVC);
 }
 
