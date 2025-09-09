@@ -179,14 +179,14 @@ std::shared_ptr<Plugins::CodecPlugin> MediaCodec::CreatePlugin(const std::string
 void MediaCodec::IODump(const std::shared_ptr<Meta> &meta)
 {
     std::time_t t = std::time(nullptr);
-    if (!std::localtime(&t)) {
+    std::tm *tm = std::localtime(&t);
+    if (!tm) {
         return;
     }
-    std::tm tm = *std::localtime(&t);
 
     std::ostringstream common;
     common << "/data/media/";
-    common << std::put_time(&tm, "%H%M%S");
+    common << std::put_time(tm, "%H%M%S");
     common << "_" << reinterpret_cast<void*>(this);
 
     int32_t channels = 0;
