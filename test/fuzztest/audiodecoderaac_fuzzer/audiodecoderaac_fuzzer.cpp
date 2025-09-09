@@ -19,6 +19,7 @@
 #include <string>
 #include <thread>
 #include "audio_decoder_aac_demo.h"
+#include "audio_decoder_aac_new_demo.h"
 #define FUZZ_PROJECT_NAME "audiodecoderaac_fuzzer"
 
 using namespace std;
