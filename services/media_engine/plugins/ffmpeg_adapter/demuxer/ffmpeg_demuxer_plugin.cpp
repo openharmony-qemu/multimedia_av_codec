@@ -1391,6 +1391,11 @@ void FFmpegDemuxerPlugin::InitParser()
     ParserBoxInfo();
     streamParsers_ = std::make_shared<MultiStreamParserManager>();
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        if (formatContext_->streams[trackIndex] == nullptr ||
+            formatContext_->streams[trackIndex]->codecpar == nullptr) {
+            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " info is nullptr", trackIndex);
+            continue;
+        }
         if (g_bitstreamFilterMap.count(formatContext_->streams[trackIndex]->codecpar->codec_id) != 0) {
             InitBitStreamContext(*(formatContext_->streams[trackIndex]));
             continue;
@@ -1491,7 +1496,7 @@ void FFmpegDemuxerPlugin::GetStreamInitialParams()
     FALSE_RETURN_MSG_W(formatContext_ != nullptr, "AVFormatContext is nullptr");
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         auto stream = formatContext_->streams[trackIndex];
-        if (stream == nullptr) {
+        if (stream == nullptr || stream->codecpar == nullptr) {
             continue;
         }
         Meta format;
