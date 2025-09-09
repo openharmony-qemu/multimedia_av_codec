@@ -1254,14 +1254,14 @@ void VCodecBaseCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr
 void VCodecBaseCallback::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
 {
     std::shared_ptr<CodecServer> codec = weakCodec_.lock();
-    CHECK_AND_RETURN_LOG(codec != nullptr, "codec_ is nullptr!");
+    CHECK_AND_RETURN_LOG(codec != nullptr, "codec is nullptr!");
     codec->OnOutputBufferBinded(bufferMap);
 }
 
 void VCodecBaseCallback::OnOutputBufferUnbinded()
 {
     std::shared_ptr<CodecServer> codec = weakCodec_.lock();
-    CHECK_AND_RETURN_LOG(codec != nullptr, "codec_ is nullptr!");
+    CHECK_AND_RETURN_LOG(codec != nullptr, "codec is nullptr!");
     codec->OnOutputBufferUnbinded();
 }
 
