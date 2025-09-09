@@ -303,6 +303,7 @@ int32_t CodecServiceStub::Init(AVCodecType type, bool isMimeType, const std::str
     this->SetTag(tag);
     codecServer_->SetTag(tag);
     static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->SetTag(tag);
+    static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->Init();
     AVCODEC_LOGI_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
     return ret;
 }
@@ -444,7 +445,6 @@ int32_t CodecServiceStub::SetLowPowerPlayerMode(bool isLpp)
 
 int32_t CodecServiceStub::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
-    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->QueueInputBuffer(index, info, flag);
 }
@@ -477,7 +477,6 @@ int32_t CodecServiceStub::ReleaseOutputBuffer(uint32_t index, bool render)
 
 int32_t CodecServiceStub::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
 {
-    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->RenderOutputBufferAtTime(index, renderTimestampNs);
 }
@@ -539,7 +538,6 @@ int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
     callerInfo.Remove(EventInfoExtentedKey::CODEC_TYPE.data());
     parcelRet = parcelRet && callerInfo.ToParcel(reply);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
-    static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->Init();
     return AVCS_ERR_OK;
 }
 
@@ -689,6 +687,7 @@ int32_t CodecServiceStub::SetLowPowerPlayerMode(MessageParcel &data, MessageParc
 
 int32_t CodecServiceStub::QueueInputBuffer(MessageParcel &data, MessageParcel &reply)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec listener is nullptr");
     uint32_t index = data.ReadUint32();
     AVCodecBufferInfo info;
@@ -730,6 +729,7 @@ int32_t CodecServiceStub::RenderOutputBufferAtTime(MessageParcel &data, MessageP
 {
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
 
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     uint32_t index = data.ReadUint32();
     int64_t renderTimestampNs = data.ReadInt64();
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec listener is nullptr");
