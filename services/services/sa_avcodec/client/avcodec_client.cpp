@@ -48,14 +48,14 @@ IAVCodecService &AVCodecServiceFactory::GetInstance()
 
 AVCodecClient::AVCodecClient() noexcept
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGI("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
 AVCodecClient::~AVCodecClient()
 {
     std::lock_guard<std::mutex> lock(g_avCodecClientMutex);
     g_isDestructed = true;
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGI("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
 bool AVCodecClient::IsAlived()

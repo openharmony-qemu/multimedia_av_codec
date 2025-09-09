@@ -120,10 +120,10 @@ private:
     template <ModeType mode>
     inline bool CanEnableMode()
     {
-        bool isUnconfigured = !(flags_ & FLAG_SYNC_ASYNC_CONFIGURED);
-        bool modeMatched = !(flags_ & FLAG_IS_SYNC);
+        bool isUnconfigured = !HasFlag(FLAG_SYNC_ASYNC_CONFIGURED);
+        bool modeMatched = !HasFlag(FLAG_IS_SYNC);
         if constexpr (mode == MODE_SYNC) {
-            modeMatched = (flags_ & FLAG_IS_SYNC);
+            modeMatched = HasFlag(FLAG_IS_SYNC);
         }
         return isUnconfigured || modeMatched;
     }
@@ -132,9 +132,9 @@ private:
     inline void EnableMode()
     {
         if constexpr (mode == MODE_SYNC) {
-            flags_ |= FLAG_IS_SYNC;
+            AddFlag(FLAG_IS_SYNC);
         }
-        flags_ |= FLAG_SYNC_ASYNC_CONFIGURED;
+        AddFlag(FLAG_SYNC_ASYNC_CONFIGURED);
     }
 
     BufferCache inCache_;
