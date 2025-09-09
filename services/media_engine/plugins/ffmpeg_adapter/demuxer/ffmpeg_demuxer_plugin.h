@@ -136,7 +136,7 @@ private:
         std::atomic<bool> initErrorAgain {false};
         std::mutex invokerTypeMutex;
         std::atomic<InvokerType> invokerType {INVOKER_NONE};
-        bool readCbReady {false};
+        std::atomic<bool> readCbReady {false};
     };
     
     bool SelectedVideo();
@@ -344,7 +344,7 @@ private:
     uint32_t trackId_ = 0;
     ThreadState threadState_ {ThreadState::NOT_STARTED};
     std::atomic<Status> readLoopStatus_ = {Status::OK};
-    bool isPauseReadPacket_ = false;
+    std::atomic<bool> isPauseReadPacket_ = false;
     std::unordered_map<int, int> readModeMap_; // 0 mean sync read, 1 mean async read
     std::mutex seekWaitMutex_;
     std::condition_variable seekWaitCv_;
