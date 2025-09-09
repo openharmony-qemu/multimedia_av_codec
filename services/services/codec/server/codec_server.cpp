@@ -1778,6 +1778,7 @@ CodecServer::DecodedBufferInfo::DecodedBufferInfo(uint32_t index, AVBuffer &buff
 std::shared_ptr<AVBuffer> CodecServer::DecodedBufferInfo::CreateAVBuffer()
 {
     auto buffer = AVBuffer::CreateAVBuffer();
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer != nullptr, nullptr, "Create AVBuffer failed");
     buffer->pts_  = this->pts;
     buffer->flag_ = this->flag;
     return buffer;
