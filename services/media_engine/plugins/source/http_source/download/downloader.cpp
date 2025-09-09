@@ -737,8 +737,11 @@ void Downloader::RequestData()
         OpenAppUri();
     }
 
-    auto handleResponseCb = [this](int32_t clientCode, int32_t serverCode, Status ret) {
-        HandleResponseCb(clientCode, serverCode, ret);
+    std::weak_ptr<Downloader> weakDownloader = weak_from_this();
+    auto handleResponseCb = [weakDownloader](int32_t clientCode, int32_t serverCode, Status ret) {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "handleResponseCb, Downloader is nullptr!");
+        shareDownloader->HandleResponseCb(clientCode, serverCode, ret);
     };
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData enter.", FAKE_POINTER(this));
     int len = currentRequest_->requestSize_;
