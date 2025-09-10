@@ -227,6 +227,7 @@ private:
     int32_t GetCallbackBufferDuration();
     int32_t ChooseVolumeMode();
     void ApplyAudioHapticsSyncId();
+    int32_t GetAvailableBufferDuration(uint32_t customSampleRate);
 
     OHOS::Media::Mutex renderMutex_{};
     Callback *callback_{};
@@ -282,6 +283,7 @@ private:
     bool isAudioVivid_ {false};
     uint64_t enqueueNumber_ {0};
     int32_t audioHapticsSyncId_ {0};
+    uint32_t customSampleRate_{0};
 };
 } // namespace Plugin
 } // namespace Media
