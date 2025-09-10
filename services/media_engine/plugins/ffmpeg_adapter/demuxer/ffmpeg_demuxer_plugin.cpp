@@ -2318,7 +2318,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
             cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
         }
         cttsCurNum--;
-        int64_t currentCttsDuration = static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration + minCttsDuration);
+        int64_t currentCttsDuration = static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration - minCttsDuration);
         if ((INT64_MAX / 1000 / 1000) < // 1000 is used for converting pts to us
             ((dts + currentCttsDuration) /
             static_cast<int64_t>(avStream->time_scale))) {
