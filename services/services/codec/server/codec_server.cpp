@@ -1601,10 +1601,8 @@ int32_t CodecServer::GetPostProcessingOutputFormat(Format& format)
 
 int32_t CodecServer::PushDecodedBufferInfo(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    auto info = std::make_shared<DecodedBufferInfo>();
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(info, AVCS_ERR_NO_MEMORY, "Failed to allocate info");
-    info->index = index;
-    info->buffer = std::make_shared<AVBuffer>(*buffer);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer != nullptr, AVCS_ERR_UNKNOWN, "buffer is nullptr!");
+    auto info = DecodedBufferInfo(index, *buffer);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(decodedBufferInfoQueue_, AVCS_ERR_UNKNOWN, "Queue is null");
     auto ret = decodedBufferInfoQueue_->PushWait(info);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == QueueResult::OK, AVCS_ERR_UNKNOWN, "Push data failed, %{public}s",
@@ -1632,17 +1630,17 @@ void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, int32_t 
         return;
     }
     CHECK_AND_RETURN_LOG_WITH_TAG(postProcessingInputBufferInfoQueue_, "Queue is null");
-    std::shared_ptr<DecodedBufferInfo> info{nullptr};
+    DecodedBufferInfo info;
     auto ret = postProcessingInputBufferInfoQueue_->PopWait(info);
     CHECK_AND_RETURN_LOG_WITH_TAG(ret == QueueResult::OK, "Get data failed, %{public}s",
                                   QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
-    CHECK_AND_RETURN_LOG_WITH_TAG(info && info->buffer, "Invalid data");
-    info->index = index;
     if (flag == 1) { // 1: EOS flag
-        info->buffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
+        info.flag = AVCODEC_BUFFER_FLAG_EOS;
         AVCODEC_LOGI_WITH_TAG("Catch EOS frame");
     }
-    videoCb_->OnOutputBufferAvailable(index, info->buffer);
+    auto buffer = info.CreateAVBuffer();
+    CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "Create AVBuffer failed");
+    videoCb_->OnOutputBufferAvailable(index, buffer);
 }
 
 void CodecServer::PostProcessingOnOutputFormatChanged(const Format& format)
@@ -1699,19 +1697,18 @@ int32_t CodecServer::StartPostProcessingTask()
 void CodecServer::PostProcessingTask()
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(decodedBufferInfoQueue_ && postProcessingInputBufferInfoQueue_, "Queue is null");
-    std::shared_ptr<DecodedBufferInfo> info{nullptr};
+    DecodedBufferInfo info;
     auto ret = decodedBufferInfoQueue_->PopWait(info);
     CHECK_AND_RETURN_LOG_WITH_TAG(ret == QueueResult::OK, "Get data failed, %{public}s",
                                   QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
-    CHECK_AND_RETURN_LOG_WITH_TAG(info && info->buffer, "Invalid data");
     ret = postProcessingInputBufferInfoQueue_->PushWait(info);
     CHECK_AND_RETURN_LOG_WITH_TAG(ret == QueueResult::OK, "Push data failed, %{public}s",
                                   QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
-    if (info->buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+    if (info.flag == AVCODEC_BUFFER_FLAG_EOS) {
         AVCODEC_LOGI_WITH_TAG("Catch EOS frame, notify post processing eos");
         postProcessing_->NotifyEos();
     }
-    (void)ReleaseOutputBufferOfCodec(info->index, true);
+    (void)ReleaseOutputBufferOfCodec(info.index, true);
 }
 
 void CodecServer::DeactivatePostProcessingQueue()
@@ -1774,6 +1771,22 @@ int32_t CodecServer::NotifyResume()
         framerateCalculator_->SetFramerate2ConfiguredFramerate();
     }
     return codecBase_->NotifyResume();
+}
+
+CodecServer::DecodedBufferInfo::DecodedBufferInfo(uint32_t index, AVBuffer &buffer)
+{
+    this->index = index;
+    this->pts   = buffer.pts_;
+    this->flag  = buffer.flag_;
+}
+
+std::shared_ptr<AVBuffer> CodecServer::DecodedBufferInfo::CreateAVBuffer()
+{
+    auto buffer = AVBuffer::CreateAVBuffer();
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, nullptr, "Create AVBuffer failed");
+    buffer->pts_  = this->pts;
+    buffer->flag_ = this->flag;
+    return buffer;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
