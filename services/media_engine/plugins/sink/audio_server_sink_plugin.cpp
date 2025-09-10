@@ -502,7 +502,6 @@ bool AudioServerSinkPlugin::AssignSampleRateIfSupported(uint32_t sampleRate)
 {
     sampleRate_ = sampleRate;
     if (mimeType_ == MimeType::AUDIO_FLAC) {
-        FALSE_RETURN_V_MSG(sampleRate < SAMPLE_RATE_MIN || sampleRate > SAMPLE_RATE_MAX, false, "sampleRate value out of limits");
         FALSE_RETURN_V_MSG(OHOS::AudioStandard::AudioRenderer::CheckSupportedSamplingRates(sampleRate), false,
             "mimeType is FLAC sampleRate is invaild");
         customSampleRate_ = sampleRate;
