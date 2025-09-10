@@ -102,6 +102,7 @@ std::string XmlElement::GetText()
         xmlChar *content = xmlNodeGetContent(xmlNodePtr_);
         if (content != nullptr) {
             std::string contentValue(reinterpret_cast<char *>(content));
+            xmlFree(content);
             return contentValue;
         }
     }
