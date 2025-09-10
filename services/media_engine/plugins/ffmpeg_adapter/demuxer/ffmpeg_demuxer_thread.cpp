@@ -119,7 +119,7 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
         readCbCv_.wait(readLock, [ioContext]() {
             return (ioContext->readCbReady) || (ioContext->invokerType != InvokerType::READ);
         }); // Wait to be notified
-        ioContext->readCbReady = false; // Reset the flag
+        ioContext->readCbReady.store(false); // Reset the flag
         tryCount = 0;
     } else {
         MEDIA_LOG_I("Read again, retry count: " PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64, tryCount, ioContext->offset);
@@ -166,7 +166,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(readModeMap_.find(0) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
     readModeMap_[1] = 1;
-    isPauseReadPacket_ = false;
+    isPauseReadPacket_.store(false);
     if (ioContext_.invokerType != InvokerType::READ) {
         std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::READ;
@@ -221,12 +221,12 @@ Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t t
         isWaitingForReadThread_.store(true);
         if (threadState_ == READING) {
             std::lock_guard<std::mutex> readLock(readPacketMutex_);
-            ioContext_.readCbReady = true;
+            ioContext_.readCbReady.store(true);
             readCbCv_.notify_one();
         }
         if (threadState_ == WAITING) {
             std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
-            threadReady_ = true;
+            threadReady_.store(true);
             readLoopCv_.notify_one();
         }
         {
@@ -303,7 +303,7 @@ void FFmpegDemuxerPlugin::HandleReadWait()
                (isWaitingForReadThread_.load() && cacheQueue_.GetCacheSize(trackId_) <= 1);
     });
     threadState_ = READING;
-    threadReady_ = false;
+    threadReady_.store(false);
 }
 
 bool FFmpegDemuxerPlugin::EnsurePacketAllocated(AVPacket*& pkt)
@@ -418,7 +418,7 @@ void FFmpegDemuxerPlugin::ReleaseFFmpegReadLoop()
         readLoopCv_.notify_one();
     }
     std::unique_lock<std::mutex> readLock(readPacketMutex_);
-    ioContext_.readCbReady = true;
+    ioContext_.readCbReady.store(true);
     readCbCv_.notify_one();
     readLock.unlock();
     if (readThread_ != nullptr && readThread_->joinable()) {
@@ -438,7 +438,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
     FALSE_RETURN_V_MSG_E(readModeMap_.find(0) == readModeMap_.end(), Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
     readModeMap_[1] = 1;
-    isPauseReadPacket_ = false;
+    isPauseReadPacket_.store(false);
     if (ioContext_.invokerType != InvokerType::READ) {
         std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
         ioContext_.invokerType = InvokerType::READ;
@@ -482,7 +482,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
 Status FFmpegDemuxerPlugin::Pause()
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    isPauseReadPacket_ = true;
+    isPauseReadPacket_.store(true);
     return Status::OK;
 }
 
