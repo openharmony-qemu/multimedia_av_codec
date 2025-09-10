@@ -68,6 +68,9 @@ static string g_codecNameHEVC = "";
 static string g_codecNameVVC = "";
 constexpr uint32_t CHANGE_AVC_FRAME = 1500;
 constexpr uint32_t CHANGE_HEVC_FRAME = 3006;
+constexpr uint32_t ONE_HUNDRED_NINETY_FIVE = 195;
+constexpr uint32_t THREE_HUNDRED_NINETY = 390;
+constexpr uint32_t ONE_HUNDRED_THIRTY = 130;
 } // namespace
 
 void HwdecFunc2NdkTest::SetUpTestCase()
@@ -1490,7 +1493,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0040, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
         vDecSample->WaitForEOS();
-        ASSERT_EQ(195, vDecSample->outFrameCount);
+        ASSERT_EQ(ONE_HUNDRED_NINETY_FIVE, vDecSample->outFrameCount);
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
@@ -1606,7 +1609,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0080, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
         vDecSample->WaitForEOS();
-        ASSERT_EQ(195, vDecSample->outFrameCount);
+        ASSERT_EQ(ONE_HUNDRED_NINETY_FIVE, vDecSample->outFrameCount);
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
@@ -1634,7 +1637,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0090, TestSize.Level0)
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
         vDecSample->WaitForEOS();
-        ASSERT_EQ(130, vDecSample->metaDataFailCount);
+        ASSERT_EQ(ONE_HUNDRED_THIRTY, vDecSample->metaDataFailCount);
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
@@ -1662,7 +1665,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0100, TestSize.Level0)
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
         vDecSample->WaitForEOS();
-        ASSERT_EQ(130, vDecSample->metaDataFailCount);
+        ASSERT_EQ(ONE_HUNDRED_THIRTY, vDecSample->metaDataFailCount);
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
@@ -1692,7 +1695,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0110, TestSize.Level0)
             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
             ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
             vDecSample->WaitForEOS();
-            ASSERT_EQ(130, vDecSample->metaDataFailCount);
+            ASSERT_EQ(ONE_HUNDRED_THIRTY, vDecSample->metaDataFailCount);
             ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
         }
     }
@@ -1721,8 +1724,8 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0120, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
         vDecSample->WaitForEOS();
-        ASSERT_EQ(195, vDecSample->outFrameCount);
-        ASSERT_EQ(390, vDecSample->metaDataFailCount);
+        ASSERT_EQ(ONE_HUNDRED_NINETY_FIVE, vDecSample->outFrameCount);
+        ASSERT_EQ(THREE_HUNDRED_NINETY, vDecSample->metaDataFailCount);
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
