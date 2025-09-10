@@ -138,7 +138,7 @@ public:
     void ProcessOutputData(OH_AVBuffer *buffer, uint32_t index);
     void CopyFrom10BitYuv(OH_AVBuffer *buffer, uint32_t index);
     void CopyFrom8BitYuv(OH_AVBuffer *buffer, uint32_t index);
-    int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr);
+    int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr, OH_AVBuffer *buffer);
     void GetStride();
     void InputFuncTest();
     void SyncInputFunc();
