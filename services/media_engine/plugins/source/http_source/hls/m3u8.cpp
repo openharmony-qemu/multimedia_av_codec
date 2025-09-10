@@ -280,7 +280,7 @@ uint32_t M3U8::SaveMapData(uint8_t* data, uint32_t len, bool notBlock)
         fmp4HeaderLen = headerLen;
     }
     NZERO_RETURN_V(memcpy_s(fmp4Header_ + downloadHeaderLen_, fmp4HeaderLen - downloadHeaderLen_, data, len), 0);
-    downloadHeaderLen_ += len;
+    downloadHeaderLen_ += std::min(len, fmp4HeaderLen - downloadHeaderLen_);
     return len;
 }
 
