@@ -71,6 +71,10 @@ private:
 VDecApi11FuzzSample::~VDecApi11FuzzSample()
 {
     Release();
+    if (nativeBuffer_ != nullptr) {
+        OH_NativeBuffer_Unreference(nativeBuffer_);
+        nativeBuffer_ = nullptr;
+    }
 }
 
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
@@ -105,6 +109,7 @@ void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, 
 
 void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
+    g_decSample->CompareHdrInfo(buffer);
     int32_t ret = 0;
     if (g_decSample->isSurfMode) {
         if (g_decSample->isRenderAttime) {
@@ -189,6 +194,33 @@ int32_t VDecApi11FuzzSample::CreateVideoDecoder()
         tmpDec = nullptr;
     }
     tmpDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    OH_VideoDecoder_IsValid(vdec_, &isValid);
+    if (tmpDec) {
+        OH_VideoDecoder_Destroy(tmpDec);
+        tmpDec = nullptr;
+    }
+    vdec_ = OH_VideoDecoder_CreateByName(codecName.c_str());
+    g_decSample = this;
+    return vdec_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
+}
+
+int32_t VDecApi11FuzzSample::CreateVideoHevcDecoder()
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+    string codecName = OH_AVCapability_GetName(cap);
+    vdec_ = OH_VideoDecoder_CreateByName("aabbcc");
+    bool isValid = false;
+    if (vdec_) {
+        OH_VideoDecoder_IsValid(vdec_, &isValid);
+        OH_VideoDecoder_Destroy(vdec_);
+        vdec_ = nullptr;
+    }
+    OH_AVCodec *tmpDec = OH_VideoDecoder_CreateByMime("aabbcc");
+    if (tmpDec) {
+        OH_VideoDecoder_Destroy(tmpDec);
+        tmpDec = nullptr;
+    }
+    tmpDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
     OH_VideoDecoder_IsValid(vdec_, &isValid);
     if (tmpDec) {
         OH_VideoDecoder_Destroy(tmpDec);
@@ -480,4 +512,58 @@ uint32_t VDecApi11FuzzSample::SendData(uint32_t bufferSize, uint32_t index, OH_A
     }
     delete[] fileBuffer;
     return 0;
+}
+
+void VDecApi11FuzzSample::CompareHdrInfo(OH_AVBuffer *buffer)
+{
+    if(!needCompareHdrInof || buffer == nullptr) {
+        return;
+    }
+    nativeBuffer_ = OH_AVBuffer_GetNativeBuffer(buffer);
+    if (nativeBuffer_ == nullptr) {
+        cout << "Fatel: get native buffer fail" << endl;
+        return;
+    }
+    GetHdrDynamicMetaData();
+    GetHdrtaticMetaData();
+    int metaDataType = 0;
+    GetHdrMetaDataType(metaDataType);
+
+}
+
+void VDecApi11FuzzSample::GetHdrDynamicMetaData()
+{
+    int32_t metadataSize = 0;
+    uint8_t *metadata = nullptr;
+    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_DYNAMIC_METADATA, &metadataSize, &metadata) != 0) {
+        cout << "get dynamic meta data faile" << endl;
+        return;
+    }
+    delete[] metadata;
+    metadata = nullptr;
+}
+
+void VDecApi11FuzzSample::GetHdrtaticMetaData()
+{
+    int32_t metadataSize = 0;
+    uint8_t *metadata = nullptr;
+    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_STATIC_METADATA, &metadataSize, &metadata) != 0) {
+        cout << "get static meta data faile" << endl;
+        return;
+    }
+    delete[] metadata;
+    metadata = nullptr;
+}
+
+void VDecApi11FuzzSample::GetHdrMetaDataType(int &metaDataType)
+{
+    int32_t metadataSize = 0;
+    uint8_t *metadata = nullptr;
+    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_METADATA_TYPE, &metadataSize, &metadata) != 0) {
+        return;
+    }
+    memcpy_s(&metaDataType, metadataSize, metadata, metadataSize);
+    delete[] metadata;
+    metadata = nullptr;
+    return;
 }

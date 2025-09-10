@@ -71,6 +71,10 @@ VDecSyncSample::~VDecSyncSample()
             nativeWindow[i] = nullptr;
         }
     }
+    if (nativeBuffer_ != nullptr) {
+        OH_NativeBuffer_Unreference(nativeBuffer_);
+        nativeBuffer_ = nullptr;
+    }
     Stop();
     Release();
 }
@@ -217,6 +221,7 @@ int32_t VDecSyncSample::SyncOutputFuncFuzz()
         cout << "OH_VideoDecoder_QueryOutputBuffer fail" << endl;
         return AV_ERR_UNKNOWN;
     }
+    CompareHdrInfo(buffer);
     if (sfOutput) {
         if (isRenderAttime) {
             ret = OH_VideoDecoder_RenderOutputBufferAtTime(vdec_, index, renderTimestampNs);
@@ -282,4 +287,58 @@ void VDecSyncSample::SetParameter(int32_t data, int32_t data1)
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, data1);
     OH_VideoDecoder_SetParameter(vdec_, format);
     OH_AVFormat_Destroy(format);
+}
+
+void VDecSyncSample::CompareHdrInfo(OH_AVBuffer *buffer)
+{
+    if(!needCompareHdrInof || buffer == nullptr) {
+        return;
+    }
+    nativeBuffer_ = OH_AVBuffer_GetNativeBuffer(buffer);
+    if (nativeBuffer_ == nullptr) {
+        cout << "Fatel: get native buffer fail" << endl;
+        return;
+    }
+    GetHdrDynamicMetaData();
+    GetHdrtaticMetaData();
+    int metaDataType = 0;
+    GetHdrMetaDataType(metaDataType);
+
+}
+
+void VDecSyncSample::GetHdrDynamicMetaData()
+{
+    int32_t metadataSize = 0;
+    uint8_t *metadata = nullptr;
+    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_DYNAMIC_METADATA, &metadataSize, &metadata) != 0) {
+        cout << "get dynamic meta data faile" << endl;
+        return;
+    }
+    delete[] metadata;
+    metadata = nullptr;
+}
+
+void VDecSyncSample::GetHdrtaticMetaData()
+{
+    int32_t metadataSize = 0;
+    uint8_t *metadata = nullptr;
+    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_STATIC_METADATA, &metadataSize, &metadata) != 0) {
+        cout << "get static meta data faile" << endl;
+        return;
+    }
+    delete[] metadata;
+    metadata = nullptr;
+}
+
+void VDecSyncSample::GetHdrMetaDataType(int &metaDataType)
+{
+    int32_t metadataSize = 0;
+    uint8_t *metadata = nullptr;
+    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_METADATA_TYPE, &metadataSize, &metadata) != 0) {
+        return;
+    }
+    memcpy_s(&metaDataType, metadataSize, metadata, metadataSize);
+    delete[] metadata;
+    metadata = nullptr;
+    return;
 }
