@@ -291,7 +291,7 @@ void VDecSyncSample::SetParameter(int32_t data, int32_t data1)
 
 void VDecSyncSample::CompareHdrInfo(OH_AVBuffer *buffer)
 {
-    if(!needCompareHdrInof || buffer == nullptr) {
+    if (!needCompareHdrInof || buffer == nullptr) {
         return;
     }
     nativeBuffer_ = OH_AVBuffer_GetNativeBuffer(buffer);
@@ -303,7 +303,6 @@ void VDecSyncSample::CompareHdrInfo(OH_AVBuffer *buffer)
     GetHdrtaticMetaData();
     int metaDataType = 0;
     GetHdrMetaDataType(metaDataType);
-
 }
 
 void VDecSyncSample::GetHdrDynamicMetaData()

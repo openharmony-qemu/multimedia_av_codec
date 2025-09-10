@@ -52,9 +52,9 @@ protected:
     const char *inpDirVvcResolution8Bit = "/data/test/media/resolution_8bit.vvc";
     const char *inpDirVvcResolution10Bit = "/data/test/media/resolution_10bit.vvc";
     const char *inpDirVvcResolutionHdr10Bit = "/data/test/media/resolution_hdr_10bit.vvc";
-    const char *INP_DIR_HDR10_6400_METADATA = "/data/test/media/hdr10_metadata_6400.h265";
-    const char *INP_DIR_HDRVIVID_1080_METADATA = "/data/test/media/hdrvivid_metadata_1080p.h265";
-    const char *INP_DIR_HLG_128_METADATA = "/data/test/media/hdr_hlg_metadata_128.h265";
+    const char *inpDirHdr106400Metadata = "/data/test/media/hdr10_metadata_6400.h265";
+    const char *inpDirHdrvivid1080Metadata = "/data/test/media/hdrvivid_metadata_1080p.h265";
+    const char *inpDirHlg128Metadata = "/data/test/media/hdr_hlg_metadata_128.h265";
 };
 } // namespace Media
 } // namespace OHOS
@@ -1388,11 +1388,11 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_H266_FLUSH_0020, TestSize.Level1)
  * @tc.name      : HDR 10同步nv12解码
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0010, TestSize.Level2)
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0010, TestSize.Level0)
 {
     if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_HDR10_6400_METADATA;
+        vDecSample->INP_DIR = inpDirHdr106400Metadata;
         vDecSample->STATIC_METADATA_FILE = "hdr10_static_meta_6400.bin";
         vDecSample->DEFAULT_WIDTH = 6400;
         vDecSample->DEFAULT_HEIGHT = 6400;
@@ -1415,11 +1415,11 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0010, TestSize.Level2)
  * @tc.name      : HDR 10异步nv21解码
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0020, TestSize.Level2)
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0020, TestSize.Level0)
 {
     if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_HDR10_6400_METADATA;
+        vDecSample->INP_DIR = inpDirHdr106400Metadata;
         vDecSample->STATIC_METADATA_FILE = "hdr10_static_meta_6400.bin";
         vDecSample->DEFAULT_WIDTH = 6400;
         vDecSample->DEFAULT_HEIGHT = 6400;
@@ -1447,7 +1447,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0030, TestSize.Level2)
     if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
         if (OH_AVCapability_IsFeatureSupported(cap_hevc, VIDEO_LOW_LATENCY)) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
-            vDecSample->INP_DIR = INP_DIR_HDR10_6400_METADATA;
+            vDecSample->INP_DIR = inpDirHdr106400Metadata;
             vDecSample->STATIC_METADATA_FILE = "hdr10_static_meta_6400.bin";
             vDecSample->DEFAULT_WIDTH = 6400;
             vDecSample->DEFAULT_HEIGHT = 6400;
@@ -1500,11 +1500,11 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0040, TestSize.Level2)
  * @tc.name      : HDR VIVID同步nv12解码
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0050, TestSize.Level2)
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0050, TestSize.Level0)
 {
     if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_HDRVIVID_1080_METADATA;
+        vDecSample->INP_DIR = inpDirHdrvivid1080Metadata;
         vDecSample->DYNAMIC_METADATA_FILE = "hdrvivid_dynamic_meta_1080p.bin";
         vDecSample->STATIC_METADATA_FILE = "hdrvivid_static_meta_1080p.bin";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1528,11 +1528,11 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0050, TestSize.Level2)
  * @tc.name      : HDR VIVID异步nv21解码
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0060, TestSize.Level2)
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0060, TestSize.Level0)
 {
     if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_HDRVIVID_1080_METADATA;
+        vDecSample->INP_DIR = inpDirHdrvivid1080Metadata;
         vDecSample->DYNAMIC_METADATA_FILE = "hdrvivid_dynamic_meta_1080p.bin";
         vDecSample->STATIC_METADATA_FILE = "hdrvivid_static_meta_1080p.bin";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -1561,7 +1561,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0070, TestSize.Level2)
     if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
         if (OH_AVCapability_IsFeatureSupported(cap_hevc, VIDEO_LOW_LATENCY)) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
-            vDecSample->INP_DIR = INP_DIR_HDRVIVID_1080_METADATA;
+            vDecSample->INP_DIR = inpDirHdrvivid1080Metadata;
             vDecSample->DYNAMIC_METADATA_FILE = "hdrvivid_dynamic_meta_1080p.bin";
             vDecSample->STATIC_METADATA_FILE = "hdrvivid_static_meta_1080p.bin";
             vDecSample->DEFAULT_WIDTH = 1920;
@@ -1616,11 +1616,11 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0080, TestSize.Level2)
  * @tc.name      : HDR HLG同步nv12解码
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0090, TestSize.Level2)
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0090, TestSize.Level0)
 {
     if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_HLG_128_METADATA;
+        vDecSample->INP_DIR = inpDirHlg128Metadata;
         vDecSample->DEFAULT_WIDTH = 128;
         vDecSample->DEFAULT_HEIGHT = 128;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1644,11 +1644,11 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0090, TestSize.Level2)
  * @tc.name      : HDR HLG异步nv21解码
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0100, TestSize.Level2)
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0100, TestSize.Level0)
 {
     if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = INP_DIR_HLG_128_METADATA;
+        vDecSample->INP_DIR = inpDirHlg128Metadata;
         vDecSample->DEFAULT_WIDTH = 128;
         vDecSample->DEFAULT_HEIGHT = 128;
         vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -1672,12 +1672,12 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0100, TestSize.Level2)
  * @tc.name      : HDR HLG异步low_latency解码
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0110, TestSize.Level2)
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0110, TestSize.Level0)
 {
     if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
         if (OH_AVCapability_IsFeatureSupported(cap_hevc, VIDEO_LOW_LATENCY)) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
-            vDecSample->INP_DIR = INP_DIR_HLG_128_METADATA;
+            vDecSample->INP_DIR = inpDirHlg128Metadata;
             vDecSample->DEFAULT_WIDTH = 128;
             vDecSample->DEFAULT_HEIGHT = 128;
             vDecSample->DEFAULT_FRAME_RATE = 30;

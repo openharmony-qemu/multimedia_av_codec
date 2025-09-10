@@ -516,7 +516,7 @@ uint32_t VDecApi11FuzzSample::SendData(uint32_t bufferSize, uint32_t index, OH_A
 
 void VDecApi11FuzzSample::CompareHdrInfo(OH_AVBuffer *buffer)
 {
-    if(!needCompareHdrInof || buffer == nullptr) {
+    if (!needCompareHdrInof || buffer == nullptr) {
         return;
     }
     nativeBuffer_ = OH_AVBuffer_GetNativeBuffer(buffer);
@@ -528,7 +528,6 @@ void VDecApi11FuzzSample::CompareHdrInfo(OH_AVBuffer *buffer)
     GetHdrtaticMetaData();
     int metaDataType = 0;
     GetHdrMetaDataType(metaDataType);
-
 }
 
 void VDecApi11FuzzSample::GetHdrDynamicMetaData()

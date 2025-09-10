@@ -64,8 +64,8 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
     g_vDecSample->renderTimestampNs = fdp.ConsumeIntegral<int64_t>();
     g_vDecSample->isRenderAttime = fdp.ConsumeBool();
     auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
-    string g_codeName = GetcodeName(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, HARDWARE);
-    int32_t ret = g_vDecSample->CreateVideoDecoder(g_codeName);
+    string gCodeName = GetcodeName(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, HARDWARE);
+    int32_t ret = g_vDecSample->CreateVideoDecoder(gCodeName);
     if (ret != AV_ERR_OK) {
         delete g_vDecSample;
         g_vDecSample = nullptr;

@@ -1003,6 +1003,7 @@ void VDecAPI11Sample::AutoSwitchSurface()
 
 int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
 {
+    CompareHdrInfo(buffer, attr);
     if (IS_FIRST_FRAME) {
         GetStride();
         IS_FIRST_FRAME = false;
@@ -1089,7 +1090,6 @@ void VDecAPI11Sample::OutputFuncTest()
         if (OH_AVBuffer_GetBufferAttr(buffer, &attr) != AV_ERR_OK) {
             errCount = errCount + 1;
         }
-        CompareHdrInfo(buffer, attr);
         if (CheckAttrFlag(attr) == -1) {
             flag = false;
             break;
@@ -1487,7 +1487,7 @@ void VDecAPI11Sample::FlushStatus()
 
 void VDecAPI11Sample::CompareHdrInfo(OH_AVBuffer *buffer, OH_AVCodecBufferAttr attr)
 {
-    if(!needCompareHdrInof || buffer == nullptr) {
+    if (!needCompareHdrInof || buffer == nullptr) {
         return;
     }
     nativeBuffer_ = OH_AVBuffer_GetNativeBuffer(buffer);
