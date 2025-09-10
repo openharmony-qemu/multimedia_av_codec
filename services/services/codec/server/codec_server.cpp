@@ -1174,17 +1174,17 @@ CodecBaseCallback::~CodecBaseCallback()
 
 void CodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
-    if (codec_ != nullptr) {
-        codec_->OnError(errorType, errorCode);
+    std::shared_ptr<CodecServer> codec = weakCodec_.lock();
+    if (codec != nullptr) {
+        codec->OnError(errorType, errorCode);
     }
 }
 
 void CodecBaseCallback::OnOutputFormatChanged(const Format &format)
 {
-    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
-    if (codec_ != nullptr) {
-        codec_->OnOutputFormatChanged(format);
+    std::shared_ptr<CodecServer> codec = weakCodec_.lock();
+    if (codec != nullptr) {
+        codec->OnOutputFormatChanged(format);
     } else {
         AVCODEC_LOGI("CodecBaseCallback receive output format changed but codec is nullptr");
     }
@@ -1192,18 +1192,18 @@ void CodecBaseCallback::OnOutputFormatChanged(const Format &format)
 
 void CodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
-    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
-    if (codec_ != nullptr) {
-        codec_->OnInputBufferAvailable(index, buffer);
+    std::shared_ptr<CodecServer> codec = weakCodec_.lock();
+    if (codec != nullptr) {
+        codec->OnInputBufferAvailable(index, buffer);
     }
 }
 
 void CodecBaseCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                                 std::shared_ptr<AVSharedMemory> buffer)
 {
-    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
-    if (codec_ != nullptr) {
-        codec_->OnOutputBufferAvailable(index, info, flag, buffer);
+    std::shared_ptr<CodecServer> codec = weakCodec_.lock();
+    if (codec != nullptr) {
+        codec->OnOutputBufferAvailable(index, info, flag, buffer);
     }
 }
 
@@ -1219,17 +1219,17 @@ VCodecBaseCallback::~VCodecBaseCallback()
 
 void VCodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
-    if (codec_ != nullptr) {
-        codec_->OnError(errorType, errorCode);
+    std::shared_ptr<CodecServer> codec = weakCodec_.lock();
+    if (codec != nullptr) {
+        codec->OnError(errorType, errorCode);
     }
 }
 
 void VCodecBaseCallback::OnOutputFormatChanged(const Format &format)
 {
-    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
-    if (codec_ != nullptr) {
-        codec_->OnOutputFormatChanged(format);
+    std::shared_ptr<CodecServer> codec = weakCodec_.lock();
+    if (codec != nullptr) {
+        codec->OnOutputFormatChanged(format);
     } else {
         AVCODEC_LOGE("receive output format changed, but codec is nullptr");
     }
@@ -1237,32 +1237,32 @@ void VCodecBaseCallback::OnOutputFormatChanged(const Format &format)
 
 void VCodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
-    if (codec_ != nullptr) {
-        codec_->OnInputBufferAvailable(index, buffer);
+    std::shared_ptr<CodecServer> codec = weakCodec_.lock();
+    if (codec != nullptr) {
+        codec->OnInputBufferAvailable(index, buffer);
     }
 }
 
 void VCodecBaseCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
-    if (codec_ != nullptr) {
-        codec_->OnOutputBufferAvailable(index, buffer);
+    std::shared_ptr<CodecServer> codec = weakCodec_.lock();
+    if (codec != nullptr) {
+        codec->OnOutputBufferAvailable(index, buffer);
     }
 }
 
 void VCodecBaseCallback::OnOutputBufferBinded(std::map<uint32_t, sptr<SurfaceBuffer>> &bufferMap)
 {
-    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
-    CHECK_AND_RETURN_LOG(codec_ != nullptr, "codec_ is nullptr!");
-    codec_->OnOutputBufferBinded(bufferMap);
+    std::shared_ptr<CodecServer> codec = weakCodec_.lock();
+    CHECK_AND_RETURN_LOG(codec != nullptr, "codec is nullptr!");
+    codec->OnOutputBufferBinded(bufferMap);
 }
- 
+
 void VCodecBaseCallback::OnOutputBufferUnbinded()
 {
-    std::shared_ptr<CodecServer> codec_ = weakCodec_.lock();
-    CHECK_AND_RETURN_LOG(codec_ != nullptr, "codec_ is nullptr!");
-    codec_->OnOutputBufferUnbinded();
+    std::shared_ptr<CodecServer> codec = weakCodec_.lock();
+    CHECK_AND_RETURN_LOG(codec != nullptr, "codec is nullptr!");
+    codec->OnOutputBufferUnbinded();
 }
 
 int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
