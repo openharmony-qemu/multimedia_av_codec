@@ -112,6 +112,14 @@ int32_t AVCodecClient::SuspendActiveAll()
     return avCodecProxy->SuspendActiveAll();
 }
 
+int32_t AVCodecClient::GetActiveSecureDecoderPids(std::vector<pid_t> &pidList)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto avCodecProxy = GetTemporaryAVCodecProxy();
+    CHECK_AND_RETURN_RET_LOG(avCodecProxy != nullptr, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
+    return avCodecProxy->GetActiveSecureDecoderPids(pidList);
+}
+
 #ifdef SUPPORT_CODEC
 int32_t AVCodecClient::CreateCodecService(std::shared_ptr<ICodecService> &codecClient)
 {

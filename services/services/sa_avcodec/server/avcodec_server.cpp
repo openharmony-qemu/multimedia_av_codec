@@ -155,6 +155,12 @@ int32_t AVCodecServer::SuspendActiveAll()
     return AVCS_ERR_OK;
 }
 
+int32_t AVCodecServer::GetActiveSecureDecoderPids(std::vector<pid_t> &pidList)
+{
+    pidList = AVCodecServerManager::GetInstance().GetActiveSecureDecoderPids();
+    return AVCS_ERR_OK;
+}
+
 int32_t AVCodecServer::Dump(int32_t fd, const std::vector<std::u16string> &args)
 {
     if (fd <= 0) {

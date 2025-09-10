@@ -59,6 +59,14 @@ public:
         */
     virtual int32_t SuspendActiveAll() = 0;
 
+    /**
+        * @brief Get active secure decoder pids.
+        *
+        * @param pidList The list of pids
+        * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+        */
+    virtual int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) = 0;
+
 #ifdef SUPPORT_CODECLIST
     /**
      * @brief Create a codeclist service.
