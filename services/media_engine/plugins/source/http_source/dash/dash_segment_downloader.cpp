@@ -31,8 +31,6 @@ constexpr uint32_t SUBTITLE_RING_BUFFER_SIZE = 1 * 1024 * 1024;
 constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr int DEFAULT_WAIT_TIME = 2;
 constexpr int32_t HTTP_TIME_OUT_MS = 10 * 1000;
-constexpr uint32_t RECORD_TIME_INTERVAL = 1000;
-constexpr int32_t RECORD_DOWNLOAD_MIN_BIT = 1000;
 constexpr uint32_t SPEED_MULTI_FACT = 1000;
 constexpr uint32_t BYTE_TO_BIT = 8;
 constexpr int PLAY_WATER_LINE = 5 * 1024;
@@ -49,6 +47,7 @@ constexpr uint32_t UPDATE_CACHE_STEP = 10;
 constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 constexpr size_t DOWNLOADER_RESUME_THRESHOLD = 10 * 1024 * 1024;
+constexpr int WRITTING_DATA_LOG_FREQUENCY = 20;
 
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
     {MediaAVCodec::MediaType::MEDIA_TYPE_VID, VID_RING_BUFFER_SIZE},
@@ -941,40 +940,40 @@ void DashSegmentDownloader::OnWriteRingBuffer(uint32_t len)
     uint32_t writeBits = len * BYTE_TO_BIT;
     totalBits_ += writeBits;
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
-    if (now > lastCheckTime_ && now - lastCheckTime_ > RECORD_TIME_INTERVAL) {
-        uint64_t curDownloadBits = totalBits_ - lastBits_;
-        if (curDownloadBits >= RECORD_DOWNLOAD_MIN_BIT) {
-            downloadDuringTime_ = now - lastCheckTime_;
-            downloadBits_ += curDownloadBits;
-            totalDownloadDuringTime_ += downloadDuringTime_;
-            double downloadRate = 0;
-            double tmpNumerator = static_cast<double>(curDownloadBits);
-            double tmpDenominator = static_cast<double>(downloadDuringTime_) / SECOND_TO_MILLISECONDS;
-            if (tmpDenominator > ZERO_THRESHOLD) {
-                downloadRate = tmpNumerator / tmpDenominator;
-            }
-            size_t remainingBuffer = 0;
-            if (buffer_ != nullptr) {
-                remainingBuffer = buffer_->GetSize();
-            }
-            MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64
-                " KByte", static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
-            // Remaining playable time: s
-            uint64_t bufferDuration = 0;
-            if (realTimeBitBate_ > 0) {
-                bufferDuration =
-                    remainingBuffer * static_cast<uint64_t>(BYTES_TO_BIT) / static_cast<uint64_t>(realTimeBitBate_);
-            } else {
-                bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / currentBitrate_;
-            }
-            if (recordData_ != nullptr) {
-                recordData_->downloadRate = downloadRate;
-                recordData_->bufferDuring = bufferDuration;
-            }
-        }
-        lastBits_ = totalBits_;
-        lastCheckTime_ = now;
+    if (now <= lastCheckTime_) {
+        return;
     }
+    uint64_t curDownloadBits = totalBits_ - lastBits_;
+    downloadDuringTime_ = now - lastCheckTime_;
+    downloadBits_ += curDownloadBits;
+    totalDownloadDuringTime_ += downloadDuringTime_;
+    double downloadRate = 0;
+    double tmpNumerator = static_cast<double>(curDownloadBits);
+    double tmpDenominator = static_cast<double>(downloadDuringTime_) / SECOND_TO_MILLISECONDS;
+    if (tmpDenominator > ZERO_THRESHOLD) {
+        downloadRate = tmpNumerator / tmpDenominator;
+    }
+    size_t remainingBuffer = 0;
+    if (buffer_ != nullptr) {
+        remainingBuffer = buffer_->GetSize();
+    }
+    MEDIA_LOGD_LIMIT(WRITTING_DATA_LOG_FREQUENCY, "Current download speed : " PUBLIC_LOG_D32
+        " Kbit/s, Current buffer size : " PUBLIC_LOG_U64 " KByte", static_cast<int32_t>(downloadRate / 1024),
+        static_cast<uint64_t>(remainingBuffer / 1024));
+    // Remaining playable time: s
+    uint64_t bufferDuration = 0;
+    if (realTimeBitBate_ > 0) {
+        bufferDuration =
+            remainingBuffer * static_cast<uint64_t>(BYTES_TO_BIT) / static_cast<uint64_t>(realTimeBitBate_);
+    } else {
+        bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / currentBitrate_;
+    }
+    if (recordData_ != nullptr) {
+        recordData_->downloadRate = downloadRate;
+        recordData_->bufferDuring = bufferDuration;
+    }
+    lastBits_ = totalBits_;
+    lastCheckTime_ = now;
 }
 
 uint64_t DashSegmentDownloader::GetDownloadSpeed() const
@@ -1061,7 +1060,8 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
 
 void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const std::string& location)
 {
-    MEDIA_LOG_I("UpdateDownloadFinished:streamId:" PUBLIC_LOG_D32, streamId_);
+    MEDIA_LOG_I("UpdateDownloadFinished streamId: " PUBLIC_LOG_D32 ", download bits: " PUBLIC_LOG_U64
+        ", download time: " PUBLIC_LOG_U64, streamId_, downloadBits_, totalDownloadDuringTime_);
     if (totalDownloadDuringTime_ > 0) {
         double tmpNumerator = static_cast<double>(downloadBits_);
         double tmpDenominator = static_cast<double>(totalDownloadDuringTime_);
