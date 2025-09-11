@@ -147,7 +147,7 @@ enum VCodecTestCode : int32_t {
     HW_AVC,
     HW_HEVC,
     HW_HDR,
-    HW_HDR_HLG_FULL, 
+    HW_HDR_HLG_FULL,
     HW_HDR10,
     SW_AVC,
     SW_MPEG2,

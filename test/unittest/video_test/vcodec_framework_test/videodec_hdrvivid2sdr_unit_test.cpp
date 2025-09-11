@@ -129,18 +129,18 @@ void GetInitialParam(ResourceType resourceType, int32_t &initialWidth, int32_t &
 {
     switch (resourceType) {
         case ResourceType::HDR:
-            initialWidth = 1280;
-            initialHeight = 720;
+            initialWidth = 1280; // 1280: resource width
+            initialHeight = 720; // 720: resource height
             initialColorSpace = OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT;
             break;
         case ResourceType::HDR_HLG_FULL:
-            initialWidth = 1920;
-            initialHeight = 1440;
+            initialWidth = 1920;  // 1920: resource width
+            initialHeight = 1440; // 1440: resource height
             initialColorSpace = OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL;
             break;
         default:
-            initialWidth = 1280;
-            initialHeight = 720;
+            initialWidth = 1280; // 1280: resource width
+            initialHeight = 720; // 720: resource height
             initialColorSpace = OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT;
             break;
     }
@@ -148,7 +148,9 @@ void GetInitialParam(ResourceType resourceType, int32_t &initialWidth, int32_t &
 
 void CheckFormatKey(std::shared_ptr<FormatMock> format, ResourceType resourceType)
 {
-    int32_t initialWidth, initialHeight, initialColorSpace;
+    int32_t initialWidth;
+    int32_t initialHeight;
+    int32_t initialColorSpace;
     GetInitialParam(resourceType, initialWidth, initialHeight, initialColorSpace);
     int32_t width = 0;
     int32_t height = 0;
@@ -184,26 +186,28 @@ void HdrVivid2SdrHevcTest::ConfigureHdrVivid2Sdr(std::string_view mimeType, Reso
     switch (testCode) {
         case HW_HDR:
             format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-                                OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                                 OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
             break;
         case HW_HDR_HLG_FULL:
             format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-                                OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
+                                 OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
             break;
         default:
             format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-                                OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+                                 OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
             break;
     }
 }
 #endif
 
-INSTANTIATE_TEST_SUITE_P(
-    , HdrVivid2SdrHevcTest,
-    testing::Values(std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::SDR, AVCodecCategory::AVCODEC_HARDWARE),
-                    std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::HDR, AVCodecCategory::AVCODEC_HARDWARE),
-                    std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::HDR_HLG_FULL,
-                                    AVCodecCategory::AVCODEC_HARDWARE)));
+INSTANTIATE_TEST_SUITE_P(,
+                         HdrVivid2SdrHevcTest,
+                         testing::Values(std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::SDR,
+                                                         AVCodecCategory::AVCODEC_HARDWARE),
+                                         std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::HDR,
+                                                         AVCodecCategory::AVCODEC_HARDWARE),
+                                         std::make_tuple(CodecMimeType::VIDEO_HEVC, ResourceType::HDR_HLG_FULL,
+                                                         AVCodecCategory::AVCODEC_HARDWARE)));
 
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_0011
@@ -525,7 +529,7 @@ HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_1092, TestSize.Level1)
  */
 HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_1101, TestSize.Level1)
 {
-    std::string_view mimeType =CodecMimeType::VIDEO_HEVC;
+    std::string_view mimeType = CodecMimeType::VIDEO_HEVC;
     ResourceType resourceType = ResourceType::HDR;
     ConfigureHdrVivid2Sdr(mimeType, resourceType);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
