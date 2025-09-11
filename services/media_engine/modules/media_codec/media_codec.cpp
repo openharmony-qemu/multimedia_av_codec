@@ -841,6 +841,12 @@ void MediaCodec::HandleInputBufferInner(uint32_t &eosStatus, bool &isProcessingN
         ret = Status::ERROR_INVALID_STATE;
         return;
     }
+
+    if (!filledInputBuffer || !filledInputBuffer->memory_ || !filledInputBuffer->memory_->GetAddr()) {
+        ret = Status::ERROR_NULL_POINTER;
+        return;
+    }
+
     uint32_t flag = filledInputBuffer->flag_;
     int8_t retryCount = 0;
     do {
@@ -976,7 +982,7 @@ Status MediaCodec::HandleOutputBufferOnce(bool &isBufferAvailable, uint32_t eosS
         }
     }
 
-    if (emptyOutputBuffer) {
+    if (emptyOutputBuffer && emptyOutputBuffer->memory_ && emptyOutputBuffer->memory_->GetAddr()) {
         emptyOutputBuffer->flag_ = eosStatus;
         isBufferAvailable = true;
     } else if (state_ != CodecState::RUNNING) {
