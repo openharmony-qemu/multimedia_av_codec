@@ -2328,8 +2328,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
         cttsCurNum--;
         int64_t currentCttsDuration = static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration - minCttsDuration);
         if ((INT64_MAX / 1000 / 1000) < // 1000 is used for converting pts to us
-            ((dts + currentCttsDuration) /
-            static_cast<int64_t>(avStream->time_scale))) {
+            ((dts + currentCttsDuration) / static_cast<int64_t>(avStream->time_scale))) {
                 MEDIA_LOG_E("pts overflow");
                 return Status::ERROR_INVALID_DATA;
         }
