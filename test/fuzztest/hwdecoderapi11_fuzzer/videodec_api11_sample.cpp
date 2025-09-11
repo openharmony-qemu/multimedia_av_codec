@@ -221,7 +221,6 @@ int32_t VDecApi11FuzzSample::CreateVideoHevcDecoder()
         tmpDec = nullptr;
     }
     tmpDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
-    OH_VideoDecoder_IsValid(vdec_, &isValid);
     if (tmpDec) {
         OH_VideoDecoder_Destroy(tmpDec);
         tmpDec = nullptr;
