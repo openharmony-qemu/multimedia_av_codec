@@ -137,6 +137,12 @@ static const std::vector<AVMediaType> g_streamMediaTypeVec = {
     AVMEDIA_TYPE_AUXILIARY
 };
 
+static const std::vector<AVMediaType> g_streamGetFirstFrameTypeVec = {
+    AVMEDIA_TYPE_AUDIO,
+    AVMEDIA_TYPE_VIDEO,
+    AVMEDIA_TYPE_AUXILIARY
+};
+
 static const std::unordered_map<std::string, PluginSnifferFunc> g_pluginSnifferMap = {
     {std::string(PLUGIN_NAME_MPEGPS), SniffMPEGPS},
 };
@@ -273,6 +279,12 @@ bool IsSupportedTrackType(const AVStream& avStream)
 {
     return (std::find(g_streamMediaTypeVec.cbegin(), g_streamMediaTypeVec.cend(),
         avStream.codecpar->codec_type) != g_streamMediaTypeVec.cend());
+}
+
+bool IsSupportedGetFirstFrame(const AVStream& avStream)
+{
+    return (std::find(g_streamGetFirstFrameTypeVec.cbegin(), g_streamGetFirstFrameTypeVec.cend(),
+        avStream.codecpar->codec_type) != g_streamGetFirstFrameTypeVec.cend());
 }
 
 bool IsSupportedTrack(const AVStream& avStream)
@@ -1700,7 +1712,7 @@ bool FFmpegDemuxerPlugin::AllSupportTrackFramesReady()
 {
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         AVStream* stream = formatContext_->streams[trackIndex];
-        if (stream == nullptr || stream->codecpar == nullptr || !IsSupportedTrackType(*stream)) {
+        if (stream == nullptr || stream->codecpar == nullptr || !IsSupportedGetFirstFrame(*stream)) {
             continue;
         }
         if (!TrackIsChecked(trackIndex)) {
