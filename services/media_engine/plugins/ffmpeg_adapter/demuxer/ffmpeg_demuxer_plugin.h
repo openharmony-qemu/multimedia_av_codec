@@ -137,7 +137,6 @@ private:
         std::mutex invokerTypeMutex;
         std::atomic<InvokerType> invokerType {INVOKER_NONE};
         std::atomic<bool> readCbReady {false};
-        std::atomic<bool> isGetFirstEos {false};
     };
     
     bool SelectedVideo();
