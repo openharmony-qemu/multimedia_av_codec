@@ -42,6 +42,20 @@
 #include "xcollie/xcollie_define.h"
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegDemuxerPlugin" };
+
+int32_t GetMinCttsDuration(const AVStream* avStream)
+{
+    if (avStream == nullptr) {
+        return 0;
+    }
+    int32_t minCttsDuration = INT_MAX;
+    for (uint32_t i = 0u; i < avStream->ctts_count; i++) {
+        if (avStream->ctts_data[i].duration < minCttsDuration) {
+            minCttsDuration = avStream->ctts_data[i].duration;
+        }
+    }
+    return std::min(minCttsDuration, 0);
+}
 }
 
 namespace OHOS {
@@ -2301,13 +2315,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
     ptsCnt_ = 0;
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
     int32_t cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
-    int32_t minCttsDuration = INT_MAX;
-    for (uint32_t i = 0u; i < avStream->ctts_count; i++) {
-        if (avStream->ctts_data[i].duration < minCttsDuration) {
-            minCttsDuration = avStream->ctts_data[i].duration;
-        }
-    }
-    minCttsDuration = std::min(minCttsDuration, 0);
+    int32_t minCttsDuration = GetMinCttsDuration(avStream);
     while (sttsIndex < avStream->stts_count && cttsIndex < avStream->ctts_count &&
             cttsCurNum >= 0 && sttsCurNum >= 0) {
         if (cttsCurNum == 0) {
