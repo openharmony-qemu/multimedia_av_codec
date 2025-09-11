@@ -73,6 +73,7 @@ public:
         std::unique_lock<std::shared_mutex> lock(mutex_);
         if (codec_ != nullptr && callback_.onStreamChanged != nullptr) {
             OHOS::sptr<OH_AVFormat> object = new (std::nothrow) OH_AVFormat(format);
+            CHECK_AND_RETURN_LOG(object != nullptr, "object is nullptr, allocate memory failed");
             // The object lifecycle is controlled by the current function stack
             callback_.onStreamChanged(codec_, reinterpret_cast<OH_AVFormat *>(object.GetRefPtr()), userData_);
         }
