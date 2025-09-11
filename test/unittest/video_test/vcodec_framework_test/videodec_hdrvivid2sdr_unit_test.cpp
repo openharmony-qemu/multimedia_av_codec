@@ -456,6 +456,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0082, TestSize.Level1)
  *           2. decoder mode is surface;
  *           3. prepare function is called before start function;
  *           4. key color space is BT709_LIMIT
+ *           5. resource is hdr
  * @tc.type: FUNC
  */
 HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0091, TestSize.Level1)
@@ -484,6 +485,7 @@ HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0091, TestSize.Level1)
  *           2. decoder mode is surface;
  *           3. prepare function is called before start function;
  *           4. key color space is OH_COLORSPACE_P3_FULL
+ *           5. resource is hdr hlg full
  * @tc.type: FUNC
  */
 HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0092, TestSize.Level1)
@@ -511,13 +513,36 @@ HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0092, TestSize.Level1)
  *           2. decoder mode is surface;
  *           3. prepare function is called before start function;
  *           4. key color space is BT709_LIMIT
+ *           5. resource is hdr
  * @tc.type: FUNC
  */
-HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0101, TestSize.Level1)
+HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0101, TestSize.Level1)
 {
-    auto params = GetParam();
-    std::string_view mimeType = std::get<0>(params);
-    ResourceType resourceType = std::get<1>(params);
+    std::string_view mimeType =CodecMimeType::VIDEO_HEVC;
+    ResourceType resourceType = ResourceType::HDR;
+    ConfigureHdrVivid2Sdr(mimeType, resourceType);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    std::shared_ptr<FormatMock> curFormat = videoDec_->GetOutputDescription();
+    CheckFormatKey(curFormat, resourceType);
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0102
+ * @tc.desc: 1. key pixel format is NV12;
+ *           2. decoder mode is surface;
+ *           3. prepare function is called before start function;
+ *           4. key color space is BT709_LIMIT
+ *           5. resource is hdr hlg full
+ * @tc.type: FUNC
+ */
+HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0102, TestSize.Level1)
+{
+    std::string_view mimeType = CodecMimeType::VIDEO_HEVC;
+    ResourceType resourceType = ResourceType::HDR_HLG_FULL;
     ConfigureHdrVivid2Sdr(mimeType, resourceType);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
@@ -641,12 +666,40 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0151, TestSize.Level1)
  *           2. decoder mode is surface;
  *           3. prepare function is called before start function;
  *           4. key color space is BT709_LIMIT
+ *           5. resource is hdr
  * @tc.type: FUNC
  */
 HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0161, TestSize.Level1)
 {
     std::string_view mimeType = CodecMimeType::VIDEO_HEVC;
     ResourceType resourceType = ResourceType::HDR;
+    CreateByNameWithParam(mimeType);
+    SetNV21Format();
+    PrepareSource(resourceType);
+    format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+                         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    std::shared_ptr<FormatMock> curFormat = videoDec_->GetOutputDescription();
+    CheckFormatKey(curFormat, resourceType);
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_HRDVivid2SDR_0162
+ * @tc.desc: 1. key pixel format is NV21;
+ *           2. decoder mode is surface;
+ *           3. prepare function is called before start function;
+ *           4. key color space is BT709_LIMIT
+ *           5. resource is hdr hlg full
+ * @tc.type: FUNC
+ */
+HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0161, TestSize.Level1)
+{
+    std::string_view mimeType = CodecMimeType::VIDEO_HEVC;
+    ResourceType resourceType = ResourceType::HDR_HLG_FULL;
     CreateByNameWithParam(mimeType);
     SetNV21Format();
     PrepareSource(resourceType);
@@ -689,7 +742,7 @@ HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0171, TestSize.Level1)
  *           5. start -> flush -> stop
  * @tc.type: FUNC
  */
-HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0241, TestSize.Level1)
+HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0241, TestSize.Level1)
 {
     auto params = GetParam();
     ResourceType resourceType = std::get<1>(params);
@@ -710,7 +763,7 @@ HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0241, TestSize.Level1)
  * @tc.desc: unordered post processing function invocation
  * @tc.type: FUNC
  */
-HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0251, TestSize.Level1)
+HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0251, TestSize.Level1)
 {
     auto params = GetParam();
     ResourceType resourceType = std::get<1>(params);
@@ -739,7 +792,7 @@ HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0251, TestSize.Level1)
  * @tc.desc: unordered post processing function invocation
  * @tc.type: FUNC
  */
-HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0261, TestSize.Level1)
+HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0261, TestSize.Level1)
 {
     auto params = GetParam();
     ResourceType resourceType = std::get<1>(params);
@@ -768,7 +821,7 @@ HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0261, TestSize.Level1)
  * @tc.desc: unordered post processing function invocation
  * @tc.type: FUNC
  */
-HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0271, TestSize.Level1)
+HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0271, TestSize.Level1)
 {
     auto params = GetParam();
     ResourceType resourceType = std::get<1>(params);
@@ -793,7 +846,7 @@ HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0271, TestSize.Level1)
  * @tc.desc: unordered post processing function invocation
  * @tc.type: FUNC
  */
-HWTEST_F(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0281, TestSize.Level1)
+HWTEST_P(HdrVivid2SdrHevcTest, VideoDecoder_HRDVivid2SDR_0281, TestSize.Level1)
 {
     auto params = GetParam();
     ResourceType resourceType = std::get<1>(params);
