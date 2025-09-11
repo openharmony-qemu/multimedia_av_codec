@@ -140,7 +140,8 @@
                 "avcodec_common.h",
                 "avcodec_info.h",
                 "avcodec_list.h",
-                "avcodec_mime_type.h"
+                "avcodec_mime_type.h",
+                "avcodec_monitor.h"
               ],
               "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
             }

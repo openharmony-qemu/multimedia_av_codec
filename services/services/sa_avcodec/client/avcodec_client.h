@@ -39,6 +39,7 @@ public:
     int32_t SuspendFreeze(const std::vector<pid_t> &pidList) override;
     int32_t SuspendActive(const std::vector<pid_t> &pidList) override;
     int32_t SuspendActiveAll() override;
+    int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) override;
 
 #ifdef SUPPORT_CODEC
     int32_t CreateCodecService(std::shared_ptr<ICodecService> &codecClient) override;

@@ -49,6 +49,7 @@ public:
     std::optional<InstanceInfo> GetInstanceInfoByInstanceId(int32_t instanceId);
     std::optional<CodecInstance> GetCodecInstanceByInstanceId(int32_t instanceId);
     void SetInstanceInfoByInstanceId(int32_t instanceId, const InstanceInfo &info);
+    std::vector<pid_t> GetActiveSecureDecoderPids();
 
 private:
     AVCodecServerManager();
@@ -88,6 +89,7 @@ private:
     static constexpr char LIB_PATH[] = "libmemmgrclient.z.so";
     static constexpr char NOTIFY_STATUS_FUNC_NAME[] = "notify_process_status";
     static constexpr char SET_CRITICAL_FUNC_NAME[] = "set_critical";
+    static constexpr char SECURE_SUFFIX[] = ".secure";
     std::shared_ptr<void> libMemMgrClientHandle_ = nullptr;
     NotifyProcessStatusFunc notifyProcessStatusFunc_ = nullptr;
     SetCriticalFunc setCriticalFunc_ = nullptr;

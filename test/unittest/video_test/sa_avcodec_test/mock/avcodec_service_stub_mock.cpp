@@ -99,5 +99,13 @@ int32_t AVCodecServiceStub::SuspendActiveAll()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
     return mock->SuspendActiveAll();
 }
+
+int32_t AVCodecServiceStub::GetActiveSecureDecoderPids(std::vector<pid_t> &pidList)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->GetActiveSecureDecoderPids(pidList);
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

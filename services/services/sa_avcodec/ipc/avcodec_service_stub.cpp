@@ -99,6 +99,9 @@ int AVCodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Mess
         case static_cast<uint32_t>(AVCodecServiceInterfaceCode::ACTIVEALL):
             ret = OnSuspendActiveAll(data, reply);
             break;
+        case static_cast<uint32_t>(AVCodecServiceInterfaceCode::GET_ACTIVE_SECURE_DECODER_PIDS):
+            ret = OnGetActiveSecureDecoderPids(data, reply);
+            break;
         default:
             AVCODEC_LOGW("AVCodecServiceStub: no member func supporting, applying default process");
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
@@ -182,6 +185,16 @@ int32_t AVCodecServiceStub::OnSuspendActive(MessageParcel &data, MessageParcel &
 int32_t AVCodecServiceStub::OnSuspendActiveAll(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = SuspendActiveAll();
+    (void)reply.WriteInt32(ret);
+
+    return AVCS_ERR_OK;
+}
+
+int32_t AVCodecServiceStub::OnGetActiveSecureDecoderPids(MessageParcel &data, MessageParcel &reply)
+{
+    std::vector<pid_t> pidList;
+    int32_t ret = GetActiveSecureDecoderPids(pidList);
+    (void)reply.WriteInt32Vector(pidList);
     (void)reply.WriteInt32(ret);
 
     return AVCS_ERR_OK;

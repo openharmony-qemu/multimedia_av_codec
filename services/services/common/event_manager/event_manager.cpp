@@ -73,6 +73,7 @@ void EventManager::OnInstanceInitEvent(Media::Meta &meta)
     meta.GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_UID,          instanceInfo.forwardCaller.uid);
     meta.GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, instanceInfo.forwardCaller.processName);
     meta.GetData(EventInfoExtentedKey::CODEC_TYPE.data(),          instanceInfo.codecType);
+    meta.GetData(Media::Tag::MEDIA_CODEC_NAME,                     instanceInfo.codecName);
     AVCodecServerManager::GetInstance().SetInstanceInfoByInstanceId(instanceId, instanceInfo);
 }
 

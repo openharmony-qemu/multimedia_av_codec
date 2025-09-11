@@ -58,6 +58,7 @@ struct InstanceInfo {
     CallerInfo forwardCaller;
     AVCodecType codecType;
     uint32_t memoryUsage = 0;
+    std::string codecName = "";
 
     void Print()
     {

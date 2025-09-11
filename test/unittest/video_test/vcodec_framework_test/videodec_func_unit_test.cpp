@@ -17,6 +17,7 @@
 #include <gtest/hwext/gtest-multithread.h>
 #include "meta/meta_key.h"
 #include "unittest_utils.h"
+#include "avcodec_monitor.h"
 #ifdef VIDEODEC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
 #include "videodec_capi_mock.h"
@@ -548,6 +549,26 @@ HWTEST_P(TEST_SUIT, VideoDecoder_RenderOutputBufferAtTime_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_GET_SECURE_DECODER_PIDS_001
+ * @tc.desc: get secure decoder pids
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_GET_SECURE_DECODER_PIDS_001, TestSize.Level1)
+{
+    ASSERT_TRUE(CreateVideoCodecByName("OMX.hisi.video.decoder.avc.secure"));
+    std::vector<pid_t> pidList;
+    auto ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    pid_t pid = getpid();
+    ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) != pidList.end());
+    videoDec_->Release();
+
+    ret = AVCodecMonitor::GetActiveSecureDecoderPids(pidList);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) == pidList.end());
 }
 } // namespace
 

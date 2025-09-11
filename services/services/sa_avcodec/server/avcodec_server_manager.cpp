@@ -19,6 +19,7 @@
 #include <locale>
 #include <thread>
 #include <unistd.h>
+#include <unordered_set>
 #include "avcodec_dump_utils.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -377,6 +378,19 @@ void AVCodecServerManager::SetInstanceInfoByInstanceId(int32_t instanceId, const
             iter->second.second = info;
         }
     }
+}
+
+std::vector<pid_t> AVCodecServerManager::GetActiveSecureDecoderPids()
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    std::unordered_set<pid_t> securePidsSet;
+    for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
+        auto codecName = iter->second.second.codecName;
+        if (codecName.find(SECURE_SUFFIX) != std::string::npos) {
+            securePidsSet.insert(iter->first);
+        }
+    }
+    return std::vector<pid_t>(securePidsSet.begin(), securePidsSet.end());
 }
 
 void AVCodecServerManager::AsyncExecutor::Commit(sptr<IRemoteObject> obj)

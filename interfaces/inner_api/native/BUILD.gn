@@ -216,6 +216,7 @@ ohos_shared_library("av_codec_client") {
 
   sources = [
     "$av_codec_root_dir/frameworks/native/avcodec/avcodec_suspend.cpp",
+    "$av_codec_root_dir/frameworks/native/avcodec/avcodec_monitor.cpp",
     "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
     "$av_codec_root_dir/services/dfx/avcodec_dfx_component.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/client/avcodec_client.cpp",

@@ -106,5 +106,23 @@ int32_t AVCodecServiceProxy::SuspendActiveAll()
         "Create av_codec proxy failed, error: %{public}d", error);
     return reply.ReadInt32();
 }
+
+int32_t AVCodecServiceProxy::GetActiveSecureDecoderPids(std::vector<pid_t> &pidList)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+    
+    bool ret = data.WriteInterfaceToken(AVCodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write descriptor");
+
+    int error = Remote()->SendRequest(static_cast<uint32_t>(
+        AVCodecServiceInterfaceCode::GET_ACTIVE_SECURE_DECODER_PIDS), data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(error == 0, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+        "Create av_codec proxy failed, error: %{public}d", error);
+
+    (void)reply.ReadInt32Vector(&pidList);
+    return reply.ReadInt32();
+}
 } // namespace MediaAVCodec
 } // namespace OHOS
