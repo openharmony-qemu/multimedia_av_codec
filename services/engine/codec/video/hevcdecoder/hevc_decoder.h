@@ -172,7 +172,7 @@ private:
     void SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer);
     int32_t SetSurfaceFormat();
     int32_t ConvertHdrStaticMetadata(const HEVC_HDR_METADATA &hevcHdrMetadata,
-                                    std::vector<uint8_t> &staticMetadataVec);
+                                     std::vector<uint8_t> &staticMetadataVec);
 
     // for memory recycle
     int32_t FreezeBuffers(State curState);
