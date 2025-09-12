@@ -1021,7 +1021,7 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         sInfo_.requestConfig.width = width_;
         sInfo_.requestConfig.height = height_;
         CHECK_AND_RETURN_RET_LOG(SetSurfaceFormat() == AVCS_ERR_OK, AVCS_ERR_UNSUPPORT,
-                                "set surface format failed: unsupported surface format");
+                                 "set surface format failed: unsupported surface format");
         sLock.unlock();
         formatChanged = true;
     }
