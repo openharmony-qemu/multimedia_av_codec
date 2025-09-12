@@ -1294,12 +1294,18 @@ int32_t HevcDecoder::ConvertHdrStaticMetadata(const HEVC_HDR_METADATA &hevcHdrMe
     HdrStaticMetadata* hdrStaticMetadata = reinterpret_cast<HdrStaticMetadata*>(staticMetadataVec.data());
     CHECK_AND_RETURN_RET_LOG(hdrStaticMetadata != nullptr, AVCS_ERR_INVALID_VAL,
         "vector convert to CM_HDR_Metadata_Type error");
-    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x = static_cast<float>(hevcHdrMetadata.displayPrimariesX[0]); // 0: Y
-    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x = static_cast<float>(hevcHdrMetadata.displayPrimariesX[1]); // 1: U
-    hdrStaticMetadata->smpte2086.displayPrimaryRed.x = static_cast<float>(hevcHdrMetadata.displayPrimariesX[2]); // 2: V
-    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y = static_cast<float>(hevcHdrMetadata.displayPrimariesY[0]); // 0: Y
-    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y = static_cast<float>(hevcHdrMetadata.displayPrimariesY[1]); // 1: U
-    hdrStaticMetadata->smpte2086.displayPrimaryRed.y = static_cast<float>(hevcHdrMetadata.displayPrimariesY[2]); // 2: V
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x =
+        static_cast<float>(hevcHdrMetadata.displayPrimariesX[0]); // 0: Y
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x =
+        static_cast<float>(hevcHdrMetadata.displayPrimariesX[1]); // 1: U
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.x =
+        static_cast<float>(hevcHdrMetadata.displayPrimariesX[2]); // 2: V
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y =
+        static_cast<float>(hevcHdrMetadata.displayPrimariesY[0]); // 0: Y
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y =
+        static_cast<float>(hevcHdrMetadata.displayPrimariesY[1]); // 1: U
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.y =
+        static_cast<float>(hevcHdrMetadata.displayPrimariesY[2]); // 2: V
     hdrStaticMetadata->smpte2086.whitePoint.x = static_cast<float>(hevcHdrMetadata.whitePointX);
     hdrStaticMetadata->smpte2086.whitePoint.y = static_cast<float>(hevcHdrMetadata.whitePointY);
     hdrStaticMetadata->smpte2086.maxLuminance = static_cast<float>(hevcHdrMetadata.maxDisplayMasteringLuminance);
