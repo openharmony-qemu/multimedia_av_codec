@@ -32,6 +32,7 @@ constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t MICRO_IN_SECOND = 1000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
 constexpr int32_t THREE = 3;
+constexpr int32_t TWO = 2;
 constexpr int32_t EIGHT = 8;
 constexpr int32_t ONE = 1;
 constexpr int32_t SIX = 6;
@@ -58,6 +59,10 @@ int32_t g_strideSurface = 0;
 int32_t g_sliceSurface = 0;
 bool g_yuvSurface = false;
 SHA512_CTX g_c;
+SHA512_CTX g_dynamicMetaData;
+SHA512_CTX g_staticMetaData;
+uint8_t g_dynamicMetaDataMd[SHA512_DIGEST_LENGTH];
+uint8_t g_staticMetaDataMd[SHA512_DIGEST_LENGTH];
 uint8_t g_md[SHA512_DIGEST_LENGTH];
 VDecAPI11Sample *dec_sample = nullptr;
 int32_t g_inBufferCounts = 0;
@@ -119,6 +124,10 @@ VDecAPI11Sample::~VDecAPI11Sample()
             OH_NativeWindow_DestroyNativeWindow(nativeWindow[i]);
             nativeWindow[i] = nullptr;
         }
+    }
+    if (nativeBuffer_ != nullptr) {
+        OH_NativeBuffer_Unreference(nativeBuffer_);
+        nativeBuffer_ = nullptr;
     }
     g_yuvSurface = false;
     abnormalIndexValue = false;
@@ -272,8 +281,33 @@ std::vector<uint8_t> VDecAPI11Sample::LoadHashFile()
     if (f) {
         json data = json::parse(f);
         filesystem::path filePath = INP_DIR;
-        std::string pixFmt = defualtPixelFormat == AV_PIXEL_FORMAT_NV12 ? "nv12" : "nv21";
+        std::string pixFmt = "";
+        if (isCheckLowLatency) {
+            pixFmt = "nv12_lowlatency";
+        } else {
+            pixFmt = defualtPixelFormat == AV_PIXEL_FORMAT_NV12 ? "nv12" : "nv21";
+        }
         std::string fileName = filePath.filename();
+        std::string hashValue = data[fileName.c_str()][pixFmt];
+        std::stringstream ss(hashValue);
+        std::string item;
+        while (getline(ss, item, ',')) {
+            if (!item.empty()) {
+                ret.push_back(stol(item, nullptr, SIXTEEN));
+            }
+        }
+    }
+    return ret;
+}
+
+std::vector<uint8_t> VDecAPI11Sample::LoadMetaDataHashFile(std::string file)
+{
+    std::ifstream f("/data/test/media/hash_val.json", ios::in);
+    std::vector<uint8_t> ret;
+    if (f) {
+        json data = json::parse(f);
+        std::string pixFmt = defualtPixelFormat == AV_PIXEL_FORMAT_NV12 ? "nv12" : "nv21";
+        std::string fileName = file;
         std::string hashValue = data[fileName.c_str()][pixFmt];
         std::stringstream ss(hashValue);
         std::string item;
@@ -307,6 +341,23 @@ static void DumpHashValue(std::vector<uint8_t> &srcHashVal, uint8_t outputHashVa
 bool VDecAPI11Sample::MdCompare(uint8_t source[])
 {
     std::vector<uint8_t> srcHashVal = LoadHashFile();
+    DumpHashValue(srcHashVal, source);
+    if (srcHashVal.size() != SHA512_DIGEST_LENGTH) {
+        cout << "get hash value failed, size " << srcHashVal.size() << endl;
+        return false;
+    }
+    for (int32_t i = 0; i < SHA512_DIGEST_LENGTH; i++) {
+        if (source[i] != srcHashVal[i]) {
+            cout << "decoded hash value mismatch" << endl;
+            return false;
+        }
+    }
+    return true;
+}
+
+bool VDecAPI11Sample::MdCompareMetaData(uint8_t source[], std::string file)
+{
+    std::vector<uint8_t> srcHashVal = LoadMetaDataHashFile(file);
     DumpHashValue(srcHashVal, source);
     if (srcHashVal.size() != SHA512_DIGEST_LENGTH) {
         cout << "get hash value failed, size " << srcHashVal.size() << endl;
@@ -950,8 +1001,9 @@ void VDecAPI11Sample::AutoSwitchSurface()
     }
 }
 
-int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
+int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr, OH_AVBuffer *buffer)
 {
+    CompareHdrInfo(buffer, attr);
     if (IS_FIRST_FRAME) {
         GetStride();
         IS_FIRST_FRAME = false;
@@ -1011,10 +1063,11 @@ void VDecAPI11Sample::OutputFuncTest()
         outFile = fopen(OUT_DIR, "wb");
     }
     SHA512_Init(&g_c);
+    SHA512_Init(&g_dynamicMetaData);
+    SHA512_Init(&g_staticMetaData);
     bool flag = true;
     while (flag) {
         if (!isRunning_.load()) {
-            flag = false;
             break;
         }
         OH_AVCodecBufferAttr attr;
@@ -1026,7 +1079,6 @@ void VDecAPI11Sample::OutputFuncTest()
             return signal_->outIdxQueue_.size() > 0 && !isFlushing_.load();
         });
         if (!isRunning_.load()) {
-            flag = false;
             break;
         }
         uint32_t index = signal_->outIdxQueue_.front();
@@ -1036,7 +1088,7 @@ void VDecAPI11Sample::OutputFuncTest()
         if (OH_AVBuffer_GetBufferAttr(buffer, &attr) != AV_ERR_OK) {
             errCount = errCount + 1;
         }
-        if (CheckAttrFlag(attr) == -1) {
+        if (CheckAttrFlag(attr, buffer) == -1) {
             flag = false;
             break;
         }
@@ -1064,6 +1116,8 @@ void VDecAPI11Sample::SyncOutputFunc()
         outFile = fopen(OUT_DIR, "wb");
     }
     SHA512_Init(&g_c);
+    SHA512_Init(&g_dynamicMetaData);
+    SHA512_Init(&g_staticMetaData);
     uint32_t last_index = 0;
     while (isRunning_.load()) {
         OH_AVCodecBufferAttr attr;
@@ -1127,7 +1181,7 @@ int32_t VDecAPI11Sample::SyncOutputFuncEos(uint32_t &last_index, uint32_t &outFr
     if (OH_AVBuffer_GetBufferAttr(buffer, &attr) != AV_ERR_OK) {
         errCount = errCount + 1;
     }
-    if (CheckAttrFlag(attr) == -1) {
+    if (CheckAttrFlag(attr, buffer) == -1) {
         if (queryInputBufferEOS) {
             OH_VideoDecoder_QueryInputBuffer(vdec_, &index, 0);
             OH_VideoDecoder_QueryInputBuffer(vdec_, &index, MILLION);
@@ -1143,35 +1197,74 @@ int32_t VDecAPI11Sample::SyncOutputFuncEos(uint32_t &last_index, uint32_t &outFr
     return AV_ERR_OK;
 }
 
+void VDecAPI11Sample::CopyFrom8BitYuv(OH_AVBuffer *buffer, uint32_t index)
+{
+    uint8_t *bufferAddr = OH_AVBuffer_GetAddr(buffer);
+    int32_t size = OH_AVBuffer_GetCapacity(buffer);
+    uint32_t cropSize = (picWidth_ * picHeight_ * THREE) >> 1;
+    uint8_t *cropBuffer = new uint8_t[cropSize];
+    uint8_t *copyPos = cropBuffer;
+    if (size >= cropSize && !NocaleHash) {
+        //copy y
+        for (int32_t i = 0; i < picHeight_; i++) {
+            memcpy_s(copyPos, picWidth_, bufferAddr, picWidth_);
+            bufferAddr += stride_;
+            copyPos += picWidth_;
+        }
+        bufferAddr += (sliceHeight_ - picHeight_) * stride_;
+        //copy uv
+        for (int32_t i = 0; i < picHeight_ >> 1; i++) {
+            memcpy_s(copyPos, picWidth_, bufferAddr, picWidth_);
+            bufferAddr += stride_;
+            copyPos += picWidth_;
+        }
+        SHA512_Update(&g_c, cropBuffer, cropSize);
+    }
+    delete[] cropBuffer;
+    if (OH_VideoDecoder_FreeOutputBuffer(vdec_, index) != AV_ERR_OK) {
+        cout << "Fatal: ReleaseOutputBuffer fail" << endl;
+        errCount = errCount + 1;
+    }
+}
+
+void VDecAPI11Sample::CopyFrom10BitYuv(OH_AVBuffer *buffer, uint32_t index)
+{
+    uint8_t *bufferAddr = OH_AVBuffer_GetAddr(buffer);
+    int32_t size = OH_AVBuffer_GetCapacity(buffer);
+    uint32_t cropSize = (picWidth_ * TWO * picHeight_ * THREE) >> 1;
+    uint16_t *cropBuffer = new uint16_t[cropSize];
+    uint16_t *copyPos = cropBuffer;
+    if (size >= cropSize && !NocaleHash) {
+        //copy y
+        for (int32_t i = 0; i < picHeight_; i++) {
+            memcpy_s(copyPos, picWidth_ * TWO, bufferAddr, picWidth_ * TWO);
+            bufferAddr += stride_;
+            copyPos += picWidth_;
+        }
+        bufferAddr += (sliceHeight_ - picHeight_) * stride_;
+        //copy uv
+        for (int32_t i = 0; i < picHeight_ >> 1; i++) {
+            memcpy_s(copyPos, picWidth_ * TWO, bufferAddr, picWidth_ * TWO);
+            bufferAddr += stride_;
+            copyPos += picWidth_;
+        }
+        SHA512_Update(&g_c, cropBuffer, cropSize);
+    }
+    delete[] cropBuffer;
+    if (OH_VideoDecoder_FreeOutputBuffer(vdec_, index) != AV_ERR_OK) {
+        cout << "Fatal: ReleaseOutputBuffer fail" << endl;
+        errCount = errCount + 1;
+    }
+}
+
 void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index)
 {
     if (!SF_OUTPUT) {
         GetStride();
-        uint8_t *bufferAddr = OH_AVBuffer_GetAddr(buffer);
-        int32_t size = OH_AVBuffer_GetCapacity(buffer);
-        uint32_t cropSize = (picWidth_ * picHeight_ * THREE) >> 1;
-        uint8_t *cropBuffer = new uint8_t[cropSize];
-        uint8_t *copyPos = cropBuffer;
-        if (size >= cropSize && !NocaleHash) {
-            //copy y
-            for (int32_t i = 0; i < picHeight_; i++) {
-                memcpy_s(copyPos, picWidth_, bufferAddr, picWidth_);
-                bufferAddr += stride_;
-                copyPos += picWidth_;
-            }
-            bufferAddr += (sliceHeight_ - picHeight_) * stride_;
-            //copy uv
-            for (int32_t i = 0; i < picHeight_ >> 1; i++) {
-                memcpy_s(copyPos, picWidth_, bufferAddr, picWidth_);
-                bufferAddr += stride_;
-                copyPos += picWidth_;
-            }
-            SHA512_Update(&g_c, cropBuffer, cropSize);
-        }
-        delete[] cropBuffer;
-        if (OH_VideoDecoder_FreeOutputBuffer(vdec_, index) != AV_ERR_OK) {
-            cout << "Fatal: ReleaseOutputBuffer fail" << endl;
-            errCount = errCount + 1;
+        if (is8bitYuv) {
+            CopyFrom8BitYuv(buffer, index);
+        } else {
+            CopyFrom10BitYuv(buffer, index);
         }
     } else {
         if (rsAtTime) {
@@ -1387,4 +1480,93 @@ void VDecAPI11Sample::FlushStatus()
     StopInloop();
     StopOutloop();
     Flush_buffer();
+}
+
+void VDecAPI11Sample::CompareHdrInfo(OH_AVBuffer *buffer, OH_AVCodecBufferAttr attr)
+{
+    if (!needCompareHdrInof || buffer == nullptr) {
+        return;
+    }
+    nativeBuffer_ = OH_AVBuffer_GetNativeBuffer(buffer);
+    if (nativeBuffer_ == nullptr) {
+        cout << "Fatel: get native buffer fail" << endl;
+        return;
+    }
+    if ((strlen(DYNAMIC_METADATA_FILE) != 0) && !(attr.flags & AVCODEC_BUFFER_FLAGS_EOS)) {
+        GetHdrDynamicMetaData();
+    }
+    if ((strlen(STATIC_METADATA_FILE) != 0) && !(attr.flags & AVCODEC_BUFFER_FLAGS_EOS)) {
+        GetHdrtaticMetaData();
+    }
+    if (needGetMetaData && !(attr.flags & AVCODEC_BUFFER_FLAGS_EOS)) {
+        GetHdrDynamicMetaData();
+        GetHdrtaticMetaData();
+    }
+    if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
+        if (strlen(DYNAMIC_METADATA_FILE) != 0) {
+            SHA512_Final(g_dynamicMetaDataMd, &g_dynamicMetaData);
+            OPENSSL_cleanse(&g_dynamicMetaData, sizeof(g_dynamicMetaData));
+            if (!MdCompareMetaData(g_dynamicMetaDataMd, DYNAMIC_METADATA_FILE)) {
+                errCount++;
+            }
+        }
+        if (strlen(STATIC_METADATA_FILE) != 0) {
+            SHA512_Final(g_staticMetaDataMd, &g_staticMetaData);
+            OPENSSL_cleanse(&g_staticMetaData, sizeof(g_staticMetaData));
+            if (!MdCompareMetaData(g_staticMetaDataMd, STATIC_METADATA_FILE)) {
+                errCount++;
+            }
+        }
+    }
+    if (!(attr.flags & AVCODEC_BUFFER_FLAGS_EOS)) {
+        int metaDataType = -1;
+        if (!GetHdrMetaDataType(metaDataType) || metaDataType != hdrType) {
+            cout << "get meta data type fail, metaDataType: " << metaDataType << ", hdrType: " << hdrType << endl;
+            errCount++;
+        }
+    }
+}
+
+void VDecAPI11Sample::GetHdrDynamicMetaData()
+{
+    int32_t metadataSize = 0;
+    uint8_t *metadata = nullptr;
+    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_DYNAMIC_METADATA, &metadataSize, &metadata) != 0) {
+        metaDataFailCount = metaDataFailCount + 1;
+        cout << "get dynamic meta data fail" << endl;
+        return;
+    }
+    SHA512_Update(&g_dynamicMetaData, metadata, metadataSize);
+    delete[] metadata;
+    metadata = nullptr;
+}
+
+void VDecAPI11Sample::GetHdrtaticMetaData()
+{
+    int32_t metadataSize = 0;
+    uint8_t *metadata = nullptr;
+    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_STATIC_METADATA, &metadataSize, &metadata) != 0) {
+        metaDataFailCount = metaDataFailCount + 1;
+        cout << "get static meta data fail" << endl;
+        return;
+    }
+    SHA512_Update(&g_staticMetaData, metadata, metadataSize);
+    delete[] metadata;
+    metadata = nullptr;
+}
+
+bool VDecAPI11Sample::GetHdrMetaDataType(int &metaDataType)
+{
+    int32_t metadataSize = 0;
+    uint8_t *metadata = nullptr;
+    if (OH_NativeBuffer_GetMetadataValue(nativeBuffer_, OH_HDR_METADATA_TYPE, &metadataSize, &metadata) != 0) {
+        return false;
+    }
+    errno_t err = memcpy_s(&metaDataType, metadataSize, metadata, metadataSize);
+    delete[] metadata;
+    metadata = nullptr;
+    if (err != 0) {
+        return false;
+    }
+    return true;
 }

@@ -70,7 +70,12 @@ public:
     int32_t ConfigureVideoDecoder();
     int32_t StartVideoDecoder();
     int64_t GetSystemTimeUs();
+    void CompareHdrInfo(OH_AVBuffer *buffer);
+    void GetHdrDynamicMetaData();
+    void GetHdrtaticMetaData();
+    void GetHdrMetaDataType(int &metaDataType);
     int32_t CreateVideoDecoder();
+    int32_t CreateVideoHevcDecoder();
     int32_t SetVideoDecoderCallback();
     int32_t Release();
     void InputFuncTest();
@@ -87,6 +92,7 @@ public:
     bool isSurfMode = false;
     bool setParameters = false;
     bool isRenderAttime = false;
+    bool needCompareHdrInof = false;
     int64_t renderTimestampNs = 0;
     OH_AVCodec *vdec_;
     OHNativeWindow *nativeWindow = nullptr;
@@ -99,6 +105,7 @@ private:
     std::unordered_map<uint32_t, OH_AVBuffer *> inBufferMap_;
     std::unordered_map<uint32_t, OH_AVBuffer *> outBufferMap_;
     OH_AVCodecCallback cb_;
+    OH_NativeBuffer *nativeBuffer_ = nullptr;
     int64_t timeStamp_ { 0 };
     int64_t lastRenderedTimeUs_ { 0 };
     bool isFirstFrame_ = true;

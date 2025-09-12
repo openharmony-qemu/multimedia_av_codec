@@ -79,16 +79,22 @@ public:
     int64_t renderTimestampNs = 0;
     int32_t maxInputSize = 0;
     bool autoSwitchSurface = false;
+    bool needCompareHdrInof = false;
     std::atomic<bool> isFlushing_ { false };
     std::atomic<bool> isRunning_ { false };
     bool useHDRSource = false;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
     int32_t DecodeSetSurface();
     void SetParameter(int32_t data, int32_t data1);
+    void CompareHdrInfo(OH_AVBuffer *buffer);
+    void GetHdrDynamicMetaData();
+    void GetHdrtaticMetaData();
+    void GetHdrMetaDataType(int &metaDataType);
 private:
     std::unique_ptr<std::ifstream> inFile_;
     OH_AVCodec *vdec_;
     OHNativeWindow *nativeWindow[2] = {};
+    OH_NativeBuffer *nativeBuffer_ = nullptr;
     sptr<Surface> cs[2] = {};
     sptr<Surface> ps[2] = {};
 };
