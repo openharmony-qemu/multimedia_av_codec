@@ -30,9 +30,7 @@ using namespace OHOS::MediaAVCodec::VCodecTestParam;
 class HdrVivid2SdrBaseSuit {
 public:
     bool CreateVideoCodecByName(const std::string &decName);
-    void SetNV12Format();
-    void SetNV21Format();
-    void SetRGBAFormat();
+    void SetFormatWithParam(VideoPixelFormat format);
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
@@ -58,25 +56,11 @@ bool HdrVivid2SdrBaseSuit::CreateVideoCodecByName(const std::string &decName)
     return true;
 }
 
-void HdrVivid2SdrBaseSuit::SetNV12Format()
+void SetFormatWithParam(VideoPixelFormat format)
 {
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-}
-
-void HdrVivid2SdrBaseSuit::SetNV21Format()
-{
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV21));
-}
-
-void HdrVivid2SdrBaseSuit::SetRGBAFormat()
-{
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::RGBA));
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(format));
 }
 } // namespace TESTBASE
 #endif // VIDEODEC_HDRVIVID2SDR_UNIT_TEST_H

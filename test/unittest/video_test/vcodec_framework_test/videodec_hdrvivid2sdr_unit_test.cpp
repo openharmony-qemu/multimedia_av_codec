@@ -181,7 +181,7 @@ void HEVC_TEST_SUIT::ConfigureHdrVivid2Sdr(std::string_view mimeType, ResourceTy
 {
     auto testCode = RESOURCE_TESTCODE.at(resourceType);
     CreateByNameWithParam(mimeType);
-    SetNV12Format();
+    SetFormatWithParam(VideoPixelFormat::NV12);
     PrepareSource(resourceType);
     switch (testCode) {
         case HW_HDR:
@@ -221,7 +221,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_0011, TestSize.Level1)
     ResourceType resourceType = std::get<1>(params);
     int32_t colorSpace = INT32_MIN;
     CreateByNameWithParam(mimeType);
-    SetNV12Format();
+    SetFormatWithParam(VideoPixelFormat::NV12);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
     ASSERT_EQ(AV_ERR_INVALID_VAL, videoDec_->Configure(format_));
@@ -239,7 +239,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_0021, TestSize.Level1)
     ResourceType resourceType = std::get<1>(params);
     int32_t colorSpace = INT32_MAX;
     CreateByNameWithParam(mimeType.data());
-    SetNV12Format();
+    SetFormatWithParam(VideoPixelFormat::NV12);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
     ASSERT_EQ(AV_ERR_INVALID_VAL, videoDec_->Configure(format_));
@@ -576,7 +576,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1111, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
-    SetNV12Format();
+    SetFormatWithParam(VideoPixelFormat::NV12);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
@@ -618,7 +618,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1131, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
-    SetNV21Format();
+    SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
@@ -640,7 +640,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1141, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
-    SetNV21Format();
+    SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
@@ -663,7 +663,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1151, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
-    SetNV21Format();
+    SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
@@ -685,7 +685,7 @@ HWTEST_F(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1161, TestSize.Level1)
     std::string_view mimeType = CodecMimeType::VIDEO_HEVC;
     ResourceType resourceType = ResourceType::HDR;
     CreateByNameWithParam(mimeType);
-    SetNV21Format();
+    SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
@@ -712,7 +712,7 @@ HWTEST_F(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1162, TestSize.Level1)
     std::string_view mimeType = CodecMimeType::VIDEO_HEVC;
     ResourceType resourceType = ResourceType::HDR_HLG_FULL;
     CreateByNameWithParam(mimeType);
-    SetNV21Format();
+    SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
@@ -737,7 +737,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_1171, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
-    SetNV21Format();
+    SetFormatWithParam(VideoPixelFormat::NV21);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
@@ -887,7 +887,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_2011, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
-    SetRGBAFormat();
+    SetFormatWithParam(VideoPixelFormat::RGBA);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
@@ -927,7 +927,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_2031, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
-    SetNV12Format();
+    SetFormatWithParam(VideoPixelFormat::NV12);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
@@ -946,7 +946,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_2041, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
-    SetRGBAFormat();
+    SetFormatWithParam(VideoPixelFormat::RGBA);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
@@ -986,7 +986,7 @@ HWTEST_P(HEVC_TEST_SUIT, VideoDecoder_HRDVivid2SDR_2061, TestSize.Level1)
     std::string_view mimeType = std::get<0>(params);
     ResourceType resourceType = std::get<1>(params);
     CreateByNameWithParam(mimeType.data());
-    SetNV12Format();
+    SetFormatWithParam(VideoPixelFormat::NV12);
     PrepareSource(resourceType);
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
@@ -1088,7 +1088,7 @@ HWTEST_P(AVC_TEST_SUIT, VideoDec_HRDVivid2SDR_001, TestSize.Level1)
 {
     int32_t colorSpace = INT32_MIN;
     CreateByNameWithParam(GetParam());
-    SetNV12Format();
+    SetFormatWithParam(VideoPixelFormat::NV12);
     PrepareSource(GetParam());
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
     ASSERT_EQ(AV_ERR_INVALID_VAL, videoDec_->Configure(format_));
@@ -1103,7 +1103,7 @@ HWTEST_P(AVC_TEST_SUIT, VideoDec_HRDVivid2SDR_002, TestSize.Level1)
 {
     int32_t colorSpace = INT32_MAX;
     CreateByNameWithParam(GetParam());
-    SetNV12Format();
+    SetFormatWithParam(VideoPixelFormat::NV12);
     PrepareSource(GetParam());
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
     ASSERT_EQ(AV_ERR_INVALID_VAL, videoDec_->Configure(format_));
@@ -1117,7 +1117,7 @@ HWTEST_P(AVC_TEST_SUIT, VideoDec_HRDVivid2SDR_002, TestSize.Level1)
 HWTEST_P(AVC_TEST_SUIT, VideoDec_HRDVivid2SDR_003, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
-    SetNV12Format();
+    SetFormatWithParam(VideoPixelFormat::NV12);
     PrepareSource(GetParam());
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
@@ -1132,7 +1132,7 @@ HWTEST_P(AVC_TEST_SUIT, VideoDec_HRDVivid2SDR_003, TestSize.Level1)
 HWTEST_P(AVC_TEST_SUIT, VideoDec_HRDVivid2SDR_004, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
-    SetNV12Format();
+    SetFormatWithParam(VideoPixelFormat::NV12);
     PrepareSource(GetParam());
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_FULL);
     ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
@@ -1146,7 +1146,7 @@ HWTEST_P(AVC_TEST_SUIT, VideoDec_HRDVivid2SDR_004, TestSize.Level1)
 HWTEST_P(AVC_TEST_SUIT, VideoDec_HRDVivid2SDR_005, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
-    SetNV12Format();
+    SetFormatWithParam(VideoPixelFormat::NV12);
     PrepareSource(GetParam());
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
                          OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
