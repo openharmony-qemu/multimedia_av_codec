@@ -99,7 +99,9 @@ static std::unordered_map<TagType, std::string> g_formatToIndex = {
     {Tag::AUDIO_MAX_INPUT_SIZE,           "maxFrame"},
     {Tag::TRACK_REFERENCE_TYPE,           "refType"},
     {Tag::TRACK_DESCRIPTION,              "trackDesc"},
-    {Tag::REFERENCE_TRACK_IDS,            "refIds"}
+    {Tag::REFERENCE_TRACK_IDS,            "refIds"},
+    {Tag::IS_GLTF,                        "isGltf"},
+    {Tag::GLTF_OFFSET,                    "gltfOffset"},
 };
 
 std::string DemuxerLogCompressor::FormatTagSerialize(Format& format)
