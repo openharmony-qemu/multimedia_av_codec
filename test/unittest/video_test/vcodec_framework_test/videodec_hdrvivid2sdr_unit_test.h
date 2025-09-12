@@ -15,6 +15,7 @@
 
 #ifndef VIDEODEC_HDRVIVID2SDR_UNIT_TEST_H
 #define VIDEODEC_HDRVIVID2SDR_UNIT_TEST_H
+#include "av_common.h"
 #include "meta/meta_key.h"
 #include "videodec_capi_mock.h"
 
@@ -56,7 +57,7 @@ bool HdrVivid2SdrBaseSuit::CreateVideoCodecByName(const std::string &decName)
     return true;
 }
 
-void SetFormatWithParam(VideoPixelFormat format)
+void HdrVivid2SdrBaseSuit::SetFormatWithParam(VideoPixelFormat format)
 {
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
