@@ -58,7 +58,7 @@ bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
     free(pstream);
     pstream = nullptr;
     close(fd);
-    int64_t pts = std::max(fdp.ConsumeIntegral<int64_t>(), 0L) ;
+    int64_t pts = std::max(fdp.ConsumeIntegral<int64_t>(), 0LL) ;
     int64_t ptsForPtsIndex = fdp.ConsumeIntegral<int64_t>();
     int64_t frameIndex = fdp.ConsumeIntegral<int64_t>();
     uint32_t createSize = fdp.ConsumeIntegral<uint32_t>();
