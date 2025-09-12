@@ -1027,7 +1027,8 @@ ohos_unittest("videodec_hdrvivid2sdr_async_unit_test") {
   ]
 
   defines = [
-    "TEST_SUIT=VideoDecHDRVivid2SDRAsyncTest",
+    "AVC_TEST_SUIT=HdrVivid2SdrAvcTestAsyncTest",
+    "HEVC_TEST_SUIT=HdrVivid2SdrHevcTestAsyncTest",
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VideoDecSample=VideoDecAsyncSample",
   ]
@@ -1502,7 +1503,8 @@ ohos_unittest("videodec_hdrvivid2sdr_sync_unit_test") {
   ]
 
   defines = [
-    "TEST_SUIT=VideoDecHDRVivid2SDRSyncTest",
+    "AVC_TEST_SUIT=HdrVivid2SdrAvcTestSyncTest",
+    "HEVC_TEST_SUIT=HdrVivid2SdrHevcTestSyncTest",
     "VIDEODEC_SYNC_UNIT_TEST",
     "VideoDecSample=VideoDecSyncSample",
   ]
