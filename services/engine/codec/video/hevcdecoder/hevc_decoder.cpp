@@ -447,7 +447,7 @@ void HevcDecoder::InitHevcHdrParams()
     hevcDecoderOutpusArgs_.uiHdrMetadata.minDisplayMasteringLuminance = 0;
     hevcDecoderOutpusArgs_.uiHdrMetadata.maxContentLightLevel = 0;
     hevcDecoderOutpusArgs_.uiHdrMetadata.maxPicAverageLightLevel = 0;
-    for (int i=0; i<3; i++) { // 3: GBR
+    for (int i = 0; i < 3; i++) { // 3: GBR
         hevcDecoderOutpusArgs_.uiHdrMetadata.displayPrimariesX[i] = 0;
         hevcDecoderOutpusArgs_.uiHdrMetadata.displayPrimariesY[i] = 0;
     }
@@ -732,7 +732,6 @@ int32_t HevcDecoder::SetSurfaceCfg()
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val32);
     outputPixelFmt_ = static_cast<VideoPixelFormat>(val32);
     std::lock_guard<std::mutex> sLock(surfaceMutex_);
-    format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
     sInfo_.requestConfig.width = width_;
     sInfo_.requestConfig.height = height_;
     CHECK_AND_RETURN_RET_LOG(SetSurfaceFormat() == AVCS_ERR_OK, AVCS_ERR_UNSUPPORT,
@@ -1001,6 +1000,7 @@ int32_t HevcDecoder::SetSurfaceFormat()
         GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(targetPixelFmt);
         CHECK_AND_RETURN_RET_LOG(surfacePixelFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT, AVCS_ERR_UNSUPPORT,
                                  "Failed to allocate output buffer: unsupported surface format");
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
         sInfo_.requestConfig.format = surfacePixelFmt;
     }
     return AVCS_ERR_OK;
@@ -1294,12 +1294,12 @@ int32_t HevcDecoder::ConvertHdrStaticMetadata(const HEVC_HDR_METADATA &hevcHdrMe
     HdrStaticMetadata* hdrStaticMetadata = reinterpret_cast<HdrStaticMetadata*>(staticMetadataVec.data());
     CHECK_AND_RETURN_RET_LOG(hdrStaticMetadata != nullptr, AVCS_ERR_INVALID_VAL,
         "vector convert to CM_HDR_Metadata_Type error");
-    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x = static_cast<float>(hevcHdrMetadata.displayPrimariesX[0]);
-    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x = static_cast<float>(hevcHdrMetadata.displayPrimariesX[1]);
-    hdrStaticMetadata->smpte2086.displayPrimaryRed.x = static_cast<float>(hevcHdrMetadata.displayPrimariesX[2]);
-    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y = static_cast<float>(hevcHdrMetadata.displayPrimariesY[0]);
-    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y = static_cast<float>(hevcHdrMetadata.displayPrimariesY[1]);
-    hdrStaticMetadata->smpte2086.displayPrimaryRed.y = static_cast<float>(hevcHdrMetadata.displayPrimariesY[2]);
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x = static_cast<float>(hevcHdrMetadata.displayPrimariesX[0]); // 0: Y
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x = static_cast<float>(hevcHdrMetadata.displayPrimariesX[1]); // 1: U
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.x = static_cast<float>(hevcHdrMetadata.displayPrimariesX[2]); // 2: V
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y = static_cast<float>(hevcHdrMetadata.displayPrimariesY[0]); // 0: Y
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y = static_cast<float>(hevcHdrMetadata.displayPrimariesY[1]); // 1: U
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.y = static_cast<float>(hevcHdrMetadata.displayPrimariesY[2]); // 2: V
     hdrStaticMetadata->smpte2086.whitePoint.x = static_cast<float>(hevcHdrMetadata.whitePointX);
     hdrStaticMetadata->smpte2086.whitePoint.y = static_cast<float>(hevcHdrMetadata.whitePointY);
     hdrStaticMetadata->smpte2086.maxLuminance = static_cast<float>(hevcHdrMetadata.maxDisplayMasteringLuminance);
