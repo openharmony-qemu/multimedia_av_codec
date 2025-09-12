@@ -17,10 +17,12 @@
 #include "avcodec_log.h"
 #include "avcodec_trace.h"
 #include "media_description.h"
+#include "v1_0/cm_color_space.h"
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 namespace {
+using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CODEC_UTILS"};
 constexpr uint32_t INDEX_ARRAY = 2;
 constexpr uint32_t WAIT_FENCE_MS = 1000;
@@ -29,6 +31,31 @@ std::map<VideoPixelFormat, AVPixelFormat> g_pixelFormatMap = {
     {VideoPixelFormat::NV12, AV_PIX_FMT_NV12},
     {VideoPixelFormat::NV21, AV_PIX_FMT_NV21},
     {VideoPixelFormat::RGBA, AV_PIX_FMT_RGBA},
+};
+std::map<ColorPrimary, CM_ColorPrimaries> g_colorPrimariesMap = {
+    {COLOR_PRIMARY_BT709, COLORPRIMARIES_BT709},
+    {COLOR_PRIMARY_BT601_625, COLORPRIMARIES_BT601_P},
+    {COLOR_PRIMARY_BT601_525, COLORPRIMARIES_BT601_N},
+    {COLOR_PRIMARY_BT2020, COLORPRIMARIES_BT2020},
+    {COLOR_PRIMARY_P3DCI, COLORPRIMARIES_P3_DCI},
+    {COLOR_PRIMARY_P3D65, COLORPRIMARIES_P3_D65},
+};
+std::map<TransferCharacteristic, CM_TransFunc> g_transFuncMap = {
+    {TRANSFER_CHARACTERISTIC_BT709, TRANSFUNC_BT709},
+    {TRANSFER_CHARACTERISTIC_BT601, TRANSFUNC_BT709},
+    {TRANSFER_CHARACTERISTIC_LINEAR, TRANSFUNC_LINEAR},
+    {TRANSFER_CHARACTERISTIC_IEC_61966_2_1, TRANSFUNC_SRGB},
+    {TRANSFER_CHARACTERISTIC_BT2020_10BIT, TRANSFUNC_BT709},
+    {TRANSFER_CHARACTERISTIC_BT2020_12BIT, TRANSFUNC_BT709},
+    {TRANSFER_CHARACTERISTIC_PQ, TRANSFUNC_PQ},
+    {TRANSFER_CHARACTERISTIC_HLG, TRANSFUNC_HLG},
+};
+std::map<MatrixCoefficient, CM_Matrix> g_matrixMap = {
+    {MATRIX_COEFFICIENT_BT709, MATRIX_BT709},
+    {MATRIX_COEFFICIENT_BT601_625, MATRIX_BT601_P},
+    {MATRIX_COEFFICIENT_BT601_525, MATRIX_BT601_N},
+    {MATRIX_COEFFICIENT_BT2020_NCL, MATRIX_BT2020},
+    {MATRIX_COEFFICIENT_ICTCP, MATRIX_BT2100_ICTCP},
 };
 } // namespace
 
@@ -301,6 +328,52 @@ AVPixelFormat ConvertPixelFormatToFFmpeg(VideoPixelFormat pixelFormat)
         g_pixelFormatMap.begin(), g_pixelFormatMap.end(),
         [&](const std::pair<VideoPixelFormat, AVPixelFormat> &tmp) -> bool { return tmp.first == pixelFormat; });
     return iter == g_pixelFormatMap.end() ? AV_PIX_FMT_NONE : iter->second;
+}
+
+int32_t ConvertParamsToColorSpaceInfo(uint32_t fullRangeFlag, uint32_t colorPrimaries,
+                                      uint32_t transferCharacteristic, uint32_t matrixCoeffs,
+                                      std::vector<uint8_t> &colorSpaceInfoData)
+{
+    colorSpaceInfoData.resize(sizeof(CM_ColorSpaceInfo));
+    CM_ColorSpaceInfo* colorSpaceInfo = reinterpret_cast<CM_ColorSpaceInfo*>(colorSpaceInfoData.data());
+    CHECK_AND_RETURN_RET_LOG(colorSpaceInfo != nullptr, AVCS_ERR_INVALID_VAL, "colorSpaceInfo is nullptr");
+    if (!g_colorPrimariesMap.count(static_cast<ColorPrimary>(colorPrimaries))) {
+        AVCODEC_LOGE("unsupported colorPrimaries: %{public}u", colorPrimaries);
+        return AVCS_ERR_UNSUPPORT;
+    }
+    if (!g_transFuncMap.count(static_cast<TransferCharacteristic>(transferCharacteristic))) {
+        AVCODEC_LOGE("unsupported transferCharacteristic: %{public}u", transferCharacteristic);
+        return AVCS_ERR_UNSUPPORT;
+    }
+    if (!g_matrixMap.count(static_cast<MatrixCoefficient>(matrixCoeffs))) {
+        AVCODEC_LOGE("unsupported matrixCoeffs: %{public}u", matrixCoeffs);
+        return AVCS_ERR_UNSUPPORT;
+    }
+    colorSpaceInfo->primaries = g_colorPrimariesMap[static_cast<ColorPrimary>(colorPrimaries)];
+    colorSpaceInfo->transfunc = g_transFuncMap[static_cast<TransferCharacteristic>(transferCharacteristic)];
+    colorSpaceInfo->matrix = g_matrixMap[static_cast<MatrixCoefficient>(matrixCoeffs)];
+    if (fullRangeFlag) {
+        colorSpaceInfo->range = RANGE_FULL;
+    } else {
+        colorSpaceInfo->range = RANGE_LIMITED;
+    }
+    return AVCS_ERR_OK;
+}
+
+uint32_t GetMetaDataTypeByTransFunc(uint32_t transferCharacteristic)
+{
+    switch (static_cast<TransferCharacteristic>(transferCharacteristic)) {
+        case TRANSFER_CHARACTERISTIC_PQ: {
+            return static_cast<uint32_t>(CM_VIDEO_HDR10);
+        }
+        case TRANSFER_CHARACTERISTIC_HLG: {
+            return static_cast<uint32_t>(CM_VIDEO_HLG);
+        }
+        default: {
+            return static_cast<uint32_t>(CM_METADATA_NONE);
+        }
+    }
+    return static_cast<uint32_t>(CM_METADATA_NONE);
 }
 
 bool IsYuvFormat(VideoPixelFormat &format)

@@ -30,6 +30,9 @@
 #include <sstream>
 #include <sys/ioctl.h>
 #include <linux/dma-buf.h>
+#include "v1_0/cm_color_space.h"
+#include "v1_0/hdr_static_metadata.h"
+#include "v1_0/buffer_handle_meta_key_type.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -426,6 +429,33 @@ void HevcDecoder::InitHevcParams()
     hevcDecoderOutpusArgs_.uiDecStride = 0;
     hevcDecoderOutpusArgs_.uiDecWidth = 0;
     hevcDecoderOutpusArgs_.uiTimeStamp = 0;
+    InitHevcHdrParams();
+}
+
+void HevcDecoder::InitHevcHdrParams()
+{
+    hevcDecoderOutpusArgs_.uiColorSpaceInfo.fullRangeFlag = 0;
+    hevcDecoderOutpusArgs_.uiColorSpaceInfo.colorDescriptionPresentFlag = 0;
+    hevcDecoderOutpusArgs_.uiColorSpaceInfo.colorPrimaries = 0;
+    hevcDecoderOutpusArgs_.uiColorSpaceInfo.transferCharacteristic = 0;
+    hevcDecoderOutpusArgs_.uiColorSpaceInfo.matrixCoeffs = 0;
+    hevcDecoderOutpusArgs_.uiHdrMetadata.dynamicMetadataSize = 0;
+    hevcDecoderOutpusArgs_.uiHdrMetadata.dynamicMetadata = nullptr;
+    hevcDecoderOutpusArgs_.uiHdrMetadata.whitePointX = 0;
+    hevcDecoderOutpusArgs_.uiHdrMetadata.whitePointY = 0;
+    hevcDecoderOutpusArgs_.uiHdrMetadata.maxDisplayMasteringLuminance = 0;
+    hevcDecoderOutpusArgs_.uiHdrMetadata.minDisplayMasteringLuminance = 0;
+    hevcDecoderOutpusArgs_.uiHdrMetadata.maxContentLightLevel = 0;
+    hevcDecoderOutpusArgs_.uiHdrMetadata.maxPicAverageLightLevel = 0;
+    for (int i=0; i<3; i++) { // 3: GBR
+        hevcDecoderOutpusArgs_.uiHdrMetadata.displayPrimariesX[i] = 0;
+        hevcDecoderOutpusArgs_.uiHdrMetadata.displayPrimariesY[i] = 0;
+    }
+    colorSpaceInfo_.fullRangeFlag = 0;
+    colorSpaceInfo_.colorDescriptionPresentFlag = 0;
+    colorSpaceInfo_.colorPrimaries = 0;
+    colorSpaceInfo_.transferCharacteristic = 0;
+    colorSpaceInfo_.matrixCoeffs = 0;
 }
 
 void HevcDecoder::ResetData()
@@ -581,19 +611,9 @@ void HevcDecoder::SetSurfaceParameter(const Format &format, const std::string_vi
             "Set parameter failed: pixel format value %{public}d invalid", val);
         outputPixelFmt_ = vpf;
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val);
-        GraphicPixelFormat surfacePixelFmt;
-        if (bitDepth_ == BIT_DEPTH10BIT) {
-            if (vpf == VideoPixelFormat::NV12) {
-                surfacePixelFmt = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010;
-            } else {
-                surfacePixelFmt = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010;
-            }
-        } else {
-            surfacePixelFmt = TranslateSurfaceFormat(vpf);
-        }
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
-        sInfo_.requestConfig.format = surfacePixelFmt;
+        CHECK_AND_RETURN_LOG(SetSurfaceFormat() == AVCS_ERR_OK,
+                             "set surface format failed: unspported surface format");
     } else if (formatKey == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
         VideoRotation sr = static_cast<VideoRotation>(val);
         CHECK_AND_RETURN_LOG(sr == VideoRotation::VIDEO_ROTATION_0 || sr == VideoRotation::VIDEO_ROTATION_90 ||
@@ -711,13 +731,12 @@ int32_t HevcDecoder::SetSurfaceCfg()
     int32_t val32 = 0;
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val32);
     outputPixelFmt_ = static_cast<VideoPixelFormat>(val32);
-    GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
-    CHECK_AND_RETURN_RET_LOG(surfacePixelFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT, AVCS_ERR_UNSUPPORT,
-                             "Failed to allocate output buffer: unsupported surface format");
+    std::lock_guard<std::mutex> sLock(surfaceMutex_);
     format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
     sInfo_.requestConfig.width = width_;
     sInfo_.requestConfig.height = height_;
-    sInfo_.requestConfig.format = surfacePixelFmt;
+    CHECK_AND_RETURN_RET_LOGD(SetSurfaceFormat() == AVCS_ERR_OK, AVCS_ERR_UNSUPPORT,
+                              "set surface format failed: unspported surface format.");
     CHECK_AND_RETURN_RET_LOGD(sInfo_.surface != nullptr, AVCS_ERR_OK, "Buffer mode not need to set surface config.");
     if (format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
         CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32) && val32 >= 0 &&
@@ -965,6 +984,28 @@ int32_t HevcDecoder::UpdateSurfaceMemory(uint32_t index)
     return AVCS_ERR_OK;
 }
 
+int32_t HevcDecoder::SetSurfaceFormat()
+{
+    if (bitDepth_ = BIT_DEPTH10BIT) {
+        if (outputPixelFmt_ == VideoPixelFormat::NV12 || outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
+            sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010;
+        } else {
+            sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010;
+        }
+        format_.PutIntValue("av_codec_event_info_bit_depth", 1);
+    } else {
+        VideoPixelFormat targetPixelFmt = outputPixelFmt_;
+        if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
+            targetPixelFmt = VideoPixelFormat::NV12;
+        }
+        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(targetPixelFmt);
+        CHECK_AND_RETURN_RET_LOG(surfacePixelFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT, AVCS_ERR_UNSUPPORT,
+                                 "Failed to allocate output buffer: unsupported surface format");
+        sInfo_.requestConfig.format = surfacePixelFmt;
+    }
+    return AVCS_ERR_OK;
+}
+
 int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, int bitDepth)
 {
     bool formatChanged = false;
@@ -979,15 +1020,8 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         std::unique_lock<std::mutex> sLock(surfaceMutex_);
         sInfo_.requestConfig.width = width_;
         sInfo_.requestConfig.height = height_;
-        if (bitDepth_ == BIT_DEPTH10BIT) {
-            if (outputPixelFmt_ == VideoPixelFormat::NV12 || outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
-                sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010;
-            } else {
-                sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010;
-            }
-            format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, sInfo_.requestConfig.format);
-            format_.PutIntValue("av_codec_event_info_bit_depth", 1); // format update key of bit depth
-        }
+        CHECK_AND_RETURN_RET_LOG(SetSurfaceFormat() == AVCS_ERR_OK, AVCS_ERR_UNSUPPORT,
+                                "set surface format failed: unsupported surface format");
         sLock.unlock();
         formatChanged = true;
     }
@@ -1206,22 +1240,118 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
     int32_t surfaceStride = GetSurfaceBufferStride(frameBuffer);
     CHECK_AND_RETURN_RET_LOG(surfaceStride > 0, AVCS_ERR_INVALID_VAL, "get GetSurfaceBufferStride failed");
     surfaceInfo.surfaceStride = static_cast<uint32_t>(surfaceStride);
+    sptr<SurfaceBuffer> surfaceBuffer;
     if (sInfo_.surface) {
         surfaceInfo.surfaceFence = frameBuffer->sMemory->GetFence();
         ret = WriteSurfaceData(bufferMemory, surfaceInfo, format_);
+        surfaceBuffer = frameBuffer->sMemory->GetSurfaceBuffer();
     } else {
         Format bufferFormat;
         bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
         bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, surfaceStride);
         bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(targetPixelFmt));
         ret = WriteBufferData(bufferMemory, scaleData_, scaleLineSize_, bufferFormat);
+        surfaceBuffer = frameBuffer->avBuffer->memory_->GetSurfaceBuffer();
     }
+    FillHdrInfo(surfaceBuffer);
 #ifdef BUILD_ENG_VERSION
     DumpConvertOut(surfaceInfo);
 #endif
     frameBuffer->avBuffer->pts_ = cachedFrame_->pts;
     AVCODEC_LOGD("Fill frame buffer successful");
     return ret;
+}
+
+void HevcDecoder::UpdateColorAspects(const HEVC_COLOR_SPACE_INFO &colorInfo)
+{
+    if (colorSpaceInfo_.fullRangeFlag != colorInfo.fullRangeFlag ||
+        colorSpaceInfo_.colorDescriptionPresentFlag != colorInfo.colorDescriptionPresentFlag ||
+        colorSpaceInfo_.colorPrimaries != colorInfo.colorPrimaries ||
+        colorSpaceInfo_.transferCharacteristic != colorInfo.transferCharacteristic ||
+        colorSpaceInfo_.matrixCoeffs != colorInfo.matrixCoeffs) {
+        colorSpaceInfo_ = colorInfo;
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG,
+                            static_cast<int32_t>(colorSpaceInfo_.fullRangeFlag));
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES,
+                            static_cast<int32_t>(colorSpaceInfo_.colorPrimaries));
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS,
+                            static_cast<int32_t>(colorSpaceInfo_.transferCharacteristic));
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS,
+                            static_cast<int32_t>(colorSpaceInfo_.matrixCoeffs));
+        AVCODEC_LOGI("color aspects: isFullrange %{public}u, primary %{public}u, transfer %{public}u,"
+            "matrix %{public}u",colorSpaceInfo_.fullRangeFlag, colorSpaceInfo_.colorPrimaries,
+            colorSpaceInfo_.transferCharacteristic, colorSpaceInfo_.matrixCoeffs);
+        callback_->OnOutputFormatChanged(format_);
+        }
+}
+
+int32_t HevcDecoder::ConvertHdrStaticMetadata(const HEVC_HDR_METADATA &hevcHdrMetadata,
+                                            std::vector<uint8_t> &staticMetadataVec)
+{
+    using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+    CHECK_AND_RETURN_RET_LOG(staticMetadataVec.size() == sizeof(HdrStaticMetadata), AVCS_ERR_INVALID_VAL,
+        "wrong staticMetadataVec.size : %{public}d", static_cast<int32_t>(staticMetadataVec.size()));
+    HdrStaticMetadata* hdrStaticMetadata = reinterpret_cast<HdrStaticMetadata*>(staticMetadataVec.data());
+    CHECK_AND_RETURN_RET_LOG(hdrStaticMetadata != nullptr, AVCS_ERR_INVALID_VAL,
+        "vector convert to CM_HDR_Metadata_Type error");
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x = static_cast<float>(hevcHdrMetadata.displayPrimariesX[0]);
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x = static_cast<float>(hevcHdrMetadata.displayPrimariesX[1]);
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.x = static_cast<float>(hevcHdrMetadata.displayPrimariesX[2]);
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y = static_cast<float>(hevcHdrMetadata.displayPrimariesY[0]);
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y = static_cast<float>(hevcHdrMetadata.displayPrimariesY[1]);
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.y = static_cast<float>(hevcHdrMetadata.displayPrimariesY[2]);
+    hdrStaticMetadata->smpte2086.whitePoint.x = static_cast<float>(hevcHdrMetadata.whitePointX);
+    hdrStaticMetadata->smpte2086.whitePoint.y = static_cast<float>(hevcHdrMetadata.whitePointY);
+    hdrStaticMetadata->smpte2086.maxLuminance = static_cast<float>(hevcHdrMetadata.maxDisplayMasteringLuminance);
+    hdrStaticMetadata->smpte2086.minLuminance = static_cast<float>(hevcHdrMetadata.minDisplayMasteringLuminance);
+    hdrStaticMetadata->cta861.maxContentLightLevel = static_cast<float>(hevcHdrMetadata.maxContentLightLevel);
+    hdrStaticMetadata->cta861.maxFrameAverageLightLevel = static_cast<float>(hevcHdrMetadata.maxPicAverageLightLevel);
+    return AVCS_ERR_OK;
+    
+}
+
+void HevcDecoder::FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer)
+{
+    CHECK_AND_RETURN_LOG(surfaceBuffer != nullptr, "surfaceBuffer is nullptr");
+    using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+    HEVC_COLOR_SPACE_INFO &outColorInfo = hevcDecoderOutpusArgs_.uiColorSpaceInfo;
+    HEVC_HDR_METADATA &hdrMetadata = hevcDecoderOutpusArgs_.uiHdrMetadata;
+    if (outColorInfo.colorDescriptionPresentFlag) {
+        std::vector<uint8_t> colorSpaceInfoVec;
+        int32_t convertRet = ConvertParamsToColorSpaceInfo(outColorInfo.fullRangeFlag,
+                                                          outColorInfo.colorPrimaries,
+                                                          outColorInfo.transferCharacteristic,
+                                                          outColorInfo.matrixCoeffs,
+                                                          colorSpaceInfoVec);
+        CHECK_AND_RETURN_LOG(convertRet == AVCS_ERR_OK, "ConvertParamsToColorSpaceInfo failed");
+        GSError setRet = surfaceBuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoVec);
+        CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "SetMetadata ATTRKEY_COLORSPACE_INFO failed");
+        std::vector<uint8_t> metadataTypeVec(sizeof(CM_HDR_Metadata_Type));
+        CM_HDR_Metadata_Type* metadataType = reinterpret_cast<CM_HDR_Metadata_Type*>(metadataTypeVec.data());
+        CHECK_AND_RETURN_LOG(metadataType != nullptr, "vector convert to CM_HDR_Metadata_Type error");
+        if (hdrMetadata.paramsValidFlag > 0) {
+            std::vector<uint8_t> staticMetadataVec(sizeof(HdrstaticMetadata));
+            CHECK_AND_RETURN_LOG(ConvertHdrStaticMetadata(hdrMetadata, staticMetadataVec) == AVCS_ERR_OK,
+                "ConvertHdrStaticMetadata error");
+            setRet = surfaceBuffer->SetMetadata(ATTRKEY_HDR_STATIC_METADATA, staticMetadataVec);
+            CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "SetMetadata ATTRKEY_HDR_STATIC_METADATA failed");
+        }
+        if (hdrMetadata.dynamicMetadataSize > 0) {
+            CHECK_AND_RETURN_LOG(hdrMetadata.dynamicMetadata != nullptr, "empty hdr dynamicMetadata");
+            std::vector<uint8_t> staticMetadataVec(hdrMetadata.dynamicMetadata,
+                hdrMetadata.dynamicMetadata + hdrMetadata.dynamicMetadataSize);
+            setRet = surfaceBuffer->SetMetadata(ATTRKEY_HDR_DYNAMIC_METADATA, staticMetadataVec);
+            CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "SetMetadata ATTRKEY_HDR_DYNAMIC_METADATA failed");
+            *metadataType = CM_VIDEO_HDR_VIVID;
+        } else {
+            *metadataType = static_cast<CM_HDR_Metadata_Type>(
+                GetMetadataTypeByTransFunc(outColorInfo.transferCharacteristic));
+        }
+        setRet = surfaceBuffer->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, metadataTypeVec);
+        CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "SetMetadata ATTRKEY_HDR_METADATA_TYPE failed");
+        UpdateColorAspects(outColorInfo);
+        AVCODEC_LOGD("surface buffer Fill hdr info successful");
+    }
 }
 
 void HevcDecoder::FramePostProcess(std::shared_ptr<HBuffer> &frameBuffer, uint32_t index, int32_t status, int ret)
