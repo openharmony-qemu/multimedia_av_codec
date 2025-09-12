@@ -81,7 +81,6 @@ private:
     static std::optional<uint32_t> GetSQRFactorFromUser(const Format &format);
     static std::optional<uint32_t> GetSQRMaxBitrateFromUser(const Format &format);
     static std::optional<uint32_t> GetCRFtagetQpFromUser(const Format &format);
-    static std::optional<double> GetOperatingRateFromUser(const Format &format);
     static int32_t GetWaterMarkInfo(std::shared_ptr<AVBuffer> buffer, WaterMarkInfo &info);
     int32_t SetupAVCEncoderParameters(const Format &format, std::optional<double> frameRate);
     void SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, int32_t iFrameInterval, double frameRate);

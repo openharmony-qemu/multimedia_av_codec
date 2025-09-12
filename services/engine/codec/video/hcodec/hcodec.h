@@ -249,6 +249,7 @@ protected:
     virtual int32_t OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer) { return AVCS_ERR_UNSUPPORT; }
     bool GetPixelFmtFromUser(const Format &format);
     static std::optional<double> GetFrameRateFromUser(const Format &format);
+    static std::optional<double> GetOperatingRateFromUser(const Format &format);
     int32_t SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info);
     virtual int32_t UpdateInPortFormat() = 0;
     virtual int32_t UpdateOutPortFormat() = 0;

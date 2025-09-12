@@ -18,7 +18,6 @@
 #include <string>
 #include <map>
 #include "codeclist_server.h"
-#include "avsharedmemory_ipc.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_server_manager.h"
