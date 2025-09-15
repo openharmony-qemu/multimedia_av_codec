@@ -127,7 +127,7 @@ bool SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, uint32_t streamSize,
     if (!GetBytes<uint32_t>(bitStream, currPos, streamSize, dummyByte4)) return false;
 
     uint32_t timescale = 0;
-    if (!GetBytes(bitStream, currPos, streamSize, timescale)) return false;
+    if (!GetBytes<uint32_t>(bitStream, currPos, streamSize, timescale)) return false;
 
     int64_t firstOffset;
     int64_t dummyByte8 = 0;
