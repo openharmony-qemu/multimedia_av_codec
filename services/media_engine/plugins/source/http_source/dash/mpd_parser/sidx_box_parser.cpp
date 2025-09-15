@@ -58,21 +58,21 @@ SidxBoxParser::~SidxBoxParser()
 template <typename T> bool GetBytes(char *buffer, uint32_t &currPos, uint32_t streamSize, T &currentReturnValue)
 {
     if constexpr (std::is_same_v<T, uint32_t>) {
-        if (streamSize - currPos > SHIFT_NUM_4) {
+        if (streamSize - currPos >= SHIFT_NUM_4) {
             currentReturnValue = Get4Bytes(buffer, currPos);
             return true;
         } else {
             return false;
         }
     } else if constexpr (std::is_same_v<T, int64_t>) {
-        if (streamSize - currPos > SHIFT_NUM_8) {
+        if (streamSize - currPos >= SHIFT_NUM_8) {
             currentReturnValue = Get8Bytes(buffer, currPos);
             return true;
         } else {
             return false;
         }
     } else if constexpr (std::is_same_v<T, unsigned short>) {
-        if (streamSize - currPos > SHIFT_NUM_2) {
+        if (streamSize - currPos >= SHIFT_NUM_2) {
             currentReturnValue = Get2Bytes(buffer, currPos);
             return true;
         } else {
