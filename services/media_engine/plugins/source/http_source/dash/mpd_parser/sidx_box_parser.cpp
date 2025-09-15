@@ -93,10 +93,10 @@ int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_
         uint32_t dummyByte4 = 0;
 
         bool isByteReadSuccess = GetBytes<uint32_t>(bitStream, currPos, streamSize, dummyByte4);
-        if(!isByteReadSuccess) return -1;
+        if (!isByteReadSuccess) return -1;
     
         isByteReadSuccess = GetBytes<uint32_t>(bitStream, currPos, streamSize, boxType);
-        if(!isByteReadSuccess) return -1;
+        if (!isByteReadSuccess) return -1;
 
         if (boxType == BEM_SIDX) {
             MEDIA_LOG_D("it is a sidx box");
@@ -121,36 +121,36 @@ bool SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, uint32_t streamSize,
     bool isByteReadSuccess = 0;
     uint32_t vFlag = 0;
     isByteReadSuccess = GetBytes<uint32_t>(bitStream, currPos, streamSize, vFlag);
-    if(!isByteReadSuccess) return false;
+    if (!isByteReadSuccess) return false;
 
     uint32_t version = GetVersion(vFlag);
 
     uint32_t dummyByte4 = 0;
     isByteReadSuccess = GetBytes<uint32_t>(bitStream, currPos, streamSize, dummyByte4);
-    if(!isByteReadSuccess) return false;
+    if (!isByteReadSuccess) return false;
 
     uint32_t timescale = 0;
     isByteReadSuccess = Get4Bytes(bitStream, currPos, streamSize, timescale);
-    if(!isByteReadSuccess) return false;
+    if (!isByteReadSuccess) return false;
 
     int64_t firstOffset;
     int64_t dummyByte8 = 0;
     if (version == 0) {
         // skip earliestPresentationTime
         isByteReadSuccess = GetBytes<uint32_t>(bitStream, currPos, streamSize, dummyByte4);
-        if(!isByteReadSuccess) return false;
+        if (!isByteReadSuccess) return false;
         
         uint32_t firstOffset32 = 0;
         isByteReadSuccess = GetBytes<uint32_t>(bitStream, currPos, streamSize, firstOffset32);
         firstOffset = firstOffset32;
-        if(!isByteReadSuccess) return false;
+        if (!isByteReadSuccess) return false;
     } else {
         // skip earliestPresentationTime
         isByteReadSuccess = GetBytes<int64_t>(bitStream, currPos, streamSize, dummyByte8);
-        if(!isByteReadSuccess) return false;
+        if (!isByteReadSuccess) return false;
     
         isByteReadSuccess = GetBytes<int64_t>(bitStream, currPos, streamSize, firstOffset);
-        if(!isByteReadSuccess) return false;
+        if (!isByteReadSuccess) return false;
     }
 
     // In the file containing the Segment Index box, the anchor point for a Segment Index box is the first byte
@@ -164,7 +164,7 @@ bool SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, uint32_t streamSize,
     unsigned short referenceCountShort = 0;
     isByteReadSuccess = GetBytes<unsigned short>(bitStream, currPos, streamSize, referenceCountShort);
     referenceCount = referenceCountShort;
-    if(!isByteReadSuccess) return false;
+    if (!isByteReadSuccess) return false;
 
     if ((referenceCount * SIDX_REFERENCE_ITEM_SIZE + currPos) > streamSize) {
         MEDIA_LOG_W("sidx box reference count error: " PUBLIC_LOG_U32 ", currPos:" PUBLIC_LOG_U32 ", streamSize:"
@@ -177,7 +177,7 @@ bool SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, uint32_t streamSize,
         std::shared_ptr<SubSegmentIndex> subSegIndex = std::make_shared<SubSegmentIndex>();
         uint32_t typeAndSize = 0;
         isByteReadSuccess = GetBytes<uint32_t>(bitStream, currPos, streamSize, typeAndSize);
-        if(!isByteReadSuccess) return false;
+        if (!isByteReadSuccess) return false;
         subSegIndex->referenceType_ = static_cast<int32_t>(GetReferenceType(typeAndSize));
         subSegIndex->referencedSize_ = static_cast<int32_t>(GetReferenceSize(typeAndSize));
         subSegIndex->startPos_ = mediaSegOffset;
@@ -185,10 +185,10 @@ bool SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, uint32_t streamSize,
         mediaSegOffset = subSegIndex->endPos_ + 1;
         subSegIndex->duration_ = 0;
         isByteReadSuccess = GetBytes<uint32_t>(bitStream, currPos, streamSize, duration_);
-        if(!isByteReadSuccess) return false;
+        if (!isByteReadSuccess) return false;
         subSegIndex->timeScale_ = timescale;
         isByteReadSuccess = GetBytes<uint32_t>(bitStream, currPos, streamSize, dummyByte4); // uint32_t sapInfo
-        if(!isByteReadSuccess) return false;
+        if (!isByteReadSuccess) return false;
         subSegIndexTable.push_back(subSegIndex);
     }
     return true;
