@@ -75,7 +75,9 @@ void MediaSynchronousSink::WriteToPluginRefTimeSync(const std::shared_ptr<OHOS::
         // no need to wait for preroll next time
         waitForPrerolled_ = false;
     }
-    DoSyncWrite(buffer);
+    int64_t actionClock = 0;
+    DoSyncWrite(buffer, actionClock);
+    (void)actionClock;
 }
 
 void MediaSynchronousSink::NotifyAllPrerolled()
