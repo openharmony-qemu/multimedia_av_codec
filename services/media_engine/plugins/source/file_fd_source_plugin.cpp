@@ -116,6 +116,7 @@ Status FileFdSourceRegister(const std::shared_ptr<Register>& reg)
         return std::make_shared<FileFdSourcePlugin>(name);
     };
     definition.SetCreator(func);
+    MEDIA_LOG_I("fileSourceRegister is end");
     return reg->AddPlugin(definition);
 }
 
