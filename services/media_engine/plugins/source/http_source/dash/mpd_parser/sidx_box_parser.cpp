@@ -59,21 +59,21 @@ template <typename T> bool GetBytes(char *buffer, uint32_t &currPos, uint32_t st
 {
     if constexpr (std::is_same_v<T, uint32_t>) {
         if (streamSize - currPos > SHIFT_NUM_4) {
-            currentReturnValue = Get4Bytes(buffe, currpos);
+            currentReturnValue = Get4Bytes(buffer, currpos);
             return true;
         } else {
             return false;
         }
     } else if constexpr (std::is_same_v<T, int64_t>) {
         if (streamSize - currPos > SHIFT_NUM_8) {
-            currentReturnValue = Get8Bytes(buffe, currpos);
+            currentReturnValue = Get8Bytes(buffer, currpos);
             return true;
         } else {
             return false;
         }
     } else if constexpr (std::is_same_v<T, unsigned short>) {
         if (streamSize - currPos > SHIFT_NUM_2) {
-            currentReturnValue = Get2Bytes(buffe, currpos);
+            currentReturnValue = Get2Bytes(buffer, currpos);
             return true;
         } else {
             return false;
@@ -130,7 +130,7 @@ bool SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, uint32_t streamSize,
     if (!isByteReadSuccess) return false;
 
     uint32_t timescale = 0;
-    isByteReadSuccess = Get4Bytes(bitStream, currPos, streamSize, timescale);
+    isByteReadSuccess = GetBytes(bitStream, currPos, streamSize, timescale);
     if (!isByteReadSuccess) return false;
 
     int64_t firstOffset;
