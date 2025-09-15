@@ -143,6 +143,14 @@ namespace MediaAVCodec {
         }                                                                   \
     } while (0)
 
+#define CHECK_AND_RETURN_LOGW(cond, fmt, ...)                               \
+    do {                                                                    \
+        if (!(cond)) {                                                      \
+            AVCODEC_LOGW(fmt, ##__VA_ARGS__);                               \
+            return;                                                         \
+        }                                                                   \
+    } while (0)
+
 #define CHECK_AND_RETURN_LOGD(cond, fmt, ...)                               \
     do {                                                                    \
         if (!(cond)) {                                                      \
