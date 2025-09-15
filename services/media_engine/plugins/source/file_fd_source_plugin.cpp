@@ -459,7 +459,7 @@ bool FileFdSourcePlugin::HasCacheData(size_t bufferSize, uint64_t offset)
 
 Status FileFdSourcePlugin::Stop()
 {
-    MEDIA_LOG_I("Stop enter.");
+    MEDIA_LOG_D("Stop enter.");
     isInterrupted_ = true;
     MEDIA_LOG_I("Stop isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
     FALSE_RETURN_V(downloadTask_ != nullptr, Status::OK);
@@ -469,7 +469,7 @@ Status FileFdSourcePlugin::Stop()
 
 Status FileFdSourcePlugin::Reset()
 {
-    MEDIA_LOG_I("Reset enter.");
+    MEDIA_LOG_D("Reset enter.");
     isInterrupted_ = true;
     MEDIA_LOG_I("Reset isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
     FALSE_RETURN_V(downloadTask_ != nullptr, Status::OK);
