@@ -131,10 +131,10 @@ FileFdSourcePlugin::~FileFdSourcePlugin()
     MEDIA_LOG_I("~FileFdSourcePlugin in.");
     steadyClock_.Reset();
     SetInterruptState(true);
-    MEDIA_LOG_I("~FileFdSourcePlugin isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
+    MEDIA_LOG_D("~FileFdSourcePlugin isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
     FALSE_RETURN_MSG(downloadTask_ != nullptr, "~FileFdSourcePlugin out.");
     downloadTask_->Stop();
-    MEDIA_LOG_I("~FileFdSourcePlugin out.");
+    MEDIA_LOG_D("~FileFdSourcePlugin out.");
 }
 
 Status FileFdSourcePlugin::SetCallback(Callback* cb)
@@ -146,7 +146,7 @@ Status FileFdSourcePlugin::SetCallback(Callback* cb)
 
 Status FileFdSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 {
-    MEDIA_LOG_I("SetSource in. %{private}s", source->GetSourceUri().c_str());
+    MEDIA_LOG_D("SetSource in. %{private}s", source->GetSourceUri().c_str());
     auto err = ParseUriInfo(source->GetSourceUri());
     if (err != Status::OK) {
         MEDIA_LOG_E("Parse file name from uri fail, uri %{private}s", source->GetSourceUri().c_str());
@@ -617,7 +617,7 @@ Status FileFdSourcePlugin::SetReadBlockingFlag(bool isAllowed)
 void FileFdSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 {
     bool isInterruptAllowed = true;
-    MEDIA_LOG_I("SetInterruptState isInterrupted_" PUBLIC_LOG_D32, isInterruptNeeded);
+    MEDIA_LOG_D("SetInterruptState isInterrupted_" PUBLIC_LOG_D32, isInterruptNeeded);
     {
         std::lock_guard<std::mutex> lock(interruptMutex_);
         isInterruptAllowed = !(isInterrupted_ && isInterruptNeeded);

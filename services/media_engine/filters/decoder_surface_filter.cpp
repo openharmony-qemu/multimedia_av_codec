@@ -532,7 +532,7 @@ Status DecoderSurfaceFilter::DoUnFreeze()
 
 Status DecoderSurfaceFilter::DoStop()
 {
-    MEDIA_LOG_I("Stop");
+    MEDIA_LOG_D("Stop enter.");
     latestBufferTime_ = HST_TIME_NONE;
     latestPausedTime_ = HST_TIME_NONE;
     totalPausedTime_ = 0;
@@ -566,7 +566,7 @@ Status DecoderSurfaceFilter::DoStop()
 
 Status DecoderSurfaceFilter::DoFlush()
 {
-    MEDIA_LOG_I("Flush");
+    MEDIA_LOG_D("Flush enter.");
     lastRenderTimeNs_ = HST_TIME_NONE;
     eosPts_ = INT64_MAX;
     videoDecoder_->Flush();
@@ -585,7 +585,7 @@ Status DecoderSurfaceFilter::DoFlush()
 
 Status DecoderSurfaceFilter::DoRelease()
 {
-    MEDIA_LOG_I("Release");
+    MEDIA_LOG_D("Release enter.");
     videoDecoder_->Release();
     if (postProcessor_) {
         postProcessor_->Release();
