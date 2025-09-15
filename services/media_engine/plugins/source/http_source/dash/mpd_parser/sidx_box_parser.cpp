@@ -184,7 +184,7 @@ bool SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, uint32_t streamSize,
         subSegIndex->endPos_ = mediaSegOffset + subSegIndex->referencedSize_ - 1;
         mediaSegOffset = subSegIndex->endPos_ + 1;
         subSegIndex->duration_ = 0;
-        isByteReadSuccess = GetBytes<uint32_t>(bitStream, currPos, streamSize, duration_);
+        isByteReadSuccess = GetBytes<uint32_t>(bitStream, currPos, streamSize, subSegIndex->duration_);
         if (!isByteReadSuccess) return false;
         subSegIndex->timeScale_ = timescale;
         isByteReadSuccess = GetBytes<uint32_t>(bitStream, currPos, streamSize, dummyByte4); // uint32_t sapInfo
