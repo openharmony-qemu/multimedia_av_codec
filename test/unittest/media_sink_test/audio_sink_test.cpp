@@ -459,10 +459,11 @@ HWTEST(TestAudioSink, audio_sink_write, TestSize.Level1)
     const std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
     buffer->flag_ = 0; // not eos
     buffer->pts_ = -1;
-    auto doSyncWriteRes = audioSink->DoSyncWrite(buffer);
+    int64_t actionClock = 0;
+    auto doSyncWriteRes = audioSink->DoSyncWrite(buffer, actionClock);
     ASSERT_TRUE(doSyncWriteRes == 0);
     buffer->pts_ = 1;
-    doSyncWriteRes = audioSink->DoSyncWrite(buffer);
+    doSyncWriteRes = audioSink->DoSyncWrite(buffer, actionClock);
     ASSERT_TRUE(doSyncWriteRes == 0);
 }
 
