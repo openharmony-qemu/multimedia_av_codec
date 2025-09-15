@@ -1130,7 +1130,9 @@ void AudioSink::WriteDataToRender(std::shared_ptr<AVBuffer> &filledOutputBuffer)
     }
     FALSE_RETURN(plugin_ != nullptr);
     UpdateAudioWriteTimeMayWait();
-    DoSyncWrite(filledOutputBuffer);
+    int64_t actionClock = 0;
+    DoSyncWrite(filledOutputBuffer, actionClock);
+    (void)actionClock;
     if (calMaxAmplitudeCbStatus_) {
         CalcMaxAmplitude(filledOutputBuffer);
         UpdateAmplitude();
@@ -1378,8 +1380,9 @@ bool AudioSink::UpdateTimeAnchorIfNeeded(const std::shared_ptr<OHOS::Media::AVBu
     return true;
 }
 
-int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t& actionClock)
 {
+    (void)actionClock;
     bool render = true; // audio sink always report time anchor and do not drop
     auto syncCenter = syncCenter_.lock();
     FALSE_RETURN_V(syncCenter != nullptr, 0);
