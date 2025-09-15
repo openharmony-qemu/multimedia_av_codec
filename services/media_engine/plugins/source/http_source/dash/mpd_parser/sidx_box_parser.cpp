@@ -58,22 +58,22 @@ SidxBoxParser::~SidxBoxParser()
 template <typename T> bool GetBytes(char *buffer, uint32_t &currPos, uint32_t streamSize, T &currentReturnValue)
 {
     if constexpr (std::is_same_v<T, uint32_t>) {
-        if (streamSize - currPos > 4) {
-            currentReturnValue = Get4Bytes(buffe,currpos);
+        if (streamSize - currPos > SHIFT_NUM_4) {
+            currentReturnValue = Get4Bytes(buffe, currpos);
             return true;
         } else {
             return false;
         }
     } else if constexpr (std::is_same_v<T, int64_t>) {
-        if (streamSize - currPos > 8) {
-            currentReturnValue = Get8Bytes(buffe,currpos);
+        if (streamSize - currPos > SHIFT_NUM_8) {
+            currentReturnValue = Get8Bytes(buffe, currpos);
             return true;
         } else {
             return false;
         }
     } else if constexpr (std::is_same_v<T, unsigned short>) {
-        if (streamSize - currPos > 2) {
-            currentReturnValue = Get2Bytes(buffe,currpos);
+        if (streamSize - currPos > SHIFT_NUM_2) {
+            currentReturnValue = Get2Bytes(buffe, currpos);
             return true;
         } else {
             return false;
@@ -118,7 +118,7 @@ bool SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, uint32_t streamSize,
                                            DashList<std::shared_ptr<SubSegmentIndex>> &subSegIndexTable,
                                            uint32_t &currPos)
 {
-    bool isByteReadSuccess =0;
+    bool isByteReadSuccess = 0;
     uint32_t vFlag = 0;
     isByteReadSuccess = GetBytes<uint32_t>(bitStream, currPos, streamSize, vFlag);
     if(!isByteReadSuccess) return false;
