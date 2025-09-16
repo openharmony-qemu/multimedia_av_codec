@@ -532,6 +532,15 @@ std::optional<double> HCodec::GetFrameRateFromUser(const Format &format)
     return nullopt;
 }
 
+std::optional<double> HCodec::GetOperatingRateFromUser(const Format &format)
+{
+    double operatingRate = 0.0;
+    if (format.GetDoubleValue(OHOS::Media::Tag::VIDEO_OPERATING_RATE, operatingRate) && operatingRate > 0.0) {
+        return operatingRate;
+    }
+    return nullopt;
+}
+
 bool HCodec::CheckBufPixFmt(const sptr<SurfaceBuffer>& buffer)
 {
     int32_t dispFmt = buffer->GetFormat();

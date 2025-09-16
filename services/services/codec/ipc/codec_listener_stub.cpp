@@ -20,7 +20,6 @@
 #include "avcodec_errors.h"
 #include "avcodec_parcel.h"
 #include "avcodec_trace.h"
-#include "avsharedmemory_ipc.h"
 #include "buffer/avsharedmemorybase.h"
 #include "meta/meta.h"
 namespace {

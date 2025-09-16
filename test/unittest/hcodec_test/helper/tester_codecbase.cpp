@@ -274,7 +274,7 @@ bool TesterCodecBase::SetEncoderParameter(const SetParameterParams& param)
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TARGET_QP, param.targetQp.value());
     }
     if (param.operatingRate.has_value()) {
-        fmt.PutDoubleValue(OHOS::Media::Tag::VIDEO_ENCODER_OPERATING_RATE, param.operatingRate.value());
+        fmt.PutDoubleValue(OHOS::Media::Tag::VIDEO_OPERATING_RATE, param.operatingRate.value());
     }
     if (param.qpRange.has_value()) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MIN, static_cast<int32_t>(param.qpRange->qpMin));

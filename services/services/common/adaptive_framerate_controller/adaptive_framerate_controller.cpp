@@ -23,14 +23,15 @@ auto afcEnable = OHOS::system::GetBoolParameter("OHOS.MediaAVCodec.AFC.Enable", 
 using namespace std::chrono_literals;
 constexpr auto CHECK_INTERVAL = 1000ms;
 constexpr auto CHECK_INTERVAL_FILTER = (CHECK_INTERVAL / 2).count(); // CHECK_INTERVAL / 2: filter out short intervals
-constexpr uint8_t MAX_INCREASE_CHECK_TIMES = 2;
+constexpr double DEFAULT_FRAMERATE = 60;
+constexpr uint8_t MAX_INCREASE_CHECK_TIMES = 1;
 constexpr uint8_t MAX_DECREASE_CHECK_TIMES = 2;
 } // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
-FramerateCalculator::FramerateCalculator(int32_t instanceId, bool isDecoder, std::function<void(double)> &&handler)
-    : instanceId_(instanceId), isDecoder_(isDecoder), resetFramerateHandler_(std::move(handler)) {}
+FramerateCalculator::FramerateCalculator(int32_t instanceId, std::function<void(double)> &&handler)
+    : instanceId_(instanceId), resetFramerateHandler_(std::move(handler)) {}
 
 void FramerateCalculator::OnFrameConsumed()
 {
@@ -62,12 +63,15 @@ bool FramerateCalculator::CheckAndResetFramerate()
         "Elapsed time is invalid, cannot calculate framerate");
 
     auto actualFramerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
+    if (actualFramerate < DEFAULT_FRAMERATE && actualFramerate < configuredFramerate_) {
+        actualFramerate = std::min(DEFAULT_FRAMERATE, configuredFramerate_);
+    }
     auto fluctuationFramerate = std::abs(actualFramerate - lastFramerate_);
     if (!(fluctuationFramerate > 5 && (fluctuationFramerate / lastFramerate_ > 0.1))) { // 5/0.1: reset threshold
         if (decreseCheckTimes_ != MAX_DECREASE_CHECK_TIMES) {
             decreseCheckTimes_ = MAX_DECREASE_CHECK_TIMES;
         }
-        if (isDecoder_ && increseCheckTimes_ != MAX_INCREASE_CHECK_TIMES) {
+        if (increseCheckTimes_ != MAX_INCREASE_CHECK_TIMES) {
             increseCheckTimes_ = MAX_INCREASE_CHECK_TIMES;
         }
         return false;
@@ -85,13 +89,8 @@ bool FramerateCalculator::CheckAndResetFramerate()
         }
     } else if (decreseCheckTimes_ > 0) {
         decreseCheckTimes_--;
-        if (isDecoder_) {
-            increseCheckTimes_ = MAX_INCREASE_CHECK_TIMES;
-        }
+        increseCheckTimes_ = MAX_INCREASE_CHECK_TIMES;
         return false;
-    }
-    if (resetFramerate < 1.0) { // 1.0: minimum framerate
-        resetFramerate = 1.0;
     }
     resetFramerateHandler_(resetFramerate);
 
@@ -137,15 +136,18 @@ AdaptiveFramerateController &AdaptiveFramerateController::GetInstance()
 void AdaptiveFramerateController::Add(int32_t intanceId, std::shared_ptr<FramerateCalculator> calculator)
 {
     {
-        std::unique_lock<std::mutex> lock(calculatorsMutex_);
+        std::lock_guard<std::mutex> calculatorsLock(calculatorsMutex_);
         calculators_[intanceId] = calculator;
         if (isRunning_) {
             return;
         }
-        isRunning_ = true;
     }
 
     std::lock_guard<std::mutex> looperLock(looperMutex_);
+    {
+        std::lock_guard<std::mutex> signalLock(signalMutex_);
+        isRunning_ = true;
+    }
     if (!looper_) {
         looper_ = std::make_unique<std::thread>(&AdaptiveFramerateController::Loop, this);
     }
@@ -159,26 +161,30 @@ void AdaptiveFramerateController::Remove(int32_t instanceId)
         if (!calculators_.empty()) {
             return;
         }
-        isRunning_ = false;
-        condition_.notify_all();
     }
 
     std::lock_guard<std::mutex> looperLock(looperMutex_);
+    {
+        std::lock_guard<std::mutex> signalLock(signalMutex_);
+        isRunning_ = false;
+        condition_.notify_all();
+    }
     if (looper_ && looper_->joinable()) {
         looper_->join();
-        looper_.reset();
     }
+    looper_.reset();
 }
 
 void AdaptiveFramerateController::Loop()
 {
     pthread_setname_np(pthread_self(), "OS_AFC_Loop");
     while (true) {
-        std::unique_lock<std::mutex> lock(calculatorsMutex_);
-        condition_.wait_for(lock, CHECK_INTERVAL, [this]() { return !isRunning_; });
+        std::unique_lock<std::mutex> signalLock(signalMutex_);
+        condition_.wait_for(signalLock, CHECK_INTERVAL, [this]() { return !isRunning_; });
         if (!isRunning_) {
             break;
         }
+        std::lock_guard<std::mutex> calculatorsLock(calculatorsMutex_);
         for (auto it = calculators_.begin(); it != calculators_.end();) {
             auto calculator = it->second.lock();
             if (!calculator) {
