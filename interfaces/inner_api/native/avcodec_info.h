@@ -609,6 +609,7 @@ private:
  */
 class CodecMimeType {
 public:
+    static constexpr std::string_view VIDEO_VC1 = "video/vc1";
     static constexpr std::string_view VIDEO_H263 = "video/h263";
     static constexpr std::string_view VIDEO_AVC = "video/avc";
     static constexpr std::string_view VIDEO_MPEG2 = "video/mpeg2";
@@ -760,6 +761,18 @@ enum H263Profile : int32_t {
 };
 
 /**
+ * @brief VC1 Profile.
+ *
+ * @since 3.1
+ * @version 4.0
+ */
+enum VC1Profile {
+    VC1_PROFILE_SIMPLE = 0,
+    VC1_PROFILE_MAIN = 1,
+    VC1_PROFILE_ADVANCED = 2,
+};
+
+/**
  * @brief
  *
  * @since 3.1
@@ -899,6 +912,32 @@ enum H263Level : int32_t {
     H263_LEVEL_60 = 6,
     /** 70 level */
     H263_LEVEL_70 = 7
+};
+
+/**
+ * @brief VC1 Level.
+ *
+ * @since 3.1
+ * @version 4.0
+ */
+enum VC1Level {
+    VC1_LEVEL_LOW = 0,
+    VC1_LEVEL_MEDIUM = 1,
+    VC1_LEVEL_HIGH = 2,
+};
+
+/**
+ * @brief VC1 Advanced Level.
+ *
+ * @since 3.1
+ * @version 4.0
+ */
+enum VC1AdvancedLevel {
+    VC1_LEVEL_L0 = 0,
+    VC1_LEVEL_L1 = 1,
+    VC1_LEVEL_L2 = 2,
+    VC1_LEVEL_L3 = 3,
+    VC1_LEVEL_L4 = 4
 };
 
 /**

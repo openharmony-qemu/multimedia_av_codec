@@ -253,6 +253,7 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG2;
  */
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_AVC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC;
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VC1;
 
 /**
  * @brief Enumerates the MIME types of audio and video codecs
@@ -1141,6 +1142,12 @@ typedef enum OH_VVCProfile {
     VVC_PROFILE_MAIN_16_444_STILL = 100,
 } OH_VVCProfile;
 
+typedef enum OH_VC1Profile {
+    VC1_PROFILE_SIMPLE = 0,
+    VC1_PROFILE_MAIN = 1,
+    VC1_PROFILE_ADVANCED = 2,
+} OH_VC1Profile;
+
 /**
  * @brief Enumerates the muxer output file format.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
@@ -1502,6 +1509,20 @@ typedef enum OH_VVCLevel {
     /** VVC level 15.5 */
     VVC_LEVEL_155 = 255,
 } OH_VVCLevel;
+
+typedef enum VC1Level {
+    VC1_LEVEL_LOW = 0,
+    VC1_LEVEL_MEDIUM = 1,
+    VC1_LEVEL_HIGH = 2,
+} OH_VC1Level;
+
+typedef enum VC1AdvancedLevel {
+    VC1_LEVEL_L0 = 3,
+    VC1_LEVEL_L1 = 4,
+    VC1_LEVEL_L2 = 5,
+    VC1_LEVEL_L3 = 6,
+    VC1_LEVEL_L4 = 7
+} OH_VC1AdvancedLevel;
 
 /**
  * @brief The bitrate mode of encoder.

@@ -626,6 +626,30 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="Vc1SwdecoderConfigureFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test.vc1 -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/glitch-ffvc1.avi -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="Vc1SwdecoderSetParameterFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test.vc1 -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/glitch-ffvc1.avi -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="Vc1SwdecoderResourceFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test.vc1 -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/glitch-ffvc1.avi -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name ="AudioDecoderVorbisFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
