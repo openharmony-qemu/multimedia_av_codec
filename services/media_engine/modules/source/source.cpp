@@ -204,7 +204,7 @@ Status Source::GetBitRates(std::vector<uint32_t>& bitRates)
         MEDIA_LOG_E("GetBitRates failed, plugin_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;
     }
-    return plugin_->GetBitRates(bitRates); 
+    return plugin_->GetBitRates(bitRates);
 }
 
 Status Source::SelectBitRate(uint32_t bitRate)
