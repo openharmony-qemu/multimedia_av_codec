@@ -250,6 +250,65 @@ private:
     std::shared_ptr<NalUnitReader> nalUnitReader_ = nullptr;
     std::shared_ptr<NalDetector> nalDetector_ = nullptr;
 };
+
+struct Vc1ReaderInfo {
+    std::string inPath;
+};
+class Vc1Reader : public DataProducerBase {
+public:
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t naluType, bool isEosFrame);
+    bool IsEOS();
+    int32_t Init(const std::shared_ptr<Vc1ReaderInfo> &info);
+    std::mutex mutex_;
+    int32_t frameInputCount_ = 0;
+private:
+    class Vc1UnitReader {
+    public:
+        explicit Vc1UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        virtual ~Vc1UnitReader() {};
+        uint8_t const *GetNextVc1UnitAddr();
+        virtual int32_t ReadVc1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos);
+        virtual bool IsEOS() = 0;
+        virtual void PrereadFile() = 0;
+        virtual void PrereadVc1Unit();
+
+    protected:
+        Vc1UnitReader() {};
+        virtual bool IsEOF() = 0;
+
+        std::unique_ptr<std::vector<uint8_t>> vc1Unit_ = nullptr;
+        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+    };
+
+    class Vc1MetaUnitReader : public Vc1UnitReader {
+    public:
+        explicit Vc1MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        int32_t ReadVc1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        bool IsEOS() override;
+        void PrereadFile() override;
+        void PrereadVc1Unit() override;
+    private:
+        bool IsEOF() override;
+        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
+        uint8_t* FindNextStartCode(uint8_t* start, uint8_t* end);
+        uint8_t GetVc1UnitType(uint8_t* startCode);
+        std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+        uint32_t frameIndex_ = 0;
+    };
+    class Vc1Detector {
+    public:
+        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
+        const uint8_t *GetVc1TypeAddr(const uint8_t *bufferAddr);
+        uint8_t GetVc1Type(const uint8_t *bufferAddr);
+        bool IsI(uint8_t vc1Type);
+    };
+
+    std::shared_ptr<Vc1UnitReader> vc1UnitReader_ = nullptr;
+    std::shared_ptr<Vc1Detector> vc1Detector_ = nullptr;
+};
 } // MediaAVCodec
 } // OHOS
 #endif // AVCC_READER_H

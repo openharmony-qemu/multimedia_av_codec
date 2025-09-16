@@ -19,6 +19,7 @@
 extern "C" {
 #endif
 
+const char *OH_AVCODEC_MIMETYPE_VIDEO_VC1 = "video/vc1";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_AVC = "video/avc";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4 = "video/mp4v-es";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2 = "video/mp4v-es";
