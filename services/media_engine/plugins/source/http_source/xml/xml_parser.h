@@ -28,7 +28,7 @@ namespace HttpPlugin {
 class XmlParser {
 public:
     XmlParser() = default;
-    ~XmlParser() = default;
+    ~XmlParser();
 
     int32_t ParseFromBuffer(const char *buf, int32_t length);
     int32_t ParseFromString(const std::string &xmlStr);

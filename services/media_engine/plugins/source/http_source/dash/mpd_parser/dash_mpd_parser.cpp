@@ -1067,8 +1067,12 @@ void DashMpdParser::ParseMPD(const char *mpdData, uint32_t length)
 
     std::shared_ptr<XmlParser> xmlParser = std::make_shared<XmlParser>();
     int32_t ret = xmlParser->ParseFromBuffer(mpdData, length);
+    if (ret != static_cast<int32_t>(XmlBaseRtnValue::XML_BASE_OK)) {
+        MEDIA_LOG_E("Parse error or stop " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, this->stopFlag_, ret);
+        return;
+    }
     std::shared_ptr<XmlElement> rootElement = xmlParser->GetRootElement();
-    if (ret != static_cast<int32_t>(XmlBaseRtnValue::XML_BASE_OK) || this->stopFlag_ || rootElement == nullptr) {
+    if (this->stopFlag_ || rootElement == nullptr) {
         MEDIA_LOG_E("Parse error or stop " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, this->stopFlag_, ret);
         return;
     }
