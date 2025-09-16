@@ -395,9 +395,10 @@ void AudioFfmpegDecoderPlugin::EnableResample(AVSampleFormat destFmt)
 
 int32_t AudioFfmpegDecoderPlugin::SetCodecExtradata()
 {
-    size_t extraSize;
+    size_t extraSize = 0;
     uint8_t *extraData;
     if (format_.GetBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, &extraData, extraSize)) {
+        AVCODEC_LOGI("receive codec config len:%{public}" PRIu64, static_cast<uint64_t>(extraSize));
         avCodecContext_->extradata = static_cast<uint8_t *>(av_mallocz(extraSize + AV_INPUT_BUFFER_PADDING_SIZE));
         if (avCodecContext_->extradata == nullptr) {
             AVCODEC_LOGE("extradata malloc failed!");
