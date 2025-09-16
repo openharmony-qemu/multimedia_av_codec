@@ -31,7 +31,7 @@
 #include "dash_seg_url_node.h"
 
 namespace {
-    using namespace OHOS::Media::Plugin::HttpPlugin;
+    using namespace OHOS::Media::Plugins::HttpPlugin;
     const std::unordered_map<std::string, std::function<IDashMpdNode *()>> DashMpdNodeGenerator = {
         {"MPD", []() { return new DashMpdNode(); }},
         {"Period", []() {return new DashPeriodNode(); }},
@@ -39,7 +39,7 @@ namespace {
         {"ContentComponent", []() { return new DashContentCompNode(); }},
         {"Representation", []() {return new DashRepresentationNode(); }},
         {"SegmentBase", []() { return new DashSegBaseNode(); }},
-        {"MultipleSegmentBase", []() { return new DashMultSegBaseNode(); }};
+        {"MultipleSegmentBase", []() { return new DashMultSegBaseNode(); }},
         {"SegmentList", []() { return new DashSegListNode(); }},
         {"SegmentTemplate", []() { return new DashSegTemplateNode(); }},
         {"Initialization", []() { return new DashUrlTypeNode(); }},
