@@ -24,6 +24,10 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+XmlParser::~XmlParser()
+{
+    DestroyDoc();
+}
 int32_t XmlParser::ParseFromBuffer(const char *buf, int32_t length)
 {
     if (buf == nullptr || length == 0) {
