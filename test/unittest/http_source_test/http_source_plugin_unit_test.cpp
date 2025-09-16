@@ -416,6 +416,12 @@ HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported10, TestSize.Level1)
     EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
 }
 
+HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported11, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "http://1500005450.vod2.myqcloud.com/playlist_eof.m3u8#maxBufferSize=30000";
+    EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
+}
+
 HWTEST_F(HttpSourcePluginUnitTest, Read_IsNull, TestSize.Level1)
 {
     httpSourcePlugin->downloader_ = nullptr;
