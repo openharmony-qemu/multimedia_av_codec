@@ -59,7 +59,7 @@ public:
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status GetLatency(uint64_t& nanoSec);
     void SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCenter);
-    int64_t DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) override;
+    int64_t DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t& actionClock) override;
     void ResetSyncInfo() override;
     Status SetSpeed(float speed);
     Status SetAudioEffectMode(int32_t effectMode);

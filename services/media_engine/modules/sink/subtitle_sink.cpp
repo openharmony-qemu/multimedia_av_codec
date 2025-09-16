@@ -354,9 +354,10 @@ uint32_t SubtitleSink::ActionToDo(SubtitleInfo &subtitleInfo)
     return SubtitleBufferState::SHOW;
 }
 
-int64_t SubtitleSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer> &buffer)
+int64_t SubtitleSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer> &buffer, int64_t& actionClock)
 {
     (void)buffer;
+    (void)actionClock;
     return 0;
 }
 

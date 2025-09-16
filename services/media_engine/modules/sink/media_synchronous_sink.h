@@ -40,7 +40,7 @@ public:
     void OnInterrupted(bool isInterruptNeeded) override;
 
 protected:
-    virtual int64_t DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) = 0;
+    virtual int64_t DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t& actionClock) = 0;
 
     virtual void ResetSyncInfo() = 0;
 

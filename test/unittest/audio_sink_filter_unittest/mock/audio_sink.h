@@ -61,7 +61,8 @@ public:
     MOCK_METHOD(void, SetEventReceiver, (const std::shared_ptr<Pipeline::EventReceiver>& receiver), ());
     MOCK_METHOD(Status, GetLatency, (uint64_t& nanoSec), ());
     MOCK_METHOD(void, SetSyncCenter, (std::shared_ptr<Pipeline::MediaSyncManager> syncCenter), ());
-    MOCK_METHOD(int64_t, DoSyncWrite, (const std::shared_ptr<OHOS::Media::AVBuffer>& buffer), (override));
+    MOCK_METHOD(int64_t, DoSyncWrite, (const std::shared_ptr<OHOS::Media::AVBuffer>& buffer,
+        int64_t& actionClock), (override));
     MOCK_METHOD(void, ResetSyncInfo, (), (override));
     MOCK_METHOD(Status, SetSpeed, (float speed), ());
     MOCK_METHOD(Status, SetAudioEffectMode, (int32_t effectMode), ());

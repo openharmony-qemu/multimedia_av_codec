@@ -31,10 +31,11 @@ class VideoSink : public MediaSynchronousSink {
 public:
     VideoSink();
     ~VideoSink();
-    int64_t DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) override; // true and render
+    int64_t DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer,
+        int64_t& actionClock) override; // true and render
     void ResetSyncInfo() override;
     Status GetLatency(uint64_t& nanoSec);
-    int64_t CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
+    int64_t CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t clockNow);
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver);
     void SetFirstPts(int64_t pts);
