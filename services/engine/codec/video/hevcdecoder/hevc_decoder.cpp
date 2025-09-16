@@ -1379,7 +1379,6 @@ void HevcDecoder::FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer)
 
 void HevcDecoder::FramePostProcess(std::shared_ptr<HBuffer> &frameBuffer, uint32_t index, int32_t status, int ret)
 {
-    std::lock_guard<std::mutex> convertLock(convertDataMutex_);
     if (status == AVCS_ERR_OK) {
         codecAvailQue_->Pop();
         frameBuffer->owner_ = Owner::OWNED_BY_USER;
@@ -1402,6 +1401,7 @@ void HevcDecoder::FramePostProcess(std::shared_ptr<HBuffer> &frameBuffer, uint32
 
 void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
 {
+    std::lock_guard<std::mutex> convertLock(convertDataMutex_);
     if (cachedFrame_ == nullptr) {
         cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *p) { av_frame_free(&p); });
     }
