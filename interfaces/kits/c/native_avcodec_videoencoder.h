@@ -48,7 +48,7 @@ extern "C" {
 /**
  * @brief Configure frame parameters. This interface can be used to set the encode parameters
  * of the frame corresponding to the index, take effect only in Surface mode.
- * It is nedd to call {@link OH_VideoEncoder_RegisterParametercallbacks} interface to register bedfore use.
+ * It is need to call {@link OH_VideoEncoder_RegisterParametercallbacks} interface to register before use.
  * In Buffer mode, OH_AVBuffer can directly carry the encoding parameters of frames.
  * Currently, frame level QPMin/QPMax parameters are supported, and specify LTR to set the reference frame.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
@@ -87,7 +87,7 @@ OH_AVCodec *OH_VideoEncoder_CreateByName(const char *name);
 
 /**
  * @brief Clear the internal resources of the encoder and destroy the encoder instance.
- * Can not be destoryed repeatedly.
+ * Can not be destroyed repeatedly.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
@@ -276,7 +276,7 @@ OH_AVErrCode OH_VideoEncoder_Reset(OH_AVCodec *codec);
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns a pointer to an OH_AVFormat instance.
- * Return NULL if the codec is NULL or invaild.
+ * Return NULL if the codec is NULL or invalid.
  * @since 9
  * @version 1.0
  */
@@ -375,7 +375,7 @@ OH_AVErrCode OH_VideoEncoder_NotifyEndOfStream(OH_AVCodec *codec);
 OH_AVErrCode OH_VideoEncoder_PushInputData(OH_AVCodec *codec, uint32_t index, OH_AVCodecBufferAttr attr);
 
 /**
- * @brief In Buffer mode, the OH_AVBuffer corresponding to the index is submited to the encoder for encoding.
+ * @brief In Buffer mode, the OH_AVBuffer corresponding to the index is submitted to the encoder for encoding.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @param index Enter the index value corresponding to the buffer,
@@ -396,7 +396,7 @@ OH_AVErrCode OH_VideoEncoder_PushInputBuffer(OH_AVCodec *codec, uint32_t index);
 
 /**
  * @brief In Surface mode, the encode parameters of the frame corresponding to the
- * index is submited to the encoder for encoding.
+ * index is submitted to the encoder for encoding.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @param index Enter the index value corresponding to the input parameter,
@@ -493,7 +493,7 @@ OH_AVBuffer *OH_VideoEncoder_GetInputBuffer(struct OH_AVCodec *codec, uint32_t i
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permitted in asynchronous mode.
  * {@link AV_ERR_STREAM_CHANGED}, stream format changed, call {@link OH_VideoEncoder_GetOutputDescription} to
- * retrieve new steam information.
+ * retrieve new stream information.
  * {@link AV_ERR_TRY_AGAIN_LATER}, query failed, recommended retry after delay.
  * @since 20
  */
@@ -520,7 +520,7 @@ OH_AVBuffer *OH_VideoEncoder_GetOutputBuffer(struct OH_AVCodec *codec, uint32_t 
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns a pointer to an OH_AVFormat instance.
- * Return NULL if the encoder is NULL or invaild.
+ * Return NULL if the encoder is NULL or invalid.
  * @since 10
  */
 OH_AVFormat *OH_VideoEncoder_GetInputDescription(OH_AVCodec *codec);
@@ -530,7 +530,7 @@ OH_AVFormat *OH_VideoEncoder_GetInputDescription(OH_AVCodec *codec);
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @param isValid Output Parameter. A pointer to a boolean instance, it is true if the codec instance is valid,
- * false if the codec instance is invalid. It is recommend that the invoker initialize isValid to false.
+ * false if the codec instance is invalid. It is recommended that the invoker initialize isValid to false.
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
  * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non encoder instance or NULL.
