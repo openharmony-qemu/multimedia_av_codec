@@ -884,7 +884,7 @@ ChunkIterator CacheMediaChunkBufferHlsImpl::SplitFragmentCacheBuffer(FragmentIte
             splitHead->dataLength = chunkInfo->dataLength > static_cast<uint32_t>(diff) ?
                 chunkInfo->dataLength - static_cast<uint32_t>(diff) : 0;
             chunkInfo->dataLength = static_cast<uint32_t>(diff);
-            memcpy_s(splitHead->data, splitHead->dataLength, chunkInfo->data + diff, splitHead->dataLength);
+            memcpy_s(splitHead->data, splitHead->chunkSize, chunkInfo->data + diff, splitHead->dataLength);
         } else {
             splitHead->dataLength = 0; // It can't happen. us_asan can check.
         }
