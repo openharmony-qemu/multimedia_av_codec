@@ -134,12 +134,14 @@ int32_t HevcDecoder::Init(Meta &callerInfo)
 void HevcDecoder::HevcFuncMatch()
 {
     if (handle_ != nullptr) {
+        std::unique_lock<std::mutex> runlock(decRunMutex_);
         hevcDecoderCreateFunc_ = reinterpret_cast<CreateHevcDecoderFuncType>(dlsym(handle_,
             HEVC_DEC_CREATE_FUNC_NAME));
         hevcDecoderDecodecFrameFunc_ = reinterpret_cast<DecodeFuncType>(dlsym(handle_,
             HEVC_DEC_DECODE_FRAME_FUNC_NAME));
         hevcDecoderFlushFrameFunc_ = reinterpret_cast<FlushFuncType>(dlsym(handle_, HEVC_DEC_FLUSH_FRAME_FUNC_NAME));
         hevcDecoderDeleteFunc_ = reinterpret_cast<DeleteFuncType>(dlsym(handle_, HEVC_DEC_DELETE_FUNC_NAME));
+        runlock.unlock();
         if (hevcDecoderCreateFunc_ == nullptr || hevcDecoderDecodecFrameFunc_ == nullptr ||
             hevcDecoderDeleteFunc_ == nullptr || hevcDecoderFlushFrameFunc_ == nullptr) {
                 AVCODEC_LOGE("HevcDecoder hevcFuncMatch_ failed!");
@@ -281,6 +283,7 @@ void HevcDecoder::ConfigureSurface(const Format &format, const std::string_view 
         VideoPixelFormat vpf = static_cast<VideoPixelFormat>(val);
         CHECK_AND_RETURN_LOG(vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21,
             "Set parameter failed: pixel format value %{public}d invalid", val);
+        std::lock_guard<std::mutex> runlock(decRunMutex_);
         outputPixelFmt_ = vpf;
         format_.PutIntValue(formatKey, val);
         GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
@@ -365,6 +368,7 @@ int32_t HevcDecoder::Start()
 
     if (!isBufferAllocated_) {
         for (int32_t i = 0; i < AV_NUM_DATA_POINTERS; i++) {
+            std::lock_guard<std::mutex> convertLock(convertDataMutex_);
             scaleData_[i] = nullptr;
             scaleLineSize_[i] = 0;
         }
@@ -460,6 +464,7 @@ void HevcDecoder::InitHevcHdrParams()
 
 void HevcDecoder::ResetData()
 {
+    std::lock_guard<std::mutex> convertLock(convertDataMutex_);
     if (scaleData_[0] != nullptr) {
         if (isConverted_) {
             av_free(scaleData_[0]);
@@ -546,9 +551,11 @@ int32_t HevcDecoder::Flush()
 
     ResetBuffers();
     int32_t ret = 0;
+    std::unique_lock<std::mutex> runLock(decRunMutex_);
     while (ret == 0 && hevcDecoderFlushFrameFunc_ != nullptr) {
         ret = hevcDecoderFlushFrameFunc_(hevcSDecoder_, &hevcDecoderOutpusArgs_);
     }
+    runLock.unlock();
     state_ = State::FLUSHED;
     AVCODEC_LOGI("%{public}s Flush codec successful, state: Flushed", decName_.c_str());
     return AVCS_ERR_OK;
@@ -581,7 +588,9 @@ void HevcDecoder::ReleaseResource()
         int ret = hevcDecoderDeleteFunc_(hevcSDecoder_);
         if (ret != 0) {
             AVCODEC_LOGE("Error: hevcDecoder delete error: %{public}d", ret);
-            callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
+            if (callback_ != nullptr) {
+                callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
+            }
             state_ = State::ERROR;
         }
         hevcSDecoder_ = nullptr;
@@ -609,6 +618,7 @@ void HevcDecoder::SetSurfaceParameter(const Format &format, const std::string_vi
         VideoPixelFormat vpf = static_cast<VideoPixelFormat>(val);
         CHECK_AND_RETURN_LOG(vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21,
             "Set parameter failed: pixel format value %{public}d invalid", val);
+        std::lock_guard<std::mutex> runLock(decRunMutex_);
         outputPixelFmt_ = vpf;
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val);
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
@@ -783,6 +793,7 @@ void HevcDecoder::RequestSurfaceBufferThread()
 
 void HevcDecoder::StartRequestSurfaceBufferThread()
 {
+    std::lock_guard<std::mutex> lck(requestBufferMutex_);
     if (!mRequestSurfaceBufferThread_.joinable()) {
         requestBufferThreadExit_ = false;
         requestBufferFinished_ = true;
@@ -1016,7 +1027,9 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         height_ = height;
         bitDepth_ = bitDepth;
         ResetData();
+        std::unique_lock<std::mutex> convertLock(convertDataMutex_);
         scale_ = nullptr;
+        convertLock.unlock();
         std::unique_lock<std::mutex> sLock(surfaceMutex_);
         sInfo_.requestConfig.width = width_;
         sInfo_.requestConfig.height = height_;
@@ -1202,7 +1215,11 @@ int32_t HevcDecoder::DecodeFrameOnce()
         CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
         std::shared_ptr<HBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
         int32_t status = AVCS_ERR_OK;
-        if (CheckFormatChange(index, cachedFrame_->width, cachedFrame_->height, bitDepth) == AVCS_ERR_OK) {
+        std::unique_lock<std::mutex> convertLock(convertDataMutex_);
+        int32_t width = cachedFrame_->width;
+        int32_t height = cachedFrame_->height;
+        convertLock.unlock();
+        if (CheckFormatChange(index, width, height, bitDepth) == AVCS_ERR_OK) {
             CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
             frameBuffer = buffers_[INDEX_OUTPUT][index];
             status = FillFrameBuffer(frameBuffer);
@@ -1227,6 +1244,7 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
         ffmpegFormat = ConvertPixelFormatToFFmpeg(targetPixelFmt);
     }
     // yuv420 -> nv12 or nv21
+    std::lock_guard<std::mutex> convertLock(convertDataMutex_);
     int32_t ret = ConvertVideoFrame(&scale_, cachedFrame_, scaleData_, scaleLineSize_, ffmpegFormat);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale video frame failed: %{public}d", ret);
     isConverted_ = true;
@@ -1361,6 +1379,7 @@ void HevcDecoder::FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer)
 
 void HevcDecoder::FramePostProcess(std::shared_ptr<HBuffer> &frameBuffer, uint32_t index, int32_t status, int ret)
 {
+    std::lock_guard<std::mutex> convertLock(convertDataMutex_);
     if (status == AVCS_ERR_OK) {
         codecAvailQue_->Pop();
         frameBuffer->owner_ = Owner::OWNED_BY_USER;
@@ -1413,6 +1432,7 @@ void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
 #ifdef BUILD_ENG_VERSION
 void HevcDecoder::DumpOutputBuffer(int32_t bitDepth)
 {
+    std::lock_guard<std::mutex> convertLock(convertDataMutex_);
     if (!dumpOutFile_ || !dumpOutFile_->is_open()) {
         return;
     }
