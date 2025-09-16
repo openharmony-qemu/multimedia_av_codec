@@ -26,13 +26,14 @@
 using namespace std;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
+const int64_t EXPECT_MIN_SIZE = 36;
 namespace OHOS {
 const char *MP4_PATH = "/data/test/fuzz_create.mp4";
 const int64_t EXPECT_SIZE = 7;
 
 bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
 {
-    if (size < sizeof(int64_t)) {
+    if (size < EXPECT_MIN_SIZE) {
         return false;
     }
     FuzzedDataProvider fdp(data, size);
@@ -41,14 +42,14 @@ bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
         return false;
     }
     uint8_t *pstream = nullptr;
-    uint16_t framesize = fdp.ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    uint16_t framesize = size - EXPECT_MIN_SIZE;
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;
         return false;
     }
     fdp.ConsumeData(pstream, framesize);
-    int len = write(fd, data, size);
+    int len = write(fd, pstream, framesize);
     if (len <= EXPECT_SIZE) {
         close(fd);
         free(pstream);
