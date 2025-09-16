@@ -143,6 +143,10 @@ group("av_codec_unit_test") {
       if (av_codec_support_hcodec) {
         deps += [ "unittest/hcodec_test:hcodec_unit_test" ]
       }
+      if(av_codec_enable_codec_eac3) {
+        deps += [ "unittest/audio_test:audio_eac3_decoder_unit_test" ]
+        deps += [ "unittest/audio_test:audio_eac3_decoder_capi_unit_test" ]
+      }
       if (av_codec_enable_special_codec) {
         deps += [
           "unittest/audio_vivid_test:audio_vivid_ability_unit_test",
@@ -374,6 +378,9 @@ group("av_codec_fuzz_test") {
       "fuzztest/hwdecoderapi11buffer10bit_fuzzer:HwdecoderApi11Buffer10BitFuzzTest",
       "fuzztest/syncdecoderbuffer10bit_fuzzer:SyncDecoderBuffer10BitFuzzTest",
     ]
+    if(av_codec_enable_codec_eac3) {
+      deps += [ "fuzztest/audiodecodereac3_fuzzer:AudioDecoderEac3FuzzTest" ]
+    }
   }
 }
 
