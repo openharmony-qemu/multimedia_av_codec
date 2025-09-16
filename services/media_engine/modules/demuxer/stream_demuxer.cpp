@@ -460,7 +460,7 @@ Status StreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shar
 
 void StreamDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
-    MEDIA_LOG_D("StreamDemuxer OnInterrupted %{public}d", isInterruptNeeded);
+    MEDIA_LOG_DD("StreamDemuxer OnInterrupted %{public}d", isInterruptNeeded);
     {
         std::unique_lock<std::mutex> lock(mutex_);
         isInterruptNeeded_ = isInterruptNeeded;

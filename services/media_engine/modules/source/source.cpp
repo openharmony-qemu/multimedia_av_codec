@@ -252,7 +252,7 @@ Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
 
 Status Source::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
-    MEDIA_LOG_I("GetDownloadInfo");
+    MEDIA_LOG_D("GetDownloadInfo");
     if (plugin_ == nullptr) {
         MEDIA_LOG_E("GetDownloadInfo failed, plugin_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;
@@ -262,7 +262,7 @@ Status Source::GetDownloadInfo(DownloadInfo& downloadInfo)
 
 Status Source::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 {
-    MEDIA_LOG_I("GetPlaybackInfo");
+    MEDIA_LOG_D("GetPlaybackInfo");
     if (plugin_ == nullptr) {
         MEDIA_LOG_E("GetPlaybackInfo  failed, plugin_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;
@@ -281,7 +281,7 @@ bool Source::IsNeedPreDownload()
 
 Status Source::Stop()
 {
-    MEDIA_LOG_I("Stop entered.");
+    MEDIA_LOG_D("Stop entered.");
     seekable_ = Seekable::INVALID;
     protocol_.clear();
     uri_.clear();
@@ -290,7 +290,7 @@ Status Source::Stop()
 
 Status Source::Pause()
 {
-    MEDIA_LOG_I("Pause entered.");
+    MEDIA_LOG_D("Pause entered.");
     if (plugin_ != nullptr) {
         plugin_->Pause();
     }
@@ -378,7 +378,7 @@ bool Source::CanAutoSelectBitRate()
 
 void Source::SetInterruptState(bool isInterruptNeeded)
 {
-    MEDIA_LOG_I("Source OnInterrupted %{public}d", isInterruptNeeded);
+    MEDIA_LOG_D("Source OnInterrupted %{public}d", isInterruptNeeded);
     std::unique_lock<std::mutex> lock(mutex_);
     isInterruptNeeded_ = isInterruptNeeded;
     if (plugin_) {
