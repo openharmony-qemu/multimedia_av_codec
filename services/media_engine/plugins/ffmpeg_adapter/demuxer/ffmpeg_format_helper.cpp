@@ -117,6 +117,9 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
 #endif
     {AV_CODEC_ID_AC3, MimeType::AUDIO_AC3},
+#ifdef SUPPORT_DEMUXER_EAC3
+    {AV_CODEC_ID_EAC3, MimeType::AUDIO_EAC3},
+#endif
     {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
     {AV_CODEC_ID_WEBVTT, MimeType::TEXT_WEBVTT},
 #ifdef SUPPORT_DEMUXER_LRC
@@ -158,6 +161,9 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
 #endif
 #ifdef SUPPORT_DEMUXER_ASS
     {"ass", FileType::ASS},
+#endif
+#ifdef SUPPORT_DEMUXER_EAC3
+    {"eac3", FileType::EAC3},
 #endif
 };
 
