@@ -1449,8 +1449,9 @@ void HttpMediaDownloader::UpdateCachedPercent(BufferingInfoType infoType)
     }
     uint64_t deltaSize = bufferSize - lastCachedSize_;
     if (deltaSize >= UPDATE_CACHE_STEP) {
-        int percent = (bufferSize >= waterLineAbove_) ?
+        uint64_t percentValue = (bufferSize >= waterLineAbove_) ?
                         100 : bufferSize * 100 / waterLineAbove_; // 100
+        int percent = static_cast<int>(percentValue);
         callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {percent}, "buffer percent"});
         lastCachedSize_ = bufferSize;
     }
