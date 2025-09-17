@@ -134,7 +134,6 @@ void HlsMediaDownloader::HlsInit(std::shared_ptr<MediaSourceLoaderCombinations> 
     } else {
         playlistDownloader_ = std::make_shared<HlsPlayListDownloader>(httpHeader_, nullptr);
     }
-    playlistDownloader_->SetPlayListCallback(this);
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     waterLineAbove_ = PLAY_WATER_LINE;
     steadyClock_.Reset();
@@ -248,6 +247,7 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
     isDownloadFinish_ = false;
     SaveHttpHeader(httpHeader);
     writeBitrateCaculator_->StartClock();
+    playlistDownloader_->SetPlayListCallback(std::weak_ptr<PlayListChangeCallback>(weak_from_this()));
     playlistDownloader_->SetMimeType(mimeType_);
     playlistDownloader_->Open(url, httpHeader);
     steadyClock_.Reset();

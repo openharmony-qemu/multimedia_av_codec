@@ -120,8 +120,11 @@ void PlayListDownloader::DoOpen(const std::string& url)
         MEDIA_LOG_E("no enough memory downloadRequest_ is nullptr");
         return;
     }
-    auto downloadDoneCallback = [this] (const std::string& url, const std::string& location) {
-        UpdateDownloadFinished(url, location);
+    std::weak_ptr<PlayListDownloader> weakDownloader = weak_from_this();
+    auto downloadDoneCallback = [weakDownloader] (const std::string& url, const std::string& location) {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "handleResponseCb, PlayListDownloader is nullptr!");
+        shareDownloader->UpdateDownloadFinished(url, location);
     };
     downloadRequest_->SetRequestProtocolType(RequestProtocolType::HLS);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
