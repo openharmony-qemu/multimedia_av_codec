@@ -61,7 +61,7 @@ FileBaseInfo CombineFileBaseInfo(std::string fileName,
  * @tc.desc: Test local file (CheckFormat, Read, Seek)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, AVDemuxer_Container_Mp4_040101, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, AVDemuxer_Container_Mp4_040001, TestSize.Level1)
 {
     std::shared_ptr<DemuxerTestHelper> testHelper = std::make_shared<DemuxerTestHelper>();
     ASSERT_NE(testHelper, nullptr);
@@ -75,7 +75,7 @@ HWTEST_F(DemuxerUnitTest, AVDemuxer_Container_Mp4_040101, TestSize.Level1)
  * @tc.desc: Test url file (CheckFormat, Read, Seek)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, AVDemuxer_Container_Mp4_140101, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, AVDemuxer_Container_Mp4_140001, TestSize.Level1)
 {
     std::shared_ptr<DemuxerTestHelper> testHelper = std::make_shared<DemuxerTestHelper>();
     ASSERT_NE(testHelper, nullptr);
