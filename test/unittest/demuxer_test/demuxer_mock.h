@@ -25,6 +25,7 @@
 #include "common_mock.h"
 #include "av_common.h"
 #include "avcodec_common.h"
+#include "avbuffer/avbuffer_mock.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -37,6 +38,8 @@ public:
     virtual int32_t UnselectTrackByID(uint32_t trackIndex) = 0;
     virtual int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemoryMock> sample,
         AVCodecBufferInfo *bufferInfo, uint32_t &flag, bool checkBufferInfo = false) = 0;
+    virtual int32_t ReadSampleBuffer(
+        uint32_t trackIndex, std::shared_ptr<AVBufferMock> sample, bool checkBufferInfo = false);
     virtual int32_t SeekToTime(int64_t mSeconds, Media::SeekMode mode) = 0;
     virtual int32_t SetMediaKeySystemInfoCallback(bool isNull)
     {

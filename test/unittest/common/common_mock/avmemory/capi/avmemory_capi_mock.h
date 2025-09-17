@@ -27,7 +27,7 @@ public:
     uint8_t *GetAddr() const override;
     int32_t GetSize() const override;
     uint32_t GetFlags() const override;
-    int32_t Destory() override;
+    int32_t Destroy() override;
     OH_AVMemory *GetAVMemory();
 
 private:

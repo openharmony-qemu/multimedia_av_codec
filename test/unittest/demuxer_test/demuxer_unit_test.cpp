@@ -139,7 +139,7 @@ void DemuxerUnitTest::TearDown(void)
         format_ = nullptr;
     }
     if (sharedMem_ != nullptr) {
-        sharedMem_->Destory();
+        sharedMem_->Destroy();
         sharedMem_ = nullptr;
     }
     if (fd_ > 0) {
