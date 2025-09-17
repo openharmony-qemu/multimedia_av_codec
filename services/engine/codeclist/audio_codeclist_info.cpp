@@ -567,7 +567,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(), GetAmrwbDecoderCapability(),
                           GetG711muDecoderCapability(), GetRawDecoderCapability(), GetAacEncoderCapability(),
                           GetFlacEncoderCapability(), GetG711muEncoderCapability(), GetAPEDecoderCapability(),
-                          GetMP3EncoderCapability(), GetG711aDecoderCapability(),
+                          GetMP3EncoderCapability(), GetG711aDecoderCapability(), GetAc3DecoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),
@@ -576,7 +576,6 @@ AudioCodeclistInfo::AudioCodeclistInfo()
 #ifdef SUPPORT_CODEC_COOK
     GetCookDecoderCapability(),
 #endif
-    GetAc3DecoderCapability(),
     };
 }
 
