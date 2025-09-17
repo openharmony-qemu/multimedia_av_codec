@@ -41,7 +41,7 @@ struct PlayListChangeCallback {
     virtual void OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv) = 0;
     virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) = 0;
 };
-class PlayListDownloader {
+class PlayListDownloader : public std::enable_shared_from_this<PlayListDownloader> {
 public:
     explicit PlayListDownloader(
         const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>(),
@@ -53,7 +53,7 @@ public:
     virtual void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
     virtual void UpdateManifest() = 0;
     virtual void ParseManifest(const std::string& location, bool isPreParse = false) = 0;
-    virtual void SetPlayListCallback(PlayListChangeCallback* callback) = 0;
+    virtual void SetPlayListCallback(std::weak_ptr<PlayListChangeCallback> callback) = 0;
     virtual int64_t GetDuration() const = 0;
     virtual Seekable GetSeekable() const = 0;
     virtual void SelectBitRate(uint32_t bitRate) = 0;

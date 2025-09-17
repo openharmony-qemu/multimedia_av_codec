@@ -31,7 +31,7 @@ public:
     void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void UpdateManifest() override;
     void ParseManifest(const std::string& location, bool isPreParse = false) override;
-    void SetPlayListCallback(PlayListChangeCallback* callback) override;
+    void SetPlayListCallback(std::weak_ptr<PlayListChangeCallback> callback) override;
     int64_t GetDuration() const override;
     Seekable GetSeekable() const override;
     void SelectBitRate(uint32_t bitRate) override;
@@ -70,7 +70,7 @@ private:
 private:
     std::string url_ {};
     std::string urlOrigin_ {};
-    PlayListChangeCallback* callback_ {nullptr};
+    std::weak_ptr<PlayListChangeCallback> callbackWeak_;
     std::shared_ptr<M3U8MasterPlaylist> master_;
     std::shared_ptr<M3U8VariantStream> currentVariant_;
     std::shared_ptr<M3U8VariantStream> newVariant_;
