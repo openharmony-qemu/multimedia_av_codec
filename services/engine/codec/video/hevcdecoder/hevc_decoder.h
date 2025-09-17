@@ -234,6 +234,7 @@ private:
     std::mutex outputMutex_;
     std::mutex decRunMutex_;
     std::mutex surfaceMutex_;
+    std::mutex convertDataMutex_;
     std::mutex requestBufferMutex_;
     std::mutex renderBufferMapMutex_;
     std::condition_variable requestBufferCV_;
