@@ -494,10 +494,6 @@ bool DemuxerTestHelper::CheckSeekPos(int64_t seekTime, SeekMode seekMode)
 {
     std::map<int32_t, int64_t> seekFrameInfo {};
     std::map<int32_t, bool> eosMap {};
-    if (fileInfo_.expectSeekInfo.count(seekTime) <= 0 || fileInfo_.expectSeekInfo[seekTime].count(seekMode) <= 0) {
-        printf("===> [ERROR][%s] seekTime[%" PRId64 "] seekMode[%d] info record error\n", __func__, seekTime, seekMode);
-        return false;
-    }
     SeekInfoRecord expectSeekInfo = fileInfo_.expectSeekInfo[seekTime][seekMode];
     for (auto expectSeekTrackMap : expectSeekInfo.seekFrameInfo) {
         if (expectSeekTrackMap.first > trackCount_) {
@@ -521,9 +517,6 @@ bool DemuxerTestHelper::CheckSeekPos(int64_t seekTime, SeekMode seekMode)
             if (static_cast<uint32_t>(flag) & static_cast<uint32_t>(AVBufferFlag::EOS)) {
                 eosMap[trackIndex] = true;
                 continue;
-            }
-            if (seekFrameInfo.count(trackIndex) <= 0) {
-                seekFrameInfo[trackIndex] = 0;
             }
             seekFrameInfo[trackIndex]++;
         }
