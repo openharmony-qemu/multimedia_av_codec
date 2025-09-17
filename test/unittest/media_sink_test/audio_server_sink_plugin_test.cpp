@@ -277,6 +277,12 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_AssignSampleRateIfSupported,
     int32_t sampleRate2 = 0;
     ASSERT_TRUE(audioServerSinkPlugin->AssignSampleRateIfSupported(sampleRate1));
     ASSERT_FALSE(audioServerSinkPlugin->AssignSampleRateIfSupported(sampleRate2));
+    audioServerSinkPlugin->mimeType_ = MimeType::AUDIO_FLAC;
+    ASSERT_TRUE(audioServerSinkPlugin->AssignSampleRateIfSupported(sampleRate1));
+    ASSERT_EQ(audioServerSinkPlugin->customSampleRate_, sampleRate1);
+    ASSERT_FALSE(audioServerSinkPlugin->AssignSampleRateIfSupported(sampleRate2));
+    int32_t sampleRate3 = 384010;
+    ASSERT_FALSE(audioServerSinkPlugin->AssignSampleRateIfSupported(sampleRate3));
 }
 
 HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_AssignChannelNumIfSupported, TestSize.Level1)
@@ -517,6 +523,26 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_get_parameter_002, TestSize.
     audioServerSinkPlugin->GetParameter(meta);
 }
 
+HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_get_parameter_003, TestSize.Level1)
+{
+    std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
+        CreateAudioServerSinkPlugin("Write");
+    ASSERT_TRUE(audioServerSinkPlugin != nullptr);
+    audioServerSinkPlugin->audioRenderSetFlag_ = true;
+    audioServerSinkPlugin->audioRenderInfo_.streamUsage = STREAM_USAGE_AUDIOBOOK;
+    audioServerSinkPlugin->Init();
+    uint32_t sampleRate = 44100;
+    ASSERT_TRUE(audioServerSinkPlugin->AssignSampleRateIfSupported(sampleRate));
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    audioServerSinkPlugin->mimeType_ = MimeType::AUDIO_FLAC;
+    audioServerSinkPlugin->customSampleRate_ = 0;
+    ASSERT_EQ(Status::OK, audioServerSinkPlugin->SetParameter(meta));
+    audioServerSinkPlugin->GetParameter(meta);
+    audioServerSinkPlugin->customSampleRate_ = 44100;
+    ASSERT_EQ(Status::OK, audioServerSinkPlugin->SetParameter(meta));
+    audioServerSinkPlugin->GetParameter(meta);
+}
+
 HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_cache_data, TestSize.Level1)
 {
     std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
@@ -583,6 +609,24 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_Drain001, TestSize.Level1)
     Status ret = audioServerSinkPlugin->Drain();
     ASSERT_EQ(ret, Status::ERROR_WRONG_STATE);
 }
+
+HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_GetAvailableBufferDuration001, TestSize.Level1)
+{
+    std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
+        CreateAudioServerSinkPlugin("Write");
+    uint32_t customSampleRate = 0;
+    int32_t CALLBACK_BUFFER_DURATION_IN_MILLISECONDS = 40;
+    int32_t result = audioServerSinkPlugin->GetAvailableBufferDuration(customSampleRate);
+    ASSERT_EQ(result, CALLBACK_BUFFER_DURATION_IN_MILLISECONDS);
+    uint32_t customSampleRate1 = 44100;
+    int32_t result1 = audioServerSinkPlugin->GetAvailableBufferDuration(customSampleRate1);
+    ASSERT_EQ(result1, CALLBACK_BUFFER_DURATION_IN_MILLISECONDS);
+    uint32_t customSampleRate2 = 44110;
+    int32_t CALLBACK_BUFFER_DURATION_IN_MILLISECONDS_100 = 100;
+    int32_t result2 = audioServerSinkPlugin->GetAvailableBufferDuration(customSampleRate2);
+    ASSERT_EQ(result2, CALLBACK_BUFFER_DURATION_IN_MILLISECONDS_100);
+}
+
 }  // namespace Test
 }  // namespace Media
 }  // namespace OHOS
