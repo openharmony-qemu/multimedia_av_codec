@@ -28,7 +28,7 @@ using namespace std;
 using namespace OHOS::Media;
 namespace OHOS {
 const char *AVI_PATH = "/data/test/fuzz_create.avi";
-const int64_t EXPECT_SIZE = 36;
+const int64_t EXPECT_SIZE = 90;
 const size_t URI_BUFFER_SIZE = 21;
 const int64_t URI_COUNT = 20;
 const char FLAG = '\0';
@@ -44,7 +44,7 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
         return false;
     }
     uint8_t *pstream = nullptr;
-    uint16_t framesize = fdp->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    uint16_t framesize = size - EXPECT_SIZE;
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

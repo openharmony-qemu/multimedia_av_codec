@@ -26,8 +26,12 @@ using namespace OHOS::Media;
 namespace OHOS {
 constexpr uint32_t WIDTH = 3840;
 constexpr uint32_t HEIGHT = 2160;
+const int64_t EXPECT_SIZE = 4;
 void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t size)
 {
+    if (size < EXPECT_SIZE) {
+        return;
+    }
     std::shared_ptr<DemuxerPluginTypeTest> demuxerTest = std::make_shared<DemuxerPluginTypeTest>();
     demuxerTest->testFilePath_ = "/data/test/demuxerpluginmpg.mpg";
     demuxerTest->demuxerPluginName_ = "avdemux_mpeg";
@@ -35,7 +39,7 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t size)
     demuxerTest->videoWidthDefault_ = WIDTH;
     FuzzedDataProvider fdp(data, size);
     uint8_t *pstream = nullptr;
-    uint16_t framesize = fdp.ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    uint16_t framesize = size - EXPECT_SIZE;
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;
