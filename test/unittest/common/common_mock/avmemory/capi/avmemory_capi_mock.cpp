@@ -37,7 +37,7 @@ uint32_t AVMemoryCapiMock::GetFlags() const
 {
     return 0;
 }
-int32_t AVMemoryCapiMock::Destory()
+int32_t AVMemoryCapiMock::Destroy()
 {
     if (memory_ != nullptr) {
         return OH_AVMemory_Destroy(memory_);

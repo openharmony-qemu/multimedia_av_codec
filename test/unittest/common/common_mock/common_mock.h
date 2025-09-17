@@ -42,7 +42,7 @@ public:
     virtual uint8_t *GetAddr() const = 0;
     virtual int32_t GetSize() const = 0;
     virtual uint32_t GetFlags() const = 0;
-    virtual int32_t Destory() = 0;
+    virtual int32_t Destroy() = 0;
 };
 
 class __attribute__((visibility("default"))) SurfaceMockFactory {
