@@ -65,6 +65,79 @@ private:
     Status ConvertF64BEToF32LE(const uint8_t *ptr, int32_t &size);
     Status F64BEToF32LE(const uint8_t *src, float *des);
     double F64BEToDouble(const uint8_t *src);
+    Status ConvertBEToLE(const uint8_t *ptr, int32_t &size);
+    Status ConvertSampleFormat(const uint8_t *ptr, int32_t &size);
+    Status ConvertS8(const uint8_t *ptr, int32_t &size);
+    Status ConvertF64LE(const uint8_t *ptr, int32_t &size);
+    Status ConvertS64LE(const uint8_t *ptr, int32_t &size);
+    Status ConvertS8P(const uint8_t *ptr, int32_t &size);
+    Status ConvertS16LEP(const uint8_t *ptr, int32_t &size);
+    Status ConvertS16BEP(const uint8_t *ptr, int32_t &size);
+    Status ConvertS24LEP(const uint8_t *ptr, int32_t &size);
+    Status ConvertS32LEP(const uint8_t *ptr, int32_t &size);
+    Status ConvertDVD(const uint8_t *ptr, int32_t &size);
+    Status ConvertBluray(const uint8_t *ptr, int32_t &size);
+    Status ConvertDVD16Bits(const uint8_t *ptr, int32_t &size);
+    Status ConvertDVD20Bits(const uint8_t *ptr, int32_t &size);
+    Status ConvertDVD24Bits(const uint8_t *ptr, int32_t &size);
+
+    void WriteU8(int32_t idx, uint8_t value);
+    void WriteS16LE(int32_t idx, int16_t value);
+    void WriteS24LE(int32_t idx, int32_t value);
+    void WriteS32LE(int32_t idx, int32_t value);
+    void WriteF32LE(int32_t idx, float value);
+
+    using ConvertFunc = std::function<void(int32_t, float)>;
+    ConvertFunc GetConverter(const AudioSampleFormat& format);
+
+    template <typename SourceParser>
+    Status ConvertGeneric(const uint8_t* ptr, int32_t& size,
+                            SourceParser normParser, bool isPlanar)
+    {
+        int32_t srcBytesSize = GetFormatBytes(srcSampleFormat_);
+        int32_t destBytesSize = GetFormatBytes(audioSampleFormat_);
+        if (srcBytesSize == 0 || destBytesSize == 0) {
+            return Status::ERROR_UNKNOWN;
+        }
+        if (destBytesSize == 0) {
+            return Status::ERROR_UNSUPPORTED_FORMAT;
+        }
+
+        if (isPlanar) {
+            if (size % (channels_ * srcBytesSize) != 0) {
+                return Status::ERROR_NOT_ENOUGH_DATA;
+            }
+        } else {
+            if (size % srcBytesSize != 0) {
+                return Status::ERROR_NOT_ENOUGH_DATA;
+            }
+        }
+
+        int32_t totalSamples = size / (channels_ * srcBytesSize);
+        int32_t outputSize = totalSamples * channels_ * destBytesSize;
+        inputBuffer_.resize(outputSize);
+
+        auto converter = GetConverter(audioSampleFormat_);
+        if (!converter) {
+            return Status::ERROR_UNSUPPORTED_FORMAT;
+        }
+
+        for (int32_t frame = 0; frame < totalSamples; frame++) {
+            for (int32_t channel = 0; channel < channels_; channel++) {
+                int32_t inputIdx = isPlanar
+                    ? (channel * totalSamples + frame) * srcBytesSize
+                    : (frame * channels_ + channel) * srcBytesSize;
+                int32_t outputIdx = (frame * channels_ + channel) * destBytesSize;
+
+                float normalized = normParser(&ptr[inputIdx]);
+
+                converter(outputIdx, normalized);
+            }
+        }
+
+        size = outputSize;
+        return Status::OK;
+    }
 
 private:
     AudioSampleFormat audioSampleFormat_;

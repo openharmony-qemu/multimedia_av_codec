@@ -22,6 +22,7 @@ namespace {
 using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
 using namespace Audio;
+using ConvertFunc = std::function<void(int32_t, float)>;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioRawDecoderPlugin"};
 Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register> &reg)
 {
@@ -59,6 +60,7 @@ namespace Audio {
 constexpr int32_t AUDIO_FRAME_LENGHT_DEFAULT = 1024;
 constexpr uint32_t BUFFER_FLAG_EOS = 1;
 constexpr float TIME_SPAN_MILLSECOND = 1000000.f;
+constexpr int32_t BYTE_LENGHT_U8 = 1;
 constexpr int32_t BYTE_LENGHT_S16 = 2;
 constexpr int32_t BYTE_LENGHT_S24 = 3;
 constexpr int32_t BYTE_LENGHT_S32_F32 = 4;
@@ -66,16 +68,53 @@ constexpr int32_t BYTE_LENGHT_DOUBLE = 8;
 constexpr int32_t BYTE_LENGHT_DOUBLE_INDEX = 7;
 constexpr int32_t MAX_CHANNELS = 255;
 constexpr int32_t MAX_INPUT_SIZE_LIMIT = 80 * 1024 * 1024;  // 80 MB
+constexpr float S8_MAX = 128.0f;
+constexpr float S16_MAX = 32768.0f;
+constexpr float S20_MAX = 5242880.0f;
+constexpr float S24_MAX = 8388608.0f;
+constexpr float S32_MAX = 2147483648.0f;
+
+constexpr int32_t AUDIO_BITS_16 = 16;
+constexpr int32_t AUDIO_BITS_20 = 20;
+constexpr int32_t AUDIO_BITS_24 = 24;
+
+constexpr int32_t MASK_S24_SIGN = 0x800000;
+constexpr int32_t MASK_S24_EXTEND = 0xff000000;
+constexpr int32_t MASK_DVD20 = 0x00fffff0;
+constexpr int32_t MASK_8 = 0xff;
+
+constexpr int32_t BIT_OFFSET_8 = 8;
+constexpr int32_t BIT_OFFSET_16 = 16;
+constexpr int32_t BIT_OFFSET_24 = 24;
+
+constexpr int32_t INDEX_OFFSET_0 = 0;
+constexpr int32_t INDEX_OFFSET_1 = 1;
+constexpr int32_t INDEX_OFFSET_2 = 2;
+constexpr int32_t INDEX_OFFSET_3 = 3;
 
 static std::vector<AudioSampleFormat> supportedSampleFormats = {
     AudioSampleFormat::SAMPLE_S16BE,
     AudioSampleFormat::SAMPLE_S24BE,
     AudioSampleFormat::SAMPLE_S32BE,
     AudioSampleFormat::SAMPLE_F32BE,
-    AudioSampleFormat::SAMPLE_F64BE
+    AudioSampleFormat::SAMPLE_F64BE,
+    AudioSampleFormat::SAMPLE_S8,
+    AudioSampleFormat::SAMPLE_F64LE,
+    AudioSampleFormat::SAMPLE_S64LE,
+    AudioSampleFormat::SAMPLE_S8P,
+    AudioSampleFormat::SAMPLE_S16LEP,
+    AudioSampleFormat::SAMPLE_S16BEP,
+    AudioSampleFormat::SAMPLE_S24LEP,
+    AudioSampleFormat::SAMPLE_S32LEP,
+    AudioSampleFormat::SAMPLE_DVD,
+    AudioSampleFormat::SAMPLE_BLURAY,
+    AudioSampleFormat::SAMPLE_U8,
+    AudioSampleFormat::SAMPLE_S16LE,
+    AudioSampleFormat::SAMPLE_S24LE,
+    AudioSampleFormat::SAMPLE_S32LE,
+    AudioSampleFormat::SAMPLE_F32LE
 };
 
-// current support convert big-endian to little-endian map
 static std::unordered_map<AudioSampleFormat, AudioSampleFormat> formatMap = {
     {AudioSampleFormat::SAMPLE_S16BE, AudioSampleFormat::SAMPLE_S16LE},
     {AudioSampleFormat::SAMPLE_S24BE, AudioSampleFormat::SAMPLE_S24LE},
@@ -201,21 +240,43 @@ int32_t AudioRawDecoderPlugin::GetFormatBytes(AudioSampleFormat format)
         case AudioSampleFormat::SAMPLE_S24BE:
         /* fall-through */
         case AudioSampleFormat::SAMPLE_S24LE:
+        case AudioSampleFormat::SAMPLE_S24LEP:
             bytesSize = BYTE_LENGHT_S24;
             break;
         case AudioSampleFormat::SAMPLE_S32BE:
         /* fall-through */
         case AudioSampleFormat::SAMPLE_S32LE:
-            bytesSize = BYTE_LENGHT_S32_F32;
-            break;
+        case AudioSampleFormat::SAMPLE_S32LEP:
         case AudioSampleFormat::SAMPLE_F32BE:
         /* fall-through */
         case AudioSampleFormat::SAMPLE_F32LE:
             bytesSize = BYTE_LENGHT_S32_F32;
             break;
+        case AudioSampleFormat::SAMPLE_F64LE:
+        case AudioSampleFormat::SAMPLE_S64LE:
         case AudioSampleFormat::SAMPLE_F64BE:
             bytesSize = BYTE_LENGHT_DOUBLE;
             break;
+        case AudioSampleFormat::SAMPLE_S8:
+        case AudioSampleFormat::SAMPLE_S8P:
+        case AudioSampleFormat::SAMPLE_U8:
+            bytesSize = BYTE_LENGHT_U8;
+            break;
+        case AudioSampleFormat::SAMPLE_DVD: {
+            int32_t audioBits = AUDIO_BITS_16;
+            if (format_->Get<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(audioBits)) {
+                bytesSize = audioBits == AUDIO_BITS_20 ? BYTE_LENGHT_S24 : BYTE_LENGHT_S16;
+            }
+            break;
+        }
+        case AudioSampleFormat::SAMPLE_BLURAY: {
+            int32_t audioBits = AUDIO_BITS_24;
+            bytesSize = BYTE_LENGHT_S24;
+            if (format_->Get<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(audioBits)) {
+                bytesSize = audioBits == AUDIO_BITS_16 ? BYTE_LENGHT_S16 : BYTE_LENGHT_S24;
+            }
+            break;
+        }
         default:
             break;
     }
@@ -269,6 +330,241 @@ Status AudioRawDecoderPlugin::ConvertF64BEToF32LE(const uint8_t *ptr, int32_t &s
     return Status::OK;
 }
 
+Status AudioRawDecoderPlugin::ConvertBEToLE(const uint8_t *ptr, int32_t &size)
+{
+    auto bytesSize = GetFormatBytes(srcSampleFormat_);
+    if (bytesSize == 0) {
+        return Status::ERROR_UNKNOWN;
+    }
+    if (srcSampleFormat_ == AudioSampleFormat::SAMPLE_F64BE) {
+        ConvertF64BEToF32LE(ptr, size);
+    } else {
+        for (int32_t i = 0; i < size / bytesSize; i++) {
+            for (int32_t j = 0; j < bytesSize; j++) {
+                inputBuffer_[i * bytesSize + bytesSize - j - 1] = ptr[i * bytesSize + j];
+            }
+        }
+    }
+    return Status::OK;
+}
+
+Status AudioRawDecoderPlugin::ConvertS8(const uint8_t *ptr, int32_t &size)
+{
+    const float normFactor = 1.0f / S8_MAX;
+    auto normParser = [normFactor](const uint8_t *src) -> float {
+        int8_t val = static_cast<int8_t>(*src);
+        return static_cast<float>(val) * normFactor;
+    };
+
+    return ConvertGeneric(ptr, size, normParser, false);
+}
+
+Status AudioRawDecoderPlugin::ConvertF64LE(const uint8_t *ptr, int32_t &size)
+{
+    auto normParser = [](const uint8_t *src) -> float {
+        double val = 0.0;
+        if (memcpy_s(&val, sizeof(double), src, sizeof(double)) != EOK) {
+            AVCODEC_LOGE("memcpy_s failed");
+        }
+        val = std::clamp(val, -1.0, 1.0);
+        return static_cast<float>(val);
+    };
+
+    return ConvertGeneric(ptr, size, normParser, false);
+}
+
+Status AudioRawDecoderPlugin::ConvertS64LE(const uint8_t *ptr, int32_t &size)
+{
+    auto normParser = [](const uint8_t *src) -> float {
+        int64_t val = 0;
+        if (memcpy_s(&val, sizeof(int64_t), src, sizeof(int64_t)) != EOK) {
+            AVCODEC_LOGE("memcpy_s failed");
+        }
+        return static_cast<float>(static_cast<double>(val) / static_cast<double>(INT64_MAX));
+    };
+
+    return ConvertGeneric(ptr, size, normParser, false);
+}
+
+Status AudioRawDecoderPlugin::ConvertS8P(const uint8_t *ptr, int32_t &size)
+{
+    const float normFactor = 1.0f / S8_MAX;
+    auto normParser = [normFactor](const uint8_t *src) -> float {
+        int8_t val = static_cast<int8_t>(*src);
+        return static_cast<float>(val) * normFactor;
+    };
+
+    return ConvertGeneric(ptr, size, normParser, true);
+}
+
+Status AudioRawDecoderPlugin::ConvertS16LEP(const uint8_t* ptr, int32_t &size)
+{
+    const float normFactor = 1.0f / S16_MAX;
+    auto normParser = [normFactor](const uint8_t *src) -> float {
+        int16_t val = static_cast<int16_t>(src[INDEX_OFFSET_0] | (src[INDEX_OFFSET_1] << BIT_OFFSET_8));
+        return static_cast<float>(val) * normFactor;
+    };
+
+    return ConvertGeneric(ptr, size, normParser, true);
+}
+
+Status AudioRawDecoderPlugin::ConvertS16BEP(const uint8_t* ptr, int32_t &size)
+{
+    const float normFactor = 1.0f / S16_MAX;
+    auto normParser = [normFactor](const uint8_t *src) -> float {
+        int16_t val = static_cast<int16_t>((src[INDEX_OFFSET_0] << BIT_OFFSET_8) | src[INDEX_OFFSET_1]);
+        return static_cast<float>(val) * normFactor;
+    };
+
+    return ConvertGeneric(ptr, size, normParser, true);
+}
+
+Status AudioRawDecoderPlugin::ConvertS24LEP(const uint8_t* ptr, int32_t &size)
+{
+    const float normFactor = 1.0f / S24_MAX;
+    auto normParser = [normFactor](const uint8_t *src) -> float {
+        int32_t val = static_cast<int32_t>(src[INDEX_OFFSET_0] |
+                                            (src[INDEX_OFFSET_1] << BIT_OFFSET_8) |
+                                            (src[INDEX_OFFSET_2] << BIT_OFFSET_16));
+        if (val & MASK_S24_SIGN) {
+            val |= MASK_S24_EXTEND;
+        }
+        return static_cast<float>(val) * normFactor;
+    };
+
+    return ConvertGeneric(ptr, size, normParser, true);
+}
+
+Status AudioRawDecoderPlugin::ConvertS32LEP(const uint8_t* ptr, int32_t &size)
+{
+    const float normFactor = 1.0f / S32_MAX;
+    auto normParser = [normFactor](const uint8_t *src) -> float {
+        int32_t val = static_cast<int32_t>(src[INDEX_OFFSET_0] |
+                                            (src[INDEX_OFFSET_1] << BIT_OFFSET_8) |
+                                            (src[INDEX_OFFSET_2] << BIT_OFFSET_16) |
+                                            (src[INDEX_OFFSET_3] << BIT_OFFSET_24));
+        return static_cast<float>(val) * normFactor;
+    };
+
+    return ConvertGeneric(ptr, size, normParser, true);
+}
+
+Status AudioRawDecoderPlugin::ConvertDVD(const uint8_t* ptr, int32_t &size)
+{
+    int32_t audioBits = AUDIO_BITS_16;
+    if (format_->Get<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(audioBits)) {
+        AVCODEC_LOGI("pcm_dvd data is %{public}d bits", audioBits);
+    }
+    if (audioBits == AUDIO_BITS_16) {
+        return ConvertDVD16Bits(ptr, size);
+    } else if (audioBits == AUDIO_BITS_20) {
+        return ConvertDVD20Bits(ptr, size);
+    } else {
+        return Status::ERROR_UNSUPPORTED_FORMAT;
+    }
+}
+
+Status AudioRawDecoderPlugin::ConvertBluray(const uint8_t* ptr, int32_t &size)
+{
+    int32_t audioBits = AUDIO_BITS_24;
+    if (format_->Get<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(audioBits)) {
+        AVCODEC_LOGI("pcm_dvd data is %{public}d bits", audioBits);
+    }
+    if (audioBits == AUDIO_BITS_16) {
+        return ConvertDVD16Bits(ptr, size);
+    } else if (audioBits == AUDIO_BITS_20) {
+        return ConvertDVD20Bits(ptr, size);
+    } else if (audioBits == AUDIO_BITS_24) {
+        return ConvertDVD24Bits(ptr, size);
+    } else {
+        return Status::ERROR_UNSUPPORTED_FORMAT;
+    }
+}
+
+Status AudioRawDecoderPlugin::ConvertDVD16Bits(const uint8_t* ptr, int32_t &size)
+{
+    const float normFactor = 1.0f / S16_MAX;
+    auto normParser = [normFactor](const uint8_t *src) -> float {
+        int16_t val = static_cast<int16_t>((src[INDEX_OFFSET_0] << BIT_OFFSET_8) | src[INDEX_OFFSET_1]);
+        return static_cast<float>(val) * normFactor;
+    };
+
+    return ConvertGeneric(ptr, size, normParser, false);
+}
+
+Status AudioRawDecoderPlugin::ConvertDVD20Bits(const uint8_t* ptr, int32_t &size)
+{
+    const float normFactor = 1.0f / S20_MAX;
+    auto normParser = [normFactor](const uint8_t *src) -> float {
+        int32_t val = static_cast<int32_t>((src[INDEX_OFFSET_0] << BIT_OFFSET_16) |
+                                            (src[INDEX_OFFSET_1] << BIT_OFFSET_8) |
+                                            src[INDEX_OFFSET_2]);
+        val &= MASK_DVD20;
+        if (val & MASK_S24_SIGN) {
+            val |= MASK_S24_EXTEND;
+        }
+        return static_cast<float>(val) * normFactor;
+    };
+
+    return ConvertGeneric(ptr, size, normParser, false);
+}
+
+Status AudioRawDecoderPlugin::ConvertDVD24Bits(const uint8_t* ptr, int32_t &size)
+{
+    const float normFactor = 1.0f / S24_MAX;
+    auto normParser = [normFactor](const uint8_t *src) -> float {
+        int32_t val = static_cast<int32_t>((src[INDEX_OFFSET_0] << BIT_OFFSET_16) |
+                                            (src[INDEX_OFFSET_1] << BIT_OFFSET_8) |
+                                            src[INDEX_OFFSET_2]);
+        if (val & MASK_S24_SIGN) {
+            val |= MASK_S24_EXTEND;
+        }
+        return static_cast<float>(val) * normFactor;
+    };
+
+    return ConvertGeneric(ptr, size, normParser, false);
+}
+
+Status AudioRawDecoderPlugin::ConvertSampleFormat(const uint8_t *ptr, int32_t &size)
+{
+    Status convertStatus = Status::OK;
+    switch (srcSampleFormat_) {
+        case AudioSampleFormat::SAMPLE_S8:
+            convertStatus = ConvertS8(ptr, size);
+            break;
+        case AudioSampleFormat::SAMPLE_F64LE:
+            convertStatus = ConvertF64LE(ptr, size);
+            break;
+        case AudioSampleFormat::SAMPLE_S64LE:
+            convertStatus = ConvertS64LE(ptr, size);
+            break;
+        case AudioSampleFormat::SAMPLE_S8P:
+            convertStatus = ConvertS8P(ptr, size);
+            break;
+        case AudioSampleFormat::SAMPLE_S16LEP:
+            convertStatus = ConvertS16LEP(ptr, size);
+            break;
+        case AudioSampleFormat::SAMPLE_S16BEP:
+            convertStatus = ConvertS16BEP(ptr, size);
+            break;
+        case AudioSampleFormat::SAMPLE_S24LEP:
+            convertStatus = ConvertS24LEP(ptr, size);
+            break;
+        case AudioSampleFormat::SAMPLE_S32LEP:
+            convertStatus = ConvertS32LEP(ptr, size);
+            break;
+        case AudioSampleFormat::SAMPLE_DVD:
+            convertStatus = ConvertDVD(ptr, size);
+            break;
+        case AudioSampleFormat::SAMPLE_BLURAY:
+            convertStatus = ConvertBluray(ptr, size);
+            break;
+        default:
+            return Status::ERROR_UNSUPPORTED_FORMAT;
+    }
+    return convertStatus;
+}
+
 Status AudioRawDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     if (inputBuffer->flag_ == BUFFER_FLAG_EOS) {
@@ -289,15 +585,14 @@ Status AudioRawDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &
         inputBuffer_.resize(size);
         maxInputSize_ = size;
     }
-    if (srcSampleFormat_ == AudioSampleFormat::SAMPLE_F64BE) {
-        ConvertF64BEToF32LE(ptr, size);
+
+    if (formatMap.find(srcSampleFormat_) != formatMap.end() &&
+        formatMap[srcSampleFormat_] == audioSampleFormat_) {
+        ConvertBEToLE(ptr, size);
     } else {
-        for (int32_t i = 0; i < size / bytesSize; i++) {
-            for (int32_t j = 0; j < bytesSize; j++) {
-                inputBuffer_[i * bytesSize + bytesSize - j - 1] = ptr[i * bytesSize + j];
-            }
-        }
+        ConvertSampleFormat(ptr, size);
     }
+
     frameSize_ = size;
     offset_ = 0;
     pts_ = inputBuffer->pts_;
@@ -371,6 +666,14 @@ Status AudioRawDecoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
         AVCODEC_LOGE("AudioRawDecoderPlugin no AUDIO_RAW_SAMPLE_FORMAT");
         return Status::ERROR_INVALID_PARAMETER;
     }
+
+    if (srcSampleFormat_ == AudioSampleFormat::SAMPLE_DVD || srcSampleFormat_ == AudioSampleFormat::SAMPLE_BLURAY) {
+        int32_t audioBits = 16;
+        if (!meta->Get<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(audioBits)) {
+            AVCODEC_LOGE("AudioRawDecoderPlugin no AUDIO_BITS_PER_RAW_SAMPLE");
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+    }
     return Status::OK;
 }
 
@@ -392,15 +695,12 @@ bool AudioRawDecoderPlugin::CheckFormat()
         return false;
     }
 
-    if (formatMap.find(srcSampleFormat_) == formatMap.end()) {
-        AVCODEC_LOGE("sample format:%{public}d not in map", srcSampleFormat_);
+    if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(), audioSampleFormat_) ==
+        supportedSampleFormats.end()) {
+        AVCODEC_LOGE("dest sample format:%{public}d not supported", audioSampleFormat_);
         return false;
     }
 
-    if (formatMap[srcSampleFormat_] != audioSampleFormat_) {
-        AVCODEC_LOGE("format:%{public}d --> %{public}d not supported", srcSampleFormat_, audioSampleFormat_);
-        return false;
-    }
     return true;
 }
 
@@ -409,6 +709,77 @@ void AudioRawDecoderPlugin::SetOutputBasicInfo(std::shared_ptr<AVBuffer> &output
     outputBuffer->pts_ = pts_;
     if (dataCallback_ != nullptr) {
         dataCallback_->OnOutputBufferDone(outputBuffer);
+    }
+}
+
+inline void AudioRawDecoderPlugin::WriteU8(int32_t idx, uint8_t value)
+{
+    inputBuffer_[idx] = value;
+}
+
+inline void AudioRawDecoderPlugin::WriteS16LE(int32_t idx, int16_t value)
+{
+    inputBuffer_[idx] = static_cast<uint8_t>(value & MASK_8);
+    inputBuffer_[idx + INDEX_OFFSET_1] = static_cast<uint8_t>((value >> BIT_OFFSET_8) & MASK_8);
+}
+
+inline void AudioRawDecoderPlugin::WriteS24LE(int32_t idx, int32_t value)
+{
+    inputBuffer_[idx] = static_cast<uint8_t>(value & MASK_8);
+    inputBuffer_[idx + INDEX_OFFSET_1] = static_cast<uint8_t>((value >> BIT_OFFSET_8) & MASK_8);
+    inputBuffer_[idx + INDEX_OFFSET_2]= static_cast<uint8_t>((value >> BIT_OFFSET_16) & MASK_8);
+}
+
+inline void AudioRawDecoderPlugin::WriteS32LE(int32_t idx, int32_t value)
+{
+    inputBuffer_[idx] = static_cast<uint8_t>(value & MASK_8);
+    inputBuffer_[idx + INDEX_OFFSET_1] = static_cast<uint8_t>((value >> BIT_OFFSET_8) & MASK_8);
+    inputBuffer_[idx + INDEX_OFFSET_2] = static_cast<uint8_t>((value >> BIT_OFFSET_16) & MASK_8);
+    inputBuffer_[idx + INDEX_OFFSET_3] = static_cast<uint8_t>((value >> BIT_OFFSET_24) & MASK_8);
+}
+
+inline void AudioRawDecoderPlugin::WriteF32LE(int32_t idx, float value)
+{
+    uint8_t* bytes = reinterpret_cast<uint8_t*>(&value);
+    inputBuffer_[idx] = bytes[INDEX_OFFSET_0];
+    inputBuffer_[idx + INDEX_OFFSET_1] = bytes[INDEX_OFFSET_1];
+    inputBuffer_[idx + INDEX_OFFSET_2] = bytes[INDEX_OFFSET_2];
+    inputBuffer_[idx + INDEX_OFFSET_3] = bytes[INDEX_OFFSET_3];
+}
+
+ConvertFunc AudioRawDecoderPlugin::GetConverter(const AudioSampleFormat& format)
+{
+    switch (format) {
+        case AudioSampleFormat::SAMPLE_U8:
+            return [this](int32_t idx, float norm) {
+                float scaled = (norm + 1.0f) * (S8_MAX - 0.5f);
+                uint8_t val = static_cast<uint8_t>(std::round(std::clamp(scaled, 0.0f, S8_MAX * 2 - 1.0f)));
+                WriteU8(idx, val);
+            };
+        case AudioSampleFormat::SAMPLE_S16LE:
+            return [this](int32_t idx, float norm) {
+                float scaled = norm * S16_MAX;
+                int16_t val = static_cast<int16_t>(std::round(std::clamp(scaled, -1.0f * S16_MAX, S16_MAX - 1.0f)));
+                WriteS16LE(idx, val);
+            };
+        case AudioSampleFormat::SAMPLE_S24LE:
+            return [this](int32_t idx, float norm) {
+                float scaled = norm * S24_MAX;
+                int32_t val = static_cast<int32_t>(std::round(std::clamp(scaled, -1.0f * S24_MAX, S24_MAX - 1.0f)));
+                WriteS24LE(idx, val);
+            };
+        case AudioSampleFormat::SAMPLE_S32LE:
+            return [this](int32_t idx, float norm) {
+                float scaled = norm * S32_MAX;
+                int32_t val = static_cast<int32_t>(std::round(std::clamp(scaled, -1.0f * S32_MAX, S32_MAX - 1.0f)));
+                WriteS32LE(idx, val);
+            };
+        case AudioSampleFormat::SAMPLE_F32LE:
+            return [this](int32_t idx, float norm) {
+                WriteF32LE(idx, norm);
+            };
+        default:
+            return nullptr;
     }
 }
 } // namespace OHOS
