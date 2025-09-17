@@ -206,10 +206,15 @@ private:
     PostProcessing::Callback postProcessingCallback_;
     struct DecodedBufferInfo {
         uint32_t index;
-        std::shared_ptr<AVBuffer> buffer;
+        int64_t pts;
+        uint32_t flag;
+
+        DecodedBufferInfo() : index(0), pts(0), flag(AVCODEC_BUFFER_FLAG_NONE) {}
+        DecodedBufferInfo(uint32_t index, AVBuffer &buffer);
+        std::shared_ptr<AVBuffer> CreateAVBuffer();
     };
-    using DecodedBufferInfoQueue = LockFreeQueue<std::shared_ptr<DecodedBufferInfo>, 20>;       // 20: QueueSize
-    using PostProcessingBufferInfoQueue = LockFreeQueue<std::shared_ptr<DecodedBufferInfo>, 8>; // 8: QueueSize
+    using DecodedBufferInfoQueue = LockFreeQueue<DecodedBufferInfo, 20>;       // 20: QueueSize
+    using PostProcessingBufferInfoQueue = LockFreeQueue<DecodedBufferInfo, 8>; // 8: QueueSize
     std::shared_ptr<DecodedBufferInfoQueue> decodedBufferInfoQueue_{nullptr};
     std::shared_ptr<PostProcessingBufferInfoQueue> postProcessingInputBufferInfoQueue_{nullptr};
     std::unique_ptr<TaskThread> postProcessingTask_{nullptr};
