@@ -46,7 +46,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "M
 
 namespace OHOS {
 namespace Media {
-constexpr int64_t MAX_PTS_DIFFER_THRESHOLD_US = 10000000; // The maximum difference between Segment 10s.
+constexpr int64_t MAX_PTS_DIFFER_THRESHOLD_US = 2000000; // The maximum difference between Segment 2s.
 constexpr int64_t INVALID_PTS_DATA = -1; // The invalid pts data -1.
 constexpr int64_t PTS_MICRO_ADJUSTMENT_US = 1000;
 
@@ -80,7 +80,7 @@ void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuff
         if (baseInfo->isLastPtsChange) {
             int64_t offset = static_cast<int64_t>(source_->GetSegmentOffset());
             if (baseInfo->segmentOffset != offset) {
-                baseInfo->segmentOffset = offset;
+                baseInfo->segmentOffset = std::max(offset, baseInfo->lastPtsModifyedMax);
                 baseInfo->basePts = baseInfo->candidateBasePts;
             }
             sample->pts_ = baseInfo->segmentOffset + curPacketPts - baseInfo->basePts + mediaStartPts_;
@@ -104,7 +104,7 @@ void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuff
 
 void MediaDemuxer::InitPtsInfo()
 {
-    if (source_ == nullptr || !source_->GetHLSDiscontinuity()) {
+    if (source_ == nullptr || !isHls_) {
         return;
     }
     MEDIA_LOG_I("Enable hls disContinuity auto maintain pts");

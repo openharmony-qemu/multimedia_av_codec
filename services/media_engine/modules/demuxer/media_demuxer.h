@@ -300,6 +300,7 @@ private:
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
     Status HandleRebootPlugin(int32_t trackId, bool& isRebooted);
     Status HandleHlsRebootPlugin();
+    Status HandleSegmentChange();
     Status HandleSeekChangeStream(int32_t currentStreamId, int32_t newStreamId, int32_t trackId);
     bool IsSubtitleMime(const std::string& mime);
     void HandleAutoMaintainPts(int32_t trackeId, std::shared_ptr<AVBuffer> sample);
@@ -465,6 +466,7 @@ private:
     PerfRecorder perfRecorder_ {};
     int32_t apiVersion_ {0};
     bool isHlsFmp4_ {false};
+    bool isHls_ {false};
 
     bool isCreatedByFilter_ {false};
 

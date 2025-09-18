@@ -303,6 +303,12 @@ public:
     {
         return false;
     }
+
+    virtual bool IsHls()
+    {
+        return false;
+    }
+
 };
 
 /// Source plugin api major number.

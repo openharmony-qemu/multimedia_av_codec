@@ -656,6 +656,11 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
         tsStorageInfo_[readTsIndex_].second == true) {
         uint64_t tsEndOffset = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first);
         if (readOffset_ >= tsEndOffset) {
+            isTsEnd_.store(true);
+            notNeedReadBack_.store(true);
+            if(playlistDownloader_->IsHlsFmp4()) {
+                isNeedReadHeader_.store(true);
+            }
             if (GetHLSDiscontinuity()) {
                 isTsEnd_.store(true);
                 notNeedReadBack_.store(true);
@@ -672,15 +677,6 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
                 MEDIA_LOG_D("HLS read readTsIndex_ " PUBLIC_LOG_U32, readTsIndex_.load());
                 return;
             }
-        }
-        if (!GetHLSDiscontinuity() && readDataInfo.realReadLength_ < readDataInfo.wantReadLength_
-            && readTsIndex_ != backPlayList_.size()) {
-            uint32_t crossFragLen = readDataInfo.wantReadLength_ - readDataInfo.realReadLength_;
-            uint32_t crossReadLen = cacheMediaBuffer_->Read(buff + readDataInfo.realReadLength_, readOffset_,
-                                                            crossFragLen);
-            readDataInfo.realReadLength_ = readDataInfo.realReadLength_ + crossReadLen;
-            ffmpegOffset_ += crossReadLen;
-            readOffset_ += crossReadLen;
         }
     }
     canWrite_ = true;
@@ -1362,6 +1358,10 @@ int64_t HlsMediaDownloader::RequestNewTs(uint64_t seekTime, SeekMode mode, doubl
     playInfo.offset_ = item.offset_;
     playInfo.length_ = item.length_;
     if (mode == SeekMode::SEEK_PREVIOUS_SYNC) {
+        double lastTotalDuration = totalDuration - hstTime;
+        if(static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
+            seekStartTimePos_ = lastTotalDuration;
+        }
         playInfo.startTimePos_ = 0;
     } else {
         int64_t startTimePos = 0;
