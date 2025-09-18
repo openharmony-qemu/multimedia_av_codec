@@ -274,10 +274,14 @@ int32_t AVCodecAudioCodecInnerImpl::SetCodecCallback(const std::shared_ptr<Media
 int32_t AVCodecAudioCodecInnerImpl::SetAudioDecryptionConfig(
     const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
 {
+#ifdef SUPPORT_DRM
     AVCODEC_LOGD("AVCodecAudioCodecInnerImpl SetAudioDecryptionConfig");
     CHECK_AND_RETURN_RET_LOG(
         codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
+    return codecService_->SetAudioDecryptionConfig(keySession, svpFlag);
+#else
     return 0;
+#endif
 }
 
 void AVCodecAudioCodecInnerImpl::SetDumpInfo(bool isDump, uint64_t instanceId)
