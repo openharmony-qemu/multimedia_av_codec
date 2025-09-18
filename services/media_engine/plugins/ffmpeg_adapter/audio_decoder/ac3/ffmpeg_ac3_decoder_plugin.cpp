@@ -31,7 +31,7 @@ constexpr int32_t MAX_CHANNELS = 8;
 constexpr int32_t MAX_BYTES_PER_SAMPLE = 4;
 constexpr int32_t SAMPLES = 1536;
 
-static const int32_t AC3_DECODER_SAMPLE_RATE_TABLE[] = {32000, 44100, 48000};
+static const int32_t AC3_DECODER_SAMPLE_RATE_TABLE[] = {11025, 32000, 44100, 48000};
 } // namespace
 
 namespace OHOS {
