@@ -1655,6 +1655,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2270, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_IS_GLTF, formatVal_.isGltf));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_GLTF_OFFSET, formatVal_.gltfOffset));
     ASSERT_EQ(formatVal_.isGltf, 1);
-    ASSERT_EQ(formatVal_.gltfOffset, 2408943);
+    ASSERT_EQ(formatVal_.gltfOffset, 12524112);
 }
 } // namespace
