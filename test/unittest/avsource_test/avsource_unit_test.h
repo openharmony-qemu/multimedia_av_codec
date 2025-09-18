@@ -111,6 +111,8 @@ protected:
         int32_t audioMaxInputSize = 0;
 
         int32_t samplePerFrame = 0;
+        int32_t isGltf = 0;
+        int64_t gltfOffset = 0;
     };
     FormatValue formatVal_;
 

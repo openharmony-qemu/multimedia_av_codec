@@ -76,6 +76,7 @@ string g_mpegUri = TEST_URI_PATH + string("mpeg_h264_mp2.mpeg");
 string g_mpegUri2 = TEST_URI_PATH + string("mpeg_h264_mp3.mpeg");
 string g_mpegUri3 = TEST_URI_PATH + string("mpeg_mpeg2_mp2.mpeg");
 string g_mpegUri4 = TEST_URI_PATH + string("mpeg_mpeg2_mp3.mpeg");
+string g_mp4GltfPath = TEST_FILE_PATH + string("3dgs.mp4");
 } //namespace
 
 /**********************************source FD**************************************/
@@ -1634,5 +1635,26 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2263, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.bitRate, 128000);
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_2270
+ * @tc.desc: get source format(gltf)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2270, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_mp4GltfPath.data());
+    fd_ = OpenFile(g_mp4GltfPath);
+    size_ = GetFileSize(g_mp4GltfPath);
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_IS_GLTF, formatVal_.isGltf));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_GLTF_OFFSET, formatVal_.gltfOffset));
+    ASSERT_EQ(formatVal_.isGltf, 1);
+    ASSERT_EQ(formatVal_.gltfOffset, 3526448);
 }
 } // namespace
