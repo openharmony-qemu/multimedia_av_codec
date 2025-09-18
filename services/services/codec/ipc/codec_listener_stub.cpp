@@ -76,7 +76,7 @@ public:
         }
         auto iter = caches_.find(index);
         if (iter == caches_.end()) {
-            AVCODEC_LOGE_WITH_TAG("Get cache failed, index: %{public}u", index);
+            AVCODEC_LOGD_WITH_TAG("Get cache failed, index: %{public}u", index);
             return;
         }
         buffer = iter->second;

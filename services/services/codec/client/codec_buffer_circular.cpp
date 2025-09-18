@@ -250,7 +250,7 @@ int32_t CodecBufferCircular::HandleOutputBuffer(uint32_t index)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(HasFlag(FLAG_IS_RUNNING), AVCS_ERR_INVALID_STATE, "Not in running state");
     BufferCacheIter iter = outCache_.find(index);
     if (iter == outCache_.end()) {
-        AVCODEC_LOGW_WITH_TAG("Index is invalid %{public}u", index);
+        AVCODEC_LOGD_WITH_TAG("Index is invalid %{public}u", index);
         return HasFlag(FLAG_IS_SYNC) ? AVCS_ERR_INVALID_OPERATION : AVCS_ERR_OK;
     }
     BufferItem &item = iter->second;
