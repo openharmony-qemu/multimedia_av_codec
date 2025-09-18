@@ -76,7 +76,7 @@ string g_mpegUri = TEST_URI_PATH + string("mpeg_h264_mp2.mpeg");
 string g_mpegUri2 = TEST_URI_PATH + string("mpeg_h264_mp3.mpeg");
 string g_mpegUri3 = TEST_URI_PATH + string("mpeg_mpeg2_mp2.mpeg");
 string g_mpegUri4 = TEST_URI_PATH + string("mpeg_mpeg2_mp3.mpeg");
-string g_mp4GltfPath = TEST_FILE_PATH + string("TEST.mp4");
+string g_mp4GltfPath = TEST_FILE_PATH + string("3dgs.mp4");
 } //namespace
 
 /**********************************source FD**************************************/
@@ -1655,6 +1655,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2270, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_IS_GLTF, formatVal_.isGltf));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_GLTF_OFFSET, formatVal_.gltfOffset));
     ASSERT_EQ(formatVal_.isGltf, 1);
-    ASSERT_EQ(formatVal_.gltfOffset, 12524112);
+    ASSERT_EQ(formatVal_.gltfOffset, 3526436);
 }
 } // namespace
