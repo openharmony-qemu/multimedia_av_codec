@@ -55,6 +55,6 @@ group("fuzztest") {
 
   deps += [
     # deps file
-    ":HwdecoderDrmFuzzTest",  #引用测试套
+    ":HwdecoderDrmFuzzTest",
   ]
 }
