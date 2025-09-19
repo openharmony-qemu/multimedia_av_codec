@@ -52,6 +52,7 @@ string g_mp4Path2 = string("/data/test/media/avcc_aac_mp3.mp4");
 string g_mp4Path3 = string("/data/test/media/MPEG4.mp4");
 string g_mp4Path4 = string("/data/test/media/muxer_auxl_265.mp4");
 string g_mp4Path5 = string("/data/test/media/muxer_auxl_265_264_aac.mp4");
+string g_mp43dgsPath = string("/data/test/media/3dgs.mp4");
 // FMP4
 string g_fmp4Path1 = string("/data/test/media/h264_fmp4.mp4");
 string g_fmp4Path2 = string("/data/test/media/h265_fmp4.mp4");
@@ -2359,4 +2360,27 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_VTT_0001, TestSize.Level1
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({4}, {4}, {0, 1, 2, 3});
+}
+
+/**
+ * @tc.name: Demuxer_GetMediaInfo_3DGS_0001
+ * @tc.desc: Get media info (3DGS)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetMediaInfo_3DGS_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_mp43dgsPath;
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    MediaInfo mediaInfo;
+    Status ret = demuxerPlugin_->GetMediaInfo(mediaInfo);
+    EXPECT_EQ(ret, Status::OK);
+    auto meta = mediaInfo.general;
+    bool isGltf = 0;
+    int64_t gltfOffset = 0;
+    meta.Get<Tag::IS_GLTF>(isGltf);
+    meta.Get<Tag::GLTF_OFFSET>(gltfOffset);
+    EXPECT_EQ(isGltf, 1);
+    EXPECT_EQ(gltfOffset, 3526448);
 }
