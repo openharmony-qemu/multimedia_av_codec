@@ -2377,10 +2377,10 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetMediaInfo_3DGS_0001, TestSize.Level1)
     Status ret = demuxerPlugin_->GetMediaInfo(mediaInfo);
     EXPECT_EQ(ret, Status::OK);
     auto meta = mediaInfo.general;
-    bool is_gltfValue = 0;
-    int64_t gltf_offset = 0;
-    meta.Get<Tag::IS_GLTF>(is_gltfValue);
-    meta.Get<Tag::GLTF_OFFSET>(gltf_offset);
-    EXPECT_EQ(is_gltfValue, 1);
-    EXPECT_EQ(gltf_offset, 3526448);
+    bool isGltf = 0;
+    int64_t gltfOffset = 0;
+    meta.Get<Tag::IS_GLTF>(isGltf);
+    meta.Get<Tag::GLTF_OFFSET>(gltfOffset);
+    EXPECT_EQ(isGltf, 1);
+    EXPECT_EQ(gltfOffset, 3526448);
 }
