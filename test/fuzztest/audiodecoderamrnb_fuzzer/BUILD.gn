@@ -24,7 +24,6 @@ ohos_fuzztest("AudioDecoderAmrnbFuzzTest") {
   fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoderamrnb_fuzzer"
   include_dirs = [
     "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoderbase_fuzzer",
-    "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoderbase_fuzzer",
     "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoderamrnb_fuzzer",
     "$MEDIA_ROOT_DIR/test/nativedemo/avmuxer",
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
