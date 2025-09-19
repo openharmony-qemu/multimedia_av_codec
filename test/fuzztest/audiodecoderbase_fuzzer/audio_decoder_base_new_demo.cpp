@@ -64,7 +64,7 @@ static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuff
     signal->outCond_.notify_all();
 }
 
-OH_AVCodecCallback GetCbFunc()
+OH_AVCodecCallback BaseFuzzDemo::GetCbFunc()
 {
     cb_ = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable, &OnOutputBufferAvailable};
     return cb_;
