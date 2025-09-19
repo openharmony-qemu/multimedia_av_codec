@@ -96,6 +96,9 @@ string g_samiPath = TEST_FILE_PATH + string("sami_test.smi");
 string g_assPath = TEST_FILE_PATH + string("ass_test.ssa");
 string g_mp4AuxlPath = TEST_FILE_PATH + string("muxer_auxl_265_264_aac.mp4");
 string g_mp4AuxlUri = TEST_URI_PATH + string("muxer_auxl_265_264_aac.mp4");
+string g_eac3Path = TEST_FILE_PATH + string("audio/eac3_test.eac3");
+string g_eac3Uri = TEST_URI_PATH + string("audio/eac3_test.eac3");
+string g_eac3ErrorPath = TEST_FILE_PATH + string("audio/test_error.eac3");
 
 } // namespace
 
@@ -466,6 +469,52 @@ void AVSourceUnitTest::CheckAuxlAac()
     checkPass_ = true;
 }
 
+void AVSourceUnitTest::CheckEac3MediaInfo()
+{
+    checkPass_ = false;
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 11066500);
+    ASSERT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_EQ(formatVal_.hasVideo, 0);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+    ASSERT_EQ(formatVal_.fileType, 110);
+#endif
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
+    checkPass_ = true;
+}
+
+void AVSourceUnitTest::CheckEac3StreamInfo()
+{
+    checkPass_ = false;
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.bitRate, 191559);
+    ASSERT_EQ(formatVal_.codecMime, "audio/eac3");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    checkPass_ = true;
+}
+
 /**********************************source FD**************************************/
 namespace {
 /**
@@ -650,6 +699,22 @@ HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithFD_1090, TestSize.Level1)
     source2 = nullptr;
     close(fd2);
 }
+
+#ifdef SUPPORT_DEMUXER_EAC3
+/**
+ * @tc.name: AVSource_CreateSourceWithFD_1100
+ * @tc.desc: create source with fd, but file is error
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithFD_1100, TestSize.Level1)
+{
+    printf("---- %s ----\n", g_eac3ErrorPath.c_str());
+    fd_ = OpenFile(g_eac3ErrorPath);
+    size_ = GetFileSize(g_eac3ErrorPath);
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_EQ(source_, nullptr);
+}
+#endif
 
 /**
  * @tc.name: AVSource_CreateSourceWithDataSource_Compare_Fd_1000
@@ -3064,4 +3129,66 @@ HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSourceExt_1000, TestSize
     delete infile1;
     delete infile2;
 }
+
+#ifdef SUPPORT_DEMUXER_EAC3
+/**
+ * @tc.name: AVSource_GetFormat_1809
+ * @tc.desc: get source format(eac3)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1809, TestSize.Level1)
+{
+    ASSERT_EQ(access(g_eac3Path.c_str(), F_OK), 0);
+    fd_ = OpenFile(g_eac3Path);
+    size_ = GetFileSize(g_eac3Path);
+    printf("---- %s ----\n", g_eac3Path.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    CheckEac3MediaInfo();
+    ASSERT_TRUE(checkPass_);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1810
+ * @tc.desc: get format when the file is eac3
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1810, TestSize.Level1)
+{
+    ASSERT_EQ(access(g_eac3Path.c_str(), F_OK), 0);
+    fd_ = OpenFile(g_eac3Path);
+    size_ = GetFileSize(g_eac3Path);
+    printf("---- %s ------\n", g_eac3Path.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    CheckEac3StreamInfo();
+    ASSERT_TRUE(checkPass_);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1811
+ * @tc.desc: get source format(eac3 url)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1811, TestSize.Level1)
+{
+    InitResource(g_eac3Uri, URI);
+    ASSERT_TRUE(initStatus_);
+    CheckEac3MediaInfo();
+    ASSERT_TRUE(checkPass_);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1812
+ * @tc.desc: get format when the file is eac3(url)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1812, TestSize.Level1)
+{
+    InitResource(g_eac3Uri, URI);
+    ASSERT_TRUE(initStatus_);
+    CheckEac3StreamInfo();
+    ASSERT_TRUE(checkPass_);
+}
+#endif
 } // namespace

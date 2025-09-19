@@ -42,6 +42,7 @@ declare_args() {
   av_codec_enable_codec_rv = false
   av_codec_enable_codec_cook = false
   av_codec_enable_demuxer_lrc = false
+  av_codec_enable_demuxer_eac3 = false
   av_codec_enable_demuxer_sami = false
   av_codec_enable_demuxer_ass = false
   av_codec_support_camera_post_processor = false
@@ -169,4 +170,8 @@ if (av_codec_enable_demuxer_sami) {
 
 if (av_codec_enable_demuxer_ass) {
   av_codec_defines += [ "SUPPORT_DEMUXER_ASS" ]
+}
+
+if (av_codec_enable_demuxer_eac3) {
+  av_codec_defines += [ "SUPPORT_DEMUXER_EAC3" ]
 }
