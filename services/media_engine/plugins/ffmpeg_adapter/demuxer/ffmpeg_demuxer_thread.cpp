@@ -105,10 +105,24 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
         return dataSize;
     }
     if (ioContext->invokerType != InvokerType::READ) {
-        ioContext->retry = true;
-        ioContext->initErrorAgain = (ioContext->invokerType == InvokerType::INIT ? true : false);
-        MEDIA_LOG_I("Read again, invokerType!=READ, offset:" PUBLIC_LOG_D64, ioContext->offset);
-        return AV_READ_PACKET_READ_ERROR;
+        switch(ioContext->avReadPacketStopState.load()) {
+            case AVReadPacketStopState::TRUE:
+                MEDIA_LOG_I("AVReadPacket stopped");
+                return AV_READ_PACKET_READ_ERROR;
+            case AVReadPacketStopState::FALSE:
+                MEDIA_LOG_I("Read again and retry, offset:" PUBLIC_LOG_D64, ioContext->offset);
+                std::this_thread::sleep_for(std::chrono::milliseconds(AV_READ_PACKET_SLEEP_TIME));
+                return AV_READ_PACKET_READ_AGAIN;
+                break;
+            case AVReadPacketStopState::UNSET:
+                ioContext->retry = true;
+                ioContext->initErrorAgain = (ioContext->invokerType == InvokerType::INIT ? true : false);
+                MEDIA_LOG_I("Read again, UNSET state, offset:" PUBLIC_LOG_D64, ioContext->offset);
+                return AV_READ_PACKET_READ_ERROR;
+            default:
+                MEDIA_LOG_E("Invalid AVReadPacketStopState");
+                break;
+        }
     }
     tryCount++;
     if (tryCount >= AV_READ_PACKET_RETRY_UPPER_LIMIT) {
@@ -520,6 +534,12 @@ void FFmpegDemuxerPlugin::UpdateAsyncReadThreadPriority()
     } else {
         MEDIA_LOG_I("Set thread qos success, level = " PUBLIC_LOG_U32, OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     }
+}
+
+Status FFmpegDemuxerPlugin::SetAVReadPacketStopState(bool state)
+{
+    ioContext_.avReadPacketStopState.store(state ? AVReadPacketStopState::TRUE : AVReadPacketStopState::FALSE);
+    return Status::OK;
 }
 } // namespace Ffmpeg
 } // namespace Plugins
