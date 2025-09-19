@@ -26,6 +26,7 @@ using namespace std;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec::AudioBufferDemo;
+using namespace OHOS::MediaAVCodec::AudioBufferNewDemo;
 
 namespace OHOS {
 bool AudioDecoderAMRNBFuzzTest(const uint8_t *data, size_t size)
