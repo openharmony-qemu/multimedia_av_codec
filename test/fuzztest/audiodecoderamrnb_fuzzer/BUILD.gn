@@ -51,7 +51,7 @@ ohos_fuzztest("AudioDecoderAmrnbFuzzTest") {
   ]
   sources = [
     "audio_decoder_amrnb_demo.cpp",
-    "../audiodecoderbase_fuzzer/audio_decoder_base_new_demo.h",
+    "../audiodecoderbase_fuzzer/audio_decoder_base_new_demo.cpp",
     "audio_decoder_amrnb_new_demo.cpp",
     "audiodecoderamrnb_fuzzer.cpp",
   ]
