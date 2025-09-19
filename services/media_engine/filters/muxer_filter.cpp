@@ -342,6 +342,7 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
 void MuxerFilter::EventCompleteStopAsync()
 {
     MEDIA_LOG_I("MuxerFilter EventCompleteStopAsync");
+    FALSE_RETURN_MSG(eventReceiver_ != nullptr, "eventReceiver_ is nullptr");
     eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_COMPLETE, Status::OK});
 }
 
