@@ -309,9 +309,6 @@ public:
      * key for AIGC info, the value type is string
      */
     static constexpr std::string_view MD_KEY_AIGC = "aigc";
-
-    static constexpr std::string_view MD_KEY_IS_GLTF = "is_gltf";
-    static constexpr std::string_view MD_KEY_GLTF_OFFSET = "gltf_offset";
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;
