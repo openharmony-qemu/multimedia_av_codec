@@ -504,13 +504,13 @@ OH_AVErrCode OH_VideoDecoder_PushInputData(struct OH_AVCodec *codec, uint32_t in
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+        "Codec magic error!");
     CHECK_AND_RETURN_RET_LOGD(attr.size >= 0, AV_ERR_INVALID_VAL, "Invalid buffer size!");
 
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
-                             "The callback of OH_AVMemory is nullptr!");
+        "The callback of OH_AVMemory is nullptr!");
 
     struct AVCodecBufferInfo bufferInfo;
     bufferInfo.presentationTimeUs = attr.pts;
@@ -520,7 +520,7 @@ OH_AVErrCode OH_VideoDecoder_PushInputData(struct OH_AVCodec *codec, uint32_t in
 
     int32_t ret = videoDecObj->videoDecoder_->QueueInputBuffer(index, bufferInfo, bufferFlag);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "Video decoder push input data failed!");
+        "Video decoder push input data failed!");
     return AV_ERR_OK;
 }
 
@@ -532,11 +532,11 @@ OH_AVErrCode OH_VideoDecoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t 
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "video decoder is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(!videoDecObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
-                             "Not support the callback of OH_AVMemory!");
+        "Not support the callback of OH_AVMemory!");
 
     int32_t ret = videoDecObj->videoDecoder_->QueueInputBuffer(index);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "videoDecoder QueueInputBuffer failed!");
+        "videoDecoder QueueInputBuffer failed!");
     return AV_ERR_OK;
 }
 
@@ -563,16 +563,16 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputData(struct OH_AVCodec *codec, uint32_t
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+        "Codec magic error!");
 
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
-                             "The callback of OH_AVMemory is nullptr!");
+        "The callback of OH_AVMemory is nullptr!");
 
     int32_t ret = videoDecObj->videoDecoder_->ReleaseOutputBuffer(index, true);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "Video decoder render output data failed!");
+        "Video decoder render output data failed!");
 
     return AV_ERR_OK;
 }
@@ -581,16 +581,16 @@ OH_AVErrCode OH_VideoDecoder_FreeOutputData(struct OH_AVCodec *codec, uint32_t i
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+        "Codec magic error!");
 
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
-                             "The callback of OH_AVMemory is nullptr!");
+        "The callback of OH_AVMemory is nullptr!");
 
     int32_t ret = videoDecObj->videoDecoder_->ReleaseOutputBuffer(index, false);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "Video decoder free output data failed!");
+        "Video decoder free output data failed!");
 
     return AV_ERR_OK;
 }
@@ -599,15 +599,15 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBuffer(struct OH_AVCodec *codec, uint32
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+        "Codec magic error!");
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(!videoDecObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
-                             "Not support the callback of OH_AVMemory!");
+        "Not support the callback of OH_AVMemory!");
 
     int32_t ret = videoDecObj->videoDecoder_->ReleaseOutputBuffer(index, true);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "Video decoder render output data failed!");
+        "Video decoder render output data failed!");
 
     return AV_ERR_OK;
 }
@@ -616,15 +616,15 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBufferAtTime(OH_AVCodec *codec, uint32_
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+        "Codec magic error!");
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(!videoDecObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
-                             "Not support the callback of OH_AVMemory!");
+        "Not support the callback of OH_AVMemory!");
 
     int32_t ret = videoDecObj->videoDecoder_->RenderOutputBufferAtTime(index, renderTimestampNs);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "Video decoder render output buffer at time failed!");
+        "Video decoder render output buffer at time failed!");
     return AV_ERR_OK;
 }
 
@@ -632,16 +632,16 @@ OH_AVErrCode OH_VideoDecoder_FreeOutputBuffer(struct OH_AVCodec *codec, uint32_t
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+        "Codec magic error!");
 
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(!videoDecObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
-                             "Not support the callback of OH_AVMemory!");
+        "Not support the callback of OH_AVMemory!");
 
     int32_t ret = videoDecObj->videoDecoder_->ReleaseOutputBuffer(index, false);
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "Video decoder free output data failed!");
+        "Video decoder free output data failed!");
 
     return AV_ERR_OK;
 }
@@ -650,7 +650,7 @@ OH_AVErrCode OH_VideoDecoder_QueryInputBuffer(struct OH_AVCodec *codec, uint32_t
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+        "Codec magic error!");
 
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
@@ -670,7 +670,7 @@ OH_AVErrCode OH_VideoDecoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_
 {
     CHECK_AND_RETURN_RET_LOGD(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
-                             "Codec magic error!");
+        "Codec magic error!");
 
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
