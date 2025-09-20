@@ -22,7 +22,7 @@
 #include <thread>
 #include <unordered_map>
 #include "avcodec_common.h"
-#include "avcodec_dfx_component.h"
+#include "avcodec_log_ex.h"
 #include "avcodec_log.h"
 #include "buffer_converter.h"
 #include "i_standard_codec_listener.h"

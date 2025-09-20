@@ -27,6 +27,8 @@ inline std::string ErrorToStr(int32_t ret)
 {
     return AVCSErrorToString(static_cast<OHOS::MediaAVCodec::AVCodecServiceErrCode>((ret)));
 }
+constexpr int64_t  LOG_INTERVAL_MS = 1000;  // 1s
+constexpr uint32_t LOG_MAX_COUNT   = 5;     // max 5 times in logIntervalMs
 } // namespace
 namespace OHOS {
 namespace MediaAVCodec {
@@ -346,8 +348,8 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->QueueInputBuffer(index, info, flag);
     }
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(),
-                                      index);
+    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(ret == AVCS_ERR_OK, ret, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+        "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(), index);
     circular_.QueueInputBufferDone(index);
     return AVCS_ERR_OK;
 }
@@ -364,8 +366,8 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index)
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->QueueInputBuffer(index);
     }
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(),
-                                      index);
+    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(ret == AVCS_ERR_OK, ret, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+        "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(), index);
     circular_.QueueInputBufferDone(index);
     return AVCS_ERR_OK;
 }
@@ -380,8 +382,8 @@ int32_t CodecClient::QueueInputParameter(uint32_t index)
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->QueueInputParameter(index);
     }
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(),
-                                      index);
+    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(ret == AVCS_ERR_OK, ret, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+        "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(), index);
     circular_.QueueInputBufferDone(index);
     return AVCS_ERR_OK;
 }
@@ -421,8 +423,8 @@ int32_t CodecClient::ReleaseOutputBuffer(uint32_t index, bool render)
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->ReleaseOutputBuffer(index, render);
     }
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(),
-                                      index);
+    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(ret == AVCS_ERR_OK, ret, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+        "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(), index);
     circular_.ReleaseOutputBufferDone(index);
     return AVCS_ERR_OK;
 }
@@ -441,8 +443,8 @@ int32_t CodecClient::RenderOutputBufferAtTime(uint32_t index, int64_t renderTime
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->RenderOutputBufferAtTime(index, renderTimestampNs);
     }
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(),
-                                      index);
+    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(ret == AVCS_ERR_OK, ret, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+        "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(), index);
     circular_.ReleaseOutputBufferDone(index);
     return AVCS_ERR_OK;
 }

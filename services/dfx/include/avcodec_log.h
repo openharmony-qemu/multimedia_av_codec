@@ -17,6 +17,7 @@
 
 #include <hilog/log.h>
 #include <cinttypes>
+#include <chrono>
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -35,18 +36,30 @@ namespace MediaAVCodec {
 
 #define STRINGFY_INNER(x) #x
 #define STRINGFY(x) STRINGFY_INNER(x)
+#ifdef BUILD_ENG_VERSION
+#define CODE_LINE ":" STRINGFY(x)
+#else
+#define CODE_LINE ""
+#endif
+
+#define POINTER_MASK 0x00FFFFFF
+#define FAKE_POINTER(addr) (POINTER_MASK & reinterpret_cast<uintptr_t>(addr))
+
+/******************* hilog wrapper *******************/
 #define AVCODEC_LOG(level, fmt, args...)                                                                               \
     do {                                                                                                               \
-        (void)HILOG_IMPL(LABEL.type, level, LABEL.domain, LABEL.tag, "{%{public}s():" STRINGFY(__LINE__) "} " fmt,     \
+        (void)HILOG_IMPL(LABEL.type, level, LABEL.domain, LABEL.tag, "{%{public}s" CODE_LINE "} " fmt,                 \
                          __FUNCTION__, ##args);                                                                        \
     } while (0)
 
+/******************* avcodec base logger *******************/
 #define AVCODEC_LOGF(fmt, ...) AVCODEC_LOG(LOG_FATAL, fmt, ##__VA_ARGS__)
 #define AVCODEC_LOGE(fmt, ...) AVCODEC_LOG(LOG_ERROR, fmt, ##__VA_ARGS__)
 #define AVCODEC_LOGW(fmt, ...) AVCODEC_LOG(LOG_WARN,  fmt, ##__VA_ARGS__)
 #define AVCODEC_LOGI(fmt, ...) AVCODEC_LOG(LOG_INFO,  fmt, ##__VA_ARGS__)
 #define AVCODEC_LOGD(fmt, ...) AVCODEC_LOG(LOG_DEBUG, fmt, ##__VA_ARGS__)
 
+/******************* avcodec logger wrapper *******************/
 #define AVCODEC_LOG_LIMIT(logger, frequency, fmt, ...)                      \
     do {                                                                    \
         static uint32_t currentTimes = 0;                                   \
@@ -56,11 +69,6 @@ namespace MediaAVCodec {
         logger("[R: %{public}u] " fmt, currentTimes, ##__VA_ARGS__);        \
     } while (0)
 
-#define AVCODEC_LOGE_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGE, frequency, fmt, ##__VA_ARGS__)
-#define AVCODEC_LOGW_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGW, frequency, fmt, ##__VA_ARGS__)
-#define AVCODEC_LOGI_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGI, frequency, fmt, ##__VA_ARGS__)
-#define AVCODEC_LOGD_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGD, frequency, fmt, ##__VA_ARGS__)
-
 #define AVCODEC_LOG_LIMIT_POW2(logger, pow2, fmt, ...)                      \
     do {                                                                    \
         static uint32_t currentTimes = 0;                                   \
@@ -69,6 +77,31 @@ namespace MediaAVCodec {
         }                                                                   \
         logger("[R: %{public}u] " fmt, currentTimes, ##__VA_ARGS__);        \
     } while (0)
+
+#define AVCODEC_LOG_LIMIT_IN_TIME(logger, intervalMs, maxCount, fmt, ...)   \
+    do {                                                                    \
+        thread_local auto lastTime = std::chrono::steady_clock::now();      \
+        thread_local uint32_t currentTimes = 0;                             \
+        auto now = std::chrono::steady_clock::now();                        \
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime).count();          \
+        if ((elapsed < (int64_t)(intervalMs)) && (currentTimes++ >= (uint32_t)(maxCount))) {                   \
+            break;                                                          \
+        }                                                                   \
+        if (elapsed >= (int64_t)(intervalMs)) {                             \
+            logger("[R: %{public}u in %{public}" PRIu64 "ms] " fmt, currentTimes, intervalMs, ##__VA_ARGS__);  \
+            currentTimes = 1;                                               \
+            lastTime = now;                                                 \
+        } else {                                                            \
+            logger(fmt, ##__VA_ARGS__);                                     \
+        }                                                                   \
+    } while (0)
+
+
+/******************* avcodec logger interface *******************/
+#define AVCODEC_LOGE_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGE, frequency, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGW_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGW, frequency, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGI_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGI, frequency, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGD_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGD, frequency, fmt, ##__VA_ARGS__)
 
 #define AVCODEC_LOGE_LIMIT_POW2(pow2, fmt, ...) AVCODEC_LOG_LIMIT_POW2(AVCODEC_LOGE, pow2, fmt, ##__VA_ARGS__)
 #define AVCODEC_LOGW_LIMIT_POW2(pow2, fmt, ...) AVCODEC_LOG_LIMIT_POW2(AVCODEC_LOGW, pow2, fmt, ##__VA_ARGS__)
@@ -180,8 +213,6 @@ namespace MediaAVCodec {
             continue;                                                       \
         }                                                                   \
     } else void (0)
-#define POINTER_MASK 0x00FFFFFF
-#define FAKE_POINTER(addr) (POINTER_MASK & reinterpret_cast<uintptr_t>(addr))
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // AVCODEC_LOG_H
