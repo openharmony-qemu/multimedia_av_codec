@@ -90,7 +90,8 @@
           "bundle_framework",
           "openmax",
           "memory_utils",
-          "config_policy"
+          "config_policy",
+          "json"
         ],
         "third_party": []
       },
