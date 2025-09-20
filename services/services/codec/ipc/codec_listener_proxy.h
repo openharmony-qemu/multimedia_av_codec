@@ -16,7 +16,7 @@
 #ifndef CODEC_LISTENER_PROXY_H
 #define CODEC_LISTENER_PROXY_H
 
-#include "avcodec_dfx_component.h"
+#include "avcodec_log_ex.h"
 #include "i_standard_codec_listener.h"
 #include "avcodec_death_recipient.h"
 #include "nocopyable.h"

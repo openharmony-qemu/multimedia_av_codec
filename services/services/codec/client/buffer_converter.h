@@ -17,7 +17,7 @@
 #define BUFFER_CONVERTER_H
 #include <functional>
 #include <shared_mutex>
-#include "avcodec_dfx_component.h"
+#include "avcodec_log_ex.h"
 #include "avcodec_info.h"
 #include "buffer/avbuffer.h"
 #include "buffer/avsharedmemorybase.h"

@@ -20,7 +20,7 @@
 #include <shared_mutex>
 #include <unordered_map>
 #include "av_common.h"
-#include "avcodec_dfx_component.h"
+#include "avcodec_log_ex.h"
 #include "block_queue.h"
 #include "buffer/avbuffer.h"
 

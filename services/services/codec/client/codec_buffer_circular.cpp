@@ -26,11 +26,11 @@
 using namespace OHOS::Media;
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecBufferCircular"};
-constexpr int64_t MAX_TIMEOUT =
-    std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::time_point::max())
-        .time_since_epoch()
-        .count() /
-    2;
+constexpr int64_t MAX_TIMEOUT = std::chrono::time_point_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::time_point::max()
+    ).time_since_epoch().count() / 2;
+constexpr int64_t  LOG_INTERVAL_MS = 1000;   // 1s
+constexpr uint32_t LOG_MAX_COUNT   = 5;      // max 5 times in logIntervalMs
 } // namespace
 namespace OHOS {
 namespace MediaAVCodec {
@@ -200,7 +200,7 @@ int32_t CodecBufferCircular::HandleInputBuffer(uint32_t index, AVCodecBufferInfo
     BufferCacheIter iter = inCache_.find(index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(HasFlag(FLAG_IS_RUNNING), AVCS_ERR_INVALID_STATE, "Not in running state");
     if (iter == inCache_.end()) {
-        AVCODEC_LOGW_WITH_TAG("Index is invalid %{public}u", index);
+        AVCODEC_LOGD_WITH_TAG("Index is invalid %{public}u", index);
         return AVCS_ERR_OK;
     }
     BufferItem &item = iter->second;
@@ -229,7 +229,7 @@ int32_t CodecBufferCircular::HandleInputBuffer(uint32_t index)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(HasFlag(FLAG_IS_RUNNING), AVCS_ERR_INVALID_STATE, "Not in running state");
     BufferCacheIter iter = inCache_.find(index);
     if (iter == inCache_.end()) {
-        AVCODEC_LOGW_WITH_TAG("Index is invalid %{public}u", index);
+        AVCODEC_LOGD_WITH_TAG("Index is invalid %{public}u", index);
         return HasFlag(FLAG_IS_SYNC) ? AVCS_ERR_INVALID_OPERATION : AVCS_ERR_OK;
     }
     BufferItem &item = iter->second;
@@ -765,7 +765,8 @@ std::shared_ptr<AVBuffer> CodecBufferCircular::GetInputBuffer(uint32_t index)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(!HasFlag(FLAG_ERROR), nullptr, "%{public}s",
                                       AVCSErrorToString(static_cast<AVCodecServiceErrCode>(lastError_)).c_str());
     BufferCacheIter iter = inCache_.find(index);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter != inCache_.end(), nullptr, "Index is invalid %{public}u", index);
+    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(iter != inCache_.end(), nullptr,
+        LOG_INTERVAL_MS, LOG_MAX_COUNT, "Index is invalid %{public}u", index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter->second.owner == OWNED_BY_USER, nullptr, "Invalid ownership:%{public}s",
                                       OwnerToString(iter->second.owner).c_str());
     return iter->second.buffer;
@@ -779,7 +780,8 @@ std::shared_ptr<AVBuffer> CodecBufferCircular::GetOutputBuffer(uint32_t index)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(!HasFlag(FLAG_ERROR), nullptr, "%{public}s",
                                       AVCSErrorToString(static_cast<AVCodecServiceErrCode>(lastError_)).c_str());
     BufferCacheIter iter = outCache_.find(index);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter != outCache_.end(), nullptr, "Index is invalid %{public}u", index);
+    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(iter != outCache_.end(), nullptr,
+        LOG_INTERVAL_MS, LOG_MAX_COUNT, "Index is invalid %{public}u", index);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(iter->second.owner == OWNED_BY_USER, nullptr, "Invalid ownership:%{public}s",
                                       OwnerToString(iter->second.owner).c_str());
     return iter->second.buffer;

@@ -20,7 +20,7 @@
 #include <shared_mutex>
 #include <string>
 #include "avcodec_common.h"
-#include "avcodec_dfx_component.h"
+#include "avcodec_log_ex.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
