@@ -32,9 +32,11 @@ constexpr int MIN_PRE_PARSE_CONTENT_LEN = 10 * 1024; // 10k
 constexpr int RETRY_DELTA_TIME_TO_REPORT_ERROR = 5 * 1000; // 5s
 constexpr int RETRY_TIME_TO_REPORT_ERROR = 10; // 10
 constexpr int HTTP_SERVER_ERROR_410 = 410; // 410 表示请求的资源已经从服务器上永久删除，不再可用
+constexpr int MAX_FILE_SIZE = 20 * 1024 * 1024; // 20M
 
 static bool isNumber(const std::string& str)
 {
+    FALSE_RETURN_V_MSG_E(!str.empty(), false, "empty str is not a number.");
     return str.find_first_not_of("0123456789") == std::string::npos;
 }
 
@@ -138,19 +140,22 @@ void PlayListDownloader::DoOpen(const std::string& url)
 void PlayListDownloader::DoOpenNative(const std::string& url)
 {
     std::string uri = url;
-    ParseUriInfo(uri);
-    char buf[size_ + 1];
+    FALSE_RETURN_MSG(ParseUriInfo(uri), "ParseUriInfo error.");
+    char* buf = new(std::nothrow) char[size_ + 1];
+    FALSE_RETURN_MSG(buf != nullptr, "ParseUriInfo error, no memory.");
 
     auto ret = read(fd_, buf, size_);
-    buf[size_] = '\0';
-    std::string m3u8(buf);
     if (ret < 0) {
         MEDIA_LOG_E("Failed to read, errno " PUBLIC_LOG_D32, static_cast<int32_t>(errno));
+        delete[] buf;
         return;
     }
+    buf[size_] = '\0';
+    std::string m3u8(buf);
     MEDIA_LOG_I("Read success.");
     playList_ = m3u8;
     ParseManifest(playList_);
+    delete[] buf;
 }
 
 bool PlayListDownloader::ParseUriInfo(const std::string& uri)
@@ -184,6 +189,7 @@ bool PlayListDownloader::ParseUriInfo(const std::string& uri)
         size_ = fileSize_;
         offset_ = 0;
     }
+    size_ = size_ > MAX_FILE_SIZE ? 0 : size_;
     position_ = static_cast<uint64_t>(offset_);
     seekable_ = FileSystem::IsSeekable(fd_) ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
     if (seekable_ == Seekable::SEEKABLE) {
@@ -232,10 +238,12 @@ uint32_t PlayListDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock
     playList_.reserve(playList_.size() + len);
     playList_.append(reinterpret_cast<const char*>(data), len);
     startedDownloadStatus_ = true;
-    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader nullptr");
-    int32_t contentlen = static_cast<int32_t>(downloader_->GetCurrentRequest()->GetFileContentLengthNoWait());
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader nullptr");
+    auto currentRequest = downloader_->GetCurrentRequest();
+    FALSE_RETURN_V_MSG_E(currentRequest != nullptr, 0, "current request nullptr");
+    int32_t contentlen = static_cast<int32_t>(currentRequest->GetFileContentLengthNoWait());
     std::string location;
-    downloader_->GetCurrentRequest()->GetLocation(location);
+    currentRequest->GetLocation(location);
     if (contentlen > MIN_PRE_PARSE_CONTENT_LEN) {
         PreParseManifest(location);
     }
