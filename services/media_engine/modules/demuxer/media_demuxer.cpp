@@ -242,6 +242,7 @@ MediaDemuxer::~MediaDemuxer()
     source_ = nullptr;
     eventReceiver_ = nullptr;
     eosMap_.clear();
+    segmentEosMap_.clear();
     requestBufferErrorCountMap_.clear();
     streamDemuxer_ = nullptr;
     localDrmInfos_.clear();
@@ -1147,6 +1148,7 @@ std::map<int32_t, sptr<AVBufferQueueProducer>> MediaDemuxer::GetBufferQueueProdu
 Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
 {
     eosMap_[trackId] = false;
+    segmentEosMap_[trackId] = false;
     requestBufferErrorCountMap_[trackId] = 0;
 
     int32_t innerTrackID = trackId;
@@ -1230,6 +1232,7 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
 {
     MEDIA_LOG_I("In, track " PUBLIC_LOG_D32, trackId);
     eosMap_[trackId] = false;
+    segmentEosMap_[trackId] = false;
     requestBufferErrorCountMap_[trackId] = 0;
 
     int32_t targetStreamID = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
@@ -1415,7 +1418,6 @@ Status MediaDemuxer::HandleSegmentChange()
     return ret;
 }
 
-
 Status MediaDemuxer::HandleHlsRebootPlugin()
 {
     MEDIA_LOG_I("HandleHlsRebootPlugin In");
@@ -1514,7 +1516,6 @@ Status MediaDemuxer::HandleRebootPlugin(int32_t trackId, bool& isRebooted)
 
 Status MediaDemuxer::SeekToTimeAfter()
 {
-    bool IsSeekToTimeSupported = source_ != nullptr && source_->IsSeekToTimeSupported();
     FALSE_RETURN_V_NOLOG(demuxerPluginManager_ != nullptr && demuxerPluginManager_->IsDash(), Status::OK);
     MEDIA_LOG_I("Reboot plugin begin");
     if (isHls_) {
@@ -1585,6 +1586,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
     }
+    ResetSegmentEosMap();
     for (auto item : requestBufferErrorCountMap_) {
         requestBufferErrorCountMap_[item.first] = 0;
     }
@@ -1997,6 +1999,7 @@ Status MediaDemuxer::Reset()
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
     }
+    ResetSegmentEosMap();
     for (auto item : requestBufferErrorCountMap_) {
         requestBufferErrorCountMap_[item.first] = 0;
     }
@@ -2016,6 +2019,7 @@ Status MediaDemuxer::Start()
     for (auto it = eosMap_.begin(); it != eosMap_.end(); it++) {
         it->second = false;
     }
+    ResetSegmentEosMap();
     for (auto it = requestBufferErrorCountMap_.begin(); it != requestBufferErrorCountMap_.end(); it++) {
         it->second = 0;
     }
@@ -2764,6 +2768,10 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
         return Status::OK;
     }
     if(isHls_ && ret == Status::END_OF_STREAM && !source_->IsHlsEnd()) {
+        segmentEosMap_[trackId] = true;
+        if (!IsSegmentEos()) {
+            return Status::OK;
+        }
         HandleSegmentChange();
         return Status::OK;
     }
@@ -3998,6 +4006,23 @@ void MediaDemuxer::HandleVideoSampleQueue()
     ret = sampleQueueMap_[videoTrackId_]->AcquireBuffer(dstBuffer);
     FALSE_RETURN_NOLOG(ret == Status::OK);
     sampleQueueMap_[videoTrackId_]->ReleaseBuffer(dstBuffer);
+}
+
+bool MediaDemuxer::IsSegmentEos()
+{
+    for (const auto& item : segmentEosMap_) {
+        if (!item.second) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void MediaDemuxer::ResetSegmentEosMap()
+{
+    for (auto& item : segmentEosMap_) {
+        item.second = false;
+    }
 }
 } // namespace Media
 } // namespace OHOS
