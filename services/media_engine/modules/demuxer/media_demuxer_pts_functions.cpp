@@ -80,7 +80,7 @@ void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuff
         if (baseInfo->isLastPtsChange) {
             int64_t offset = static_cast<int64_t>(source_->GetSegmentOffset());
             if (baseInfo->segmentOffset != offset) {
-                baseInfo->segmentOffset = std::max(offset, baseInfo->lastPtsModifyedMax);
+                baseInfo->segmentOffset = offset;
                 baseInfo->basePts = baseInfo->candidateBasePts;
             }
             sample->pts_ = baseInfo->segmentOffset + curPacketPts - baseInfo->basePts + mediaStartPts_;
