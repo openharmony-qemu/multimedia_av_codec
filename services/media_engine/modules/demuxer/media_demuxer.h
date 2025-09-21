@@ -352,6 +352,8 @@ private:
     void HandleSeek(int32_t trackId);
     void RecordErrorCount(int32_t queueIndex, Status ret);
     void HandleVideoSampleQueue();
+    bool IsSegmentEos();
+    void ResetSegmentEosMap();
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
@@ -371,6 +373,7 @@ private:
 
     std::map<int32_t, std::shared_ptr<SampleQueue>> sampleQueueMap_;
     std::map<int32_t, bool> eosMap_;
+    std::map<int32_t, bool> segmentEosMap_;
     std::map<int32_t, uint32_t> requestBufferErrorCountMap_;
     std::atomic<bool> isThreadExit_ = true;
     bool useBufferQueue_ = false;
