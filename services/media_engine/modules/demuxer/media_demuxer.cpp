@@ -2767,7 +2767,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
         MEDIA_LOG_I("HandleDashChangeStream success");
         return Status::OK;
     }
-    if(isHls_ && ret == Status::END_OF_STREAM && !source_->IsHlsEnd()) {
+    if (isHls_ && ret == Status::END_OF_STREAM && !source_->IsHlsEnd()) {
         segmentEosMap_[trackId] = true;
         if (!IsSegmentEos()) {
             return Status::OK;
