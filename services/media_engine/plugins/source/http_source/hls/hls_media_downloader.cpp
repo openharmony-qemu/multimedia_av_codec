@@ -658,7 +658,7 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
         if (readOffset_ >= tsEndOffset) {
             isTsEnd_.store(true);
             notNeedReadBack_.store(true);
-            if(playlistDownloader_->IsHlsFmp4()) {
+            if (playlistDownloader_->IsHlsFmp4()) {
                 isNeedReadHeader_.store(true);
             }
             RemoveFmp4PaddingData(buff, readDataInfo);
