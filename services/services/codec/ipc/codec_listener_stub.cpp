@@ -374,7 +374,7 @@ bool CodecListenerStub::WriteInputBufferToParcel(uint32_t index, MessageParcel &
 {
     std::shared_ptr<AVBuffer> buffer = nullptr;
     inputBufferCache_->GetBuffer(index, buffer);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer != nullptr, false, "Get buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOGD_WITH_TAG(buffer != nullptr, false, "Get buffer is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer->meta_ != nullptr, false, "Get buffer meta is nullptr");
     if (buffer->memory_ == nullptr) {
         return buffer->meta_->ToParcel(data);

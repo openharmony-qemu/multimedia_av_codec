@@ -22,7 +22,7 @@
 #define AVCODEC_LOG_WITH_TAG(level, fmt, args...)                                                                      \
     do {                                                                                                               \
         (void)HILOG_IMPL(LABEL.type, level, LABEL.domain, LABEL.tag,                                                   \
-                         "%{public}s{%{public}s()" CODE_LINE "} " fmt, tag_.load(), __FUNCTION__, ##args);             \
+                         "%{public}s{%{public}s" CODE_LINE "} " fmt, tag_.load(), __FUNCTION__, ##args);               \
     } while (0)
 
 #define AVCODEC_LOGF_WITH_TAG(fmt, ...) AVCODEC_LOG_WITH_TAG(LOG_FATAL, fmt, ##__VA_ARGS__)
