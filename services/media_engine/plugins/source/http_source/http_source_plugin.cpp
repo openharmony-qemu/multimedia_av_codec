@@ -637,11 +637,11 @@ bool HttpSourcePlugin::IsHlsEnd()
     return downloader_->IsHlsEnd();
 }
 
-bool HttpSourcePlugin::IsHls() 
+bool HttpSourcePlugin::IsHls()
 {
     if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
         return CheckIsM3U8Uri();
-    }    
+    }
     MEDIA_LOG_I("IsHls return true");
     return true;
 }
