@@ -340,7 +340,6 @@ int32_t CodecServiceStub::SetOutputSurface(sptr<OHOS::Surface> surface)
 
 int32_t CodecServiceStub::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
-    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->QueueInputBuffer(index, info, flag);
 }
@@ -373,7 +372,6 @@ int32_t CodecServiceStub::ReleaseOutputBuffer(uint32_t index, bool render)
 
 int32_t CodecServiceStub::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
 {
-    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->RenderOutputBufferAtTime(index, renderTimestampNs);
 }
@@ -558,6 +556,7 @@ int32_t CodecServiceStub::QueueInputBuffer(MessageParcel &data, MessageParcel &r
 {
     AVCODEC_SYNC_TRACE;
 
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     uint32_t index = data.ReadUint32();
     AVCodecBufferInfo info;
     AVCodecBufferFlag flag;
@@ -598,6 +597,7 @@ int32_t CodecServiceStub::RenderOutputBufferAtTime(MessageParcel &data, MessageP
 {
     AVCODEC_SYNC_TRACE;
 
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     uint32_t index = data.ReadUint32();
     int64_t renderTimestampNs = data.ReadInt64();
     CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec listener is nullptr");
