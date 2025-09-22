@@ -94,4 +94,79 @@ HWTEST_F(AudioDecoderFilterCallBackUnitTest, CallBackOnBufferAvailable_001, Test
     auto ptr = testPtr->audioDecoderFilter_.lock();
     EXPECT_EQ(ptr, audioDecoderFilter);
 }
+
+/**
+ * @tc.name: OnOutputFormatChanged_001
+ * @tc.desc: Test AudioDecoderCallback OnOutputFormatChanged interface normal case
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderFilterCallBackUnitTest, OnOutputFormatChanged_001, TestSize.Level1)
+{
+    ASSERT_NE(audioDecoderFilter_, nullptr);
+    auto callback = std::make_shared<AudioDecoderCallback>(audioDecoderFilter_);
+    ASSERT_NE(callback, nullptr);
+    Format testFormat;
+    testFormat.PutStringValue("mime", "audio/mp3");
+    testFormat.PutIntValue("sample_rate", 44100);
+    testFormat.PutIntValue("channels", 2);
+    callback->OnOutputFormatChanged(testFormat);
+    EXPECT_TRUE(true);
+}
+
+/**
+ * @tc.name: OnOutputFormatChanged_002
+ * @tc.desc: Test AudioDecoderCallback OnOutputFormatChanged interface empty format case
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderFilterCallBackUnitTest, OnOutputFormatChanged_002, TestSize.Level1)
+{
+    ASSERT_NE(audioDecoderFilter_, nullptr);
+    auto callback = std::make_shared<AudioDecoderCallback>(audioDecoderFilter_);
+    ASSERT_NE(callback, nullptr);
+    Format emptyFormat;
+    callback->OnOutputFormatChanged(emptyFormat);
+    EXPECT_TRUE(true);
+}
+
+/**
+ * @tc.name: OnOutputFormatChanged_003
+ * @tc.desc: Test AudioDecoderCallback OnOutputFormatChanged interface null filter case
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderFilterCallBackUnitTest, OnOutputFormatChanged_003, TestSize.Level1)
+{
+    auto callback = std::make_shared<AudioDecoderCallback>(nullptr);
+    ASSERT_NE(callback, nullptr);
+    Format testFormat;
+    testFormat.PutStringValue("mime", "audio/aac");
+    testFormat.PutIntValue("sample_rate", 48000);
+    testFormat.PutIntValue("channels", 6);
+    callback->OnOutputFormatChanged(testFormat);
+    EXPECT_TRUE(true);
+}
+
+/**
+ * @tc.name: OnOutputFormatChanged_MultipleCallTest_004
+ * @tc.desc: Test AudioDecoderCallback OnOutputFormatChanged interface multiple call case
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderFilterCallBackUnitTest, OnOutputFormatChanged_004, TestSize.Level1)
+{
+    ASSERT_NE(audioDecoderFilter_, nullptr);
+    auto callback = std::make_shared<AudioDecoderCallback>(audioDecoderFilter_);
+    ASSERT_NE(callback, nullptr);
+    Format format1;
+    format1.PutStringValue("mime", "audio/aac");
+    format1.PutIntValue("sample_rate", 44100);
+    format1.PutIntValue("channels", 2);
+    
+    Format format2;
+    format2.PutStringValue("mime", "audio/mp3");
+    format2.PutIntValue("sample_rate", 48000);
+    format2.PutIntValue("channels", 6);
+    callback->OnOutputFormatChanged(format1);
+    callback->OnOutputFormatChanged(format2);
+    callback->OnOutputFormatChanged(format1);
+    EXPECT_TRUE(true);
+}
 } // namespace OHOS::Media

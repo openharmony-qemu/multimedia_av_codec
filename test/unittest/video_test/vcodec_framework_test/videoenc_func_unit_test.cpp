@@ -977,3 +977,39 @@ int main(int argc, char **argv)
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+
+/**
+ * @tc.name: GetParameter_001
+ * @tc.desc: Test GetParameter interface normal case
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, GetParameter_001, TestSize.Level1)
+{
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    auto allocator = AVAllocatorFactory::CreateSurfaceAllocator(DEFAULT_CONFIG);
+    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(allocator);
+    std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
+    std::shared_ptr<FormatMock> param = buffer->GetParameter();
+    EXPECT_NE(param, nullptr);
+    EXPECT_FALSE(param->IsEmpty());
+}
+
+/**
+ * @tc.name: GetParameter_002
+ * @tc.desc: Test GetParameter interface empty parameter case
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, GetParameter_002, TestSize.Level1)
+{
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    auto allocator = AVAllocatorFactory::CreateSurfaceAllocator(DEFAULT_CONFIG);
+    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(allocator);
+    std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
+    std::shared_ptr<FormatMock> param = buffer->GetParameter();
+    EXPECT_NE(param, nullptr);
+    param->Clear();
+    std::shared_ptr<FormatMock> emptyParam = buffer->GetParameter();
+    EXPECT_NE(emptyParam, nullptr);
+}
