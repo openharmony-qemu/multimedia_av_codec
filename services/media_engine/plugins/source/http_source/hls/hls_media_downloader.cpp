@@ -1356,7 +1356,7 @@ int64_t HlsMediaDownloader::RequestNewTs(uint64_t seekTime, SeekMode mode, doubl
     playInfo.length_ = item.length_;
     if (mode == SeekMode::SEEK_PREVIOUS_SYNC) {
         double lastTotalDuration = totalDuration - hstTime;
-        if(static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
+        if (static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
             seekStartTimePos_ = lastTotalDuration;
         }
         playInfo.startTimePos_ = 0;
