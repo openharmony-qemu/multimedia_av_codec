@@ -308,7 +308,6 @@ public:
     {
         return false;
     }
-
 };
 
 /// Source plugin api major number.
