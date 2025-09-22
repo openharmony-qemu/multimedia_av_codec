@@ -1270,7 +1270,7 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
     CHECK_AND_RETURN_RET_LOG(surfaceStride > 0, AVCS_ERR_INVALID_VAL, "get GetSurfaceBufferStride failed");
     surfaceInfo.surfaceStride = static_cast<uint32_t>(surfaceStride);
     Format bufferFormat;
-    bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
+    bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, cachedFrame_->height);
     bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, surfaceStride);
     bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(targetPixelFmt));
     if (sInfo_.surface) {

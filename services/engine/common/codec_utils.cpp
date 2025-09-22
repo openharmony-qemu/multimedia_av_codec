@@ -89,19 +89,19 @@ int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale,
     return (*scale)->Convert(srcData, srcLineSize, dstData, dstLineSize);
 }
 
-int32_t MemWritePlaneDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t* srcData, int32_t srcStirde,
+int32_t MemWritePlaneDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t* srcData, int32_t srcStride,
                                 int32_t dstStride, int32_t height)
 {
     CHECK_AND_RETURN_RET_LOG(memory != nullptr && srcData != nullptr, AVCS_ERR_INVALID_VAL,
         "memory or srcData is nullptr");
     int32_t srcPos = 0;
     int32_t dstPos = memory->GetSize();
-    int32_t writeSize = srcStirde > dstStride ? dstStride : srcStirde;
+    int32_t writeSize = srcStride > dstStride ? dstStride : srcStride;
     for (int32_t colNum = 0; colNum < height; colNum++) {
         CHECK_AND_RETURN_RET_LOG(memory->Write(srcData + srcPos, writeSize, dstPos) > 0,
             AVCS_ERR_NO_MEMORY, "memory Write Data failed");
         dstPos += dstStride;
-        srcPos += srcStirde;
+        srcPos += srcStride;
     }
     CHECK_AND_RETURN_RET_LOG(memory->SetSize(dstPos) == Status::OK, AVCS_ERR_NO_MEMORY, "memory SetSize failed");
     return AVCS_ERR_OK;
@@ -203,7 +203,7 @@ int32_t WriteRgbData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleDat
                              "output buffer size is not enough: real[%{public}d], need[%{public}u]",
                              memory->GetCapacity(), frameSize);
     CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[0], frameSize) > 0,
-            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
+        AVCS_ERR_NO_MEMORY, "memory Write Data failed");
     return AVCS_ERR_OK;
 }
 
