@@ -89,6 +89,24 @@ int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale,
     return (*scale)->Convert(srcData, srcLineSize, dstData, dstLineSize);
 }
 
+int32_t MemWritePlaneDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t* srcData, int32_t srcStirde,
+                                int32_t dstStride, int32_t height)
+{
+    CHECK_AND_RETURN_RET_LOG(memory != nullptr && srcData != nullptr, AVCS_ERR_INVALID_VAL,
+        "memory or srcData is nullptr");
+    int32_t srcPos = 0;
+    int32_t dstPos = memory->GetSize();
+    int32_t writeSize = srcStirde > dstStride ? dstStride : srcStirde;
+    for (int32_t colNum = 0; colNum < height; colNum++) {
+        CHECK_AND_RETURN_RET_LOG(memory->Write(srcData + srcPos, writeSize, dstPos) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
+        dstPos += dstStride;
+        srcPos += srcStirde;
+    }
+    CHECK_AND_RETURN_RET_LOG(memory->SetSize(dstPos) == Status::OK, AVCS_ERR_NO_MEMORY, "memory SetSize failed");
+    return AVCS_ERR_OK;
+}
+
 int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, const int32_t *scaleLineSize,
                            int32_t stride, const Format &format)
 {
@@ -100,42 +118,23 @@ int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **sc
     CHECK_AND_RETURN_RET_LOG(pixFmt == VideoPixelFormat::YUVI420 || pixFmt == VideoPixelFormat::NV12 ||
                                  pixFmt == VideoPixelFormat::NV21,
                              AVCS_ERR_UNSUPPORT, "pixFmt: %{public}d do not support", pixFmt);
-    int32_t srcPos = 0;
-    int32_t dstPos = 0;
-    int32_t dataSize = scaleLineSize[0];
-    int32_t writeSize = dataSize > stride ? stride : dataSize;
     std::string traceTitle = "stride(" + std::to_string(stride) + ")_height(" + std::to_string(height) + ")";
     AVCodecTrace trace("WriteYuvByStride_pixfmt(" + std::to_string(fmt) + ")_" + traceTitle);
-    for (int32_t colNum = 0; colNum < height; colNum++) {
-        memory->Write(scaleData[0] + srcPos, writeSize, dstPos);
-        dstPos += stride;
-        srcPos += dataSize;
-    }
-    srcPos = 0;
+    int32_t ret = MemWritePlaneDataStride(memory, scaleData[0], scaleLineSize[0], stride, height);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "memory Write Data failed")
     stride = ((stride + UV_SCALE_FACTOR - 1) / UV_SCALE_FACTOR) * UV_SCALE_FACTOR;
     height = ((height + UV_SCALE_FACTOR - 1) / UV_SCALE_FACTOR) * UV_SCALE_FACTOR;
     if (pixFmt == VideoPixelFormat::YUVI420) {
-        dataSize = scaleLineSize[1];
-        writeSize = dataSize > (stride / UV_SCALE_FACTOR) ? (stride / UV_SCALE_FACTOR) : dataSize;
-        for (int32_t colNum = 0; colNum < (height / UV_SCALE_FACTOR); colNum++) {
-            memory->Write(scaleData[1] + srcPos, writeSize, dstPos);
-            dstPos += (stride / UV_SCALE_FACTOR);
-            srcPos += dataSize;
-        }
-        srcPos = 0;
-        for (int32_t colNum = 0; colNum < (height / UV_SCALE_FACTOR); colNum++) {
-            memory->Write(scaleData[INDEX_ARRAY] + srcPos, writeSize, dstPos);
-            dstPos += (stride / UV_SCALE_FACTOR);
-            srcPos += dataSize;
-        }
+        ret = MemWritePlaneDataStride(memory, scaleData[1], scaleLineSize[1],
+            static_cast<int32_t>(stride / UV_SCALE_FACTOR), static_cast<int32_t>(height / UV_SCALE_FACTOR));
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "memory Write Data failed");
+        ret = MemWritePlaneDataStride(memory, scaleData[INDEX_ARRAY], scaleLineSize[1],
+            static_cast<int32_t>(stride / UV_SCALE_FACTOR), static_cast<int32_t>(height / UV_SCALE_FACTOR));
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "memory Write Data failed");
     } else if ((pixFmt == VideoPixelFormat::NV12) || (pixFmt == VideoPixelFormat::NV21)) {
-        dataSize = scaleLineSize[1];
-        writeSize = dataSize > stride ? stride : dataSize;
-        for (int32_t colNum = 0; colNum < (height / UV_SCALE_FACTOR); colNum++) {
-            memory->Write(scaleData[1] + srcPos, writeSize, dstPos);
-            dstPos += stride;
-            srcPos += dataSize;
-        }
+        ret = MemWritePlaneDataStride(memory, scaleData[1], scaleLineSize[1], stride,
+            static_cast<int32_t>(height / UV_SCALE_FACTOR));
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "memory Write Data failed");
     }
     AVCODEC_LOGD("WriteYuvDataStride success");
     return AVCS_ERR_OK;
@@ -153,7 +152,8 @@ int32_t WriteRgbDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **sc
     std::string traceTitle = "stride(" + std::to_string(stride) + ")_height(" + std::to_string(height) + ")";
     AVCodecTrace trace("WriteRgbByStride_" + traceTitle);
     for (int32_t colNum = 0; colNum < height; colNum++) {
-        memory->Write(scaleData[0] + srcPos, writeSize, dstPos);
+        CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[0] + srcPos, writeSize, dstPos) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
         dstPos += stride;
         srcPos += dataSize;
     }
@@ -177,12 +177,17 @@ int32_t WriteYuvData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleDat
                              "output buffer size is not enough: real[%{public}d], need[%{public}u]",
                              memory->GetCapacity(), frameSize);
     if (pixFmt == VideoPixelFormat::YUVI420) {
-        memory->Write(scaleData[0], ySize);
-        memory->Write(scaleData[1], uvSize);
-        memory->Write(scaleData[2], uvSize); // 2
+        CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[0], ySize) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
+        CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[1], uvSize) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
+        CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[INDEX_ARRAY], uvSize) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
     } else if ((pixFmt == VideoPixelFormat::NV12) || (pixFmt == VideoPixelFormat::NV21)) {
-        memory->Write(scaleData[0], ySize);
-        memory->Write(scaleData[1], uvSize);
+        CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[0], ySize) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
+        CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[1], uvSize) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
     } else {
         return AVCS_ERR_UNSUPPORT;
     }
@@ -197,7 +202,8 @@ int32_t WriteRgbData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleDat
     CHECK_AND_RETURN_RET_LOG(memory->GetCapacity() >= frameSize, AVCS_ERR_NO_MEMORY,
                              "output buffer size is not enough: real[%{public}d], need[%{public}u]",
                              memory->GetCapacity(), frameSize);
-    memory->Write(scaleData[0], frameSize);
+    CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[0], frameSize) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
     return AVCS_ERR_OK;
 }
 
