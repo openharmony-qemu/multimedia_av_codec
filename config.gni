@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//build/ohos.gni")
+
 declare_args() {
   av_codec_support_capi = true
   av_codec_support_codec = true
@@ -75,6 +77,10 @@ av_codec_defines = [
   "HST_ANY_WITH_NO_RTTI",
   "MEDIA_OHOS",
 ]
+
+if (build_variant != "user") {
+  av_codec_defines += [ "BUILD_ENG_VERSION" ]
+}
 
 if (av_codec_support_capi) {
   av_codec_defines += [ "SUPPORT_CAPI" ]

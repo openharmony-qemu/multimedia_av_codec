@@ -37,7 +37,7 @@ namespace MediaAVCodec {
 #define STRINGFY_INNER(x) #x
 #define STRINGFY(x) STRINGFY_INNER(x)
 #ifdef BUILD_ENG_VERSION
-#define CODE_LINE ":" STRINGFY(x)
+#define CODE_LINE ":" STRINGFY(__LINE__)
 #else
 #define CODE_LINE ""
 #endif
@@ -46,10 +46,10 @@ namespace MediaAVCodec {
 #define FAKE_POINTER(addr) (POINTER_MASK & reinterpret_cast<uintptr_t>(addr))
 
 /******************* hilog wrapper *******************/
-#define AVCODEC_LOG(level, fmt, args...)                                                                               \
-    do {                                                                                                               \
-        (void)HILOG_IMPL(LABEL.type, level, LABEL.domain, LABEL.tag, "{%{public}s" CODE_LINE "} " fmt,                 \
-                         __FUNCTION__, ##args);                                                                        \
+#define AVCODEC_LOG(level, fmt, args...)                                    \
+    do {                                                                    \
+        (void)HILOG_IMPL(LABEL.type, level, LABEL.domain, LABEL.tag,        \
+            "{%{public}s" CODE_LINE "} " fmt, __FUNCTION__, ##args);        \
     } while (0)
 
 /******************* avcodec base logger *******************/
@@ -83,19 +83,20 @@ namespace MediaAVCodec {
         thread_local auto lastTime = std::chrono::steady_clock::now();      \
         thread_local uint32_t currentTimes = 0;                             \
         auto now = std::chrono::steady_clock::now();                        \
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime).count();          \
-        if ((elapsed < (int64_t)(intervalMs)) && (currentTimes++ >= (uint32_t)(maxCount))) {                   \
+        int64_t elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime).count();    \
+        if ((elapsed < (int64_t)(intervalMs)) && (currentTimes++ >= (uint32_t)(maxCount))) {                \
             break;                                                          \
         }                                                                   \
+        if (currentTimes <= (uint32_t)(maxCount)) {                         \
+            logger(fmt, ##__VA_ARGS__);                                     \
+        } else {                                                            \
+            logger("[R: %{public}u in %{public}" PRId64 "ms] " fmt, currentTimes, elapsed, ##__VA_ARGS__);  \
+        }                                                                   \
         if (elapsed >= (int64_t)(intervalMs)) {                             \
-            logger("[R: %{public}u in %{public}" PRIu64 "ms] " fmt, currentTimes, intervalMs, ##__VA_ARGS__);  \
             currentTimes = 1;                                               \
             lastTime = now;                                                 \
-        } else {                                                            \
-            logger(fmt, ##__VA_ARGS__);                                     \
         }                                                                   \
     } while (0)
-
 
 /******************* avcodec logger interface *******************/
 #define AVCODEC_LOGE_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGE, frequency, fmt, ##__VA_ARGS__)

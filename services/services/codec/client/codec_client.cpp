@@ -27,7 +27,7 @@ inline std::string ErrorToStr(int32_t ret)
 {
     return AVCSErrorToString(static_cast<OHOS::MediaAVCodec::AVCodecServiceErrCode>((ret)));
 }
-constexpr int64_t  LOG_INTERVAL_MS = 1000;  // 1s
+constexpr int64_t  LOG_INTERVAL_MS = 2000;  // 2s
 constexpr uint32_t LOG_MAX_COUNT   = 5;     // max 5 times in logIntervalMs
 } // namespace
 namespace OHOS {
