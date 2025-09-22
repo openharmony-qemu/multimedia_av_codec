@@ -1252,6 +1252,16 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
 
     std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer->memory_;
     CHECK_AND_RETURN_RET_LOG(bufferMemory != nullptr, AVCS_ERR_INVALID_VAL, "bufferMemory is nullptr");
+    sptr<SurfaceBuffer> surfaceBuffer = sInfo_.surface ? frameBuffer->sMemory->GetSurfaceBuffer() :
+        frameBuffer->avBuffer->memory_->GetSurfaceBuffer();
+    CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_INVALID_VAL, "surfaceBuffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG(surfaceBuffer->GetVirAddr() == bufferMemory->GetAddr() &&
+        surfaceBuffer->GetSize() == bufferMemory->GetCapacity(), AVCS_ERR_INVALID_VAL,
+        "surfaceBuffer and bufferMemory not match");
+    CHECK_AND_RETURN_RET_LOG(surfaceBuffer->GetWidth() == cachedFrame_->width &&
+        surfaceBuffer->GetHeight() == cachedFrame_->height, AVCS_ERR_INVALID_VAL,
+        "surfaceBuffer not match current cachedFrame_");
+    
     bufferMemory->SetSize(0);
     struct SurfaceInfo surfaceInfo;
     surfaceInfo.scaleData = scaleData_;
@@ -1259,18 +1269,15 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
     int32_t surfaceStride = GetSurfaceBufferStride(frameBuffer);
     CHECK_AND_RETURN_RET_LOG(surfaceStride > 0, AVCS_ERR_INVALID_VAL, "get GetSurfaceBufferStride failed");
     surfaceInfo.surfaceStride = static_cast<uint32_t>(surfaceStride);
-    sptr<SurfaceBuffer> surfaceBuffer;
+    Format bufferFormat;
+    bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, cachedFrame_->height);
+    bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, surfaceStride);
+    bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(targetPixelFmt));
     if (sInfo_.surface) {
         surfaceInfo.surfaceFence = frameBuffer->sMemory->GetFence();
-        ret = WriteSurfaceData(bufferMemory, surfaceInfo, format_);
-        surfaceBuffer = frameBuffer->sMemory->GetSurfaceBuffer();
+        ret = WriteSurfaceData(bufferMemory, surfaceInfo, bufferFormat);
     } else {
-        Format bufferFormat;
-        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
-        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, surfaceStride);
-        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(targetPixelFmt));
         ret = WriteBufferData(bufferMemory, scaleData_, scaleLineSize_, bufferFormat);
-        surfaceBuffer = frameBuffer->avBuffer->memory_->GetSurfaceBuffer();
     }
     FillHdrInfo(surfaceBuffer);
 #ifdef BUILD_ENG_VERSION
