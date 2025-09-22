@@ -961,8 +961,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetPTSParameter_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
-#endif // HMOS_TEST
-} // namespace
 
 int main(int argc, char **argv)
 {
@@ -1013,3 +1011,5 @@ HWTEST_P(TEST_SUIT, GetParameter_002, TestSize.Level1)
     std::shared_ptr<FormatMock> emptyParam = buffer->GetParameter();
     EXPECT_NE(emptyParam, nullptr);
 }
+#endif // HMOS_TEST
+} // namespace
