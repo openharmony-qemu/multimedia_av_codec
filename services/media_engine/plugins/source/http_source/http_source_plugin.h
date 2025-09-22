@@ -76,7 +76,7 @@ public:
     uint64_t GetMemorySize() override;
     std::string GetContentType() override;
     bool IsHlsEnd() override;
-    bool IsHls() override;    
+    bool IsHls() override;
 
 private:
     void CloseUri(bool isAsync = false);
