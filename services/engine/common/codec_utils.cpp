@@ -121,7 +121,7 @@ int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **sc
     std::string traceTitle = "stride(" + std::to_string(stride) + ")_height(" + std::to_string(height) + ")";
     AVCodecTrace trace("WriteYuvByStride_pixfmt(" + std::to_string(fmt) + ")_" + traceTitle);
     int32_t ret = MemWritePlaneDataStride(memory, scaleData[0], scaleLineSize[0], stride, height);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "memory Write Data failed")
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "memory Write Data failed");
     stride = ((stride + UV_SCALE_FACTOR - 1) / UV_SCALE_FACTOR) * UV_SCALE_FACTOR;
     height = ((height + UV_SCALE_FACTOR - 1) / UV_SCALE_FACTOR) * UV_SCALE_FACTOR;
     if (pixFmt == VideoPixelFormat::YUVI420) {
