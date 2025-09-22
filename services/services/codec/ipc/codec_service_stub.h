@@ -18,7 +18,7 @@
 
 #include <map>
 #include <shared_mutex>
-#include "avcodec_dfx_component.h"
+#include "avcodec_log_ex.h"
 #include "avcodec_death_recipient.h"
 #include "meta.h"
 #include "i_codec_service.h"

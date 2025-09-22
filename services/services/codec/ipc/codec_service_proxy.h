@@ -16,7 +16,7 @@
 #ifndef CODEC_SERVICE_PROXY_H
 #define CODEC_SERVICE_PROXY_H
 
-#include "avcodec_dfx_component.h"
+#include "avcodec_log_ex.h"
 #include "avcodec_log.h"
 #include "codec_listener_stub.h"
 #include "i_standard_codec_service.h"
