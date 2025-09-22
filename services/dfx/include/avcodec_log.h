@@ -78,24 +78,15 @@ namespace MediaAVCodec {
         logger("[R: %{public}u] " fmt, currentTimes, ##__VA_ARGS__);        \
     } while (0)
 
-#define AVCODEC_LOG_LIMIT_IN_TIME(logger, intervalMs, maxCount, fmt, ...)   \
-    do {                                                                    \
-        thread_local auto lastTime = std::chrono::steady_clock::now();      \
-        thread_local uint32_t currentTimes = 0;                             \
-        auto now = std::chrono::steady_clock::now();                        \
-        int64_t elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime).count();    \
-        if ((elapsed < (int64_t)(intervalMs)) && (currentTimes++ >= (uint32_t)(maxCount))) {                \
-            break;                                                          \
-        }                                                                   \
-        if (currentTimes <= (uint32_t)(maxCount)) {                         \
-            logger(fmt, ##__VA_ARGS__);                                     \
-        } else {                                                            \
-            logger("[R: %{public}u in %{public}" PRId64 "ms] " fmt, currentTimes, elapsed, ##__VA_ARGS__);  \
-        }                                                                   \
-        if (elapsed >= (int64_t)(intervalMs)) {                             \
-            currentTimes = 1;                                               \
-            lastTime = now;                                                 \
-        }                                                                   \
+#define AVCODEC_LOG_LIMIT_IN_TIME(logger, intervalMs, maxCount, fmt, ...)                                    \
+    do {                                                                                                     \
+        thread_local auto lastTime = std::chrono::steady_clock::now(); thread_local uint32_t count = 0;      \
+        auto now = std::chrono::steady_clock::now();                                                         \
+        int64_t elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime).count();     \
+        if ((elapsed < (int64_t)(intervalMs)) && (count++ >= (uint32_t)(maxCount))) { break; }               \
+        if (count <= (uint32_t)(maxCount)) { logger(fmt, ##__VA_ARGS__); }                                   \
+        else { logger("[R: %{public}u in %{public}" PRId64 "ms] " fmt, count, elapsed, ##__VA_ARGS__); }     \
+        if (elapsed >= (int64_t)(intervalMs)) { count = 1; lastTime = now; }                                 \
     } while (0)
 
 /******************* avcodec logger interface *******************/
