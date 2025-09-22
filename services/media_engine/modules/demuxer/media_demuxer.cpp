@@ -1403,7 +1403,7 @@ Status MediaDemuxer::HandleSegmentChange()
     int32_t trackId = IsValidTrackId(videoTrackId_) ? videoTrackId_ : audioTrackId_;
     FALSE_RETURN_V(!subStreamDemuxer_ || trackId != subtitleTrackId_, Status::OK);
     Status ret = Status::OK;
-    if(IsValidTrackId(trackId)) {
+    if (IsValidTrackId(trackId)) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         FALSE_RETURN_V_MSG_E(streamID != INVALID_STREAM_OR_TRACK_ID, Status::ERROR_INVALID_PARAMETER,
             "Invaid streamId");
