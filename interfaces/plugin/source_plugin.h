@@ -304,7 +304,7 @@ public:
         return false;
     }
 
-    virtual bool IsHls()
+    virtual bool IsHls() 
     {
         return false;
     }
