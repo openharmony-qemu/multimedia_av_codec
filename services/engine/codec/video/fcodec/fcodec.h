@@ -68,7 +68,6 @@ public:
     int32_t NotifyMemoryRecycle() override;
     int32_t NotifyMemoryWriteBack() override;
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
-    static void SetCapabilityData(CapabilityData capsData, uint32_t i);
 
 private:
     int32_t Initialize();
@@ -125,8 +124,9 @@ private:
     static void GetAvcCapProf(std::vector<CapabilityData> &capaArray);
     static void GetH263CapProf(std::vector<CapabilityData> &capaArray);
     static void GetVc1CapProf(std::vector<CapabilityData> &capaArray);
-
-#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES)
+    void FreeExtradataIfNeeded(std::string name);
+    static void FillBaseCapability(CapabilityData &capsData, uint32_t i);
+#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     int32_t SetCodecExtradata(const Format &format);
 #endif
     void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);

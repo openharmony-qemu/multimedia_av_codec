@@ -58,13 +58,14 @@ constexpr int32_t VIDEO_FRAMERATE_DEFAULT_SIZE = 60;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 139264;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
 constexpr int32_t DEFAULT_THREAD_COUNT = 2;
-constexpr int32_t VC1_ALIGNMENT_SIZE = 16;
-constexpr int32_t VC1_MIN_SIZE = 16;
+constexpr int32_t VC1_ALIGNMENT_SIZE = 2;
+constexpr int32_t VC1_MIN_WIDTH_SIZE = 176;
+constexpr int32_t VC1_MIN_HEIGHT_SIZE = 144;
 constexpr int32_t VC1_MAX_WIDTH_SIZE = 2048;
-constexpr int32_t VC1_MAX_HEIGHT_SIZE = 1536;
+constexpr int32_t VC1_MAX_HEIGHT_SIZE = 2048;
 constexpr int32_t VC1_BITRATE_MAX_SIZE = 135000000;
-constexpr int32_t VC1_BLOCKPERFRAME_SIZE = 12288;
-constexpr int32_t VC1_BLOCKPERSEC_SIZE = 737280;
+constexpr int32_t VC1_BLOCKPERFRAME_SIZE = 16384;
+constexpr int32_t VC1_BLOCKPERSEC_SIZE = 983040;
 #ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/fcodecdump";
@@ -264,14 +265,14 @@ int32_t FCodec::ConfigureContext(const Format &format)
     avCodecContext_->width = width_;
     avCodecContext_->height = height_;
     avCodecContext_->thread_count = DEFAULT_THREAD_COUNT;
-#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES)
+#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     return SetCodecExtradata(format);
 #else
     return AVCS_ERR_OK;
 #endif
 }
 
-#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES)
+#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
 int32_t FCodec::SetCodecExtradata(const Format &format)
 {
     size_t extraSize = 0;
@@ -353,15 +354,19 @@ bool FCodec::IsActive() const
     return state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS;
 }
 
-void FCodec::ResetContext(bool isFlush)
+void FCodec::FreeExtradataIfNeeded(std::string name)
 {
-    CHECK_AND_RETURN_LOG(avCodecContext_ != nullptr, "Avcodec context is nullptr");
-    AVCODEC_LOGI("avCodecContext_->codec->name = %{public}s", codecName_.c_str());
-    if (avCodecContext_->extradata && !(codecName_ == "OH.Media.Codec.Decoder.Video.VC1")) {
+    if (avCodecContext_->extradata && !(name == AVCodecCodecName::VIDEO_DECODER_VC1_NAME)) {
         av_free(avCodecContext_->extradata);
         avCodecContext_->extradata = nullptr;
         avCodecContext_->extradata_size = 0;
     }
+}
+
+void FCodec::ResetContext(bool isFlush)
+{
+    CHECK_AND_RETURN_LOG(avCodecContext_ != nullptr, "Avcodec context is nullptr");
+    FreeExtradataIfNeeded(codecName_);
     avCodecContext_->coded_width = 0;
     avCodecContext_->coded_height = 0;
     if (!isFlush) {
@@ -1939,8 +1944,8 @@ void FCodec::GetVc1CapProf(std::vector<CapabilityData> &capaArray)
         CapabilityData& capsData = capaArray.back();
         capsData.alignment.width = VC1_ALIGNMENT_SIZE;
         capsData.alignment.height = VC1_ALIGNMENT_SIZE;
-        capsData.width.minVal = VC1_MIN_SIZE;
-        capsData.height.minVal = VC1_MIN_SIZE;
+        capsData.width.minVal = VC1_MIN_WIDTH_SIZE;
+        capsData.height.minVal = VC1_MIN_HEIGHT_SIZE;
         capsData.width.maxVal = VC1_MAX_WIDTH_SIZE;
         capsData.height.maxVal = VC1_MAX_HEIGHT_SIZE;
         capsData.bitrate.maxVal = VC1_BITRATE_MAX_SIZE;
@@ -1950,23 +1955,18 @@ void FCodec::GetVc1CapProf(std::vector<CapabilityData> &capaArray)
             static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
             static_cast<int32_t>(VideoPixelFormat::NV21)};
         capsData.profiles = {static_cast<int32_t>(VC1_PROFILE_SIMPLE), static_cast<int32_t>(VC1_PROFILE_MAIN),
-                                static_cast<int32_t>(VC1_PROFILE_COMPLEX), static_cast<int32_t>(VC1_PROFILE_ADVANCED)};
-        std::vector<int32_t> simple_levels;
+                             static_cast<int32_t>(VC1_PROFILE_ADVANCED)};
+        std::vector<int32_t> levels;
         for (int32_t j = 0; j <= static_cast<int32_t>(VC1Level::VC1_LEVEL_HIGH); ++j) {
-            simple_levels.emplace_back(j);
+            levels.emplace_back(j);
         }
-        std::vector<int32_t> advanced_levels;
-        for (int32_t j = 0; j <= static_cast<int32_t>(VC1AdvancedLevel::VC1_LEVEL_L4); ++j) {
-            advanced_levels.emplace_back(j);
-        }
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_SIMPLE), simple_levels));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_MAIN), simple_levels));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_COMPLEX), simple_levels));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_ADVANCED), advanced_levels));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_SIMPLE), levels));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_MAIN), levels));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_ADVANCED), levels));
     }
 }
 
-void FCodec::SetCapabilityData(CapabilityData capsData, uint32_t i)
+void FCodec::FillBaseCapability(CapabilityData &capsData, uint32_t i)
 {
     capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[i].codecName);
     capsData.mimeType = static_cast<std::string>(SUPPORT_VCODEC[i].mimeType);
@@ -1996,15 +1996,14 @@ void FCodec::SetCapabilityData(CapabilityData capsData, uint32_t i)
         static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P),
         static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP),
         static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP),
-        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888)
-    };
+        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888)};
 }
 
 int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 {
     for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {
         CapabilityData capsData;
-        SetCapabilityData(capsData, i);
+        FillBaseCapability(capsData, i);
         if (capsData.mimeType == "video/mpeg2") {
             capaArray.emplace_back(capsData);
             GetMpeg2CapProf(capaArray);

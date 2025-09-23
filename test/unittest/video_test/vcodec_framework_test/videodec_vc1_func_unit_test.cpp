@@ -44,8 +44,8 @@ uint8_t* extradata = nullptr;
 int64_t extradatasize = 0;
 constexpr std::string_view filename = "/data/test/media/glitch-ffvc1.avi";
 
-const int DEFAULT_WIDTH_VC1 = 1920;
-const int DEFAULT_HEIGHT_VC1 = 1080;
+const int DEFAULT_WIDTH_VC1 = 720;
+const int DEFAULT_HEIGHT_VC1 = 480;
 
 using namespace std;
 using namespace OHOS;
@@ -313,7 +313,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_PushInputBuffer_Invalid_001, TestSize.Level1)
     struct OH_AVCodecCallback cb = GetVoidCallback();
     OH_AVCodecBufferAttr attr = {0, 0, 0, 0};
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(codec_, cb, nullptr));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_PushInputData(codec_, 0, attr));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_PushInputBuffer(codec_, 0, attr));
 }
 
 /**
@@ -325,8 +325,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_PushInputBuffer_Invalid_002, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_VC1).data());
     ASSERT_NE(nullptr, codec_);
-    struct OH_AVCodecAsyncCallback cb = GetVoidAsyncCallback();
-    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_SetCallback(codec_, cb, nullptr));
+    struct OH_AVCodecCallback cb = GetVoidCallback();
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(codec_, cb, nullptr));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_PushInputBuffer(codec_, 0));
 }
 
@@ -367,7 +367,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Free_Buffer_Invalid_001, TestSize.Level1)
     ASSERT_NE(nullptr, codec_);
     struct OH_AVCodecCallback cb = GetVoidCallback();
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(codec_, cb, nullptr));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_FreeOutputData(codec_, 0));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_FreeOutputBuffer(codec_, 0));
 }
 
 /**
@@ -379,8 +379,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Free_Buffer_Invalid_002, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_VC1).data());
     ASSERT_NE(nullptr, codec_);
-    struct OH_AVCodecAsyncCallback cb = GetVoidAsyncCallback();
-    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_SetCallback(codec_, cb, nullptr));
+    struct OH_AVCodecCallback cb = GetVoidCallback();
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(codec_, cb, nullptr));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_FreeOutputBuffer(codec_, 0));
 }
 
@@ -421,7 +421,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Render_Buffer_Invalid_001, TestSize.Level1)
     ASSERT_NE(nullptr, codec_);
     struct OH_AVCodecCallback cb = GetVoidCallback();
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(codec_, cb, nullptr));
-    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_RenderOutputData(codec_, 0));
+    EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_RenderOutputBuffer(codec_, 0));
 }
 
 /**
@@ -433,8 +433,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Render_Buffer_Invalid_002, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_VC1).data());
     ASSERT_NE(nullptr, codec_);
-    struct OH_AVCodecAsyncCallback cb = GetVoidAsyncCallback();
-    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_SetCallback(codec_, cb, nullptr));
+    struct OH_AVCodecCallback cb = GetVoidCallback();
+    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(codec_, cb, nullptr));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_RenderOutputBuffer(codec_, 0));
 }
 

@@ -76,8 +76,7 @@ string GetTestName()
 enum class VC1VideoPaths {
     VC1_PROFILE_SIMPLE = 0,
     VC1_PROFILE_MAIN = 1,
-    VC1_PROFILE_COMPLEX = 2,
-    VC1_PROFILE_ADVANCED = 3,
+    VC1_PROFILE_ADVANCED = 2,
 };
 
 std::string getVC1InputPath(VC1VideoPaths path)
@@ -87,8 +86,6 @@ std::string getVC1InputPath(VC1VideoPaths path)
             return "test.vc1";
         case VC1VideoPaths::VC1_PROFILE_MAIN:
             return "main.vc1";
-        case VC1VideoPaths::VC1_PROFILE_COMPLEX:
-            return "complex.vc1";
         case VC1VideoPaths::VC1_PROFILE_ADVANCED:
             return "advanced.vc1";
         default:

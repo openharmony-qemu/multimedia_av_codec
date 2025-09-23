@@ -761,16 +761,17 @@ enum H263Profile : int32_t {
 };
 
 /**
- * @brief
+ * @brief VC1 Profile.
  *
- * @since 3.1
- * @version 4.0
+ * @since 22
  */
 enum VC1Profile {
+    /** Simple profile */
     VC1_PROFILE_SIMPLE = 0,
+    /** Main profile */
     VC1_PROFILE_MAIN = 1,
-    VC1_PROFILE_COMPLEX = 2,
-    VC1_PROFILE_ADVANCED = 3,
+    /** Advanced profile */
+    VC1_PROFILE_ADVANCED = 2,
 };
 
 /**
@@ -916,29 +917,27 @@ enum H263Level : int32_t {
 };
 
 /**
- * @brief
+ * @brief VC-1 Level.
  *
- * @since 3.1
- * @version 4.0
+ * @since 22
  */
 enum VC1Level {
-    VC1_LEVEL_LOW = 0,
-    VC1_LEVEL_MEDIUM = 1,
-    VC1_LEVEL_HIGH = 2,
-};
-
-/**
- * @brief
- *
- * @since 3.1
- * @version 4.0
- */
-enum VC1AdvancedLevel {
+    /** L0 level */
     VC1_LEVEL_L0 = 0,
+    /** L1 level */
     VC1_LEVEL_L1 = 1,
+    /** L2 level */
     VC1_LEVEL_L2 = 2,
+    /** L3 level */
     VC1_LEVEL_L3 = 3,
-    VC1_LEVEL_L4 = 4
+    /** L4 level */
+    VC1_LEVEL_L4 = 4,
+    /** LOW level */
+    VC1_LEVEL_LOW = 5,
+    /** MEDIUM level */
+    VC1_LEVEL_MEDIUM = 6,
+    /** HIGH level */
+    VC1_LEVEL_HIGH = 7,
 };
 
 /**
