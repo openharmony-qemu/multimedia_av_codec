@@ -435,7 +435,7 @@ void CodecBufferCircular::OnOutputBufferUnbinded()
 /******************************** Async mode ********************************/
 void CodecBufferCircular::AsyncOnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    if (errorType == AVCODEC_ERROR_FRAMEAORK_FAILED) {
+    if (errorType == AVCODEC_ERROR_FRAMEWORK_FAILED) {
         return;
     }
     std::shared_ptr<MediaCodecCallback> mediaCb = nullptr;

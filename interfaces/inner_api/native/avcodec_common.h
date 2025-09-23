@@ -40,7 +40,7 @@ enum AVCodecErrorType : int32_t {
        the application will be transparently transmitted by the service. */
     AVCODEC_ERROR_DECRYTION_FAILED,
     /* internal errors, the extension error codes within the framework. */
-    AVCODEC_ERROR_FRAMEAORK_FAILED,
+    AVCODEC_ERROR_FRAMEWORK_FAILED,
     AVCODEC_ERROR_EXTEND_START = 0X10000,
 };
 

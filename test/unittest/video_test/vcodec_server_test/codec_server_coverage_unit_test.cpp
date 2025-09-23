@@ -847,8 +847,8 @@ HWTEST_F(CodecServerUnitTest, OnOutputFormatChanged_Valid_Test_002, TestSize.Lev
     CreateHCodecByMime();
     auto mock = std::make_shared<MediaCodecCallbackMock>();
     server_->videoCb_ = mock;
-    EXPECT_CALL(*mock, OnError(AVCODEC_ERROR_FRAMEAORK_FAILED, AVCS_ERR_INVALID_STATE)).Times(1);
-    server_->OnError(AVCODEC_ERROR_FRAMEAORK_FAILED, AVCS_ERR_INVALID_STATE);
+    EXPECT_CALL(*mock, OnError(AVCODEC_ERROR_FRAMEWORK_FAILED, AVCS_ERR_INVALID_STATE)).Times(1);
+    server_->OnError(AVCODEC_ERROR_FRAMEWORK_FAILED, AVCS_ERR_INVALID_STATE);
     server_->videoCb_ = nullptr;
 }
 

@@ -537,10 +537,9 @@ int32_t CodecServer::SetInputSurface(sptr<Surface> surface)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == CONFIGURED, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                                       GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    if (surface != nullptr) {
-        isSurfaceMode_ = true;
-    }
-    return codecBase_->SetInputSurface(surface);
+    int32_t ret = codecBase_->SetInputSurface(surface);
+    isSurfaceMode_ = (ret == AVCS_ERR_OK);
+    return ret;
 }
 
 int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
@@ -571,7 +570,7 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
         ret = codecBase_->SetOutputSurface(surface);
     }
     surfaceId_ = surface->GetUniqueId();
-    isSurfaceMode_ = true;
+    isSurfaceMode_ = (ret == AVCS_ERR_OK);
 #ifdef EMULATOR_ENABLED
     Format config_emulator;
     config_emulator.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::RGBA));
@@ -968,9 +967,9 @@ inline void CodecServer::StatusChanged(CodecStatus newStatus)
     if (status_ == newStatus) {
         return;
     }
-    if (status_ == ERROR && videoCb_ != nullptr &&
+    if (newStatus == ERROR && videoCb_ != nullptr &&
         (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) {
-        videoCb_->OnError(AVCODEC_ERROR_FRAMEAORK_FAILED, AVCS_ERR_INVALID_STATE);
+        videoCb_->OnError(AVCODEC_ERROR_FRAMEWORK_FAILED, AVCS_ERR_INVALID_STATE);
     }
     AVCODEC_LOGI_WITH_TAG("Status %{public}s -> %{public}s", GetStatusDescription(status_).data(),
                           GetStatusDescription(newStatus).data());
