@@ -181,8 +181,8 @@ protected:
         uint64_t discardCntInterval_ = 0;       // 丢帧总数
         uint64_t waitFenceCostUsInterval_ = 0;  // 等fence的总耗时
         // 某一刻的瞬时值
-        std::array<int, OWNER_CNT> currOwner_;  // 此刻每个轮转方持有几个buffer
-        std::array<std::optional<TimePoint>, OWNER_CNT> lastOwnerChangeTime_;  // 每个轮转方最新一次轮转发生在哪个时刻
+        std::array<int, OWNER_CNT> currOwner_{};  // 此刻每个轮转方持有几个buffer
+        std::array<std::optional<TimePoint>, OWNER_CNT> lastOwnerChangeTime_{};  // 每个轮转方最新一次轮转发生在哪个时刻
         int64_t lastPts_ = -1;          // 最新的一帧的pts
     } record_[2]; // 2: port count
 
