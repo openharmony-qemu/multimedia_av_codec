@@ -1344,8 +1344,14 @@ bool HCodec::GetFirstSyncMsgToReply(MsgInfo& msg)
     if (iter == syncMsgToReply_.end()) {
         return false;
     }
+    if (iter->second.empty()) {
+        return false;
+    }
     std::tie(msg.id, msg.param) = iter->second.front();
     iter->second.pop();
+    if (iter->second.empty()) {
+        syncMsgToReply_.erase(iter);
+    }
     return true;
 }
 
