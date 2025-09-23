@@ -364,7 +364,8 @@ Status SurfaceEncoderAdapter::Stop()
         GetCurrentTime(stopTime_);
     }
     isStopKeyFramePts_ = true;
-    MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
+    MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64 " recordVideoFrameCount_: " PUBLIC_LOG_D64,
+        stopTime_, recordVideoFrameCount_);
     // operate stop when it is paused state.
     if (curState_ == ProcessStateCode::PAUSED && !isTransCoderMode) {
         stopTime_ = pauseTime_;
@@ -393,6 +394,7 @@ Status SurfaceEncoderAdapter::Stop()
         MEDIA_LOG_I("releaseBufferTask_ Stop");
     }
     if (!codecServer_) {
+        MEDIA_LOG_E("codecServer_ is nullptr");
         return Status::OK;
     }
     int32_t ret = codecServer_->Stop();
@@ -418,7 +420,8 @@ Status SurfaceEncoderAdapter::Pause()
     std::lock_guard<std::mutex> lock(checkFramesMutex_);
     GetCurrentTime(pauseTime_);
     FALSE_RETURN_V_MSG(pauseTime_ > 0, Status::ERROR_UNKNOWN, "GetCurrentTime pauseTime_ <= 0");
-    MEDIA_LOG_I("Pause time: " PUBLIC_LOG_D64, pauseTime_);
+    MEDIA_LOG_I("Pause time: " PUBLIC_LOG_D64 " recordVideoFrameCount_: " PUBLIC_LOG_D64,
+        pauseTime_, recordVideoFrameCount_);
     if (pauseResumeQueue_.empty() ||
         (pauseResumeQueue_.back().second == StateCode::RESUME && pauseResumeQueue_.back().first <= pauseTime_)) {
         pauseResumeQueue_.push_back({pauseTime_, StateCode::PAUSE});
@@ -728,25 +731,25 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
     std::lock_guard<std::mutex> lock(checkFramesMutex_);
     int64_t currentPts = 0;
     attribute->GetLongValue(Tag::MEDIA_TIME_STAMP, currentPts);
-    MEDIA_LOG_D("OnInputParameterWithAttrAvailable currentPts " PUBLIC_LOG_D64, currentPts);
-    
     bool isDroppedFrames = CheckFrames(currentPts, checkFramesPauseTime_);
-    MEDIA_LOG_D("OnInputParameterWithAttrAvailable checkFramesPauseTime " PUBLIC_LOG_D64, checkFramesPauseTime_);
-    MEDIA_LOG_D("OnInputParameterWithAttrAvailable isDroppedFrames = " PUBLIC_LOG_S,
-        isDroppedFrames ? "true" : "false");
+    MEDIA_LOG_D("currentPts " PUBLIC_LOG_D64 "checkFramesPauseTime_ " PUBLIC_LOG_D64
+        "isDroppedFrames " PUBLIC_LOG_S, currentPts, checkFramesPauseTime_, isDroppedFrames ? "true" : "false");
     {
         std::lock_guard<std::mutex> mappingLock(mappingPtsMutex_);
-        // adjustPts means timestamps after resume time are translated to corresponding ones after pause time
         int64_t adjustPts = currentPts - totalPauseTimeQueue_[0] + checkFramesPauseTime_;
-        MEDIA_LOG_D("OnInputParameterWithAttrAvailable adjustPts " PUBLIC_LOG_D64, adjustPts);
-        MEDIA_LOG_D("OnInputParameterWithAttrAvailable totalPauseTimeQueue_[0] " PUBLIC_LOG_D64,
-                    totalPauseTimeQueue_[0]);
+        MEDIA_LOG_D("OnInputParameterWithAttrAvailable adjustPts: " PUBLIC_LOG_D64
+            "totalPauseTimeQueue_[0]:" PUBLIC_LOG_D64, adjustPts, totalPauseTimeQueue_[0]);
         if (!isDroppedFrames) {
             if (startBufferTime_ == -1) {
                 startBufferTime_ = currentPts;
             }
             int64_t mappingTime = adjustPts - startBufferTime_;
             MEDIA_LOG_D("OnInputParameterWithAttrAvailable mappingTime = " PUBLIC_LOG_D64, mappingTime);
+            if (mappingTime < 0) {
+                MEDIA_LOG_W("mappingTime is invalid, mappingTime: " PUBLIC_LOG_D64 " currentPts: " PUBLIC_LOG_D64
+                    "totalPauseTimeQueue_[0]: " PUBLIC_LOG_D64 "checkFramesPauseTime_: " PUBLIC_LOG_D64,
+                    mappingTime, currentPts, totalPauseTimeQueue_[0], checkFramesPauseTime_);
+            }
             preKeyFramePts_ = currentKeyFramePts_;
             currentKeyFramePts_ = currentPts;
             AddStartPts(currentPts);
@@ -757,6 +760,7 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
     }
     parameter->PutIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, isDroppedFrames);
     codecServer_->QueueInputParameter(index);
+    recordVideoFrameCount_++;
     FALSE_RETURN_MSG(videoFrameRate_ != 0, "videoFrameRate_ = 0, invalid value.");
     if (stopTime_ != -1 && currentPts > stopTime_ - (SEC_TO_NS / videoFrameRate_)) {
         MEDIA_LOG_I("currentPts > stopTime, send EOS.");
@@ -920,6 +924,7 @@ void SurfaceEncoderAdapter::Clear()
     currentPts_ = -1;
     currentKeyFramePts_ = -1;
     preKeyFramePts_ = -1;
+    recordVideoFrameCount_ = 0;
 }
 
 bool SurfaceEncoderAdapter::GetIsTransCoderMode()

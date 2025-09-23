@@ -99,6 +99,7 @@ private:
     int64_t pauseTime_ {0};
     int64_t stopTime_ {0};
     int64_t currentTime_ {0};
+    int64_t recordAudioFrameCount_{0};
     std::atomic<int64_t> firstAudioFramePts_{-1};
     std::atomic<int64_t> firstVideoFramePts_{-1};
     std::deque<std::shared_ptr<uint8_t>> cachedAudioDataDeque_;

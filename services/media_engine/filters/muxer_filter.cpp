@@ -173,9 +173,10 @@ Status MuxerFilter::DoResume()
 
 Status MuxerFilter::DoStop()
 {
-    MEDIA_LOG_I("MuxerFilter Stop");
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::Stop");
     stopCount_++;
+    MEDIA_LOG_I("MuxerFilter Stop, stopCount_: %{public}d, preFilterCount_: %{public}d",
+        stopCount_, preFilterCount_);
     if (stopCount_ == preFilterCount_) {
         stopCount_ = 0;
         Status ret = mediaMuxer_->Stop();
