@@ -257,7 +257,8 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_003, TestSize.
     streamDemuxer->SetSource(source);
     streamDemuxer->Init("");
 
-    bool ret = truestd::thread initPluginThread([demuxerPluginManager, streamDemuxer, pluginName]() {
+    bool ret = true;
+    std::thread initPluginThread([&ret, demuxerPluginManager, streamDemuxer, pluginName]() {
         ret = demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0);
     });
     streamDemuxer->SetInterruptState(true);
