@@ -657,11 +657,12 @@ void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnError(AVCodecErrorType error
 
 void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnOutputFormatChanged(const Format &format)
 {
-    if (!impl_->isSyncMode_.load() && impl_->callback_) {
-        impl_->callback_->OnOutputFormatChanged(format);
-    }
     if (!impl_->isSyncMode_.load()) {
-        AVCODEC_LOGE("receive format changed, but impl callback is nullptr");
+        if (impl_->callback_) {
+            impl_->callback_->OnOutputFormatChanged(format);
+        } else {
+            AVCODEC_LOGE("receive format changed, but impl callback is nullptr");
+        }
         return;
     }
     AVCODEC_SYNC_TRACE;
