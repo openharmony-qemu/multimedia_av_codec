@@ -745,6 +745,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 
 void HlsMediaDownloader::PrepareToSeek()
 {
+    isTsEnd_.store(false);
     int32_t retry {0};
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
     do {
