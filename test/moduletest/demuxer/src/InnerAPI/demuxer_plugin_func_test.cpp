@@ -1182,7 +1182,7 @@ HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_GLTF_INNER_FUNC_0010, TestSize.Leve
     ASSERT_NE(pluginBase_, nullptr);
     auto plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     MediaInfo mediaInfo;
-    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo);, Status::OK);
+    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo), Status::OK);
     Meta generalMeta = mediaInfo.general;
     bool isGltfValue = 0;
     int64_t glftOffsetValue = 0;
@@ -1210,7 +1210,7 @@ HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_GLTF_INNER_FUNC_0020, TestSize.Leve
     ASSERT_NE(pluginBase_, nullptr);
     auto plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     MediaInfo mediaInfo;
-    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo);, Status::OK);
+    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo), Status::OK);
     Meta generalMeta = mediaInfo.general;
     bool isGltfValue = 0;
     int64_t glftOffsetValue = 0;
@@ -1238,7 +1238,7 @@ HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_GLTF_INNER_FUNC_0030, TestSize.Leve
     ASSERT_NE(pluginBase_, nullptr);
     auto plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     MediaInfo mediaInfo;
-    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo);, Status::OK);
+    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo), Status::OK);
     Meta generalMeta = mediaInfo.general;
     bool isGltfValue = 0;
     int64_t glftOffsetValue = 0;
@@ -1266,7 +1266,7 @@ HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_GLTF_INNER_FUNC_0040, TestSize.Leve
     ASSERT_NE(pluginBase_, nullptr);
     auto plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     MediaInfo mediaInfo;
-    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo);, Status::OK);
+    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo), Status::OK);
     Meta generalMeta = mediaInfo.general;
     bool isGltfValue = 0;
     int64_t glftOffsetValue = 0;
@@ -1294,7 +1294,7 @@ HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_GLTF_INNER_FUNC_0050, TestSize.Leve
     ASSERT_NE(pluginBase_, nullptr);
     auto plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     MediaInfo mediaInfo;
-    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo);, Status::OK);
+    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo), Status::OK);
     Meta generalMeta = mediaInfo.general;
     bool isGltfValue = 0;
     int64_t glftOffsetValue = 0;
@@ -1322,7 +1322,7 @@ HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_GLTF_INNER_FUNC_0060, TestSize.Leve
     ASSERT_NE(pluginBase_, nullptr);
     auto plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     MediaInfo mediaInfo;
-    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo);, Status::OK);
+    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo), Status::OK);
     Meta generalMeta = mediaInfo.general;
     bool isGltfValue = 0;
     int64_t glftOffsetValue = 0;
@@ -1348,7 +1348,7 @@ HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_GLTF_INNER_FUNC_0070, TestSize.Leve
     ASSERT_NE(pluginBase_, nullptr);
     auto plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     MediaInfo mediaInfo;
-    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo);, Status::OK);
+    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo), Status::OK);
     Meta generalMeta = mediaInfo.general;
     bool isGltfValue = 0;
     int64_t glftOffsetValue = 0;
