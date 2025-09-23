@@ -149,4 +149,82 @@ HWTEST_F(AudioDecoderFilterUnitTest, OnOutputFormatChanged_003, TestSize.Level1)
     audioDecoderFilter_->OnOutputFormatChanged(vividFormat);
     EXPECT_TRUE(true);
 }
+
+/**
+ * @tc.name: OnOutputFormatChanged_004
+ * @tc.desc: Test AudioDecoderFilter OnOutputFormatChanged with valid meta and nextFilter
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderFilterUnitTest, OnOutputFormatChanged_004, TestSize.Level1)
+{
+    ASSERT_NE(audioDecoderFilter_, nullptr);
+    auto meta = std::make_shared<Meta>();
+    meta->SetData(Tag::MIME_TYPE, std::string("audio/mp4a-latm"));
+    audioDecoderFilter_->meta_ = meta;
+    auto mockFilter = std::make_shared<MockFilter>();
+    audioDecoderFilter_->nextFilter_ = mockFilter;
+    EXPECT_CALL(*mockFilter, HandleFormatChange(_)).WillOnce(Return(Status::OK));
+    Format format;
+    format.PutIntValue("sample_rate", 44100);
+    format.PutIntValue("channel_count", 2);
+    format.PutIntValue("sample_format", 16);
+    audioDecoderFilter_->OnOutputFormatChanged(format);
+    EXPECT_TRUE(true);
+}
+
+/**
+ * @tc.name: OnOutputFormatChanged_005
+ * @tc.desc: Test AudioDecoderFilter OnOutputFormatChanged with audio/vivid mime type
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderFilterUnitTest, OnOutputFormatChanged_005, TestSize.Level1)
+{
+    ASSERT_NE(audioDecoderFilter_, nullptr);
+    auto meta = std::make_shared<Meta>();
+    meta->SetData(Tag::MIME_TYPE, std::string("audio/vivid"));
+    audioDecoderFilter_->meta_ = meta;
+    auto mockFilter = std::make_shared<MockFilter>();
+    audioDecoderFilter_->nextFilter_ = mockFilter;
+    Format vividFormat;
+    vividFormat.PutStringValue("mime", "audio/vivid");
+    vividFormat.PutIntValue("sample_rate", 48000);
+    vividFormat.PutIntValue("channels", 6);
+    audioDecoderFilter_->OnOutputFormatChanged(vividFormat);
+    EXPECT_TRUE(true);
+}
+
+/**
+ * @tc.name: AudioDecoderCallback_OnOutputFormatChanged_001
+ * @tc.desc: Test AudioDecoderCallback OnOutputFormatChanged with valid filter
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderCallback_OnOutputFormatChanged_001, TestSize.Level1)
+{
+    ASSERT_NE(audioDecoderFilter_, nullptr);
+    AudioDecoderCallback callback(audioDecoderFilter_);
+    Format format;
+    format.PutIntValue("sample_rate", 44100);
+    format.PutIntValue("channel_count", 2);
+    format.PutIntValue("sample_format", 16);
+    callback.OnOutputFormatChanged(format);
+    EXPECT_TRUE(true);
+}
+
+/**
+ * @tc.name: AudioDecoderCallback_OnOutputFormatChanged_002
+ * @tc.desc: Test AudioDecoderCallback OnOutputFormatChanged with weak_ptr expired
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderCallback_OnOutputFormatChanged_002, TestSize.Level1)
+{
+    auto tempFilter = std::make_shared<AudioDecoderFilter>("test", FilterType::FILTERTYPE_ADEC);
+    AudioDecoderCallback callback(tempFilter);
+    tempFilter.reset();
+    Format format;
+    format.PutIntValue("sample_rate", 44100);
+    format.PutIntValue("channel_count", 2);
+    format.PutIntValue("sample_format", 16);
+    callback.OnOutputFormatChanged(format);
+    EXPECT_TRUE(true);
+}
 } // namespace OHOS::Media

@@ -45,6 +45,13 @@ public:
     MOCK_METHOD(void, NotifyRelease, (), (override));
     MOCK_METHOD(void, OnMemoryUsageEvent, (const DfxEvent& event), (override));
 };
+
+class MockFilter : public Filter {
+public:
+    MockFilter() : Filter("MockFilter", FilterType::FILTERTYPE_ADEC) {}
+    ~MockFilter() override = default;
+    MOCK_METHOD(Status, HandleFormatChange, (std::shared_ptr<Meta>& meta), (override));
+};
 } // namespace Media
 } // namespace OHOS
 #endif // AUDIO_DECODER_FILTER_UNITTEST_H

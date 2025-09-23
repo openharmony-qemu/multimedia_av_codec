@@ -78,6 +78,36 @@ HWTEST_F(AudioEncoderFilterUnitest, OnLinkedResult_001, TestSize.Level0)
     ptr->mediaCodec_ = nullptr;
     linkCallback = nullptr;
 }
+
+/**
+ * @tc.name  : Test GetInputSurface
+ * @tc.number: GetInputSurface_001
+ * @tc.desc  : Test GetInputSurface with valid mediaCodec_
+ */
+HWTEST_F(AudioEncoderFilterUnitest, GetInputSurface_001, TestSize.Level0)
+{
+    ASSERT_NE(audioEncoderFilter_, nullptr);
+    auto mockMediaCodec = std::make_shared<MediaCodec>();
+    audioEncoderFilter_->mediaCodec_ = mockMediaCodec;
+    sptr<Surface> mockSurface = nullptr;
+    EXPECT_CALL(*mockMediaCodec, GetInputSurface()).WillOnce(Return(mockSurface));
+    auto ret = audioEncoderFilter_->GetInputSurface();
+    EXPECT_EQ(ret, mockSurface);
+}
+
+/**
+ * @tc.name  : Test GetInputSurface
+ * @tc.number: GetInputSurface_002
+ * @tc.desc  : Test GetInputSurface with nullptr mediaCodec_
+ */
+HWTEST_F(AudioEncoderFilterUnitest, GetInputSurface_002, TestSize.Level0)
+{
+    ASSERT_NE(audioEncoderFilter_, nullptr);
+    audioEncoderFilter_->mediaCodec_ = nullptr;
+    auto ret = audioEncoderFilter_->GetInputSurface();
+    EXPECT_EQ(ret, nullptr);
+}
+
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

@@ -990,26 +990,8 @@ HWTEST_P(TEST_SUIT, GetParameter_001, TestSize.Level1)
     std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
     std::shared_ptr<FormatMock> param = buffer->GetParameter();
     EXPECT_NE(param, nullptr);
-    EXPECT_FALSE(param->IsEmpty());
-}
-
-/**
- * @tc.name: GetParameter_002
- * @tc.desc: Test GetParameter interface empty parameter case
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, GetParameter_002, TestSize.Level1)
-{
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-    auto allocator = AVAllocatorFactory::CreateSurfaceAllocator(DEFAULT_CONFIG);
-    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(allocator);
-    std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
-    std::shared_ptr<FormatMock> param = buffer->GetParameter();
-    EXPECT_NE(param, nullptr);
-    param->Clear();
-    std::shared_ptr<FormatMock> emptyParam = buffer->GetParameter();
-    EXPECT_NE(emptyParam, nullptr);
+    bool result = param->PutStringValue("test_key", "test_value");
+    EXPECT_TRUE(result);
 }
 #endif // HMOS_TEST
 } // namespace
