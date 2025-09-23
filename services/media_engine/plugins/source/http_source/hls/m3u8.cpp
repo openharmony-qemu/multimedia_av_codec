@@ -659,7 +659,7 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
                 break;
         }
     });
-    if (defaultVariant_ == nullptr) {
+    if (defaultVariant_ == nullptr && !variants_.empty()) {
         defaultVariant_ = variants_.front();
     }
     tags.clear();
