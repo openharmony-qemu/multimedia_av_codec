@@ -773,7 +773,7 @@ void HlsMediaDownloader::PrepareToSeek()
     if (cacheMediaBuffer_ == nullptr) {
         cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     } else {
-        cacheMediaBuffer_.Reset();
+        cacheMediaBuffer_->Reset();
     }
     cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
     memorySize_ = totalBufferSize_;
