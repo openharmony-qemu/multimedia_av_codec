@@ -261,10 +261,6 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
     ioInfoMem->Write(outFrame->data[0], outputSize, 0);
     outBuffer->pts_ = cachedFrame_->pts;
     outBuffer->duration_ = static_cast<int64_t>(cachedFrame_->nb_samples * durationTime_);
-    if (avCodecContext_->codec->id == AV_CODEC_ID_AAC && !(outBuffer->pts_ + outBuffer->duration_ > 0)) {
-        AVCODEC_LOGI("drop this output, pts_ + duration_= %{public}" PRIu64, outBuffer->pts_ + outBuffer->duration_);
-        return Status::ERROR_NOT_ENOUGH_DATA;
-    }
     format_->SetData(Tag::AUDIO_SAMPLE_PER_FRAME, outFrame->nb_samples);
     ioInfoMem->SetSize(outputSize);
     if (needResample_) {

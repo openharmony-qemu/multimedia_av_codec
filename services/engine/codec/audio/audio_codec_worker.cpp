@@ -314,7 +314,7 @@ void AudioCodecWorker::ConsumerOutputBuffer()
     }
     std::unique_lock lock(outputMutex_);
     while (!inBufIndexQue_.empty() && isRunning) {
-        int32_t ret;
+        int32_t ret = AVCodecServiceErrCode::AVCS_ERR_INVALID_DATA;
         bool isEos = HandInputBuffer(ret);
         if (ret == AVCodecServiceErrCode::AVCS_ERR_NOT_ENOUGH_DATA) {
             AVCODEC_LOGW("current input buffer is not enough,skip this frame");
