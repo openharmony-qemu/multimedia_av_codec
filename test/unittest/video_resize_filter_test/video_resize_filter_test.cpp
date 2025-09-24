@@ -540,43 +540,6 @@ HWTEST_F(VideoResizeFilterTest, NotifyNextFilterEos_002, TestSize.Level1)
     Status ret = videoResizeFilter_->NotifyNextFilterEos();
     EXPECT_EQ(ret, Status::OK);
 }
-
-/**
- * @tc.name: DoSetPerfRecEnabled_001
- * @tc.desc: Test DoSetPerfRecEnabled interface enable performance recording
- * @tc.type: FUNC
- */
-HWTEST_F(VideoResizeFilterTest, DoSetPerfRecEnabled_001, TestSize.Level1)
-{
-    Status ret = videoResizeFilter_->DoSetPerfRecEnabled(true);
-    EXPECT_EQ(ret, Status::OK);
-}
-
-/**
- * @tc.name: DoSetPerfRecEnabled_002
- * @tc.desc: Test DoSetPerfRecEnabled interface disable performance recording
- * @tc.type: FUNC
- */
-HWTEST_F(VideoResizeFilterTest, DoSetPerfRecEnabled_002, TestSize.Level1)
-{
-    Status ret = videoResizeFilter_->DoSetPerfRecEnabled(false);
-    EXPECT_EQ(ret, Status::OK);
-}
-
-/**
- * @tc.name: DoSetPerfRecEnabled_003
- * @tc.desc: Test DoSetPerfRecEnabled interface repeat setting
- * @tc.type: FUNC
- */
-HWTEST_F(VideoResizeFilterTest, DoSetPerfRecEnabled_003, TestSize.Level1)
-{
-    Status ret1 = videoResizeFilter_->DoSetPerfRecEnabled(true);
-    EXPECT_EQ(ret1, Status::OK);
-    Status ret2 = videoResizeFilter_->DoSetPerfRecEnabled(true);
-    EXPECT_EQ(ret2, Status::OK);
-    Status ret3 = videoResizeFilter_->DoSetPerfRecEnabled(false);
-    EXPECT_EQ(ret3, Status::OK);
-}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

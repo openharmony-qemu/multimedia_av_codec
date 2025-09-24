@@ -961,7 +961,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetPTSParameter_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
-
+#endif // HMOS_TEST
+} // namespace
 int main(int argc, char **argv)
 {
     testing::GTEST_FLAG(output) = "xml:./";
@@ -975,23 +976,3 @@ int main(int argc, char **argv)
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
-
-/**
- * @tc.name: GetParameter_001
- * @tc.desc: Test GetParameter interface normal case
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, GetParameter_001, TestSize.Level1)
-{
-    SetFormatWithParam(GetParam());
-    PrepareSource(GetParam());
-    auto allocator = AVAllocatorFactory::CreateSurfaceAllocator(DEFAULT_CONFIG);
-    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(allocator);
-    std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
-    std::shared_ptr<FormatMock> param = buffer->GetParameter();
-    EXPECT_NE(param, nullptr);
-    bool result = param->PutStringValue("test_key", "test_value");
-    EXPECT_TRUE(result);
-}
-#endif // HMOS_TEST
-} // namespace

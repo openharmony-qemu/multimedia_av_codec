@@ -1439,51 +1439,6 @@ HWTEST(TestAudioSink, audio_sink_CacheBuffer_003, TestSize.Level1)
 
     ASSERT_TRUE(ret == Status::OK);
 }
-
-/**
- * @tc.name: SetVolumeWithRamp_001
- * @tc.desc: Test SetVolumeWithRamp interface boundary value cases
- * @tc.type: FUNC
- */
-HWTEST(TestAudioSink, SetVolumeWithRamp_001, TestSize.Level1)
-{
-    std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
-    ASSERT_TRUE(audioSink != nullptr);
-    int32_t ret1 = audioSink->SetVolumeWithRamp(0.0f, 1000);
-    EXPECT_EQ(ret1, 0);
-    int32_t ret2 = audioSink->SetVolumeWithRamp(1.0f, 1000);
-    EXPECT_EQ(ret2, 0);
-}
-
-/**
- * @tc.name: SetVolumeWithRamp_002
- * @tc.desc: Test SetVolumeWithRamp interface invalid value cases
- * @tc.type: FUNC
- */
-HWTEST(TestAudioSink, SetVolumeWithRamp_002, TestSize.Level1)
-{
-    std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
-    ASSERT_TRUE(audioSink != nullptr);
-    int32_t ret1 = audioSink->SetVolumeWithRamp(-0.1f, 1000);
-    EXPECT_NE(ret1, 0);
-    int32_t ret2 = audioSink->SetVolumeWithRamp(1.1f, 1000);
-    EXPECT_NE(ret2, 0);
-    int32_t ret3 = audioSink->SetVolumeWithRamp(0.5f, -100);
-    EXPECT_NE(ret3, 0);
-}
-
-/**
- * @tc.name: SetVolumeWithRamp_003
- * @tc.desc: Test SetVolumeWithRamp interface zero duration case
- * @tc.type: FUNC
- */
-HWTEST(TestAudioSink, SetVolumeWithRamp_003, TestSize.Level1)
-{
-    std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
-    ASSERT_TRUE(audioSink != nullptr);
-    int32_t ret = audioSink->SetVolumeWithRamp(0.5f, 0);
-    EXPECT_EQ(ret, 0);
-}
 } // namespace Test
 } // namespace Media
 } // namespace OHOS

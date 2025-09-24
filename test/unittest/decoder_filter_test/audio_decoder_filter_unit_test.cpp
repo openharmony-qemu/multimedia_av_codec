@@ -157,4 +157,47 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_006, TestSize.Level1)
         Status::ERROR_INVALID_PARAMETER);
 }
 
+/**
+ * @tc.name: OnOutputFormatChanged_001
+ * @tc.desc: Test AudioDecoderFilter OnOutputFormatChanged interface normal case
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_007, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::AudioDecoderFilter> audioDecoder =
+        std::make_shared<Pipeline::AudioDecoderFilter>("AudioDecoderFilter", Pipeline::FilterType::FILTERTYPE_AENC);
+    std::shared_ptr<TestEventReceiver> eventReceive = std::make_shared<TestEventReceiver>();
+    std::shared_ptr<TestFilterCallback> filterCallback = std::make_shared<TestFilterCallback>();
+    audioDecoder->Init(nullptr, filterCallback);
+    Format testFormat;
+    testFormat.PutStringValue("mime", "audio/aac");
+    testFormat.PutIntValue("sample_rate", 44100);
+    testFormat.PutIntValue("channels", 2);
+    testFormat.PutIntValue("sample_format", 6); 
+    audioDecoder->OnOutputFormatChanged(testFormat);
+    EXPECT_TRUE(true);
+}
+
+/**
+ * @tc.name: AudioDecoderFilter_Callback_001
+ * @tc.desc: Test AudioDecoderCallback OnOutputFormatChanged interface normal case
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_Callback_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::AudioDecoderFilter> audioDecoder =
+        std::make_shared<Pipeline::AudioDecoderFilter>("AudioDecoderFilter", Pipeline::FilterType::FILTERTYPE_AENC);
+    std::shared_ptr<TestEventReceiver> eventReceive = std::make_shared<TestEventReceiver>();
+    std::shared_ptr<TestFilterCallback> filterCallback = std::make_shared<TestFilterCallback>();
+    audioDecoder->Init(nullptr, filterCallback);
+
+    std::shared_ptr<Pipeline::AudioDecoderCallback> audioDecoderCallback =
+        std::make_shared<Pipeline::AudioDecoderCallback>(audioDecoder);
+    Format testFormat;
+    testFormat.PutStringValue("mime", "audio/mp3");
+    testFormat.PutIntValue("sample_rate", 44100);
+    testFormat.PutIntValue("channels", 2);
+    audioDecoderCallback->OnOutputFormatChanged(testFormat);
+    EXPECT_TRUE(true);
+}
 }

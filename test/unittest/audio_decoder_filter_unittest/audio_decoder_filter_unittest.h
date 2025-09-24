@@ -45,7 +45,6 @@ public:
     MOCK_METHOD(void, NotifyRelease, (), (override));
     MOCK_METHOD(void, OnMemoryUsageEvent, (const DfxEvent& event), (override));
 };
-
 } // namespace Media
 } // namespace OHOS
 #endif // AUDIO_DECODER_FILTER_UNITTEST_H
