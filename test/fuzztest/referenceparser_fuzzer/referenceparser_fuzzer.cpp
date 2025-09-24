@@ -49,7 +49,7 @@ bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
         return false;
     }
     fdp.ConsumeData(pstream, framesize);
-    int len = write(fd, pstream, framesize);
+    int len = write(fd, data, size);
     if (len <= EXPECT_SIZE) {
         close(fd);
         free(pstream);
