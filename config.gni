@@ -43,6 +43,7 @@ declare_args() {
   av_codec_enable_codec_rm = false
   av_codec_enable_codec_rv = false
   av_codec_enable_codec_cook = false
+  av_codec_enable_codec_eac3 = false
   av_codec_enable_demuxer_lrc = false
   av_codec_enable_demuxer_eac3 = false
   av_codec_enable_demuxer_sami = false
@@ -164,6 +165,9 @@ if (av_codec_enable_codec_rv) {
 
 if (av_codec_enable_codec_cook) {
   av_codec_defines += [ "SUPPORT_CODEC_COOK" ]
+}
+if (av_codec_enable_codec_eac3) {
+  av_codec_defines += [ "SUPPORT_CODEC_EAC3" ]
 }
 
 if (av_codec_enable_demuxer_lrc) {

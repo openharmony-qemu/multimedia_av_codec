@@ -42,6 +42,7 @@
         "av_codec_enable_codec_rm",
         "av_codec_enable_codec_rv",
         "av_codec_enable_codec_cook",
+        "av_codec_enable_codec_eac3",
         "av_codec_enable_demuxer_lrc",
         "av_codec_enable_demuxer_sami",
         "av_codec_enable_demuxer_ass",
