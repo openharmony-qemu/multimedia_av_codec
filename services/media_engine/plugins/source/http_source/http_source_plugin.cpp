@@ -318,6 +318,8 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     if (bufData == nullptr) {
         return Status::ERROR_AGAIN;
     }
+    auto writableAddr = bufData->GetWritableAddr(expectedLen);
+    FALSE_RETURN_V(writableAddr != nullptr, Status::ERROR_AGAIN);
 
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = streamId;
@@ -325,7 +327,7 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     readDataInfo.wantReadLength_ = expectedLen;
     readDataInfo.ffmpegOffset = offset;
 
-    auto result = downloader_->Read(bufData->GetWritableAddr(expectedLen), readDataInfo);
+    auto result = downloader_->Read(writableAddr, readDataInfo);
     buffer->streamID = readDataInfo.nextStreamId_;
 
     bufData->UpdateDataSize(readDataInfo.realReadLength_);
