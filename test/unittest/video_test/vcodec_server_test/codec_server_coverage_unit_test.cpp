@@ -803,6 +803,7 @@ HWTEST_F(CodecServerUnitTest, QueueInputParameter_Invalid_Test_001, TestSize.Lev
     EXPECT_EQ(ret, AVCS_ERR_UNSUPPORT);
 }
 
+
 /**
  * @tc.name: GetOutputFormat_Valid_Test_001
  * @tc.desc: codec GetOutputFormat
@@ -1290,6 +1291,18 @@ HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_003, TestSize.Level1)
 
     format = Format();
     oldFormat = Format();
+}
+HWTEST_F(CodecServerUnitTest, SetAudioDecryptionConfig_Test_001, TestSize.Level1)
+{
+    bool svpFlag = true;
+    sptr<DrmStandard::IMediaKeySessionService> keySession = nullptr;
+
+    int32_t ret = codecBaseMock_->SetAudioDecryptionConfig(keySession, svpFlag);
+    EXPECT_EQ(ret, AVCS_ERR_OK); 
+
+    svpFlag = false;
+    ret = codecBaseMock_->SetAudioDecryptionConfig(keySession, svpFlag);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
 }
 } // MediaAVCodec
 } // namespace
