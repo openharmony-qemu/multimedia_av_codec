@@ -963,6 +963,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetPTSParameter_001, TestSize.Level1)
 }
 #endif // HMOS_TEST
 } // namespace
+
 int main(int argc, char **argv)
 {
     testing::GTEST_FLAG(output) = "xml:./";
