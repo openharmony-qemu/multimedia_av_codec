@@ -639,6 +639,7 @@ Status DecoderSurfaceFilter::DoWaitPrerollDone(bool render)
             return Status::OK;
         }
     }
+    MEDIA_LOG_I("DoWaitPrerollDone end.");
     std::unique_lock<std::mutex> bufferLock(mutex_);
     if (render && !eosNext_.load() && !outputBuffers_.empty()) {
         std::pair<int, std::shared_ptr<AVBuffer>> nextTask = std::move(outputBuffers_.front());
