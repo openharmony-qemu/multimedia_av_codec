@@ -173,7 +173,7 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_007, TestSize.Level1)
     testFormat.PutStringValue("mime", "audio/aac");
     testFormat.PutIntValue("sample_rate", 44100);
     testFormat.PutIntValue("channels", 2);
-    testFormat.PutIntValue("sample_format", 6); 
+    testFormat.PutIntValue("sample_format", 6);
     audioDecoder->OnOutputFormatChanged(testFormat);
     EXPECT_TRUE(true);
 }
