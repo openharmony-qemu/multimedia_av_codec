@@ -451,7 +451,7 @@ inline void AudioCodecServer::StatusChanged(CodecStatus newStatus)
         return;
     }
     if (status_ == ERROR && videoCb_ != nullptr) {
-        videoCb_->OnError(AVCODEC_ERROR_FRAMEAORK_FAILED, AVCS_ERR_INVALID_STATE);
+        videoCb_->OnError(AVCODEC_ERROR_FRAMEWORK_FAILED, AVCS_ERR_INVALID_STATE);
     }
     AVCODEC_LOGI("Status %{public}s -> %{public}s", GetStatusDescription(status_).data(),
                  GetStatusDescription(newStatus).data());
