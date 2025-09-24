@@ -241,6 +241,7 @@ Status VideoDecoderAdapter::Flush()
             inputBufferDtsQue_.clear();
         }
     }
+    MEDIA_LOG_I_SHORT("Flush end.");
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
 
