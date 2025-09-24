@@ -500,8 +500,8 @@ bool DashSegmentDownloader::ReadInitSegment(uint8_t *buff, uint32_t wantReadLeng
         if (unReadSize > 0) {
             realReadLength = unReadSize > wantReadLength ? wantReadLength : unReadSize;
             std::string readStr = initSegment->content_.substr(initSegment->readIndex_);
-            CHECK_AND_RETURN_RET_LOG(wantReadLength <= VID_RING_BUFFER_SIZE * BYTE_TO_BIT, 1, "too large");
-            CHECK_AND_RETURN_RET_LOG(realReadLength <= VID_RING_BUFFER_SIZE * BYTE_TO_BIT, 1, "too large");
+            CHECK_AND_RETURN_RET_LOG(wantReadLength <= VID_RING_BUFFER_SIZE, 1, "too large");
+            CHECK_AND_RETURN_RET_LOG(realReadLength <= VID_RING_BUFFER_SIZE, 1, "too large");
             memcpy_s(buff, wantReadLength, readStr.c_str(), realReadLength);
             initSegment->readIndex_ += realReadLength;
             if (initSegment->readIndex_ == contentLen && initSegment->isDownloadFinish_) {
