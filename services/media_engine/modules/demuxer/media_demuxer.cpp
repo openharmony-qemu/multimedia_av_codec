@@ -72,6 +72,9 @@ std::map<OHOS::Media::TrackType, OHOS::Media::StreamType> TRACK_TO_STREAM_MAP = 
 };
 } // namespace
 
+bool MediaDemuxer::isWatchDeviceCached_ = false;
+bool MediaDemuxer::isWatchDeviceInitialized_ = false;
+
 namespace OHOS {
 namespace Media {
 constexpr uint32_t REQUEST_BUFFER_TIMEOUT = 0; // Requesting buffer overtimes 0ms means no retry
@@ -902,6 +905,73 @@ int32_t MediaDemuxer::GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> t
     return targetVideoTrackId_;
 }
 
+Status MediaDemuxer::BoostReadThreadPriority()
+{
+    MEDIA_LOG_I("Boost read thread priority start");
+    std::shared_ptr<Plugins::DemuxerPlugin> plugin = GetCurFFmpegPlugin();
+    if (plugin == nullptr) {
+        MEDIA_LOG_W("Demuxer not available, boost read thread priority failed");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    Status ret = plugin->BoostReadThreadPriority();
+    if (ret != Status::OK) {
+        MEDIA_LOG_W("Boost read thread priority failed, ret: " PUBLIC_LOG_D32, static_cast<int32_t>(ret));
+        return ret;
+    }
+    MEDIA_LOG_I("Read thread priority successfully boosted");
+    return Status::OK;
+}
+
+bool MediaDemuxer::IsWatchDevice()
+{
+    if (isWatchDeviceInitialized_) {
+        return isWatchDeviceCached_;
+    }
+
+    std::string deviceType = system::GetParameter("ro.build.device_type", "");
+    if (!deviceType.empty()) {
+        if (deviceType.find("watch") != std::string::npos || deviceType.find("wearable") != std::string::npos) {
+            MEDIA_LOG_I("Detected watch device by device_type: %{public}s", deviceType.c_str());
+            isWatchDeviceCached_ = true;
+            isWatchDeviceInitialized_ = true;
+            return true;
+        }
+    }
+
+    isWatchDeviceCached_ = false;
+    isWatchDeviceInitialized_ = true;
+    MEDIA_LOG_D("Device is not detected as watch device");
+    return false;
+}
+
+bool MediaDemuxer::BoostThreadPriorityIfNeeded()
+{
+    if (IsWatchDevice()) {
+        MEDIA_LOG_I("Watch device, boosting read thread priority");
+        Status boostWatchRet = BoostReadThreadPriority();
+        if (boostWatchRet != Status::OK) {
+            MEDIA_LOG_W("Failed to boost read thread priority, ret: %{public}d",
+                static_cast<int32_t>(boostWatchRet));
+            return false;
+        } else {
+            MEDIA_LOG_I("Successfully boosted read thread priority for watch");
+            return true;
+        }
+    } else if (!HasVideo() && HasAudio()) {
+        MEDIA_LOG_I("Audio only, boosting read thread priority");
+        Status boostAudioRet = BoostReadThreadPriority();
+        if (boostAudioRet != Status::OK) {
+            MEDIA_LOG_W("Failed to boost read thread priority for audio, ret: %{public}d",
+                static_cast<int32_t>(boostAudioRet));
+            return false;
+        } else {
+            MEDIA_LOG_I("Successfully boosted read thread priority for audio");
+            return true;
+        }
+    }
+    return false;
+}
+
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
@@ -942,6 +1012,8 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
         eventReceiver_->OnDfxEvent({"DEMUX", DfxEventType::DFX_INFO_PLAYER_EOS_SEEK,
             static_cast<int32_t>(snifferPluginName == inferPluginName)});
     }
+    bool isBoosted = BoostThreadPriorityIfNeeded();
+    MEDIA_LOG_I("Thread priority boosted: %{public}d", isBoosted);
     MEDIA_LOG_I("Out");
     return res;
 }
