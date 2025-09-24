@@ -72,8 +72,8 @@ std::map<OHOS::Media::TrackType, OHOS::Media::StreamType> TRACK_TO_STREAM_MAP = 
 };
 } // namespace
 
-bool MediaDemuxer::isWatchDeviceCached_ = false;
-bool MediaDemuxer::isWatchDeviceInitialized_ = false;
+bool OHOS::Media::MediaDemuxer::isWatchDeviceCached_ = false;
+bool OHOS::Media::MediaDemuxer::isWatchDeviceInitialized_ = false;
 
 namespace OHOS {
 namespace Media {
