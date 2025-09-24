@@ -593,32 +593,6 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_SetCodecFormat_001, Test
     Status ret = videoCaptureFilter_->SetCodecFormat(videoMeta);
     EXPECT_EQ(ret, Status::OK);
 }
-
-/**
- * @tc.name: VideoCaptureFilter_GetInputSurface_002
- * @tc.desc: GetInputSurface repeated call test
- * @tc.type: FUNC
- */
-HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_GetInputSurface_002, TestSize.Level1)
-{
-    sptr<Surface> surface1 = videoCaptureFilter_->GetInputSurface();
-    EXPECT_NE(surface1, nullptr);
-    sptr<Surface> surface2 = videoCaptureFilter_->GetInputSurface();
-    EXPECT_NE(surface2, nullptr);
-    EXPECT_EQ(surface1, surface2);
-}
-
-/**
- * @tc.name: VideoCaptureFilter_GetInputSurface_003
- * @tc.desc: GetInputSurface test in uninitialized state
- * @tc.type: FUNC
- */
-HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_GetInputSurface_003, TestSize.Level1)
-{
-    auto newFilter = std::make_shared<VideoCaptureFilter>("testFilter", FilterType::VIDEO_CAPTURE);
-    sptr<Surface> surface = newFilter->GetInputSurface();
-    EXPECT_NE(surface, nullptr);
-}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

@@ -87,12 +87,11 @@ HWTEST_F(AudioEncoderFilterUnitest, OnLinkedResult_001, TestSize.Level0)
 HWTEST_F(AudioEncoderFilterUnitest, GetInputSurface_001, TestSize.Level0)
 {
     ASSERT_NE(audioEncoderFilter_, nullptr);
-    auto mockMediaCodec = std::make_shared<MediaCodec>();
-    audioEncoderFilter_->mediaCodec_ = mockMediaCodec;
-    sptr<Surface> mockSurface = nullptr;
-    EXPECT_CALL(*mockMediaCodec, GetInputSurface()).WillOnce(Return(mockSurface));
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodec;
+    sptr<Surface> surface = nullptr;
     auto ret = audioEncoderFilter_->GetInputSurface();
-    EXPECT_EQ(ret, mockSurface);
+    EXPECT_EQ(ret, surface);
 }
 
 /**

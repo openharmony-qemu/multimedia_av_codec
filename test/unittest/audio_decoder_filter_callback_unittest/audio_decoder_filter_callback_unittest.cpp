@@ -103,7 +103,7 @@ HWTEST_F(AudioDecoderFilterCallBackUnitTest, CallBackOnBufferAvailable_001, Test
 HWTEST_F(AudioDecoderFilterCallBackUnitTest, OnOutputFormatChanged_001, TestSize.Level1)
 {
     ASSERT_NE(audioDecoderFilter_, nullptr);
-    auto callback = std::make_shared<AudioDecoderCallback>(audioDecoderFilter_);
+    auto callback = std::make_shared<AudioDecoderFilterLinkCallback>(audioDecoderFilter_);
     ASSERT_NE(callback, nullptr);
     Format testFormat;
     testFormat.PutStringValue("mime", "audio/mp3");
@@ -121,7 +121,7 @@ HWTEST_F(AudioDecoderFilterCallBackUnitTest, OnOutputFormatChanged_001, TestSize
 HWTEST_F(AudioDecoderFilterCallBackUnitTest, OnOutputFormatChanged_002, TestSize.Level1)
 {
     ASSERT_NE(audioDecoderFilter_, nullptr);
-    auto callback = std::make_shared<AudioDecoderCallback>(audioDecoderFilter_);
+    auto callback = std::make_shared<AudioDecoderFilterLinkCallback>(audioDecoderFilter_);
     ASSERT_NE(callback, nullptr);
     Format emptyFormat;
     callback->OnOutputFormatChanged(emptyFormat);
@@ -135,7 +135,7 @@ HWTEST_F(AudioDecoderFilterCallBackUnitTest, OnOutputFormatChanged_002, TestSize
  */
 HWTEST_F(AudioDecoderFilterCallBackUnitTest, OnOutputFormatChanged_003, TestSize.Level1)
 {
-    auto callback = std::make_shared<AudioDecoderCallback>(nullptr);
+    auto callback = std::make_shared<AudioDecoderFilterLinkCallback>(nullptr);
     ASSERT_NE(callback, nullptr);
     Format testFormat;
     testFormat.PutStringValue("mime", "audio/aac");
@@ -153,13 +153,12 @@ HWTEST_F(AudioDecoderFilterCallBackUnitTest, OnOutputFormatChanged_003, TestSize
 HWTEST_F(AudioDecoderFilterCallBackUnitTest, OnOutputFormatChanged_004, TestSize.Level1)
 {
     ASSERT_NE(audioDecoderFilter_, nullptr);
-    auto callback = std::make_shared<AudioDecoderCallback>(audioDecoderFilter_);
+    auto callback = std::make_shared<AudioDecoderFilterLinkCallback>(audioDecoderFilter_);
     ASSERT_NE(callback, nullptr);
     Format format1;
     format1.PutStringValue("mime", "audio/aac");
     format1.PutIntValue("sample_rate", 44100);
     format1.PutIntValue("channels", 2);
-    
     Format format2;
     format2.PutStringValue("mime", "audio/mp3");
     format2.PutIntValue("sample_rate", 48000);
