@@ -16,7 +16,7 @@ import("//foundation/multimedia/av_codec/config.gni")
 
 module_output_path = "av_codec/AVCodec_Video/unittest"
 pts_and_index_conversion_test_sources = [
-  "$av_codec_root_dir/services/media_engine/modules/demuxer/pts_and_index_conversion.cpp",
+  "$av_codec_root_dir/services/media_engine/modules/pts_index_conversion/pts_and_index_conversion.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/type_finder.cpp",
   "$av_codec_root_dir/services/media_engine/modules/source/source.cpp",
 ]
@@ -55,6 +55,7 @@ config("pts_and_index_conversio_unittest_cfg") {
     "$av_codec_root_dir/interfaces/inner_api/native",
     "$av_codec_root_dir/services/media_engine/modules",
     "$av_codec_root_dir/services/media_engine/modules/demuxer",
+    "$av_codec_root_dir/services/media_engine/modules/pts_index_conversion",
     "$av_codec_root_dir/test/unittest/common",
   ]
 }

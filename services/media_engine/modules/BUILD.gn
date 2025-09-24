@@ -15,7 +15,7 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 config("av_codec_media_engine_modules_pts_and_index_convert_config") {
-  include_dirs = [ "$av_codec_root_dir/services/media_engine/modules/demuxer" ]
+  include_dirs = [ "$av_codec_root_dir/services/media_engine/modules/pts_index_conversion" ]
 }
 
 config("av_codec_media_engine_modules_config") {
@@ -77,7 +77,6 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "demuxer/base_stream_demuxer.cpp",
     "demuxer/demuxer_plugin_manager.cpp",
     "demuxer/media_demuxer.cpp",
-    "demuxer/pts_and_index_conversion.cpp",
     "demuxer/sample_queue.cpp",
     "demuxer/stream_demuxer.cpp",
     "demuxer/type_finder.cpp",
@@ -86,6 +85,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "muxer/data_sink_file.cpp",
     "muxer/media_muxer.cpp",
     "post_processor/video_post_processor_factory.cpp",
+    "pts_index_conversion/pts_and_index_conversion.cpp",
     "sink/audio_sampleformat.cpp",
     "sink/audio_sink.cpp",
     "sink/calc_max_amplitude.cpp",
