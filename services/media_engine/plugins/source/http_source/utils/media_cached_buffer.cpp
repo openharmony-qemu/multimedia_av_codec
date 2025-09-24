@@ -1049,6 +1049,27 @@ void CacheMediaChunkBufferImpl::Clear()
     totalReadSize_ = 0;
 }
 
+void CacheMediaChunkBufferImpl::Reset()
+{
+    std::lock_guard lock(mutex_);
+    freeChunks_.clear();
+    fragmentCacheBuffer_.clear();
+    readPos_ = fragmentCacheBuffer_.end();
+    writePos_ = fragmentCacheBuffer_.end();
+    totalBuffSize_ = 0;
+    totalReadSize_ = 0;
+    chunkMaxNum_ = 0;
+    chunkSize_ = 0;
+    initReadSizeFactor_ = 0;
+    if (bufferAddr_ != nullptr) {
+        free(bufferAddr_);
+        bufferAddr_ = nullptr;
+    }
+    fragmentMaxNum_ = CACHE_FRAGMENT_MAX_NUM_DEFAULT;
+    lruCache_.ReCacheSize(CACHE_FRAGMENT_MAX_NUM_DEFAULT);
+    isLargeOffsetSpan_ = false;
+}
+
 uint64_t CacheMediaChunkBufferImpl::GetFreeSize()
 {
     std::lock_guard lock(mutex_);

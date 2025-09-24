@@ -770,8 +770,11 @@ void HlsMediaDownloader::PrepareToSeek()
     playList_->Clear();
     downloader_->Cancel();
 
-    cacheMediaBuffer_.reset();
-    cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    if (cacheMediaBuffer_ == nullptr) {
+        cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    } else {
+        cacheMediaBuffer_->Reset();
+    }
     cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
     memorySize_ = totalBufferSize_;
     canWrite_ = true;
