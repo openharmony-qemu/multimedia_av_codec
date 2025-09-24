@@ -269,7 +269,7 @@ private:
     ConditionVariable loopPauseCond_;
     std::atomic<bool> isAppBackground_ {false};
 
-    int64_t uuid_ {0};
+    int64_t sourceId_ {0};
     FairMutex closeMutex_ {};
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_;
     std::shared_ptr<IMediaSourceLoadingRequest> loadingReques_;
