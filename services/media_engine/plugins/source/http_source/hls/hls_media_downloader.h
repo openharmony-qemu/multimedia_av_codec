@@ -303,7 +303,7 @@ private:
     volatile size_t bufferingTime_ {0};
     volatile size_t readTime_ {0};
     FairMutex tsStorageInfoMutex_ {};
-    std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
+    std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_ {nullptr};
 
     FairMutex bufferingEndMutex_ {};
     ConditionVariable bufferingEndCond_;
@@ -317,7 +317,7 @@ private:
     std::atomic<bool> isTimeoutErrorNotified_ {false};
 	
     size_t timeoutInterval_ = 0;
-    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_;
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     std::atomic<bool> isNeedResume_ {false};
     uint64_t cachedDuration_ {0};
     SteadyClock loopInterruptClock_;
