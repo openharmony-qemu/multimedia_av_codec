@@ -4010,10 +4010,11 @@ void MediaDemuxer::HandleVideoSampleQueue()
 
 bool MediaDemuxer::IsSegmentEos()
 {
-    for (const auto& item : segmentEosMap_) {
-        if (!item.second) {
-            return false;
-        }
+    if (IsValidTrackId(videoTrackId_)) {
+        FALSE_RETURN_V(segmentEosMap_[videoTrackId_], false);
+    }
+    if (IsValidTrackId(audioTrackId_)) {
+        FALSE_RETURN_V(segmentEosMap_[audioTrackId_], false);
     }
     return true;
 }
