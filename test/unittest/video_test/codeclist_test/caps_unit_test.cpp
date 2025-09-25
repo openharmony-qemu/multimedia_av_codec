@@ -77,6 +77,16 @@ std::vector<std::shared_ptr<VideoCaps>> CapsUnitTest::GetVideoEncoderCaps()
     return ret;
 }
 
+std::vector<std::shared_ptr<VideoCaps>> CapsUnitTest::GetVideoEncoderCapsDup(int32_t times)
+{
+    std::vector<std::shared_ptr<VideoCaps>> ret;
+    for (int32_t i = 0; i < times; i++) {
+        auto capabilityCapi = OH_AVCodec_GetCapability(string(CodecMimeType::VIDEO_HEVC).c_str(), true);
+        ret.push_back(std::make_shared<VideoCaps>(capabilityCapi->capabilityData_));
+    }
+    return ret;
+}
+
 std::vector<std::shared_ptr<AudioCaps>> CapsUnitTest::GetAudioDecoderCaps()
 {
     std::vector<std::shared_ptr<AudioCaps>> ret;
@@ -92,6 +102,16 @@ std::vector<std::shared_ptr<AudioCaps>> CapsUnitTest::GetAudioEncoderCaps()
     std::vector<std::shared_ptr<AudioCaps>> ret;
     for (auto it : audioEncoderList) {
         auto capabilityCapi = OH_AVCodec_GetCapability(it.c_str(), true);
+        ret.push_back(std::make_shared<AudioCaps>(capabilityCapi->capabilityData_));
+    }
+    return ret;
+}
+
+std::vector<std::shared_ptr<AudioCaps>> CapsUnitTest::GetAudioEncoderCapsDup(int32_t times)
+{
+    std::vector<std::shared_ptr<AudioCaps>> ret;
+    for (int32_t i = 0; i < times; i++) {
+        auto capabilityCapi = OH_AVCodec_GetCapability(string(CodecMimeType::AUDIO_AAC).c_str(), true);
         ret.push_back(std::make_shared<AudioCaps>(capabilityCapi->capabilityData_));
     }
     return ret;
@@ -133,6 +153,17 @@ std::vector<std::shared_ptr<VideoCaps>> CapsUnitTest::GetVideoEncoderCaps()
     return ret;
 }
 
+std::vector<std::shared_ptr<VideoCaps>> CapsUnitTest::GetVideoEncoderCapsDup(int32_t times)
+{
+    std::vector<std::shared_ptr<VideoCaps>> ret;
+    for (int32_t i = 0; i < times; i++) {
+        CapabilityData *capabilityData = avCodecList_->GetCapability(
+            string(CodecMimeType::VIDEO_HEVC), true, AVCodecCategory::AVCODEC_NONE);
+        ret.push_back(std::make_shared<VideoCaps>(capabilityData));
+    }
+    return ret;
+}
+
 std::vector<std::shared_ptr<AudioCaps>> CapsUnitTest::GetAudioDecoderCaps()
 {
     std::vector<std::shared_ptr<AudioCaps>> ret;
@@ -148,6 +179,17 @@ std::vector<std::shared_ptr<AudioCaps>> CapsUnitTest::GetAudioEncoderCaps()
     std::vector<std::shared_ptr<AudioCaps>> ret;
     for (auto it : audioEncoderList) {
         CapabilityData *capabilityData = avCodecList_->GetCapability(it, true, AVCodecCategory::AVCODEC_NONE);
+        ret.push_back(std::make_shared<AudioCaps>(capabilityData));
+    }
+    return ret;
+}
+
+std::vector<std::shared_ptr<AudioCaps>> CapsUnitTest::GetAudioEncoderCapsDup(int32_t times)
+{
+    std::vector<std::shared_ptr<AudioCaps>> ret;
+    for (int32_t i = 0; i < times; i++) {
+        CapabilityData *capabilityData = avCodecList_->GetCapability(
+            string(CodecMimeType::AUDIO_AAC), true, AVCodecCategory::AVCODEC_NONE);
         ret.push_back(std::make_shared<AudioCaps>(capabilityData));
     }
     return ret;
@@ -813,6 +855,19 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoEncoderCaps_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: AVCaps_GetVideoEncoderCaps_002
+ * @tc.desc: AAVCdecList GetVideoEncoderCaps for multi times
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetVideoEncoderCaps_002, TestSize.Level1)
+{
+    std::vector<std::shared_ptr> videoEncoderArray;
+    videoEncoderArray = GetVideoEncoderCapsDup(10); // 10 is multi times
+    CheckVideoCapsArray(videoEncoderArray);
+}
+
+/**
  * @tc.name: AVCaps_GetAudioDecoderCaps_001
  * @tc.desc: AVCdecList GetAudioDecoderCaps
  * @tc.type: FUNC
@@ -823,6 +878,19 @@ HWTEST_F(CapsUnitTest, AVCaps_GetAudioDecoderCaps_001, TestSize.Level1)
     std::vector<std::shared_ptr<AudioCaps>> audioDecoderArray;
     audioDecoderArray = GetAudioDecoderCaps();
     CheckAudioCapsArray(audioDecoderArray);
+}
+
+/**
+ * @tc.name: AVCaps_GetAudioEncoderCaps_002
+ * @tc.desc: AVCdecList GetAudioEncoderCaps for multi times
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetAudioEncoderCaps_002, TestSize.Level1)
+{
+    std::vector<std::shared_ptr> audioEncoderArray;
+    audioEncoderArray = GetAudioEncoderCapsDup(10); // 10 is multi times
+    CheckAudioCapsArray(audioEncoderArray);
 }
 
 /**
