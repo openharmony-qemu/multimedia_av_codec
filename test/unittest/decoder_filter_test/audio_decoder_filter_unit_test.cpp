@@ -176,6 +176,11 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_007, TestSize.Level1)
     initialMeta->SetData(Tag::AUDIO_SAMPLE_FORMAT, 1);
     audioDecoder->meta_ = initialMeta;
 
+    std::shared_ptr<Pipeline::AudioDecoderFilter> mockNextFilter =
+        std::make_shared<Pipeline::AudioDecoderFilter>("MockNextFilter", Pipeline::FilterType::FILTERTYPE_ADEC);
+    mockNextFilter->Init(nullptr, filterCallback);
+    audioDecoder->nextFilter_ = mockNextFilter;
+
     Format testFormat;
     testFormat.PutStringValue("mime", "audio/aac");
     testFormat.PutIntValue("sample_rate", 44100);
@@ -215,6 +220,12 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_Callback_001, TestSize.L
     initialMeta->SetData(Tag::AUDIO_OUTPUT_CHANNELS, 1);
     initialMeta->SetData(Tag::AUDIO_SAMPLE_FORMAT, 1);
     audioDecoder->meta_ = initialMeta;
+
+    std::shared_ptr<Pipeline::AudioDecoderFilter> mockNextFilter =
+        std::make_shared<Pipeline::AudioDecoderFilter>("MockNextFilter", Pipeline::FilterType::FILTERTYPE_ADEC);
+    mockNextFilter->Init(nullptr, filterCallback);
+    audioDecoder->nextFilter_ = mockNextFilter;
+
     std::shared_ptr<Pipeline::AudioDecoderCallback> audioDecoderCallback =
         std::make_shared<Pipeline::AudioDecoderCallback>(audioDecoder);
     Format testFormat;
