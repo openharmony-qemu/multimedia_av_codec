@@ -74,6 +74,7 @@ constexpr size_t STORP_WRITE_BUFFER_REDUNDANCY = 1 * 1024 * 1024;
 constexpr int MAX_RETRY = 10;
 constexpr uint32_t MAX_LOOP_TIMES = 100;
 constexpr uint64_t MAX_EXPECT_DURATION = 19;
+constexpr uint32_t POP_TIME_OUT_MS = 1;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -1467,7 +1468,7 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url, const st
     if (keyLen_ > 0) {
         NZERO_LOG(memcpy_s(iv_, DECRYPT_UNIT_LEN, initIv_, DECRYPT_UNIT_LEN));
     }
-    auto playInfo = playList_->Pop(1);
+    auto playInfo = playList_->Pop(POP_TIME_OUT_MS);
     if (!playInfo.url_.empty()) {
         writeTsIndex_++;
         size_t fragmentSize = downloadRequest_->GetFileContentLength();
