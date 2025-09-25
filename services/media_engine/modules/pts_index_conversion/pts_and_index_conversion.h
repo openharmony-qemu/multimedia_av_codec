@@ -25,7 +25,7 @@
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_definition.h"
 #include "common/media_source.h"
-#include "stream_demuxer.h"
+#include "demuxer/stream_demuxer.h"
 
 #define BOX_TYPE_FTYP "ftyp"
 #define BOX_TYPE_MOOV "moov"
