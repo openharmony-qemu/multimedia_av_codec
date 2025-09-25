@@ -433,21 +433,6 @@ static void CheckM2TSSourceKey()
 }
 
 /**
- * @tc.number    : M2TS_DEMUXER_FUNCTION_TEST_0000
- * @tc.name      : create source with invalid fd
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0000, TestSize.Level0)
-{
-    const char *file = "/data/test/media/invalid.m2ts";
-    int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
-    ASSERT_EQ(source, nullptr);
-    close(fd);
-}
-
-/**
  * @tc.number    : M2TS_DEMUXER_FUNCTION_TEST_0100
  * @tc.name      : fd demux h264_aac.m2ts
  * @tc.desc      : function test

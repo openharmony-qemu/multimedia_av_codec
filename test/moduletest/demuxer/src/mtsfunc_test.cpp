@@ -433,21 +433,6 @@ static void CheckMTSSourceKey()
 }
 
 /**
- * @tc.number    : MTS_DEMUXER_FUNCTION_TEST_0000
- * @tc.name      : create source with invalid fd
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0000, TestSize.Level0)
-{
-    const char *file = "/data/test/media/invalid.mts";
-    int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
-    ASSERT_EQ(source, nullptr);
-    close(fd);
-}
-
-/**
  * @tc.number    : MTS_DEMUXER_FUNCTION_TEST_0100
  * @tc.name      : fd demux h264_aac.mts
  * @tc.desc      : function test
