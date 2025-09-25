@@ -15,7 +15,7 @@
 
 #include "codec_listener_proxy.h"
 #include <shared_mutex>
-#include "avcodec_dfx_component.h"
+#include "avcodec_log_ex.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_parcel.h"
