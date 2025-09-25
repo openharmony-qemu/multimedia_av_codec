@@ -57,8 +57,11 @@ void ApeFuzzDemo::RandomSetMeta(const uint8_t *data)
     data++;
     uint32_t sampleRate = g_supportedSampleRateSet[static_cast<uint8_t>((*data) % g_supportedSampleRateSetSize)];
     data++;
+    OH_BitsPerSample sampleFormat = g_supportedSampleFormats[static_cast<uint8_t>((*data) %
+                                                             g_supportedSampleFormatsSize)];
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channel);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), sampleFormat);
 
     return;
 }
