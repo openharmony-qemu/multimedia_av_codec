@@ -191,7 +191,6 @@ public:
     }
     void NotifyResumeUnMute();
     bool BoostThreadPriorityIfNeeded();
-    bool IsWatchDevice();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;

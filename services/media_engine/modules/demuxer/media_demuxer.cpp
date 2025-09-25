@@ -919,34 +919,9 @@ Status MediaDemuxer::BoostReadThreadPriority()
     return Status::OK;
 }
 
-bool MediaDemuxer::IsWatchDevice()
-{
-    std::string deviceType = system::GetParameter("ro.build.device_type", "");
-    if (!deviceType.empty()) {
-        if (deviceType.find("watch") != std::string::npos || deviceType.find("wearable") != std::string::npos) {
-            MEDIA_LOG_I("Detected watch device by device_type: %{public}s", deviceType.c_str());
-            return true;
-        }
-    }
-
-    MEDIA_LOG_D("Device is not detected as watch device");
-    return false;
-}
-
 bool MediaDemuxer::BoostThreadPriorityIfNeeded()
 {
-    if (IsWatchDevice()) {
-        MEDIA_LOG_I("Watch device, boosting read thread priority");
-        Status boostWatchRet = BoostReadThreadPriority();
-        if (boostWatchRet != Status::OK) {
-            MEDIA_LOG_W("Failed to boost read thread priority, ret: %{public}d",
-                static_cast<int32_t>(boostWatchRet));
-            return false;
-        } else {
-            MEDIA_LOG_I("Successfully boosted read thread priority for watch");
-            return true;
-        }
-    } else if (!HasVideo() && HasAudio()) {
+    if (!HasVideo() && HasAudio()) {
         MEDIA_LOG_I("Audio only, boosting read thread priority");
         Status boostAudioRet = BoostReadThreadPriority();
         if (boostAudioRet != Status::OK) {
