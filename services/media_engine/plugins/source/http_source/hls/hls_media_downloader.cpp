@@ -1467,12 +1467,12 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url, const st
     if (keyLen_ > 0) {
         NZERO_LOG(memcpy_s(iv_, DECRYPT_UNIT_LEN, initIv_, DECRYPT_UNIT_LEN));
     }
-    if (!playList_->Empty()) {
+    auto playInfo = playList_->Pop(1);
+    if (!playInfo.url_.empty()) {
         writeTsIndex_++;
         size_t fragmentSize = downloadRequest_->GetFileContentLength();
         double duration = downloadRequest_->GetDuration();
         CalculateBitRate(fragmentSize, duration);
-        auto playInfo = playList_->Pop();
         PutRequestIntoDownloader(playInfo);
     } else {
         isDownloadStarted_ = false;
