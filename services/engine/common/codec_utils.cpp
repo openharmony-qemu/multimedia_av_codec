@@ -225,13 +225,13 @@ int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct Surface
     }
     uint32_t yScaleLineSize = static_cast<uint32_t>(surfaceInfo.scaleLineSize[0]);
     if (IsYuvFormat(pixFmt)) {
-        if (surfaceInfo.surfaceStride % yScaleLineSize) {
+        if (surfaceInfo.surfaceStride != yScaleLineSize) {
             return WriteYuvDataStride(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize,
                                       surfaceInfo.surfaceStride, format);
         }
         return WriteYuvData(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize, height, pixFmt);
     } else if (IsRgbFormat(pixFmt)) {
-        if (surfaceInfo.surfaceStride % yScaleLineSize) {
+        if (surfaceInfo.surfaceStride != yScaleLineSize) {
             return WriteRgbDataStride(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize,
                                       surfaceInfo.surfaceStride, format);
         }
@@ -260,12 +260,12 @@ int32_t WriteBufferData(const std::shared_ptr<AVMemory> &memory, uint8_t **scale
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
     AVCODEC_SYNC_TRACE;
     if (IsYuvFormat(pixFmt)) {
-        if (scaleLineSize[0] % width) {
+        if (scaleLineSize[0] != width) {
             return WriteYuvDataStride(memory, scaleData, scaleLineSize, width, format);
         }
         return WriteYuvData(memory, scaleData, scaleLineSize, height, pixFmt);
     } else if (IsRgbFormat(pixFmt)) {
-        if (scaleLineSize[0] % width) {
+        if (scaleLineSize[0] != width) {
             return WriteRgbDataStride(memory, scaleData, scaleLineSize, width * VIDEO_PIX_DEPTH_RGBA, format);
         }
         return WriteRgbData(memory, scaleData, scaleLineSize, height);
