@@ -183,6 +183,8 @@ static void CheckSeekMode(seekInfo seekInfo)
         } else if (g_tarckType == MEDIA_TYPE_SUBTITLE) {
             ASSERT_EQ(seekInfo.subtitleCount, frameNum);
         }
+        OH_AVFormat_Destroy(trackFormat);
+        trackFormat = nullptr;
     }
     close(fd);
 }
@@ -428,6 +430,21 @@ static void CheckM2TSSourceKey()
     ASSERT_EQ(expectcurrentFileType, currentFileType);
     int expectduration = 10054666;
     ASSERT_EQ(expectduration, duration);
+}
+
+/**
+ * @tc.number    : M2TS_DEMUXER_FUNCTION_TEST_0000
+ * @tc.name      : create source with invalid fd
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0000, TestSize.Level0)
+{
+    const char *file = "/data/test/media/invalid.m2ts";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_EQ(source, nullptr);
+    close(fd);
 }
 
 /**

@@ -184,6 +184,8 @@ static void CheckSeekMode(seekInfo seekInfo)
         } else if (g_tarckType == MEDIA_TYPE_SUBTITLE) {
             ASSERT_EQ(seekInfo.subtitleCount, frameNum);
         }
+        OH_AVFormat_Destroy(trackFormat);
+        trackFormat = nullptr;
     }
     close(fd);
 }
@@ -427,6 +429,21 @@ static void CheckTRPSourceKey()
     ASSERT_EQ(expectcurrentFileType, currentFileType);
     int expectduration = 10090667;
     ASSERT_EQ(expectduration, duration);
+}
+
+/**
+ * @tc.number    : TRP_DEMUXER_FUNCTION_TEST_0000
+ * @tc.name      : create source with invalid fd
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerTrpFuncNdkTest, TRP_DEMUXER_FUNCTION_TEST_0000, TestSize.Level0)
+{
+    const char *file = "/data/test/media/invalid.trp";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_EQ(source, nullptr);
+    close(fd);
 }
 
 /**
