@@ -29,6 +29,7 @@
 #include "nocopyable.h"
 #include "common/native_mfmagic.h"
 #include "avcodec_audio_common.h"
+#include "audio_decoder_base_new_demo.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -37,48 +38,10 @@ namespace AudioBufferNewDemo {
 using namespace std;
 using namespace OHOS::Media;
 
-class ADecBufferSignal {
-public:
-    std::mutex inMutex_;
-    std::mutex outMutex_;
-    std::mutex startMutex_;
-    std::condition_variable inCond_;
-    std::condition_variable outCond_;
-    std::condition_variable startCond_;
-    std::queue<uint32_t> inQueue_;
-    std::queue<uint32_t> outQueue_;
-    std::queue<OH_AVBuffer *> inBufferQueue_;
-    std::queue<OH_AVBuffer *> outBufferQueue_;
-};
-
-class AacFuzzDemo : public NoCopyable {
+class AacFuzzDemo : public BaseFuzzDemo {
 public:
     void RandomSetMeta(const uint8_t *data);
     bool DoAacParserWithParserAPI(const uint8_t *data, size_t size);
-private:
-    void WriteData();
-
-    OH_AVErrCode Start();
-    OH_AVErrCode Stop();
-    OH_AVErrCode Flush();
-    OH_AVErrCode Reset();
-    int32_t Release();
-    void InputFunc();
-    void OutputFunc();
-
-    int32_t decodeMaxInput;
-    int32_t decodeMaxOutput;
-    shared_ptr<AVBuffer> inputBuffer;
-    shared_ptr<AVBuffer> outputBuffer;
-    OH_AVCodec *audioDec_;
-    struct OH_AVCodecCallback cb_;
-    ADecBufferSignal *signal_;
-    OH_AVFormat *format;
-    std::atomic<bool> isRunning_ = false;
-    std::unique_ptr<std::thread> inputLoop_;
-    std::unique_ptr<std::thread> outputLoop_;
-    const uint8_t *data_;
-    size_t size_;
 };
 } // namespace AudioBufferNewDemo
 } // namespace MediaAVCodec
