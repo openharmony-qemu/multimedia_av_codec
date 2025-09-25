@@ -184,8 +184,6 @@ static void CheckSeekMode(seekInfo seekInfo)
         } else if (g_tarckType == MEDIA_TYPE_SUBTITLE) {
             ASSERT_EQ(seekInfo.subtitleCount, frameNum);
         }
-        OH_AVFormat_Destroy(trackFormat);
-        trackFormat = nullptr;
     }
     close(fd);
 }
