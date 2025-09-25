@@ -72,9 +72,6 @@ std::map<OHOS::Media::TrackType, OHOS::Media::StreamType> TRACK_TO_STREAM_MAP = 
 };
 } // namespace
 
-bool OHOS::Media::MediaDemuxer::isWatchDeviceCached_ = false;
-bool OHOS::Media::MediaDemuxer::isWatchDeviceInitialized_ = false;
-
 namespace OHOS {
 namespace Media {
 constexpr uint32_t REQUEST_BUFFER_TIMEOUT = 0; // Requesting buffer overtimes 0ms means no retry
@@ -924,22 +921,14 @@ Status MediaDemuxer::BoostReadThreadPriority()
 
 bool MediaDemuxer::IsWatchDevice()
 {
-    if (isWatchDeviceInitialized_) {
-        return isWatchDeviceCached_;
-    }
-
     std::string deviceType = system::GetParameter("ro.build.device_type", "");
     if (!deviceType.empty()) {
         if (deviceType.find("watch") != std::string::npos || deviceType.find("wearable") != std::string::npos) {
             MEDIA_LOG_I("Detected watch device by device_type: %{public}s", deviceType.c_str());
-            isWatchDeviceCached_ = true;
-            isWatchDeviceInitialized_ = true;
             return true;
         }
     }
 
-    isWatchDeviceCached_ = false;
-    isWatchDeviceInitialized_ = true;
     MEDIA_LOG_D("Device is not detected as watch device");
     return false;
 }

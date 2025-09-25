@@ -193,8 +193,6 @@ public:
     bool BoostThreadPriorityIfNeeded();
     bool IsWatchDevice();
 private:
-    static bool isWatchDeviceCached_;
-    static bool isWatchDeviceInitialized_;
     class AVBufferQueueProducerListener;
     class TrackWrapper;
     struct MediaMetaData {
