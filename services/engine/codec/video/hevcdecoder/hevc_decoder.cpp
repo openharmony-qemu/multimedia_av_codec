@@ -865,6 +865,7 @@ int32_t HevcDecoder::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, i
     int32_t ret = SetQueueSize(surface, bufferCnt);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set surface queue size failed!");
     ret = SetSurfaceCfg();
+    surface->Disconnect();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set surface cfg failed!");
     CHECK_AND_RETURN_RET_LOGD(buffers_[INDEX_OUTPUT].size() > 0u, AVCS_ERR_OK, "Set surface cfg & queue size success.");
     int32_t valBufferCnt = 0;
@@ -1727,6 +1728,7 @@ int32_t HevcDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
     sptr<Surface> curSurface = sInfo_.surface;
     newSurface->Connect(); // cleancache will work only if the surface is connected by us
     newSurface->CleanCache(); // make sure new surface is empty
+    newSurface->Disconnect();
     std::vector<uint32_t> ownedBySurfaceBufferIndex;
     uint64_t newId = newSurface->GetUniqueId();
     for (uint32_t index = 0; index < buffers_[INDEX_OUTPUT].size(); index++) {
