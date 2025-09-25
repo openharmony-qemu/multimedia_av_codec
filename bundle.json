@@ -275,7 +275,7 @@
               "header_files": [
                 "pts_and_index_conversion.h"
               ],
-              "header_base": "//foundation/multimedia/av_codec/services/media_engine/modules/demuxer"
+              "header_base": "//foundation/multimedia/av_codec/services/media_engine/modules/pts_and_index_conversion"
             }
           },
           {
