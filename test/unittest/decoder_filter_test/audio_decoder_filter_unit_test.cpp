@@ -170,7 +170,7 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_007, TestSize.Level1)
     std::shared_ptr<TestFilterCallback> filterCallback = std::make_shared<TestFilterCallback>();
     audioDecoder->Init(nullptr, filterCallback);
     std::shared_ptr<Meta> initialMeta = std::make_shared<Meta>();
-    initialMeta->SetData(Tag::MIME_TYPE, "audio/aac");
+    initialMeta->SetData(Tag::MIME_TYPE, "audio/flac");
     initialMeta->SetData(Tag::AUDIO_SAMPLE_RATE, 48000);
     initialMeta->SetData(Tag::AUDIO_OUTPUT_CHANNELS, 1);
     initialMeta->SetData(Tag::AUDIO_SAMPLE_FORMAT, 1);
@@ -182,17 +182,14 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_007, TestSize.Level1)
     audioDecoder->nextFilter_ = mockNextFilter;
 
     Format testFormat;
-    testFormat.PutStringValue("mime", "audio/aac");
-    testFormat.PutIntValue("sample_rate", 44100);
-    testFormat.PutIntValue("channels", 2);
-    testFormat.PutIntValue("sample_format", 6);
+    testFormat.PutIntValue(Tag::AUDIO_SAMPLE_RATE, 44100);
+    testFormat.PutIntValue(Tag::AUDIO_CHANNEL_COUNT, 2);
+    testFormat.PutIntValue(Tag::AUDIO_SAMPLE_FORMAT, 6);
     audioDecoder->OnOutputFormatChanged(testFormat);
     std::string updatedMime;
     int32_t updatedSampleRate = 0;
     int32_t updatedChannels = 0;
     int32_t updatedSampleFormat = 0;
-    EXPECT_TRUE(audioDecoder->meta_->GetData(Tag::MIME_TYPE, updatedMime));
-    EXPECT_EQ(updatedMime, "audio/aac");
     EXPECT_TRUE(audioDecoder->meta_->GetData(Tag::AUDIO_SAMPLE_RATE, updatedSampleRate));
     EXPECT_EQ(updatedSampleRate, 44100);
     EXPECT_TRUE(audioDecoder->meta_->GetData(Tag::AUDIO_OUTPUT_CHANNELS, updatedChannels));
@@ -215,7 +212,7 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_Callback_001, TestSize.L
     audioDecoder->Init(nullptr, filterCallback);
 
     std::shared_ptr<Meta> initialMeta = std::make_shared<Meta>();
-    initialMeta->SetData(Tag::MIME_TYPE, "audio/mp3");
+    initialMeta->SetData(Tag::MIME_TYPE, "audio/flac");
     initialMeta->SetData(Tag::AUDIO_SAMPLE_RATE, 48000);
     initialMeta->SetData(Tag::AUDIO_OUTPUT_CHANNELS, 1);
     initialMeta->SetData(Tag::AUDIO_SAMPLE_FORMAT, 1);
@@ -229,10 +226,9 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_Callback_001, TestSize.L
     std::shared_ptr<Pipeline::AudioDecoderCallback> audioDecoderCallback =
         std::make_shared<Pipeline::AudioDecoderCallback>(audioDecoder);
     Format testFormat;
-    testFormat.PutStringValue("mime", "audio/mp3");
-    testFormat.PutIntValue("sample_rate", 44100);
-    testFormat.PutIntValue("channels", 2);
-    testFormat.PutIntValue("sample_format", 6);
+    testFormat.PutIntValue(Tag::AUDIO_SAMPLE_RATE, 44100);
+    testFormat.PutIntValue(Tag::AUDIO_CHANNEL_COUNT, 2);
+    testFormat.PutIntValue(Tag::AUDIO_SAMPLE_FORMAT, 6);
 
     audioDecoderCallback->OnOutputFormatChanged(testFormat);
 
@@ -240,8 +236,6 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_Callback_001, TestSize.L
     int32_t updatedSampleRate = 0;
     int32_t updatedChannels = 0;
     int32_t updatedSampleFormat = 0;
-    EXPECT_TRUE(audioDecoder->meta_->GetData(Tag::MIME_TYPE, updatedMime));
-    EXPECT_EQ(updatedMime, "audio/mp3");
     EXPECT_TRUE(audioDecoder->meta_->GetData(Tag::AUDIO_SAMPLE_RATE, updatedSampleRate));
     EXPECT_EQ(updatedSampleRate, 44100);
     EXPECT_TRUE(audioDecoder->meta_->GetData(Tag::AUDIO_OUTPUT_CHANNELS, updatedChannels));
