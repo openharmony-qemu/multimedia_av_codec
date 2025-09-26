@@ -127,22 +127,17 @@ static void CheckSeekMode(seekInfo seekInfo)
     OH_AVCodecBufferAttr attr;
     int fd = open(seekInfo.fileName, O_RDONLY);
     int64_t size = GetFileSize(seekInfo.fileName);
-    cout << seekInfo.fileName << "-------" << fd << "-------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
-
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
-
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     cout << "g_trackCount----" << g_trackCount << endl;
-
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
-
     for (int32_t index = 0; index < g_trackCount; index++) {
         trackFormat = OH_AVSource_GetTrackFormat(source, index);
         ASSERT_NE(trackFormat, nullptr);
@@ -152,7 +147,6 @@ static void CheckSeekMode(seekInfo seekInfo)
         int32_t frameNum = 0;
         while (!readEnd) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            //cout << "frameNum---" << frameNum << "---PTS---" << attr.pts << "---tarckType---" << tarckType << endl;
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 readEnd = true;
                 break;
@@ -178,7 +172,6 @@ static void CheckSeekMode(seekInfo seekInfo)
     close(fd);
     fd = -1;
 }
-
 
 /**
  * @tc.number    : DEMUXER_SEEK_0087

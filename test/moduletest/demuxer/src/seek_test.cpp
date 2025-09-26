@@ -121,6 +121,16 @@ struct seekInfo {
     int32_t subtitleCount;
 };
 
+static void SeekDestroy()
+{
+    OH_AVSource_Destroy(source);
+    source = nullptr;
+    OH_AVDemuxer_Destroy(demuxer);
+    demuxer = nullptr;
+    OH_AVFormat_Destroy(sourceFormat);
+    sourceFormat = nullptr;
+}
+
 static void CheckSeekMode(seekInfo seekInfo)
 {
     int tarckType = 0;
@@ -138,7 +148,6 @@ static void CheckSeekMode(seekInfo seekInfo)
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
-
     for (int32_t index = 0; index < g_trackCount; index++) {
         trackFormat = OH_AVSource_GetTrackFormat(source, index);
         ASSERT_NE(trackFormat, nullptr);
@@ -170,12 +179,7 @@ static void CheckSeekMode(seekInfo seekInfo)
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
     }
-    OH_AVSource_Destroy(source);
-    source = nullptr;
-    OH_AVDemuxer_Destroy(demuxer);
-    demuxer = nullptr;
-    OH_AVFormat_Destroy(sourceFormat);
-    sourceFormat = nullptr;
+    SeekDestroy();
     close(fd);
     fd = -1;
 }
