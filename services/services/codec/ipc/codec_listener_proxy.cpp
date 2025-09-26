@@ -54,7 +54,7 @@ public:
         if (iter != caches_.end() && iter->second.lock() == buffer) {
             flag = CacheFlag::HIT_CACHE;
             parcel.WriteUint8(static_cast<uint8_t>(flag));
-            return buffer->WriteToMessageParcel(parcel);
+            return buffer->WriteToMessageParcel(parcel, false);
         }
 
         if (iter == caches_.end()) {
@@ -163,8 +163,11 @@ void CodecListenerProxy::OnOutputFormatChanged(const Format &format)
 void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(inputBufferCache_ != nullptr, "Input buffer cache is nullptr");
-    MessageParcel data;
-    MessageParcel reply;
+    std::lock_guard<std::mutex> lock(parcelMutex_);
+    MessageParcel &data = input_;
+    MessageParcel &reply = output_;
+    ResetParcel(data);
+    ResetParcel(reply);
     MessageOption option(MessageOption::TF_ASYNC);
     bool token = data.WriteInterfaceToken(CodecListenerProxy::GetDescriptor());
     CHECK_AND_RETURN_LOG_WITH_TAG(token, "Write descriptor failed!");
@@ -190,8 +193,11 @@ void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<
 void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(outputBufferCache_ != nullptr, "Output buffer cache is nullptr");
-    MessageParcel data;
-    MessageParcel reply;
+    std::lock_guard<std::mutex> lock(parcelMutex_);
+    MessageParcel &data = input_;
+    MessageParcel &reply = output_;
+    ResetParcel(data);
+    ResetParcel(reply);
     MessageOption option(MessageOption::TF_ASYNC);
     bool token = data.WriteInterfaceToken(CodecListenerProxy::GetDescriptor());
     CHECK_AND_RETURN_LOG_WITH_TAG(token, "Write descriptor failed!");
@@ -282,6 +288,13 @@ void CodecListenerProxy::ClearListenerCache()
 {
     inputBufferCache_->ClearCaches();
     outputBufferCache_->ClearCaches();
+}
+
+void CodecListenerProxy::ResetParcel(MessageParcel &parcel)
+{
+    parcel.RewindRead(0);
+    parcel.RewindWrite(0);
+    parcel.SetDataSize(0);
 }
 
 CodecListenerCallback::CodecListenerCallback(const sptr<IStandardCodecListener> &listener) : listener_(listener)
