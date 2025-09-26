@@ -905,7 +905,7 @@ int32_t MediaDemuxer::GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> t
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
-    MEDIA_LOG_I("In");
+    MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running");
     if (isCreatedByFilter_) {
         source_->SetCallback(this);
@@ -2059,7 +2059,7 @@ Status MediaDemuxer::PausePreroll()
 
 Status MediaDemuxer::Stop()
 {
-    MEDIA_LOG_I("In");
+    MEDIA_LOG_D("In");
     MediaAVCodec::AVCodecTrace trace("MediaDemuxer::Stop");
     FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Thread exit");
     if (useBufferQueue_) {
