@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -91,7 +91,6 @@ void DemuxerTrpFuncNdkTest::TearDown()
         OH_AVFormat_Destroy(format);
         format = nullptr;
     }
-
     if (memory != nullptr) {
         OH_AVMemory_Destroy(memory);
         memory = nullptr;
@@ -514,6 +513,7 @@ HWTEST_F(DemuxerTrpFuncNdkTest, TRP_DEMUXER_FUNCTION_TEST_0400, TestSize.Level0)
         close(fd);
     }
 }
+
 /**
  * @tc.number    : TRP_DEMUXER_FUNCTION_TEST_0500
  * @tc.name      : fd demux mpeg2_aac.trp
@@ -529,6 +529,7 @@ HWTEST_F(DemuxerTrpFuncNdkTest, TRP_DEMUXER_FUNCTION_TEST_0500, TestSize.Level0)
     CheckFrames(303, 26, 434, 434);
     close(fd);
 }
+
 /**
  * @tc.number    : TRP_DEMUXER_FUNCTION_TEST_0600
  * @tc.name      : fd demux mpeg2_mp3.trp
@@ -544,6 +545,7 @@ HWTEST_F(DemuxerTrpFuncNdkTest, TRP_DEMUXER_FUNCTION_TEST_0600, TestSize.Level0)
     CheckFrames(303, 26, 387, 387);
     close(fd);
 }
+
 /**
  * @tc.number    : TRP_DEMUXER_FUNCTION_TEST_0700
  * @tc.name      : fd demux mpeg4_aac.trp
@@ -559,6 +561,7 @@ HWTEST_F(DemuxerTrpFuncNdkTest, TRP_DEMUXER_FUNCTION_TEST_0700, TestSize.Level0)
     CheckFrames(303, 26, 434, 434);
     close(fd);
 }
+
 /**
  * @tc.number    : TRP_DEMUXER_FUNCTION_TEST_0800
  * @tc.name      : fd demux mpeg4_mp3.trp
@@ -675,7 +678,6 @@ HWTEST_F(DemuxerTrpFuncNdkTest, TRP_DEMUXER_FUNCTION_TEST_1100, TestSize.Level3)
     close(fd);
     fd = -1;
 }
-
 
 /**
  * @tc.number    : TRP_DEMUXER_FUNCTION_TEST_1200

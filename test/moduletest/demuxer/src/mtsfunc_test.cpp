@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -91,7 +91,6 @@ void DemuxerMtsFuncNdkTest::TearDown()
         OH_AVFormat_Destroy(format);
         format = nullptr;
     }
-
     if (memory != nullptr) {
         OH_AVMemory_Destroy(memory);
         memory = nullptr;
@@ -463,12 +462,12 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0100, TestSize.Level0)
     CheckFrames(602, 3, 472, 472);
     close(fd);
 }
+
 /**
  * @tc.number    : MTS_DEMUXER_FUNCTION_TEST_0200
  * @tc.name      : fd demux h264_mp3.mts
  * @tc.desc      : function test
  */
-
 HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0200, TestSize.Level0)
 {
     const char *file = "/data/test/media/h264_mp3.mts";
@@ -479,6 +478,7 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0200, TestSize.Level0)
     CheckFrames(602, 3, 420, 420);
     close(fd);
 }
+
 /**
  * @tc.number    : MTS_DEMUXER_FUNCTION_TEST_0300
  * @tc.name      : fd demux h265_aac.mts
@@ -496,6 +496,7 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0300, TestSize.Level0)
         close(fd);
     }
 }
+
 /**
  * @tc.number    : MTS_DEMUXER_FUNCTION_TEST_0400
  * @tc.name      : fd demux h265_mp3.mts
@@ -513,6 +514,7 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0400, TestSize.Level0)
         close(fd);
     }
 }
+
 /**
  * @tc.number    : MTS_DEMUXER_FUNCTION_TEST_0500
  * @tc.name      : fd demux mpeg2_aac.mts
@@ -528,6 +530,7 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0500, TestSize.Level0)
     CheckFrames(303, 26, 434, 434);
     close(fd);
 }
+
 /**
  * @tc.number    : MTS_DEMUXER_FUNCTION_TEST_0600
  * @tc.name      : fd demux mpeg2_mp3.mts
@@ -543,6 +546,7 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0600, TestSize.Level0)
     CheckFrames(303, 26, 387, 387);
     close(fd);
 }
+
 /**
  * @tc.number    : MTS_DEMUXER_FUNCTION_TEST_0700
  * @tc.name      : fd demux mpeg4_aac.mts
@@ -558,6 +562,7 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0700, TestSize.Level0)
     CheckFrames(303, 26, 434, 434);
     close(fd);
 }
+
 /**
  * @tc.number    : MTS_DEMUXER_FUNCTION_TEST_0800
  * @tc.name      : fd demux mpeg4_mp3.mts
@@ -674,6 +679,7 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_1100, TestSize.Level3)
     close(fd);
     fd = -1;
 }
+
 /**
  * @tc.number    : MTS_DEMUXER_FUNCTION_TEST_1200
  * @tc.name      : demux multi track TS file
@@ -757,7 +763,6 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_1400, TestSize.Level0)
     close(fd);
     fd = -1;
 }
-
 
 /**
  * @tc.number    : MTS_DEMUXER_SEEK_TEST_0100

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -90,7 +90,6 @@ void DemuxerM2tsFuncNdkTest::TearDown()
         OH_AVFormat_Destroy(format);
         format = nullptr;
     }
-
     if (memory != nullptr) {
         OH_AVMemory_Destroy(memory);
         memory = nullptr;
@@ -463,6 +462,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0100, TestSize.Level
     CheckFrames(602, 3, 472, 472);
     close(fd);
 }
+
 /**
  * @tc.number    : M2TS_DEMUXER_FUNCTION_TEST_0200
  * @tc.name      : fd demux h264_mp3.m2ts
@@ -478,6 +478,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0200, TestSize.Level
     CheckFrames(602, 3, 420, 420);
     close(fd);
 }
+
 /**
  * @tc.number    : M2TS_DEMUXER_FUNCTION_TEST_0300
  * @tc.name      : fd demux h265_aac.m2ts
@@ -495,6 +496,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0300, TestSize.Level
         close(fd);
     }
 }
+
 /**
  * @tc.number    : M2TS_DEMUXER_FUNCTION_TEST_0400
  * @tc.name      : fd demux h265_mp3.m2ts
@@ -512,6 +514,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0400, TestSize.Level
         close(fd);
     }
 }
+
 /**
  * @tc.number    : M2TS_DEMUXER_FUNCTION_TEST_0500
  * @tc.name      : fd demux mpeg2_aac.m2ts
@@ -527,6 +530,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0500, TestSize.Level
     CheckFrames(303, 26, 434, 434);
     close(fd);
 }
+
 /**
  * @tc.number    : M2TS_DEMUXER_FUNCTION_TEST_0600
  * @tc.name      : fd demux mpeg2_mp3.m2ts
