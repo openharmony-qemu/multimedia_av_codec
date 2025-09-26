@@ -969,12 +969,13 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_TRP_RELI_0100, TestSize.Level3)
 HWTEST_F(DemuxerReli2NdkTest, DEMUXER_MTS_RELI_0200, TestSize.Level3)
 {
     int num = 0;
+    int len = 256;
     while (num < 10) {
         num++;
         vector<std::thread> vecThread;
         for (int i = 0; i < g_maxThread; i++) {
             char uri[256];
-            sprintf_s(uri, "http://192.168.1.100:8080/share/three/media/16/%d_creat_destroy.mts", i);
+            sprintf_s(uri, len, "http://192.168.1.100:8080/share/three/media/16/%d_creat_destroy.mts", i);
             memory_list[i] = OH_AVMemory_Create(g_width * g_height);
             cout << i << "  uri:  " << uri << endl;
             source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
@@ -1014,12 +1015,13 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_MTS_RELI_0200, TestSize.Level3)
 HWTEST_F(DemuxerReli2NdkTest, DEMUXER_M2TS_RELI_0200, TestSize.Level3)
 {
     int num = 0;
+    int len = 256;
     while (num < 10) {
         num++;
         vector<std::thread> vecThread;
         for (int i = 0; i < g_maxThread; i++) {
             char uri[256];
-            sprintf_s(uri, "http://192.168.1.100:8080/share/three/media/16/%d_creat_destroy.m2ts", i);
+            sprintf_s(uri, len, "http://192.168.1.100:8080/share/three/media/16/%d_creat_destroy.m2ts", i);
             memory_list[i] = OH_AVMemory_Create(g_width * g_height);
             cout << i << "  uri:  " << uri << endl;
             source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
@@ -1059,12 +1061,13 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_M2TS_RELI_0200, TestSize.Level3)
 HWTEST_F(DemuxerReli2NdkTest, DEMUXER_TRP_RELI_0200, TestSize.Level3)
 {
     int num = 0;
+    int len = 256;
     while (num < 10) {
         num++;
         vector<std::thread> vecThread;
         for (int i = 0; i < g_maxThread; i++) {
             char uri[256];
-            sprintf_s(uri, "http://192.168.1.100:8080/share/three/media/16/%d_creat_destroy.trp", i);
+            sprintf_s(uri, len, "http://192.168.1.100:8080/share/three/media/16/%d_creat_destroy.trp", i);
             memory_list[i] = OH_AVMemory_Create(g_width * g_height);
             cout << i << "  uri:  " << uri << endl;
             source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
