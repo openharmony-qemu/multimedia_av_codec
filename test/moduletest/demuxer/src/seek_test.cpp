@@ -181,7 +181,6 @@ static void CheckSeekMode(seekInfo seekInfo)
     }
     SeekDestroy();
     close(fd);
-    fd = -1;
 }
 
 /**
