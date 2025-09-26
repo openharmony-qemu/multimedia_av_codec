@@ -862,7 +862,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoEncoderCaps_001, TestSize.Level1)
  */
 HWTEST_F(CapsUnitTest, AVCaps_GetVideoEncoderCaps_002, TestSize.Level1)
 {
-    std::vector<std::shared_ptr> videoEncoderArray;
+    std::vector<std::shared_ptr<VideoCaps>> videoEncoderArray;
     videoEncoderArray = GetVideoEncoderCapsDup(10); // 10 is multi times
     CheckVideoCapsArray(videoEncoderArray);
 }
@@ -888,7 +888,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetAudioDecoderCaps_001, TestSize.Level1)
  */
 HWTEST_F(CapsUnitTest, AVCaps_GetAudioEncoderCaps_002, TestSize.Level1)
 {
-    std::vector<std::shared_ptr> audioEncoderArray;
+    std::vector<std::shared_ptr<AudioCaps>> audioEncoderArray;
     audioEncoderArray = GetAudioEncoderCapsDup(10); // 10 is multi times
     CheckAudioCapsArray(audioEncoderArray);
 }
