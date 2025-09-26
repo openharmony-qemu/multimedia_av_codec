@@ -170,6 +170,12 @@ static void CheckSeekMode(seekInfo seekInfo)
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
     }
+    OH_AVSource_Destroy(source);
+    source = nullptr;
+    OH_AVDemuxer_Destroy(demuxer);
+    demuxer = nullptr;
+    OH_AVFormat_Destroy(sourceFormat);
+    sourceFormat = nullptr;
     close(fd);
     fd = -1;
 }
