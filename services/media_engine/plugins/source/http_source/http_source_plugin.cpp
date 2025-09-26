@@ -318,6 +318,8 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     if (bufData == nullptr) {
         return Status::ERROR_AGAIN;
     }
+    auto writableAddr = bufData->GetWritableAddr(expectedLen);
+    FALSE_RETURN_V(writableAddr != nullptr, Status::ERROR_AGAIN);
 
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = streamId;
@@ -325,7 +327,7 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     readDataInfo.wantReadLength_ = expectedLen;
     readDataInfo.ffmpegOffset = offset;
 
-    auto result = downloader_->Read(bufData->GetWritableAddr(expectedLen), readDataInfo);
+    auto result = downloader_->Read(writableAddr, readDataInfo);
     buffer->streamID = readDataInfo.nextStreamId_;
 
     bufData->UpdateDataSize(readDataInfo.realReadLength_);
@@ -635,6 +637,15 @@ bool HttpSourcePlugin::IsHlsEnd()
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
     return downloader_->IsHlsEnd();
+}
+
+bool HttpSourcePlugin::IsHls()
+{
+    if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
+        return CheckIsM3U8Uri();
+    }
+    MEDIA_LOG_I("IsHls return true");
+    return true;
 }
 }
 }

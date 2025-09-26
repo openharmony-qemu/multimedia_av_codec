@@ -44,6 +44,7 @@ const std::vector<std::string> AUDIO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_G711A),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_COOK),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AC3),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_EAC3),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AVS3DA),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_LBVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_APE),
@@ -165,7 +166,7 @@ CapabilityData *AVCodecListImpl::GetCapability(const std::string &mime, const bo
     std::string name = capaDataIn.codecName;
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && !name.empty(), nullptr, "Get capability failed from service,"
         "mime: %{public}s, isEnc: %{public}d, category: %{public}d", mime.c_str(), isEncoder, category);
-    if (category == AVCodecCategory::AVCODEC_NONE && nameAddrMap_.find(name) != nameAddrMap_.end()) {
+    if (category == AVCodecCategory::AVCODEC_NONE) {
         for (auto cap : mimeCapsMap_[mime]) {
             if (cap->codecType == codecType && cap->codecName == name) {
                 return cap;

@@ -128,13 +128,14 @@ Status AudioG711aDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>
             size, memory->GetCapacity());
         return Status::ERROR_UNKNOWN;
     }
-    if ((size_t)size > decodeInput_.capacity()) {
-        AVCODEC_LOGI("g711a size change form %{public}zu to %{public}d", decodeInput_.capacity(), size);
-        decodeInput_.reserve(size);
-        maxInputSize_ = size;
-    }
+
     {
         std::lock_guard<std::mutex> lock(avMutex_);
+        if ((size_t)size > decodeInput_.capacity()) {
+            AVCODEC_LOGI("g711a size change form %{public}zu to %{public}d", decodeInput_.capacity(), size);
+            decodeInput_.reserve(size);
+            maxInputSize_ = size;
+        }
         decodeBytes_ = size;
         memory->Read(reinterpret_cast<uint8_t *>(decodeInput_.data()), decodeBytes_, 0);
         pts_ = inputBuffer->pts_;

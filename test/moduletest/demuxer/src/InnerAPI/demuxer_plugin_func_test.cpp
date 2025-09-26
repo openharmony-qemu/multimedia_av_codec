@@ -109,6 +109,11 @@ static const string TEST_FILE_URI_SRT = TEST_FILE_PATH + "srt_2800.srt";
 static const string TEST_FILE_URI_WEBVTT = TEST_FILE_PATH + "webvtt_test.vtt";
 static const string TEST_FILE_URI_OGG = TEST_FILE_PATH + "audio/OGG_48000_1.ogg";
 static const string TEST_FILE_URI_WAV = TEST_FILE_PATH + "audio/wav_48000_1.wav";
+static const string TEST_GLTF_H264_MP4 = TEST_FILE_PATH + "test_264_B_Gop25_4sec_gltf.mp4";
+static const string TEST_GLTF_H265_MP4 = TEST_FILE_PATH + "h265_mp3_gltf.mp4";
+static const string TEST_GLTF_H266_MP4 = TEST_FILE_PATH + "vvc_1280_720_8_gltf.mp4";
+static const string TEST_GLTF_HDRVIVID_MP4 = TEST_FILE_PATH + "demuxer_parser_hdr_vivid_gltf.mp4";
+static const string TEST_GLTF_MPEG4_MP4 = TEST_FILE_PATH + "mpeg4_aac_gltf.mp4";
 
 void DemuxerPluginInnerFuncTest::SetUpTestCase(void) {}
 
@@ -1164,6 +1169,197 @@ HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_CREATE_PLUGIN_BY_NAME_INNER_FUNC_00
     ASSERT_EQ(CreateDemuxerPluginByNotExistName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_SRT, DEF_PROB_SIZE), true);
     ASSERT_EQ(CreateDemuxerPluginByNotExistName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_WEBVTT, DEF_PROB_SIZE), true);
     ASSERT_EQ(CreateDemuxerPluginByNotExistName(DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_OGG, DEF_PROB_SIZE), true);
+}
+
+/**
+ * @tc.number    : DEMUXER_GLTF_INNER_FUNC_0010
+ * @tc.name      : h264 GLTF
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_GLTF_INNER_FUNC_0010, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_GLTF_H264_MP4, DEF_PROB_SIZE), true);
+    ASSERT_NE(pluginBase_, nullptr);
+    auto plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    MediaInfo mediaInfo;
+    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo), Status::OK);
+    Meta generalMeta = mediaInfo.general;
+    bool isGltfValue = 0;
+    int64_t glftOffsetValue = 0;
+    string stringVal = "";
+    float longval = 0.0;
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, stringVal));
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, longval));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, stringVal));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, longval));
+    ASSERT_TRUE(generalMeta.GetData(Tag::IS_GLTF, isGltfValue));
+    ASSERT_TRUE(generalMeta.GetData(Tag::GLTF_OFFSET, glftOffsetValue));
+    ASSERT_TRUE(isGltfValue);
+    int64_t expectedVal = 66252;
+    ASSERT_EQ(expectedVal, glftOffsetValue);
+}
+
+/**
+ * @tc.number    : DEMUXER_GLTF_INNER_FUNC_0020
+ * @tc.name      : h265 GLTF
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_GLTF_INNER_FUNC_0020, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_GLTF_H265_MP4, DEF_PROB_SIZE), true);
+    ASSERT_NE(pluginBase_, nullptr);
+    auto plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    MediaInfo mediaInfo;
+    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo), Status::OK);
+    Meta generalMeta = mediaInfo.general;
+    bool isGltfValue = 0;
+    int64_t glftOffsetValue = 0;
+    string stringVal = "";
+    float longval = 0.0;
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, stringVal));
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, longval));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, stringVal));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, longval));
+    ASSERT_TRUE(generalMeta.GetData(Tag::IS_GLTF, isGltfValue));
+    ASSERT_TRUE(generalMeta.GetData(Tag::GLTF_OFFSET, glftOffsetValue));
+    ASSERT_TRUE(isGltfValue);
+    int64_t expectedVal = 38882;
+    ASSERT_EQ(expectedVal, glftOffsetValue);
+}
+
+/**
+ * @tc.number    : DEMUXER_GLTF_INNER_FUNC_0030
+ * @tc.name      : h266 GLTF
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_GLTF_INNER_FUNC_0030, TestSize.Level2)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_GLTF_H266_MP4, DEF_PROB_SIZE), true);
+    ASSERT_NE(pluginBase_, nullptr);
+    auto plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    MediaInfo mediaInfo;
+    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo), Status::OK);
+    Meta generalMeta = mediaInfo.general;
+    bool isGltfValue = 0;
+    int64_t glftOffsetValue = 0;
+    string stringVal = "";
+    float longval = 0.0;
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, stringVal));
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, longval));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, stringVal));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, longval));
+    ASSERT_TRUE(generalMeta.GetData(Tag::IS_GLTF, isGltfValue));
+    ASSERT_TRUE(generalMeta.GetData(Tag::GLTF_OFFSET, glftOffsetValue));
+    ASSERT_TRUE(isGltfValue);
+    int64_t expectedVal = 20268;
+    ASSERT_EQ(expectedVal, glftOffsetValue);
+}
+
+/**
+ * @tc.number    : DEMUXER_GLTF_INNER_FUNC_0040
+ * @tc.name      : hdrvivid GLTF
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_GLTF_INNER_FUNC_0040, TestSize.Level2)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_GLTF_HDRVIVID_MP4, DEF_PROB_SIZE), true);
+    ASSERT_NE(pluginBase_, nullptr);
+    auto plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    MediaInfo mediaInfo;
+    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo), Status::OK);
+    Meta generalMeta = mediaInfo.general;
+    bool isGltfValue = 0;
+    int64_t glftOffsetValue = 0;
+    string stringVal = "";
+    float longval = 0.0;
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, stringVal));
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, longval));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, stringVal));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, longval));
+    ASSERT_TRUE(generalMeta.GetData(Tag::IS_GLTF, isGltfValue));
+    ASSERT_TRUE(generalMeta.GetData(Tag::GLTF_OFFSET, glftOffsetValue));
+    ASSERT_TRUE(isGltfValue);
+    int64_t expectedVal = 209563;
+    ASSERT_EQ(expectedVal, glftOffsetValue);
+}
+
+/**
+ * @tc.number    : DEMUXER_GLTF_INNER_FUNC_0050
+ * @tc.name      : mpeg4 GLTF
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_GLTF_INNER_FUNC_0050, TestSize.Level2)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_GLTF_MPEG4_MP4, DEF_PROB_SIZE), true);
+    ASSERT_NE(pluginBase_, nullptr);
+    auto plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    MediaInfo mediaInfo;
+    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo), Status::OK);
+    Meta generalMeta = mediaInfo.general;
+    bool isGltfValue = 0;
+    int64_t glftOffsetValue = 0;
+    string stringVal = "";
+    float longval = 0.0;
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, stringVal));
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, longval));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, stringVal));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, longval));
+    ASSERT_TRUE(generalMeta.GetData(Tag::IS_GLTF, isGltfValue));
+    ASSERT_TRUE(generalMeta.GetData(Tag::GLTF_OFFSET, glftOffsetValue));
+    ASSERT_TRUE(isGltfValue);
+    int64_t expectedVal = 60799;
+    ASSERT_EQ(expectedVal, glftOffsetValue);
+}
+
+/**
+ * @tc.number    : DEMUXER_GLTF_INNER_FUNC_0060
+ * @tc.name      : 不含 GLTF
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_GLTF_INNER_FUNC_0060, TestSize.Level3)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4, DEF_PROB_SIZE), true);
+    ASSERT_NE(pluginBase_, nullptr);
+    auto plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    MediaInfo mediaInfo;
+    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo), Status::OK);
+    Meta generalMeta = mediaInfo.general;
+    bool isGltfValue = 0;
+    int64_t glftOffsetValue = 0;
+    string stringVal = "";
+    float longval = 0.0;
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, stringVal));
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, longval));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, stringVal));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, longval));
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, isGltfValue));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, glftOffsetValue));
+}
+
+
+/**
+ * @tc.number    : DEMUXER_GLTF_INNER_FUNC_0070
+ * @tc.name      : 不含 GLTF
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerPluginInnerFuncTest, DEMUXER_GLTF_INNER_FUNC_0070, TestSize.Level3)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_FMP4, DEF_PROB_SIZE), true);
+    ASSERT_NE(pluginBase_, nullptr);
+    auto plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    MediaInfo mediaInfo;
+    ASSERT_EQ(plugin_->GetMediaInfo(mediaInfo), Status::OK);
+    Meta generalMeta = mediaInfo.general;
+    bool isGltfValue = 0;
+    int64_t glftOffsetValue = 0;
+    string stringVal = "";
+    float longval = 0.0;
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, stringVal));
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, longval));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, stringVal));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, longval));
+    ASSERT_FALSE(generalMeta.GetData(Tag::IS_GLTF, isGltfValue));
+    ASSERT_FALSE(generalMeta.GetData(Tag::GLTF_OFFSET, glftOffsetValue));
 }
 }  // namespace Media
 }  // namespace OHOS

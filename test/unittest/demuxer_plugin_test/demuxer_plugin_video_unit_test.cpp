@@ -52,6 +52,7 @@ string g_mp4Path2 = string("/data/test/media/avcc_aac_mp3.mp4");
 string g_mp4Path3 = string("/data/test/media/MPEG4.mp4");
 string g_mp4Path4 = string("/data/test/media/muxer_auxl_265.mp4");
 string g_mp4Path5 = string("/data/test/media/muxer_auxl_265_264_aac.mp4");
+string g_mp43dgsPath = string("/data/test/media/3dgs.mp4");
 // FMP4
 string g_fmp4Path1 = string("/data/test/media/h264_fmp4.mp4");
 string g_fmp4Path2 = string("/data/test/media/h265_fmp4.mp4");
@@ -235,6 +236,50 @@ void DemuxerPluginUnitTest::InitWeakNetworkDemuxerPlugin(
     ASSERT_EQ(demuxerPlugin_->SetDataSource(dataSource), Status::OK);
     ASSERT_EQ(demuxerPlugin_->GetMediaInfo(mediaInfo_), Status::OK);
     initStatus_ = true;
+}
+
+void TestAVReadPacketStopState(const std::string& pluginName, const std::string& filePath,
+                               int sleepMs, bool expectSuccess)
+{
+    struct stat fileStatus {};
+    ASSERT_EQ(stat(filePath.c_str(), &fileStatus), 0);
+    int64_t fileSize = static_cast<int64_t>(fileStatus.st_size);
+    int fd = open(filePath.c_str(), O_RDONLY);
+    ASSERT_GE(fd, 0);
+    auto uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+
+    auto demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    SourceCallback cb(demuxerPluginManager);
+    auto source = std::make_shared<Source>();
+    source->SetCallback(&cb);
+    EXPECT_EQ(source->SetSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::vector<StreamInfo> streams;
+    source->GetStreamInfo(streams);
+    demuxerPluginManager->InitDefaultPlay(streams);
+
+    auto streamDemuxer = std::make_shared<StreamDemuxerPullDataFailMock>(0, 20);
+    streamDemuxer->SetInterruptState(false);
+    streamDemuxer->SetSource(source);
+    streamDemuxer->Init("");
+    streamDemuxer->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+
+    auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(pluginName);
+    auto demuxerPlugin = std::reinterpret_pointer_cast<OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin>(basePlugin);
+
+    Status setDataSourceStatus = Status::ERROR_UNKNOWN;
+    demuxerPlugin->SetAVReadPacketStopState(false);
+    std::thread t([&]() {
+        setDataSourceStatus = demuxerPlugin->SetDataSource(dataSource);
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
+    demuxerPlugin->SetAVReadPacketStopState(true);
+    t.join();
+    if (expectSuccess) {
+        ASSERT_EQ(setDataSourceStatus, Status::OK);
+    } else {
+        ASSERT_NE(setDataSourceStatus, Status::OK);
+    }
 }
 
 void DemuxerPluginUnitTest::SetInitValue()
@@ -2359,4 +2404,47 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_VTT_0001, TestSize.Level1
     InitResourceURI(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
     CheckAllFrames({4}, {4}, {0, 1, 2, 3});
+}
+
+/**
+ * @tc.name: Demuxer_GetMediaInfo_3DGS_0001
+ * @tc.desc: Get media info (3DGS)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetMediaInfo_3DGS_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = g_mp43dgsPath;
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    MediaInfo mediaInfo;
+    Status ret = demuxerPlugin_->GetMediaInfo(mediaInfo);
+    EXPECT_EQ(ret, Status::OK);
+    auto meta = mediaInfo.general;
+    bool isGltf = 0;
+    int64_t gltfOffset = 0;
+    meta.Get<Tag::IS_GLTF>(isGltf);
+    meta.Get<Tag::GLTF_OFFSET>(gltfOffset);
+    EXPECT_EQ(isGltf, 1);
+    EXPECT_EQ(gltfOffset, 3526448);
+}
+
+/**
+ * @tc.name: Demuxer_SetAVReadPacketStopState_TimeoutFail_0001
+ * @tc.desc: 500ms timeout, expect fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetAVReadPacketStopState_TimeoutFail_0001, TestSize.Level1)
+{
+    TestAVReadPacketStopState("avdemux_mov,mp4,m4a,3gp,3g2,mj2", g_mp4Path1, 500, false);
+}
+
+/**
+ * @tc.name: Demuxer_SetAVReadPacketStopState_TimeoutSuccess_0002
+ * @tc.desc: 1000ms timeout, expect success
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetAVReadPacketStopState_TimeoutSuccess_0002, TestSize.Level1)
+{
+    TestAVReadPacketStopState("avdemux_mov,mp4,m4a,3gp,3g2,mj2", g_mp4Path1, 1000, true);
 }

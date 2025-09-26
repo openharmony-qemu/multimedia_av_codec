@@ -143,6 +143,10 @@ group("av_codec_unit_test") {
       if (av_codec_support_hcodec) {
         deps += [ "unittest/hcodec_test:hcodec_unit_test" ]
       }
+      if(av_codec_enable_codec_eac3) {
+        deps += [ "unittest/audio_test:audio_eac3_decoder_unit_test" ]
+        deps += [ "unittest/audio_test:audio_eac3_decoder_capi_unit_test" ]
+      }
       if (av_codec_enable_special_codec) {
         deps += [
           "unittest/audio_vivid_test:audio_vivid_ability_unit_test",
@@ -249,6 +253,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxerapi11_fuzzer:DemuxerAPI11FuzzTest",
       "fuzztest/demuxeravi_fuzzer:DemuxerAviFuzzTest",
       "fuzztest/demuxeraviapi11_fuzzer:DemuxerAviAPI11FuzzTest",
+      "fuzztest/demuxereac3api11_fuzzer:DemuxerEac3API11FuzzTest",
       "fuzztest/demuxerflac_fuzzer:DemuxerFlacFuzzTest",
       "fuzztest/demuxerflacapi11_fuzzer:DemuxerFlacAPI11FuzzTest",
       "fuzztest/demuxerflv_fuzzer:DemuxerFlvFuzzTest",
@@ -275,6 +280,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxerpluginamr_fuzzer:DemuxerPluginAmrFuzzTest",
       "fuzztest/demuxerpluginape_fuzzer:DemuxerPluginApeFuzzTest",
       "fuzztest/demuxerpluginavi_fuzzer:DemuxerPluginAviFuzzTest",
+      "fuzztest/demuxerplugineac3_fuzzer:DemuxerPluginEac3FuzzTest",
       "fuzztest/demuxerpluginflac_fuzzer:DemuxerPluginFlacFuzzTest",
       "fuzztest/demuxerpluginflvtest_fuzzer:DemuxerPluginFlvtestFuzzTest",
       "fuzztest/demuxerpluginfmp4_fuzzer:DemuxerPluginFmp4FuzzTest",
@@ -341,6 +347,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/hwdecoderapi11h26510bit_fuzzer:HwdecoderAPI11H26510BitFuzzTest",
       "fuzztest/hwdecoderapi11h2658bit_fuzzer:HwdecoderAPI11H2658BitFuzzTest",
       "fuzztest/hwdecoderapi11hdr2sdr_fuzzer:HwdecoderAPI11Hdr2SdrFuzzTest",
+      "fuzztest/hwdecoderdrm_fuzzer:HwdecoderDrmFuzzTest",
       "fuzztest/mediademuxer_fuzzer:MediaDemuxerFuzzTest",
       "fuzztest/mediademuxerptsfunctions_fuzzer:MediaDemuxerPtsFunctionsFuzzTest",
       "fuzztest/mpeg2swdecoderconfigure_fuzzer:Mpeg2SwdecoderConfigureFuzzTest",
@@ -373,6 +380,9 @@ group("av_codec_fuzz_test") {
       "fuzztest/hwdecoderapi11buffer10bit_fuzzer:HwdecoderApi11Buffer10BitFuzzTest",
       "fuzztest/syncdecoderbuffer10bit_fuzzer:SyncDecoderBuffer10BitFuzzTest",
     ]
+    if(av_codec_enable_codec_eac3) {
+      deps += [ "fuzztest/audiodecodereac3_fuzzer:AudioDecoderEac3FuzzTest" ]
+    }
   }
 }
 

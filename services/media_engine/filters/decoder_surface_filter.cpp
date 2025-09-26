@@ -639,6 +639,7 @@ Status DecoderSurfaceFilter::DoWaitPrerollDone(bool render)
             return Status::OK;
         }
     }
+    MEDIA_LOG_I("DoWaitPrerollDone end.");
     std::unique_lock<std::mutex> bufferLock(mutex_);
     if (render && !eosNext_.load() && !outputBuffers_.empty()) {
         std::pair<int, std::shared_ptr<AVBuffer>> nextTask = std::move(outputBuffers_.front());
@@ -1013,13 +1014,14 @@ Status DecoderSurfaceFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
     return Status::OK;
 }
 
-int64_t DecoderSurfaceFilter::CalculateNextRender(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
+int64_t DecoderSurfaceFilter::CalculateNextRender(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer,
+    int64_t& actionClock)
 {
     (void) index;
     int64_t waitTime = -1;
     MEDIA_LOG_D("DrainOutputBuffer not seeking and render. pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
     videoSink_->SetFirstPts(outputBuffer->pts_);
-    waitTime = videoSink_->DoSyncWrite(outputBuffer);
+    waitTime = videoSink_->DoSyncWrite(outputBuffer, actionClock);
     return waitTime;
 }
 
@@ -1030,10 +1032,10 @@ void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBu
         Filter::ProcessOutputBuffer(false, 0);
         return;
     }
-
-    int64_t waitTime = CalculateNextRender(index, outputBuffer);
+    int64_t actionClock = 0;
+    int64_t waitTime = CalculateNextRender(index, outputBuffer, actionClock);
     if (enableRenderAtTime_) {
-        int64_t renderTimeNs = waitTime * NS_PER_US + GetSystimeTimeNs();
+        int64_t renderTimeNs = (waitTime + actionClock) * NS_PER_US;
         MEDIA_LOG_D("RenderNextOutput enter. pts: " PUBLIC_LOG_D64 "  waitTime: " PUBLIC_LOG_D64
                     "  renderTimeNs: " PUBLIC_LOG_D64, outputBuffer->pts_, waitTime, renderTimeNs);
         // most renderTimeMaxAdvanceUs_ in advance
@@ -1118,7 +1120,9 @@ void DecoderSurfaceFilter::RenderLoop()
             nextTask = std::move(outputBuffers_.front());
             outputBuffers_.pop_front();
         }
-        int64_t waitTime = CalculateNextRender(nextTask.first, nextTask.second);
+        int64_t actionClock = 0;
+        int64_t waitTime = CalculateNextRender(nextTask.first, nextTask.second, actionClock);
+        (void)actionClock;
         MEDIA_LOG_D("RenderLoop pts: " PUBLIC_LOG_D64"  waitTime:" PUBLIC_LOG_D64,
             nextTask.second->pts_, waitTime);
         if (waitTime > 0) {

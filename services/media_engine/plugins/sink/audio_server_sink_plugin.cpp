@@ -142,6 +142,8 @@ inline void ResetAudioRendererParams(OHOS::AudioStandard::AudioRendererParams &p
     param.encodingType = ENCODING_INVALID;
 }
 constexpr int32_t CALLBACK_BUFFER_DURATION_IN_MILLISECONDS = 40;
+constexpr int32_t CALLBACK_BUFFER_DURATION_IN_MILLISECONDS_100 = 100;
+constexpr int32_t MS_IN_SECOND = 1000;
 } // namespace
 
 namespace OHOS {
@@ -277,6 +279,7 @@ Status AudioServerSinkPlugin::Init()
     rendererOptions_.rendererInfo.rendererFlags = audioRenderInfo_.rendererFlags;
     rendererOptions_.rendererInfo.volumeMode = static_cast<AudioStandard::AudioVolumeMode>(ChooseVolumeMode());
     rendererOptions_.streamInfo.samplingRate = rendererParams_.sampleRate;
+    rendererOptions_.streamInfo.customSampleRate = customSampleRate_;
     rendererOptions_.streamInfo.encoding =
         mimeType_ == MimeType::AUDIO_AVS3DA ? AudioStandard::ENCODING_AUDIOVIVID : AudioStandard::ENCODING_PCM;
     rendererOptions_.streamInfo.format = rendererParams_.sampleFormat;
@@ -413,6 +416,7 @@ Status AudioServerSinkPlugin::Reset()
     bitRate_ = 0;
     sampleRate_ = 0;
     samplesPerFrame_ = 0;
+    customSampleRate_ = 0;
     needReformat_ = false;
     if (resample_) {
         resample_.reset();
@@ -477,6 +481,10 @@ Status AudioServerSinkPlugin::GetParameter(std::shared_ptr<Meta> &meta)
                         rendererParams_.sampleRate, params.sampleRate);
         }
         meta->Set<Tag::AUDIO_SAMPLE_RATE>(params.sampleRate);
+        if (mimeType_ == MimeType::AUDIO_FLAC && customSampleRate_ != 0) {
+            MEDIA_LOG_I_SHORT("mimeType is FLAC, customSampleRate: " PUBLIC_LOG_U32, customSampleRate_);
+            meta->Set<Tag::AUDIO_SAMPLE_RATE>(customSampleRate_);
+        }
         if (params.sampleFormat != rendererParams_.sampleFormat) {
             MEDIA_LOG_W("sampleFormat has changed from " PUBLIC_LOG_U32 " to " PUBLIC_LOG_U32,
                         rendererParams_.sampleFormat, params.sampleFormat);
@@ -493,6 +501,13 @@ Status AudioServerSinkPlugin::GetParameter(std::shared_ptr<Meta> &meta)
 bool AudioServerSinkPlugin::AssignSampleRateIfSupported(uint32_t sampleRate)
 {
     sampleRate_ = sampleRate;
+    if (mimeType_ == MimeType::AUDIO_FLAC) {
+        FALSE_RETURN_V_MSG(OHOS::AudioStandard::AudioRenderer::CheckSupportedSamplingRates(sampleRate), false,
+            "mimeType is FLAC sampleRate is invaild");
+        customSampleRate_ = sampleRate;
+        MEDIA_LOG_I_SHORT("mimeType is FLAC, customSampleRate: " PUBLIC_LOG_U32, customSampleRate_);
+        return true;
+    }
     auto supportedSampleRateList = OHOS::AudioStandard::AudioRenderer::GetSupportedSamplingRates();
     FALSE_RETURN_V_MSG(!supportedSampleRateList.empty(), false, "GetSupportedSamplingRates fail");
     for (const auto &rate : supportedSampleRateList) {
@@ -1099,7 +1114,7 @@ Status AudioServerSinkPlugin::Drain()
 
 int64_t AudioServerSinkPlugin::GetPlayedOutDurationUs(int64_t nowUs)
 {
-    FALSE_RETURN_V(audioRenderer_ != nullptr && rendererParams_.sampleRate != 0, -1);
+    FALSE_RETURN_V(audioRenderer_ != nullptr && (rendererParams_.sampleRate != 0 || customSampleRate_ != 0), -1);
     uint32_t numFramesPlayed = 0;
     AudioStandard::Timestamp ts;
     bool res = audioRenderer_->GetAudioTime(ts, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
@@ -1328,7 +1343,7 @@ int32_t AudioServerSinkPlugin::GetCallbackBufferDuration()
 {
     FALSE_RETURN_V(mimeType_ != MimeType::AUDIO_AVS3DA, -1);
     FALSE_RETURN_V_MSG(sampleRate_ > 0, -1, "Can not calculate callback buffer size because sampleRate <= 0.");
-    return CALLBACK_BUFFER_DURATION_IN_MILLISECONDS;
+    return GetAvailableBufferDuration(customSampleRate_);
 }
 
 Status AudioServerSinkPlugin::SetRequestDataCallback(const std::shared_ptr<AudioSinkDataCallback> &callback)
@@ -1349,9 +1364,19 @@ Status AudioServerSinkPlugin::SetRequestDataCallback(const std::shared_ptr<Audio
     int32_t callbackBufferDuration = GetCallbackBufferDuration();
     FALSE_RETURN_V_MSG_W(callbackBufferDuration > 0, Status::OK,
         "minetype is audioVivid");
-    audioRenderer_->SetBufferDuration(CALLBACK_BUFFER_DURATION_IN_MILLISECONDS);
+    audioRenderer_->SetBufferDuration(callbackBufferDuration);
     MEDIA_LOG_I("Set Preferred duration is " PUBLIC_LOG_D32 " ms", callbackBufferDuration);
     return Status::OK;
+}
+
+int32_t AudioServerSinkPlugin::GetAvailableBufferDuration(uint32_t customSampleRate)
+{
+    FALSE_RETURN_V_MSG(customSampleRate != 0, CALLBACK_BUFFER_DURATION_IN_MILLISECONDS,
+        "the mimType is not flac, set the default buffer duration");
+    if (std::fmod(customSampleRate * CALLBACK_BUFFER_DURATION_IN_MILLISECONDS, MS_IN_SECOND) == 0) {
+        return CALLBACK_BUFFER_DURATION_IN_MILLISECONDS;
+    }
+    return CALLBACK_BUFFER_DURATION_IN_MILLISECONDS_100;
 }
 
 bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosition)

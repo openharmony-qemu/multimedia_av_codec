@@ -632,7 +632,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2001, TestSize.Level1)
         ret_ = demuxer_->SeekToTime(*toPts, SeekMode::SEEK_CLOSEST_SYNC);
         ASSERT_NE(ret_, AV_ERR_OK);
         if (sharedMem_ != nullptr) {
-            sharedMem_->Destory();
+            sharedMem_->Destroy();
             sharedMem_ = nullptr;
         }
     }

@@ -176,6 +176,7 @@ Status AudioCaptureFilter::DoStart()
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Start");
     eos_ = false;
     currentTime_ = 0;
+    recordAudioFrameCount_ = 0;
     firstAudioFramePts_.store(-1);
     firstVideoFramePts_.store(-1);
     hasCalculateAVTime_ = false;
@@ -231,6 +232,7 @@ Status AudioCaptureFilter::DoPause()
             RecordCachedData(cachedAudioDataDeque_.size());
         }
     }
+    MEDIA_LOG_I("Pause recordAudioFrameCount_: " PUBLIC_LOG_D64, recordAudioFrameCount_);
     return ret;
 }
 
@@ -280,6 +282,7 @@ Status AudioCaptureFilter::DoStop()
     if (!cachedAudioDataDeque_.empty()) {
         RecordCachedData(cachedAudioDataDeque_.size());
     }
+    MEDIA_LOG_I("Pause recordAudioFrameCount_: " PUBLIC_LOG_D64, recordAudioFrameCount_);
     return ret;
 }
 
@@ -573,6 +576,7 @@ void AudioCaptureFilter::RecordOneAudioFrame(uint64_t bufferSize)
         return;
     }
     currentTime_ += AUDIO_CAPTURE_READ_FRAME_TIME;
+    recordAudioFrameCount_++;
     MEDIA_LOG_D("[audio] currentTime_: " PUBLIC_LOG_D64, currentTime_);
 }
 
@@ -614,6 +618,7 @@ void AudioCaptureFilter::RecordCachedData(int32_t recordFrameNum)
         }
         currentTime_ += AUDIO_CAPTURE_READ_FRAME_TIME;
         recordFrameNum--;
+        recordAudioFrameCount_++;
         MEDIA_LOG_D("[audio] currentTime_: " PUBLIC_LOG_D64, currentTime_);
     }
 }

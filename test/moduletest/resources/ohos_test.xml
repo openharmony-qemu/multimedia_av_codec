@@ -168,6 +168,12 @@
             <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
+    <target name="DemuxerEac3API11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
 	<target name="DemuxerFlacFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/"/>

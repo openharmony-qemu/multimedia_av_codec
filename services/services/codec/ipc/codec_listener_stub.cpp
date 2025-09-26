@@ -76,7 +76,7 @@ public:
         }
         auto iter = caches_.find(index);
         if (iter == caches_.end()) {
-            AVCODEC_LOGE_WITH_TAG("Get cache failed, index: %{public}u", index);
+            AVCODEC_LOGD_WITH_TAG("Get cache failed, index: %{public}u", index);
             return;
         }
         buffer = iter->second;
@@ -374,7 +374,7 @@ bool CodecListenerStub::WriteInputBufferToParcel(uint32_t index, MessageParcel &
 {
     std::shared_ptr<AVBuffer> buffer = nullptr;
     inputBufferCache_->GetBuffer(index, buffer);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer != nullptr, false, "Get buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOGD_WITH_TAG(buffer != nullptr, false, "Get buffer is nullptr");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer->meta_ != nullptr, false, "Get buffer meta is nullptr");
     if (buffer->memory_ == nullptr) {
         return buffer->meta_->ToParcel(data);

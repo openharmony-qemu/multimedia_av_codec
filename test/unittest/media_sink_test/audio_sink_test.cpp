@@ -459,10 +459,11 @@ HWTEST(TestAudioSink, audio_sink_write, TestSize.Level1)
     const std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
     buffer->flag_ = 0; // not eos
     buffer->pts_ = -1;
-    auto doSyncWriteRes = audioSink->DoSyncWrite(buffer);
+    int64_t actionClock = 0;
+    auto doSyncWriteRes = audioSink->DoSyncWrite(buffer, actionClock);
     ASSERT_TRUE(doSyncWriteRes == 0);
     buffer->pts_ = 1;
-    doSyncWriteRes = audioSink->DoSyncWrite(buffer);
+    doSyncWriteRes = audioSink->DoSyncWrite(buffer, actionClock);
     ASSERT_TRUE(doSyncWriteRes == 0);
 }
 
@@ -931,7 +932,8 @@ HWTEST(TestAudioSink, audio_sink_DoSyncWrite_001, TestSize.Level1)
     config.capacity = 9;
     config.memoryType = MemoryType::VIRTUAL_MEMORY;
     std::shared_ptr<OHOS::Media::AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
-    ASSERT_EQ(0, audioSink->DoSyncWrite(buffer));
+    int64_t actionClock = 0;
+    ASSERT_EQ(0, audioSink->DoSyncWrite(buffer, actionClock));
 }
 
 // lastAnchorClockTime_ != HST_TIME_NONE || forceUpdateTimeAnchorNextTime_ == true
@@ -949,7 +951,8 @@ HWTEST(TestAudioSink, audio_sink_DoSyncWrite_002, TestSize.Level1)
     config.capacity = 9;
     config.memoryType = MemoryType::VIRTUAL_MEMORY;
     std::shared_ptr<OHOS::Media::AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
-    ASSERT_EQ(0, audioSink->DoSyncWrite(buffer));
+    int64_t actionClock = 0;
+    ASSERT_EQ(0, audioSink->DoSyncWrite(buffer, actionClock));
 }
 
 HWTEST(TestAudioSink, audio_sink_SetSpeed_001, TestSize.Level1)
@@ -1069,7 +1072,8 @@ HWTEST(TestAudioSink, audio_sink_CalcMaxAmplitude_001, TestSize.Level1)
     config.memoryType = MemoryType::VIRTUAL_MEMORY;
     std::shared_ptr<OHOS::Media::AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
     audioSink->CalcMaxAmplitude(buffer);
-    ASSERT_EQ(0, audioSink->DoSyncWrite(buffer));
+    int64_t actionClock = 0;
+    ASSERT_EQ(0, audioSink->DoSyncWrite(buffer, actionClock));
 }
 
 HWTEST(TestAudioSink, audio_sink_CheckUpdateState_001, TestSize.Level1)

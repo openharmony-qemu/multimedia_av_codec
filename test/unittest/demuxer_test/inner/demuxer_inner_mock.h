@@ -32,6 +32,8 @@ public:
     int32_t UnselectTrackByID(uint32_t trackIndex) override;
     int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemoryMock> sample,
         AVCodecBufferInfo *bufferInfo, uint32_t &flag, bool checkBufferInfo) override;
+    int32_t ReadSampleBuffer(
+        uint32_t trackIndex, std::shared_ptr<AVBufferMock> sample, bool checkBufferInfo) override;
     int32_t SeekToTime(int64_t mSeconds, SeekMode mode) override;
 
     int32_t GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,

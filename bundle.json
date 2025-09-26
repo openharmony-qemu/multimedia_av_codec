@@ -42,9 +42,11 @@
         "av_codec_enable_codec_rm",
         "av_codec_enable_codec_rv",
         "av_codec_enable_codec_cook",
+        "av_codec_enable_codec_eac3",
         "av_codec_enable_demuxer_lrc",
         "av_codec_enable_demuxer_sami",
-        "av_codec_enable_demuxer_ass"
+        "av_codec_enable_demuxer_ass",
+        "av_codec_enable_demuxer_eac3"
       ],
       "adapted_system_type": [ "standard" ],
       "rom": "10000KB",
@@ -89,7 +91,8 @@
           "bundle_framework",
           "openmax",
           "memory_utils",
-          "config_policy"
+          "config_policy",
+          "json"
         ],
         "third_party": []
       },
@@ -272,7 +275,7 @@
               "header_files": [
                 "pts_and_index_conversion.h"
               ],
-              "header_base": "//foundation/multimedia/av_codec/services/media_engine/modules/demuxer"
+              "header_base": "//foundation/multimedia/av_codec/services/media_engine/modules/pts_index_conversion"
             }
           },
           {

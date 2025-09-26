@@ -108,7 +108,7 @@ void VideoSink::UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBu
     syncCenter->UpdateTimeAnchor(ct4Buffer, latency, iMediaTime, this);
 }
 
-int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t& actionClock)
 {
     FALSE_RETURN_V(buffer != nullptr, 0);
     int64_t waitTime = 0;
@@ -116,13 +116,14 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
     auto syncCenter = syncCenter_.lock();
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
         int64_t nowCt = syncCenter ? syncCenter->GetClockTimeNow() : 0;
+        actionClock = nowCt;
         if (isFirstFrame_ && !needDropOnMute_.load()) {
             FALSE_RETURN_V(syncCenter != nullptr, false);
             isFirstFrame_ = false;
             firstFrameClockTime_  = nowCt;
             firstFramePts_ = buffer->pts_;
         } else {
-            waitTime = CheckBufferLatenessMayWait(buffer);
+            waitTime = CheckBufferLatenessMayWait(buffer, nowCt);
         }
         UpdateTimeAnchorIfNeeded(nowCt, waitTime, buffer);
         lagDetector_.CalcLag(buffer);
@@ -237,7 +238,7 @@ int64_t VideoSink::CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& 
     return diff;
 }
 
-int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t clockNow)
 {
     InitWaitPeriod();
     auto syncCenter = syncCenter_.lock();
@@ -265,7 +266,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
     }
 
     auto diff = CalcBufferDiff(buffer, bufferAnchoredClockTime,
-        syncCenter->GetClockTimeNow(), syncCenter->GetPlaybackRate());
+        clockNow, syncCenter->GetPlaybackRate());
 
     bool tooLate = false;
     int64_t waitTimeUs = 0;

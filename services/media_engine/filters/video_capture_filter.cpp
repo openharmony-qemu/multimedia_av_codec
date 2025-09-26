@@ -351,7 +351,7 @@ bool VideoCaptureFilter::AcquireInputBuffer(sptr<SurfaceBuffer>& buffer, int64_t
     sptr<SyncFence> fence;
     OHOS::Rect damage;
     GSError ret = inputSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
-    FALSE_RETURN_V_MSG(ret == GSERROR_OK && buffer != nullptr, false, "AcquireBuffer fail");
+    FALSE_RETURN_V_MSG(ret == GSERROR_OK && buffer != nullptr && fence != nullptr, false, "AcquireBuffer fail");
 
     constexpr uint32_t waitForEver = -1;
     (void)fence->Wait(waitForEver);
@@ -382,7 +382,7 @@ bool VideoCaptureFilter::ProcessAndPushOutputBuffer(sptr<SurfaceBuffer>& buffer,
     int32_t timeOutMs = 100;
     Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, timeOutMs);
     
-    FALSE_RETURN_V_MSG(status == Status::OK, false, "RequestBuffer fail.");
+    FALSE_RETURN_V_MSG(status == Status::OK && emptyOutputBuffer != nullptr, false, "RequestBuffer fail.");
 
     std::shared_ptr<AVMemory> &bufferMem = emptyOutputBuffer->memory_;
     FALSE_RETURN_V_MSG(emptyOutputBuffer->memory_ != nullptr, false, "emptyOutputBuffer->memory_ is nullptr.");

@@ -92,6 +92,7 @@ public:
     Status SetDataSourceWithProbSize(const std::shared_ptr<DataSource>& source,
         const int32_t probSize) override;
     Status BoostReadThreadPriority() override;
+    Status SetAVReadPacketStopState(bool state) override;
 private:
     enum ThreadState : unsigned int {
         NOT_STARTED,
@@ -120,6 +121,11 @@ private:
         RELATIVEPTS_TO_INDEX,
         GET_ALL_FRAME_PTS,
     };
+    enum AVReadPacketStopState : unsigned int {
+        UNSET = 0,
+        TRUE,
+        FALSE,
+    };
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};
         int64_t offset {0};
@@ -137,8 +143,9 @@ private:
         std::mutex invokerTypeMutex;
         std::atomic<InvokerType> invokerType {INVOKER_NONE};
         std::atomic<bool> readCbReady {false};
+        std::atomic<AVReadPacketStopState> avReadPacketStopState {UNSET};
     };
-    
+
     bool SelectedVideo();
     bool NeedDropAfterSeek(uint32_t trackId, int64_t pts);
     std::atomic<int64_t> seekTime_ = AV_NOPTS_VALUE;
@@ -245,7 +252,7 @@ private:
     
     void UpdateReferenceIds();
     std::map<int32_t, std::vector<int32_t>> referenceIdsMap_ {};
-    
+
     Status ParseVideoFirstFrames();
     bool AllVideoFirstFramesReady();
     bool AllSupportTrackFramesReady();

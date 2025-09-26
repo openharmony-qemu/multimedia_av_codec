@@ -73,9 +73,9 @@ void HlsPlayListDownloader::UpdateManifest()
     }
 }
 
-void HlsPlayListDownloader::SetPlayListCallback(PlayListChangeCallback* callback)
+void HlsPlayListDownloader::SetPlayListCallback(std::weak_ptr<PlayListChangeCallback> callback)
 {
-    callback_ = callback;
+    callbackWeak_ = callback;
 }
 
 bool HlsPlayListDownloader::IsParseAndNotifyFinished()
@@ -115,7 +115,8 @@ Seekable HlsPlayListDownloader::GetSeekable() const
 
 void HlsPlayListDownloader::NotifyListChange()
 {
-    if (currentVariant_ == nullptr || callback_ == nullptr) {
+    auto callback = callbackWeak_.lock();
+    if (currentVariant_ == nullptr || callback == nullptr) {
         return;
     }
     if (currentVariant_->m3u8_ == nullptr) {
@@ -127,14 +128,14 @@ void HlsPlayListDownloader::NotifyListChange()
         while (!currentVariant_->m3u8_->isDecryptKeyReady_ && !isInterruptNeeded_) {
             Task::SleepInTask(10); // sleep 10ms
         }
-        callback_->OnSourceKeyChange(currentVariant_->m3u8_->key_, currentVariant_->m3u8_->keyLen_,
+        callback->OnSourceKeyChange(currentVariant_->m3u8_->key_, currentVariant_->m3u8_->keyLen_,
             currentVariant_->m3u8_->iv_);
     } else {
         MEDIA_LOG_E("Decrypkey is not needed.");
         if (master_ != nullptr) {
-            callback_->OnSourceKeyChange(master_->key_, master_->keyLen_, master_->iv_);
+            callback->OnSourceKeyChange(master_->key_, master_->keyLen_, master_->iv_);
         } else {
-            callback_->OnSourceKeyChange(nullptr, 0, nullptr);
+            callback->OnSourceKeyChange(nullptr, 0, nullptr);
         }
     }
     FALSE_RETURN_MSG(!isInterruptNeeded_, "HLS Seek return, isInterruptNeeded_.");
@@ -149,12 +150,12 @@ void HlsPlayListDownloader::NotifyListChange()
         playList.push_back(palyInfo);
     }
     if (!currentVariant_->m3u8_->localDrmInfos_.empty()) {
-        callback_->OnDrmInfoChanged(currentVariant_->m3u8_->localDrmInfos_);
+        callback->OnDrmInfoChanged(currentVariant_->m3u8_->localDrmInfos_);
     }
     if (playList.size() > MAX_LIVE_TS_NUM && isParseFinished_ && master_->bLive_) {
         playList.erase(playList.begin(), playList.end() - MAX_LIVE_TS_NUM);
     }
-    callback_->OnPlayListChanged(playList);
+    callback->OnPlayListChanged(playList);
     if (isParseFinished_) {
         isNotifyPlayListFinished_ = true;
         if (master_->bLive_ && !updateTask_->IsTaskRunning() && !isLiveUpdateTaskStarted_) {
@@ -443,7 +444,7 @@ bool HlsPlayListDownloader::ReadFmp4Header(uint8_t* buffer, uint32_t& readLen, u
     }
     errno_t err {0};
     for (const auto &stream : master_->variants_) {
-        if (stream->streamId_ == streamId && stream->m3u8_->isHeaderReady_) {
+        if (stream != nullptr && stream->streamId_ == streamId && stream->m3u8_->isHeaderReady_) {
             readLen = stream->m3u8_->downloadHeaderLen_;
             err = memcpy_s(buffer, readLen, stream->m3u8_->fmp4Header_, readLen);
             if (err == 0) {

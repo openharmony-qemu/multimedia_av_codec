@@ -165,6 +165,29 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnBufferFilled_0100, TestSize.Level1)
 }
 
 /**
+ * @tc.name: MuxerFilter_OnBufferFilled_0200
+ * @tc.desc: OnBufferFilled
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnBufferFilled_0200, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    muxerFilter_->GetParameter(meta);
+    muxerFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer();
+    int32_t trackIndex = 1;
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    muxerFilter_->mediaMuxer_ = std::make_shared<MediaMuxer>(0, 0);
+    sptr<AVBufferQueueProducer> inputBufferQueue = new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    muxerFilter_->isTransCoderMode = false;
+    muxerFilter_->preFilterCount_ = 0;
+    muxerFilter_->maxDuration_ = 100;
+    inputBuffer->pts_ = 3000000000;
+    muxerFilter_->OnBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    EXPECT_EQ(inputBuffer->flag_, 0);
+}
+
+/**
  * @tc.name: MuxerFilter_OnTransCoderBufferFilled_0100
  * @tc.desc: OnTransCoderBufferFilled
  * @tc.type: FUNC

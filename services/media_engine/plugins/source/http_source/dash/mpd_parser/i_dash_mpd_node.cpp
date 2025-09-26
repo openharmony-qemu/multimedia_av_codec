@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include <functional>
+#include <unordered_map>
 #include "i_dash_mpd_node.h"
 #include "dash_mpd_node.h"
 #include "dash_period_node.h"
@@ -28,6 +30,30 @@
 #include "dash_descriptor_node.h"
 #include "dash_seg_url_node.h"
 
+namespace {
+    using namespace OHOS::Media::Plugins::HttpPlugin;
+    const std::unordered_map<std::string, std::function<IDashMpdNode *()>> DashMpdNodeGenerator = {
+        {"MPD", []() { return new DashMpdNode(); }},
+        {"Period", []() {return new DashPeriodNode(); }},
+        {"AdaptationSet", []() { return new DashAdptSetNode(); }},
+        {"ContentComponent", []() { return new DashContentCompNode(); }},
+        {"Representation", []() {return new DashRepresentationNode(); }},
+        {"SegmentBase", []() { return new DashSegBaseNode(); }},
+        {"MultipleSegmentBase", []() { return new DashMultSegBaseNode(); }},
+        {"SegmentList", []() { return new DashSegListNode(); }},
+        {"SegmentTemplate", []() { return new DashSegTemplateNode(); }},
+        {"Initialization", []() { return new DashUrlTypeNode(); }},
+        {"RepresentationIndex", []() { return new DashUrlTypeNode(); }},
+        {"BitstreamSwitching", []() { return new DashUrlTypeNode(); }},
+        {"SegmentTimeline", []() { return new DashSegTmlineNode(); }},
+        {"ContentProtection", []() { return new DashDescriptorNode(); }},
+        {"Role", []() { return new DashDescriptorNode(); }},
+        {"EssentialProperty", []() { return new DashDescriptorNode(); }},
+        {"AudioChannelConfiguration", []() { return new DashDescriptorNode(); }},
+        {"SegmentURL", []() { return new DashSegUrlNode(); }},
+    };
+}
+
 namespace OHOS {
 namespace Media {
 namespace Plugins {
@@ -35,60 +61,12 @@ namespace HttpPlugin {
 // ISO/IEC 23009-1 define MPD node
 IDashMpdNode *IDashMpdNode::CreateNode(const std::string &nodeName)
 {
-    if (nodeName == "MPD") {
-        return new DashMpdNode();
+    auto generator = DashMpdNodeGenerator.find(nodeName);
+    if (generator == DashMpdNodeGenerator.end()) {
+        return nullptr;
     }
 
-    if (nodeName == "Period") {
-        return new DashPeriodNode();
-    }
-
-    if (nodeName == "AdaptationSet") {
-        return new DashAdptSetNode();
-    }
-
-    if (nodeName == "ContentComponent") {
-        return new DashContentCompNode();
-    }
-
-    if (nodeName == "Representation") {
-        return new DashRepresentationNode();
-    }
-
-    if (nodeName == "SegmentBase") {
-        return new DashSegBaseNode();
-    }
-
-    if (nodeName == "MultipleSegmentBase") {
-        return new DashMultSegBaseNode();
-    }
-
-    if (nodeName == "SegmentList") {
-        return new DashSegListNode();
-    }
-
-    if (nodeName == "SegmentTemplate") {
-        return new DashSegTemplateNode();
-    }
-
-    if (nodeName == "Initialization" || nodeName == "RepresentationIndex" || nodeName == "BitstreamSwitching") {
-        return new DashUrlTypeNode();
-    }
-
-    if (nodeName == "SegmentTimeline") {
-        return new DashSegTmlineNode();
-    }
-
-    if (nodeName == "ContentProtection" || nodeName == "Role" || nodeName == "EssentialProperty" ||
-        nodeName == "AudioChannelConfiguration") {
-        return new DashDescriptorNode();
-    }
-
-    if (nodeName == "SegmentURL") {
-        return new DashSegUrlNode();
-    }
-
-    return nullptr;
+    return generator->second();
 }
 
 void IDashMpdNode::DestroyNode(IDashMpdNode *node)

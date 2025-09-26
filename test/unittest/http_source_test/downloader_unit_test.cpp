@@ -1348,12 +1348,12 @@ HWTEST_F(DownloaderUnitTest, OPEN_APP_URI_001, TestSize.Level1)
     EXPECT_NE(downloader1->client_, nullptr);
     EXPECT_NE(downloader1->sourceLoader_, nullptr);
     EXPECT_NE(downloader1->currentRequest_, nullptr);
-    EXPECT_EQ(downloader1->uuid_, 0);
+    EXPECT_EQ(downloader1->sourceId_, 0);
     downloader1->OpenAppUri();
-    EXPECT_NE(downloader1->uuid_, 0);
+    EXPECT_NE(downloader1->sourceId_, 0);
     downloader1->sourceLoader_ = nullptr;
     downloader1->OpenAppUri();
-    EXPECT_NE(downloader1->uuid_, 0);
+    EXPECT_NE(downloader1->sourceId_, 0);
 }
 
 HWTEST_F(DownloaderUnitTest, DROP_RETRY_DATA_001, TestSize.Level1)

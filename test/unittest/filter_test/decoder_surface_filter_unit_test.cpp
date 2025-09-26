@@ -682,12 +682,13 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, CalculateNextRender_002, TestSize.Level1)
     std::shared_ptr<AVBuffer> outBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     decoderSurfaceFilter_->isSeek_ = true;
     outBuffer->pts_ = 1;
-    decoderSurfaceFilter_->CalculateNextRender(index, outBuffer);
+    int64_t actionClock = 0;
+    decoderSurfaceFilter_->CalculateNextRender(index, outBuffer, actionClock);
     decoderSurfaceFilter_->isSeek_ = true;
     outBuffer->pts_ = -1;
-    decoderSurfaceFilter_->CalculateNextRender(index, outBuffer);
+    decoderSurfaceFilter_->CalculateNextRender(index, outBuffer, actionClock);
     decoderSurfaceFilter_->isSeek_ = false;
-    decoderSurfaceFilter_->CalculateNextRender(index, outBuffer);
+    decoderSurfaceFilter_->CalculateNextRender(index, outBuffer, actionClock);
     EXPECT_EQ(decoderSurfaceFilter_->seekTimeUs_, 0);
 }
 

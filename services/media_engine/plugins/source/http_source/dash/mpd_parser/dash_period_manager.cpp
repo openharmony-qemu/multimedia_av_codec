@@ -28,11 +28,11 @@ namespace HttpPlugin {
  *
  * @return  bool
  */
-static bool ContainType(DashList<DashContentCompInfo *> contentComp, const std::string &pattern)
+static bool ContainType(const DashList<DashContentCompInfo *> &contentComp, const std::string &pattern)
 {
     bool flag = false;
-    for (DashList<DashContentCompInfo *>::iterator it = contentComp.begin(); it != contentComp.end(); ++it) {
-        std::string type((*it)->contentType_);
+    for (DashList<DashContentCompInfo *>::const_iterator it = contentComp.begin(); it != contentComp.end(); ++it) {
+        const std::string &type((*it)->contentType_);
         if (!type.empty() && type == pattern) {
             flag = true;
             break;

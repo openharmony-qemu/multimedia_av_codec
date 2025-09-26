@@ -28,7 +28,7 @@ namespace Media {
 namespace Pipeline {
 class VideoSink {
 public:
-    MOCK_METHOD(int64_t, DoSyncWrite, (const std::shared_ptr<OHOS::Media::AVBuffer> &buffer), ());
+    MOCK_METHOD(int64_t, DoSyncWrite, (const std::shared_ptr<OHOS::Media::AVBuffer> &buffer, int64_t& actionClock), ());
     MOCK_METHOD(void, ResetSyncInfo, (), ());
     MOCK_METHOD(Status, GetLatency, (uint64_t & nanoSec), ());
     MOCK_METHOD(int64_t, CheckBufferLatenessMayWait, (const std::shared_ptr<OHOS::Media::AVBuffer> &buffer), ());

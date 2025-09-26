@@ -451,7 +451,7 @@ inline void AudioCodecServer::StatusChanged(CodecStatus newStatus)
         return;
     }
     if (status_ == ERROR && videoCb_ != nullptr) {
-        videoCb_->OnError(AVCODEC_ERROR_FRAMEAORK_FAILED, AVCS_ERR_INVALID_STATE);
+        videoCb_->OnError(AVCODEC_ERROR_FRAMEWORK_FAILED, AVCS_ERR_INVALID_STATE);
     }
     AVCODEC_LOGI("Status %{public}s -> %{public}s", GetStatusDescription(status_).data(),
                  GetStatusDescription(newStatus).data());
@@ -687,7 +687,13 @@ bool AudioCodecServer::CheckRunning()
 int32_t AudioCodecServer::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
                                                    const bool svpFlag)
 {
-    return 0;
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    AVCODEC_LOGI("AudioCodecServer::SetAudioDecryptionConfig");
+    if (codecBase_ == nullptr) {
+        AVCODEC_LOGE("codecBase_ is nullptr");
+        return AVCS_ERR_NO_MEMORY;
+    }
+    return codecBase_->SetAudioDecryptionConfig(keySession, svpFlag);
 }
 #endif
 

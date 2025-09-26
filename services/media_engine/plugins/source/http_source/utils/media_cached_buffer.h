@@ -90,6 +90,7 @@ public:
     void Dump(uint64_t param);
     bool Check();
     void Clear();
+    void Reset();
     uint64_t GetFreeSize();
     bool ClearFragmentBeforeOffset(uint64_t offset);
     bool ClearChunksOfFragment(uint64_t offset);

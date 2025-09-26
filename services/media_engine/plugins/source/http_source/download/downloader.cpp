@@ -318,7 +318,7 @@ Downloader::~Downloader()
     {
         AutoLock lock(closeMutex_);
         if (sourceLoader_ != nullptr) {
-            sourceLoader_->Close(uuid_);
+            sourceLoader_->Close(sourceId_);
             sourceLoader_ = nullptr;
         }
     }
@@ -350,7 +350,7 @@ bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32
 std::string Downloader::GetContentType()
 {
     if (isDestructor_) {
-        MEDIA_LOG_E("Get " PUBLIC_LOG_S " content type failed, uuid " PUBLIC_LOG_D64, name_.c_str(), uuid_);
+        MEDIA_LOG_E("Get " PUBLIC_LOG_S " content type failed, sourceId " PUBLIC_LOG_D64, name_.c_str(), sourceId_);
         return contentType_;
     }
     FALSE_RETURN_V_NOLOG(!isContentTypeUpdated_, contentType_);
@@ -643,10 +643,10 @@ void Downloader::OpenAppUri()
             appPreviousRequestUrl_ = currentRequest_->GetUrl();
         }
         if (sourceLoader_ != nullptr && currentRequest_ != nullptr) {
-            if (uuid_ != 0) {
-                sourceLoader_->Close(uuid_);
+            if (sourceId_ != 0) {
+                sourceLoader_->Close(sourceId_);
                 MEDIA_LOG_D("0x%{public}06" PRIXPTR "LoaderCombinations Close uuid " PUBLIC_LOG_D64,
-                    FAKE_POINTER(this), uuid_);
+                    FAKE_POINTER(this), sourceId_);
             }
 
             int64_t uuid = 0;
@@ -662,7 +662,7 @@ void Downloader::OpenAppUri()
                 FAKE_POINTER(this), uuid);
             if (uuid != 0) {
                 client_->SetUuid(uuid);
-                uuid_ = uuid;
+                sourceId_ = uuid;
             } else {
                 MEDIA_LOG_E("0x%{public}06" PRIXPTR "Open faild, uuid " PUBLIC_LOG_D64,
                 FAKE_POINTER(this), uuid);
@@ -731,7 +731,7 @@ void Downloader::RequestData()
     sourceInfo.httpHeader = currentRequest_->httpHeader_;
     sourceInfo.timeoutMs = currentRequest_->requestInfo_.timeoutMs;
 
-    if ((currentRequest_->protocolType_ == RequestProtocolType::HTTP && uuid_ == 0) ||
+    if ((currentRequest_->protocolType_ == RequestProtocolType::HTTP && sourceId_ == 0) ||
         currentRequest_->protocolType_ == RequestProtocolType::HLS ||
         currentRequest_->protocolType_ == RequestProtocolType::DASH) {
         OpenAppUri();

@@ -201,12 +201,10 @@ void VEncSyncSample::InputFuncSurfaceFuzz()
     OHNativeWindowBuffer *ohNativeWindowBuffer;
     int fenceFd = -1;
     if (nativeWindow == nullptr) {
-        cout << "nativeWindow == nullptr" << endl;
         return;
     }
     int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow, &ohNativeWindowBuffer, &fenceFd);
     if (err != 0) {
-        cout << "RequestBuffer failed, GSError=" << err << endl;
         return;
     }
     if (fenceFd > 0) {
@@ -218,20 +216,25 @@ void VEncSyncSample::InputFuncSurfaceFuzz()
     OH_NativeBuffer_GetConfig (nativeBuffer, &config);
     err = OH_NativeBuffer_Map(nativeBuffer, &virAddr);
     if (err != 0) {
-        cout << "OH_NativeBuffer_Map failed, GSError=" << err << endl;
         return;
     }
     uint8_t *dst = (uint8_t *)virAddr;
-    if (dst == nullptr) {
+    if (dst == nullptr || fuzzData == nullptr) {
         return;
     }
-    if (memcpy_s(dst, (config.stride * config.height * THREE) / DOUBLE, fuzzData, fuzzSize) != EOK) {
-        return;
+    int32_t frameSize = (config.stride * config.height * THREE) / DOUBLE;
+    if (frameSize >= fuzzSize) {
+        if (memcpy_s(dst, frameSize, fuzzData, fuzzSize) != EOK) {
+            return;
+        }
+    } else {
+        if (memcpy_s(dst, frameSize, fuzzData, frameSize) != EOK) {
+            return;
+        }
     }
     if (frameCount == maxFrameInput) {
         err = OH_VideoEncoder_NotifyEndOfStream(venc_);
         if (err != 0) {
-            cout << "OH_VideoEncoder_NotifyEndOfStream failed" << endl;
             isRunning_.store(false);
         }
         return;
@@ -258,14 +261,20 @@ void VEncSyncSample::SyncInputFuncFuzz()
     OH_AVCodecBufferAttr attr;
     int32_t bufferSize = OH_AVBuffer_GetCapacity(buffer);
     uint8_t *fileBuffer = OH_AVBuffer_GetAddr(buffer);
-    if (fileBuffer == nullptr) {
+    if (fileBuffer == nullptr || fuzzData == nullptr) {
         return;
     }
-    if (memcpy_s(fileBuffer, bufferSize, fuzzData, fuzzSize) != EOK) {
-        cout << "Fatal: memcpy fail" << endl;
-        return;
+    if (bufferSize >= fuzzSize) {
+        if (memcpy_s(fileBuffer, bufferSize, fuzzData, fuzzSize) != EOK) {
+            return;
+        }
+        attr.size = fuzzSize;
+    } else {
+        if (memcpy_s(fileBuffer, bufferSize, fuzzData, bufferSize) != EOK) {
+            return;
+        }
+        attr.size = bufferSize;
     }
-    attr.size = fuzzSize;
     attr.pts = TIMESTAMP_BASE + DURATION_BASE * frameIndex_;
     frameIndex_++;
     attr.offset = 0;

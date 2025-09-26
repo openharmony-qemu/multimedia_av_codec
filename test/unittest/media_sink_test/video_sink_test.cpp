@@ -86,13 +86,14 @@ HWTEST_F(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
     const std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
     ASSERT_TRUE(buffer != nullptr);
     buffer->flag_ = 0; // not eos
-    videoSink_->DoSyncWrite(buffer);
+    int64_t actionClock = 0;
+    videoSink_->DoSyncWrite(buffer, actionClock);
     buffer->flag_ = BUFFER_FLAG_EOS;
-    videoSink_->DoSyncWrite(buffer);
+    videoSink_->DoSyncWrite(buffer, actionClock);
     buffer->pts_ = 1;
     videoSink_->lastBufferAnchoredClockTime_ = 1;
     videoSink_->seekFlag_ = false;
-    (void)videoSink_->CheckBufferLatenessMayWait(buffer);
+    (void)videoSink_->CheckBufferLatenessMayWait(buffer, 1);
     float speed = 0;
     videoSink_->AdjustPlaybackRate(speed);
 }
@@ -119,15 +120,16 @@ HWTEST_F(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
     const std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
     ASSERT_TRUE(buffer != nullptr);
     buffer->flag_ = 0; // not eos
-    videoSink_->DoSyncWrite(buffer);
+    int64_t actionClock = 0;
+    videoSink_->DoSyncWrite(buffer, actionClock);
     const std::shared_ptr<AVBuffer> buffer2 = AVBuffer::CreateAVBuffer(config);
     ASSERT_TRUE(buffer2 != nullptr);
     buffer->flag_ = 0; // not eos
-    videoSink_->DoSyncWrite(buffer2);
+    videoSink_->DoSyncWrite(buffer2, actionClock);
     buffer->pts_ = 1;
     videoSink_->lastBufferAnchoredClockTime_ = 1;
     videoSink_->seekFlag_ = false;
-    (void)videoSink_->CheckBufferLatenessMayWait(buffer);
+    (void)videoSink_->CheckBufferLatenessMayWait(buffer, 1);
     float speed = 0;
     videoSink_->AdjustPlaybackRate(speed);
 }
@@ -154,14 +156,15 @@ HWTEST_F(TestVideoSink, do_sync_write_eos, TestSize.Level1)
     const std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
     ASSERT_TRUE(buffer != nullptr);
     buffer->flag_ = 1; // eos
-    videoSink_->DoSyncWrite(buffer);
-    videoSink_->DoSyncWrite(buffer);
+    int64_t actionClock = 0;
+    videoSink_->DoSyncWrite(buffer, actionClock);
+    videoSink_->DoSyncWrite(buffer, actionClock);
     buffer->flag_ = BUFFER_FLAG_EOS;
-    videoSink_->DoSyncWrite(buffer);
+    videoSink_->DoSyncWrite(buffer, actionClock);
     buffer->pts_ = 1;
     videoSink_->lastBufferAnchoredClockTime_ = 1;
     videoSink_->seekFlag_ = false;
-    (void)videoSink_->CheckBufferLatenessMayWait(buffer);
+    (void)videoSink_->CheckBufferLatenessMayWait(buffer, 1);
     float speed = 0;
     videoSink_->AdjustPlaybackRate(speed);
 }
@@ -177,7 +180,7 @@ HWTEST_F(TestVideoSink, CheckBufferLatenessMayWait_001, TestSize.Level1)
     videoSink_->SetSyncCenter(syncCenter);
 
     syncCenter->returnInt64Queue_.push(Plugins::HST_TIME_NONE);
-    bool result = videoSink_->CheckBufferLatenessMayWait(buffer);
+    bool result = videoSink_->CheckBufferLatenessMayWait(buffer, 1);
     EXPECT_EQ(result, 0);
 }
 
@@ -194,7 +197,7 @@ HWTEST_F(TestVideoSink, CheckBufferLatenessMayWait_002, TestSize.Level1)
     syncCenter->returnInt64Queue_.push(1000);
     syncCenter->returnInt64Queue_.push(2000);
     buffer->pts_ = 1500;
-    bool result = videoSink_->CheckBufferLatenessMayWait(buffer);
+    bool result = videoSink_->CheckBufferLatenessMayWait(buffer, 2000);
     EXPECT_EQ(result, 0);
 }
 
@@ -211,7 +214,7 @@ HWTEST_F(TestVideoSink, CheckBufferLatenessMayWait_003, TestSize.Level1)
     syncCenter->returnInt64Queue_.push(1000);
     syncCenter->returnInt64Queue_.push(2000);
     buffer->pts_ = 1500;
-    bool result = videoSink_->CheckBufferLatenessMayWait(buffer);
+    bool result = videoSink_->CheckBufferLatenessMayWait(buffer, 2000);
     EXPECT_EQ(result, false);
 }
 
@@ -228,7 +231,7 @@ HWTEST_F(TestVideoSink, CheckBufferLatenessMayWait_004, TestSize.Level1)
     syncCenter->returnInt64Queue_.push(1000);
     syncCenter->returnInt64Queue_.push(2000);
     buffer->pts_ = 1500;
-    bool result = videoSink_->CheckBufferLatenessMayWait(buffer);
+    bool result = videoSink_->CheckBufferLatenessMayWait(buffer, 2000);
     EXPECT_EQ(result, false);
 }
 

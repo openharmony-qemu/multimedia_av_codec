@@ -28,7 +28,7 @@ public:
     uint8_t *GetAddr() const override;
     int32_t GetSize() const override;
     uint32_t GetFlags() const override;
-    int32_t Destory() override;
+    int32_t Destroy() override;
     std::shared_ptr<AVSharedMemory> GetAVMemory();
 
 private:

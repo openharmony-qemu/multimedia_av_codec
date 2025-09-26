@@ -64,5 +64,57 @@ int32_t DemuxerCapiMock::GetRelativePresentationTimeUsByIndex(const uint32_t tra
 {
     return AV_ERR_OK;
 }
+
+int32_t DemuxerCapiMock::ReadSampleBuffer(
+    uint32_t trackIndex, std::shared_ptr<AVBufferMock> sample, bool checkBufferInfo)
+{
+    if (sample == nullptr) {
+        printf("AVBufferMock is nullptr\n");
+        return AV_ERR_UNKNOWN;
+    }
+    if (demuxer_ == nullptr) {
+        printf("Demuxer is nullptr\n");
+        return AV_ERR_UNKNOWN;
+    }
+
+    OH_AVBuffer *avBuffer = OH_AVBuffer_Create(sample->GetCapacity());
+    if (avBuffer == nullptr) {
+        printf("OH_AVBuffer is nullptr\n");
+        return AV_ERR_UNKNOWN;
+    }
+    int32_t ret = OH_AVDemuxer_ReadSampleBuffer(demuxer_, trackIndex, avBuffer);
+    if (ret != AV_ERR_OK) {
+        OH_AVBuffer_Destroy(avBuffer);
+        return ret;
+    }
+    OH_AVCodecBufferAttr bufferAttr;
+    ret = OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr);
+    if (ret != AV_ERR_OK) {
+        OH_AVBuffer_Destroy(avBuffer);
+        return ret;
+    }
+    ret = sample->SetBufferAttr(bufferAttr);
+    if (ret != AV_ERR_OK) {
+        OH_AVBuffer_Destroy(avBuffer);
+        return ret;
+    }
+
+    if (checkBufferInfo) {
+        OH_AVFormat *format = OH_AVBuffer_GetParameter(avBuffer);
+        if (format == nullptr) {
+            printf("OH_AVBuffer format is nullptr\n");
+        } else {
+            int64_t duration;
+            int64_t dts;
+            OH_AVFormat_GetLongValue(format, OH_MD_KEY_BUFFER_DURATION, &duration);
+            OH_AVFormat_GetLongValue(format, OH_MD_KEY_DECODING_TIMESTAMP, &dts);
+            printf("[track %d] duration %" PRId64 " dts %" PRId64 "\n", trackIndex, duration, dts);
+        }
+        OH_AVFormat_Destroy(format);
+    }
+
+    OH_AVBuffer_Destroy(avBuffer);
+    return AV_ERR_OK;
+}
 }
 }

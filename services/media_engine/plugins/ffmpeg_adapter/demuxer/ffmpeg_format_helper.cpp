@@ -117,6 +117,9 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
 #endif
     {AV_CODEC_ID_AC3, MimeType::AUDIO_AC3},
+#ifdef SUPPORT_DEMUXER_EAC3
+    {AV_CODEC_ID_EAC3, MimeType::AUDIO_EAC3},
+#endif
     {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
     {AV_CODEC_ID_WEBVTT, MimeType::TEXT_WEBVTT},
 #ifdef SUPPORT_DEMUXER_LRC
@@ -158,6 +161,9 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
 #endif
 #ifdef SUPPORT_DEMUXER_ASS
     {"ass", FileType::ASS},
+#endif
+#ifdef SUPPORT_DEMUXER_EAC3
+    {"eac3", FileType::EAC3},
 #endif
 };
 
@@ -1334,7 +1340,6 @@ void FFmpegFormatHelper::ParseGltfInfo(const AVFormatContext& avFormatContext, M
         size_t len = strlen(value);
         for (size_t i = 0; i + BRAND_CODE_LEN <= len; i += BRAND_CODE_LEN) {
             if (strncmp(value + i, "glti", BRAND_CODE_LEN) == 0) {
-                MEDIA_LOG_I("compatibleBrands contains 'glti' at pos " PUBLIC_LOG_U32, i);
                 format.Set<Tag::IS_GLTF>(true);
                 break;
             }

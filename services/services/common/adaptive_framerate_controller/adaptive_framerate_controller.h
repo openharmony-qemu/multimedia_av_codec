@@ -23,7 +23,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <memory>
-#include "avcodec_dfx_component.h"
+#include "avcodec_log_ex.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

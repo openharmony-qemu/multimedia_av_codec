@@ -370,6 +370,14 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_RAW;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_G711A;
 
 /**
+ * @brief Enumerates the mime types of audio Enhanced AC-3 codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 22
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_EAC3;
+
+/**
  * @brief Key for timeStamp in surfacebuffer, value type is int64_t.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
@@ -572,8 +580,8 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY;
 extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE;
 /**
  * @brief Key for describing the reference mode in temporal group of picture, value type is int32_t, see enum
- * {@link OH_TemporalGopReferenceMode}. It takes effect only when temporal level sacle is enabled.
- * This is an optional key that applies only to video encodeing. It is used in Configure state.
+ * {@link OH_TemporalGopReferenceMode}. It takes effect only when temporal level scale is enabled.
+ * This is an optional key that applies only to video encoding. It is used in Configure state.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
@@ -581,9 +589,9 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE;
 extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE;
 /**
  * @brief Key for describing the count of used long-term reference frames, value type is int32_t, must be within the
- * supported range. To get supported range, you should query wthether the capability is supported through the interface
+ * supported range. To get supported range, you should query whether the capability is supported through the interface
  * {@link OH_AVCapability_GetFeatureProperties} with enum {@link VIDEO_ENCODER_LONG_TERM_REFERENCE}, otherwise, not set
- * the key. This is an optional key that applies only to video encodeing. It is used in Configure state.
+ * the key. This is an optional key that applies only to video encoding. It is used in Configure state.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
@@ -600,7 +608,7 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_COUNT;
 extern const char *OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_MARK_LTR;
 /**
  * @brief Key for describing the long term reference frame poc referenced by this frame, value type is int32_t. This is
- * an optional key that applies only to video encodeing input loop. It takes effect immediately.
+ * an optional key that applies only to video encoding input loop. It takes effect immediately.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
@@ -609,7 +617,7 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR;
 /**
  * @brief Key for whether the frame corresponding to output buffer in OH_AVBuffer is a long-term reference frame,
  * value type is int32_t (0 or 1): 1 is LTR,0 otherwise. This is an optional key that applies only
- * to video encodeing output loop. It indicates the attribute of the frame.
+ * to video encoding output loop. It indicates the attribute of the frame.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
@@ -617,7 +625,7 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR;
 extern const char *OH_MD_KEY_VIDEO_PER_FRAME_IS_LTR;
 /**
  * @brief Key for describing the frame poc, value type is int32_t. This is an optional key that applies only to video
- * encodeing output loop. It indicates the attribute of the frame.
+ * encoding output loop. It indicates the attribute of the frame.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
@@ -800,7 +808,7 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_ENABLE_VRR;
 /**
  * @brief Key applies only when configuring a video encoder in surface mode, value type is int32_t.
  * If no new frame became available since the last frame submitted to the encoder,
- * it will sumbit the previous frame repeatly in milliseconds. It is used in configure.
+ * it will submit the previous frame repeatedly in milliseconds. It is used in configure.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 18
@@ -809,7 +817,7 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER;
 /**
  * @brief Key for describing the maximum count that the frame previously submitted to the encoder will be
  * repeated, in case no new frame has been available since, value type is int32_t. This key takes effect only when
- * {@link VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER} is vaild. It is used in configure.
+ * {@link VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER} is valid. It is used in configure.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 18
@@ -984,13 +992,13 @@ typedef enum OH_MediaType {
  * @version 1.0
  */
 typedef enum OH_AACProfile {
-    /** AAC encoding level is Low Complexity levele. */
+    /** AAC encoding level is Low Complexity level. */
     AAC_PROFILE_LC = 0,
-    /** AAC encoding level is High Efficiency levele.
+    /** AAC encoding level is High Efficiency level.
      * @since 14
      */
     AAC_PROFILE_HE = 3,
-    /** AAC encoding level is High Efficiency v2 levele.
+    /** AAC encoding level is High Efficiency v2 level.
      * @since 14
      */
     AAC_PROFILE_HE_V2 = 4,

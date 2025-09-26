@@ -480,6 +480,7 @@ FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin()
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_D("In");
+    ioContext_.avReadPacketStopState.store(AVReadPacketStopState::TRUE);
     ReleaseFFmpegReadLoop();
 #ifndef _WIN32
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);

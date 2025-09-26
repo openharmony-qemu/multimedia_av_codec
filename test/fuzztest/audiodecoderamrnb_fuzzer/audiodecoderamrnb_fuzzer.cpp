@@ -19,12 +19,14 @@
 #include <string>
 #include <thread>
 #include "audio_decoder_amrnb_demo.h"
+#include "audio_decoder_amrnb_new_demo.h"
 #define FUZZ_PROJECT_NAME "audiodecoderamrnb_fuzzer"
 
 using namespace std;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec::AudioBufferDemo;
+using namespace OHOS::MediaAVCodec::AudioBufferNewDemo;
 
 namespace OHOS {
 bool AudioDecoderAMRNBFuzzTest(const uint8_t *data, size_t size)
@@ -32,6 +34,9 @@ bool AudioDecoderAMRNBFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
+    // FUZZ amrnb new
+    AmrnbFuzzDemo* amrnbFuzzDemo = new AmrnbFuzzDemo();
+    amrnbFuzzDemo->DoAmrnbParserWithParserAPI(data, size);
     // FUZZ amrnb
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("amrnb");

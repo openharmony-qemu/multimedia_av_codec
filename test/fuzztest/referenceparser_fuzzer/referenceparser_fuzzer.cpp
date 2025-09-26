@@ -26,13 +26,14 @@
 using namespace std;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
+const int64_t EXPECT_MIN_SIZE = 36;
 namespace OHOS {
 const char *MP4_PATH = "/data/test/fuzz_create.mp4";
 const int64_t EXPECT_SIZE = 7;
 
 bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
 {
-    if (size < sizeof(int64_t)) {
+    if (size < EXPECT_MIN_SIZE) {
         return false;
     }
     FuzzedDataProvider fdp(data, size);
@@ -41,7 +42,7 @@ bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
         return false;
     }
     uint8_t *pstream = nullptr;
-    uint16_t framesize = fdp.ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    uint16_t framesize = size - EXPECT_MIN_SIZE;
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;
@@ -58,7 +59,7 @@ bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
     free(pstream);
     pstream = nullptr;
     close(fd);
-    int64_t pts = std::max(fdp.ConsumeIntegral<int64_t>(), 0LL) ;
+    int64_t pts = std::max(fdp.ConsumeIntegral<int64_t>(), static_cast<int64_t>(0));
     int64_t ptsForPtsIndex = fdp.ConsumeIntegral<int64_t>();
     int64_t frameIndex = fdp.ConsumeIntegral<int64_t>();
     uint32_t createSize = fdp.ConsumeIntegral<uint32_t>();
