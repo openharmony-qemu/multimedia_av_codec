@@ -51,9 +51,6 @@ void CodecServerUnitTest::CreateFCodecByName()
     EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(Return(AVCS_ERR_OK));
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
@@ -74,9 +71,6 @@ void CodecServerUnitTest::CreateFCodecByMime()
     EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(Return(AVCS_ERR_OK));
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
@@ -97,9 +91,6 @@ void CodecServerUnitTest::CreateHCodecByName()
     EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(Return(AVCS_ERR_OK));
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
@@ -121,9 +112,6 @@ void CodecServerUnitTest::CreateHCodecByMime()
     EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(Return(AVCS_ERR_OK));
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
@@ -192,9 +180,6 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_005, TestSize.Level1)
     EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(fcodecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(Return(AVCS_ERR_OK));
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
@@ -228,9 +213,6 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_006, TestSize.Level1)
     EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(fcodecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(Return(AVCS_ERR_OK));
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
@@ -254,7 +236,6 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_001, TestSize.Lev
     EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
     EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
     EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName)).Times(1).WillOnce(Return(nullptr));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr))).Times(0);
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr))).Times(0);
 
     int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName,
@@ -265,7 +246,7 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_001, TestSize.Lev
 /**
  * @tc.name: Codec_Server_Constructor_Invalid_002
  * @tc.desc: 1. create hcodec by name
- *           2. SetCallback of AVCodecCallback return error
+ *           2. SetCallback of MediaCodecCallback return error
  */
 HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_002, TestSize.Level1)
 {
@@ -278,10 +259,9 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_002, TestSize.Lev
     EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
         .Times(1)
         .WillOnce(Return(AVCS_ERR_INVALID_OPERATION));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr))).Times(0);
 
     int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName,
             *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
@@ -290,79 +270,9 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_002, TestSize.Lev
 
 /**
  * @tc.name: Codec_Server_Constructor_Invalid_003
- * @tc.desc: 1. create hcodec by name
- *           2. SetCallback of MediaCodecCallback return error
- */
-HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_003, TestSize.Level1)
-{
-    std::string codecName = "video.H.Encoder.Name.00";
-
-    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
-    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
-    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
-    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName))
-        .Times(1)
-        .WillOnce(Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(Return(AVCS_ERR_OK));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(Return(AVCS_ERR_INVALID_OPERATION));
-
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName,
-            *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_OPERATION);
-}
-
-/**
- * @tc.name: Codec_Server_Constructor_Invalid_004
- * @tc.desc: 1. create hcodec by name
- *           2. SetCallback of MediaCodecCallback return error
- */
-HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_004, TestSize.Level1)
-{
-    std::string codecName = "video.H.Encoder.Name.00";
-
-    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
-    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
-    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
-    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName))
-        .Times(1)
-        .WillOnce(Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(Return(AVCS_ERR_OK));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(Return(AVCS_ERR_INVALID_OPERATION));
-
-    int32_t ret =
-        server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName,
-            *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_OPERATION);
-}
-
-/**
- * @tc.name: Codec_Server_Constructor_Invalid_005
- * @tc.desc: invalid audio codecname
- */
-HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_005, TestSize.Level1)
-{
-    std::string codecName = "AudioDecoder.InvaildName";
-    int32_t ret =
-        server_->Init(AVCODEC_TYPE_AUDIO_ENCODER, false, codecName,
-            *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_OPERATION);
-}
-
-/**
- * @tc.name: Codec_Server_Constructor_Invalid_006
  * @tc.desc: invalid mime type
  */
-HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_006, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_003, TestSize.Level1)
 {
     std::string codecMime = "test";
     EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
@@ -930,196 +840,180 @@ HWTEST_F(CodecServerUnitTest, OnOutputFormatChanged_Valid_Test_001, TestSize.Lev
 
 /**
  * @tc.name: OnOutputFormatChanged_Valid_Test_002
- * @tc.desc: OnOutputFormatChanged codecCb_ is not nullptr, videoCb_ is nullptr
+ * @tc.desc: OnOutputFormatChanged videoCb_ is not nullptr
  */
 HWTEST_F(CodecServerUnitTest, OnOutputFormatChanged_Valid_Test_002, TestSize.Level1)
 {
     CreateHCodecByMime();
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = mock;
+    EXPECT_CALL(*mock, OnError(AVCODEC_ERROR_FRAMEAORK_FAILED, AVCS_ERR_INVALID_STATE)).Times(1);
+    server_->OnError(AVCODEC_ERROR_FRAMEAORK_FAILED, AVCS_ERR_INVALID_STATE);
     server_->videoCb_ = nullptr;
-    auto mock = std::make_shared<AVCodecCallbackMock>();
-    server_->codecCb_ = mock;
-    EXPECT_CALL(*mock, OnOutputFormatChanged).Times(1);
-    server_->OnOutputFormatChanged(validFormat_);
-    server_->codecCb_ = nullptr;
-}
-
-std::shared_ptr<AVSharedMemory> CreateAVSharedMemory(const int32_t size)
-{
-    return AVSharedMemoryBase::CreateFromLocal(size,
-        AVSharedMemory::Flags::FLAGS_READ_WRITE,
-        "buffer_converter_test");
 }
 
 /**
- * @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_001
- * @tc.desc: 1. OnInputBufferAvailable codecCb_ is not nullptr
+ * @tc.name: OnInputBufferAvailable_AVBuffer_Test_001
+ * @tc.desc: 1. OnInputBufferAvailable videoCb_ is not nullptr
  *           2. isCreateSurface_ is false
  *           3. isSetParameterCb_ is true
  */
-HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_001, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVBuffer_Test_001, TestSize.Level1)
 {
-    auto mock = std::make_shared<AVCodecCallbackMock>();
-    server_->codecCb_ = mock;
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = mock;
     server_->isCreateSurface_ = false;
     server_->isSetParameterCb_ = true;
     uint32_t index = 1;
-    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
-    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
-    EXPECT_CALL(*mock, OnInputBufferAvailable).Times(1);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    EXPECT_CALL(*mock, OnInputBufferAvailable(index, buffer)).Times(1);
     server_->OnInputBufferAvailable(index, buffer);
-    server_->codecCb_ = nullptr;
+    server_->videoCb_ = nullptr;
 }
 
 /**
- * @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_002
- * @tc.desc: 1. OnInputBufferAvailable codecCb_ is not nullptr
+ * @tc.name: OnInputBufferAvailable_AVBuffer_Test_002
+ * @tc.desc: 1. OnInputBufferAvailable videoCb_ is not nullptr
  *           2. isCreateSurface_ is false
  *           3. isSetParameterCb_ is false
  */
-HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_002, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVBuffer_Test_002, TestSize.Level1)
 {
     CreateHCodecByMime();
-    auto mock = std::make_shared<AVCodecCallbackMock>();
-    server_->codecCb_ = mock;
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = mock;
     server_->isCreateSurface_ = false;
     server_->isSetParameterCb_ = false;
     uint32_t index = 1;
-    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
-    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
-    EXPECT_CALL(*mock, OnInputBufferAvailable).Times(1);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    EXPECT_CALL(*mock, OnInputBufferAvailable(index, buffer)).Times(1);
     server_->OnInputBufferAvailable(index, buffer);
-    server_->codecCb_ = nullptr;
+    server_->videoCb_ = nullptr;
 }
 
 /**
- * @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_003
- * @tc.desc: 1. OnInputBufferAvailable codecCb_ is not nullptr
+ * @tc.name: OnInputBufferAvailable_AVBuffer_Test_003
+ * @tc.desc: 1. OnInputBufferAvailable videoCb_ is not nullptr
  *           2. isCreateSurface_ is true
  *           3. isSetParameterCb_ is false
  */
-HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_003, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVBuffer_Test_003, TestSize.Level1)
 {
     CreateHCodecByMime();
-    auto mock = std::make_shared<AVCodecCallbackMock>();
-    server_->codecCb_ = mock;
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = mock;
     server_->isCreateSurface_ = true;
     server_->isSetParameterCb_ = false;
     uint32_t index = 1;
-    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
-    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
     EXPECT_CALL(*mock, OnInputBufferAvailable).Times(0);
     server_->OnInputBufferAvailable(index, buffer);
-    server_->codecCb_ = nullptr;
+    server_->videoCb_ = nullptr;
 }
 
 /**
- * @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_004
- * @tc.desc: 1. OnInputBufferAvailable codecCb_ is not nullptr
+ * @tc.name: OnInputBufferAvailable_AVBuffer_Test_004
+ * @tc.desc: 1. OnInputBufferAvailable videoCb_ is not nullptr
  *           2. isCreateSurface_ is true
  *           3. isSetParameterCb_ is true
  */
-HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_004, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVBuffer_Test_004, TestSize.Level1)
 {
     CreateHCodecByMime();
-    auto mock = std::make_shared<AVCodecCallbackMock>();
-    server_->codecCb_ = mock;
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = mock;
     server_->isCreateSurface_ = true;
     server_->isSetParameterCb_ = true;
     uint32_t index = 1;
-    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
-    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
-    EXPECT_CALL(*mock, OnInputBufferAvailable).Times(1);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    EXPECT_CALL(*mock, OnInputBufferAvailable(index, buffer)).Times(1);
     server_->OnInputBufferAvailable(index, buffer);
-    server_->codecCb_ = nullptr;
+    server_->videoCb_ = nullptr;
 }
 
 /**
- * @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_005
- * @tc.desc: 1. OnInputBufferAvailable codecCb_ is nullptr
+ * @tc.name: OnInputBufferAvailable_AVBuffer_Test_005
+ * @tc.desc: 1. OnInputBufferAvailable videoCb_ is nullptr
  *           2. isCreateSurface_ is true
  *           3. isSetParameterCb_ is false
  */
-HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_005, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVBuffer_Test_005, TestSize.Level1)
 {
     CreateHCodecByMime();
-    auto mock = std::make_shared<AVCodecCallbackMock>();
-    server_->codecCb_ = nullptr;
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = nullptr;
     server_->isCreateSurface_ = true;
     server_->isSetParameterCb_ = false;
     uint32_t index = 1;
-    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
-    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
     EXPECT_CALL(*mock, OnInputBufferAvailable).Times(0);
     server_->OnInputBufferAvailable(index, buffer);
 }
 
 /**
- * @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_006
- * @tc.desc: 1. OnInputBufferAvailable codecCb_ is nullptr
+ * @tc.name: OnInputBufferAvailable_AVBuffer_Test_006
+ * @tc.desc: 1. OnInputBufferAvailable videoCb_ is nullptr
  *           2. isCreateSurface_ is true
  *           3. isSetParameterCb_ is true
  */
-HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_006, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVBuffer_Test_006, TestSize.Level1)
 {
     CreateHCodecByMime();
-    auto mock = std::make_shared<AVCodecCallbackMock>();
-    server_->codecCb_ = nullptr;
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = nullptr;
     server_->isCreateSurface_ = true;
     server_->isSetParameterCb_ = true;
     uint32_t index = 1;
-    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
-    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
     EXPECT_CALL(*mock, OnInputBufferAvailable).Times(0);
     server_->OnInputBufferAvailable(index, buffer);
 }
 
-/* @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_007
- * @tc.desc: 1. OnInputBufferAvailable codecCb_ is nullptr
+/* @tc.name: OnInputBufferAvailable_AVBuffer_Test_007
+ * @tc.desc: 1. OnInputBufferAvailable videoCb_ is nullptr
  *           2. isCreateSurface_ is false
  *           3. isSetParameterCb_ is true
  */
-HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_007, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVBuffer_Test_007, TestSize.Level1)
 {
     CreateHCodecByMime();
-    auto mock = std::make_shared<AVCodecCallbackMock>();
-    server_->codecCb_ = nullptr;
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = nullptr;
     server_->isCreateSurface_ = false;
     server_->isSetParameterCb_ = true;
     uint32_t index = 1;
-    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
-    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
     EXPECT_CALL(*mock, OnInputBufferAvailable).Times(0);
     server_->OnInputBufferAvailable(index, buffer);
 }
 
 /**
- * @tc.name: OnInputBufferAvailable_AVSharedMemory_Test_008
- * @tc.desc: 1. OnInputBufferAvailable codecCb_ is nullptr
+ * @tc.name: OnInputBufferAvailable_AVBuffer_Test_008
+ * @tc.desc: 1. OnInputBufferAvailable videoCb_ is nullptr
  *           2. isCreateSurface_ is false
  *           3. isSetParameterCb_ is false
  */
-HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVSharedMemory_Test_008, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_AVBuffer_Test_008, TestSize.Level1)
 {
     CreateHCodecByMime();
-    auto mock = std::make_shared<AVCodecCallbackMock>();
-    server_->codecCb_ = nullptr;
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = nullptr;
     server_->isCreateSurface_ = false;
     server_->isSetParameterCb_ = false;
     uint32_t index = 1;
-    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 3 / 2; // NV12 YUVI420
-    std::shared_ptr<AVSharedMemory> buffer = CreateAVSharedMemory(testSize);
-    EXPECT_CALL(*mock, OnInputBufferAvailable).Times(0);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    EXPECT_CALL(*mock, OnInputBufferAvailable(index, buffer)).Times(0);
     server_->OnInputBufferAvailable(index, buffer);
 }
 
 /**
  * @tc.name: OnError_Valid_Test_001
- * @tc.desc: VCodecBaseCallback OnError test
+ * @tc.desc: CodecBaseCallback OnError test
  */
 HWTEST_F(CodecServerUnitTest, OnError_Valid_Test_001, TestSize.Level1)
 {
     CreateHCodecByMime();
-    auto codecBaseCallback = std::make_shared<VCodecBaseCallback>(server_);
+    auto codecBaseCallback = std::make_shared<CodecBaseCallback>(server_);
     AVCodecErrorType errorType = AVCODEC_ERROR_INTERNAL;
     int32_t errorCode = AVCS_ERR_OK;
     codecBaseCallback->OnError(errorType, errorCode);

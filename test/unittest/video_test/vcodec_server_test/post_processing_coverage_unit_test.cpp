@@ -47,9 +47,6 @@ void CodecServerUnitTest::CreateCodecByMime()
     EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(Return(AVCS_ERR_OK));
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
