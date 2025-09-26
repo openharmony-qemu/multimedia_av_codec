@@ -19,20 +19,24 @@
 #include <string>
 #include <thread>
 #include "audio_decoder_mp3_demo.h"
+#include "audio_decoder_mp3_new_demo.h"
 #define FUZZ_PROJECT_NAME "audiodecoder_fuzzer"
 
 using namespace std;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec::AudioBufferDemo;
+using namespace OHOS::MediaAVCodec::AudioBufferNewDemo;
 
 namespace OHOS {
-
 bool AudioDecoderMP3FuzzTest(const uint8_t *data, size_t size)
 {
     if (size < sizeof(int64_t)) {
         return false;
     }
+    // FUZZ g711 new
+    Mp3FuzzDemo* mp3FuzzDemo = new Mp3FuzzDemo();
+    mp3FuzzDemo->DoMp3ParserWithParserAPI(data, size);
     // FUZZ lbvc
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("mp3");
