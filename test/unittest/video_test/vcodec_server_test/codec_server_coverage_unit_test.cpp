@@ -1310,5 +1310,6 @@ HWTEST_F(CodecServerUnitTest, SetAudioDecryptionConfig_Test_001, TestSize.Level1
     ret = codecBaseMock_->SetAudioDecryptionConfig(keySession, svpFlag);
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
+
 } // MediaAVCodec
 } // namespace
