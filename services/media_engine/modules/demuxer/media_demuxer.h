@@ -190,6 +190,8 @@ public:
         return isVideoMuted_ || needRestore_;
     }
     void NotifyResumeUnMute();
+    bool BoostThreadPriorityIfNeeded();
+    bool IsWatchDevice();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -218,6 +220,8 @@ private:
     static constexpr int32_t TRACK_ID_INVALID = -1;
     static constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
     static inline bool IsValidTrackId(const int32_t trackId) { return trackId >= 0; }
+
+    Status BoostReadThreadPriority();
 
     Status InnerPrepare();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
