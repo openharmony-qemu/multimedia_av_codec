@@ -68,7 +68,7 @@ void ApeFuzzDemo::RandomSetMeta(const uint8_t *data)
 
 bool ApeFuzzDemo::DoApeParserWithParserAPI(const uint8_t *data, size_t size)
 {
-    if (size < 3) {
+    if (size < 3) { // 3 is data length
         return false;
     }
     BaseFuzzDemo base;
