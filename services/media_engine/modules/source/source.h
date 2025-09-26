@@ -133,6 +133,7 @@ public:
     uint64_t GetMemorySize();
     Status StopBufferring(bool isAppBackground);
     bool IsHlsEnd();
+    bool IsHls();
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);

@@ -657,9 +657,10 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
         tsStorageInfo_[readTsIndex_].second == true) {
         uint64_t tsEndOffset = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first);
         if (readOffset_ >= tsEndOffset) {
-            if (GetHLSDiscontinuity()) {
-                isTsEnd_.store(true);
-                notNeedReadBack_.store(true);
+            isTsEnd_.store(true);
+            notNeedReadBack_.store(true);
+            if (playlistDownloader_->IsHlsFmp4()) {
+                isNeedReadHeader_.store(true);
             }
             RemoveFmp4PaddingData(buff, readDataInfo);
             readTsIndex_++;
@@ -670,18 +671,10 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
                 readDataInfo.streamId_ != static_cast<int32_t>(tsStreamIdInfo_[readTsIndex_])) {
                 curStreamId_ = tsStreamIdInfo_[readTsIndex_];
                 isNeedResetOffset_.store(true);
+                isTsEnd_.store(false);
                 MEDIA_LOG_D("HLS read readTsIndex_ " PUBLIC_LOG_U32, readTsIndex_.load());
                 return;
             }
-        }
-        if (!GetHLSDiscontinuity() && readDataInfo.realReadLength_ < readDataInfo.wantReadLength_
-            && readTsIndex_ != backPlayList_.size()) {
-            uint32_t crossFragLen = readDataInfo.wantReadLength_ - readDataInfo.realReadLength_;
-            uint32_t crossReadLen = cacheMediaBuffer_->Read(buff + readDataInfo.realReadLength_, readOffset_,
-                                                            crossFragLen);
-            readDataInfo.realReadLength_ = readDataInfo.realReadLength_ + crossReadLen;
-            ffmpegOffset_ += crossReadLen;
-            readOffset_ += crossReadLen;
         }
     }
     canWrite_ = true;
@@ -753,6 +746,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 
 void HlsMediaDownloader::PrepareToSeek()
 {
+    isTsEnd_.store(false);
     int32_t retry {0};
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
     do {
@@ -1366,6 +1360,10 @@ int64_t HlsMediaDownloader::RequestNewTs(uint64_t seekTime, SeekMode mode, doubl
     playInfo.offset_ = item.offset_;
     playInfo.length_ = item.length_;
     if (mode == SeekMode::SEEK_PREVIOUS_SYNC) {
+        double lastTotalDuration = totalDuration - hstTime;
+        if (static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
+            seekStartTimePos_ = lastTotalDuration;
+        }
         playInfo.startTimePos_ = 0;
     } else {
         int64_t startTimePos = 0;
@@ -2276,9 +2274,6 @@ bool HlsMediaDownloader::IsPureByteRange()
 
 void HlsMediaDownloader::HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos)
 {
-    if (playlistDownloader_ && !playlistDownloader_->IsHlsFmp4()) {
-        return;
-    }
     Format seekReadyInfo {};
     seekReadyInfo.PutIntValue("currentStreamType", streamType);
     seekReadyInfo.PutIntValue("currentStreamId", streamId);
