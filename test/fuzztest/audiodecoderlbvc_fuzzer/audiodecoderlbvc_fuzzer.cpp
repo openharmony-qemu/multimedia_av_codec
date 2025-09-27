@@ -33,6 +33,9 @@ bool AudioDecoderLBVCFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
+    // FUZZ lbvc new
+    LbvcFuzzDemo* lbvcFuzzDemo = new LbvcFuzzDemo();
+    lbvcFuzzDemo->DoLbvcParserWithParserAPI(data, size);
     // FUZZ lbvc
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("lbvc");
