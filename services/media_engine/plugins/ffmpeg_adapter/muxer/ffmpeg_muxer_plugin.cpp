@@ -1359,7 +1359,7 @@ Status FFmpegMuxerPlugin::WriteVideoSample(uint32_t trackIndex, const std::share
         }
     }
     MEDIA_LOG_D("write sample data offset: " PUBLIC_LOG_D32, dataOffset);
-    return WriteNormal(trackIndex, sample, dataoffset);
+    return WriteNormal(trackIndex, sample, dataOffset);
 }
 
 std::vector<uint8_t> FFmpegMuxerPlugin::TransAnnexbToMp4(const uint8_t *sample, int32_t size)
