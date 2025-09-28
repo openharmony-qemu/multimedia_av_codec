@@ -105,12 +105,12 @@ group("vcodec_framework_test") {
       ":videodec_memrecycle_unit_test",
       ":videodec_mpeg_func_async_unit_test",
       ":videodec_mpeg_func_sync_unit_test",
-      #":videodec_VC1_func_async_unit_test",
-      #":videodec_VC1_func_sync_unit_test",
+      ":videodec_VC1_func_async_unit_test",
+      ":videodec_VC1_func_sync_unit_test",
       ":videodec_mpeg_stable_unit_test",
       ":videodec_stable_unit_test",
       ":videodec_state_unit_test",
-      #":videodec_VC1_stable_unit_test",
+      ":videodec_VC1_stable_unit_test",
     ]
     if (target_cpu == "arm64" && av_codec_support_hcodec) {
       deps += [
@@ -990,7 +990,7 @@ ohos_unittest("videodec_VC1_stable_unit_test") {
   module_out_path = module_output_path
   include_dirs = []
   sources = [ "./videodec_vc1_stable_unit_test.cpp" ]
-  public_deps = [ "./stable_sample:video_sample" ]
+  deps = [ "./stable_sample:video_sample" ]
   resource_config_file = resource_configuration_file
 }
 
