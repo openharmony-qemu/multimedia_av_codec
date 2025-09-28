@@ -77,16 +77,6 @@ std::vector<std::shared_ptr<VideoCaps>> CapsUnitTest::GetVideoEncoderCaps()
     return ret;
 }
 
-std::vector<std::shared_ptr<VideoCaps>> CapsUnitTest::GetVideoEncoderCapsDup(int32_t times)
-{
-    std::vector<std::shared_ptr<VideoCaps>> ret;
-    for (int32_t i = 0; i < times; i++) {
-        auto capabilityCapi = OH_AVCodec_GetCapability(string(CodecMimeType::VIDEO_HEVC).c_str(), true);
-        ret.push_back(std::make_shared<VideoCaps>(capabilityCapi->capabilityData_));
-    }
-    return ret;
-}
-
 std::vector<std::shared_ptr<AudioCaps>> CapsUnitTest::GetAudioDecoderCaps()
 {
     std::vector<std::shared_ptr<AudioCaps>> ret;
@@ -107,12 +97,15 @@ std::vector<std::shared_ptr<AudioCaps>> CapsUnitTest::GetAudioEncoderCaps()
     return ret;
 }
 
-std::vector<std::shared_ptr<AudioCaps>> CapsUnitTest::GetAudioEncoderCapsDup(int32_t times)
+std::vector<CapabilityData *> CapsUnitTest::GetDupCaps(std::string mime, int32_t dupTimes)
 {
-    std::vector<std::shared_ptr<AudioCaps>> ret;
-    for (int32_t i = 0; i < times; i++) {
-        auto capabilityCapi = OH_AVCodec_GetCapability(string(CodecMimeType::AUDIO_AAC).c_str(), true);
-        ret.push_back(std::make_shared<AudioCaps>(capabilityCapi->capabilityData_));
+    std::vector<CapabilityData *> ret;
+    for (int32_t i = 0; i < dupTimes; i++) {
+        auto capabilityCapi = OH_AVCodec_GetCapability(mime.c_str(), true);
+        if (capabilityCapi == nullptr) {
+            break;
+        }
+        ret.push_back(capabilityCapi->capabilityData_);
     }
     return ret;
 }
@@ -153,17 +146,6 @@ std::vector<std::shared_ptr<VideoCaps>> CapsUnitTest::GetVideoEncoderCaps()
     return ret;
 }
 
-std::vector<std::shared_ptr<VideoCaps>> CapsUnitTest::GetVideoEncoderCapsDup(int32_t times)
-{
-    std::vector<std::shared_ptr<VideoCaps>> ret;
-    for (int32_t i = 0; i < times; i++) {
-        CapabilityData *capabilityData = avCodecList_->GetCapability(
-            string(CodecMimeType::VIDEO_HEVC), true, AVCodecCategory::AVCODEC_NONE);
-        ret.push_back(std::make_shared<VideoCaps>(capabilityData));
-    }
-    return ret;
-}
-
 std::vector<std::shared_ptr<AudioCaps>> CapsUnitTest::GetAudioDecoderCaps()
 {
     std::vector<std::shared_ptr<AudioCaps>> ret;
@@ -184,13 +166,15 @@ std::vector<std::shared_ptr<AudioCaps>> CapsUnitTest::GetAudioEncoderCaps()
     return ret;
 }
 
-std::vector<std::shared_ptr<AudioCaps>> CapsUnitTest::GetAudioEncoderCapsDup(int32_t times)
+std::vector<CapabilityData *> CapsUnitTest::GetDupCaps(std::string mime, int32_t dupTimes)
 {
-    std::vector<std::shared_ptr<AudioCaps>> ret;
-    for (int32_t i = 0; i < times; i++) {
-        CapabilityData *capabilityData = avCodecList_->GetCapability(
-            string(CodecMimeType::AUDIO_AAC), true, AVCodecCategory::AVCODEC_NONE);
-        ret.push_back(std::make_shared<AudioCaps>(capabilityData));
+    std::vector<CapabilityData *> ret;
+    for (int32_t i = 0; i < dupTimes; i++) {
+        CapabilityData *capabilityData = avCodecList_->GetCapability(mime, true, AVCodecCategory::AVCODEC_NONE);
+        if (capabilityData == nullptr) {
+            break;
+        }
+        ret.push_back(capabilityData);
     }
     return ret;
 }
@@ -855,19 +839,6 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoEncoderCaps_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVCaps_GetVideoEncoderCaps_002
- * @tc.desc: AAVCdecList GetVideoEncoderCaps for multi times
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F(CapsUnitTest, AVCaps_GetVideoEncoderCaps_002, TestSize.Level1)
-{
-    std::vector<std::shared_ptr<VideoCaps>> videoEncoderArray;
-    videoEncoderArray = GetVideoEncoderCapsDup(10); // 10 is multi times
-    CheckVideoCapsArray(videoEncoderArray);
-}
-
-/**
  * @tc.name: AVCaps_GetAudioDecoderCaps_001
  * @tc.desc: AVCdecList GetAudioDecoderCaps
  * @tc.type: FUNC
@@ -881,16 +852,22 @@ HWTEST_F(CapsUnitTest, AVCaps_GetAudioDecoderCaps_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVCaps_GetAudioEncoderCaps_002
- * @tc.desc: AVCdecList GetAudioEncoderCaps for multi times
+ * @tc.name: AVCaps_GetDupCaps_001
+ * @tc.desc: AVCdecList GetDupCaps
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(CapsUnitTest, AVCaps_GetAudioEncoderCaps_002, TestSize.Level1)
+HWTEST_F(CapsUnitTest, AVCaps_GetDupCaps_001, TestSize.Level1)
 {
-    std::vector<std::shared_ptr<AudioCaps>> audioEncoderArray;
-    audioEncoderArray = GetAudioEncoderCapsDup(10); // 10 is multi times
-    CheckAudioCapsArray(audioEncoderArray);
+    std::vector<CapabilityData *> videoCapVec = GetDupCaps(
+        std::string(CodecMimeType::VIDEO_AVC), 2); // 2 is multi times
+    EXPECT_EQ(videoCapVec.size(), 2); // 2 is exp cap num
+    EXPECT_EQ(videoCapVec[0], videoCapVec[1]);
+
+    std::vector<CapabilityData *> audioCapVec = GetDupCaps(
+        std::string(CodecMimeType::AUDIO_AAC), 2); // 2 is multi times
+    EXPECT_EQ(audioCapVec.size(), 2); // 2 is exp cap num
+    EXPECT_EQ(audioCapVec[0], audioCapVec[1]);
 }
 
 /**
