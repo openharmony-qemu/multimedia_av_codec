@@ -61,6 +61,7 @@ protected:
     std::vector<std::shared_ptr<VideoCaps>> GetVideoEncoderCaps();
     std::vector<std::shared_ptr<AudioCaps>> GetAudioDecoderCaps();
     std::vector<std::shared_ptr<AudioCaps>> GetAudioEncoderCaps();
+    std::vector<CapabilityData *> GetDupCaps(std::string mime, int32_t dupTimes);
 
     std::string codecMimeKey_;
     std::string bitrateKey_;

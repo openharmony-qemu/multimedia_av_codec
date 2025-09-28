@@ -648,5 +648,11 @@ bool Source::IsHlsEnd()
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");
     return plugin_->IsHlsEnd();
 }
+
+bool Source::IsHls()
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");
+    return plugin_->IsHls();
+}
 } // namespace Media
 } // namespace OHOS

@@ -58,6 +58,14 @@ constexpr int32_t VIDEO_FRAMERATE_DEFAULT_SIZE = 60;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 139264;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
 constexpr int32_t DEFAULT_THREAD_COUNT = 2;
+constexpr int32_t VC1_ALIGNMENT_SIZE = 2;
+constexpr int32_t VC1_MIN_WIDTH_SIZE = 176;
+constexpr int32_t VC1_MIN_HEIGHT_SIZE = 144;
+constexpr int32_t VC1_MAX_WIDTH_SIZE = 2048;
+constexpr int32_t VC1_MAX_HEIGHT_SIZE = 2048;
+constexpr int32_t VC1_BITRATE_MAX_SIZE = 135000000;
+constexpr int32_t VC1_BLOCKPERFRAME_SIZE = 16384;
+constexpr int32_t VC1_BLOCKPERSEC_SIZE = 983040;
 #ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/fcodecdump";
@@ -72,6 +80,7 @@ constexpr struct {
     {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME, CodecMimeType::VIDEO_MPEG2, "mpeg2video"},
     {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4"},
     {AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME, CodecMimeType::VIDEO_MJPEG, "mjpeg"},
+    {AVCodecCodecName::VIDEO_DECODER_VC1_NAME, CodecMimeType::VIDEO_VC1, "vc1"},
 #ifdef SUPPORT_CODEC_RV
     {AVCodecCodecName::VIDEO_DECODER_RV30_NAME, CodecMimeType::VIDEO_RV30, "rv30"},
     {AVCodecCodecName::VIDEO_DECODER_RV40_NAME, CodecMimeType::VIDEO_RV40, "rv40"},
@@ -257,14 +266,14 @@ int32_t FCodec::ConfigureContext(const Format &format)
     avCodecContext_->width = width_;
     avCodecContext_->height = height_;
     avCodecContext_->thread_count = DEFAULT_THREAD_COUNT;
-#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES)
+#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     return SetCodecExtradata(format);
 #else
     return AVCS_ERR_OK;
 #endif
 }
 
-#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES)
+#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
 int32_t FCodec::SetCodecExtradata(const Format &format)
 {
     size_t extraSize = 0;
@@ -346,16 +355,21 @@ bool FCodec::IsActive() const
     return state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS;
 }
 
+void FCodec::FreeExtradataIfNeeded(std::string name)
+{
+    if (avCodecContext_->extradata && !(name == AVCodecCodecName::VIDEO_DECODER_VC1_NAME)) {
+        av_free(avCodecContext_->extradata);
+        avCodecContext_->extradata = nullptr;
+        avCodecContext_->extradata_size = 0;
+    }
+}
+
 void FCodec::ResetContext(bool isFlush)
 {
     CHECK_AND_RETURN_LOG(avCodecContext_ != nullptr, "Avcodec context is nullptr");
-    if (avCodecContext_->extradata) {
-        av_free(avCodecContext_->extradata);
-        avCodecContext_->extradata = nullptr;
-    }
+    FreeExtradataIfNeeded(codecName_);
     avCodecContext_->coded_width = 0;
     avCodecContext_->coded_height = 0;
-    avCodecContext_->extradata_size = 0;
     if (!isFlush) {
         avCodecContext_->width = 0;
         avCodecContext_->height = 0;
@@ -1939,40 +1953,73 @@ void FCodec::GetMjpegCapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
+void FCodec::GetVc1CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.alignment.width = VC1_ALIGNMENT_SIZE;
+        capsData.alignment.height = VC1_ALIGNMENT_SIZE;
+        capsData.width.minVal = VC1_MIN_WIDTH_SIZE;
+        capsData.height.minVal = VC1_MIN_HEIGHT_SIZE;
+        capsData.width.maxVal = VC1_MAX_WIDTH_SIZE;
+        capsData.height.maxVal = VC1_MAX_HEIGHT_SIZE;
+        capsData.bitrate.maxVal = VC1_BITRATE_MAX_SIZE;
+        capsData.blockPerFrame.maxVal = VC1_BLOCKPERFRAME_SIZE;
+        capsData.blockPerSecond.maxVal = VC1_BLOCKPERSEC_SIZE;
+        capsData.pixFormat = {
+            static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
+            static_cast<int32_t>(VideoPixelFormat::NV21)};
+        capsData.profiles = {static_cast<int32_t>(VC1_PROFILE_SIMPLE), static_cast<int32_t>(VC1_PROFILE_MAIN),
+                             static_cast<int32_t>(VC1_PROFILE_ADVANCED)};
+        std::vector<int32_t> levels;
+        for (int32_t j = 0; j <= static_cast<int32_t>(VC1Level::VC1_LEVEL_HIGH); ++j) {
+            levels.emplace_back(j);
+        }
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_SIMPLE), levels));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_MAIN), levels));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_ADVANCED), levels));
+    }
+}
+
+void FCodec::FillBaseCapability(CapabilityData &capsData, uint32_t i)
+{
+    capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[i].codecName);
+    capsData.mimeType = static_cast<std::string>(SUPPORT_VCODEC[i].mimeType);
+    capsData.codecType = AVCODEC_TYPE_VIDEO_DECODER;
+    capsData.isVendor = false;
+    capsData.maxInstance = VIDEO_INSTANCE_SIZE;
+    capsData.alignment.width = VIDEO_ALIGNMENT_SIZE;
+    capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
+    capsData.width.minVal = capsData.mimeType == "video/h263" ? VIDEO_MIN_WIDTH_H263_SIZE : VIDEO_MIN_SIZE;
+    capsData.height.minVal = capsData.mimeType == "video/h263" ? VIDEO_MIN_HEIGHT_H263_SIZE : VIDEO_MIN_SIZE;
+    capsData.width.maxVal = capsData.mimeType == "video/h263" ? VIDEO_MAX_WIDTH_H263_SIZE : VIDEO_MAX_WIDTH_SIZE;
+    capsData.height.maxVal = capsData.mimeType == "video/h263" ? VIDEO_MAX_HEIGHT_H263_SIZE : VIDEO_MAX_HEIGHT_SIZE;
+    capsData.frameRate.minVal = 0;
+    capsData.frameRate.maxVal = VIDEO_FRAMERATE_DEFAULT_SIZE;
+    capsData.bitrate.minVal = 1;
+    capsData.bitrate.maxVal = VIDEO_BITRATE_MAX_SIZE;
+    capsData.blockPerFrame.minVal = 1;
+    capsData.blockPerFrame.maxVal = VIDEO_BLOCKPERFRAME_SIZE;
+    capsData.blockPerSecond.minVal = 1;
+    capsData.blockPerSecond.maxVal = VIDEO_BLOCKPERSEC_SIZE;
+    capsData.blockSize.width = VIDEO_ALIGN_SIZE;
+    capsData.blockSize.height = VIDEO_ALIGN_SIZE;
+    capsData.pixFormat = {
+        static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
+        static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
+    capsData.graphicPixFormat = {
+        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P),
+        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP),
+        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP),
+        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888)};
+}
+
+>>>>>>> master
 int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 {
     for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {
         CapabilityData capsData;
-        capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[i].codecName);
-        capsData.mimeType = static_cast<std::string>(SUPPORT_VCODEC[i].mimeType);
-        capsData.codecType = AVCODEC_TYPE_VIDEO_DECODER;
-        capsData.isVendor = false;
-        capsData.maxInstance = VIDEO_INSTANCE_SIZE;
-        capsData.alignment.width = VIDEO_ALIGNMENT_SIZE;
-        capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
-        capsData.width.minVal = capsData.mimeType == "video/h263" ? VIDEO_MIN_WIDTH_H263_SIZE : VIDEO_MIN_SIZE;
-        capsData.height.minVal = capsData.mimeType == "video/h263" ? VIDEO_MIN_HEIGHT_H263_SIZE : VIDEO_MIN_SIZE;
-        capsData.width.maxVal = capsData.mimeType == "video/h263" ? VIDEO_MAX_WIDTH_H263_SIZE : VIDEO_MAX_WIDTH_SIZE;
-        capsData.height.maxVal = capsData.mimeType == "video/h263" ? VIDEO_MAX_HEIGHT_H263_SIZE : VIDEO_MAX_HEIGHT_SIZE;
-        capsData.frameRate.minVal = 0;
-        capsData.frameRate.maxVal = VIDEO_FRAMERATE_DEFAULT_SIZE;
-        capsData.bitrate.minVal = 1;
-        capsData.bitrate.maxVal = VIDEO_BITRATE_MAX_SIZE;
-        capsData.blockPerFrame.minVal = 1;
-        capsData.blockPerFrame.maxVal = VIDEO_BLOCKPERFRAME_SIZE;
-        capsData.blockPerSecond.minVal = 1;
-        capsData.blockPerSecond.maxVal = VIDEO_BLOCKPERSEC_SIZE;
-        capsData.blockSize.width = VIDEO_ALIGN_SIZE;
-        capsData.blockSize.height = VIDEO_ALIGN_SIZE;
-        capsData.pixFormat = {
-            static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
-            static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
-        capsData.graphicPixFormat = {
-            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P),
-            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP),
-            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP),
-            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888)
-        };
+        FillBaseCapability(capsData, i);
         if (capsData.mimeType == "video/mpeg2") {
             capaArray.emplace_back(capsData);
             GetMpeg2CapProf(capaArray);
@@ -1985,6 +2032,9 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         } else if (capsData.mimeType == "video/mjpeg") {
             capaArray.emplace_back(capsData);
             GetMjpegCapProf(capaArray);
+        } else if (capsData.mimeType == "video/vc1") {
+            capaArray.emplace_back(capsData);
+            GetVc1CapProf(capaArray);
         } else {
             capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
             capaArray.emplace_back(capsData);

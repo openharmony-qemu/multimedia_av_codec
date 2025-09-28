@@ -125,6 +125,11 @@ private:
     static void GetH263CapProf(std::vector<CapabilityData> &capaArray);
     static void GetMjpegCapProf(std::vector<CapabilityData> &capaArray);
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES)
+    static void GetVc1CapProf(std::vector<CapabilityData> &capaArray);
+    void FreeExtradataIfNeeded(std::string name);
+    static void FillBaseCapability(CapabilityData &capsData, uint32_t i);
+#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
+>>>>>>> master
     int32_t SetCodecExtradata(const Format &format);
 #endif
     void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);

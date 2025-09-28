@@ -179,6 +179,8 @@ int32_t VideoDecSyncSample::CreateReader(const std::string &inPath)
         case MPEG2_STREAM:
         case MPEG4_STREAM:
             return CreateMpegReader();
+        case VC1_STREAM:
+            return CreateVc1Reader();
         default:
             return CreateAvccReader();
     }
@@ -375,6 +377,16 @@ int32_t VideoDecSyncSample::CreateH263Reader()
 
     h263Reader_ = std::make_shared<H263Reader>();
     int32_t ret = h263Reader_->Init(info);
+    return ret;
+}
+
+int32_t VideoDecSyncSample::CreateVc1Reader()
+{
+    std::shared_ptr<Vc1ReaderInfo> info = std::make_shared<Vc1ReaderInfo>();
+    info->inPath = inPath_;
+
+    vc1Reader_ = std::make_shared<Vc1Reader>();
+    int32_t ret = vc1Reader_->Init(info);
     return ret;
 }
 
@@ -653,7 +665,8 @@ int32_t VideoDecSyncSample::OutputLoopInnerExt()
     if (!isSurfaceMode_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
         int32_t size = (testParam_ == VCodecTestParam::SW_AVC || testParam_ == VCodecTestParam::SW_MPEG2 ||
-                        testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263)
+                        testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263 ||
+                        testParam_ == VCodecTestParam::SW_VC1)
                            ? attr.size
                            : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
@@ -710,8 +723,10 @@ int32_t VideoDecSyncSample::InputLoopInnerExt()
     } else if (avccReader_ != nullptr) {
         isKeepExecuting_ == false ? avccReader_->FillBuffer(buffer->GetAddr(), attr)
                                   : avccReader_->KeepFillBuffer(buffer->GetAddr(), attr);
-    } else {
+    } else if (mpegReader_ != nullptr) {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
+    } else {
+        vc1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }
     buffer->SetBufferAttr(attr);
     return PushInputBuffer(index);

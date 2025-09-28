@@ -190,6 +190,8 @@ public:
         return isVideoMuted_ || needRestore_;
     }
     void NotifyResumeUnMute();
+    bool BoostThreadPriorityIfNeeded();
+    bool IsWatchDevice();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -218,6 +220,8 @@ private:
     static constexpr int32_t TRACK_ID_INVALID = -1;
     static constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
     static inline bool IsValidTrackId(const int32_t trackId) { return trackId >= 0; }
+
+    Status BoostReadThreadPriority();
 
     Status InnerPrepare();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
@@ -300,6 +304,7 @@ private:
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
     Status HandleRebootPlugin(int32_t trackId, bool& isRebooted);
     Status HandleHlsRebootPlugin();
+    Status HandleSegmentChange();
     Status HandleSeekChangeStream(int32_t currentStreamId, int32_t newStreamId, int32_t trackId);
     bool IsSubtitleMime(const std::string& mime);
     void HandleAutoMaintainPts(int32_t trackeId, std::shared_ptr<AVBuffer> sample);
@@ -351,6 +356,8 @@ private:
     void HandleSeek(int32_t trackId);
     void RecordErrorCount(int32_t queueIndex, Status ret);
     void HandleVideoSampleQueue();
+    bool IsSegmentEos();
+    void ResetSegmentEosMap();
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
@@ -370,6 +377,7 @@ private:
 
     std::map<int32_t, std::shared_ptr<SampleQueue>> sampleQueueMap_;
     std::map<int32_t, bool> eosMap_;
+    std::map<int32_t, bool> segmentEosMap_;
     std::map<int32_t, uint32_t> requestBufferErrorCountMap_;
     std::atomic<bool> isThreadExit_ = true;
     bool useBufferQueue_ = false;
@@ -465,6 +473,7 @@ private:
     PerfRecorder perfRecorder_ {};
     int32_t apiVersion_ {0};
     bool isHlsFmp4_ {false};
+    bool isHls_ {false};
 
     bool isCreatedByFilter_ {false};
 

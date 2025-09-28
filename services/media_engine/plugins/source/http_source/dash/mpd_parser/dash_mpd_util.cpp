@@ -158,6 +158,10 @@ int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
         int32_t coefficient = 0;
         double num = strtod(start, &end);
 
+        if (end == nullptr) {
+            num = 0;
+        }
+
         if (start != end && end) {
             start = end;
         }

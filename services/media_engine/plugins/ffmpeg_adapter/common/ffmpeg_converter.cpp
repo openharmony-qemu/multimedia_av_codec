@@ -109,6 +109,18 @@ const std::vector<std::pair<AVCodecID, AudioSampleFormat>> g_pFfCodeIDToSampleFm
     {AVCodecID::AV_CODEC_ID_PCM_S32BE, AudioSampleFormat::SAMPLE_S32BE},
     {AVCodecID::AV_CODEC_ID_PCM_F32BE, AudioSampleFormat::SAMPLE_F32BE},
     {AVCodecID::AV_CODEC_ID_PCM_F64BE, AudioSampleFormat::SAMPLE_F64BE},
+    {AVCodecID::AV_CODEC_ID_PCM_S8, AudioSampleFormat::SAMPLE_S8},
+    {AVCodecID::AV_CODEC_ID_PCM_F64LE, AudioSampleFormat::SAMPLE_F64LE},
+    {AVCodecID::AV_CODEC_ID_PCM_S64LE, AudioSampleFormat::SAMPLE_S64LE},
+    {AVCodecID::AV_CODEC_ID_PCM_S8_PLANAR, AudioSampleFormat::SAMPLE_S8P},
+    {AVCodecID::AV_CODEC_ID_PCM_S16LE_PLANAR, AudioSampleFormat::SAMPLE_S16LEP},
+    {AVCodecID::AV_CODEC_ID_PCM_S16BE_PLANAR, AudioSampleFormat::SAMPLE_S16BEP},
+    {AVCodecID::AV_CODEC_ID_PCM_S24LE_PLANAR, AudioSampleFormat::SAMPLE_S24LEP},
+    {AVCodecID::AV_CODEC_ID_PCM_S32LE_PLANAR, AudioSampleFormat::SAMPLE_S32LEP},
+    {AVCodecID::AV_CODEC_ID_PCM_DVD, AudioSampleFormat::SAMPLE_DVD},
+    {AVCodecID::AV_CODEC_ID_PCM_BLURAY, AudioSampleFormat::SAMPLE_BLURAY},
+    {AVCodecID::AV_CODEC_ID_PCM_ALAW, AudioSampleFormat::SAMPLE_S16LE},
+    {AVCodecID::AV_CODEC_ID_PCM_MULAW, AudioSampleFormat::SAMPLE_S16LE},
 };
 
 const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayoutToString = {

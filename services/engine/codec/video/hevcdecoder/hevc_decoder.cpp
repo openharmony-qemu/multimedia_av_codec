@@ -1257,8 +1257,8 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
         frameBuffer->avBuffer->memory_->GetSurfaceBuffer();
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_INVALID_VAL, "surfaceBuffer is nullptr");
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer->GetVirAddr() == bufferMemory->GetAddr() &&
-        surfaceBuffer->GetSize() == bufferMemory->GetCapacity(), AVCS_ERR_INVALID_VAL,
-        "surfaceBuffer and bufferMemory not match");
+        surfaceBuffer->GetSize() == static_cast<uint32_t>(bufferMemory->GetCapacity()),
+        AVCS_ERR_INVALID_VAL, "surfaceBuffer and bufferMemory not match");
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer->GetWidth() == cachedFrame_->width &&
         surfaceBuffer->GetHeight() == cachedFrame_->height, AVCS_ERR_INVALID_VAL,
         "surfaceBuffer not match current cachedFrame_");

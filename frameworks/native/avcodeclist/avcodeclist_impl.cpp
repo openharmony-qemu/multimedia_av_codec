@@ -21,6 +21,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecListImpl"};
 const std::vector<std::string> VIDEO_MIME_VEC = {
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VC1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_AVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_HEVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VVC),
@@ -167,7 +168,7 @@ CapabilityData *AVCodecListImpl::GetCapability(const std::string &mime, const bo
     std::string name = capaDataIn.codecName;
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && !name.empty(), nullptr, "Get capability failed from service,"
         "mime: %{public}s, isEnc: %{public}d, category: %{public}d", mime.c_str(), isEncoder, category);
-    if (category == AVCodecCategory::AVCODEC_NONE && nameAddrMap_.find(name) != nameAddrMap_.end()) {
+    if (category == AVCodecCategory::AVCODEC_NONE) {
         for (auto cap : mimeCapsMap_[mime]) {
             if (cap->codecType == codecType && cap->codecName == name) {
                 return cap;
