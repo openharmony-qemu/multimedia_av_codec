@@ -99,6 +99,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_RV30, MimeType::VIDEO_RV30},
     {AV_CODEC_ID_RV40, MimeType::VIDEO_RV40},
 #endif
+    {AV_CODEC_ID_WMV3, MimeType::VIDEO_WMV3},
     {AV_CODEC_ID_MJPEG, MimeType::IMAGE_JPG},
     {AV_CODEC_ID_PNG, MimeType::IMAGE_PNG},
     {AV_CODEC_ID_BMP, MimeType::IMAGE_BMP},
@@ -160,6 +161,9 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"mpeg", FileType::MPEGPS},
     {"rm", FileType::RM},
     {"ac3", FileType::AC3},
+    {"wmv", FileType::WMV},
+    {"asf", FileType::WMV},
+    {"vob", FileType::VOB},
     {"ape", FileType::APE},
     {"srt", FileType::SRT},
     {"webvtt", FileType::VTT},
@@ -796,9 +800,14 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
         if (type == nullptr) {
             return FileType::MP4;
         }
-        if (StartWith(type->value, "m4a") || StartWith(type->value, "M4A") ||
-            StartWith(type->value, "m4v") || StartWith(type->value, "M4V")) {
+        if (StartWith(type->value, "m4a") || StartWith(type->value, "M4A")) {
             fileType = FileType::M4A;
+        } else if (StartWith(type->value, "m4v") || StartWith(type->value, "M4V")) {
+            fileType = FileType::M4V;
+        } else if (StartWith(type->value, "3g2")) {
+            fileType = FileType::FT_3G2;
+        } else if (StartWith(type->value, "3gp")) {
+            fileType = FileType::FT_3GP;
         } else if (StartWith(type->value, "qt") || StartWith(type->value, "QT")) {
             fileType = FileType::MOV;
         } else {
@@ -1345,7 +1354,9 @@ bool FFmpegFormatHelper::IsAudioType(const AVStream &avStream)
 
 bool FFmpegFormatHelper::IsMpeg4File(FileType filetype)
 {
-    return filetype == FileType::MP4 || filetype == FileType::MOV;
+    return filetype == FileType::MP4 || filetype == FileType::MOV
+            || filetype == FileType::M4V || filetype == FileType::FT_3GP
+            || filetype == FileType::FT_3G2;
 }
 
 bool FFmpegFormatHelper::IsValidCodecId(const AVCodecID &codecId)

@@ -31,7 +31,8 @@ const std::vector<std::string> VIDEO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV30),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV40),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP8),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP9)};
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP9),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_WMV3)};
 const std::vector<std::string> AUDIO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_NB),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_WB),

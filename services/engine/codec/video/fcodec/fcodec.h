@@ -70,6 +70,8 @@ public:
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
 
 private:
+    static void GetBaseCapabilityData(CapabilityData &capsData);
+    static void GetCapabilityData(CapabilityData &capsData, uint32_t index);
     int32_t Initialize();
     struct FBuffer {
     public:
@@ -123,9 +125,9 @@ private:
     static void SetMpeg4Profiles(CapabilityData& capsData);
     static void GetAvcCapProf(std::vector<CapabilityData> &capaArray);
     static void GetH263CapProf(std::vector<CapabilityData> &capaArray);
+    static void GetWmv3CapProf(std::vector<CapabilityData> &capaArray);
     static void GetVc1CapProf(std::vector<CapabilityData> &capaArray);
     void FreeExtradataIfNeeded(std::string name);
-    static void FillBaseCapability(CapabilityData &capsData, uint32_t i);
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     int32_t SetCodecExtradata(const Format &format);
 #endif

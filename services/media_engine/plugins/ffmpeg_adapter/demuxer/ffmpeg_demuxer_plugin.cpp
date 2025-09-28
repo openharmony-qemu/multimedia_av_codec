@@ -159,6 +159,12 @@ static const std::vector<AVMediaType> g_streamGetFirstFrameTypeVec = {
     AVMEDIA_TYPE_AUXILIARY
 };
 
+static const std::vector<FileType> g_streamCheckFileTypeVec = {
+    FileType::MPEGTS,
+    FileType::MPEGPS,
+    FileType::VOB
+};
+
 static const std::unordered_map<std::string, PluginSnifferFunc> g_pluginSnifferMap = {
     {std::string(PLUGIN_NAME_MPEGPS), SniffMPEGPS},
 };
@@ -1730,10 +1736,9 @@ static bool IsSyncFrameCheckNeeded(std::shared_ptr<AVFormatContext> formatContex
 {
     FALSE_RETURN_V_MSG_E(formatContext != nullptr, false, "AVFormatContext is nullptr");
     FileType fileType = FFmpegFormatHelper::GetFileTypeByName(*formatContext);
-    if (fileType == FileType::MPEGTS || fileType == FileType::MPEGPS) {
-        return false;
-    }
-    return true;
+
+    return (std::find(g_streamCheckFileTypeVec.cbegin(), g_streamCheckFileTypeVec.cend(),
+        fileType) == g_streamCheckFileTypeVec.cend());
 }
 
 bool FFmpegDemuxerPlugin::AllSupportTrackFramesReady()
