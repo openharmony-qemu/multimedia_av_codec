@@ -29,6 +29,10 @@ using namespace OHOS::MediaAVCodec::CodecListTestParam;
 
 namespace OHOS {
 namespace MediaAVCodec {
+
+constexpr uint32_t MAX_VIDEO_BITRATE = 300000000;
+constexpr uint32_t MAX_VIDEO_FRAME_RATE = 60;
+
 void CapsUnitTest::SetUpTestCase(void) {}
 
 void CapsUnitTest::TearDownTestCase(void) {}
@@ -211,6 +215,8 @@ void CapsUnitTest::CheckVideoCaps(const std::shared_ptr<VideoCaps> &videoCaps) c
         CheckAVDecH263(videoCaps);
     } else if (codecName.compare("OMX.hisi.video.encoder.avc") == 0) {
         CheckAVEncAVC(videoCaps);
+    } else if (codecName.compare(AVCodecCodecName::VIDEO_DECODER_WMV3_NAME) == 0) {
+        CheckAVDecWMV3(videoCaps);
     }
 }
 
@@ -279,6 +285,38 @@ void CapsUnitTest::CheckAVDecH263(const std::shared_ptr<VideoCaps> &videoCaps) c
     EXPECT_EQ(false, videoCaps->IsSupportDynamicIframe());
     EXPECT_EQ(false, videoCaps->IsSizeSupported(videoCaps->GetSupportedWidth().minVal - 1,
                                                 videoCaps->GetSupportedHeight().maxVal));
+}
+
+void CapsUnitTest::CheckAVDecWMV3(const std::shared_ptr<VideoCaps> &videoCaps) const
+{
+    std::shared_ptr<AVCodecInfo> videoCodecCaps = videoCaps->GetCodecInfo();
+    EXPECT_EQ(AVCODEC_TYPE_VIDEO_DECODER, videoCodecCaps->GetType());
+    EXPECT_EQ(CodecMimeType::VIDEO_WMV3, videoCodecCaps->GetMimeType());
+    EXPECT_EQ(0, videoCodecCaps->IsHardwareAccelerated());
+    EXPECT_EQ(1, videoCodecCaps->IsSoftwareOnly());
+    EXPECT_EQ(0, videoCodecCaps->IsVendor());
+    EXPECT_GE(1, videoCaps->GetSupportedBitrate().minVal);
+    EXPECT_LE(MAX_VIDEO_BITRATE, videoCaps->GetSupportedBitrate().maxVal);
+    EXPECT_GE(DEFAULT_WIDTH_ALIGNMENT, videoCaps->GetSupportedWidthAlignment());
+    EXPECT_GE(DEFAULT_HEIGHT_ALIGNMENT, videoCaps->GetSupportedHeightAlignment());
+    EXPECT_GE(DEFAULT_WIDTH_RANGE.minVal, videoCaps->GetSupportedWidth().minVal);
+    EXPECT_LE(DEFAULT_WIDTH_RANGE.maxVal, videoCaps->GetSupportedWidth().maxVal);
+    EXPECT_GE(DEFAULT_HEIGHT_RANGE.minVal, videoCaps->GetSupportedHeight().minVal);
+    EXPECT_LE(DEFAULT_HEIGHT_RANGE.maxVal, videoCaps->GetSupportedHeight().maxVal);
+    EXPECT_GE(0, videoCaps->GetSupportedFrameRate().minVal);
+    EXPECT_LE(MAX_VIDEO_FRAME_RATE, videoCaps->GetSupportedFrameRate().maxVal);
+    EXPECT_LE(0, videoCaps->GetSupportedQuality().minVal);
+    EXPECT_LE(0, videoCaps->GetSupportedQuality().maxVal);
+    EXPECT_LE(0, videoCaps->GetSupportedComplexity().minVal);
+    EXPECT_LE(0, videoCaps->GetSupportedComplexity().maxVal);
+    EXPECT_LT(0, videoCaps->GetSupportedFormats().size());
+    EXPECT_LT(0, videoCaps->GetSupportedProfiles().size());
+    EXPECT_LE(0, videoCaps->GetSupportedBitrateMode().size());
+    EXPECT_LE(0, videoCaps->GetSupportedLevels().size());
+    EXPECT_EQ(false, videoCaps->IsSupportDynamicIframe());
+    EXPECT_EQ(false, videoCaps->IsSizeAndRateSupported(videoCaps->GetSupportedWidth().minVal,
+                                                       videoCaps->GetSupportedHeight().maxVal,
+                                                       videoCaps->GetSupportedFrameRate().maxVal + 1));
 }
 
 void CapsUnitTest::CheckAVDecMpeg2Video(const std::shared_ptr<VideoCaps> &videoCaps) const
@@ -1482,6 +1520,258 @@ HWTEST_F(CapsUnitTest, AVCaps_THREAD_POOL_004, TestSize.Level2)
         th.join();
     }
 }
+
+/**
+ * @tc.name: AVCaps_GetCapabilityByCategory_001
+ * @tc.desc: AVCaps GetCapabilityByCategory
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetCapabilityByCategory_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+}
+
+/**
+ * @tc.name: AVCaps_GetVideoWidthRangeForHeight_001
+ * @tc.desc: AVCaps query spported GetVideoWidthRangeForHeight
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetVideoWidthRangeForHeight_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVRange range = {-1, -1};
+    EXPECT_EQ(OH_AVCapability_GetVideoWidthRangeForHeight(cap, DEFAULT_HEIGHT, &range), AV_ERR_OK);
+    EXPECT_EQ(range.minVal, 2);
+    EXPECT_EQ(range.maxVal, 4096);
+}
+
+/**
+ * @tc.name: AVCaps_GetVideoHeightRangeForWidth_001
+ * @tc.desc: AVCaps query spported GetVideoHeightRangeForWidth
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetVideoHeightRangeForWidth_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVRange range = {-1, -1};
+    EXPECT_EQ(OH_AVCapability_GetVideoHeightRangeForWidth(cap, DEFAULT_WIDTH, &range), AV_ERR_OK);
+    EXPECT_EQ(range.minVal, 2);
+    EXPECT_EQ(range.maxVal, 4096);
+}
+
+/**
+ * @tc.name: AVCaps_GetVideoWidthRange_001
+ * @tc.desc: AVCaps query spported GetVideoWidthRange
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetVideoWidthRange_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVRange range = {-1, -1};
+    EXPECT_EQ(OH_AVCapability_GetVideoWidthRange(cap, &range), AV_ERR_OK);
+    EXPECT_EQ(range.minVal, 2);
+    EXPECT_EQ(range.maxVal, 4096);
+}
+
+/**
+ * @tc.name: AVCaps_GetVideoHeightRange_001
+ * @tc.desc: AVCaps query spported GetVideoHeightRange
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetVideoHeightRange_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVRange range = {-1, -1};
+    EXPECT_EQ(OH_AVCapability_GetVideoHeightRange(cap, &range), AV_ERR_OK);
+    EXPECT_EQ(range.minVal, 2);
+    EXPECT_EQ(range.maxVal, 4096);
+}
+
+/**
+ * @tc.name: AVCaps_IsVideoSizeSupported_001
+ * @tc.desc: AVCaps query spported IsVideoSizeSupported
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_IsVideoSizeSupported_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    EXPECT_EQ(OH_AVCapability_IsVideoSizeSupported(cap, DEFAULT_WIDTH, DEFAULT_HEIGHT), true);
+}
+
+/**
+ * @tc.name: AVCaps_GetSupportedProfiles_GetSupportedLevelsForProfile_001
+ * @tc.desc: AVCaps query supported levels for simple\main\advanced profile
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetSupportedProfiles_GetSupportedLevelsForProfile_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    const int32_t *profiles = nullptr;
+    uint32_t profilesNum = -1;
+    EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
+    EXPECT_GT(profilesNum, 0);
+    for (int32_t i = 0; i < profilesNum; i++) {
+        int32_t profile = profiles[i];
+        EXPECT_GE(profile, WMV3_PROFILE_SIMPLE);
+        EXPECT_LE(profile, WMV3_PROFILE_MAIN);
+        const int32_t *levels = nullptr;
+        uint32_t levelsNum = -1;
+        EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+        EXPECT_GT(levelsNum, 0);
+        EXPECT_LE(levelsNum, WMV3_LEVEL_HIGH + 1);
+        for (int32_t j = 0; j < levelsNum; j++) {
+            int32_t level = levels[j];
+            EXPECT_GE(level, WMV3_LEVEL_LOW);
+            EXPECT_LE(level, WMV3_LEVEL_HIGH);
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_AreProfileAndLevelSupported_001
+ * @tc.desc: AVCaps query spported AreProfileAndLevelSupported
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_AreProfileAndLevelSupported_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    EXPECT_EQ(OH_AVCapability_AreProfileAndLevelSupported(cap, WMV3_PROFILE_MAIN, WMV3_LEVEL_LOW), true);
+}
+
+/**
+ * @tc.name: AVCaps_GetMaxSupportedInstances_001
+ * @tc.desc: AVCaps query spported etMaxSupportedInstances
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetMaxSupportedInstances_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    EXPECT_EQ(OH_AVCapability_GetMaxSupportedInstances(cap), 64);
+}
+
+/**
+ * @tc.name: AVCaps_GetVideoFrameRateRange_001
+ * @tc.desc: AVCaps query spported GetVideoFrameRateRange_
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetVideoFrameRateRange_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVRange range = {-1, -1};
+    EXPECT_EQ(OH_AVCapability_GetVideoFrameRateRange(cap, &range), AV_ERR_OK);
+    EXPECT_EQ(range.minVal, 0);
+    EXPECT_EQ(range.maxVal, 60);
+}
+
+/**
+ * @tc.name: AVCaps_GetVideoFrameRateRangeForSize_001
+ * @tc.desc: AVCaps query spported GetVideoFrameRateRangeForSize
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetVideoFrameRateRangeForSize_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVRange range = {-1, -1};
+    EXPECT_EQ(OH_AVCapability_GetVideoFrameRateRangeForSize(cap, DEFAULT_WIDTH, DEFAULT_HEIGHT, &range), AV_ERR_OK);;
+    EXPECT_EQ(range.minVal, 0);
+    EXPECT_EQ(range.maxVal, 60);
+}
+
+/**
+ * @tc.name: AVCaps_AreVideoSizeAndFrameRateSupported_001
+ * @tc.desc: AVCaps query spported AreVideoSizeAndFrameRateSupported
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_AreVideoSizeAndFrameRateSupported_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    EXPECT_EQ(
+        OH_AVCapability_AreVideoSizeAndFrameRateSupported(cap, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FRAMERATE),
+        true);
+}
+
+/**
+ * @tc.name: AVCaps_IsFeatureSupported_001
+ * @tc.desc: AVCaps query unspported IsFeatureSupported
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_IsFeatureSupported_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    std::string nameStr = OH_AVCapability_GetName(cap);
+    std::string mimeStr = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
+    auto it = CAPABILITY_DECODER_NAME.find(mimeStr);
+    if (it != CAPABILITY_DECODER_NAME.end()) {
+        if (nameStr.compare(it->second) == 0) {
+            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_TEMPORAL_SCALABILITY), false);
+            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE), false);
+            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_LOW_LATENCY), false);
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_GetFeatureProperties_001
+ * @tc.desc: AVCaps query spported GetFeatureProperties
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetFeatureProperties_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_B_FRAME);
+    EXPECT_EQ(property, nullptr);
+}
+
+/**
+ * @tc.name: AVCaps_GetVideoSupportedPixelFormats_001
+ * @tc.desc: AVCaps query spported GetVideoSupportedPixelFormats
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetVideoSupportedPixelFormats_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    const int32_t *pixFormats = nullptr;
+    uint32_t pixFormatNum = -1;
+    EXPECT_EQ(OH_AVCapability_GetVideoSupportedPixelFormats(cap, &pixFormats, &pixFormatNum), AV_ERR_OK);
+    EXPECT_GT(pixFormatNum, 0);
+    EXPECT_LE(pixFormatNum, 4);
+    for (int32_t j = 0; j < pixFormatNum; j++) {
+        int32_t pixFormat = pixFormats[j];
+        EXPECT_GE(pixFormat, static_cast<int32_t>(VideoPixelFormat::YUVI420));
+        EXPECT_LE(pixFormat, static_cast<int32_t>(VideoPixelFormat::RGBA));
+    }
+}
+
 #endif
 } // namespace MediaAVCodec
 } // namespace OHOS
