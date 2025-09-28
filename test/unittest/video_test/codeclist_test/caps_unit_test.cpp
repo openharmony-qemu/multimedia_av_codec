@@ -861,12 +861,12 @@ HWTEST_F(CapsUnitTest, AVCaps_GetDupCaps_001, TestSize.Level1)
 {
     std::vector<CapabilityData *> videoCapVec = GetDupCaps(
         std::string(CodecMimeType::VIDEO_AVC), 2); // 2 is multi times
-    EXPECT_EQ(videoCapVec.size, 2); // 2 is exp cap num
+    EXPECT_EQ(videoCapVec.size(), 2); // 2 is exp cap num
     EXPECT_EQ(videoCapVec[0], videoCapVec[1]);
 
     std::vector<CapabilityData *> audioCapVec = GetDupCaps(
         std::string(CodecMimeType::AUDIO_AAC), 2); // 2 is multi times
-    EXPECT_EQ(audioCapVec.size, 2); // 2 is exp cap num
+    EXPECT_EQ(audioCapVec.size(), 2); // 2 is exp cap num
     EXPECT_EQ(audioCapVec[0], audioCapVec[1]);
 }
 
