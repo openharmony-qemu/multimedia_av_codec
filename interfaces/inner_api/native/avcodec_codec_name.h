@@ -35,6 +35,7 @@ public:
     static constexpr std::string_view AUDIO_DECODER_G711MU_NAME = "OH.Media.Codec.Decoder.Audio.G711mu";
     static constexpr std::string_view AUDIO_DECODER_G711A_NAME = "OH.Media.Codec.Decoder.Audio.G711a";
     static constexpr std::string_view AUDIO_DECODER_GSM_MS_NAME = "OH.Media.Codec.Decoder.Audio.GSM_MS";
+    static constexpr std::string_view AUDIO_DECODER_GSM_NAME = "OH.Media.Codec.Decoder.Audio.GSM";
     static constexpr std::string_view AUDIO_DECODER_APE_NAME = "OH.Media.Codec.Decoder.Audio.Ape";
     static constexpr std::string_view AUDIO_DECODER_L2HC_NAME = "OH.Media.Codec.Decoder.Audio.L2HC";
     static constexpr std::string_view AUDIO_DECODER_LBVC_NAME = "OH.Media.Codec.Decoder.Audio.LBVC";
@@ -89,6 +90,7 @@ public:
 #ifdef SUPPORT_CODEC_EAC3
             AUDIO_DECODER_EAC3_NAME,
 #endif
+            AUDIO_DECODER_GSM_NAME
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
             AUDIO_ENCODER_VENDOR_AAC_NAME,
             AUDIO_DECODER_OPUS_NAME,

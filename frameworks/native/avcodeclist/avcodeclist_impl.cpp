@@ -45,6 +45,7 @@ const std::vector<std::string> AUDIO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_G711MU),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_G711A),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_GSM_MS),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_GSM),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_COOK),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AC3),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_EAC3),

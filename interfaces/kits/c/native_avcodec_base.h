@@ -400,6 +400,14 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM_MS;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_EAC3;
 
 /**
+ * @brief Enumerates the mime types of audio GSM codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM;
+
+/**
  * @brief Key for timeStamp in surfacebuffer, value type is int64_t.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9

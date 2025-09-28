@@ -862,14 +862,14 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     MEDIA_LOG_D("Convert size [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32 "]",
         tempPkt->size, remainSize, copySize, samplePacket->offset);
     SetDrmCencInfo(sample, samplePacket);
-
     sample->flag_ = ConvertFlagsFromFFmpeg(*tempPkt, (copySize != static_cast<uint32_t>(tempPkt->size)));
+
     ret = WriteBuffer(sample, tempPkt->data + samplePacket->offset, copySize);
     if (ret != Status::OK && tempPkt->size != samplePacket->pkts[0]->size) {
         FreeAVPacket(tempPkt);
     }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Write buffer failed");
 
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Write buffer failed");
     if (!samplePacket->isEOS) {
         UpdateLastPacketInfo(tempPkt->stream_index, sample->pts_, tempPkt->pos, sample->duration_);
     }
