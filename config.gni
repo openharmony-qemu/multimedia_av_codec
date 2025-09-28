@@ -16,6 +16,7 @@ import("//build/ohos.gni")
 declare_args() {
   av_codec_support_capi = true
   av_codec_support_codec = true
+  av_codec_support_suspend = true
   av_codec_client_support_codec = true
   av_codec_support_codeclist = true
   av_codec_support_hcodec = true
