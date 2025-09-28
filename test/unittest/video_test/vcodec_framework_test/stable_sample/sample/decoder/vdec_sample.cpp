@@ -24,6 +24,15 @@
 #include "ui/rs_surface_node.h"
 #include "window_option.h"
 #include "syspara/parameters.h"
+#include "media_description.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include <libavformat/avformat.h>
+#ifdef __cplusplus
+}
+#endif
 
 #define PRINT_HILOG
 #define TEST_ID sampleId_
@@ -32,6 +41,9 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecSample"};
+uint8_t* extradata = nullptr;
+int64_t extradatasize = 0;
+constexpr std::string_view filename = "/data/test/media/glitch-ffvc1.avi";
 } // namespace
 using namespace std;
 using namespace OHOS;
@@ -256,6 +268,9 @@ bool VideoDecSample::InitInputFile()
         } else if (inPath_.find("h264") != std::string::npos || inPath_.find("h265") != std::string::npos) {
             int32_t ret = CreateAvccReader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateAvccReader failed");
+        } else if (inPath_.find("vc1") != std::string::npos) {
+            int32_t ret = CreateVc1Reader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateH263Reader failed");
         } else {
             int32_t ret = CreateMpegReader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMpegReader failed");
@@ -293,6 +308,16 @@ int32_t VideoDecSample::CreateMpegReader()
 
     signal_->reader_ = std::make_shared<MpegReader>();
     int32_t ret = std::static_pointer_cast<MpegReader>(signal_->reader_)->Init(info);
+    return ret;
+}
+
+int32_t VideoDecSample::CreateVc1Reader()
+{
+    std::shared_ptr<Vc1ReaderInfo> info = std::make_shared<Vc1ReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<Vc1Reader>();
+    int32_t ret = std::static_pointer_cast<Vc1Reader>(signal_->reader_)->Init(info);
     return ret;
 }
 
@@ -359,11 +384,8 @@ int32_t VideoDecSample::SetOutputSurface(OHNativeWindow *window)
     return AV_ERR_UNKNOWN;
 }
 
-int32_t VideoDecSample::Configure()
+bool VideoDecSample::DoConfigure(OH_AVFormat* format)
 {
-    TITLE_LOG;
-    OH_AVFormat *format = OH_AVFormat_Create();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_UNKNOWN, "create format failed");
     bool setFormatRet = OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, sampleWidth_) &&
                         OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleHeight_);
     if (setPixelFormat_) {
@@ -401,7 +423,29 @@ int32_t VideoDecSample::Configure()
         setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, 1);
         setFormatRet = setFormatRet && OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 1000000); // 1000000
     }
+    return setFormatRet;
+}
+
+int32_t VideoDecSample::Configure()
+{
+    TITLE_LOG;
+    OH_AVFormat *format = OH_AVFormat_Create();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_UNKNOWN, "create format failed");
+    bool setFormatRet = DoConfigure(format);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(setFormatRet, AV_ERR_UNKNOWN, "set format failed");
+
+    AVFormatContext* formatContext = avformat_alloc_context();
+    int ret_ = avformat_open_input(&formatContext, filename.data(), nullptr, nullptr);
+    ret_ = avformat_find_stream_info(formatContext, nullptr);
+    for (int i = 0; i < formatContext->nb_streams; i++) {
+        AVStream* stream = formatContext->streams[i];
+        if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            extradata = stream->codecpar->extradata;
+            extradatasize = stream->codecpar->extradata_size;
+        }
+    }
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret_ == AV_ERR_OK, AV_ERR_UNKNOWN, "avformat_find_stream_info failed");
+    OH_AVFormat_SetBuffer(format, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), extradata, extradatasize);
 
     if (!dumpKey_.empty() && !dumpValue_.empty()) {
         bool dumpRet = OHOS::system::SetParameter(dumpKey_, dumpValue_);

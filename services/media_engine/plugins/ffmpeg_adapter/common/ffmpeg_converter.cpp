@@ -119,6 +119,8 @@ const std::vector<std::pair<AVCodecID, AudioSampleFormat>> g_pFfCodeIDToSampleFm
     {AVCodecID::AV_CODEC_ID_PCM_S32LE_PLANAR, AudioSampleFormat::SAMPLE_S32LEP},
     {AVCodecID::AV_CODEC_ID_PCM_DVD, AudioSampleFormat::SAMPLE_DVD},
     {AVCodecID::AV_CODEC_ID_PCM_BLURAY, AudioSampleFormat::SAMPLE_BLURAY},
+    {AVCodecID::AV_CODEC_ID_PCM_ALAW, AudioSampleFormat::SAMPLE_S16LE},
+    {AVCodecID::AV_CODEC_ID_PCM_MULAW, AudioSampleFormat::SAMPLE_S16LE},
 };
 
 const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayoutToString = {

@@ -109,10 +109,20 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_VVC, MimeType::VIDEO_VVC},
     {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
     {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
+    {AV_CODEC_ID_VC1, MimeType::VIDEO_VC1},
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
     {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
     {AV_CODEC_ID_PCM_ALAW, MimeType::AUDIO_G711A},
+    {AV_CODEC_ID_GSM_MS, MimeType::AUDIO_GSM_MS},
+    {AV_CODEC_ID_WMAV1, MimeType::AUDIO_WMAV1},
+    {AV_CODEC_ID_WMAV2, MimeType::AUDIO_WMAV2},
+    {AV_CODEC_ID_ADPCM_G722, MimeType::AUDIO_ADPCM_G722},
+    {AV_CODEC_ID_ADPCM_G726, MimeType::AUDIO_ADPCM_G726},
+    {AV_CODEC_ID_ADPCM_IMA_WAV, MimeType::AUDIO_ADPCM_IMA_WAV},
+    {AV_CODEC_ID_ADPCM_MS, MimeType::AUDIO_ADPCM_MS},
+    {AV_CODEC_ID_ADPCM_YAMAHA, MimeType::AUDIO_ADPCM_YAMAHA},
+    {AV_CODEC_ID_WMAPRO, MimeType::AUDIO_WMAPRO},
 #ifdef SUPPORT_CODEC_COOK
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
 #endif
@@ -766,6 +776,16 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     }
 }
 
+static bool IsWmaFormat(const AVFormatContext& avFormatContext)
+{
+    for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
+        if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            return false;
+        }
+    }
+    return true;
+}
+
 FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatContext)
 {
     FALSE_RETURN_V_MSG_E(avFormatContext.iformat != nullptr, FileType::UNKNOW, "Iformat is nullptr");
@@ -784,6 +804,8 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
         } else {
             fileType = FileType::MP4;
         }
+    } else if (StartWith(fileName, "asf") && IsWmaFormat(avFormatContext)) {
+        fileType = FileType::WMA;
     } else {
         if (g_convertFfmpegFileType.count(fileName) != 0) {
             fileType = g_convertFfmpegFileType[fileName];
