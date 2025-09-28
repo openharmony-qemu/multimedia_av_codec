@@ -36,6 +36,38 @@ constexpr int32_t MAX_INPUT_SIZE = 4096;
 constexpr int32_t MIN_INPUT_SIZE = 16;
 constexpr AudioSampleFormat SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_S16LE;
 constexpr AudioSampleFormat RAW_SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_S16BE;
+constexpr uint32_t SAMPLE_RATE_48000 = 48000;
+const std::string OUTPUT_PREFIX = "/data/test/media/pcm_";
+const std::string OUTPUT_SUFFIX = ".pcm";
+constexpr int32_t BYTE_LENGTH_U8 = 1;
+constexpr int32_t BYTE_LENGTH_S16 = 2;
+constexpr int32_t BYTE_LENGTH_S24 = 3;
+constexpr int32_t BYTE_LENGTH_S32_F32 = 4;
+constexpr int32_t BYTE_LENGTH_DOUBLE = 8;
+constexpr int32_t AUDIO_BITS_16 = 16;
+constexpr int32_t AUDIO_BITS_20 = 20;
+constexpr int32_t AUDIO_BITS_24 = 24;
+// {sampleFormat, {filePath, outputName}}
+const std::unordered_map<AudioSampleFormat, std::pair<std::string, std::string>> inputFormatPathMap = {
+    {AudioSampleFormat::SAMPLE_S8, std::make_pair("/data/test/media/pcm_s8.pcm", "s8_")},
+    {AudioSampleFormat::SAMPLE_F64LE, std::make_pair("/data/test/media/pcm_f64le.pcm", "f64le_")},
+    {AudioSampleFormat::SAMPLE_S64LE, std::make_pair("/data/test/media/pcm_s64le.pcm", "s64le_")},
+    {AudioSampleFormat::SAMPLE_S8P, std::make_pair("/data/test/media/pcm_s8_planar.pcm", "s8p_")},
+    {AudioSampleFormat::SAMPLE_S16LEP, std::make_pair("/data/test/media/pcm_s16le_planar.pcm", "s16lep_")},
+    {AudioSampleFormat::SAMPLE_S16BEP, std::make_pair("/data/test/media/pcm_s16be_planar.pcm", "s16bep_")},
+    {AudioSampleFormat::SAMPLE_S24LEP, std::make_pair("/data/test/media/pcm_s24le_planar.pcm", "s24lep_")},
+    {AudioSampleFormat::SAMPLE_S32LEP, std::make_pair("/data/test/media/pcm_s32le_planar.pcm", "s32lep_")},
+    {AudioSampleFormat::SAMPLE_DVD, std::make_pair("/data/test/media/pcm_bluray_16bit.pcm", "dvd_16bit_")},
+    {AudioSampleFormat::SAMPLE_BLURAY, std::make_pair("/data/test/media/pcm_bluray_24bit.pcm", "bluray_24bit_")},
+};
+// {sampleFormat, outputName}
+const std::vector<pair<AudioSampleFormat, std::string>> outputFormats = {
+    std::make_pair(AudioSampleFormat::SAMPLE_U8, "to_u8"),
+    std::make_pair(AudioSampleFormat::SAMPLE_S16LE, "to_s16le"),
+    std::make_pair(AudioSampleFormat::SAMPLE_S24LE, "to_s24le"),
+    std::make_pair(AudioSampleFormat::SAMPLE_S32LE, "to_s32le"),
+    std::make_pair(AudioSampleFormat::SAMPLE_F32LE, "to_f32le")
+};
 
 class RawDecoderUnitTest : public testing::Test, public DataCallback {
 public:
@@ -63,6 +95,74 @@ public:
     void OnEvent(const shared_ptr<Plugins::PluginEvent> event) override
     {
         (void)event;
+    }
+
+    int32_t GetFormatBytes(AudioSampleFormat format)
+    {
+        int32_t bytesSize = BYTE_LENGTH_S16;
+        switch (format) {
+            case AudioSampleFormat::SAMPLE_S16BE:
+            /* fall-through */
+            case AudioSampleFormat::SAMPLE_S16LE:
+                bytesSize = BYTE_LENGTH_S16;
+                break;
+            case AudioSampleFormat::SAMPLE_S24BE:
+            /* fall-through */
+            case AudioSampleFormat::SAMPLE_S24LE:
+            case AudioSampleFormat::SAMPLE_S24LEP:
+                bytesSize = BYTE_LENGTH_S24;
+                break;
+            case AudioSampleFormat::SAMPLE_S32BE:
+            /* fall-through */
+            case AudioSampleFormat::SAMPLE_S32LE:
+            case AudioSampleFormat::SAMPLE_S32LEP:
+            case AudioSampleFormat::SAMPLE_F32BE:
+            /* fall-through */
+            case AudioSampleFormat::SAMPLE_F32LE:
+                bytesSize = BYTE_LENGTH_S32_F32;
+                break;
+            case AudioSampleFormat::SAMPLE_F64LE:
+            case AudioSampleFormat::SAMPLE_S64LE:
+            case AudioSampleFormat::SAMPLE_F64BE:
+                bytesSize = BYTE_LENGTH_DOUBLE;
+                break;
+            case AudioSampleFormat::SAMPLE_S8:
+            case AudioSampleFormat::SAMPLE_S8P:
+            case AudioSampleFormat::SAMPLE_U8:
+                bytesSize = BYTE_LENGTH_U8;
+                break;
+            case AudioSampleFormat::SAMPLE_DVD: {
+                int32_t audioBits = AUDIO_BITS_16;
+                if (meta_->Get<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(audioBits)) {
+                    bytesSize = audioBits == AUDIO_BITS_20 ? BYTE_LENGTH_S24 : BYTE_LENGTH_S16;
+                }
+                break;
+            }
+            case AudioSampleFormat::SAMPLE_BLURAY: {
+                int32_t audioBits = AUDIO_BITS_24;
+                bytesSize = BYTE_LENGTH_S24;
+                if (meta_->Get<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(audioBits)) {
+                    bytesSize = audioBits == AUDIO_BITS_16 ? BYTE_LENGTH_S16 : BYTE_LENGTH_S24;
+                }
+                break;
+            }
+            default:
+                break;
+        }
+        return bytesSize;
+    }
+
+    void SetupParameter(AudioSampleFormat inputFormat, AudioSampleFormat outputFormat)
+    {
+        meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNELS);
+        meta_->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48000);
+        meta_->Set<Tag::AUDIO_RAW_SAMPLE_FORMAT>(inputFormat);
+        if (inputFormat == AudioSampleFormat::SAMPLE_DVD) {
+            meta_->Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(AUDIO_BITS_16);
+        } else if (inputFormat == AudioSampleFormat::SAMPLE_BLURAY) {
+            meta_->Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(AUDIO_BITS_24);
+        }
+        meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(outputFormat);
     }
 
 protected:
@@ -298,6 +398,61 @@ HWTEST_F(RawDecoderUnitTest, QueueInputBuffer_004, TestSize.Level1)
     EXPECT_EQ(Status::OK, decoder_->QueueInputBuffer(inputBuffer));
     shared_ptr<AVBuffer> outputBuffer = AVBuffer::CreateAVBuffer(avAllocator, oneFrameSize);
     EXPECT_EQ(Status::OK, decoder_->QueueOutputBuffer(outputBuffer));
+}
+
+HWTEST_F(RawDecoderUnitTest, QueueInputBuffer_005, TestSize.Level1)
+{
+    for (auto &elem : inputFormatPathMap) {
+        AudioSampleFormat inputFormat = elem.first;
+        auto pair = elem.second;
+        std::string inputFilePath = pair.first;
+        std::string srcOutName = pair.second;
+
+        for (auto outElem : outputFormats) {
+            AudioSampleFormat outputFormat = outElem.first;
+            std::string destName = outElem.second;
+            SetupParameter(inputFormat, outputFormat);
+            EXPECT_EQ(Status::OK, decoder_->SetParameter(meta_));
+
+            std::ifstream inputFile;
+            inputFile.open(inputFilePath, std::ios::binary | std::ios::ate);
+            int32_t fileSize = static_cast<int32_t>(inputFile.tellg());
+            inputFile.seekg(0, std::ios::beg);
+
+            auto avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+            shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, fileSize);
+            inputBuffer->memory_->SetSize(fileSize);
+            inputFile.read(reinterpret_cast<char*>(inputBuffer->memory_->GetAddr()), fileSize);
+            EXPECT_EQ(Status::OK, decoder_->QueueInputBuffer(inputBuffer));
+
+            std::ofstream outputFile;
+            std::string outputPath = OUTPUT_PREFIX + srcOutName + destName + OUTPUT_SUFFIX;
+            outputFile.open(outputPath, std::ios::out | std::ios::binary);
+
+            int32_t srcBytesSize = GetFormatBytes(inputFormat);
+            int32_t destBytesSize = GetFormatBytes(outputFormat);
+            int32_t totalSamples = fileSize / (CHANNELS * srcBytesSize);
+            int32_t outputSize = totalSamples * CHANNELS * destBytesSize;
+            shared_ptr<AVBuffer> outputBuffer = AVBuffer::CreateAVBuffer(avAllocator, outputSize);
+            shared_ptr<AVBuffer> emptyOutputBuffer = AVBuffer::CreateAVBuffer(avAllocator, outputSize);
+
+            Status ret = Status::ERROR_AGAIN;
+            int32_t pos = 0;
+            while (ret == Status::ERROR_AGAIN) {
+                ret = decoder_->QueueOutputBuffer(emptyOutputBuffer);
+                outputBuffer->memory_->Write(emptyOutputBuffer->memory_->GetAddr(),
+                                            emptyOutputBuffer->memory_->GetSize(), pos);
+                pos += emptyOutputBuffer->memory_->GetSize();
+            }
+            EXPECT_EQ(Status::OK, ret);
+            EXPECT_EQ(outputSize, outputBuffer->memory_->GetSize());
+            outputFile.write(reinterpret_cast<char*>(outputBuffer->memory_->GetAddr()),
+                    outputBuffer->memory_->GetSize());
+
+            inputFile.close();
+            outputFile.close();
+        }
+    }
 }
 } // namespace Plugins
 }

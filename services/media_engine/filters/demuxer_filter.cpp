@@ -57,6 +57,16 @@ static std::map<AudioSampleFormat, AudioSampleFormat> g_sampleFormatBeToLe = {
     {AudioSampleFormat::SAMPLE_S32BE, AudioSampleFormat::SAMPLE_S32LE},
     {AudioSampleFormat::SAMPLE_F32BE, AudioSampleFormat::SAMPLE_F32LE},
     {AudioSampleFormat::SAMPLE_F64BE, AudioSampleFormat::SAMPLE_F32LE},
+    {AudioSampleFormat::SAMPLE_S8, AudioSampleFormat::SAMPLE_U8},
+    {AudioSampleFormat::SAMPLE_F64LE, AudioSampleFormat::SAMPLE_F32LE},
+    {AudioSampleFormat::SAMPLE_S64LE, AudioSampleFormat::SAMPLE_S32LE},
+    {AudioSampleFormat::SAMPLE_S8P, AudioSampleFormat::SAMPLE_U8},
+    {AudioSampleFormat::SAMPLE_S16LEP, AudioSampleFormat::SAMPLE_S16LE},
+    {AudioSampleFormat::SAMPLE_S16BEP, AudioSampleFormat::SAMPLE_S16LE},
+    {AudioSampleFormat::SAMPLE_S24LEP, AudioSampleFormat::SAMPLE_S24LE},
+    {AudioSampleFormat::SAMPLE_S32LEP, AudioSampleFormat::SAMPLE_S32LE},
+    {AudioSampleFormat::SAMPLE_DVD, AudioSampleFormat::SAMPLE_S16LE},
+    {AudioSampleFormat::SAMPLE_BLURAY, AudioSampleFormat::SAMPLE_S24LE},
 };
 
 class DemuxerFilterLinkCallback : public FilterLinkCallback {
