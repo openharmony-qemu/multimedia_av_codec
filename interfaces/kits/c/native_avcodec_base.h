@@ -303,6 +303,13 @@ extern const char *OH_AVCODEC_MIMETYPE_IMAGE_PNG;
 extern const char *OH_AVCODEC_MIMETYPE_IMAGE_BMP;
 
 /**
+ * @brief Enumerates the MIME type of video MJPEG codec.
+ *
+ * @since 22
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MJPEG;
+
+/**
  * @brief Enumerates the MIME types of audio codecs
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 11
@@ -1148,6 +1155,14 @@ typedef enum OH_VVCProfile {
     /** Main 16 4:4:4 Still Picture profile */
     VVC_PROFILE_MAIN_16_444_STILL = 100,
 } OH_VVCProfile;
+
+typedef enum OH_MJPEGProfile {
+    MJPEG_PROFILE_BASELINE = 0,
+    MJPEG_PROFILE_SEQUENTIAL = 0,
+    MJPEG_PROFILE_PROGRESSIVE = 0,
+    MJPEG_PROFILE_LOSSLESS = 0,
+    MJPEG_PROFILE_JPEG_LS = 0,
+} OH_MJPEGProfile;
 
 /**
  * @brief Enumerates the muxer output file format.

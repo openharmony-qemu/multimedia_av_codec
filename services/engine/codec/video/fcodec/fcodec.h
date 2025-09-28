@@ -123,6 +123,7 @@ private:
     static void SetMpeg4Profiles(CapabilityData& capsData);
     static void GetAvcCapProf(std::vector<CapabilityData> &capaArray);
     static void GetH263CapProf(std::vector<CapabilityData> &capaArray);
+    static void GetMjpegCapProf(std::vector<CapabilityData> &capaArray);
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES)
     int32_t SetCodecExtradata(const Format &format);
 #endif

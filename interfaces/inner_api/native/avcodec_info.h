@@ -619,6 +619,7 @@ public:
     static constexpr std::string_view VIDEO_RV30 = "video/rv30";
     static constexpr std::string_view VIDEO_RV40 = "video/rv40";
     static constexpr std::string_view VIDEO_VVC = "video/vvc";
+    static constexpr std::string_view VIDEO_MJEPG = "video/mjpeg";
     static constexpr std::string_view AUDIO_MIMETYPE_L2HC = "audio/l2hc";
     static constexpr std::string_view AUDIO_AMR_NB = "audio/3gpp";
     static constexpr std::string_view AUDIO_AMR_WB = "audio/amr-wb";
@@ -768,6 +769,20 @@ enum H263Profile : int32_t {
  */
 enum VP8Profile : int32_t {
     VP8_PROFILE_MAIN = 0,
+};
+
+/**
+ * @brief MJPEG Profile
+ *
+ * @since 3.1
+ * @version 4.0
+ */
+enum MJPEGProfile : int32_t {
+    MJPEG_PROFILE_BASELINE = 0,
+    MJPEG_PROFILE_SEQUENTIAL = 0,
+    MJPEG_PROFILE_PROGRESSIVE = 0,
+    MJPEG_PROFILE_LOSSLESS = 0,
+    MJPEG_PROFILE_JPEG_LS = 0,
 };
 
 /**

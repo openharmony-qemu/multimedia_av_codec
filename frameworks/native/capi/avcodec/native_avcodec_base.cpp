@@ -25,6 +25,7 @@ const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2 = "video/mp4v-es";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_H263 = "video/h263";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_HEVC = "video/hevc";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG2 = "video/mpeg2";
+const char *OH_AVCODEC_MIMETYPE_VIDEO_MJPEG = "video/mjpeg";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC = "audio/mp4a-latm";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_FLAC = "audio/flac";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_VORBIS = "audio/vorbis";

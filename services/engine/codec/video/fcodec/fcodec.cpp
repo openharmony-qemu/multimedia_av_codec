@@ -71,6 +71,7 @@ constexpr struct {
     {AVCodecCodecName::VIDEO_DECODER_H263_NAME, CodecMimeType::VIDEO_H263, "h263"},
     {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME, CodecMimeType::VIDEO_MPEG2, "mpeg2video"},
     {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4"},
+    {AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME, CodecMimeType::VIDEO_MJPEG, "mjpeg"},
 #ifdef SUPPORT_CODEC_RV
     {AVCodecCodecName::VIDEO_DECODER_RV30_NAME, CodecMimeType::VIDEO_RV30, "rv30"},
     {AVCodecCodecName::VIDEO_DECODER_RV40_NAME, CodecMimeType::VIDEO_RV40, "rv40"},
@@ -1924,6 +1925,20 @@ void FCodec::GetAvcCapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
+void FCodec::GetMjpegCapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.profiles = {
+            static_cast<int32_t>(MJPEG_PROFILE_BASELINE),
+            static_cast<int32_t>(MJPEG_PROFILE_SEQUENTIAL),
+            static_cast<int32_t>(MJPEG_PROFILE_PROGRESSIVE),
+            static_cast<int32_t>(MJPEG_PROFILE_LOSSLESS),
+            static_cast<int32_t>(MJPEG_PROFILE_JPEG_LS),
+        };
+    }
+}
+
 int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 {
     for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {
@@ -1967,6 +1982,9 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         } else if (capsData.mimeType == "video/h263") {
             capaArray.emplace_back(capsData);
             GetH263CapProf(capaArray);
+        } else if (capsData.mimeType == "video/mjpeg") {
+            capaArray.emplace_back(capsData);
+            GetMjpegCapProf(capaArray);
         } else {
             capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
             capaArray.emplace_back(capsData);
