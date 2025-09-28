@@ -63,7 +63,7 @@ bool G711aFuzzDemo::DoG711aParserWithParserAPI(const uint8_t *data, size_t size)
     }
     BaseFuzzDemo base;
     base.signal_ = new ADecBufferSignal();
-    base.audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME).data());
+    base.audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_G711A_NAME).data());
     base.cb_ = base.GetCbFunc();
     DEMO_CHECK_AND_RETURN_RET_LOG(OH_AudioCodec_RegisterCallback(base.audioDec_, base.cb_, base.signal_) == AV_ERR_OK,
                                   false, "Fatal: OH_AudioCodec_RegisterCallback fail");
