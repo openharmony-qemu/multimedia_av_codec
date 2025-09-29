@@ -298,6 +298,18 @@ Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
     MEDIA_LOG_I("Configure");
     configureParameter_ = parameter;
     configFormat_.SetMeta(configureParameter_);
+    int32_t width = 0;
+    int32_t height = 0;
+    configFormat_.GetIntValue(Tag::VIDEO_WIDTH, width);
+    configFormat_.GetIntValue(Tag::VIDEO_HEIGHT, height);
+    if (width == 0) {
+        MEDIA_LOG_I("width update 0 -> 512");
+        configFormat_.PutIntValue(Tag::VIDEO_WIDTH, 512);
+    }
+    if (height == 0) {
+        MEDIA_LOG_I("height update 0 -> 512");
+        configFormat_.PutIntValue(Tag::VIDEO_HEIGHT, 512);
+    }
     Status ret = videoDecoder_->Configure(configFormat_);
 
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> mediaCodecCallback = nullptr;
