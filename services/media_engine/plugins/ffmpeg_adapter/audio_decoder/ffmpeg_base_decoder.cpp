@@ -22,6 +22,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FfmpegBaseDecoder"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
+constexpr uint8_t LOGE_FREQUENCY = 3;
 constexpr float TIME_BASE_FFMPEG = 1000000.f;
 constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_S16;
 static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
@@ -133,7 +134,7 @@ Status FfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
         AVCODEC_LOGW("eos send frame, msg:%{public}s", AVStrError(ret).data());
         return Status::END_OF_STREAM;
     } else if (ret == AVERROR_INVALIDDATA) {
-        AVCODEC_LOGE("error msg:%{public}s", AVStrError(ret).data());
+        AVCODEC_LOGE_LIMIT(LOGE_FREQUENCY, "error msg:%{public}s", AVStrError(ret).data());
         return Status::ERROR_INVALID_DATA;
     } else {
         AVCODEC_LOGE("error msg:%{public}s", AVStrError(ret).data());
