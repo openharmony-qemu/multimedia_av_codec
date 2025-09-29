@@ -30,6 +30,7 @@ using namespace std;
 using namespace OHOS::Media;
 namespace {
 static const std::string MPD_SEGMENT_LIST = "http://127.0.0.1:47777/test_dash/segment_list/index.mpd";
+constexpr uint32_t BUFFER_SIZE = 1024;
 }
 
 bool DashMediaDownReadFuzzerTest(const uint8_t *data, size_t size)
@@ -48,11 +49,11 @@ bool DashMediaDownReadFuzzerTest(const uint8_t *data, size_t size)
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
 
-    unsigned char buff[1024];;
+    unsigned char buff[BUFFER_SIZE];
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = streams[0].streamId;
     readDataInfo.nextStreamId_ = streams[0].streamId;
-    readDataInfo.wantReadLength_ = 1024;
+    readDataInfo.wantReadLength_ = BUFFER_SIZE;
     mediaDownloader->Read(buff, readDataInfo);
     mediaDownloader->SetDownloadErrorState();
     mediaDownloader->Read(buff, readDataInfo);
