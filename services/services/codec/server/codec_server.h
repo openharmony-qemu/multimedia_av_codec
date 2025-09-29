@@ -135,6 +135,8 @@ private:
     int32_t ReleaseOutputBufferOfCodec(uint32_t index, bool render);
     void OnInstanceMemoryUpdateEvent(std::shared_ptr<Media::Meta> meta = nullptr);
     void OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta = nullptr);
+    void OnInstanceEncodeBeginEvent(std::shared_ptr<Media::Meta> meta = nullptr);
+    void OnInstanceEncodeEndEvent(std::shared_ptr<Media::Meta> meta = nullptr);
     void InitFramerateCalculator(Meta &callerInfo);
 
     CodecStatus status_ = UNINITIALIZED;
