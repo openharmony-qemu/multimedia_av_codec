@@ -87,6 +87,8 @@ ohos_unittest("audio_encoder_filter_unitest") {
   public_configs = []
 
   external_deps = [
+    "access_token:libaccesstoken_sdk",
+    "access_token:libtokenid_sdk",
     "audio_framework:audio_capturer",
     "audio_framework:audio_client",
     "bundle_framework:appexecfwk_base",
@@ -163,6 +165,8 @@ ohos_unittest("audio_encoder_filter_optimize_unitest") {
   public_configs = []
 
   external_deps = [
+    "access_token:libaccesstoken_sdk",
+    "access_token:libtokenid_sdk",
     "audio_framework:audio_capturer",
     "audio_framework:audio_client",
     "bundle_framework:appexecfwk_base",

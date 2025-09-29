@@ -29,6 +29,10 @@
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
 #include "param_wrapper.h"
+#include "access_token.h"
+#include "accesstoken_kit.h"
+#include "ipc_skeleton.h"
+#include "tokenid_kit.h"
 
 #ifdef SUPPORT_DRM
 #include "imedia_key_session_service.h"
@@ -1138,6 +1142,12 @@ void MediaCodec::OnDumpInfo(int32_t fd)
 uint32_t MediaCodec::GetApiVersion()
 {
     uint32_t apiVersion = INVALID_API_VERSION;
+    using namespace OHOS::Security::AccessToken;
+    AccessTokenID callerToken = IPCSkeleton::GetCallingTokenID();
+    ATokenTypeEnum tokenType = AccessTokenKit::GetTokenTypeFlag(callerToken);
+    if (tokenType != TOKEN_HAP) {
+        return apiVersion;
+    }
     OHOS::sptr<OHOS::ISystemAbilityManager> systemAbilityManager =
         OHOS::SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     OHOS::sptr<OHOS::IRemoteObject> remoteObject =
