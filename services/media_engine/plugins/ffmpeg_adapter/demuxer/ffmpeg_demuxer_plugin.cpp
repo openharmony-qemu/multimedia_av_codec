@@ -598,6 +598,9 @@ Status FFmpegDemuxerPlugin::SetDrmCencInfo(
 bool FFmpegDemuxerPlugin::NeedCombineFrame(uint32_t trackId)
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, false, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(trackId < formatContext_->nb_streams, false, "TrackId out of range");
+    FALSE_RETURN_V_MSG_E(formatContext_->streams[trackId] != nullptr, false, "AVStream is nullptr");
+    FALSE_RETURN_V_MSG_E(formatContext_->streams[trackId]->codecpar != nullptr, false, "Codecpar is nullptr");
     if (FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MPEGTS &&
         formatContext_->streams[trackId]->codecpar->codec_id == AV_CODEC_ID_HEVC) {
         return true;
@@ -1283,6 +1286,11 @@ void FFmpegDemuxerPlugin::InitParser()
     FALSE_RETURN_MSG(formatContext_ != nullptr, "AVFormatContext is nullptr");
     ParserBoxInfo();
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        if (formatContext_->streams[trackIndex] == nullptr ||
+            formatContext_->streams[trackIndex]->codecpar == nullptr) {
+            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " info is nullptr", trackIndex);
+            continue;
+        }
         if (g_bitstreamFilterMap.count(formatContext_->streams[trackIndex]->codecpar->codec_id) != 0) {
             InitBitStreamContext(*(formatContext_->streams[trackIndex]));
             break;
@@ -1385,7 +1393,7 @@ void FFmpegDemuxerPlugin::GetStreamInitialParams()
     FALSE_RETURN_MSG_W(formatContext_ != nullptr, "AVFormatContext is nullptr");
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         auto stream = formatContext_->streams[trackIndex];
-        if (stream == nullptr) {
+        if (stream == nullptr || stream->codecpar == nullptr) {
             continue;
         }
         Meta format;
@@ -1907,6 +1915,7 @@ void FFmpegDemuxerPlugin::InitPTSandIndexConvert()
 Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
     const uint64_t relativePresentationTimeUs, uint32_t &index)
 {
+    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
 
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
@@ -1948,6 +1957,7 @@ Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t 
 Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
     const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
+    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(index < UINT32_MAX, Status::ERROR_INVALID_DATA, "Index is out of range");
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
