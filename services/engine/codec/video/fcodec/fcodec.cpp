@@ -1943,13 +1943,6 @@ void FCodec::GetMjpegCapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
         CapabilityData& capsData = capaArray.back();
-        capsData.profiles = {
-            static_cast<int32_t>(MJPEG_PROFILE_BASELINE),
-            static_cast<int32_t>(MJPEG_PROFILE_SEQUENTIAL),
-            static_cast<int32_t>(MJPEG_PROFILE_PROGRESSIVE),
-            static_cast<int32_t>(MJPEG_PROFILE_LOSSLESS),
-            static_cast<int32_t>(MJPEG_PROFILE_JPEG_LS),
-        };
     }
 }
 
@@ -2014,7 +2007,6 @@ void FCodec::FillBaseCapability(CapabilityData &capsData, uint32_t i)
         static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888)};
 }
 
->>>>>>> master
 int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 {
     for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {

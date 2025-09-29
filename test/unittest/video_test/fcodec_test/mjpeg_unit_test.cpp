@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -465,8 +465,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Create_02, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_Configure_01
+ * @tc.desc: video configure
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_01, TestSize.Level1)
@@ -480,8 +480,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_01, TestSize.Level
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_Configure_02
+ * @tc.desc: video configure
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_02, TestSize.Level1)
@@ -496,8 +496,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_02, TestSize.Level
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_Configure_03
+ * @tc.desc: video configure
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_03, TestSize.Level1)
@@ -513,8 +513,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_03, TestSize.Level
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_Configure_04
+ * @tc.desc: video configure
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_04, TestSize.Level1)
@@ -529,8 +529,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_04, TestSize.Level
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_Configure_05
+ * @tc.desc: video configure
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_05, TestSize.Level1)
@@ -544,8 +544,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_05, TestSize.Level
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_Configure_06
+ * @tc.desc: video configure
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_06, TestSize.Level1)
@@ -560,8 +560,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_06, TestSize.Level
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_Configure_07
+ * @tc.desc: video configure
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_07, TestSize.Level1)
@@ -579,8 +579,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_07, TestSize.Level
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_Start_01
+ * @tc.desc: video start
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Start_01, TestSize.Level1)
@@ -595,8 +595,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Start_01, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_Start_02
+ * @tc.desc: video start
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Start_02, TestSize.Level1)
@@ -606,8 +606,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Start_02, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_Start_03
+ * @tc.desc: video start
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Start_03, TestSize.Level1)
@@ -623,8 +623,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Start_03, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_Start_04
+ * @tc.desc: video start
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Start_04, TestSize.Level1)
@@ -640,8 +640,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Start_04, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_getOutputFormat_01
+ * @tc.desc: video output format
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_getOutputFormat_01, TestSize.Level1)
@@ -656,8 +656,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_getOutputFormat_01, TestSize
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_getOutputFormat_01
+ * @tc.desc: video output format
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_getOutputFormat_02, TestSize.Level1)
@@ -673,8 +673,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_getOutputFormat_02, TestSize
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_SetParameter_01
+ * @tc.desc: video SetParameter
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_SetParameter_01, TestSize.Level1)
@@ -715,8 +715,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_SetParameter_01, TestSize.Le
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_SetParameter_02
+ * @tc.desc: video SetParameter
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_SetParameter_02, TestSize.Level1)
@@ -732,8 +732,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_SetParameter_02, TestSize.Le
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_SetParameter_03
+ * @tc.desc: video SetParameter
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_SetParameter_03, TestSize.Level1)
@@ -751,8 +751,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_SetParameter_03, TestSize.Le
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_normalcase_01
+ * @tc.desc: video normal case
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_01, TestSize.Level1)
@@ -795,8 +795,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_01, TestSize.Leve
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_normalcase_02
+ * @tc.desc: video normal case  surface
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_02, TestSize.Level1)
@@ -853,8 +853,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_02, TestSize.Leve
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_normalcase_03
+ * @tc.desc: video normal case
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_03, TestSize.Level1)
@@ -897,8 +897,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_03, TestSize.Leve
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_normalcase_04
+ * @tc.desc: video normal case
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_04, TestSize.Level1)
@@ -943,8 +943,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_04, TestSize.Leve
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_normalcase_05
+ * @tc.desc: video normal case
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_05, TestSize.Level1)
@@ -988,8 +988,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_05, TestSize.Leve
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_normalcase_06
+ * @tc.desc: video normal case
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_06, TestSize.Level1)
@@ -1034,8 +1034,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_06, TestSize.Leve
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_normalcase_formatchange
+ * @tc.desc: video format change surface
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_formatchange, TestSize.Level1)
@@ -1084,8 +1084,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_formatchange, Tes
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_abnormalcase_01
+ * @tc.desc: video abnormalcase
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_01, TestSize.Level1)
@@ -1099,8 +1099,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_01, TestSize.Le
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_abnormalcase_02
+ * @tc.desc: video abnormalcase
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_02, TestSize.Level1)
@@ -1111,8 +1111,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_02, TestSize.Le
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_abnormalcase_03
+ * @tc.desc: video abnormalcase
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_03, TestSize.Level1)
@@ -1123,8 +1123,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_03, TestSize.Le
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_abnormalcase_04
+ * @tc.desc: video abnormalcase
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_04, TestSize.Level1)
@@ -1140,8 +1140,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_04, TestSize.Le
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_abnormalcase_05
+ * @tc.desc: video abnormalcase
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_05, TestSize.Level1)
@@ -1157,8 +1157,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_05, TestSize.Le
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_abnormalcase_06
+ * @tc.desc: video abnormalcase
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_06, TestSize.Level1)
@@ -1174,8 +1174,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_06, TestSize.Le
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_abnormalcase_07
+ * @tc.desc: video abnormalcase
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_07, TestSize.Level1)
@@ -1192,8 +1192,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_07, TestSize.Le
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_abnormalcase_08
+ * @tc.desc: video abnormalcase
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_08, TestSize.Level1)
@@ -1210,8 +1210,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_abnormalcase_08, TestSize.Le
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_statuscase_01
+ * @tc.desc: video statuscase
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_statuscase_01, TestSize.Level1)
@@ -1228,8 +1228,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_statuscase_01, TestSize.Leve
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_statuscase_02
+ * @tc.desc: video statuscase
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_statuscase_02, TestSize.Level1)
@@ -1251,11 +1251,11 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_statuscase_02, TestSize.Leve
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_RegisterCallback_01
+ * @tc.desc: video RegisterCallback
  * @tc.type: FUNC
  */
-HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_setcallback_01, TestSize.Level1)
+HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_RegisterCallback_01, TestSize.Level1)
 {
     videoDec_ = OH_VideoDecoder_CreateByName((AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME).data());
     EXPECT_NE(nullptr, videoDec_);
@@ -1265,11 +1265,11 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_setcallback_01, TestSize.Lev
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_PushInputBuffer_01
+ * @tc.desc: video PushInputBuffer
  * @tc.type: FUNC
  */
-HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_pushInputData_01, TestSize.Level1)
+HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_PushInputBuffer_01, TestSize.Level1)
 {
     OH_AVCodecBufferAttr info = {0, 0, 0, AVCODEC_BUFFER_FLAGS_EOS};
     int32_t bufferSize = 13571;
@@ -1310,11 +1310,11 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_pushInputData_01, TestSize.L
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_PushInputBuffer_01
+ * @tc.desc: video PushInputBuffer
  * @tc.type: FUNC
  */
-HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_pushInputData_02, TestSize.Level1)
+HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_PushInputBuffer_02, TestSize.Level1)
 {
     OH_AVCodecBufferAttr info = {0, 0, 0, AVCODEC_BUFFER_FLAGS_EOS};
     int32_t bufferSize = 13571;
@@ -1350,8 +1350,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_pushInputData_02, TestSize.L
 }
 
 /**
- * @tc.name: videoDecoder_Create_02
- * @tc.desc: video create
+ * @tc.name: videoDecoder_getOutputBuffer_01
+ * @tc.desc: video getOutputBuffer
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_getOutputBuffer_01, TestSize.Level1)

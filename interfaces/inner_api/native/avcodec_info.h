@@ -787,20 +787,6 @@ enum VP8Profile : int32_t {
 };
 
 /**
- * @brief MJPEG Profile
- *
- * @since 3.1
- * @version 4.0
- */
-enum MJPEGProfile : int32_t {
-    MJPEG_PROFILE_BASELINE = 0,
-    MJPEG_PROFILE_SEQUENTIAL = 0,
-    MJPEG_PROFILE_PROGRESSIVE = 0,
-    MJPEG_PROFILE_LOSSLESS = 0,
-    MJPEG_PROFILE_JPEG_LS = 0,
-};
-
-/**
  * @brief
  *
  * @since 3.1
