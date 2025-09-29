@@ -61,6 +61,7 @@ void DemuxerReli2NdkTest::SetUpTestCase() {}
 void DemuxerReli2NdkTest::TearDownTestCase() {}
 void DemuxerReli2NdkTest::SetUp()
 {
+    avBuffer = OH_AVBuffer_Create(g_width * g_height);
     memory = OH_AVMemory_Create(g_width * g_height);
     g_trackCount = 0;
 }
@@ -1134,8 +1135,8 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_MTS_RELI_0300, TestSize.Level3)
             if ((audioIsEnd && (index == MEDIA_TYPE_AUD)) || (videoIsEnd && (index == MEDIA_TYPE_VID))) {
                 continue;
             }
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
             if (index == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
             } else if (index == MEDIA_TYPE_VID) {
@@ -1181,8 +1182,8 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_M2TS_RELI_0300, TestSize.Level3)
             if ((audioIsEnd && (index == MEDIA_TYPE_AUD)) || (videoIsEnd && (index == MEDIA_TYPE_VID))) {
                 continue;
             }
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
             if (index == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
             } else if (index == MEDIA_TYPE_VID) {
@@ -1228,8 +1229,8 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_TRP_RELI_0300, TestSize.Level3)
             if ((audioIsEnd && (index == MEDIA_TYPE_AUD)) || (videoIsEnd && (index == MEDIA_TYPE_VID))) {
                 continue;
             }
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
             if (index == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
             } else if (index == MEDIA_TYPE_VID) {

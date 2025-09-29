@@ -73,6 +73,7 @@ void DemuxerMtsFuncNdkTest::SetUpTestCase() {}
 void DemuxerMtsFuncNdkTest::TearDownTestCase() {}
 void DemuxerMtsFuncNdkTest::SetUp()
 {
+    avBuffer = OH_AVBuffer_Create(g_width * g_height);
     memory = OH_AVMemory_Create(g_width * g_height);
     g_trackCount = 0;
 }
@@ -150,7 +151,6 @@ static void CheckSeekMode(seekInfo seekInfo)
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    cout << "g_trackCount----" << g_trackCount << endl;
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
@@ -162,7 +162,8 @@ static void CheckSeekMode(seekInfo seekInfo)
         bool readEnd = false;
         int32_t frameNum = 0;
         while (!readEnd) {
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 readEnd = true;
                 break;
@@ -215,7 +216,8 @@ static void CheckSeekResult(const char *fileName, uint32_t seekCount)
                 ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, (g_mtsRdm() % duration) / THOUSAND,
                 (OH_AVSeekMode)((g_mtsRdm() % 1) +1)));
             }
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
         }
     }
     close(fd);
@@ -248,8 +250,8 @@ static void FramesMultiTrks(int vFrameNum, int videoKey, int aFrameNum, int audi
                 (trackEndFlag[index] && (trackType == MEDIA_TYPE_VID))) {
                 continue;
             }
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
             if (trackType == MEDIA_TYPE_AUD &&
                 (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
                 trackEndFlag[index] = true;
@@ -355,8 +357,8 @@ static void CheckFrames(int videoFrameNum, int videoKey, int audioFrameNum, int 
             if ((audioIsEnd && (trackType == MEDIA_TYPE_AUD)) || (videoIsEnd && (trackType == MEDIA_TYPE_VID))) {
                 continue;
             }
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
             if (trackType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
             } else if (trackType == MEDIA_TYPE_VID) {
@@ -632,12 +634,13 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_1000, TestSize.Level3)
     cout << " pos= " << pos << endl;
     while (!isEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
             if (count == pos) {
                 cout << count << " count == pos!!!!!!!!!" << endl;
                 ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_UnselectTrackByID(demuxer, 0));
                 ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_UnselectTrackByID(demuxer, 1));
-                ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+                ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
                 isEnd = true;
                 break;
             }
@@ -663,7 +666,6 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_1000, TestSize.Level3)
 HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_1100, TestSize.Level3)
 {
     uint32_t trackIndex = 0;
-    OH_AVCodecBufferAttr attr;
     const char *file = "/data/test/media/h264_mp3.mts";
     srand(time(nullptr));
     int fd = open(file, O_RDONLY);
@@ -674,7 +676,7 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_1100, TestSize.Level3)
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
-    ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
+    ret = OH_AVDemuxer_ReadSampleBuffer(demuxer, trackIndex, avBuffer);
     ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
     close(fd);
     fd = -1;
@@ -749,7 +751,8 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_1400, TestSize.Level0)
         || (videoIsEnd && (g_tarckType == MEDIA_TYPE_VID) && index == MEDIA_TYPE_VID)) {
             continue;
         }
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+        ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
         if (g_tarckType == MEDIA_TYPE_AUD) {
             SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
             CheckMTSAudioKey();
