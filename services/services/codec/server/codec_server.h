@@ -83,8 +83,6 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
-    int32_t ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta) override;
-    int32_t SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback) override;
     void SetDumpInfo(bool isDump, uint64_t instanceId) override;
 #ifdef SUPPORT_DRM
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
@@ -97,10 +95,6 @@ public:
 
     void OnError(int32_t errorType, int32_t errorCode);
     void OnOutputFormatChanged(const Format &format);
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer);
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                 std::shared_ptr<AVSharedMemory> buffer);
-
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
 
@@ -110,12 +104,7 @@ public:
     int32_t Configure(const std::shared_ptr<Media::Meta> &meta) override;
     int32_t SetParameter(const std::shared_ptr<Media::Meta> &parameter) override;
     int32_t GetOutputFormat(std::shared_ptr<Media::Meta> &parameter) override;
-
-    int32_t SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer) override;
     int32_t Prepare() override;
-    sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
-    sptr<Media::AVBufferQueueConsumer> GetInputBufferQueueConsumer() override;
-    sptr<Media::AVBufferQueueProducer> GetOutputBufferQueueProducer() override;
     void ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed, uint32_t &bufferStatus) override;
     void ProcessInputBuffer() override;
     bool CheckRunning() override;
@@ -125,11 +114,6 @@ public:
     void PostProcessingOnError(int32_t errorCode);
     void PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_unused]] int32_t flag);
     void PostProcessingOnOutputFormatChanged(const Format &format);
-
-#ifdef SUPPORT_DRM
-    int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
-        const bool svpFlag) override;
-#endif
 
     int32_t NotifyMemoryRecycle();
     int32_t NotifyMemoryWriteBack();
@@ -147,8 +131,7 @@ private:
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
     int32_t DrmVideoCencDecrypt(uint32_t index);
     int32_t CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySessionService> &keySession, bool svpFlag);
-    void SetFreeStatus(bool isFree);
-    int32_t QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
+    int32_t QueueInputBufferIn(uint32_t index);
     int32_t ReleaseOutputBufferOfCodec(uint32_t index, bool render);
     void OnInstanceMemoryUpdateEvent(std::shared_ptr<Media::Meta> meta = nullptr);
     void OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta = nullptr);
@@ -157,7 +140,6 @@ private:
     CodecStatus status_ = UNINITIALIZED;
 
     std::shared_ptr<CodecBase> codecBase_;
-    std::shared_ptr<AVCodecCallback> codecCb_;
     std::shared_ptr<MediaCodecCallback> videoCb_;
     std::shared_mutex mutex_;
     std::shared_mutex cbMutex_;
@@ -177,8 +159,6 @@ private:
     std::shared_ptr<TemporalScalability> temporalScalability_ = nullptr;
     std::shared_ptr<CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::unordered_map<uint32_t, DrmDecryptVideoBuf> decryptVideoBufs_;
-    std::shared_mutex freeMutex_;
-    bool isFree_ = false;
     std::shared_ptr<TaskThread> inputParamTask_ = nullptr;
     CodecScenario scenario_ = CodecScenario::CODEC_SCENARIO_ENC_NORMAL;
 
@@ -219,30 +199,14 @@ private:
     std::shared_ptr<PostProcessingBufferInfoQueue> postProcessingInputBufferInfoQueue_{nullptr};
     std::unique_ptr<TaskThread> postProcessingTask_{nullptr};
     Format outputFormatChanged_;
-    std::shared_ptr<AVCodecCallback> shareBufCallback_ = nullptr;
-    std::shared_ptr<MediaCodecCallback> avBufCallback_ = nullptr;
+    std::shared_ptr<MediaCodecCallback> codecBaseCb_ = nullptr;
     std::shared_ptr<FramerateCalculator> framerateCalculator_ = nullptr;
 };
 
-class CodecBaseCallback : public AVCodecCallback, public NoCopyable {
+class CodecBaseCallback : public MediaCodecCallback, public NoCopyable {
 public:
     explicit CodecBaseCallback(const std::shared_ptr<CodecServer> &codec);
     virtual ~CodecBaseCallback();
-
-    void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
-    void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                 std::shared_ptr<AVSharedMemory> buffer) override;
-
-private:
-    std::shared_ptr<CodecServer> codec_ = nullptr;
-};
-
-class VCodecBaseCallback : public MediaCodecCallback, public NoCopyable {
-public:
-    explicit VCodecBaseCallback(const std::shared_ptr<CodecServer> &codec);
-    virtual ~VCodecBaseCallback();
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
@@ -252,7 +216,7 @@ public:
     void OnOutputBufferUnbinded() override;
 
 private:
-    std::shared_ptr<CodecServer> codec_ = nullptr;
+    std::weak_ptr<CodecServer> weakCodec_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
