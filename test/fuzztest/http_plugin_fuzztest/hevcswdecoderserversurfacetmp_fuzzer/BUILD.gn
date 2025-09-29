@@ -1,0 +1,76 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#####################hydra-fuzz###################
+import("//build/config/features.gni")
+import("//build/test.gni")
+module_output_path = "av_codec/av_codec"
+MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec"
+##############################fuzztest##########################################
+ohos_fuzztest("HevcSwdecoderServerSurfaceTmpFuzzTest") {
+  module_out_path = module_output_path
+  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/http_plugin_fuzztest/hevcswdecoderserversurfacetmp_fuzzer"
+  include_dirs = [
+    "$MEDIA_ROOT_DIR/test/fuzztest/http_plugin_fuzztest/common",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/source/http_source",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/source/http_source/http",
+    "$MEDIA_ROOT_DIR/interfaces",
+    "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/source/http_source/base64",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/source/http_source/xml",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/source/http_source/dash",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/include",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
+  ]
+  cflags = [
+    "-g",
+    "-O0",
+    "-Wno-unused-variable",
+    "-fno-omit-frame-pointer",
+  ]
+  sources = [
+    "$MEDIA_ROOT_DIR/test/fuzztest/http_plugin_fuzztest/hevcswdecoderserversurfacetmp_fuzzer/hevcswdecoderserversurfacetmp_fuzzer.cpp",
+  ]
+  external_deps = [
+    "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "media_foundation:native_media_core",
+    "media_foundation:media_foundation",
+    "window_manager:libwm",
+    "graphic_surface:surface",
+    "init:libbegetutil",
+    "libxml2:libxml2",
+    "openssl:libcrypto_shared",
+    "safwk:system_ability_fwk",
+    "netmanager_base:net_conn_manager_if",
+  ]
+  deps = [
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/source/http_source:media_plugin_HttpSource",
+    "$MEDIA_ROOT_DIR/services/dfx:av_codec_service_dfx",
+  ]
+  resource_config_file =
+      "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
+}
+
+###############################################################################
+group("fuzztest") {
+  testonly = true
+  deps = []
+  deps += [
+    # deps file
+    ":HevcSwdecoderServerSurfaceTmpFuzzTest",  #引用测试套
+  ]
+}
+###############################################################################
