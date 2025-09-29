@@ -59,6 +59,8 @@ static const std::string ENHANCE_FLAG = "com.openharmony.deferredVideoEnhanceFla
 static const std::string VIDEO_ID = "com.openharmony.videoId";
 static const std::string SCENE_INSERT_FRAME = "1";
 static const std::string SCENE_MP_PWP = "2"; // moving photo playing with processing
+static const int32_t VIDEO_WIDTH = 512;
+static const int32_t VIDEO_HEIGHT = 512;
 
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
@@ -304,11 +306,11 @@ Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
     configFormat_.GetIntValue(Tag::VIDEO_HEIGHT, height);
     if (width == 0) {
         MEDIA_LOG_I("width update 0 -> 512");
-        configFormat_.PutIntValue(Tag::VIDEO_WIDTH, 512);
+        configFormat_.PutIntValue(Tag::VIDEO_WIDTH, VIDEO_WIDTH);
     }
     if (height == 0) {
         MEDIA_LOG_I("height update 0 -> 512");
-        configFormat_.PutIntValue(Tag::VIDEO_HEIGHT, 512);
+        configFormat_.PutIntValue(Tag::VIDEO_HEIGHT, VIDEO_HEIGHT);
     }
     Status ret = videoDecoder_->Configure(configFormat_);
 
