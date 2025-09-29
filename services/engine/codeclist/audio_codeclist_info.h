@@ -42,6 +42,7 @@ public:
     CapabilityData GetLbvcEncoderCapability();
     CapabilityData GetVendorAacEncoderCapability();
     CapabilityData GetAc3DecoderCapability();
+    CapabilityData GetGsmMsDecoderCapability();
 #ifdef SUPPORT_CODEC_EAC3
     CapabilityData GetEac3DecoderCapability();
 #endif

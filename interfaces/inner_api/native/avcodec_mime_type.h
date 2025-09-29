@@ -45,6 +45,7 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_AC3 = "audio/ac3";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_EAC3 = "audio/eac3";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_RAW = "audio/raw";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_GSM_MS = "audio/gsm_ms";
 
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_VC1 = "video/vc1";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_AVC = "video/avc";
@@ -84,6 +85,7 @@ public:
             MEDIA_MIMETYPE_AUDIO_AMRNB,
             MEDIA_MIMETYPE_AUDIO_AMRWB,
             MEDIA_MIMETYPE_AUDIO_APE,
+            MEDIA_MIMETYPE_AUDIO_GSM_MS,
 #ifdef SUPPORT_CODEC_EAC3
             MEDIA_MIMETYPE_AUDIO_EAC3,
 #endif

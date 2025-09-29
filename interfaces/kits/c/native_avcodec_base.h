@@ -384,6 +384,14 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_RAW;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_G711A;
 
 /**
+ * @brief Enumerates the mime types of audio GSM_MS codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM_MS;
+
+/**
  * @brief Enumerates the mime types of audio Enhanced AC-3 codec.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
