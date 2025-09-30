@@ -35,7 +35,7 @@
 #include "window.h"
 #include "unittest_log.h"
 
-extern "c" {
+extern "C" {
 #include "libavcodec/avcodec.h"
 }
 
@@ -256,9 +256,9 @@ void VideoCodeCapiDecoderUnitTest::InputFunc()
         }
         OH_AVCodecBufferAttr info;
         if (file_end_) {
+            info.pts = 0;
             info.size = 0;
             info.offset = 0;
-            info.pts = 0;
             info.flags = AVCODEC_BUFFER_FLAGS_EOS;
             OH_AVBuffer_SetBufferAttr(buffer, &info);
             OH_VideoDecoder_PushInputBuffer(videoDec_, index);
