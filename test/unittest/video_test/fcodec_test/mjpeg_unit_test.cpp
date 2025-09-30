@@ -97,14 +97,13 @@ static void OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffe
     signal_->inCond_.notify_all();
 }
 
-static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, OH_AVCodecBufferAttr *attr,
-                                    void *userData)
+static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData)
 {
     (void)codec;
     VDecSignal *signal_ = static_cast<VDecSignal *>(userData);
-    if (attr) {
+    if (data) {
         int size = OH_AVBuffer_GetCapacity(data)
-        cout << "OnOutputBufferAvailable received, index:" << index << ", attr->size:" << size << endl;
+        cout << "OnOutputBufferAvailable received, index:" << index << ", data->size:" << size << endl;
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outQueue_.push(index);
         signal_->outBufferQueue_.push(data);
@@ -114,7 +113,7 @@ static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuff
         g_outFrameCount += 1;
         signal_->outCond_.notify_all();
     } else {
-        cout << "OnOutputBufferAvailable error, attr is nullptr!" << endl;
+        cout << "OnOutputBufferAvailable error, data is nullptr!" << endl;
     }
 }
 
@@ -188,12 +187,12 @@ protected:
     int32_t Release();
     int32_t ExtractPacket();
     std::atomic<bool> isRunning_ = false;
-    std::unique_ptr<std::ifstream> testFile_;
+    std::unique_ptr<std::ifstream> inputFile_;
     std::unique_ptr<std::ofstream> outFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
     OH_AVCodec *videoDec_ = nullptr;
-    struct OH_AVCodecAsyncCallback cb_;
+    struct OH_AVCodecCallback cb_;
     VDecSignal *signal_ = nullptr;
     OH_AVFormat *format_ = nullptr;
     bool isFirstFrame_ = true;
@@ -261,7 +260,7 @@ void VideoCodeCapiDecoderUnitTest::InputFunc()
             info.offset = 0;
             info.pts = 0;
             info.flags = AVCODEC_BUFFER_FLAGS_EOS;
-            OH_AVBuffer_SetBufferAttr(buffer, &info)
+            OH_AVBuffer_SetBufferAttr(buffer, &info);
             OH_VideoDecoder_PushInputBuffer(videoDec_, index);
             cout << "push end" << endl;
             break;
@@ -274,12 +273,12 @@ void VideoCodeCapiDecoderUnitTest::InputFunc()
         int32_t ret = AVCS_ERR_OK;
         if (isFirstFrame_) {
             info.flags = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-            OH_AVBuffer_SetBufferAttr(buffer, &info)
+            OH_AVBuffer_SetBufferAttr(buffer, &info);
             ret = OH_VideoDecoder_PushInputBuffer(videoDec_, index);
             isFirstFrame_ = false;
         } else {
             info.flags = AVCODEC_BUFFER_FLAGS_NONE;
-            OH_AVBuffer_SetBufferAttr(buffer, &info)
+            OH_AVBuffer_SetBufferAttr(buffer, &info);
             ret = OH_VideoDecoder_PushInputBuffer(videoDec_, index);
         }
         if (ret != AVCS_ERR_OK) {
@@ -389,7 +388,7 @@ void VideoCodeCapiDecoderUnitTest::DelVDecDemo()
 
 int32_t VideoCodeCapiDecoderUnitTest::ProceFunc(void)
 {
-    videoDec_ = OH_VideoDecoder_CreateByName((AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME).data());
+    videoDec_ = OH_VideoDecoder_CreateByName(AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME.data());
     EXPECT_NE(nullptr, videoDec_);
 
     signal_ = new VDecSignal();
@@ -1056,7 +1055,7 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_formatchange, Tes
 
     isRunning_.store(true);
 
-    inputLoop_ = make_unique<thread>(&VideoCodeCapiDecoderUnitTest::FormatChangeInputFunc, this);
+    inputLoop_ = make_unique<thread>(&VideoCodeCapiDecoderUnitTest::InputFunc, this);
     EXPECT_NE(nullptr, inputLoop_);
 
     outputLoop_ = make_unique<thread>(&VideoCodeCapiDecoderUnitTest::OutputFunc, this);
@@ -1273,8 +1272,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_PushInputBuffer_01, TestSize
 {
     OH_AVCodecBufferAttr info = {0, 0, 0, AVCODEC_BUFFER_FLAGS_EOS};
     int32_t bufferSize = 13571;
-    testFile_ = std::make_unique<std::ifstream>();
-    UNITTEST_CHECK_AND_RETURN_LOG(testFile_ != nullptr, "Fatal: No memory");
+    inputFile_ = std::make_unique<std::ifstream>();
+    UNITTEST_CHECK_AND_RETURN_LOG(inputFile_ != nullptr, "Fatal: No memory");
 
     ProceFunc();
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_WIDTH.data(), DEFAULT_WIDTH);
@@ -1285,14 +1284,14 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_PushInputBuffer_01, TestSize
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Start(videoDec_));
 
     isRunning_.store(true);
-    testFile_->open(inputFilePath, std::ios::in | std::ios::binary);
+    inputFile_->open(inputFilePath, std::ios::in | std::ios::binary);
     unique_lock<mutex> lock(signal_->inMutex_);
     signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
     uint32_t index = signal_->inQueue_.front();
     auto buffer = signal_->inBufferQueue_.front();
     info.size = bufferSize;
     char *fileBuffer = static_cast<char *>(malloc(sizeof(char) * info.size + 1));
-    (void)testFile_->read(fileBuffer, info.size);
+    (void)inputFile_->read(fileBuffer, info.size);
     memcpy_s(OH_AVBuffer_GetAddr(buffer), OH_AVBuffer_GetCapacity(buffer), fileBuffer, info.size);
     free(fileBuffer);
     info.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
@@ -1305,7 +1304,7 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_PushInputBuffer_01, TestSize
     info.size = 0;
     info.flags = AVCODEC_BUFFER_FLAGS_EOS;
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_PushInputBuffer(videoDec_, index));
-    testFile_->close();
+    inputFile_->close();
     isRunning_.store(false);
 }
 
@@ -1318,8 +1317,8 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_PushInputBuffer_02, TestSize
 {
     OH_AVCodecBufferAttr info = {0, 0, 0, AVCODEC_BUFFER_FLAGS_EOS};
     int32_t bufferSize = 13571;
-    testFile_ = std::make_unique<std::ifstream>();
-    UNITTEST_CHECK_AND_RETURN_LOG(testFile_ != nullptr, "Fatal: No memory");
+    inputFile_ = std::make_unique<std::ifstream>();
+    UNITTEST_CHECK_AND_RETURN_LOG(inputFile_ != nullptr, "Fatal: No memory");
 
     ProceFunc();
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_WIDTH.data(), DEFAULT_WIDTH);
@@ -1330,14 +1329,14 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_PushInputBuffer_02, TestSize
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Start(videoDec_));
 
     isRunning_.store(true);
-    testFile_->open(inputFilePath, std::ios::in | std::ios::binary);
+    inputFile_->open(inputFilePath, std::ios::in | std::ios::binary);
     unique_lock<mutex> lock(signal_->inMutex_);
     signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
     uint32_t index = 1024;
     auto buffer = signal_->inBufferQueue_.front();
     info.size = bufferSize;
     char *fileBuffer = static_cast<char *>(malloc(sizeof(char) * info.size + 1));
-    (void)testFile_->read(fileBuffer, info.size);
+    (void)inputFile_->read(fileBuffer, info.size);
     memcpy_s(OH_AVBuffer_GetAddr(buffer), OH_AVBuffer_GetCapacity(buffer), fileBuffer, info.size);
     free(fileBuffer);
     info.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
@@ -1345,7 +1344,7 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_PushInputBuffer_02, TestSize
     signal_->inQueue_.pop();
     signal_->inBufferQueue_.pop();
 
-    testFile_->close();
+    inputFile_->close();
     isRunning_.store(false);
 }
 

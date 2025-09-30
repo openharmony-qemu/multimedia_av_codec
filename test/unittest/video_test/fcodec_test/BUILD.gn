@@ -115,7 +115,7 @@ ohos_unittest("video_mjpeg_unit_test") {
   public_configs = []
 
   if (av_codec_support_test) {
-    sources = [ "./video_mjpeg_unit_test.cpp" ]
+    sources = [ "./mjpeg_unit_test.cpp" ]
   }
 
   deps = [
