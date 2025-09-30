@@ -67,6 +67,7 @@ public:
     MOCK_METHOD2(GetCurrentCacheSize, Status(uint32_t, uint32_t&));
     MOCK_METHOD2(GetProbeSize, bool(int32_t&, int32_t&));
     MOCK_METHOD0(BoostReadThreadPriority, Status());
+    MOCK_METHOD1(SetAVReadPacketStopState, Status(bool));
 private:
     std::string name_ {};
 };

@@ -196,6 +196,10 @@ public:
     {
         return mapStatus_[name_];
     }
+    Status SetAVReadPacketStopState(bool state) override
+    {
+        return mapStatus_[name_];
+    }
 private:
     std::map<std::string, Status> mapStatus_;
     std::string name_;
