@@ -355,25 +355,43 @@ bool FCodec::IsActive() const
     return state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS;
 }
 
-void FCodec::FreeExtradataIfNeeded(std::string name)
+void FCodec::FreeExtraData()
 {
-    if (avCodecContext_->extradata && !(name == AVCodecCodecName::VIDEO_DECODER_VC1_NAME)) {
+    if (avCodecContext_ != nullptr && avCodecContext_->extradata) {
         av_free(avCodecContext_->extradata);
         avCodecContext_->extradata = nullptr;
         avCodecContext_->extradata_size = 0;
     }
 }
 
+void FCodec::ResetCodedWidthHeight()
+{
+    if (avCodecContext_ != nullptr) {
+        avCodecContext_->coded_width = 0;
+        avCodecContext_->coded_height = 0;
+    }
+}
+
+bool FCodec::IsVC1Codec()
+{
+    return (codecName_ == AVCodecCodecName::VIDEO_DECODER_VC1_NAME ||
+                        codecName_ == AVCodecCodecName::VIDEO_DECODER_WMV3_NAME);
+}
+
 void FCodec::ResetContext(bool isFlush)
 {
     CHECK_AND_RETURN_LOG(avCodecContext_ != nullptr, "Avcodec context is nullptr");
-    FreeExtradataIfNeeded(codecName_);
-    avCodecContext_->coded_width = 0;
-    avCodecContext_->coded_height = 0;
     if (!isFlush) {
+        FreeExtraData();
+        ResetCodedWidthHeight();
         avCodecContext_->width = 0;
         avCodecContext_->height = 0;
         avCodecContext_->get_buffer2 = nullptr;
+    } else {
+        if (!IsVC1Codec()) {
+          FreeExtraData();
+          ResetCodedWidthHeight();
+        }
     }
 }
 

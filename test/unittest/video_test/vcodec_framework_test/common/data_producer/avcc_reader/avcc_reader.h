@@ -309,6 +309,57 @@ private:
     std::shared_ptr<Vc1UnitReader> vc1UnitReader_ = nullptr;
     std::shared_ptr<Vc1Detector> vc1Detector_ = nullptr;
 };
+
+struct Wmv3ReaderInfo {
+    std::string inPath;
+    bool isHdrStream = false;
+};
+
+class Wmv3Reader : public DataProducerBase {
+public:
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t frameType, bool isEosFrame);
+    bool IsEOS();
+    int32_t Init(const std::shared_ptr<Wmv3ReaderInfo> &info);
+    std::mutex mutex_;
+    int32_t frameInputCount_ = 0;
+private:
+    class Wmv3UnitReader {
+    public:
+        explicit Wmv3UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        virtual ~Wmv3UnitReader() {};
+        uint8_t const *GetNextWmv3UnitAddr();
+        virtual int32_t ReadWmv3Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) = 0;
+        virtual bool IsEOS() = 0;
+        virtual void PrereadFile() = 0;
+
+    protected:
+        Wmv3UnitReader() {};
+        virtual bool IsEOF() = 0;
+        std::unique_ptr<std::vector<uint8_t>> wmv3Unit_ = nullptr;
+        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+        bool isHdrStream_ = false;
+    };
+
+    class Wmv3MetaUnitReader : public Wmv3UnitReader {
+    public:
+        explicit Wmv3MetaUnitReader(std::shared_ptr<std::ifstream> inputFile, bool isHdrStream);
+        int32_t ReadWmv3Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        bool IsEOS() override;
+        void PrereadFile() override;
+        void PrereadWmv3Unit();
+
+    private:
+        bool IsEOF() override;
+        uint32_t GetFrameLenth(uint32_t index);
+        std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+        uint32_t frameIndex_ = 0;
+    };
+
+    std::shared_ptr<Wmv3UnitReader> wmv3UnitReader_ = nullptr;
+};
 } // MediaAVCodec
 } // OHOS
 #endif // AVCC_READER_H
