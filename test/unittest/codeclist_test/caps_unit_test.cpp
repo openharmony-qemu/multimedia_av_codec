@@ -96,6 +96,19 @@ std::vector<std::shared_ptr<AudioCaps>> CapsUnitTest::GetAudioEncoderCaps()
     }
     return ret;
 }
+
+std::vector<CapabilityData *> CapsUnitTest::GetDupCaps(std::string mime, int32_t dupTimes)
+{
+    std::vector<CapabilityData *> ret;
+    for (int32_t i = 0; i < dupTimes; i++) {
+        auto capabilityCapi = OH_AVCodec_GetCapability(mime.c_str(), true);
+        if (capabilityCapi == nullptr) {
+            break;
+        }
+        ret.push_back(capabilityCapi->capabilityData_);
+    }
+    return ret;
+}
 #endif
 
 #ifdef CODECLIST_INNER_UNIT_TEST
@@ -137,6 +150,19 @@ std::vector<std::shared_ptr<AudioCaps>> CapsUnitTest::GetAudioEncoderCaps()
     for (auto it : audioEncoderList) {
         CapabilityData *capabilityData = avCodecList_->GetCapability(it, true, AVCodecCategory::AVCODEC_NONE);
         ret.push_back(std::make_shared<AudioCaps>(capabilityData));
+    }
+    return ret;
+}
+
+std::vector<CapabilityData *> CapsUnitTest::GetDupCaps(std::string mime, int32_t dupTimes)
+{
+    std::vector<CapabilityData *> ret;
+    for (int32_t i = 0; i < dupTimes; i++) {
+        CapabilityData *capabilityData = avCodecList_->GetCapability(mime, true, AVCodecCategory::AVCODEC_NONE);
+        if (capabilityData == nullptr) {
+            break;
+        }
+        ret.push_back(capabilityData);
     }
     return ret;
 }
@@ -828,6 +854,25 @@ HWTEST_F(CapsUnitTest, AVCaps_GetAudioDecoderCaps_001, TestSize.Level1)
     std::vector<std::shared_ptr<AudioCaps>> audioDecoderArray;
     audioDecoderArray = GetAudioDecoderCaps();
     CheckAudioCapsArray(audioDecoderArray);
+}
+
+/**
+ * @tc.name: AVCaps_GetDupCaps_001
+ * @tc.desc: AVCdecList GetDupCaps
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_GetDupCaps_001, TestSize.Level1)
+{
+    std::vector<CapabilityData *> videoCapVec = GetDupCaps(
+        std::string(CodecMimeType::VIDEO_AVC), 2); // 2 is multi times
+    EXPECT_EQ(videoCapVec.size(), 2); // 2 is exp cap num
+    EXPECT_EQ(videoCapVec[0], videoCapVec[1]);
+
+    std::vector<CapabilityData *> audioCapVec = GetDupCaps(
+        std::string(CodecMimeType::AUDIO_AAC), 2); // 2 is multi times
+    EXPECT_EQ(audioCapVec.size(), 2); // 2 is exp cap num
+    EXPECT_EQ(audioCapVec[0], audioCapVec[1]);
 }
 
 /**
