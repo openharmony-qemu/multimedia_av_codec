@@ -35,7 +35,7 @@
 #include "window.h"
 #include "unittest_log.h"
 
-extern "c"{
+extern "c" {
 #include "libavcodec/avcodec.h"
 }
 
@@ -102,13 +102,13 @@ static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuff
     (void)codec;
     VDecSignal *signal_ = static_cast<VDecSignal *>(userData);
     if (data) {
-        int size = OH_AVBuffer_GetCapacity(data)
+        int size = OH_AVBuffer_GetCapacity(data);
         cout << "OnOutputBufferAvailable received, index:" << index << ", data->size:" << size << endl;
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outQueue_.push(index);
         signal_->outBufferQueue_.push(data);
         OH_AVCodecBufferAttr attr;
-        OH_AVBuffer_GetBufferAttr(data, &attr)
+        OH_AVBuffer_GetBufferAttr(data, &attr);
         signal_->attrQueue_.push(attr);
         g_outFrameCount += 1;
         signal_->outCond_.notify_all();
@@ -1256,7 +1256,7 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_statuscase_02, TestSize.Leve
  */
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_RegisterCallback_01, TestSize.Level1)
 {
-    videoDec_ = OH_VideoDecoder_CreateByName((AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME).data());
+    videoDec_ = OH_VideoDecoder_CreateByName(AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME.data());
     EXPECT_NE(nullptr, videoDec_);
     cb_ = {nullptr, nullptr, nullptr, nullptr};
     signal_ = new VDecSignal();
