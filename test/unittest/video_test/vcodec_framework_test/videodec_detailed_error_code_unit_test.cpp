@@ -1,0 +1,315 @@
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <gtest/gtest.h>
+#include <gtest/hwext/gtest-multithread.h>
+#include "meta/meta_key.h"
+#include "unittest_utils.h"
+#ifdef VIDEODEC_CAPI_UNIT_TEST
+#include "native_avmagic.h"
+#include "videodec_capi_mock.h"
+#endif
+#include "videodec_func_test_suit.h"
+
+using namespace std;
+using namespace OHOS;
+using namespace OHOS::MediaAVCodec;
+using namespace testing::ext;
+using namespace testing::mt;
+
+namespace VFTSUIT {
+void TEST_SUIT::SetUpTestCase(void)
+{
+    auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
+    ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
+}
+
+void TEST_SUIT::CreateByNameWithParam(std::string_view param)
+{
+    std::string codecName = "";
+    if (param == CodecMimeType::VIDEO_AVC) {
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
+                                                                        AVCodecCategory::AVCODEC_HARDWARE);
+    } else if (param == CodecMimeType::VIDEO_HEVC) {
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), false,
+                                                                        AVCodecCategory::AVCODEC_HARDWARE);
+    } else {
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
+                                                                        AVCodecCategory::AVCODEC_HARDWARE);
+    }
+    codecName = capability_->GetName();
+    std::cout << "CodecName: " << codecName << "\n";
+    ASSERT_TRUE(CreateVideoCodecByName(codecName));
+}
+
+void TEST_SUIT::PrepareSource(int32_t param, std::string sourcePath)
+{
+    if (param == CodecMimeType::VIDEO_AVC) {
+        videoDec_->SetSourceType(false);
+    }
+    videoDec_->testParam_ = param;
+    std::cout << "SourcePath: " << sourcePath << std::endl;
+    videoDec_->SetSource(sourcePath);
+    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+    string prefix = "/data/test/media/";
+    string fileName = testInfo_->name();
+    auto check = [](char it) { return it == '/'; };
+    (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
+    videoDec_->SetOutPath(prefix + fileName);
+}
+
+/**
+ * @tc.name: VideoDecoder_XPS_Width_001
+ * @tc.desc: exceeding the maximum xps frame width
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Width_001, TestSize.Level1)
+{
+    constexpr int32_t width = 720;
+    constexpr int32_t height = 1280;
+    CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    PrepareSource(CodecMimeType::VIDEO_AVC, "/data/test/media/8160_720_avcc.h264");
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_XPS_Width_002
+ * @tc.desc: exceeding the minimum xps frame width
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Width_002, TestSize.Level1)
+{
+    constexpr int32_t width = 720;
+    constexpr int32_t height = 1280;
+    CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    PrepareSource(CodecMimeType::VIDEO_AVC, "/data/test/media/100_720_avcc.h264");
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_XPS_Height_001
+ * @tc.desc: exceeding the maximum xps frame height
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Height_001, TestSize.Level1)
+{
+    constexpr int32_t width = 720;
+    constexpr int32_t height = 1280;
+    CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    PrepareSource(CodecMimeType::VIDEO_AVC, "/data/test/media/720_8160_avcc.h264");
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_XPS_Height_002
+ * @tc.desc: exceeding the minimum xps frame height
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Height_002, TestSize.Level1)
+{
+    constexpr int32_t width = 720;
+    constexpr int32_t height = 1280;
+    CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    PrepareSource(CodecMimeType::VIDEO_AVC, "/data/test/media/720_100_avcc.h264");
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+// /**
+//  * @tc.name: VideoDecoder_XPS_BitDepth_001
+//  * @tc.desc: invalid bit depth
+//  * @tc.type: FUNC
+//  */
+// HWTEST_F(TEST_SUIT, VideoDecoder_XPS_BitDepth_001, TestSize.Level1)
+// {
+//     constexpr int32_t width = 720;
+//     constexpr int32_t height = 1280;
+//     CreateByNameWithParam(CodecMimeType::VIDEO_HEVC);
+//     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+//     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+//     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+//     PrepareSource(CodecMimeType::VIDEO_HEVC, "/data/test/media/720_1280_25_12bit_avcc.h265");
+//     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+//     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+//     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+// }
+
+/**
+ * @tc.name: VideoDecoder_XPS_Chroma_Format_001
+ * @tc.desc: xps frame chroma format is yuv400
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_001, TestSize.Level1)
+{
+    constexpr int32_t width = 720;
+    constexpr int32_t height = 1280;
+    CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    PrepareSource(CodecMimeType::VIDEO_AVC, "/data/test/media/720_1280_yuv400p_avcc.h264");
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_XPS_Chroma_Format_002
+ * @tc.desc: xps frame chroma format is yuv422
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_002, TestSize.Level1)
+{
+    constexpr int32_t width = 720;
+    constexpr int32_t height = 1280;
+    CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    PrepareSource(CodecMimeType::VIDEO_AVC, "/data/test/media/720_1280_yuv422p_avcc.h264");
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_XPS_Chroma_Format_003
+ * @tc.desc: xps frame chroma format is yuv444
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_003, TestSize.Level1)
+{
+    constexpr int32_t width = 720;
+    constexpr int32_t height = 1280;
+    CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    PrepareSource(CodecMimeType::VIDEO_AVC, "/data/test/media/720_1280_yuv444p_avcc.h264");
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_XPS_AVC_10Bit_001
+ * @tc.desc: 264 bitstream xps frame bit depth is 10bit
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_XPS_AVC_10Bit_001, TestSize.Level1)
+{
+    constexpr int32_t width = 720;
+    constexpr int32_t height = 1280;
+    CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    PrepareSource(CodecMimeType::VIDEO_AVC, "/data/test/media/720_1280_10bit_avcc.h264");
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+// /**
+//  * @tc.name: VideoDecoder_XPS_MBAFF_001
+//  * @tc.desc: xps frame is mbaff
+//  * @tc.type: FUNC
+//  */
+// HWTEST_F(TEST_SUIT, VideoDecoder_XPS_MBAFF_001, TestSize.Level1)
+// {
+//     constexpr int32_t width = 720;
+//     constexpr int32_t height = 1280;
+//     CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
+//     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+//     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+//     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+//     PrepareSource(CodecMimeType::VIDEO_AVC, "/data/test/media/720_1280_25_mbaff_avcc.h264");
+//     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+//     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+//     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+// }
+
+// /**
+//  * @tc.name: VideoDecoder_XPS_Invalid_001
+//  * @tc.desc: xps frame data invalid
+//  * @tc.type: FUNC
+//  */
+// HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Invalid_001, TestSize.Level1)
+// {
+//     constexpr int32_t width = 720;
+//     constexpr int32_t height = 1280;
+//     CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
+//     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+//     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+//     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+//     PrepareSource(CodecMimeType::VIDEO_AVC, "/data/test/media/720_1280_25_xps_invalid_avcc.h264");
+//     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+//     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+//     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+// }
+
+// /**
+//  * @tc.name: VideoDecoder_XPS_Not_Exist_001
+//  * @tc.desc: xps frame does not exist
+//  * @tc.type: FUNC
+//  */
+// HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Not_Exist_001, TestSize.Level1)
+// {
+//     constexpr int32_t width = 720;
+//     constexpr int32_t height = 1280;
+//     CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
+//     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+//     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+//     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+//     PrepareSource(CodecMimeType::VIDEO_AVC, "/data/test/media/720_1280_25_no_xps_avcc.h264");
+//     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+//     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+//     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+// }
+} // namespace
+
+int main(int argc, char **argv)
+{
+    testing::GTEST_FLAG(output) = "xml:./";
+    for (int i = 0; i < argc; ++i) {
+        cout << argv[i] << endl;
+        if (strcmp(argv[i], "--need_dump") == 0) {
+            VideoDecSample::needDump_ = true;
+            DecArgv(i, argc, argv);
+        }
+    }
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
