@@ -120,6 +120,11 @@ constexpr int MAX_BIT_RATE_G711A_DECODER = 64000;
 
 const std::string VENDOR_AAC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libaudiocodec_aac_proxy_1.0.z.so";
 
+constexpr int MIN_BIT_RATE_GSM_MS = 13000;
+constexpr int MAX_BIT_RATE_GSM_MS = 13000;
+constexpr int MAX_CHANNEL_COUNT_GSM_MS = 1;
+const std::vector<int32_t> AUDIO_GSM_MS_SAMPLE_RATE = {8000};
+
 static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sampleRate)
 {
     std::vector<Range> sampleRateRange;
@@ -128,6 +133,21 @@ static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sample
         sampleRateRange.push_back(Range(sampleRate[i], sampleRate[i]));
     }
     return sampleRateRange;
+}
+
+CapabilityData AudioCodeclistInfo::GetGsmMsDecoderCapability()
+{
+    CapabilityData audioGsmMsCapability;
+    audioGsmMsCapability.codecName = AVCodecCodecName::AUDIO_DECODER_GSM_MS_NAME;
+    audioGsmMsCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioGsmMsCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_GSM_MS;
+    audioGsmMsCapability.isVendor = false;
+    audioGsmMsCapability.bitrate = Range(MIN_BIT_RATE_GSM_MS, MAX_BIT_RATE_GSM_MS);
+    audioGsmMsCapability.channels = Range(1, MAX_CHANNEL_COUNT_GSM_MS);
+    audioGsmMsCapability.sampleRate = AUDIO_GSM_MS_SAMPLE_RATE;
+    audioGsmMsCapability.sampleRateRanges = convertVectorToRange(AUDIO_GSM_MS_SAMPLE_RATE);
+    audioGsmMsCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioGsmMsCapability;
 }
 
 CapabilityData AudioCodeclistInfo::GetMP3DecoderCapability()
@@ -591,6 +611,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetG711muDecoderCapability(), GetRawDecoderCapability(), GetAacEncoderCapability(),
                           GetFlacEncoderCapability(), GetG711muEncoderCapability(), GetAPEDecoderCapability(),
                           GetMP3EncoderCapability(), GetG711aDecoderCapability(), GetAc3DecoderCapability(),
+                          GetGsmMsDecoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),

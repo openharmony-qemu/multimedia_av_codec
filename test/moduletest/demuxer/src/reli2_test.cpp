@@ -61,6 +61,7 @@ void DemuxerReli2NdkTest::SetUpTestCase() {}
 void DemuxerReli2NdkTest::TearDownTestCase() {}
 void DemuxerReli2NdkTest::SetUp()
 {
+    avBuffer = OH_AVBuffer_Create(g_width * g_height);
     memory = OH_AVMemory_Create(g_width * g_height);
     g_trackCount = 0;
 }
@@ -800,5 +801,443 @@ HWTEST_F(DemuxerReli2NdkTest, DEMUXER_AVI_RELI_0700, TestSize.Level3)
         }
     }
     close(g_fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_MTS_RELI_0100
+ * @tc.name      : create 16 instances create-destory
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReli2NdkTest, DEMUXER_MTS_RELI_0100, TestSize.Level3)
+{
+    int num = 0;
+    int len = 256;
+    while (num < 10) {
+        num++;
+        vector<std::thread> vecThread;
+        for (int i = 0; i < g_maxThread; i++) {
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            char file[256] = {};
+            sprintf_s(file, len, "/data/test/media/16/%d_creat_destroy.mts", i);
+            g_fdList[i] = open(file, O_RDONLY);
+            int64_t size = GetFileSize(file);
+            cout << file << "----------------------" << g_fdList[i] << "---------" << size << endl;
+
+            source_list[i] = OH_AVSource_CreateWithFD(g_fdList[i], 0, size);
+            ASSERT_NE(source_list[i], nullptr);
+
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+
+            close(g_fdList[i]);
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_M2TS_RELI_0100
+ * @tc.name      : create 16 instances create-destory
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReli2NdkTest, DEMUXER_M2TS_RELI_0100, TestSize.Level3)
+{
+    int num = 0;
+    int len = 256;
+    while (num < 10) {
+        num++;
+        vector<std::thread> vecThread;
+        for (int i = 0; i < g_maxThread; i++) {
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            char file[256] = {};
+            sprintf_s(file, len, "/data/test/media/16/%d_creat_destroy.m2ts", i);
+            g_fdList[i] = open(file, O_RDONLY);
+            int64_t size = GetFileSize(file);
+            cout << file << "----------------------" << g_fdList[i] << "---------" << size << endl;
+
+            source_list[i] = OH_AVSource_CreateWithFD(g_fdList[i], 0, size);
+            ASSERT_NE(source_list[i], nullptr);
+
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+
+            close(g_fdList[i]);
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_TRP_RELI_0100
+ * @tc.name      : create 16 instances create-destory
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReli2NdkTest, DEMUXER_TRP_RELI_0100, TestSize.Level3)
+{
+    int num = 0;
+    int len = 256;
+    while (num < 10) {
+        num++;
+        vector<std::thread> vecThread;
+        for (int i = 0; i < g_maxThread; i++) {
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            char file[256] = {};
+            sprintf_s(file, len, "/data/test/media/16/%d_creat_destroy.trp", i);
+            g_fdList[i] = open(file, O_RDONLY);
+            int64_t size = GetFileSize(file);
+            cout << file << "----------------------" << g_fdList[i] << "---------" << size << endl;
+
+            source_list[i] = OH_AVSource_CreateWithFD(g_fdList[i], 0, size);
+            ASSERT_NE(source_list[i], nullptr);
+
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+
+            close(g_fdList[i]);
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_MTS_RELI_0200
+ * @tc.name      : create 16 instances repeat create-destory with mts uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReli2NdkTest, DEMUXER_MTS_RELI_0200, TestSize.Level3)
+{
+    int num = 0;
+    int len = 256;
+    while (num < 10) {
+        num++;
+        vector<std::thread> vecThread;
+        for (int i = 0; i < g_maxThread; i++) {
+            char uri[256];
+            sprintf_s(uri, len, "http://192.168.1.100:8080/share/three/media/16/%d_creat_destroy.mts", i);
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            cout << i << "  uri:  " << uri << endl;
+            source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+            ASSERT_NE(source_list[i], nullptr);
+
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_M2TS_RELI_0200
+ * @tc.name      : create 16 instances repeat create-destory with m2ts uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReli2NdkTest, DEMUXER_M2TS_RELI_0200, TestSize.Level3)
+{
+    int num = 0;
+    int len = 256;
+    while (num < 10) {
+        num++;
+        vector<std::thread> vecThread;
+        for (int i = 0; i < g_maxThread; i++) {
+            char uri[256];
+            sprintf_s(uri, len, "http://192.168.1.100:8080/share/three/media/16/%d_creat_destroy.m2ts", i);
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            cout << i << "  uri:  " << uri << endl;
+            source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+            ASSERT_NE(source_list[i], nullptr);
+
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_TRP_RELI_0200
+ * @tc.name      : create 16 instances repeat create-destory with trp uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReli2NdkTest, DEMUXER_TRP_RELI_0200, TestSize.Level3)
+{
+    int num = 0;
+    int len = 256;
+    while (num < 10) {
+        num++;
+        vector<std::thread> vecThread;
+        for (int i = 0; i < g_maxThread; i++) {
+            char uri[256];
+            sprintf_s(uri, len, "http://192.168.1.100:8080/share/three/media/16/%d_creat_destroy.trp", i);
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            cout << i << "  uri:  " << uri << endl;
+            source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+            ASSERT_NE(source_list[i], nullptr);
+
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_MTS_RELI_0300
+ * @tc.name      : one instance demux long file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReli2NdkTest, DEMUXER_MTS_RELI_0300, TestSize.Level3)
+{
+    int num = 0;
+    OH_AVCodecBufferAttr attr;
+    const char *file = "/data/test/media/long.mts";
+
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    num++;
+    cout << num << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    for (int32_t index = 0; index < 2; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < 2; index++) {
+            if ((audioIsEnd && (index == MEDIA_TYPE_AUD)) || (videoIsEnd && (index == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
+            if (index == MEDIA_TYPE_AUD) {
+                SetAudioValue(attr, audioIsEnd, audioFrame);
+            } else if (index == MEDIA_TYPE_VID) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
+            }
+        }
+    }
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_M2TS_RELI_0300
+ * @tc.name      : one instance demux long file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReli2NdkTest, DEMUXER_M2TS_RELI_0300, TestSize.Level3)
+{
+    int num = 0;
+    OH_AVCodecBufferAttr attr;
+    const char *file = "/data/test/media/long.m2ts";
+
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    num++;
+    cout << num << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    for (int32_t index = 0; index < 2; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < 2; index++) {
+            if ((audioIsEnd && (index == MEDIA_TYPE_AUD)) || (videoIsEnd && (index == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
+            if (index == MEDIA_TYPE_AUD) {
+                SetAudioValue(attr, audioIsEnd, audioFrame);
+            } else if (index == MEDIA_TYPE_VID) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
+            }
+        }
+    }
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_TRP_RELI_0300
+ * @tc.name      : one instance demux long file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReli2NdkTest, DEMUXER_TRP_RELI_0300, TestSize.Level3)
+{
+    int num = 0;
+    OH_AVCodecBufferAttr attr;
+    const char *file = "/data/test/media/long.trp";
+
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    num++;
+    cout << num << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    for (int32_t index = 0; index < 2; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < 2; index++) {
+            if ((audioIsEnd && (index == MEDIA_TYPE_AUD)) || (videoIsEnd && (index == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
+            if (index == MEDIA_TYPE_AUD) {
+                SetAudioValue(attr, audioIsEnd, audioFrame);
+            } else if (index == MEDIA_TYPE_VID) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
+            }
+        }
+    }
+    close(fd);
 }
 }

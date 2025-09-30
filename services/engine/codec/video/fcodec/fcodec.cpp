@@ -79,12 +79,13 @@ constexpr struct {
     {AVCodecCodecName::VIDEO_DECODER_H263_NAME, CodecMimeType::VIDEO_H263, "h263"},
     {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME, CodecMimeType::VIDEO_MPEG2, "mpeg2video"},
     {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4"},
-    {AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME, CodecMimeType::VIDEO_MJPEG, "mjpeg"},
     {AVCodecCodecName::VIDEO_DECODER_VC1_NAME, CodecMimeType::VIDEO_VC1, "vc1"},
 #ifdef SUPPORT_CODEC_RV
     {AVCodecCodecName::VIDEO_DECODER_RV30_NAME, CodecMimeType::VIDEO_RV30, "rv30"},
     {AVCodecCodecName::VIDEO_DECODER_RV40_NAME, CodecMimeType::VIDEO_RV40, "rv40"},
 #endif
+    {AVCodecCodecName::VIDEO_DECODER_WMV3_NAME, CodecMimeType::VIDEO_WMV3, "wmv3"},
+    {AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME, CodecMimeType::VIDEO_MJPEG, "mjpeg"},
 };
 constexpr uint32_t SUPPORT_VCODEC_NUM = sizeof(SUPPORT_VCODEC) / sizeof(SUPPORT_VCODEC[0]);
 } // namespace
@@ -1939,13 +1940,6 @@ void FCodec::GetAvcCapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
-void FCodec::GetMjpegCapProf(std::vector<CapabilityData> &capaArray)
-{
-    if (!capaArray.empty()) {
-        CapabilityData& capsData = capaArray.back();
-    }
-}
-
 void FCodec::GetVc1CapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
@@ -1974,13 +1968,26 @@ void FCodec::GetVc1CapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
-void FCodec::FillBaseCapability(CapabilityData &capsData, uint32_t i)
+void FCodec::GetWmv3CapProf(std::vector<CapabilityData> &capaArray)
 {
-    capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[i].codecName);
-    capsData.mimeType = static_cast<std::string>(SUPPORT_VCODEC[i].mimeType);
-    capsData.codecType = AVCODEC_TYPE_VIDEO_DECODER;
-    capsData.isVendor = false;
-    capsData.maxInstance = VIDEO_INSTANCE_SIZE;
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.profiles = {static_cast<int32_t>(WMV3_PROFILE_SIMPLE), static_cast<int32_t>(WMV3_PROFILE_MAIN)};
+        std::vector<int32_t> levels_s;
+        std::vector<int32_t> levels_m;
+        for (int32_t j = 0; j <= static_cast<int32_t>(WMV3Level::WMV3_LEVEL_MEDIUM); ++j) {
+            levels_s.emplace_back(j);
+        }
+        for (int32_t j = 0; j <= static_cast<int32_t>(WMV3Level::WMV3_LEVEL_HIGH); ++j) {
+            levels_m.emplace_back(j);
+        }
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(WMV3_PROFILE_SIMPLE), levels_s));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(WMV3_PROFILE_MAIN), levels_m));
+    }
+}
+
+void FCodec::GetBaseCapabilityData(CapabilityData &capsData)
+{
     capsData.alignment.width = VIDEO_ALIGNMENT_SIZE;
     capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
     capsData.width.minVal = capsData.mimeType == "video/h263" ? VIDEO_MIN_WIDTH_H263_SIZE : VIDEO_MIN_SIZE;
@@ -1997,6 +2004,18 @@ void FCodec::FillBaseCapability(CapabilityData &capsData, uint32_t i)
     capsData.blockPerSecond.maxVal = VIDEO_BLOCKPERSEC_SIZE;
     capsData.blockSize.width = VIDEO_ALIGN_SIZE;
     capsData.blockSize.height = VIDEO_ALIGN_SIZE;
+}
+
+void FCodec::GetCapabilityData(CapabilityData &capsData, uint32_t index)
+{
+    capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[index].codecName);
+    capsData.mimeType = static_cast<std::string>(SUPPORT_VCODEC[index].mimeType);
+    capsData.codecType = AVCODEC_TYPE_VIDEO_DECODER;
+    capsData.isVendor = false;
+    capsData.maxInstance = VIDEO_INSTANCE_SIZE;
+
+    GetBaseCapabilityData(capsData);
+
     capsData.pixFormat = {
         static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
         static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
@@ -2011,7 +2030,7 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 {
     for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {
         CapabilityData capsData;
-        FillBaseCapability(capsData, i);
+        GetCapabilityData(capsData, i);
         if (capsData.mimeType == "video/mpeg2") {
             capaArray.emplace_back(capsData);
             GetMpeg2CapProf(capaArray);
@@ -2023,10 +2042,12 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
             GetH263CapProf(capaArray);
         } else if (capsData.mimeType == "video/mjpeg") {
             capaArray.emplace_back(capsData);
-            GetMjpegCapProf(capaArray);
         } else if (capsData.mimeType == "video/vc1") {
             capaArray.emplace_back(capsData);
             GetVc1CapProf(capaArray);
+        } else if (capsData.mimeType == "video/wmv3") {
+            capaArray.emplace_back(capsData);
+            GetWmv3CapProf(capaArray);
         } else {
             capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
             capaArray.emplace_back(capsData);

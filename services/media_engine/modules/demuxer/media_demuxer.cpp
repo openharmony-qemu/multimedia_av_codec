@@ -967,9 +967,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running");
-    if (isCreatedByFilter_) {
-        source_->SetCallback(this);
-    }
+    source_->SetCallback(this);
     auto res = source_->SetSource(source);
     FALSE_RETURN_V_MSG_E(res == Status::OK, res, "Plugin set source failed");
     isFlvLiveStream_ = source_->IsFlvLiveStream();

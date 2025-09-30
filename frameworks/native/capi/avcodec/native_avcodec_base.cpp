@@ -47,6 +47,8 @@ const char *OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT = "text/vtt";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_RAW = "audio/raw";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_G711A = "audio/g711a";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_EAC3 = "audio/eac3";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM_MS = "audio/gsm_ms";
+const char *OH_AVCODEC_MIMETYPE_VIDEO_WMV3 = "video/wmv3";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";

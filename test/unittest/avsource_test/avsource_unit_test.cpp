@@ -3455,6 +3455,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1817, TestSize.Level1)
     ASSERT_EQ(formatVal_.channelLayout, 4);
 }
 
+#ifdef SUPPORT_DEMUXER_EAC3
 /**
  * @tc.name: AVSource_GetFormat_1818
  * @tc.desc: get source format(eac3.wma)
@@ -3495,6 +3496,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1818, TestSize.Level1)
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 4);
 }
+#endif
 
 /**
  * @tc.name: AVSource_GetFormat_1819
