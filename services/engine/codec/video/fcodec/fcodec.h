@@ -125,7 +125,6 @@ private:
     static void SetMpeg4Profiles(CapabilityData& capsData);
     static void GetAvcCapProf(std::vector<CapabilityData> &capaArray);
     static void GetH263CapProf(std::vector<CapabilityData> &capaArray);
-    static void GetMjpegCapProf(std::vector<CapabilityData> &capaArray);
     static void GetWmv3CapProf(std::vector<CapabilityData> &capaArray);
     static void GetVc1CapProf(std::vector<CapabilityData> &capaArray);
     void FreeExtradataIfNeeded(std::string name);
