@@ -153,6 +153,19 @@ const std::vector<CapabilityData> HCODEC_CAPS = {{.codecName = "video.H.Decoder.
 
 class CodecBase;
 using RetAndCaps = std::pair<int32_t, std::vector<CapabilityData>>;
+
+class AVCodecCallbackMock : public AVCodecCallback {
+public:
+    AVCodecCallbackMock() = default;
+    ~AVCodecCallbackMock() = default;
+
+    MOCK_METHOD(void, OnError, (AVCodecErrorType errorType, int32_t errorCode), (override));
+    MOCK_METHOD(void, OnOutputFormatChanged, (const Format &format), (override));
+    MOCK_METHOD(void, OnInputBufferAvailable, (uint32_t index, std::shared_ptr<AVSharedMemory> buffer), (override));
+    MOCK_METHOD(void, OnOutputBufferAvailable, (uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                              std::shared_ptr<AVSharedMemory> buffer), (override));
+};
+
 class MediaCodecCallbackMock : public MediaCodecCallback {
 public:
     MediaCodecCallbackMock() = default;

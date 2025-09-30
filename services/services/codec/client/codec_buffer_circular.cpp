@@ -230,7 +230,7 @@ int32_t CodecBufferCircular::HandleInputBuffer(uint32_t index)
     BufferCacheIter iter = inCache_.find(index);
     if (iter == inCache_.end()) {
         AVCODEC_LOGD_WITH_TAG("Index is invalid %{public}u", index);
-        return HasFlag(FLAG_IS_SYNC) ? AVCS_ERR_INVALID_VAL : AVCS_ERR_OK;
+        return HasFlag(FLAG_IS_SYNC) ? AVCS_ERR_INVALID_OPERATION : AVCS_ERR_OK;
     }
     BufferItem &item = iter->second;
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(item.owner == OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
@@ -250,8 +250,8 @@ int32_t CodecBufferCircular::HandleOutputBuffer(uint32_t index)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(HasFlag(FLAG_IS_RUNNING), AVCS_ERR_INVALID_STATE, "Not in running state");
     BufferCacheIter iter = outCache_.find(index);
     if (iter == outCache_.end()) {
-        AVCODEC_LOGD_WITH_TAG("Index is invalid %{public}u", index);
-        return HasFlag(FLAG_IS_SYNC) ? AVCS_ERR_INVALID_VAL : AVCS_ERR_OK;
+        AVCODEC_LOGW_WITH_TAG("Index is invalid %{public}u", index);
+        return HasFlag(FLAG_IS_SYNC) ? AVCS_ERR_INVALID_OPERATION : AVCS_ERR_OK;
     }
     BufferItem &item = iter->second;
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(item.owner == OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
