@@ -216,7 +216,7 @@ protected:
     size_t dataSize_ = 0;
     uint8_t *data_ = nullptr;
     uint8_t inbuf_[videoInbufSize + 64] = {0};
-    bool file_end_ = false;
+    bool fileEnd_ = false;
 };
 
 void VideoCodeCapiDecoderUnitTest::SetUpTestCase(void)
@@ -255,11 +255,11 @@ void VideoCodeCapiDecoderUnitTest::InputFunc()
         uint32_t index = signal_->inQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
         lock.unlock();
-        if (!file_end_ && (ExtractPacket() != AVCS_ERR_OK || pkt_->size == 0)) {
+        if (!fileEnd_ && (ExtractPacket() != AVCS_ERR_OK || pkt_->size == 0)) {
             continue;
         }
         OH_AVCodecBufferAttr info;
-        if (file_end_) {
+        if (fileEnd_) {
             info.pts = 0;
             info.size = 0;
             info.offset = 0;
@@ -411,7 +411,7 @@ int32_t VideoCodeCapiDecoderUnitTest::ExtractPacket()
         dataSize_ = inputFile_->gcount();
     }
 
-    if ((dataSize_ < videoRefillThresh) && !file_end_) {
+    if ((dataSize_ < videoRefillThresh) && !fileEnd_) {
         memmove_s(inbuf_, dataSize_, data_, dataSize_);
         data_ = inbuf_;
         (void)inputFile_->read(reinterpret_cast<char *>(data_ + dataSize_), videoInbufSize - dataSize_);
@@ -419,7 +419,7 @@ int32_t VideoCodeCapiDecoderUnitTest::ExtractPacket()
         if (len > 0) {
             dataSize_ += len;
         } else if (len == 0 && dataSize_ == 0) {
-            file_end_ = true;
+            fileEnd_ = true;
             cout << "extract file end" << endl;
         }
     }
