@@ -35,9 +35,15 @@
 #include "window.h"
 #include "unittest_log.h"
 
+#ifdef __cplusplus
 extern "C" {
+#endif
+
 #include "libavcodec/avcodec.h"
+
+#ifdef __cplusplus
 }
+#endif
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -89,29 +95,29 @@ static void OnOutputFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *
 static void OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData)
 {
     (void)codec;
-    VDecSignal *signal_ = static_cast<VDecSignal *>(userData);
+    VDecSignal *signal = static_cast<VDecSignal *>(userData);
     cout << "OnInputBufferAvailable received, index:" << index << endl;
-    unique_lock<mutex> lock(signal_->inMutex_);
-    signal_->inQueue_.push(index);
-    signal_->inBufferQueue_.push(data);
-    signal_->inCond_.notify_all();
+    unique_lock<mutex> lock(signal->inMutex_);
+    signal->inQueue_.push(index);
+    signal->inBufferQueue_.push(data);
+    signal->inCond_.notify_all();
 }
 
 static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData)
 {
     (void)codec;
-    VDecSignal *signal_ = static_cast<VDecSignal *>(userData);
+    VDecSignal *signal = static_cast<VDecSignal *>(userData);
     if (data) {
         int size = OH_AVBuffer_GetCapacity(data);
         cout << "OnOutputBufferAvailable received, index:" << index << ", data->size:" << size << endl;
-        unique_lock<mutex> lock(signal_->outMutex_);
-        signal_->outQueue_.push(index);
-        signal_->outBufferQueue_.push(data);
+        unique_lock<mutex> lock(signal->outMutex_);
+        signal->outQueue_.push(index);
+        signal->outBufferQueue_.push(data);
         OH_AVCodecBufferAttr attr;
         OH_AVBuffer_GetBufferAttr(data, &attr);
-        signal_->attrQueue_.push(attr);
+        signal->attrQueue_.push(attr);
         g_outFrameCount += 1;
-        signal_->outCond_.notify_all();
+        signal->outCond_.notify_all();
     } else {
         cout << "OnOutputBufferAvailable error, data is nullptr!" << endl;
     }
@@ -201,15 +207,15 @@ protected:
     int64_t timeStamp_ = 0;
 
     // Extract packet
-    static constexpr int32_t VIDEO_INBUF_SIZE = 10240;
-    static constexpr int32_t VIDEO_REFILL_THRESH = 4096;
+    static constexpr int32_t videoInbufSize = 10240;
+    static constexpr int32_t videoRefillThresh = 4096;
     const AVCodec *codec_ = nullptr;
     AVCodecParserContext *parser_ = nullptr;
     AVCodecContext *codec_ctx_ = nullptr;
     AVPacket *pkt_ = nullptr;
-    size_t data_size_ = 0;
+    size_t dataSize_ = 0;
     uint8_t *data_ = nullptr;
-    uint8_t inbuf_[VIDEO_INBUF_SIZE + 64] = {0};
+    uint8_t inbuf_[videoInbufSize + 64] = {0};
     bool file_end_ = false;
 };
 
@@ -243,11 +249,9 @@ void VideoCodeCapiDecoderUnitTest::InputFunc()
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
-
         if (!isRunning_.load()) {
             break;
         }
-
         uint32_t index = signal_->inQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
         lock.unlock();
@@ -262,7 +266,6 @@ void VideoCodeCapiDecoderUnitTest::InputFunc()
             info.flags = AVCODEC_BUFFER_FLAGS_EOS;
             OH_AVBuffer_SetBufferAttr(buffer, &info);
             OH_VideoDecoder_PushInputBuffer(videoDec_, index);
-            cout << "push end" << endl;
             break;
         }
         info.size = pkt_->size;
@@ -282,10 +285,8 @@ void VideoCodeCapiDecoderUnitTest::InputFunc()
             ret = OH_VideoDecoder_PushInputBuffer(videoDec_, index);
         }
         if (ret != AVCS_ERR_OK) {
-            cout << "Fatal error, exit" << endl;
             break;
         }
-
         timeStamp_ += FRAME_DURATION_US;
         lock.lock();
         signal_->inQueue_.pop();
@@ -406,31 +407,31 @@ int32_t VideoCodeCapiDecoderUnitTest::ExtractPacket()
 
     if (data_ == nullptr) {
         data_ = inbuf_;
-        (void)inputFile_->read(reinterpret_cast<char *>(inbuf_), VIDEO_INBUF_SIZE);
-        data_size_ = inputFile_->gcount();
+        (void)inputFile_->read(reinterpret_cast<char *>(inbuf_), videoInbufSize);
+        dataSize_ = inputFile_->gcount();
     }
 
-    if ((data_size_ < VIDEO_REFILL_THRESH) && !file_end_) {
-        memmove_s(inbuf_, data_size_, data_, data_size_);
+    if ((dataSize_ < videoRefillThresh) && !file_end_) {
+        memmove_s(inbuf_, dataSize_, data_, dataSize_);
         data_ = inbuf_;
-        (void)inputFile_->read(reinterpret_cast<char *>(data_ + data_size_), VIDEO_INBUF_SIZE - data_size_);
+        (void)inputFile_->read(reinterpret_cast<char *>(data_ + dataSize_), videoInbufSize - dataSize_);
         len = inputFile_->gcount();
         if (len > 0) {
-            data_size_ += len;
-        } else if (len == 0 && data_size_ == 0) {
+            dataSize_ += len;
+        } else if (len == 0 && dataSize_ == 0) {
             file_end_ = true;
             cout << "extract file end" << endl;
         }
     }
 
-    if (data_size_ > 0) {
-        ret = av_parser_parse2(parser_, codec_ctx_, &pkt_->data, &pkt_->size, data_, data_size_, AV_NOPTS_VALUE,
+    if (dataSize_ > 0) {
+        ret = av_parser_parse2(parser_, codec_ctx_, &pkt_->data, &pkt_->size, data_, dataSize_, AV_NOPTS_VALUE,
                                AV_NOPTS_VALUE, 0);
         if (ret < 0) {
             cout << "av_parser_parser2 Error!" << endl;
         }
         data_ += ret;
-        data_size_ -= ret;
+        dataSize_ -= ret;
         if (pkt_->size) {
             return AVCS_ERR_OK;
         } else {
