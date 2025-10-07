@@ -57,7 +57,6 @@ constexpr uint32_t FRAME_DURATION_US = 33000;
 constexpr string_view inputFilePath = "/data/test/media/origin_mjpeg.avi";
 constexpr string_view outputFilePath = "/data/test/media/origin_mjpeg.yuv";
 constexpr string_view outputSurfacePath = "/data/test/media/out_320_240_10s.rgba";
-constexpr uint32_t SLEEP_TIME = 1;
 uint32_t g_outFrameCount = 0;
 } // namespace
 
