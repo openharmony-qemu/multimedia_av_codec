@@ -65,7 +65,7 @@ struct M3U8Info {
     bool bVod {false};
 };
 
-struct M3U8 {
+struct M3U8 : public std::enable_shared_from_this<M3U8> {
     M3U8(std::string uri, std::string name, StatusCallbackFunc statusCallback = [](DownloadStatus,
          std::shared_ptr<Downloader>&,
          std::shared_ptr<DownloadRequest>&) {});

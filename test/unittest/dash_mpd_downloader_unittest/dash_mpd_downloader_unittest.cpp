@@ -36,6 +36,7 @@ void DashMpdDownloaderUnittest::TearDownTestCase(void) {}
 void DashMpdDownloaderUnittest::SetUp(void)
 {
     mpdDownloader_ = std::make_shared<DashMpdDownloader>();
+    mpdDownloader_->Init();
 }
 void DashMpdDownloaderUnittest::TearDown(void)
 {
@@ -53,6 +54,7 @@ HWTEST_F(DashMpdDownloaderUnittest, DashMpdDownloader_001, TestSize.Level0)
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader =
         std::make_shared<MediaSourceLoaderCombinations>(nullptr);
     auto mpdDownloader = std::make_shared<DashMpdDownloader>(sourceLoader);
+    mpdDownloader->Init();
     EXPECT_NE(mpdDownloader->downloader_, nullptr);
     EXPECT_NE(mpdDownloader->downloader_->sourceLoader_, nullptr);
     mpdDownloader = nullptr;

@@ -97,9 +97,12 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, bool userDefine
     }
     httpHeader_ = httpHeader;
     timeoutInterval_ = MAX_BUFFERING_TIME_OUT;
+    if (sourceLoader != nullptr) {
+        sourceLoader_ = sourceLoader;
+        MEDIA_LOG_I("HLS app download.");
+    }
     MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU " userDefinedDuration:" PUBLIC_LOG_D32,
         totalBufferSize_, userDefinedDuration);
-    HlsInit(sourceLoader);
 }
 
 HlsMediaDownloader::HlsMediaDownloader(std::string mimeType,
@@ -113,28 +116,31 @@ HlsMediaDownloader::HlsMediaDownloader(std::string mimeType,
     totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
     memorySize_ = MAX_CACHE_BUFFER_SIZE;
     MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
-    HlsInit(nullptr);
 }
 
-void HlsMediaDownloader::HlsInit(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
+void HlsMediaDownloader::Init()
 {
-    if (sourceLoader != nullptr) {
-        sourceLoader_ = sourceLoader;
-        downloader_ = std::make_shared<Downloader>("hlsMedia", sourceLoader);
+    if (sourceLoader_ != nullptr) {
+        downloader_ = std::make_shared<Downloader>("hlsMedia", sourceLoader_);
         MEDIA_LOG_I("HLS app download.");
     } else {
         downloader_ = std::make_shared<Downloader>("hlsMedia");
     }
+    downloader_->Init();
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList");
-    dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) {
-        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
+    auto weakDownloader = weak_from_this();
+    dataSave_ =  [weakDownloader] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) -> uint32_t {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_V_MSG(shareDownloader != nullptr, 0u, "dataSave_, Hls Media Downloader already destructed.");
+        return shareDownloader->SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
             std::forward<decltype(notBlock)>(notBlock));
     };
-    if (sourceLoader != nullptr) {
-        playlistDownloader_ = std::make_shared<HlsPlayListDownloader>(httpHeader_, sourceLoader);
+    if (sourceLoader_ != nullptr) {
+        playlistDownloader_ = std::make_shared<HlsPlayListDownloader>(httpHeader_, sourceLoader_);
     } else {
         playlistDownloader_ = std::make_shared<HlsPlayListDownloader>(httpHeader_, nullptr);
     }
+    playlistDownloader_->Init();
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     waterLineAbove_ = PLAY_WATER_LINE;
     steadyClock_.Reset();
@@ -177,17 +183,18 @@ std::string HlsMediaDownloader::GetContentType()
 void HlsMediaDownloader::SetDownloaderRequestCb(
     StatusCallbackFunc& statusCallback, DownloadDoneCbFunc& downloadDoneCallback)
 {
-    std::weak_ptr<HlsMediaDownloader> weakThis = weak_from_this();
-    statusCallback = [weakThis] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+    auto weakDownloader = weak_from_this();
+    statusCallback = [weakDownloader] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                         std::shared_ptr<DownloadRequest>& request) {
-        auto shareThis = weakThis.lock();
-        FALSE_RETURN_MSG(shareThis != nullptr, "hls statusCallback shareThis, is nullptr!");
-        shareThis->statusCallback_(status, shareThis->downloader_, std::forward<decltype(request)>(request));
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "statusCallback, Hls Media Downloader already destructed.");
+        shareDownloader->statusCallback_(status, shareDownloader->downloader_,
+            std::forward<decltype(request)>(request));
     };
-    downloadDoneCallback = [weakThis] (const std::string &url, const std::string& location) {
-        auto shareThis = weakThis.lock();
-        FALSE_RETURN_MSG(shareThis != nullptr, "hls downloadDoneCallback, shareThis is nullptr!");
-        shareThis->UpdateDownloadFinished(url, location);
+    downloadDoneCallback = [weakDownloader] (const std::string &url, const std::string& location) {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "downloadDoneCb, Hls Media Downloader already destructed.");
+        shareDownloader->UpdateDownloadFinished(url, location);
     };
 }
 
