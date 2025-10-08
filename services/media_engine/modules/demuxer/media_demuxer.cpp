@@ -967,6 +967,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running");
+    isPrepared_.store(false);
     source_->SetCallback(this);
     auto res = source_->SetSource(source);
     FALSE_RETURN_V_MSG_E(res == Status::OK, res, "Plugin set source failed");
@@ -1003,6 +1004,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     }
     bool isBoosted = BoostThreadPriorityIfNeeded();
     MEDIA_LOG_I("Thread priority boosted: %{public}d", isBoosted);
+    isPrepared_.store(true);
     MEDIA_LOG_I("Out");
     return res;
 }
@@ -3382,6 +3384,7 @@ void MediaDemuxer::SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
 bool MediaDemuxer::CanAutoSelectBitRate()
 {
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "Plugin manager is nullptr");
+    FALSE_RETURN_V_MSG_E(isPrepared_.load(), false, "is not prepared, cannot auto select bitrate");
     // calculating auto selectbitrate time
     return !(isSelectBitRate_.load()) && !(isSelectTrack_.load())
         && (targetBitRate_ == demuxerPluginManager_->GetCurrentBitRate());
