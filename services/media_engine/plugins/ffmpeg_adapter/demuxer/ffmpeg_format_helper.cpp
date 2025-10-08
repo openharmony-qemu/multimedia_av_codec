@@ -105,12 +105,15 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_BMP, MimeType::IMAGE_BMP},
     {AV_CODEC_ID_H263, MimeType::VIDEO_H263},
     {AV_CODEC_ID_MPEG2TS, MimeType::VIDEO_MPEG2},
+    {AV_CODEC_ID_MPEG1VIDEO, MimeType::VIDEO_MPEG1},
     {AV_CODEC_ID_MPEG2VIDEO, MimeType::VIDEO_MPEG2},
     {AV_CODEC_ID_HEVC, MimeType::VIDEO_HEVC},
     {AV_CODEC_ID_VVC, MimeType::VIDEO_VVC},
     {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
     {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
     {AV_CODEC_ID_VC1, MimeType::VIDEO_VC1},
+    {AV_CODEC_ID_MSVIDEO1, MimeType::VIDEO_MSVIDEO1},
+
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
     {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
@@ -132,6 +135,12 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
 #ifdef SUPPORT_DEMUXER_EAC3
     {AV_CODEC_ID_EAC3, MimeType::AUDIO_EAC3},
 #endif
+    {AV_CODEC_ID_WMAPRO, MimeType::AUDIO_WMV},
+    {AV_CODEC_ID_WMAV1, MimeType::AUDIO_WMV},
+    {AV_CODEC_ID_WMAV2, MimeType::AUDIO_WMV},
+    {AV_CODEC_ID_ALAC, MimeType::AUDIO_ALAC},
+    {AV_CODEC_ID_GSM, MimeType::AUDIO_GSM},
+    {AV_CODEC_ID_EAC3, MimeType::AUDIO_EAC3},
     {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
     {AV_CODEC_ID_WEBVTT, MimeType::TEXT_WEBVTT},
 #ifdef SUPPORT_DEMUXER_LRC

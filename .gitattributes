@@ -1,5 +1,7 @@
 test/unittest/resources/reference_parser_test/mp4/*.mp4 filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/video_res/*.m2v filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/video_res/*.m4v filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/3gp_h264_aac.3gp filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/wmv_wmv3_wmapro.wmv filter=lfs diff=lfs merge=lfs -text
 /test/moduletest/resources/demuxer/mkv.mkv filter=lfs diff=lfs merge=lfs -text
 /test/unittest/resources/reference_parser_test/mp4/ippp_0.mp4 filter=lfs diff=lfs merge=lfs -text
