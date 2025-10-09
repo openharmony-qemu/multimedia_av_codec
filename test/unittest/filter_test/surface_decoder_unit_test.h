@@ -97,6 +97,10 @@ public:
     {
         return ret;
     }
+    int32_t GetCodecInfo(Format &format)
+    {
+        return ret;
+    }
     int32_t ReleaseOutputBuffer(uint32_t index, bool render)
     {
         return ret;
