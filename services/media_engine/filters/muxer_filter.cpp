@@ -260,7 +260,9 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
         audioCodecMimeType_ = mimeType;
         if (mimeType == "audio/mp4a-latm") {
             meta->Set<Tag::AUDIO_AAC_IS_ADTS>(isAdts_);
-            meta->Set<Tag::MEDIA_PROFILE>(mediaProfile_);
+            if (meta->Find(Tag::MEDIA_PROFILE) == meta->end()) {
+                meta->Set<Tag::MEDIA_PROFILE>(mediaProfile_);
+            }
         }
     } else if (mimeType.find("video/") == 0) {
         videoCodecMimeType_ = mimeType;
