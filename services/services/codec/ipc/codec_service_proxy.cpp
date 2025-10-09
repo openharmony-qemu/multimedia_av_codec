@@ -508,7 +508,7 @@ int32_t CodecServiceProxy::GetInputFormat(Format &format)
     return AVCS_ERR_OK;
 }
 
-int32_t GetCodecInfo(Format &format)
+int32_t CodecServiceProxy::GetCodecInfo(Format &format)
 {
     MessageParcel data;
     MessageParcel reply;
