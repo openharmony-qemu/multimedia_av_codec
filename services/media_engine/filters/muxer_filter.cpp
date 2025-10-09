@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #include <sys/timeb.h>
 #include <thread>
 #include <unordered_map>
