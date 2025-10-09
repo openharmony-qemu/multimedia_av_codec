@@ -14,6 +14,7 @@
  */
 
 #include "hcodec.h"
+#include <sstream>
 #include "hdf_base.h"
 #include "hitrace_meter.h"
 #include "hcodec_list.h"
@@ -107,13 +108,7 @@ void HCodec::BaseState::OnCodecEvent(const MsgInfo &info)
 void HCodec::BaseState::OnCodecEvent(CodecEventType event, uint32_t data1, uint32_t data2)
 {
     if (event == CODEC_EVENT_ERROR) {
-        SLOGE("omx report error event, data1 = %u, data2 = %u", data1, data2);
-        codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
-        if (data1 == static_cast<uint32_t>(OMX_ErrorUnsupportedSetting) ||
-            data1 == static_cast<uint32_t>(OMX_ErrorInsufficientResources)) {
-            SLOGE("unsupport or insufficient resources, need force shut down");
-            (void)codec_->ForceShutdown(codec_->stateGeneration_, false);
-        }
+        OnErrorEventHandler(data1);
     } else {
         SLOGW("ignore event %d, data1 = %u, data2 = %u", event, data1, data2);
     }
@@ -178,6 +173,43 @@ void HCodec::BaseState::OnResume(const MsgInfo &info)
         SLOGE("Recover Freq Fail!");
     }
     ReplyErrorCode(info.id, errCode);
+}
+
+void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
+{
+    int32_t errorCode = 0;
+    std::string faultType;
+    std::string sysEventMsg = "[" + codec_->caller_.app.processName + "]" + "[" + codec_->compUniqueStr_ + "]";
+    bool isNeedForceShutdown = false;
+ 
+    switch (omxError) {
+        case static_cast<uint32_t>(OMX_ErrorInsufficientResources):
+            codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
+            (void)codec_->ForceShutdown(codec_->stateGeneration_, false);
+            return;
+        case static_cast<uint32_t>(OMX_ErrorUnsupportedSetting):
+            errorCode = AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION;
+            faultType = "XPS_UNSUPPORT";
+            isNeedForceShutdown = true;
+            break;
+        case static_cast<uint32_t>(OMX_ErrorParameterSetsIllegal):
+            errorCode = AVCS_ERR_ILLEGAL_PARAMETER_SETS;
+            faultType = "XPS_ILLEGAL";
+            break;
+        case static_cast<uint32_t>(OMX_ErrorParameterSetsLost):
+            errorCode = AVCS_ERR_MINSSING_PARAMETER_SETS;
+            faultType = "XPS_LOST";
+            break;
+        default:
+            SLOGE("unknown error type %d", omxError);
+            codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
+            return;
+    }
+    codec_->SignalError(AVCODEC_ERROR_INTERNAL, errorCode);
+    codec_->FaultEventWrite(faultType, sysEventMsg);
+    if (isNeedForceShutdown) {
+        (void)codec_->ForceShutdown(codec_->stateGeneration_, false);
+    }
 }
 /**************************** BaseState End ******************************/
 
