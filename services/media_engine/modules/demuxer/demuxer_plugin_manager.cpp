@@ -533,6 +533,7 @@ bool DemuxerPluginManager::CreatePlugin(std::string pluginName, int32_t id)
     if (plugin == nullptr) {
         return false;
     }
+    plugin->SetAVReadPacketStopState(false);
     streamInfoMap_[id].plugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(plugin);
     if (!streamInfoMap_[id].plugin || streamInfoMap_[id].plugin->Init() != Status::OK) {
         MEDIA_LOG_E("CreatePlugin " PUBLIC_LOG_S " failed.", pluginName.c_str());

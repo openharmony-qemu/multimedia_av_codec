@@ -257,10 +257,13 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_003, TestSize.
     streamDemuxer->SetSource(source);
     streamDemuxer->Init("");
 
-    std::thread initPluginThread([demuxerPluginManager, streamDemuxer, pluginName]() {
-        EXPECT_EQ(demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0), false);
+    bool ret = true;
+    std::thread initPluginThread([&ret, demuxerPluginManager, streamDemuxer, pluginName]() {
+        ret = demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0);
     });
+    streamDemuxer->SetInterruptState(true);
     initPluginThread.join();
+    EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectTrack_003, TestSize.Level1)
