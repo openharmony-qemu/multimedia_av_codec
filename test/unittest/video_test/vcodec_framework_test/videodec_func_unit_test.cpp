@@ -570,6 +570,37 @@ HWTEST_F(TEST_SUIT, VideoDecoder_GET_SECURE_DECODER_PIDS_001, TestSize.Level1)
     ASSERT_EQ(AVCS_ERR_OK, ret);
     ASSERT_TRUE(std::find(pidList.begin(), pidList.end(), pid) == pidList.end());
 }
+
+/**
+ * @tc.name: VideoDecoder_CODEC_INFO_001
+ * @tc.desc: get codec info
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_CODEC_INFO_001, TestSize.Level1)
+{
+    std::shared_ptr<OHOS::MediaAVCodec::FormatMock> format = nullptr;
+    if(CreateVideoCodecByName("OMX.hisi.video.decoder.avc")) {
+        format = videoDec_->GetCodecInfo();
+        if (format) {
+            EXPECT_TRUE(format->GetIntValue(Media::Tag::MEDIA_IS_HARDWARE, 1));
+        }
+        videoDec_->Release();
+    }
+    if(CreateVideoCodecByName("OMX.rk.video_decoder.hevc")) {
+        format = videoDec_->GetCodecInfo();
+        if (format) {
+            EXPECT_TRUE(format->GetIntValue(Media::Tag::MEDIA_IS_HARDWARE, 1));
+        }
+        videoDec_->Release();
+    }
+    if(CreateVideoCodecByName("OH.Media.Codec.Decoder.Video.AVC")) {
+        format = videoDec_->GetCodecInfo();
+        if (format) {
+            EXPECT_TRUE(format->GetIntValue(Media::Tag::MEDIA_IS_HARDWARE, 0));
+        }
+        videoDec_->Release();
+    }
+}
 } // namespace
 
 int main(int argc, char **argv)

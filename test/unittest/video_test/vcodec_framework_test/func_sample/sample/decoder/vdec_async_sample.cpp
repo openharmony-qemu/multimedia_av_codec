@@ -348,6 +348,19 @@ std::shared_ptr<FormatMock> VideoDecAsyncSample::GetOutputDescription()
     return format;
 }
 
+std::shared_ptr<FormatMock> VideoDecAsyncSample::GetCodecInfo()
+{
+    if (videoDec_ == nullptr) {
+        return nullptr;
+    }
+    std::shared_ptr<FormatMock> format = videoDec_->GetCodecInfo();
+    if (format == nullptr) {
+        return nullptr;
+    }
+    cout << "codec info: " << format->DumpInfo() << endl;
+    return format;
+}
+
 int32_t VideoDecAsyncSample::SetParameter(std::shared_ptr<FormatMock> format)
 {
     if (videoDec_ == nullptr) {

@@ -199,6 +199,16 @@ std::shared_ptr<FormatMock> VideoDecInnerMock::GetOutputDescription()
     return nullptr;
 }
 
+std::shared_ptr<FormatMock> VideoDecInnerMock::GetCodecInfo()
+{
+    if (videoDec_ != nullptr) {
+        Format format;
+        (void)videoDec_->GetCodecInfo(format);
+        return std::make_shared<AVFormatInnerMock>(format);
+    }
+    return nullptr;
+}
+
 int32_t VideoDecInnerMock::SetParameter(std::shared_ptr<FormatMock> format)
 {
     if (videoDec_ != nullptr && format != nullptr) {
