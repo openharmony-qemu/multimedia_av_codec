@@ -83,6 +83,7 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
+    int32_t GetCodecInfo(Format &format) override;
     void SetDumpInfo(bool isDump, uint64_t instanceId) override;
 #ifdef SUPPORT_DRM
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,

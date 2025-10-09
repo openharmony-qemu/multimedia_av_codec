@@ -264,6 +264,14 @@ int32_t AVCodecVideoDecoderImpl::SetCallback(const std::shared_ptr<MediaCodecCal
     return codecClient_->SetCallback(callback);
 }
 
+int32_t AVCodecVideoDecoderImpl::GetCodecInfo(Format &format)
+{
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
+    return codecClient_->GetCodecInfo(callback);
+}
+
 #ifdef SUPPORT_DRM
 int32_t AVCodecVideoDecoderImpl::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
     const bool svpFlag)

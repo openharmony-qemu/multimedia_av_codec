@@ -344,6 +344,18 @@ public:
         (void)index;
         return nullptr;
     }
+
+    /**
+     * @brief Gets the description information of the decoder
+     *
+     * This function must be called after {@link Configure}
+     *
+     * @param format
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 6.0
+     * @version 6.0
+     */
+    virtual int32_t GetCodecInfo(Format &format) = 0;
 };
 
 class __attribute__((visibility("default"))) VideoDecoderFactory {
