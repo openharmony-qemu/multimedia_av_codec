@@ -580,7 +580,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_CODEC_INFO_001, TestSize.Level1)
 {
     std::shared_ptr<OHOS::MediaAVCodec::FormatMock> format = nullptr;
     int32_t isHardware = 0;
-    if(CreateVideoCodecByName("OMX.hisi.video.decoder.avc")) {
+    if (CreateVideoCodecByName("OMX.hisi.video.decoder.avc")) {
         format = videoDec_->GetCodecInfo();
         if (format) {
             format->GetIntValue(Media::Tag::MEDIA_IS_HARDWARE, isHardware);
@@ -588,7 +588,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_CODEC_INFO_001, TestSize.Level1)
         }
         videoDec_->Release();
     }
-    if(CreateVideoCodecByName("OMX.rk.video_decoder.hevc")) {
+    if (CreateVideoCodecByName("OMX.rk.video_decoder.hevc")) {
         format = videoDec_->GetCodecInfo();
         if (format) {
             format->GetIntValue(Media::Tag::MEDIA_IS_HARDWARE, isHardware);
@@ -596,7 +596,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_CODEC_INFO_001, TestSize.Level1)
         }
         videoDec_->Release();
     }
-    if(CreateVideoCodecByName("OH.Media.Codec.Decoder.Video.AVC")) {
+    if (CreateVideoCodecByName("OH.Media.Codec.Decoder.Video.AVC")) {
         format = videoDec_->GetCodecInfo();
         if (format) {
             format->GetIntValue(Media::Tag::MEDIA_IS_HARDWARE, isHardware);
