@@ -1042,6 +1042,7 @@ int64_t DecoderSurfaceFilter::CalculateNextRender(uint32_t index, std::shared_pt
 // async filter should call this function
 void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
+    FALSE_RETURN_MSG(!isBuffering_ || !isFirstFrameWrite_, "RenderNextOutput Buffering");
     if (isInSeekContinous_) {
         Filter::ProcessOutputBuffer(false, 0);
         return;
@@ -1404,6 +1405,7 @@ int64_t DecoderSurfaceFilter::GetSystimeTimeNs()
 void DecoderSurfaceFilter::HandleFirstOutput()
 {
     isRenderStarted_ = true;
+    isFirstFrameWrite_ = true;
     FALSE_RETURN_MSG(eventReceiver_ != nullptr, "ReportFirsrFrameEvent without eventReceiver_");
     eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
 }
@@ -1661,6 +1663,15 @@ Status DecoderSurfaceFilter::DoReInitAndStart()
     }
     FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoStart fail");
     return ret;
+}
+
+void DecoderSurfaceFilter::SetBuffering(bool isBuffering)
+{
+    std::unique_lock<std::mutex> lock(mutex_);
+    isBuffering_ = isBuffering;
+    FALSE_RETURN(!outputBuffers_.empty());
+    std::pair<int, std::shared_ptr<AVBuffer>> nextTask = outputBuffers_.front();
+    RenderNextOutput(nextTask.first, nextTask.second);
 }
 } // namespace Pipeline
 } // namespace MEDIA

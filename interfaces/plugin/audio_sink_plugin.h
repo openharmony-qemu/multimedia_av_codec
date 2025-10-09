@@ -30,6 +30,7 @@ class AudioSinkDataCallback {
 public:
     virtual ~AudioSinkDataCallback() = default;
     virtual void OnWriteData(int32_t size, bool isAudioVivid) = 0;
+    virtual void OnFirstFrameWriting() = 0;
 };
 /**
  * @brief Audio Sink Plugin.

@@ -1188,6 +1188,7 @@ bool DashSegmentDownloader::IsNeedBufferForPlaying()
         isBuffering_.store(false);
         isDemuxerInitSuccess_.store(false);
         bufferingTime_ = 0;
+        UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         return false;
     }
     if (GetBufferSize() >= waterlineForPlaying_ || isAllSegmentFinished_.load()) {
@@ -1196,6 +1197,7 @@ bool DashSegmentDownloader::IsNeedBufferForPlaying()
         isBuffering_.store(false);
         isDemuxerInitSuccess_.store(false);
         bufferingTime_ = 0;
+        UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         return false;
     }
     return true;
@@ -1213,7 +1215,7 @@ void DashSegmentDownloader::NotifyInitSuccess()
     }
     waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(realTimeBitBate_) /
         static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
-    isBuffering_.store(true);
+    HandleCache();
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
 }
 
