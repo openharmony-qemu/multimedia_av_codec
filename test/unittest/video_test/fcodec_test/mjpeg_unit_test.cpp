@@ -179,6 +179,7 @@ public:
     void TearDown();
     int32_t ProceFunc();
     void InputFunc();
+    void PushEOSBuffer(uint32_t index, OH_AVBuffer* buffer);
     void OutputFunc();
 
 protected:
@@ -257,16 +258,11 @@ void VideoCodeCapiDecoderUnitTest::InputFunc()
         if (!fileEnd_ && (ExtractPacket() != AVCS_ERR_OK || pkt_->size == 0)) {
             continue;
         }
-        OH_AVCodecBufferAttr info;
         if (fileEnd_) {
-            info.pts = 0;
-            info.size = 0;
-            info.offset = 0;
-            info.flags = AVCODEC_BUFFER_FLAGS_EOS;
-            OH_AVBuffer_SetBufferAttr(buffer, &info);
-            OH_VideoDecoder_PushInputBuffer(videoDec_, index);
+            PushEOSBuffer(index, buffer);
             break;
         }
+        OH_AVCodecBufferAttr info;
         info.size = pkt_->size;
         info.offset = 0;
         info.pts = pkt_->pts;
@@ -291,6 +287,17 @@ void VideoCodeCapiDecoderUnitTest::InputFunc()
         signal_->inQueue_.pop();
         signal_->inBufferQueue_.pop();
     }
+}
+
+void VideoCodeCapiDecoderUnitTest::PushEOSBuffer(uint32_t index, OH_AVBuffer* buffer)
+{
+    OH_AVCodecBufferAttr info;
+    info.pts = 0;
+    info.size = 0;
+    info.offset = 0;
+    info.flags = AVCODEC_BUFFER_FLAGS_EOS;
+    OH_AVBuffer_SetBufferAttr(buffer, &info);
+    OH_VideoDecoder_PushInputBuffer(videoDec_, index);
 }
 
 void VideoCodeCapiDecoderUnitTest::OutputFunc()
