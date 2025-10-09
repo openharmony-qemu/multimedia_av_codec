@@ -112,7 +112,7 @@ private:
     std::shared_mutex mutex_;
     std::shared_ptr<std::recursive_mutex> syncMutex_ = nullptr;
     std::atomic<bool> needUpdateGeneration_ = true;
-    std::shared_ptr<Format> codecInfo = nullptr;
+    Format codecInfo_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
