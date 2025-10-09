@@ -915,15 +915,15 @@ int32_t CodecServer::GetInputFormat(Format &format)
 int32_t CodecServer::GetCodecInfo(Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ != UNCONFIGURED,
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ != UNINITIALIZED,
         AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
 
     Format outputformat;
     codecBase_->GetOutputFormat(outputformat);
     int32_t codecIsVendor = 0;
-    outputformat.GetIntValue(TAG::MEDIA_IS_HARDWARE, codecIsVendor);
-    format.PutIntValue(TAG::MEDIA_IS_HARDWARE, codecIsVendor);
+    outputformat.GetIntValue(Tag::MEDIA_IS_HARDWARE, codecIsVendor);
+    format.PutIntValue(Tag::MEDIA_IS_HARDWARE, codecIsVendor);
 
     return AVCS_ERR_OK;
 }
