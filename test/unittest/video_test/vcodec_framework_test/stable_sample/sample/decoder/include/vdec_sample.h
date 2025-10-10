@@ -109,6 +109,7 @@ private:
     int32_t CreateMpegReader();
     int32_t CreateH263Reader();
     int32_t CreateVc1Reader();
+    int32_t CreateMsvideo1Reader();
     int32_t CreateWmv3Reader();
 
     OH_AVCodec *codec_ = nullptr;
