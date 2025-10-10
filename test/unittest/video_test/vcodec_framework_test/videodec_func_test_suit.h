@@ -1,6 +1,5 @@
 #ifndef VIDEODEC_FUNC_TEST_SUIT_H
 #define VIDEODEC_FUNC_TEST_SUIT_H
-#include <string_view.h>
 #include "avcodec_log.h"
 
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
@@ -84,6 +83,7 @@ public:
     void CreateByNameWithParam(std::string_view param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
+    void PrepareSource(int32_t param, std::string sourcePath);
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(TEST_SUIT)};
 
 protected:
