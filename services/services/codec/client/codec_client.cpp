@@ -571,7 +571,6 @@ int32_t CodecClient::GetCodecInfo(Format &format)
         }
     }
     AVCODEC_LOGI_WITH_TAG("%{public}s", format.Stringify().c_str());
-    AVCODEC_LOGI_WITH_TAG("%{public}s", ErrorToStr(ret).c_str());
     return ret;
 }
 

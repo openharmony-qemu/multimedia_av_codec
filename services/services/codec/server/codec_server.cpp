@@ -919,7 +919,9 @@ int32_t CodecServer::GetCodecInfo(Format &format)
         AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
 
-    format.PutIntValue(Tag::MEDIA_IS_HARDWARE, codecName_.find("OMX") != std::string::npos ? 1 : 0);
+    std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
+    CodecType codecType = codecListCore->FindCodecType(codecName_);
+    format.PutIntValue(Tag::MEDIA_IS_HARDWARE, codecType == CodecType::AVCODEC_HCODEC ? 1 : 0);
 
     return AVCS_ERR_OK;
 }
