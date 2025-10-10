@@ -33,6 +33,7 @@
 #include "surface_type.h"
 #include "surface_tools.h"
 #include "surface_utils.h"
+#include "codeclist_core.h"
 #ifdef SUPPORT_DRM
 #include "imedia_key_session_service.h"
 #endif
