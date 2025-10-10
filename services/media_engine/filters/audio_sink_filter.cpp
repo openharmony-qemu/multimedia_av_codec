@@ -453,6 +453,12 @@ Status AudioSinkFilter::CacheBuffer()
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->CacheBuffer();
 }
+
+void AudioSinkFilter::SetBuffering(bool isBuffering)
+{
+    FALSE_RETURN(audioSink_ != nullptr);
+    audioSink_->SetBuffering(isBuffering);
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

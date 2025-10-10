@@ -110,6 +110,8 @@ public:
     Status SetAudioHapticsSyncId(int32_t syncId);
     Status SetLoudnessGain(float loudnessGain);
     Status CacheBuffer();
+    void SetBuffering(bool isBuffering);
+    void OnFirstFrameWriting();
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
@@ -215,6 +217,7 @@ private:
     public:
         explicit AudioSinkDataCallbackImpl(std::shared_ptr<AudioSink> sink);
         void OnWriteData(int32_t size, bool isAudioVivid) override;
+        void OnFirstFrameWriting() override;
     private:
         std::weak_ptr<AudioSink> audioSink_;
     };
@@ -327,6 +330,8 @@ private:
     MemoryType bufferMemoryType_ {MemoryType::UNKNOWN_MEMORY};
     int32_t maxCbDataSize_ {0};
     std::queue<std::shared_ptr<AVBuffer>> swapOutputBuffers_ {};
+    bool isBuffering_ {false};
+    bool isFirstFrameWrite_ {false};
 };
 }
 }
