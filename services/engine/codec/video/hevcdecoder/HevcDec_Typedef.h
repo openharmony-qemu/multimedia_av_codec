@@ -45,6 +45,28 @@ typedef struct TagHevcDecInArgs {
     UINT64 uiTimeStamp;
 } HEVC_DEC_INARGS;
 
+typedef struct TagHevcColorSpaceInfo {
+    UINT32 fullRangeFlag;
+    UINT32 colorDescriptionPresentFlag;
+    UINT32 colorPrimaries;
+    UINT32 transferCharacteristic;
+    UINT32 matrixCoeffs;
+} HEVC_COLOR_SPACE_INFO;
+
+typedef struct TagHevcHdrMetadata {
+    UINT8 *dynamicMetadata;
+    INT32 dynamicMetadataSize;
+    INT32 paramsValidFlag;
+    INT32 displayPrimariesX[3];
+    INT32 displayPrimariesY[3];
+    INT32 whitePointX;
+    INT32 whitePointY;
+    INT32 maxDisplayMasteringLuminance;
+    INT32 minDisplayMasteringLuminance;
+    INT32 maxContentLightLevel;
+    INT32 maxPicAverageLightLevel;
+} HEVC_HDR_METADATA;
+
 typedef struct TagHevcDecOutArgs {
     UINT32 uiDecWidth;
     UINT32 uiDecHeight;
@@ -53,6 +75,8 @@ typedef struct TagHevcDecOutArgs {
     UINT64 uiTimeStamp;
     UINT32 uiBytsConsumed;
     UINT8 *pucOutYUV[3];  // YUV address, store YUV in order
+    HEVC_COLOR_SPACE_INFO uiColorSpaceInfo;
+    HEVC_HDR_METADATA uiHdrMetadata;
 } HEVC_DEC_OUTARGS;
 
 #endif // __HEVC_DEC_TYPE_DEF_H__

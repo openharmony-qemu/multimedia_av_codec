@@ -140,6 +140,8 @@ private:
     int32_t AllocateOutputBuffersFromSurface(int32_t bufferCnt);
     int32_t FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height, int bitDepth);
+    void UpdateColorAspects(const HEVC_COLOR_SPACE_INFO &colorInfo);
+    void FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer);
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
     int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
@@ -155,6 +157,7 @@ private:
     void HevcFuncMatch();
     void ReleaseHandle();
     void InitHevcParams();
+    void InitHevcHdrParams();
     void ConvertDecOutToAVFrame(int32_t bitDepth);
     static int32_t CheckHevcDecLibStatus();
     // surface listener callback
@@ -167,6 +170,9 @@ private:
     void StopRequestSurfaceBufferThread();
     bool RequestSurfaceBufferOnce(uint32_t index);
     void SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer);
+    int32_t SetSurfaceFormat();
+    int32_t ConvertHdrStaticMetadata(const HEVC_HDR_METADATA &hevcHdrMetadata,
+                                     std::vector<uint8_t> &staticMetadataVec);
 
     // for memory recycle
     int32_t FreezeBuffers(State curState);
@@ -228,6 +234,7 @@ private:
     std::mutex outputMutex_;
     std::mutex decRunMutex_;
     std::mutex surfaceMutex_;
+    std::mutex convertDataMutex_;
     std::mutex requestBufferMutex_;
     std::mutex renderBufferMapMutex_;
     std::condition_variable requestBufferCV_;
@@ -239,6 +246,7 @@ private:
     std::atomic<bool> requestBufferFinished_ = true;
     std::atomic<bool> requestBufferThreadExit_ = false;
     std::thread mRequestSurfaceBufferThread_;
+    HEVC_COLOR_SPACE_INFO colorSpaceInfo_;
 #ifdef BUILD_ENG_VERSION
     std::shared_ptr<std::ofstream> dumpInFile_ = nullptr;
     std::shared_ptr<std::ofstream> dumpOutFile_ = nullptr;

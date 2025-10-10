@@ -2032,6 +2032,231 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
+/**
+ * @tc.name: VideoDecoder_hevcdecoder_AVBuffer_With_hdr_001
+ * @tc.desc: 1. push buffer in callback;
+ *           2. operate in input callback;
+ *           3. render buffer in queue;
+ *           4. set surface;
+ */
+AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_hdr_001, TestSize.Level1,
+                VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec);
+    vdec->operation_ = VideoDecHevcDecTest::GetParam();
+    vdec->frameCount_ = 60; // 60: input frame num
+    vdec->skipOutFrameHalfCheck_ = true;
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec->inPath_ = "hdrVivid_avcc.h265";
+    vdec->sampleWidth_ = 1920;
+    vdec->sampleHeight_ = 1080;
+    vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoDecoder_hevcdecoder_AVBuffer_With_hdr_002
+ * @tc.desc: 1. push buffer in callback;
+ *           2. operate in input callback;
+ */
+AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_hdr_002, TestSize.Level1,
+                VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec);
+    vdec->operation_ = VideoDecHevcDecTest::GetParam();
+    vdec->frameCount_ = 60; // 60: input frame num
+    vdec->skipOutFrameHalfCheck_ = true;
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec->inPath_ = "hdrVivid_avcc.h265";
+    vdec->sampleWidth_ = 1920;
+    vdec->sampleHeight_ = 1080;
+    vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoDecoder_hevcdecoder_AVBuffer_With_hdr_003
+ * @tc.desc: 1. push buffer in callback;
+ *           2. operate in input callback;
+ *           3. render buffer in queue;
+ *           4. set surface;
+ */
+AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_hdr_003, TestSize.Level1,
+                VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec);
+    vdec->operation_ = VideoDecHevcDecTest::GetParam();
+    vdec->frameCount_ = 60; // 60: input frame num
+    vdec->skipOutFrameHalfCheck_ = true;
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec->inPath_ = "hdr10_avcc.h265";
+    vdec->sampleWidth_ = 1920;
+    vdec->sampleHeight_ = 1080;
+    vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoDecoder_hevcdecoder_AVBuffer_With_hdr_004
+ * @tc.desc: 1. push buffer in callback;
+ *           2. operate in input callback;
+ */
+AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_hdr_004, TestSize.Level1,
+                VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec);
+    vdec->operation_ = VideoDecHevcDecTest::GetParam();
+    vdec->frameCount_ = 60; // 60: input frame num
+    vdec->skipOutFrameHalfCheck_ = true;
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec->inPath_ = "hdr10_avcc.h265";
+    vdec->sampleWidth_ = 1920;
+    vdec->sampleHeight_ = 1080;
+    vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoDecoder_hevcdecoder_AVBuffer_With_hdr_005
+ * @tc.desc: 1. push buffer in callback;
+ *           2. operate in input callback;
+ *           3. render buffer in queue;
+ *           4. set surface;
+ */
+AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_hdr_005, TestSize.Level1,
+                VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec);
+    vdec->operation_ = VideoDecHevcDecTest::GetParam();
+    vdec->frameCount_ = 60; // 60: input frame num
+    vdec->skipOutFrameHalfCheck_ = true;
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec->inPath_ = "hdrHLG_avcc.h265";
+    vdec->sampleWidth_ = 1920;
+    vdec->sampleHeight_ = 1080;
+    vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoDecoder_hevcdecoder_AVBuffer_With_hdr_006
+ * @tc.desc: 1. push buffer in callback;
+ *           2. operate in input callback;
+ */
+AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_hdr_006, TestSize.Level1,
+                VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VCodecSignal>(vdec);
+    vdec->operation_ = VideoDecHevcDecTest::GetParam();
+    vdec->frameCount_ = 60; // 60: input frame num
+    vdec->skipOutFrameHalfCheck_ = true;
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    vdec->inPath_ = "hdrHLG_avcc.h265";
+    vdec->sampleWidth_ = 1920;
+    vdec->sampleHeight_ = 1080;
+    vdec->outPath_ = GetTestName();
+    vdec->dumpKey_ = "hevcdecoder.dump";
+    vdec->dumpValue_ = "0";
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
 bool CheckCapabilitySupport()
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);

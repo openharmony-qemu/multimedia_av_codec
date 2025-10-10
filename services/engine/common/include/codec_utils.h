@@ -73,6 +73,10 @@ int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct Surface
                          const Format &format);
 int32_t WriteBufferData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, int32_t *scaleLineSize,
                         const Format &format);
+int32_t ConvertParamsToColorSpaceInfo(uint32_t fullRangeFlag, uint32_t colorPrimaries,
+                                      uint32_t transferCharacteristic, uint32_t matrixCoeffs,
+                                      std::vector<uint8_t> &colorSpaceInfoData);
+uint32_t GetMetaDataTypeByTransFunc(uint32_t transferCharacteristic);
 
 std::string AVStrError(int errnum);
 bool IsYuvFormat(VideoPixelFormat &format);
