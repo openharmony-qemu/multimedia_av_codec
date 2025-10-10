@@ -131,6 +131,8 @@ public:
 
     void OnWriteData(size_t length);
 
+    void OnFirstFrameWriting();
+
     Status SetRequestDataCallback(const std::shared_ptr<AudioSinkDataCallback> &callback) override;
  
     bool GetAudioPosition(timespec &time, uint32_t &framePosition) override;
@@ -173,11 +175,13 @@ private:
     };
     class AudioFirstFrameCallbackImpl : public OHOS::AudioStandard::AudioRendererFirstFrameWritingCallback {
     public:
-        explicit AudioFirstFrameCallbackImpl(std::shared_ptr<Pipeline::EventReceiver> &receiver);
+        explicit AudioFirstFrameCallbackImpl(std::shared_ptr<Pipeline::EventReceiver> &receiver,
+            const std::weak_ptr<AudioServerSinkPlugin> &plugin);
         void OnFirstFrameWriting(uint64_t latency) override;
 
     private:
         std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
+        std::weak_ptr<AudioServerSinkPlugin> plugin_;
     };
     class AudioRendererWriteCallbackImpl : public AudioStandard::AudioRendererWriteCallback {
     public:

@@ -59,6 +59,8 @@ static const std::string ENHANCE_FLAG = "com.openharmony.deferredVideoEnhanceFla
 static const std::string VIDEO_ID = "com.openharmony.videoId";
 static const std::string SCENE_INSERT_FRAME = "1";
 static const std::string SCENE_MP_PWP = "2"; // moving photo playing with processing
+static const int32_t VIDEO_WIDTH = 512;
+static const int32_t VIDEO_HEIGHT = 512;
 
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
@@ -298,6 +300,18 @@ Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
     MEDIA_LOG_I("Configure");
     configureParameter_ = parameter;
     configFormat_.SetMeta(configureParameter_);
+    int32_t width = 0;
+    int32_t height = 0;
+    configFormat_.GetIntValue(Tag::VIDEO_WIDTH, width);
+    configFormat_.GetIntValue(Tag::VIDEO_HEIGHT, height);
+    if (width == 0) {
+        MEDIA_LOG_I("width update 0 -> 512");
+        configFormat_.PutIntValue(Tag::VIDEO_WIDTH, VIDEO_WIDTH);
+    }
+    if (height == 0) {
+        MEDIA_LOG_I("height update 0 -> 512");
+        configFormat_.PutIntValue(Tag::VIDEO_HEIGHT, VIDEO_HEIGHT);
+    }
     Status ret = videoDecoder_->Configure(configFormat_);
 
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> mediaCodecCallback = nullptr;
@@ -1028,6 +1042,7 @@ int64_t DecoderSurfaceFilter::CalculateNextRender(uint32_t index, std::shared_pt
 // async filter should call this function
 void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
+    FALSE_RETURN_MSG(!isBuffering_ || !isFirstFrameWrite_, "RenderNextOutput Buffering");
     if (isInSeekContinous_) {
         Filter::ProcessOutputBuffer(false, 0);
         return;
@@ -1390,6 +1405,7 @@ int64_t DecoderSurfaceFilter::GetSystimeTimeNs()
 void DecoderSurfaceFilter::HandleFirstOutput()
 {
     isRenderStarted_ = true;
+    isFirstFrameWrite_ = true;
     FALSE_RETURN_MSG(eventReceiver_ != nullptr, "ReportFirsrFrameEvent without eventReceiver_");
     eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
 }
@@ -1647,6 +1663,15 @@ Status DecoderSurfaceFilter::DoReInitAndStart()
     }
     FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoStart fail");
     return ret;
+}
+
+void DecoderSurfaceFilter::SetBuffering(bool isBuffering)
+{
+    std::unique_lock<std::mutex> lock(mutex_);
+    isBuffering_ = isBuffering;
+    FALSE_RETURN(!outputBuffers_.empty());
+    std::pair<int, std::shared_ptr<AVBuffer>> nextTask = outputBuffers_.front();
+    RenderNextOutput(nextTask.first, nextTask.second);
 }
 } // namespace Pipeline
 } // namespace MEDIA

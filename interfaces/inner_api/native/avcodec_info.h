@@ -619,6 +619,7 @@ public:
     static constexpr std::string_view VIDEO_VP9 = "video/x-vnd.on2.vp9";
     static constexpr std::string_view VIDEO_RV30 = "video/rv30";
     static constexpr std::string_view VIDEO_RV40 = "video/rv40";
+    static constexpr std::string_view VIDEO_WMV3 = "video/wmv3";
     static constexpr std::string_view VIDEO_VVC = "video/vvc";
     static constexpr std::string_view AUDIO_MIMETYPE_L2HC = "audio/l2hc";
     static constexpr std::string_view AUDIO_AMR_NB = "audio/3gpp";
@@ -641,6 +642,7 @@ public:
     static constexpr std::string_view IMAGE_JPG = "image/jpeg";
     static constexpr std::string_view IMAGE_PNG = "image/png";
     static constexpr std::string_view IMAGE_BMP = "image/bmp";
+    static constexpr std::string_view AUDIO_GSM_MS = "audio/gsm_ms";
 };
 
 /**
@@ -773,6 +775,18 @@ enum VC1Profile {
     VC1_PROFILE_MAIN = 1,
     /** Advanced profile */
     VC1_PROFILE_ADVANCED = 2,
+};
+
+/**
+ * @brief WMV3 Profile
+ *
+ * @since 6.0
+ */
+enum WMV3Profile : int32_t {
+    /** SIMPLE Profile */
+    WMV3_PROFILE_SIMPLE = 0,
+    /** MAIN Profile */
+    WMV3_PROFILE_MAIN = 1
 };
 
 /**
@@ -939,6 +953,20 @@ enum VC1Level {
     VC1_LEVEL_MEDIUM = 6,
     /** HIGH level */
     VC1_LEVEL_HIGH = 7,
+};
+
+/**
+ * @brief WMV3 Level
+ *
+ * @since 6.0
+ */
+enum WMV3Level : int32_t {
+    /** LOW level */
+    WMV3_LEVEL_LOW = 0,
+    /** MEDIUM level */
+    WMV3_LEVEL_MEDIUM = 1,
+    /** HIGH level */
+    WMV3_LEVEL_HIGH = 2
 };
 
 /**

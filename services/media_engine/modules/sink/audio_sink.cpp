@@ -101,6 +101,7 @@ void AudioSink::AudioSinkDataCallbackImpl::OnWriteData(int32_t size, bool isAudi
 {
     auto sink = audioSink_.lock();
     FALSE_RETURN_MSG(sink != nullptr, "audioSink_ is nullptr");
+    FALSE_RETURN_MSG(!sink->isBuffering_ || !sink->isFirstFrameWrite_, "OnWriteData buffering");
     AudioStandard::BufferDesc bufferDesc;
     MediaAVCodec::AVCodecTrace trace("AudioSink::OnWriteData");
     MEDIA_LOG_DD("GetBufferDesc in");
@@ -116,6 +117,23 @@ void AudioSink::AudioSinkDataCallbackImpl::OnWriteData(int32_t size, bool isAudi
     ret = sink->EnqueueBufferDesc(bufferDesc);
     sink->HandleAudioRenderRequestPost();
     FALSE_RETURN_MSG(ret == Status::OK, "enqueue failed, ret=" PUBLIC_LOG_D32, ret);
+}
+
+void AudioSink::AudioSinkDataCallbackImpl::OnFirstFrameWriting()
+{
+    auto sink = audioSink_.lock();
+    FALSE_RETURN_MSG(sink != nullptr, "audioSink_ is nullptr");
+    sink->OnFirstFrameWriting();
+}
+ 
+void AudioSink::OnFirstFrameWriting()
+{
+    isFirstFrameWrite_ = true;
+}
+  
+void AudioSink::SetBuffering(bool isBuffering)
+{
+    isBuffering_ = isBuffering;
 }
 
 bool AudioSink::HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc)

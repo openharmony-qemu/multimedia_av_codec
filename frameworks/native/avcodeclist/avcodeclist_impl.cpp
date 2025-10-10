@@ -31,7 +31,8 @@ const std::vector<std::string> VIDEO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV30),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV40),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP8),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP9)};
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP9),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_WMV3)};
 const std::vector<std::string> AUDIO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_NB),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_WB),
@@ -43,6 +44,7 @@ const std::vector<std::string> AUDIO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_RAW),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_G711MU),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_G711A),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_GSM_MS),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_COOK),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AC3),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_EAC3),

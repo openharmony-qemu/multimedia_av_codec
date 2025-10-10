@@ -99,6 +99,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_RV30, MimeType::VIDEO_RV30},
     {AV_CODEC_ID_RV40, MimeType::VIDEO_RV40},
 #endif
+    {AV_CODEC_ID_WMV3, MimeType::VIDEO_WMV3},
     {AV_CODEC_ID_MJPEG, MimeType::IMAGE_JPG},
     {AV_CODEC_ID_PNG, MimeType::IMAGE_PNG},
     {AV_CODEC_ID_BMP, MimeType::IMAGE_BMP},
@@ -114,6 +115,16 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
     {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
     {AV_CODEC_ID_PCM_ALAW, MimeType::AUDIO_G711A},
+    {AV_CODEC_ID_GSM_MS, MimeType::AUDIO_GSM_MS},
+    {AV_CODEC_ID_WMAV1, MimeType::AUDIO_WMAV1},
+    {AV_CODEC_ID_WMAV2, MimeType::AUDIO_WMAV2},
+    {AV_CODEC_ID_ADPCM_G722, MimeType::AUDIO_ADPCM_G722},
+    {AV_CODEC_ID_ADPCM_G726, MimeType::AUDIO_ADPCM_G726},
+    {AV_CODEC_ID_ADPCM_IMA_WAV, MimeType::AUDIO_ADPCM_IMA_WAV},
+    {AV_CODEC_ID_ADPCM_MS, MimeType::AUDIO_ADPCM_MS},
+    {AV_CODEC_ID_ADPCM_YAMAHA, MimeType::AUDIO_ADPCM_YAMAHA},
+    {AV_CODEC_ID_WMAPRO, MimeType::AUDIO_WMAPRO},
+    {AV_CODEC_ID_GSM_MS, MimeType::AUDIO_GSM_MS},
 #ifdef SUPPORT_CODEC_COOK
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
 #endif
@@ -151,6 +162,9 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"mpeg", FileType::MPEGPS},
     {"rm", FileType::RM},
     {"ac3", FileType::AC3},
+    {"wmv", FileType::WMV},
+    {"asf", FileType::WMV},
+    {"vob", FileType::VOB},
     {"ape", FileType::APE},
     {"srt", FileType::SRT},
     {"webvtt", FileType::VTT},
@@ -767,6 +781,16 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     }
 }
 
+static bool IsWmaFormat(const AVFormatContext& avFormatContext)
+{
+    for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
+        if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            return false;
+        }
+    }
+    return true;
+}
+
 FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatContext)
 {
     FALSE_RETURN_V_MSG_E(avFormatContext.iformat != nullptr, FileType::UNKNOW, "Iformat is nullptr");
@@ -777,14 +801,21 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
         if (type == nullptr) {
             return FileType::MP4;
         }
-        if (StartWith(type->value, "m4a") || StartWith(type->value, "M4A") ||
-            StartWith(type->value, "m4v") || StartWith(type->value, "M4V")) {
+        if (StartWith(type->value, "m4a") || StartWith(type->value, "M4A")) {
             fileType = FileType::M4A;
+        } else if (StartWith(type->value, "m4v") || StartWith(type->value, "M4V")) {
+            fileType = FileType::M4V;
+        } else if (StartWith(type->value, "3g2")) {
+            fileType = FileType::FT_3G2;
+        } else if (StartWith(type->value, "3gp")) {
+            fileType = FileType::FT_3GP;
         } else if (StartWith(type->value, "qt") || StartWith(type->value, "QT")) {
             fileType = FileType::MOV;
         } else {
             fileType = FileType::MP4;
         }
+    } else if (StartWith(fileName, "asf") && IsWmaFormat(avFormatContext)) {
+        fileType = FileType::WMA;
     } else {
         if (g_convertFfmpegFileType.count(fileName) != 0) {
             fileType = g_convertFfmpegFileType[fileName];
@@ -1324,7 +1355,9 @@ bool FFmpegFormatHelper::IsAudioType(const AVStream &avStream)
 
 bool FFmpegFormatHelper::IsMpeg4File(FileType filetype)
 {
-    return filetype == FileType::MP4 || filetype == FileType::MOV;
+    return filetype == FileType::MP4 || filetype == FileType::MOV
+            || filetype == FileType::M4V || filetype == FileType::FT_3GP
+            || filetype == FileType::FT_3G2;
 }
 
 bool FFmpegFormatHelper::IsValidCodecId(const AVCodecID &codecId)

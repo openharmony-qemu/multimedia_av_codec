@@ -271,6 +271,8 @@ int32_t VideoDecAsyncSample::CreateReader(const std::string &inPath)
             return CreateMpegReader();
         case VC1_STREAM:
             return CreateVc1Reader();
+        case WMV3_STREAM:
+            return CreateWmv3Reader();
         default:
             return CreateAvccReader();
     }
@@ -477,6 +479,17 @@ int32_t VideoDecAsyncSample::CreateVc1Reader()
 
     vc1Reader_ = std::make_shared<Vc1Reader>();
     int32_t ret = vc1Reader_->Init(info);
+    return ret;
+}
+
+int32_t VideoDecAsyncSample::CreateWmv3Reader()
+{
+    std::shared_ptr<Wmv3ReaderInfo> info = std::make_shared<Wmv3ReaderInfo>();
+    info->inPath = inPath_;
+    info->isHdrStream = false;
+
+    wmv3Reader_ = std::make_shared<Wmv3Reader>();
+    int32_t ret = wmv3Reader_->Init(info);
     return ret;
 }
 
@@ -706,6 +719,8 @@ int32_t VideoDecAsyncSample::InputLoopInner()
                                   : avccReader_->KeepFillBuffer(buffer->GetAddr(), attr);
     } else if (mpegReader_ != nullptr) {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (wmv3Reader_ != nullptr) {
+        wmv3Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else {
         vc1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }
@@ -910,7 +925,7 @@ int32_t VideoDecAsyncSample::OutputLoopInnerExt()
         char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
         int32_t size = (testParam_ == VCodecTestParam::SW_AVC || testParam_ == VCodecTestParam::SW_MPEG2 ||
                         testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263 ||
-                        testParam_ == VCodecTestParam::SW_VC1)
+                        testParam_ == VCodecTestParam::SW_VC1 || testParam_ == VCodecTestParam::SW_WMV3)
                            ? attr.size
                            : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
@@ -981,6 +996,8 @@ int32_t VideoDecAsyncSample::InputLoopInnerExt()
                                   : avccReader_->KeepFillBuffer(buffer->GetAddr(), attr);
     } else if (mpegReader_ != nullptr) {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (wmv3Reader_ != nullptr) {
+        wmv3Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else {
         vc1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }

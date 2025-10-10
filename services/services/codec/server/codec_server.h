@@ -128,6 +128,7 @@ private:
     void StartInputParamTask();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
     void StatusChanged(CodecStatus newStatus);
+    void SetFreeStatus(bool isFree);
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
     int32_t DrmVideoCencDecrypt(uint32_t index);
     int32_t CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySessionService> &keySession, bool svpFlag);
@@ -135,6 +136,8 @@ private:
     int32_t ReleaseOutputBufferOfCodec(uint32_t index, bool render);
     void OnInstanceMemoryUpdateEvent(std::shared_ptr<Media::Meta> meta = nullptr);
     void OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta = nullptr);
+    void OnInstanceEncodeBeginEvent(std::shared_ptr<Media::Meta> meta = nullptr);
+    void OnInstanceEncodeEndEvent(std::shared_ptr<Media::Meta> meta = nullptr);
     void InitFramerateCalculator(Meta &callerInfo);
 
     CodecStatus status_ = UNINITIALIZED;
@@ -159,6 +162,8 @@ private:
     std::shared_ptr<TemporalScalability> temporalScalability_ = nullptr;
     std::shared_ptr<CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::unordered_map<uint32_t, DrmDecryptVideoBuf> decryptVideoBufs_;
+    std::shared_mutex freeMutex_;
+    bool isFree_ = false;
     std::shared_ptr<TaskThread> inputParamTask_ = nullptr;
     CodecScenario scenario_ = CodecScenario::CODEC_SCENARIO_ENC_NORMAL;
 

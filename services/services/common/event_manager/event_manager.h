@@ -29,6 +29,8 @@ enum class EventType {
     INSTANCE_RELEASE,
     INSTANCE_MEMORY_UPDATE,
     INSTANCE_MEMORY_RESET,
+    INSTANCE_ENCODE_BEGIN,
+    INSTANCE_ENCODE_END,
     END,
 };
 
@@ -46,6 +48,8 @@ private:
     void OnInstanceReleaseEvent(Media::Meta &meta);
     void OnInstanceMemoryUpdateEvent(Media::Meta &meta);
     void OnInstanceMemoryResetEvent(Media::Meta &meta);
+    void OnInstanceEncodeBeginEvent(Media::Meta &meta);
+    void OnInstanceEncodeEndEvent(Media::Meta &meta);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

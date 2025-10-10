@@ -80,24 +80,9 @@ VDecFuzzSample::~VDecFuzzSample()
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     cout << "Error errorCode=" << errorCode << endl;
-    if (g_decSample) {
-        g_decSample->isRunning_.store(false);
-        g_fuzzError = true;
-        g_decSample->signal_->inCond_.notify_all();
-    }
 }
 
-void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
-{
-    if (g_decSample) {
-        int32_t currentWidth = 0;
-        int32_t currentHeight = 0;
-        OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &currentWidth);
-        OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &currentHeight);
-        g_decSample->defaultWidth = currentWidth;
-        g_decSample->defaultHeight = currentHeight;
-    }
-}
+void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData) {}
 
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
@@ -111,13 +96,7 @@ void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, vo
 void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
                          void *userData)
 {
-    if (g_decSample) {
-        if (g_decSample->isSurfMode) {
-            OH_VideoDecoder_RenderOutputData(codec, index);
-        } else {
-            OH_VideoDecoder_FreeOutputData(codec, index);
-        }
-    }
+    OH_VideoDecoder_FreeOutputData(codec, index);
 }
 
 int64_t VDecFuzzSample::GetSystemTimeUs()

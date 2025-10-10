@@ -80,18 +80,24 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/func3_test.cpp",
       "./src/func4_test.cpp",
       "./src/func_test.cpp",
+      "./src/mtsfunc_test.cpp",
+      "./src/m2tsfunc_test.cpp",
+      "./src/trpfunc_test.cpp",
       "./src/movfunc_test.cpp",
       "./src/randomseek_test.cpp",
       "./src/seek2_test.cpp",
       "./src/seek_test.cpp",
+      "./src/wmafunc_test.cpp",
 
       #"./src/net_test.cpp",
       #"./src/net2_test.cpp",
+      #"./src/net3_test.cpp",
       "./src/InnerAPI/demuxer_asyn_func_test.cpp",
       "./src/InnerAPI/demuxer_cachesize_func_test.cpp",
       "./src/InnerAPI/demuxer_plugin_func_test.cpp",
       "./src/format_test.cpp",
       "./src/proc_test.cpp",
+      "./src/eac3func_test.cpp",
     ]
   }
 

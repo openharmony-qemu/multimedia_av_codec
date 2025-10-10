@@ -301,6 +301,13 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_H263;
 
 /**
+ * @brief Enumerates the MIME type of video WMV3 codec.
+ *
+ * @since 22
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
+
+/**
  * @brief Enumerates the types of audio and video muxer
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
@@ -375,6 +382,14 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_RAW;
  * @since 20
  */
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_G711A;
+
+/**
+ * @brief Enumerates the mime types of audio GSM_MS codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM_MS;
 
 /**
  * @brief Enumerates the mime types of audio Enhanced AC-3 codec.

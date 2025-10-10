@@ -19,6 +19,7 @@
 #include "meta/meta_key.h"
 
 #include "instance_memory_update_event_handler.h"
+#include "instance_operation_event_handler.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "EventManager"};
@@ -53,6 +54,12 @@ void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
         case EventType::INSTANCE_MEMORY_RESET:
             OnInstanceMemoryResetEvent(meta);
             break;
+        case EventType::INSTANCE_ENCODE_BEGIN:
+            OnInstanceEncodeBeginEvent(meta);
+            break;
+        case EventType::INSTANCE_ENCODE_END:
+            OnInstanceEncodeEndEvent(meta);
+            break;
         default:
             AVCODEC_LOGW("Nothing to do with this event: %{public}d", static_cast<int32_t>(type));
             break;
@@ -80,6 +87,16 @@ void EventManager::OnInstanceInitEvent(Media::Meta &meta)
 void EventManager::OnInstanceReleaseEvent(Media::Meta &meta)
 {
     InstanceMemoryUpdateEventHandler::GetInstance().OnInstanceRelease(meta);
+}
+
+void EventManager::OnInstanceEncodeBeginEvent(Media::Meta &meta)
+{
+    InstanceOperationEventHandler::GetInstance().OnInstanceEncodeBegin(meta);
+}
+
+void EventManager::OnInstanceEncodeEndEvent(Media::Meta &meta)
+{
+    InstanceOperationEventHandler::GetInstance().OnInstanceEncodeEnd(meta);
 }
 
 void EventManager::OnInstanceMemoryUpdateEvent(Media::Meta &meta)
