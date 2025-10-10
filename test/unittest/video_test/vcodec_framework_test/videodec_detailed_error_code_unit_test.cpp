@@ -54,7 +54,7 @@ void TEST_SUIT::CreateByNameWithParam(std::string_view param)
 
 void TEST_SUIT::PrepareSource(int32_t param, std::string sourcePath)
 {
-    if (param == VCodecTestCode::HW_AVC) {
+    if (param == VCodecTestCode::HW_HEVC) {
         videoDec_->SetSourceType(false);
     }
     videoDec_->testParam_ = param;
@@ -260,10 +260,10 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_MBAFF_001, TestSize.Level1)
 
 /**
  * @tc.name: VideoDecoder_XPS_Not_Exist_001
- * @tc.desc: xps frame does not exit
+ * @tc.desc: xps frame does not exist
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Invalid_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Not_Exist_001, TestSize.Level1)
 {
     constexpr int32_t width = 270;
     constexpr int32_t height = 576;
@@ -279,10 +279,10 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Invalid_001, TestSize.Level1)
 
 /**
  * @tc.name: VideoDecoder_XPS_Not_Exist_002
- * @tc.desc: xps frame does not exit
+ * @tc.desc: xps frame does not exist
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Invalid_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Not_Exist_002, TestSize.Level1)
 {
     constexpr int32_t width = 720;
     constexpr int32_t height = 576;
