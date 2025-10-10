@@ -271,6 +271,8 @@ int32_t VideoDecAsyncSample::CreateReader(const std::string &inPath)
             return CreateMpegReader();
         case VC1_STREAM:
             return CreateVc1Reader();
+        case MSVIDEO1_STREAM:
+            return CreateMsvideo1Reader();
         case WMV3_STREAM:
             return CreateWmv3Reader();
         default:
@@ -479,6 +481,16 @@ int32_t VideoDecAsyncSample::CreateVc1Reader()
 
     vc1Reader_ = std::make_shared<Vc1Reader>();
     int32_t ret = vc1Reader_->Init(info);
+    return ret;
+}
+
+int32_t VideoDecAsyncSample::CreateMsvideo1Reader()
+{
+    std::shared_ptr<Msvideo1ReaderInfo> info = std::make_shared<Msvideo1ReaderInfo>();
+    info->inPath = inPath_;
+
+    msvideo1Reader_ = std::make_shared<Msvideo1Reader>();
+    int32_t ret = msvideo1Reader_->Init(info);
     return ret;
 }
 
@@ -719,10 +731,12 @@ int32_t VideoDecAsyncSample::InputLoopInner()
                                   : avccReader_->KeepFillBuffer(buffer->GetAddr(), attr);
     } else if (mpegReader_ != nullptr) {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (vc1Reader_ != nullptr) {
+        vc1Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (wmv3Reader_ != nullptr) {
         wmv3Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else {
-        vc1Reader_->FillBuffer(buffer->GetAddr(), attr);
+        msvideo1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }
     return PushInputData(index, attr);
 }
@@ -925,9 +939,9 @@ int32_t VideoDecAsyncSample::OutputLoopInnerExt()
         char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
         int32_t size = (testParam_ == VCodecTestParam::SW_AVC || testParam_ == VCodecTestParam::SW_MPEG2 ||
                         testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263 ||
-                        testParam_ == VCodecTestParam::SW_VC1 || testParam_ == VCodecTestParam::SW_WMV3)
-                           ? attr.size
-                           : buffer->GetNativeBuffer()->GetSize();
+                        testParam_ == VCodecTestParam::SW_VC1 || testParam_ == VCodecTestParam::SW_MSVIDEO1 ||
+                        testParam_ == VCodecTestParam::SW_WMV3)
+                           ? attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                           "Fatal: GetOutputBuffer fail, exit, index: %d", index);
         UpdateSHA(bufferAddr, size);
@@ -996,10 +1010,12 @@ int32_t VideoDecAsyncSample::InputLoopInnerExt()
                                   : avccReader_->KeepFillBuffer(buffer->GetAddr(), attr);
     } else if (mpegReader_ != nullptr) {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (vc1Reader_ != nullptr) {
+        vc1Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (wmv3Reader_ != nullptr) {
         wmv3Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else {
-        vc1Reader_->FillBuffer(buffer->GetAddr(), attr);
+        msvideo1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }
     buffer->SetBufferAttr(attr);
     return PushInputBuffer(index);
