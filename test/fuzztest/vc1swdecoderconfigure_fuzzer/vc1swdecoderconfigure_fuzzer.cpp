@@ -24,6 +24,7 @@ using namespace OHOS;
 using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "vc1swdecoderconfigure_fuzzer"
 const size_t EXPECT_SIZE = 6;
+const int32_t EVEN_ADJUSTMENT = 2;
 namespace OHOS {
 void SaveCorpus(const uint8_t *data, size_t size, const std::string& filename)
 {
@@ -46,12 +47,14 @@ bool Vc1SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     SaveCorpus(data, size, filename);
     vDecSample->inpDir = filename.c_str();
     int32_t lengthMin = 96;
-    int32_t lengthMax = 2048;
-    int32_t frameRateMin = 1;
-    int32_t frameRateMax = 60;
-    vDecSample->defaultWidth = std::clamp(fdp.ConsumeIntegral<int32_t>(), lengthMin, lengthMax);
-    vDecSample->defaultHeight = std::clamp(fdp.ConsumeIntegral<int32_t>(), lengthMin, lengthMax);
-    vDecSample->defaultFrameRate = std::clamp(fdp.ConsumeIntegral<int32_t>(), frameRateMin, frameRateMax);
+    int32_t lengthMax = 1920;
+    int32_t width = std::clamp(fdp.ConsumeIntegral<int32_t>(), lengthMin, lengthMax);
+    vDecSample->defaultWidth = (width % EVEN_ADJUSTMENT != 0) ? width - 1 : width;
+    int32_t height = std::clamp(fdp.ConsumeIntegral<int32_t>(), lengthMin, lengthMax);
+    vDecSample->defaultHeight = (height % EVEN_ADJUSTMENT != 0) ? height - 1 : height;
+    size_t maxStrSize = 128;
+    vDecSample->randomName = fdp.ConsumeRandomLengthString(maxStrSize);
+    vDecSample->randomMime = fdp.ConsumeRandomLengthString(maxStrSize);
     std::vector<int32_t> rotations = {0, 90, 180, 270};
     size_t index = fdp.ConsumeIntegralInRange<size_t>(0, rotations.size() - 1);
     vDecSample->defaultRotation = rotations[index];
