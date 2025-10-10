@@ -50,7 +50,7 @@ bool GetInstanceEncodeOperationMeta(const Media::Meta &meta, pid_t &pid, uid_t &
 
 void InstanceOperationEventHandler::OnInstanceEncodeBegin(Media::Meta &meta)
 {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     pid_t pid = INVALID_PID;
     uid_t uid = -1;
     int32_t instanceId = INVALID_INSTANCE_ID;
@@ -63,7 +63,7 @@ void InstanceOperationEventHandler::OnInstanceEncodeBegin(Media::Meta &meta)
         std::unordered_map<std::string, std::string> payLoad = {{"pid", std::to_string(pid)},
                                                                 {"uid", std::to_string(uid)},
                                                                 {"bundleName", processName}};
-        AVCODEC_LOGI("codec encode begin.pid:%{public}d,uid:%{public}d,bundleName:%{public}s", pid, uid,
+        AVCODEC_LOGD("codec encode begin.pid:%{public}d,uid:%{public}d,bundleName:%{public}s", pid, uid,
                      processName.c_str());
         ResSchedClient::GetInstance().ReportData(RES_TYPE_CODEC_ENCODE_STATUS_CHANGED, CODEC_ENCODE_BEGIN, payLoad);
     }
@@ -72,7 +72,7 @@ void InstanceOperationEventHandler::OnInstanceEncodeBegin(Media::Meta &meta)
 
 void InstanceOperationEventHandler::OnInstanceEncodeEnd(Media::Meta &meta)
 {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     pid_t pid = INVALID_PID;
     uid_t uid = -1;
     int32_t instanceId = INVALID_INSTANCE_ID;
@@ -95,7 +95,7 @@ void InstanceOperationEventHandler::OnInstanceEncodeEnd(Media::Meta &meta)
         std::unordered_map<std::string, std::string> payLoad = {{"pid", std::to_string(pid)},
                                                                 {"uid", std::to_string(uid)},
                                                                 {"bundleName", processName}};
-        AVCODEC_LOGI("codec encode end.pid:%{public}d,uid:%{public}d,bundleName:%{public}s", pid, uid,
+        AVCODEC_LOGD("codec encode end.pid:%{public}d,uid:%{public}d,bundleName:%{public}s", pid, uid,
                      processName.c_str());
         ResSchedClient::GetInstance().ReportData(RES_TYPE_CODEC_ENCODE_STATUS_CHANGED, CODEC_ENCODE_END, payLoad);
     }

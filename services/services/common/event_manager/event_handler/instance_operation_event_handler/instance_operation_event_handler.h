@@ -34,7 +34,7 @@ private:
     InstanceOperationEventHandler() {};
     ~InstanceOperationEventHandler() = default;
 
-    std::recursive_mutex mutex_;
+    std::mutex mutex_;
     std::unordered_map<pid_t, std::set<int32_t>> encodeExecutingMap_;
 };
 } // namespace MediaAVCodec

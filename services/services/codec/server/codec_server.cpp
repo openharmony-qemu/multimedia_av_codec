@@ -813,6 +813,18 @@ void CodecServer::OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta)
 #endif
 }
 
+void CodecServer::SetInstanceEncodeEventInfo(std::shared_ptr<Media::Meta> &meta)
+{
+    bool isForwardCaller = forwardCaller_.pid >= 0 || !forwardCaller_.processName.empty();
+    pid_t &pid = isForwardCaller ? forwardCaller_.pid : caller_.pid;
+    uid_t &uid = isForwardCaller ? forwardCaller_.uid : caller_.uid;
+    std::string &processName = isForwardCaller ? forwardCaller_.processName : caller_.processName;
+    meta->SetData(Tag::AV_CODEC_CALLER_PID, pid);
+    meta->SetData(Tag::AV_CODEC_CALLER_UID, uid);
+    meta->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, processName);
+    meta->SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+}
+
 void CodecServer::OnInstanceEncodeBeginEvent(std::shared_ptr<Media::Meta> meta)
 {
 #ifdef AVCODEC_SUPPORT_EVENT_MANAGER
@@ -820,10 +832,7 @@ void CodecServer::OnInstanceEncodeBeginEvent(std::shared_ptr<Media::Meta> meta)
         return;
     }
     meta = (meta == nullptr) ? std::make_shared<Media::Meta>() : meta;
-    meta->SetData(Tag::AV_CODEC_CALLER_PID, caller_.pid);
-    meta->SetData(Tag::AV_CODEC_CALLER_UID, caller_.uid);
-    meta->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, caller_.processName);
-    meta->SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    SetInstanceEncodeEventInfo(meta);
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_ENCODE_BEGIN, *meta);
 #endif
 }
@@ -835,10 +844,7 @@ void CodecServer::OnInstanceEncodeEndEvent(std::shared_ptr<Media::Meta> meta)
         return;
     }
     meta = (meta == nullptr) ? std::make_shared<Media::Meta>() : meta;
-    meta->SetData(Tag::AV_CODEC_CALLER_PID, caller_.pid);
-    meta->SetData(Tag::AV_CODEC_CALLER_UID, caller_.uid);
-    meta->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, caller_.processName);
-    meta->SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    SetInstanceEncodeEventInfo(meta);
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_ENCODE_END, *meta);
 #endif
 }
