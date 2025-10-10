@@ -14,7 +14,6 @@
  */
 
 #include "hcodec.h"
-#include <sstream>
 #include "hdf_base.h"
 #include "hitrace_meter.h"
 #include "hcodec_list.h"
