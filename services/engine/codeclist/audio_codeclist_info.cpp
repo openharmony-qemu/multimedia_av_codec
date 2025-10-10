@@ -41,6 +41,8 @@ constexpr int MAX_VORBIS_SAMPLE_RATE = 96000;
 constexpr int MIN_FLAC_SAMPLE_RATE = 8000;
 constexpr int MAX_FLAC_SAMPLE_RATE = 384000;
 constexpr int MAX_INT32 = 0x7FFFFFFF; // 2147483647
+constexpr int MIN_ALAC_SAMPLE_RATE = 8000;
+constexpr int MAX_ALAC_SAMPLE_RATE = 384000;
 
 const std::vector<int32_t> AUDIO_VORBIS_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000,
                                                        32000, 44100, 48000, 64000, 88200, 96000};
@@ -113,6 +115,13 @@ const std::vector<int32_t> AUDIO_EAC3_SAMPLE_RATE = {16000, 22050, 24000, 32000,
 #endif
 constexpr int MIN_BIT_RATE_AC3 = 32000;
 constexpr int MAX_BIT_RATE_AC3 = 640000;
+constexpr int MIN_BIT_RATE_ALAC = 0;
+constexpr int MAX_BIT_RATE_ALAC = 3000000;
+constexpr int ALAC_MAX_AUDIO_CHANNEL_COUNT = 8;
+const std::vector<int32_t> AUDIO_ALAC_SAMPLE_RATE = {
+    8000, 11025, 12000, 16000, 22050, 24000,
+    32000, 44100, 48000, 88200, 96000, 176400, 192000
+};
 const std::vector<int32_t> AUDIO_AC3_SAMPLE_RATE = {11025, 32000, 44100, 48000};
 constexpr int MAX_BIT_RATE_G711MU_DECODER = 64000;
 constexpr int MAX_BIT_RATE_G711MU_ENCODER = 64000;
@@ -600,6 +609,21 @@ CapabilityData AudioCodeclistInfo::GetEac3DecoderCapability()
 }
 #endif
 
+CapabilityData AudioCodeclistInfo::GetAlacDecoderCapability()
+{
+    CapabilityData audioAlacCapability;
+    audioAlacCapability.codecName = AVCodecCodecName::AUDIO_DECODER_ALAC_NAME;
+    audioAlacCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioAlacCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ALAC;
+    audioAlacCapability.isVendor = false;
+    audioAlacCapability.bitrate = Range(MIN_BIT_RATE_ALAC, MAX_BIT_RATE_ALAC);
+    audioAlacCapability.channels = Range(1, ALAC_MAX_AUDIO_CHANNEL_COUNT);
+    audioAlacCapability.sampleRate = AUDIO_ALAC_SAMPLE_RATE;
+    audioAlacCapability.sampleRateRanges = {Range(MIN_ALAC_SAMPLE_RATE, MAX_ALAC_SAMPLE_RATE)};
+    audioAlacCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioAlacCapability;
+}
+
 AudioCodeclistInfo::AudioCodeclistInfo()
 {
     audioCapabilities_ = {
@@ -611,7 +635,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetG711muDecoderCapability(), GetRawDecoderCapability(), GetAacEncoderCapability(),
                           GetFlacEncoderCapability(), GetG711muEncoderCapability(), GetAPEDecoderCapability(),
                           GetMP3EncoderCapability(), GetG711aDecoderCapability(), GetAc3DecoderCapability(),
-                          GetGsmMsDecoderCapability(),
+                          GetGsmMsDecoderCapability(), GetAlacDecoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),

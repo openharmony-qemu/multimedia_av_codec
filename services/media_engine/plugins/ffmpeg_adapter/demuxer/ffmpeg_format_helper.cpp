@@ -132,6 +132,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
 #ifdef SUPPORT_DEMUXER_EAC3
     {AV_CODEC_ID_EAC3, MimeType::AUDIO_EAC3},
 #endif
+    {AV_CODEC_ID_ALAC, MimeType::AUDIO_ALAC},
     {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
     {AV_CODEC_ID_WEBVTT, MimeType::TEXT_WEBVTT},
 #ifdef SUPPORT_DEMUXER_LRC

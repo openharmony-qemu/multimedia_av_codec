@@ -635,6 +635,7 @@ public:
     static constexpr std::string_view AUDIO_COOK = "audio/cook";
     static constexpr std::string_view AUDIO_AC3 = "audio/ac3";
     static constexpr std::string_view AUDIO_EAC3 = "audio/eac3";
+    static constexpr std::string_view AUDIO_ALAC = "audio/alac";
     static constexpr std::string_view AUDIO_VIVID = "audio/av3a";
     static constexpr std::string_view AUDIO_AVS3DA = "audio/av3a";
     static constexpr std::string_view AUDIO_APE = "audio/x-ape";
