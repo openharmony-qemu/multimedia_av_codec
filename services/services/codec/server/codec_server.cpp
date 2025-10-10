@@ -922,7 +922,7 @@ int32_t CodecServer::GetCodecInfo(Format &format)
     Format outputformat;
     codecBase_->GetOutputFormat(outputformat);
     int32_t codecIsVendor = 0;
-    outputformat.GetIntValue(Tag::MEDIA_IS_HARDWARE, codecIsVendor);
+    outputformat.GetIntValue("IS_VENDOR", codecIsVendor);
     format.PutIntValue(Tag::MEDIA_IS_HARDWARE, codecIsVendor);
 
     return AVCS_ERR_OK;
