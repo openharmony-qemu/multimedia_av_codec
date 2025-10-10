@@ -55,11 +55,11 @@ public:
     VDecFuzzSample() = default;
     ~VDecFuzzSample();
     int32_t RunVideoDec(std::string codeName = "");
-    const char *inpDir = "/data/test/media/test.vc1";
+    const char *inpDir = "/data/test/media/test_vc1.vc1";
     const char *outDir = "/data/test/media/VDecTest.yuv";
     std::string randomName = "aabbcc";
     std::string randomMime = "aabbcc";
-    std::string filename = "/data/test/media/glitch-ffvc1.avi";
+    std::string filename = "/data/test/media/glitch-ffvc1_vc1.avi";
     uint32_t defaultWidth = 720;
     uint32_t defaultHeight = 480;
     uint32_t defaultFrameRate = 60;
@@ -79,6 +79,7 @@ public:
     int32_t Reset();
     void SetEOS(OH_AVBuffer *buffer, uint32_t index);
     uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVBuffer *buffer);
+    uint32_t InspectionBufferSize(uint32_t bufferSize, uint8_t *frameBuffer, bool &isPass);
     void CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, OH_AVCodecBufferAttr &attr);
     int32_t ReadData(uint32_t index, OH_AVBuffer *buffer);
     void WaitForEOS();

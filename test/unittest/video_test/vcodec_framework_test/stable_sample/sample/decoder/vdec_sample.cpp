@@ -476,19 +476,20 @@ int32_t VideoDecSample::Configure()
     bool setFormatRet = DoConfigure(format);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(setFormatRet, AV_ERR_UNKNOWN, "set format failed");
 
-    AVFormatContext* formatContext = avformat_alloc_context();
-    int ret_ = avformat_open_input(&formatContext, filename.data(), nullptr, nullptr);
-    ret_ = avformat_find_stream_info(formatContext, nullptr);
-    for (int i = 0; i < formatContext->nb_streams; i++) {
-        AVStream* stream = formatContext->streams[i];
-        if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-            extradata = stream->codecpar->extradata;
-            extradatasize = stream->codecpar->extradata_size;
+    if (inPath_.find("vc1") != std::string::npos) {
+        AVFormatContext* formatContext = avformat_alloc_context();
+        int ret_ = avformat_open_input(&formatContext, filename.data(), nullptr, nullptr);
+        ret_ = avformat_find_stream_info(formatContext, nullptr);
+        for (int i = 0; i < formatContext->nb_streams; i++) {
+            AVStream* stream = formatContext->streams[i];
+            if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+                extradata = stream->codecpar->extradata;
+                extradatasize = stream->codecpar->extradata_size;
+            }
         }
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret_ == AV_ERR_OK, AV_ERR_UNKNOWN, "avformat_find_stream_info failed");
+        OH_AVFormat_SetBuffer(format, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), extradata, extradatasize);
     }
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret_ == AV_ERR_OK, AV_ERR_UNKNOWN, "avformat_find_stream_info failed");
-    OH_AVFormat_SetBuffer(format, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), extradata, extradatasize);
-
     if (!dumpKey_.empty() && !dumpValue_.empty()) {
         bool dumpRet = OHOS::system::SetParameter(dumpKey_, dumpValue_);
         UNITTEST_INFO_LOG("SetParameter %s %s ret: %d", dumpKey_.c_str(), dumpValue_.c_str(), dumpRet);
