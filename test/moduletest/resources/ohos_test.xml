@@ -611,6 +611,28 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+
+    <target name="MsVideo1decoderConfigureFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test_msvideo1.msvideo1 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="MsVideo1decoderResourceFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test_msvideo1.msvideo1 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="MsVideo1decoderSetParameterFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test_msvideo1.msvideo1 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="Vc1SwdecoderConfigureFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>

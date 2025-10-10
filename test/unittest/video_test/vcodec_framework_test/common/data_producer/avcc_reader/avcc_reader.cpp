@@ -169,6 +169,53 @@ const uint32_t ES_VC1[] = {
 
 const uint32_t ES_VC1_LENGTH = sizeof(ES_VC1) / sizeof(ES_VC1[0]);
 
+enum Msvideo1Type {
+    MSVIDEO1_UNSPECIFIED = 0,
+    MSVIDEO1_I = 1,
+    MSVIDEO1_P = 2,
+    MSVIDEO1_B = 3,
+    MSVIDEO1_SEQUENCE_HEADER = 4
+};
+
+const uint32_t ES_MSVIDEO1[] = { // MSVideo1_FRAME_SIZE
+    71138, 688, 464, 516, 544, 1068, 918, 918, 2064, 1930, 2054, 5586, 8944, 4166, 2408, 2412, 3992, 2920, 6298, 10034,
+    7966, 5232, 6034, 6810, 6056, 4596, 68262, 4710, 6898, 9684, 7652, 8212, 7346, 8180, 8442, 12220, 14172, 12276,
+    9654, 13196, 9256, 11018, 13604, 17192, 16130, 15114, 13782, 13178, 15818, 16344, 17206, 18240, 67830, 9656, 17508,
+    15316, 17730, 22148, 17666, 23746, 24178, 20300, 21336, 20726, 20424, 22642, 24638, 26080, 26420, 25320, 25918,
+    25494, 24944, 25014, 25174, 29054, 27588, 27146, 68198, 21700, 25190, 28046, 27862, 29896, 30380, 29384, 28690,
+    30040, 28378, 30026, 29556, 30210, 30360, 29440, 30268, 30362, 29960, 31402, 29878, 31522, 30636, 30468, 29894,
+    30820, 67378, 27712, 30714, 31158, 31278, 31096, 30618, 30368, 30762, 31456, 30958, 32154, 31696, 31016, 31070,
+    30932, 31736, 31072, 31274, 33122, 32108, 31686, 30804, 32294, 31804, 30386, 67490, 29728, 32366, 30910, 29974,
+    30070, 29994, 28146, 28334, 32336, 31624, 29350, 29084, 27642, 28070, 24904, 24678, 28902, 28248, 26988, 24898,
+    24388, 25856, 21954, 21776, 26250, 64678, 21098, 22818, 21480, 21980, 20350, 21144, 23298, 23008, 22654, 20398,
+    21104, 20986, 18238, 18862, 21706, 21084, 20206, 17766, 16858, 18586, 14624, 16092, 18722, 19234, 17398, 63626,
+    8282, 14918, 11484, 12232, 15508, 15368, 14188, 12606, 11328, 13924, 6552, 8518, 12632, 13360, 12570, 10452, 7778,
+    9474, 6762, 8088, 11616, 10508, 11442, 8606, 7610, 61926, 2676, 7436, 6508, 7538, 7154, 6554, 7634, 5628, 7750,
+    7766, 5290, 6674, 6308, 7332, 5682, 5502, 7330, 7496, 6876, 5432, 7854, 8146, 6720, 5920, 7322, 61078, 3004, 5356,
+    5908, 6620, 5956, 7964, 6310, 7210, 6372, 5984, 6752, 7284, 6514, 5998, 4418, 14026, 4604, 6792, 6688, 6432, 7440,
+    7886, 6588, 7366, 6812, 60774, 2896, 5212, 5452, 7020, 7790, 7228, 7300, 7850, 6802, 6964, 6314, 8220, 7576, 6608,
+    8436, 8576, 8038, 7478, 7062, 7924, 7856, 7364, 7324, 8824, 9036, 60334, 2126, 5754, 8436, 6314, 5908, 6990, 6796,
+    5120, 7104, 7204, 7258, 5566, 6968, 8288, 8204, 5680, 7092, 7878, 7776, 5258, 7376, 7588, 7720, 5366, 7194, 59466,
+    2456, 3988, 5420, 6186, 6088, 4924, 6798, 7118, 6912, 4498, 7474, 8588, 7472, 5566, 7500, 8094, 7910, 6460, 9642,
+    10266, 9160, 8528, 8630, 9314, 10738, 60462, 4218, 9972, 9250, 7432, 8712, 8976, 10664, 8394, 10820, 10870, 9926,
+    8308, 9516, 10138, 11578, 7908, 10484, 9682, 10282, 8206, 9890, 10666, 10830, 8606, 9502, 60806, 2928, 7118, 9030,
+    10226, 10326, 9166, 10496, 11342, 10556, 8966, 11048, 10532, 11146, 9730, 9840, 11244, 10960, 10282, 10106, 12926,
+    9746, 10534, 9782, 11342, 10034, 62318, 2864, 8954, 9192, 10618, 9472, 12590, 10174, 11296, 10164, 12908, 11196,
+    12080, 4812, 12742, 12934, 11012, 11560, 12074, 12850, 12062, 12096, 11674, 12208, 11086, 12352, 62890, 5378, 11476,
+    10738, 13498, 13750, 11678, 13058, 12630, 14618, 13146, 13178, 12768, 13374, 12966, 12508, 14550, 13402, 13610,
+    13496, 15460, 15374, 14924, 13892, 14760, 15878, 64830, 9660, 13818, 15586, 15076, 14938, 15738, 17072, 15752,
+    15056, 15106, 16312, 14920, 15254, 14520, 16500, 14806, 14242, 14210, 17484, 15878, 14462, 15830, 17402, 16380,
+    16572, 66482, 10940, 17428, 16970, 18156, 19136, 19412, 18638, 19152, 19994, 18702, 18098, 21932, 19568, 18826,
+    19462, 19892, 21224, 19636, 18894, 19876, 20992, 19578, 18752, 19722, 20526, 69038, 12008, 18874, 20090, 20388,
+    17808, 32954, 21126, 23562, 26324, 24672, 23910, 25462, 24210, 27064, 23206, 25686, 25332, 24742, 23390, 25786,
+    23976, 24662, 22860, 24206, 23530, 75542, 17016, 20868, 21604, 24196, 21862, 23562, 22888, 21448, 21558, 22970,
+    22984, 23678, 25268, 26106, 25474, 24016, 23820, 26480, 27820, 30348, 28076, 28822, 28672, 27110, 27800, 74434,
+    20882, 29404, 27228, 28230, 29322, 27158, 28474, 29020, 30418, 27182, 29326, 30484, 29374, 28798, 28416, 31634,
+    29860, 27748, 28356, 29606, 30096, 28078, 29444, 29550, 29550, 76210, 19970, 27300, 28694, 26852, 28906, 27834,
+    28582, 27722, 25816, 26912, 26614, 26688, 26922, 28272, 28162, 27338, 25322, 26546, 26824, 25518, 25796, 27514,
+    25622, 27078, 25534, 74270, 17090, 24448, 23858};
+
+const uint32_t ES_MSVIDEO1_LENGTH = sizeof(ES_MSVIDEO1) / sizeof(ES_MSVIDEO1[0]);
 namespace OHOS {
 namespace MediaAVCodec {
 
@@ -1150,6 +1197,94 @@ void Vc1Reader::Vc1UnitReader::PrereadVc1Unit()
     std::cout << "[Vc1UnitReader::PrereadVc1Unit] Base class implementation - should be overridden" << std::endl;
 }
 
+int32_t Msvideo1Reader::Init(const std::shared_ptr<Msvideo1ReaderInfo>& info)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(info, AV_ERR_INVALID_VAL, "Msvideo1ReaderInfo is null");
+
+    std::shared_ptr<std::ifstream> inputFile = std::make_shared<std::ifstream>(
+        info->inPath, std::ios::binary | std::ios::in);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile && inputFile->is_open(),
+        AV_ERR_INVALID_VAL, "Open input file failed");
+
+    msvideo1UnitReader_ = std::static_pointer_cast<Msvideo1UnitReader>(
+        std::make_shared<Msvideo1MetaUnitReader>(inputFile));
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(msvideo1UnitReader_, AV_ERR_INVALID_VAL, "MSVIDEO1 unit reader create failed");
+
+    msvideo1Detector_ = std::static_pointer_cast<Msvideo1Detector>(
+        std::make_shared<Msvideo1Detector>());
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(msvideo1Detector_, AV_ERR_INVALID_VAL, "MSVIDEO1 detector create failed");
+
+    return AV_ERR_OK;
+}
+
+int32_t Msvideo1Reader::FillBuffer(uint8_t* bufferAddr, OH_AVCodecBufferAttr& attr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr, AV_ERR_INVALID_VAL, "Buffer address is null");
+
+    int32_t frameSize = 0;
+    bool isEosFrame = false;
+    auto ret = msvideo1UnitReader_->ReadMsvideo1Unit(bufferAddr, frameSize, isEosFrame);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCS_ERR_INVALID_OPERATION, "ReadMsvideo1Unit failed");
+
+    uint8_t msvideo1Type = msvideo1Detector_->GetMsvideo1Type(msvideo1Detector_->GetMsvideo1TypeAddr(bufferAddr));
+    bufferAddr += frameSize;
+    FillBufferAttr(attr, frameSize, msvideo1Type, isEosFrame);
+    frameInputCount_++;
+    return AV_ERR_OK;
+}
+
+bool Msvideo1Reader::IsEOS()
+{
+    return msvideo1UnitReader_ ? msvideo1UnitReader_->IsEOS() : true;
+}
+
+void Msvideo1Reader::FillBufferAttr(OH_AVCodecBufferAttr& attr, int32_t frameSize, uint8_t msvideo1Type,
+                                    bool isEosFrame)
+{
+    attr.size = frameSize;
+    attr.pts = GetTimeUs();
+    attr.flags = 0;
+
+    if (isEosFrame) {
+        attr.flags |= AVCODEC_BUFFER_FLAG_EOS;
+        std::cout << "Input EOS Frame, frameCount = " << (frameInputCount_) << std::endl;
+    } else {
+        if (msvideo1Detector_->IsI(msvideo1Type) || msvideo1Type == MSVIDEO1_SEQUENCE_HEADER) {
+            attr.flags |= AVCODEC_BUFFER_FLAG_SYNC_FRAME;
+        }
+    }
+}
+
+Msvideo1Reader::Msvideo1MetaUnitReader::Msvideo1MetaUnitReader(std::shared_ptr<std::ifstream> inputFile)
+{
+    inputFile_ = inputFile;
+    prereadBuffer_ = std::make_unique<uint8_t[]>(PREREAD_BUFFER_SIZE);
+    msvideo1Unit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+    frameIndex_ = 0;
+    PrereadMsvideo1Unit();
+}
+
+int32_t Msvideo1Reader::Msvideo1MetaUnitReader::ReadMsvideo1Unit(uint8_t* bufferAddr, int32_t& bufferSize,
+                                                                 bool& isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr, AV_ERR_INVALID_VAL, "Got an invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(msvideo1Unit_, AV_ERR_INVALID_VAL, "MSVIDEO1 unit buffer is nullptr");
+    bufferSize = static_cast<int32_t>(msvideo1Unit_->size());
+    if (bufferSize > 0) {
+        memcpy_s(bufferAddr, bufferSize, msvideo1Unit_->data(), bufferSize);
+    }
+    if (frameIndex_ < ES_MSVIDEO1_LENGTH) {
+        isEosFrame = false;
+        PrereadMsvideo1Unit();
+    } else {
+        isEosFrame = true;
+        msvideo1Unit_->clear();
+    }
+    return AV_ERR_OK;
+}
+
 int32_t Wmv3Reader::Init(const std::shared_ptr<Wmv3ReaderInfo> &info)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -1220,6 +1355,49 @@ int32_t Wmv3Reader::Wmv3MetaUnitReader::ReadWmv3Unit(uint8_t *bufferAddr, int32_
     return AV_ERR_OK;
 }
 
+bool Msvideo1Reader::Msvideo1MetaUnitReader::IsEOS()
+{
+    return frameIndex_ >= ES_MSVIDEO1_LENGTH;
+}
+
+bool Msvideo1Reader::Msvideo1MetaUnitReader::IsEOF()
+{
+    return (pPrereadBuffer_ >= prereadBufferSize_) && (inputFile_ && inputFile_->peek() == EOF);
+}
+
+void Msvideo1Reader::Msvideo1MetaUnitReader::PrereadFile()
+{
+    CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nullptr");
+    if (!inputFile_ || !inputFile_->is_open()) {
+        prereadBufferSize_ = 0;
+        pPrereadBuffer_ = 0;
+        return;
+    }
+    inputFile_->read(reinterpret_cast<char*>(prereadBuffer_.get()), PREREAD_BUFFER_SIZE);
+    std::streamsize bytesRead = inputFile_->gcount();
+    prereadBufferSize_ = static_cast<uint32_t>(bytesRead);
+    pPrereadBuffer_ = 0;
+}
+
+void Msvideo1Reader::Msvideo1MetaUnitReader::PrereadMsvideo1Unit()
+{
+    CHECK_AND_RETURN_LOG(inputFile_ && inputFile_->is_open(), "Input file not open");
+    CHECK_AND_RETURN_LOG(msvideo1Unit_ != nullptr, "msvideo1 unit buffer is nullptr");
+    CHECK_AND_RETURN_LOG(frameIndex_ < ES_MSVIDEO1_LENGTH, "All MSVIDEO1 frames have been read");
+
+    uint32_t frameSize = ES_MSVIDEO1[frameIndex_];
+    msvideo1Unit_->resize(frameSize);
+    auto pBuffer = msvideo1Unit_->data();
+
+    inputFile_->read(reinterpret_cast<char*>(pBuffer), frameSize);
+    uint32_t bytesRead = static_cast<uint32_t>(inputFile_->gcount());
+
+    CHECK_AND_RETURN_LOG(bytesRead == frameSize,
+        "Failed to read full frame. Expected: %u, Got: %u", frameSize, bytesRead);
+
+    frameIndex_++;
+}
+
 Wmv3Reader::Wmv3MetaUnitReader::Wmv3MetaUnitReader(std::shared_ptr<std::ifstream> inputFile, bool isHdrStream)
 {
     inputFile_ = inputFile;
@@ -1269,6 +1447,40 @@ void Wmv3Reader::Wmv3MetaUnitReader::PrereadWmv3Unit()
         "Failed to read full frame. Expected: %u, Got: %u", frameSize, bytesRead);
 
     frameIndex_++;
+}
+
+const uint8_t* Msvideo1Reader::Msvideo1Detector::GetMsvideo1TypeAddr(const uint8_t* bufferAddr)
+{
+    return bufferAddr;
+}
+
+uint8_t Msvideo1Reader::Msvideo1Detector::GetMsvideo1Type(const uint8_t* bufferAddr)
+{
+    if (!bufferAddr) {
+        return MSVIDEO1_UNSPECIFIED;
+    }
+    uint8_t type = bufferAddr[0];
+    switch (type) {
+        case 0x00: return MSVIDEO1_I;
+        case 0x01: return MSVIDEO1_P;
+        case 0x02: return MSVIDEO1_B;
+        default:   return MSVIDEO1_UNSPECIFIED;
+    }
+}
+
+bool Msvideo1Reader::Msvideo1Detector::IsI(uint8_t msvideo1Type)
+{
+    return (msvideo1Type == MSVIDEO1_I);
+}
+
+int32_t Msvideo1Reader::Msvideo1UnitReader::ReadMsvideo1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame)
+{
+    return AV_ERR_OK;
+}
+
+void Msvideo1Reader::Msvideo1UnitReader::PrereadMsvideo1Unit()
+{
+    std::cout << "[Msvideo1UnitReader::PrereadMsvideo1Unit] Base class implementation" << std::endl;
 }
 
 void Wmv3Reader::Wmv3MetaUnitReader::PrereadFile()

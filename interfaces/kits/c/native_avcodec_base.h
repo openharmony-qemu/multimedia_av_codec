@@ -255,6 +255,13 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_AVC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC;
 
 /**
+ * @brief Enumerates the MIME type of video MSVIDEO1 codec.
+ *
+ * @since 22
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MSVIDEO1;
+
+/**
  * @brief Enumerates the MIME type of video VC-1 codec.
  *
  * @since 22

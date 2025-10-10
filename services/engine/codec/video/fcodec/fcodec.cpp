@@ -66,6 +66,10 @@ constexpr int32_t VC1_MAX_HEIGHT_SIZE = 2048;
 constexpr int32_t VC1_BITRATE_MAX_SIZE = 135000000;
 constexpr int32_t VC1_BLOCKPERFRAME_SIZE = 16384;
 constexpr int32_t VC1_BLOCKPERSEC_SIZE = 983040;
+constexpr int32_t MSVIDEO1_MIN_WIDTH_SIZE = 4;
+constexpr int32_t MSVIDEO1_MIN_HEIGHT_SIZE = 4;
+constexpr int32_t MSVIDEO1_BLOCKPERSEC_SIZE = 3932160;
+
 #ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/fcodecdump";
@@ -80,6 +84,7 @@ constexpr struct {
     {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME, CodecMimeType::VIDEO_MPEG2, "mpeg2video"},
     {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4"},
     {AVCodecCodecName::VIDEO_DECODER_VC1_NAME, CodecMimeType::VIDEO_VC1, "vc1"},
+    {AVCodecCodecName::VIDEO_DECODER_MSVIDEO1_NAME, CodecMimeType::VIDEO_MSVIDEO1, "msvideo1"},
 #ifdef SUPPORT_CODEC_RV
     {AVCodecCodecName::VIDEO_DECODER_RV30_NAME, CodecMimeType::VIDEO_RV30, "rv30"},
     {AVCodecCodecName::VIDEO_DECODER_RV40_NAME, CodecMimeType::VIDEO_RV40, "rv40"},
@@ -1996,6 +2001,19 @@ void FCodec::GetVc1CapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
+void FCodec::GetMsVideo1CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.width.minVal = MSVIDEO1_MIN_WIDTH_SIZE;
+        capsData.height.minVal = MSVIDEO1_MIN_HEIGHT_SIZE;
+        capsData.blockPerSecond.maxVal = MSVIDEO1_BLOCKPERSEC_SIZE;
+        capsData.pixFormat = {
+            static_cast<int32_t>(VideoPixelFormat::RGBA), static_cast<int32_t>(VideoPixelFormat::NV12),
+            static_cast<int32_t>(VideoPixelFormat::NV21)};
+    }
+}
+
 void FCodec::GetWmv3CapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
@@ -2071,6 +2089,9 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         } else if (capsData.mimeType == "video/vc1") {
             capaArray.emplace_back(capsData);
             GetVc1CapProf(capaArray);
+        } else if (capsData.mimeType == "video/msvideo1") {
+            capaArray.emplace_back(capsData);
+            GetMsVideo1CapProf(capaArray);
         } else if (capsData.mimeType == "video/wmv3") {
             capaArray.emplace_back(capsData);
             GetWmv3CapProf(capaArray);

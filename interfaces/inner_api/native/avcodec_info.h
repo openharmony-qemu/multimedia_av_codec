@@ -609,6 +609,7 @@ private:
  */
 class CodecMimeType {
 public:
+    static constexpr std::string_view VIDEO_MSVIDEO1 = "video/msvideo1";
     static constexpr std::string_view VIDEO_VC1 = "video/vc1";
     static constexpr std::string_view VIDEO_H263 = "video/h263";
     static constexpr std::string_view VIDEO_AVC = "video/avc";
