@@ -172,6 +172,27 @@ const uint32_t ES_VC1_LENGTH = sizeof(ES_VC1) / sizeof(ES_VC1[0]);
 namespace OHOS {
 namespace MediaAVCodec {
 
+const uint32_t ES_WMV3_NORMAL[] = {
+    9673, 2294, 3049, 2229, 2859, 2735, 2901, 2881, 3056, 3570,
+    2583, 2636, 2708, 2426, 2226, 2892, 3104, 3224, 2466, 2590,
+    3371, 2963, 2768, 3152, 3377, 4311, 4512, 3991, 3692, 2715,
+    3297, 3482, 3461, 3672, 4766, 3194, 3750, 3731, 4622, 3228,
+    4155, 5918, 5879, 6822, 5330, 6465, 5614, 5274, 5416, 3847,
+    5176, 3806, 4520, 4829, 3375, 3546, 3483, 4206, 4693, 3826,
+    3812
+};
+const uint32_t ES_WMV3_NORMAL_LEN = sizeof(ES_WMV3_NORMAL) / sizeof(ES_WMV3_NORMAL[0]);
+
+const uint32_t ES_WMV3_HDR[] = {
+    96567, 28373, 28624, 29924, 28891, 29772, 30359, 29766, 31042, 34215,
+    30812, 33766, 32173, 23693, 29794, 29307, 31815, 31160, 32350, 32360,
+    23243, 31439, 32176, 31647, 31064, 31641, 33174, 21929, 29088, 31025,
+    29285, 29210, 30145, 30843, 31814, 30112, 29904, 31500, 32499, 30658,
+    29975, 29324, 28694, 30066, 29851, 29234, 50921, 29758, 32406, 29906,
+    28567, 29755, 31127, 29116, 51264, 31911, 31241, 28658, 30101, 30472,
+    30589
+};
+const uint32_t ES_WMV3_HDR_LEN = sizeof(ES_WMV3_HDR) / sizeof(ES_WMV3_HDR[0]);
 
 int32_t MpegReader::Init(const std::shared_ptr<MpegReaderInfo> &info)
 {
@@ -1128,5 +1149,135 @@ void Vc1Reader::Vc1UnitReader::PrereadVc1Unit()
 {
     std::cout << "[Vc1UnitReader::PrereadVc1Unit] Base class implementation - should be overridden" << std::endl;
 }
+
+int32_t Wmv3Reader::Init(const std::shared_ptr<Wmv3ReaderInfo> &info)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_ptr<std::ifstream> inputFile = std::make_unique<std::ifstream>(info->inPath.c_str(),
+                                                std::ios::binary | std::ios::in);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile != nullptr && inputFile->is_open(),
+                                      AV_ERR_INVALID_VAL, "Open input file failed");
+    wmv3UnitReader_= std::static_pointer_cast<Wmv3UnitReader>(std::make_shared<Wmv3MetaUnitReader>(
+                                      inputFile, info->isHdrStream));
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(wmv3UnitReader_, AV_ERR_INVALID_VAL, "wmv3 unit reader create failed");
+    return AV_ERR_OK;
+}
+
+void Wmv3Reader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t frameType,
+                                bool isEosFrame)
+{
+    (void) frameType;
+    attr.size += frameSize;
+    attr.pts = GetTimeUs();
+    if (isEosFrame) {
+        attr.flags = AVCODEC_BUFFER_FLAG_EOS;
+        std::cout << "Input EOS Frame, frameCount = " << (frameInputCount_ + 1) << std::endl;
+    }
+}
+
+int32_t Wmv3Reader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    int32_t frameSize = 0;
+    bool isEosFrame = false;
+    auto ret = wmv3UnitReader_->ReadWmv3Unit(bufferAddr, frameSize, isEosFrame);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AV_ERR_INVALID_VAL, "ReadWmv3Unit failed");
+    uint8_t frameType = 0x00;
+    bufferAddr += frameSize;
+    FillBufferAttr(attr, frameSize, frameType, isEosFrame);
+
+    frameInputCount_++;
+
+    return AV_ERR_OK;
+}
+
+bool Wmv3Reader::IsEOS()
+{
+    return wmv3UnitReader_ ? wmv3UnitReader_->IsEOS() : true;
+}
+
+uint8_t const *Wmv3Reader::Wmv3UnitReader::GetNextWmv3UnitAddr()
+{
+    CHECK_AND_RETURN_RET_LOG(wmv3Unit_ != nullptr, nullptr, "wmv3Unit_ is nullptr");
+    return wmv3Unit_->data();
+}
+
+int32_t Wmv3Reader::Wmv3MetaUnitReader::ReadWmv3Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL, "Got a invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(wmv3Unit_, AV_ERR_INVALID_VAL, "wmv3 unit buffer is nullptr");
+    bufferSize = wmv3Unit_->size();
+    memcpy_s(bufferAddr, bufferSize, wmv3Unit_->data(), bufferSize);
+    std::cout << "wuwenbin bufferSize = " << (bufferSize) << std::endl;
+
+    if (!IsEOF()) {
+        isEosFrame = false;
+        PrereadWmv3Unit();
+    } else {
+        isEosFrame = true;
+        wmv3Unit_->clear();
+    }
+    return AV_ERR_OK;
+}
+
+Wmv3Reader::Wmv3MetaUnitReader::Wmv3MetaUnitReader(std::shared_ptr<std::ifstream> inputFile, bool isHdrStream)
+{
+    inputFile_ = inputFile;
+    isHdrStream_ = isHdrStream;
+    prereadBuffer_ = std::make_unique<uint8_t []>(PREREAD_BUFFER_SIZE);
+
+    wmv3Unit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+    PrereadWmv3Unit();
+}
+
+bool Wmv3Reader::Wmv3MetaUnitReader::IsEOS()
+{
+    return IsEOF() && wmv3Unit_->empty();
+}
+
+bool Wmv3Reader::Wmv3MetaUnitReader::IsEOF()
+{
+    if (isHdrStream_) {
+        return frameIndex_ >= ES_WMV3_HDR_LEN;
+    }
+    return frameIndex_ >= ES_WMV3_NORMAL_LEN;
+}
+
+uint32_t Wmv3Reader::Wmv3MetaUnitReader::GetFrameLenth(uint32_t index)
+{
+    if (isHdrStream_) {
+        return ES_WMV3_HDR[index];
+    }
+    return ES_WMV3_NORMAL[index];
+}
+
+void Wmv3Reader::Wmv3MetaUnitReader::PrereadWmv3Unit()
+{
+    CHECK_AND_RETURN_LOG(inputFile_ && inputFile_->is_open(), "Input file not open");
+    CHECK_AND_RETURN_LOG(wmv3Unit_ != nullptr, "wmv3 unit buffer is nullptr");
+    CHECK_AND_RETURN_LOG(frameIndex_ < (isHdrStream_ ? ES_WMV3_HDR_LEN : ES_WMV3_NORMAL_LEN),
+        "All wmv3 frames have been read");
+
+    uint32_t frameSize = GetFrameLenth(frameIndex_);
+    wmv3Unit_->resize(frameSize);
+    auto pBuffer = wmv3Unit_->data();
+
+    inputFile_->read(reinterpret_cast<char*>(pBuffer), frameSize);
+    uint32_t bytesRead = static_cast<uint32_t>(inputFile_->gcount());
+
+    CHECK_AND_RETURN_LOG(bytesRead == frameSize,
+        "Failed to read full frame. Expected: %u, Got: %u", frameSize, bytesRead);
+
+    frameIndex_++;
+}
+
+void Wmv3Reader::Wmv3MetaUnitReader::PrereadFile()
+{
+    CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nallptr");
+    inputFile_->read((char *)prereadBuffer_.get(), PREREAD_BUFFER_SIZE);
+    prereadBufferSize_ = inputFile_->gcount();
+    pPrereadBuffer_ = 0;
+}
+
 } // MediaAVCodec
 } // OHOS
