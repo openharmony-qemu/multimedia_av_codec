@@ -119,6 +119,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
     {AV_CODEC_ID_PCM_ALAW, MimeType::AUDIO_G711A},
     {AV_CODEC_ID_GSM_MS, MimeType::AUDIO_GSM_MS},
+    {AV_CODEC_ID_GSM, MimeType::AUDIO_GSM},
     {AV_CODEC_ID_WMAV1, MimeType::AUDIO_WMAV1},
     {AV_CODEC_ID_WMAV2, MimeType::AUDIO_WMAV2},
     {AV_CODEC_ID_ADPCM_G722, MimeType::AUDIO_ADPCM_G722},

@@ -643,6 +643,7 @@ public:
     static constexpr std::string_view IMAGE_PNG = "image/png";
     static constexpr std::string_view IMAGE_BMP = "image/bmp";
     static constexpr std::string_view AUDIO_GSM_MS = "audio/gsm_ms";
+    static constexpr std::string_view AUDIO_GSM = "audio/gsm";
 };
 
 /**
