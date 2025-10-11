@@ -1179,4 +1179,66 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="HlsCfgFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_hls"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_hls/720_1M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_hls/720_2M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_hls/1080_3M"/>
+            <option name="push" value="video_res/test_hls/enc.key -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/out000.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/out001.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHLSEncode.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHLSEncode_session_key.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_cbr/test_cbr.m3u8 -> /data/test/media/test_cbr" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_native.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_live.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_5K.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_null.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_0.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_1.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_2.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_3.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_4.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_5.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_6.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_7.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_8.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_9.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_720.m3u8 -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7200.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7201.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7202.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7203.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7204.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7205.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7206.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7207.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7208.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7209.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_72010.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_72011.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_1080.m3u8 -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10800.ts-> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10801.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10802.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10803.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10804.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10805.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10806.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10807.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10808.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10809.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_108010.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_108011.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_108012.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_hls/testXMap.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testByteRange.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testMutiStream.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHlsLive.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
 </configuration>
