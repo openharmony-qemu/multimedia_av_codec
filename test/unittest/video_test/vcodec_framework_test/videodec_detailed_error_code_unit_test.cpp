@@ -259,6 +259,25 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_MBAFF_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: VideoDecoder_XPS_Invalid_001
+ * @tc.desc: xps frame data invalid
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Invalid_001, TestSize.Level1)
+{
+    constexpr int32_t width = 720;
+    constexpr int32_t height = 576;
+    CreateByNameWithParam(CodecMimeType::VIDEO_HEVC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    PrepareSource(VCodecTestCode::HW_HEVC, "/data/test/media/720_576_xps_invalid_avcc.h265");
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
  * @tc.name: VideoDecoder_XPS_Not_Exist_001
  * @tc.desc: xps frame does not exist
  * @tc.type: FUNC

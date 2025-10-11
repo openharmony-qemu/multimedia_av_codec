@@ -445,6 +445,7 @@
             <option name="push" value="video_res/text_xps/270_576_no_xps_avcc.h264 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/text_xps/720_100_avcc.h264 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/text_xps/720_576_no_xps_avcc.h265 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/text_xps/720_576_xps_invalid_avcc.h265 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/text_xps/720_1280_10bit_avcc.h264 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/text_xps/720_1280_25_12bit_avcc.h265 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/text_xps/720_1280_yuv400p_avcc.h264 -> /data/test/media" src="res"/>

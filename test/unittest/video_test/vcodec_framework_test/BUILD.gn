@@ -1884,7 +1884,7 @@ ohos_unittest("videodec_detailed_error_code_async_unit_test") {
     "./common/utils/unittest_utils.cpp",
     "./func_sample/mock/inner/vcodec_inner_mock_factory.cpp",
     "./func_sample/mock/inner/videodec_inner_mock.cpp",
-    "./func_sample/sample/decoder/vdec_sync_sample.cpp",
+    "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_detailed_error_code_unit_test.cpp",
   ]
 
