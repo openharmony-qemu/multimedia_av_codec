@@ -98,9 +98,9 @@ static void OnOutputFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *
     OH_AVFormat_GetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, &g_outputChannelLayout);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, &g_outputSampleFormat);
     cout << "OnOutputFormatChanged received, rate:" << g_outputSampleRate
-         << ",channel:" << g_outputChannels << endl;
+        << ",channel:" << g_outputChannels << endl;
     cout << "OnOutputFormatChanged received, layout:" << g_outputChannelLayout
-         << ",format:" << g_outputSampleFormat << endl;
+        << ",format:" << g_outputSampleFormat << endl;
 }
 
 static void OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData)
@@ -143,7 +143,9 @@ public:
     void SetEOS(uint32_t index, OH_AVBuffer *buffer);
 
 protected:
+    int fd_ = -1;
     bool isTestingFormat_ = false;
+    bool isSync_ = false;
     std::atomic<bool> isRunning_ = false;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
@@ -459,6 +461,9 @@ int32_t AudioCodeGsmDecoderUnitTest::Configure()
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
     uint32_t bitRate = 13000;
+    if (isSync_) {
+        OH_AVFormat_SetIntValue(format_, OH_MD_KEY_ENABLE_SYNC_MODE, 1);
+    }
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), DEFAULT_CHANNELS);
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(),
         OH_AudioChannelLayout::CH_LAYOUT_MONO);
@@ -500,6 +505,71 @@ HWTEST_F(AudioCodeGsmDecoderUnitTest, audioDecoder_Gsm_CreateByMime_02, TestSize
     Release();
 }
 
+HWTEST_F(AudioCodeGsmDecoderUnitTest, capability_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_AUDIO_GSM, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    const int threadCnt = 10;
+    std::vector<std::thread> threadPool;
+    for (int32_t i = 0; i < threadCnt; i++) {
+        threadPool.emplace_back([&cap]() {
+            const int32_t *sampleRates = nullptr;
+            uint32_t sampleRateNum = 0;
+            OH_AVRange* sampleRateRanges[10];
+            uint32_t rangesNum = 0;
+            OH_AVRange channelCountRange = {0, 0};
+            for (int i = 0; i < 10; i++) {
+                sampleRateRanges[i] = nullptr;
+            }
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRateRanges(cap, sampleRateRanges, &rangesNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRateRanges(cap, sampleRateRanges, &rangesNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRateRanges(cap, sampleRateRanges, &rangesNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &channelCountRange), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &channelCountRange), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &channelCountRange), AV_ERR_OK);
+        });
+    }
+    for (auto &th : threadPool) {
+        th.join();
+    }
+}
+
+HWTEST_F(AudioCodeGsmDecoderUnitTest, CheckSampleInvalidFormat_Gsm_001, TestSize.Level1)
+{
+    uint32_t bitRate = 13000;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
+    ASSERT_EQ(AV_ERR_OK, CreateCodecFunc());
+    OH_AVFormat *fmt = OH_AVFormat_Create();
+    EXPECT_EQ(AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), DEFAULT_CHANNELS);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(),
+        OH_AudioChannelLayout::CH_LAYOUT_MONO);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), 48000);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
+
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_AudioCodec_Configure(audioDec_, fmt));
+    Release();
+}
+
+HWTEST_F(AudioCodeGsmDecoderUnitTest, CheckSampleInvalidFormat_Gsm_002, TestSize.Level1)
+{
+    uint32_t bitRate = 13000;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
+    ASSERT_EQ(AV_ERR_OK, CreateCodecFunc());
+    OH_AVFormat *fmt = OH_AVFormat_Create();
+    EXPECT_EQ(AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), 2);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(),
+        OH_AudioChannelLayout::CH_LAYOUT_MONO);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
+
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_AudioCodec_Configure(audioDec_, fmt));
+    OH_AVFormat_Destroy(fmt);
+}
 
 HWTEST_F(AudioCodeGsmDecoderUnitTest, audioDecoder_Gsm_PushInputData_InvalidIndex_01, TestSize.Level1)
 {
@@ -508,8 +578,8 @@ HWTEST_F(AudioCodeGsmDecoderUnitTest, audioDecoder_Gsm_PushInputData_InvalidInde
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
 
-    const uint32_t index = 0; // 非法 index
-    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_PushInputBuffer(audioDec_, index));
+    const uint32_t index = 100000;
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_INVALID_VAL, OH_AudioCodec_PushInputBuffer(audioDec_, index));
     Release();
 }
 
@@ -520,8 +590,8 @@ HWTEST_F(AudioCodeGsmDecoderUnitTest, audioDecoder_Gsm_ReleaseOutputBuffer_Inval
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
 
-    const uint32_t index = 1024; // 非法 index
-    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_FreeOutputBuffer(audioDec_, index));
+    const uint32_t index = 100000;
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_INVALID_VAL, OH_AudioCodec_FreeOutputBuffer(audioDec_, index));
     Release();
 }
 

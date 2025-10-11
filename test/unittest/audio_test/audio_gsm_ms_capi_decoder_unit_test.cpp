@@ -52,9 +52,9 @@ namespace {
 const string CODEC_EAC3_NAME = std::string(std::string(AVCodecCodecName::AUDIO_DECODER_GSM_MS_NAME));
 constexpr int32_t DEFAULT_CHANNELS = 1;
 constexpr uint32_t DEFAULT_SAMPLE_RATE = 8000;
-constexpr uint32_t DEFAULT_INDEX = 1024;
 constexpr string_view GSM_MS_FILE_TODEMUX = "/data/test/media/8000_mono_gsm_ms.avi";
 constexpr string_view OUTPUT_GSM_MS_PCM_FILE_PATH = "/data/test/media/test_decoder_gsm_ms.pcm";
+const string OPUS_SO_FILE_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_ext_base.z.so";
 } // namespace
 
 namespace OHOS {
@@ -99,17 +99,14 @@ static void OnOutputFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *
     OH_AVFormat_GetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, &g_outputChannelLayout);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, &g_outputSampleFormat);
     cout << "OnOutputFormatChanged received, rate:" << g_outputSampleRate << ",channel:" << g_outputChannels << endl;
-    cout << "OnOutputFormatChanged received, layout:" << g_outputChannelLayout
-        << ",format:" << g_outputSampleFormat << endl;
+    cout << "OnOutputFormatChanged received, layout:" << g_outputChannelLayout << ",format:"
+        << g_outputSampleFormat << endl;
 }
 
 static void OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData)
 {
     (void)codec;
     AudioCodecBufferSignal *signal = static_cast<AudioCodecBufferSignal *>(userData);
-    if (signal == nullptr) {
-        return;
-    }
     unique_lock<mutex> lock(signal->inMutex_);
     signal->inQueue_.push(index);
     signal->inBufferQueue_.push(data);
@@ -120,16 +117,13 @@ static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuff
 {
     (void)codec;
     AudioCodecBufferSignal *signal = static_cast<AudioCodecBufferSignal *>(userData);
-    if (signal == nullptr) {
-        return;
-    }
     unique_lock<mutex> lock(signal->outMutex_);
     signal->outQueue_.push(index);
     signal->outBufferQueue_.push(data);
     signal->outCond_.notify_all();
 }
 
-class AudioCodeGsmMsDecoderUnitTest : public testing::Test {
+class AudioCodeGsm_MsDecoderUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
@@ -166,28 +160,32 @@ protected:
     OH_AVSource *source = nullptr;
 };
 
-void AudioCodeGsmMsDecoderUnitTest::SetUpTestCase(void)
+void AudioCodeGsm_MsDecoderUnitTest::SetUpTestCase(void)
 {
+    cout << "[SetUpTestCase]: " << endl;
 }
 
-void AudioCodeGsmMsDecoderUnitTest::TearDownTestCase(void)
+void AudioCodeGsm_MsDecoderUnitTest::TearDownTestCase(void)
 {
+    cout << "[TearDownTestCase]: " << endl;
 }
 
-void AudioCodeGsmMsDecoderUnitTest::SetUp(void)
+void AudioCodeGsm_MsDecoderUnitTest::SetUp(void)
 {
     g_outputFormatChangedTimes = 0;
     g_outputSampleRate = 0;
     g_outputChannels = 0;
+    cout << "[SetUp]: SetUp!!!" << endl;
 }
 
-void AudioCodeGsmMsDecoderUnitTest::TearDown(void)
+void AudioCodeGsm_MsDecoderUnitTest::TearDown(void)
 {
     if (isTestingFormat_) {
         EXPECT_EQ(g_outputFormatChangedTimes, 1);
     } else {
         EXPECT_EQ(g_outputFormatChangedTimes, 0);
     }
+    cout << "[TearDown]: over!!!" << endl;
 
     if (signal_) {
         delete signal_;
@@ -206,20 +204,21 @@ void AudioCodeGsmMsDecoderUnitTest::TearDown(void)
     }
 }
 
-void AudioCodeGsmMsDecoderUnitTest::Release()
+void AudioCodeGsm_MsDecoderUnitTest::Release()
 {
     Stop();
     OH_AudioCodec_Destroy(audioDec_);
 }
 
-void AudioCodeGsmMsDecoderUnitTest::HandleEOS(const uint32_t &index)
+void AudioCodeGsm_MsDecoderUnitTest::HandleEOS(const uint32_t &index)
 {
     OH_AudioCodec_PushInputBuffer(audioDec_, index);
+    std::cout << "end buffer\n";
     signal_->inQueue_.pop();
     signal_->inBufferQueue_.pop();
 }
 
-void AudioCodeGsmMsDecoderUnitTest::SetEOS(uint32_t index, OH_AVBuffer *buffer)
+void AudioCodeGsm_MsDecoderUnitTest::SetEOS(uint32_t index, OH_AVBuffer *buffer)
 {
     OH_AVCodecBufferAttr attr;
     attr.pts = 0;
@@ -227,10 +226,11 @@ void AudioCodeGsmMsDecoderUnitTest::SetEOS(uint32_t index, OH_AVBuffer *buffer)
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
     OH_AVBuffer_SetBufferAttr(buffer, &attr);
-    OH_AudioCodec_PushInputBuffer(audioDec_, index);
+    int32_t res = OH_AudioCodec_PushInputBuffer(audioDec_, index);
+    cout << "OH_AudioCodec_PushInputBuffer    EOS   res: " << res << endl;
 }
 
-bool AudioCodeGsmMsDecoderUnitTest::ReadBuffer(OH_AVBuffer *buffer, uint32_t index)
+bool AudioCodeGsm_MsDecoderUnitTest::ReadBuffer(OH_AVBuffer *buffer, uint32_t index)
 {
     OH_AVCodecBufferAttr attr;
     OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, buffer);
@@ -245,7 +245,7 @@ bool AudioCodeGsmMsDecoderUnitTest::ReadBuffer(OH_AVBuffer *buffer, uint32_t ind
     return true;
 }
 
-int64_t AudioCodeGsmMsDecoderUnitTest::GetFileSize(const char *fileName)
+int64_t AudioCodeGsm_MsDecoderUnitTest::GetFileSize(const char *fileName)
 {
     int64_t fileSize = 0;
     if (fileName != nullptr) {
@@ -257,7 +257,7 @@ int64_t AudioCodeGsmMsDecoderUnitTest::GetFileSize(const char *fileName)
     return fileSize;
 }
 
-void AudioCodeGsmMsDecoderUnitTest::InputFunc()
+void AudioCodeGsm_MsDecoderUnitTest::InputFunc()
 {
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
@@ -268,6 +268,7 @@ void AudioCodeGsmMsDecoderUnitTest::InputFunc()
         uint32_t index = signal_->inQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
         if (buffer == nullptr) {
+            cout << "Fatal: GetInputBuffer fail" << endl;
             break;
         }
         if (ReadBuffer(buffer, index) == false) {
@@ -284,7 +285,7 @@ void AudioCodeGsmMsDecoderUnitTest::InputFunc()
             buffer->buffer_->memory_->SetSize(attr.size);
         }
 
-        int32_t ret = 0;
+        int32_t ret;
         if (isFirstFrame_) {
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
             ret = OH_AudioCodec_PushInputBuffer(audioDec_, index);
@@ -297,59 +298,68 @@ void AudioCodeGsmMsDecoderUnitTest::InputFunc()
         signal_->inBufferQueue_.pop();
         frameCount_++;
         if (ret != AVCS_ERR_OK) {
+            cout << "Fatal error, exit" << endl;
             break;
         }
     }
+    cout << "stop, exit" << endl;
     inputFile_.close();
 }
 
-void AudioCodeGsmMsDecoderUnitTest::OutputFunc()
+void AudioCodeGsm_MsDecoderUnitTest::OutputFunc()
 {
     if (!pcmOutputFile_.is_open()) {
-        return;
+        std::cout << "open " << OUTPUT_GSM_MS_PCM_FILE_PATH << " failed!" << std::endl;
     }
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
         if (!isRunning_.load()) {
+            cout << "wait to stop, exit" << endl;
             break;
         }
         uint32_t index = signal_->outQueue_.front();
         OH_AVBuffer *data = signal_->outBufferQueue_.front();
         if (data == nullptr) {
+            cout << "OutputFunc OH_AVBuffer is nullptr" << endl;
             continue;
         }
         pcmOutputFile_.write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)), data->buffer_->memory_->GetSize());
         if (data != nullptr &&
             (data->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS || data->buffer_->memory_->GetSize() == 0)) {
+            cout << "decode eos" << endl;
             isRunning_.store(false);
             signal_->startCond_.notify_all();
         }
         signal_->outBufferQueue_.pop();
         signal_->outQueue_.pop();
         if (OH_AudioCodec_FreeOutputBuffer(audioDec_, index) != AV_ERR_OK) {
+            cout << "Fatal: FreeOutputData fail" << endl;
             break;
         }
     }
+    cout << "stop, exit" << endl;
     pcmOutputFile_.close();
 }
 
 
-int32_t AudioCodeGsmMsDecoderUnitTest::Start()
+int32_t AudioCodeGsm_MsDecoderUnitTest::Start()
 {
     isRunning_.store(true);
-    inputLoop_ = make_unique<thread>(&AudioCodeGsmMsDecoderUnitTest::InputFunc, this);
+    inputLoop_ = make_unique<thread>(&AudioCodeGsm_MsDecoderUnitTest::InputFunc, this);
     if (inputLoop_ == nullptr) {
+        cout << "Fatal: No memory" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
-    outputLoop_ = make_unique<thread>(&AudioCodeGsmMsDecoderUnitTest::OutputFunc, this);
+    outputLoop_ = make_unique<thread>(&AudioCodeGsm_MsDecoderUnitTest::OutputFunc, this);
     if (outputLoop_ == nullptr) {
+        cout << "Fatal: No memory" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
     return OH_AudioCodec_Start(audioDec_);
 }
 
-int32_t AudioCodeGsmMsDecoderUnitTest::Stop()
+int32_t AudioCodeGsm_MsDecoderUnitTest::Stop()
 {
     isRunning_.store(false);
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
@@ -381,60 +391,71 @@ int32_t AudioCodeGsmMsDecoderUnitTest::Stop()
             signal_->outBufferQueue_.pop();
         }
     }
+    std::cout << "start stop!\n";
     return OH_AudioCodec_Stop(audioDec_);
 }
 
-int32_t AudioCodeGsmMsDecoderUnitTest::InitFile()
+int32_t AudioCodeGsm_MsDecoderUnitTest::InitFile()
 {
     inputFile_.open(GSM_MS_FILE_TODEMUX.data(), std::ios::binary);
     if (!inputFile_.is_open()) {
+        cout << "Fatal: open input file failed:" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
     pcmOutputFile_.open(OUTPUT_GSM_MS_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
     if (!pcmOutputFile_.is_open()) {
+        cout << "Fatal: open output file failed" << endl;
         inputFile_.close();
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
     int fd = open(GSM_MS_FILE_TODEMUX.data(), O_RDONLY);
     int64_t size = GetFileSize(GSM_MS_FILE_TODEMUX.data());
+    cout << GSM_MS_FILE_TODEMUX.data() << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     if (source == nullptr) {
+        cout << "Fatal: source is null" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     if (demuxer == nullptr) {
+        cout << "Fatal: demuxer is null" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
     OH_AVErrCode ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
     if (ret != OH_AVErrCode::AV_ERR_OK) {
+        cout << "Fatal: OH_AVDemuxer_SelectTrackByID is fail" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
 
     return OH_AVErrCode::AV_ERR_OK;
 }
 
-int32_t AudioCodeGsmMsDecoderUnitTest::CreateCodecFunc()
+int32_t AudioCodeGsm_MsDecoderUnitTest::CreateCodecFunc()
 {
     audioDec_ = OH_AudioCodec_CreateByName((std::string(AVCodecCodecName::AUDIO_DECODER_GSM_MS_NAME)).data());
     if (audioDec_ == nullptr) {
+        cout << "Fatal: CreateByName fail" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
     signal_ = new AudioCodecBufferSignal();
     if (signal_ == nullptr) {
+        cout << "Fatal: create signal fail" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
     cb_ = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable, &OnOutputBufferAvailable};
     int32_t ret = OH_AudioCodec_RegisterCallback(audioDec_, cb_, signal_);
     if (ret != OH_AVErrCode::AV_ERR_OK) {
+        cout << "Fatal: SetCallback fail" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
     return OH_AVErrCode::AV_ERR_OK;
 }
 
-int32_t AudioCodeGsmMsDecoderUnitTest::Configure()
+int32_t AudioCodeGsm_MsDecoderUnitTest::Configure()
 {
     format_ = OH_AVFormat_Create();
     if (format_ == nullptr) {
+        cout << "Fatal: create format failed" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
     uint32_t bitRate = 13000;
@@ -446,72 +467,137 @@ int32_t AudioCodeGsmMsDecoderUnitTest::Configure()
     return OH_AudioCodec_Configure(audioDec_, format_);
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_CreateByName_01, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_CreateByName_01, TestSize.Level1)
 {
     audioDec_ = OH_AudioCodec_CreateByName((std::string(AVCodecCodecName::AUDIO_DECODER_GSM_MS_NAME)).data());
     EXPECT_NE(nullptr, audioDec_);
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_CreateByName_02, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_CreateByName_02, TestSize.Level1)
 {
     audioDec_ = OH_AudioCodec_CreateByName(nullptr);
     EXPECT_EQ(nullptr, audioDec_);
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_CreateByName_03, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_CreateByName_03, TestSize.Level1)
 {
     audioDec_ = OH_AudioCodec_CreateByName("audio_gsm_msdecoder");
     EXPECT_EQ(nullptr, audioDec_);
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_CreateByMime_01, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_CreateByMime_01, TestSize.Level1)
 {
     audioDec_ = OH_AudioCodec_CreateByMime(std::string(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_GSM_MS).data(), false);
     EXPECT_NE(nullptr, audioDec_);
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_CreateByMime_02, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_CreateByMime_02, TestSize.Level1)
 {
     audioDec_ = OH_AudioCodec_CreateByMime(nullptr, false);
     EXPECT_EQ(nullptr, audioDec_);
     Release();
 }
 
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, capability_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_AUDIO_GSM_MS, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    const int threadCnt = 10;
+    std::vector<std::thread> threadPool;
+    for (int32_t i = 0; i < threadCnt; i++) {
+        threadPool.emplace_back([&cap]() {
+            const int32_t *sampleRates = nullptr;
+            uint32_t sampleRateNum = 0;
+            OH_AVRange* sampleRateRanges[10];
+            uint32_t rangesNum = 0;
+            OH_AVRange channelCountRange = {0, 0};
+            for (int i = 0; i < 10; i++) {
+                sampleRateRanges[i] = nullptr;
+            }
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRateRanges(cap, sampleRateRanges, &rangesNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRateRanges(cap, sampleRateRanges, &rangesNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRateRanges(cap, sampleRateRanges, &rangesNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &channelCountRange), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &channelCountRange), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &channelCountRange), AV_ERR_OK);
+        });
+    }
+    for (auto &th : threadPool) {
+        th.join();
+    }
+}
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_PushInputData_InvalidIndex_01, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, CheckSampleInvalidFormat_Gsm_Ms_001, TestSize.Level1)
+{
+    uint32_t bitRate = 13000;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
+    ASSERT_EQ(AV_ERR_OK, CreateCodecFunc());
+    OH_AVFormat *fmt = OH_AVFormat_Create();
+    EXPECT_EQ(AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), DEFAULT_CHANNELS);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(),
+        OH_AudioChannelLayout::CH_LAYOUT_MONO);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), 48000);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
+
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_AudioCodec_Configure(audioDec_, fmt));
+    Release();
+}
+
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, CheckSampleInvalidFormat_Gsm_Ms_002, TestSize.Level1)
+{
+    uint32_t bitRate = 13000;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
+    ASSERT_EQ(AV_ERR_OK, CreateCodecFunc());
+    OH_AVFormat *fmt = OH_AVFormat_Create();
+    EXPECT_EQ(AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), 2);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(),
+        OH_AudioChannelLayout::CH_LAYOUT_MONO);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
+
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_AudioCodec_Configure(audioDec_, fmt));
+    OH_AVFormat_Destroy(fmt);
+}
+
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_PushInputData_InvalidIndex_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
 
-    const uint32_t index = DEFAULT_INDEX;
-    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_PushInputBuffer(audioDec_, index));
+    const uint32_t index = 100000;
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_INVALID_VAL, OH_AudioCodec_PushInputBuffer(audioDec_, index));
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_ReleaseOutputBuffer_InvalidIndex_01, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_ReleaseOutputBuffer_InvalidIndex_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
 
-    const uint32_t index = DEFAULT_INDEX;
-    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_FreeOutputBuffer(audioDec_, index));
+    const uint32_t index = 100000;
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_INVALID_VAL, OH_AudioCodec_FreeOutputBuffer(audioDec_, index));
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Configure_01, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_Configure_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_SetParameter_01, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_SetParameter_01, TestSize.Level1)
 {
     isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
@@ -527,7 +613,7 @@ HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_SetParameter_01, Test
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_SetParameter_02, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_SetParameter_02, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
@@ -535,7 +621,7 @@ HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_SetParameter_02, Test
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Start_01, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_Start_01, TestSize.Level1)
 {
     isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
@@ -549,7 +635,7 @@ HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Start_01, TestSize.Le
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_Gsm_Ms_Start_02, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_Start_02, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
@@ -564,7 +650,7 @@ HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_Gsm_Ms_Start_02, TestSize.L
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Stop_01, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_Stop_01, TestSize.Level1)
 {
     isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
@@ -577,7 +663,7 @@ HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Stop_01, TestSize.Lev
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Flush_01, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_Flush_01, TestSize.Level1)
 {
     isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
@@ -592,7 +678,7 @@ HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Flush_01, TestSize.Le
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Reset_01, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_Reset_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
@@ -600,7 +686,7 @@ HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Reset_01, TestSize.Le
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Reset_02, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_Reset_02, TestSize.Level1)
 {
     isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
@@ -616,7 +702,7 @@ HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Reset_02, TestSize.Le
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Reset_03, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_Reset_03, TestSize.Level1)
 {
     isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
@@ -631,7 +717,7 @@ HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Reset_03, TestSize.Le
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Destroy_01, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_Destroy_01, TestSize.Level1)
 {
     isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
@@ -646,7 +732,7 @@ HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Destroy_01, TestSize.
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioDec_));
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Destroy_02, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_Destroy_02, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
@@ -655,7 +741,7 @@ HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Destroy_02, TestSize.
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioDec_));
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_GetOutputFormat_01, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_GetOutputFormat_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
@@ -665,7 +751,7 @@ HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_GetOutputFormat_01, T
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_IsValid_01, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_IsValid_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
     bool isValid = false;
@@ -673,13 +759,12 @@ HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_IsValid_01, TestSize.
     Release();
 }
 
-HWTEST_F(AudioCodeGsmMsDecoderUnitTest, audioDecoder_GsmMs_Prepare_01, TestSize.Level1)
+HWTEST_F(AudioCodeGsm_MsDecoderUnitTest, audioDecoder_Gsm_Ms_Prepare_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Prepare(audioDec_));
     Release();
 }
-
 } // namespace MediaAVCodec
 } // namespace OHOS
