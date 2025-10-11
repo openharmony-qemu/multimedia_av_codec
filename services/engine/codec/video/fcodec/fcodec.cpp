@@ -66,6 +66,8 @@ constexpr int32_t VC1_MAX_HEIGHT_SIZE = 2048;
 constexpr int32_t VC1_BITRATE_MAX_SIZE = 135000000;
 constexpr int32_t VC1_BLOCKPERFRAME_SIZE = 16384;
 constexpr int32_t VC1_BLOCKPERSEC_SIZE = 983040;
+constexpr int32_t MSVIDEO1_MIN_WIDTH_SIZE = 4;
+constexpr int32_t MSVIDEO1_MIN_HEIGHT_SIZE = 4;
 #ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/fcodecdump";
@@ -80,6 +82,7 @@ constexpr struct {
     {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME, CodecMimeType::VIDEO_MPEG2, "mpeg2video"},
     {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4"},
     {AVCodecCodecName::VIDEO_DECODER_VC1_NAME, CodecMimeType::VIDEO_VC1, "vc1"},
+    {AVCodecCodecName::VIDEO_DECODER_MSVIDEO1_NAME, CodecMimeType::VIDEO_MSVIDEO1, "msvideo1"},
 #ifdef SUPPORT_CODEC_RV
     {AVCodecCodecName::VIDEO_DECODER_RV30_NAME, CodecMimeType::VIDEO_RV30, "rv30"},
     {AVCodecCodecName::VIDEO_DECODER_RV40_NAME, CodecMimeType::VIDEO_RV40, "rv40"},
@@ -356,25 +359,43 @@ bool FCodec::IsActive() const
     return state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS;
 }
 
-void FCodec::FreeExtradataIfNeeded(std::string name)
+void FCodec::FreeExtraData()
 {
-    if (avCodecContext_->extradata && !(name == AVCodecCodecName::VIDEO_DECODER_VC1_NAME)) {
+    if (avCodecContext_ != nullptr && avCodecContext_->extradata) {
         av_free(avCodecContext_->extradata);
         avCodecContext_->extradata = nullptr;
         avCodecContext_->extradata_size = 0;
     }
 }
 
+void FCodec::ResetCodedWidthHeight()
+{
+    if (avCodecContext_ != nullptr) {
+        avCodecContext_->coded_width = 0;
+        avCodecContext_->coded_height = 0;
+    }
+}
+
+bool FCodec::IsVC1Codec()
+{
+    return (codecName_ == AVCodecCodecName::VIDEO_DECODER_VC1_NAME ||
+                        codecName_ == AVCodecCodecName::VIDEO_DECODER_WMV3_NAME);
+}
+
 void FCodec::ResetContext(bool isFlush)
 {
     CHECK_AND_RETURN_LOG(avCodecContext_ != nullptr, "Avcodec context is nullptr");
-    FreeExtradataIfNeeded(codecName_);
-    avCodecContext_->coded_width = 0;
-    avCodecContext_->coded_height = 0;
     if (!isFlush) {
+        FreeExtraData();
+        ResetCodedWidthHeight();
         avCodecContext_->width = 0;
         avCodecContext_->height = 0;
         avCodecContext_->get_buffer2 = nullptr;
+    } else {
+        if (!IsVC1Codec()) {
+          FreeExtraData();
+          ResetCodedWidthHeight();
+        }
     }
 }
 
@@ -1958,13 +1979,33 @@ void FCodec::GetVc1CapProf(std::vector<CapabilityData> &capaArray)
             static_cast<int32_t>(VideoPixelFormat::NV21)};
         capsData.profiles = {static_cast<int32_t>(VC1_PROFILE_SIMPLE), static_cast<int32_t>(VC1_PROFILE_MAIN),
                              static_cast<int32_t>(VC1_PROFILE_ADVANCED)};
-        std::vector<int32_t> levels;
-        for (int32_t j = 0; j <= static_cast<int32_t>(VC1Level::VC1_LEVEL_HIGH); ++j) {
-            levels.emplace_back(j);
+        std::vector<int32_t> advlevels;
+        for (int32_t advcount = static_cast<int32_t>(VC1Level::VC1_LEVEL_L0);
+            advcount <= static_cast<int32_t>(VC1Level::VC1_LEVEL_L4); ++advcount) {
+            advlevels.emplace_back(advcount);
         }
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_SIMPLE), levels));
+        std::vector<int32_t> levels;
+        for (int32_t levelcount = static_cast<int32_t>(VC1_LEVEL_LOW);
+            levelcount <= static_cast<int32_t>(VC1Level::VC1_LEVEL_HIGH); ++levelcount) {
+            levels.emplace_back(levelcount);
+        }
+        std::vector<int32_t> simplelevels;
+        for (int32_t simplecount = static_cast<int32_t>(VC1_LEVEL_LOW);
+            simplecount <= static_cast<int32_t>(VC1Level::VC1_LEVEL_MEDIUM); ++simplecount) {
+            simplelevels.emplace_back(simplecount);
+        }
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_SIMPLE), simplelevels));
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_MAIN), levels));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_ADVANCED), levels));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_ADVANCED), advlevels));
+    }
+}
+
+void FCodec::GetMsVideo1CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.width.minVal = MSVIDEO1_MIN_WIDTH_SIZE;
+        capsData.height.minVal = MSVIDEO1_MIN_HEIGHT_SIZE;
     }
 }
 
@@ -2045,6 +2086,9 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         } else if (capsData.mimeType == "video/vc1") {
             capaArray.emplace_back(capsData);
             GetVc1CapProf(capaArray);
+        } else if (capsData.mimeType == "video/msvideo1") {
+            capaArray.emplace_back(capsData);
+            GetMsVideo1CapProf(capaArray);
         } else if (capsData.mimeType == "video/wmv3") {
             capaArray.emplace_back(capsData);
             GetWmv3CapProf(capaArray);

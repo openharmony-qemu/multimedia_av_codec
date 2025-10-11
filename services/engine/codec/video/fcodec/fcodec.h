@@ -127,7 +127,9 @@ private:
     static void GetH263CapProf(std::vector<CapabilityData> &capaArray);
     static void GetWmv3CapProf(std::vector<CapabilityData> &capaArray);
     static void GetVc1CapProf(std::vector<CapabilityData> &capaArray);
+    static void GetMsVideo1CapProf(std::vector<CapabilityData> &capaArray);
     void FreeExtradataIfNeeded(std::string name);
+    
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     int32_t SetCodecExtradata(const Format &format);
 #endif
@@ -162,6 +164,9 @@ private:
     bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
     int32_t SwapInBuffers(bool isOutputBuffer);
+    void ResetCodedWidthHeight();
+    void FreeExtraData();
+    bool IsVC1Codec();
     bool disableDmaSwap_ = false;
     int32_t pid_ = -1;
 

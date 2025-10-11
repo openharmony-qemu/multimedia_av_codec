@@ -128,6 +128,7 @@ public:
     Status SetMediaMuted(bool isMuted, bool hasInitialized);
     Status DoReleaseOnMuted(bool isNeedRelease) override;
     Status DoReInitAndStart() override;
+    void SetBuffering(bool isBuffering);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -266,6 +267,8 @@ private:
     bool isDecoderReleasedForMute_ {true};
     bool hasReceivedReleaseEvent_ {false};
     bool isFirstStart_ = true;
+    bool isBuffering_ {false};
+    bool isFirstFrameWrite_ {false};
 };
 } // namespace Pipeline
 } // namespace Media

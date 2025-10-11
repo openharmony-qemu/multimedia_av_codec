@@ -38,7 +38,7 @@ std::vector<std::string_view> codecVec = {
     AVCodecCodecName::AUDIO_DECODER_FLAC_NAME, AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME,
     AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME, AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME,
     AVCodecCodecName::AUDIO_DECODER_APE_NAME, AVCodecCodecName::AUDIO_DECODER_AC3_NAME,
-    AVCodecCodecName::AUDIO_DECODER_GSM_MS_NAME
+    AVCodecCodecName::AUDIO_DECODER_GSM_MS_NAME, AVCodecCodecName::AUDIO_DECODER_GSM_NAME
 };
 
 template <class T>
@@ -90,6 +90,10 @@ void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap)
         case 8: // 8:gsm_ms
             InitDefinition<FFmpegGsmMsDecoderPlugin>(MimeType::AUDIO_GSM_MS,
                 AVCodecCodecName::AUDIO_DECODER_GSM_MS_NAME, definition, cap);
+            break;
+        case 9: // 9:gsm
+            InitDefinition<FFmpegGSMDecoderPlugin>(MimeType::AUDIO_GSM,
+                AVCodecCodecName::AUDIO_DECODER_GSM_NAME, definition, cap);
             break;
         default:
             MEDIA_LOG_I("codec is not supported right now");

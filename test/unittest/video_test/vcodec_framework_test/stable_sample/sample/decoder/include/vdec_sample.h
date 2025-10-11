@@ -109,6 +109,8 @@ private:
     int32_t CreateMpegReader();
     int32_t CreateH263Reader();
     int32_t CreateVc1Reader();
+    int32_t CreateMsvideo1Reader();
+    int32_t CreateWmv3Reader();
 
     OH_AVCodec *codec_ = nullptr;
     std::shared_ptr<VCodecSignal> signal_ = nullptr;
@@ -124,6 +126,8 @@ private:
     bool isSurfaceMode_ = false;
     bool isAvcStream_ = true; // true: AVC; false: HEVC
     bool isMpeg2Stream_ = true; // true: Mpeg2; false: Mpeg4
+    bool needExtraData_ = false;
+    bool isWmv3HdrStream_ = false;
 
 private:
     OH_AVCodecAsyncCallback asyncCallback_;

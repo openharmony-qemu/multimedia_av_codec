@@ -489,6 +489,7 @@ private:
     bool enableAsyncDemuxer_ = true;
 
     bool enableDfxBufferQueue_ {false};
+    std::atomic<bool> isPrepared_ {false};
     std::shared_ptr<AVBufferQueue> dfxBufferQueue_ {nullptr};
     sptr<AVBufferQueueProducer> dfxBufferQueueProducer_ {nullptr};
     sptr<AVBufferQueueConsumer> dfxBufferQueueConsumer_ {nullptr};

@@ -531,13 +531,13 @@ void FileFdSourcePlugin::NotifyBufferingStart()
 {
     MEDIA_LOG_I("NotifyBufferingStart, ringBuffer.size() " PUBLIC_LOG_ZU
         ", waterLineAbove_ " PUBLIC_LOG_U64, ringBuffer_->GetSize(), waterLineAbove_);
-    isBuffering_ = true;
     if (callback_ != nullptr && !isInterrupted_) {
-        MEDIA_LOG_I("Read OnEvent BUFFERING_START.");
         callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
+        MEDIA_LOG_I("Read OnEvent BUFFERING_START.");
     } else {
         MEDIA_LOG_E("BUFFERING_START callback_ is nullptr or isInterrupted_ is true");
     }
+    isBuffering_.store(true);
 }
 
 void FileFdSourcePlugin::NotifyBufferingPercent()
@@ -562,14 +562,14 @@ void FileFdSourcePlugin::NotifyBufferingEnd()
     NotifyBufferingPercent();
     MEDIA_LOG_I("NotifyBufferingEnd, ringBuffer.size() " PUBLIC_LOG_ZU
         ", waterLineAbove_ " PUBLIC_LOG_U64, ringBuffer_->GetSize(), waterLineAbove_);
-    isBuffering_ = false;
     lastReadTime_ = 0;
     if (callback_ != nullptr && !isInterrupted_) {
-        MEDIA_LOG_I("NotifyBufferingEnd success .");
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+        MEDIA_LOG_I("NotifyBufferingEnd success .");
     } else {
         MEDIA_LOG_E("BUFFERING_END callback_ is nullptr or isInterrupted_ is true");
     }
+    isBuffering_.store(false);
 }
 
 void FileFdSourcePlugin::NotifyReadFail()

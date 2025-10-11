@@ -23,6 +23,8 @@ demuxer_moduletest_native_include_dirs = [
   "$MEDIA_ROOT_DIR/services/services/factory",
   "$MEDIA_ROOT_DIR/services/utils",
   "./src/InnerAPI/include",
+  "$av_codec_root_dir/test/nativedemo/include",
+  "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
 ]
 
 demuxer_moduletest_cflags = [
@@ -61,6 +63,7 @@ ohos_unittest("demuxer_native_module_test") {
       #"./src/perf_test.cpp",
       #"./src/reli2_test.cpp",
       #"./src/reli_test.cpp",
+      "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
       "./src/InnerAPI/api_test.cpp",
       "./src/InnerAPI/func_test.cpp",
       "./src/InnerAPI/inner_demuxer_parser_sample.cpp",
@@ -87,6 +90,7 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/randomseek_test.cpp",
       "./src/seek2_test.cpp",
       "./src/seek_test.cpp",
+      "./src/wmafunc_test.cpp",
 
       #"./src/net_test.cpp",
       #"./src/net2_test.cpp",
@@ -96,6 +100,8 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/InnerAPI/demuxer_plugin_func_test.cpp",
       "./src/format_test.cpp",
       "./src/proc_test.cpp",
+      "./src/eac3func_test.cpp",
+      "./src/3g2func_test.cpp",
     ]
   }
 
