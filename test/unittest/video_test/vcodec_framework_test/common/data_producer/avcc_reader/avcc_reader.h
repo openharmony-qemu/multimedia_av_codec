@@ -309,6 +309,115 @@ private:
     std::shared_ptr<Vc1UnitReader> vc1UnitReader_ = nullptr;
     std::shared_ptr<Vc1Detector> vc1Detector_ = nullptr;
 };
+
+struct Msvideo1ReaderInfo {
+    std::string inPath;
+};
+class Msvideo1Reader : public DataProducerBase {
+public:
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t naluType, bool isEosFrame);
+    bool IsEOS();
+    int32_t Init(const std::shared_ptr<Msvideo1ReaderInfo> &info);
+    std::mutex mutex_;
+    int32_t frameInputCount_ = 0;
+private:
+    class Msvideo1UnitReader {
+    public:
+        explicit Msvideo1UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        virtual ~Msvideo1UnitReader() {};
+        uint8_t const *GetNextMsvideo1UnitAddr();
+        virtual int32_t ReadMsvideo1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos);
+        virtual bool IsEOS() = 0;
+        virtual void PrereadFile() = 0;
+        virtual void PrereadMsvideo1Unit();
+
+    protected:
+        Msvideo1UnitReader() {};
+        virtual bool IsEOF() = 0;
+
+        std::unique_ptr<std::vector<uint8_t>> msvideo1Unit_ = nullptr;
+        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+    };
+
+    class Msvideo1MetaUnitReader : public Msvideo1UnitReader {
+    public:
+        explicit Msvideo1MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        int32_t ReadMsvideo1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        bool IsEOS() override;
+        void PrereadFile() override;
+        void PrereadMsvideo1Unit() override;
+    private:
+        bool IsEOF() override;
+        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
+        std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+        uint32_t frameIndex_ = 0;
+    };
+
+    class Msvideo1Detector {
+    public:
+        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
+        const uint8_t *GetMsvideo1TypeAddr(const uint8_t *bufferAddr);
+        uint8_t GetMsvideo1Type(const uint8_t *bufferAddr);
+        bool IsI(uint8_t msvideo1Type);
+    };
+
+    std::shared_ptr<Msvideo1UnitReader> msvideo1UnitReader_ = nullptr;
+    std::shared_ptr<Msvideo1Detector> msvideo1Detector_ = nullptr;
+};
+
+struct Wmv3ReaderInfo {
+    std::string inPath;
+    bool isHdrStream = false;
+};
+
+class Wmv3Reader : public DataProducerBase {
+public:
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t frameType, bool isEosFrame);
+    bool IsEOS();
+    int32_t Init(const std::shared_ptr<Wmv3ReaderInfo> &info);
+    std::mutex mutex_;
+    int32_t frameInputCount_ = 0;
+private:
+    class Wmv3UnitReader {
+    public:
+        explicit Wmv3UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        virtual ~Wmv3UnitReader() {};
+        uint8_t const *GetNextWmv3UnitAddr();
+        virtual int32_t ReadWmv3Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) = 0;
+        virtual bool IsEOS() = 0;
+        virtual void PrereadFile() = 0;
+
+    protected:
+        Wmv3UnitReader() {};
+        virtual bool IsEOF() = 0;
+        std::unique_ptr<std::vector<uint8_t>> wmv3Unit_ = nullptr;
+        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+        bool isHdrStream_ = false;
+    };
+
+    class Wmv3MetaUnitReader : public Wmv3UnitReader {
+    public:
+        explicit Wmv3MetaUnitReader(std::shared_ptr<std::ifstream> inputFile, bool isHdrStream);
+        int32_t ReadWmv3Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        bool IsEOS() override;
+        void PrereadFile() override;
+        void PrereadWmv3Unit();
+
+    private:
+        bool IsEOF() override;
+        uint32_t GetFrameLenth(uint32_t index);
+        std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+        uint32_t frameIndex_ = 0;
+    };
+
+    std::shared_ptr<Wmv3UnitReader> wmv3UnitReader_ = nullptr;
+};
 } // MediaAVCodec
 } // OHOS
 #endif // AVCC_READER_H

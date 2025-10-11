@@ -134,6 +134,11 @@ constexpr int MAX_BIT_RATE_GSM_MS = 13000;
 constexpr int MAX_CHANNEL_COUNT_GSM_MS = 1;
 const std::vector<int32_t> AUDIO_GSM_MS_SAMPLE_RATE = {8000};
 
+constexpr int MIN_BIT_RATE_GSM = 13000;
+constexpr int MAX_BIT_RATE_GSM = 13000;
+constexpr int MAX_CHANNEL_COUNT_GSM = 1;
+const std::vector<int32_t> AUDIO_GSM_SAMPLE_RATE = {8000};
+
 static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sampleRate)
 {
     std::vector<Range> sampleRateRange;
@@ -157,6 +162,21 @@ CapabilityData AudioCodeclistInfo::GetGsmMsDecoderCapability()
     audioGsmMsCapability.sampleRateRanges = convertVectorToRange(AUDIO_GSM_MS_SAMPLE_RATE);
     audioGsmMsCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioGsmMsCapability;
+}
+
+CapabilityData AudioCodeclistInfo::GetGsmDecoderCapability()
+{
+    CapabilityData audioGsmCapability;
+    audioGsmCapability.codecName = AVCodecCodecName::AUDIO_DECODER_GSM_NAME;
+    audioGsmCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioGsmCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_GSM;
+    audioGsmCapability.isVendor = false;
+    audioGsmCapability.bitrate = Range(MIN_BIT_RATE_GSM, MAX_BIT_RATE_GSM);
+    audioGsmCapability.channels = Range(1, MAX_CHANNEL_COUNT_GSM);
+    audioGsmCapability.sampleRate = AUDIO_GSM_SAMPLE_RATE;
+    audioGsmCapability.sampleRateRanges = convertVectorToRange(AUDIO_GSM_SAMPLE_RATE);
+    audioGsmCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioGsmCapability;
 }
 
 CapabilityData AudioCodeclistInfo::GetMP3DecoderCapability()
@@ -188,6 +208,7 @@ CapabilityData AudioCodeclistInfo::GetMP3EncoderCapability()
     audioMp3Capability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioMp3Capability;
 }
+
 
 CapabilityData AudioCodeclistInfo::GetAacDecoderCapability()
 {

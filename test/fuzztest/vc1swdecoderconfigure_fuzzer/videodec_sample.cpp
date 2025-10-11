@@ -28,6 +28,7 @@ constexpr int32_t SIXTEEN = 16;
 constexpr int32_t TWENTY_FOUR = 24;
 constexpr uint32_t START_CODE_SIZE = 4;
 constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
+const uint32_t MAX_SINGLE_BUFFER = 512 * 1024 * 1024;
 VDecFuzzSample *g_decSample = nullptr;
 
 bool g_fuzzError = false;
@@ -72,6 +73,9 @@ private:
 
 VDecFuzzSample::~VDecFuzzSample()
 {
+    isRunning_.store(false);
+    StopInloop();
+    ReleaseInFile();
     Release();
 }
 
@@ -326,19 +330,51 @@ int32_t VDecFuzzSample::ReadData(uint32_t index, OH_AVBuffer *buffer)
     return SendData(bufferSize, index, buffer);
 }
 
+uint32_t VDecFuzzSample::InspectionBufferSize(uint32_t bufferSize, uint8_t *frameBuffer, bool &isPass)
+{
+    if (bufferSize > MAX_SINGLE_BUFFER) {
+        cout << "bufferSize exceeds max limit, size=" << bufferSize << endl;
+        isRunning_.store(false);
+        return 1;
+    }
+    if (bufferSize <= 0) {
+        return 0;
+    }
+    frameBuffer = new (std::nothrow) uint8_t[bufferSize];
+    if (frameBuffer == nullptr) {
+        cout << "new failed, bufferSize=" << bufferSize << endl;
+        isRunning_.store(false);
+        return 1;
+    }
+    if (!inFile_->good()) {
+        delete[] frameBuffer;
+        cout << "inFile is not good" << endl;
+        isRunning_.store(false);
+        return 1;
+    }
+    inFile_->read(reinterpret_cast<char *>(frameBuffer), bufferSize);
+    if (inFile_->gcount() != static_cast<std::streamsize>(bufferSize) && !inFile_->eof()) {
+        delete[] frameBuffer;
+        cout << "read size mismatch, expected=" << bufferSize << ", actual=" << inFile_->gcount() << endl;
+        isRunning_.store(false);
+        return 1;
+    }
+    isPass = true;
+    return 0;
+}
+
 uint32_t VDecFuzzSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuffer *buffer)
 {
     OH_AVCodecBufferAttr attr;
     uint8_t *frameBuffer = nullptr;
-    if (bufferSize <= 0) {
-        return 0;
+    bool isPass = false;
+    uint32_t res = InspectionBufferSize(bufferSize, frameBuffer, isPass);
+    if (isPass != true) {
+        return res;
     }
-    frameBuffer = new uint8_t[bufferSize];
-    (void)inFile_->read(reinterpret_cast<char *>(frameBuffer), bufferSize);
-    attr.flags = (bufferSize != 0) ?
-     (AVCODEC_BUFFER_FLAGS_SYNC_FRAME + AVCODEC_BUFFER_FLAGS_CODEC_DATA) : AVCODEC_BUFFER_FLAGS_EOS;
+    attr.size = bufferSize;
     int32_t size = OH_AVBuffer_GetCapacity(buffer);
-    if (size < attr.size) {
+    if (size < static_cast<int32_t>(attr.size)) {
         delete[] frameBuffer;
         cout << "ERROR:AVBuffer not enough, buffer size" << attr.size << "   AVBuffer Size " << size << endl;
         isRunning_.store(false);
@@ -355,12 +391,14 @@ uint32_t VDecFuzzSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuff
     attr.pts = GetSystemTimeUs();
     attr.size = bufferSize;
     attr.offset = 0;
+    attr.flags = (bufferSize != 0) ?
+        (AVCODEC_BUFFER_FLAGS_SYNC_FRAME + AVCODEC_BUFFER_FLAGS_CODEC_DATA) : AVCODEC_BUFFER_FLAGS_EOS;
     int32_t ret = OH_VideoDecoder_PushInputBuffer(vdec_, index);
     if (ret != AV_ERR_OK) {
         errCount++;
         cout << "push input data failed, error:" << ret << endl;
     }
-    frameCount_ = frameCount_ + 1;
+    frameCount_++;
     if (inFile_->eof()) {
         isRunning_.store(false);
     }

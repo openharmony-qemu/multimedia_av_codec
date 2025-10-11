@@ -19,6 +19,7 @@
 extern "C" {
 #endif
 
+const char *OH_AVCODEC_MIMETYPE_VIDEO_MSVIDEO1 = "video/msvideo1";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_VC1 = "video/vc1";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_AVC = "video/avc";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4 = "video/mp4v-es";
@@ -48,6 +49,7 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_G711A = "audio/g711a";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_EAC3 = "audio/eac3";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM_MS = "audio/gsm_ms";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_WMV3 = "video/wmv3";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM = "audio/gsm";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";

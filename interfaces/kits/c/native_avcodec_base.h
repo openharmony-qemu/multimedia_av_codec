@@ -255,6 +255,13 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_AVC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC;
 
 /**
+ * @brief Enumerates the MIME type of video MSVIDEO1 codec.
+ *
+ * @since 22
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MSVIDEO1;
+
+/**
  * @brief Enumerates the MIME type of video VC-1 codec.
  *
  * @since 22
@@ -398,6 +405,14 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM_MS;
  * @since 22
  */
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_EAC3;
+
+/**
+ * @brief Enumerates the mime types of audio GSM codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 20
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM;
 
 /**
  * @brief Key for timeStamp in surfacebuffer, value type is int64_t.
