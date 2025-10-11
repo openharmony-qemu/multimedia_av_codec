@@ -1203,6 +1203,7 @@ ohos_unittest("audio_alac_decoder_unit_test") {
   ]
 }
 
+##################################################################################################################
 ohos_unittest("audio_sync_mode_capi_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
