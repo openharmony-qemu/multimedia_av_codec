@@ -72,7 +72,10 @@ const std::map<AVCodecServiceErrCode, std::string> AVCS_ERRCODE_INFOS = {
     {AVCS_ERR_INPUT_DATA_ERROR,                      "there is somthing wrong for input data"},
     {AVCS_ERR_TRY_AGAIN,                             "try again later"},
     {AVCS_ERR_STREAM_CHANGED,                        "video stream changed"},
-    {AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, "video unsupported color space conversion"}};
+    {AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, "video unsupported color space conversion"},
+    {AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION,        "unsuported codec specification"},
+    {AVCS_ERR_ILLEGAL_PARAMETER_SETS,                 "illegal parameter sets"},
+    {AVCS_ERR_MINSSING_PARAMETER_SETS,                "missing parameter sets"}};
 
 const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRCODE = {
     {AVCS_ERR_OK,                                  AV_ERR_OK},
@@ -127,6 +130,9 @@ const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRC
     {AVCS_ERR_TRY_AGAIN,                           AV_ERR_TRY_AGAIN_LATER},
     {AVCS_ERR_STREAM_CHANGED,                      AV_ERR_STREAM_CHANGED},
     {AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION},
+    {AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, AV_ERR_UNKNOWN},
+    {AVCS_ERR_ILLEGAL_PARAMETER_SETS, AV_ERR_UNKNOWN},
+    {AVCS_ERR_MINSSING_PARAMETER_SETS, AV_ERR_UNKNOWN},
     };
 
 const std::map<OH_AVErrCode, std::string> OHAVCODECERRCODE_INFOS = {

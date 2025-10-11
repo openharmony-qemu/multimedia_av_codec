@@ -33,6 +33,7 @@
 #include "surface_type.h"
 #include "surface_tools.h"
 #include "surface_utils.h"
+#include "codeclist_core.h"
 #ifdef SUPPORT_DRM
 #include "imedia_key_session_service.h"
 #endif
@@ -926,6 +927,20 @@ int32_t CodecServer::GetInputFormat(Format &format)
         AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     return codecBase_->GetInputFormat(format);
+}
+
+int32_t CodecServer::GetCodecInfo(Format &format)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ != UNINITIALIZED,
+        AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s", GetStatusDescription(status_).data());
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+
+    std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
+    CodecType codecType = codecListCore->FindCodecType(codecName_);
+    format.PutIntValue(Tag::MEDIA_IS_HARDWARE, codecType == CodecType::AVCODEC_HCODEC ? 1 : 0);
+
+    return AVCS_ERR_OK;
 }
 
 void CodecServer::SetDumpInfo(bool isDump, uint64_t instanceId)

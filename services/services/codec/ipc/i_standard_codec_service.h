@@ -56,6 +56,7 @@ public:
     virtual int32_t RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs) = 0;
     virtual int32_t SetParameter(const Format &format) = 0;
     virtual int32_t GetInputFormat(Format &format) = 0;
+    virtual int32_t GetCodecInfo(Format &format) = 0;
     virtual int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag)
     {
