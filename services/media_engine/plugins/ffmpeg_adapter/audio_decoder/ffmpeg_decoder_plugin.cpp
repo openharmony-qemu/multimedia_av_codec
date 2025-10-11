@@ -97,7 +97,7 @@ void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap)
                 AVCodecCodecName::AUDIO_DECODER_GSM_NAME, definition, cap);
             break;
         case 10: // 10:alac
-            InitDefinition<FFmpegAlacMsDecoderPlugin>(MimeType::AUDIO_ALAC,
+            InitDefinition<FFmpegAlacDecoderPlugin>(MimeType::AUDIO_ALAC,
                 AVCodecCodecName::AUDIO_DECODER_ALAC_NAME, definition, cap);
             break;
         default:
