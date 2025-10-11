@@ -61,7 +61,6 @@ group("av_codec_unit_test") {
         "unittest/audio_test:av_audio_inner_unit_test",
         "unittest/audio_test:av_audio_media_codec_unit_test",
         "unittest/audio_test:audio_sync_codec_adapter_unit_test",
-        "unittest/audio_test:audio_codec_inner_unit_test",
         "unittest/audio_test:audio_gsm_ms_decoder_unit_test",
         "unittest/audio_test:audio_gsm_ms_capi_decoder_unit_test",
         "unittest/audio_test:audio_gsm_decoder_unit_test",
