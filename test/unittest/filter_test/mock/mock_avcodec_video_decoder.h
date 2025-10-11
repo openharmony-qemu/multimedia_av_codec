@@ -44,6 +44,7 @@ public:
         MediaAVCodec::AVCodecBufferFlag flag), (override));
     MOCK_METHOD(int32_t, QueueInputBuffer, (uint32_t index), (override));
     MOCK_METHOD(int32_t, GetOutputFormat, (Format &format), (override));
+    MOCK_METHOD(int32_t, GetCodecInfo, (Format &format), (override));
     MOCK_METHOD(int32_t, ReleaseOutputBuffer, (uint32_t index, bool render), (override));
     MOCK_METHOD(int32_t, RenderOutputBufferAtTime, (uint32_t index, int64_t renderTimestampNs), (override));
     MOCK_METHOD(int32_t, SetParameter, (const Format &format), (override));

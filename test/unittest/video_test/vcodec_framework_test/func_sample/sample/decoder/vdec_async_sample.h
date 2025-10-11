@@ -37,6 +37,7 @@ public:
     int32_t Reset();
     int32_t Release();
     std::shared_ptr<FormatMock> GetOutputDescription();
+    std::shared_ptr<FormatMock> GetCodecInfo();
     int32_t SetParameter(std::shared_ptr<FormatMock> format);
     int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr);
     int32_t RenderOutputData(uint32_t index);

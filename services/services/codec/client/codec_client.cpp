@@ -556,6 +556,24 @@ int32_t CodecClient::GetInputFormat(Format &format)
     return ret;
 }
 
+int32_t CodecClient::GetCodecInfo(Format &format)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+    int32_t ret;
+    if (codecInfo_.ContainKey(Tag::MEDIA_IS_HARDWARE)) {
+        format = codecInfo_;
+        ret = AVCS_ERR_OK;
+    } else {
+        ret = codecProxy_->GetCodecInfo(codecInfo_);
+        if (ret == AVCS_ERR_OK) {
+            format = codecInfo_;
+        }
+    }
+    AVCODEC_LOGI_WITH_TAG("%{public}s", format.Stringify().c_str());
+    return ret;
+}
+
 void CodecClient::UpdateGeneration()
 {
     if (listenerStub_ != nullptr && needUpdateGeneration_) {

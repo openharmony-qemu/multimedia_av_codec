@@ -229,6 +229,11 @@ std::shared_ptr<FormatMock> VideoDecCapiMock::GetOutputDescription()
     return std::make_shared<AVFormatCapiMock>(format);
 }
 
+std::shared_ptr<FormatMock> VideoDecCapiMock::GetCodecInfo()
+{
+    return nullptr;
+}
+
 int32_t VideoDecCapiMock::SetParameter(std::shared_ptr<FormatMock> format)
 {
     auto formatMock = std::static_pointer_cast<AVFormatCapiMock>(format);

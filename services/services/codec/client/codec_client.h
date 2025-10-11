@@ -65,6 +65,7 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
+    int32_t GetCodecInfo(Format &format) override;
 #ifdef SUPPORT_DRM
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag) override;
 #endif
@@ -111,6 +112,7 @@ private:
     std::shared_mutex mutex_;
     std::shared_ptr<std::recursive_mutex> syncMutex_ = nullptr;
     std::atomic<bool> needUpdateGeneration_ = true;
+    Format codecInfo_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
