@@ -102,6 +102,7 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/proc_test.cpp",
       "./src/eac3func_test.cpp",
       "./src/3g2func_test.cpp",
+      "./src/3gpfunc_test.cpp",
     ]
   }
 
