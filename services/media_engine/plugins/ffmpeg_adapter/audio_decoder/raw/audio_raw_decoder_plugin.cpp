@@ -92,6 +92,9 @@ constexpr int32_t INDEX_OFFSET_1 = 1;
 constexpr int32_t INDEX_OFFSET_2 = 2;
 constexpr int32_t INDEX_OFFSET_3 = 3;
 
+constexpr int32_t BLURAY_OFFSET = 4;
+constexpr int32_t DVD_OFFSET = 3;
+
 static std::vector<AudioSampleFormat> supportedSampleFormats = {
     AudioSampleFormat::SAMPLE_S16BE,
     AudioSampleFormat::SAMPLE_S24BE,
@@ -264,15 +267,15 @@ int32_t AudioRawDecoderPlugin::GetFormatBytes(AudioSampleFormat format)
             break;
         case AudioSampleFormat::SAMPLE_DVD: {
             int32_t audioBits = AUDIO_BITS_16;
-            if (format_->Get<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(audioBits)) {
+            if (format_->Get<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(audioBits)) {
                 bytesSize = audioBits == AUDIO_BITS_20 ? BYTE_LENGHT_S24 : BYTE_LENGHT_S16;
             }
             break;
         }
         case AudioSampleFormat::SAMPLE_BLURAY: {
-            int32_t audioBits = AUDIO_BITS_24;
-            bytesSize = BYTE_LENGHT_S24;
-            if (format_->Get<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(audioBits)) {
+            int32_t audioBits = AUDIO_BITS_16;
+            bytesSize = BYTE_LENGHT_S16;
+            if (format_->Get<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(audioBits)) {
                 bytesSize = audioBits == AUDIO_BITS_16 ? BYTE_LENGHT_S16 : BYTE_LENGHT_S24;
             }
             break;
@@ -452,8 +455,8 @@ Status AudioRawDecoderPlugin::ConvertS32LEP(const uint8_t* ptr, int32_t &size)
 Status AudioRawDecoderPlugin::ConvertDVD(const uint8_t* ptr, int32_t &size)
 {
     int32_t audioBits = AUDIO_BITS_16;
-    if (format_->Get<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(audioBits)) {
-        AVCODEC_LOGI("pcm_dvd data is %{public}d bits", audioBits);
+    if (format_->Get<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(audioBits)) {
+        AVCODEC_LOGD("pcm_dvd data is %{public}d bits", audioBits);
     }
     if (audioBits == AUDIO_BITS_16) {
         return ConvertDVD16Bits(ptr, size);
@@ -466,9 +469,9 @@ Status AudioRawDecoderPlugin::ConvertDVD(const uint8_t* ptr, int32_t &size)
 
 Status AudioRawDecoderPlugin::ConvertBluray(const uint8_t* ptr, int32_t &size)
 {
-    int32_t audioBits = AUDIO_BITS_24;
-    if (format_->Get<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(audioBits)) {
-        AVCODEC_LOGI("pcm_dvd data is %{public}d bits", audioBits);
+    int32_t audioBits = AUDIO_BITS_16;
+    if (format_->Get<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(audioBits)) {
+        AVCODEC_LOGD("pcm_bluray data is %{public}d bits", audioBits);
     }
     if (audioBits == AUDIO_BITS_16) {
         return ConvertDVD16Bits(ptr, size);
@@ -576,6 +579,14 @@ Status AudioRawDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &
     auto memory = inputBuffer->memory_;
     int32_t size = memory->GetSize();
     uint8_t *ptr = memory->GetAddr();
+    if (srcSampleFormat_ == AudioSampleFormat::SAMPLE_BLURAY) {
+        size -= BLURAY_OFFSET;
+        ptr += BLURAY_OFFSET;
+    }
+    if (srcSampleFormat_ == AudioSampleFormat::SAMPLE_DVD) {
+        size -= DVD_OFFSET;
+        ptr += DVD_OFFSET;
+    }
     if (size % bytesSize != 0) {
         AVCODEC_LOGE("size:%{public}d is invalid, bytesSize:%{public}d", size, bytesSize);
         return Status::ERROR_UNKNOWN;
@@ -586,11 +597,15 @@ Status AudioRawDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &
         maxInputSize_ = size;
     }
 
+    Status convertResult = Status::OK;
     if (formatMap.find(srcSampleFormat_) != formatMap.end() &&
         formatMap[srcSampleFormat_] == audioSampleFormat_) {
-        ConvertBEToLE(ptr, size);
+        convertResult = ConvertBEToLE(ptr, size);
     } else {
-        ConvertSampleFormat(ptr, size);
+        convertResult = ConvertSampleFormat(ptr, size);
+    }
+    if (convertResult != Status::OK) {
+        return convertResult;
     }
 
     frameSize_ = size;
@@ -618,7 +633,6 @@ Status AudioRawDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outpu
         frameSize_ -= size;
     } else if (frameSize_ > 0) {
         size = frameSize_;
-        AVCODEC_LOGE("frame size:%{public}d", frameSize_);
         auto memory = outputBuffer->memory_;
         memory->Write(inputBuffer_.data() + offset_, frameSize_, 0);
         frameSize_ = 0;
@@ -669,8 +683,8 @@ Status AudioRawDecoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
 
     if (srcSampleFormat_ == AudioSampleFormat::SAMPLE_DVD || srcSampleFormat_ == AudioSampleFormat::SAMPLE_BLURAY) {
         int32_t audioBits = 16;
-        if (!meta->Get<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(audioBits)) {
-            AVCODEC_LOGE("AudioRawDecoderPlugin no AUDIO_BITS_PER_RAW_SAMPLE");
+        if (!meta->Get<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(audioBits)) {
+            AVCODEC_LOGW("AudioRawDecoderPlugin no AUDIO_BITS_PER_CODED_SAMPLE");
             return Status::ERROR_INVALID_PARAMETER;
         }
     }
