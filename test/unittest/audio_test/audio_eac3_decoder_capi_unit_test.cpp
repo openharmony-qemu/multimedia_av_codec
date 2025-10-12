@@ -537,7 +537,6 @@ HWTEST_F(AudioCodeEac3DecoderUnitTest, AudioDemuxAndDecode_Eac3_001, TestSize.Le
         unique_lock<mutex> lock(signal_->startMutex_);
         signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
     }
-    cout << "8" << endl;
     Release();
 }
 
@@ -696,6 +695,38 @@ HWTEST_F(AudioCodeEac3DecoderUnitTest, CheckSampleFormat_Eac3_007, TestSize.Leve
     Release();
 }
 
+HWTEST_F(AudioCodeEac3DecoderUnitTest, capability_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_AUDIO_EAC3, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    const int threadCnt = 10;
+    std::vector<std::thread> threadPool;
+    for (int32_t i = 0; i < threadCnt; i++) {
+        threadPool.emplace_back([&cap]() {
+            const int32_t *sampleRates = nullptr;
+            uint32_t sampleRateNum = 0;
+            OH_AVRange* sampleRateRanges[10];
+            uint32_t rangesNum = 0;
+            OH_AVRange channelCountRange = {0, 0};
+            for (int i = 0; i < 10; i++) {
+                sampleRateRanges[i] = nullptr;
+            }
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRateRanges(cap, sampleRateRanges, &rangesNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRateRanges(cap, sampleRateRanges, &rangesNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRateRanges(cap, sampleRateRanges, &rangesNum), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &channelCountRange), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &channelCountRange), AV_ERR_OK);
+            EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &channelCountRange), AV_ERR_OK);
+        });
+    }
+    for (auto &th : threadPool) {
+        th.join();
+    }
+}
+
 HWTEST_F(AudioCodeEac3DecoderUnitTest, CheckSampleFormat_Eac3_008, TestSize.Level1)
 {
     isTestingFormat_ = true;
@@ -739,7 +770,6 @@ HWTEST_F(AudioCodeEac3DecoderUnitTest, CheckSampleFormat_Eac3_009, TestSize.Leve
     OH_AVFormat_Destroy(fmt);
     Release();
 }
-
 
 HWTEST_F(AudioCodeEac3DecoderUnitTest, CheckSampleFormat_Eac3_010, TestSize.Level1)
 {
@@ -857,7 +887,7 @@ HWTEST_F(AudioCodeEac3DecoderUnitTest, CheckSampleFormat_Eac3_015, TestSize.Leve
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(INPUT_EAC3_WAV_15_PATH, OUTPUT_EAC3_PCM_15_PATH));
     ASSERT_EQ(AV_ERR_OK, CreateCodecFunc());
     OH_AVFormat *fmt = OH_AVFormat_Create();
-    OH_AVFormat_SetIntValue(fmt, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), 5);
+    OH_AVFormat_SetIntValue(fmt, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), 8);
     OH_AVFormat_SetLongValue(fmt, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(),
         OH_AudioChannelLayout::CH_LAYOUT_5POINT0);
     OH_AVFormat_SetIntValue(fmt, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), 44100);
@@ -870,6 +900,36 @@ HWTEST_F(AudioCodeEac3DecoderUnitTest, CheckSampleFormat_Eac3_015, TestSize.Leve
         signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
     }
     OH_AVFormat_Destroy(fmt);
+    Release();
+}
+
+HWTEST_F(AudioCodeEac3DecoderUnitTest, CheckSampleInvalidFormat_Eac3_001, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(INPUT_EAC3_WAV_15_PATH, OUTPUT_EAC3_PCM_15_PATH));
+    ASSERT_EQ(AV_ERR_OK, CreateCodecFunc());
+    OH_AVFormat *fmt = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(fmt, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), 5);
+    OH_AVFormat_SetLongValue(fmt, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(),
+        OH_AudioChannelLayout::CH_LAYOUT_5POINT0);
+    OH_AVFormat_SetIntValue(fmt, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), 8000);
+    OH_AVFormat_SetIntValue(fmt, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AVSampleFormat::AV_SAMPLE_FMT_FLTP);
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_AudioCodec_Configure(audioDec_, fmt));
+    Release();
+}
+
+HWTEST_F(AudioCodeEac3DecoderUnitTest, CheckSampleInvalidFormat_Eac3_002, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(INPUT_EAC3_WAV_15_PATH, OUTPUT_EAC3_PCM_15_PATH));
+    ASSERT_EQ(AV_ERR_OK, CreateCodecFunc());
+    OH_AVFormat *fmt = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(fmt, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), 20);
+    OH_AVFormat_SetLongValue(fmt, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(),
+        OH_AudioChannelLayout::CH_LAYOUT_5POINT0);
+    OH_AVFormat_SetIntValue(fmt, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), 44100);
+    OH_AVFormat_SetIntValue(fmt, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AVSampleFormat::AV_SAMPLE_FMT_FLTP);
+    EXPECT_EQ(AV_ERR_INVALID_VAL, OH_AudioCodec_Configure(audioDec_, fmt));
     Release();
 }
 
@@ -906,26 +966,30 @@ HWTEST_F(AudioCodeEac3DecoderUnitTest, audioDecoder_Eac3_CreateByMime_02, TestSi
     Release();
 }
 
-
 HWTEST_F(AudioCodeEac3DecoderUnitTest, audioDecoder_Eac3_PushInputData_InvalidIndex_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(EAC3_FILE_TODEMUX));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-
-    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_PushInputBuffer(audioDec_, nullptr));
+    const uint32_t index = 1024;
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_INVALID_VAL, OH_AudioCodec_PushInputBuffer(audioDec_, index));
     Release();
 }
 
 HWTEST_F(AudioCodeEac3DecoderUnitTest, audioDecoder_Eac3_ReleaseOutputBuffer_InvalidIndex_01, TestSize.Level1)
 {
+    isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(EAC3_FILE_TODEMUX));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-
-    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_FreeOutputBuffer(audioDec_, nullptr));
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    const uint32_t index = 100000;
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_INVALID_VAL, OH_AudioCodec_FreeOutputBuffer(audioDec_, index));
     Release();
 }
 
@@ -976,13 +1040,12 @@ HWTEST_F(AudioCodeEac3DecoderUnitTest, audioDecoder_Eac3_Start_01, TestSize.Leve
 
 HWTEST_F(AudioCodeEac3DecoderUnitTest, audioDecoder_Eac3_Start_02, TestSize.Level1)
 {
-    isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(EAC3_FILE_TODEMUX));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Start(audioDec_));
     {
         unique_lock<mutex> lock(signal_->startMutex_);
         signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
