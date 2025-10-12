@@ -40,10 +40,11 @@ struct RetryRequest {
     std::function<void()> function;
 };
 
-class DownloadMonitor : public MediaDownloader {
+class DownloadMonitor : public MediaDownloader, public std::enable_shared_from_this<DownloadMonitor> {
 public:
     explicit DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) noexcept;
     ~DownloadMonitor() override = default;
+    void Init() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;

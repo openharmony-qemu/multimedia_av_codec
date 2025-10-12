@@ -54,6 +54,12 @@ DashMediaDownloader::~DashMediaDownloader()
     segmentDownloaders_.clear();
 }
 
+void DashMediaDownloader::Init()
+{
+    MEDIA_LOG_D("0x%{public}06" PRIXPTR " Init", FAKE_POINTER(this));
+    mpdDownloader_->Init();
+}
+
 bool DashMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     mpdDownloader_->Open(url);
@@ -468,15 +474,21 @@ void DashMediaDownloader::OpenInitSegment(
 {
     std::shared_ptr<DashSegmentDownloader> downloader = std::make_shared<DashSegmentDownloader>(
         callback_, streamDesc->streamId_, streamDesc->type_, expectDuration_, sourceLoader_);
+    downloader->Init();
     if (statusCallback_ != nullptr) {
         downloader->SetStatusCallback(statusCallback_);
     }
-    auto doneCallback = [this] (int streamId) {
-        UpdateDownloadFinished(streamId);
+    auto weakDownloader = weak_from_this();
+    auto doneCallback = [weakDownloader] (int streamId) {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "doneCb, dash media downloader already destructed.");
+        shareDownloader->UpdateDownloadFinished(streamId);
     };
     downloader->SetDownloadDoneCallback(doneCallback);
-    auto bufferingCallback = [this] (int streamId, BufferingInfoType type) {
-        PostBufferingEvent(streamId, type);
+    auto bufferingCallback = [weakDownloader] (int streamId, BufferingInfoType type) {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "bufferingCb, dash media downloader already destructed.");
+        shareDownloader->PostBufferingEvent(streamId, type);
     };
     downloader->SetSegmentBufferingCallback(bufferingCallback);
     segmentDownloaders_.push_back(downloader);

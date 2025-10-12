@@ -59,6 +59,7 @@ void DashSegmentDownloaderUnitTest::SetUp(void)
     }
     segmentDownloader_ = std::make_shared<DashSegmentDownloader>(nullptr, ID_STREAM,
             MediaAVCodec::MediaType::MEDIA_TYPE_AUD, NUM_TEST, nullptr);
+    segmentDownloader_->Init();
 }
 
 void DashSegmentDownloaderUnitTest::TearDown(void)

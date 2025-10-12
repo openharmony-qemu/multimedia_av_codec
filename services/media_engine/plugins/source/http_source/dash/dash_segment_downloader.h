@@ -135,12 +135,13 @@ struct DashBufferSegment {
 using SegmentDownloadDoneCbFunc = std::function<void(int streamId)>;
 using SegmentBufferingCbFunc = std::function<void(int, BufferingInfoType)>;
 
-class DashSegmentDownloader {
+class DashSegmentDownloader : public std::enable_shared_from_this<DashSegmentDownloader> {
 public:
     DashSegmentDownloader(Callback *callback, int streamId, MediaAVCodec::MediaType streamType,
                           uint64_t expectDuration, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader);
     virtual ~DashSegmentDownloader() noexcept;
 
+    void Init();
     bool Open(const std::shared_ptr<DashSegment> &dashSegment);
     void Close(bool isAsync, bool isClean);
     void Pause();

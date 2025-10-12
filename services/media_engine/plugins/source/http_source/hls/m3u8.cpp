@@ -234,21 +234,34 @@ void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
         return;
     }
     downloaderHeader_ = std::make_shared<Downloader>("HlsSourceMap");
-    dataSaveHeader_ = [this](uint8_t *&&data, uint32_t &&len, bool &&notBlock) {
-        return SaveMapData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len), notBlock);
+    downloaderHeader_->Init();
+    auto weakDownloader = weak_from_this();
+    dataSaveHeader_ = [weakDownloader](uint8_t *&&data, uint32_t &&len, bool &&notBlock) -> uint32_t {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_V_MSG(shareDownloader != nullptr, 0u, "dataSaveHeader, M3U8 map downloader already destructed.");
+        return shareDownloader->SaveMapData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
+            notBlock);
     };
-    statusCallback_ = [this](DownloadStatus &&status, std::shared_ptr<Downloader> d,
+    statusCallback_ = [weakDownloader](DownloadStatus &&status, std::shared_ptr<Downloader> d,
         std::shared_ptr<DownloadRequest> &request) {
-        OnDownloadStatus(std::forward<decltype(status)>(status), downloaderHeader_,
-                         std::forward<decltype(request)>(request));
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "statusCb, M3U8 map downloader already destructed.");
+        shareDownloader->OnDownloadStatus(std::forward<decltype(status)>(status), shareDownloader->downloaderHeader_,
+            std::forward<decltype(request)>(request));
     };
-    auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {
-        UpdateDownloadFinished(url, location);
+    auto downloadDoneCallback = [weakDownloader] (const std::string &url, const std::string& location) {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "downloadDoneCb, M3U8 map downloader already destructed.");
+        shareDownloader->UpdateDownloadFinished(url, location);
     };
-    auto realStatusCallback = [this](DownloadStatus &&status, std::shared_ptr<Downloader> &downloader,
+    auto realStatusCallback = [weakDownloader](DownloadStatus &&status, std::shared_ptr<Downloader> &downloader,
         std::shared_ptr<DownloadRequest> &request) {
-        monitorStatusCallback_(status, downloaderHeader_, std::forward<decltype(request)>(request));
-        statusCallback_(status, downloaderHeader_, std::forward<decltype(request)>(request));
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "realStatusCb, M3U8 map downloader already destructed.");
+        shareDownloader->monitorStatusCallback_(status, shareDownloader->downloaderHeader_,
+            std::forward<decltype(request)>(request));
+        shareDownloader->statusCallback_(status, shareDownloader->downloaderHeader_,
+            std::forward<decltype(request)>(request));
     };
     RequestInfo requestInfo;
     requestInfo.url = uri;
@@ -410,18 +423,30 @@ void M3U8::DownloadKey()
     }
 
     downloader_ = std::make_shared<Downloader>("hlsSourceKey");
-    dataSave_ = [this](uint8_t *&&data, uint32_t &&len, bool &&notBlock) {
-        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len), notBlock);
+    downloader_->Init();
+    auto weakDownloader = weak_from_this();
+    dataSave_ = [weakDownloader](uint8_t *&&data, uint32_t &&len, bool &&notBlock) -> uint32_t {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_V_MSG(shareDownloader != nullptr, 0u, "dataSave, M3U8 key downloader already destructed.");
+        return shareDownloader->SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
+            notBlock);
     };
     // this is default callback
-    statusCallback_ = [this](DownloadStatus &&status, std::shared_ptr<Downloader> d,
+    statusCallback_ = [weakDownloader](DownloadStatus &&status, std::shared_ptr<Downloader> d,
         std::shared_ptr<DownloadRequest> &request) {
-        OnDownloadStatus(std::forward<decltype(status)>(status), downloader_, std::forward<decltype(request)>(request));
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "statusCb, M3U8 key downloader already destructed.");
+        shareDownloader->OnDownloadStatus(std::forward<decltype(status)>(status), shareDownloader->downloader_,
+            std::forward<decltype(request)>(request));
     };
-    auto realStatusCallback = [this](DownloadStatus &&status, std::shared_ptr<Downloader> &downloader,
+    auto realStatusCallback = [weakDownloader](DownloadStatus &&status, std::shared_ptr<Downloader> &downloader,
         std::shared_ptr<DownloadRequest> &request) {
-        monitorStatusCallback_(status, downloader_, std::forward<decltype(request)>(request));
-        statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "realStatusCb, M3U8 key downloader already destructed.");
+        shareDownloader->monitorStatusCallback_(status, shareDownloader->downloader_,
+            std::forward<decltype(request)>(request));
+        shareDownloader->statusCallback_(status, shareDownloader->downloader_,
+            std::forward<decltype(request)>(request));
     };
     std::string realKeyUrl = UriJoin(uri_, *keyUri_);
     RequestInfo requestInfo;

@@ -149,6 +149,7 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
     } else {
         downloader_ = std::make_shared<Downloader>("http");
     }
+    downloader_->Init();
 
     timeoutInterval_ = MAX_BUFFERING_TIME_OUT;
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
@@ -164,6 +165,11 @@ HttpMediaDownloader::~HttpMediaDownloader()
     Close(false);
 }
 
+void HttpMediaDownloader::Init()
+{
+    MEDIA_LOG_D("0x%{public}06" PRIXPTR " Init", FAKE_POINTER(this));
+}
+
 std::string HttpMediaDownloader::GetContentType()
 {
     FALSE_RETURN_V(downloader_ != nullptr, "");
@@ -176,34 +182,38 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
     MEDIA_LOG_I("HTTP Open download in");
     isDownloadFinish_ = false;
     openTime_ = steadyClock_.ElapsedMilliseconds();
-    auto saveData = [this] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) {
-        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
+    auto weakDownloader = weak_from_this();
+    auto saveData = [weakDownloader] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) -> uint32_t {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_V_MSG(shareDownloader != nullptr, 0u, "saveData, Http Media Downloader already destructed.");
+        return shareDownloader->SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
             std::forward<decltype(notBlock)>(notBlock));
     };
     FALSE_RETURN_V(statusCallback_ != nullptr, false);
-    std::weak_ptr<HttpMediaDownloader> weakThis = weak_from_this();
-    auto realStatusCallback = [weakThis] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                                  std::shared_ptr<DownloadRequest>& request) {
-        auto shareThis = weakThis.lock();
-        FALSE_RETURN_MSG(shareThis != nullptr, "HTTP statusCallback shareThis, is nullptr!");
-        shareThis->statusCallback_(status, shareThis->downloader_, std::forward<decltype(request)>(request));
+    auto realStatusCallback = [weakDownloader] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "realStatusCb, Http Media Downloader already destructed.");
+        shareDownloader->statusCallback_(status, shareDownloader->downloader_,
+            std::forward<decltype(request)>(request));
     };
-    auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {
-        if (downloadRequest_ != nullptr && downloadRequest_->IsEos()
-            && (totalBits_ / BYTES_TO_BIT) >= downloadRequest_->GetFileContentLengthNoWait()) {
-            isDownloadFinish_ = true;
+    auto downloadDoneCallback = [weakDownloader] (const std::string &url, const std::string& location) {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "downloadDoneCb, Http Media Downloader already destructed.");
+        if (shareDownloader->downloadRequest_ != nullptr && shareDownloader->downloadRequest_->IsEos()
+            && (shareDownloader->totalBits_ / BYTES_TO_BIT) >=
+            shareDownloader->downloadRequest_->GetFileContentLengthNoWait()) {
+            shareDownloader->isDownloadFinish_ = true;
         }
-        int64_t nowTime = steadyClock_.ElapsedMilliseconds();
-        double downloadTime = (static_cast<double>(nowTime) - static_cast<double>(startDownloadTime_)) /
-            SECOND_TO_MILLISECONDS;
+        int64_t nowTime = shareDownloader->steadyClock_.ElapsedMilliseconds();
+        double downloadTime = (nowTime - shareDownloader->startDownloadTime_) * 1.0 / SECOND_TO_MILLISECONDS;
         if (downloadTime > ZERO_THRESHOLD) {
-            avgDownloadSpeed_ = totalBits_ / downloadTime;
+            shareDownloader->avgDownloadSpeed_ = shareDownloader->totalBits_ / downloadTime;
         }
-        MEDIA_LOG_D("HTTP Download done, average download speed: " PUBLIC_LOG_D32 " bit/s",
-            static_cast<int32_t>(avgDownloadSpeed_));
-        MEDIA_LOG_I("HTTP Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
-            totalBits_, static_cast<int64_t>(downloadTime * SECOND_TO_MILLISECONDS));
-        HandleBuffering();
+        MEDIA_LOG_I("HTTP Download done, data usage: " PUBLIC_LOG_U64 " bits in %{public}.0lfms, "
+            "average download speed: %{public}.0lf bits/s", shareDownloader->totalBits_,
+            downloadTime * SECOND_TO_MILLISECONDS, shareDownloader->avgDownloadSpeed_);
+        shareDownloader->HandleBuffering();
     };
     RequestInfo requestInfo;
     requestInfo.url = defaultStream_ != nullptr ? defaultStream_->url : url;

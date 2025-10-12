@@ -46,11 +46,7 @@ DashMpdDownloader::DashMpdDownloader(std::shared_ptr<MediaSourceLoaderCombinatio
     } else {
         downloader_ = std::make_shared<Downloader>("dashMpd");
     }
-
-    dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) {
-        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
-            std::forward<decltype(notBlock)>(notBlock));
-    };
+    downloader_->Init();
 
     mpdParser_ = std::make_shared<DashMpdParser>();
     mpdManager_ = std::make_shared<DashMpdManager>();
@@ -65,6 +61,17 @@ DashMpdDownloader::~DashMpdDownloader() noexcept
         downloader_->Stop(false);
     }
     streamDescriptions_.clear();
+}
+
+void DashMpdDownloader::Init()
+{
+    auto weakDownloader = weak_from_this();
+    dataSave_ = [weakDownloader] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) -> uint32_t {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_V_MSG(shareDownloader != nullptr, 0u, "doneCb, dash mpd downloader already destructed.");
+        return shareDownloader->SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
+            std::forward<decltype(notBlock)>(notBlock));
+    };
 }
 
 std::string DashMpdDownloader::GetContentType()
@@ -786,10 +793,14 @@ void DashMpdDownloader::OpenStream(std::shared_ptr<DashStreamDescription> stream
 void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64_t endRange)
 {
     downloadContent_.clear();
-    auto realStatusCallback = [this](DownloadStatus &&status, std::shared_ptr<Downloader> &downloader,
+    auto weakDownloader = weak_from_this();
+    auto realStatusCallback = [weakDownloader](DownloadStatus &&status, std::shared_ptr<Downloader> &downloader,
         std::shared_ptr<DownloadRequest> &request) {
-        if (statusCallback_ != nullptr) {
-            statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "realStatusCb, dash mpd downloader already destructed.");
+        if (shareDownloader->statusCallback_ != nullptr) {
+            shareDownloader->statusCallback_(status, shareDownloader->downloader_,
+                std::forward<decltype(request)>(request));
         }
     };
 
@@ -803,8 +814,10 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
     mediaSource.url = url;
     mediaSource.timeoutMs = MPD_HTTP_TIME_OUT_MS;
     downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSource, requestWholeFile);
-    auto downloadDoneCallback = [this](const std::string &url, const std::string &location) {
-        UpdateDownloadFinished(url);
+    auto downloadDoneCallback = [weakDownloader](const std::string &url, const std::string &location) {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "downloadDoneCb, dash mpd downloader already destructed.");
+        shareDownloader->UpdateDownloadFinished(url);
     };
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest_->SetRequestProtocolType(RequestProtocolType::DASH);

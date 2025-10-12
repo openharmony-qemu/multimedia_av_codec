@@ -109,11 +109,12 @@ struct DashMpdCallback {
     virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) = 0;
 };
 
-class DashMpdDownloader {
+class DashMpdDownloader : public std::enable_shared_from_this<DashMpdDownloader> {
 public:
     explicit DashMpdDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     virtual ~DashMpdDownloader() noexcept;
 
+    void Init();
     void Open(const std::string &url);
     void Close(bool isAsync);
     void SetStatusCallback(StatusCallbackFunc cb);

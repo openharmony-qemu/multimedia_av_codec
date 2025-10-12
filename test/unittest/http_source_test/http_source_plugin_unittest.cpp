@@ -34,6 +34,10 @@ public:
         (void)httpHeader;
         return true;
     }
+    void Init() override
+    {
+        return;
+    }
     void Close(bool isAsync) override
     {
         (void)isAsync;

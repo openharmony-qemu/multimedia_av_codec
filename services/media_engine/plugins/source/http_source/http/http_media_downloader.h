@@ -41,6 +41,7 @@ public:
     explicit HttpMediaDownloader(std::string url, uint32_t expectBufferDuration,
                                  std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~HttpMediaDownloader() override;
+    void Init() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;
