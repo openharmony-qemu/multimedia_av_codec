@@ -622,6 +622,7 @@ public:
     static constexpr std::string_view VIDEO_RV40 = "video/rv40";
     static constexpr std::string_view VIDEO_WMV3 = "video/wmv3";
     static constexpr std::string_view VIDEO_VVC = "video/vvc";
+    static constexpr std::string_view VIDEO_MJPEG = "video/mjpeg";
     static constexpr std::string_view AUDIO_MIMETYPE_L2HC = "audio/l2hc";
     static constexpr std::string_view AUDIO_AMR_NB = "audio/3gpp";
     static constexpr std::string_view AUDIO_AMR_WB = "audio/amr-wb";
