@@ -68,6 +68,8 @@ constexpr int32_t VC1_BLOCKPERFRAME_SIZE = 16384;
 constexpr int32_t VC1_BLOCKPERSEC_SIZE = 983040;
 constexpr int32_t MSVIDEO1_MIN_WIDTH_SIZE = 4;
 constexpr int32_t MSVIDEO1_MIN_HEIGHT_SIZE = 4;
+constexpr int32_t MSVIDEO1_BLOCKPERSEC_SIZE = 3932160;
+
 #ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/fcodecdump";
@@ -2005,6 +2007,10 @@ void FCodec::GetMsVideo1CapProf(std::vector<CapabilityData> &capaArray)
         CapabilityData& capsData = capaArray.back();
         capsData.width.minVal = MSVIDEO1_MIN_WIDTH_SIZE;
         capsData.height.minVal = MSVIDEO1_MIN_HEIGHT_SIZE;
+        capsData.blockPerSecond.maxVal = MSVIDEO1_BLOCKPERSEC_SIZE;
+        capsData.pixFormat = {
+            static_cast<int32_t>(VideoPixelFormat::RGBA), static_cast<int32_t>(VideoPixelFormat::NV12),
+            static_cast<int32_t>(VideoPixelFormat::NV21)};
     }
 }
 
