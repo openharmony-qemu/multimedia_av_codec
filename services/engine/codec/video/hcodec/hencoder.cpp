@@ -23,6 +23,7 @@
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
 #include "hcodec_list.h"
+#include "v2_2/buffer_handle_meta_key_type.h"
 #include "v4_0/codec_ext_types.h"
 #include <algorithm>
 #include <regex>
@@ -1744,6 +1745,15 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
     }
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     WrapSurfaceBufferToSlot(info, entry.item->buffer, entry.pts, 0);
+    using namespace OHOS::HDI::Display::Graphic::Common::V2_2;
+    vector<uint8_t> vec;
+    GSError err = info.surfaceBuffer->GetMetadata(ATTRKEY_ROI_METADATA, vec);
+    if (err == GSERROR_OK && !vec.empty()) {
+        vec[vec.size() - 1] = '\0';
+        string roiStr = reinterpret_cast<char*>(vec.data());
+        HLOGI("roi str is %s", roiStr.c_str());
+        info.avBuffer->meta_->SetData(OHOS::Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiStr);
+    }
     encodingBuffers_[info.bufferId] = entry;
     if (enableSurfaceModeInputCb_) {
         info.avBuffer->pts_ = entry.pts;
