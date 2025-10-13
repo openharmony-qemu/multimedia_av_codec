@@ -70,7 +70,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_M4V_GetFormat_0001, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 110);
+    ASSERT_EQ(formatVal_.fileType, 111);
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -122,7 +122,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_M4V_GetFormat_0002, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 110);
+    ASSERT_EQ(formatVal_.fileType, 111);
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -326,7 +326,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_M4V_GetFormat_0006, TestSize.Level1)
 
 /**
  * @tc.name: AVSource_M4V_GetFormat_0007
- * @tc.desc: get source format when the file is asf(h264, wmav1)
+ * @tc.desc: get source format when the file is asf(h264, alac)
  * @tc.type: FUNC
  */
 HWTEST_F(AVSourceUnitTest, AVSource_M4V_GetFormat_0007, TestSize.Level1)
@@ -371,14 +371,14 @@ HWTEST_F(AVSourceUnitTest, AVSource_M4V_GetFormat_0007, TestSize.Level1)
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.bitRate, 1117307);
-    ASSERT_EQ(formatVal_.codecMime, "audio/x-m4a");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
+    ASSERT_EQ(formatVal_.codecMime, "audio/alac");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
 
 /**
  * @tc.name: AVSource_M4V_GetFormat_0008
- * @tc.desc: get source format when the file is asf(h264, wmav1)
+ * @tc.desc: get source format when the file is asf(h264, alac)
  * @tc.type: FUNC
  */
 HWTEST_F(AVSourceUnitTest, AVSource_M4V_GetFormat_0008, TestSize.Level1)
@@ -421,8 +421,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_M4V_GetFormat_0008, TestSize.Level1)
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.bitRate, 1117307);
-    ASSERT_EQ(formatVal_.codecMime, "audio/x-m4a");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
+    ASSERT_EQ(formatVal_.codecMime, "audio/alac");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
 } // namespace

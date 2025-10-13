@@ -2041,7 +2041,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1318, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.hasVideo, 1);
     ASSERT_EQ(formatVal_.hasAudio, 0);
-    ASSERT_EQ(formatVal_.fileType, 206);
+    ASSERT_EQ(formatVal_.fileType, 111);
 #endif
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
