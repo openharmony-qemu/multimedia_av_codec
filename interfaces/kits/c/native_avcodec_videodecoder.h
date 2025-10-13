@@ -101,7 +101,6 @@ OH_AVErrCode OH_VideoDecoder_Destroy(OH_AVCodec *codec);
  * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or NULL.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
- * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state, must be called before Prepare.
  * @deprecated since 11
  * @useinstead OH_VideoDecoder_RegisterCallback
  * @since 9
@@ -122,7 +121,6 @@ OH_AVErrCode OH_VideoDecoder_SetCallback(OH_AVCodec *codec, OH_AVCodecAsyncCallb
  * {@link AV_ERR_INVALID_VAL}, the input codec pointer is non decoder instance or NULL.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_OPERATE_NOT_PERMIT}, internal execution error.
- * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state, must be called before Prepare.
  * @since 11
  */
 OH_AVErrCode OH_VideoDecoder_RegisterCallback(OH_AVCodec *codec, OH_AVCodecCallback callback, void *userData);
