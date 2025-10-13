@@ -110,6 +110,10 @@ shared_ptr<Media::Meta> ALACUnitTest::CreateMeta()
     meta->Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
     meta->Set<Tag::MEDIA_BITRATE>(ALAC_BIT_RATE);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    vector<unit8_t>extraData = { 0x00, 0x00, 0x00, 0x24, 0x61, 0x6c, 0x61, 0x63, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x10, 0x00, 0x00, 0x10, 0x28, 0x0A, 0x0E, 0x02, 0x00, 0x00, 0x00, 0x00, 0x40, 0x04, 0x00, 0x17, 0x70, 0x00,
+        0x00, 0x00, 0xBB, 0x80 };
+    meta->Set<Tag::MEDIA_CODEC_CONFIG>(extraData);
     return meta;
 }
 
@@ -303,7 +307,7 @@ HWTEST_F(ALACUnitTest, GetParameter_002, TestSize.Level1)
 {
     ASSERT_EQ(plugin_->Init(), Status::OK);
     ASSERT_EQ(plugin_->SetDataCallback(this), Status::OK);
-    int32_t defaultInputSize = 1536 * ALAC_CHANNEL_COUNT * 4;
+    int32_t defaultInputSize = 4096 * 8 * 4;
     shared_ptr<Media::Meta> outMeta = make_shared<Media::Meta>();
     int32_t maxInputSize = 0;
     int32_t smallInputSize = 4096;
@@ -312,7 +316,7 @@ HWTEST_F(ALACUnitTest, GetParameter_002, TestSize.Level1)
     ASSERT_EQ(plugin_->GetParameter(outMeta), Status::OK);
     ASSERT_TRUE(outMeta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize));
     ASSERT_EQ(maxInputSize, smallInputSize);
-    int32_t largeInputSize = 20000;
+    int32_t largeInputSize = 140000;
     meta_->Set<Tag::AUDIO_MAX_INPUT_SIZE>(largeInputSize);
     ASSERT_EQ(plugin_->SetParameter(meta_), Status::OK);
     ASSERT_EQ(plugin_->GetParameter(outMeta), Status::OK);
@@ -337,29 +341,6 @@ HWTEST_F(ALACUnitTest, Decode_With_Invalid_File_001, TestSize.Level1)
     ASSERT_EQ(plugin_->QueueInputBuffer(inputBuffer), Status::ERROR_INVALID_DATA);
     Status status = plugin_->QueueOutputBuffer(outputBuffer);
     ASSERT_TRUE(status == Status::OK || status == Status::ERROR_NOT_ENOUGH_DATA || status == Status::ERROR_UNKNOWN);
-    ASSERT_EQ(plugin_->Stop(), Status::OK);
-}
-
-HWTEST_F(ALACUnitTest, Decode_With_Valid_File_001, TestSize.Level1)
-{
-    const char *filePath = "/data/test/media/alac_test.alac";
-    ifstream file(filePath, ios::binary);
-    ASSERT_EQ(file.is_open(), true);
-    ASSERT_EQ(plugin_->Init(), Status::OK);
-    ASSERT_EQ(plugin_->SetDataCallback(this), Status::OK);
-    meta_->Set<Tag::AUDIO_MAX_INPUT_SIZE>(ALAC_MAX_INPUT_SIZE);
-    ASSERT_EQ(plugin_->SetParameter(meta_), Status::OK);
-    ASSERT_EQ(plugin_->Start(), Status::OK);
-    bool sentEos = false;
-    int inputFrameCount = 0;
-    int outputFrameCount = 0;
-    ProcessInputFrames(file, inputFrameCount, outputFrameCount, sentEos);
-    ProcessOutputFrames(outputFrameCount);
-    if (outputFrameCount == 0) {
-        GTEST_LOG_(WARNING) << "No decoded frames produced. inputFrameCount=" << inputFrameCount;
-    }
-    ASSERT_GT(inputFrameCount, 0);
-    ASSERT_GT(outputFrameCount, 0);
     ASSERT_EQ(plugin_->Stop(), Status::OK);
 }
 

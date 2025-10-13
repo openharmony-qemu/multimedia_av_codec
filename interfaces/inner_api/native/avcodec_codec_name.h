@@ -89,6 +89,7 @@ public:
             AUDIO_DECODER_RAW_NAME,
             AUDIO_DECODER_AC3_NAME,
             AUDIO_DECODER_GSM_MS_NAME,
+            AUDIO_DECODER_ALAC_NAME,
 #ifdef SUPPORT_CODEC_EAC3
             AUDIO_DECODER_EAC3_NAME,
 #endif

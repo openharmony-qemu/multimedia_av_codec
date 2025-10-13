@@ -3594,6 +3594,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_Configure_03, TestSiz
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_SetParameter_01, TestSize.Level1)
 {
+    isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_ALAC));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_ALAC));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_ALAC));
@@ -3619,6 +3620,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_SetParameter_02, Test
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_Start_01, TestSize.Level1)
 {
+    isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_ALAC));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_ALAC));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_ALAC));
@@ -3650,6 +3652,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_Start_02, TestSize.Le
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_Stop_01, TestSize.Level1)
 {
+    isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_ALAC));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_ALAC));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_ALAC));
@@ -3662,6 +3665,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_Stop_01, TestSize.Lev
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_Flush_01, TestSize.Level1)
 {
+    isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_ALAC));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_ALAC));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_ALAC));
@@ -3686,6 +3690,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_Reset_01, TestSize.Le
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_Reset_02, TestSize.Level1)
 {
+    isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_ALAC));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_ALAC));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_ALAC));
@@ -3701,6 +3706,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_Reset_02, TestSize.Le
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_Destroy_01, TestSize.Level1)
 {
+    isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_ALAC));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_ALAC));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_ALAC));
@@ -3743,6 +3749,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_IsValid_01, TestSize.
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_PushInputData_01, TestSize.Level1)
 {
+    isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_ALAC));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_ALAC));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_ALAC));
