@@ -475,6 +475,7 @@ private:
         void ReplyErrorCode(MsgId id, int32_t err);
         void OnCodecEvent(const MsgInfo &info);
         virtual void OnCodecEvent(CodecHDI::CodecEventType event, uint32_t data1, uint32_t data2);
+        void OnErrorEventHandler(uint32_t omxError);
         void OnGetFormat(const MsgInfo &info);
         virtual void OnShutDown(const MsgInfo &info) = 0;
         virtual void OnCheckIfStuck(const MsgInfo &info);
