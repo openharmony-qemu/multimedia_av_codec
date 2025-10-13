@@ -17,10 +17,12 @@
 #include "avcodec_log.h"
 #include "avcodec_trace.h"
 #include "media_description.h"
+#include "v1_0/cm_color_space.h"
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 namespace {
+using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CODEC_UTILS"};
 constexpr uint32_t INDEX_ARRAY = 2;
 constexpr uint32_t WAIT_FENCE_MS = 1000;
@@ -29,6 +31,31 @@ std::map<VideoPixelFormat, AVPixelFormat> g_pixelFormatMap = {
     {VideoPixelFormat::NV12, AV_PIX_FMT_NV12},
     {VideoPixelFormat::NV21, AV_PIX_FMT_NV21},
     {VideoPixelFormat::RGBA, AV_PIX_FMT_RGBA},
+};
+std::map<ColorPrimary, CM_ColorPrimaries> g_colorPrimariesMap = {
+    {COLOR_PRIMARY_BT709, COLORPRIMARIES_BT709},
+    {COLOR_PRIMARY_BT601_625, COLORPRIMARIES_BT601_P},
+    {COLOR_PRIMARY_BT601_525, COLORPRIMARIES_BT601_N},
+    {COLOR_PRIMARY_BT2020, COLORPRIMARIES_BT2020},
+    {COLOR_PRIMARY_P3DCI, COLORPRIMARIES_P3_DCI},
+    {COLOR_PRIMARY_P3D65, COLORPRIMARIES_P3_D65},
+};
+std::map<TransferCharacteristic, CM_TransFunc> g_transFuncMap = {
+    {TRANSFER_CHARACTERISTIC_BT709, TRANSFUNC_BT709},
+    {TRANSFER_CHARACTERISTIC_BT601, TRANSFUNC_BT709},
+    {TRANSFER_CHARACTERISTIC_LINEAR, TRANSFUNC_LINEAR},
+    {TRANSFER_CHARACTERISTIC_IEC_61966_2_1, TRANSFUNC_SRGB},
+    {TRANSFER_CHARACTERISTIC_BT2020_10BIT, TRANSFUNC_BT709},
+    {TRANSFER_CHARACTERISTIC_BT2020_12BIT, TRANSFUNC_BT709},
+    {TRANSFER_CHARACTERISTIC_PQ, TRANSFUNC_PQ},
+    {TRANSFER_CHARACTERISTIC_HLG, TRANSFUNC_HLG},
+};
+std::map<MatrixCoefficient, CM_Matrix> g_matrixMap = {
+    {MATRIX_COEFFICIENT_BT709, MATRIX_BT709},
+    {MATRIX_COEFFICIENT_BT601_625, MATRIX_BT601_P},
+    {MATRIX_COEFFICIENT_BT601_525, MATRIX_BT601_N},
+    {MATRIX_COEFFICIENT_BT2020_NCL, MATRIX_BT2020},
+    {MATRIX_COEFFICIENT_ICTCP, MATRIX_BT2100_ICTCP},
 };
 } // namespace
 
@@ -62,6 +89,24 @@ int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale,
     return (*scale)->Convert(srcData, srcLineSize, dstData, dstLineSize);
 }
 
+int32_t MemWritePlaneDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t* srcData, int32_t srcStride,
+                                int32_t dstStride, int32_t height)
+{
+    CHECK_AND_RETURN_RET_LOG(memory != nullptr && srcData != nullptr, AVCS_ERR_INVALID_VAL,
+        "memory or srcData is nullptr");
+    int32_t srcPos = 0;
+    int32_t dstPos = memory->GetSize();
+    int32_t writeSize = srcStride > dstStride ? dstStride : srcStride;
+    for (int32_t colNum = 0; colNum < height; colNum++) {
+        CHECK_AND_RETURN_RET_LOG(memory->Write(srcData + srcPos, writeSize, dstPos) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
+        dstPos += dstStride;
+        srcPos += srcStride;
+    }
+    CHECK_AND_RETURN_RET_LOG(memory->SetSize(dstPos) == Status::OK, AVCS_ERR_NO_MEMORY, "memory SetSize failed");
+    return AVCS_ERR_OK;
+}
+
 int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, const int32_t *scaleLineSize,
                            int32_t stride, const Format &format)
 {
@@ -73,42 +118,23 @@ int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **sc
     CHECK_AND_RETURN_RET_LOG(pixFmt == VideoPixelFormat::YUVI420 || pixFmt == VideoPixelFormat::NV12 ||
                                  pixFmt == VideoPixelFormat::NV21,
                              AVCS_ERR_UNSUPPORT, "pixFmt: %{public}d do not support", pixFmt);
-    int32_t srcPos = 0;
-    int32_t dstPos = 0;
-    int32_t dataSize = scaleLineSize[0];
-    int32_t writeSize = dataSize > stride ? stride : dataSize;
     std::string traceTitle = "stride(" + std::to_string(stride) + ")_height(" + std::to_string(height) + ")";
     AVCodecTrace trace("WriteYuvByStride_pixfmt(" + std::to_string(fmt) + ")_" + traceTitle);
-    for (int32_t colNum = 0; colNum < height; colNum++) {
-        memory->Write(scaleData[0] + srcPos, writeSize, dstPos);
-        dstPos += stride;
-        srcPos += dataSize;
-    }
-    srcPos = 0;
+    int32_t ret = MemWritePlaneDataStride(memory, scaleData[0], scaleLineSize[0], stride, height);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "memory Write Data failed");
     stride = ((stride + UV_SCALE_FACTOR - 1) / UV_SCALE_FACTOR) * UV_SCALE_FACTOR;
     height = ((height + UV_SCALE_FACTOR - 1) / UV_SCALE_FACTOR) * UV_SCALE_FACTOR;
     if (pixFmt == VideoPixelFormat::YUVI420) {
-        dataSize = scaleLineSize[1];
-        writeSize = dataSize > (stride / UV_SCALE_FACTOR) ? (stride / UV_SCALE_FACTOR) : dataSize;
-        for (int32_t colNum = 0; colNum < (height / UV_SCALE_FACTOR); colNum++) {
-            memory->Write(scaleData[1] + srcPos, writeSize, dstPos);
-            dstPos += (stride / UV_SCALE_FACTOR);
-            srcPos += dataSize;
-        }
-        srcPos = 0;
-        for (int32_t colNum = 0; colNum < (height / UV_SCALE_FACTOR); colNum++) {
-            memory->Write(scaleData[INDEX_ARRAY] + srcPos, writeSize, dstPos);
-            dstPos += (stride / UV_SCALE_FACTOR);
-            srcPos += dataSize;
-        }
+        ret = MemWritePlaneDataStride(memory, scaleData[1], scaleLineSize[1],
+            static_cast<int32_t>(stride / UV_SCALE_FACTOR), static_cast<int32_t>(height / UV_SCALE_FACTOR));
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "memory Write Data failed");
+        ret = MemWritePlaneDataStride(memory, scaleData[INDEX_ARRAY], scaleLineSize[1],
+            static_cast<int32_t>(stride / UV_SCALE_FACTOR), static_cast<int32_t>(height / UV_SCALE_FACTOR));
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "memory Write Data failed");
     } else if ((pixFmt == VideoPixelFormat::NV12) || (pixFmt == VideoPixelFormat::NV21)) {
-        dataSize = scaleLineSize[1];
-        writeSize = dataSize > stride ? stride : dataSize;
-        for (int32_t colNum = 0; colNum < (height / UV_SCALE_FACTOR); colNum++) {
-            memory->Write(scaleData[1] + srcPos, writeSize, dstPos);
-            dstPos += stride;
-            srcPos += dataSize;
-        }
+        ret = MemWritePlaneDataStride(memory, scaleData[1], scaleLineSize[1], stride,
+            static_cast<int32_t>(height / UV_SCALE_FACTOR));
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "memory Write Data failed");
     }
     AVCODEC_LOGD("WriteYuvDataStride success");
     return AVCS_ERR_OK;
@@ -126,7 +152,8 @@ int32_t WriteRgbDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **sc
     std::string traceTitle = "stride(" + std::to_string(stride) + ")_height(" + std::to_string(height) + ")";
     AVCodecTrace trace("WriteRgbByStride_" + traceTitle);
     for (int32_t colNum = 0; colNum < height; colNum++) {
-        memory->Write(scaleData[0] + srcPos, writeSize, dstPos);
+        CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[0] + srcPos, writeSize, dstPos) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
         dstPos += stride;
         srcPos += dataSize;
     }
@@ -150,12 +177,17 @@ int32_t WriteYuvData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleDat
                              "output buffer size is not enough: real[%{public}d], need[%{public}u]",
                              memory->GetCapacity(), frameSize);
     if (pixFmt == VideoPixelFormat::YUVI420) {
-        memory->Write(scaleData[0], ySize);
-        memory->Write(scaleData[1], uvSize);
-        memory->Write(scaleData[2], uvSize); // 2
+        CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[0], ySize) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
+        CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[1], uvSize) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
+        CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[INDEX_ARRAY], uvSize) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
     } else if ((pixFmt == VideoPixelFormat::NV12) || (pixFmt == VideoPixelFormat::NV21)) {
-        memory->Write(scaleData[0], ySize);
-        memory->Write(scaleData[1], uvSize);
+        CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[0], ySize) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
+        CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[1], uvSize) > 0,
+            AVCS_ERR_NO_MEMORY, "memory Write Data failed");
     } else {
         return AVCS_ERR_UNSUPPORT;
     }
@@ -170,7 +202,8 @@ int32_t WriteRgbData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleDat
     CHECK_AND_RETURN_RET_LOG(memory->GetCapacity() >= frameSize, AVCS_ERR_NO_MEMORY,
                              "output buffer size is not enough: real[%{public}d], need[%{public}u]",
                              memory->GetCapacity(), frameSize);
-    memory->Write(scaleData[0], frameSize);
+    CHECK_AND_RETURN_RET_LOG(memory->Write(scaleData[0], frameSize) > 0,
+        AVCS_ERR_NO_MEMORY, "memory Write Data failed");
     return AVCS_ERR_OK;
 }
 
@@ -192,13 +225,13 @@ int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct Surface
     }
     uint32_t yScaleLineSize = static_cast<uint32_t>(surfaceInfo.scaleLineSize[0]);
     if (IsYuvFormat(pixFmt)) {
-        if (surfaceInfo.surfaceStride % yScaleLineSize) {
+        if (surfaceInfo.surfaceStride != yScaleLineSize) {
             return WriteYuvDataStride(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize,
                                       surfaceInfo.surfaceStride, format);
         }
         return WriteYuvData(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize, height, pixFmt);
     } else if (IsRgbFormat(pixFmt)) {
-        if (surfaceInfo.surfaceStride % yScaleLineSize) {
+        if (surfaceInfo.surfaceStride != yScaleLineSize) {
             return WriteRgbDataStride(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize,
                                       surfaceInfo.surfaceStride, format);
         }
@@ -227,12 +260,12 @@ int32_t WriteBufferData(const std::shared_ptr<AVMemory> &memory, uint8_t **scale
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
     AVCODEC_SYNC_TRACE;
     if (IsYuvFormat(pixFmt)) {
-        if (scaleLineSize[0] % width) {
+        if (scaleLineSize[0] != width) {
             return WriteYuvDataStride(memory, scaleData, scaleLineSize, width, format);
         }
         return WriteYuvData(memory, scaleData, scaleLineSize, height, pixFmt);
     } else if (IsRgbFormat(pixFmt)) {
-        if (scaleLineSize[0] % width) {
+        if (scaleLineSize[0] != width) {
             return WriteRgbDataStride(memory, scaleData, scaleLineSize, width * VIDEO_PIX_DEPTH_RGBA, format);
         }
         return WriteRgbData(memory, scaleData, scaleLineSize, height);
@@ -301,6 +334,52 @@ AVPixelFormat ConvertPixelFormatToFFmpeg(VideoPixelFormat pixelFormat)
         g_pixelFormatMap.begin(), g_pixelFormatMap.end(),
         [&](const std::pair<VideoPixelFormat, AVPixelFormat> &tmp) -> bool { return tmp.first == pixelFormat; });
     return iter == g_pixelFormatMap.end() ? AV_PIX_FMT_NONE : iter->second;
+}
+
+int32_t ConvertParamsToColorSpaceInfo(uint32_t fullRangeFlag, uint32_t colorPrimaries,
+                                      uint32_t transferCharacteristic, uint32_t matrixCoeffs,
+                                      std::vector<uint8_t> &colorSpaceInfoData)
+{
+    colorSpaceInfoData.resize(sizeof(CM_ColorSpaceInfo));
+    CM_ColorSpaceInfo* colorSpaceInfo = reinterpret_cast<CM_ColorSpaceInfo*>(colorSpaceInfoData.data());
+    CHECK_AND_RETURN_RET_LOG(colorSpaceInfo != nullptr, AVCS_ERR_INVALID_VAL, "colorSpaceInfo is nullptr");
+    if (!g_colorPrimariesMap.count(static_cast<ColorPrimary>(colorPrimaries))) {
+        AVCODEC_LOGE("unsupported colorPrimaries: %{public}u", colorPrimaries);
+        return AVCS_ERR_UNSUPPORT;
+    }
+    if (!g_transFuncMap.count(static_cast<TransferCharacteristic>(transferCharacteristic))) {
+        AVCODEC_LOGE("unsupported transferCharacteristic: %{public}u", transferCharacteristic);
+        return AVCS_ERR_UNSUPPORT;
+    }
+    if (!g_matrixMap.count(static_cast<MatrixCoefficient>(matrixCoeffs))) {
+        AVCODEC_LOGE("unsupported matrixCoeffs: %{public}u", matrixCoeffs);
+        return AVCS_ERR_UNSUPPORT;
+    }
+    colorSpaceInfo->primaries = g_colorPrimariesMap[static_cast<ColorPrimary>(colorPrimaries)];
+    colorSpaceInfo->transfunc = g_transFuncMap[static_cast<TransferCharacteristic>(transferCharacteristic)];
+    colorSpaceInfo->matrix = g_matrixMap[static_cast<MatrixCoefficient>(matrixCoeffs)];
+    if (fullRangeFlag) {
+        colorSpaceInfo->range = RANGE_FULL;
+    } else {
+        colorSpaceInfo->range = RANGE_LIMITED;
+    }
+    return AVCS_ERR_OK;
+}
+
+uint32_t GetMetaDataTypeByTransFunc(uint32_t transferCharacteristic)
+{
+    switch (static_cast<TransferCharacteristic>(transferCharacteristic)) {
+        case TRANSFER_CHARACTERISTIC_PQ: {
+            return static_cast<uint32_t>(CM_VIDEO_HDR10);
+        }
+        case TRANSFER_CHARACTERISTIC_HLG: {
+            return static_cast<uint32_t>(CM_VIDEO_HLG);
+        }
+        default: {
+            return static_cast<uint32_t>(CM_METADATA_NONE);
+        }
+    }
+    return static_cast<uint32_t>(CM_METADATA_NONE);
 }
 
 bool IsYuvFormat(VideoPixelFormat &format)
