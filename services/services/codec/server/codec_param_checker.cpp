@@ -198,7 +198,6 @@ std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData,
     bool enableExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, enable);
     bool temporalGopSizeExist = format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE);
     bool modeExist = format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE);
-    PrintParam(enableExist, Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, enable);
 
     if (codecType == AVCODEC_TYPE_VIDEO_DECODER) {
         if (enableExist || temporalGopSizeExist || modeExist) {
@@ -228,7 +227,6 @@ std::optional<CodecScenario> BFrameScenarioChecker(CapabilityData &capData, cons
     std::optional<CodecScenario> scenario = std::nullopt;
     bool enableExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enable);
     bool temporalEnableExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, temporalEnable);
-    PrintParam(enableExist, Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enable);
 
     if (codecType == AVCODEC_TYPE_VIDEO_DECODER) {
         if (enableExist) {
@@ -259,11 +257,9 @@ int32_t ResolutionChecker(CapabilityData &capData, Format &format, CodecScenario
     bool widthExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     bool heightExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
     CHECK_AND_RETURN_RET_LOG(widthExist && heightExist, AVCS_ERR_INVALID_VAL, "Key param missing, width or height");
-    PrintParam(widthExist && heightExist, "resolution", width, height);
 
     bool resolutionValid = true;
     if (capData.supportSwapWidthHeight) {
-        AVCODEC_LOGI("Codec support swap width and height");
         resolutionValid = (capData.width.InRange(width) && capData.height.InRange(height)) ||
                           (capData.width.InRange(height) && capData.height.InRange(width));
     } else {
@@ -283,7 +279,6 @@ int32_t PixelFormatChecker(CapabilityData &capData, Format &format, CodecScenari
     if (!paramExist || pixelFormat == static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT)) {
         return AVCS_ERR_OK;
     }
-    PrintParam(paramExist, MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, pixelFormat);
 
     bool paramValid = IsSupported(capData.pixFormat, pixelFormat);
     CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_UNSUPPORT,
@@ -299,7 +294,6 @@ int32_t FramerateChecker(CapabilityData &capData, Format &format, CodecScenario 
     (void)scenario;
     double framerate;
     bool paramExist = format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, framerate);
-    PrintParam(paramExist, MediaDescriptionKey::MD_KEY_FRAME_RATE, framerate);
     if (paramExist == false) {
         return AVCS_ERR_OK;
     }
@@ -363,8 +357,6 @@ bool CheckSqrMode(CapabilityData &capData, Format &format)
     bool qualityExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality);
     bool sqrFactorExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor);
     bool bitrateModeExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-    PrintParam(sqrFactorExist, MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor);
-    PrintParam(maxBitrateExist, MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, maxBitrate);
 
     if (!bitrateModeExist || bitrateMode != VideoEncodeBitrateMode::SQR) {
         return false;
@@ -435,9 +427,6 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, [[mayb
     bool bitrateExist = format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitrate);
     bool qualityExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality);
     bool bitrateModeExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-    PrintParam(bitrateExist, MediaDescriptionKey::MD_KEY_BITRATE, bitrate);
-    PrintParam(qualityExist, MediaDescriptionKey::MD_KEY_QUALITY, quality);
-    PrintParam(bitrateModeExist, MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
 
     /* CHECK: set SQR */
     if (CheckSqrMode(capData, format)) {
@@ -480,7 +469,6 @@ int32_t VideoProfileChecker(CapabilityData &capData, Format &format, CodecScenar
     if (paramExist == false) {
         return AVCS_ERR_OK;
     }
-    PrintParam(paramExist, MediaDescriptionKey::MD_KEY_PROFILE, profile);
 
     bool paramValid = IsSupported(capData.profiles, profile);
     CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_CODEC_PARAM_INCORRECT,
@@ -499,7 +487,6 @@ int32_t RotationChecker(CapabilityData &capData, Format &format, CodecScenario s
     if (paramExist == false) {
         return AVCS_ERR_OK;
     }
-    PrintParam(paramExist, MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, rotation);
 
     // valid rotation: 0, 90, 180, 270
     CHECK_AND_RETURN_RET_LOG(rotation == 0 || rotation == 90 || rotation == 180 || rotation == 270,
@@ -531,7 +518,6 @@ int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScen
     CHECK_AND_RETURN_RET_LOG(colorSpace == colorSpaceBt709Limited || colorSpace == colorSpaceP3Full,
                              AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION,
                              "The output color space %{public}d is not supported", colorSpace);
-    PrintParam(true, MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
 
     return AVCS_ERR_OK;
 }
@@ -550,7 +536,6 @@ int32_t QPChecker(CapabilityData &capData, Format &format, CodecScenario scenari
     }
     CHECK_AND_RETURN_RET_LOG(!(qpMinExist != qpMaxExist), AVCS_ERR_INVALID_VAL,
         "Param invalid, QPmin and QPmax are expected to be set in pairs in format");
-    PrintParam(qpMinExist && qpMaxExist, "QP", qpMin, qpMax);
 
     CHECK_AND_RETURN_RET_LOG(qpMin >= 0 && qpMin <= qpMax, AVCS_ERR_INVALID_VAL,
         "Param invalid, QP range: %{public}d-%{public}d", qpMin, qpMax);
@@ -567,7 +552,6 @@ int32_t IFrameIntervalChecker(CapabilityData &capData, Format &format, CodecScen
 
     int32_t iFrameInterval;
     bool iFrameIntervalExist = format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, iFrameInterval);
-    PrintParam(iFrameIntervalExist, Tag::VIDEO_I_FRAME_INTERVAL, iFrameInterval);
     if (!iFrameIntervalExist) {
         format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
     }
@@ -606,7 +590,6 @@ int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, CodecSce
     if (!temporalGopSizeExist) {
         return AVCS_ERR_OK;
     }
-    PrintParam(temporalGopSizeExist, Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
     CHECK_AND_RETURN_RET_LOG(temporalGopSize >= MIN_TEMPORAL_GOPSIZE, AVCS_ERR_INVALID_VAL,
         "Param invalid, %{public}s: %{public}d, expect greater or equal than %{public}d",
         Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize, MIN_TEMPORAL_GOPSIZE);
@@ -626,7 +609,6 @@ int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format,
     if (!modeExist) {
         return AVCS_ERR_OK;
     }
-    PrintParam(modeExist, Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, mode);
 
     using namespace OHOS::Media::Plugins;
     if (mode < static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) ||
@@ -667,7 +649,6 @@ int32_t ColorPrimariesChecker(CapabilityData &capData, Format &format, CodecScen
     if (!colorPrimariesExist) {
         return AVCS_ERR_OK;
     }
-    PrintParam(colorPrimariesExist, Tag::VIDEO_COLOR_PRIMARIES, colorPrimaries);
 
     if (colorPrimaries < static_cast<int32_t>(ColorPrimary::COLOR_PRIMARY_BT709) ||
         colorPrimaries > static_cast<int32_t>(ColorPrimary::COLOR_PRIMARY_P3D65)) {
@@ -686,7 +667,6 @@ int32_t TransferCharacteristicsChecker(CapabilityData &capData, Format &format, 
     if (!transferCharacteristicsExist) {
         return AVCS_ERR_OK;
     }
-    PrintParam(transferCharacteristicsExist, Tag::VIDEO_COLOR_TRC, transferCharacteristics);
 
     if (transferCharacteristics < static_cast<int32_t>(TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT709) ||
         transferCharacteristics > static_cast<int32_t>(TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG)) {
@@ -705,7 +685,6 @@ int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, Codec
     if (!matrixCoefficientsExist) {
         return AVCS_ERR_OK;
     }
-    PrintParam(matrixCoefficientsExist, Tag::VIDEO_COLOR_MATRIX_COEFF, matrixCoefficients);
 
     if (matrixCoefficients < static_cast<int32_t>(MatrixCoefficient::MATRIX_COEFFICIENT_IDENTITY) ||
         matrixCoefficients > static_cast<int32_t>(MatrixCoefficient::MATRIX_COEFFICIENT_ICTCP)) {
@@ -722,7 +701,6 @@ int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScena
     if (!ltrFrameCountExist) {
         return AVCS_ERR_OK;
     }
-    PrintParam(ltrFrameCountExist, Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameCount);
 
     CHECK_AND_RETURN_RET_LOG(scenario != CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY,
         AVCS_ERR_UNSUPPORT, "Param invalid, not supported to set LTR frame count in temporal scalability scenario");
@@ -754,7 +732,6 @@ int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenari
     if (!scalingModeExist) {
         return AVCS_ERR_OK;
     }
-    PrintParam(scalingModeExist, Tag::VIDEO_SCALE_TYPE, scalingMode);
 
     if (scalingMode < static_cast<int32_t>(OHOS::ScalingMode::SCALING_MODE_SCALE_TO_WINDOW) ||
         scalingMode > static_cast<int32_t>(OHOS::ScalingMode::SCALING_MODE_SCALE_CROP)) {
@@ -780,16 +757,13 @@ int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenari
     bool condExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, cond);
     if (!condExist || cond <= 0) {
         format.RemoveKey(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE);
-        AVCODEC_LOGE("Encoder B-frame key VIDEO_ENCODER_ENABLE_B_FRAME not exist or param illegal!");
         return AVCS_ERR_OK;
     }
-    PrintParam(condExist, Tag::VIDEO_ENCODER_ENABLE_B_FRAME, cond);
     bool modeExist = format.GetIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
     if (!modeExist) {
         AVCODEC_LOGW("undefine VIDEO_ENCODE_B_FRAME_GOP_MODE, default to ADAPTIVE_B_MODE");
         mode = static_cast<int32_t>(Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_ADAPTIVE_B_MODE);
     }
-    PrintParam(modeExist, Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
     format.PutIntValue(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, mode);
     bool maxBFrameExist = format.GetIntValue(Tag::VIDEO_ENCODER_MAX_B_FRAME, maxBFrameCount);
     if (maxBFrameExist) {
