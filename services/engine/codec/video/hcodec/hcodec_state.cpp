@@ -107,6 +107,7 @@ void HCodec::BaseState::OnCodecEvent(const MsgInfo &info)
 void HCodec::BaseState::OnCodecEvent(CodecEventType event, uint32_t data1, uint32_t data2)
 {
     if (event == CODEC_EVENT_ERROR) {
+        SLOGE("omx report error event, data1 = %u, data2 = %u", data1, data2);
         OnErrorEventHandler(data1);
     } else {
         SLOGW("ignore event %d, data1 = %u, data2 = %u", event, data1, data2);
