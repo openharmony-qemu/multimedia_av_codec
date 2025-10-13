@@ -211,7 +211,7 @@ std::vector<uint8_t> StreamParserManager::GetLogInfo()
 
 int32_t StreamParserManager::GetFirstFillerDataNalSize(const uint8_t *sample, int32_t size)
 {
-    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, {}, "Stream parser is nullptr");
+    FALSE_RETURN_V_MSG_E(streamParser_ != nullptr, -1, "Stream parser is nullptr");
     return streamParser_->GetFirstFillerDataNalSize(sample, size);
 }
 

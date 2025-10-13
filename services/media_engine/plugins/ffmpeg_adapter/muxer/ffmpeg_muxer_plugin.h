@@ -82,6 +82,7 @@ private:
         int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID, bool isCover);
     Status WriteNormal(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample, int32_t dataOffset);
     Status WriteVideoSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample);
+    Status WriteVideoSampleFirstFrame(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample);
     std::vector<uint8_t> TransAnnexbToMp4(const uint8_t *sample, int32_t size);
     uint8_t *FindNalStartCode(const uint8_t *buf, const uint8_t *end, int32_t &startCodeLen);
     bool IsAvccSample(const uint8_t* sample, int32_t size, int32_t nalSizeLen);
