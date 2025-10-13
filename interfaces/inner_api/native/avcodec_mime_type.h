@@ -44,6 +44,7 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_COOK = "audio/cook";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_AC3 = "audio/ac3";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_EAC3 = "audio/eac3";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_ALAC = "audio/alac";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_RAW = "audio/raw";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_GSM_MS = "audio/gsm_ms";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_GSM = "audio/gsm";
