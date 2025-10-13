@@ -597,7 +597,8 @@ int32_t AudioDecoderBufferCapiUnitTest::Configure(AudioBufferFormatType audioTyp
     OH_AVFormat_SetIntValue(format_, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
     OH_AVFormat_SetIntValue(format_, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
     OH_AVFormat_SetLongValue(format_, OH_MD_KEY_BITRATE, BITS_RATE[(uint32_t)audioType]);
-    if (audioType == AudioBufferFormatType::TYPE_VORBIS || audioType == AudioBufferFormatType::TYPE_COOK) {
+    if (audioType == AudioBufferFormatType::TYPE_VORBIS || audioType == AudioBufferFormatType::TYPE_COOK ||
+        audioType == AudioBufferFormatType::TYPE_ALAC) {
         int64_t extradataSize;
         if (!inputFile_.is_open()) {
             cout << "Fatal: file is not open" << endl;
