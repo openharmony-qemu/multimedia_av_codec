@@ -139,6 +139,7 @@ private:
     void OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta = nullptr);
     void OnInstanceEncodeBeginEvent(std::shared_ptr<Media::Meta> meta = nullptr);
     void OnInstanceEncodeEndEvent(std::shared_ptr<Media::Meta> meta = nullptr);
+    void SetInstanceEncodeEventInfo(std::shared_ptr<Media::Meta> &meta);
     void InitFramerateCalculator(Meta &callerInfo);
 
     CodecStatus status_ = UNINITIALIZED;
