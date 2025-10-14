@@ -577,6 +577,7 @@
             <option name="push" value="audio_res/g711mu_8kHz.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/voice_cook.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/voice_ac3.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_alac.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/aac_2c_44100hz_199k_lc.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/aac_2c_44100hz_199k_he.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/aac_2c_44100hz_199k_hev2.dat -> /data/test/media" src="res"/>
