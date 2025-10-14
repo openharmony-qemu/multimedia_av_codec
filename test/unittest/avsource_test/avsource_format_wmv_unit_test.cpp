@@ -53,15 +53,17 @@ string g_wmvPath2 = TEST_FILE_PATH + string("wmv_h264_wmav1.wmv");
 string g_wmvUri2 = TEST_URI_PATH + string("wmv_h264_wmav1.wmv");
 string g_wmvPath3 = TEST_FILE_PATH + string("wmv_h264_wmav2.wmv");
 string g_wmvUri3 = TEST_URI_PATH + string("wmv_h264_wmav2.wmv");
+#ifdef SUPPORT_DEMUXER_EAC3
 string g_wmvPath4 = TEST_FILE_PATH + string("wmv_h264_eac3.wmv");
 string g_wmvUri4 = TEST_URI_PATH + string("wmv_h264_eac3.wmv");
+#endif
 
 /**
- * @tc.name: AVSource_GetFormat_20801
+ * @tc.name: AVSource_WMV_GetFormat_0001
  * @tc.desc: get source format when the file is wmv(wmv3)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_20801, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_WMV_GetFormat_0001, TestSize.Level1)
 {
     fd_ = OpenFile(g_wmvPath1);
     size_ = GetFileSize(g_wmvPath1);
@@ -72,7 +74,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_20801, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 111);
+    ASSERT_EQ(formatVal_.fileType, 112);
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -83,7 +85,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_20801, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
     ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, "video/x-ms-wmv");
+    ASSERT_EQ(formatVal_.codecMime, "video/wmv3");
     printf("[ formatVal_.codecMime ]: %s\n", formatVal_.codecMime.c_str());
     ASSERT_EQ(formatVal_.width, 320);
     ASSERT_EQ(formatVal_.height, 240);
@@ -91,11 +93,11 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_20801, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVSource_GetFormat_20802
+ * @tc.name: AVSource_WMV_GetFormat_0002
  * @tc.desc: get source format when the file is wmv(wmv3)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_20802, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_WMV_GetFormat_0002, TestSize.Level1)
 {
     printf("---- %s ------\n", g_wmvUri1.data());
     source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_wmvUri1.data()));
@@ -104,7 +106,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_20802, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 111);
+    ASSERT_EQ(formatVal_.fileType, 112);
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -118,7 +120,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_20802, TestSize.Level1)
     ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE,
                 formatVal_.frameRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, "video/x-ms-wmv");
+    ASSERT_EQ(formatVal_.codecMime, "video/wmv3");
     printf("[ formatVal_.codecMime ]: %s\n", formatVal_.codecMime.c_str());
     ASSERT_EQ(formatVal_.width, 320);
     ASSERT_EQ(formatVal_.height, 240);
@@ -126,11 +128,11 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_20802, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVSource_GetFormat_2413
- * @tc.desc: get source format when the file is asf(wmv2, wma)
+ * @tc.name: AVSource_WMV_GetFormat_0003
+ * @tc.desc: get source format when the file is asf(wmv2, wmapro)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2413, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_WMV_GetFormat_0003, TestSize.Level1)
 {
     fd_ = OpenFile(g_asfPath1);
     size_ = GetFileSize(g_asfPath1);
@@ -150,7 +152,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2413, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
     ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, "video/x-ms-wmv");
+    ASSERT_EQ(formatVal_.codecMime, "video/wmv3");
     printf("[ formatVal_.codecMime ]: %s\n", formatVal_.codecMime.c_str());
     ASSERT_EQ(formatVal_.width, 1280);
     ASSERT_EQ(formatVal_.height, 720);
@@ -171,17 +173,17 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2413, TestSize.Level1)
     ASSERT_EQ(formatVal_.sampleRate, 48000);
     ASSERT_EQ(formatVal_.channelCount, 6);
     ASSERT_EQ(formatVal_.bitRate, 384000);
-    ASSERT_EQ(formatVal_.codecMime, "audio/x-ms-wma");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
-    ASSERT_EQ(formatVal_.channelLayout, 1551);
+    ASSERT_EQ(formatVal_.codecMime, "audio/wmapro");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
+    ASSERT_EQ(formatVal_.channelLayout, 63);
 }
 
 /**
- * @tc.name: AVSource_GetFormat_2414
- * @tc.desc: get source format when the file is asf(wmv2, wma)
+ * @tc.name: AVSource_WMV_GetFormat_0004
+ * @tc.desc: get source format when the file is asf(wmv2, wmapro)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2414, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_WMV_GetFormat_0004, TestSize.Level1)
 {
     printf("---- %s ------\n", g_asfUri1.data());
     source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_asfUri1.data()));
@@ -199,7 +201,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2414, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
     ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, "video/x-ms-wmv");
+    ASSERT_EQ(formatVal_.codecMime, "video/wmv3");
     printf("[ formatVal_.codecMime ]: %s\n", formatVal_.codecMime.c_str());
     ASSERT_EQ(formatVal_.width, 1280);
     ASSERT_EQ(formatVal_.height, 720);
@@ -222,17 +224,17 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2414, TestSize.Level1)
     ASSERT_EQ(formatVal_.sampleRate, 48000);
     ASSERT_EQ(formatVal_.channelCount, 6);
     ASSERT_EQ(formatVal_.bitRate, 384000);
-    ASSERT_EQ(formatVal_.codecMime, "audio/x-ms-wma");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
-    ASSERT_EQ(formatVal_.channelLayout, 1551);
+    ASSERT_EQ(formatVal_.codecMime, "audio/wmapro");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
+    ASSERT_EQ(formatVal_.channelLayout, 63);
 }
 
 /**
- * @tc.name: AVSource_GetFormat_2415
+ * @tc.name: AVSource_WMV_GetFormat_0005
  * @tc.desc: get source format when the file is asf(h264, wmav1)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2415, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_WMV_GetFormat_0005, TestSize.Level1)
 {
     fd_ = OpenFile(g_wmvPath2);
     size_ = GetFileSize(g_wmvPath2);
@@ -275,17 +277,17 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2415, TestSize.Level1)
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.bitRate, 128000);
-    ASSERT_EQ(formatVal_.codecMime, "audio/x-ms-wma");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
+    ASSERT_EQ(formatVal_.codecMime, "audio/wmav1");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
 
 /**
- * @tc.name: AVSource_GetFormat_2416
+ * @tc.name: AVSource_WMV_GetFormat_0006
  * @tc.desc: get source format when the file is asf(h264, wmav1)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2416, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_WMV_GetFormat_0006, TestSize.Level1)
 {
     printf("---- %s ------\n", g_wmvUri2.data());
     source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_wmvUri2.data()));
@@ -326,17 +328,17 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2416, TestSize.Level1)
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.bitRate, 128000);
-    ASSERT_EQ(formatVal_.codecMime, "audio/x-ms-wma");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
+    ASSERT_EQ(formatVal_.codecMime, "audio/wmav1");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
 
 /**
- * @tc.name: AVSource_GetFormat_2417
+ * @tc.name: AVSource_WMV_GetFormat_0007
  * @tc.desc: get source format when the file is asf(h264, wmav1)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2417, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_WMV_GetFormat_0007, TestSize.Level1)
 {
     fd_ = OpenFile(g_wmvPath3);
     size_ = GetFileSize(g_wmvPath3);
@@ -379,17 +381,17 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2417, TestSize.Level1)
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.bitRate, 128000);
-    ASSERT_EQ(formatVal_.codecMime, "audio/x-ms-wma");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
+    ASSERT_EQ(formatVal_.codecMime, "audio/wmav2");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
 
 /**
- * @tc.name: AVSource_GetFormat_2418
+ * @tc.name: AVSource_WMV_GetFormat_0008
  * @tc.desc: get source format when the file is asf(h264, wmav1)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2418, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_WMV_GetFormat_0008, TestSize.Level1)
 {
     printf("---- %s ------\n", g_wmvUri3.data());
     source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_wmvUri3.data()));
@@ -430,17 +432,18 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2418, TestSize.Level1)
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.bitRate, 128000);
-    ASSERT_EQ(formatVal_.codecMime, "audio/x-ms-wma");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
+    ASSERT_EQ(formatVal_.codecMime, "audio/wmav2");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
 
+#ifdef SUPPORT_DEMUXER_EAC3
 /**
- * @tc.name: AVSource_GetFormat_Wmv_2419
+ * @tc.name: AVSource_WMV_GetFormat_0009
  * @tc.desc: get source format when the file is wmv(h264, eac3)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_Wmv_2419, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_WMV_GetFormat_0009, TestSize.Level1)
 {
     fd_ = OpenFile(g_wmvPath4);
     size_ = GetFileSize(g_wmvPath4);
@@ -482,18 +485,18 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_Wmv_2419, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 191552);
+    ASSERT_EQ(formatVal_.bitRate, 191559);
     ASSERT_EQ(formatVal_.codecMime, "audio/eac3");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
 
 /**
- * @tc.name: AVSource_GetFormat_Wmv_24110
+ * @tc.name: AVSource_WMV_GetFormat_0010
  * @tc.desc: get source format when the file is wmv(h264, eac3)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_Wmv_24110, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_WMV_GetFormat_0010, TestSize.Level1)
 {
     printf("---- %s ------\n", g_wmvUri4.data());
     source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_wmvUri4.data()));
@@ -533,9 +536,10 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_Wmv_24110, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 191552);
+    ASSERT_EQ(formatVal_.bitRate, 191559);
     ASSERT_EQ(formatVal_.codecMime, "audio/eac3");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
+#endif
 }
