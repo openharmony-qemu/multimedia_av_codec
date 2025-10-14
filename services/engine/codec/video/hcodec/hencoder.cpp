@@ -1749,9 +1749,8 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
     vector<uint8_t> vec;
     GSError err = info.surfaceBuffer->GetMetadata(ATTRKEY_ROI_METADATA, vec);
     if (err == GSERROR_OK && !vec.empty()) {
-        vec[vec.size() - 1] = '\0';
+        vec.emplace_back('\0');
         string roiStr = reinterpret_cast<char*>(vec.data());
-        HLOGI("roi str is %s", roiStr.c_str());
         info.avBuffer->meta_->SetData(OHOS::Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiStr);
     }
     encodingBuffers_[info.bufferId] = entry;
@@ -1759,6 +1758,9 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         info.avBuffer->pts_ = entry.pts;
         NotifyUserToFillThisInBuffer(info);
     } else {
+        info.omxBuffer->alongParam.clear();
+        WrapRoiParamIntoOmxBuffer(info.omxBuffer, info.avBuffer->meta_);
+        info.avBuffer->meta_->Clear();
         CheckPts(info.omxBuffer->pts);
         int32_t err = InBufUsToOmx(info);
         if (err != AVCS_ERR_OK) {
