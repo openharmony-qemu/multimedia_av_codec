@@ -13,12 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef FUZZTEST_COMMON_HTTP_SERVER_MOCK
-#define FUZZTEST_COMMON_HTTP_SERVER_MOCK
+#ifndef HTTP_SERVER_MOCK_H
+#define HTTP_SERVER_MOCK_H
+
+// 虚假m3u8文件，需通过fuzz data 喂入
+#define FAKE_FUZZ_M3U8  "fakefuzz.m3u8"
 
 namespace OHOS::Media::Plugins::HttpPlugin {
     bool InitServer(void);
     bool CloseServer(void);
-}
 
+    bool InitServer(const uint8_t *data, size_t size);
+}
 #endif
