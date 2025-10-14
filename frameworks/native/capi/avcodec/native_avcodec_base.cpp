@@ -49,6 +49,7 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_RAW = "audio/raw";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_G711A = "audio/g711a";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_EAC3 = "audio/eac3";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AC3 = "audio/ac3";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_ALAC = "audio/alac";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM_MS = "audio/gsm_ms";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_WMV3 = "video/wmv3";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM = "audio/gsm";
