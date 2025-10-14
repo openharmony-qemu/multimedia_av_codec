@@ -100,7 +100,7 @@ constexpr int MIN_BIT_RATE_OPUS = 6000;
 constexpr int MAX_BIT_RATE_OPUS = 510000;
 constexpr int MIN_OPUS_COMPLIANCE_LEVEL = 1;
 constexpr int MAX_OPUS_COMPLIANCE_LEVEL = 10;
-constexpr int MAX_CHANNEL_COUNT_OPUS = 2;
+constexpr int MAX_CHANNEL_COUNT_OPUS = 255;
 const std::vector<int32_t> AUDIO_OPUS_SAMPLE_RATE = {8000, 12000, 16000, 24000, 48000};
 #endif
 #ifdef SUPPORT_CODEC_COOK
