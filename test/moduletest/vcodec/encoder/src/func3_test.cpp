@@ -14,6 +14,14 @@
  */
 #include <string>
 #include <limits>
+#include <iostream>
+#include <cstdio>
+#include <atomic>
+#include <fstream>
+#include <thread>
+#include <mutex>
+#include <queue>
+
 #include "meta/format.h"
 #include "gtest/gtest.h"
 #include "native_avcodec_videoencoder.h"
@@ -532,6 +540,689 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_H265_FLUSH_0020, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
         vEncSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0010
+ * @tc.name      : create-start-stop
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0010, TestSize.Level1)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
+        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0020
+ * @tc.name      : create-start-stop
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0020, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
+        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0030
+ * @tc.name      : create-start-reset
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0030, TestSize.Level1)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0040
+ * @tc.name      : create-start-reset
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0040, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0050
+ * @tc.name      : create-start-destroy
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0050, TestSize.Level1)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
+        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0060
+ * @tc.name      : create-start-destroy
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0060, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
+        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0070
+ * @tc.name      : create-start
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0070, TestSize.Level1)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0080
+ * @tc.name      : create-start
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0080, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0090
+ * @tc.name      : create-reset
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0090, TestSize.Level1)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0100
+ * @tc.name      : create-reset
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0100, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0110
+ * @tc.name      : create-destroy
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0110, TestSize.Level1)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
+        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0120
+ * @tc.name      : create-destroy
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0120, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
+        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0130
+ * @tc.name      : create-Stop
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0130, TestSize.Level1)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
+        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0140
+ * @tc.name      : create-Stop
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0140, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
+        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0150
+ * @tc.name      : 多编码器start
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0150, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        std::thread Thread1([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        std::thread Thread2([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        Thread1.join();
+        Thread2.join();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0160
+ * @tc.name      : 多编码器 start-stop
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0160, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        std::thread Thread1([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
+            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        std::thread Thread2([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        Thread1.join();
+        Thread2.join();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0170
+ * @tc.name      : 多编码器 start-stop
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0170, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        std::thread Thread1([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        std::thread Thread2([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
+            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        Thread1.join();
+        Thread2.join();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0180
+ * @tc.name      : 多编码器 start-stop
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0180, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        std::thread Thread1([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
+            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        std::thread Thread2([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
+            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        Thread1.join();
+        Thread2.join();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0190
+ * @tc.name      : 多编码器 start-reset
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0190, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        std::thread Thread1([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        std::thread Thread2([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        Thread1.join();
+        Thread2.join();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0200
+ * @tc.name      : 多编码器 start-reset
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0200, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        std::thread Thread1([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        std::thread Thread2([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        Thread1.join();
+        Thread2.join();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0210
+ * @tc.name      : 多编码器 start-reset
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0210, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        std::thread Thread1([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        std::thread Thread2([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        Thread1.join();
+        Thread2.join();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0220
+ * @tc.name      : 多编码器 start-Release
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0220, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        std::thread Thread1([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
+            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        std::thread Thread2([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        Thread1.join();
+        Thread2.join();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0230
+ * @tc.name      : 多编码器 start-Release
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0230, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        std::thread Thread1([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        std::thread Thread2([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
+            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        Thread1.join();
+        Thread2.join();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INFO_0240
+ * @tc.name      : 多编码器 start-Release
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0240, TestSize.Level1)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        std::thread Thread1([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
+            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        std::thread Thread2([this]() {
+            auto vEncSample = make_shared<VEncAPI11Sample>();
+            vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
+            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
+        });
+        Thread1.join();
+        Thread2.join();
     }
 }
 } // namespace
