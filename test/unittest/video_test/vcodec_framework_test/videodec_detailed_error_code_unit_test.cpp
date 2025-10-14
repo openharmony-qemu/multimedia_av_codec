@@ -31,7 +31,8 @@ enum class Scenario : int32_t {
     UNSUPPORT_CODEC_SPECIFICATION,
     ILLEGAL_PARAMETER_SETS,
     MISSING_PARAMETER_SETS,
-}
+};
+
 void TEST_SUIT::SetUpTestCase(void)
 {
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
@@ -76,7 +77,7 @@ void TEST_SUIT::PrepareSource(int32_t param, std::string sourcePath)
 void SetDetailedErrorCodeParmater(std::shared_ptr<VDecCallbackTestExt> vdecCallbackExt,
                                   std::shared_ptr<VDecCallbackTest> vdecCallback,
                                   bool isAVBufferMode,
-                                  int32_t scenario)
+                                  Scenario scenario)
 {
     auto& target = isAVBufferMode ? vdecCallbackExt->detailedErrorCode_ : vdecCallback->detailedErrorCode_;
     target.verification_ = false;

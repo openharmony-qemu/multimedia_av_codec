@@ -48,9 +48,9 @@ void VDecCallbackTest::CheckDetailedErrorCode(int32_t errorCode)
             return ;
     }
 
-    if ((errorCode == AVCS_ERR_UNSUPPORT_CODEC_SPECIFICATION && detailedErrorCode_.unsupportedSpecification_) ||
+    if ((errorCode == AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION && detailedErrorCode_.unsupportedSpecification_) ||
         (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS && detailedErrorCode_.illegalParam_) ||
-        (errorCode == AVCS_ERR_MISSING_PARAMETER_SETS && detailedErrorCode_.missingParam_)) {
+        (errorCode == AVCS_ERR_MINSSING_PARAMETER_SETS && detailedErrorCode_.missingParam_)) {
             detailedErrorCode_.verification_ = true;
     }
 }
@@ -113,9 +113,9 @@ void VDecCallbackTestExt::CheckDetailedErrorCode(int32_t errorCode)
             return ;
     }
 
-    if ((errorCode == AVCS_ERR_UNSUPPORT_CODEC_SPECIFICATION && detailedErrorCode_.unsupportedSpecification_) ||
+    if ((errorCode == AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION && detailedErrorCode_.unsupportedSpecification_) ||
         (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS && detailedErrorCode_.illegalParam_) ||
-        (errorCode == AVCS_ERR_MISSING_PARAMETER_SETS && detailedErrorCode_.missingParam_)) {
+        (errorCode == AVCS_ERR_MINSSING_PARAMETER_SETS && detailedErrorCode_.missingParam_)) {
             detailedErrorCode_.verification_ = true;
     }
 }
@@ -580,7 +580,7 @@ void VideoDecAsyncSample::WaitForEos()
     lock.unlock();
     int64_t tempTime =
         chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
-    if (!videoDec_->detailedError_) {
+    if (!detailedError_) {
         EXPECT_TRUE(isNotTimeout);
     }
     if (!isNotTimeout) {
