@@ -43,11 +43,11 @@ public:
     CapabilityData GetVendorAacEncoderCapability();
     CapabilityData GetAc3DecoderCapability();
     CapabilityData GetGsmMsDecoderCapability();
+    CapabilityData GetGsmDecoderCapability();
     CapabilityData GetAlacDecoderCapability();
 #ifdef SUPPORT_CODEC_EAC3
     CapabilityData GetEac3DecoderCapability();
 #endif
-    CapabilityData GetGsmDecoderCapability();
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
     CapabilityData GetVividDecoderCapability();
     CapabilityData GetAmrnbEncoderCapability();
