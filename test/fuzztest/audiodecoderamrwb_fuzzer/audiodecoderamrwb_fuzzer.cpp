@@ -19,20 +19,24 @@
 #include <string>
 #include <thread>
 #include "audio_decoder_amrwb_demo.h"
+#include "audio_decoder_amrwb_new_demo.h"
 #define FUZZ_PROJECT_NAME "audiodecoderamrwb_fuzzer"
 
 using namespace std;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec::AudioBufferDemo;
+using namespace OHOS::MediaAVCodec::AudioBufferNewDemo;
 
 namespace OHOS {
-
 bool AudioDecoderAMRWBFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < sizeof(int64_t)) {
         return false;
     }
+    // FUZZ amrwb new
+    AmrwbFuzzDemo* amrwbFuzzDemo = new AmrwbFuzzDemo();
+    amrwbFuzzDemo->DoAmrwbParserWithParserAPI(data, size);
     // FUZZ amrwb
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("amrwb");

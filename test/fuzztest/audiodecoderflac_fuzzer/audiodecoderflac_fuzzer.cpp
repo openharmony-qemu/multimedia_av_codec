@@ -19,20 +19,24 @@
 #include <string>
 #include <thread>
 #include "audio_decoder_flac_demo.h"
+#include "audio_decoder_flac_new_demo.h"
 #define FUZZ_PROJECT_NAME "audiodecoderflac_fuzzer"
 
 using namespace std;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec::AudioBufferDemo;
+using namespace OHOS::MediaAVCodec::AudioBufferNewDemo;
 
 namespace OHOS {
-
 bool AudioDecoderFlacFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < sizeof(int64_t)) {
         return false;
     }
+    // FUZZ flac new
+    FlacFuzzDemo* flacFuzzDemo = new FlacFuzzDemo();
+    flacFuzzDemo->DoFlacParserWithParserAPI(data, size);
     // FUZZ flac
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("flac");
