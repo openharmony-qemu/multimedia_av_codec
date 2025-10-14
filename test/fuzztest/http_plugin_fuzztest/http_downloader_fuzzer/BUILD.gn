@@ -1,0 +1,146 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+module_output_path = "player_framework/stream_player_framework"
+test_sources = [
+  "$av_codec_root_dir/services/media_engine/modules/source/source.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/base64/base64_utils.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_media_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_mpd_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_segment_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_manager.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_com_attrs_elements.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_content_comp_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_descriptor_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_manager_util.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_manager.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_parser.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_util.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mult_seg_base_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_period_manager.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_period_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_representation_manager.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_representation_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_base_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_list_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_template_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_tmline_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_url_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_url_type_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/i_dash_mpd_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/sidx_box_parser.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/app_client.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/media_source_loading_request.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/network_client/http_curl_client.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_media_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_playlist_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/m3u8.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/playlist_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http/http_media_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http_source_plugin.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/monitor/download_monitor.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
+]
+
+config("fuzz_cfg") {
+  defines = [
+    "HST_ANY_WITH_NO_RTTI",
+    "MEDIA_OHOS",
+  ]
+
+  cflags = [
+    "-Wno-sign-compare",
+    "-fno-exceptions",
+    "-fno-common",
+    "-fstack-protector-all",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+
+  cflags_cc = [
+    "-std=c++17",
+    "-fno-rtti",
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+
+  include_dirs = [
+    "$av_codec_root_dir/interfaces",
+    "$av_codec_root_dir/interfaces/inner_api/native",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/base64",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
+    "$av_codec_root_dir/test/unittest/common",
+    "$av_codec_root_dir/services/drm_decryptor",
+    "$av_codec_root_dir/services/media_engine/modules",
+    "../common",
+  ]
+}
+
+##############################fuzztest##########################################
+ohos_fuzztest("HttpDownloaderFuzzTest") {
+  module_out_path = module_output_path
+  fuzz_config_file = "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/http_downloader_fuzzer"
+  configs = [
+    ":fuzz_cfg"
+  ]
+  sources = test_sources + ["http_downloader_fuzzer.cpp"]
+
+  external_deps = [
+    "c_utils:utils",
+    "curl:curl_shared",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "ipc:ipc_single",
+    "libxml2:libxml2",
+    "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
+    "openssl:libcrypto_shared",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+  ]
+}
+
+###############################################################################
+group("fuzztest") {
+  testonly = true
+  deps = []
+  deps += [
+    # deps file
+    ":HttpDownloaderFuzzTest",  #引用测试套
+  ]
+}
+###############################################################################
