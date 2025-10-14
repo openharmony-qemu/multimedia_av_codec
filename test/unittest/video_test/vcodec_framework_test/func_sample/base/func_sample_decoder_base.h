@@ -123,6 +123,24 @@ public:
     int32_t hStride_ = 0;
 };
 
+struct DetailedErrorCode {
+    bool verification_{false};
+    bool unsupportedSpecification_{false};
+    bool illegalParam_ {false};
+    bool missingParam_{false};
+
+    DetailedErrorCode(bool verification = false,
+                      bool unsupportedSpecification = false,
+                      bool illegalParam = false,
+                      bool missingParam = false)
+        : verification_(verification)
+        , unsupportedSpecification_(unsupportedSpecification)
+        , illegalParam_(illegalParam)
+        , missingParam_(missingParam) {};
+
+    ~DetailedErrorCode() {};
+};
+
 class VDecCallbackTest : public AVCodecCallbackMock {
 public:
     explicit VDecCallbackTest(std::shared_ptr<VDecSignal> signal);
@@ -133,7 +151,9 @@ public:
     void OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryMock> data, OH_AVCodecBufferAttr attr) override;
 
 private:
+    void CheckDetailedErrorCode(int32_t errorCode);
     std::shared_ptr<VDecSignal> signal_ = nullptr;
+    DetailedErrorCode detailedErrorCode_;
 };
 
 class VDecCallbackTestExt : public MediaCodecCallbackMock {
@@ -146,7 +166,9 @@ public:
     void OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
 
 private:
+    void CheckDetailedErrorCode(int32_t errorCode);
     std::shared_ptr<VDecSignal> signal_ = nullptr;
+    DetailedErrorCode detailedErrorCode_;
 };
 
 class TestConsumerListener : public IBufferConsumerListener {

@@ -40,6 +40,21 @@ VDecCallbackTest::VDecCallbackTest(std::shared_ptr<VDecSignal> signal) : signal_
 
 VDecCallbackTest::~VDecCallbackTest() {}
 
+void VDecCallbackTest::CheckDetailedErrorCode(int32_t errorCode)
+{
+    if (!detailedErrorCode_.unsupportedSpecification_ &&
+        !detailedErrorCode_.illegalParam_ &&
+        !detailedErrorCode_.missingParam_) {
+            return ;
+    }
+
+    if ((errorCode == AVCS_ERR_UNSUPPORT_CODEC_SPECIFICATION && detailedErrorCode_.unsupportedSpecification_) ||
+        (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS && detailedErrorCode_.illegalParam_) ||
+        (errorCode == AVCS_ERR_MISSING_PARAMETER_SETS && detailedErrorCode_.missingParam_)) {
+            detailedErrorCode_.verification_ = true;
+    }
+}
+
 void VDecCallbackTest::OnError(int32_t errorCode)
 {
     cout << "VDec Error errorCode=" << errorCode;
@@ -48,6 +63,7 @@ void VDecCallbackTest::OnError(int32_t errorCode)
     }
     signal_->errorNum += 1;
     cout << ", errorNum=" << signal_->errorNum << endl;
+    CheckDetailedErrorCode(errorCode);
 }
 
 void VDecCallbackTest::OnStreamChanged(std::shared_ptr<FormatMock> format)
@@ -89,6 +105,21 @@ VDecCallbackTestExt::VDecCallbackTestExt(std::shared_ptr<VDecSignal> signal) : s
 
 VDecCallbackTestExt::~VDecCallbackTestExt() {}
 
+void VDecCallbackTestExt::CheckDetailedErrorCode(int32_t errorCode)
+{
+    if (!detailedErrorCode_.unsupportedSpecification_ &&
+        !detailedErrorCode_.illegalParam_ &&
+        !detailedErrorCode_.missingParam_) {
+            return ;
+    }
+
+    if ((errorCode == AVCS_ERR_UNSUPPORT_CODEC_SPECIFICATION && detailedErrorCode_.unsupportedSpecification_) ||
+        (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS && detailedErrorCode_.illegalParam_) ||
+        (errorCode == AVCS_ERR_MISSING_PARAMETER_SETS && detailedErrorCode_.missingParam_)) {
+            detailedErrorCode_.verification_ = true;
+    }
+}
+
 void VDecCallbackTestExt::OnError(int32_t errorCode)
 {
     cout << "VDec Error errorCode=" << errorCode;
@@ -97,6 +128,7 @@ void VDecCallbackTestExt::OnError(int32_t errorCode)
     }
     signal_->errorNum += 1;
     cout << ", errorNum=" << signal_->errorNum << endl;
+    CheckDetailedErrorCode(errorCode);
 }
 
 void VDecCallbackTestExt::OnStreamChanged(std::shared_ptr<FormatMock> format)
@@ -548,7 +580,9 @@ void VideoDecAsyncSample::WaitForEos()
     lock.unlock();
     int64_t tempTime =
         chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
-    EXPECT_TRUE(isNotTimeout);
+    if (!videoDec_->detailedError_) {
+        EXPECT_TRUE(isNotTimeout);
+    }
     if (!isNotTimeout) {
         cout << "Run func timeout, time used: " << tempTime - time_ << "ms" << endl;
     } else {

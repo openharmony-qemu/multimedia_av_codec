@@ -27,6 +27,11 @@ using namespace testing::ext;
 using namespace testing::mt;
 
 namespace VFTSUIT {
+enum class Scenario : int32_t {
+    UNSUPPORT_CODEC_SPECIFICATION,
+    ILLEGAL_PARAMETER_SETS,
+    MISSING_PARAMETER_SETS,
+}
 void TEST_SUIT::SetUpTestCase(void)
 {
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
@@ -68,6 +73,29 @@ void TEST_SUIT::PrepareSource(int32_t param, std::string sourcePath)
     videoDec_->SetOutPath(prefix + fileName);
 }
 
+void SetDetailedErrorCodeParmater(std::shared_ptr<VDecCallbackTestExt> vdecCallbackExt,
+                                  std::shared_ptr<VDecCallbackTest> vdecCallback,
+                                  bool isAVBufferMode,
+                                  int32_t scenario)
+{
+    auto& target = isAVBufferMode ? vdecCallbackExt->detailedErrorCode_ : vdecCallback->detailedErrorCode_;
+    target.verification_ = false;
+
+    switch (scenario) {
+        case Scenario::UNSUPPORT_CODEC_SPECIFICATION:
+            target.unsupportedSpecification_ = true;
+            break;
+        case Scenario::ILLEGAL_PARAMETER_SETS:
+            target.illegalParam_ = true;
+            break;
+        case Scenario::MISSING_PARAMETER_SETS:
+            target.missingParam_ = true;
+            break;
+        default: 
+            break;
+    }
+}
+
 /**
  * @tc.name: VideoDecoder_XPS_Width_001
  * @tc.desc: exceeding the maximum xps frame width
@@ -77,6 +105,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Width_001, TestSize.Level1)
 {
     constexpr int32_t width = 720;
     constexpr int32_t height = 1280;
+    videoDec_->detailedError_ = true;
+    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, true, Scenario::UNSUPPORT_CODEC_SPECIFICATION);
     CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
@@ -85,6 +115,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Width_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    ASSERT_EQ(true, vdecCallbackExt_->detailedErrorCode_.verification_);
 }
 
 /**
@@ -96,6 +127,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Width_002, TestSize.Level1)
 {
     constexpr int32_t width = 720;
     constexpr int32_t height = 1280;
+    videoDec_->detailedError_ = true;
+    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, true, Scenario::UNSUPPORT_CODEC_SPECIFICATION);
     CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
@@ -104,6 +137,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Width_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    ASSERT_EQ(true, vdecCallbackExt_->detailedErrorCode_.verification_);
 }
 
 /**
@@ -115,6 +149,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Height_001, TestSize.Level1)
 {
     constexpr int32_t width = 720;
     constexpr int32_t height = 1280;
+    videoDec_->detailedError_ = true;
+    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, true, Scenario::UNSUPPORT_CODEC_SPECIFICATION);
     CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
@@ -123,6 +159,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Height_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    ASSERT_EQ(true, vdecCallbackExt_->detailedErrorCode_.verification_);
 }
 
 /**
@@ -134,6 +171,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Height_002, TestSize.Level1)
 {
     constexpr int32_t width = 720;
     constexpr int32_t height = 1280;
+    videoDec_->detailedError_ = true;
+    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, true, Scenario::UNSUPPORT_CODEC_SPECIFICATION);
     CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
@@ -142,6 +181,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Height_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    ASSERT_EQ(true, vdecCallbackExt_->detailedErrorCode_.verification_);
 }
 
 /**
@@ -153,6 +193,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_BitDepth_001, TestSize.Level1)
 {
     constexpr int32_t width = 720;
     constexpr int32_t height = 1280;
+    videoDec_->detailedError_ = true;
+    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, true, Scenario::UNSUPPORT_CODEC_SPECIFICATION);
     CreateByNameWithParam(CodecMimeType::VIDEO_HEVC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
@@ -161,6 +203,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_BitDepth_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    ASSERT_EQ(true, vdecCallbackExt_->detailedErrorCode_.verification_);
 }
 
 /**
@@ -172,6 +215,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_001, TestSize.Level1)
 {
     constexpr int32_t width = 720;
     constexpr int32_t height = 1280;
+    videoDec_->detailedError_ = true;
+    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, true, Scenario::UNSUPPORT_CODEC_SPECIFICATION);
     CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
@@ -180,6 +225,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    ASSERT_EQ(true, vdecCallbackExt_->detailedErrorCode_.verification_);
 }
 
 /**
@@ -191,6 +237,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_002, TestSize.Level1)
 {
     constexpr int32_t width = 720;
     constexpr int32_t height = 1280;
+    videoDec_->detailedError_ = true;
+    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, true, Scenario::UNSUPPORT_CODEC_SPECIFICATION);
     CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
@@ -199,6 +247,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    ASSERT_EQ(true, vdecCallbackExt_->detailedErrorCode_.verification_);
 }
 
 /**
@@ -210,6 +259,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_003, TestSize.Level1)
 {
     constexpr int32_t width = 720;
     constexpr int32_t height = 1280;
+    videoDec_->detailedError_ = true;
+    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, true, Scenario::UNSUPPORT_CODEC_SPECIFICATION);
     CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
@@ -218,6 +269,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_003, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    ASSERT_EQ(true, vdecCallbackExt_->detailedErrorCode_.verification_);
 }
 
 /**
@@ -229,6 +281,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_AVC_10Bit_001, TestSize.Level1)
 {
     constexpr int32_t width = 720;
     constexpr int32_t height = 1280;
+    videoDec_->detailedError_ = true;
+    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, true, Scenario::UNSUPPORT_CODEC_SPECIFICATION);
     CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
@@ -237,6 +291,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_AVC_10Bit_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    ASSERT_EQ(true, vdecCallbackExt_->detailedErrorCode_.verification_);
 }
 
 /**
@@ -248,6 +303,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_MBAFF_001, TestSize.Level1)
 {
     constexpr int32_t width = 1920;
     constexpr int32_t height = 1080;
+    videoDec_->detailedError_ = true;
+    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, true, Scenario::UNSUPPORT_CODEC_SPECIFICATION);
     CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
@@ -256,6 +313,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_MBAFF_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    ASSERT_EQ(true, vdecCallbackExt_->detailedErrorCode_.verification_);
 }
 
 /**
@@ -267,6 +325,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Invalid_001, TestSize.Level1)
 {
     constexpr int32_t width = 720;
     constexpr int32_t height = 576;
+    videoDec_->detailedError_ = true;
+    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, true, Scenario::ILLEGAL_PARAMETER_SETS);
     CreateByNameWithParam(CodecMimeType::VIDEO_HEVC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
@@ -275,6 +335,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Invalid_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    ASSERT_EQ(true, vdecCallbackExt_->detailedErrorCode_.verification_);
 }
 
 /**
@@ -286,6 +347,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Not_Exist_001, TestSize.Level1)
 {
     constexpr int32_t width = 270;
     constexpr int32_t height = 576;
+    videoDec_->detailedError_ = true;
+    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, true, Scenario::MISSING_PARAMETER_SETS);
     CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
@@ -294,6 +357,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Not_Exist_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    ASSERT_EQ(true, vdecCallbackExt_->detailedErrorCode_.verification_);
 }
 
 /**
@@ -305,6 +369,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Not_Exist_002, TestSize.Level1)
 {
     constexpr int32_t width = 720;
     constexpr int32_t height = 576;
+    videoDec_->detailedError_ = true;
+    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, true, Scenario::MISSING_PARAMETER_SETS);
     CreateByNameWithParam(CodecMimeType::VIDEO_HEVC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
@@ -313,6 +379,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Not_Exist_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    ASSERT_EQ(true, vdecCallbackExt_->detailedErrorCode_.verification_);
 }
 } // namespace
 
