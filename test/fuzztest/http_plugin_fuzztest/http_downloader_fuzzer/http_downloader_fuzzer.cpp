@@ -47,6 +47,16 @@ void TestHttpDownloaderFuzz(FuzzedDataProvider &fdp)
     downloader->Open(TEST_URI_PATH, httpHeader);
     downloader->SetPlayStrategy(playStrategy);
     downloader->Read(g_buffer, readDataInfo);
+    uint64_t extraCacheDuration = GetData<uint64_t>();
+    downloader->SetExtraCache(extraCacheDuration);
+    int32_t initOffset = GetData<int32_t>();
+    int32_t initSize = GetData<int32_t>();
+    downloader->SetInitialBufferSize(initOffset, initSize);
+    int64_t seekOffset = GetData<int64_t>();
+    bool isSeekHit = GetData<bool>();
+    downloader->SeekToPos(seekOffset, isSeekHit);
+    uint32_t bitRate = GetData<uint32_t>();
+    downloader->SelectBitRate(bitRate);
 }
 
 /* Fuzzer entry point */
