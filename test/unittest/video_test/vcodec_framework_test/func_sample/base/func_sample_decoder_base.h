@@ -139,10 +139,10 @@ struct DetailedErrorCode {
                       bool unsupportedSpecification = false,
                       bool illegalParam = false,
                       bool missingParam = false)
-        : verification_(verification)
-        , unsupportedSpecification_(unsupportedSpecification)
-        , illegalParam_(illegalParam)
-        , missingParam_(missingParam) {};
+        : verification_(verification),
+          unsupportedSpecification_(unsupportedSpecification),
+          illegalParam_(illegalParam),
+          missingParam_(missingParam) {};
 
     ~DetailedErrorCode() {};
 };

@@ -36,7 +36,7 @@ enum class Scenario : int32_t {
 void TEST_SUIT::SetUpTestCase(void)
 {
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
-                                                                    AVCodecCategory::AVCODEC_HARDWARE);
+                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
 }
 
@@ -45,13 +45,13 @@ void TEST_SUIT::CreateByNameWithParam(std::string_view param)
     std::string codecName = "";
     if (param == CodecMimeType::VIDEO_AVC) {
         capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
-                                                                        AVCodecCategory::AVCODEC_HARDWARE);
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
     } else if (param == CodecMimeType::VIDEO_HEVC) {
         capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), false,
-                                                                        AVCodecCategory::AVCODEC_HARDWARE);
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
     } else {
         capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
-                                                                        AVCodecCategory::AVCODEC_HARDWARE);
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
     }
     codecName = capability_->GetName();
     std::cout << "CodecName: " << codecName << "\n";
@@ -92,7 +92,7 @@ void SetDetailedErrorCodeParmater(std::shared_ptr<VDecCallbackTestExt> vdecCallb
         case Scenario::MISSING_PARAMETER_SETS:
             target.missingParam_ = true;
             break;
-        default: 
+        default:
             break;
     }
 }
