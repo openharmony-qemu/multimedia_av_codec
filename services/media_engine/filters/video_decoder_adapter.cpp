@@ -564,6 +564,16 @@ void VideoDecoderAdapter::OnDumpInfo(int32_t fd)
     }
 }
 
+bool VideoDecoderAdapter::IsHwDecoder()
+{
+    OHOS::MediaAVCodec::Format format = OHOS::MediaAVCodec::Format();
+    mediaCodec_->GetCodecInfo(format);
+    int32_t isHardware = 0;
+    format.GetIntValue(Media::Tag::MEDIA_IS_HARDWARE, isHardware);
+    MEDIA_LOG_I("isHardware: %{public}d ", isHardware);
+    return isHardware ==1 ? true : false;
+}
+
 void VideoDecoderAdapter::NotifyMemoryExchange(bool exchangeFlag)
 {
     FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr");
