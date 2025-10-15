@@ -68,6 +68,7 @@ protected:
     const char *INP_DIR_13 = "/data/test/media/vc1_mkv.mkv";
     const char *INP_DIR_14 = "/data/test/media/vc1_mov.mov";
     const char *INP_DIR_15 = "/data/test/media/vc1_mp4.mp4";
+    const char *INP_DIR_16 = "/data/test/media/vc1_ts.ts";
 };
 
 static OH_AVCapability *cap_vc1 = nullptr;
@@ -977,6 +978,25 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0042, TestSize.Level0)
     const char *file = "/data/test/media/vc1_mp4.mp4";
     
     vDecSample->getFormat(file);
+    vDecSample->outputYuvFlag = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VC1"));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
+}
+
+/**
+ * @tc.number    : VIDEO_VC1DEC_FUNCTION_0043
+ * @tc.name      : decode Vc1 buffer from ts file
+ * @tc.desc      : function test
+ */
+HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0043, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->getFormat(INP_DIR_16);
     vDecSample->outputYuvFlag = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VC1"));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
