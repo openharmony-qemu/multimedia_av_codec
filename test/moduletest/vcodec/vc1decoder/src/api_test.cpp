@@ -517,6 +517,21 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_API_1004, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : VIDEO_VC1DEC_API_1005
+ * @tc.name      : OH_VideoDecoder_RegisterSetCallback with null capability
+ * @tc.desc      : function test
+ */
+HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_API_1005, TestSize.Level2)
+{
+    OH_AVCodecCallback cb_;
+    cb_.onError = VdecAPI11Error;
+    cb_.onStreamChanged = VdecAPI11FormatChanged;
+    cb_.onNeedInputBuffer = VdecAPI11InputDataReady;
+    cb_.onNewOutputBuffer = VdecAPI11OutputDataReady;
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RegisterCallback(nullptr, cb_, NULL));
+}
+
+/**
  * @tc.number    : VIDEO_VC1DEC_API_1100
  * @tc.name      : Repeat OH_VideoDecoder_GetOutputDescription
  * @tc.desc      : function test
