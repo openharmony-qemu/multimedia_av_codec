@@ -778,6 +778,7 @@ void HevcDecoder::RequestSurfaceBufferThread()
         }
         auto index = requestSurfaceBufferQue_->Front();
         requestSurfaceBufferQue_->Pop();
+        std::lock_guard<std::mutex> oLock(outputMutex_);
         std::shared_ptr<HBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
         std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory;
         sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
@@ -964,9 +965,7 @@ int32_t HevcDecoder::UpdateOutputBuffer(uint32_t index)
 int32_t HevcDecoder::UpdateSurfaceMemory(uint32_t index)
 {
     AVCODEC_SYNC_TRACE;
-    std::unique_lock<std::mutex> oLock(outputMutex_);
     std::shared_ptr<HBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
-    oLock.unlock();
     if (width_ != outputBuffer->width || height_ != outputBuffer->height || bitDepth_ != outputBuffer->bitDepth) {
         std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory;
         CHECK_AND_RETURN_RET_LOG(surfaceMemory != nullptr, AVCS_ERR_UNKNOWN, "Surface memory is nullptr!");
@@ -1045,6 +1044,7 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         CHECK_AND_RETURN_RET_LOG((UpdateOutputBuffer(index) == AVCS_ERR_OK), AVCS_ERR_NO_MEMORY,
                                  "Update output buffer failed, index=%{public}u", index);
     } else {
+        std::lock_guard<std::mutex> oLock(outputMutex_);
         CHECK_AND_RETURN_RET_LOG((UpdateSurfaceMemory(index) == AVCS_ERR_OK), AVCS_ERR_NO_MEMORY,
                                  "Update buffer failed");
     }
@@ -1348,7 +1348,7 @@ void HevcDecoder::FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer)
     using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
     HEVC_COLOR_SPACE_INFO &outColorInfo = hevcDecoderOutpusArgs_.uiColorSpaceInfo;
     HEVC_HDR_METADATA &hdrMetadata = hevcDecoderOutpusArgs_.uiHdrMetadata;
-    if (outColorInfo.colorDescriptionPresentFlag) {
+    if (outColorInfo.colorDescriptionPresentFlag > 0) {
         std::vector<uint8_t> colorSpaceInfoVec;
         int32_t convertRet = ConvertParamsToColorSpaceInfo(outColorInfo.fullRangeFlag,
                                                            outColorInfo.colorPrimaries,
