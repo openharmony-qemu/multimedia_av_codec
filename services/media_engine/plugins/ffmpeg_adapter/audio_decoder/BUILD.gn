@@ -57,7 +57,7 @@ config("ffmpeg_adapter_config") {
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/ape",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/gsm_ms",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/gsm",
-	"$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/wma",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/wma",
   ]
 }
 
@@ -84,7 +84,7 @@ ohos_shared_library("media_plugin_FFmpegAudioDecoders") {
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/vorbis/ffmpeg_vorbis_decoder_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/gsm_ms/ffmpeg_gsm_ms_decoder_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/gsm/ffmpeg_gsm_decoder_plugin.cpp",
-	"$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/wma/ffmpeg_wma_decoder_plugin.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/wma/ffmpeg_wma_decoder_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_convert.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_converter.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_utils.cpp",
