@@ -1022,6 +1022,7 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     }
     format.Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(avStream.codecpar->bits_per_coded_sample);
     format.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(avStream.codecpar->bits_per_raw_sample);
+	format.Set<Tag::AUDIO_BLOCK_ALIGN>(avStream.codecpar->block_align);
 
     if (avStream.codecpar->codec_id == AV_CODEC_ID_AVS3DA) {
         format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);

@@ -139,6 +139,13 @@ constexpr int MAX_BIT_RATE_GSM = 13000;
 constexpr int MAX_CHANNEL_COUNT_GSM = 1;
 const std::vector<int32_t> AUDIO_GSM_SAMPLE_RATE = {8000};
 
+const std::vector<int32_t> AUDIO_WMA_LEGACY_SAMPLE_RATE = {
+    8000, 11025, 16000, 22050, 32000, 44100, 48000
+};
+const std::vector<int32_t> AUDIO_WMAPRO_SAMPLE_RATE = {
+    8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000
+};
+
 static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sampleRate)
 {
     std::vector<Range> sampleRateRange;
@@ -147,6 +154,51 @@ static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sample
         sampleRateRange.push_back(Range(sampleRate[i], sampleRate[i]));
     }
     return sampleRateRange;
+}
+
+CapabilityData AudioCodeclistInfo::GetWMAV1DecoderCapability()
+{
+    CapabilityData cap;
+    cap.codecName = AVCodecCodecName::AUDIO_DECODER_WMAV1_NAME;
+    cap.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    cap.mimeType  = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_WMAV1;
+    cap.isVendor  = false;
+    cap.bitrate   = Range(1, MAX_INT32);
+    cap.channels  = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    cap.sampleRate = AUDIO_WMA_LEGACY_SAMPLE_RATE;
+    cap.sampleRateRanges = convertVectorToRange(AUDIO_WMA_LEGACY_SAMPLE_RATE);
+    cap.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return cap;
+}
+
+CapabilityData AudioCodeclistInfo::GetWMAV2DecoderCapability()
+{
+    CapabilityData cap;
+    cap.codecName = AVCodecCodecName::AUDIO_DECODER_WMAV2_NAME;
+    cap.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    cap.mimeType  = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_WMAV2;
+    cap.isVendor  = false;
+    cap.bitrate   = Range(1, MAX_INT32);
+    cap.channels  = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    cap.sampleRate = AUDIO_WMA_LEGACY_SAMPLE_RATE;
+    cap.sampleRateRanges = convertVectorToRange(AUDIO_WMA_LEGACY_SAMPLE_RATE);
+    cap.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return cap;
+}
+
+CapabilityData AudioCodeclistInfo::GetWMAProDecoderCapability()
+{
+    CapabilityData cap;
+    cap.codecName = AVCodecCodecName::AUDIO_DECODER_WMAPRO_NAME;
+    cap.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    cap.mimeType  = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_WMAPRO;
+    cap.isVendor  = false;
+    cap.bitrate   = Range(1, MAX_INT32);
+    cap.channels  = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    cap.sampleRate = AUDIO_WMAPRO_SAMPLE_RATE;
+    cap.sampleRateRanges = convertVectorToRange(AUDIO_WMAPRO_SAMPLE_RATE);
+    cap.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return cap;
 }
 
 CapabilityData AudioCodeclistInfo::GetGsmMsDecoderCapability()
@@ -657,6 +709,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetFlacEncoderCapability(), GetG711muEncoderCapability(), GetAPEDecoderCapability(),
                           GetMP3EncoderCapability(), GetG711aDecoderCapability(), GetAc3DecoderCapability(),
                           GetGsmMsDecoderCapability(), GetGsmDecoderCapability(), GetAlacDecoderCapability(),
+						  GetWMAV1DecoderCapability(),GetWMAV2DecoderCapability(),GetWMAProDecoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),

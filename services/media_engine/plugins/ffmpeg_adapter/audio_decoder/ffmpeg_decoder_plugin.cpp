@@ -39,7 +39,8 @@ std::vector<std::string_view> codecVec = {
     AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME, AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME,
     AVCodecCodecName::AUDIO_DECODER_APE_NAME, AVCodecCodecName::AUDIO_DECODER_AC3_NAME,
     AVCodecCodecName::AUDIO_DECODER_GSM_MS_NAME, AVCodecCodecName::AUDIO_DECODER_GSM_NAME,
-    AVCodecCodecName::AUDIO_DECODER_ALAC_NAME,
+    AVCodecCodecName::AUDIO_DECODER_ALAC_NAME,AVCodecCodecName::AUDIO_DECODER_WMAV1_NAME, 
+	AVCodecCodecName::AUDIO_DECODER_WMAV2_NAME,AVCodecCodecName::AUDIO_DECODER_WMAPRO_NAME,
 };
 
 template <class T>
@@ -99,6 +100,18 @@ void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap)
         case 10: // 10:alac
             InitDefinition<FFmpegAlacDecoderPlugin>(MimeType::AUDIO_ALAC,
                 AVCodecCodecName::AUDIO_DECODER_ALAC_NAME, definition, cap);
+            break;
+        case 11: // 11: wmav1
+            InitDefinition<FFmpegWMADecoderPlugin>(MimeType::AUDIO_WMAV1,
+                AVCodecCodecName::AUDIO_DECODER_WMAV1_NAME, definition, cap);
+            break;
+        case 12: // 12: wmav2
+            InitDefinition<FFmpegWMADecoderPlugin>(MimeType::AUDIO_WMAV2,
+                AVCodecCodecName::AUDIO_DECODER_WMAV2_NAME, definition, cap);
+            break;
+        case 13: // 13: wmapro
+            InitDefinition<FFmpegWMADecoderPlugin>(MimeType::AUDIO_WMAPRO,
+                AVCodecCodecName::AUDIO_DECODER_WMAPRO_NAME, definition, cap);
             break;
         default:
             MEDIA_LOG_I("codec is not supported right now");
