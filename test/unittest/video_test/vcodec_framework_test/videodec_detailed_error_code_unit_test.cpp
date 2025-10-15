@@ -312,7 +312,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_AVC_10Bit_001, TestSize.Level1)
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
 #endif  // HMOS_TEST
 }
-
+#ifdef HMOS_TEST
 /**
  * @tc.name: VideoDecoder_XPS_MBAFF_001
  * @tc.desc: xps frame is mbaff
@@ -332,11 +332,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_MBAFF_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-#ifdef HMOS_TEST
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
-#endif  // HMOS_TEST
 }
-
+#endif // HMOS_TEST
 /**
  * @tc.name: VideoDecoder_XPS_Invalid_001
  * @tc.desc: xps frame data invalid
