@@ -357,7 +357,6 @@ bool CheckSqrMode(CapabilityData &capData, Format &format)
     bool qualityExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality);
     bool sqrFactorExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor);
     bool bitrateModeExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-
     if (!bitrateModeExist || bitrateMode != VideoEncodeBitrateMode::SQR) {
         return false;
     }
