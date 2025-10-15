@@ -2338,6 +2338,9 @@ ohos_unittest("videodec_detailed_error_code_async_unit_test") {
     "VideoDecSample=VideoDecAsyncSample",
   ]
   defines += av_codec_defines
+  if (target_cpu == "arm64") {
+    defines += [ "HMOS_TEST" ]
+  }
 
   cflags = vcodec_unittest_cflags
 

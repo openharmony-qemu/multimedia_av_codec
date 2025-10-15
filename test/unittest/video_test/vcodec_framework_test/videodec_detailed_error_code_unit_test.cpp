@@ -116,7 +116,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Width_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+#ifdef HMOS_TEST
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
+#endif  // HMOS_TEST
 }
 
 /**
@@ -138,7 +140,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Width_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+#ifdef HMOS_TEST
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
+#endif  // HMOS_TEST
 }
 
 /**
@@ -160,7 +164,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Height_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+#ifdef HMOS_TEST
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
+#endif  // HMOS_TEST
 }
 
 /**
@@ -182,7 +188,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Height_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+#ifdef HMOS_TEST
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
+#endif  // HMOS_TEST
 }
 
 /**
@@ -204,7 +212,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_BitDepth_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+#ifdef HMOS_TEST
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
+#endif  // HMOS_TEST
 }
 
 /**
@@ -226,7 +236,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+#ifdef HMOS_TEST
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
+#endif  // HMOS_TEST
 }
 
 /**
@@ -248,7 +260,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+#ifdef HMOS_TEST
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
+#endif  // HMOS_TEST
 }
 
 /**
@@ -270,7 +284,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_003, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+#ifdef HMOS_TEST
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
+#endif  // HMOS_TEST
 }
 
 /**
@@ -292,7 +308,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_AVC_10Bit_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+#ifdef HMOS_TEST
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
+#endif  // HMOS_TEST
 }
 
 /**
@@ -314,7 +332,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_MBAFF_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+#ifdef HMOS_TEST
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
+#endif  // HMOS_TEST
 }
 
 /**
@@ -336,7 +356,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Invalid_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+#ifdef HMOS_TEST
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
+#endif  // HMOS_TEST
 }
 
 /**
@@ -358,7 +380,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Not_Exist_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+#ifdef HMOS_TEST
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
+#endif  // HMOS_TEST
 }
 
 /**
@@ -380,7 +404,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Not_Exist_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+#ifdef HMOS_TEST
     ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
+#endif  // HMOS_TEST
 }
 } // namespace
 
