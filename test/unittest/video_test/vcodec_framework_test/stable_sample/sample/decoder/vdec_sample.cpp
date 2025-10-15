@@ -24,6 +24,15 @@
 #include "ui/rs_surface_node.h"
 #include "window_option.h"
 #include "syspara/parameters.h"
+#include "media_description.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include <libavformat/avformat.h>
+#ifdef __cplusplus
+}
+#endif
 
 #define PRINT_HILOG
 #define TEST_ID sampleId_
@@ -32,6 +41,9 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecSample"};
+uint8_t* extradata = nullptr;
+int64_t extradatasize = 0;
+constexpr std::string_view filename = "/data/test/media/glitch-ffvc1.avi";
 } // namespace
 using namespace std;
 using namespace OHOS;
@@ -39,6 +51,10 @@ using namespace OHOS::Media;
 
 namespace {
 constexpr uint32_t MAX_OUTPUT_FRMAENUM = 1000;
+constexpr uint8_t WMV3_EXTRADATA[] = {0x45, 0xf9, 0x18, 0x00};
+constexpr uint32_t WMV3_EXTRDATA_SIZE = sizeof(WMV3_EXTRADATA);
+constexpr uint8_t WMV3_HDR_EXTRADATA[] = {0x4b, 0xf1, 0x0a, 0x01};
+constexpr uint32_t WMV3_HDR_EXTRDATA_SIZE = sizeof(WMV3_HDR_EXTRADATA);
 
 static inline int64_t GetTimeUs()
 {
@@ -219,6 +235,8 @@ bool VideoDecSample::Create()
 
     isAvcStream_ = inPath_.find("h264") != std::string::npos;
     isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
+    needExtraData_ = inPath_.find("wmv3") != std::string::npos;
+    isWmv3HdrStream_ = inPath_.find("hdr.wmv3") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
 
@@ -240,6 +258,8 @@ bool VideoDecSample::CreateByMime()
 
     isAvcStream_ = inPath_.find("h264") != std::string::npos;
     isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
+    needExtraData_ = inPath_.find("wmv3") != std::string::npos;
+    isWmv3HdrStream_ = inPath_.find("hdr.wmv3") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
     codec_ = OH_VideoDecoder_CreateByMime(mime_.c_str());
@@ -256,6 +276,15 @@ bool VideoDecSample::InitInputFile()
         } else if (inPath_.find("h264") != std::string::npos || inPath_.find("h265") != std::string::npos) {
             int32_t ret = CreateAvccReader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateAvccReader failed");
+        } else if (inPath_.find("vc1") != std::string::npos) {
+            int32_t ret = CreateVc1Reader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateH263Reader failed");
+        } else if (inPath_.find("msvideo1") != std::string::npos) {
+            int32_t ret = CreateMsvideo1Reader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMsvideo1Reader failed");
+        } else if (inPath_.find("wmv3") != std::string::npos) {
+            int32_t ret = CreateWmv3Reader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateWmv3Reader failed");
         } else {
             int32_t ret = CreateMpegReader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMpegReader failed");
@@ -296,6 +325,26 @@ int32_t VideoDecSample::CreateMpegReader()
     return ret;
 }
 
+int32_t VideoDecSample::CreateVc1Reader()
+{
+    std::shared_ptr<Vc1ReaderInfo> info = std::make_shared<Vc1ReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<Vc1Reader>();
+    int32_t ret = std::static_pointer_cast<Vc1Reader>(signal_->reader_)->Init(info);
+    return ret;
+}
+
+int32_t VideoDecSample::CreateMsvideo1Reader()
+{
+    std::shared_ptr<Msvideo1ReaderInfo> info = std::make_shared<Msvideo1ReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<Msvideo1Reader>();
+    int32_t ret = std::static_pointer_cast<Msvideo1Reader>(signal_->reader_)->Init(info);
+    return ret;
+}
+
 int32_t VideoDecSample::CreateH263Reader()
 {
     std::shared_ptr<H263ReaderInfo> info = std::make_shared<H263ReaderInfo>();
@@ -303,6 +352,17 @@ int32_t VideoDecSample::CreateH263Reader()
 
     signal_->reader_ = std::make_shared<H263Reader>();
     int32_t ret = std::static_pointer_cast<H263Reader>(signal_->reader_)->Init(info);
+    return ret;
+}
+
+int32_t VideoDecSample::CreateWmv3Reader()
+{
+    std::shared_ptr<Wmv3ReaderInfo> info = std::make_shared<Wmv3ReaderInfo>();
+    info->inPath = inPath_;
+    info->isHdrStream = isWmv3HdrStream_;
+
+    signal_->reader_ = std::make_shared<Wmv3Reader>();
+    int32_t ret = std::static_pointer_cast<Wmv3Reader>(signal_->reader_)->Init(info);
     return ret;
 }
 
@@ -359,11 +419,8 @@ int32_t VideoDecSample::SetOutputSurface(OHNativeWindow *window)
     return AV_ERR_UNKNOWN;
 }
 
-int32_t VideoDecSample::Configure()
+bool VideoDecSample::DoConfigure(OH_AVFormat* format)
 {
-    TITLE_LOG;
-    OH_AVFormat *format = OH_AVFormat_Create();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_UNKNOWN, "create format failed");
     bool setFormatRet = OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, sampleWidth_) &&
                         OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleHeight_);
     if (setPixelFormat_) {
@@ -397,12 +454,42 @@ int32_t VideoDecSample::Configure()
         setFormatRet = setFormatRet &&
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_SCALING_MODE, OH_ScalingMode::SCALING_MODE_SCALE_CROP);
     }
+
+    if (needExtraData_) {
+        uint32_t extradataSize = isWmv3HdrStream_ ? WMV3_HDR_EXTRDATA_SIZE : WMV3_EXTRDATA_SIZE;
+        auto extradata = isWmv3HdrStream_ ? WMV3_HDR_EXTRADATA : WMV3_EXTRADATA;
+        OH_AVFormat_SetBuffer(format, OH_MD_KEY_CODEC_CONFIG, extradata, extradataSize);
+    }
+
     if (lowLatency_) {
         setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, 1);
         setFormatRet = setFormatRet && OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 1000000); // 1000000
     }
+    return setFormatRet;
+}
+
+int32_t VideoDecSample::Configure()
+{
+    TITLE_LOG;
+    OH_AVFormat *format = OH_AVFormat_Create();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_UNKNOWN, "create format failed");
+    bool setFormatRet = DoConfigure(format);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(setFormatRet, AV_ERR_UNKNOWN, "set format failed");
 
+    if (inPath_.find("vc1") != std::string::npos) {
+        AVFormatContext* formatContext = avformat_alloc_context();
+        int ret_ = avformat_open_input(&formatContext, filename.data(), nullptr, nullptr);
+        ret_ = avformat_find_stream_info(formatContext, nullptr);
+        for (int i = 0; i < formatContext->nb_streams; i++) {
+            AVStream* stream = formatContext->streams[i];
+            if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+                extradata = stream->codecpar->extradata;
+                extradatasize = stream->codecpar->extradata_size;
+            }
+        }
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret_ == AV_ERR_OK, AV_ERR_UNKNOWN, "avformat_find_stream_info failed");
+        OH_AVFormat_SetBuffer(format, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), extradata, extradatasize);
+    }
     if (!dumpKey_.empty() && !dumpValue_.empty()) {
         bool dumpRet = OHOS::system::SetParameter(dumpKey_, dumpValue_);
         UNITTEST_INFO_LOG("SetParameter %s %s ret: %d", dumpKey_.c_str(), dumpValue_.c_str(), dumpRet);

@@ -52,7 +52,7 @@ public:
     int32_t RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs) override;
     int32_t SetParameter(const Format &format) override;
     int32_t GetInputFormat(Format &format) override;
-
+    int32_t GetCodecInfo(Format &format) override;
     int32_t DestroyStub() override;
 #ifdef SUPPORT_DRM
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,

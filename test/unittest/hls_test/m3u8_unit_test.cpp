@@ -552,6 +552,7 @@ HWTEST_F(M3u8UnitTest, DOWNLOAD_STATUS_001, TestSize.Level1)
 {
     M3U8 m3u8(testUri, "");
     std::shared_ptr<Downloader> downloader = std::make_shared<Downloader>("hlsPlayList");
+    downloader->Init();
     std::shared_ptr<DownloadRequest> request = std::make_shared<DownloadRequest>("", nullptr, nullptr,  false);
     m3u8.OnDownloadStatus(DownloadStatus::PARTTAL_DOWNLOAD, downloader, request);
     request->clientError_ = 52;

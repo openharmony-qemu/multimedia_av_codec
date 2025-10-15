@@ -41,6 +41,8 @@ constexpr int MAX_VORBIS_SAMPLE_RATE = 96000;
 constexpr int MIN_FLAC_SAMPLE_RATE = 8000;
 constexpr int MAX_FLAC_SAMPLE_RATE = 384000;
 constexpr int MAX_INT32 = 0x7FFFFFFF; // 2147483647
+constexpr int MIN_ALAC_SAMPLE_RATE = 8000;
+constexpr int MAX_ALAC_SAMPLE_RATE = 384000;
 
 const std::vector<int32_t> AUDIO_VORBIS_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000,
                                                        32000, 44100, 48000, 64000, 88200, 96000};
@@ -98,7 +100,7 @@ constexpr int MIN_BIT_RATE_OPUS = 6000;
 constexpr int MAX_BIT_RATE_OPUS = 510000;
 constexpr int MIN_OPUS_COMPLIANCE_LEVEL = 1;
 constexpr int MAX_OPUS_COMPLIANCE_LEVEL = 10;
-constexpr int MAX_CHANNEL_COUNT_OPUS = 2;
+constexpr int MAX_CHANNEL_COUNT_OPUS = 255;
 const std::vector<int32_t> AUDIO_OPUS_SAMPLE_RATE = {8000, 12000, 16000, 24000, 48000};
 #endif
 #ifdef SUPPORT_CODEC_COOK
@@ -113,12 +115,29 @@ const std::vector<int32_t> AUDIO_EAC3_SAMPLE_RATE = {16000, 22050, 24000, 32000,
 #endif
 constexpr int MIN_BIT_RATE_AC3 = 32000;
 constexpr int MAX_BIT_RATE_AC3 = 640000;
+constexpr int MIN_BIT_RATE_ALAC = 0;
+constexpr int MAX_BIT_RATE_ALAC = 3000000;
+constexpr int ALAC_MAX_AUDIO_CHANNEL_COUNT = 8;
+const std::vector<int32_t> AUDIO_ALAC_SAMPLE_RATE = {
+    8000, 11025, 12000, 16000, 22050, 24000,
+    32000, 44100, 48000, 88200, 96000, 176400, 192000
+};
 const std::vector<int32_t> AUDIO_AC3_SAMPLE_RATE = {11025, 32000, 44100, 48000};
 constexpr int MAX_BIT_RATE_G711MU_DECODER = 64000;
 constexpr int MAX_BIT_RATE_G711MU_ENCODER = 64000;
 constexpr int MAX_BIT_RATE_G711A_DECODER = 64000;
 
 const std::string VENDOR_AAC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libaudiocodec_aac_proxy_1.0.z.so";
+
+constexpr int MIN_BIT_RATE_GSM_MS = 13000;
+constexpr int MAX_BIT_RATE_GSM_MS = 13000;
+constexpr int MAX_CHANNEL_COUNT_GSM_MS = 1;
+const std::vector<int32_t> AUDIO_GSM_MS_SAMPLE_RATE = {8000};
+
+constexpr int MIN_BIT_RATE_GSM = 13000;
+constexpr int MAX_BIT_RATE_GSM = 13000;
+constexpr int MAX_CHANNEL_COUNT_GSM = 1;
+const std::vector<int32_t> AUDIO_GSM_SAMPLE_RATE = {8000};
 
 static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sampleRate)
 {
@@ -128,6 +147,36 @@ static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sample
         sampleRateRange.push_back(Range(sampleRate[i], sampleRate[i]));
     }
     return sampleRateRange;
+}
+
+CapabilityData AudioCodeclistInfo::GetGsmMsDecoderCapability()
+{
+    CapabilityData audioGsmMsCapability;
+    audioGsmMsCapability.codecName = AVCodecCodecName::AUDIO_DECODER_GSM_MS_NAME;
+    audioGsmMsCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioGsmMsCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_GSM_MS;
+    audioGsmMsCapability.isVendor = false;
+    audioGsmMsCapability.bitrate = Range(MIN_BIT_RATE_GSM_MS, MAX_BIT_RATE_GSM_MS);
+    audioGsmMsCapability.channels = Range(1, MAX_CHANNEL_COUNT_GSM_MS);
+    audioGsmMsCapability.sampleRate = AUDIO_GSM_MS_SAMPLE_RATE;
+    audioGsmMsCapability.sampleRateRanges = convertVectorToRange(AUDIO_GSM_MS_SAMPLE_RATE);
+    audioGsmMsCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioGsmMsCapability;
+}
+
+CapabilityData AudioCodeclistInfo::GetGsmDecoderCapability()
+{
+    CapabilityData audioGsmCapability;
+    audioGsmCapability.codecName = AVCodecCodecName::AUDIO_DECODER_GSM_NAME;
+    audioGsmCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioGsmCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_GSM;
+    audioGsmCapability.isVendor = false;
+    audioGsmCapability.bitrate = Range(MIN_BIT_RATE_GSM, MAX_BIT_RATE_GSM);
+    audioGsmCapability.channels = Range(1, MAX_CHANNEL_COUNT_GSM);
+    audioGsmCapability.sampleRate = AUDIO_GSM_SAMPLE_RATE;
+    audioGsmCapability.sampleRateRanges = convertVectorToRange(AUDIO_GSM_SAMPLE_RATE);
+    audioGsmCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioGsmCapability;
 }
 
 CapabilityData AudioCodeclistInfo::GetMP3DecoderCapability()
@@ -159,6 +208,7 @@ CapabilityData AudioCodeclistInfo::GetMP3EncoderCapability()
     audioMp3Capability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioMp3Capability;
 }
+
 
 CapabilityData AudioCodeclistInfo::GetAacDecoderCapability()
 {
@@ -580,6 +630,21 @@ CapabilityData AudioCodeclistInfo::GetEac3DecoderCapability()
 }
 #endif
 
+CapabilityData AudioCodeclistInfo::GetAlacDecoderCapability()
+{
+    CapabilityData audioAlacCapability;
+    audioAlacCapability.codecName = AVCodecCodecName::AUDIO_DECODER_ALAC_NAME;
+    audioAlacCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioAlacCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ALAC;
+    audioAlacCapability.isVendor = false;
+    audioAlacCapability.bitrate = Range(MIN_BIT_RATE_ALAC, MAX_BIT_RATE_ALAC);
+    audioAlacCapability.channels = Range(1, ALAC_MAX_AUDIO_CHANNEL_COUNT);
+    audioAlacCapability.sampleRate = AUDIO_ALAC_SAMPLE_RATE;
+    audioAlacCapability.sampleRateRanges = {Range(MIN_ALAC_SAMPLE_RATE, MAX_ALAC_SAMPLE_RATE)};
+    audioAlacCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioAlacCapability;
+}
+
 AudioCodeclistInfo::AudioCodeclistInfo()
 {
     audioCapabilities_ = {
@@ -591,6 +656,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetG711muDecoderCapability(), GetRawDecoderCapability(), GetAacEncoderCapability(),
                           GetFlacEncoderCapability(), GetG711muEncoderCapability(), GetAPEDecoderCapability(),
                           GetMP3EncoderCapability(), GetG711aDecoderCapability(), GetAc3DecoderCapability(),
+                          GetGsmMsDecoderCapability(), GetGsmDecoderCapability(), GetAlacDecoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),

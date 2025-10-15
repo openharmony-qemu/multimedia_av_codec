@@ -19,12 +19,14 @@
 #include <string>
 #include <thread>
 #include "audio_decoder_g711a_demo.h"
+#include "audio_decoder_g711a_new_demo.h"
 #define FUZZ_PROJECT_NAME "audiodecoderg711a_fuzzer"
 
 using namespace std;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec::AudioBufferDemo;
+using namespace OHOS::MediaAVCodec::AudioBufferNewDemo;
 
 namespace OHOS {
 
@@ -33,6 +35,9 @@ bool AudioDecoderG711AFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
+    // FUZZ g711 new
+    G711aFuzzDemo* g711aFuzzDemo = new G711aFuzzDemo();
+    g711aFuzzDemo->DoG711aParserWithParserAPI(data, size);
     // FUZZ g711
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("g711a");

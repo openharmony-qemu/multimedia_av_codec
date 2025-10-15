@@ -23,6 +23,7 @@ ohos_fuzztest("AudioDecoderMp3FuzzTest") {
   module_out_path = module_output_path
   fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/audiodecodermp3_fuzzer"
   include_dirs = [
+    "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoderbase_fuzzer",
     "$MEDIA_ROOT_DIR/test/fuzztest/audiodecodermp3_fuzzer",
     "$MEDIA_ROOT_DIR/test/nativedemo/avmuxer",
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
@@ -49,6 +50,8 @@ ohos_fuzztest("AudioDecoderMp3FuzzTest") {
   ]
   sources = [
     "audio_decoder_mp3_demo.cpp",
+    "../audiodecoderbase_fuzzer/audio_decoder_base_new_demo.cpp",
+    "audio_decoder_mp3_new_demo.cpp",
     "audiodecodermp3_fuzzer.cpp",
   ]
 

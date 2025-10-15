@@ -44,13 +44,20 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_COOK = "audio/cook";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_AC3 = "audio/ac3";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_EAC3 = "audio/eac3";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_ALAC = "audio/alac";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_RAW = "audio/raw";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_GSM_MS = "audio/gsm_ms";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_GSM = "audio/gsm";
 
+    static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_MSVIDEO1 = "video/msvideo1";
+    static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_VC1 = "video/vc1";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_AVC = "video/avc";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_MPEG4 = "video/mp4v-es";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_HEVC = "video/hevc";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_RV30 = "video/rv30";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_RV40 = "video/rv40";
+    static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_MJPEG = "video/mjpeg";
+    static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_WMV3 = "video/wmv3";
 
     static constexpr std::string_view MEDIA_MIMETYPE_IMAGE_JPG = "image/jpeg";
     static constexpr std::string_view MEDIA_MIMETYPE_IMAGE_PNG = "image/png";
@@ -82,6 +89,10 @@ public:
             MEDIA_MIMETYPE_AUDIO_AMRNB,
             MEDIA_MIMETYPE_AUDIO_AMRWB,
             MEDIA_MIMETYPE_AUDIO_APE,
+            MEDIA_MIMETYPE_AUDIO_ALAC,
+            MEDIA_MIMETYPE_AUDIO_GSM_MS,
+            MEDIA_MIMETYPE_AUDIO_GSM,
+            MEDIA_MIMETYPE_AUDIO_AC3,
 #ifdef SUPPORT_CODEC_EAC3
             MEDIA_MIMETYPE_AUDIO_EAC3,
 #endif

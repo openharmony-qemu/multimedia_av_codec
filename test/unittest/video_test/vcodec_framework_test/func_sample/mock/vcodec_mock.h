@@ -81,6 +81,7 @@ public:
     virtual int32_t Flush() = 0;
     virtual int32_t Reset() = 0;
     virtual std::shared_ptr<FormatMock> GetOutputDescription() = 0;
+    virtual std::shared_ptr<FormatMock> GetCodecInfo() = 0;
     virtual int32_t SetParameter(std::shared_ptr<FormatMock> format) = 0;
     virtual int32_t QueryInputBuffer(uint32_t& index, int64_t timeoutUs) = 0;
     virtual std::shared_ptr<AVBufferMock> GetInputBuffer(uint32_t index) = 0;
@@ -153,7 +154,10 @@ enum VCodecTestCode : int32_t {
     SW_MPEG2,
     SW_MPEG4,
     SW_RV40,
-    SW_H263
+    SW_H263,
+    SW_VC1,
+    SW_MSVIDEO1,
+    SW_WMV3
 };
 
 enum VCodecPixelFormat : int32_t {
@@ -172,7 +176,10 @@ const std::map<int32_t, std::string> decSourcePathMap_ = {{HW_AVC, "/data/test/m
                                                           {SW_MPEG2, "/data/test/media/mpeg2.m2v"},
                                                           {SW_MPEG4, "/data/test/media/mpeg4.m4v"},
                                                           {SW_RV40, "/data/test/media/rv40.rm"},
-                                                          {SW_H263, "/data/test/media/profile2_1920x1080.h263"}};
+                                                          {SW_H263, "/data/test/media/profile2_1920x1080.h263"},
+                                                          {SW_VC1, "/data/test/media/test.vc1"},
+                                                          {SW_MSVIDEO1, "/data/test/media/test_msvideo1_001.msvideo1"},
+                                                          {SW_WMV3, "/data/test/media/352_288_10.wmv3"}};
 
 constexpr uint32_t DEFAULT_BITRATE = 12000;
 

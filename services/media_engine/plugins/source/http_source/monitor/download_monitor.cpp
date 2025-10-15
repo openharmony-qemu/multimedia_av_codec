@@ -58,13 +58,20 @@ namespace {
 DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) noexcept
     : downloader_(std::move(downloader))
 {
-    auto statusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+}
+
+void DownloadMonitor::Init()
+{
+    downloader_->Init();
+    
+    auto weakDownloader = weak_from_this();
+    auto statusCallback = [weakDownloader] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
-        if (isClosed_) {
-            MEDIA_LOG_W("Downloader monitor is already closed.");
-            return;
-        }
-        OnDownloadStatus(std::forward<decltype(downloader)>(downloader), std::forward<decltype(request)>(request));
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "statusCallback, Downloader monitor already destructed.");
+        FALSE_RETURN_MSG_W(!shareDownloader->isClosed_, "statusCallback, Downloader monitor is already closed.");
+        shareDownloader->OnDownloadStatus(std::forward<decltype(downloader)>(downloader),
+            std::forward<decltype(request)>(request));
     };
     downloader_->SetStatusCallback(statusCallback);
     task_ = std::make_shared<Task>(std::string("OS_HttpMonitor"));

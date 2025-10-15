@@ -33,10 +33,12 @@ struct DashPreparedAction {
     DashMpdTrackParam preparedSubtitleParam_;
 };
 
-class DashMediaDownloader : public MediaDownloader, public DashMpdCallback {
+class DashMediaDownloader : public MediaDownloader, public DashMpdCallback,
+    public std::enable_shared_from_this<DashMediaDownloader> {
 public:
     explicit DashMediaDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~DashMediaDownloader() override;
+    void Init() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;

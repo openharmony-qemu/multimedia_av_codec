@@ -233,6 +233,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     if (uri_.find(".mpd") != std::string::npos) {
         downloader_ = std::make_shared<DownloadMonitor>(
                       std::make_shared<DashMediaDownloader>(loaderCombinations_));
+        downloader_->Init();
         delayReady_ = false;
     } else if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
         bool userDefinedDuration = false;  // 允许自动调节缓冲区大小
@@ -243,6 +244,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
         }
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>
                       (expectDuration, userDefinedDuration, httpHeader_, loaderCombinations_));
+        downloader_->Init();
         delayReady_ = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
         InitHttpSource(source);
@@ -252,6 +254,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     }
     if (mimeType_== AVMimeTypes::APPLICATION_M3U8) {
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType_));
+        downloader_->Init();
     }
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded_);
@@ -278,6 +281,7 @@ void HttpSourcePlugin::InitHttpSource(const std::shared_ptr<MediaSource>& source
     }
     downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
         (uri_, expectDuration, loaderCombinations_));
+    downloader_->Init();
     downloader_->SetMediaStreams(playMediaStreams);
 }
 
@@ -637,6 +641,15 @@ bool HttpSourcePlugin::IsHlsEnd()
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
     return downloader_->IsHlsEnd();
+}
+
+bool HttpSourcePlugin::IsHls()
+{
+    if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
+        return CheckIsM3U8Uri();
+    }
+    MEDIA_LOG_I("IsHls return true");
+    return true;
 }
 }
 }

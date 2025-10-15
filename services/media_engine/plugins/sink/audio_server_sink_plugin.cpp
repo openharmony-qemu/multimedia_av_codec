@@ -163,10 +163,11 @@ AudioServerSinkPlugin::AudioServiceDiedCallbackImpl::AudioServiceDiedCallbackImp
 }
 
 AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::AudioFirstFrameCallbackImpl(
-    std::shared_ptr<Pipeline::EventReceiver> &receiver)
+    std::shared_ptr<Pipeline::EventReceiver> &receiver, const std::weak_ptr<AudioServerSinkPlugin> &plugin)
 {
     FALSE_RETURN(receiver != nullptr);
     playerEventReceiver_ = receiver;
+    plugin_ = plugin;
 }
 
 void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnInterrupt(
@@ -233,6 +234,9 @@ void AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::OnFirstFrameWriting(uin
     FALSE_RETURN(playerEventReceiver_ != nullptr);
     playerEventReceiver_->OnEvent(event);
     MEDIA_LOG_I_SHORT("OnFirstFrameWriting event upload ");
+    auto plugin = plugin_.lock();
+    FALSE_RETURN_MSG(plugin != nullptr, "AudioServerSinkPlugin OnFirstFrameWriting plugin_ is nullptr");
+    plugin->OnFirstFrameWriting();
 }
 
 void AudioServerSinkPlugin::AudioServiceDiedCallbackImpl::OnAudioPolicyServiceDied()
@@ -376,7 +380,8 @@ Status AudioServerSinkPlugin::Prepare()
             audioRenderer_->RegisterOutputDeviceChangeWithInfoCallback(audioRendererCallback_);
         }
         if (audioFirstFrameCallback_ == nullptr) {
-            audioFirstFrameCallback_ = std::make_shared<AudioFirstFrameCallbackImpl>(playerEventReceiver_);
+            audioFirstFrameCallback_ = std::make_shared<AudioFirstFrameCallbackImpl>(playerEventReceiver_,
+                weak_from_this());
             audioRenderer_->SetRendererFirstFrameWritingCallback(audioFirstFrameCallback_);
         }
         if (audioServiceDiedCallback_ == nullptr) {
@@ -1421,6 +1426,13 @@ Status AudioServerSinkPlugin::SetLoudnessGain(float loudnessGain)
         "set loudnessGain failed with code " PUBLIC_LOG_D32, ret);
     MEDIA_LOG_I("SetLoudnessGain succ");
     return Status::OK;
+}
+
+void AudioServerSinkPlugin::OnFirstFrameWriting()
+{
+    auto cb = audioSinkDataCallback_.lock();
+    FALSE_RETURN_MSG(cb != nullptr, "AudioServerSinkPlugin OnFirstFrameWriting callback is nullptr");
+    cb->OnFirstFrameWriting();
 }
 } // namespace Plugin
 } // namespace Media

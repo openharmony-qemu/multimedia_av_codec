@@ -40,17 +40,22 @@ static bool isNumber(const std::string& str)
     return str.find_first_not_of("0123456789") == std::string::npos;
 }
 
-void PlayListDownloader::PlayListDownloaderInit()
+void PlayListDownloader::Init()
 {
-    dataSave_ = [this] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) {
-        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
+    auto weakDownloader = weak_from_this();
+    dataSave_ = [weakDownloader] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) -> uint32_t {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_V_MSG(shareDownloader != nullptr, 0u, "dataSave, playlist downloader already destructed.");
+        return shareDownloader->SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
             std::forward<decltype(notBlock)>(notBlock));
     };
     // this is default callback
-    statusCallback_ = [this] (DownloadStatus&& status, std::shared_ptr<Downloader> d,
+    statusCallback_ = [weakDownloader] (DownloadStatus&& status, std::shared_ptr<Downloader> d,
             std::shared_ptr<DownloadRequest>& request) {
-        OnDownloadStatus(std::forward<decltype(status)>(status), downloader_,
-                         std::forward<decltype(request)>(request));
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "statusCb, playlist downloader already destructed.");
+        shareDownloader->OnDownloadStatus(std::forward<decltype(status)>(status), shareDownloader->downloader_,
+            std::forward<decltype(request)>(request));
     };
     updateTask_ = std::make_shared<Task>(std::string("OS_FragmentListUpdate"), "", TaskType::SINGLETON);
     updateTask_->RegisterJob([this] {
@@ -71,8 +76,8 @@ PlayListDownloader::PlayListDownloader(const std::map<std::string, std::string>&
     } else {
         downloader_ = std::make_shared<Downloader>("hlsPlayList");
     }
+    downloader_->Init();
     httpHeader_ = httpHeader;
-    PlayListDownloaderInit();
 }
 
 PlayListDownloader::PlayListDownloader(std::shared_ptr<Downloader> downloader,
@@ -80,7 +85,6 @@ PlayListDownloader::PlayListDownloader(std::shared_ptr<Downloader> downloader,
 {
     downloader_ = downloader;
     httpHeader_ = httpHeader;
-    PlayListDownloaderInit();
 }
 
 void PlayListDownloader::SaveHttpHeader(const std::map<std::string, std::string>& httpHeader)
@@ -90,28 +94,32 @@ void PlayListDownloader::SaveHttpHeader(const std::map<std::string, std::string>
 
 void PlayListDownloader::DoOpen(const std::string& url)
 {
-    auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                                      std::shared_ptr<DownloadRequest>& request) {
+    auto weakDownloader = weak_from_this();
+    auto realStatusCallback = [weakDownloader] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "realStatusCb, playlist downloader already destructed.");
         // 目标资源永久删除，需要重头重新请求
         if (request->GetServerError() == HTTP_SERVER_ERROR_410) {
-            ReOpen();
+            shareDownloader->ReOpen();
             return;
         }
-        if (retryStartTime_ == 0) {
-            retryStartTime_ = request->GetNowTime();
+        if (shareDownloader->retryStartTime_ == 0) {
+            shareDownloader->retryStartTime_ = request->GetNowTime();
         }
         int64_t nowTime = request->GetNowTime();
-        bool isNeedReportError = (nowTime - retryStartTime_) >= RETRY_DELTA_TIME_TO_REPORT_ERROR
+        bool isNeedReportError = (nowTime - shareDownloader->retryStartTime_) >= RETRY_DELTA_TIME_TO_REPORT_ERROR
                                   || request->GetRetryTimes() >= RETRY_TIME_TO_REPORT_ERROR;
-        if (isNeedReportError && eventCallback_ != nullptr) {
+        if (isNeedReportError && shareDownloader->eventCallback_ != nullptr) {
             MEDIA_LOG_E("fail to download m3u8.");
-            eventCallback_->OnEvent({PluginEventType::CLIENT_ERROR,
-                                    {NetworkClientErrorCode::ERROR_TIME_OUT}, "download m3u8"});
+            shareDownloader->eventCallback_->OnEvent({PluginEventType::CLIENT_ERROR,
+                {NetworkClientErrorCode::ERROR_TIME_OUT}, "download m3u8"});
 
             return;
         }
-        playList_.clear();
-        statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
+        shareDownloader->playList_.clear();
+        shareDownloader->statusCallback_(status, shareDownloader->downloader_,
+            std::forward<decltype(request)>(request));
     };
 
     RequestInfo requestInfo;
@@ -122,7 +130,6 @@ void PlayListDownloader::DoOpen(const std::string& url)
         MEDIA_LOG_E("no enough memory downloadRequest_ is nullptr");
         return;
     }
-    std::weak_ptr<PlayListDownloader> weakDownloader = weak_from_this();
     auto downloadDoneCallback = [weakDownloader] (const std::string& url, const std::string& location) {
         auto shareDownloader = weakDownloader.lock();
         FALSE_RETURN_MSG(shareDownloader != nullptr, "handleResponseCb, PlayListDownloader is nullptr!");

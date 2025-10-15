@@ -23,6 +23,7 @@ ohos_fuzztest("AudioDecoderAacFuzzTest") {
   module_out_path = module_output_path
   fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoderaac_fuzzer"
   include_dirs = [
+    "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoderbase_fuzzer",
     "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoderaac_fuzzer",
     "$MEDIA_ROOT_DIR/test/nativedemo/avmuxer",
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
@@ -49,6 +50,7 @@ ohos_fuzztest("AudioDecoderAacFuzzTest") {
   ]
   sources = [
     "audio_decoder_aac_demo.cpp",
+    "../audiodecoderbase_fuzzer/audio_decoder_base_new_demo.cpp",
     "audio_decoder_aac_new_demo.cpp",
     "audiodecoderaac_fuzzer.cpp",
   ]

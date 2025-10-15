@@ -198,6 +198,7 @@ public:
     explicit Downloader(const std::string& name, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader) noexcept;
     virtual ~Downloader();
 
+    void Init();
     bool Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs);
     void Start();
     void Pause(bool isAsync = false);
@@ -242,7 +243,6 @@ private:
     void WaitLoopPause();
     void NotifyLoopPause();
     void HandleRetErrorCode();
-    void DonwloaderInit(const std::string& name);
     void OpenAppUri();
     void HandleRedirect(Status& ret);
 

@@ -84,7 +84,7 @@ public:
     void Cancel();
     void SetStatusCallback(StatusCallbackFunc cb);
     bool GetPlayListDownloadStatus();
-    void PlayListDownloaderInit();
+    void Init();
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     std::map<std::string, std::string> GetHttpHeader();
     void SetCallback(Callback* cb);

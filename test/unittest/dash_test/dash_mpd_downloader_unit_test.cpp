@@ -48,6 +48,7 @@ void DashMpdDownloaderUnitTest::SetUpTestCase(void)
     std::cout << "start" << std::endl;
 
     g_mpdDownloader = std::make_shared<DashMpdDownloader>();
+    g_mpdDownloader->Init();
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                               std::shared_ptr<DownloadRequest>& request) {};
     g_mpdDownloader->SetStatusCallback(statusCallback);
@@ -210,60 +211,70 @@ HWTEST_F(DashMpdDownloaderUnitTest, TEST_GET_NEXT_TRACK_STREAM, TestSize.Level1)
 
 HWTEST_F(DashMpdDownloaderUnitTest, TEST_SET_HDR_START, TestSize.Level1)
 {
-    DashMpdDownloader downloader;
+    auto downloader = std::make_shared<DashMpdDownloader>();
+    downloader->Init();
     std::string testUrl = MPD_SEGMENT_LIST;
-    downloader.SetHdrStart(true);
-    downloader.Open(testUrl);
-    downloader.GetSeekable();
-    int usingStreamId = downloader.GetInUseVideoStreamId();
-    std::shared_ptr<DashStreamDescription> stream = downloader.GetStreamByStreamId(usingStreamId);
+    downloader->SetHdrStart(true);
+    downloader->Open(testUrl);
+    downloader->GetSeekable();
+    int usingStreamId = downloader->GetInUseVideoStreamId();
+    std::shared_ptr<DashStreamDescription> stream = downloader->GetStreamByStreamId(usingStreamId);
     EXPECT_NE(stream, nullptr);
     EXPECT_FALSE(stream->videoType_ == DASH_VIDEO_TYPE_HDR_VIVID);
-    downloader.Close(true);
+    downloader->Close(true);
+    downloader = nullptr;
 }
 
 HWTEST_F(DashMpdDownloaderUnitTest, TEST_OPEN_TIMELINE_MPD, TestSize.Level1)
 {
-    DashMpdDownloader downloader;
+    auto downloader = std::make_shared<DashMpdDownloader>();
+    downloader->Init();
     std::string testUrl = MPD_SEGMENT_LIST_TIMELINE;
-    downloader.Open(testUrl);
-    downloader.GetSeekable();
-    int64_t duration = downloader.GetDuration();
+    downloader->Open(testUrl);
+    downloader->GetSeekable();
+    int64_t duration = downloader->GetDuration();
     EXPECT_GE(duration, 0);
-    downloader.Close(true);
+    downloader->Close(true);
+    downloader = nullptr;
 }
 
 HWTEST_F(DashMpdDownloaderUnitTest, TEST_OPEN_TEMPLATE_TIMELINE_MPD, TestSize.Level1)
 {
-    DashMpdDownloader downloader;
+    auto downloader = std::make_shared<DashMpdDownloader>();
+    downloader->Init();
     std::string testUrl = URL_TEMPLATE_TIMELINE;
-    downloader.Open(testUrl);
-    downloader.GetSeekable();
-    int64_t duration = downloader.GetDuration();
+    downloader->Open(testUrl);
+    downloader->GetSeekable();
+    int64_t duration = downloader->GetDuration();
     EXPECT_GE(duration, 0);
-    downloader.Close(true);
+    downloader->Close(true);
+    downloader = nullptr;
 }
 
 HWTEST_F(DashMpdDownloaderUnitTest, TEST_OPEN_ADPT_MPD, TestSize.Level1)
 {
-    DashMpdDownloader downloader;
+    auto downloader = std::make_shared<DashMpdDownloader>();
+    downloader->Init();
     std::string testUrl = MPD_SEGMENT_TEMPLATE_ADPT;
-    downloader.Open(testUrl);
-    downloader.GetSeekable();
-    int64_t duration = downloader.GetDuration();
+    downloader->Open(testUrl);
+    downloader->GetSeekable();
+    int64_t duration = downloader->GetDuration();
     EXPECT_GE(duration, 0);
-    downloader.Close(true);
+    downloader->Close(true);
+    downloader = nullptr;
 }
 
 HWTEST_F(DashMpdDownloaderUnitTest, TEST_OPEN_PERIOD_MPD, TestSize.Level1)
 {
-    DashMpdDownloader downloader;
+    auto downloader = std::make_shared<DashMpdDownloader>();
+    downloader->Init();
     std::string testUrl = URL_SEGMENT_BASE_IN_PERIOD;
-    downloader.Open(testUrl);
-    downloader.GetSeekable();
-    int64_t duration = downloader.GetDuration();
+    downloader->Open(testUrl);
+    downloader->GetSeekable();
+    int64_t duration = downloader->GetDuration();
     EXPECT_GE(duration, 0);
-    downloader.Close(true);
+    downloader->Close(true);
+    downloader = nullptr;
 }
 
 }

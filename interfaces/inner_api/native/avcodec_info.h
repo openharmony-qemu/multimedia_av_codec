@@ -609,6 +609,8 @@ private:
  */
 class CodecMimeType {
 public:
+    static constexpr std::string_view VIDEO_MSVIDEO1 = "video/msvideo1";
+    static constexpr std::string_view VIDEO_VC1 = "video/vc1";
     static constexpr std::string_view VIDEO_H263 = "video/h263";
     static constexpr std::string_view VIDEO_AVC = "video/avc";
     static constexpr std::string_view VIDEO_MPEG2 = "video/mpeg2";
@@ -618,7 +620,9 @@ public:
     static constexpr std::string_view VIDEO_VP9 = "video/x-vnd.on2.vp9";
     static constexpr std::string_view VIDEO_RV30 = "video/rv30";
     static constexpr std::string_view VIDEO_RV40 = "video/rv40";
+    static constexpr std::string_view VIDEO_WMV3 = "video/wmv3";
     static constexpr std::string_view VIDEO_VVC = "video/vvc";
+    static constexpr std::string_view VIDEO_MJPEG = "video/mjpeg";
     static constexpr std::string_view AUDIO_MIMETYPE_L2HC = "audio/l2hc";
     static constexpr std::string_view AUDIO_AMR_NB = "audio/3gpp";
     static constexpr std::string_view AUDIO_AMR_WB = "audio/amr-wb";
@@ -633,6 +637,7 @@ public:
     static constexpr std::string_view AUDIO_COOK = "audio/cook";
     static constexpr std::string_view AUDIO_AC3 = "audio/ac3";
     static constexpr std::string_view AUDIO_EAC3 = "audio/eac3";
+    static constexpr std::string_view AUDIO_ALAC = "audio/alac";
     static constexpr std::string_view AUDIO_VIVID = "audio/av3a";
     static constexpr std::string_view AUDIO_AVS3DA = "audio/av3a";
     static constexpr std::string_view AUDIO_APE = "audio/x-ape";
@@ -640,6 +645,8 @@ public:
     static constexpr std::string_view IMAGE_JPG = "image/jpeg";
     static constexpr std::string_view IMAGE_PNG = "image/png";
     static constexpr std::string_view IMAGE_BMP = "image/bmp";
+    static constexpr std::string_view AUDIO_GSM_MS = "audio/gsm_ms";
+    static constexpr std::string_view AUDIO_GSM = "audio/gsm";
 };
 
 /**
@@ -758,6 +765,32 @@ enum H263Profile : int32_t {
     H263_PROFILE_CONVERSATIONAL_INTERNET = 6, // ffmpeg not support
     H263_PROFILE_CONVERSATIONAL_PLUS_INTERLACE = 7, // ffmpeg not support
     H263_PROFILE_HIGH_LATENCY = 8 // ffmpeg not support
+};
+
+/**
+ * @brief VC1 Profile.
+ *
+ * @since 22
+ */
+enum VC1Profile {
+    /** Simple profile */
+    VC1_PROFILE_SIMPLE = 0,
+    /** Main profile */
+    VC1_PROFILE_MAIN = 1,
+    /** Advanced profile */
+    VC1_PROFILE_ADVANCED = 2,
+};
+
+/**
+ * @brief WMV3 Profile
+ *
+ * @since 6.0
+ */
+enum WMV3Profile : int32_t {
+    /** SIMPLE Profile */
+    WMV3_PROFILE_SIMPLE = 0,
+    /** MAIN Profile */
+    WMV3_PROFILE_MAIN = 1
 };
 
 /**
@@ -900,6 +933,44 @@ enum H263Level : int32_t {
     H263_LEVEL_60 = 6,
     /** 70 level */
     H263_LEVEL_70 = 7
+};
+
+/**
+ * @brief VC-1 Level.
+ *
+ * @since 22
+ */
+enum VC1Level {
+    /** L0 level */
+    VC1_LEVEL_L0 = 0,
+    /** L1 level */
+    VC1_LEVEL_L1 = 1,
+    /** L2 level */
+    VC1_LEVEL_L2 = 2,
+    /** L3 level */
+    VC1_LEVEL_L3 = 3,
+    /** L4 level */
+    VC1_LEVEL_L4 = 4,
+    /** LOW level */
+    VC1_LEVEL_LOW = 5,
+    /** MEDIUM level */
+    VC1_LEVEL_MEDIUM = 6,
+    /** HIGH level */
+    VC1_LEVEL_HIGH = 7,
+};
+
+/**
+ * @brief WMV3 Level
+ *
+ * @since 6.0
+ */
+enum WMV3Level : int32_t {
+    /** LOW level */
+    WMV3_LEVEL_LOW = 0,
+    /** MEDIUM level */
+    WMV3_LEVEL_MEDIUM = 1,
+    /** HIGH level */
+    WMV3_LEVEL_HIGH = 2
 };
 
 /**

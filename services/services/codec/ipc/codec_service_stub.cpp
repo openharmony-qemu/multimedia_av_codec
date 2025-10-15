@@ -228,6 +228,9 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
         case static_cast<uint32_t>(CodecServiceInterfaceCode::GET_INPUT_FORMAT):
             ret = GetInputFormat(data, reply);
             break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::GET_CODEC_INFO):
+            ret = GetCodecInfo(data, reply);
+            break;
         case static_cast<uint32_t>(CodecServiceInterfaceCode::DESTROY_STUB):
             ret = DestroyStub(data, reply);
             break;
@@ -492,6 +495,13 @@ int32_t CodecServiceStub::GetInputFormat(Format &format)
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->GetInputFormat(format);
+}
+
+int32_t CodecServiceStub::GetCodecInfo(Format &format)
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    return codecServer_->GetCodecInfo(format);
 }
 
 #ifdef SUPPORT_DRM
@@ -759,6 +769,17 @@ int32_t CodecServiceStub::GetInputFormat(MessageParcel &data, MessageParcel &rep
     (void)data;
     Format format;
     (void)GetInputFormat(format);
+    (void)AVCodecParcel::Marshalling(reply, format);
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecServiceStub::GetCodecInfo(MessageParcel &data, MessageParcel &reply)
+{
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
+
+    (void)data;
+    Format format;
+    (void)GetCodecInfo(format);
     (void)AVCodecParcel::Marshalling(reply, format);
     return AVCS_ERR_OK;
 }

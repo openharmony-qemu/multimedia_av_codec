@@ -37,6 +37,7 @@ public:
     int32_t Reset() override;
     int32_t Release() override;
     std::shared_ptr<FormatMock> GetOutputDescription() override;
+    std::shared_ptr<FormatMock> GetCodecInfo() override;
     int32_t SetParameter(std::shared_ptr<FormatMock> format) override;
     int32_t QueryInputBuffer(uint32_t& index, int64_t timeoutUs) override;
     std::shared_ptr<AVBufferMock> GetInputBuffer(uint32_t index) override;

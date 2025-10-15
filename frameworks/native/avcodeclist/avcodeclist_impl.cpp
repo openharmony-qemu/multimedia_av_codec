@@ -21,6 +21,8 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecListImpl"};
 const std::vector<std::string> VIDEO_MIME_VEC = {
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MSVIDEO1),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VC1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_AVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_HEVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VVC),
@@ -29,8 +31,10 @@ const std::vector<std::string> VIDEO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MPEG4),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV30),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV40),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MJPEG),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP8),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP9)};
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP9),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_WMV3)};
 const std::vector<std::string> AUDIO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_NB),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_WB),
@@ -42,9 +46,12 @@ const std::vector<std::string> AUDIO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_RAW),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_G711MU),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_G711A),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_GSM_MS),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_GSM),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_COOK),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AC3),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_EAC3),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ALAC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AVS3DA),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_LBVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_APE),
@@ -166,7 +173,7 @@ CapabilityData *AVCodecListImpl::GetCapability(const std::string &mime, const bo
     std::string name = capaDataIn.codecName;
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && !name.empty(), nullptr, "Get capability failed from service,"
         "mime: %{public}s, isEnc: %{public}d, category: %{public}d", mime.c_str(), isEncoder, category);
-    if (category == AVCodecCategory::AVCODEC_NONE && nameAddrMap_.find(name) != nameAddrMap_.end()) {
+    if (category == AVCodecCategory::AVCODEC_NONE) {
         for (auto cap : mimeCapsMap_[mime]) {
             if (cap->codecType == codecType && cap->codecName == name) {
                 return cap;

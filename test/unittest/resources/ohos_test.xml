@@ -163,10 +163,24 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="videodec_wmv3_capi_async_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/352_288_10.wmv3 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="videodec_h263_capi_sync_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/profile2_1920x1080.h263 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_wmv3_capi_sync_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/352_288_10.wmv3 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -177,10 +191,24 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="videodec_wmv3_inner_async_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/352_288_10.wmv3 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="videodec_h263_inner_sync_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/profile2_1920x1080.h263 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_wmv3_inner_sync_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/352_288_10.wmv3 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -204,6 +232,58 @@
             <option name="push" value="video_res/profile2_720x480_par40_33.h263 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/profile2_720x480_par31_23.h263 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/profile2_720x480_par23_31.h263 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videocdec_msvideo1dec_fun_async_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/test_msvideo1_001.msvideo1 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videocdec_msvideo1dec_fun_sync_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/test_msvideo1_001.msvideo1 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_msvideo1dec_stable_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/test_msvideo1_001.msvideo1 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_VC1_func_async_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/test.vc1 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/glitch-ffvc1.avi -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_VC1_func_sync_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/test.vc1 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/glitch-ffvc1.avi -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_VC1_stable_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/test.vc1 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/glitch-ffvc1.avi -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_wmv3_stable_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/1280_720_24.hdr.wmv3 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -412,6 +492,13 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="videoenc_mjpeg_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/origin_mjpeg.avi -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="video_fcodec_capi_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
@@ -509,10 +596,47 @@
             <option name="push" value="audio_res/g711mu_8kHz.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/voice_cook.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/voice_ac3.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_alac.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/aac_2c_44100hz_199k_lc.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/aac_2c_44100hz_199k_he.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/aac_2c_44100hz_199k_hev2.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/FLAC_192k_2c_xxkb.dat -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_eac3_decoder_capi_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/48000_mono_eac3.avi -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/48000_mono_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/48000_stereo_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/48000_30back_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/44100_quad_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/44100_quad_side_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/44100_40_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/44100_50_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/44100_2_channels_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/44100_4_channels_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/32000_21_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/32000_31_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/32000_51_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/32000_41_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/48000_30_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/44100_50side_eac3.wav -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_gsm_capi_decoder_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/8000_mono_gsm.mov -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_gsm_ms_capi_decoder_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/8000_mono_gsm_ms.avi -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -1094,6 +1218,89 @@
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="demuxer_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_raw_decoder_plugin_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_gsm_ms_capi_decoder_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/8000_mono_gsm_ms.avi -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_gsm_capi_decoder_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/8000_mono_gsm.gsm -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="HlsCfgFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_hls"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_hls/720_1M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_hls/720_2M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_hls/1080_3M"/>
+            <option name="push" value="video_res/test_hls/enc.key -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/out000.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/out001.ts -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHLSEncode.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHLSEncode_session_key.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_cbr/test_cbr.m3u8 -> /data/test/media/test_cbr" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_native.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_live.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_5K.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_720_null.m3u8 -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_0.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_1.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_2.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_3.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_4.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_5.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_6.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_7.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_8.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_1M/video_9.ts -> /data/test/media/test_cbr/720_1M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_720.m3u8 -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7200.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7201.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7202.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7203.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7204.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7205.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7206.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7207.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7208.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_7209.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_72010.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/720_2M/video_72011.ts -> /data/test/media/test_cbr/720_2M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_1080.m3u8 -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10800.ts-> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10801.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10802.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10803.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10804.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10805.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10806.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10807.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10808.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_10809.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_108010.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_108011.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_cbr/1080_3M/video_108012.ts -> /data/test/media/test_cbr/1080_3M" src="res"/>
+            <option name="push" value="video_res/test_hls/testXMap.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testByteRange.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testMutiStream.m3u8 -> /data/test/media/test_hls" src="res"/>
+            <option name="push" value="video_res/test_hls/testHlsLive.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>

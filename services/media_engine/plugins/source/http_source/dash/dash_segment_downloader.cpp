@@ -74,11 +74,7 @@ DashSegmentDownloader::DashSegmentDownloader(Callback *callback, int streamId, M
 
     sourceLoader_ = sourceLoader;
     downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
- 
-    dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) {
-        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
-            std::forward<decltype(notBlock)>(notBlock));
-    };
+    downloader_->Init();
 
     downloadRequest_ = nullptr;
     mediaSegment_ = nullptr;
@@ -95,6 +91,17 @@ DashSegmentDownloader::~DashSegmentDownloader() noexcept
         downloader_->Stop(false);
     }
     segmentList_.clear();
+}
+
+void DashSegmentDownloader::Init()
+{
+    auto weakDownloader = weak_from_this();
+    dataSave_ = [weakDownloader] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) -> uint32_t {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_V_MSG(shareDownloader != nullptr, 0u, "downloadDoneCb, dash seg downloader already destructed.");
+        return shareDownloader->SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
+            std::forward<decltype(notBlock)>(notBlock));
+    };
 }
 
 bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& dashSegment)
@@ -680,6 +687,7 @@ bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& rema
         }
 
         downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
+        downloader_->Init();
         buffer_->Clear();
         segmentList_.clear();
         buffer_->SetActive(true);
@@ -732,6 +740,7 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
         });
 
         downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
+        downloader_->Init();
         MEDIA_LOG_I("CleanSegmentBuffer bufferHead:" PUBLIC_LOG_ZU " ,bufferTail:" PUBLIC_LOG_ZU " ,clearTail:"
             PUBLIC_LOG_ZU, buffer_->GetHead(), buffer_->GetTail(), clearTail);
         buffer_->SetTail(clearTail);
@@ -817,6 +826,7 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
         });
 
         downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
+        downloader_->Init();
         MEDIA_LOG_I("CleanBufferByTime bufferHead:" PUBLIC_LOG_ZU " ,bufferTail:" PUBLIC_LOG_ZU " ,clearTail:"
             PUBLIC_LOG_ZU " ,seq:" PUBLIC_LOG_D64 ",size:" PUBLIC_LOG_ZU, buffer_->GetHead(), buffer_->GetTail(),
             clearTail, remainLastNumberSeq, segmentList_.size());
@@ -1027,12 +1037,18 @@ uint32_t DashSegmentDownloader::GetRingBufferCapacity() const
 void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int64_t startPos, int64_t endPos,
                                                      const std::string &url)
 {
-    auto realStatusCallback = [this](DownloadStatus &&status, std::shared_ptr<Downloader> &downloader,
+    auto weakDownloader = weak_from_this();
+    auto realStatusCallback = [weakDownloader](DownloadStatus &&status, std::shared_ptr<Downloader> &downloader,
         std::shared_ptr<DownloadRequest> &request) {
-            statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "realStatusCb, dash seg downloader already destructed.");
+        shareDownloader->statusCallback_(status, shareDownloader->downloader_,
+            std::forward<decltype(request)>(request));
     };
-    auto downloadDoneCallback = [this](const std::string &url, const std::string &location) {
-        UpdateDownloadFinished(url, location);
+    auto downloadDoneCallback = [weakDownloader](const std::string &url, const std::string &location) {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "downloadDoneCb, dash seg downloader already destructed.");
+        shareDownloader->UpdateDownloadFinished(url, location);
     };
 
     bool requestWholeFile = true;
@@ -1188,6 +1204,7 @@ bool DashSegmentDownloader::IsNeedBufferForPlaying()
         isBuffering_.store(false);
         isDemuxerInitSuccess_.store(false);
         bufferingTime_ = 0;
+        UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         return false;
     }
     if (GetBufferSize() >= waterlineForPlaying_ || isAllSegmentFinished_.load()) {
@@ -1196,6 +1213,7 @@ bool DashSegmentDownloader::IsNeedBufferForPlaying()
         isBuffering_.store(false);
         isDemuxerInitSuccess_.store(false);
         bufferingTime_ = 0;
+        UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         return false;
     }
     return true;
@@ -1213,7 +1231,7 @@ void DashSegmentDownloader::NotifyInitSuccess()
     }
     waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(realTimeBitBate_) /
         static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
-    isBuffering_.store(true);
+    HandleCache();
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
 }
 

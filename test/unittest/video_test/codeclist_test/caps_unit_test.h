@@ -35,6 +35,7 @@ protected:
     void CheckAVDecAVC(const std::shared_ptr<VideoCaps> &videoCaps) const;
     void CheckAVDecHEVC(const std::shared_ptr<VideoCaps> &videoCaps) const;
     void CheckAVEncAVC(const std::shared_ptr<VideoCaps> &videoCaps) const;
+    void CheckAVDecWMV3(const std::shared_ptr<VideoCaps> &videoCaps) const;
     void CheckVideoCaps(const std::shared_ptr<VideoCaps> &videoCaps) const;
     void CheckVideoCapsArray(const std::vector<std::shared_ptr<VideoCaps>> &videoCapsArray) const;
     void CheckAVDecMP3(const std::shared_ptr<AudioCaps> &audioCaps) const;
@@ -61,6 +62,7 @@ protected:
     std::vector<std::shared_ptr<VideoCaps>> GetVideoEncoderCaps();
     std::vector<std::shared_ptr<AudioCaps>> GetAudioDecoderCaps();
     std::vector<std::shared_ptr<AudioCaps>> GetAudioEncoderCaps();
+    std::vector<CapabilityData *> GetDupCaps(std::string mime, int32_t dupTimes);
 
     std::string codecMimeKey_;
     std::string bitrateKey_;

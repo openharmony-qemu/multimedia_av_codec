@@ -46,6 +46,7 @@ public:
     int32_t SetCallback(OH_AVCodecAsyncCallback callback, std::shared_ptr<VCodecSignal> &signal);
     int32_t RegisterCallback(OH_AVCodecCallback callback, std::shared_ptr<VCodecSignal> &signal);
     int32_t SetOutputSurface(const bool isNew = true);
+    bool DoConfigure(OH_AVFormat* format);
     int32_t Configure();
     int32_t Start();
     int32_t Prepare();
@@ -107,6 +108,9 @@ private:
     int32_t CreateAvccReader();
     int32_t CreateMpegReader();
     int32_t CreateH263Reader();
+    int32_t CreateVc1Reader();
+    int32_t CreateMsvideo1Reader();
+    int32_t CreateWmv3Reader();
 
     OH_AVCodec *codec_ = nullptr;
     std::shared_ptr<VCodecSignal> signal_ = nullptr;
@@ -122,6 +126,8 @@ private:
     bool isSurfaceMode_ = false;
     bool isAvcStream_ = true; // true: AVC; false: HEVC
     bool isMpeg2Stream_ = true; // true: Mpeg2; false: Mpeg4
+    bool needExtraData_ = false;
+    bool isWmv3HdrStream_ = false;
 
 private:
     OH_AVCodecAsyncCallback asyncCallback_;

@@ -154,6 +154,11 @@ public:
         return status_;
     }
 
+    virtual int32_t GetCodecInfo(Format &format)
+    {
+        return status_;
+    }
+
     virtual int32_t ReleaseOutputBuffer(uint32_t index, bool render)
     {
         return status_;

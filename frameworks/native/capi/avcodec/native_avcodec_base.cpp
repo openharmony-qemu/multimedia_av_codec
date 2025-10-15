@@ -19,12 +19,15 @@
 extern "C" {
 #endif
 
+const char *OH_AVCODEC_MIMETYPE_VIDEO_MSVIDEO1 = "video/msvideo1";
+const char *OH_AVCODEC_MIMETYPE_VIDEO_VC1 = "video/vc1";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_AVC = "video/avc";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4 = "video/mp4v-es";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2 = "video/mp4v-es";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_H263 = "video/h263";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_HEVC = "video/hevc";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG2 = "video/mpeg2";
+const char *OH_AVCODEC_MIMETYPE_VIDEO_MJPEG = "video/mjpeg";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC = "audio/mp4a-latm";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_FLAC = "audio/flac";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_VORBIS = "audio/vorbis";
@@ -45,6 +48,10 @@ const char *OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT = "text/vtt";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_RAW = "audio/raw";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_G711A = "audio/g711a";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_EAC3 = "audio/eac3";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_AC3 = "audio/ac3";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM_MS = "audio/gsm_ms";
+const char *OH_AVCODEC_MIMETYPE_VIDEO_WMV3 = "video/wmv3";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM = "audio/gsm";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";

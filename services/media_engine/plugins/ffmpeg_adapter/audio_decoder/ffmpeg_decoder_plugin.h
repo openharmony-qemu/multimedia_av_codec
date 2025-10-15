@@ -27,5 +27,8 @@
 #include "amrnb/ffmpeg_amrnb_decoder_plugin.h"
 #include "amrwb/ffmpeg_amrwb_decoder_plugin.h"
 #include "ape/ffmpeg_ape_decoder_plugin.h"
+#include "gsm_ms/ffmpeg_gsm_ms_decoder_plugin.h"
+#include "gsm/ffmpeg_gsm_decoder_plugin.h"
+#include "alac/ffmpeg_alac_decoder_plugin.h"
 
 #endif // FFMPEG_DECODER_PLUGIN_H

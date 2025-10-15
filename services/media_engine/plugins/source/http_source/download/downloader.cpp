@@ -270,25 +270,27 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
     shouldStartNextRequest = true;
 
     client_ = NetworkClient::GetInstance(&RxHeaderData, &RxBodyData, this);
-    DonwloaderInit(name);
 }
  
-void Downloader::DonwloaderInit(const std::string& name)
+void Downloader::Init()
 {
     client_->Init();
     requestQue_ = std::make_shared<BlockingQueue<std::shared_ptr<DownloadRequest>>>(name_ + "RequestQue",
         REQUEST_QUEUE_SIZE);
     task_ = std::make_shared<Task>(std::string("OS_" + name_ + "Downloader"));
-    task_->RegisterJob([this] {
+    auto weakDownloader = weak_from_this();
+    task_->RegisterJob([weakDownloader] {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_V_MSG(shareDownloader != nullptr, 0, "downloader is destructed");
         {
-            AutoLock lk(loopPauseMutex_);
-            if (loopStatus_ == LoopStatus::PAUSE) {
-                MEDIA_LOG_I("0x%{public}06" PRIXPTR " loopStatus PAUSE to START", FAKE_POINTER(this));
+            AutoLock lk(shareDownloader->loopPauseMutex_);
+            if (shareDownloader->loopStatus_ == LoopStatus::PAUSE) {
+                MEDIA_LOG_I("0x%{public}06" PRIXPTR " loopStatus PAUSE to START", FAKE_POINTER(shareDownloader.get()));
             }
-            loopStatus_ = LoopStatus::START;
+            shareDownloader->loopStatus_ = LoopStatus::START;
         }
-        HttpDownloadLoop();
-        NotifyLoopPause();
+        shareDownloader->HttpDownloadLoop();
+        shareDownloader->NotifyLoopPause();
         return 0;
     });
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " Downloader ctor", FAKE_POINTER(this));
@@ -308,7 +310,6 @@ Downloader::Downloader(const std::string& name, std::shared_ptr<MediaSourceLoade
         MEDIA_LOG_I("0x%{public}06" PRIXPTR "Get libcurl instance success", FAKE_POINTER(this));
         client_ = NetworkClient::GetInstance(&RxHeaderData, &RxBodyData, this);
     }
-    DonwloaderInit(name);
 }
 
 Downloader::~Downloader()

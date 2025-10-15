@@ -45,6 +45,7 @@ void DashMediaDownloaderUnitTest::SetUpTestCase(void)
     std::cout << "start" << std::endl;
 
     g_mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    g_mediaDownloader->Init();
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                               std::shared_ptr<DownloadRequest>& request) {};
     g_mediaDownloader->SetStatusCallback(statusCallback);
@@ -208,6 +209,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_VIDEO, TestSize.Level1)
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_SUBTITLE, TestSize.Level1)
 {
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
     std::map<std::string, std::string> httpHeader;
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
@@ -263,6 +265,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_SUBTITLE, TestSize.Level1)
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_BITRATE_AFTER_SWITCH, TestSize.Level1)
 {
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
     std::map<std::string, std::string> httpHeader;
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
@@ -320,6 +323,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_BITRATE_AFTER_SWITCH, TestSize
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_SUBTITLE_AFTER_SWITCH, TestSize.Level1)
 {
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
     std::map<std::string, std::string> httpHeader;
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
@@ -377,6 +381,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_SUBTITLE_AFTER_SWITCH, TestSiz
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
 {
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
     std::string testUrl = MPD_SEGMENT_TEMPLATE;
     std::map<std::string, std::string> httpHeader;
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
@@ -396,6 +401,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_READ, TestSize.Level1)
 {
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
     std::string testUrl = MPD_SEGMENT_LIST;
     std::map<std::string, std::string> httpHeader;
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
@@ -426,6 +432,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_READ, TestSize.Level1)
 HWTEST_F(DashMediaDownloaderUnitTest, GET_PLAYBACK_INFO_001, TestSize.Level1)
 {
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
     std::string testUrl = MPD_SEGMENT_LIST;
     std::map<std::string, std::string> httpHeader;
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
@@ -452,6 +459,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, GET_PLAYBACK_INFO_001, TestSize.Level1)
 HWTEST_F(DashMediaDownloaderUnitTest, STOP_BUFFERING_001, TestSize.Level1)
 {
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
     std::string testUrl = MPD_SEGMENT_LIST;
     std::map<std::string, std::string> httpHeader;
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,

@@ -23,6 +23,8 @@ demuxer_moduletest_native_include_dirs = [
   "$MEDIA_ROOT_DIR/services/services/factory",
   "$MEDIA_ROOT_DIR/services/utils",
   "./src/InnerAPI/include",
+  "$av_codec_root_dir/test/nativedemo/include",
+  "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
 ]
 
 demuxer_moduletest_cflags = [
@@ -61,6 +63,7 @@ ohos_unittest("demuxer_native_module_test") {
       #"./src/perf_test.cpp",
       #"./src/reli2_test.cpp",
       #"./src/reli_test.cpp",
+      "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
       "./src/InnerAPI/api_test.cpp",
       "./src/InnerAPI/func_test.cpp",
       "./src/InnerAPI/inner_demuxer_parser_sample.cpp",
@@ -80,18 +83,29 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/func3_test.cpp",
       "./src/func4_test.cpp",
       "./src/func_test.cpp",
+      "./src/mtsfunc_test.cpp",
+      "./src/m2tsfunc_test.cpp",
+      "./src/trpfunc_test.cpp",
       "./src/movfunc_test.cpp",
       "./src/randomseek_test.cpp",
       "./src/seek2_test.cpp",
       "./src/seek_test.cpp",
+      "./src/wmafunc_test.cpp",
 
       #"./src/net_test.cpp",
       #"./src/net2_test.cpp",
+      #"./src/net3_test.cpp",
       "./src/InnerAPI/demuxer_asyn_func_test.cpp",
       "./src/InnerAPI/demuxer_cachesize_func_test.cpp",
       "./src/InnerAPI/demuxer_plugin_func_test.cpp",
+      "./src/vobfunc_test.cpp",
       "./src/format_test.cpp",
       "./src/proc_test.cpp",
+      "./src/eac3func_test.cpp",
+      "./src/3g2func_test.cpp",
+      "./src/3gpfunc_test.cpp",
+      "./src/m4vfunc_test.cpp",
+      "./src/wmvfunc_test.cpp"
     ]
   }
 
@@ -113,7 +127,7 @@ ohos_unittest("demuxer_native_module_test") {
     av_codec_path = "\"/system/lib\""
   }
   defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
-
+  defines += av_codec_defines
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avdemuxer",

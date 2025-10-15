@@ -53,6 +53,7 @@ void DownloaderUnitTest::TearDownTestCase(void)
 void DownloaderUnitTest::SetUp(void)
 {
     downloader = std::make_shared<Downloader>("test");
+    downloader->Init();
 }
 
 void DownloaderUnitTest::TearDown(void)
@@ -1343,6 +1344,7 @@ HWTEST_F(DownloaderUnitTest, OPEN_APP_URI_001, TestSize.Level1)
         return len;
     };
     std::shared_ptr<Downloader> downloader1 = std::make_shared<Downloader>("test", sourceLoader);
+    downloader1->Init();
     downloader1->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader1->appPreviousRequestUrl_ = testPath;
     EXPECT_NE(downloader1->client_, nullptr);
@@ -1373,6 +1375,7 @@ HWTEST_F(DownloaderUnitTest, DROP_RETRY_DATA_001, TestSize.Level1)
         return len;
     };
     std::shared_ptr<Downloader> downloader1 = std::make_shared<Downloader>("test", sourceLoader);
+    downloader1->Init();
     downloader1->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader1->appPreviousRequestUrl_ = testPath;
     downloader1->OpenAppUri();
@@ -1399,6 +1402,7 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_001, TestSize.Level1)
 {
     std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
         (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
     Plugins::Callback* sourceCallback = new SourceCallback();
     downloader->callback_ = sourceCallback;
     downloader->NotifyError(52, 403);
@@ -1441,6 +1445,7 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_002, TestSize.Level1)
 {
     std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
         (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
     Plugins::Callback* sourceCallback = new SourceCallback();
     downloader->downloader_ = nullptr;
     downloader->callback_ = sourceCallback;
@@ -1513,6 +1518,7 @@ HWTEST_F(DownloaderUnitTest, APP_CLIENT_001, TestSize.Level1)
         return len;
     };
     std::shared_ptr<Downloader> downloader2 = std::make_shared<Downloader>("test", sourceLoader);
+    downloader2->Init();
     downloader2->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader2->appPreviousRequestUrl_ = testPath;
     downloader2->OpenAppUri();

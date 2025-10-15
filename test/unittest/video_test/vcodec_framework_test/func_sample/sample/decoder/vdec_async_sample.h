@@ -37,6 +37,7 @@ public:
     int32_t Reset();
     int32_t Release();
     std::shared_ptr<FormatMock> GetOutputDescription();
+    std::shared_ptr<FormatMock> GetCodecInfo();
     int32_t SetParameter(std::shared_ptr<FormatMock> format);
     int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr);
     int32_t RenderOutputData(uint32_t index);
@@ -82,6 +83,9 @@ private:
     int32_t CreateAvccReader();
     int32_t CreateMpegReader();
     int32_t CreateH263Reader();
+    int32_t CreateVc1Reader();
+    int32_t CreateMsvideo1Reader();
+    int32_t CreateWmv3Reader();
     int32_t CreateReader(const std::string& inPath);
     bool CompareHdrInfo(std::shared_ptr<AVBufferMock> buffer);
     bool CompareMetadata(std::shared_ptr<std::ifstream> file, int32_t size,
@@ -107,6 +111,9 @@ private:
     std::shared_ptr<AvccReader> avccReader_ = nullptr;
     std::shared_ptr<MpegReader> mpegReader_ = nullptr;
     std::shared_ptr<H263Reader> h263Reader_ = nullptr;
+    std::shared_ptr<Vc1Reader> vc1Reader_ = nullptr;
+    std::shared_ptr<Msvideo1Reader> msvideo1Reader_ = nullptr;
+    std::shared_ptr<Wmv3Reader> wmv3Reader_ = nullptr;
     std::shared_ptr<std::ifstream> dynamicMetadataFile_ = nullptr;
     std::shared_ptr<std::ifstream> staticMetadataFile_ = nullptr;
 };

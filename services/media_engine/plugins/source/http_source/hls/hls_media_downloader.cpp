@@ -97,9 +97,12 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, bool userDefine
     }
     httpHeader_ = httpHeader;
     timeoutInterval_ = MAX_BUFFERING_TIME_OUT;
+    if (sourceLoader != nullptr) {
+        sourceLoader_ = sourceLoader;
+        MEDIA_LOG_I("HLS app download.");
+    }
     MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU " userDefinedDuration:" PUBLIC_LOG_D32,
         totalBufferSize_, userDefinedDuration);
-    HlsInit(sourceLoader);
 }
 
 HlsMediaDownloader::HlsMediaDownloader(std::string mimeType,
@@ -113,28 +116,31 @@ HlsMediaDownloader::HlsMediaDownloader(std::string mimeType,
     totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
     memorySize_ = MAX_CACHE_BUFFER_SIZE;
     MEDIA_LOG_I("HLS setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
-    HlsInit(nullptr);
 }
 
-void HlsMediaDownloader::HlsInit(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
+void HlsMediaDownloader::Init()
 {
-    if (sourceLoader != nullptr) {
-        sourceLoader_ = sourceLoader;
-        downloader_ = std::make_shared<Downloader>("hlsMedia", sourceLoader);
+    if (sourceLoader_ != nullptr) {
+        downloader_ = std::make_shared<Downloader>("hlsMedia", sourceLoader_);
         MEDIA_LOG_I("HLS app download.");
     } else {
         downloader_ = std::make_shared<Downloader>("hlsMedia");
     }
+    downloader_->Init();
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList");
-    dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) {
-        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
+    auto weakDownloader = weak_from_this();
+    dataSave_ =  [weakDownloader] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) -> uint32_t {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_V_MSG(shareDownloader != nullptr, 0u, "dataSave_, Hls Media Downloader already destructed.");
+        return shareDownloader->SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
             std::forward<decltype(notBlock)>(notBlock));
     };
-    if (sourceLoader != nullptr) {
-        playlistDownloader_ = std::make_shared<HlsPlayListDownloader>(httpHeader_, sourceLoader);
+    if (sourceLoader_ != nullptr) {
+        playlistDownloader_ = std::make_shared<HlsPlayListDownloader>(httpHeader_, sourceLoader_);
     } else {
         playlistDownloader_ = std::make_shared<HlsPlayListDownloader>(httpHeader_, nullptr);
     }
+    playlistDownloader_->Init();
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     waterLineAbove_ = PLAY_WATER_LINE;
     steadyClock_.Reset();
@@ -177,17 +183,18 @@ std::string HlsMediaDownloader::GetContentType()
 void HlsMediaDownloader::SetDownloaderRequestCb(
     StatusCallbackFunc& statusCallback, DownloadDoneCbFunc& downloadDoneCallback)
 {
-    std::weak_ptr<HlsMediaDownloader> weakThis = weak_from_this();
-    statusCallback = [weakThis] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+    auto weakDownloader = weak_from_this();
+    statusCallback = [weakDownloader] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                         std::shared_ptr<DownloadRequest>& request) {
-        auto shareThis = weakThis.lock();
-        FALSE_RETURN_MSG(shareThis != nullptr, "hls statusCallback shareThis, is nullptr!");
-        shareThis->statusCallback_(status, shareThis->downloader_, std::forward<decltype(request)>(request));
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "statusCallback, Hls Media Downloader already destructed.");
+        shareDownloader->statusCallback_(status, shareDownloader->downloader_,
+            std::forward<decltype(request)>(request));
     };
-    downloadDoneCallback = [weakThis] (const std::string &url, const std::string& location) {
-        auto shareThis = weakThis.lock();
-        FALSE_RETURN_MSG(shareThis != nullptr, "hls downloadDoneCallback, shareThis is nullptr!");
-        shareThis->UpdateDownloadFinished(url, location);
+    downloadDoneCallback = [weakDownloader] (const std::string &url, const std::string& location) {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "downloadDoneCb, Hls Media Downloader already destructed.");
+        shareDownloader->UpdateDownloadFinished(url, location);
     };
 }
 
@@ -657,9 +664,10 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
         tsStorageInfo_[readTsIndex_].second == true) {
         uint64_t tsEndOffset = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first);
         if (readOffset_ >= tsEndOffset) {
-            if (GetHLSDiscontinuity()) {
-                isTsEnd_.store(true);
-                notNeedReadBack_.store(true);
+            isTsEnd_.store(true);
+            notNeedReadBack_.store(true);
+            if (playlistDownloader_->IsHlsFmp4()) {
+                isNeedReadHeader_.store(true);
             }
             RemoveFmp4PaddingData(buff, readDataInfo);
             readTsIndex_++;
@@ -670,18 +678,10 @@ void HlsMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& read
                 readDataInfo.streamId_ != static_cast<int32_t>(tsStreamIdInfo_[readTsIndex_])) {
                 curStreamId_ = tsStreamIdInfo_[readTsIndex_];
                 isNeedResetOffset_.store(true);
+                isTsEnd_.store(false);
                 MEDIA_LOG_D("HLS read readTsIndex_ " PUBLIC_LOG_U32, readTsIndex_.load());
                 return;
             }
-        }
-        if (!GetHLSDiscontinuity() && readDataInfo.realReadLength_ < readDataInfo.wantReadLength_
-            && readTsIndex_ != backPlayList_.size()) {
-            uint32_t crossFragLen = readDataInfo.wantReadLength_ - readDataInfo.realReadLength_;
-            uint32_t crossReadLen = cacheMediaBuffer_->Read(buff + readDataInfo.realReadLength_, readOffset_,
-                                                            crossFragLen);
-            readDataInfo.realReadLength_ = readDataInfo.realReadLength_ + crossReadLen;
-            ffmpegOffset_ += crossReadLen;
-            readOffset_ += crossReadLen;
         }
     }
     canWrite_ = true;
@@ -753,6 +753,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 
 void HlsMediaDownloader::PrepareToSeek()
 {
+    isTsEnd_.store(false);
     int32_t retry {0};
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
     do {
@@ -1366,6 +1367,10 @@ int64_t HlsMediaDownloader::RequestNewTs(uint64_t seekTime, SeekMode mode, doubl
     playInfo.offset_ = item.offset_;
     playInfo.length_ = item.length_;
     if (mode == SeekMode::SEEK_PREVIOUS_SYNC) {
+        double lastTotalDuration = totalDuration - hstTime;
+        if (static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
+            seekStartTimePos_ = lastTotalDuration;
+        }
         playInfo.startTimePos_ = 0;
     } else {
         int64_t startTimePos = 0;
@@ -2276,9 +2281,6 @@ bool HlsMediaDownloader::IsPureByteRange()
 
 void HlsMediaDownloader::HandleSeekReady(int32_t streamType, int32_t streamId, int32_t isEos)
 {
-    if (playlistDownloader_ && !playlistDownloader_->IsHlsFmp4()) {
-        return;
-    }
     Format seekReadyInfo {};
     seekReadyInfo.PutIntValue("currentStreamType", streamType);
     seekReadyInfo.PutIntValue("currentStreamId", streamId);

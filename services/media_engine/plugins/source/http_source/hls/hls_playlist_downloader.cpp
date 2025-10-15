@@ -296,6 +296,7 @@ void HlsPlayListDownloader::SelectBitRate(uint32_t bitRate)
 
 bool HlsPlayListDownloader::IsBitrateSame(uint32_t bitRate)
 {
+    FALSE_RETURN_V(master_ != nullptr, false);
     uint32_t maxGap = 0;
     bool isFirstSelect = true;
     for (const auto &item : master_->variants_) {

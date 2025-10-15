@@ -62,6 +62,7 @@ public:
     explicit HlsMediaDownloader(std::string mimeType,
         const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>());
     ~HlsMediaDownloader() override;
+    void Init() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;
