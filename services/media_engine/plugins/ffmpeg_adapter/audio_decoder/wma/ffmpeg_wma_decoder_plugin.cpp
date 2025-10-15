@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,12 +34,12 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
 constexpr int MIN_CHANNELS = 1;
 
 constexpr int MAX_CHANNELS_WMA_LEGACY = 2;
-constexpr int MAX_CHANNELS_WMAPRO      = 8;
+constexpr int MAX_CHANNELS_WMAPRO = 8;
 
 constexpr int MAX_SR_WMA_LEGACY = 48000;
-constexpr int MAX_SR_WMAPRO     = 96000;
+constexpr int MAX_SR_WMAPRO = 96000;
 
-constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT  = 8192;
+constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 2048 * 8;
 } // namespace
 
@@ -67,13 +67,40 @@ FFmpegWMADecoderPlugin::~FFmpegWMADecoderPlugin()
     base_.reset();
 }
 
-Status FFmpegWMADecoderPlugin::Init()    { return Status::OK; }
-Status FFmpegWMADecoderPlugin::Prepare() { return Status::OK; }
-Status FFmpegWMADecoderPlugin::Start()   { return Status::OK; }
-Status FFmpegWMADecoderPlugin::Stop()    { return Status::OK; }
-Status FFmpegWMADecoderPlugin::Reset()   { return base_->Reset(); }
-Status FFmpegWMADecoderPlugin::Flush()   { return base_->Flush(); }
-Status FFmpegWMADecoderPlugin::Release() { return base_->Release(); }
+Status FFmpegWMADecoderPlugin::Init()
+{
+    return Status::OK;
+}
+
+Status FFmpegWMADecoderPlugin::Prepare()
+{
+    return Status::OK;
+}
+
+Status FFmpegWMADecoderPlugin::Start()
+{
+    return Status::OK;
+}
+
+Status FFmpegWMADecoderPlugin::Stop()
+{
+    return Status::OK;
+}
+
+Status FFmpegWMADecoderPlugin::Reset()
+{
+    return base_->Reset();
+}
+
+Status FFmpegWMADecoderPlugin::Flush()
+{
+    return base_->Flush();
+}
+
+Status FFmpegWMADecoderPlugin::Release()
+{
+    return base_->Release();
+}
 
 Status FFmpegWMADecoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 {
