@@ -276,16 +276,21 @@ static void FeedFileToCodec(const std::string &path, std::shared_ptr<MediaCodec>
                                in->memory_->GetCapacity(),
                                chunk.data(),
                                n);
+        if (ret != 0) {
+            MEDIA_LOG_E("memcpy_s failed, ret=%d, path=%s", ret, path.c_str());
+            return;
+        }
         ASSERT_EQ(0, ret);
         in->memory_->SetSize(n);
-        ASSERT_EQ((int)Status::OK, mc->QueueInputBuffer(in));
+        ASSERT_EQ(static_cast<int>(Status::OK), mc->QueueInputBuffer(in));
     }
 
     // 送 EOS
     auto eos = AVBuffer::CreateAVBuffer(alloc, 0);
     eos->flag_ = AVCODEC_BUFFER_FLAG_EOS;
-    ASSERT_EQ((int)Status::OK, mc->QueueInputBuffer(eos));
+    ASSERT_EQ(static_cast<int>(Status::OK), mc->QueueInputBuffer(eos));
 }
+
 
 // 通用真解码用例（codecName + 文件路径）
 static void RealDecodeOnce(const std::string &codecName, const std::string &assetPath)

@@ -709,7 +709,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetFlacEncoderCapability(), GetG711muEncoderCapability(), GetAPEDecoderCapability(),
                           GetMP3EncoderCapability(), GetG711aDecoderCapability(), GetAc3DecoderCapability(),
                           GetGsmMsDecoderCapability(), GetGsmDecoderCapability(), GetAlacDecoderCapability(),
-						  GetWMAV1DecoderCapability(),GetWMAV2DecoderCapability(),GetWMAProDecoderCapability(),
+                          GetWMAV1DecoderCapability(), GetWMAV2DecoderCapability(), GetWMAProDecoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),

@@ -41,11 +41,14 @@ public:
     Status QueueInputBuffer(const std::shared_ptr<AVBuffer> &in) override;
     Status QueueOutputBuffer(std::shared_ptr<AVBuffer> &out) override;
 
-    Status GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>>&) override { 
-        return Status::OK; 
+    Status GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &) override
+	{
+        return Status::OK;
     }
-    Status GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &) override { 
-        return Status::OK; 
+	
+    Status GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &) override
+	{
+        return Status::OK;
     }
 
     Status Flush() override;
