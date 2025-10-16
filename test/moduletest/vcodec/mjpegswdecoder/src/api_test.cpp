@@ -1819,7 +1819,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_1600, TestSize.Level2)
         ASSERT_GE(range.minVal, 0);
         ASSERT_GT(range.maxVal, 0);
         ASSERT_EQ(range.minVal, 0);
-        ASSERT_EQ(range.maxVal, 30);
+        ASSERT_EQ(range.maxVal, 60);
     }
 }
 
@@ -2192,7 +2192,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_7100, TestSize.Level2)
             vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
             ASSERT_NE(nullptr, vdec_);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_RGBA);
-            ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+            ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         } else {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
             ASSERT_NE(nullptr, vdec_);
@@ -2260,11 +2260,11 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_1200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(HevcSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_8400, TestSize.Level2)
+HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_8400, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         OH_AVFormat *format = OH_AVCapability_GetFeatureProperties(capability,
             VIDEO_ENCODER_LONG_TERM_REFERENCE);

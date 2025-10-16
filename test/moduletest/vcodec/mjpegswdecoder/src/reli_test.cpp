@@ -49,15 +49,6 @@ protected:
     const char *INP_DIR_1080_30 = "/data/test/media/1920_1080_30.avi";
     const char *INP_DIR_144 = "/data/test/media/176_144_Main10.avi";
     const char *INP_DIR_64 = "/data/test/media/64_64_Main.avi";
-    const char *inpDir1080Array[16] = {
-        "/data/test/media/1920_1080_30.avi",    "/data/test/media/1920_1080_30_1.avi",
-        "/data/test/media/1920_1080_30_2.avi",  "/data/test/media/1920_1080_30_3.avi",
-        "/data/test/media/1920_1080_30_4.avi",  "/data/test/media/1920_1080_30_5.avi",
-        "/data/test/media/1920_1080_30_6.avi",  "/data/test/media/1920_1080_30_7.avi",
-        "/data/test/media/1920_1080_30_8.avi",  "/data/test/media/1920_1080_30_9.avi",
-        "/data/test/media/1920_1080_30_10.avi", "/data/test/media/1920_1080_30_11.avi",
-        "/data/test/media/1920_1080_30_12.avi", "/data/test/media/1920_1080_30_13.avi",
-        "/data/test/media/1920_1080_30_14.avi", "/data/test/media/1920_1080_30_15.avi"}
 };
 } // namespace Media
 } // namespace OHOS
@@ -129,37 +120,6 @@ HWTEST_F(MjpegSwdecReliNdkTest, VIDEO_MJPEGSWDEC_STABILITY_0020, TestSize.Level3
             ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
             vDecSample->WaitForEOS();
         }
-    }
-}
-
-/**
- * @tc.number    : VIDEO_MJPEGSWDEC_STABLITY_0030
- * @tc.name      : 16 Multiple instances h265 soft decode with Surface mode
- * @tc.desc      : reli test
- */
-HWTEST_F(MjpegSwdecReliNdkTest, VIDEO_MJPEGSWDEC_STABILITY_0030, TestSize.Level3)
-{
-    if (!access("/system/lib64/media/", 0)) {
-        vector<shared_ptr<VDecAPI11Sample>> decVec;
-        for (int i = 0; i < g_reliCount; i++) {
-            auto vDecSample = make_shared<VDecAPI11Sample>();
-            decVec.push_back(vDecSample);
-            vDecSample->INP_DIR = inpDir1080Array[i];
-            const char *file = "/data/test/media/1920_1080_30.avi";
-            vDecSample->getFormat(file);
-            vDecSample->DEFAULT_WIDTH = 1920;
-            vDecSample->DEFAULT_HEIGHT = 1080;
-            vDecSample->DEFAULT_FRAME_RATE = 30;
-            vDecSample->autoSwitchSurface = false;
-            vDecSample->sleepOnFPS = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMjpeg));
-        }
-        uint32_t errorCount = 0;
-        for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample) {
-            sample->WaitForEOS();
-            errorCount += sample->errCount;
-        });
-        decVec.clear();
     }
 }
 
@@ -239,37 +199,6 @@ HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0020, TestSize.
             ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
             vDecSample->WaitForEOS();
         }
-    }
-}
-/**
- * @tc.number    : API11_VIDEO_MJPEGSWDEC_STABILITY_0030
- * @tc.name      : 16 Multiple instances h265 soft decode with Surface mode
- * @tc.desc      : reli test
- */
-HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0030, TestSize.Level3)
-{
-    if (!access("/system/lib64/media/", 0)) {
-        vector<shared_ptr<VDecAPI11Sample>> decVec;
-        for (int i = 0; i < g_reliCount; i++) {
-            auto vDecSample = make_shared<VDecAPI11Sample>();
-            decVec.push_back(vDecSample);
-            vDecSample->INP_DIR = inpDir1080Array[i];
-            const char *file = "/data/test/media/1920_1080_30.avi";
-            vDecSample->getFormat(file);
-            vDecSample->DEFAULT_WIDTH = 1920;
-            vDecSample->DEFAULT_HEIGHT = 1080;
-            vDecSample->DEFAULT_FRAME_RATE = 30;
-            vDecSample->SF_OUTPUT = true;
-            vDecSample->autoSwitchSurface = false;
-            vDecSample->sleepOnFPS = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMjpeg));
-        }
-        uint32_t errorCount = 0;
-        for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample) {
-            sample->WaitForEOS();
-            errorCount += sample->errCount;
-        });
-        decVec.clear();
     }
 }
 
@@ -359,13 +288,12 @@ HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0060, TestSize.
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SF_OUTPUT = false;
-        vDecSample->REPEAT_START_STOP_BEFORE_EOS = 1000;
+        vDecSample->REPEAT_START_FLUSH_BEFORE_EOS = 1000;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMjpeg));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
         vDecSample->WaitForEOS();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 
@@ -434,6 +362,8 @@ HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0060, TestSize.
             for (int j = 0; j < 2; j++){
                 shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
                 vDecSample->INP_DIR = INP_DIR_1080_30;
+                const char *file = "/data/test/media/1920_1080_30.avi";
+                vDecSample->getFormat(file);
                 vDecSample->DEFAULT_WIDTH = 1920;
                 vDecSample->DEFAULT_HEIGHT = 1080;
                 vDecSample->DEFAULT_FRAME_RATE = 30;

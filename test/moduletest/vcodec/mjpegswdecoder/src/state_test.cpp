@@ -58,14 +58,14 @@ void MjpegSwdecStateNdkTest::SetUpTestCase(void) {}
 
 void MjpegSwdecStateNdkTest::TearDownTestCase(void) {}
 
-VDecNdkSample *vDecSample = NULL;
+VDecAPI11Sample *vDecSample = NULL;
 void MjpegSwdecStateNdkTest::SetUp(void)
 {
     if (!access("/system/lib64/media/", 0)) {
-        cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
         string mjpegCodeName = OH_AVCapability_GetName(cap);
         cout << "mjpegCodeName: " << mjpegCodeName << endl;
-        vDecSample = new VDecNdkSample();
+        vDecSample = new VDecAPI11Sample();
         int32_t ret = vDecSample->CreateVideoDecoder(mjpegCodeName);
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->SetVideoDecoderCallback();

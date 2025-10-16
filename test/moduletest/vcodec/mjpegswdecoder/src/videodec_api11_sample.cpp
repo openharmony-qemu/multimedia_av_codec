@@ -912,7 +912,7 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
         AutoSwitchSurface();
         SHA512_Final(g_md, &g_c);
         OPENSSL_cleanse(&g_c, sizeof(g_c));
-        if (!SF_OUTPUT && !NocaleHash) {
+        if (!SF_OUTPUT) {
             if (!MdCompare(g_md)) {
                 errCount++;
             }

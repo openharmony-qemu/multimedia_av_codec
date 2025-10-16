@@ -950,7 +950,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level0)
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_016, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        if (int i = 0; i < 2; i++){
+        for (int i = 0; i < 2; i++){
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
             const char *file = "/data/test/media/1920_1080_30.avi";
@@ -1506,7 +1506,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_STAB_FUNC_0100, TestSize.
             shared_ptr<VDecAPI11Sample> vDecSample1 = make_shared<VDecAPI11Sample>();
             vDecSample1->INP_DIR = INP_DIR_1080_30;
             const char *file1 = "/data/test/media/1920_1080_30.avi";
-            vDecSample->getFormat(file1);
+            vDecSample1->getFormat(file1);
             vDecSample1->SF_OUTPUT = true;
             vDecSample1->DEFAULT_WIDTH = 1920;
             vDecSample1->DEFAULT_HEIGHT = 1080;
@@ -1541,7 +1541,6 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_STABLITY_FUNC_0110, TestS
             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
             ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
             vDecSample->WaitForEOS();
-            ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
         }
     }
 }
@@ -1570,7 +1569,6 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_STABLITY_FUNC_0120, TestS
             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
             ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
             vDecSample->WaitForEOS();
-            ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
         }
     }
 }

@@ -168,16 +168,15 @@ public:
     bool outputCallbackFlush = false;
     bool outputCallbackStop = false;
     bool useHDRSource = false;
-    bool NocaleHash = false;
     bool isAPI = false;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
     int32_t DecodeSetSurface();
     void getFormat(const char *fileName);
     int64_t GetFileSize(const char *fileName);
     int g_fd = -1;
-    OH_AVMemory *memory = nullptr;
     OH_AVSource *videoSource = nullptr;
     OH_AVDemuxer *demuxer = nullptr;
+    OH_AVFormat *sourceFormat = nullptr;
     OH_AVFormat *sourceFormat = nullptr;
     int32_t g_trackCount;
     int enbleBlankFrame = 0;
@@ -189,6 +188,7 @@ private:
     std::unordered_map<uint32_t, OH_AVBuffer *> outBufferMap_;
     OH_AVCodec *vdec_;
     OH_AVCodecCallback cb_;
+    int64_t timeStamp_ { 0};
     int64_t timeStamp_ { 0};
     bool isFirstFrame_ = true;
     OHNativeWindow *nativeWindow[2] = {};
