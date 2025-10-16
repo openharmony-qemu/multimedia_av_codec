@@ -67,7 +67,7 @@ static int32_t g_trackCount;
 static int g_tarckType = 0;
 constexpr int32_t SEEKTIMES = 10;
 constexpr int32_t THOUSAND = 1000.0;
-constexpr int32_t g_thousand = 2000.0;
+constexpr int32_t g_thousand = 2000;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
 void DemuxerTrpFuncNdkTest::SetUpTestCase() {}
