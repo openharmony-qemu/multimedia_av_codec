@@ -121,6 +121,7 @@ protected:
     void CheckEac3MediaInfo();
     void CheckEac3StreamInfo();
     void CheckWmaMediaInfo();
+    void CheckWebmMediaInfo();
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
