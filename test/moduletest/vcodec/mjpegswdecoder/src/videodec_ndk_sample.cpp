@@ -49,7 +49,7 @@ constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
 constexpr int32_t SYS_MAX_INPUT_SIZE = 1024 * 1024 * 24;
-SHA512_CTX c;
+SHA512_CTX g_c;
 uint8_t g_md[SHA512_DIGEST_LENGTH];
 VDecNdkSample *dec_sample = nullptr;
 
@@ -104,20 +104,20 @@ void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 
 void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
-    int32_t current_width = 0;
-    int32_t current_height = 0;
+    int32_t currentWidth = 0;
+    int32_t currentHeight = 0;
     int32_t stride = 0;
     int32_t sliceHeight = 0;
     int32_t picWidth = 0;
     int32_t picHeight = 0;
-    OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &current_width);
-    OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &current_height);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &currentWidth);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &currentHeight);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_STRIDE, &stride);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_SLICE_HEIGHT, &sliceHeight);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_WIDTH, &picWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_HEIGHT, &picHeight);
-    dec_sample->DEFAULT_WIDTH = current_width;
-    dec_sample->DEFAULT_HEIGHT = current_height;
+    dec_sample->DEFAULT_WIDTH = currentWidth;
+    dec_sample->DEFAULT_HEIGHT = currentHeight;
     dec_sample->stride_ = stride;
     dec_sample->sliceHeight_ = sliceHeight;
     dec_sample->picWidth_ = picWidth;
@@ -541,7 +541,7 @@ void VDecNdkSample::WaitForEOS()
 
 void VDecNdkSample::InputFuncTest()
 {
-    while (true) {
+    while (isRunning_.load()) {
         if (!isRunning_.load()) {
             break;
         }
@@ -723,8 +723,8 @@ void VDecNdkSample::AutoSwitchSurface()
 
 void VDecNdkSample::OutputFuncTest()
 {
-    SHA512_Init(&c);
-    while (true) {
+    SHA512_Init(&g_c);
+    while (isRunning_.load()) {
         if (!isRunning_.load()) {
             break;
         }
@@ -751,8 +751,8 @@ void VDecNdkSample::OutputFuncTest()
         }
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
             AutoSwitchSurface();
-            SHA512_Final(g_md, &c);
-            OPENSSL_cleanse(&c, sizeof(c));
+            SHA512_Final(g_md, &g_c);
+            OPENSSL_cleanse(&g_c, sizeof(g_c));
             if (!MdCompare(g_md)) {
                 errCount++;
             }
@@ -786,7 +786,7 @@ void VDecNdkSample::ProcessOutputData(OH_AVMemory *buffer, uint32_t index)
             bufferAddr += stride_;
             copyPos += picWidth_;
         }
-        SHA512_Update(&c, cropBuffer, cropSize);
+        SHA512_Update(&g_c, cropBuffer, cropSize);
         delete[] cropBuffer;
         if (OH_VideoDecoder_FreeOutputData(vdec_, index) != AV_ERR_OK) {
             cout << "Fatal: ReleaseOutputBuffer fail" << endl;

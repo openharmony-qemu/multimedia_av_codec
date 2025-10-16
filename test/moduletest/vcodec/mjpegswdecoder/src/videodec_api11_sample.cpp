@@ -272,36 +272,36 @@ int32_t HighRand()
 {
     std::mt19937 rng(std::random_device{}());
     std::uniform_int_distribution<> dis(MIN_RANGE, MAX_RANGE);
-    int HRand = dis(rng);
-    if (HRand % EVEN_NUMBER != 0) {
-        HRand = HRand + 1;
+    int hRand = dis(rng);
+    if (hRand % EVEN_NUMBER != 0) {
+        hRand = hRand + 1;
     }
-    cout << "HRand is =  " << HRand << endl;
-    return HRand;
+    cout << "hRand is =  " << hRand << endl;
+    return hRand;
 }
 
 int32_t FrameRand()
 {
     std::mt19937 rng(std::random_device{}());
     std::uniform_int_distribution<> dis(MIN_FRANGE, MAX_FRANGE);
-    int FRand = dis(rng);
-    if (FRand % EVEN_NUMBER != 0) {
-        FRand = FRand + 1;
+    int fRand = dis(rng);
+    if (fRand % EVEN_NUMBER != 0) {
+        fRand = fRand + 1;
     }
-    cout << "FRand is =  " << FRand << endl;
-    return FRand;
+    cout << "fRand is =  " << fRand << endl;
+    return fRand;
 }
 
 int32_t WidthRand()
 {
     std::mt19937 rng(std::random_device{}());
     std::uniform_int_distribution<> dis(MIN_RANGE, MAX_RANGE);
-    int WRand = dis(rng);
-    if (WRand % EVEN_NUMBER != 0) {
-        WRand = WRand + 1;
+    int wRand = dis(rng);
+    if (wRand % EVEN_NUMBER != 0) {
+        wRand = wRand + 1;
     }
-    cout << "WRand is =  " << WRand << endl;
-    return WRand;
+    cout << "wRand is =  " << wRand << endl;
+    return wRand;
 }
 
 int64_t VDecAPI11Sample::GetSystemTimeUs()

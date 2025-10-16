@@ -51,15 +51,15 @@ public:
 
 namespace {
 OH_AVErrCode ret_1 = AV_ERR_OK;
-uint32_t pixelFormatNum_1 = 0;
-const int32_t *pixelFormat_1 = nullptr;
+uint32_t g_pixelFormatNum1 = 0;
+const int32_t *g_pixelFormat1 = nullptr;
 OH_AVCodec *vdec_ = NULL;
 OH_AVCapability *cap = nullptr;
 OH_AVCapability *cap_mjpeg = nullptr;
 VDecSignal *signal_;
 const string INVALID_CODEC_NAME = "avdec_mjpeg";
 const string VIDEO_DECODER_MJPEG_NAME = "OH.Media.Codec.Decoder.Video.MJPEG";
-static string g_codecName_mjpeg = "";
+static string g_codecNameMjpeg = "";
 OH_AVFormat *format;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
@@ -70,8 +70,8 @@ void MjpegSwdecApiNdkTest::SetUpTestCase()
 {
     cap_mjpeg = OH_AVCodec_GetCapabilityByCategory(
         OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
-    g_codecName_mjpeg = OH_AVCapability_GetName(cap_mjpeg);
-    cout << "g_codecName_mjpeg: " << g_codecName_mjpeg << endl;
+    g_codecNameMjpeg = OH_AVCapability_GetName(cap_mjpeg);
+    cout << "g_codecNameMjpeg: " << g_codecNameMjpeg << endl;
 }
 void MjpegSwdecApiNdkTest::TearDownTestCase() {}
 void MjpegSwdecApiNdkTest::SetUp()
@@ -118,7 +118,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_0100, TestSize.Leve
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_0200, TestSize.Level2)
 {
     if (access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_EQ(NULL, vdec_);
     }
 }
@@ -148,7 +148,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_3300, TestSize.Leve
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_1800, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec_);
 
         OH_AVCodecAsyncCallback cb2_;
@@ -168,7 +168,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_1800, TestSize.Leve
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_0300, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         OH_AVCodecAsyncCallback cb_;
         cb_.onError = VdecError;
         cb_.onStreamChanged = VdecFormatChanged;
@@ -198,7 +198,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_0400, TestSize.Leve
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_0500, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec_);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, NULL));
     }
@@ -319,7 +319,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_1000, TestSize.Leve
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_1100, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_SetParameter(vdec_, NULL));
     }
 }
@@ -364,7 +364,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_1500, TestSize.Leve
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_1200, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_SetSurface(vdec_, NULL));
     }
 }
@@ -377,7 +377,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_1200, TestSize.Leve
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_1300, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec_);
     }
 }
@@ -420,7 +420,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_2200, TestSize.Leve
         OH_AVErrCode ret = AV_ERR_OK;
         ret = OH_VideoDecoder_IsValid(nullptr, &isValid);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec_);
         ret = OH_VideoDecoder_IsValid(vdec_, nullptr);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -447,7 +447,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_2500, TestSize.Leve
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_2600, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_RenderOutputData(vdec_, 0));
     }
 }
@@ -472,7 +472,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_2700, TestSize.Leve
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_2800, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_FreeOutputData(vdec_, 0));
     }
 }
@@ -485,7 +485,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_2800, TestSize.Leve
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_2900, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_FreeOutputData(vdec_, -1));
     }
 }
@@ -498,7 +498,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_2900, TestSize.Leve
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_3000, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         OH_AVCodecBufferAttr attr;
         attr.pts = -1;
         attr.size = -1;
@@ -551,7 +551,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_3200, TestSize.Leve
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0100, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(vdec_, NULL);
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(vdec_));
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(vdec_));
@@ -567,7 +567,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0100, TestSize.Level2)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0200, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
@@ -588,7 +588,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0200, TestSize.Level2)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0300, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
@@ -610,7 +610,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0300, TestSize.Level2)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0400, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
@@ -633,7 +633,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0400, TestSize.Level2)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0500, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec_);
 
         format = OH_AVFormat_Create();
@@ -660,7 +660,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0500, TestSize.Level2)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0700, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
@@ -683,7 +683,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0700, TestSize.Level2)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0800, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
@@ -708,9 +708,9 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0800, TestSize.Level2)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0900, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(vdec_, NULL);
-        OH_AVCodec *vdec_2 = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        OH_AVCodec *vdec_2 = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(vdec_2, NULL);
         OH_VideoDecoder_Destroy(vdec_2);
         vdec_2 = nullptr;
@@ -725,7 +725,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_0900, TestSize.Level2)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_1000, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         OH_AVCodecAsyncCallback cb_;
         cb_.onError = VdecError;
         cb_.onStreamChanged = VdecFormatChanged;
@@ -744,7 +744,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_1000, TestSize.Level2)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_1100, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         format = OH_VideoDecoder_GetOutputDescription(vdec_);
         ASSERT_NE(NULL, format);
         format = OH_VideoDecoder_GetOutputDescription(vdec_);
@@ -760,7 +760,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_1100, TestSize.Level2)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_1200, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
@@ -1197,7 +1197,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4000, TestSize.Level2)
         ASSERT_GT(range.maxVal, 0);
         ASSERT_EQ(range.minVal, 2);
         ASSERT_EQ(range.maxVal, 4096);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(nullptr, format);
@@ -1206,7 +1206,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4000, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.minVal - 1);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.maxVal + 1);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
@@ -1231,7 +1231,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4010, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, ret);
         ASSERT_GE(range.minVal, 0);
         ASSERT_GT(range.maxVal, 0);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(nullptr, format);
@@ -1240,7 +1240,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4010, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.minVal - 1);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.maxVal + 1);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
@@ -1398,7 +1398,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4400, TestSize.Level2)
         ASSERT_GT(range.maxVal, 0);
         ASSERT_EQ(range.minVal, 2);
         ASSERT_EQ(range.maxVal, 4096);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(nullptr, format);
@@ -1407,7 +1407,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4400, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, range.minVal - 1);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, range.maxVal + 1);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
@@ -1432,7 +1432,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4410, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, ret);
         ASSERT_GE(range.minVal, 0);
         ASSERT_GT(range.maxVal, 0);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(nullptr, format);
@@ -1441,7 +1441,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4410, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, range.minVal - 1);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, range.maxVal + 1);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
@@ -1500,7 +1500,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4700, TestSize.Level2)
         ASSERT_GT(range.maxVal, 0);
         ASSERT_EQ(range.minVal, 2);
         ASSERT_EQ(range.maxVal, 4096);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(nullptr, format);
@@ -1509,7 +1509,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4700, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.minVal - 1);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.maxVal + 1);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
@@ -1534,7 +1534,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4710, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, ret);
         ASSERT_GE(range.minVal, 0);
         ASSERT_GT(range.maxVal, 0);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(nullptr, format);
@@ -1543,7 +1543,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4710, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.minVal - 1);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.maxVal + 1);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
@@ -1603,7 +1603,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_5000, TestSize.Level2)
         ASSERT_GT(heightRange.maxVal, 0);
         ASSERT_EQ(heightRange.minVal, 2);
         ASSERT_EQ(heightRange.maxVal, 4096);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(nullptr, format);
@@ -1612,7 +1612,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_5000, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.minVal - 1);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.maxVal + 1);
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
@@ -1642,7 +1642,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_1700, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, ret);
         ASSERT_GE(widthRange.minVal, 0);
         ASSERT_GT(widthRange.maxVal, 0);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(nullptr, format);
@@ -1651,7 +1651,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_1700, TestSize.Level2)
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.minVal - 1);
         ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.maxVal + 1);
         ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
@@ -2156,24 +2156,24 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_7100, TestSize.Level2)
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
             OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
-        ret_1 = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat_1, &pixelFormatNum_1);
-        ASSERT_NE(nullptr, pixelFormat_1);
-        ASSERT_GT(pixelFormatNum_1, 0);
+        ret_1 = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &g_pixelFormat1, &g_pixelFormatNum1);
+        ASSERT_NE(nullptr, g_pixelFormat1);
+        ASSERT_GT(g_pixelFormatNum1, 0);
         ASSERT_EQ(AV_ERR_OK, ret_1);
-        for (int i = 0; i < pixelFormatNum_1; i++) {
-            vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        for (int i = 0; i < g_pixelFormatNum1; i++) {
+            vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
             ASSERT_NE(nullptr, format);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-            EXPECT_GE(pixelFormat_1[i], 0);
-            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, pixelFormat_1[i]);
+            EXPECT_GE(g_pixelFormat1[i], 0);
+            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, g_pixelFormat1[i]);
             EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
             OH_AVFormat_Destroy(format);
             OH_VideoDecoder_Destroy(vdec_);
         }
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(nullptr, format);
@@ -2183,18 +2183,18 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_7100, TestSize.Level2)
             format, OH_MD_KEY_PIXEL_FORMAT, -1);
         ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
         if (!access("/system/lib64/media/", 0)) {
-            vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+            vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
             ASSERT_NE(nullptr, vdec_);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_RGBA);
             ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         } else {
-            vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+            vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
             ASSERT_NE(nullptr, vdec_);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV21);
             ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
@@ -2213,27 +2213,27 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_1200, TestSize.Level2)
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
             OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
-        ret_1 = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat_1, &pixelFormatNum_1);
-        ASSERT_NE(nullptr, pixelFormat_1);
-        ASSERT_GT(pixelFormatNum_1, 0);
-        ASSERT_EQ(pixelFormatNum_1, 4);
+        ret_1 = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &g_pixelFormat1, &g_pixelFormatNum1);
+        ASSERT_NE(nullptr, g_pixelFormat1);
+        ASSERT_GT(g_pixelFormatNum1, 0);
+        ASSERT_EQ(g_pixelFormatNum1, 4);
         ASSERT_EQ(AV_ERR_OK, ret_1);
-        for (int i = 0; i < pixelFormatNum_1; i++) {
-            vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        for (int i = 0; i < g_pixelFormatNum1; i++) {
+            vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
             ASSERT_NE(nullptr, format);
-            ASSERT_EQ(pixelFormat_1[0], 1);
-            ASSERT_EQ(pixelFormat_1[1], 2);
+            ASSERT_EQ(g_pixelFormat1[0], 1);
+            ASSERT_EQ(g_pixelFormat1[1], 2);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-            EXPECT_GE(pixelFormat_1[i], 0);
-            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, pixelFormat_1[i]);
+            EXPECT_GE(g_pixelFormat1[i], 0);
+            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, g_pixelFormat1[i]);
             EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
             OH_AVFormat_Destroy(format);
             OH_VideoDecoder_Destroy(vdec_);
         }
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(nullptr, format);
@@ -2243,12 +2243,12 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_1200, TestSize.Level2)
             format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_RGBA + AV_PIXEL_FORMAT_RGBA);
         ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         OH_VideoDecoder_Destroy(vdec_);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_RGBA);
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
@@ -2281,7 +2281,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_8400, TestSize.Level2)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CONFIGURE_0010, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
-        OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec);
         OH_AVFormat *format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
@@ -2303,7 +2303,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CONFIGURE_0010, TestSize.Level1)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CONFIGURE_0020, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
-        OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec);
         OH_AVFormat *format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
@@ -2325,7 +2325,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CONFIGURE_0020, TestSize.Level1)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CONFIGURE_0030, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
-        OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec);
         OH_AVFormat *format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
@@ -2347,7 +2347,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CONFIGURE_0030, TestSize.Level1)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CONFIGURE_0040, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
-        OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecName_mjpeg.c_str());
+        OH_AVCodec *vdec = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec);
         OH_AVFormat *format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
@@ -2424,8 +2424,8 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CONFIGURE_0090, TestSize.Level2)
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
             OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
-        string g_codecName_mjpeg_H = OH_AVCapability_GetName(capability);
-        cout << "g_codecName_mjpeg_H: " << g_codecName_mjpeg_H << endl;
+        string g_codecNameMjpeg_H = OH_AVCapability_GetName(capability);
+        cout << "g_codecNameMjpeg_H: " << g_codecNameMjpeg_H << endl;
         OH_AVRange FRateRange;
         int ret = OH_AVCapability_GetVideoFrameRateRange(capability, &FRateRange);
         cout << "FRateRangeMax = " << FRateRange.maxVal << endl;

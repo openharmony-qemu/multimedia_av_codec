@@ -950,7 +950,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level0)
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_016, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
-        for (int i = 0; i < 2; i++){
+        for (int i = 0; i < 2; i++) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
             const char *file = "/data/test/media/1920_1080_30.avi";

@@ -359,7 +359,7 @@ HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0110, TestSize.
 {
     if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < g_reliCount; i++) {
-            for (int j = 0; j < 2; j++){
+            for (int j = 0; j < 2; j++) {
                 shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
                 vDecSample->INP_DIR = INP_DIR_1080_30;
                 const char *file = "/data/test/media/1920_1080_30.avi";
