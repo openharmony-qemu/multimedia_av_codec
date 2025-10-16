@@ -84,7 +84,6 @@ void DemuxerTrpFuncNdkTest::TearDown()
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
     }
-
     if (sourceFormat != nullptr) {
         OH_AVFormat_Destroy(sourceFormat);
         sourceFormat = nullptr;
