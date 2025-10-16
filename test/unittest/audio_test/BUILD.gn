@@ -1632,10 +1632,21 @@ ohos_unittest("audio_wma_decoder_unit_test") {
     "$av_codec_root_dir/services/engine/codec/include/audio",
     "$av_codec_root_dir/services/engine/codec/include/audio/decoder",
     "$av_codec_root_dir/services/engine/factory",
-    "$av_codec_root_dir/services/media_engine/modules/media_codec",
   ]
 
-  cflags = av_codec_unittest_cflags
+  cflags = [
+    "-fno-exceptions",
+    "-Wall",
+    "-fno-common",
+    "-fstack-protector-all",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
+  ]
   cflags_cc = cflags
 
   public_configs = []
@@ -1648,7 +1659,6 @@ ohos_unittest("audio_wma_decoder_unit_test") {
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/services/engine/codec/audio:av_codec_audio_ffmpeg_codec",
-    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",  # for MediaCodec
     "$av_codec_root_dir/services/services:av_codec_service",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
   ]
@@ -1656,7 +1666,6 @@ ohos_unittest("audio_wma_decoder_unit_test") {
   external_deps = [
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
-    "media_foundation:native_media_core",  # MediaCodec
   ]
 
   if (target_cpu == "arm64") {

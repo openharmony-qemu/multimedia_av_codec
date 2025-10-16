@@ -13,17 +13,12 @@
  * limitations under the License.
  */
 
+#include <cstdint>
+#include <string>
 #include <gtest/gtest.h>
 #include <memory>
-
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-parameter"
-#endif
+#include <vector>
 #include "plugin/plugin_manager_v2.h"
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
 
 #include "meta/format.h"
 #include "avcodec_audio_common.h"
@@ -44,6 +39,8 @@ constexpr int32_t INVALID_SR_N = -48000;
 constexpr Plugins::AudioSampleFormat S16 = Plugins::AudioSampleFormat::SAMPLE_S16LE;
 constexpr Plugins::AudioSampleFormat F32 = Plugins::AudioSampleFormat::SAMPLE_F32LE;
 
+
+
 std::shared_ptr<CodecPlugin> CreatePluginByName(const std::string &name)
 {
     auto p = PluginManagerV2::Instance().CreatePluginByName(name);
@@ -52,6 +49,15 @@ std::shared_ptr<CodecPlugin> CreatePluginByName(const std::string &name)
     }
     return std::reinterpret_pointer_cast<CodecPlugin>(p);
 }
+
+static inline std::vector<uint8_t> MakeWmaExtraData()
+{
+    return {
+        0x10, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0xE0, 0x00, 0x00, 0x00
+    };
+}
+constexpr int32_t WMA_BLOCK_ALIGN = 5462;
 } // namespace
 
 class AudioWMAPluginUnitTest : public testing::Test {
@@ -74,7 +80,8 @@ HWTEST_F(AudioWMAPluginUnitTest, WMAv1_SetParameter_MissingChannel, TestSize.Lev
     ASSERT_EQ(Status::OK, plugin->Init());
     auto meta = std::make_shared<Meta>();
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(VALID_SR);
-    meta->Set<Tag::AUDIO_BLOCK_ALIGN>(1);
+    meta->Set<Tag::AUDIO_BLOCK_ALIGN>(WMA_BLOCK_ALIGN);
+    meta->Set<Tag::MEDIA_CODEC_CONFIG>(MakeWmaExtraData());
     // 未设置 AUDIO_CHANNEL_COUNT
     EXPECT_NE(Status::OK, plugin->SetParameter(meta));
     EXPECT_EQ(Status::OK, plugin->Release());
@@ -91,7 +98,8 @@ HWTEST_F(AudioWMAPluginUnitTest, WMAv2_SetParameter_InvalidSampleRate, TestSize.
         auto meta = std::make_shared<Meta>();
         meta->Set<Tag::AUDIO_CHANNEL_COUNT>(2);
         meta->Set<Tag::AUDIO_SAMPLE_RATE>(INVALID_SR_0);
-        meta->Set<Tag::AUDIO_BLOCK_ALIGN>(1);
+        meta->Set<Tag::AUDIO_BLOCK_ALIGN>(WMA_BLOCK_ALIGN);
+        meta->Set<Tag::MEDIA_CODEC_CONFIG>(MakeWmaExtraData());
         EXPECT_NE(Status::OK, plugin->SetParameter(meta));
 
         EXPECT_EQ(Status::OK, plugin->Release());
@@ -105,7 +113,8 @@ HWTEST_F(AudioWMAPluginUnitTest, WMAv2_SetParameter_InvalidSampleRate, TestSize.
         auto meta = std::make_shared<Meta>();
         meta->Set<Tag::AUDIO_CHANNEL_COUNT>(2);
         meta->Set<Tag::AUDIO_SAMPLE_RATE>(INVALID_SR_N);
-        meta->Set<Tag::AUDIO_BLOCK_ALIGN>(1);
+        meta->Set<Tag::AUDIO_BLOCK_ALIGN>(WMA_BLOCK_ALIGN);
+        meta->Set<Tag::MEDIA_CODEC_CONFIG>(MakeWmaExtraData());
         EXPECT_NE(Status::OK, plugin->SetParameter(meta));
 
         EXPECT_EQ(Status::OK, plugin->Release());
@@ -124,15 +133,17 @@ HWTEST_F(AudioWMAPluginUnitTest, WMAPro_SetParameter_ValidParams, TestSize.Level
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(2);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(VALID_SR);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(S16);
-    meta->Set<Tag::AUDIO_BLOCK_ALIGN>(1);
+    meta->Set<Tag::AUDIO_BLOCK_ALIGN>(WMA_BLOCK_ALIGN);
+    meta->Set<Tag::MEDIA_CODEC_CONFIG>(MakeWmaExtraData());
     EXPECT_EQ(Status::OK, plugin->SetParameter(meta));
     EXPECT_EQ(Status::OK, plugin->Release());
 
     auto metaF32 = std::make_shared<Meta>();
-    metaF32->Set<Tag::AUDIO_CHANNEL_COUNT>(1);
+    metaF32->Set<Tag::AUDIO_CHANNEL_COUNT>(2);
     metaF32->Set<Tag::AUDIO_SAMPLE_RATE>(VALID_SR);
     metaF32->Set<Tag::AUDIO_SAMPLE_FORMAT>(F32);
-    metaF32->Set<Tag::AUDIO_BLOCK_ALIGN>(1);
+    metaF32->Set<Tag::AUDIO_BLOCK_ALIGN>(WMA_BLOCK_ALIGN);
+    metaF32->Set<Tag::MEDIA_CODEC_CONFIG>(MakeWmaExtraData());
     
     auto plugin2 = CreatePluginByName(std::string(AVCodecCodecName::AUDIO_DECODER_WMAPRO_NAME));
     ASSERT_NE(nullptr, plugin2);
@@ -164,7 +175,8 @@ HWTEST_F(AudioWMAPluginUnitTest, WMAv1_GetParameter_CheckOutputFormat, TestSize.
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(2);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(VALID_SR);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(S16);
-    meta->Set<Tag::AUDIO_BLOCK_ALIGN>(1);
+    meta->Set<Tag::AUDIO_BLOCK_ALIGN>(WMA_BLOCK_ALIGN);
+    meta->Set<Tag::MEDIA_CODEC_CONFIG>(MakeWmaExtraData());
     ASSERT_EQ(Status::OK, plugin->SetParameter(meta));
 
     std::shared_ptr<Meta> got;
@@ -185,6 +197,7 @@ HWTEST_F(AudioWMAPluginUnitTest, WMAv1_GetParameter_CheckOutputFormat, TestSize.
     std::string mime;
     EXPECT_TRUE(got->Get<Tag::MIME_TYPE>(mime));
     EXPECT_EQ(mime, MimeType::AUDIO_WMAV1);
+    EXPECT_EQ(Status::OK, plugin->Release());
 }
 
 HWTEST_F(AudioWMAPluginUnitTest, WMAv2_GetParameter_CheckOutputFormat, TestSize.Level1)
@@ -196,7 +209,8 @@ HWTEST_F(AudioWMAPluginUnitTest, WMAv2_GetParameter_CheckOutputFormat, TestSize.
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(2);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(VALID_SR);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(S16);
-    meta->Set<Tag::AUDIO_BLOCK_ALIGN>(1);
+    meta->Set<Tag::AUDIO_BLOCK_ALIGN>(WMA_BLOCK_ALIGN);
+    meta->Set<Tag::MEDIA_CODEC_CONFIG>(MakeWmaExtraData());
     ASSERT_EQ(Status::OK, plugin->SetParameter(meta));
 
     std::shared_ptr<Meta> got;
@@ -216,7 +230,8 @@ HWTEST_F(AudioWMAPluginUnitTest, WMAPro_GetParameter_CheckOutputFormat, TestSize
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(2);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(VALID_SR);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(S16);
-    meta->Set<Tag::AUDIO_BLOCK_ALIGN>(1);
+    meta->Set<Tag::AUDIO_BLOCK_ALIGN>(WMA_BLOCK_ALIGN);
+    meta->Set<Tag::MEDIA_CODEC_CONFIG>(MakeWmaExtraData());
     ASSERT_EQ(Status::OK, plugin->SetParameter(meta));
 
     std::shared_ptr<Meta> got;
