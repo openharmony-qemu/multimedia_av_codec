@@ -21,6 +21,7 @@
 #include "codec_callback.h"
 #include "native_window.h"
 #include "sample_utils.h"
+#include "sample_context.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoEncoder"};
@@ -54,7 +55,17 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_HEIGHT, sampleInfo.videoHeight);
     OH_AVFormat_SetDoubleValue(format.get(), OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, sampleInfo.bitrateMode);
-    OH_AVFormat_SetLongValue(format.get(), OH_MD_KEY_BITRATE, sampleInfo.bitrate);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME, sampleInfo.enableBFrame);
+    if (sampleInfo.bitrateMode != CQ) {
+        OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODER_QP_MAX, 51); // 51 is max qp
+        OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODER_QP_MIN, 0); // 0 is min qp
+    }
+    if (sampleInfo.bitrateMode == SQR) {
+        OH_AVFormat_SetLongValue(format.get(), OH_MD_KEY_MAX_BITRATE, sampleInfo.bitrate);
+        OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_SQR_FACTOR, sampleInfo.sqrFactor);
+    } else {
+        OH_AVFormat_SetLongValue(format.get(), OH_MD_KEY_BITRATE, sampleInfo.bitrate);
+    }
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PROFILE, sampleInfo.profile);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_I_FRAME_INTERVAL, sampleInfo.iFrameInterval);
@@ -233,6 +244,13 @@ int32_t VideoEncoderAPI11::SetCallback(uintptr_t *const sampleContext)
 
     int32_t ret = OH_VideoEncoder_RegisterCallback(codec_.get(), AVCodecCallback, sampleContext);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed, ret: %{public}d", ret);
+    SampleContext *context = reinterpret_cast<SampleContext *>(sampleContext);
+    if (context != nullptr && context->sampleInfo->enableRoi && context->sampleInfo->codecRunMode == API11_SURFACE) {
+        ret = OH_VideoEncoder_RegisterParameterCallback(
+            codec_.get(), CodecCallback::OnNeedInputParameter, sampleContext);
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+            "Set parameter callback failed, ret: %{public}d", ret);
+    }
     return AVCODEC_SAMPLE_ERR_OK;
 }
 

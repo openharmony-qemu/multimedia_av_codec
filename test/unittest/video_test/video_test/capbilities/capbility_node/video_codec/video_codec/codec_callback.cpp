@@ -75,6 +75,19 @@ void CodecCallback::OnNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBu
     CHECK_AND_RETURN_LOG(userData != nullptr, "User data is nullptr");
     (void)codec;
     SampleContext *context = static_cast<SampleContext *>(userData);
+    if (context != nullptr && context->sampleInfo->enableRoi) {
+        OH_AVFormat *parameter = OH_AVBuffer_GetParameter(buffer);
+        std::string roiInfo;
+        if (context->inputStream.is_open() && std::getline(context->inputStream, roiInfo) && roiInfo != "") {
+            if (roiInfo == "clear") {
+                roiInfo = "";
+            }
+            OH_AVFormat_SetStringValue(parameter, OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS, roiInfo.c_str());
+            OH_AVBuffer_SetParameter(buffer, parameter);
+        }
+        OH_AVFormat_Destroy(parameter);
+    }
+ 
     CodecBufferInfo bufferInfo = CodecBufferInfo(index, buffer);
     context->inputBufferQueue.QueueBuffer(bufferInfo);
 }
@@ -87,6 +100,22 @@ void CodecCallback::OnNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBu
     CodecBufferInfo bufferInfo = CodecBufferInfo(index, buffer);
     context->outputBufferQueue.QueueBuffer(bufferInfo);
 }
+ 
+void CodecCallback::OnNeedInputParameter(OH_AVCodec *codec, uint32_t index, OH_AVFormat *parameter, void *userData)
+{
+    SampleContext *context = static_cast<SampleContext *>(userData);
+    if (context != nullptr && context->sampleInfo->enableRoi) {
+        std::string roiInfo;
+        if (context->inputStream.is_open() && std::getline(context->inputStream, roiInfo) && roiInfo != "") {
+            if (roiInfo == "clear") {
+                roiInfo = "";
+            }
+            OH_AVFormat_SetStringValue(parameter, OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS, roiInfo.c_str());
+        }
+    }
+    OH_VideoEncoder_PushInputParameter(codec, index);
+}
+
 } // Sample
 } // MediaAVCodec
 } // OHOS

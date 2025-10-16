@@ -19,6 +19,7 @@
 #include "sample_buffer_queue.h"
 #include "video_codec_base.h"
 #include "sample_window_manager.h"
+#include <fstream>
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -29,6 +30,8 @@ struct SampleContext {
     std::shared_ptr<WindowWrapper> windowWrapper = nullptr;
     SampleBufferQueue inputBufferQueue;
     SampleBufferQueue outputBufferQueue;
+    std::ifstream inputStream;
+    std::ifstream inputStreamByNativebuf;
 };
 } // Sample
 } // MediaAVCodec
