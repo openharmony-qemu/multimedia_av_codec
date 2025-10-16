@@ -190,6 +190,8 @@ private:
     Status CodePluginInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer);
     Status CodePluginOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer);
 
+    void ResetIOStat();
+
 private:
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
@@ -221,6 +223,11 @@ private:
     Mutex codecPluginMutex_;
     std::shared_ptr<std::ofstream> dumpDataOutputFs_;
     std::shared_ptr<std::ofstream> dumpDataInputFs_;
+
+    size_t inputBytesSum_;
+    size_t outputBytesSum_;
+    size_t inputCount_;
+    size_t outputCount_;
 };
 } // namespace Media
 } // namespace OHOS
