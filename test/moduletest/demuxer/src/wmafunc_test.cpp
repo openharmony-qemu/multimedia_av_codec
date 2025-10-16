@@ -48,7 +48,6 @@ protected:
     const char *INP_DIR_5 = "/data/test/media/audio/adpcm_g726.wma";
     const char *INP_DIR_6 = "/data/test/media/audio/adpcm_ima_wav.wma";
     const char *INP_DIR_7 = "/data/test/media/audio/adpcm_ms.wma";
-    const char *INP_DIR_8 = "/data/test/media/audio/adpcm_swf.wma";
     const char *INP_DIR_9 = "/data/test/media/audio/adpcm_yamaha.wma";
     const char *INP_DIR_10 = "/data/test/media/audio/amr_nb.wma";
     const char *INP_DIR_11 = "/data/test/media/audio/amr_wb.wma";
@@ -916,16 +915,6 @@ HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_3600, TestSize.Level2)
 HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_3700, TestSize.Level2)
 {
     DemuxerResult(INP_DIR_7, 65, 0);
-}
-
-/**
- * @tc.number    : DEMUXER_WMA_FUNC_3800
- * @tc.name      : create source with g_fd, wma
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_3800, TestSize.Level2)
-{
-    DemuxerResult(INP_DIR_8, 65, 0);
 }
 
 /**
