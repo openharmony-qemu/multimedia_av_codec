@@ -1194,7 +1194,7 @@ HWTEST_F(DemuxerTrpFuncNdkTest, DEMUXER_TRP_RANDOM_SEEK_0700, TestSize.Level2)
 {
     const char *file = "/data/test/media/mpeg4_aac.trp";
     static int64_t duration = 0;
-    static int32_t g_thousand = 2000;
+    int g_thousand = 2000;
     OH_AVCodecBufferAttr attr;
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
