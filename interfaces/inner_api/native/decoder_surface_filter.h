@@ -128,6 +128,7 @@ public:
     Status SetMediaMuted(bool isMuted, bool hasInitialized);
     Status DoReleaseOnMuted(bool isNeedRelease) override;
     Status DoReInitAndStart() override;
+    void SetIsSwDecoder(bool isSwDecoder);
     void SetBuffering(bool isBuffering);
 
 protected:
@@ -157,6 +158,7 @@ private:
     void RenderAtTimeDfx(int64_t renderTimeNs, int64_t currentTimeNs, int64_t lastRenderTimeNs);
     int64_t GetSystimeTimeNs();
     bool IsPostProcessorSupported();
+    Status HwDecoderToSwDecoder(std::string codecMimeType);
     std::shared_ptr<BaseVideoPostProcessor> CreatePostProcessor();
     void InitPostProcessorType();
 #ifdef SUPPORT_CAMERA_POST_PROCESSOR
@@ -191,6 +193,9 @@ private:
     int64_t stopTime_{0};
     sptr<Surface> decoderOutputSurface_;
     sptr<Surface> videoSurface_;
+    bool isSwDecoder_ = false;
+    bool hasToSwDecoder_ = false;
+    bool hasReceiveUnsupportError_ = false;
     bool isDrmProtected_ = false;
 #ifdef SUPPORT_DRM
     sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_ = nullptr;

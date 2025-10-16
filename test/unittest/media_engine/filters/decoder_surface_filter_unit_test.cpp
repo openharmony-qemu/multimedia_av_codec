@@ -126,6 +126,10 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_DoInitAfterLink, Tes
     linkRes = decoderSurfaceFilter_->DoInitAfterLink();
     ASSERT_NE(linkRes, Status::ERROR_UNKNOWN);
 
+    decoderSurfaceFilter_->SetIsSwDecoder(true);
+    linkRes = decoderSurfaceFilter_->DoInitAfterLink();
+    ASSERT_NE(linkRes, Status::ERROR_UNKNOWN);
+
     decoderSurfaceFilter_->svpFlag_ = true;
     decoderSurfaceFilter_->isDrmProtected_ = true;
     EXPECT_CALL(*videoDecoderAdapter, Init(_, _, _)).WillRepeatedly(Return(Status::ERROR_UNKNOWN));

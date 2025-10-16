@@ -69,6 +69,7 @@ public:
     void ResetRenderTime();
     Status SetPerfRecEnabled(bool isPerfRecEnabled);
     void NotifyMemoryExchange(bool exchangeFlag);
+    bool IsHwDecoder();
     void InitDefaultSurface();
 
 private:

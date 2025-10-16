@@ -25,6 +25,8 @@
 #include "avcodec_info.h"
 #include "avcodec_common.h"
 #include "avcodec_list.h"
+#include "native_avcodec_videodecoder.h"
+#include "native_avcapability.h"
 #include "osal/utils/util.h"
 #include "parameters.h"
 #include "scope_guard.h"
@@ -273,8 +275,25 @@ void DecoderSurfaceFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int
 {
     MEDIA_LOG_E("AVCodec error happened. ErrorType: %{public}d, errorCode: %{public}d",
         static_cast<int32_t>(errorType), errorCode);
+    if (hasReceiveUnsupportError_) {
+        MEDIA_LOG_E("has receive unsupport cap err, do not handle other err");
+        return;
+    }
+    bool needToSwDecoder = !hasToSwDecoder_ && eventReceiver_ != nullptr &&
+        errorCode == OHOS::MediaAVCodec::AVCodecServiceErrCode::AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION &&
+        videoDecoder_->IsHwDecoder();
+    if (needToSwDecoder) {
+        hasReceiveUnsupportError_ = true;
+        eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_HW_DECODER_UNSUPPORT_CAP, 0});
+        return;
+    }
     FALSE_RETURN(eventReceiver_ != nullptr);
     eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO});
+}
+
+void DecoderSurfaceFilter::SetIsSwDecoder(bool isSwDecoder)
+{
+    isSwDecoder_ = isSwDecoder;
 }
 
 void DecoderSurfaceFilter::PostProcessorOnError(int32_t errorCode)
@@ -339,7 +358,6 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     }
     videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
     if (isDrmProtected_ && svpFlag_) {
-        MEDIA_LOG_D("DecoderSurfaceFilter will create secure decoder for drm-protected videos");
         std::string baseName = GetCodecName(codecMimeType_);
         FALSE_RETURN_V_MSG(!baseName.empty(),
             Status::ERROR_INVALID_PARAMETER, "get name by mime failed.");
@@ -347,6 +365,11 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
         MEDIA_LOG_D("DecoderSurfaceFilter will create secure decoder %{public}s", secureDecoderName.c_str());
         ScopedTimer timer("drm-protected VideoDecoder Init", OVERTIME_WARNING_MS);
         ret = videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, false, secureDecoderName);
+    } else if (isSwDecoder_) {
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMimeType_.c_str(), false, SOFTWARE);
+        const char *name = OH_AVCapability_GetName(capability);
+        std::string swDecoder(name);
+        ret = videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, false, swDecoder);
     } else {
         ScopedTimer timer("VideoDecoder Init", OVERTIME_WARNING_MS);
         ret = videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, true, codecMimeType_);
