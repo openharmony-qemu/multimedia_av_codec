@@ -52,6 +52,9 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_AC3 = "audio/ac3";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM_MS = "audio/gsm_ms";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_WMV3 = "video/wmv3";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM = "audio/gsm";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAV1 = "audio/wmav1";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAV2 = "audio/wmav2";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAPRO = "audio/wmapro";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";

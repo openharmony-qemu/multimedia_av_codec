@@ -68,6 +68,7 @@ group("av_codec_unit_test") {
         "unittest/audio_test:audio_gsm_decoder_unit_test",
         "unittest/audio_test:audio_gsm_capi_decoder_unit_test",
         "unittest/audio_test:audio_alac_decoder_unit_test",
+        "unittest/audio_test:audio_wma_decoder_unit_test",
         "unittest/avcenc_info_test:avcenc_info_capi_unit_test",
         "unittest/avmuxer_test:avmuxer_capi_unit_test",
         "unittest/avmuxer_test:avmuxer_inner_unit_test",

@@ -423,6 +423,30 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AC3;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM;
 
 /**
+ * @brief Enumerates the mime types of windows media audio 1 codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 22
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAV1;
+
+/**
+ * @brief Enumerates the mime types of windows media audio 2 codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 22
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAV2;
+
+/**
+ * @brief Enumerates the mime types of windows media audio 9 professional codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 22
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAPRO;
+
+/**
  * @brief Key for timeStamp in surfacebuffer, value type is int64_t.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9

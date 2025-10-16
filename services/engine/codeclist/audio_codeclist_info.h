@@ -45,6 +45,9 @@ public:
     CapabilityData GetGsmMsDecoderCapability();
     CapabilityData GetGsmDecoderCapability();
     CapabilityData GetAlacDecoderCapability();
+    CapabilityData GetWMAV1DecoderCapability();
+    CapabilityData GetWMAV2DecoderCapability();
+    CapabilityData GetWMAProDecoderCapability();
 #ifdef SUPPORT_CODEC_EAC3
     CapabilityData GetEac3DecoderCapability();
 #endif
