@@ -16,7 +16,15 @@
 #include <gtest/gtest.h>
 #include <memory>
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#endif
 #include "plugin/plugin_manager_v2.h"
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+
 #include "meta/format.h"
 #include "avcodec_audio_common.h"
 #include "avcodec_codec_name.h"
