@@ -21,6 +21,8 @@
 using namespace OHOS;
 using namespace OHOS::Media::Plugins::HttpPlugin;
 using namespace OHOS::Media::Plugins;
+#define FUZZ_PROJECT_NAME "httpdownloader_fuzzer"
+
 static constexpr int32_t MAX_BUFFER_SIZE_FUZZ = 1024 * 1024 * 2;
 static uint8_t g_buffer[MAX_BUFFER_SIZE_FUZZ];
 
