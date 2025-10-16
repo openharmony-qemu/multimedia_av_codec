@@ -525,6 +525,25 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="videodec_detailed_error_code_async_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/test_xps/100_720_avcc.h264 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test_xps/270_576_no_xps_avcc.h264 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test_xps/720_100_avcc.h264 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test_xps/720_576_no_xps_avcc.h265 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test_xps/720_576_xps_invalid_avcc.h265 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test_xps/720_1280_10bit_avcc.h264 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test_xps/720_1280_25_12bit_avcc.h265 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test_xps/720_1280_yuv400p_avcc.h264 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test_xps/720_1280_yuv422p_avcc.h264 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test_xps/720_1280_yuv444p_avcc.h264 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test_xps/720_8160_avcc.h264 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test_xps/1920_1080_mbaff_avcc.h264 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test_xps/8160_720_avcc.h264 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="hencoder_buffer_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
@@ -577,10 +596,47 @@
             <option name="push" value="audio_res/g711mu_8kHz.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/voice_cook.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/voice_ac3.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_alac.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/aac_2c_44100hz_199k_lc.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/aac_2c_44100hz_199k_he.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/aac_2c_44100hz_199k_hev2.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/FLAC_192k_2c_xxkb.dat -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_eac3_decoder_capi_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/48000_mono_eac3.avi -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/48000_mono_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/48000_stereo_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/48000_30back_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/44100_quad_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/44100_quad_side_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/44100_40_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/44100_50_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/44100_2_channels_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/44100_4_channels_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/32000_21_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/32000_31_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/32000_51_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/32000_41_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/48000_30_eac3.wav -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/44100_50side_eac3.wav -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_gsm_capi_decoder_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/8000_mono_gsm.mov -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_gsm_ms_capi_decoder_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/8000_mono_gsm_ms.avi -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>

@@ -46,7 +46,10 @@ constexpr int32_t BYTE_LENGTH_S32_F32 = 4;
 constexpr int32_t BYTE_LENGTH_DOUBLE = 8;
 constexpr int32_t AUDIO_BITS_16 = 16;
 constexpr int32_t AUDIO_BITS_20 = 20;
-constexpr int32_t AUDIO_BITS_24 = 24;
+constexpr int32_t BLURAY_PACKET_SIZE = 964;
+constexpr int32_t BLURAY_PACKET_OFFSET = 4;
+constexpr int32_t DVD_PACKET_SIZE = 2013;
+constexpr int32_t DVD_PACKET_OFFSET = 3;
 // {sampleFormat, {filePath, outputName}}
 const std::unordered_map<AudioSampleFormat, std::pair<std::string, std::string>> inputFormatPathMap = {
     {AudioSampleFormat::SAMPLE_S8, std::make_pair("/data/test/media/pcm_s8.pcm", "s8_")},
@@ -57,8 +60,8 @@ const std::unordered_map<AudioSampleFormat, std::pair<std::string, std::string>>
     {AudioSampleFormat::SAMPLE_S16BEP, std::make_pair("/data/test/media/pcm_s16be_planar.pcm", "s16bep_")},
     {AudioSampleFormat::SAMPLE_S24LEP, std::make_pair("/data/test/media/pcm_s24le_planar.pcm", "s24lep_")},
     {AudioSampleFormat::SAMPLE_S32LEP, std::make_pair("/data/test/media/pcm_s32le_planar.pcm", "s32lep_")},
-    {AudioSampleFormat::SAMPLE_DVD, std::make_pair("/data/test/media/pcm_bluray_16bit.pcm", "dvd_16bit_")},
-    {AudioSampleFormat::SAMPLE_BLURAY, std::make_pair("/data/test/media/pcm_bluray_24bit.pcm", "bluray_24bit_")},
+    {AudioSampleFormat::SAMPLE_DVD, std::make_pair("/data/test/media/pcm_dvd_16bit.pcm", "dvd_16bit_")},
+    {AudioSampleFormat::SAMPLE_BLURAY, std::make_pair("/data/test/media/pcm_bluray_16bit.pcm", "bluray_16bit_")},
 };
 // {sampleFormat, outputName}
 const std::vector<pair<AudioSampleFormat, std::string>> outputFormats = {
@@ -139,8 +142,8 @@ public:
                 break;
             }
             case AudioSampleFormat::SAMPLE_BLURAY: {
-                int32_t audioBits = AUDIO_BITS_24;
-                bytesSize = BYTE_LENGTH_S24;
+                int32_t audioBits = AUDIO_BITS_16;
+                bytesSize = BYTE_LENGTH_S16;
                 if (meta_->Get<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(audioBits)) {
                     bytesSize = audioBits == AUDIO_BITS_16 ? BYTE_LENGTH_S16 : BYTE_LENGTH_S24;
                 }
@@ -157,11 +160,7 @@ public:
         meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNELS);
         meta_->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48000);
         meta_->Set<Tag::AUDIO_RAW_SAMPLE_FORMAT>(inputFormat);
-        if (inputFormat == AudioSampleFormat::SAMPLE_DVD) {
-            meta_->Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(AUDIO_BITS_16);
-        } else if (inputFormat == AudioSampleFormat::SAMPLE_BLURAY) {
-            meta_->Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(AUDIO_BITS_24);
-        }
+        meta_->Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(AUDIO_BITS_16);
         meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(outputFormat);
     }
 
@@ -404,6 +403,9 @@ HWTEST_F(RawDecoderUnitTest, QueueInputBuffer_005, TestSize.Level1)
 {
     for (auto &elem : inputFormatPathMap) {
         AudioSampleFormat inputFormat = elem.first;
+        if (inputFormat == AudioSampleFormat::SAMPLE_BLURAY || inputFormat == AudioSampleFormat::SAMPLE_DVD) {
+            continue;
+        }
         auto pair = elem.second;
         std::string inputFilePath = pair.first;
         std::string srcOutName = pair.second;
@@ -453,6 +455,63 @@ HWTEST_F(RawDecoderUnitTest, QueueInputBuffer_005, TestSize.Level1)
             outputFile.close();
         }
     }
+}
+
+HWTEST_F(RawDecoderUnitTest, QueueInputBuffer_006, TestSize.Level1)
+{
+    auto func = [this](AudioSampleFormat inputFormat, int32_t frameSize, int32_t offset) {
+        auto pair = inputFormatPathMap.at(inputFormat);
+        std::string inputFilePath = pair.first;
+        std::string srcOutName = pair.second;
+
+        for (auto outElem : outputFormats) {
+            AudioSampleFormat outputFormat = outElem.first;
+            std::string destName = outElem.second;
+            SetupParameter(inputFormat, outputFormat);
+            EXPECT_EQ(Status::OK, decoder_->SetParameter(meta_));
+
+            std::ifstream inputFile;
+            inputFile.open(inputFilePath, std::ios::binary | std::ios::ate);
+            int32_t fileSize = static_cast<int32_t>(inputFile.tellg());
+            inputFile.seekg(0, std::ios::beg);
+
+            int32_t frames = fileSize / frameSize;
+
+            std::ofstream outputFile;
+            std::string outputPath = OUTPUT_PREFIX + srcOutName + destName + OUTPUT_SUFFIX;
+            outputFile.open(outputPath, std::ios::out | std::ios::binary);
+
+            int32_t srcBytesSize = GetFormatBytes(inputFormat);
+            int32_t destBytesSize = GetFormatBytes(outputFormat);
+            int32_t outputSize = (fileSize - frames * offset) * destBytesSize / srcBytesSize;
+            auto avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+            shared_ptr<AVBuffer> outputBuffer = AVBuffer::CreateAVBuffer(avAllocator, outputSize);
+            int32_t pos = 0;
+            for (int32_t i = 0; i < frames; i++) {
+                shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, fileSize);
+                inputBuffer->memory_->SetSize(frameSize);
+                inputFile.read(reinterpret_cast<char*>(inputBuffer->memory_->GetAddr()), frameSize);
+                EXPECT_EQ(Status::OK, decoder_->QueueInputBuffer(inputBuffer));
+
+                shared_ptr<AVBuffer> emptyOutputBuffer = AVBuffer::CreateAVBuffer(avAllocator,
+                    (frameSize - offset) * destBytesSize / srcBytesSize);
+                Status ret = decoder_->QueueOutputBuffer(emptyOutputBuffer);
+                outputBuffer->memory_->Write(emptyOutputBuffer->memory_->GetAddr(),
+                                            emptyOutputBuffer->memory_->GetSize(), pos);
+                pos += emptyOutputBuffer->memory_->GetSize();
+                EXPECT_EQ(Status::OK, ret);
+            }
+            outputFile.write(reinterpret_cast<char*>(outputBuffer->memory_->GetAddr()),
+                    outputBuffer->memory_->GetSize());
+
+            inputFile.close();
+            outputFile.close();
+        }
+    };
+
+    func(AudioSampleFormat::SAMPLE_BLURAY, BLURAY_PACKET_SIZE, BLURAY_PACKET_OFFSET);
+
+    func(AudioSampleFormat::SAMPLE_DVD, DVD_PACKET_SIZE, DVD_PACKET_OFFSET);
 }
 } // namespace Plugins
 }

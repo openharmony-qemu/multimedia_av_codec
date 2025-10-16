@@ -883,7 +883,15 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
         SHA512_Final(g_md, &g_c);
         OPENSSL_cleanse(&g_c, sizeof(g_c));
         if (!SF_OUTPUT && !NocaleHash) {
-            if (!MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256_vc1)) {
+            const char **source = nullptr;
+            if (defualtPixelFormat == AV_PIXEL_FORMAT_NV12) {
+                source = fileSourcesha256_vc1;
+            } else if (defualtPixelFormat == AV_PIXEL_FORMAT_NV21) {
+                source = fileSourcesha256_nv21;
+            } else {
+                source = fileSourcesha256_yuvi;
+            }
+            if (!MdCompare(g_md, SHA512_DIGEST_LENGTH, source)) {
                 errCount++;
             }
         }

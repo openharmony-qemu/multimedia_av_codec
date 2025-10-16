@@ -64,8 +64,8 @@ public:
     const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
     const char *OUT_DIR2 = "/data/test/media/VDecTest2.yuv";
     bool SF_OUTPUT = false;
-    uint32_t DEFAULT_WIDTH = 1920;
-    uint32_t DEFAULT_HEIGHT = 1080;
+    uint32_t DEFAULT_WIDTH = 720;
+    uint32_t DEFAULT_HEIGHT = 480;
     uint32_t originalWidth = 0;
     uint32_t originalHeight = 0;
     bool SURFACE_OUTPUT = false;
@@ -94,13 +94,24 @@ public:
     int64_t syncOutputWaitTime = -1;
     bool queryOutputBufferEOS = false;
     bool queryInputBufferEOS = false;
-    const char *fileSourcesha256_vc1[64] = {"cc", "8c", "1d", "8a", "c9", "c2", "4e", "41", "dc", "02",
-                                            "c9", "9b", "a0", "60", "7e", "58", "32", "f7", "f6", "9f",
-                                            "7d", "ac", "2b", "ca", "c3", "6b", "d7", "d5", "1e", "60",
-                                            "f9", "02", "5e", "a1", "b1", "da", "28", "91", "40", "0a",
-                                            "31", "0c", "4b", "2f", "5f", "f3", "12", "58", "db", "5d",
-                                            "70", "f0", "19", "71", "06", "c7", "b2", "7d", "af", "b1",
-                                            "3e", "56", "e4", "d2"};
+    const char *fileSourcesha256_vc1[64] = {
+        "49", "22", "dc", "ba", "89", "23", "29", "a1", "fe", "ff", "0e", "2d", "4b", "10", "ea", "7e",
+        "b5", "56", "9a", "f1", "8c", "d7", "2c", "5c", "d1", "65", "be", "cc", "83", "7e", "f7", "f9",
+        "ef", "5f", "e9", "d5", "7b", "be", "41", "bb", "8a", "1d", "ce", "d3", "04", "61", "a6", "f6",
+        "b0", "5a", "4b", "01", "e2", "c4", "af", "d2", "24", "e8", "db", "29", "90", "da", "55", "9d"
+    };
+    const char *fileSourcesha256_nv21[64] = {
+        "ab", "12", "44", "b5", "d2", "c0", "13", "66", "85", "e5", "b2", "d9", "32", "39", "57", "fe",
+        "24", "34", "bd", "24", "08", "52", "4f", "b4", "76", "ec", "23", "4d", "56", "4e", "85", "38",
+        "76", "eb", "1a", "7c", "e2", "02", "f3", "5f", "a5", "70", "f3", "c1", "23", "8d", "5b", "6c",
+        "87", "ea", "47", "8e", "b8", "69", "16", "c9", "a5", "b1", "87", "20", "64", "43", "f9", "83"
+    };
+    const char *fileSourcesha256_yuvi[64] = {
+        "bc", "cc", "c8", "26", "9b", "58", "0a", "c4", "fe", "e8", "f4", "ab", "38", "1a", "d5", "42",
+        "67", "bd", "d3", "80", "fc", "84", "be", "c6", "27", "45", "b6", "d8", "bb", "5f", "08", "87",
+        "7b", "fd", "94", "ae", "c7", "1d", "d8", "05", "98", "04", "4b", "b1", "7f", "89", "d2", "70",
+        "a5", "ba", "88", "53", "f4", "2e", "62", "ca", "8a", "fe", "2c", "32", "18", "31", "56", "c3"
+    };
     int32_t Start();
     int32_t Stop();
     int32_t Flush();

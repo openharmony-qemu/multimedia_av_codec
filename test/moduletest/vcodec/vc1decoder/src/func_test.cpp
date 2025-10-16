@@ -56,14 +56,30 @@ protected:
     const char *INP_DIR_1 = "/data/test/media/vc1_advanced_L1_720x480.avi";
     const char *INP_DIR_2 = "/data/test/media/vc1_advanced_L2_1280x720.avi";
     const char *INP_DIR_3 = "/data/test/media/vc1_advanced_L3_1920x1080_30fps.avi";
-    const char *INP_DIR_4 = "/data/test/media/vc1_advanced_L3_1920x1080_60fps.avi";
+    const char *INP_DIR_4 = "/data/test/media/vc1_advanced_L4_1920x1080_60fps.avi";
+    const char *INP_DIR_5 = "/data/test/media/vc1_176x144.avi";
+    const char *INP_DIR_6 = "/data/test/media/vc1_advanced_L0_352x288.avi";
+    const char *INP_DIR_7 = "/data/test/media/vc1_advanced_L3_720x1280.avi";
+    const char *INP_DIR_8 = "/data/test/media/vc1_advanced_L4_2048x2048.avi";
+    const char *INP_DIR_9 = "/data/test/media/vc1_advanced_L3_IPBFrame.avi";
+    const char *INP_DIR_10 = "/data/test/media/vc1_advanced_L3_IFrame_only.avi";
+    const char *INP_DIR_11 = "/data/test/media/vc1_advanced_L3_IPFrame_only.avi";
+    const char *INP_DIR_12 = "/data/test/media/vc1_fmp4.mp4";
+    const char *INP_DIR_13 = "/data/test/media/vc1_mkv.mkv";
+    const char *INP_DIR_14 = "/data/test/media/vc1_mov.mov";
+    const char *INP_DIR_15 = "/data/test/media/vc1_mp4.mp4";
+    const char *INP_DIR_16 = "/data/test/media/vc1_ts.ts";
 };
 
 static OH_AVCapability *cap_vc1 = nullptr;
 static string g_codecNameVc1 = "";
-constexpr uint32_t FRAMESIZE56 = 56;
-constexpr uint32_t FRAMESIZE336 = 336;
-constexpr uint32_t FRAMESIZE126 = 126;
+constexpr uint32_t FRAMESIZE60 = 60;
+constexpr uint32_t FRAMESIZE26 = 26;
+constexpr uint32_t FRAMESIZE9 = 9;
+constexpr uint32_t FRAMESIZE4 = 4;
+constexpr uint32_t FRAMESIZE354 = 354;
+constexpr uint32_t FRAMESIZE88 = 88;
+constexpr uint32_t FRAMESIZE2 = 2;
 void Vc1decFuncNdkTest::SetUpTestCase()
 {
     cap_vc1 = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_VC1, false, SOFTWARE);
@@ -112,7 +128,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0001, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -133,7 +149,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0002, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -154,7 +170,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0003, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -175,7 +191,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0004, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -197,7 +213,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0005, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -219,7 +235,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0006, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -241,7 +257,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0007, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -349,7 +365,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0012, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -375,7 +391,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0013, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -449,7 +465,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0017, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -471,7 +487,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0018, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -527,7 +543,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0021, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -548,7 +564,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0022, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -570,7 +586,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0023, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -588,7 +604,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0024, TestSize.Level0)
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface("OH.Media.Codec.Decoder.Video.VC1"));
     vDecSample->WaitForEOS();
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -606,7 +622,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0025, TestSize.Level0)
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface("OH.Media.Codec.Decoder.Video.VC1"));
     vDecSample->WaitForEOS();
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -927,7 +943,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0040, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -948,7 +964,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0041, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -969,7 +985,26 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0042, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
+}
+
+/**
+ * @tc.number    : VIDEO_VC1DEC_FUNCTION_0043
+ * @tc.name      : decode Vc1 buffer from ts file
+ * @tc.desc      : function test
+ */
+HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0043, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->getFormat(INP_DIR_16);
+    vDecSample->outputYuvFlag = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VC1"));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -990,7 +1025,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0044, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -1011,7 +1046,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0045, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 
     auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = vDecSample->OUT_DIR;
@@ -1045,7 +1080,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0046, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE336, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE26, vDecSample->outFrameCount);
 }
 
 /**
@@ -1067,7 +1102,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0047, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE126, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE9, vDecSample->outFrameCount);
 }
 
 /**
@@ -1081,13 +1116,15 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0048, TestSize.Level0)
     vDecSample->getFormat(INP_DIR_3);
     vDecSample->outputYuvFlag = true;
     vDecSample->NocaleHash = true;
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1080;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VC1"));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE4, vDecSample->outFrameCount);
 }
 
 /**
@@ -1101,13 +1138,169 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0049, TestSize.Level0)
     vDecSample->getFormat(INP_DIR_4);
     vDecSample->outputYuvFlag = true;
     vDecSample->NocaleHash = true;
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1080;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VC1"));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE126, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE4, vDecSample->outFrameCount);
+}
+
+/**
+ * @tc.number    : VIDEO_VC1DEC_FUNCTION_0050
+ * @tc.name      : decode Vc1 buffer, 176x144
+ * @tc.desc      : function test
+ */
+HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0050, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->getFormat(INP_DIR_5);
+    vDecSample->outputYuvFlag = true;
+    vDecSample->NocaleHash = true;
+    vDecSample->DEFAULT_WIDTH = 176;
+    vDecSample->DEFAULT_HEIGHT = 144;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VC1"));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(FRAMESIZE354, vDecSample->outFrameCount);
+}
+
+/**
+ * @tc.number    : VIDEO_VC1DEC_FUNCTION_0051
+ * @tc.name      : decode Vc1 buffer, advanced profile L0
+ * @tc.desc      : function test
+ */
+HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0051, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->getFormat(INP_DIR_6);
+    vDecSample->outputYuvFlag = true;
+    vDecSample->NocaleHash = true;
+    vDecSample->DEFAULT_WIDTH = 352;
+    vDecSample->DEFAULT_HEIGHT = 288;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VC1"));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(FRAMESIZE88, vDecSample->outFrameCount);
+}
+
+/**
+ * @tc.number    : VIDEO_VC1DEC_FUNCTION_0052
+ * @tc.name      : decode Vc1 buffer, 720x1280
+ * @tc.desc      : function test
+ */
+HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0052, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->getFormat(INP_DIR_7);
+    vDecSample->outputYuvFlag = true;
+    vDecSample->NocaleHash = true;
+    vDecSample->DEFAULT_WIDTH = 720;
+    vDecSample->DEFAULT_HEIGHT = 1280;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VC1"));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(FRAMESIZE9, vDecSample->outFrameCount);
+}
+
+/**
+ * @tc.number    : VIDEO_VC1DEC_FUNCTION_0053
+ * @tc.name      : decode Vc1 buffer, advanced profile L4,2048x2048
+ * @tc.desc      : function test
+ */
+HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0053, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->getFormat(INP_DIR_8);
+    vDecSample->outputYuvFlag = true;
+    vDecSample->NocaleHash = true;
+    vDecSample->DEFAULT_WIDTH = 2048;
+    vDecSample->DEFAULT_HEIGHT = 2048;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VC1"));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(FRAMESIZE2, vDecSample->outFrameCount);
+}
+
+/**
+ * @tc.number    : VIDEO_VC1DEC_FUNCTION_0054
+ * @tc.name      : decode Vc1 buffer, IPB frames
+ * @tc.desc      : function test
+ */
+HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0054, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->getFormat(INP_DIR_9);
+    vDecSample->outputYuvFlag = true;
+    vDecSample->NocaleHash = true;
+    vDecSample->DEFAULT_WIDTH = 1280;
+    vDecSample->DEFAULT_HEIGHT = 720;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VC1"));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(FRAMESIZE9, vDecSample->outFrameCount);
+}
+
+/**
+ * @tc.number    : VIDEO_VC1DEC_FUNCTION_0055
+ * @tc.name      : decode Vc1 buffer, IP frame only
+ * @tc.desc      : function test
+ */
+HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0055, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->getFormat(INP_DIR_10);
+    vDecSample->outputYuvFlag = true;
+    vDecSample->NocaleHash = true;
+    vDecSample->DEFAULT_WIDTH = 1280;
+    vDecSample->DEFAULT_HEIGHT = 720;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VC1"));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(FRAMESIZE9, vDecSample->outFrameCount);
+}
+
+/**
+ * @tc.number    : VIDEO_VC1DEC_FUNCTION_0056
+ * @tc.name      : decode Vc1 buffer, I frame only
+ * @tc.desc      : function test
+ */
+HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0056, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->getFormat(INP_DIR_11);
+    vDecSample->outputYuvFlag = true;
+    vDecSample->NocaleHash = true;
+    vDecSample->DEFAULT_WIDTH = 1280;
+    vDecSample->DEFAULT_HEIGHT = 720;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VC1"));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(FRAMESIZE9, vDecSample->outFrameCount);
 }
 
 /**
@@ -1127,7 +1320,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_DECODE_SYNC_VC1_FUNC_0001, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -1147,7 +1340,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_DECODE_SYNC_VC1_FUNC_0002, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -1169,7 +1362,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_DECODE_SYNC_VC1_FUNC_0003, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
     vDecSample->WaitForEOS();
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 /**
@@ -1189,7 +1382,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_DECODE_SYNC_VC1_FUNC_0004, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(FRAMESIZE56, vDecSample->outFrameCount);
+    ASSERT_EQ(FRAMESIZE60, vDecSample->outFrameCount);
 }
 
 } // namespace

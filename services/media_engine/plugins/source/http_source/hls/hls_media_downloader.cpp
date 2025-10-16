@@ -911,7 +911,11 @@ void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList
         auto playInfo = playList_->Pop();
         std::string url = playInfo.url_;
         isDownloadStarted_ = true;
-        writeTsIndex_ > 0 ? writeTsIndex_++ : 0;
+        if (tsStorageInfo_.find(0) != tsStorageInfo_.end() && tsStorageInfo_[0].second) {
+            writeTsIndex_++;
+        } else {
+            writeTsIndex_ > 0 ? writeTsIndex_++ : 0;
+        }
         PutRequestIntoDownloader(playInfo);
     }
 }

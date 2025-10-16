@@ -127,7 +127,7 @@ ohos_unittest("demuxer_native_module_test") {
     av_codec_path = "\"/system/lib\""
   }
   defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
-
+  defines += av_codec_defines
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avdemuxer",

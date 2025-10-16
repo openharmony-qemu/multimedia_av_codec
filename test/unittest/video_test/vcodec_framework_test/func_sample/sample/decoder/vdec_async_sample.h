@@ -57,6 +57,7 @@ public:
     int32_t testParam_ = VCodecTestParam::SW_AVC;
     bool renderAtTimeFlag_ = false;
     static bool needDump_;
+    bool detailedError_ = false;
 
 private:
     void FlushInner();

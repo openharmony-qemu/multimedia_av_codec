@@ -2452,5 +2452,91 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9100, TestSize.Level3)
         cout << "num: " << num << endl;
     }
 }
+#ifdef SUPPORT_DEMUXER_EAC3
+/**
+ * @tc.number    : DEMUXER_RELI_9200
+ * @tc.name      : create source with uri, eac3
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9200, TestSize.Level3)
+{
+    OH_AVCodecBufferAttr attr;
+    bool isEnd = false;
+    const char *file = "/data/test/media/eac3.eac3";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int audioFrame = 0;
+    int keyCount = 0;
+    while (!isEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            cout << attr.size << "size---------------pts:" << attr.pts << endl;
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                isEnd = true;
+                cout << "isend !!!!!!!!!!!!!!!" << endl;
+                continue;
+            }
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
+            }
+        }
+    }
+    ASSERT_EQ(audioFrame, 6862);
+    ASSERT_EQ(keyCount, 6862);
+    close(fd);
+}
+#endif
 
+/**
+ * @tc.number    : DEMUXER_RELI_9300
+ * @tc.name      : create source with uri, wma
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9300, TestSize.Level3)
+{
+    OH_AVCodecBufferAttr attr;
+    bool isEnd = false;
+    const char *file = "/data/test/media/audio/aac.wma";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int audioFrame = 0;
+    int keyCount = 0;
+    while (!isEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            cout << attr.size << "size---------------pts:" << attr.pts << endl;
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                isEnd = true;
+                cout << "isend !!!!!!!!!!!!!!!" << endl;
+                continue;
+            }
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
+            }
+        }
+    }
+    ASSERT_EQ(audioFrame, 433);
+    ASSERT_EQ(keyCount, 433);
+}
 }

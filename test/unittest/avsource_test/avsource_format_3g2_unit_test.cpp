@@ -70,7 +70,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_3G2_GetFormat_0001, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 113);
+    ASSERT_EQ(formatVal_.fileType, 114);
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -122,7 +122,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_3G2_GetFormat_0002, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 113);
+    ASSERT_EQ(formatVal_.fileType, 114);
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
