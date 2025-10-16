@@ -67,6 +67,7 @@ static int32_t g_trackCount;
 static int g_tarckType = 0;
 constexpr int32_t SEEKTIMES = 10;
 constexpr int32_t THOUSAND = 1000.0;
+constexpr int32_t g_THOUSAND = 2000.0;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
 void DemuxerTrpFuncNdkTest::SetUpTestCase() {}
@@ -213,7 +214,7 @@ static void CheckSeekResult(const char *fileName, uint32_t seekCount)
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
         for (int32_t i = 0; i < seekCount; i++) {
             if (duration != 0) {
-                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, (g_trpRdm() % duration) / THOUSAND,
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, (g_trpRdm() % duration) / g_THOUSAND,
                 (OH_AVSeekMode)((g_trpRdm() % 1) +1)));
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
