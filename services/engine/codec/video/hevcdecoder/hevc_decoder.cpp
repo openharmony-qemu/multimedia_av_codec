@@ -1225,6 +1225,7 @@ int32_t HevcDecoder::DecodeFrameOnce()
         } else {
             CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
             callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
+            state_ = State::ERROR;
             return -1;
         }
         frameBuffer->avBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
