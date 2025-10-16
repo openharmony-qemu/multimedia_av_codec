@@ -187,6 +187,7 @@ group("av_codec_module_test") {
       "moduletest/vcodec/swdecoder:swdecoder_native_module_test",
       "moduletest/vcodec/vc1decoder:vc1decoder_native_module_test",
       "moduletest/vcodec/msvideo1decoder:msvideo1decoder_native_module_test",
+      "moduletest/vcodec/mjpegswdecoder:mjpegswdecoder_native_module_test",
     ]
   }
 }
