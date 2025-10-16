@@ -67,7 +67,6 @@ static int32_t g_trackCount;
 static int g_tarckType = 0;
 constexpr int32_t SEEKTIMES = 10;
 constexpr int32_t THOUSAND = 1000.0;
-static int32_t g_thousand = 2000;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
 void DemuxerTrpFuncNdkTest::SetUpTestCase() {}
@@ -213,7 +212,7 @@ static void CheckSeekResult(const char *fileName, uint32_t seekCount)
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
         for (int32_t i = 0; i < seekCount; i++) {
             if (duration != 0) {
-                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, (g_trpRdm() % duration) / g_thousand,
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, (g_trpRdm() % duration) / THOUSAND,
                 (OH_AVSeekMode)((g_trpRdm() % 1) +1)));
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
@@ -1193,7 +1192,37 @@ HWTEST_F(DemuxerTrpFuncNdkTest, DEMUXER_TRP_RANDOM_SEEK_0600, TestSize.Level2)
  */
 HWTEST_F(DemuxerTrpFuncNdkTest, DEMUXER_TRP_RANDOM_SEEK_0700, TestSize.Level2)
 {
-    CheckSeekResult("/data/test/media/mpeg4_aac.trp", SEEKTIMES);
+    const char *file = "/data/test/media/mpeg4_aac.trp";
+    static int64_t duration = 0;
+    static int32_t g_thousand = 2000;
+    OH_AVCodecBufferAttr attr;
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "-------" << fd << "-------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    cout << "g_trackCount----" << g_trackCount << endl;
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_DURATION, &duration));
+    cout << "duration----" << duration << endl;
+    srand(time(nullptr));
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+        for (int32_t i = 0; i < SEEKTIMES; i++) {
+            if (duration != 0) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, (g_trpRdm() % duration) / g_thousand,
+                (OH_AVSeekMode)((g_trpRdm() % 1) +1)));
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
+        }
+    }
+    close(fd);
+    fd = -1;
 }
 
 /**
