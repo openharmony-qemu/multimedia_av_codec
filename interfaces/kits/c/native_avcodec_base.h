@@ -1135,6 +1135,18 @@ typedef enum OH_H263Profile {
 } OH_H263Profile;
 
 /**
+ * @brief WMV3 Profile
+ *
+ * @since 22
+ */
+typedef enum OH_WMV3Profile {
+    /** SIMPLE Profile */
+    WMV3_PROFILE_SIMPLE = 0,
+    /** MAIN Profile */
+    WMV3_PROFILE_MAIN = 1
+} OH_WMV3Profile;
+
+/**
  * @brief HEVC Profile
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
@@ -1478,6 +1490,20 @@ typedef enum OH_H263Level {
     /** 70 level */
     H263_LEVEL_70 = 7
 } OH_H263Level;
+
+/**
+ * @brief WMV3 Level
+ *
+ * @since 22
+ */
+typedef enum OH_WMV3Level {
+    /** LOW Level */
+    WMV3_LEVEL_LOW = 0,
+    /** MEDIUM Level */
+    WMV3_LEVEL_MEDIUM = 1,
+    /** HIGH Level */
+    WMV3_LEVEL_HIGH = 2
+} OH_WMV3Level;
 
 /**
  * @brief AVC Level.
