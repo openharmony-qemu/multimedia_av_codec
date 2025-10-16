@@ -1194,7 +1194,7 @@ HWTEST_F(DemuxerTrpFuncNdkTest, DEMUXER_TRP_RANDOM_SEEK_0700, TestSize.Level2)
 {
     const char *file = "/data/test/media/mpeg4_aac.trp";
     static int64_t duration = 0;
-    int g_thousand = 2000;
+    int timecount = 2000;
     OH_AVCodecBufferAttr attr;
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -1214,7 +1214,7 @@ HWTEST_F(DemuxerTrpFuncNdkTest, DEMUXER_TRP_RANDOM_SEEK_0700, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
         for (int32_t i = 0; i < SEEKTIMES; i++) {
             if (duration != 0) {
-                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, (g_trpRdm() % duration) / g_thousand,
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, (g_trpRdm() % duration) / timecount,
                 (OH_AVSeekMode)((g_trpRdm() % 1) +1)));
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
