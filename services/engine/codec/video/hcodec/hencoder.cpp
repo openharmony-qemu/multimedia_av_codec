@@ -1752,7 +1752,7 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         if (vec.back() != 0) {
             vec.push_back(static_cast<uint8_t>('\0'));
         }
-        string roiStr(vec.begin(), vec.end() - 1);
+        string roiStr(vec.begin(), vec.end());
         info.avBuffer->meta_->SetData(OHOS::Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiStr);
     }
     encodingBuffers_[info.bufferId] = entry;
