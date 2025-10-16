@@ -80,8 +80,10 @@ public:
     bool CreateVideoCodecByName(const std::string &decName);
     bool CreateVideoCodecByMime(const std::string &decMime);
     void CreateByNameWithParam(int32_t param);
+    void CreateByNameWithParam(std::string_view param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
+    void PrepareSource(int32_t param, std::string sourcePath);
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(TEST_SUIT)};
 
 protected:
