@@ -59,7 +59,7 @@ int32_t g_reliCount1000 = 1000;
 void MjpegSwdecReliNdkTest::SetUpTestCase()
 {
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(
-        OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+        "video/mjpeg", false, SOFTWARE);
     g_codecNameMjpeg = OH_AVCapability_GetName(cap);
     cout << "g_codecNameMjpeg: " << g_codecNameMjpeg << endl;
 }
@@ -306,7 +306,7 @@ HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0100, TestSize.
 {
     if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < g_reliCount; i++) {
-            for (int j = 0; j < 2; j++){
+            for (int j = 0; j < 2; j++) {
                 shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
                 vDecSample->INP_DIR = INP_DIR_144;
                 const char *file = "/data/test/media/176_144_Main10.avi";

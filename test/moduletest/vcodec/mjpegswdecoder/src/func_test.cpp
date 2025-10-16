@@ -66,7 +66,7 @@ constexpr int32_t DEFAULT_HEIGHT = 1080;
 
 void MjpegSwdecFuncNdkTest::SetUpTestCase()
 {
-    cap_mjpeg = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+    cap_mjpeg = OH_AVCodec_GetCapabilityByCategory("video/mjpeg", false, SOFTWARE);
     g_codecNameMjpeg = OH_AVCapability_GetName(cap_mjpeg);
     cout << "g_codecNameMjpeg: " << g_codecNameMjpeg << endl;
 }
@@ -377,7 +377,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, SUB_MEDIA_VIDEO_MJPEGSWDEC_H265_SWITCH_001, Test
 {
     if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i <= 39; i++) {
-            vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_MJPEG);
+            vdec_ = OH_VideoDecoder_CreateByMime("video/mjpeg");
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
             ASSERT_NE(nullptr, format);
@@ -415,7 +415,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, SUB_MEDIA_VIDEO_MJPEGSWDEC_H265_SWITCH_002, Test
                 vDecSample->WaitForEOS();
                 ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
             }
-            vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_MJPEG);
+            vdec_ = OH_VideoDecoder_CreateByMime("video/mjpeg");
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
             ASSERT_NE(nullptr, format);

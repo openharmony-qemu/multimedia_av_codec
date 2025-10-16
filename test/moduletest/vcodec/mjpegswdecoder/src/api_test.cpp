@@ -69,7 +69,7 @@ constexpr double DEFAULT_FRAME_RATE = 30.0;
 void MjpegSwdecApiNdkTest::SetUpTestCase()
 {
     cap_mjpeg = OH_AVCodec_GetCapabilityByCategory(
-        OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+        "video/mjpeg", false, SOFTWARE);
     g_codecNameMjpeg = OH_AVCapability_GetName(cap_mjpeg);
     cout << "g_codecNameMjpeg: " << g_codecNameMjpeg << endl;
 }
@@ -781,7 +781,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_API_1200, TestSize.Level2)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_0100, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        cap = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false);
+        cap = OH_AVCodec_GetCapability("video/mjpeg", false);
         ASSERT_NE(cap, nullptr);
     }
 }
@@ -808,7 +808,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_0300, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         cap = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         string codec_name = OH_AVCapability_GetName(cap);
         ASSERT_EQ(VIDEO_DECODER_MJPEG_NAME, codec_name);
     }
@@ -836,7 +836,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_0500, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         cap = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(cap, nullptr);
         ASSERT_FALSE(OH_AVCapability_IsHardware(cap));
     }
@@ -851,7 +851,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_0510, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         cap = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(cap, nullptr);
         ASSERT_FALSE(OH_AVCapability_IsHardware(cap));
     }
@@ -889,7 +889,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_0700, TestSize.Level2)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_0800, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+        cap = OH_AVCodec_GetCapabilityByCategory("video/mjpeg", false, SOFTWARE);
         ASSERT_NE(cap, nullptr);
         string codec_name = OH_AVCapability_GetName(cap);
         ASSERT_EQ(64, OH_AVCapability_GetMaxSupportedInstances(cap));
@@ -904,7 +904,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_0800, TestSize.Level2)
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_0900, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+        cap = OH_AVCodec_GetCapabilityByCategory("video/mjpeg", false, SOFTWARE);
         ASSERT_NE(cap, nullptr);
         ASSERT_EQ(VIDEO_DECODER_MJPEG_NAME, OH_AVCapability_GetName(cap));
     }
@@ -934,7 +934,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_3100, TestSize.Level2)
     if (!access("/system/lib64/media/", 0)) {
         OH_AVErrCode ret = AV_ERR_OK;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthAlignment(capability, nullptr);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -966,7 +966,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_3300, TestSize.Level2)
     if (!access("/system/lib64/media/", 0)) {
         OH_AVErrCode ret = AV_ERR_OK;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         int32_t alignment = 0;
         ret = OH_AVCapability_GetVideoWidthAlignment(capability, &alignment);
@@ -985,7 +985,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_3310, TestSize.Level2)
     if (!access("/system/lib64/media/", 0)) {
         OH_AVErrCode ret = AV_ERR_OK;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         int32_t alignment = 0;
         ret = OH_AVCapability_GetVideoWidthAlignment(capability, &alignment);
@@ -1004,7 +1004,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_3400, TestSize.Level2)
     if (!access("/system/lib64/media/", 0)) {
         OH_AVErrCode ret = AV_ERR_OK;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightAlignment(capability, nullptr);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1036,7 +1036,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_3600, TestSize.Level2)
     if (!access("/system/lib64/media/", 0)) {
         OH_AVErrCode ret = AV_ERR_OK;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         int32_t alignment = 0;
         ret = OH_AVCapability_GetVideoHeightAlignment(capability, &alignment);
@@ -1056,7 +1056,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_3610, TestSize.Level2)
     if (!access("/system/lib64/media/", 0)) {
         OH_AVErrCode ret = AV_ERR_OK;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         int32_t alignment = 0;
         ret = OH_AVCapability_GetVideoHeightAlignment(capability, &alignment);
@@ -1077,7 +1077,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_3700, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRangeForHeight(nullptr, DEFAULT_HEIGHT, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1094,7 +1094,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_3800, TestSize.Level2)
     if (!access("/system/lib64/media/", 0)) {
         OH_AVErrCode ret = AV_ERR_OK;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, nullptr);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1113,7 +1113,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_3900, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, 0, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1132,7 +1132,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_002, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, -1, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1151,7 +1151,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_004, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, 9999, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1170,7 +1170,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_005, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, 2, nullptr);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1189,7 +1189,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4000, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1225,7 +1225,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4010, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1259,7 +1259,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4100, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRangeForWidth(nullptr, DEFAULT_WIDTH, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1276,7 +1276,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4200, TestSize.Level2)
     if (!access("/system/lib64/media/", 0)) {
         OH_AVErrCode ret = AV_ERR_OK;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, nullptr);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1295,7 +1295,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_007, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, -1, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1314,7 +1314,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_008, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, 0, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1333,7 +1333,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_009, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, 9999, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1352,7 +1352,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_010, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, 9999, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1371,7 +1371,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4300, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, 0, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1390,7 +1390,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4400, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1426,7 +1426,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4410, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1473,7 +1473,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4600, TestSize.Level2)
     if (!access("/system/lib64/media/", 0)) {
         OH_AVErrCode ret = AV_ERR_OK;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRange(capability, nullptr);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1492,7 +1492,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4700, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRange(capability, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1528,7 +1528,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4710, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoWidthRange(capability, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1575,7 +1575,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_4900, TestSize.Level2)
     if (!access("/system/lib64/media/", 0)) {
         OH_AVErrCode ret = AV_ERR_OK;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRange(capability, nullptr);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1595,7 +1595,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_5000, TestSize.Level2)
         OH_AVRange heightRange;
         memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1632,7 +1632,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_1700, TestSize.Level2)
         OH_AVRange heightRange;
         memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1667,7 +1667,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_5100, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, 0, DEFAULT_HEIGHT));
     }
@@ -1682,7 +1682,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_5200, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, DEFAULT_WIDTH, 0));
     }
@@ -1708,7 +1708,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_9400, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         OH_AVRange heightRange;
         OH_AVRange widthRange;
@@ -1727,7 +1727,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_5400, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ASSERT_EQ(true, OH_AVCapability_IsVideoSizeSupported(capability, DEFAULT_WIDTH, DEFAULT_HEIGHT));
     }
@@ -1741,7 +1741,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_5410, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ASSERT_EQ(true, OH_AVCapability_IsVideoSizeSupported(capability, DEFAULT_WIDTH, DEFAULT_HEIGHT));
     }
@@ -1772,7 +1772,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_5600, TestSize.Level2)
     if (!access("/system/lib64/media/", 0)) {
         OH_AVErrCode ret = AV_ERR_OK;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoFrameRateRange(capability, nullptr);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1791,7 +1791,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_5700, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoFrameRateRange(capability, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1812,7 +1812,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_1600, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoFrameRateRange(capability, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1849,7 +1849,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_5900, TestSize.Level2)
     if (!access("/system/lib64/media/", 0)) {
         OH_AVErrCode ret = AV_ERR_OK;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoFrameRateRangeForSize(
             capability, DEFAULT_WIDTH, DEFAULT_HEIGHT, nullptr);
@@ -1869,7 +1869,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_6000, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 0, DEFAULT_HEIGHT, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1888,7 +1888,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_6100, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, DEFAULT_WIDTH, 0, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1907,7 +1907,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_012, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, -1, -1, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1926,7 +1926,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_013, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 0, 0, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1945,7 +1945,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_014, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 9999, 9999, &range);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1964,7 +1964,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_6200, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 1280, 720, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1995,7 +1995,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_6210, TestSize.Level2)
         OH_AVRange range;
         memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, DEFAULT_WIDTH, DEFAULT_HEIGHT, &range);
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -2011,7 +2011,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_6300, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, 0, DEFAULT_HEIGHT, 30));
     }
@@ -2026,7 +2026,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_6400, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, DEFAULT_WIDTH, 0, 30));
     }
@@ -2041,7 +2041,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_6500, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(
             capability, DEFAULT_WIDTH, DEFAULT_HEIGHT, 0));
@@ -2070,7 +2070,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_6700, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ASSERT_EQ(true, OH_AVCapability_AreVideoSizeAndFrameRateSupported(
             capability, DEFAULT_WIDTH, DEFAULT_HEIGHT, 30));
@@ -2086,7 +2086,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_6710, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ASSERT_EQ(true, OH_AVCapability_AreVideoSizeAndFrameRateSupported(
             capability, DEFAULT_WIDTH, DEFAULT_HEIGHT, 30));
@@ -2120,7 +2120,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_6900, TestSize.Level2)
         OH_AVErrCode ret = AV_ERR_OK;
         uint32_t pixelFormatNum = 0;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, nullptr, &pixelFormatNum);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -2138,7 +2138,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_7000, TestSize.Level2)
         OH_AVErrCode ret = AV_ERR_OK;
         const int32_t *pixelFormat = nullptr;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat, nullptr);
         ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -2154,7 +2154,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_7100, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret_1 = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &g_pixelFormat1, &g_pixelFormatNum1);
         ASSERT_NE(nullptr, g_pixelFormat1);
@@ -2211,7 +2211,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_1200, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret_1 = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &g_pixelFormat1, &g_pixelFormatNum1);
         ASSERT_NE(nullptr, g_pixelFormat1);
@@ -2264,7 +2264,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CAP_API_8400, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         OH_AVFormat *format = OH_AVCapability_GetFeatureProperties(capability,
             VIDEO_ENCODER_LONG_TERM_REFERENCE);
@@ -2373,7 +2373,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CONFIGURE_0050, TestSize.Level2)
         int32_t DEFAULT_WIDTH = 1080;
         for (int i = 0; i < 100; i++) {
             OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-                OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+                "video/mjpeg", false, SOFTWARE);
             ASSERT_NE(nullptr, capability);
             DEFAULT_HEIGHT = HighRand();
             usleep(1500);
@@ -2398,7 +2398,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CONFIGURE_0060, TestSize.Level2)
         int32_t DEFAULT_WIDTH = 1080;
         for (int i = 0; i < 100; i++) {
             OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-                OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+                "video/mjpeg", false, SOFTWARE);
             ASSERT_NE(nullptr, capability);
             DEFAULT_HEIGHT = HighRand();
             usleep(1500);
@@ -2422,7 +2422,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_CONFIGURE_0090, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+            "video/mjpeg", false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         string g_codecNameMjpeg_H = OH_AVCapability_GetName(capability);
         cout << "g_codecNameMjpeg_H: " << g_codecNameMjpeg_H << endl;

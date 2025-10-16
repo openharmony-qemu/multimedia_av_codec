@@ -62,7 +62,7 @@ VDecAPI11Sample *vDecSample = NULL;
 void MjpegSwdecStateNdkTest::SetUp(void)
 {
     if (!access("/system/lib64/media/", 0)) {
-        cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+        cap = OH_AVCodec_GetCapabilityByCategory("video/mjpeg", false, SOFTWARE);
         string mjpegCodeName = OH_AVCapability_GetName(cap);
         cout << "mjpegCodeName: " << mjpegCodeName << endl;
         vDecSample = new VDecAPI11Sample();
