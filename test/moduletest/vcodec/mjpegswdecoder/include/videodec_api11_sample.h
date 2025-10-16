@@ -177,7 +177,7 @@ public:
     OH_AVSource *videoSource = nullptr;
     OH_AVDemuxer *demuxer = nullptr;
     OH_AVFormat *sourceFormat = nullptr;
-    OH_AVFormat *sourceFormat = nullptr;
+    OH_AVFormat *trackFormat = nullptr;
     int32_t g_trackCount;
     int enbleBlankFrame = 0;
 private:
@@ -189,7 +189,7 @@ private:
     OH_AVCodec *vdec_;
     OH_AVCodecCallback cb_;
     int64_t timeStamp_ { 0};
-    int64_t timeStamp_ { 0};
+    int64_t lastRenderedTimeUs_ { 0 };
     bool isFirstFrame_ = true;
     OHNativeWindow *nativeWindow[2] = {};
     sptr<Surface> cs[2] = {};

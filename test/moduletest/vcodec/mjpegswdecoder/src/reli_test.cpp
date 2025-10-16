@@ -274,7 +274,7 @@ HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0050, TestSize.
 
 /**
  * @tc.number    : API11_VIDEO_MJPEGSWDEC_STABILITY_0060
- * @tc.name      : repeat start and stop 1000 times before EOS
+ * @tc.name      : repeat start and flush 1000 times before EOS
  * @tc.desc      : reli test
  */
 HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0060, TestSize.Level2)
@@ -351,11 +351,11 @@ HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABLITY_FUNC_0130, TestS
 }
 
 /**
- * @tc.number    : API11_VIDEO_MJPEGSWDEC_STABILITY_0060
+ * @tc.number    : API11_VIDEO_MJPEGSWDEC_STABILITY_0110
  * @tc.name      : SVC stream and common stream decode simultaneously
  * @tc.desc      : reli test
  */
-HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0060, TestSize.Level0)
+HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0110, TestSize.Level0)
 {
     if (!access("/system/lib64/media/", 0)) {
         for (int i = 0; i < g_reliCount; i++) {
