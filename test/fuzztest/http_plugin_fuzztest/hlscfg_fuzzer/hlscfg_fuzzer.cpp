@@ -43,14 +43,17 @@ bool StartFuzzTest(FuzzedDataProvider *fdp, size_t size)
     const int expectBufDuration = 10; // 10s
     std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = std::make_shared<HlsMediaDownloader>(expectBufDuration,
         userDefinedDuration, g_httpHeader, nullptr);
-    
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {};
+    hlsMediaDownloader->SetStatusCallback(statusCallback);
+
     int32_t appUid = fdp->ConsumeIntegral<uint32_t>();
     hlsMediaDownloader->SetAppUid(appUid);
     bool isInterruptNeeded = false; // fdp->ConsumeBool();
     hlsMediaDownloader->SetInterruptState(isInterruptNeeded);
 
     const std::string url = "http://127.0.0.1:46666/test_cbr/test_cbr.m3u8";
-    cout << " Open url: " << url << endl;
+    cout << "  Open url: " << url << endl;
     hlsMediaDownloader->Open(url, g_httpHeader);
 
     for (int i = 0; i < 3; i++) {   // 种子，当前48字节，仅支持3轮测试
@@ -83,7 +86,7 @@ bool StartFuzzTest(FuzzedDataProvider *fdp, size_t size)
 } // namespace OHOS::Media::Plugins::HttpPlugin
 
 /* Fuzzer entry point */
-extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     FuzzedDataProvider fdp(data, size);
