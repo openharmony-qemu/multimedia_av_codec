@@ -39,8 +39,6 @@ constexpr int32_t INVALID_SR_N = -48000;
 constexpr Plugins::AudioSampleFormat S16 = Plugins::AudioSampleFormat::SAMPLE_S16LE;
 constexpr Plugins::AudioSampleFormat F32 = Plugins::AudioSampleFormat::SAMPLE_F32LE;
 
-
-
 std::shared_ptr<CodecPlugin> CreatePluginByName(const std::string &name)
 {
     auto p = PluginManagerV2::Instance().CreatePluginByName(name);
