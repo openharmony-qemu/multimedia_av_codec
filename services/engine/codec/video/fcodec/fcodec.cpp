@@ -356,8 +356,8 @@ void FCodec::InitBuffers()
         AVCODEC_LOGI("%{public}s OnInputBufferAvailable frame index = %{public}u, owner = %{public}d",
                      decName_.c_str(), i, buffers_[INDEX_INPUT][i]->owner_.load());
     }
-    CHECK_AND_RETURN_LOG(buffers_[INDEX_OUTPUT].size() > 0, "Output buffers is null!");
     std::lock_guard<std::mutex> oLock(outputMutex_);
+    CHECK_AND_RETURN_LOG(buffers_[INDEX_OUTPUT].size() > 0, "Output buffers is null!");
     // for buffer mode or state is CONFIGURED
     if (sInfo_.surface == nullptr || state_ == State::CONFIGURED) {
         for (uint32_t i = 0u; i < buffers_[INDEX_OUTPUT].size(); i++) {
