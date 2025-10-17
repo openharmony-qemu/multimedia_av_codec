@@ -14,6 +14,10 @@
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
+declare_args() {
+    video_codec_demo_use_rosen_window = false
+}
+
 config("video_sample_config") {
   include_dirs = [
     "./capbilities/capbility_node/data_producer/bitstream_reader",
@@ -51,7 +55,6 @@ ohos_source_set("video_sample") {
     "./capbilities/sample_buffer_queue/sample_buffer_queue.cpp",
     "./capbilities/sample_window_manager/sample_window_manager.cpp",
     "./capbilities/sample_window_manager/window_wrapper/native_image_window_wrapper.cpp",
-    "./capbilities/sample_window_manager/window_wrapper/rosen_window_wrapper.cpp",
     "./capbilities/sample_window_manager/window_wrapper/window_wrapper.cpp",
     "./common/av_codec_sample_log.cpp",
     "./common/sample_utils.cpp",
@@ -96,14 +99,9 @@ ohos_source_set("video_sample") {
   ]
 
   external_deps = [
-    "access_token:libaccesstoken_sdk",
-    "access_token:libnativetoken_shared",
-    "access_token:libtoken_setproc",
     "c_utils:utils",
     "eventhandler:libeventhandler",
     "graphic_2d:libnative_image",
-    "graphic_2d:librender_service_base",
-    "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
@@ -111,8 +109,20 @@ ohos_source_set("video_sample") {
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
-    "window_manager:libwm",
   ]
+
+  if (video_codec_demo_use_rosen_window) {
+    defines += [ "SAMPLE_USE_ROSEN_WINDOW" ]
+    sources += [ "./capbilities/sample_window_manager/window_wrapper/rosen_window_wrapper.cpp" ]
+    external_deps += [
+      "access_token:libaccesstoken_sdk",
+      "access_token:libnativetoken_shared",
+      "access_token:libtoken_setproc",
+      "graphic_2d:librender_service_base",
+      "graphic_2d:librender_service_client",
+      "window_manager:libwm",
+    ]
+  }
 
   subsystem_name = "multimedia"
   part_name = "av_codec"

@@ -54,7 +54,7 @@ int32_t ToGraphicPixelFormat(int32_t avPixelFormat, int32_t profile)
         ret = NATIVEBUFFER_PIXEL_FMT_YCRCB_P010;
     } else if (p == std::make_pair(AV_PIXEL_FORMAT_NV12, HEVC_PROFILE_MAIN_10)) {
         ret = NATIVEBUFFER_PIXEL_FMT_YCBCR_P010;
-    } else if (p == std::make_pair(static_cast<OH_AVPixelFormat>(6), HEVC_PROFILE_MAIN_10)) {
+    } else if (p == std::make_pair(AV_PIXEL_FORMAT_RGBA1010102, HEVC_PROFILE_MAIN_10)) {
         ret = NATIVEBUFFER_PIXEL_FMT_RGBA_1010102;
     } else {
         ret = NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP;

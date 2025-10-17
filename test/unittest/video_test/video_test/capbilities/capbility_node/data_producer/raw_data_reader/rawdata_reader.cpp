@@ -37,13 +37,13 @@ int32_t RawdataReader::FillBuffer(CodecBufferInfo &info)
 
     int32_t format = sampleInfo_->pixelFormat;
     switch (format) {
-        case 6: // NATIVEBUFFER_PIXEL_FMT_RGBA_4444
+        case AV_PIXEL_FORMAT_RGBA1010102:
             ReadInputBufferWithStrideRGBA(bufferAddr);
             break;
-        case 5: // NATIVEBUFFER_PIXEL_FMT_RGBX_4444
+        case AV_PIXEL_FORMAT_RGBA:
             ReadInputBufferWithStrideRGBA(bufferAddr);
             break;
-        case 1: // NATIVEBUFFER_PIXEL_FMT_CLUT1
+        case AV_PIXEL_FORMAT_YUVI420:
             ReadInputBufferWithStrideYUVI420(bufferAddr);
             break;
         default:
