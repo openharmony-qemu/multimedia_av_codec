@@ -109,11 +109,11 @@ config("fuzz_cfg") {
 ##############################fuzztest##########################################
 ohos_fuzztest("HttpDownloaderFuzzTest") {
   module_out_path = module_output_path
-  fuzz_config_file = "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/http_downloader_fuzzer"
+  fuzz_config_file = "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/httpdownloader_fuzzer"
   configs = [
     ":fuzz_cfg"
   ]
-  sources = test_sources + ["http_downloader_fuzzer.cpp"]
+  sources = test_sources + ["httpdownloader_fuzzer.cpp"]
 
   external_deps = [
     "c_utils:utils",
