@@ -15,7 +15,7 @@ import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 declare_args() {
-    video_codec_demo_use_rosen_window = false
+  video_codec_demo_use_rosen_window = false
 }
 
 config("video_sample_config") {
