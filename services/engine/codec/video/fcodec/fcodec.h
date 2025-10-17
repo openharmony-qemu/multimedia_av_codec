@@ -98,10 +98,8 @@ private:
     };
     void DumpOutputBuffer();
     bool IsActive() const;
-    void ResetCodedWidthHeight();
     void FreeExtraData();
-    bool IsVC1Codec();
-    void ResetContext(bool isFlush = false);
+    void ResetContext(bool isNeedFree = true);
     void CalculateBufferSize();
     int32_t AllocateBuffers();
     void InitBuffers();

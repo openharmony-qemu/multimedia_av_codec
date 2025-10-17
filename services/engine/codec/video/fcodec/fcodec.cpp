@@ -363,41 +363,27 @@ bool FCodec::IsActive() const
 
 void FCodec::FreeExtraData()
 {
-    if (avCodecContext_ != nullptr && avCodecContext_->extradata) {
+    if (avCodecContext_->extradata) {
         av_free(avCodecContext_->extradata);
         avCodecContext_->extradata = nullptr;
         avCodecContext_->extradata_size = 0;
     }
+    avCodecContext_->coded_width = 0;
+    avCodecContext_->coded_height = 0;
 }
 
-void FCodec::ResetCodedWidthHeight()
-{
-    if (avCodecContext_ != nullptr) {
-        avCodecContext_->coded_width = 0;
-        avCodecContext_->coded_height = 0;
-    }
-}
-
-bool FCodec::IsVC1Codec()
-{
-    return (codecName_ == AVCodecCodecName::VIDEO_DECODER_VC1_NAME ||
-                        codecName_ == AVCodecCodecName::VIDEO_DECODER_WMV3_NAME);
-}
-
-void FCodec::ResetContext(bool isFlush)
+void FCodec::ResetContext(bool isNeedFree)
 {
     CHECK_AND_RETURN_LOG(avCodecContext_ != nullptr, "Avcodec context is nullptr");
-    if (!isFlush) {
+    if (isNeedFree) {
         FreeExtraData();
-        ResetCodedWidthHeight();
         avCodecContext_->width = 0;
         avCodecContext_->height = 0;
         avCodecContext_->get_buffer2 = nullptr;
-    } else {
-        if (!IsVC1Codec()) {
-          FreeExtraData();
-          ResetCodedWidthHeight();
-        }
+        return;
+    }
+    if (codecName_ == AVCodecCodecName::VIDEO_DECODER_AVC_NAME) {
+        FreeExtraData();
     }
 }
 
@@ -529,7 +515,7 @@ int32_t FCodec::Stop()
     AVCODEC_LOGI("step into STOPPING status");
     StopThread();
     avcodec_close(avCodecContext_.get());
-    ResetContext(true);
+    ResetContext(false);
     ReleaseBuffers();
     state_ = State::CONFIGURED;
     AVCODEC_LOGI("Stop codec successful, state: Configured");
@@ -556,7 +542,7 @@ int32_t FCodec::Flush()
     receiveTask_->Pause();
 
     avcodec_flush_buffers(avCodecContext_.get());
-    ResetContext(true);
+    ResetContext(false);
     FlushBuffers();
     state_ = State::FLUSHED;
     AVCODEC_LOGI("%{public}s Flush codec successful, state: Flushed", decName_.c_str());
@@ -689,11 +675,7 @@ int32_t FCodec::GetOutputFormat(Format &format)
         int32_t maxInputSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) / UV_SCALE_FACTOR);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     }
-        format = format_;
-        format = format_;
-    }
     format = format_;
-    }
     AVCODEC_LOGI("Get outputFormat successful");
     return AVCS_ERR_OK;
 }
