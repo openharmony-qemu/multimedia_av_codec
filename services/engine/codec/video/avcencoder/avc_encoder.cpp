@@ -285,28 +285,20 @@ void AvcEncoder::GetBufferFromSurface()
     }
 
     AVCODEC_LOGD("timestamp: %{public}" PRId64 ", dataSize: %{public}d", pts, buffer->GetSize());
-
     CHECK_AND_RETURN_LOG(!freeList_.empty(), "freeList_ is empty!");
     std::unique_lock<std::mutex> listLock(freeListMutex_);
     uint32_t index = freeList_.front();
     freeList_.pop_front();
     listLock.unlock();
     std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
-
     CHECK_AND_RETURN_LOG(inputBuffer != nullptr, "input buffer is null");
+    inputBuffer->surfaceBuffer_ = buffer;
+    inputBuffer->fence_ = fence;
+    CHECK_AND_RETURN_LOG(inputBuffer->avBuffer_ != nullptr, "Allocate input buffer failed!");
+    inputBuffer->avBuffer_->pts_ = pts;
     if (enableSurfaceModeInputCb_) {
-        inputBuffer->surfaceBuffer_ = buffer;
-        inputBuffer->fence_ = fence;
-        inputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer();
-        CHECK_AND_RETURN_LOG(inputBuffer->avBuffer_ != nullptr, "Allocate input buffer failed!");
-        inputBuffer->avBuffer_->pts_ = pts;
         callback_->OnInputBufferAvailable(index, inputBuffer->avBuffer_);
     } else {
-        inputBuffer->surfaceBuffer_ = nullptr;
-        inputBuffer->fence_ = fence;
-        inputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(buffer);
-        CHECK_AND_RETURN_LOG(inputBuffer->avBuffer_ != nullptr, "Allocate input buffer failed!");
-        inputBuffer->avBuffer_->pts_ = pts;
         inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
         inputAvailQue_->Push(index);
     }
@@ -763,7 +755,9 @@ int32_t AvcEncoder::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize)
             AVCODEC_LOGI("Allocate input buffer success: index=%{public}d, size=%{public}d",
                 i, buf->avBuffer_->memory_->GetCapacity());
         } else {
-            buf->avBuffer_ = nullptr;
+            buf->avBuffer_ = AVBuffer::CreateAVBuffer();
+            CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr,
+                "Allocate input buffer failed (surface mode), index=%{public}d", i);
         }
         buffers_[INDEX_INPUT].emplace_back(buf);
         valBufferCnt++;
@@ -1121,6 +1115,19 @@ bool AvcEncoder::GetDiscardFlagFromAVBuffer(const std::shared_ptr<AVBuffer> &buf
     return ret;
 }
 
+int64_t AvcEncoder::GetBufferPts(const std::shared_ptr<AVBuffer> &buffer)
+{
+    int64_t pts = 0;
+    AVCODEC_LOGD("avBuffer pts before setted, absolute pts=%{public}" PRId64 "", buffer->pts_);
+    bool bret = buffer->meta_->GetData(
+        OHOS::Media::Tag::VIDEO_ENCODE_SET_FRAME_PTS, pts);
+    AVCODEC_LOGD("avBuffer pts after setted, relative pts=%{public}" PRId64 ", bret=%{public}d", pts, bret);
+    if (!bret) {
+        pts = buffer->pts_;
+    }
+    return pts;
+}
+
 int32_t AvcEncoder::QueueInputBuffer(uint32_t index)
 {
     AVCODEC_SYNC_TRACE;
@@ -1138,15 +1145,14 @@ int32_t AvcEncoder::QueueInputBuffer(uint32_t index)
                              "Queue input buffer failed: buffer with index=%{public}u is not available", index);
 
     if (inputSurface_ != nullptr) {
-        int64_t pts = inputBuffer->avBuffer_->pts_;
-        bool discard = GetDiscardFlagFromAVBuffer(inputBuffer->avBuffer_);
-        inputBuffer->avBuffer_->meta_->Clear();
-        inputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(inputBuffer->surfaceBuffer_);
-        CHECK_AND_RETURN_RET_LOG(inputBuffer->avBuffer_ != nullptr && inputBuffer->avBuffer_->memory_ != nullptr,
+        CHECK_AND_RETURN_RET_LOG(inputBuffer->avBuffer_ != nullptr,
             AVCS_ERR_INVALID_VAL, "Allocate input buffer failed, index=%{public}u", index);
+        int64_t pts = GetBufferPts(inputBuffer->avBuffer_);
+        bool discard = GetDiscardFlagFromAVBuffer(inputBuffer->avBuffer_);
         inputBuffer->avBuffer_->pts_ = pts;
         if (discard) {
             inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
+            inputSurface_->ReleaseBuffer(inputBuffer->surfaceBuffer_, -1);
             NotifyUserToFillBuffer(index, inputBuffer->avBuffer_);
             return AVCS_ERR_OK;
         }
@@ -1226,6 +1232,7 @@ void AvcEncoder::ReleaseSurfaceBufferByAVBuffer(std::shared_ptr<AVBuffer> &buffe
     CHECK_AND_RETURN_LOG(buffer != nullptr, "input buffer nullptr");
     CHECK_AND_RETURN_LOG(buffer->memory_ != nullptr, "input buffer memory nullptr");
     auto surfaceBuffer = buffer->memory_->GetSurfaceBuffer();
+    CHECK_AND_RETURN_LOG(surfaceBuffer != nullptr, "surface buffer nullptr");
     inputSurface_->ReleaseBuffer(surfaceBuffer, -1);
 }
 
@@ -1570,6 +1577,21 @@ void AvcEncoder::EncoderAvcTailer()
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Avc Encoder tailer error: %{public}d", ret);
 }
 
+std::shared_ptr<AVBuffer> AvcEncoder::GetAvBuffer(const std::shared_ptr<FBuffer> &inputBuffer)
+{
+    CHECK_AND_RETURN_RET_LOG(inputBuffer != nullptr, nullptr, "input buffer nullptr");
+    std::shared_ptr<AVBuffer> inputAVBuffer = nullptr;
+    if (inputBuffer->surfaceBuffer_ == nullptr) {
+        inputAVBuffer = inputBuffer->avBuffer_;
+        return inputAVBuffer;
+    }
+    inputAVBuffer = AVBuffer::CreateAVBuffer(inputBuffer->surfaceBuffer_);
+    CHECK_AND_RETURN_RET_LOG(inputAVBuffer != nullptr, nullptr, "create buffer fail");
+    inputAVBuffer->pts_ = inputBuffer->avBuffer_->pts_;
+    inputAVBuffer->flag_ = inputBuffer->avBuffer_->flag_;
+    return inputAVBuffer;
+}
+
 void AvcEncoder::SendFrame()
 {
     SCOPED_TRACE_AVC("SendFrame");
@@ -1583,7 +1605,7 @@ void AvcEncoder::SendFrame()
     uint32_t index = inputAvailQue_->Front();
     CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
     std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
-    std::shared_ptr<AVBuffer> &inputAVBuffer = inputBuffer->avBuffer_;
+    std::shared_ptr<AVBuffer> inputAVBuffer = GetAvBuffer(inputBuffer);
     CHECK_AND_RETURN_LOG(inputAVBuffer != nullptr, "input buffer nullptr");
     if (inputAVBuffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
         std::unique_lock<std::mutex> sendLock(sendMutex_);
