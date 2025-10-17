@@ -24,41 +24,27 @@ using namespace OHOS::Media::Plugins;
 #define FUZZ_PROJECT_NAME "httpdownloader_fuzzer"
 
 static constexpr int32_t MAX_BUFFER_SIZE_FUZZ = 1024 * 1024 * 2;
-static uint8_t g_buffer[MAX_BUFFER_SIZE_FUZZ];
 
-void TestHttpDownloaderFuzz(FuzzedDataProvider &fdp)
+bool TestHttpDownloaderOpenFuzz(uint8_t *data, size_t size)
 {
-    static const std::string TEST_URI_PATH = "http://127.0.0.1:46666/xxx.mp4";
-    static const std::map<std::string, std::string> httpHeader = {
-        {"User-Agent", "ABC"},
-        {"Referer", "DEF"},
-    };
+    const std::string avsource_url = "http://127.0.0.1:46666/dewu.mp4";
+    std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::HttpMediaDownloader> httpMediaDownloader =
+        std::make_shared<OHOS::Media::Plugins::HttpPlugin::HttpMediaDownloader>(avsource_url, 4, nullptr);  // 4
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {};
+    httpMediaDownloader->SetStatusCallback(statusCallback);
+    std::map<std::string, std::string> httpHeader;
+    httpMediaDownloader->Open(avsource_url, httpHeader);
+    unsigned char buff[MAX_BUFFER_SIZE_FUZZ];
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = GetData<int32_t>();
-    readDataInfo.wantReadLength_ = GetData<uint32_t>();
+    readDataInfo.wantReadLength_ = GetData<unsigned int>();
     readDataInfo.wantReadLength_ %= MAX_BUFFER_SIZE_FUZZ;
     readDataInfo.isEos_ = GetData<bool>();
-    std::map<std::string, std::string> header = std::map<std::string, std::string>();
-    std::string fuzzString = fdp.ConsumeRandomLengthString();
-    std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::HttpMediaDownloader> downloader =
-        std::make_shared<OHOS::Media::Plugins::HttpPlugin::HttpMediaDownloader>(TEST_URI_PATH, 5, nullptr);  // 5
-    std::string testUrl = TEST_URI_PATH + fuzzString;
-    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
-    playStrategy->width = 640;  // 640
-    playStrategy->height = 480;  // 480
-    downloader->Open(TEST_URI_PATH, httpHeader);
-    downloader->SetPlayStrategy(playStrategy);
-    downloader->Read(g_buffer, readDataInfo);
-    uint64_t extraCacheDuration = GetData<uint64_t>();
-    downloader->SetExtraCache(extraCacheDuration);
-    int32_t initOffset = GetData<int32_t>();
-    int32_t initSize = GetData<int32_t>();
-    downloader->SetInitialBufferSize(initOffset, initSize);
-    int64_t seekOffset = GetData<int64_t>();
-    bool isSeekHit = GetData<bool>();
-    downloader->SeekToPos(seekOffset, isSeekHit);
-    uint32_t bitRate = GetData<uint32_t>();
-    downloader->SelectBitRate(bitRate);
+    bool blockingFlag = GetData<bool>();
+    httpMediaDownloader->Read(buff, readDataInfo);
+    httpMediaDownloader->SetReadBlockingFlag(blockingFlag);
+    return true;
 }
 
 /* Fuzzer entry point */
@@ -68,7 +54,6 @@ extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
     g_baseFuzzData = data;
     g_baseFuzzSize = size;
     g_baseFuzzPos = 0;
-    FuzzedDataProvider fdp(data, size);
-    TestHttpDownloaderFuzz(fdp);
+    TestHttpDownloaderOpenFuzz(data, size);
     return 0;
 }
