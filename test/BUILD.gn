@@ -409,6 +409,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/http_plugin_fuzztest/hlscfg_fuzzer:HlsCfgFuzzTest",
       "fuzztest/http_plugin_fuzztest/hlsm3u8mutate_fuzzer:HlsM3u8MutateFuzzTest",
       "fuzztest/http_plugin_fuzztest/httpdownloader_fuzzer:HttpDownloaderFuzzTest",
+      "fuzztest/http_plugin_fuzztest/httpdownloaderopen_fuzzer:HttpDownloaderOpenFuzzTest",
     ]
     if(av_codec_enable_codec_eac3) {
       deps += [ "fuzztest/audiodecodereac3_fuzzer:AudioDecoderEac3FuzzTest" ]
