@@ -42,19 +42,24 @@ void ThreadSleep(bool isValid, int32_t interval)
 
 int32_t ToGraphicPixelFormat(int32_t avPixelFormat, int32_t profile)
 {
-    if (profile == HEVC_PROFILE_MAIN_10) {
-        return NATIVEBUFFER_PIXEL_FMT_YCBCR_P010;
+    auto p = std::make_pair(static_cast<OH_AVPixelFormat>(avPixelFormat), static_cast<OH_HEVCProfile>(profile));
+    auto ret = NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP;
+    if (p == std::make_pair(AV_PIXEL_FORMAT_NV21, HEVC_PROFILE_MAIN)) {
+        ret = NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP;
+    } else if (p == std::make_pair(AV_PIXEL_FORMAT_RGBA, HEVC_PROFILE_MAIN)) {
+        ret = NATIVEBUFFER_PIXEL_FMT_RGBA_8888;
+    } else if (p == std::make_pair(AV_PIXEL_FORMAT_YUVI420, HEVC_PROFILE_MAIN)) {
+        ret = NATIVEBUFFER_PIXEL_FMT_YCBCR_420_P;
+    } else if (p == std::make_pair(AV_PIXEL_FORMAT_NV21, HEVC_PROFILE_MAIN_10)) {
+        ret = NATIVEBUFFER_PIXEL_FMT_YCRCB_P010;
+    } else if (p == std::make_pair(AV_PIXEL_FORMAT_NV12, HEVC_PROFILE_MAIN_10)) {
+        ret = NATIVEBUFFER_PIXEL_FMT_YCBCR_P010;
+    } else if (p == std::make_pair(AV_PIXEL_FORMAT_RGBA1010102, HEVC_PROFILE_MAIN_10)) {
+        ret = NATIVEBUFFER_PIXEL_FMT_RGBA_1010102;
+    } else {
+        ret = NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP;
     }
-    switch (avPixelFormat) {
-        case AV_PIXEL_FORMAT_RGBA:
-            return NATIVEBUFFER_PIXEL_FMT_RGBA_8888;
-        case AV_PIXEL_FORMAT_YUVI420:
-            return NATIVEBUFFER_PIXEL_FMT_YCBCR_420_P;
-        case AV_PIXEL_FORMAT_NV21:
-            return NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP;
-        default:    // NV12 and others
-            return NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP;
-    }
+    return ret;
 }
 
 std::string ToString(int32_t index, std::unordered_map<int32_t, std::string> map)

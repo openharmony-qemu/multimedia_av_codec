@@ -42,7 +42,12 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
 
     context_ = std::make_shared<SampleContext>();
     context_->sampleInfo = std::make_shared<SampleInfo>(sampleInfo);
-
+    if (context_->sampleInfo->enableRoi) {
+        context_->inputStream.open(context_->sampleInfo->roiFilePath);
+    }
+    if (context_->sampleInfo->enableRoiByNativebuf) {
+        context_->inputStreamByNativebuf.open(context_->sampleInfo->roiFilePathByNativebuf);
+    }
     auto &info = *context_->sampleInfo;
     auto &videoCodec = context_->videoCodec;
 

@@ -17,6 +17,7 @@
 #define AVCODEC_SAMPLE_VIDEO_ENCODER_SAMPLE_H
 
 #include "video_sample_base.h"
+#include "native_buffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -29,6 +30,7 @@ private:
     int32_t Init() override;
     int32_t Prepare() override;
     void BufferInputThread();
+    void SetRoiByNativebuf(OH_NativeBuffer *nativeBuffer);
     void SurfaceInputThread();
     void OutputThread();
     void SyncThread();

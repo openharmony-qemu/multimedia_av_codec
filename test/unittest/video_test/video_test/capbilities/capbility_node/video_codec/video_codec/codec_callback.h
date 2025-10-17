@@ -29,6 +29,7 @@ public:
                                         OH_AVCodecBufferAttr *attr, void *userData);
     static void OnNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
     static void OnNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
+    static void OnNeedInputParameter(OH_AVCodec *codec, uint32_t index, OH_AVFormat *parameter, void *userData);
 };
 
 constexpr OH_AVCodecAsyncCallback AVCodecAsyncCallback {

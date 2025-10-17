@@ -20,7 +20,9 @@
 #include "sample_utils.h"
 
 #include "native_image_window_wrapper.h"
+#ifdef SAMPLE_USE_ROSEN_WINDOW
 #include "rosen_window_wrapper.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "WindowManager"};
@@ -63,9 +65,11 @@ std::shared_ptr<WindowWrapper> WindowManager::CreateWindowWrapper(SampleWindowTy
             windowWrappper = std::make_shared<WindowWrapper>(windowType, window);
             break;
 #ifdef SAMPLE_BUILD_TO_EXECUTOR
+#ifdef SAMPLE_USE_ROSEN_WINDOW
         case SampleWindowType::ROSEN:
             windowWrappper = std::static_pointer_cast<WindowWrapper>(std::make_shared<RosenWindowWrapper>());
             break;
+#endif
 #endif
 #ifdef SAMPLE_BUILD_TO_HAP
         case SampleWindowType::XCOMPONENT:

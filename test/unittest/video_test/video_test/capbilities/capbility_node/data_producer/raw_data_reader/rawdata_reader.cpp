@@ -35,7 +35,11 @@ int32_t RawdataReader::FillBuffer(CodecBufferInfo &info)
     uint8_t *bufferAddr = info.bufferAddr;
     CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid buffer address");
 
-    switch (sampleInfo_->pixelFormat) {
+    int32_t format = sampleInfo_->pixelFormat;
+    switch (format) {
+        case AV_PIXEL_FORMAT_RGBA1010102:
+            ReadInputBufferWithStrideRGBA(bufferAddr);
+            break;
         case AV_PIXEL_FORMAT_RGBA:
             ReadInputBufferWithStrideRGBA(bufferAddr);
             break;
@@ -53,12 +57,10 @@ int32_t RawdataReader::FillBuffer(CodecBufferInfo &info)
 
 void RawdataReader::ReadInputBufferWithStrideRGBA(uint8_t *bufferAddr)
 {
-    int32_t width = sampleInfo_->videoWidth *
-        ((sampleInfo_->codecMime == OH_AVCODEC_MIMETYPE_VIDEO_HEVC && sampleInfo_->profile == HEVC_PROFILE_MAIN_10) ?
-         RATIO_10BIT : RATIO_8BIT);
+    int32_t width = sampleInfo_->videoWidth;
     for (uint32_t row = 0; row < sampleInfo_->videoSliceHeight; row++) {
         inputFile_->read(reinterpret_cast<char *>(bufferAddr), width * 4); // 4: RGBA 4 channels
-        bufferAddr += sampleInfo_->videoStrideWidth * 4; // 4: RGBA 4 channels;
+        bufferAddr += sampleInfo_->videoStrideWidth;
     }
 }
 
