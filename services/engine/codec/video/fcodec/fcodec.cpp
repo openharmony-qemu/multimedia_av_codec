@@ -24,6 +24,7 @@
 #include "avcodec_log.h"
 #include "utils.h"
 #include "avcodec_codec_name.h"
+#include "fcodec_surport_codec.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -118,6 +119,44 @@ void FCodec::OpenDumpFile()
     }
 }
 #endif // BUILD_ENG_VERSION
+
+int32_t FCodec::Initialize()
+{
+    AVCODEC_SYNC_TRACE;
+    fDecInfo_.instanceId = std::to_string(instanceId_);
+    decName_ = "fdecoder_[" + std::to_string(instanceId_) + "]";
+    AVCODEC_LOGI("current codec name: %{public}s", decName_.c_str());
+    CHECK_AND_RETURN_RET_LOG(!codecName_.empty(), AVCS_ERR_INVALID_VAL, "Init codec failed: empty name");
+    pid_ = getpid();
+    std::string fcodecName;
+    std::string_view mime;
+    for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {
+        if (SUPPORT_VCODEC[i].codecName == codecName_) {
+            fcodecName = SUPPORT_VCODEC[i].ffmpegCodec;
+            mime = SUPPORT_VCODEC[i].mimeType;
+            break;
+        }
+    }
+    CHECK_AND_RETURN_RET_LOG(!fcodecName.empty(), AVCS_ERR_INVALID_VAL,
+                             "Init codec failed: not support name: %{public}s", codecName_.c_str());
+    format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mime);
+    format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecName_);
+    fDecInfo_.mimeType = mime;
+    avCodec_ = std::shared_ptr<AVCodec>(const_cast<AVCodec *>(avcodec_find_decoder_by_name(fcodecName.c_str())),
+                                        [](void *ptr) {});
+    CHECK_AND_RETURN_RET_LOG(avCodec_ != nullptr, AVCS_ERR_INVALID_VAL,
+                             "Init codec failed: cannot find codec with name %{public}s", codecName_.c_str());
+    sendTask_ = std::make_shared<TaskThread>("SendFrame");
+    sendTask_->RegisterHandler([this] { SendFrame(); });
+    receiveTask_ = std::make_shared<TaskThread>("ReceiveFrame");
+    receiveTask_->RegisterHandler([this] { ReceiveFrame(); });
+#ifdef BUILD_ENG_VERSION
+    OpenDumpFile();
+#endif // BUILD_ENG_VERSION
+    state_ = State::INITIALIZED;
+    AVCODEC_LOGI("Init codec successful, state: Uninitialized -> Initialized");
+    return AVCS_ERR_OK;
+}
 
 void FCodec::ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal,
                                  int32_t maxVal)

@@ -18,6 +18,7 @@
 #include "avcodec_log.h"
 #include "utils.h"
 #include "avcodec_codec_name.h"
+#include "fcodec_surport_codec.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -49,66 +50,8 @@ constexpr int32_t VC1_BLOCKPERSEC_SIZE = 983040;
 constexpr int32_t MSVIDEO1_MIN_WIDTH_SIZE = 4;
 constexpr int32_t MSVIDEO1_MIN_HEIGHT_SIZE = 4;
 constexpr int32_t MSVIDEO1_BLOCKPERSEC_SIZE = 3932160;
-
-constexpr struct {
-    const std::string_view codecName;
-    const std::string_view mimeType;
-    const char *ffmpegCodec;
-} SUPPORT_VCODEC[] = {
-    {AVCodecCodecName::VIDEO_DECODER_AVC_NAME, CodecMimeType::VIDEO_AVC, "h264"},
-    {AVCodecCodecName::VIDEO_DECODER_H263_NAME, CodecMimeType::VIDEO_H263, "h263"},
-    {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME, CodecMimeType::VIDEO_MPEG2, "mpeg2video"},
-    {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4"},
-    {AVCodecCodecName::VIDEO_DECODER_VC1_NAME, CodecMimeType::VIDEO_VC1, "vc1"},
-    {AVCodecCodecName::VIDEO_DECODER_MSVIDEO1_NAME, CodecMimeType::VIDEO_MSVIDEO1, "msvideo1"},
-#ifdef SUPPORT_CODEC_RV
-    {AVCodecCodecName::VIDEO_DECODER_RV30_NAME, CodecMimeType::VIDEO_RV30, "rv30"},
-    {AVCodecCodecName::VIDEO_DECODER_RV40_NAME, CodecMimeType::VIDEO_RV40, "rv40"},
-#endif
-    {AVCodecCodecName::VIDEO_DECODER_WMV3_NAME, CodecMimeType::VIDEO_WMV3, "wmv3"},
-    {AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME, CodecMimeType::VIDEO_MJPEG, "mjpeg"},
-};
-constexpr uint32_t SUPPORT_VCODEC_NUM = sizeof(SUPPORT_VCODEC) / sizeof(SUPPORT_VCODEC[0]);
 } // namespace
 using namespace OHOS::Media;
-
-int32_t FCodec::Initialize()
-{
-    AVCODEC_SYNC_TRACE;
-    fDecInfo_.instanceId = std::to_string(instanceId_);
-    decName_ = "fdecoder_[" + std::to_string(instanceId_) + "]";
-    AVCODEC_LOGI("current codec name: %{public}s", decName_.c_str());
-    CHECK_AND_RETURN_RET_LOG(!codecName_.empty(), AVCS_ERR_INVALID_VAL, "Init codec failed: empty name");
-    pid_ = getpid();
-    std::string fcodecName;
-    std::string_view mime;
-    for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {
-        if (SUPPORT_VCODEC[i].codecName == codecName_) {
-            fcodecName = SUPPORT_VCODEC[i].ffmpegCodec;
-            mime = SUPPORT_VCODEC[i].mimeType;
-            break;
-        }
-    }
-    CHECK_AND_RETURN_RET_LOG(!fcodecName.empty(), AVCS_ERR_INVALID_VAL,
-                             "Init codec failed: not support name: %{public}s", codecName_.c_str());
-    format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mime);
-    format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecName_);
-    fDecInfo_.mimeType = mime;
-    avCodec_ = std::shared_ptr<AVCodec>(const_cast<AVCodec *>(avcodec_find_decoder_by_name(fcodecName.c_str())),
-                                        [](void *ptr) {});
-    CHECK_AND_RETURN_RET_LOG(avCodec_ != nullptr, AVCS_ERR_INVALID_VAL,
-                             "Init codec failed: cannot find codec with name %{public}s", codecName_.c_str());
-    sendTask_ = std::make_shared<TaskThread>("SendFrame");
-    sendTask_->RegisterHandler([this] { SendFrame(); });
-    receiveTask_ = std::make_shared<TaskThread>("ReceiveFrame");
-    receiveTask_->RegisterHandler([this] { ReceiveFrame(); });
-#ifdef BUILD_ENG_VERSION
-    OpenDumpFile();
-#endif // BUILD_ENG_VERSION
-    state_ = State::INITIALIZED;
-    AVCODEC_LOGI("Init codec successful, state: Uninitialized -> Initialized");
-    return AVCS_ERR_OK;
-}
 
 void FCodec::GetMpeg2CapProf(std::vector<CapabilityData> &capaArray)
 {
