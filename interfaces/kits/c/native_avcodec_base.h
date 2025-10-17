@@ -415,6 +415,14 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_EAC3;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AC3;
 
 /**
+ * @brief Enumerates the mime types of ALAC(Apple Lossless Audio Codec).
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 22
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_ALAC;
+
+/**
  * @brief Enumerates the mime types of audio GSM codec.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
