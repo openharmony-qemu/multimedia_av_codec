@@ -140,7 +140,7 @@ group("fuzztest") {
   deps = []
   deps += [
     # deps file
-    ":HttpDownloaderFuzzTest",  #引用测试套
+    ":HttpDownloaderOpenFuzzTest",  #引用测试套
   ]
 }
 ###############################################################################
