@@ -39,6 +39,7 @@ ohos_shared_library("fcodec") {
   sources = [
     "$av_codec_root_dir/services/engine/codec/video/fcodec/fcodec.cpp",
     "$av_codec_root_dir/services/engine/codec/video/fcodec/fcodec_api.cpp",
+    "$av_codec_root_dir/services/engine/codec/video/fcodec/fcodec_capability_register.cpp",
   ]
 
   deps = [

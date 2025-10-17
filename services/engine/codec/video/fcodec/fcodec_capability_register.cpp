@@ -1,0 +1,424 @@
+/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "fcodec.h"
+#include "avcodec_trace.h"
+#include "avcodec_log.h"
+#include "utils.h"
+#include "avcodec_codec_name.h"
+
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Codec {
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FCodec"};
+constexpr int32_t VIDEO_MIN_SIZE = 2;
+constexpr int32_t VIDEO_ALIGNMENT_SIZE = 2;
+constexpr int32_t VIDEO_MAX_WIDTH_SIZE = 4096;
+constexpr int32_t VIDEO_MAX_HEIGHT_SIZE = 4096;
+constexpr int32_t VIDEO_MAX_WIDTH_H263_SIZE = 2048;
+constexpr int32_t VIDEO_MAX_HEIGHT_H263_SIZE = 1152;
+constexpr int32_t VIDEO_MIN_WIDTH_H263_SIZE = 20;
+constexpr int32_t VIDEO_MIN_HEIGHT_H263_SIZE = 20;
+constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
+constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 300000000;
+constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
+constexpr int32_t VIDEO_FRAMERATE_DEFAULT_SIZE = 60;
+constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 139264;
+constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
+constexpr int32_t VC1_ALIGNMENT_SIZE = 2;
+constexpr int32_t VC1_MIN_WIDTH_SIZE = 176;
+constexpr int32_t VC1_MIN_HEIGHT_SIZE = 144;
+constexpr int32_t VC1_MAX_WIDTH_SIZE = 2048;
+constexpr int32_t VC1_MAX_HEIGHT_SIZE = 2048;
+constexpr int32_t VC1_BITRATE_MAX_SIZE = 135000000;
+constexpr int32_t VC1_BLOCKPERFRAME_SIZE = 16384;
+constexpr int32_t VC1_BLOCKPERSEC_SIZE = 983040;
+constexpr int32_t MSVIDEO1_MIN_WIDTH_SIZE = 4;
+constexpr int32_t MSVIDEO1_MIN_HEIGHT_SIZE = 4;
+constexpr int32_t MSVIDEO1_BLOCKPERSEC_SIZE = 3932160;
+
+constexpr struct {
+    const std::string_view codecName;
+    const std::string_view mimeType;
+    const char *ffmpegCodec;
+} SUPPORT_VCODEC[] = {
+    {AVCodecCodecName::VIDEO_DECODER_AVC_NAME, CodecMimeType::VIDEO_AVC, "h264"},
+    {AVCodecCodecName::VIDEO_DECODER_H263_NAME, CodecMimeType::VIDEO_H263, "h263"},
+    {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME, CodecMimeType::VIDEO_MPEG2, "mpeg2video"},
+    {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4"},
+    {AVCodecCodecName::VIDEO_DECODER_VC1_NAME, CodecMimeType::VIDEO_VC1, "vc1"},
+    {AVCodecCodecName::VIDEO_DECODER_MSVIDEO1_NAME, CodecMimeType::VIDEO_MSVIDEO1, "msvideo1"},
+#ifdef SUPPORT_CODEC_RV
+    {AVCodecCodecName::VIDEO_DECODER_RV30_NAME, CodecMimeType::VIDEO_RV30, "rv30"},
+    {AVCodecCodecName::VIDEO_DECODER_RV40_NAME, CodecMimeType::VIDEO_RV40, "rv40"},
+#endif
+    {AVCodecCodecName::VIDEO_DECODER_WMV3_NAME, CodecMimeType::VIDEO_WMV3, "wmv3"},
+    {AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME, CodecMimeType::VIDEO_MJPEG, "mjpeg"},
+};
+constexpr uint32_t SUPPORT_VCODEC_NUM = sizeof(SUPPORT_VCODEC) / sizeof(SUPPORT_VCODEC[0]);
+} // namespace
+using namespace OHOS::Media;
+
+int32_t FCodec::Initialize()
+{
+    AVCODEC_SYNC_TRACE;
+    fDecInfo_.instanceId = std::to_string(instanceId_);
+    decName_ = "fdecoder_[" + std::to_string(instanceId_) + "]";
+    AVCODEC_LOGI("current codec name: %{public}s", decName_.c_str());
+    CHECK_AND_RETURN_RET_LOG(!codecName_.empty(), AVCS_ERR_INVALID_VAL, "Init codec failed: empty name");
+    pid_ = getpid();
+    std::string fcodecName;
+    std::string_view mime;
+    for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {
+        if (SUPPORT_VCODEC[i].codecName == codecName_) {
+            fcodecName = SUPPORT_VCODEC[i].ffmpegCodec;
+            mime = SUPPORT_VCODEC[i].mimeType;
+            break;
+        }
+    }
+    CHECK_AND_RETURN_RET_LOG(!fcodecName.empty(), AVCS_ERR_INVALID_VAL,
+                             "Init codec failed: not support name: %{public}s", codecName_.c_str());
+    format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mime);
+    format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecName_);
+    fDecInfo_.mimeType = mime;
+    avCodec_ = std::shared_ptr<AVCodec>(const_cast<AVCodec *>(avcodec_find_decoder_by_name(fcodecName.c_str())),
+                                        [](void *ptr) {});
+    CHECK_AND_RETURN_RET_LOG(avCodec_ != nullptr, AVCS_ERR_INVALID_VAL,
+                             "Init codec failed: cannot find codec with name %{public}s", codecName_.c_str());
+    sendTask_ = std::make_shared<TaskThread>("SendFrame");
+    sendTask_->RegisterHandler([this] { SendFrame(); });
+    receiveTask_ = std::make_shared<TaskThread>("ReceiveFrame");
+    receiveTask_->RegisterHandler([this] { ReceiveFrame(); });
+#ifdef BUILD_ENG_VERSION
+    OpenDumpFile();
+#endif // BUILD_ENG_VERSION
+    state_ = State::INITIALIZED;
+    AVCODEC_LOGI("Init codec successful, state: Uninitialized -> Initialized");
+    return AVCS_ERR_OK;
+}
+
+void FCodec::GetMpeg2CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.profiles = {static_cast<int32_t>(MPEG2_PROFILE_422), static_cast<int32_t>(MPEG2_PROFILE_HIGH),
+                            static_cast<int32_t>(MPEG2_PROFILE_MAIN), static_cast<int32_t>(MPEG2_PROFILE_SNR),
+                            static_cast<int32_t>(MPEG2_PROFILE_SIMPLE), static_cast<int32_t>(MPEG2_PROFILE_SPATIAL)};
+        std::vector<int32_t> levels_sp;
+        std::vector<int32_t> levels_mp;
+        std::vector<int32_t> levels_snr;
+        std::vector<int32_t> levels_422p;
+        for (int32_t j = 0; j <= static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_ML); ++j) {
+            levels_sp.emplace_back(j);
+        }
+        for (int32_t j = 0; j <= static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_HL); ++j) {
+            levels_mp.emplace_back(j);
+        }
+        for (int32_t j = 0; j <= static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_H14); ++j) {
+            levels_snr.emplace_back(j);
+        }
+        for (int32_t j = static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_ML);
+                j <= static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_HL); ++j) {
+            levels_422p.emplace_back(j);
+        }
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(MPEG2_PROFILE_SIMPLE), levels_sp));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(MPEG2_PROFILE_MAIN), levels_mp));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(MPEG2_PROFILE_SNR), levels_snr));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(MPEG2_PROFILE_SPATIAL), levels_mp));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(MPEG2_PROFILE_HIGH), levels_mp));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(MPEG2_PROFILE_422), levels_422p));
+    }
+}
+
+void FCodec::SetMpeg4Profiles(CapabilityData& capsData)
+{
+    capsData.profiles = {
+        static_cast<int32_t>(MPEG4_PROFILE_SIMPLE),
+        static_cast<int32_t>(MPEG4_PROFILE_SIMPLE_SCALABLE),
+        static_cast<int32_t>(MPEG4_PROFILE_CORE),
+        static_cast<int32_t>(MPEG4_PROFILE_MAIN),
+        static_cast<int32_t>(MPEG4_PROFILE_NBIT),
+        static_cast<int32_t>(MPEG4_PROFILE_HYBRID),
+        static_cast<int32_t>(MPEG4_PROFILE_BASIC_ANIMATED_TEXTURE),
+        static_cast<int32_t>(MPEG4_PROFILE_SCALABLE_TEXTURE),
+        static_cast<int32_t>(MPEG4_PROFILE_SIMPLE_FA),
+        static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_REAL_TIME_SIMPLE),
+        static_cast<int32_t>(MPEG4_PROFILE_CORE_SCALABLE),
+        static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_CODING_EFFICIENCY),
+        static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_CORE),
+        static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_SCALABLE_TEXTURE),
+        static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_SIMPLE),
+    };
+}
+
+void FCodec::SetMpeg4LevelsProfileGroup1(CapabilityData& capsData)
+{
+    capsData.profileLevelsMap = {
+        {static_cast<int32_t>(MPEG4_PROFILE_SIMPLE), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_0), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_0B),
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2),
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_4A),
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_5), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_6)
+        }},
+        {static_cast<int32_t>(MPEG4_PROFILE_SIMPLE_SCALABLE), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_0), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1),
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
+        }},
+        {static_cast<int32_t>(MPEG4_PROFILE_CORE), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
+        }},
+        {static_cast<int32_t>(MPEG4_PROFILE_MAIN), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3),
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_4)
+        }},
+        {static_cast<int32_t>(MPEG4_PROFILE_NBIT), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
+        }},
+        {static_cast<int32_t>(MPEG4_PROFILE_HYBRID), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
+        }},
+        {static_cast<int32_t>(MPEG4_PROFILE_BASIC_ANIMATED_TEXTURE), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
+        }},
+        {static_cast<int32_t>(MPEG4_PROFILE_SCALABLE_TEXTURE), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1)
+        }}
+    };
+}
+
+void FCodec::SetMpeg4LevelsProfileGroup2(CapabilityData& capsData)
+{
+    capsData.profileLevelsMap.insert({
+        {static_cast<int32_t>(MPEG4_PROFILE_SIMPLE_FA), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
+        }},
+        {static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_REAL_TIME_SIMPLE), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2),
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_4)
+        }},
+        {static_cast<int32_t>(MPEG4_PROFILE_CORE_SCALABLE), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2),
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3)
+        }},
+        {static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_CODING_EFFICIENCY), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2),
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_4)
+        }},
+        {static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_CORE), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
+        }},
+        {static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_SCALABLE_TEXTURE), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2),
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3)
+        }},
+        {static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_SIMPLE), {
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_0), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1),
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3),
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3B), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_4),
+            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_5)
+        }}
+    });
+}
+
+void FCodec::GetMpeg4esCapProf(std::vector<CapabilityData>& capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        SetMpeg4Profiles(capsData);
+        SetMpeg4LevelsProfileGroup1(capsData);
+        SetMpeg4LevelsProfileGroup2(capsData);
+    }
+}
+
+void FCodec::GetH263CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.profiles = {static_cast<int32_t>(H263_PROFILE_BASELINE),
+                             static_cast<int32_t>(H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY)};
+        std::vector<int32_t> levels;
+        for (int32_t j = 0; j <= static_cast<int32_t>(H263Level::H263_LEVEL_70); ++j) {
+            levels.emplace_back(j);
+        }
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(H263_PROFILE_BASELINE), levels));
+        capsData.profileLevelsMap.insert(
+            std::make_pair(static_cast<int32_t>(H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY), levels));
+    }
+    return;
+}
+
+void FCodec::GetAvcCapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.profiles = {static_cast<int32_t>(AVC_PROFILE_BASELINE), static_cast<int32_t>(AVC_PROFILE_MAIN),
+                                    static_cast<int32_t>(AVC_PROFILE_HIGH)};
+        std::vector<int32_t> levels;
+        for (int32_t j = 0; j <= static_cast<int32_t>(AVCLevel::AVC_LEVEL_62); ++j) {
+            levels.emplace_back(j);
+        }
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_MAIN), levels));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_HIGH), levels));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_BASELINE), levels));
+    }
+}
+
+void FCodec::GetVc1CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.alignment.width = VC1_ALIGNMENT_SIZE;
+        capsData.alignment.height = VC1_ALIGNMENT_SIZE;
+        capsData.width.minVal = VC1_MIN_WIDTH_SIZE;
+        capsData.height.minVal = VC1_MIN_HEIGHT_SIZE;
+        capsData.width.maxVal = VC1_MAX_WIDTH_SIZE;
+        capsData.height.maxVal = VC1_MAX_HEIGHT_SIZE;
+        capsData.bitrate.maxVal = VC1_BITRATE_MAX_SIZE;
+        capsData.blockPerFrame.maxVal = VC1_BLOCKPERFRAME_SIZE;
+        capsData.blockPerSecond.maxVal = VC1_BLOCKPERSEC_SIZE;
+        capsData.pixFormat = {
+            static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
+            static_cast<int32_t>(VideoPixelFormat::NV21)};
+        capsData.profiles = {static_cast<int32_t>(VC1_PROFILE_SIMPLE), static_cast<int32_t>(VC1_PROFILE_MAIN),
+                             static_cast<int32_t>(VC1_PROFILE_ADVANCED)};
+        std::vector<int32_t> advlevels;
+        for (int32_t advcount = static_cast<int32_t>(VC1Level::VC1_LEVEL_L0);
+            advcount <= static_cast<int32_t>(VC1Level::VC1_LEVEL_L4); ++advcount) {
+            advlevels.emplace_back(advcount);
+        }
+        std::vector<int32_t> levels;
+        for (int32_t levelcount = static_cast<int32_t>(VC1_LEVEL_LOW);
+            levelcount <= static_cast<int32_t>(VC1Level::VC1_LEVEL_HIGH); ++levelcount) {
+            levels.emplace_back(levelcount);
+        }
+        std::vector<int32_t> simplelevels;
+        for (int32_t simplecount = static_cast<int32_t>(VC1_LEVEL_LOW);
+            simplecount <= static_cast<int32_t>(VC1Level::VC1_LEVEL_MEDIUM); ++simplecount) {
+            simplelevels.emplace_back(simplecount);
+        }
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_SIMPLE), simplelevels));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_MAIN), levels));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_ADVANCED), advlevels));
+    }
+}
+
+void FCodec::GetMsVideo1CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.width.minVal = MSVIDEO1_MIN_WIDTH_SIZE;
+        capsData.height.minVal = MSVIDEO1_MIN_HEIGHT_SIZE;
+        capsData.blockPerSecond.maxVal = MSVIDEO1_BLOCKPERSEC_SIZE;
+        capsData.pixFormat = {
+            static_cast<int32_t>(VideoPixelFormat::RGBA), static_cast<int32_t>(VideoPixelFormat::NV12),
+            static_cast<int32_t>(VideoPixelFormat::NV21)};
+    }
+}
+
+void FCodec::GetWmv3CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.profiles = {static_cast<int32_t>(WMV3_PROFILE_SIMPLE), static_cast<int32_t>(WMV3_PROFILE_MAIN)};
+        std::vector<int32_t> levels_s;
+        std::vector<int32_t> levels_m;
+        for (int32_t j = 0; j <= static_cast<int32_t>(WMV3Level::WMV3_LEVEL_MEDIUM); ++j) {
+            levels_s.emplace_back(j);
+        }
+        for (int32_t j = 0; j <= static_cast<int32_t>(WMV3Level::WMV3_LEVEL_HIGH); ++j) {
+            levels_m.emplace_back(j);
+        }
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(WMV3_PROFILE_SIMPLE), levels_s));
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(WMV3_PROFILE_MAIN), levels_m));
+    }
+}
+
+void FCodec::GetBaseCapabilityData(CapabilityData &capsData)
+{
+    capsData.alignment.width = VIDEO_ALIGNMENT_SIZE;
+    capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
+    capsData.width.minVal = capsData.mimeType == "video/h263" ? VIDEO_MIN_WIDTH_H263_SIZE : VIDEO_MIN_SIZE;
+    capsData.height.minVal = capsData.mimeType == "video/h263" ? VIDEO_MIN_HEIGHT_H263_SIZE : VIDEO_MIN_SIZE;
+    capsData.width.maxVal = capsData.mimeType == "video/h263" ? VIDEO_MAX_WIDTH_H263_SIZE : VIDEO_MAX_WIDTH_SIZE;
+    capsData.height.maxVal = capsData.mimeType == "video/h263" ? VIDEO_MAX_HEIGHT_H263_SIZE : VIDEO_MAX_HEIGHT_SIZE;
+    capsData.frameRate.minVal = 0;
+    capsData.frameRate.maxVal = VIDEO_FRAMERATE_DEFAULT_SIZE;
+    capsData.bitrate.minVal = 1;
+    capsData.bitrate.maxVal = VIDEO_BITRATE_MAX_SIZE;
+    capsData.blockPerFrame.minVal = 1;
+    capsData.blockPerFrame.maxVal = VIDEO_BLOCKPERFRAME_SIZE;
+    capsData.blockPerSecond.minVal = 1;
+    capsData.blockPerSecond.maxVal = VIDEO_BLOCKPERSEC_SIZE;
+    capsData.blockSize.width = VIDEO_ALIGN_SIZE;
+    capsData.blockSize.height = VIDEO_ALIGN_SIZE;
+}
+
+void FCodec::GetCapabilityData(CapabilityData &capsData, uint32_t index)
+{
+    capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[index].codecName);
+    capsData.mimeType = static_cast<std::string>(SUPPORT_VCODEC[index].mimeType);
+    capsData.codecType = AVCODEC_TYPE_VIDEO_DECODER;
+    capsData.isVendor = false;
+    capsData.maxInstance = VIDEO_INSTANCE_SIZE;
+
+    GetBaseCapabilityData(capsData);
+
+    capsData.pixFormat = {
+        static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
+        static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
+    capsData.graphicPixFormat = {
+        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P),
+        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP),
+        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP),
+        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888)};
+}
+
+int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
+{
+    for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {
+        CapabilityData capsData;
+        GetCapabilityData(capsData, i);
+        if (capsData.mimeType == "video/mpeg2") {
+            capaArray.emplace_back(capsData);
+            GetMpeg2CapProf(capaArray);
+        } else if (capsData.mimeType == "video/mp4v-es") {
+            capaArray.emplace_back(capsData);
+            GetMpeg4esCapProf(capaArray);
+        } else if (capsData.mimeType == "video/h263") {
+            capaArray.emplace_back(capsData);
+            GetH263CapProf(capaArray);
+        } else if (capsData.mimeType == "video/mjpeg") {
+            capaArray.emplace_back(capsData);
+        } else if (capsData.mimeType == "video/vc1") {
+            capaArray.emplace_back(capsData);
+            GetVc1CapProf(capaArray);
+        } else if (capsData.mimeType == "video/msvideo1") {
+            capaArray.emplace_back(capsData);
+            GetMsVideo1CapProf(capaArray);
+        } else if (capsData.mimeType == "video/wmv3") {
+            capaArray.emplace_back(capsData);
+            GetWmv3CapProf(capaArray);
+        } else {
+            capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
+            capaArray.emplace_back(capsData);
+            GetAvcCapProf(capaArray);
+        }
+    }
+    return AVCS_ERR_OK;
+}
+} // namespace Codec
+} // namespace MediaAVCodec
+} // namespace OHOS
