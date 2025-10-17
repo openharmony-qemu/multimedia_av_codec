@@ -156,6 +156,69 @@ static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sample
     return sampleRateRange;
 }
 
+static CapabilityData MakeAdpcmDecoderCapability(const std::string &codecName,
+                                                 const std::string &mime)
+{
+    CapabilityData cap;
+    cap.codecName = codecName;
+    cap.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    cap.mimeType  = mime;
+    cap.isVendor  = false;
+
+    cap.bitrate   = Range(1, MAX_INT32);
+    cap.channels  = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    cap.sampleRate = AUDIO_SAMPLE_RATE;
+    cap.sampleRateRanges = convertVectorToRange(AUDIO_SAMPLE_RATE);
+    cap.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return cap;
+}
+
+void AudioCodeclistInfo::AppendAdpcmCapabilities()
+{
+    using MediaAVCodec::AVCodecCodecName;
+    using MediaAVCodec::AVCodecMimeType;
+
+    const struct { std::string_view name; std::string_view mime; } kAdpcmList[] = {
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_MS_NAME,         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_MS },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_QT_NAME,     AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_QT },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_WAV_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_WAV },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_DK3_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_DK3 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_DK4_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_DK4 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_WS_NAME,     AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_WS },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_SMJPEG_NAME,
+          AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_SMJPEG },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_DAT4_NAME,   AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_DAT4 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_MTAF_NAME,       AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_MTAF },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_ADX_NAME,        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_ADX },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_AFC_NAME,        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_AFC },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_AICA_NAME,       AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_AICA },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_CT_NAME,         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_CT },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_DTK_NAME,        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_DTK },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_G722_NAME,       AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_G722 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_G726_NAME,       AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_G726 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_G726LE_NAME,     AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_G726LE },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_AMV_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_AMV },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_APC_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_APC },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_ISS_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_ISS },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_OKI_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_OKI },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_RAD_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_RAD },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_PSX_NAME,        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_PSX },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_SBPRO_2_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_SBPRO_2 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_SBPRO_3_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_SBPRO_3 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_SBPRO_4_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_SBPRO_4 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_THP_NAME,        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_THP },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_THP_LE_NAME,     AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_THP_LE },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_XA_NAME,         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_XA },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_YAMAHA_NAME,     AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_YAMAHA },
+    };
+
+    for (const auto &e : kAdpcmList) {
+        audioCapabilities_.push_back(
+            MakeAdpcmDecoderCapability(std::string(e.name), std::string(e.mime))
+        );
+    }
+}
+
 CapabilityData AudioCodeclistInfo::GetWMAV1DecoderCapability()
 {
     CapabilityData cap;
@@ -722,6 +785,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
     GetEac3DecoderCapability(),
 #endif
     };
+    AppendAdpcmCapabilities();
 }
 
 AudioCodeclistInfo::~AudioCodeclistInfo()

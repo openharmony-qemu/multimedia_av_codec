@@ -31,5 +31,6 @@
 #include "gsm/ffmpeg_gsm_decoder_plugin.h"
 #include "alac/ffmpeg_alac_decoder_plugin.h"
 #include "wma/ffmpeg_wma_decoder_plugin.h"
+#include "adpcm/ffmpeg_adpcm_decoder_plugin.h"
 
 #endif // FFMPEG_DECODER_PLUGIN_H
