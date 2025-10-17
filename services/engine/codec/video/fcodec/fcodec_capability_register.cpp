@@ -14,9 +14,6 @@
  */
 
 #include "fcodec.h"
-#include "avcodec_trace.h"
-#include "avcodec_log.h"
-#include "utils.h"
 #include "avcodec_codec_name.h"
 #include "fcodec_surport_codec.h"
 
@@ -24,7 +21,6 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FCodec"};
 constexpr int32_t VIDEO_MIN_SIZE = 2;
 constexpr int32_t VIDEO_ALIGNMENT_SIZE = 2;
 constexpr int32_t VIDEO_MAX_WIDTH_SIZE = 4096;
