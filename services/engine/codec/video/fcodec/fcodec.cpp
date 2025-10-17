@@ -1526,7 +1526,6 @@ int32_t FCodec::SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize)
 
 int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
 {
-    sptr<Surface> curSurface = sInfo_.surface;
     newSurface->Connect(); // cleancache will work only if the surface is connected by us
     newSurface->CleanCache(); // make sure new surface is empty
     newSurface->Disconnect();
@@ -1538,6 +1537,7 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         }
         sptr<SurfaceBuffer> surfaceBuffer = nullptr;
         if (buffers_[INDEX_OUTPUT][index]->owner_ == Owner::OWNED_BY_SURFACE) {
+            std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
             if (renderSurfaceBufferMap_.count(index)) {
                 surfaceBuffer = renderSurfaceBufferMap_[index].first;
                 ownedBySurfaceBufferIndex.push_back(index);
@@ -1558,8 +1558,9 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
                                  val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
                                  AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
-        sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
+        newSurface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
     }
+    sptr<Surface> curSurface = sInfo_.surface;
     sInfo_.surface = newSurface;
     CombineConsumerUsage();
     for (uint32_t index: ownedBySurfaceBufferIndex) {
@@ -1573,9 +1574,10 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
 
 int32_t FCodec::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, uint32_t index)
 {
-    std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory_;
+    std::unique_lock<std::mutex> mLock(renderBufferMapMutex_);
     sptr<SurfaceBuffer> surfaceBuffer = renderSurfaceBufferMap_[index].first;
     OHOS::BufferFlushConfig flushConfig = renderSurfaceBufferMap_[index].second;
+    mLock.unlock();
     if (sInfo_.scalingMode >= 0) {
         newSurface->SetScalingMode(surfaceBuffer->GetSeqNum(), static_cast<ScalingMode>(sInfo_.scalingMode));
     }
