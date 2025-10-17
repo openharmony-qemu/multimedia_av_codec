@@ -309,9 +309,7 @@ void AVCodecServerManager::SetCritical(const bool isKeyService)
     CHECK_AND_RETURN_LOG(memMgrStarted_, "Memory manager service is not started");
     CHECK_AND_RETURN_LOG(setCriticalFunc_ != nullptr, "set critical is nullptr, %{public}d", isKeyService);
     int32_t ret = setCriticalFunc_(pid_, isKeyService, AV_CODEC_SERVICE_ID);
-    if (ret == 0) {
-        AVCODEC_LOGI("set critical to %{public}d success", isKeyService);
-    } else {
+    if (ret != 0) {
         AVCODEC_LOGW("set critical to %{public}d fail", isKeyService);
     }
 }

@@ -67,7 +67,6 @@ CodecAbilitySingleton::CodecAbilitySingleton()
             RegisterCapabilityArray(capaArray, codecType);
         }
     }
-    AVCODEC_LOGI("Succeed");
 }
 
 CodecAbilitySingleton::~CodecAbilitySingleton()

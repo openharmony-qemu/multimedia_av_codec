@@ -72,19 +72,15 @@ void TemporalScalability::ValidateTemporalGopParam(Format &format)
         gopSize_ = DEFAULT_GOPSIZE;
     }
 
-    if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize_)) {
-        AVCODEC_LOGI_WITH_TAG("Set temporal gop size successfully, value is %{public}d", temporalGopSize_);
-    } else {
+    if (!format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize_)) {
         temporalGopSize_ = gopSize_ <= DEFAULT_TEMPORAL_GOPSIZE ? MIN_TEMPORAL_GOPSIZE : DEFAULT_TEMPORAL_GOPSIZE;
         format.PutIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize_);
-        AVCODEC_LOGI_WITH_TAG("Get temporal gop size failed, use default value %{public}d", temporalGopSize_);
+        AVCODEC_LOGW_WITH_TAG("Get temporal gop size failed, use default value %{public}d", temporalGopSize_);
     }
-    if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_)) {
-        AVCODEC_LOGI_WITH_TAG("Set temporal reference mode successfully");
-    } else {
+    if (!format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_)) {
         tRefMode_ = static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE);
         format.PutIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_);
-        AVCODEC_LOGI_WITH_TAG("Get temporal reference mode failed, use default value ADJACENT_REFERENCE");
+        AVCODEC_LOGW_WITH_TAG("Get temporal reference mode failed, use default value ADJACENT_REFERENCE");
     }
     svcLTR_ = IsLTRSolution();
     if (svcLTR_) {
@@ -93,7 +89,6 @@ void TemporalScalability::ValidateTemporalGopParam(Format &format)
         format.PutIntValue(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameNum);
         format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, ENABLE_PARAMETER_CALLBACK);
     }
-    AVCODEC_LOGI_WITH_TAG("Set temporal gop parameter successfully");
 }
 
 void TemporalScalability::StoreAVBuffer(uint32_t index, shared_ptr<AVBuffer> buffer)
