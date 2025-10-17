@@ -39,6 +39,7 @@ bool StartFuzzTest(FuzzedDataProvider *fdp, size_t size)
     const int expectBufDuration = 10; // 10s
     std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = std::make_shared<HlsMediaDownloader>(expectBufDuration,
         userDefinedDuration, g_httpHeader, nullptr);
+    hlsMediaDownloader->Init();
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
     hlsMediaDownloader->SetStatusCallback(statusCallback);
@@ -75,7 +76,7 @@ bool StartFuzzTest(FuzzedDataProvider *fdp, size_t size)
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    if (size < sizeof(int64_t)) {
+    if (size <= sizeof(int64_t)) {
         return false;
     }
 

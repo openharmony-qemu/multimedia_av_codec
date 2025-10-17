@@ -66,6 +66,7 @@ private:
     void UpdateMasterInfo(bool isPreParse);
     void UpdateMasterAndNotifyList(bool isPreParse);
     void CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file);
+    void KeyChange(void);
 
 private:
     std::string url_ {};

@@ -259,7 +259,7 @@ int32_t HttpServerFuzzDemo::SendContinue(int32_t connFd, std::string &path, int3
         size -= ret;
         ret = send(connFd, fileBuff.data(), std::min(ret, sendSize), MSG_NOSIGNAL);
         if (ret <= 0) {
-            std::cout << "send file buffer failed, ret=" << ret << std::endl;
+            std::cout << "send file buffer failed, ret=" << ret << " errno" << errno << std::endl;
             break;
         }
     }
