@@ -44,13 +44,41 @@ public:
     static constexpr std::string_view AUDIO_DECODER_EAC3_NAME = "OH.Media.Codec.Decoder.Audio.EAC3";
     static constexpr std::string_view AUDIO_DECODER_ALAC_NAME = "OH.Media.Codec.Decoder.Audio.ALAC";
     static constexpr std::string_view AUDIO_DECODER_RAW_NAME = "OH.Media.Codec.Decoder.Audio.Raw";
-    static constexpr std::string_view AUDIO_DECODER_WMAV1_NAME =
-        "OH.Media.Codec.Decoder.Audio.WMAv1";
-    static constexpr std::string_view AUDIO_DECODER_WMAV2_NAME =
-        "OH.Media.Codec.Decoder.Audio.WMAv2";
-    static constexpr std::string_view AUDIO_DECODER_WMAPRO_NAME =
-        "OH.Media.Codec.Decoder.Audio.WMAPro";
-
+    static constexpr std::string_view AUDIO_DECODER_WMAV1_NAME = "OH.Media.Codec.Decoder.Audio.WMAv1";
+    static constexpr std::string_view AUDIO_DECODER_WMAV2_NAME = "OH.Media.Codec.Decoder.Audio.WMAv2";
+    static constexpr std::string_view AUDIO_DECODER_WMAPRO_NAME = "OH.Media.Codec.Decoder.Audio.WMAPro";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_MS_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.MS";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_IMA_QT_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.IMA.QT";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_IMA_WAV_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.IMA.WAV";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_IMA_DK3_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.IMA.DK3";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_IMA_DK4_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.IMA.DK4";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_IMA_WS_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.IMA.WS";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_IMA_SMJPEG_NAME =
+                                      "OH.Media.Codec.Decoder.Audio.ADPCM.IMA.SMJPEG";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_IMA_DAT4_NAME =
+                                      "OH.Media.Codec.Decoder.Audio.ADPCM.IMA.DAT4";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_MTAF_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.MTAF";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_ADX_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.ADX";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_AFC_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.AFC";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_AICA_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.AICA";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_CT_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.CT";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_DTK_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.DTK";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_G722_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.G722";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_G726_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.G726";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_G726LE_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.G726LE";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_IMA_AMV_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.IMA.AMV";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_IMA_APC_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.IMA.APC";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_IMA_ISS_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.IMA.ISS";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_IMA_OKI_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.IMA.OKI";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_IMA_RAD_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.IMA.RAD";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_PSX_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.PSX";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_SBPRO_2_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.SBPRO2";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_SBPRO_3_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.SBPRO3";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_SBPRO_4_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.SBPRO4";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_THP_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.THP";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_THP_LE_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.THP.LE";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_XA_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.XA";
+    static constexpr std::string_view AUDIO_DECODER_ADPCM_YAMAHA_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.YAMAHA";
     static constexpr std::string_view AUDIO_ENCODER_FLAC_NAME = "OH.Media.Codec.Encoder.Audio.Flac";
     static constexpr std::string_view AUDIO_ENCODER_OPUS_NAME = "OH.Media.Codec.Encoder.Audio.Opus";
     static constexpr std::string_view AUDIO_ENCODER_G711MU_NAME = "OH.Media.Codec.Encoder.Audio.G711mu";
@@ -101,6 +129,7 @@ public:
             AUDIO_DECODER_WMAV1_NAME,
             AUDIO_DECODER_WMAV2_NAME,
             AUDIO_DECODER_WMAPRO_NAME,
+            
 #ifdef SUPPORT_CODEC_EAC3
             AUDIO_DECODER_EAC3_NAME,
 #endif

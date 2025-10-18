@@ -66,6 +66,8 @@ public:
 private:
     std::vector<CapabilityData> audioCapabilities_;
     AudioCodeclistInfo();
+
+    void AppendAdpcmCapabilities();
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
