@@ -58,6 +58,8 @@ public:
 
     Status SetBlockAlignContext(const int block_align);
 
+    Status SetBitsPerSampleContext(const int bits_per_sample);
+
     Status OpenContext();
 
     void SetMaxInputSize(int32_t setSize);

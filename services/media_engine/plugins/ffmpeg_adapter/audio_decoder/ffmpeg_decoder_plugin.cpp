@@ -77,7 +77,7 @@ static const std::vector<std::string_view> codecVec = {
     AVCodecCodecName::AUDIO_DECODER_WMAV1_NAME,            // 40: wmav1
     AVCodecCodecName::AUDIO_DECODER_WMAV2_NAME,            // 41: wmav2
     AVCodecCodecName::AUDIO_DECODER_WMAPRO_NAME,           // 42: wmapro
-	AVCodecCodecName::AUDIO_DECODER_ALAC_NAME			   // 43: alac
+    AVCodecCodecName::AUDIO_DECODER_ALAC_NAME			   // 43: alac
 };
 
 template <class T>
@@ -91,188 +91,109 @@ void InitDefinition(const std::string &mimetype, const std::string_view &codecNa
     });
 }
 
+static const std::vector<std::string> codecMimeMap = {
+    MimeType::AUDIO_MPEG,             // 0: mp3
+    MimeType::AUDIO_AAC,              // 1: aac
+    MimeType::AUDIO_FLAC,             // 2: flac
+    MimeType::AUDIO_VORBIS,           // 3: vorbis
+    MimeType::AUDIO_AMR_NB,           // 4: amrnb
+    MimeType::AUDIO_AMR_WB,           // 5: amrwb
+    MimeType::AUDIO_APE,              // 6: ape
+    MimeType::AUDIO_AC3,              // 7: ac3
+    MimeType::AUDIO_GSM,              // 8: gsm
+    MimeType::AUDIO_GSM_MS,           // 9: gsm_ms
+    MimeType::AUDIO_ADPCM_MS,         // 10: adpcm_ms
+    MimeType::AUDIO_ADPCM_IMA_QT,     // 11: adpcm_ima_qt
+    MimeType::AUDIO_ADPCM_IMA_WAV,    // 12: adpcm_ima_wav
+    MimeType::AUDIO_ADPCM_IMA_DK3,    // 13: adpcm_ima_dk3
+    MimeType::AUDIO_ADPCM_IMA_DK4,    // 14: adpcm_ima_dk4
+    MimeType::AUDIO_ADPCM_IMA_WS,     // 15: adpcm_ima_ws
+    MimeType::AUDIO_ADPCM_IMA_SMJPEG, // 16: adpcm_ima_smjpeg
+    MimeType::AUDIO_ADPCM_IMA_DAT4,   // 17: adpcm_ima_dat4
+    MimeType::AUDIO_ADPCM_MTAF,       // 18: adpcm_mtaf
+    MimeType::AUDIO_ADPCM_ADX,        // 19: adpcm_adx
+    MimeType::AUDIO_ADPCM_AFC,        // 20: adpcm_afc
+    MimeType::AUDIO_ADPCM_AICA,       // 21: adpcm_aica
+    MimeType::AUDIO_ADPCM_CT,         // 22: adpcm_ct
+    MimeType::AUDIO_ADPCM_DTK,        // 23: adpcm_dtk
+    MimeType::AUDIO_ADPCM_G722,       // 24: adpcm_g722
+    MimeType::AUDIO_ADPCM_G726,       // 25: adpcm_g726
+    MimeType::AUDIO_ADPCM_G726LE,     // 26: adpcm_g726le
+    MimeType::AUDIO_ADPCM_IMA_AMV,    // 27: adpcm_ima_amv
+    MimeType::AUDIO_ADPCM_IMA_APC,    // 28: adpcm_ima_apc
+    MimeType::AUDIO_ADPCM_IMA_ISS,    // 29: adpcm_ima_iss
+    MimeType::AUDIO_ADPCM_IMA_OKI,    // 30: adpcm_ima_oki
+    MimeType::AUDIO_ADPCM_IMA_RAD,    // 31: adpcm_ima_rad
+    MimeType::AUDIO_ADPCM_PSX,        // 32: adpcm_psx
+    MimeType::AUDIO_ADPCM_SBPRO_2,    // 33: adpcm_sbpro_2
+    MimeType::AUDIO_ADPCM_SBPRO_3,    // 34: adpcm_sbpro_3
+    MimeType::AUDIO_ADPCM_SBPRO_4,    // 35: adpcm_sbpro_4
+    MimeType::AUDIO_ADPCM_THP,        // 36: adpcm_thp
+    MimeType::AUDIO_ADPCM_THP_LE,     // 37: adpcm_thp_le
+    MimeType::AUDIO_ADPCM_XA,         // 38: adpcm_xa
+    MimeType::AUDIO_ADPCM_YAMAHA,     // 39: adpcm_yamaha
+    MimeType::AUDIO_WMAV1,            // 40: wmav1
+    MimeType::AUDIO_WMAV2,            // 41: wmav2
+    MimeType::AUDIO_WMAPRO,           // 42: wmapro
+    MimeType::AUDIO_ALAC              // 43: alac
+};
+
+static const std::vector<void(*)(const std::string&, const std::string_view&,
+                                 CodecPluginDef&, Capability&)> codecInitMap = {
+    InitDefinition<FFmpegMp3DecoderPlugin>,    // 0: mp3
+    InitDefinition<FFmpegAACDecoderPlugin>,    // 1: aac
+    InitDefinition<FFmpegFlacDecoderPlugin>,   // 2: flac
+    InitDefinition<FFmpegVorbisDecoderPlugin>, // 3: vorbis
+    InitDefinition<FFmpegAmrnbDecoderPlugin>,  // 4: amrnb
+    InitDefinition<FFmpegAmrWbDecoderPlugin>,  // 5: amrwb
+    InitDefinition<FFmpegAPEDecoderPlugin>,    // 6: ape
+    InitDefinition<FFmpegAC3DecoderPlugin>,    // 7: ac3
+    InitDefinition<FFmpegGSMDecoderPlugin>,    // 8: gsm
+    InitDefinition<FFmpegGsmMsDecoderPlugin>,  // 9: gsm_ms
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 10: adpcm_ms
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 11: adpcm_ima_qt
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 12: adpcm_ima_wav
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 13: adpcm_ima_dk3
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 14: adpcm_ima_dk4
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 15: adpcm_ima_ws
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 16: adpcm_ima_smjpeg
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 17: adpcm_ima_dat4
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 18: adpcm_mtaf
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 19: adpcm_adx
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 20: adpcm_afc
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 21: adpcm_aica
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 22: adpcm_ct
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 23: adpcm_dtk
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 24: adpcm_g722
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 25: adpcm_g726
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 26: adpcm_g726le
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 27: adpcm_ima_amv
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 28: adpcm_ima_apc
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 29: adpcm_ima_iss
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 30: adpcm_ima_oki
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 31: adpcm_ima_rad
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 32: adpcm_psx
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 33: adpcm_sbpro_2
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 34: adpcm_sbpro_3
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 35: adpcm_sbpro_4
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 36: adpcm_thp
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 37: adpcm_thp_le
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 38: adpcm_xa
+    InitDefinition<FFmpegADPCMDecoderPlugin>,  // 39: adpcm_yamaha
+    InitDefinition<FFmpegWMADecoderPlugin>,    // 40: wmav1
+    InitDefinition<FFmpegWMADecoderPlugin>,    // 41: wmav2
+    InitDefinition<FFmpegWMADecoderPlugin>,    // 42: wmapro
+    InitDefinition<FFmpegAlacDecoderPlugin>    // 43: alac
+};
+
 void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap)
 {
-    switch (index) {
-        case 0: // 0: mp3
-            InitDefinition<FFmpegMp3DecoderPlugin>(MimeType::AUDIO_MPEG,
-                AVCodecCodecName::AUDIO_DECODER_MP3_NAME, definition, cap);
-            break;
-        case 1: // 1: aac
-            InitDefinition<FFmpegAACDecoderPlugin>(MimeType::AUDIO_AAC,
-                AVCodecCodecName::AUDIO_DECODER_AAC_NAME, definition, cap);
-            break;
-        case 2: // 2: flac
-            InitDefinition<FFmpegFlacDecoderPlugin>(MimeType::AUDIO_FLAC,
-                AVCodecCodecName::AUDIO_DECODER_FLAC_NAME, definition, cap);
-            break;
-        case 3: // 3: vorbis
-            InitDefinition<FFmpegVorbisDecoderPlugin>(MimeType::AUDIO_VORBIS,
-                AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME, definition, cap);
-            break;
-        case 4: // 4: amrnb
-            InitDefinition<FFmpegAmrnbDecoderPlugin>(MimeType::AUDIO_AMR_NB,
-                AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME, definition, cap);
-            break;
-        case 5: // 5: amrwb
-            InitDefinition<FFmpegAmrWbDecoderPlugin>(MimeType::AUDIO_AMR_WB,
-                AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME, definition, cap);
-            break;
-        case 6: // 6: ape
-            InitDefinition<FFmpegAPEDecoderPlugin>(MimeType::AUDIO_APE,
-                AVCodecCodecName::AUDIO_DECODER_APE_NAME, definition, cap);
-            break;
-        case 7: // 7: ac3
-            InitDefinition<FFmpegAC3DecoderPlugin>(MimeType::AUDIO_AC3,
-                AVCodecCodecName::AUDIO_DECODER_AC3_NAME, definition, cap);
-            break;
-        case 8: // 8: gsm
-            InitDefinition<FFmpegGSMDecoderPlugin>(MimeType::AUDIO_GSM,
-                AVCodecCodecName::AUDIO_DECODER_GSM_NAME, definition, cap);
-            break;
-        case 9: // 9: gsm_ms
-            InitDefinition<FFmpegGsmMsDecoderPlugin>(MimeType::AUDIO_GSM_MS,
-                AVCodecCodecName::AUDIO_DECODER_GSM_MS_NAME, definition, cap);
-            break;
-        case 10: // 10: adpcm_ms
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_MS,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_MS_NAME, definition, cap);
-            break;
-        case 11: // 11: adpcm_ima_qt
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_IMA_QT,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_QT_NAME, definition, cap);
-            break;
-        case 12: // 12: adpcm_ima_wav
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_IMA_WAV,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_WAV_NAME, definition, cap);
-            break;
-        case 13: // 13: adpcm_ima_dk3
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_IMA_DK3,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_DK3_NAME, definition, cap);
-            break;
-        case 14: // 14: adpcm_ima_dk4
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_IMA_DK4,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_DK4_NAME, definition, cap);
-            break;
-        case 15: // 15: adpcm_ima_ws
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_IMA_WS,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_WS_NAME, definition, cap);
-            break;
-        case 16: // 16: adpcm_ima_smjpeg
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_IMA_SMJPEG,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_SMJPEG_NAME, definition, cap);
-            break;
-        case 17: // 17: adpcm_ima_dat4
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_IMA_DAT4,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_DAT4_NAME, definition, cap);
-            break;
-        case 18: // 18: adpcm_mtaf
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_MTAF,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_MTAF_NAME, definition, cap);
-            break;
-        case 19: // 19: adpcm_adx
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_ADX,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_ADX_NAME, definition, cap);
-            break;
-        case 20: // 20: adpcm_afc
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_AFC,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_AFC_NAME, definition, cap);
-            break;
-        case 21: // 21: adpcm_aica
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_AICA,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_AICA_NAME, definition, cap);
-            break;
-        case 22: // 22: adpcm_ct
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_CT,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_CT_NAME, definition, cap);
-            break;
-        case 23: // 23: adpcm_dtk
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_DTK,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_DTK_NAME, definition, cap);
-            break;
-        case 24: // 24: adpcm_g722
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_G722,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_G722_NAME, definition, cap);
-            break;
-        case 25: // 25: adpcm_g726
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_G726,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_G726_NAME, definition, cap);
-            break;
-        case 26: // 26: adpcm_g726le
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_G726LE,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_G726LE_NAME, definition, cap);
-            break;
-        case 27: // 27: adpcm_ima_amv
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_IMA_AMV,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_AMV_NAME, definition, cap);
-            break;
-        case 28: // 28: adpcm_ima_apc
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_IMA_APC,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_APC_NAME, definition, cap);
-            break;
-        case 29: // 29: adpcm_ima_iss
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_IMA_ISS,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_ISS_NAME, definition, cap);
-            break;
-        case 30: // 30: adpcm_ima_oki
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_IMA_OKI,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_OKI_NAME, definition, cap);
-            break;
-        case 31: // 31: adpcm_ima_rad
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_IMA_RAD,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_RAD_NAME, definition, cap);
-            break;
-        case 32: // 32: adpcm_psx
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_PSX,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_PSX_NAME, definition, cap);
-            break;
-        case 33: // 33: adpcm_sbpro_2
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_SBPRO_2,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_SBPRO_2_NAME, definition, cap);
-            break;
-        case 34: // 34: adpcm_sbpro_3
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_SBPRO_3,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_SBPRO_3_NAME, definition, cap);
-            break;
-        case 35: // 35: adpcm_sbpro_4
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_SBPRO_4,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_SBPRO_4_NAME, definition, cap);
-            break;
-        case 36: // 36: adpcm_thp
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_THP,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_THP_NAME, definition, cap);
-            break;
-        case 37: // 37: adpcm_thp_le
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_THP_LE,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_THP_LE_NAME, definition, cap);
-            break;
-        case 38: // 38: adpcm_xa
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_XA,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_XA_NAME, definition, cap);
-            break;
-        case 39: // 39: adpcm_yamaha
-            InitDefinition<FFmpegADPCMDecoderPlugin>(MimeType::AUDIO_ADPCM_YAMAHA,
-                AVCodecCodecName::AUDIO_DECODER_ADPCM_YAMAHA_NAME, definition, cap);
-            break;
-        case 40: // 40: wmav1
-            InitDefinition<FFmpegWMADecoderPlugin>(MimeType::AUDIO_WMAV1,
-                AVCodecCodecName::AUDIO_DECODER_WMAV1_NAME, definition, cap);
-            break;
-        case 41: // 41: wmav2
-            InitDefinition<FFmpegWMADecoderPlugin>(MimeType::AUDIO_WMAV2,
-                AVCodecCodecName::AUDIO_DECODER_WMAV2_NAME, definition, cap);
-            break;
-        case 42: // 42: wmapro
-            InitDefinition<FFmpegWMADecoderPlugin>(MimeType::AUDIO_WMAPRO,
-                AVCodecCodecName::AUDIO_DECODER_WMAPRO_NAME, definition, cap);
-            break;
-        case 43: // 43:alac
-            InitDefinition<FFmpegAlacDecoderPlugin>(MimeType::AUDIO_ALAC,
-                AVCodecCodecName::AUDIO_DECODER_ALAC_NAME, definition, cap);
-            break;
-        default:
-            MEDIA_LOG_I("codec is not supported right now");
+    if (index >= codecVec.size() || index >= codecMimeMap.size() || index >= codecInitMap.size()) {
+        MEDIA_LOG_I("codec is not supported right now");
+        return;
     }
+
+    codecInitMap[index](codecMimeMap[index], codecVec[index], definition, cap);
 }
 
 Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register> &reg)

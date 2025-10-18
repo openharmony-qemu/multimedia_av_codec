@@ -52,6 +52,7 @@ const std::vector<std::string> AUDIO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AC3),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_WMAV1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_WMAV2),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_WMAPRO),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_MS),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_QT),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_WAV),

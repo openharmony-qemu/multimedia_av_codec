@@ -35,7 +35,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
 constexpr int MIN_CHANNELS = 1;
 constexpr int MAX_CHANNELS = 8;
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT  = 8192;
-constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 2 * 2 * 2048;
+constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 2 * 4 * 2048;
 
 static const std::unordered_map<std::string_view, const char*> kAdpcmName2Ff = {
     { AVCodecCodecName::AUDIO_DECODER_ADPCM_MS_NAME,         "adpcm_ms"         },
@@ -164,6 +164,14 @@ Status FFmpegADPCMDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
         AVCODEC_LOGW("set block align error");
     }
 
+    int32_t bitsPerSample = 1;
+    if (meta->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, bitsPerSample)) {
+        base_->SetBitsPerSampleContext(bitsPerSample);
+        AVCODEC_LOGI("set bolck align1:%{public}d", bitsPerSample);
+    } else {
+        AVCODEC_LOGW("set block align error");
+    }
+
     return base_->OpenContext();
 }
 
@@ -183,8 +191,15 @@ Status FFmpegADPCMDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &ou
     return base_->ProcessReceiveData(out);
 }
 
-Status FFmpegADPCMDecoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &)  { return Status::OK; }
-Status FFmpegADPCMDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &) { return Status::OK; }
+Status FFmpegADPCMDecoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &)
+{
+    return Status::OK;
+}
+
+Status FFmpegADPCMDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &)
+{
+    return Status::OK;
+}
 
 bool FFmpegADPCMDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &meta)
 {
@@ -245,8 +260,6 @@ int32_t FFmpegADPCMDecoderPlugin::GetOutputBufferSize()
     }
     return OUTPUT_BUFFER_SIZE_DEFAULT;
 }
-
-
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

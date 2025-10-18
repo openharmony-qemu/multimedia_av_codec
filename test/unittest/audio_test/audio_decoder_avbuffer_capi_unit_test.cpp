@@ -3635,17 +3635,18 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_Start_01, TestSize.Le
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_Start_02, TestSize.Level1)
 {
+    isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_ALAC));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_ALAC));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_ALAC));
     
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Start(audioDec_));
     {
         unique_lock<mutex> lock(signal_->startMutex_);
         signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
     }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Start(audioDec_));
 
     Release();
 }
@@ -3754,7 +3755,10 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_PushInputData_01, Tes
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_ALAC));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_ALAC));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
     const uint32_t index = 1024;
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_PushInputBuffer(audioDec_, index));
     Release();
@@ -3762,10 +3766,15 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_PushInputData_01, Tes
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Alac_ReleaseOutputBuffer_01, TestSize.Level1)
 {
+    isTestingFormat_ = true;
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_ALAC));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_ALAC));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_ALAC));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
 
     const uint32_t index = 1024;
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_FreeOutputBuffer(audioDec_, index));
