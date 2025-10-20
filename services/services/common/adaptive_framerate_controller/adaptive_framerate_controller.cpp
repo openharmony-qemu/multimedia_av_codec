@@ -19,8 +19,10 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AFC"};
-auto afcEnable = OHOS::system::GetBoolParameter("OHOS.MediaAVCodec.AFC.Enable", true);
+auto afcEnable = OHOS::system::GetBoolParameter("persist.OHOS.MediaAVCodec.AFC.Enable", true);
+auto allowLowFps = OHOS::system::GetBoolParameter("persist.OHOS.MediaAVCodec.AFC.AllowLowFps.Enable", true);
 using namespace std::chrono_literals;
+constexpr auto MIN_FRAMERATE = 1.0;
 constexpr auto CHECK_INTERVAL = 1000ms;
 constexpr auto CHECK_INTERVAL_FILTER = (CHECK_INTERVAL / 2).count(); // CHECK_INTERVAL / 2: filter out short intervals
 constexpr double DEFAULT_FRAMERATE = 60;
@@ -43,6 +45,9 @@ void FramerateCalculator::OnFrameConsumed()
         Register2AFC();
         status_ = Status::RUNNING;
     }
+    if (static_cast<int32_t>(lastFramerate_.load()) == MIN_FRAMERATE && configuredFramerate_ > MIN_FRAMERATE) {
+        SetFramerate2ConfiguredFramerate();
+    }
     frameCount_++;
 }
 
@@ -63,7 +68,7 @@ bool FramerateCalculator::CheckAndResetFramerate()
         "Elapsed time is invalid, cannot calculate framerate");
 
     auto actualFramerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
-    if (actualFramerate < DEFAULT_FRAMERATE && actualFramerate < configuredFramerate_) {
+    if (!allowLowFps && actualFramerate < DEFAULT_FRAMERATE && actualFramerate < configuredFramerate_) {
         actualFramerate = std::min(DEFAULT_FRAMERATE, configuredFramerate_);
     }
     auto fluctuationFramerate = std::abs(actualFramerate - lastFramerate_);
@@ -92,6 +97,9 @@ bool FramerateCalculator::CheckAndResetFramerate()
         increseCheckTimes_ = MAX_INCREASE_CHECK_TIMES;
         return false;
     }
+    if (resetFramerate < MIN_FRAMERATE) {
+        resetFramerate = MIN_FRAMERATE;
+    }
     resetFramerateHandler_(resetFramerate);
 
     char direction = (resetFramerate > lastFramerate_) ? '+' : '-';
@@ -103,7 +111,7 @@ bool FramerateCalculator::CheckAndResetFramerate()
 
 void FramerateCalculator::SetConfiguredFramerate(double framerate)
 {
-    if (framerate >= 1.0) { // 1.0: minimum framerate
+    if (framerate >= MIN_FRAMERATE) {
         configuredFramerate_ = framerate;
         lastFramerate_ = configuredFramerate_;
     }
@@ -112,6 +120,7 @@ void FramerateCalculator::SetConfiguredFramerate(double framerate)
 bool FramerateCalculator::SetFramerate2ConfiguredFramerate()
 {
     resetFramerateHandler_(configuredFramerate_);
+    lastFramerate_ = configuredFramerate_;
     return true;
 }
 
