@@ -33,9 +33,9 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
 };
 
 constexpr int MIN_CHANNELS = 1;
-constexpr int MAX_CHANNELS = 8;
-constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT  = 8192;
-constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 2 * 4 * 2048;
+constexpr int MAX_CHANNELS = 255;
+constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT  = 24 * 1024;
+constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 72 * 1024;
 
 static const std::unordered_map<std::string_view, const char*> kAdpcmName2Ff = {
     { AVCodecCodecName::AUDIO_DECODER_ADPCM_MS_NAME,         "adpcm_ms"         },
@@ -52,8 +52,8 @@ static const std::unordered_map<std::string_view, const char*> kAdpcmName2Ff = {
     { AVCodecCodecName::AUDIO_DECODER_ADPCM_AICA_NAME,       "adpcm_aica"       },
     { AVCodecCodecName::AUDIO_DECODER_ADPCM_CT_NAME,         "adpcm_ct"         },
     { AVCodecCodecName::AUDIO_DECODER_ADPCM_DTK_NAME,        "adpcm_dtk"        },
-    { AVCodecCodecName::AUDIO_DECODER_ADPCM_G722_NAME,       "adpcm_g722"       },
-    { AVCodecCodecName::AUDIO_DECODER_ADPCM_G726_NAME,       "adpcm_g726"       },
+    { AVCodecCodecName::AUDIO_DECODER_ADPCM_G722_NAME,       "g722"             },
+    { AVCodecCodecName::AUDIO_DECODER_ADPCM_G726_NAME,       "g726"             },
     { AVCodecCodecName::AUDIO_DECODER_ADPCM_G726LE_NAME,     "adpcm_g726le"     },
     { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_AMV_NAME,    "adpcm_ima_amv"    },
     { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_APC_NAME,    "adpcm_ima_apc"    },
@@ -159,7 +159,7 @@ Status FFmpegADPCMDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
     int32_t blockAlign = 1;
     if (meta->GetData(Tag::AUDIO_BLOCK_ALIGN, blockAlign)) {
         base_->SetBlockAlignContext(blockAlign);
-        AVCODEC_LOGI("set bolck align1:%{public}d", blockAlign);
+        AVCODEC_LOGI("set bolck align:%{public}d", blockAlign);
     } else {
         AVCODEC_LOGW("set block align error");
     }
@@ -167,9 +167,9 @@ Status FFmpegADPCMDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
     int32_t bitsPerSample = 1;
     if (meta->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, bitsPerSample)) {
         base_->SetBitsPerSampleContext(bitsPerSample);
-        AVCODEC_LOGI("set bolck align1:%{public}d", bitsPerSample);
+        AVCODEC_LOGI("set bits per sample:%{public}d", bitsPerSample);
     } else {
-        AVCODEC_LOGW("set block align error");
+        AVCODEC_LOGW("set bits per sample error");
     }
 
     return base_->OpenContext();
