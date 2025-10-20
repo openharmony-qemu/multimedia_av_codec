@@ -145,7 +145,7 @@ private:
         std::atomic<bool> readCbReady {false};
         std::atomic<AVReadPacketStopState> avReadPacketStopState {UNSET};
     };
-    
+
     bool SelectedVideo();
     bool NeedDropAfterSeek(uint32_t trackId, int64_t pts);
     std::atomic<int64_t> seekTime_ = AV_NOPTS_VALUE;
@@ -252,7 +252,7 @@ private:
     
     void UpdateReferenceIds();
     std::map<int32_t, std::vector<int32_t>> referenceIdsMap_ {};
-    
+
     Status ParseVideoFirstFrames();
     bool AllVideoFirstFramesReady();
     bool AllSupportTrackFramesReady();

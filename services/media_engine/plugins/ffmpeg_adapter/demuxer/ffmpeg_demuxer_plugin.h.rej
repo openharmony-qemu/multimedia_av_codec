@@ -1,0 +1,10 @@
+diff a/services/media_engine/plugins/ffmpeg_adapter/demuxer/ffmpeg_demuxer_plugin.h b/services/media_engine/plugins/ffmpeg_adapter/demuxer/ffmpeg_demuxer_plugin.h	(rejected hunks)
+@@ -138,7 +138,7 @@ private:
+         std::atomic<InvokerType> invokerType {INVOKER_NONE};
+         std::atomic<bool> readCbReady {false};
+     };
+-    
++
+     bool SelectedVideo();
+     bool NeedDropAfterSeek(uint32_t trackId, int64_t pts);
+     std::atomic<int64_t> seekTime_ = AV_NOPTS_VALUE;
