@@ -299,6 +299,28 @@ HWTEST_F(AudioAdpcmDecoderUnitTest, decode_ct, TestSize.Level0)
     ASSERT_EQ(decoder_->Start(), Status::OK);
 }
 
+HWTEST_F(AudioAdpcmDecoderUnitTest, decode_g722, TestSize.Level0)
+{
+    InitDecoder("OH.Media.Codec.Decoder.Audio.ADPCM.G722");
+    meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(ADPCM_CHANNEL_COUNT);
+    meta_->Set<Tag::AUDIO_SAMPLE_RATE>(ADPCM_SAMPLE_RATE);
+    meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    ASSERT_EQ(decoder_->SetParameter(meta_), Status::OK);
+    ASSERT_EQ(decoder_->Start(), Status::OK);
+}
+
+HWTEST_F(AudioAdpcmDecoderUnitTest, decode_g726, TestSize.Level0)
+{
+    InitDecoder("OH.Media.Codec.Decoder.Audio.ADPCM.G726");
+    meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(ADPCM_CHANNEL_COUNT);
+    meta_->Set<Tag::AUDIO_SAMPLE_RATE>(ADPCM_SAMPLE_RATE);
+    meta_->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    meta_->Set<Tag::AUDIO_BLOCK_ALIGN>(1);
+    meta_->Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(ADPCM_BITS_PER_SAMPLE);
+    ASSERT_EQ(decoder_->SetParameter(meta_), Status::OK);
+    ASSERT_EQ(decoder_->Start(), Status::OK);
+}
+
 HWTEST_F(AudioAdpcmDecoderUnitTest, decode_ima_amv, TestSize.Level0)
 {
     InitDecoder("OH.Media.Codec.Decoder.Audio.ADPCM.IMA.AMV");

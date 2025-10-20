@@ -146,6 +146,8 @@ const std::vector<int32_t> AUDIO_WMAPRO_SAMPLE_RATE = {
     8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000
 };
 
+constexpr int MAX_CHANNEL_COUNT_ADPCM = 255;
+
 static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sampleRate)
 {
     std::vector<Range> sampleRateRange;
@@ -166,7 +168,7 @@ static CapabilityData MakeAdpcmDecoderCapability(const std::string &codecName,
     cap.isVendor  = false;
 
     cap.bitrate   = Range(1, MAX_INT32);
-    cap.channels  = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    cap.channels  = Range(1, MAX_CHANNEL_COUNT_ADPCM);
     cap.sampleRate = AUDIO_SAMPLE_RATE;
     cap.sampleRateRanges = convertVectorToRange(AUDIO_SAMPLE_RATE);
     cap.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
