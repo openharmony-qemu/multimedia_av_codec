@@ -1334,7 +1334,6 @@ void FFmpegFormatHelper::ParseGltfInfo(const AVFormatContext& avFormatContext, M
         size_t len = strlen(value);
         for (size_t i = 0; i + BRAND_CODE_LEN <= len; i += BRAND_CODE_LEN) {
             if (strncmp(value + i, "glti", BRAND_CODE_LEN) == 0) {
-                MEDIA_LOG_I("compatibleBrands contains 'glti' at pos " PUBLIC_LOG_U32, i);
                 format.Set<Tag::IS_GLTF>(true);
                 break;
             }
