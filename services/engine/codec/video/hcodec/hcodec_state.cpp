@@ -191,12 +191,19 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
             errorCode = AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION;
             faultType = "XPS_UNSUPPORT";
             isNeedForceShutdown = true;
+            codec_->unsupportHappened_ = true;
             break;
         case static_cast<uint32_t>(OMX_ErrorParameterSetsIllegal):
+            if (codec_->unsupportHappened_) {
+                return;
+            }
             errorCode = AVCS_ERR_ILLEGAL_PARAMETER_SETS;
             faultType = "XPS_ILLEGAL";
             break;
         case static_cast<uint32_t>(OMX_ErrorParameterSetsLost):
+            if (codec_->unsupportHappened_) {
+                return;
+            }
             errorCode = AVCS_ERR_MINSSING_PARAMETER_SETS;
             faultType = "XPS_LOST";
             break;

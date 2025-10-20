@@ -640,6 +640,7 @@ private:
     bool notifyCallerAfterShutdownComplete_ = false;
     bool keepComponentAllocated_ = false;
     bool hasFatalError_ = false;
+    bool unsupportHappened_ = false;
     std::list<MsgInfo> deferredQueue_;
     std::map<MsgType, std::queue<std::pair<MsgId, ParamSP>>> syncMsgToReply_;
 }; // class HCodec
