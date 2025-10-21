@@ -136,9 +136,9 @@ Status FFmpegWMADecoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
     fmt->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     fmt->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
     fmt->SetData(Tag::MIME_TYPE,
-        (ffCodecName_ == "wmav1" ? MimeType::AUDIO_WMAV1 :
-         ffCodecName_ == "wmav2" ? MimeType::AUDIO_WMAV2 :
-                                   MimeType::AUDIO_WMAPRO));
+        (ffCodecName_ == "wmav1" ? std::string(MimeType::AUDIO_WMAV1) :
+         ffCodecName_ == "wmav2" ? std::string(MimeType::AUDIO_WMAV2) :
+                                   std::string(MimeType::AUDIO_WMAPRO)));
 
     return base_->OpenContext();
 }
