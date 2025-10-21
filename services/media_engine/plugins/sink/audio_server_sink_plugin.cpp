@@ -758,7 +758,7 @@ void AudioServerSinkPlugin::SetUpAudioRenderInfoSetter()
 
 void AudioServerSinkPlugin::SetPrivacyType()
 {
-    paramsSetterMap_[Tag::PRIVACY_TYPE] = [this](const ValueType &para) {
+    paramsSetterMap_["PRIVACY_TYPE"] = [this](const ValueType &para) {
         FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<int32_t>(para), Status::ERROR_MISMATCHED_TYPE,
                              "PRIVACY_TYPE type should be int32_t");
         privacyType_ = AnyCast<int32_t>(para);
