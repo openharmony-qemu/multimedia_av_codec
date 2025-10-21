@@ -50,12 +50,12 @@ public:
     // TearDown: Called after each test cases
     void TearDown(void);
 protected:
-    const char *INP_DIR_1 = (TEST_FILE_PATH + string("m4v_h264_high@level31_1280_720_aac_2.m4v")).c_str();
-    const char *INP_URI_1 = (TEST_URI_PATH + string("m4v_h264_high@level31_1280_720_aac_2.m4v")).c_str();
-    const char *INP_DIR_2 = (TEST_FILE_PATH + string("m4v_h264_high@level31_1280_720_aac_31.m4v")).c_str();
-    const char *INP_URI_2 = (TEST_URI_PATH + string("m4v_h264_high@level31_1280_720_aac_31.m4v")).c_str();
-    const char *INP_DIR_3 = (TEST_FILE_PATH + string("m4v_h264_high@level31_1280_720_aac_13.m4v")).c_str();
-    const char *INP_URI_3 = (TEST_URI_PATH + string("m4v_h264_high@level31_1280_720_aac_13.m4v")).c_str();
+    const char *INP_DIR_1 = "/data/test/media/m4v_h264_high@level31_1280_720_aac_2.m4v";
+    const char *INP_URI_1 = "http://127.0.0.1:46666/m4v_h264_high@level31_1280_720_aac_2.m4v";
+    const char *INP_DIR_2 = "/data/test/media/m4v_h264_high@level31_1280_720_aac_31.m4v";
+    const char *INP_URI_2 = "http://127.0.0.1:46666/m4v_h264_high@level31_1280_720_aac_31.m4v";
+    const char *INP_DIR_3 = "/data/test/media/m4v_h264_high@level31_1280_720_aac_13.m4v";
+    const char *INP_URI_3 = "http://127.0.0.1:46666/m4v_h264_high@level31_1280_720_aac_13.m4v";
 };
 
 static int g_fd = -1;
