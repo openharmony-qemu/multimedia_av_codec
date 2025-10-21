@@ -618,6 +618,7 @@ void AudioServerSinkPlugin::SetUpParamsSetterMap()
     SetUpAppPidSetter();
     SetUpAppUidSetter();
     SetUpAudioRenderInfoSetter();
+    SetPrivacyType();
     SetUpAudioRenderSetFlagSetter();
     SetUpAudioInterruptModeSetter();
     SetUpAudioRenderSourceDurationSetter();
@@ -751,6 +752,16 @@ void AudioServerSinkPlugin::SetUpAudioRenderInfoSetter()
         FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<AudioRenderInfo>(para), Status::ERROR_MISMATCHED_TYPE,
                              "AUDIO_RENDER_INFO type should be AudioRenderInfo");
         audioRenderInfo_ = AnyCast<AudioRenderInfo>(para);
+        return Status::OK;
+    };
+}
+
+void AudioServerSinkPlugin::SetPrivacyType()
+{
+    paramsSetterMap_[Tag::PRIVACY_TYPE] = [this](const ValueType &para) {
+        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<int32_t>(para), Status::ERROR_MISMATCHED_TYPE,
+                             "PRIVACY_TYPE type should be int32_t");
+        privacyType_ = AnyCast<int32_t>(para);
         return Status::OK;
     };
 }
