@@ -433,6 +433,9 @@ Status DecoderSurfaceFilter::DoStart()
 {
     MEDIA_LOG_I("Start");
     if (isDecoderReleasedForMute_) {
+        state_ = FilterState::RUNNING;
+        FALSE_RETURN_V(!isPaused_.load() && eventReceiver_ != nullptr, Status::OK);
+        eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_NO_NEED_INIT, Status::OK});
         return Status::OK;
     }
     if (isPaused_.load()) {
@@ -1644,9 +1647,6 @@ Status DecoderSurfaceFilter::SetMediaMuted(bool isMuted, bool hasInitialized)
     if (isMuted && !isVideoMuted_) {
         hasReceivedReleaseEvent_ = false;
         isRenderStarted_ = false;
-        if (!hasInitialized && eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_NO_NEED_INIT, Status::OK});
-        }
     }
     isVideoMuted_.store(isMuted);
     if (videoSink_ != nullptr) {
@@ -1680,6 +1680,7 @@ Status DecoderSurfaceFilter::DoReInitAndStart()
         FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoInitAfterLink fail");
     }
     videoDecoder_->Flush();
+    FALSE_RETURN_V_MSG(state_ == FilterState::RUNNING,  Status::OK, "Do not need to start video decoder");
     ret = DoStart();
     if (eventReceiver_ != nullptr) {
         eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_VIDEO_DECODER_RESTART, Status::OK});

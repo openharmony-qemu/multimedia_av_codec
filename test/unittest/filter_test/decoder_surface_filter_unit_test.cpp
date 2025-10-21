@@ -1164,6 +1164,7 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DoReInitAndStart_001, TestSize.Level1)
 
     decoderSurfaceFilter_->hasReceivedReleaseEvent_ = true;
     decoderSurfaceFilter_->isDecoderReleasedForMute_ = false;
+    decoderSurfaceFilter_->state_ = FilterState::RUNNING;
     ret = decoderSurfaceFilter_->DoReInitAndStart();
     EXPECT_NE(ret, Status::OK);
 }
