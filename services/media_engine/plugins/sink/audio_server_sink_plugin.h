@@ -288,6 +288,7 @@ private:
     uint64_t enqueueNumber_ {0};
     int32_t audioHapticsSyncId_ {0};
     uint32_t customSampleRate_{0};
+    int32_t privacyType_ {0};
 };
 } // namespace Plugin
 } // namespace Media
