@@ -116,10 +116,13 @@ void VideoEncoderSample::SetRoiByNativebuf(OH_NativeBuffer *nativeBuffer)
         if (context_->inputStreamByNativebuf.is_open() &&
             std::getline(context_->inputStreamByNativebuf, roiInfo) && roiInfo != "") {
             if (roiInfo == "clear") {
-                roiInfo = "";
+                roiInfo = ";";
             }
-            (void)OH_NativeBuffer_SetMetadataValue(nativeBuffer, OH_REGION_OF_INTEREST_METADATA,
+            int32_t ret = OH_NativeBuffer_SetMetadataValue(nativeBuffer, OH_REGION_OF_INTEREST_METADATA,
                 roiInfo.size(), reinterpret_cast<uint8_t*>(const_cast<char*>(roiInfo.c_str())));
+            if (ret != 0) {
+                AVCODEC_LOGE("set roi failed, roi str is %s, ret is %d", roiInfo.c_str(), ret);
+            }
         }
     }
 }
