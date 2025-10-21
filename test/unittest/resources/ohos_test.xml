@@ -1369,4 +1369,13 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="HttpDownloaderFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/dewu.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/dewuNull.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/h264.flv -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
 </configuration>
