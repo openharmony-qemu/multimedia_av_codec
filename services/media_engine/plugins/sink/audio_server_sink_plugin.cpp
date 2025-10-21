@@ -289,7 +289,7 @@ Status AudioServerSinkPlugin::Init()
     rendererOptions_.streamInfo.format = rendererParams_.sampleFormat;
     rendererOptions_.streamInfo.channels = rendererParams_.channelCount;
     rendererOptions_.rendererInfo.playerType = AudioStandard::PlayerType::PLAYER_TYPE_AV_PLAYER;
-    rendererOptions_.playerType = privacyType_;
+    rendererOptions_.privacyType = privacyType_;
     MEDIA_LOG_I_SHORT("Create audio renderer for samplingRate " PUBLIC_LOG_D32 " encoding " PUBLIC_LOG_D32
                 " sampleFormat " PUBLIC_LOG_D32 " channels " PUBLIC_LOG_D32,
                 rendererOptions_.streamInfo.samplingRate, rendererOptions_.streamInfo.encoding,
