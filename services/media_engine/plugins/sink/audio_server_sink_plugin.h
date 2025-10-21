@@ -218,6 +218,7 @@ private:
     void SetUpAppPidSetter();
     void SetUpAppUidSetter();
     void SetUpAudioRenderInfoSetter();
+    void SetPrivacyType();
     void SetUpAudioInterruptModeSetter();
     void SetUpAudioRenderSetFlagSetter();
     void SetUpAudioRenderSourceDurationSetter();
