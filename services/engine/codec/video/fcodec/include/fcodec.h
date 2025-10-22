@@ -65,8 +65,10 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
+    // for memory recycle
     int32_t NotifyMemoryRecycle() override;
     int32_t NotifyMemoryWriteBack() override;
+    // for capability register
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
 
 private:
@@ -153,19 +155,6 @@ private:
     int32_t SwapInBuffers(bool isOutputBuffer);
     bool disableDmaSwap_ = false;
     int32_t pid_ = -1;
-    // for capability register
-    static void GetMpeg2CapProf(std::vector<CapabilityData> &capaArray);
-    static void GetMpeg4esCapProf(std::vector<CapabilityData> &capaArray);
-    static void SetMpeg4LevelsProfileGroup1(CapabilityData& capsData);
-    static void SetMpeg4LevelsProfileGroup2(CapabilityData& capsData);
-    static void SetMpeg4Profiles(CapabilityData& capsData);
-    static void GetAvcCapProf(std::vector<CapabilityData> &capaArray);
-    static void GetH263CapProf(std::vector<CapabilityData> &capaArray);
-    static void GetWmv3CapProf(std::vector<CapabilityData> &capaArray);
-    static void GetVc1CapProf(std::vector<CapabilityData> &capaArray);
-    static void GetMsVideo1CapProf(std::vector<CapabilityData> &capaArray);
-    static void GetBaseCapabilityData(CapabilityData &capsData);
-    static void GetCapabilityData(CapabilityData &capsData, uint32_t index);
 
     int32_t instanceId_ = -1;
     std::string decName_;

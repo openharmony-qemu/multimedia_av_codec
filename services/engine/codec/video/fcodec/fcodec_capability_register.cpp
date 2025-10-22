@@ -49,7 +49,7 @@ constexpr int32_t MSVIDEO1_BLOCKPERSEC_SIZE = 3932160;
 } // namespace
 using namespace OHOS::Media;
 
-void FCodec::GetMpeg2CapProf(std::vector<CapabilityData> &capaArray)
+void GetMpeg2CapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
         CapabilityData& capsData = capaArray.back();
@@ -82,7 +82,7 @@ void FCodec::GetMpeg2CapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
-void FCodec::SetMpeg4Profiles(CapabilityData& capsData)
+void SetMpeg4Profiles(CapabilityData& capsData)
 {
     capsData.profiles = {
         static_cast<int32_t>(MPEG4_PROFILE_SIMPLE),
@@ -103,7 +103,7 @@ void FCodec::SetMpeg4Profiles(CapabilityData& capsData)
     };
 }
 
-void FCodec::SetMpeg4LevelsProfileGroup1(CapabilityData& capsData)
+void SetMpeg4LevelsProfileGroup1(CapabilityData& capsData)
 {
     capsData.profileLevelsMap = {
         {static_cast<int32_t>(MPEG4_PROFILE_SIMPLE), {
@@ -138,7 +138,7 @@ void FCodec::SetMpeg4LevelsProfileGroup1(CapabilityData& capsData)
     };
 }
 
-void FCodec::SetMpeg4LevelsProfileGroup2(CapabilityData& capsData)
+void SetMpeg4LevelsProfileGroup2(CapabilityData& capsData)
 {
     capsData.profileLevelsMap.insert({
         {static_cast<int32_t>(MPEG4_PROFILE_SIMPLE_FA), {
@@ -172,7 +172,7 @@ void FCodec::SetMpeg4LevelsProfileGroup2(CapabilityData& capsData)
     });
 }
 
-void FCodec::GetMpeg4esCapProf(std::vector<CapabilityData>& capaArray)
+void GetMpeg4esCapProf(std::vector<CapabilityData>& capaArray)
 {
     if (!capaArray.empty()) {
         CapabilityData& capsData = capaArray.back();
@@ -182,7 +182,7 @@ void FCodec::GetMpeg4esCapProf(std::vector<CapabilityData>& capaArray)
     }
 }
 
-void FCodec::GetH263CapProf(std::vector<CapabilityData> &capaArray)
+void GetH263CapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
         CapabilityData& capsData = capaArray.back();
@@ -203,7 +203,7 @@ void FCodec::GetH263CapProf(std::vector<CapabilityData> &capaArray)
     return;
 }
 
-void FCodec::GetAvcCapProf(std::vector<CapabilityData> &capaArray)
+void GetAvcCapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
         CapabilityData& capsData = capaArray.back();
@@ -219,7 +219,7 @@ void FCodec::GetAvcCapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
-void FCodec::GetVc1CapProf(std::vector<CapabilityData> &capaArray)
+void GetVc1CapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
         CapabilityData& capsData = capaArray.back();
@@ -258,7 +258,7 @@ void FCodec::GetVc1CapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
-void FCodec::GetMsVideo1CapProf(std::vector<CapabilityData> &capaArray)
+void GetMsVideo1CapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
         CapabilityData& capsData = capaArray.back();
@@ -271,7 +271,7 @@ void FCodec::GetMsVideo1CapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
-void FCodec::GetWmv3CapProf(std::vector<CapabilityData> &capaArray)
+void GetWmv3CapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
         CapabilityData& capsData = capaArray.back();
@@ -289,8 +289,14 @@ void FCodec::GetWmv3CapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
-void FCodec::GetBaseCapabilityData(CapabilityData &capsData)
+void GetCapabilityData(CapabilityData &capsData, uint32_t index)
 {
+    capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[index].codecName);
+    capsData.mimeType = static_cast<std::string>(SUPPORT_VCODEC[index].mimeType);
+    capsData.codecType = AVCODEC_TYPE_VIDEO_DECODER;
+    capsData.isVendor = false;
+    capsData.maxInstance = VIDEO_INSTANCE_SIZE;
+
     capsData.alignment.width = VIDEO_ALIGNMENT_SIZE;
     capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
     capsData.width.minVal = VIDEO_MIN_SIZE;
@@ -307,17 +313,6 @@ void FCodec::GetBaseCapabilityData(CapabilityData &capsData)
     capsData.blockPerSecond.maxVal = VIDEO_BLOCKPERSEC_SIZE;
     capsData.blockSize.width = VIDEO_ALIGN_SIZE;
     capsData.blockSize.height = VIDEO_ALIGN_SIZE;
-}
-
-void FCodec::GetCapabilityData(CapabilityData &capsData, uint32_t index)
-{
-    capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[index].codecName);
-    capsData.mimeType = static_cast<std::string>(SUPPORT_VCODEC[index].mimeType);
-    capsData.codecType = AVCODEC_TYPE_VIDEO_DECODER;
-    capsData.isVendor = false;
-    capsData.maxInstance = VIDEO_INSTANCE_SIZE;
-
-    GetBaseCapabilityData(capsData);
 
     capsData.pixFormat = {
         static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
