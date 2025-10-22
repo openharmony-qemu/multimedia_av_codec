@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-#define AVCODEC_SYNC_CUSTOM_TRACE(level, fmt, ...) AVCodecTrace trace(level, fmt, ##__VA_ARGS__)
+#define AVCODEC_SYNC_CUSTOM_TRACE(level, fmt, ...) AVCodecTrace trace(level, "", fmt, ##__VA_ARGS__)
 #define AVCODEC_SYNC_TRACE AVCODEC_SYNC_CUSTOM_TRACE(HITRACE_LEVEL_INFO, "%s", __FUNCTION__)
 
 #define AVCODEC_SYNC_CUSTOM_TRACE_WITH_TAG(level, customArgs, fmt, ...) \

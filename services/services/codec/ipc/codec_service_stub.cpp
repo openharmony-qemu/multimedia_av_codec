@@ -742,11 +742,9 @@ int32_t CodecServiceStub::RenderOutputBufferAtTime(MessageParcel &data, MessageP
     uint32_t index = data.ReadUint32();
     int64_t renderTimestampNs = data.ReadInt64();
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec listener is nullptr");
-    bool ret = static_cast<CodecListenerProxy *>(listener_.GetRefPtr())
-                   ->SetOutputBufferRenderTimestamp(index, renderTimestampNs);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Listener read meta data failed");
+    static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->SetOutputBufferRenderTimestamp(index, renderTimestampNs);
 
-    ret = reply.WriteInt32(RenderOutputBufferAtTime(index, renderTimestampNs));
+    bool ret = reply.WriteInt32(RenderOutputBufferAtTime(index, renderTimestampNs));
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
