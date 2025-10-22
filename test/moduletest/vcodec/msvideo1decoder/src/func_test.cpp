@@ -108,7 +108,7 @@ static void getVideoSizeRange(OH_AVRange *widthRange, OH_AVRange *heightRange)
 namespace {
 /**
  * @tc.number    : VIDEO_MSVIDEO1DEC_FUNCTION_0001
- * @tc.name      : Decode MsVideo1 buffer with NV12 pixel format
+ * @tc.name      : Decode MsVideo1 buffer, 1280x720, NV12
  * @tc.desc      : function test
  */
 HWTEST_F(MsVideo1decFuncNdkTest, VIDEO_MSVIDEO1DEC_FUNCTION_0001, TestSize.Level0)
@@ -700,7 +700,7 @@ HWTEST_F(MsVideo1decFuncNdkTest, VIDEO_MSVIDEO1DEC_FUNCTION_0030, TestSize.Level
 
 /**
  * @tc.number    : VIDEO_MSVIDEO1DEC_FUNCTION_0031
- * @tc.name      : Surface model change in config state
+ * @tc.name      : Surface model change in create state
  * @tc.desc      : function test
  */
 HWTEST_F(MsVideo1decFuncNdkTest, VIDEO_MSVIDEO1DEC_FUNCTION_0031, TestSize.Level0)
@@ -767,7 +767,7 @@ HWTEST_F(MsVideo1decFuncNdkTest, VIDEO_MSVIDEO1DEC_FUNCTION_0033, TestSize.Level
 
 /**
  * @tc.number    : VIDEO_MSVIDEO1DEC_FUNCTION_0034
- * @tc.name      : Decode MsVideo1 buffer with NV12 pixel format
+ * @tc.name      : Decode MsVideo1 buffer in avi format
  * @tc.desc      : function test
  */
 HWTEST_F(MsVideo1decFuncNdkTest, VIDEO_MSVIDEO1DEC_FUNCTION_0034, TestSize.Level0)
