@@ -252,7 +252,7 @@ private:
     
     void UpdateReferenceIds();
     std::map<int32_t, std::vector<int32_t>> referenceIdsMap_ {};
-    
+
     Status ParseVideoFirstFrames();
     bool AllVideoFirstFramesReady();
     bool AllSupportTrackFramesReady();

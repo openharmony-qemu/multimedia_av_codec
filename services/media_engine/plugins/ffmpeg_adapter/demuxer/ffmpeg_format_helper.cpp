@@ -72,6 +72,8 @@ const int32_t VALUE_2 = 2;
 const int32_t VALUE_4 = 4;
 const int32_t VALUE_10 = 10;
 
+const size_t BRAND_CODE_LEN = 4; // 4 is brand code length
+
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
     {AVMEDIA_TYPE_AUDIO, MediaType::AUDIO},
@@ -175,6 +177,14 @@ static std::map<std::string, TagType> g_formatToString = {
     {"composer",      Tag::MEDIA_COMPOSER},
     {"creation_time", Tag::MEDIA_CREATION_TIME},
     {"aigc",          Tag::MEDIA_AIGC}
+};
+
+static const char* g_gltfKeys[] = {
+    "meta_hdlr",
+    "meta_iloc",
+    "meta_iinf",
+    "meta_idat",
+    "is_hdlr_type_gltf",
 };
 
 std::vector<TagType> g_supportSourceFormat = {
@@ -429,7 +439,8 @@ std::string ConvertArrayToString(const int* array, size_t size)
 enum ValueType {
     INT32 = 0,
     FLOAT = 1,
-    BUFFER = 2
+    BUFFER = 2,
+    INT64 = 3,
 };
 
 template <typename T>
@@ -500,6 +511,14 @@ static void SetToFormatIfConvertSuccess(Meta& format, const TagType& tag, std::s
             std::vector<uint8_t> buffer;
             if (ConvertHexStrToBuffer(valueStr, buffer)) {
                 format.SetData(tag, buffer);
+                convertSuccess = true;
+            }
+            break;
+        }
+        case ValueType::INT64: {
+            int64_t int64Value = -1;
+            if (ConvertString(valueStr, int64Value)) {
+                format.SetData<int64_t>(tag, int64Value);
                 convertSuccess = true;
             }
             break;
@@ -619,6 +638,7 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     }
     ParseLocationInfo(avFormatContext, format);
     ParseInfoFromMetadata(avFormatContext.metadata, format);
+    ParseGltfInfo(avFormatContext, format);
 }
 
 void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format)
@@ -1303,6 +1323,33 @@ bool FFmpegFormatHelper::IsMpeg4File(FileType filetype)
 bool FFmpegFormatHelper::IsValidCodecId(const AVCodecID &codecId)
 {
     return (g_codecIdToMime.count(codecId) > 0) || (IsPCMStream(codecId));
+}
+
+void FFmpegFormatHelper::ParseGltfInfo(const AVFormatContext& avFormatContext, Meta &format)
+{
+    FALSE_RETURN_MSG_W(avFormatContext.metadata != nullptr, "metadata is nullptr");
+    auto compatibleBrands = av_dict_get(avFormatContext.metadata, "compatible_brands", NULL, 0);
+    if (compatibleBrands != nullptr && compatibleBrands->value != nullptr) {
+        const char* value = compatibleBrands->value;
+        size_t len = strlen(value);
+        for (size_t i = 0; i + BRAND_CODE_LEN <= len; i += BRAND_CODE_LEN) {
+            if (strncmp(value + i, "glti", BRAND_CODE_LEN) == 0) {
+                format.Set<Tag::IS_GLTF>(true);
+                break;
+            }
+        }
+    }
+    for (const char* key : g_gltfKeys) {
+        auto entry = av_dict_get(avFormatContext.metadata, key, NULL, 0);
+        if (!entry || strcmp(entry->value, "1") != 0) {
+            return;
+        }
+    }
+    auto idatPos = av_dict_get(avFormatContext.metadata, "idat_pos", NULL, 0);
+    MEDIA_LOG_I("Valid glTF file and idat Pos: " PUBLIC_LOG_S, idatPos ? idatPos->value : "not found");
+    if (idatPos && idatPos->value) {
+        SetToFormatIfConvertSuccess(format, Tag::GLTF_OFFSET, idatPos->value, ValueType::INT64);
+    }
 }
 } // namespace Ffmpeg
 } // namespace Plugins
