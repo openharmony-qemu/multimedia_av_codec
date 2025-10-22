@@ -210,6 +210,7 @@ void DownloadMonitor::SetCallback(Callback* cb)
 
 void DownloadMonitor::SetStatusCallback(StatusCallbackFunc cb)
 {
+    // do nothing
 }
 
 bool DownloadMonitor::GetStartedStatus()

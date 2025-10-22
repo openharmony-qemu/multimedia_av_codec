@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <regex>
 #include <vector>
+#include <sstream>
 #include "common/log.h"
 #include "osal/task/autolock.h"
 #include "securec.h"
@@ -37,17 +38,18 @@ constexpr uint32_t DEFAULT_LOW_SPEED_LIMIT = 1L;
 constexpr uint32_t DEFAULT_LOW_SPEED_TIME = 10L;
 constexpr uint32_t MILLS_TO_SECOND = 1000;
 constexpr uint32_t HTTP_ERROR_THRESHOLD = 400;
+constexpr char S_ALPHA_NUM_LINE_E[] = "^[a-zA-Z0-9\\-_\\.*]+$";
 
 std::string ToString(const std::list<std::string> &lists, char tab)
 {
-    std::string str;
+    std::ostringstream strOs;
     for (auto it = lists.begin(); it != lists.end(); ++it) {
         if (it != lists.begin()) {
-            str.append(1, tab);
+            strOs << tab;
         }
-        str.append(*it);
+        strOs << *it;
     }
-    return str;
+    return strOs.str();
 }
 
 std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar)
@@ -107,7 +109,7 @@ bool IsRegexValid(const std::string &regex)
     if (Trim(regex).empty()) {
         return false;
     }
-    return regex_match(regex, std::regex("^[a-zA-Z0-9\\-_\\.*]+$"));
+    return regex_match(regex, std::regex(S_ALPHA_NUM_LINE_E));
 }
 
 std::string ReplaceCharacters(const std::string &input)
@@ -158,9 +160,8 @@ bool IsHostNameExcluded(const std::string &url, const std::string &exclusions, c
 
 void GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions)
 {
-    using namespace NetManagerStandard;
     NetManagerStandard::HttpProxy httpProxy;
-    NetConnClient::GetInstance().GetDefaultHttpProxy(httpProxy);
+    NetManagerStandard::NetConnClient::GetInstance().GetDefaultHttpProxy(httpProxy);
     host = httpProxy.GetHost();
     port = httpProxy.GetPort();
     exclusions = ToString(httpProxy.GetExclusionList());
@@ -199,15 +200,15 @@ std::string HttpCurlClient::ClearHeadTailSpace(std::string& str)
     return str;
 }
 
-void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHeader)
+void HttpCurlClient::HttpHeaderParse(const std::map<std::string, std::string>& httpHeader)
 {
     if (httpHeader.empty()) {
         MEDIA_LOG_D("Set http header fail, http header is empty.");
         return;
     }
-    for (std::map<std::string, std::string>::iterator iter = httpHeader.begin(); iter != httpHeader.end(); iter++) {
-        std::string setKey = iter->first;
-        std::string setValue = iter->second;
+    for (auto iter : httpHeader) {
+        std::string setKey = iter.first;
+        std::string setValue = iter.second;
         if (setKey.length() <= MAX_STRING_LENGTH && setValue.length() <= MAX_STRING_LENGTH) {
             ClearHeadTailSpace(setKey);
             std::string headerStr = setKey + ":" + setValue;
@@ -229,9 +230,9 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
         easyHandle_ = curl_easy_init();
     }
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
-    std::map<std::string, std::string> header = httpHeader;
+
     if (isFirstOpen_) {
-        HttpHeaderParse(header);
+        HttpHeaderParse(httpHeader);
         isFirstOpen_ = false;
     }
     InitCurlEnvironment(url, timeoutMs);
@@ -302,7 +303,9 @@ void HttpCurlClient::InitCurProxy(const std::string& url)
     std::string exclusions;
     int32_t port = 0;
     GetHttpProxyInfo(host, port, exclusions);
-    if (!host.empty() && !IsHostNameExcluded(url, exclusions, ",")) {
+
+    bool isHNameExclded = IsHostNameExcluded(url, exclusions, ",");
+    if (!host.empty() && !isHNameExclded) {
         MEDIA_LOG_I("InitCurlEnvironment host: " PUBLIC_LOG_S ", port " PUBLIC_LOG_U32 ", exclusions " PUBLIC_LOG_S,
             host.c_str(), port, exclusions.c_str());
         curl_easy_setopt(easyHandle_, CURLOPT_PROXY, host.c_str());
@@ -312,7 +315,7 @@ void HttpCurlClient::InitCurProxy(const std::string& url)
         auto proxyType = (host.find("https://") != std::string::npos) ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
         curl_easy_setopt(easyHandle_, CURLOPT_PROXYTYPE, proxyType);
     } else {
-        if (IsHostNameExcluded(url, exclusions, ",")) {
+        if (isHNameExclded) {
             MEDIA_LOG_I("InitCurlEnvironment host name is excluded.");
         }
     }

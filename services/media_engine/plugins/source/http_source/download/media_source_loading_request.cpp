@@ -124,7 +124,7 @@ int32_t MediaSourceLoadingRequest::RespondHeader(int64_t uuid, std::map<std::str
     AutoLock lock(clientMutex_);
     auto it = requestMap_.find(uuid);
     if (it != requestMap_.end()) {
-        it->second->RespondHeader(uuid, header, redirectUrl);
+        return it->second->RespondHeader(uuid, header, redirectUrl);
     } else {
         MEDIA_LOG_E("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest RespondHeader, invalid uuid: " PUBLIC_LOG_D64,
             FAKE_POINTER(this), uuid);
@@ -139,7 +139,7 @@ int32_t MediaSourceLoadingRequest::FinishLoading(int64_t uuid, LoadingRequestErr
     AutoLock lock(clientMutex_);
     auto it = requestMap_.find(uuid);
     if (it != requestMap_.end()) {
-        it->second->FinishLoading(uuid, state);
+        return it->second->FinishLoading(uuid, state);
     } else {
         MEDIA_LOG_E("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest FinishLoading, invalid uuid: " PUBLIC_LOG_D64,
             FAKE_POINTER(this), uuid);
