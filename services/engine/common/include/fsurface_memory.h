@@ -23,7 +23,8 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace {
-constexpr uint64_t USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
+constexpr uint64_t USAGE = 
+    BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE;
 constexpr int32_t SURFACE_STRIDE_ALIGN = 8;
 constexpr int32_t TIMEOUT = 0;
 } // namespace
