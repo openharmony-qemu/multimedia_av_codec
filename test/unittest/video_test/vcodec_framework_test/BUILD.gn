@@ -113,8 +113,8 @@ group("vcodec_framework_test") {
       ":videodec_mpeg_func_sync_unit_test",
       ":videodec_VC1_func_async_unit_test",
       ":videodec_VC1_func_sync_unit_test",
-      ":videocdec_msvideo1dec_fun_async_unit_test",
-      ":videocdec_msvideo1dec_fun_sync_unit_test",
+      ":videodec_msvideo1dec_fun_async_unit_test",
+      ":videodec_msvideo1dec_fun_sync_unit_test",
       ":videodec_mpeg_stable_unit_test",
       ":videodec_stable_unit_test",
       ":videodec_state_unit_test",
@@ -1844,7 +1844,7 @@ ohos_unittest("videodec_VC1_func_sync_unit_test") {
 }
 
 #################################################################
-ohos_unittest("videocdec_msvideo1dec_fun_async_unit_test") {
+ohos_unittest("videodec_msvideo1dec_fun_async_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   configs = [
@@ -1896,7 +1896,7 @@ ohos_unittest("videocdec_msvideo1dec_fun_async_unit_test") {
 }
 
 #################################################################
-ohos_unittest("videocdec_msvideo1dec_fun_sync_unit_test") {
+ohos_unittest("videodec_msvideo1dec_fun_sync_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   configs = [
