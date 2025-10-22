@@ -268,6 +268,8 @@ protected:
     virtual int32_t RequestIDRFrame() { return AVCS_ERR_UNSUPPORT; }
 
     // start
+    virtual void OnEnterRunningState() {}
+    virtual void OnExitRunningState() {}
     virtual bool ReadyToStart() = 0;
     virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) = 0;
     void SetCallerToBuffer(int fd, uint32_t w, uint32_t h);
@@ -528,6 +530,7 @@ private:
         explicit RunningState(HCodec *codec) : BaseState(codec, "Run", RESUBMIT_BUFFER, RESUBMIT_BUFFER) {}
     private:
         void OnStateEntered() override;
+        void OnStateExited() override;
         void OnMsgReceived(const MsgInfo &info) override;
         void OnCodecEvent(CodecHDI::CodecEventType event, uint32_t data1, uint32_t data2) override;
         void OnShutDown(const MsgInfo &info) override;

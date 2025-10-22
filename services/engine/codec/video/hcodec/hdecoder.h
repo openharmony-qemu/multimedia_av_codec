@@ -32,6 +32,18 @@ public:
         : HCodec(caps, codingType, false) {}
     ~HDecoder() override;
 
+    class XperfConnector : public OHOS::HiviewDFX::VideoJankCallbackStub {
+    public:
+        ErrCode OnVideoJankEvent(const std::string& msg) override;
+        static std::shared_ptr<MsgToken> FindSuitableDecoder(uint64_t surfaceId, const std::string& bundleName);
+    };
+
+    struct DecoderInst {
+        std::weak_ptr<MsgToken> token;
+        std::optional<uint64_t> surfaceId;
+        std::string processName;
+    };
+
 private:
     struct SurfaceBufferItem {
         sptr<SurfaceBuffer> buffer;
@@ -61,6 +73,8 @@ private:
     int32_t SetScaleMode();
 
     // start
+    void OnEnterRunningState() override;
+    void OnExitRunningState() override;
     bool UseHandleOnOutputPort(bool isDynamic);
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
     void UpdateFmtFromSurfaceBuffer() override;
@@ -149,20 +163,6 @@ private:
     int32_t RecoverFreq() override;
 
     void ReportRenderFirstFrame();
- 
-    class XperfCallback : public OHOS::HiviewDFX::VideoJankCallbackStub {
-    public:
-        void BeginToUse(uint64_t surfaceId, std::weak_ptr<MsgToken> token);
-        void EndToUse(uint64_t surfaceId);
-        ErrCode OnVideoJankEvent(const std::string& msg) override;
- 
-    private:
-        std::mutex mtx_;
-        std::unordered_map<uint64_t, std::weak_ptr<MsgToken>> surfaceIdToCodec_;
-    };
- 
-    static std::shared_mutex g_cbMtx;
-    static sptr<XperfCallback> g_xperfCb;
 
 private:
     static constexpr uint64_t SURFACE_MODE_PRODUCER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
