@@ -18,7 +18,7 @@
 #include "http_server_fuzz_demo.h"
 
 namespace OHOS::Media::Plugins::HttpPlugin {
-    
+
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 std::unique_ptr<MediaAVCodec::HttpServerFuzzDemo> g_serverFuzz = nullptr;
 
@@ -62,4 +62,4 @@ bool InitServer(const uint8_t *data, size_t size)
     std::cout << "Server fuzz start ... size " << size << std::endl;
     return true;
 }
-}
+} // OHOS::Media::Plugins::HttpPlugin

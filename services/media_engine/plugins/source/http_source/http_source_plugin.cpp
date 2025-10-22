@@ -21,7 +21,6 @@
 #include "dash/dash_media_downloader.h"
 #include "http/http_media_downloader.h"
 #include "monitor/download_monitor.h"
-#undef ERROR_INVALID_OPERATION
 
 namespace OHOS {
 namespace Media {
@@ -161,8 +160,6 @@ Status HttpSourcePlugin::Resume()
     }
     return Status::OK;
 }
-
-#undef ERROR_INVALID_PARAMETER
 
 Status HttpSourcePlugin::GetParameter(std::shared_ptr<Meta> &meta)
 {

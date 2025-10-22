@@ -30,18 +30,18 @@ namespace OHOS::Media::Plugins::HttpPlugin {
 
 class SourceCallback : public Plugins::Callback {
     public:
-        void OnEvent(const Plugins::PluginEvent &event)
+        void OnEvent(const Plugins::PluginEvent &event) override
         {
             (void)event;
         }
     
-        void SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
+        void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override
         {
             (void)flag;
             (void)desBitRate;
         }
     
-        bool CanDoSelectBitRate()
+        bool CanAutoSelectBitRate() override
         {
             return true;
         }
@@ -64,7 +64,7 @@ const std::string g_urls[] = {
     std::string("test_cbr/1080_3M/video_1080.m3u8"),
     std::string("test_cbr/720_1M/video_720_null.m3u8"),
     std::string("test_cbr/720_1M/video_720_live.m3u8"),
-    std::string("test_hls/testHLSEncode.m3u8 "),
+    std::string("test_hls/testHLSEncode.m3u8"),
     std::string("test_hls/testHLSEncode_session_key.m3u8"),
     std::string("test_hls/testXMap.m3u8"),
     std::string("test_hls/testByteRange.m3u8"),
@@ -85,7 +85,7 @@ void IncreaseCoverageSet(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloader
 void IncreaseCoverageRead(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloader)
 {
     hlsMediaDownloader->ReportVideoSizeChange();
-    
+
     hlsMediaDownloader->GetPlayable();
 
     PlaybackInfo playbackInfo;
@@ -291,6 +291,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     }
 
     OHOS::Media::Plugins::HttpPlugin::StartFuzzTest(data, size);
+
+    OHOS::Media::Plugins::HttpPlugin::StartFuzzTestRead(data, size);
+
+    OHOS::Media::Plugins::HttpPlugin::StartFuzzTestMultiUrl(data, size);
 
     if (!CloseServer()) {
         cout << "Close server error" << endl;
