@@ -186,6 +186,10 @@ void FCodec::GetH263CapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
         CapabilityData& capsData = capaArray.back();
+        capsData.width.minVal = VIDEO_MIN_WIDTH_H263_SIZE;
+        capsData.height.minVal = VIDEO_MIN_HEIGHT_H263_SIZE;
+        capsData.width.maxVal = VIDEO_MAX_WIDTH_H263_SIZE;
+        capsData.height.maxVal = VIDEO_MAX_HEIGHT_H263_SIZE;
         capsData.profiles = {static_cast<int32_t>(H263_PROFILE_BASELINE),
                              static_cast<int32_t>(H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY)};
         std::vector<int32_t> levels;
@@ -289,10 +293,10 @@ void FCodec::GetBaseCapabilityData(CapabilityData &capsData)
 {
     capsData.alignment.width = VIDEO_ALIGNMENT_SIZE;
     capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
-    capsData.width.minVal = capsData.mimeType == "video/h263" ? VIDEO_MIN_WIDTH_H263_SIZE : VIDEO_MIN_SIZE;
-    capsData.height.minVal = capsData.mimeType == "video/h263" ? VIDEO_MIN_HEIGHT_H263_SIZE : VIDEO_MIN_SIZE;
-    capsData.width.maxVal = capsData.mimeType == "video/h263" ? VIDEO_MAX_WIDTH_H263_SIZE : VIDEO_MAX_WIDTH_SIZE;
-    capsData.height.maxVal = capsData.mimeType == "video/h263" ? VIDEO_MAX_HEIGHT_H263_SIZE : VIDEO_MAX_HEIGHT_SIZE;
+    capsData.width.minVal = VIDEO_MIN_SIZE;
+    capsData.height.minVal = VIDEO_MIN_SIZE;
+    capsData.width.maxVal = VIDEO_MAX_WIDTH_SIZE;
+    capsData.height.maxVal = VIDEO_MAX_HEIGHT_SIZE;
     capsData.frameRate.minVal = 0;
     capsData.frameRate.maxVal = VIDEO_FRAMERATE_DEFAULT_SIZE;
     capsData.bitrate.minVal = 1;
