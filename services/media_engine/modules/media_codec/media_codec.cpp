@@ -86,12 +86,17 @@ MediaCodec::MediaCodec()
       isSurfaceMode_(false),
       isBufferMode_(false),
       outputBufferCapacity_(0),
-      state_(CodecState::UNINITIALIZED)
+      state_(CodecState::UNINITIALIZED),
+      inputBytesSum_(0),
+      outputBytesSum_(0),
+      inputCount_(0),
+      outputCount_(0)
 {
 }
 
 MediaCodec::~MediaCodec()
 {
+    ResetIOStat();
     state_ = CodecState::UNINITIALIZED;
     outputBufferCapacity_ = 0;
     if (codecPlugin_) {
@@ -472,6 +477,7 @@ int32_t MediaCodec::Stop()
     }
     CHECK_AND_RETURN_RET_LOG(state_ == CodecState::RUNNING || state_ == CodecState::END_OF_STREAM ||
         state_ == CodecState::FLUSHED, (int32_t)Status::ERROR_INVALID_STATE, "state invalid");
+    ResetIOStat();
     state_ = CodecState::STOPPING;
     auto ret = codecPlugin_->Stop();
     AVCODEC_LOGI("codec Stop, state from %{public}s to Stop", StateToString(state_).data());
@@ -495,6 +501,7 @@ int32_t MediaCodec::Flush()
         return (int32_t)Status::ERROR_INVALID_STATE;
     }
     AVCODEC_LOGI("Flush, state from %{public}s to FLUSHING", StateToString(state_).data());
+    ResetIOStat();
     state_ = CodecState::FLUSHING;
     inputBufferQueueProducer_->Clear();
     auto ret = codecPlugin_->Flush();
@@ -532,6 +539,7 @@ int32_t MediaCodec::Reset()
         dumpDataOutputFs_->flush();
         dumpDataOutputFs_->close();
     }
+    ResetIOStat();
     state_ = CodecState::INITIALIZED;
     return (int32_t)ret;
 }
@@ -553,6 +561,7 @@ int32_t MediaCodec::Release()
         return (int32_t)Status::OK;
     }
     AVCODEC_LOGI("codec Release, state from %{public}s to RELEASING", StateToString(state_).data());
+    ResetIOStat();
     state_ = CodecState::RELEASING;
     auto ret = codecPlugin_->Release();
     CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "plugin release failed");
@@ -937,7 +946,10 @@ Status MediaCodec::ChangePlugin(const std::string &mime, bool isEncoder, const s
     }
 
     // discard undecoded data and unconsumed decoded data.
-    inputBufferQueueProducer_->Clear();
+    if (inputBufferQueueProducer_) {
+        inputBufferQueueProducer_->Clear();
+    }
+
     CHECK_AND_RETURN_RET_LOG(inputBufferQueue_ != nullptr, Status::ERROR_UNKNOWN, "inputBufferQueue_ is nullptr");
     ClearInputBuffer();
     ResetBufferStatusInfo();
@@ -951,6 +963,7 @@ Status MediaCodec::ChangePlugin(const std::string &mime, bool isEncoder, const s
             AVCODEC_LOGE("codecPlugin Start ret %{public}d", ret);
         }
     }
+    ResetIOStat();
 
     return ret;
 }
@@ -1182,6 +1195,12 @@ Status MediaCodec::CodePluginInputBuffer(const std::shared_ptr<AVBuffer> &inputB
         MEDIA_TRACE_DEBUG(std::string("MediaCodec::CodePluginInputBuffer-QueueInputBuffer:") +
             std::to_string(inputBuffer->flag_) + "," + std::to_string(inputBuffer->pts_) +
             "," + std::to_string(inputBuffer->duration_));
+
+        if (inputBuffer && inputBuffer->memory_) {
+            ++inputCount_;
+            inputBytesSum_ += inputBuffer->memory_->GetSize();
+        }
+
         return codecPlugin_->QueueInputBuffer(inputBuffer);
     } else {
         AVCODEC_LOGE("plugin is null");
@@ -1195,7 +1214,32 @@ Status MediaCodec::CodePluginOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffe
     CHECK_AND_RETURN_RET_LOG(codecPlugin_ != nullptr, Status::ERROR_INVALID_STATE, "plugin is null");
 
     MEDIA_TRACE_DEBUG("MediaCodec::CodePluginOutputBuffer");
-    return codecPlugin_->QueueOutputBuffer(outputBuffer);
+    auto res = codecPlugin_->QueueOutputBuffer(outputBuffer);
+
+    if (outputBuffer && outputBuffer->memory_) {
+        ++outputCount_;
+        outputBytesSum_ += outputBuffer->memory_->GetSize();
+    }
+
+    return res;
+}
+
+void MediaCodec::ResetIOStat()
+{
+    if (state_ == CodecState::RUNNING || state_ == CodecState::END_OF_STREAM) {
+        AVCODEC_LOGI(
+            "MediaCodec::ResetIOStat, input: %{public}zu bytes in %{public}zu times, output: %{public}zu bytes in "
+            "%{public}zu times utill last run",
+            inputBytesSum_,
+            inputCount_,
+            outputBytesSum_,
+            outputCount_);
+    }
+
+    inputBytesSum_ = 0;
+    outputBytesSum_ = 0;
+    inputCount_ = 0;
+    outputCount_ = 0;
 }
 
 } // namespace Media
