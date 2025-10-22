@@ -36,8 +36,9 @@ namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace CodecHDI;
 
-std::shared_mutex HDecoder::g_cbMtx;
-sptr<HDecoder::XperfCallback> HDecoder::g_xperfCb = nullptr;
+std::shared_mutex g_xperfMtx;
+sptr<HDecoder::XperfConnector> g_xperfConnector = nullptr;
+std::unordered_map<HDecoder*, HDecoder::DecoderInst> g_insts;
 
 HDecoder::~HDecoder()
 {
@@ -911,16 +912,12 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
         HLOGE("surface(%" PRIu64 "), RegisterReleaseListener failed", surfaceId);
         return AVCS_ERR_UNKNOWN;
     }
-    std::unique_lock<std::shared_mutex> lk(g_cbMtx);
-    if (g_xperfCb == nullptr) {
-        g_xperfCb = sptr<XperfCallback>::MakeSptr();
-        int regret = OHOS::HiviewDFX::XperfServiceClient::GetInstance().RegisterVideoJank("avcodec", g_xperfCb);
-        if (regret != 0) {
-            g_xperfCb = nullptr;
+    std::unique_lock<std::shared_mutex> lk(g_xperfMtx);
+    if (g_xperfConnector != nullptr) {
+        auto iter = g_insts.find(this);
+        if (iter != g_insts.end()) {
+            iter->second.surfaceId = surfaceId;
         }
-    }
-    if (g_xperfCb != nullptr) {
-        g_xperfCb->BeginToUse(surfaceId, weakThis);
     }
     return AVCS_ERR_OK;
 }
@@ -1223,12 +1220,6 @@ void HDecoder::SurfaceItem::Release(bool cleanAll)
 {
     if (surface_) {
         LOGI("release surface(%" PRIu64 ")", surface_->GetUniqueId());
-        {
-            std::shared_lock<std::shared_mutex> lk(g_cbMtx);
-            if (g_xperfCb) {
-                g_xperfCb->EndToUse(surface_->GetUniqueId());
-            }
-        }
         if (originalTransform_.has_value()) {
             surface_->SetTransform(originalTransform_.value());
             originalTransform_ = std::nullopt;
@@ -1409,20 +1400,65 @@ void HDecoder::ReportRenderFirstFrame()
             OHOS::HiviewDFX::DomainId::AVCODEC, OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_FIRST_FRAME_START, str);
     }
 }
- 
-void HDecoder::XperfCallback::BeginToUse(uint64_t surfaceId, std::weak_ptr<MsgToken> token)
+
+void HDecoder::OnEnterRunningState()
 {
-    std::lock_guard<std::mutex> lk(mtx_);
-    surfaceIdToCodec_[surfaceId] = token;
+    std::unique_lock<std::shared_mutex> lk(g_xperfMtx);
+    if (g_xperfConnector == nullptr) {
+        g_xperfConnector = sptr<XperfConnector>::MakeSptr();
+        int regret = OHOS::HiviewDFX::XperfServiceClient::GetInstance().RegisterVideoJank("avcodec", g_xperfConnector);
+        if (regret != 0) {
+            g_xperfConnector = nullptr;
+        }
+    }
+    if (g_xperfConnector != nullptr) {
+        DecoderInst inst {
+            .token = m_token,
+            .surfaceId = std::nullopt,
+            .processName = caller_.app.processName,
+        };
+        if (currSurface_.surface_) {
+            inst.surfaceId = currSurface_.surface_->GetUniqueId();
+        }
+        g_insts[this] = inst;
+    }
 }
- 
-void HDecoder::XperfCallback::EndToUse(uint64_t surfaceId)
+
+void HDecoder::OnExitRunningState()
 {
-    std::lock_guard<std::mutex> lk(mtx_);
-    surfaceIdToCodec_.erase(surfaceId);
+    std::unique_lock<std::shared_mutex> lk(g_xperfMtx);
+    if (g_xperfConnector != nullptr) {
+        g_insts.erase(this);
+    }
 }
+
+std::shared_ptr<HDecoder::MsgToken> HDecoder::XperfConnector::FindSuitableDecoder(
+    uint64_t surfaceId, const std::string& bundleName)
+{
+    std::shared_lock<std::shared_mutex> lk(g_xperfMtx);
+    if (g_xperfConnector == nullptr) {
+        return nullptr;
+    }
  
-ErrCode HDecoder::XperfCallback::OnVideoJankEvent(const std::string& msg)
+    auto it = std::find_if(g_insts.begin(), g_insts.end(), [surfaceId](const pair<HDecoder*, DecoderInst>& pair) {
+        return pair.second.surfaceId == surfaceId;
+    });
+    if (it != g_insts.end()) {
+        return it->second.token.lock();
+    }
+    LOGI("no decoder is using this surfaceId=%" PRIu64, surfaceId);
+ 
+    it = std::find_if(g_insts.begin(), g_insts.end(), [&bundleName](const pair<HDecoder*, DecoderInst>& pair) {
+        return pair.second.processName == bundleName;
+    });
+    if (it != g_insts.end()) {
+        return it->second.token.lock();
+    }
+    LOGI("no decoder is created by this app=%s", bundleName.c_str());
+    return nullptr;
+}
+
+ErrCode HDecoder::XperfConnector::OnVideoJankEvent(const std::string& msg)
 {
     LOGD("msg=%s", msg.c_str());
     std::string sub = "#UNIQUEID:";
@@ -1432,21 +1468,35 @@ ErrCode HDecoder::XperfCallback::OnVideoJankEvent(const std::string& msg)
         return 0;
     }
     uint64_t surfaceId = strtoull(msg.substr(pos + sub.length()).c_str(), nullptr, 10);
-    std::lock_guard<std::mutex> lk(mtx_);
-    auto it = surfaceIdToCodec_.find(surfaceId);
-    if (it == surfaceIdToCodec_.end()) {
-        LOGW("cannot find surfaceId=%" PRIu64, surfaceId);
+ 
+    sub = "#BUNDLE_NAME:";
+    pos = msg.find(sub);
+    if (pos == std::string::npos) {
+        LOGW("cannot find #BUNDLE_NAME:");
         return 0;
     }
-    std::shared_ptr<MsgToken> codec = it->second.lock();
-    if (codec == nullptr) {
-        LOGW("codec is gone");
+    string bundleName = msg.substr(pos + sub.length());
+ 
+    std::shared_ptr<MsgToken> codec = FindSuitableDecoder(surfaceId, bundleName);
+    if (codec != nullptr) {
+        codec->SendAsyncMsg(MsgWhat::QUERY_JANK_REASON, nullptr);
         return 0;
     }
-    codec->SendAsyncMsg(MsgWhat::QUERY_JANK_REASON, nullptr);
+ 
+    std::stringstream s;
+    s << "#UNIQUEID:" << surfaceId <<
+         "#PID:" << 0 <<
+         "#BUNDLE_NAME:" << bundleName <<
+         "#SURFACE_NAME:" << "" <<
+         "#FAULT_ID:" << OHOS::HiviewDFX::DomainId::AVCODEC <<
+         "#FAULT_CODE:" << OHOS::HiviewDFX::AvcodecFaultCode::NO_MATCHING_DECODER <<
+         "#JANK_REASON:" << "no matching decoder";
+    string str = s.str();
+    OHOS::HiviewDFX::XperfServiceClient::GetInstance().NotifyToXperf(
+        OHOS::HiviewDFX::DomainId::AVCODEC, OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_JANK_REPORT, str);
     return 0;
 }
- 
+
 void HDecoder::OnQueryJankReason()
 {
     HLOGI(">>");

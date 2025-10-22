@@ -530,6 +530,7 @@ void HCodec::StartingState::OnStateExited()
 void HCodec::RunningState::OnStateEntered()
 {
     codec_->ProcessDeferredMessages();
+    codec_->OnEnterRunningState();
 }
 
 void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
@@ -665,6 +666,12 @@ void HCodec::RunningState::OnFlush(const MsgInfo &info)
         SLOGI("ask omx to flush failed, ret=%d", ret);
         ReplyErrorCode(info.id, AVCS_ERR_UNKNOWN);
     }
+}
+
+void HCodec::RunningState::OnStateExited()
+{
+    codec_->OnExitRunningState();
+    BaseState::OnStateExited();
 }
 /**************************** RunningState End ********************************/
 
