@@ -272,6 +272,9 @@ int32_t AVDemuxerImpl::GetRelativePresentationTimeUsByIndex(const uint32_t track
 int32_t AVDemuxerImpl::GetCurrentCacheSize(uint32_t trackIndex, uint32_t& size)
 {
     AVCODEC_SYNC_TRACE;
+
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+
     AVCODEC_LOGD("AVDemuxer::GetCurrentCacheSize");
     CHECK_AND_RETURN_RET_LOG(mediaDemuxer_ != nullptr, AVCS_ERR_INVALID_OPERATION, "MediaDemuxer does not exist");
     return StatusToAVCodecServiceErrCode(mediaDemuxer_->GetCurrentCacheSize(trackIndex, size));
