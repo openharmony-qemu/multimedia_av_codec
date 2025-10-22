@@ -100,7 +100,8 @@ constexpr int MIN_BIT_RATE_OPUS = 6000;
 constexpr int MAX_BIT_RATE_OPUS = 510000;
 constexpr int MIN_OPUS_COMPLIANCE_LEVEL = 1;
 constexpr int MAX_OPUS_COMPLIANCE_LEVEL = 10;
-constexpr int MAX_CHANNEL_COUNT_OPUS = 255;
+constexpr int MAX_CHANNEL_COUNT_OPUS_ENC = 2;
+constexpr int MAX_CHANNEL_COUNT_OPUS_DEC = 255;
 const std::vector<int32_t> AUDIO_OPUS_SAMPLE_RATE = {8000, 12000, 16000, 24000, 48000};
 #endif
 #ifdef SUPPORT_CODEC_COOK
@@ -596,7 +597,7 @@ CapabilityData AudioCodeclistInfo::GetOpusEncoderCapability()
     audioOpusCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS;
     audioOpusCapability.isVendor = false;
     audioOpusCapability.bitrate = Range(MIN_BIT_RATE_OPUS, MAX_BIT_RATE_OPUS);
-    audioOpusCapability.channels = Range(1, MAX_CHANNEL_COUNT_OPUS);
+    audioOpusCapability.channels = Range(1, MAX_CHANNEL_COUNT_OPUS_ENC);
     audioOpusCapability.sampleRate = AUDIO_OPUS_SAMPLE_RATE;
     audioOpusCapability.sampleRateRanges = convertVectorToRange(AUDIO_OPUS_SAMPLE_RATE);
     audioOpusCapability.complexity = Range(MIN_OPUS_COMPLIANCE_LEVEL, MAX_OPUS_COMPLIANCE_LEVEL);
@@ -612,7 +613,7 @@ CapabilityData AudioCodeclistInfo::GetOpusDecoderCapability()
     audioOpusCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS;
     audioOpusCapability.isVendor = false;
     audioOpusCapability.bitrate = Range(1, MAX_BIT_RATE_OPUS);
-    audioOpusCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    audioOpusCapability.channels = Range(1, MAX_CHANNEL_COUNT_OPUS_DEC);
     audioOpusCapability.sampleRate = AUDIO_OPUS_SAMPLE_RATE;
     audioOpusCapability.sampleRateRanges = convertVectorToRange(AUDIO_OPUS_SAMPLE_RATE);
     audioOpusCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
