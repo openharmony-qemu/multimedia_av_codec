@@ -1754,6 +1754,9 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         }
         string roiStr(vec.begin(), vec.end());
         info.avBuffer->meta_->SetData(OHOS::Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiStr);
+        if (info.surfaceBuffer->EraseMetadataKey(ATTRKEY_ROI_METADATA) != GSERROR_OK) {
+            HLOGW("erase roi key failed");
+        }
     }
     encodingBuffers_[info.bufferId] = entry;
     if (enableSurfaceModeInputCb_) {
