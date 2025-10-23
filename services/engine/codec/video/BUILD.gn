@@ -23,7 +23,7 @@ ohos_static_library("av_codec_video_loader") {
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/engine/base/include",
     "$av_codec_root_dir/services/engine/codec/include/video",
-    "$av_codec_root_dir/services/engine/codec/video/fcodec",
+    "$av_codec_root_dir/services/engine/codec/video/fcodec/include",
     "$av_codec_root_dir/services/engine/codec/video/avcencoder",
     "$av_codec_root_dir/services/engine/codec/video/hevcdecoder",
     "$av_codec_root_dir/services/engine/common/include",

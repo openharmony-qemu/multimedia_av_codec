@@ -2460,6 +2460,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9100, TestSize.Level3)
  */
 HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9200, TestSize.Level3)
 {
+    if (memory == nullptr) {
+        memory = OH_AVMemory_Create(g_width * g_height);
+    }
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
     const char *file = "/data/test/media/eac3.eac3";
@@ -2504,6 +2507,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9200, TestSize.Level3)
  */
 HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9300, TestSize.Level3)
 {
+    if (memory == nullptr) {
+        memory = OH_AVMemory_Create(g_width * g_height);
+    }
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
     const char *file = "/data/test/media/audio/aac.wma";

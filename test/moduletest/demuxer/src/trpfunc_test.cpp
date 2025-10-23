@@ -83,7 +83,6 @@ void DemuxerTrpFuncNdkTest::TearDown()
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
     }
-
     if (sourceFormat != nullptr) {
         OH_AVFormat_Destroy(sourceFormat);
         sourceFormat = nullptr;
@@ -1193,7 +1192,37 @@ HWTEST_F(DemuxerTrpFuncNdkTest, DEMUXER_TRP_RANDOM_SEEK_0600, TestSize.Level2)
  */
 HWTEST_F(DemuxerTrpFuncNdkTest, DEMUXER_TRP_RANDOM_SEEK_0700, TestSize.Level2)
 {
-    CheckSeekResult("/data/test/media/mpeg4_aac.trp", SEEKTIMES);
+    const char *file = "/data/test/media/mpeg4_aac.trp";
+    static int64_t duration = 0;
+    int timecount = 2000;
+    OH_AVCodecBufferAttr attr;
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "-------" << fd << "-------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    cout << "g_trackCount----" << g_trackCount << endl;
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_DURATION, &duration));
+    cout << "duration----" << duration << endl;
+    srand(time(nullptr));
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+        for (int32_t i = 0; i < SEEKTIMES; i++) {
+            if (duration != 0) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, (g_trpRdm() % duration) / timecount,
+                (OH_AVSeekMode)((g_trpRdm() % 1) +1)));
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
+        }
+    }
+    close(fd);
+    fd = -1;
 }
 
 /**

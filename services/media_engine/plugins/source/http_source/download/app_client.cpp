@@ -41,9 +41,6 @@ namespace {
 AppClient::AppClient(RxHeader headCallback, RxBody bodyCallback, void *userParam)
     : rxHeader_(headCallback), rxBody_(bodyCallback), userParam_(userParam)
 {
-    rxHeader_ = headCallback;
-    rxBody_ = bodyCallback;
-    userParam_ = userParam;
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " AppClient create", FAKE_POINTER(this));
 }
  
@@ -93,7 +90,6 @@ Status AppClient::RequestData(long startPos, int len, const RequestInfo& request
     MEDIA_LOG_I("0x%{public}06" PRIXPTR "AppClient RequestData in, startPos: "
         PUBLIC_LOG_D32 " len: " PUBLIC_LOG_D32, FAKE_POINTER(this), static_cast<int>(startPos), len);
  
-    startPos_ = startPos;
     if (startPos == -1) {
         len = -1;
         startPos = 0;

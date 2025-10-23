@@ -100,7 +100,8 @@ constexpr int MIN_BIT_RATE_OPUS = 6000;
 constexpr int MAX_BIT_RATE_OPUS = 510000;
 constexpr int MIN_OPUS_COMPLIANCE_LEVEL = 1;
 constexpr int MAX_OPUS_COMPLIANCE_LEVEL = 10;
-constexpr int MAX_CHANNEL_COUNT_OPUS = 255;
+constexpr int MAX_CHANNEL_COUNT_OPUS_ENC = 2;
+constexpr int MAX_CHANNEL_COUNT_OPUS_DEC = 255;
 const std::vector<int32_t> AUDIO_OPUS_SAMPLE_RATE = {8000, 12000, 16000, 24000, 48000};
 #endif
 #ifdef SUPPORT_CODEC_COOK
@@ -139,6 +140,15 @@ constexpr int MAX_BIT_RATE_GSM = 13000;
 constexpr int MAX_CHANNEL_COUNT_GSM = 1;
 const std::vector<int32_t> AUDIO_GSM_SAMPLE_RATE = {8000};
 
+const std::vector<int32_t> AUDIO_WMA_LEGACY_SAMPLE_RATE = {
+    8000, 11025, 16000, 22050, 32000, 44100, 48000
+};
+const std::vector<int32_t> AUDIO_WMAPRO_SAMPLE_RATE = {
+    8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000
+};
+
+constexpr int MAX_CHANNEL_COUNT_ADPCM = 255;
+
 static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sampleRate)
 {
     std::vector<Range> sampleRateRange;
@@ -147,6 +157,114 @@ static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sample
         sampleRateRange.push_back(Range(sampleRate[i], sampleRate[i]));
     }
     return sampleRateRange;
+}
+
+static CapabilityData MakeAdpcmDecoderCapability(const std::string &codecName,
+                                                 const std::string &mime)
+{
+    CapabilityData cap;
+    cap.codecName = codecName;
+    cap.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    cap.mimeType  = mime;
+    cap.isVendor  = false;
+
+    cap.bitrate   = Range(1, MAX_INT32);
+    cap.channels  = Range(1, MAX_CHANNEL_COUNT_ADPCM);
+    cap.sampleRate = AUDIO_SAMPLE_RATE;
+    cap.sampleRateRanges = convertVectorToRange(AUDIO_SAMPLE_RATE);
+    cap.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return cap;
+}
+
+void AudioCodeclistInfo::AppendAdpcmCapabilities()
+{
+    using MediaAVCodec::AVCodecCodecName;
+    using MediaAVCodec::AVCodecMimeType;
+
+    const struct { std::string_view name; std::string_view mime; } kAdpcmList[] = {
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_MS_NAME,         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_MS },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_QT_NAME,     AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_QT },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_WAV_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_WAV },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_DK3_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_DK3 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_DK4_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_DK4 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_WS_NAME,     AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_WS },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_SMJPEG_NAME,
+          AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_SMJPEG },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_DAT4_NAME,   AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_DAT4 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_MTAF_NAME,       AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_MTAF },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_ADX_NAME,        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_ADX },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_AFC_NAME,        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_AFC },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_AICA_NAME,       AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_AICA },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_CT_NAME,         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_CT },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_DTK_NAME,        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_DTK },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_G722_NAME,       AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_G722 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_G726_NAME,       AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_G726 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_G726LE_NAME,     AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_G726LE },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_AMV_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_AMV },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_APC_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_APC },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_ISS_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_ISS },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_OKI_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_OKI },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_RAD_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_RAD },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_PSX_NAME,        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_PSX },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_SBPRO_2_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_SBPRO_2 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_SBPRO_3_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_SBPRO_3 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_SBPRO_4_NAME,    AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_SBPRO_4 },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_THP_NAME,        AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_THP },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_THP_LE_NAME,     AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_THP_LE },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_XA_NAME,         AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_XA },
+        { AVCodecCodecName::AUDIO_DECODER_ADPCM_YAMAHA_NAME,     AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_ADPCM_YAMAHA },
+    };
+
+    for (const auto &e : kAdpcmList) {
+        audioCapabilities_.push_back(
+            MakeAdpcmDecoderCapability(std::string(e.name), std::string(e.mime))
+        );
+    }
+}
+
+CapabilityData AudioCodeclistInfo::GetWMAV1DecoderCapability()
+{
+    CapabilityData cap;
+    cap.codecName = AVCodecCodecName::AUDIO_DECODER_WMAV1_NAME;
+    cap.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    cap.mimeType  = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_WMAV1;
+    cap.isVendor  = false;
+    cap.bitrate   = Range(1, MAX_INT32);
+    cap.channels  = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    cap.sampleRate = AUDIO_WMA_LEGACY_SAMPLE_RATE;
+    cap.sampleRateRanges = convertVectorToRange(AUDIO_WMA_LEGACY_SAMPLE_RATE);
+    cap.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return cap;
+}
+
+CapabilityData AudioCodeclistInfo::GetWMAV2DecoderCapability()
+{
+    CapabilityData cap;
+    cap.codecName = AVCodecCodecName::AUDIO_DECODER_WMAV2_NAME;
+    cap.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    cap.mimeType  = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_WMAV2;
+    cap.isVendor  = false;
+    cap.bitrate   = Range(1, MAX_INT32);
+    cap.channels  = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    cap.sampleRate = AUDIO_WMA_LEGACY_SAMPLE_RATE;
+    cap.sampleRateRanges = convertVectorToRange(AUDIO_WMA_LEGACY_SAMPLE_RATE);
+    cap.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return cap;
+}
+
+CapabilityData AudioCodeclistInfo::GetWMAProDecoderCapability()
+{
+    CapabilityData cap;
+    cap.codecName = AVCodecCodecName::AUDIO_DECODER_WMAPRO_NAME;
+    cap.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    cap.mimeType  = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_WMAPRO;
+    cap.isVendor  = false;
+    cap.bitrate   = Range(1, MAX_INT32);
+    cap.channels  = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    cap.sampleRate = AUDIO_WMAPRO_SAMPLE_RATE;
+    cap.sampleRateRanges = convertVectorToRange(AUDIO_WMAPRO_SAMPLE_RATE);
+    cap.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return cap;
 }
 
 CapabilityData AudioCodeclistInfo::GetGsmMsDecoderCapability()
@@ -479,7 +597,7 @@ CapabilityData AudioCodeclistInfo::GetOpusEncoderCapability()
     audioOpusCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS;
     audioOpusCapability.isVendor = false;
     audioOpusCapability.bitrate = Range(MIN_BIT_RATE_OPUS, MAX_BIT_RATE_OPUS);
-    audioOpusCapability.channels = Range(1, MAX_CHANNEL_COUNT_OPUS);
+    audioOpusCapability.channels = Range(1, MAX_CHANNEL_COUNT_OPUS_ENC);
     audioOpusCapability.sampleRate = AUDIO_OPUS_SAMPLE_RATE;
     audioOpusCapability.sampleRateRanges = convertVectorToRange(AUDIO_OPUS_SAMPLE_RATE);
     audioOpusCapability.complexity = Range(MIN_OPUS_COMPLIANCE_LEVEL, MAX_OPUS_COMPLIANCE_LEVEL);
@@ -495,7 +613,7 @@ CapabilityData AudioCodeclistInfo::GetOpusDecoderCapability()
     audioOpusCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS;
     audioOpusCapability.isVendor = false;
     audioOpusCapability.bitrate = Range(1, MAX_BIT_RATE_OPUS);
-    audioOpusCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    audioOpusCapability.channels = Range(1, MAX_CHANNEL_COUNT_OPUS_DEC);
     audioOpusCapability.sampleRate = AUDIO_OPUS_SAMPLE_RATE;
     audioOpusCapability.sampleRateRanges = convertVectorToRange(AUDIO_OPUS_SAMPLE_RATE);
     audioOpusCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
@@ -657,6 +775,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetFlacEncoderCapability(), GetG711muEncoderCapability(), GetAPEDecoderCapability(),
                           GetMP3EncoderCapability(), GetG711aDecoderCapability(), GetAc3DecoderCapability(),
                           GetGsmMsDecoderCapability(), GetGsmDecoderCapability(), GetAlacDecoderCapability(),
+                          GetWMAV1DecoderCapability(), GetWMAV2DecoderCapability(), GetWMAProDecoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),
@@ -669,6 +788,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
     GetEac3DecoderCapability(),
 #endif
     };
+    AppendAdpcmCapabilities();
 }
 
 AudioCodeclistInfo::~AudioCodeclistInfo()

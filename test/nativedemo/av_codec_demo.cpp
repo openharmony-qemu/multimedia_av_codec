@@ -32,6 +32,7 @@
 #include "avcodec_audio_avbuffer_mp3_encoder_demo.h"
 #include "avcodec_audio_avbuffer_lbvc_decoder_inner_demo.h"
 #include "avcodec_audio_avbuffer_lbvc_encoder_inner_demo.h"
+#include "avcodec_audio_adpcm_decoder_demo.h"
 #include "avcodec_audio_opus_encoder_demo.h"
 #include "avcodec_audio_g711mu_encoder_demo.h"
 #include "codeclist_demo.h"
@@ -235,6 +236,7 @@ static int RunAudioInnerDecoder()
     cout << "3: VORBIS" << endl;
     cout << "4: DecoderInner-API11" << endl;
     cout << "5: LBVC" << endl;
+    cout << "6: ADPCM" << endl;
     string mode;
     (void)getline(cin, mode);
     if (mode == "" || mode == "0") {
@@ -254,6 +256,9 @@ static int RunAudioInnerDecoder()
         audioDec->RunCase();
     } else if (mode == "5") {
         auto audioDec = std::make_unique<AudioDecInnerAvBufferLbvcDemo>();
+        audioDec->RunCase();
+    } else if (mode == "6") {
+        auto audioDec = std::make_unique<Media::Plugins::AudioAdpcmDecoderDemo>();
         audioDec->RunCase();
     } else {
         cout << "no that selection" << endl;

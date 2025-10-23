@@ -55,11 +55,18 @@ int32_t VideoEncoderSample::Prepare()
         (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_FORMAT,
             ToGraphicPixelFormat(info.pixelFormat, info.profile));
 
-        int32_t strideAlignment = 0;
-        (void)OH_NativeWindow_NativeWindowHandleOpt(window, GET_STRIDE, &strideAlignment);
-        info.videoStrideWidth = strideAlignment > 0 ?
-            (strideAlignment * std::ceil(static_cast<float>(info.videoWidth) / strideAlignment)) : info.videoWidth;
+        OHNativeWindowBuffer *buffer = nullptr;
+        int fenceFd = -1;
+        int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(window, &buffer, &fenceFd);
+        CHECK_AND_RETURN_RET_LOG(ret == 0, AVCODEC_SAMPLE_ERR_ERROR, "RequestBuffer failed, ret: %{public}d", ret);
+        OH_NativeBuffer *nativeBuffer = nullptr;
+        OH_NativeBuffer_FromNativeWindowBuffer(buffer, &nativeBuffer);
+        OH_NativeBuffer_Config config;
+        OH_NativeBuffer_GetConfig(nativeBuffer, &config);
+ 
+        info.videoStrideWidth = config.stride;
         info.videoSliceHeight = info.videoHeight;
+        OH_NativeWindow_NativeWindowAbortBuffer(window, buffer);
         if (!syncMode) {
             inputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::SurfaceInputThread, this);
         }
@@ -102,6 +109,24 @@ void VideoEncoderSample::BufferInputThread()
     PushEosFrame();
 }
 
+void VideoEncoderSample::SetRoiByNativebuf(OH_NativeBuffer *nativeBuffer)
+{
+    if (nativeBuffer != nullptr && context_->sampleInfo->enableRoiByNativebuf) {
+        std::string roiInfo;
+        if (context_->inputStreamByNativebuf.is_open() &&
+            std::getline(context_->inputStreamByNativebuf, roiInfo) && roiInfo != "") {
+            if (roiInfo == "clear") {
+                roiInfo = ";";
+            }
+            int32_t ret = OH_NativeBuffer_SetMetadataValue(nativeBuffer, OH_REGION_OF_INTEREST_METADATA,
+                roiInfo.size(), reinterpret_cast<uint8_t*>(const_cast<char*>(roiInfo.c_str())));
+            if (ret != 0) {
+                AVCODEC_LOGE("set roi failed, roi str is %s, ret is %d", roiInfo.c_str(), ret);
+            }
+        }
+    }
+}
+
 void VideoEncoderSample::SurfaceInputThread()
 {
     OHNativeWindowBuffer *buffer = nullptr;
@@ -116,19 +141,20 @@ void VideoEncoderSample::SurfaceInputThread()
         (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_UI_TIMESTAMP, pts);
         int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(window, &buffer, &fenceFd);
         CHECK_AND_CONTINUE_LOG(ret == 0, "RequestBuffer failed, ret: %{public}d", ret);
-
-        BufferHandle* bufferHandle = OH_NativeWindow_GetBufferHandleFromNative(buffer);
-        CHECK_AND_BREAK_LOG(bufferHandle != nullptr, "Get buffer handle failed, thread out");
-        uint8_t *bufferAddr = static_cast<uint8_t *>(mmap(bufferHandle->virAddr, bufferHandle->size,
-            PROT_READ | PROT_WRITE, MAP_SHARED, bufferHandle->fd, 0));
-        CHECK_AND_BREAK_LOG(bufferAddr != MAP_FAILED, "Map native window buffer failed, thread out");
-
+        OH_NativeBuffer *nativeBuffer;
+        ret = OH_NativeBuffer_FromNativeWindowBuffer(buffer, &nativeBuffer);
+        CHECK_AND_BREAK_LOG(ret == 0, "Convert from window buffer failed, thread out");
+        SetRoiByNativebuf(nativeBuffer);
+        void *virAddr = nullptr;
+        ret = OH_NativeBuffer_Map(nativeBuffer, &virAddr);
+        CHECK_AND_BREAK_LOG(ret == 0, "Map native buffer failed, thread out");
+        uint8_t *bufferAddr = static_cast<uint8_t *>(virAddr);
         CodecBufferInfo bufferInfo(bufferAddr);
         ret = dataProducer_->ReadSample(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Read EOS frame, thread out");
-        ret = munmap(bufferAddr, bufferHandle->size);
-        CHECK_AND_BREAK_LOG(ret != -1, "Unmap buffer failed, thread out");
+        ret = OH_NativeBuffer_Unmap(nativeBuffer);
+        CHECK_AND_BREAK_LOG(ret == 0, "Unmap native buffer failed, thread out");
 
         ThreadSleep(info.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP, info.frameInterval);
 
@@ -153,9 +179,11 @@ void VideoEncoderSample::OutputThread()
         AVCODEC_LOGV("Out buffer count: %{public}u, size: %{public}d, flag: %{public}u, pts: %{public}" PRId64,
             context_->outputBufferQueue.GetFrameCount(),
             bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
+        if (bufferInfo.attr.size > 0) {
+            DumpOutput(bufferInfo);
+        }
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS frame, thread out");
 
-        DumpOutput(bufferInfo);
         ThreadSleep(info.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP, info.frameInterval);
 
         int32_t ret = context_->videoCodec->FreeOutput(bufferInfo.bufferIndex);

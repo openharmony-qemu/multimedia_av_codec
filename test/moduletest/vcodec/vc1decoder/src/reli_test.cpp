@@ -96,7 +96,7 @@ HWTEST_F(Vc1DecReliNdkTest, VIDEO_VC1DEC_STABILITY_0010, TestSize.Level3)
 }
 /**
  * @tc.number    : VIDEO_VC1DEC_STABILITY_0020
- * @tc.name      : VC1 soft decode 16 times with fast Surface change
+ * @tc.name      : VC1 soft decode 16 times surface mode, change videoSize to 1920x1080
  * @tc.desc      : reli test
  */
 HWTEST_F(Vc1DecReliNdkTest, VIDEO_VC1DEC_STABILITY_0020, TestSize.Level3)
@@ -186,7 +186,7 @@ HWTEST_F(Vc1DecReliNdkTest, VIDEO_VC1DEC_STABILITY_0050, TestSize.Level3)
 }
 /**
  * @tc.number    : VIDEO_VC1DEC_STABILITY_0060
- * @tc.name      : 16 instances VC1 soft decode with Surface mode
+ * @tc.name      : Decode 16 VC1 streams simultaneously in Surface mode
  * @tc.desc      : reli test
  */
 HWTEST_F(Vc1DecReliNdkTest, VIDEO_VC1DEC_STABILITY_0060, TestSize.Level3)
@@ -211,7 +211,7 @@ HWTEST_F(Vc1DecReliNdkTest, VIDEO_VC1DEC_STABILITY_0060, TestSize.Level3)
 }
 /**
  * @tc.number    : VIDEO_VC1DEC_STABILITY_0070
- * @tc.name      : 16 instances VC1 soft decode with buffer mode
+ * @tc.name      : Decode 16 VC1 streams simultaneously in buffer mode
  * @tc.desc      : reli test
  */
 HWTEST_F(Vc1DecReliNdkTest, VIDEO_VC1DEC_STABILITY_0070, TestSize.Level3)
@@ -269,7 +269,7 @@ HWTEST_F(Vc1DecReliNdkTest, VIDEO_VC1DEC_STABILITY_0080, TestSize.Level3)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_STABILITY_0090
- * @tc.name      : Decode SVC and common VC1 streams simultaneously
+ * @tc.name      : Decode VC1 streams simultaneously
  * @tc.desc      : reli test
  */
 HWTEST_F(Vc1DecReliNdkTest, VIDEO_VC1DEC_STABILITY_0090, TestSize.Level3)
@@ -347,7 +347,7 @@ HWTEST_F(Vc1DecReliNdkTest, VIDEO_VC1DEC_STABILITY_0110, TestSize.Level3)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_STABILITY_0120
- * @tc.name      : Decode SVC and common VC1 streams simultaneously
+ * @tc.name      : Decode VC1 streams with surface and buffer mode successively
  * @tc.desc      : reli test
  */
 HWTEST_F(Vc1DecReliNdkTest, VIDEO_VC1DEC_STABILITY_0120, TestSize.Level3)

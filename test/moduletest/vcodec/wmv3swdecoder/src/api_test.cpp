@@ -356,10 +356,22 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0100, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0200
- * @tc.name      : OH_AVCapability_GetMaxSupportedInstances param correct
+ * @tc.name      : OH_AVCapability_GetMaxSupportedInstances param error
  * @tc.desc      : function test
  */
 HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0200, TestSize.Level1)
+{
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(cap, nullptr);
+    ASSERT_EQ(0, OH_AVCapability_GetMaxSupportedInstances(nullptr));
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0300
+ * @tc.name      : OH_AVCapability_GetMaxSupportedInstances param correct
+ * @tc.desc      : function test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0300, TestSize.Level1)
 {
     cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     ASSERT_NE(cap, nullptr);
@@ -367,11 +379,23 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0200, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0300
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0400
+ * @tc.name      : OH_AVCapability_GetName param error
+ * @tc.desc      : function test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0400, TestSize.Level1)
+{
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(cap, nullptr);
+    ASSERT_NE(CODEC_NAME, OH_AVCapability_GetName(nullptr));
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0500
  * @tc.name      : OH_AVCapability_GetName param correct
  * @tc.desc      : function test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0300, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0500, TestSize.Level1)
 {
     cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     ASSERT_NE(cap, nullptr);
@@ -379,11 +403,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0300, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0400
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0600
  * @tc.name      : OH_AVCapability_GetVideoWidthAlignment param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0400, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0600, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
@@ -393,11 +417,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0400, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0500
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0700
  * @tc.name      : OH_AVCapability_GetVideoWidthAlignment param correct
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0500, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0700, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
@@ -406,15 +430,15 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0500, TestSize.Level1)
     ret = OH_AVCapability_GetVideoWidthAlignment(capability, &alignment);
     cout << "WidthAlignment " << alignment << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_GE(alignment, 0);
+    ASSERT_EQ(alignment, 2);
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0600
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0800
  * @tc.name      : OH_AVCapability_GetVideoHeightAlignment param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0600, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0800, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
@@ -424,11 +448,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0600, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0700
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0900
  * @tc.name      : OH_AVCapability_GetVideoHeightAlignment param correct
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0700, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0900, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
@@ -437,37 +461,7 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0700, TestSize.Level1)
     ret = OH_AVCapability_GetVideoHeightAlignment(capability, &alignment);
     cout << "HeightAlignment " << alignment << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_GE(alignment, 0);
-}
-
-/**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0800
- * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
- * @tc.desc      : api test
- */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0800, TestSize.Level1)
-{
-    OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVRange range;
-    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
-    ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoWidthRangeForHeight(nullptr, DEFAULT_HEIGHT, &range);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-}
-
-/**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_0900
- * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
- * @tc.desc      : api test
- */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_0900, TestSize.Level1)
-{
-    OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
-    ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, nullptr);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    ASSERT_EQ(alignment, 2);
 }
 
 /**
@@ -482,16 +476,65 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1000, TestSize.Level1)
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, 0, &range);
+    ret = OH_AVCapability_GetVideoWidthRangeForHeight(nullptr, DEFAULT_HEIGHT, &range);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
 }
 
 /**
  * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1100
- * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param correct
+ * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
  * @tc.desc      : api test
  */
 HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1100, TestSize.Level1)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, nullptr);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1200
+ * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1200, TestSize.Level1)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    OH_AVRange range;
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, 0, &range);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1300
+ * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1300, TestSize.Level1)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    OH_AVRange range;
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, &range);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
+    ASSERT_EQ(range.minVal, 2);
+    ASSERT_EQ(range.maxVal, 4096);
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1400
+ * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1400, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -503,8 +546,8 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1100, TestSize.Level1)
     ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, &range);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_EQ(2, range.minVal);
+    ASSERT_EQ(4096, range.maxVal);
     vdec_ = OH_VideoDecoder_CreateByName(codecName);
     ASSERT_NE(nullptr, vdec_);
     format = OH_AVFormat_Create();
@@ -521,11 +564,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1100, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1200
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1500
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1200, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1500, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -537,11 +580,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1200, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1300
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1600
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1300, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1600, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
@@ -551,11 +594,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1300, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1400
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1700
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1400, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1700, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -567,11 +610,30 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1400, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1500
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1800
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param correct
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1500, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1800, TestSize.Level1)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    OH_AVRange range;
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, &range);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
+    ASSERT_EQ(range.minVal, 2);
+    ASSERT_EQ(range.maxVal, 4096);
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1900
+ * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1900, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -583,8 +645,8 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1500, TestSize.Level1)
     ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_EQ(2, range.minVal);
+    ASSERT_EQ(4096, range.maxVal);
     vdec_ = OH_VideoDecoder_CreateByName(codecName);
     ASSERT_NE(nullptr, vdec_);
     format = OH_AVFormat_Create();
@@ -601,11 +663,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1500, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1600
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2000
  * @tc.name      : OH_AVCapability_GetVideoWidthRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1600, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2000, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
@@ -615,11 +677,26 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1600, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1700
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2100
+ * @tc.name      : OH_AVCapability_GetVideoWidthRange param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2100, TestSize.Level1)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    OH_AVRange range;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetVideoWidthRange(nullptr, &range);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2200
  * @tc.name      : OH_AVCapability_GetVideoWidthRange param correct
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1700, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2200, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -629,16 +706,16 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1700, TestSize.Level1)
     ret = OH_AVCapability_GetVideoWidthRange(capability, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_GE(range.minVal, 0);
-    ASSERT_GT(range.maxVal, 0);
+    ASSERT_EQ(range.minVal, 2);
+    ASSERT_EQ(range.maxVal, 4096);
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1800
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2300
  * @tc.name      : OH_AVCapability_GetVideoHeightRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1800, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2300, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
@@ -648,11 +725,45 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1800, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_1900
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2400
+ * @tc.name      : OH_AVCapability_GetVideoHeightRange param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2400, TestSize.Level1)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    OH_AVRange range;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetVideoHeightRange(nullptr, &range);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2500
  * @tc.name      : OH_AVCapability_GetVideoHeightRange param correct
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1900, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2500, TestSize.Level1)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    OH_AVRange range;
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetVideoHeightRange(capability, &range);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
+    ASSERT_EQ(range.minVal, 2);
+    ASSERT_EQ(range.maxVal, 4096);
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2600
+ * @tc.name      : OH_AVCapability_GetVideoHeightRange param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2600, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange widthRange;
@@ -686,11 +797,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_1900, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2000
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2700
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2000, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2700, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -698,11 +809,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2000, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2100
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2800
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2100, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2800, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -710,11 +821,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2100, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2200
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2900
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2200, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2900, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -725,11 +836,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2200, TestSize.Level1)
     ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, widthRange.maxVal + 1, heightRange.maxVal + 1));
 }
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2300
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3000
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2300, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3000, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -737,11 +848,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2300, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2400
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3100
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2400, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3100, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
@@ -751,11 +862,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2400, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2500
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3200
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRange param correct
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2500, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3200, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -769,11 +880,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2500, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2600
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3300
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2600, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3300, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
@@ -783,11 +894,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2600, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2700
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3400
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2700, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3400, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -799,11 +910,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2700, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2800
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3500
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2800, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3500, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -815,11 +926,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2800, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_2900
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3600
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param correct
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2900, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3600, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     int32_t width = 1280;
@@ -849,11 +960,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_2900, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3000
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3700
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3000, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3700, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -861,11 +972,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3000, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3100
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3800
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3100, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3800, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -873,11 +984,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3100, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3200
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3900
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3200, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3900, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -885,11 +996,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3200, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3300
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_4000
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3300, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_4000, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -897,11 +1008,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3300, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3400
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_4100
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3400, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_4100, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     uint32_t pixelFormatNum = 0;
@@ -912,11 +1023,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3400, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3500
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_4200
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3500, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_4200, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *pixelFormat = nullptr;
@@ -927,11 +1038,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3500, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3600
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_4300
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param correct
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3600, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_4300, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *pixelFormat = nullptr;
@@ -966,11 +1077,59 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3600, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3700
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_4400
+ * @tc.name      : OH_AVCapability_GetSupportedProfiles param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_4400, TestSize.Level1)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    const int32_t *profiles = nullptr;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, nullptr);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_4500
+ * @tc.name      : OH_AVCapability_GetSupportedProfiles param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_4500, TestSize.Level1)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    uint32_t profileNum = 0;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetSupportedProfiles(capability, nullptr, &profileNum);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_4600
+ * @tc.name      : OH_AVCapability_GetSupportedProfiles param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_4600, TestSize.Level1)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    const int32_t *profiles = nullptr;
+    uint32_t profileNum = 0;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetSupportedProfiles(nullptr, &profiles, &profileNum);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    ASSERT_EQ(profileNum, 0);
+    ASSERT_EQ(nullptr, profiles);
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_4700
  * @tc.name      : OH_AVCapability_GetSupportedProfiles param correct
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3700, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_4700, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *profiles = nullptr;
@@ -987,11 +1146,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3700, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3800
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_4800
  * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param correct
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3800, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_4800, TestSize.Level1)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *levels = nullptr;
@@ -1017,24 +1176,63 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3800, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_3900
- * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param correct
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_4900
+ * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_3900, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_4900, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
-    ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability, AVC_PROFILE_BASELINE, 1));
+    int32_t level = WMV3_LEVEL_HIGH + 1;
+    ASSERT_EQ(false, OH_AVCapability_AreProfileAndLevelSupported(capability, WMV3_PROFILE_MAIN, level));
 }
 
 /**
- * @tc.number    : VIDEO_MPEG2SWDEC_CAP_4000
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_5000
+ * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param error
+ * @tc.desc      : api test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_5000, TestSize.Level1)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    int32_t level = WMV3_LEVEL_HIGH;
+    ASSERT_EQ(false, OH_AVCapability_AreProfileAndLevelSupported(capability, WMV3_PROFILE_SIMPLE, level));
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_5100
+ * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_5100, TestSize.Level1)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    int32_t level = WMV3_LEVEL_MEDIUM;
+    ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability, WMV3_PROFILE_SIMPLE, level));
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_5200
+ * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_5200, TestSize.Level1)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    int32_t level = WMV3_LEVEL_MEDIUM;
+    ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability, WMV3_PROFILE_MAIN, level));
+}
+
+/**
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_5300
  * @tc.name      : OH_AVCapability_IsFeatureSupported param error
  * @tc.desc      : api test
  */
-
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_4000, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_5300, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
@@ -1042,11 +1240,11 @@ HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_4000, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_MPEG2SWDEC_CAP_4100
+ * @tc.number    : VIDEO_WMV3SWDEC_CAP_API_5400
  * @tc.name      : OH_AVCapability_GetFeatureProperties param error
  * @tc.desc      : api test
  */
-HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_4100, TestSize.Level1)
+HWTEST_F(WMV3SwdecApiNdkTest, VIDEO_WMV3SWDEC_CAP_API_5400, TestSize.Level1)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);

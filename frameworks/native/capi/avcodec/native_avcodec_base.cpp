@@ -49,9 +49,13 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_RAW = "audio/raw";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_G711A = "audio/g711a";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_EAC3 = "audio/eac3";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AC3 = "audio/ac3";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_ALAC = "audio/alac";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM_MS = "audio/gsm_ms";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_WMV3 = "video/wmv3";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM = "audio/gsm";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAV1 = "audio/wmav1";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAV2 = "audio/wmav2";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAPRO = "audio/wmapro";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";
@@ -91,6 +95,7 @@ const char *OH_MD_KEY_SCALING_MODE = "scale_type";
 const char *OH_MD_MAX_INPUT_BUFFER_COUNT = "max_input_buffer_count";
 const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT = "max_output_buffer_count";
 const char *OH_MD_KEY_VIDEO_IS_HDR_VIVID = "video_is_hdr_vivid";
+const char *OH_MD_KEY_BLOCK_ALIGN = "audio_block_align";
 
 const char *OH_MD_KEY_TITLE = "title";
 const char *OH_MD_KEY_ARTIST = "artist";

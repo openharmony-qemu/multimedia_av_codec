@@ -68,6 +68,8 @@ group("av_codec_unit_test") {
         "unittest/audio_test:audio_gsm_decoder_unit_test",
         "unittest/audio_test:audio_gsm_capi_decoder_unit_test",
         "unittest/audio_test:audio_alac_decoder_unit_test",
+        "unittest/audio_test:audio_wma_decoder_unit_test",
+        "unittest/audio_test:audio_adpcm_decoder_unit_test",
         "unittest/avcenc_info_test:avcenc_info_capi_unit_test",
         "unittest/avmuxer_test:avmuxer_capi_unit_test",
         "unittest/avmuxer_test:avmuxer_inner_unit_test",
@@ -407,7 +409,12 @@ group("av_codec_fuzz_test") {
       "fuzztest/dashmediadownsetbit_fuzzer:DashMediaDownSetBitFuzzTest",
       "fuzztest/dashmpddownloader_fuzzer:DashMpdDownloaderFuzzTest",
       "fuzztest/http_plugin_fuzztest/hlscfg_fuzzer:HlsCfgFuzzTest",
-      "fuzztest/http_plugin_fuzztest/http_downloader_fuzzer:HttpDownloaderFuzzTest",
+      "fuzztest/http_plugin_fuzztest/hlsm3u8mutate_fuzzer:HlsM3u8MutateFuzzTest",
+      "fuzztest/http_plugin_fuzztest/httpdownloader_fuzzer:HttpDownloaderFuzzTest",
+      "fuzztest/http_plugin_fuzztest/httpdownloaderopen_fuzzer:HttpDownloaderOpenFuzzTest",
+      "fuzztest/dashmediadownappuid_fuzzer:DashMediaDownAppUidFuzzTest",
+      "fuzztest/dashmediadownseektotime_fuzzer:DashMediaDownSeekToTimeFuzzTest",
+      "fuzztest/dashmpddownfinished_fuzzer:DashMpdDownFinishedFuzzTest",
     ]
     if(av_codec_enable_codec_eac3) {
       deps += [ "fuzztest/audiodecodereac3_fuzzer:AudioDecoderEac3FuzzTest" ]
@@ -429,8 +436,8 @@ group("video_codec_unit_test") {
         "unittest/video_test/dfx_test:video_codec_dfx_test",
         "unittest/video_test/drm_decryptor_test:drm_decryptor_coverage_unit_test",
         "unittest/video_test/event_manager_unit_test:video_event_manager_coverage_unit_test",
-        "unittest/video_test/fcodec_test:video_fcodec_capi_unit_test",
-        "unittest/video_test/fcodec_test:video_mjpeg_unit_test",
+        "unittest/video_test/fcodec_test:videodec_fcodec_capi_unit_test",
+        "unittest/video_test/fcodec_test:videodec_mjpeg_unit_test",
         "unittest/video_test/key_type_test:video_codec_key_type_test",
         "unittest/video_test/sa_avcodec_test:video_sa_avcodec_unit_test",
         "unittest/video_test/vcodec_framework_test:vcodec_framework_test",

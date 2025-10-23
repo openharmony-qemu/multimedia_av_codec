@@ -138,6 +138,12 @@ struct SampleInfo {
     int32_t videoDecoderOutputColorspace = -1;
     SampleType sampleType = SampleType::VIDEO_SAMPLE;
     bool syncMode = false;
+    int32_t sqrFactor = 25; // 25: default sqr factor
+    bool enableBFrame = false;
+    bool enableRoi = false;
+    std::string roiFilePath;
+    bool enableRoiByNativebuf = false;
+    std::string roiFilePathByNativebuf;
 };
 
 struct CodecBufferInfo {

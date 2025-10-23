@@ -196,6 +196,10 @@ int32_t AVCodecAudioCodecImpl::Reset()
     StopTask();
     ClearCache();
     ClearInputBuffer();
+    implBufferQueue_ = Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY,
+        INPUT_BUFFER_QUEUE_NAME);
+    CHECK_AND_RETURN_RET_LOG(implBufferQueue_ != nullptr, AVCS_ERR_NO_MEMORY, "failed to create buffer queue");
+
     inputBufferSize_ = 0;
     isSyncMode_.store(false);
     return ret;

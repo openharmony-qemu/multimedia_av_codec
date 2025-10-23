@@ -415,12 +415,44 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_EAC3;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AC3;
 
 /**
+ * @brief Enumerates the mime types of ALAC(Apple Lossless Audio Codec).
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 22
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_ALAC;
+
+/**
  * @brief Enumerates the mime types of audio GSM codec.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 22
  */
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM;
+
+/**
+ * @brief Enumerates the mime types of windows media audio 1 codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 22
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAV1;
+
+/**
+ * @brief Enumerates the mime types of windows media audio 2 codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 22
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAV2;
+
+/**
+ * @brief Enumerates the mime types of windows media audio 9 professional codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 22
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAPRO;
 
 /**
  * @brief Key for timeStamp in surfacebuffer, value type is int64_t.
@@ -1006,6 +1038,17 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN;
 extern const char *OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT;
 
 /**
+ * @brief Key for specifying the number of bytes per audio packet. The value type is int32_t.
+ *
+ * This key is required only for Windows Media audio decoders. The supported decoder MIME types
+ * include {@link OH_AVCODEC_MIMETYPE_AUDIO_WMAV1}, {@link OH_AVCODEC_MIMETYPE_AUDIO_WMAV2},
+ * and {@link OH_AVCODEC_MIMETYPE_AUDIO_WMAPRO}.
+ *
+ * @since 22
+ */
+extern const char *OH_MD_KEY_BLOCK_ALIGN;
+
+/**
  * @brief Media type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
@@ -1133,6 +1176,18 @@ typedef enum OH_H263Profile {
     /** Version 1 backward compatibility profile */
     H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY = 2,
 } OH_H263Profile;
+
+/**
+ * @brief WMV3 Profile
+ *
+ * @since 22
+ */
+typedef enum OH_WMV3Profile {
+    /** SIMPLE Profile */
+    WMV3_PROFILE_SIMPLE = 0,
+    /** MAIN Profile */
+    WMV3_PROFILE_MAIN = 1
+} OH_WMV3Profile;
 
 /**
  * @brief HEVC Profile
@@ -1478,6 +1533,20 @@ typedef enum OH_H263Level {
     /** 70 level */
     H263_LEVEL_70 = 7
 } OH_H263Level;
+
+/**
+ * @brief WMV3 Level
+ *
+ * @since 22
+ */
+typedef enum OH_WMV3Level {
+    /** LOW Level */
+    WMV3_LEVEL_LOW = 0,
+    /** MEDIUM Level */
+    WMV3_LEVEL_MEDIUM = 1,
+    /** HIGH Level */
+    WMV3_LEVEL_HIGH = 2
+} OH_WMV3Level;
 
 /**
  * @brief AVC Level.

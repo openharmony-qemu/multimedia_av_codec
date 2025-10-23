@@ -382,6 +382,12 @@ Status FfmpegBaseDecoder::SetBlockAlignContext(const int block_align)
     return Status::OK;
 }
 
+Status FfmpegBaseDecoder::SetBitsPerSampleContext(const int bits_per_sample)
+{
+    avCodecContext_->bits_per_coded_sample = bits_per_sample;
+    return Status::OK;
+}
+
 Status FfmpegBaseDecoder::InitResample()
 {
     AVCODEC_LOGI("channels :%{public}" PRId32, avCodecContext_->channels);

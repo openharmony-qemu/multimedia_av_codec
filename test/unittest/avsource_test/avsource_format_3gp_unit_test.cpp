@@ -51,6 +51,8 @@ string g_3gpPath3 = TEST_FILE_PATH + string("3gp_mpeg4_aac.3gp");
 string g_3gpUri1 = TEST_URI_PATH + string("3gp_h264_aac.3gp");
 string g_3gpUri2 = TEST_URI_PATH + string("3gp_h263_aac.3gp");
 string g_3gpUri3 = TEST_URI_PATH + string("3gp_mpeg4_aac.3gp");
+string g_3gpPath4 = TEST_FILE_PATH + string("3gp_amr_nb.3gp");
+string g_3gpUri4 = TEST_URI_PATH + string("3gp_amr_nb.3gp");
 
 /**
  * @tc.name: AVSource_3GP_GetFormat_0001
@@ -366,5 +368,72 @@ HWTEST_F(AVSourceUnitTest, AVSource_3GP_GetFormat_0006, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
+}
+
+/**
+* @tc.name: AVSource_3GP_GetFormat_0007
+* @tc.desc: get source format when the file is 3gp(amr_nb)
+* @tc.type: FUNC
+*/
+HWTEST_F(AVSourceUnitTest, AVSource_3GP_GetFormat_0007, TestSize.Level1)
+{
+    fd_ = OpenFile(g_3gpPath4);
+    size_ = GetFileSize(g_3gpPath4);
+    printf("---- %s ----\n", g_3gpPath4.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_EQ(formatVal_.fileType, 115);
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.sampleRate, 8000);
+    ASSERT_EQ(formatVal_.channelCount, 1);
+    ASSERT_EQ(formatVal_.bitRate, 12800);
+    ASSERT_EQ(formatVal_.codecMime, "audio/3gpp");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
+    ASSERT_EQ(formatVal_.channelLayout, 4);
+}
+
+/**
+* @tc.name: AVSource_3GP_GetFormat_0008
+* @tc.desc: get source format when the file is 3gp(amr_nb)
+* @tc.type: FUNC
+*/
+HWTEST_F(AVSourceUnitTest, AVSource_3GP_GetFormat_0008, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_3gpUri4.data());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_3gpUri4.data()));
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.sampleRate, 8000);
+    ASSERT_EQ(formatVal_.channelCount, 1);
+    ASSERT_EQ(formatVal_.bitRate, 12800);
+    ASSERT_EQ(formatVal_.codecMime, "audio/3gpp");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
+    ASSERT_EQ(formatVal_.channelLayout, 4);
 }
 }

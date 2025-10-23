@@ -1315,12 +1315,12 @@ int32_t Wmv3Reader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
     std::lock_guard<std::mutex> lock(mutex_);
     int32_t frameSize = 0;
     bool isEosFrame = false;
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(wmv3UnitReader_ != nullptr, AV_ERR_INVALID_VAL, "wmv3UnitReader_ is nullptr");
     auto ret = wmv3UnitReader_->ReadWmv3Unit(bufferAddr, frameSize, isEosFrame);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AV_ERR_INVALID_VAL, "ReadWmv3Unit failed");
     uint8_t frameType = 0x00;
     bufferAddr += frameSize;
     FillBufferAttr(attr, frameSize, frameType, isEosFrame);
-
     frameInputCount_++;
 
     return AV_ERR_OK;

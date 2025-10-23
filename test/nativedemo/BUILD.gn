@@ -83,6 +83,7 @@ ohos_executable("av_codec_demo") {
     "./audio_demo/avcodec_audio_decoder_demo.cpp",
     "./audio_demo/avcodec_audio_decoder_inner_demo.cpp",
     "./audio_demo/avcodec_audio_encoder_inner_demo.cpp",
+    "./audio_demo/avcodec_audio_adpcm_decoder_demo.cpp",
     "./audio_demo/avcodec_audio_flac_encoder_demo.cpp",
     "./audio_demo/avcodec_audio_g711mu_encoder_demo.cpp",
     "./audio_demo/avcodec_audio_opus_encoder_demo.cpp",

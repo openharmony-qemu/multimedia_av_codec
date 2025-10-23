@@ -101,6 +101,7 @@ private:
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey,
         int32_t minVal = 0, int32_t maxVal = INT_MAX);
     bool GetDiscardFlagFromAVBuffer(const std::shared_ptr<AVBuffer> &buffer);
+    int64_t GetBufferPts(const std::shared_ptr<AVBuffer> &buffer);
     void GetPixelFmtFromUser(const Format &format);
     void GetQpRangeFromUser(const Format &format);
     void GetBitRateFromUser(const Format &format);
@@ -167,7 +168,7 @@ private:
     void EncoderAvcHeader();
     void EncoderAvcTailer();
     int32_t EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &outArgs);
-
+    std::shared_ptr<AVBuffer> GetAvBuffer(const std::shared_ptr<FBuffer> &inputBuffer);
     enum struct State : int32_t {
         UNINITIALIZED,
         INITIALIZED,

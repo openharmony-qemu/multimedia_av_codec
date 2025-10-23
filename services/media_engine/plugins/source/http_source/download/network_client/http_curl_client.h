@@ -69,7 +69,7 @@ private:
     void InitCurlEnvironment(const std::string& url, int32_t timeoutMs);
     void InitCurProxy(const std::string& url);
     std::string UrlParse(const std::string& url) const;
-    void HttpHeaderParse(std::map<std::string, std::string> httpHeader);
+    void HttpHeaderParse(const std::map<std::string, std::string>& httpHeader);
     static std::string ClearHeadTailSpace(std::string& str);
     void CheckRequestRange(long startPos, int len);
     Status SetIp();

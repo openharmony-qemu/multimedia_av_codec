@@ -191,12 +191,19 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
             errorCode = AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION;
             faultType = "XPS_UNSUPPORT";
             isNeedForceShutdown = true;
+            codec_->unsupportHappened_ = true;
             break;
         case static_cast<uint32_t>(OMX_ErrorParameterSetsIllegal):
+            if (codec_->unsupportHappened_) {
+                return;
+            }
             errorCode = AVCS_ERR_ILLEGAL_PARAMETER_SETS;
             faultType = "XPS_ILLEGAL";
             break;
         case static_cast<uint32_t>(OMX_ErrorParameterSetsLost):
+            if (codec_->unsupportHappened_) {
+                return;
+            }
             errorCode = AVCS_ERR_MINSSING_PARAMETER_SETS;
             faultType = "XPS_LOST";
             break;
@@ -523,6 +530,7 @@ void HCodec::StartingState::OnStateExited()
 void HCodec::RunningState::OnStateEntered()
 {
     codec_->ProcessDeferredMessages();
+    codec_->OnEnterRunningState();
 }
 
 void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
@@ -658,6 +666,12 @@ void HCodec::RunningState::OnFlush(const MsgInfo &info)
         SLOGI("ask omx to flush failed, ret=%d", ret);
         ReplyErrorCode(info.id, AVCS_ERR_UNKNOWN);
     }
+}
+
+void HCodec::RunningState::OnStateExited()
+{
+    codec_->OnExitRunningState();
+    BaseState::OnStateExited();
 }
 /**************************** RunningState End ********************************/
 

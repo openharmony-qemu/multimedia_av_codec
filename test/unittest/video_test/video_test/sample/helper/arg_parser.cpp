@@ -52,6 +52,12 @@ enum DemoArgumentType : int {
     DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,
     DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,
     DEMO_ARG_SYNC_MODE,
+    DEMO_ARG_ENABLE_B_FRAME,
+    DEMO_ARG_SQR_FACTOR,
+    DEMO_ARG_ENABLE_ROI,
+    DEMO_ARG_ROI_FILE_PATH,
+    DEMO_ARG_ENABLE_ROI_BY_NATIVEBUF,
+    DEMO_ARG_ROI_FILE_PATH_BY_NATIVEBUF,
     DEMO_ARG_END,
 };
 
@@ -85,6 +91,12 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
     {DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,          "pause_before_run_sample"},
     {DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,  "video_decoder_output_colorspace"},
     {DEMO_ARG_SYNC_MODE,                        "sync_mode"},
+    {DEMO_ARG_ENABLE_B_FRAME,                   "enable_b_frame"},
+    {DEMO_ARG_SQR_FACTOR,                       "sqr_factor"},
+    {DEMO_ARG_ENABLE_ROI,                       "enable_roi"},
+    {DEMO_ARG_ROI_FILE_PATH,                    "roi_file_path"},
+    {DEMO_ARG_ENABLE_ROI_BY_NATIVEBUF,          "enable_roi_by_nativebuf"},
+    {DEMO_ARG_ROI_FILE_PATH_BY_NATIVEBUF,       "roi_file_path_by_nativebuf"},
 };
 
 constexpr struct option DEMO_LONG_ARGUMENT[] = {
@@ -118,6 +130,12 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"pause_before_run_sample",          required_argument,  nullptr, DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE},
     {"video_decoder_output_colorspace",  required_argument,  nullptr, DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE},
     {"sync_mode",                        required_argument,  nullptr, DEMO_ARG_SYNC_MODE},
+    {"enable_b_frame",                   required_argument,  nullptr, DEMO_ARG_ENABLE_B_FRAME},
+    {"sqr_factor",                       required_argument,  nullptr, DEMO_ARG_SQR_FACTOR},
+    {"enable_roi",                       required_argument,  nullptr, DEMO_ARG_ENABLE_ROI},
+    {"roi_file_path",                    required_argument,  nullptr, DEMO_ARG_ROI_FILE_PATH},
+    {"enable_roi_by_nativebuf",          required_argument,  nullptr, DEMO_ARG_ENABLE_ROI_BY_NATIVEBUF},
+    {"roi_file_path_by_nativebuf",       required_argument,  nullptr, DEMO_ARG_ROI_FILE_PATH_BY_NATIVEBUF},
 };
 
 constexpr std::string_view HELP_TEXT = R"HELP_TEXT(
@@ -136,7 +154,7 @@ Video codec demo help:
     --pixel_format                      1: YUVI420          2: NV12     3: NV21
                                         4: SURFACE_FORMAT   5: RGBA
     --bitrate                           encoder bitrate (bps)
-    --bitrate_mode                      encoder bitrate mode (0: CBR; 1: VBR; 2: CQ)
+    --bitrate_mode                      encoder bitrate mode (0: CBR; 1: VBR; 2: CQ; 3: SQR)
     --video_profile                     AVC profile (0: baseline; 4: high; 8: main)
                                         HEVC profile (0: main; 1: main10)
     --codec_run_mode                    0: Surface origin      1: Buffer SharedMemory
@@ -162,6 +180,12 @@ Video codec demo help:
                                         greater than 0 then sleep seconds of value
     --video_decoder_output_colorspace   enable video processing and specified colorspace type
     --sync_mode                         enable sync mode
+    --enable_b_frame                    enable b frame? (0: false; 1: true)
+    --sqr_factor                        default 25, range [0, 51]
+    --enable_roi                        enable roi? (0: false; 1: true)
+    --roi_file_path                     roi file path
+    --enable_roi_by_nativebuf           enable roi by nativebuf? (0: false; 1: true)
+    --roi_file_path_by_nativebuf        roi file path by nativebuf
 
 Example:
     --codec_type 0 --input input.h264 --mime video/avc --width 1280 --height 720 --framerate 30 --pixel_format 1
@@ -329,6 +353,36 @@ inline void SetSyncMode(SampleInfo &info, const char * const value)
     info.syncMode = std::stol(value);
 }
 
+inline void SetEnableBFrame(SampleInfo &info, const char * const value)
+{
+    info.enableBFrame = std::stol(value);
+}
+ 
+inline void SetSqrFactor(SampleInfo &info, const char * const value)
+{
+    info.sqrFactor = std::stol(value);
+}
+ 
+inline void SetEnableRoi(SampleInfo &info, const char * const value)
+{
+    info.enableRoi = std::stol(value);
+}
+ 
+inline void SetRoiFilePath(SampleInfo &info, const char * const value)
+{
+    info.roiFilePath = value;
+}
+ 
+inline void SetEnableRoiByNativebuf(SampleInfo &info, const char * const value)
+{
+    info.enableRoiByNativebuf = std::stol(value);
+}
+ 
+inline void SetRoiFilePathByNativebuf(SampleInfo &info, const char * const value)
+{
+    info.roiFilePathByNativebuf = value;
+}
+
 const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char * const value)> ARG_OPT_MAP = {
     {DEMO_ARG_HELP,                             ShowHelp},
     {DEMO_ARG_SAMPLE_TYPE,                      SetSampleType},
@@ -360,6 +414,12 @@ const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char
     {DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,          SetPauseBeforeRunSample},
     {DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,  SetVideoDecoderOutputColorspace},
     {DEMO_ARG_SYNC_MODE,                        SetSyncMode},
+    {DEMO_ARG_ENABLE_B_FRAME,                   SetEnableBFrame},
+    {DEMO_ARG_SQR_FACTOR,                       SetSqrFactor},
+    {DEMO_ARG_ENABLE_ROI,                       SetEnableRoi},
+    {DEMO_ARG_ROI_FILE_PATH,                    SetRoiFilePath},
+    {DEMO_ARG_ENABLE_ROI_BY_NATIVEBUF,          SetEnableRoiByNativebuf},
+    {DEMO_ARG_ROI_FILE_PATH_BY_NATIVEBUF,       SetRoiFilePathByNativebuf},
 };
 } // namespace
 

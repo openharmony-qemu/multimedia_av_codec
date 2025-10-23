@@ -1036,5 +1036,74 @@ HWTEST_F(AudioMediaCodecUnitTest, EncoderConfigureHEAAC, TestSize.Level1)
     EXPECT_EQ(0, mediaCodec->Release());
 }
 
+HWTEST_F(AudioMediaCodecUnitTest, ChangePluginBeforePrepare, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ(0, mediaCodec->Init(AAC_MIME_TYPE, true));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(1);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_F32LE);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    meta->Set<Tag::MEDIA_BITRATE>(64000);  // 64000: valid param
+    EXPECT_EQ(0, mediaCodec->Configure(meta));
+    auto implBufferQueue_ =
+        Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY, "UT-TEST");
+    EXPECT_EQ(0, mediaCodec->SetOutputBufferQueue(implBufferQueue_->GetProducer()));
+    EXPECT_EQ(-1, static_cast<int32_t>(mediaCodec->ChangePlugin(AAC_MIME_TYPE, true, meta)));
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, ShouldLogIOStatWhileStateIsRunning, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ(0, mediaCodec->Init(AAC_MIME_TYPE, true));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(1);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_F32LE);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    meta->Set<Tag::MEDIA_BITRATE>(64000);  // 64000: valid param
+    EXPECT_EQ(0, mediaCodec->Configure(meta));
+    auto implBufferQueue_ =
+        Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY, "UT-TEST");
+    EXPECT_EQ(0, mediaCodec->SetOutputBufferQueue(implBufferQueue_->GetProducer()));
+    EXPECT_EQ(0, mediaCodec->Prepare());
+    EXPECT_EQ(0, mediaCodec->Start());
+    EXPECT_EQ(0, mediaCodec->Stop());
+
+    EXPECT_EQ(0, mediaCodec->Start());
+    EXPECT_EQ(0, mediaCodec->Flush());
+
+    EXPECT_EQ(0, mediaCodec->Start());
+    EXPECT_EQ(0, mediaCodec->Reset());
+
+    EXPECT_EQ(0, mediaCodec->Configure(meta));
+    implBufferQueue_ = Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY, "UT-TEST");
+    EXPECT_EQ(0, mediaCodec->SetOutputBufferQueue(implBufferQueue_->GetProducer()));
+    EXPECT_EQ(0, mediaCodec->Prepare());
+
+    EXPECT_EQ(0, mediaCodec->Start());
+    EXPECT_EQ(0, static_cast<int32_t>(mediaCodec->ChangePlugin(AAC_MIME_TYPE, true, meta)));
+
+    EXPECT_EQ(0, mediaCodec->Release());
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, ShouldLogIOStatWhileStateIsEndOfStream, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ(0, mediaCodec->Init(AAC_MIME_TYPE, true));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(1);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_F32LE);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    meta->Set<Tag::MEDIA_BITRATE>(64000);  // 64000: valid param
+    EXPECT_EQ(0, mediaCodec->Configure(meta));
+    auto implBufferQueue_ =
+        Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY, "UT-TEST");
+    EXPECT_EQ(0, mediaCodec->SetOutputBufferQueue(implBufferQueue_->GetProducer()));
+    EXPECT_EQ(0, mediaCodec->Prepare());
+    EXPECT_EQ(0, mediaCodec->Start());
+    EXPECT_EQ(0, mediaCodec->NotifyEos());
+    EXPECT_EQ(0, mediaCodec->Stop());
+}
+
 }  // namespace MediaAVCodec
 }  // namespace OHOS

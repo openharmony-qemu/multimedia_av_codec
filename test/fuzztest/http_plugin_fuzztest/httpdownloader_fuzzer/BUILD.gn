@@ -59,6 +59,7 @@ test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
+  "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
 ]
 
 config("fuzz_cfg") {
@@ -109,11 +110,15 @@ config("fuzz_cfg") {
 ##############################fuzztest##########################################
 ohos_fuzztest("HttpDownloaderFuzzTest") {
   module_out_path = module_output_path
-  fuzz_config_file = "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/http_downloader_fuzzer"
+  fuzz_config_file = "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/httpdownloader_fuzzer"
   configs = [
     ":fuzz_cfg"
   ]
-  sources = test_sources + ["http_downloader_fuzzer.cpp"]
+  sources = test_sources + [
+    "httpdownloader_fuzzer.cpp",
+    "../common/http_server_fuzz_demo.cpp",
+    "../common/http_server_mock.cpp",
+  ]
 
   external_deps = [
     "c_utils:utils",
@@ -132,6 +137,9 @@ ohos_fuzztest("HttpDownloaderFuzzTest") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
   ]
+
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
 
 ###############################################################################

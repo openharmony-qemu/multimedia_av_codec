@@ -24,7 +24,7 @@
 #include "codeclist_builder.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecList_builder"};
+[[maybe_unused]] constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecList_builder"};
 }
 namespace OHOS {
 namespace MediaAVCodec {
@@ -62,7 +62,6 @@ int32_t AudioCodecList::GetCapabilityList(std::vector<CapabilityData> &caps)
     for (const auto &v : audioCapabilities) {
         caps.emplace_back(v);
     }
-    AVCODEC_LOGI("Get capability from audio codec list successful");
     return AVCS_ERR_OK;
 }
 } // namespace MediaAVCodec

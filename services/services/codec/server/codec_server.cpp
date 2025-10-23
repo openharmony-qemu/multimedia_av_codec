@@ -817,9 +817,9 @@ void CodecServer::OnInstanceMemoryResetEvent(std::shared_ptr<Media::Meta> meta)
 void CodecServer::SetInstanceEncodeEventInfo(std::shared_ptr<Media::Meta> &meta)
 {
     bool isForwardCaller = forwardCaller_.pid >= 0 || !forwardCaller_.processName.empty();
-    pid_t &pid = isForwardCaller ? forwardCaller_.pid : caller_.pid;
-    uid_t &uid = isForwardCaller ? forwardCaller_.uid : caller_.uid;
-    std::string &processName = isForwardCaller ? forwardCaller_.processName : caller_.processName;
+    const pid_t &pid = isForwardCaller ? forwardCaller_.pid : caller_.pid;
+    const uid_t &uid = isForwardCaller ? forwardCaller_.uid : caller_.uid;
+    const std::string &processName = isForwardCaller ? forwardCaller_.processName : caller_.processName;
     meta->SetData(Tag::AV_CODEC_CALLER_PID, pid);
     meta->SetData(Tag::AV_CODEC_CALLER_UID, uid);
     meta->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, processName);
@@ -957,6 +957,7 @@ void CodecServer::SetDumpInfo(bool isDump, uint64_t instanceId)
 
 int32_t CodecServer::DumpInfo(int32_t fd)
 {
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(fd >= 0, AVCS_ERR_OK, "Get a invalid fd");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     Format codecFormat;
