@@ -93,7 +93,7 @@ ohos_unittest("videodec_fcodec_capi_unit_test") {
 }
 
 ##################################################################################################################
-ohos_unittest("video_mjpeg_unit_test") {
+ohos_unittest("videodec_mjpeg_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = av_codec_unittest_include_dirs

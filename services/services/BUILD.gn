@@ -48,7 +48,7 @@ config("av_codec_service_config") {
     "$av_codec_root_dir/services/engine/base/include",
     "$av_codec_root_dir/services/engine/codec/include/audio",
     "$av_codec_root_dir/services/engine/codec/include/video",
-    "$av_codec_root_dir/services/engine/codec/video/fcodec",
+    "$av_codec_root_dir/services/engine/codec/video/fcodec/include",
     "$av_codec_root_dir/services/engine/codec/video/hevcdecoder",
     "$av_codec_root_dir/services/engine/codeclist",
     "$av_codec_root_dir/services/engine/common/include",
