@@ -1,0 +1,655 @@
+/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <atomic>
+#include <cstdint>
+#include <fcntl.h>
+#include <fstream>
+#include <gtest/gtest.h>
+#include <iostream>
+#include <libavutil/samplefmt.h>
+#include <mutex>
+#include <queue>
+#include <string>
+#include <thread>
+#include <unistd.h>
+#include "avcodec_audio_common.h"
+#include "avcodec_codec_name.h"
+#include "avcodec_common.h"
+#include "avcodec_errors.h"
+#include "avcodec_mime_type.h"
+#include "common/native_mfmagic.h"
+#include "common/status.h"
+#include "media_description.h"
+#include "native_audio_channel_layout.h"
+#include "native_avbuffer.h"
+#include "native_avcapability.h"
+#include "native_avcodec_audiocodec.h"
+#include "native_avcodec_audiodecoder.h"
+#include "native_avcodec_base.h"
+#include "native_avdemuxer.h"
+#include "native_avsource.h"
+#include "securec.h"
+
+using namespace std;
+using namespace testing::ext;
+using namespace OHOS::Media;
+using namespace OHOS::MediaAVCodec;
+
+namespace {
+int32_t g_loopNumber2000 = []() {
+    const char *env = getenv("GSM_LOOP_COUNT");
+    if (env != nullptr) {
+        int v = atoi(env);
+        if (v > 0) {
+            return v;
+        }
+    }
+    return 2000;
+}();
+constexpr int32_t MAX_CHANNELS = 16;
+constexpr int32_t FRAME_COUNT = 5;
+constexpr uint32_t DEFAULT_SAMPLE_RATE = 48000;
+constexpr string_view EAC3_FILE_TODEMUX = "/data/test/media/48000_mono_eac3.avi";
+constexpr string_view OUTPUT_EAC3_PCM_FILE_PATH = "/data/test/media/test_decoder_eac3.pcm";
+} // namespace
+
+namespace OHOS {
+namespace MediaAVCodec {
+class AudioCodecBufferSignal {
+public:
+    std::mutex inMutex_;
+    std::mutex outMutex_;
+    std::mutex startMutex_;
+    std::condition_variable inCond_;
+    std::condition_variable outCond_;
+    std::condition_variable startCond_;
+    std::queue<uint32_t> inQueue_;
+    std::queue<uint32_t> outQueue_;
+    std::queue<OH_AVBuffer *> inBufferQueue_;
+    std::queue<OH_AVBuffer *> outBufferQueue_;
+    std::atomic<uint64_t> generation_ {0};
+    std::queue<uint64_t, std::deque<uint64_t>> inGenQueue_;
+    std::queue<uint64_t, std::deque<uint64_t>> outGenQueue_;
+};
+
+static int32_t g_outputSampleRate = 0;
+static int32_t g_outputChannels = 0;
+static int64_t g_outputChannelLayout = 0;
+static int32_t g_outputSampleFormat = 0;
+constexpr int SAMPLERATE = 8000;
+constexpr int SAMPLES_PER_FRAME = 160;
+
+static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
+{
+    (void)codec;
+    (void)errorCode;
+    (void)userData;
+    cout << "Error received, errorCode:" << errorCode << endl;
+}
+
+static void OnOutputFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+{
+    (void)codec;
+    (void)userData;
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, &g_outputChannels);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, &g_outputSampleRate);
+    OH_AVFormat_GetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, &g_outputChannelLayout);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, &g_outputSampleFormat);
+    cout << "OnOutputFormatChanged received, rate:" << g_outputSampleRate << ",channel:" << g_outputChannels << endl;
+    cout << "OnOutputFormatChanged received, layout:" << g_outputChannelLayout << ",format:" << g_outputSampleFormat
+         << endl;
+}
+
+static void OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData)
+{
+    (void)codec;
+    AudioCodecBufferSignal *signal = static_cast<AudioCodecBufferSignal *>(userData);
+    unique_lock<mutex> lock(signal->inMutex_);
+    signal->inQueue_.push(index);
+    signal->inBufferQueue_.push(data);
+    signal->inGenQueue_.push(signal->generation_.load(std::memory_order_relaxed));
+    signal->inCond_.notify_all();
+}
+
+static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData)
+{
+    (void)codec;
+    AudioCodecBufferSignal *signal = static_cast<AudioCodecBufferSignal *>(userData);
+    unique_lock<mutex> lock(signal->outMutex_);
+    signal->outQueue_.push(index);
+    signal->outBufferQueue_.push(data);
+    signal->outGenQueue_.push(signal->generation_.load(std::memory_order_relaxed));
+    signal->outCond_.notify_all();
+}
+
+class AudioCodeEac3DecoderUnitTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+    int32_t InitFile();
+    void InputFunc();
+    void OutputFunc();
+    bool ReadBuffer(OH_AVBuffer *buffer, uint32_t index);
+    int32_t CreateCodecFunc();
+    void HandleEOS(const uint32_t &index);
+    int32_t Configure();
+    int32_t Start();
+    int32_t Stop();
+    int32_t Reset();
+    void Release();
+    int64_t GetFileSize(const char *fileName);
+    void SetEOS(uint32_t index, OH_AVBuffer *buffer);
+    void CleanUp();
+    void StopLoops();
+
+protected:
+    int fd_ = -1;
+    bool isTestingFormat_ = false;
+    bool isSync_ = false;
+    std::atomic<bool> isRunning_ = false;
+    uint64_t loopIndex_ = 0;
+    std::unique_ptr<std::thread> inputLoop_;
+    std::unique_ptr<std::thread> outputLoop_;
+    struct OH_AVCodecCallback cb_;
+    AudioCodecBufferSignal *signal_ = nullptr;
+    OH_AVCodec *audioDec_ = nullptr;
+    OH_AVFormat *format_ = nullptr;
+    bool isFirstFrame_ = true;
+    uint32_t frameCount_ = 0;
+    std::unique_ptr<std::ifstream> soFile_;
+    std::ofstream pcmOutputFile_;
+    OH_AVDemuxer *demuxer = nullptr;
+    OH_AVSource *source = nullptr;
+    // Diagnostics
+    std::atomic<bool> gotEos_ {false};
+    size_t staleInputDiscarded_ = 0;
+    size_t staleOutputDiscarded_ = 0;
+};
+
+void AudioCodeEac3DecoderUnitTest::SetUpTestCase(void)
+{
+    cout << "[SetUpTestCase]: " << endl;
+}
+
+void AudioCodeEac3DecoderUnitTest::TearDownTestCase(void)
+{
+    cout << "[TearDownTestCase]: " << endl;
+}
+
+void AudioCodeEac3DecoderUnitTest::SetUp(void)
+{
+    g_outputSampleRate = 0;
+    g_outputChannels = 0;
+    cout << "[SetUp]: SetUp!!!" << endl;
+}
+
+void AudioCodeEac3DecoderUnitTest::TearDown(void)
+{
+    cout << "[TearDown]: over!!!" << endl;
+    CleanUp();
+    if (signal_) {
+        delete signal_;
+        signal_ = nullptr;
+    }
+    if (pcmOutputFile_.is_open()) {
+        pcmOutputFile_.close();
+    }
+    if (format_ != nullptr) {
+        OH_AVFormat_Destroy(format_);
+        format_ = nullptr;
+    }
+}
+
+void AudioCodeEac3DecoderUnitTest::Release()
+{
+    Stop();
+    OH_AudioCodec_Destroy(audioDec_);
+    audioDec_ = nullptr;
+    CleanUp();
+}
+
+void AudioCodeEac3DecoderUnitTest::HandleEOS(const uint32_t &index)
+{
+    OH_AudioCodec_PushInputBuffer(audioDec_, index);
+    if (!signal_->inQueue_.empty()) {
+        signal_->inQueue_.pop();
+    }
+    if (!signal_->inBufferQueue_.empty()) {
+        signal_->inBufferQueue_.pop();
+    }
+    if (!signal_->inGenQueue_.empty()) {
+        signal_->inGenQueue_.pop();
+    }
+    gotEos_.store(true, std::memory_order_relaxed);
+}
+
+void AudioCodeEac3DecoderUnitTest::SetEOS(uint32_t index, OH_AVBuffer *buffer)
+{
+    OH_AVCodecBufferAttr attr;
+    attr.pts = 0;
+    attr.size = 0;
+    attr.offset = 0;
+    attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
+    OH_AVBuffer_SetBufferAttr(buffer, &attr);
+    int32_t res = OH_AudioCodec_PushInputBuffer(audioDec_, index);
+    if (res != AV_ERR_OK) {
+        cout << "Fatal: PushInputBuffer EOS fail, ret:" << res << endl;
+    }
+}
+
+bool AudioCodeEac3DecoderUnitTest::ReadBuffer(OH_AVBuffer *buffer, uint32_t index)
+{
+    if (demuxer == nullptr || buffer == nullptr) {
+        cout << "Fatal: demuxer or buffer is null loop=" << loopIndex_ << " frame=" << frameCount_ << endl;
+        return false;
+    }
+    if (buffer->magic_ != MFMagic::MFMAGIC_AVBUFFER) {
+        cout << "Fatal: buffer magic invalid before demux read loop=" << loopIndex_ << " frame=" << frameCount_
+             << " magic=" << static_cast<uint64_t>(buffer->magic_) << endl;
+        return false;
+    }
+    OH_AVCodecBufferAttr attr;
+    OH_AVErrCode readRet = OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, buffer);
+    if (readRet != OH_AVErrCode::AV_ERR_OK) {
+        cout << "Fatal: OH_AVDemuxer_ReadSampleBuffer fail loop=" << loopIndex_ << " frame=" << frameCount_
+             << " ret=" << readRet << " addr=" << (void *)buffer << " magic=" << static_cast<uint64_t>(buffer->magic_)
+             << endl;
+        return false;
+    }
+    if (OH_AVBuffer_GetBufferAttr(buffer, &attr) != AV_ERR_OK) {
+        cout << "Fatal: OH_AVBuffer_GetBufferAttr fail loop=" << loopIndex_ << " frame=" << frameCount_ << endl;
+        return false;
+    }
+    if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
+        SetEOS(index, buffer);
+        return false;
+    }
+    buffer->buffer_->pts_ = frameCount_ * SAMPLES_PER_FRAME * 1000000LL / SAMPLERATE;
+    buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_NONE;
+    if (frameCount_ < FRAME_COUNT) {
+        cout << "[ReadBuffer] loop=" << loopIndex_ << " frame=" << frameCount_ << " size=" << attr.size << endl;
+    }
+    return true;
+}
+
+int64_t AudioCodeEac3DecoderUnitTest::GetFileSize(const char *fileName)
+{
+    int64_t fileSize = 0;
+    if (fileName != nullptr) {
+        struct stat fileStatus {};
+        if (stat(fileName, &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    return fileSize;
+}
+
+inline void PopInputQueues(AudioCodecBufferSignal* sig, bool popGen = true) {
+    if (!sig->inQueue_.empty()) sig->inQueue_.pop();
+    if (!sig->inBufferQueue_.empty()) sig->inBufferQueue_.pop();
+    if (popGen && !sig->inGenQueue_.empty()) sig->inGenQueue_.pop();
+}
+
+void AudioCodeEac3DecoderUnitTest::InputFunc()
+{
+    while (isRunning_.load()) {
+        unique_lock<mutex> lock(signal_->inMutex_);
+        signal_->inCond_.wait(lock, [this]() { return !signal_->inQueue_.empty() || !isRunning_.load(); });
+        if (!isRunning_.load()) break;
+        uint32_t index = signal_->inQueue_.front();
+        OH_AVBuffer *buffer = signal_->inBufferQueue_.empty() ? nullptr : signal_->inBufferQueue_.front();
+        uint64_t bufGen = signal_->inGenQueue_.empty() ? 0 : signal_->inGenQueue_.front();
+        uint64_t curGen = signal_->generation_.load();
+        if (!buffer) {
+            PopInputQueues(signal_); continue;
+        }
+        if (bufGen != curGen) {
+            staleInputDiscarded_++; PopInputQueues(signal_);
+            continue;
+        }
+        if (buffer->magic_ != MFMagic::MFMAGIC_AVBUFFER) {
+            PopInputQueues(signal_);
+            continue;
+        }
+        if (!ReadBuffer(buffer, index)) {
+            buffer->buffer_->memory_->SetSize(1);
+            buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
+            HandleEOS(index);
+            break;
+        }
+        OH_AVCodecBufferAttr attr; OH_AVBuffer_GetBufferAttr(buffer, &attr);
+        if (attr.size == 0) {
+            PopInputQueues(signal_);
+            continue;
+        }
+        buffer->buffer_->memory_->SetSize(attr.size);
+        buffer->buffer_->flag_ = isFirstFrame_ ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : AVCODEC_BUFFER_FLAGS_NONE;
+        int32_t ret = OH_AudioCodec_PushInputBuffer(audioDec_, index);
+        isFirstFrame_ = false;
+        PopInputQueues(signal_);
+        frameCount_++;
+        if (ret != AVCS_ERR_OK) {
+            isRunning_.store(false);
+            signal_->startCond_.notify_all();
+            break;
+        }
+    }
+}
+
+inline void PopOutputQueues(AudioCodecBufferSignal* sig, bool popGen = true) {
+    if (!sig->outQueue_.empty()) sig->outQueue_.pop();
+    if (!sig->outBufferQueue_.empty()) sig->outBufferQueue_.pop();
+    if (popGen && !sig->outGenQueue_.empty()) sig->outGenQueue_.pop();
+}
+
+void AudioCodeEac3DecoderUnitTest::OutputFunc()
+{
+    if (!pcmOutputFile_.is_open()) {
+        std::cout << "open " << EAC3_FILE_TODEMUX << " failed!" << std::endl;
+    }
+    while (isRunning_.load()) {
+        unique_lock<mutex> lock(signal_->outMutex_);
+        signal_->outCond_.wait(lock, [this]() { return !signal_->outQueue_.empty() || !isRunning_.load(); });
+        if (!isRunning_.load()) break;
+        uint32_t index = signal_->outQueue_.front();
+        OH_AVBuffer *data = signal_->outBufferQueue_.empty() ? nullptr : signal_->outBufferQueue_.front();
+        uint64_t bufGen = signal_->outGenQueue_.empty() ? 0 : signal_->outGenQueue_.front();
+        uint64_t curGen = signal_->generation_.load(std::memory_order_relaxed);
+        if (!data) {
+            PopOutputQueues(signal_);
+            continue;
+        }
+        if (bufGen != curGen) {
+            staleOutputDiscarded_++;
+            PopOutputQueues(signal_);
+            continue;
+        }
+        if (data->magic_ != MFMagic::MFMAGIC_AVBUFFER) {
+            PopOutputQueues(signal_);
+            continue;
+        }
+        OH_AVCodecBufferAttr outAttr; OH_AVBuffer_GetBufferAttr(data, &outAttr);
+        if (frameCount_ < FRAME_COUNT) {
+            cout << "[OutputFunc] loop=" << loopIndex_ << " gen=" << curGen << " idx=" << index
+                 << " outSize=" << outAttr.size << " flags=" << outAttr.flags << " pts=" << data->buffer_->pts_ << endl;
+        }
+        pcmOutputFile_.write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)), data->buffer_->memory_->GetSize());
+        if (data->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS || data->buffer_->memory_->GetSize() == 0) {
+            isRunning_.store(false);
+            signal_->startCond_.notify_all();
+        }
+        PopOutputQueues(signal_);
+        if (OH_AudioCodec_FreeOutputBuffer(audioDec_, index) != AV_ERR_OK) {
+            isRunning_.store(false);
+            signal_->startCond_.notify_all();
+            break;
+        }
+    }
+    pcmOutputFile_.close();
+}
+
+int32_t AudioCodeEac3DecoderUnitTest::Start()
+{
+    isRunning_.store(true);
+    inputLoop_ = make_unique<thread>(&AudioCodeEac3DecoderUnitTest::InputFunc, this);
+    if (inputLoop_ == nullptr) {
+        cout << "Fatal: No memory" << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    outputLoop_ = make_unique<thread>(&AudioCodeEac3DecoderUnitTest::OutputFunc, this);
+    if (outputLoop_ == nullptr) {
+        cout << "Fatal: No memory" << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    return OH_AudioCodec_Start(audioDec_);
+}
+
+int32_t AudioCodeEac3DecoderUnitTest::Stop()
+{
+    isRunning_.store(false);
+    StopLoops();
+    if (signal_) {
+        signal_->generation_.fetch_add(1, std::memory_order_relaxed);
+    }
+    int32_t ret = OH_AudioCodec_Stop(audioDec_);
+    CleanUp();
+    return ret;
+}
+
+void AudioCodeEac3DecoderUnitTest::StopLoops()
+{
+    if (signal_ != nullptr) {
+        {
+            unique_lock<mutex> inLock(signal_->inMutex_);
+            signal_->inCond_.notify_all();
+        }
+        {
+            unique_lock<mutex> outLock(signal_->outMutex_);
+            signal_->outCond_.notify_all();
+        }
+        {
+            unique_lock<mutex> startLock(signal_->startMutex_);
+            signal_->startCond_.notify_all();
+        }
+    }
+    if (inputLoop_ != nullptr) {
+        if (inputLoop_->joinable()) {
+            inputLoop_->join();
+        }
+        inputLoop_.reset();
+    }
+    if (outputLoop_ != nullptr) {
+        if (outputLoop_->joinable()) {
+            outputLoop_->join();
+        }
+        outputLoop_.reset();
+    }
+    if (signal_ != nullptr) {
+        while (!signal_->inQueue_.empty()) {
+            signal_->inQueue_.pop();
+        }
+        while (!signal_->outQueue_.empty()) {
+            signal_->outQueue_.pop();
+        }
+        while (!signal_->inBufferQueue_.empty()) {
+            signal_->inBufferQueue_.pop();
+        }
+        while (!signal_->outBufferQueue_.empty()) {
+            signal_->outBufferQueue_.pop();
+        }
+        while (!signal_->inGenQueue_.empty()) {
+            signal_->inGenQueue_.pop();
+        }
+        while (!signal_->outGenQueue_.empty()) {
+            signal_->outGenQueue_.pop();
+        }
+    }
+}
+
+int32_t AudioCodeEac3DecoderUnitTest::InitFile()
+{
+    CleanUp();
+    isFirstFrame_ = true;
+    frameCount_ = 0;
+    pcmOutputFile_.open(OUTPUT_EAC3_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
+    if (!pcmOutputFile_.is_open()) {
+        cout << "Fatal: open output file failed" << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    fd_ = open(EAC3_FILE_TODEMUX.data(), O_RDONLY);
+    if (fd_ < 0) {
+        cout << "Fatal: open input file failed" << endl;
+        CleanUp();
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    int64_t size = GetFileSize(EAC3_FILE_TODEMUX.data());
+    source = OH_AVSource_CreateWithFD(fd_, 0, size);
+    if (source == nullptr) {
+        cout << "Fatal: source is null" << endl;
+        CleanUp();
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    if (demuxer == nullptr) {
+        cout << "Fatal: demuxer is null" << endl;
+        CleanUp();
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    OH_AVErrCode ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
+    if (ret != OH_AVErrCode::AV_ERR_OK) {
+        cout << "Fatal: OH_AVDemuxer_SelectTrackByID is fail" << endl;
+        CleanUp();
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    cout << "[InitFile] loop=" << loopIndex_ << " generation=" << (signal_ ? signal_->generation_.load() : 0)
+         << " fd=" << fd_ << endl;
+    return OH_AVErrCode::AV_ERR_OK;
+}
+
+int32_t AudioCodeEac3DecoderUnitTest::CreateCodecFunc()
+{
+    audioDec_ = OH_AudioCodec_CreateByName((std::string(AVCodecCodecName::AUDIO_DECODER_EAC3_NAME)).data());
+    if (audioDec_ == nullptr) {
+        cout << "Fatal: CreateByName fail" << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    signal_ = new AudioCodecBufferSignal();
+    if (signal_ == nullptr) {
+        cout << "Fatal: create signal fail" << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    cb_ = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable, &OnOutputBufferAvailable};
+    int32_t ret = OH_AudioCodec_RegisterCallback(audioDec_, cb_, signal_);
+    if (ret != OH_AVErrCode::AV_ERR_OK) {
+        cout << "Fatal: SetCallback fail" << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    return OH_AVErrCode::AV_ERR_OK;
+}
+
+int32_t AudioCodeEac3DecoderUnitTest::Configure()
+{
+    format_ = OH_AVFormat_Create();
+    if (format_ == nullptr) {
+        cout << "Fatal: create format failed" << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    uint32_t bitRate = 384000;
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), MAX_CHANNELS);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
+    return OH_AudioCodec_Configure(audioDec_, format_);
+}
+
+int32_t AudioCodeEac3DecoderUnitTest::Reset()
+{
+    isRunning_.store(false);
+    StopLoops();
+    if (signal_) {
+        signal_->generation_.fetch_add(1, std::memory_order_relaxed);
+    }
+    CleanUp();
+    return OH_AudioCodec_Reset(audioDec_);
+}
+
+void AudioCodeEac3DecoderUnitTest::CleanUp()
+{
+    if (pcmOutputFile_.is_open()) {
+        pcmOutputFile_.close();
+    }
+    if (demuxer != nullptr) {
+        OH_AVDemuxer_Destroy(demuxer);
+        demuxer = nullptr;
+    }
+    if (source != nullptr) {
+        OH_AVSource_Destroy(source);
+        source = nullptr;
+    }
+    if (fd_ != -1) {
+        close(fd_);
+        fd_ = -1;
+    }
+}
+
+HWTEST_F(AudioCodeEac3DecoderUnitTest, audioDecoder_Eac3_loop_test_01, TestSize.Level1)
+{
+    isTestingFormat_ = true;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
+    for (int i = 0; i < g_loopNumber2000; i++) {
+        ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+        {
+            unique_lock<mutex> lock(signal_->startMutex_);
+            signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+        }
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioDec_));
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    }
+    Release();
+}
+
+HWTEST_F(AudioCodeEac3DecoderUnitTest, audioDecoder_Eac3_loop_test_02, TestSize.Level1)
+{
+    isTestingFormat_ = true;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
+    for (int i = 0; i < g_loopNumber2000; i++) {
+        loopIndex_ = static_cast<uint64_t>(i);
+        if (signal_) {
+            signal_->generation_.fetch_add(1, std::memory_order_relaxed);
+        }
+        cout << "[Cycle] " << i << " start generation=" << (signal_ ? signal_->generation_.load() : 0) << "\n";
+        ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+        {
+            unique_lock<mutex> lock(signal_->startMutex_);
+            signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+        }
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Reset());
+        cout << "[Cycle] " << i << " end staleIn=" << staleInputDiscarded_ << " staleOut=" << staleOutputDiscarded_
+             << endl;
+    }
+    Release();
+}
+
+HWTEST_F(AudioCodeEac3DecoderUnitTest, audioDecoder_Eac3_loop_test_03, TestSize.Level1)
+{
+    isTestingFormat_ = true;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
+    for (int i = 0; i < g_loopNumber2000; i++) {
+        loopIndex_ = static_cast<uint64_t>(i);
+        if (signal_) {
+            signal_->generation_.fetch_add(1, std::memory_order_relaxed);
+        }
+        cout << "[Cycle] " << i << " start generation=" << (signal_ ? signal_->generation_.load() : 0) << "\n";
+        ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+        {
+            unique_lock<mutex> lock(signal_->startMutex_);
+            signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+        }
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+        cout << "[Cycle] " << i << " end staleIn=" << staleInputDiscarded_ << " staleOut=" << staleOutputDiscarded_
+             << endl;
+    }
+    Release();
+}
+} // namespace MediaAVCodec
+} // namespace OHOS
