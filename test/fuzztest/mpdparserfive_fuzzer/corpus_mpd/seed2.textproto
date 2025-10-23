@@ -1,0 +1,18 @@
+type: DASH_TYPE_STATIC
+base_url: "http://ex.com/root/"
+media_presentation_duration_sec: 300
+periods: {
+    id: "p1"
+    start_sec: 0
+    duration_sec: 300
+    seg_template {
+        media: "seg-$Number$.m4s"
+        initialization: "init.m4s"
+        mult { seg_base { time_scale: 90000 } duration: 4500 start_number: "1"}
+    }
+    adaptation_sets: {
+        mime_type: "audio/mp4"
+        common { mime_type: "audio/mp4" audio_sampling_rate: "48000" }
+        representations: { id: "a1" bandwidth: 128000 common { mime_type: "audio/mp4" } }
+    }
+}
