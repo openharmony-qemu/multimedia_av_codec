@@ -1038,6 +1038,17 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN;
 extern const char *OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT;
 
 /**
+ * @brief Key for specifying the number of bytes per audio packet. The value type is int32_t.
+ *
+ * This key is required only for Windows Media audio decoders. The supported decoder MIME types
+ * include {@link OH_AVCODEC_MIMETYPE_AUDIO_WMAV1}, {@link OH_AVCODEC_MIMETYPE_AUDIO_WMAV2},
+ * and {@link OH_AVCODEC_MIMETYPE_AUDIO_WMAPRO}.
+ *
+ * @since 22
+ */
+extern const char *OH_MD_KEY_BLOCK_ALIGN;
+
+/**
  * @brief Media type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
