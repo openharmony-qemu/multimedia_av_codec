@@ -92,7 +92,7 @@ HWTEST_F(MsVideo1DecReliNdkTest, VIDEO_MSVIDEO1DEC_STABILITY_0010, TestSize.Leve
 }
 /**
  * @tc.number    : VIDEO_MSVIDEO1DEC_STABILITY_0020
- * @tc.name      : Msvideo1 soft decode 16 times with fast Surface change
+ * @tc.name      : Msvideo1 soft decode 16 times surface mode, change videoSize to 1920x1080
  * @tc.desc      : reli test
  */
 HWTEST_F(MsVideo1DecReliNdkTest, VIDEO_MSVIDEO1DEC_STABILITY_0020, TestSize.Level3)
@@ -182,7 +182,7 @@ HWTEST_F(MsVideo1DecReliNdkTest, VIDEO_MSVIDEO1DEC_STABILITY_0050, TestSize.Leve
 }
 /**
  * @tc.number    : VIDEO_MSVIDEO1DEC_STABILITY_0060
- * @tc.name      : 16 instances Msvideo1 soft decode with Surface mode
+ * @tc.name      : Decode 16 MSvideo1 streams simultaneously in Surface mode
  * @tc.desc      : reli test
  */
 HWTEST_F(MsVideo1DecReliNdkTest, VIDEO_MSVIDEO1DEC_STABILITY_0060, TestSize.Level3)
@@ -207,7 +207,7 @@ HWTEST_F(MsVideo1DecReliNdkTest, VIDEO_MSVIDEO1DEC_STABILITY_0060, TestSize.Leve
 }
 /**
  * @tc.number    : VIDEO_MSVIDEO1DEC_STABILITY_0070
- * @tc.name      : 16 instances Msvideo1 soft decode with buffer mode
+ * @tc.name      : Decode 16 MsVideo1 streams simultaneously in buffer mode
  * @tc.desc      : reli test
  */
 HWTEST_F(MsVideo1DecReliNdkTest, VIDEO_MSVIDEO1DEC_STABILITY_0070, TestSize.Level3)
@@ -266,7 +266,7 @@ HWTEST_F(MsVideo1DecReliNdkTest, VIDEO_MSVIDEO1DEC_STABILITY_0080, TestSize.Leve
 }
 /**
  * @tc.number    : VIDEO_MSVIDEO1DEC_STABILITY_0090
- * @tc.name      : Decode SVC and common Msvideo1 streams simultaneously
+ * @tc.name      : Decode Msvideo1 streams simultaneously
  * @tc.desc      : reli test
  */
 HWTEST_F(MsVideo1DecReliNdkTest, VIDEO_MSVIDEO1DEC_STABILITY_0090, TestSize.Level3)
@@ -342,7 +342,7 @@ HWTEST_F(MsVideo1DecReliNdkTest, VIDEO_MSVIDEO1DEC_STABILITY_0110, TestSize.Leve
 }
 /**
  * @tc.number    : VIDEO_MSVIDEO1DEC_STABILITY_0120
- * @tc.name      : Decode SVC and common Msvideo1 streams simultaneously
+ * @tc.name      : Decode MSVideo1 streams with surface and buffer mode successively
  * @tc.desc      : reli test
  */
 HWTEST_F(MsVideo1DecReliNdkTest, VIDEO_MSVIDEO1DEC_STABILITY_0120, TestSize.Level3)

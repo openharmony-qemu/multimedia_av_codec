@@ -924,7 +924,7 @@ HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0039, TestSize.Level0)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_FUNCTION_0040
- * @tc.name      : decode Vc1 buffer from MP4 file
+ * @tc.name      : decode Vc1 buffer from FMP4 file
  * @tc.desc      : function test
  */
 HWTEST_F(Vc1decFuncNdkTest, VIDEO_VC1DEC_FUNCTION_0040, TestSize.Level0)

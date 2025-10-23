@@ -519,7 +519,7 @@ HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_1200, TestSize.Level2)
 
 /**
  * @tc.number    : DEMUXER_WMA_FUNC_1300
- * @tc.name      : demuxer wma ,GetPublicTrackFormat,MD_KEY_TRACK_TYPE
+ * @tc.name      : demuxer wma ,GetPublicTrackFormat,OH_MD_KEY_CHANNEL_LAYOUT
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_1300, TestSize.Level2)
@@ -543,7 +543,7 @@ HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_1300, TestSize.Level2)
 
 /**
  * @tc.number    : DEMUXER_WMA_FUNC_1400
- * @tc.name      : demuxer wma ,GetPublicTrackFormat,MD_KEY_TRACK_TYPE
+ * @tc.name      : demuxer wma ,GetPublicTrackFormat,OH_MD_KEY_AUDIO_SAMPLE_FORMAT
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_1400, TestSize.Level2)
@@ -568,7 +568,7 @@ HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_1400, TestSize.Level2)
 
 /**
  * @tc.number    : DEMUXER_WMA_FUNC_1500
- * @tc.name      : demuxer wma ,GetPublicTrackFormat,MD_KEY_TRACK_TYPE
+ * @tc.name      : demuxer wma ,GetPublicTrackFormat,OH_MD_KEY_BITS_PER_CODED_SAMPLE
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_1500, TestSize.Level2)
@@ -659,7 +659,7 @@ HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_2100, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_WMA_FUNC_2200
- * @tc.name      : seek to the middle time, previous mode
+ * @tc.name      : seek to the middle time, 5000000 millisecond, previous mode
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_2200, TestSize.Level1)
@@ -670,7 +670,7 @@ HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_2200, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_WMA_FUNC_2300
- * @tc.name      : seek to the middle time, next mode
+ * @tc.name      : seek to the middle time, 5000000 millisecond, next mode
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_2300, TestSize.Level1)
@@ -681,7 +681,7 @@ HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_2300, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_WMA_FUNC_2400
- * @tc.name      : seek to the middle time, closest mode
+ * @tc.name      : seek to the middle time, 5000000 millisecond, closest mode
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_2400, TestSize.Level1)
@@ -692,7 +692,7 @@ HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_2400, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_WMA_FUNC_2500
- * @tc.name      : seek to the middle time, closest mode
+ * @tc.name      : seek to the middle time, closest mode, previous mode
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_2500, TestSize.Level1)
@@ -704,7 +704,7 @@ HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_2500, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_WMA_FUNC_2600
- * @tc.name      : seek to the middle time, closest mode
+ * @tc.name      : seek to the middle time, previous mode, next mode
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_2600, TestSize.Level1)
@@ -716,7 +716,7 @@ HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_2600, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_WMA_FUNC_2700
- * @tc.name      : seek to the middle time, closest mode
+ * @tc.name      : seek to the middle time, closest mode, next mode
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerWmaFuncNdkTest, DEMUXER_WMA_FUNC_2700, TestSize.Level1)

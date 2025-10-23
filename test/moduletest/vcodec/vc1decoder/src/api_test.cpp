@@ -454,7 +454,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_API_1000, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_API_1001
- * @tc.name      : Repeat OH_VideoDecoder_RegisterSetCallback
+ * @tc.name      : OH_VideoDecoder_RegisterSetCallback onError as null
  * @tc.desc      : function test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_API_1001, TestSize.Level2)
@@ -470,7 +470,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_API_1001, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_API_1002
- * @tc.name      : Repeat OH_VideoDecoder_RegisterSetCallback
+ * @tc.name      : OH_VideoDecoder_RegisterSetCallback onNeedInputBuffer as null
  * @tc.desc      : function test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_API_1002, TestSize.Level2)
@@ -486,7 +486,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_API_1002, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_API_1003
- * @tc.name      : Repeat OH_VideoDecoder_RegisterSetCallback
+ * @tc.name      : OH_VideoDecoder_RegisterSetCallback onNewOutputBuffer as null
  * @tc.desc      : function test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_API_1003, TestSize.Level2)
@@ -502,7 +502,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_API_1003, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_API_1004
- * @tc.name      : Repeat OH_VideoDecoder_RegisterSetCallback
+ * @tc.name      : OH_VideoDecoder_RegisterSetCallback onStreamChanged as null
  * @tc.desc      : function test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_API_1004, TestSize.Level2)
@@ -568,8 +568,8 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_API_1200, TestSize.Level2)
 
 
 /**
- * @tc.number    :   VIDEO_VC1DEC_CAP_API_0001
- * @tc.name      : OH_AVCodec_GetCapability
+ * @tc.number    : VIDEO_VC1DEC_CAP_API_0001
+ * @tc.name      : OH_AVCodec_GetCapability vc1 decoder
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest,   VIDEO_VC1DEC_CAP_API_0001, TestSize.Level2)
@@ -579,8 +579,8 @@ HWTEST_F(Vc1decApiNdkTest,   VIDEO_VC1DEC_CAP_API_0001, TestSize.Level2)
 }
 
 /**
- * @tc.number    :   VIDEO_VC1DEC_CAP_API_0002
- * @tc.name      : OH_AVCodec_GetCapability
+ * @tc.number    : VIDEO_VC1DEC_CAP_API_0002
+ * @tc.name      : OH_AVCapability_GetName vc1 decoder
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest,   VIDEO_VC1DEC_CAP_API_0002, TestSize.Level2)
@@ -591,8 +591,8 @@ HWTEST_F(Vc1decApiNdkTest,   VIDEO_VC1DEC_CAP_API_0002, TestSize.Level2)
 }
 
 /**
- * @tc.number    :   VIDEO_VC1DEC_CAP_API_0003
- * @tc.name      : OH_AVCodec_GetCapability
+ * @tc.number    : VIDEO_VC1DEC_CAP_API_0003
+ * @tc.name      : OH_AVCodec_GetCapability with null mime
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest,   VIDEO_VC1DEC_CAP_API_0003, TestSize.Level2)
@@ -602,8 +602,8 @@ HWTEST_F(Vc1decApiNdkTest,   VIDEO_VC1DEC_CAP_API_0003, TestSize.Level2)
 }
 
 /**
- * @tc.number    :   VIDEO_VC1DEC_CAP_API_0004
- * @tc.name      : OH_AVCodec_GetCapability
+ * @tc.number    : VIDEO_VC1DEC_CAP_API_0004
+ * @tc.name      : OH_AVCodec_GetCapabilityByCategory with null mime
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest,   VIDEO_VC1DEC_CAP_API_0004, TestSize.Level2)
@@ -770,7 +770,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_0700, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_0800
- * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
+ * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight with null capability
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_0800, TestSize.Level1)
@@ -786,7 +786,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_0800, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_0900
- * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
+ * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight with null range
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_0900, TestSize.Level1)
@@ -800,7 +800,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_0900, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_1000
- * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
+ * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight with invalid height 0
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_1000, TestSize.Level1)
@@ -848,7 +848,7 @@ HWTEST_F(Vc1decApiNdkTest,  VIDEO_VC1DEC_CAP_API_1002, TestSize.Level1)
 
 /**
  * @tc.number    :  VIDEO_VC1DEC_CAP_API_1003
- * @tc.name      : Test video width range retrieval for height with 9999 height
+ * @tc.name      : Test video width range retrieval for height with 4 height
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest,  VIDEO_VC1DEC_CAP_API_1003, TestSize.Level1)
@@ -898,7 +898,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_1100, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_1200
- * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
+ * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth with null capability
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_1200, TestSize.Level1)
@@ -914,7 +914,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_1200, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_1300
- * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
+ * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth with null range
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_1300, TestSize.Level1)
@@ -928,7 +928,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_1300, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_1400
- * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
+ * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth with invalid width 0
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_1400, TestSize.Level1)
@@ -1058,7 +1058,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_1700, TestSize.Level1)
 
 /**
  * @tc.number    :  VIDEO_VC1DEC_CAP_API_1701
- * @tc.name      : OH_AVCapability_GetVideoWidthRange param correct
+ * @tc.name      : OH_AVCapability_GetVideoWidthRange and test configure with out of range width
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest,  VIDEO_VC1DEC_CAP_API_1701, TestSize.Level2)
@@ -1119,7 +1119,7 @@ HWTEST_F(Vc1decApiNdkTest,  VIDEO_VC1DEC_CAP_API_1801, TestSize.Level1)
 
 /**
  * @tc.number    :  VIDEO_VC1DEC_CAP_API_1802
- * @tc.name      : OH_AVCapability_GetVideoHeightRange param correct
+ * @tc.name      : OH_AVCapability_GetVideoHeightRange and test configure with out of range height
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest,  VIDEO_VC1DEC_CAP_API_1802, TestSize.Level2)
@@ -1152,7 +1152,7 @@ HWTEST_F(Vc1decApiNdkTest,  VIDEO_VC1DEC_CAP_API_1802, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_1900
- * @tc.name      : OH_AVCapability_GetVideoHeightRange param correct
+ * @tc.name      : GetVideoSizeRange and test configure with out of range width and height
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_1900, TestSize.Level1)
@@ -1192,7 +1192,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_1900, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_2000
- * @tc.name      : OH_AVCapability_IsVideoSizeSupported param error
+ * @tc.name      : OH_AVCapability_IsVideoSizeSupported with 0 width
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_2000, TestSize.Level1)
@@ -1204,7 +1204,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_2000, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_2100
- * @tc.name      : OH_AVCapability_IsVideoSizeSupported param error
+ * @tc.name      : OH_AVCapability_IsVideoSizeSupported with 0 height
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_2100, TestSize.Level1)
@@ -1227,7 +1227,7 @@ HWTEST_F(Vc1decApiNdkTest,  VIDEO_VC1DEC_CAP_API_2101, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_2200
- * @tc.name      : OH_AVCapability_IsVideoSizeSupported param correct
+ * @tc.name      : OH_AVCapability_IsVideoSizeSupported with out-of-range dimensions
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_2200, TestSize.Level1)
@@ -1259,7 +1259,7 @@ HWTEST_F(Vc1decApiNdkTest,  VIDEO_VC1DEC_CAP_API_2201, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_2300
- * @tc.name      : OH_AVCapability_IsVideoSizeSupported param correct
+ * @tc.name      : OH_AVCapability_IsVideoSizeSupported with 1920x1080 dimensions
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_2300, TestSize.Level1)
@@ -1318,7 +1318,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_2500, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_2600
- * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
+ * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize with null range
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_2600, TestSize.Level1)
@@ -1347,7 +1347,7 @@ HWTEST_F(Vc1decApiNdkTest,  VIDEO_VC1DEC_CAP_API_2601, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_2700
- * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
+ * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize with 0 width
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_2700, TestSize.Level1)
@@ -1363,7 +1363,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_2700, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_2800
- * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
+ * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize with 0 height
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_2800, TestSize.Level1)
@@ -1461,7 +1461,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_2900, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_3000
- * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
+ * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported with 0 width
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_3000, TestSize.Level1)
@@ -1473,7 +1473,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_3000, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_3100
- * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
+ * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported with 0 height
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_3100, TestSize.Level1)
@@ -1485,7 +1485,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_3100, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_3200
- * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
+ * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported with 0 frame rate
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_3200, TestSize.Level1)
@@ -1544,7 +1544,7 @@ HWTEST_F(Vc1decApiNdkTest,  VIDEO_VC1DEC_CAP_API_3302, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_3400
- * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param error
+ * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats with null pixelFormat
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_3400, TestSize.Level1)
@@ -1559,7 +1559,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_3400, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_3500
- * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param error
+ * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats with null pixelFormatNum
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_3500, TestSize.Level1)
@@ -1590,7 +1590,7 @@ HWTEST_F(Vc1decApiNdkTest,  VIDEO_VC1DEC_CAP_API_3501, TestSize.Level1)
 
 /**
  * @tc.number    :  VIDEO_VC1DEC_CAP_API_3502
- * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param correct
+ * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats and test configure with supported pixel formats
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest,  VIDEO_VC1DEC_CAP_API_3502, TestSize.Level2)
@@ -1760,7 +1760,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_3800, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_3801
- * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param error
+ * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile with null capability
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_3801, TestSize.Level1)
@@ -1775,7 +1775,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_3801, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_3802
- * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param error
+ * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile with null levels
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_3802, TestSize.Level1)
@@ -1789,7 +1789,7 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_3802, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_VC1DEC_CAP_API_3803
- * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param error
+ * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile with null levelNum
  * @tc.desc      : api test
  */
 HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_3803, TestSize.Level1)
