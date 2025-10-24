@@ -188,10 +188,10 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_1900, TestSize.Leve
     if (!access("/system/lib64/media/", 0)) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         OH_AVCodecCallback cb_;
-        cb_.onError = VdecAPI1Error;
+        cb_.onError = VdecAPI11Error;
         cb_.onStreamChanged = VdecAPI11FormatChanged;
-        cb_.onNeedInputData = VdecAPI11InputDataReady;
-        cb_.onNeedOutputData = VdecAPI11OutputDataReady;
+        cb_.onNeedInputBuffer = VdecAPI11InputDataReady;
+        cb_.onNewOutputBuffer = VdecAPI11OutputDataReady;
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(vdec_, cb_, signal_));
     }
 }
@@ -208,8 +208,8 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_2000, TestSize.Leve
         OH_AVCodecCallback cb_;
         cb_.onError = NULL;
         cb_.onStreamChanged = VdecAPI11FormatChanged;
-        cb_.onNeedInputData = VdecAPI11InputDataReady;
-        cb_.onNeedOutputData = VdecAPI11OutputDataReady;
+        cb_.onNeedInputBuffer = VdecAPI11InputDataReady;
+        cb_.onNewOutputBuffer = VdecAPI11OutputDataReady;
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(vdec_, cb_, signal_));
     }
 }
@@ -224,10 +224,10 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_2100, TestSize.Leve
     if (!access("/system/lib64/media/", 0)) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         OH_AVCodecCallback cb_;
-        cb_.onError = VdecAPI1Error;
+        cb_.onError = VdecAPI11Error;
         cb_.onStreamChanged = NULL;
-        cb_.onNeedInputData = VdecAPI11InputDataReady;
-        cb_.onNeedOutputData = VdecAPI11OutputDataReady;
+        cb_.onNeedInputBuffer = VdecAPI11InputDataReady;
+        cb_.onNewOutputBuffer = VdecAPI11OutputDataReady;
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(vdec_, cb_, signal_));
     }
 }
@@ -242,11 +242,11 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_2300, TestSize.Leve
     if (!access("/system/lib64/media/", 0)) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         OH_AVCodecCallback cb_;
-        cb_.onError = VdecAPI1Error;
+        cb_.onError = VdecAPI11Error;
         cb_.onStreamChanged = VdecAPI11FormatChanged;
-        cb_.onNeedInputData = NULL;
-        cb_.onNeedOutputData = VdecAPI11OutputDataReady;
-        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(vdec_, cb_, signal_));
+        cb_.onNeedInputBuffer = NULL;
+        cb_.onNewOutputBuffer = VdecAPI11OutputDataReady;
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RegisterCallback(vdec_, cb_, signal_));
     }
 }
 
@@ -260,11 +260,11 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_2400, TestSize.Leve
     if (!access("/system/lib64/media/", 0)) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         OH_AVCodecCallback cb_;
-        cb_.onError = VdecAPI1Error;
+        cb_.onError = VdecAPI11Error;
         cb_.onStreamChanged = VdecAPI11FormatChanged;
-        cb_.onNeedInputData = VdecAPI11InputDataReady;
-        cb_.onNeedOutputData = NULL;
-        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(vdec_, cb_, signal_));
+        cb_.onNeedInputBuffer = VdecAPI11InputDataReady;
+        cb_.onNewOutputBuffer = NULL;
+        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RegisterCallback(vdec_, cb_, signal_));
     }
 }
 /**
