@@ -39,7 +39,7 @@ constexpr int MAX_CHANNELS_WMAPRO = 8;
 constexpr int MAX_SR_WMA_LEGACY = 48000;
 constexpr int MAX_SR_WMAPRO = 96000;
 
-constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
+constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 45000;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 2048 * 8;
 } // namespace
 
