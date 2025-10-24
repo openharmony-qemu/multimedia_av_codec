@@ -24,7 +24,7 @@ using namespace OHOS;
 using namespace OHOS::Media;
 static VDecFuzzSample *vDecSample = nullptr;
 constexpr uint32_t DEFAULT_WIDTH = 640;
-constexpr uint32_t DEFAULT_HEIGHT = 380;
+constexpr uint32_t DEFAULT_HEIGHT = 480;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 OH_AVFormat *format = nullptr;

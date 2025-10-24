@@ -38,7 +38,7 @@ bool MjpegdecoderInnerFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_MJPEG, false, SOFTWARE);
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/mjpeg", false, SOFTWARE);
     if (cap == nullptr) {
         return false;
     }

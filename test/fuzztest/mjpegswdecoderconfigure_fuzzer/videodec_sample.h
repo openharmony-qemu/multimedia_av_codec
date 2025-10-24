@@ -70,7 +70,7 @@ public:
     int32_t Stop();
     int32_t Flush();
     int32_t Reset();
-    void SetEOS(OH_AVBuffer *buffer, uint32_t index)
+    void SetEOS(OH_AVBuffer *buffer, uint32_t index);
     uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVBuffer *buffer);
     void CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, OH_AVCodecBufferAttr &attr);
     int32_t ReadData(uint32_t index, OH_AVBuffer *buffer);
@@ -119,5 +119,5 @@ private:
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData);
 void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData);
-void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userDat);
+void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData);
 #endif // VIDEODEC_SAMPLE_H

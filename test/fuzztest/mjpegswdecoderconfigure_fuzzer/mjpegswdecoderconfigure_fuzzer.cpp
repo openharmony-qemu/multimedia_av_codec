@@ -28,7 +28,7 @@ using namespace OHOS::Media;
 namespace OHOS {
 bool MjpegSwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
-    if (size < EXPECT_SIZE) {
+    if (size < sizeof(int32_t)) {
         return false;
     }
     bool result = false;

@@ -117,9 +117,9 @@ void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, v
     signal->outCond_.notify_all();
     int32_t ret = 0;
     if (g_decSample->isSurfMode) {
-        OH_VideoDecoder_RenderOutputData(codec, index);
+        ret = OH_VideoDecoder_RenderOutputBuffer(codec, index);
     } else {
-        OH_VideoDecoder_FreeOutputData(codec, index);
+        ret = OH_VideoDecoder_FreeOutputBuffer(codec, index);
     }
     if (ret != AV_ERR_OK) {
         g_decSample->Flush();
@@ -197,8 +197,8 @@ int32_t VDecFuzzSample::SetVideoDecoderCallback()
 
     cb_.onError = VdecError;
     cb_.onStreamChanged = VdecFormatChanged;
-    cb_.onNeedInputDataBuffer = VdecInputDataReady;
-    cb_.onNewOutputDataBuffer = VdecOutputDataReady;
+    cb_.onNeedInputBuffer = VdecInputDataReady;
+    cb_.onNewOutputBuffer = VdecOutputDataReady;
     return OH_VideoDecoder_RegisterCallback(vdec_, cb_, static_cast<void *>(signal_));
 }
 
@@ -276,7 +276,7 @@ int32_t VDecFuzzSample::CreateVideoDecoder(string codeName)
         OH_VideoDecoder_Destroy(tmpDec);
         tmpDec = nullptr;
     }
-    tmpDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_H263);
+    tmpDec = OH_VideoDecoder_CreateByMime("video/mjpeg");
     if (tmpDec) {
         OH_VideoDecoder_Destroy(tmpDec);
         tmpDec = nullptr;

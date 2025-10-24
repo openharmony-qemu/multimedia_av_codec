@@ -83,7 +83,7 @@ int32_t VDecServerSample::SetCallback()
 
 void VDecServerSample::RunVideoServerDecoder()
 {
-    codec_ = make_shared<FCodec>("OH.Media.Codec.Decoder.Video.H263");
+    codec_ = make_shared<FCodec>("OH.Media.Codec.Decoder.Video.MJPEG");
     if (codec_ == nullptr) {
         cout << "Create failed" << endl;
         return;
