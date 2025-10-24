@@ -29,27 +29,27 @@ using namespace OHOS::Media::Plugins::HttpPlugin;
 namespace OHOS::Media::Plugins::HttpPlugin {
 
 class SourceCallback : public Plugins::Callback {
-    public:
-        void OnEvent(const Plugins::PluginEvent &event) override
-        {
-            (void)event;
-        }
-    
-        void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override
-        {
-            (void)flag;
-            (void)desBitRate;
-        }
-    
-        bool CanAutoSelectBitRate() override
-        {
-            return true;
-        }
-    };
+public:
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        (void)event;
+    }
+
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override
+    {
+        (void)flag;
+        (void)desBitRate;
+    }
+
+    bool CanAutoSelectBitRate() override
+    {
+        return true;
+    }
+};
 
 constexpr int BUFF_READ_SIZE = 5 * 1024 * 1024; // buf size 5MB
 constexpr int READ_TIMES_5S = 1000 * 5;         // 5000MS
-constexpr int READ_TIMES_NS = 1500;             // 1500MS
+constexpr int READ_TIMES_NS = 1010;             // 1010MS
 unsigned char g_buffRead[BUFF_READ_SIZE];
 
 const map<string, string> g_httpHeader = {
@@ -80,6 +80,13 @@ void IncreaseCoverageSet(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloader
     hlsMediaDownloader->SetPlayStrategy(playStrategy);
     hlsMediaDownloader->SetInitialBufferSize(0, 50000); // buf size 50000B
     hlsMediaDownloader->SetInitialBufferSize(0, 20000000); // buf size 20000000B
+
+    bool isInterruptNeeded = false;
+    hlsMediaDownloader->SetInterruptState(isInterruptNeeded);
+    bool isTriggerAutoMode = false;
+    hlsMediaDownloader->SetIsTriggerAutoMode(isTriggerAutoMode);
+
+    hlsMediaDownloader->SetReadBlockingFlag(true);
 }
 
 void IncreaseCoverageRead(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloader)
@@ -88,14 +95,26 @@ void IncreaseCoverageRead(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloade
 
     hlsMediaDownloader->GetPlayable();
 
+    hlsMediaDownloader->GetStartedStatus();
+
     PlaybackInfo playbackInfo;
     hlsMediaDownloader->GetPlaybackInfo(playbackInfo);
 
+    std::vector<StreamInfo> streams;
+    hlsMediaDownloader->GetStreamInfo(streams);
+
     DownloadInfo downloadInfo;
     hlsMediaDownloader->GetDownloadInfo(downloadInfo);
+    hlsMediaDownloader->GetDownloadInfo();
+
+    hlsMediaDownloader->GetContentType();
+    hlsMediaDownloader->GetContentLength();
+    hlsMediaDownloader->GetTotalBufferSize();
+    hlsMediaDownloader->IsHlsFmp4();
+    hlsMediaDownloader->GetMemorySize();
 }
 
-void ReadData(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloader, int32_t streamID, uint32_t readLength,
+Status ReadData(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloader, int32_t streamID, uint32_t readLength,
     bool isEos)
 {
     ReadDataInfo readDataInfo;
@@ -103,7 +122,7 @@ void ReadData(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloader, int32_t s
     readDataInfo.wantReadLength_ = (readLength == 0 || readLength > sizeof(g_buffRead))
         ? sizeof(g_buffRead) : readLength;
     readDataInfo.isEos_ = isEos;
-    hlsMediaDownloader->Read(g_buffRead, readDataInfo);
+    return hlsMediaDownloader->Read(g_buffRead, readDataInfo);
 }
 
 void Seek(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloader, FuzzedDataProvider *fdp)
@@ -115,34 +134,62 @@ void Seek(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloader, FuzzedDataPro
     hlsMediaDownloader->SetInitialBufferSize(offset, bufSize);
 }
 
-bool StartFuzzTest(const uint8_t *data, size_t size)
+std::shared_ptr<HlsMediaDownloader> CreateFuzzTestObj(bool useCase,
+    FuzzedDataProvider *fdp, Plugins::Callback* &sourceCb)
 {
-    FuzzedDataProvider fdProvider(data, size);
-    FuzzedDataProvider *fdp = &fdProvider;
+    std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader= nullptr;
+    sourceCb = nullptr;
 
-    bool userDefinedDuration = true;
-    const int expectBufDuration = 10; // 10s
-    std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = std::make_shared<HlsMediaDownloader>(expectBufDuration,
-        userDefinedDuration, g_httpHeader, nullptr);
+    if (fdp == nullptr) {
+        std::string mimeType{AVMimeTypes::APPLICATION_M3U8.data(), AVMimeTypes::APPLICATION_M3U8.size()};
+        hlsMediaDownloader = std::make_shared<HlsMediaDownloader>(mimeType, g_httpHeader);
+    } else {
+        const int expectBufDuration = useCase ? fdp->ConsumeIntegralInRange<uint32_t>(0, 20) : 10; // 20、10s
+        bool userDefinedDuration = useCase ? !fdp->ConsumeBool() : fdp->ConsumeBool();
+        hlsMediaDownloader = std::make_shared<HlsMediaDownloader>(expectBufDuration,
+            userDefinedDuration, g_httpHeader, nullptr);
+    }
+    if (hlsMediaDownloader == nullptr) {
+        return nullptr;
+    }
+
     hlsMediaDownloader->Init();
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
     hlsMediaDownloader->SetStatusCallback(statusCallback);
 
-    IncreaseCoverageSet(hlsMediaDownloader);
+    sourceCb = new SourceCallback();
+    if (sourceCb == nullptr) {
+        return nullptr;
+    }
+    hlsMediaDownloader->SetCallback(sourceCb);
+    return hlsMediaDownloader;
+}
 
-    int32_t appUid = fdp->ConsumeIntegral<uint32_t>();
-    hlsMediaDownloader->SetAppUid(appUid);
-    bool isInterruptNeeded = false; // fdp->ConsumeBool();
-    hlsMediaDownloader->SetInterruptState(isInterruptNeeded);
-    bool isTriggerAutoMode = false;
-    hlsMediaDownloader->SetIsTriggerAutoMode(isTriggerAutoMode);
+bool StartFuzzTest(const uint8_t *data, size_t size)
+{
+    FuzzedDataProvider fdProvider(data, size);
+    FuzzedDataProvider *fdp = &fdProvider;
+    Plugins::Callback* sourceCb = nullptr;
+    std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = CreateFuzzTestObj(true, nullptr, sourceCb);
+    if (hlsMediaDownloader == nullptr) {
+        cout << "  Memory 1 apply failed." << endl;
+        return false;
+    }
+
+    IncreaseCoverageSet(hlsMediaDownloader);
 
     const std::string url = g_urlIPPort + g_urls[0];
     cout << "  Open url: " << url << endl;
     hlsMediaDownloader->Open(url, g_httpHeader);
+
+    int32_t appUid = fdp->ConsumeIntegral<uint32_t>();
+    hlsMediaDownloader->SetAppUid(appUid);
     int32_t streamID = 0;
     ReadData(hlsMediaDownloader, streamID, 0, false);
+    IncreaseCoverageRead(hlsMediaDownloader);
+    hlsMediaDownloader->SetDemuxerState(streamID);
+    hlsMediaDownloader->NotifyInitSuccess();
 
     for (int i = 0; i < 3; i++) {   // 种子，当前48字节，仅支持3轮测试
         this_thread::sleep_for(chrono::seconds(1));
@@ -159,17 +206,21 @@ bool StartFuzzTest(const uint8_t *data, size_t size)
         hlsMediaDownloader->SetCurrentBitRate(bitRate, streamID);
         hlsMediaDownloader->SelectBitRate(bitRate);
 
-        cout << " Run in size " << size << ", appUid " << appUid << ", isInterrupt " << isInterruptNeeded
-        << ", bitRate " << bitRate << ", streamID " << streamID << ", duration " << duration << endl;
+        cout << " Run in size " << size << ", appUid " << appUid << ", bitRate " << bitRate
+            << ", streamID " << streamID << ", duration " << duration << endl;
         appUid = fdp->ConsumeIntegral<uint32_t>();
         ReadData(hlsMediaDownloader, streamID, 10, true); // 10s
     }
 
     ReadData(hlsMediaDownloader, streamID, BUFF_READ_SIZE, true);
     Seek(hlsMediaDownloader, fdp);
+    IncreaseCoverageSet(hlsMediaDownloader);
 
-    bool isAsync = true; // fdp->ConsumeBool();
+    bool isAsync = true;
     hlsMediaDownloader->Close(isAsync);
+    hlsMediaDownloader->SetCallback(nullptr);
+    delete sourceCb;
+    sourceCb = nullptr;
     hlsMediaDownloader = nullptr;
 
     return true;
@@ -179,29 +230,31 @@ bool StartFuzzTestRead(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider fdProvider(data, size);
     FuzzedDataProvider *fdp = &fdProvider;
-
-    bool userDefinedDuration = !fdp->ConsumeBool();
-    const int expectBufDuration = 10; // 10s
-    std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = std::make_shared<HlsMediaDownloader>(expectBufDuration,
-        userDefinedDuration, g_httpHeader, nullptr);
-    hlsMediaDownloader->Init();
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-        std::shared_ptr<DownloadRequest>& request) {};
-    hlsMediaDownloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCb = nullptr;
+    std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = CreateFuzzTestObj(true, fdp, sourceCb);
+    if (hlsMediaDownloader == nullptr) {
+        cout << "  Memory 2 apply failed." << endl;
+        return false;
+    }
 
     const std::string url = g_urlIPPort + g_urls[0];
     hlsMediaDownloader->Open(url, g_httpHeader);
-    hlsMediaDownloader->GetSeekable();
-    hlsMediaDownloader->GetSeekable();
     hlsMediaDownloader->Resume();
     hlsMediaDownloader->Pause();
     hlsMediaDownloader->Pause();
     hlsMediaDownloader->Resume();
 
     int32_t streamID = 0;
+    uint32_t readLen = fdp->ConsumeIntegralInRange<uint32_t>(10, BUFF_READ_SIZE); // 10B
+    bool isDemuxerInit = false;
     for (int i = 0; i < READ_TIMES_5S; i++) {
         this_thread::sleep_for(chrono::milliseconds(1));
-        ReadData(hlsMediaDownloader, streamID, BUFF_READ_SIZE, fdp->ConsumeBool());
+        Status status = ReadData(hlsMediaDownloader, streamID, readLen, fdp->ConsumeBool());
+        if (!isDemuxerInit && status == Status::OK) {
+            hlsMediaDownloader->SetDemuxerState(streamID);
+            hlsMediaDownloader->NotifyInitSuccess();
+            isDemuxerInit = true;
+        }
 
         if (i % 1000 == 0) {    // 间隔 1000 ms，打印一次
             IncreaseCoverageRead(hlsMediaDownloader);
@@ -211,21 +264,21 @@ bool StartFuzzTestRead(const uint8_t *data, size_t size)
             cout << " Run read in size " << size << ", duration " << duration
                 << ", durationCached " << durationCached << endl;
         }
+        if (hlsMediaDownloader->IsHlsEnd()) {
+            break;
+        }
     }
 
-    hlsMediaDownloader->GetContentType();
-    hlsMediaDownloader->GetContentLength();
     int64_t seekTime = 1000; // 1000 ts
     SeekMode mode = static_cast<SeekMode>(
         fdp->ConsumeIntegralInRange<uint32_t>(0, uint32_t(SeekMode::SEEK_CLOSEST_INNER) + 1));
     hlsMediaDownloader->SeekToTime(seekTime, mode);
     hlsMediaDownloader->HandleSeekReady(0, streamID, fdp->ConsumeBool());
-    hlsMediaDownloader->GetTotalBufferSize();
-    hlsMediaDownloader->IsHlsFmp4();
-    hlsMediaDownloader->GetMemorySize();
-    hlsMediaDownloader->IsHlsEnd();
     hlsMediaDownloader->SetInterruptState(fdp->ConsumeBool());
     hlsMediaDownloader->Close(true);
+    hlsMediaDownloader->SetCallback(nullptr);
+    delete sourceCb;
+    sourceCb = nullptr;
     hlsMediaDownloader = nullptr;
 
     return true;
@@ -235,34 +288,41 @@ bool StartFuzzTestMultiUrl(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider fdProvider(data, size);
     FuzzedDataProvider *fdp = &fdProvider;
+    Plugins::Callback* sourceCb = nullptr;
+    std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = CreateFuzzTestObj(false, fdp, sourceCb);
+    if (hlsMediaDownloader == nullptr) {
+        cout << "  Memory 3 apply failed." << endl;
+        return false;
+    }
 
-    bool userDefinedDuration = !fdp->ConsumeBool();
-    const int expectBufDuration = 10; // 10s
-    std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = std::make_shared<HlsMediaDownloader>(expectBufDuration,
-        userDefinedDuration, g_httpHeader, nullptr);
-    hlsMediaDownloader->Init();
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-        std::shared_ptr<DownloadRequest>& request) {};
-    hlsMediaDownloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCb = new SourceCallback();
-    hlsMediaDownloader->SetCallback(sourceCb);
+    int32_t urlStart = fdp->ConsumeIntegralInRange<uint32_t>(0, sizeof(g_urls) / sizeof(g_urls[0]) - 1);
+    for (int32_t index = 0; index < sizeof(g_urls) / sizeof(g_urls[0]); index++) {
+        urlStart = (urlStart + index) % (sizeof(g_urls) / sizeof(g_urls[0]));
+        const std::string url = g_urlIPPort + g_urls[urlStart];
+        cout << " Run multi in size " << size << ", urlStart " << urlStart << ", open url: " << url << endl;
+        hlsMediaDownloader->Open(url, g_httpHeader);
 
-    int32_t index = fdp->ConsumeIntegralInRange<uint32_t>(0, sizeof(g_urls) / sizeof(g_urls[0]) - 1);
-    const std::string url = g_urlIPPort + g_urls[index];
-    cout << " Run multi in size " << size << ", index " << index << ", open url: " << url << endl;
-    hlsMediaDownloader->Open(url, g_httpHeader);
+        int32_t streamID = 0;
+        bool isDemuxerInit = false;
+        for (int i = 0; i < READ_TIMES_NS; i++) {
+            this_thread::sleep_for(chrono::milliseconds(1));
+            Status status = ReadData(hlsMediaDownloader, streamID, BUFF_READ_SIZE, fdp->ConsumeBool());
+            if (!isDemuxerInit && status == Status::OK) {
+                hlsMediaDownloader->SetDemuxerState(streamID);
+                hlsMediaDownloader->NotifyInitSuccess();
+                isDemuxerInit = true;
+            }
 
-    int32_t streamID = 0;
-    for (int i = 0; i < READ_TIMES_NS; i++) {
-        this_thread::sleep_for(chrono::milliseconds(1));
-        ReadData(hlsMediaDownloader, streamID, BUFF_READ_SIZE, fdp->ConsumeBool());
+            if (i % 1000 == 0) {    // 间隔 1000 ms，打印一次
+                IncreaseCoverageRead(hlsMediaDownloader);
 
-        if (i % 1000 == 0) {    // 间隔 1000 ms，打印一次
-            IncreaseCoverageRead(hlsMediaDownloader);
-
-            int64_t duration = hlsMediaDownloader->GetDuration();
-            int64_t durationCached = hlsMediaDownloader->GetCachedDuration();
-            cout << "  Times " << i << ", duration " << duration << ", durationCached " << durationCached << endl;
+                int64_t duration = hlsMediaDownloader->GetDuration();
+                int64_t durationCached = hlsMediaDownloader->GetCachedDuration();
+                cout << "  Times " << i << ", duration " << duration << ", durationCached " << durationCached << endl;
+            }
+            if (hlsMediaDownloader->IsHlsEnd()) {
+                break;
+            }
         }
     }
 

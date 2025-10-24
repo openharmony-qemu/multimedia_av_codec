@@ -225,11 +225,14 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
                             int32_t timeoutMs)
 {
     MEDIA_LOG_I("Open client in");
-    if (easyHandle_ == nullptr) {
-        MEDIA_LOG_E("EasyHandle is nullptr, init easyHandle.");
-        easyHandle_ = curl_easy_init();
+    {
+        AutoLock lock(mutex_);
+        if (easyHandle_ == nullptr) {
+            MEDIA_LOG_E("EasyHandle is nullptr, init easyHandle.");
+            easyHandle_ = curl_easy_init();
+        }
+        FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     }
-    FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
 
     if (isFirstOpen_) {
         HttpHeaderParse(httpHeader);
@@ -248,15 +251,16 @@ Status HttpCurlClient::Close(bool isAsync)
         if (easyHandle_) {
             curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
         }
-    }
-    if (isAsync) {
-        MEDIA_LOG_I("Close client Async out");
-        return Status::OK;
-    }
-    AutoLock lock(mutex_);
-    if (easyHandle_) {
-        curl_easy_cleanup(easyHandle_);
-        easyHandle_ = nullptr;
+
+        if (isAsync) {
+            MEDIA_LOG_I("Close client Async out");
+            return Status::OK;
+        }
+
+        if (easyHandle_) {
+            curl_easy_cleanup(easyHandle_);
+            easyHandle_ = nullptr;
+        }
     }
     ipFlag_ = false;
     if (!ip_.empty()) {
