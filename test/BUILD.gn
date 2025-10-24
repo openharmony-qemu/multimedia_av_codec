@@ -415,6 +415,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/dashmediadownappuid_fuzzer:DashMediaDownAppUidFuzzTest",
       "fuzztest/dashmediadownseektotime_fuzzer:DashMediaDownSeekToTimeFuzzTest",
       "fuzztest/dashmpddownfinished_fuzzer:DashMpdDownFinishedFuzzTest",
+      "fuzztest/hlstagsattronly_fuzzer:HlsTagsAttrOnlyFuzzTest",
     ]
     if(av_codec_enable_codec_eac3) {
       deps += [ "fuzztest/audiodecodereac3_fuzzer:AudioDecoderEac3FuzzTest" ]

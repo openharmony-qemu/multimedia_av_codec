@@ -1,0 +1,79 @@
+import("//build/config/features.gni")
+import("//build/test.gni")
+
+module_output_path = "multimedia_av_codec/m3u8_comprehensive_fuzzer"
+AV_CODEC_ROOT_DIR = "//foundation/multimedia/av_codec/"
+
+hls_sources = [
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/base64/base64_utils.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/download/app_client.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/download/downloader.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/download/media_source_loading_request.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/download/network_client/http_curl_client.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/hls/hls_media_downloader.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/hls/hls_playlist_downloader.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/hls/m3u8.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/hls/playlist_downloader.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/http/http_media_downloader.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp",
+]
+
+ohos_fuzztest("HlsTagsAttrOnlyFuzzTest") {
+  module_out_path = module_output_path
+  fuzz_config_file = "../hlstagsattronly_fuzzer"
+
+  cflags = [
+    "-g",
+    "-O0",
+    "-Wno-unused-variable",
+    "-fno-omit-frame-pointer",
+  ]
+
+  include_dirs = [
+    "$AV_CODEC_ROOT_DIR/interfaces",
+    "$AV_CODEC_ROOT_DIR/interfaces/inner_api/native",
+    "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source",
+    "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/hls",
+    "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/base64",
+    "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/xml",
+    "$AV_CODEC_ROOT_DIR/test/unittest/common",
+    "$AV_CODEC_ROOT_DIR/services/drm_decryptor",
+    "$AV_CODEC_ROOT_DIR/services/media_engine/modules",
+  ]
+
+  sources = hls_sources + ["hls_tags_attr_only_fuzzer.cpp",
+  ]
+
+  deps = [ "$AV_CODEC_ROOT_DIR/services/dfx:av_codec_service_dfx" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "curl:curl_shared",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "ipc:ipc_single",
+    "libxml2:libxml2",
+    "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
+    "openssl:libcrypto_shared",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+
+  defines = [
+    "HST_ANY_WITH_NO_RTTI",
+    "MEDIA_OHOS",
+  ]
+
+  testonly = true
+  install_enable = true
+}
+
+group("fuzztest") {
+  testonly = true
+  deps = [
+    ":HlsTagsAttrOnlyFuzzTest",
+  ]
+}
