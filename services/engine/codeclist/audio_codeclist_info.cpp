@@ -31,6 +31,7 @@ constexpr int MAX_BIT_RATE_MP3 = 320000;
 constexpr int MIN_BIT_RATE_MP3_ENCODE = 8000;
 constexpr int MAX_CHANNEL_COUNT_MP3 = 2;
 constexpr int MAX_CHANNEL_COUNT_APE = 2;
+constexpr int MAX_CHANNEL_COUNT_WMA = 2;
 constexpr int MAX_CHANNEL_COUNT_RAW = 16;
 constexpr int MAX_CHANNEL_COUNT_G711A = 6;
 
@@ -230,7 +231,7 @@ CapabilityData AudioCodeclistInfo::GetWMAV1DecoderCapability()
     cap.mimeType  = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_WMAV1;
     cap.isVendor  = false;
     cap.bitrate   = Range(1, MAX_INT32);
-    cap.channels  = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    cap.channels  = Range(1, MAX_CHANNEL_COUNT_WMA);
     cap.sampleRate = AUDIO_WMA_LEGACY_SAMPLE_RATE;
     cap.sampleRateRanges = convertVectorToRange(AUDIO_WMA_LEGACY_SAMPLE_RATE);
     cap.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
@@ -245,7 +246,7 @@ CapabilityData AudioCodeclistInfo::GetWMAV2DecoderCapability()
     cap.mimeType  = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_WMAV2;
     cap.isVendor  = false;
     cap.bitrate   = Range(1, MAX_INT32);
-    cap.channels  = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    cap.channels  = Range(1, MAX_CHANNEL_COUNT_WMA);
     cap.sampleRate = AUDIO_WMA_LEGACY_SAMPLE_RATE;
     cap.sampleRateRanges = convertVectorToRange(AUDIO_WMA_LEGACY_SAMPLE_RATE);
     cap.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
