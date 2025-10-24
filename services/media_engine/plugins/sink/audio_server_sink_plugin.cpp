@@ -289,6 +289,7 @@ Status AudioServerSinkPlugin::Init()
     rendererOptions_.streamInfo.format = rendererParams_.sampleFormat;
     rendererOptions_.streamInfo.channels = rendererParams_.channelCount;
     rendererOptions_.rendererInfo.playerType = AudioStandard::PlayerType::PLAYER_TYPE_AV_PLAYER;
+    rendererOptions_.privacyType = static_cast<AudioStandard::AudioPrivacyType>(privacyType_);
     MEDIA_LOG_I_SHORT("Create audio renderer for samplingRate " PUBLIC_LOG_D32 " encoding " PUBLIC_LOG_D32
                 " sampleFormat " PUBLIC_LOG_D32 " channels " PUBLIC_LOG_D32,
                 rendererOptions_.streamInfo.samplingRate, rendererOptions_.streamInfo.encoding,
@@ -617,6 +618,7 @@ void AudioServerSinkPlugin::SetUpParamsSetterMap()
     SetUpAppPidSetter();
     SetUpAppUidSetter();
     SetUpAudioRenderInfoSetter();
+    SetPrivacyType();
     SetUpAudioRenderSetFlagSetter();
     SetUpAudioInterruptModeSetter();
     SetUpAudioRenderSourceDurationSetter();
@@ -750,6 +752,16 @@ void AudioServerSinkPlugin::SetUpAudioRenderInfoSetter()
         FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<AudioRenderInfo>(para), Status::ERROR_MISMATCHED_TYPE,
                              "AUDIO_RENDER_INFO type should be AudioRenderInfo");
         audioRenderInfo_ = AnyCast<AudioRenderInfo>(para);
+        return Status::OK;
+    };
+}
+
+void AudioServerSinkPlugin::SetPrivacyType()
+{
+    paramsSetterMap_["PRIVACY_TYPE"] = [this](const ValueType &para) {
+        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<int32_t>(para), Status::ERROR_MISMATCHED_TYPE,
+                             "PRIVACY_TYPE type should be int32_t");
+        privacyType_ = AnyCast<int32_t>(para);
         return Status::OK;
     };
 }
