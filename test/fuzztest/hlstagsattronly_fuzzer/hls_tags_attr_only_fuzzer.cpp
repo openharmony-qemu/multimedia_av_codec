@@ -27,8 +27,11 @@ using namespace OHOS::Media::Plugins::HttpPlugin;
 static inline std::string RandToken(FuzzedDataProvider& fdp, size_t maxLen = 24)
 {
     std::string s = fdp.ConsumeRandomLengthString(maxLen);
+
     // 避免把换行塞进同一行
-    s.erase(std::remove_if(s.begin(), s.end(), [](unsigned char c){ return c=='\r'||c=='\n'; }), s.end());
+    s.erase(std::remove_if(s.begin(), s.end(), [](unsigned char c){
+        return c == '\r' || c == '\n';
+    }), s.end());
     return s;
 }
 
@@ -37,9 +40,14 @@ static inline std::string RandQuoted(FuzzedDataProvider& fdp, size_t maxLen = 24
     std::string out = "\"";
     std::string raw = fdp.ConsumeRandomLengthString(maxLen);
     for (char c : raw) {
-        if (c == '"' && withEsc) { out.push_back('\\'); out.push_back('"'); }
-        else if (c == '\n' || c == '\r') out.push_back(' ');
-        else out.push_back(c);
+        if (c == '"' && withEsc) {
+            out.push_back('\\');
+            out.push_back('"');
+        } else if (c == '\n' || c == '\r') {
+            out.push_back(' ');
+        } else {
+            out.push_back(c);
+        }
     }
     out.push_back('"');
     return out;
@@ -47,31 +55,39 @@ static inline std::string RandQuoted(FuzzedDataProvider& fdp, size_t maxLen = 24
 
 static inline std::string RandUInt(FuzzedDataProvider& fdp, uint32_t lo, uint32_t hi)
 {
-    if (lo > hi) std::swap(lo, hi);
+    if (lo > hi) {
+        std::swap(lo, hi);
+    }
     return std::to_string(fdp.ConsumeIntegralInRange<uint32_t>(lo, hi));
 }
 
 static inline std::string RandFloat(FuzzedDataProvider& fdp, double lo, double hi)
 {
-    if (lo > hi) std::swap(lo, hi);
-    std::ostringstream os; os.setf(std::ios::fmtflags(0), std::ios::floatfield);
+    if (lo > hi) {
+        std::swap(lo, hi);
+    }
+    std::ostringstream os;
+    os.setf(std::ios::fmtflags(0), std::ios::floatfield);
     os << fdp.ConsumeFloatingPointInRange<double>(lo, hi);
     return os.str();
 }
 
 static inline std::string RandHexIV(FuzzedDataProvider& fdp, bool oddLen = false)
 {
-    static const char* H = "0123456789ABCDEF";
+    static const char* HEX = "0123456789ABCDEF";
     int n = fdp.ConsumeIntegralInRange<int>(2, 32);
-    if (oddLen) n |= 1;
+    if (oddLen) {
+        n |= 1;
+    }
     std::string s = "0x";
-    for (int i = 0; i < n; i++) s.push_back(H[fdp.ConsumeIntegralInRange<int>(0, 15)]);
+    for (int i = 0; i < n; i++) s.push_back(HEX[fdp.ConsumeIntegralInRange<int>(0, 15)]);
     return s;
 }
 
 static inline std::string RandResolution(FuzzedDataProvider& fdp)
 {
-    const char* pool[] = {"426x240","640x360","854x480","1280x720","1920x1080","2560x1440","3840x2160","1x1","0x1080","9999x1"};
+    const char* pool[] = { "426x240", "640x360", "854x480", "1280x720", "1920x1080", "2560x1440", "3840x2160",
+        "1x1", "0x1080", "9999x1" };
     return pool[fdp.ConsumeIntegralInRange<int>(0, (int)(sizeof(pool)/sizeof(pool[0]))-1)];
 }
 
@@ -97,15 +113,19 @@ static inline std::string RandURI(FuzzedDataProvider& fdp)
 
 static inline std::string KV(const std::string& k, const std::string& v, FuzzedDataProvider& fdp)
 {
-    auto sp = [&](void){ return fdp.ConsumeBool() ? " " : ""; };
-    return k + sp() + "=" + sp() +v;
+    auto sp = [&](void){
+        return fdp.ConsumeBool() ? " " : "";
+    };
+    return k + sp() + "=" + sp() + v;
 }
 
 // 构造属性密集型（不走下载）
 static std::string BuildAttributesLine(FuzzedDataProvider& fdp, HlsTag tagType)
 {
     std::vector<std::string> parts;
-    auto push = [&](const std::string& k, const std::string& v){ parts.emplace_back(KV(k, v, fdp)); };
+    auto push = [&](const std::string& k, const std::string& v){
+        parts.emplace_back(KV(k, v, fdp));
+    };
 
     switch (tagType) {
         case HlsTag::EXTXSTREAMINF:
@@ -142,7 +162,11 @@ static std::string BuildAttributesLine(FuzzedDataProvider& fdp, HlsTag tagType)
         case HlsTag::EXTXKEY:
             // 安全：避免出发下载（允许空URI/内联PSSH字符串）
             push("METHOD", fdp.ConsumeBool() ? "AES-128" : "SAMPLE-AES");
-            if (fdp.ConsumeBool()) push("URI", "\"\""); else push("URI", RandQuoted(fdp, 24));
+            if (fdp.ConsumeBool()) {
+                push("URI", "\"\"");
+            } else {
+                push("URI", RandQuoted(fdp, 24));
+            }
             if (fdp.ConsumeBool()) push("IV", fdp.ConsumeBool() ? RandHexIV(fdp, false) : RandHexIV(fdp, true));
             if (fdp.ConsumeBool()) push("KEYFORMAT", RandQuoted(fdp, 10));
             if (fdp.ConsumeBool()) push("KEYFORMATVERSIONS", RandQuoted(fdp, 6));
@@ -172,7 +196,9 @@ static std::string BuildAttributesLine(FuzzedDataProvider& fdp, HlsTag tagType)
 
 static inline void PoundOnAttribute(const std::shared_ptr<Attribute>& a)
 {
-    if (!a) return;
+    if (!a) {
+        return;
+    }
     (void)a->Decimal();
     (void)a->FloatingPoint();
     (void)a->HexSequence();
@@ -184,7 +210,9 @@ static inline void PoundOnAttribute(const std::shared_ptr<Attribute>& a)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
-    if (!data || size == 0) return 0;
+    if (!data || size == 0) {
+        return 0;
+    }
     FuzzedDataProvider fdp(data, size);
 
     // 1) 先构造若干“增强版”文本变体
@@ -228,7 +256,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
                     os << "\n" << RandURI(fdp) << "\n";
             }
         }
-        if (fdp.ConsumeBool()) os << "#EXT-X-ENDLIST\n";
+        if (fdp.ConsumeBool()) {
+            os << "#EXT-X-ENDLIST\n";
+        }
         texts.emplace_back(os.str());
     }
 
@@ -269,7 +299,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
                     static const char* keys[] = {
                         "BANDWIDTH", "AVERAGE-BANDWIDTH", "RESOLUTIOIN", "FRAME-RATE", "CODECS",
                         "URI", "BYTERANGE", "IV", "TIME-OFFSET", "LANGUAGE", "KEYFORMAT", "KEYFORMATVERSIONS",
-                        "GROUP-ID", "NAME", "DEFAULT", "AUTOSELECT","FORCED", "CLOSED-CAPTIONS", "AUDIO", "VIDEO",
+                        "GROUP-ID", "NAME", "DEFAULT", "AUTOSELECT", "FORCED", "CLOSED-CAPTIONS", "AUDIO", "VIDEO",
                         "SUBTITLES", "STRANGE_KEY"  // 有意的未知键
                     };
                     for (auto k : keys) {
