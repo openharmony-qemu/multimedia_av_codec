@@ -325,10 +325,14 @@ int32_t VDecFuzzSample::ReadData(uint32_t index, OH_AVBuffer *buffer)
 uint32_t VDecFuzzSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuffer *buffer)
 {
     OH_AVCodecBufferAttr attr;
-    uint8_t *frameBuffer = new uint8_t[bufferSize];
     if (bufferSize <= 0) {
-        return 0;
+    return 0;
     }
+    if (bufferSize > MAX_ALLOWED_BUFFER_SIZE) {
+    cout << "ERROR:Buffer size too large: " << bufferSize << endl;
+    return ERROR_INVALID_SIZE;
+    }
+    uint8_t *frameBuffer = new uint8_t[bufferSize];
     (void)inFile_->read(reinterpret_cast<char *>(frameBuffer), bufferSize);
     int32_t size = OH_AVBuffer_GetCapacity(buffer);
     if (size < bufferSize) {
