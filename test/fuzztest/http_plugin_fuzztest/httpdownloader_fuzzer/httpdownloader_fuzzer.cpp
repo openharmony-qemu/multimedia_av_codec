@@ -101,6 +101,9 @@ void TestHttpDownloaderFuzz(FuzzedDataProvider &fdp)
     std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::HttpMediaDownloader> httpMediaDownloader =
         std::make_shared<OHOS::Media::Plugins::HttpPlugin::HttpMediaDownloader>(testUriPath, 5, nullptr);  // 5
     httpMediaDownloader->Init();
+    httpMediaDownloader->readOffset_ = 0;
+    httpMediaDownloader->minReadOffset_ = 1;
+    httpMediaDownloader->UpdateMinAndMaxReadOffset();
     std::string testUrl = testUriPath + fuzzString;
     std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
     playStrategy->width = 640;  // 640
@@ -125,6 +128,18 @@ void CallHttpDownloaderFuncs(std::shared_ptr<HttpMediaDownloader> httpMediaDownl
     if (httpMediaDownloader == nullptr) {
         return;
     }
+    httpMediaDownloader->isFirstFrameArrived_ = true;
+    httpMediaDownloader->UpdateWaterLineAbove();
+    httpMediaDownloader->GetStartedStatus();
+    httpMediaDownloader->GetBuffer();
+    httpMediaDownloader->GetReadFrame();
+    httpMediaDownloader->SetIsReportedErrorCode();
+    httpMediaDownloader->SetStartPts(0);
+    std::string outString;
+    std::string sizeString = "offset";
+    std::string numString = "0";
+    httpMediaDownloader->AddParamForUrl(outString, sizeString, numString);
+    httpMediaDownloader->GetResolutionDelta(fdp.ConsumeIntegral<uint32_t>(), fdp.ConsumeIntegral<uint32_t>());
     httpMediaDownloader->IsFlvLive();
     httpMediaDownloader->GetBufferSize();
     httpMediaDownloader->GetStatusCallbackFunc();
@@ -257,6 +272,8 @@ void HttpDownloaderFlvRun(FuzzedDataProvider &fdp)
     httpMediaDownloader->IsFlvLive();
     httpMediaDownloader->SetInterruptState(fdp.ConsumeIntegral<bool>());
     httpMediaDownloader->SeekRingBuffer(fdp.ConsumeIntegralInRange<int64_t>(0, 10240));  // 10240
+    httpMediaDownloader->SetReadBlockingFlag(false);
+    httpMediaDownloader->AutoSelectBitRate(10);  // 10
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
 }
