@@ -105,7 +105,7 @@ static inline std::string KV(const std::string& k, const std::string& v, FuzzedD
 static std::string BuildAttributesLine(FuzzedDataProvider& fdp, HlsTag tagType)
 {
     std::vector<std::string> parts;
-    auto push = [&](cosnt std::string& k, const std::string& v){ parts.emplace_back(KV(k, v, fdp)); };
+    auto push = [&](const std::string& k, const std::string& v){ parts.emplace_back(KV(k, v, fdp)); };
 
     switch (tagType) {
         case HlsTag::EXTXSTREAMINF:
@@ -119,7 +119,7 @@ static std::string BuildAttributesLine(FuzzedDataProvider& fdp, HlsTag tagType)
             if (fdp.ConsumeBool()) push("STRANGE_KEY", RandQuoted(fdp, 8)); // 非法键，压榨容错
             break;
         case HlsTag::EXTXIFRAMESTREAMINF:
-            push("BANDWIDTH", RandUInt(fdp, 1, 1000'000'000));
+            push("BANDWIDTH", RandUInt(fdp, 1, 100'000'000));
             if (fdp.ConsumeBool()) push("RESOLUTION", RandResolution(fdp));
             if (fdp.ConsumeBool()) push("URI", RandQuoted(fdp, 24));
             if (fdp.ConsumeBool()) push("BYTERANGE", RandQuoted(fdp, 24));
@@ -271,7 +271,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
                         "URI", "BYTERANGE", "IV", "TIME-OFFSET", "LANGUAGE", "KEYFORMAT", "KEYFORMATVERSIONS",
                         "GROUP-ID", "NAME", "DEFAULT", "AUTOSELECT","FORCED", "CLOSED-CAPTIONS", "AUDIO", "VIDEO",
                         "SUBTITLES", "STRANGE_KEY"  // 有意的未知键
-                    }；
+                    };
                     for (auto k : keys) {
                         PoundOnAttribute(at->GetAttributeByName(k));
                     }
@@ -283,20 +283,20 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
             // TARGETDURATION/MEDIA-SEQUENCE/DISCONTINUITY-SEQUENCE/PLAYLIST-TYPE
             if (tp == HlsTag::URI || tp == HlsTag::EXTXVERSION || tp == HlsTag::EXTXBYTERANGE ||
                 tp == HlsTag::EXTXPROGRAMDATETIME || tp == HlsTag::EXTXTARGETDURATION ||
-                tp == HlsTag::EXTXMEDIASEQUENCE || tp == HlsTag::EXTXDISCONTINUITY-SEQUENCE ||
+                tp == HlsTag::EXTXMEDIASEQUENCE || tp == HlsTag::EXTXDISCONTINUITYSEQUENCE ||
                 tp == HlsTag::EXTXPLAYLISTTYPE) {
                 auto* sv = static_cast<SingleValueTag*>(tg.get());
                 if (sv) {
                     const Attribute& a = sv->GetValue();
 
                     // 尽可能调用各种取值路径
-                    (void)a->Decimal();
-                    (void)a->FloatingPoint();
-                    (void)a->HexSequence();
-                    (void)a->GetByteRange();
-                    (void)a->GetResolution();
-                    (void)a->QuotedString();
-                    (void)a->UnescapeQuotes();
+                    (void)a.Decimal();
+                    (void)a.FloatingPoint();
+                    (void)a.HexSequence();
+                    (void)a.GetByteRange();
+                    (void)a.GetResolution();
+                    (void)a.QuotedString();
+                    (void)a.UnescapeQuotes();
                 }
                 continue;
             }

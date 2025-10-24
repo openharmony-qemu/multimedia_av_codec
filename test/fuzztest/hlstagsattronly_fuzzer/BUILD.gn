@@ -2,7 +2,7 @@ import("//build/config/features.gni")
 import("//build/test.gni")
 
 module_output_path = "multimedia_av_codec/m3u8_comprehensive_fuzzer"
-AV_CODEC_ROOT_DIR = "//foundation/multimedia/av_codec"
+AV_CODEC_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
 hls_sources = [
   "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/base64/base64_utils.cpp",
