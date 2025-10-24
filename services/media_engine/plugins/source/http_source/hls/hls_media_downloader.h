@@ -332,6 +332,7 @@ private:
     int64_t seekStartTimePos_ {0};
     std::atomic<bool> isTsEnd_ {false};
     std::atomic<bool> notNeedReadBack_ {false};
+    bool isEos_ {false};
 };
 }
 }

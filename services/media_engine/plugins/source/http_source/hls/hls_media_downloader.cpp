@@ -329,12 +329,11 @@ bool HlsMediaDownloader::CheckReadStatus()
     // eos:palylist is empty, request is finished, hls is vod, do not select bitrate
     FALSE_RETURN_V(playlistDownloader_ != nullptr, false);
     FALSE_RETURN_V(downloadRequest_ != nullptr, false);
-    bool isEos = playList_->Empty() && (downloadRequest_ != nullptr) &&
+    isEos_ = playList_->Empty() && (downloadRequest_ != nullptr) &&
                  downloadRequest_->IsEos() && playlistDownloader_ != nullptr &&
                  (playlistDownloader_->GetDuration() > 0) &&
                  playlistDownloader_->IsParseAndNotifyFinished();
-    if (isEos) {
-        MEDIA_LOG_I("HLS download done.");
+    if (isEos_) {
         return true;
     }
     if (playlistDownloader_->GetDuration() > 0 && playlistDownloader_->IsParseAndNotifyFinished() &&
@@ -1313,6 +1312,9 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
             return true;
         }
         callback_->SetSelectBitRateFlag(true, bitRate);
+    }
+    if (isEos_) {
+        MEDIA_LOG_I("HLS download done.");
     }
     // report change bitrate start
     ReportBitrateStart(bitRate);
@@ -2329,6 +2331,9 @@ bool HlsMediaDownloader::IsHlsEnd()
     if (CheckReadStatus() && GetBufferSize() == 0 && readTsIndex_ + 1 == backPlayList_.size() &&
         tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
         tsStorageInfo_[readTsIndex_].second) {
+            if (isEos_) {
+                MEDIA_LOG_I("HLS download done.");
+            }
             return true;
         }
     return false;
