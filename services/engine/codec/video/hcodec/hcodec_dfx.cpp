@@ -247,6 +247,9 @@ void HCodec::UpdateHoldTime(const TimePoint& now, const BufferInfo& info, Buffer
 bool HCodec::CalculateInterval(const TimePoint& now, OMX_DIRTYPE port, IntervalAverage& ave)
 {
     Record& record = record_[port];
+    if(!record.beginOfInterval_.has_value()){
+        return false;
+    }
     auto fromBeginOfIntervalToNowUs = chrono::duration_cast<chrono::microseconds>(
         now - record.beginOfInterval_.value()).count();
     if (fromBeginOfIntervalToNowUs < 0) {
