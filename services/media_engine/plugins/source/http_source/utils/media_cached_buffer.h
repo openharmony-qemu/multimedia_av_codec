@@ -28,8 +28,6 @@
 
 namespace OHOS {
 namespace Media {
-constexpr uint32_t CHUNK_SIZE = 16 * 1024;
-constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
 constexpr int64_t LOOP_TIMEOUT = 60; // s
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
 using Clock = std::chrono::steady_clock;

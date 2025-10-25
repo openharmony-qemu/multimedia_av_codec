@@ -75,6 +75,8 @@ constexpr size_t IGNORE_BUFFERING_WITH_START_TIME_MS = 5000;
 constexpr size_t IGNORE_BUFFERING_EXTRA_CACHE_BEYOND_MS = 300;
 constexpr float FLV_AUTO_SELECT_SMOOTH_FACTOR = 0.8;
 constexpr size_t FLV_AUTO_SELECT_TIME_GAP = 3;
+constexpr uint32_t CHUNK_SIZE = 16 * 1024;
+constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
 
 }
 void HttpMediaDownloader::InitRingBuffer(uint32_t expectBufferDuration)

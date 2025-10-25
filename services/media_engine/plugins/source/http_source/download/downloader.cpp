@@ -29,8 +29,7 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr int32_t PER_REQUEST_SIZE = 2 * 1024 * 1024;
-constexpr int32_t TWO_SECONDS = 2;
-constexpr int32_t BYTES_TO_BIT = 8;
+constexpr int32_t BITRATE_REQUEST_SIZE = 4;
 constexpr unsigned int SLEEP_TIME = 5;    // Sleep 5ms
 constexpr size_t RETRY_TIMES = 6000;  // Retry 6000 times
 constexpr size_t REQUEST_QUEUE_SIZE = 50;
@@ -262,7 +261,7 @@ void DownloadRequest::GetLocation(std::string& location) const
 
 void DownloadRequest::SetBitRateToRequestSize(const int32_t videoBitrate)
 {
-    bitRateToRequestSize_ = videoBitrate * TWO_SECONDS / BYTES_TO_BIT;
+    bitRateToRequestSize_ = videoBitrate / BITRATE_REQUEST_SIZE;
 }
 
 Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name))
@@ -794,7 +793,7 @@ void Downloader::HandleRetOK()
     } else {
         remaining = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
     }
-    if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 0) { // Check whether the playback ends.
+    if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 1) { // Check whether the playback ends.
         MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
         currentRequest_->isEos_ = true;
         HandlePlayingFinish();

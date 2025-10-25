@@ -41,6 +41,8 @@ constexpr int START_POS = 10;
 constexpr int ONE_KILO = 1024;
 constexpr int FIR_BUFFER = 128;
 constexpr long LIVE_CONTENT_LENGTH = 2147483646;
+static constexpr uint32_t CHUNK_SIZE = 16 * 1024;
+static constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
 
 void DownloaderUnitTest::SetUpTestCase(void)
 {

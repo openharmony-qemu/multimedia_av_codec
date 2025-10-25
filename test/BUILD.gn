@@ -109,6 +109,7 @@ group("av_codec_unit_test") {
         "unittest/demuxer_unit_test:demuxer_unit_test",
         "unittest/filter_test:filter_unit_test",
         "unittest/hls_test:hls_media_downloader_unit_test",
+        "unittest/hls_test:hls_segment_manager_unit_test",
         "unittest/hls_test:hls_playlist_downloader_unit_test",
         "unittest/hls_test:hls_tags_unit_test",
         "unittest/hls_test:m3u8_unit_test",
