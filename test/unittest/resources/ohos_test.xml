@@ -1048,9 +1048,9 @@
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media/test_cbr"/>
             <option name="shell" value="mkdir -p /data/test/media/test_hls"/>
-            <option name="shell" value="mkdir -p /data/test/media/test_hls/720_1M"/>
-            <option name="shell" value="mkdir -p /data/test/media/test_hls/720_2M"/>
-            <option name="shell" value="mkdir -p /data/test/media/test_hls/1080_3M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/720_1M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/720_2M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/1080_3M"/>
             <option name="push" value="video_res/test_hls/enc.key -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/out000.ts -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/out001.ts -> /data/test/media/test_hls" src="res"/>
@@ -1110,9 +1110,9 @@
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media/test_cbr"/>
             <option name="shell" value="mkdir -p /data/test/media/test_hls"/>
-            <option name="shell" value="mkdir -p /data/test/media/test_hls/720_1M"/>
-            <option name="shell" value="mkdir -p /data/test/media/test_hls/720_2M"/>
-            <option name="shell" value="mkdir -p /data/test/media/test_hls/1080_3M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/720_1M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/720_2M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/1080_3M"/>
             <option name="push" value="video_res/test_hls/enc.key -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/out000.ts -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/out001.ts -> /data/test/media/test_hls" src="res"/>
@@ -1254,9 +1254,9 @@
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media/test_cbr"/>
             <option name="shell" value="mkdir -p /data/test/media/test_hls"/>
-            <option name="shell" value="mkdir -p /data/test/media/test_hls/720_1M"/>
-            <option name="shell" value="mkdir -p /data/test/media/test_hls/720_2M"/>
-            <option name="shell" value="mkdir -p /data/test/media/test_hls/1080_3M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/720_1M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/720_2M"/>
+            <option name="shell" value="mkdir -p /data/test/media/test_cbr/1080_3M"/>
             <option name="push" value="video_res/test_hls/enc.key -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/out000.ts -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/out001.ts -> /data/test/media/test_hls" src="res"/>

@@ -246,7 +246,7 @@ int32_t HttpServerFuzzDemo::SendContinue(int32_t connFd, std::string &path, int3
     int32_t ret = 0;
     fileFd = open(path.c_str(), O_RDONLY);
     if (fileFd == -1) {
-        std::cout << "file does not exist, path:" << path << std::endl;
+        std::cout << "file does not exist, path:" << path << " errno:" << errno << std::endl;
         CloseFd(connFd, fileFd, true, true);
         return -1;
     }

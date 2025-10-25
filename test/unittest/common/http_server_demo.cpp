@@ -225,7 +225,7 @@ void HttpServerDemo::FileReadFunc(int32_t connFd)
     }
     fileFd = open(path.c_str(), O_RDONLY);
     if (fileFd == -1) {
-        std::cout << "File does not exist, path:" << path << std::endl;
+        std::cout << "File does not exist, path:" << path << " errno:" << errno << std::endl;
         CloseFd(connFd, fileFd, true, true);
         return;
     }
