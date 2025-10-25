@@ -53,8 +53,8 @@ namespace {
 constexpr uint32_t MAX_OUTPUT_FRMAENUM = 1000;
 constexpr uint8_t WMV3_EXTRADATA[] = {0x45, 0xf9, 0x18, 0x00};
 constexpr uint32_t WMV3_EXTRDATA_SIZE = sizeof(WMV3_EXTRADATA);
-constexpr uint8_t WMV3_HDR_EXTRADATA[] = {0x4b, 0xf1, 0x0a, 0x01};
-constexpr uint32_t WMV3_HDR_EXTRDATA_SIZE = sizeof(WMV3_HDR_EXTRADATA);
+constexpr uint8_t WMV3_MAIN_EXTRADATA[] = {0x4b, 0xf1, 0x0a, 0x01};
+constexpr uint32_t WMV3_MAIN_EXTRDATA_SIZE = sizeof(WMV3_MAIN_EXTRADATA);
 
 static inline int64_t GetTimeUs()
 {
@@ -236,7 +236,7 @@ bool VideoDecSample::Create()
     isAvcStream_ = inPath_.find("h264") != std::string::npos;
     isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
     needExtraData_ = inPath_.find("wmv3") != std::string::npos;
-    isWmv3HdrStream_ = inPath_.find("hdr.wmv3") != std::string::npos;
+    isWmv3MainStream_ = inPath_.find("profile1_1280_720_24.wmv3") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
 
@@ -259,7 +259,7 @@ bool VideoDecSample::CreateByMime()
     isAvcStream_ = inPath_.find("h264") != std::string::npos;
     isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
     needExtraData_ = inPath_.find("wmv3") != std::string::npos;
-    isWmv3HdrStream_ = inPath_.find("hdr.wmv3") != std::string::npos;
+    isWmv3MainStream_ = inPath_.find("profile1_1280_720_24.wmv3") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
     codec_ = OH_VideoDecoder_CreateByMime(mime_.c_str());
@@ -359,7 +359,7 @@ int32_t VideoDecSample::CreateWmv3Reader()
 {
     std::shared_ptr<Wmv3ReaderInfo> info = std::make_shared<Wmv3ReaderInfo>();
     info->inPath = inPath_;
-    info->isHdrStream = isWmv3HdrStream_;
+    info->isMainStream = isWmv3MainStream_;
 
     signal_->reader_ = std::make_shared<Wmv3Reader>();
     int32_t ret = std::static_pointer_cast<Wmv3Reader>(signal_->reader_)->Init(info);
@@ -456,8 +456,8 @@ bool VideoDecSample::DoConfigure(OH_AVFormat* format)
     }
 
     if (needExtraData_) {
-        uint32_t extradataSize = isWmv3HdrStream_ ? WMV3_HDR_EXTRDATA_SIZE : WMV3_EXTRDATA_SIZE;
-        auto extradata = isWmv3HdrStream_ ? WMV3_HDR_EXTRADATA : WMV3_EXTRADATA;
+        uint32_t extradataSize = isWmv3MainStream_ ? WMV3_MAIN_EXTRDATA_SIZE : WMV3_EXTRDATA_SIZE;
+        auto extradata = isWmv3MainStream_ ? WMV3_MAIN_EXTRADATA : WMV3_EXTRADATA;
         OH_AVFormat_SetBuffer(format, OH_MD_KEY_CODEC_CONFIG, extradata, extradataSize);
     }
 

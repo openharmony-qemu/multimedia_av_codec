@@ -36,10 +36,10 @@ constexpr uint32_t WMV3_SAPMLE_WIDTH = 352;
 constexpr uint32_t WMV3_SAMPLE_HEIGHT = 288;
 std::string WMV3_STREAM_FILE_NAME = "352_288_10.wmv3";
 
-constexpr uint32_t WMV3_HDR_WIDTH = 1280;
-constexpr uint32_t WMV3_HDR_HEIGHT = 720;
-std::string WMV3_HDR_STREAM_FILE_NAME = "1280_720_24.hdr.wmv3";
-std::string WMV3_DECODER_DUMP_FILE_NAME = "wmv3decoder.dump";
+constexpr uint32_t WMV3_MAIN_WIDTH = 1280;
+constexpr uint32_t WMV3_MAIN_HEIGHT = 720;
+std::string WMV3_MAIN_STREAM_FILE_NAME = "profile1_1280_720_24.wmv3";
+std::string WMV3_DECODER_DUMP_FILE_NAME = "fcodec.dump";
 
 class VideoDecStableTestWmv3 : public testing::TestWithParam<std::string> {
 public:
@@ -319,11 +319,11 @@ HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_004, 
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_Create_AVBuffer_Main10_001
+ * @tc.name: VideoDecoder_wmv3decoder_Create_AVBuffer_Main_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
  */
-HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main10_001, TestSize.Level1,
+HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main_001, TestSize.Level1,
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -331,9 +331,9 @@ HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main1
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->releaseOtherBuffer_ = true;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
@@ -354,11 +354,11 @@ HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main1
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_Create_AVBuffer_Main10_002
+ * @tc.name: VideoDecoder_wmv3decoder_Create_AVBuffer_Main_002
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
  */
-HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main10_002, TestSize.Level1,
+HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main_002, TestSize.Level1,
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -366,9 +366,9 @@ HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main1
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "11";
@@ -391,11 +391,11 @@ HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main1
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_Create_AVBuffer_Main10_003
+ * @tc.name: VideoDecoder_wmv3decoder_Create_AVBuffer_Main_003
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
  */
-HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main10_003, TestSize.Level1,
+HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main_003, TestSize.Level1,
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -406,9 +406,9 @@ HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main1
     vdec->maxInputBufferCount_ = true;
     vdec->defaultBufferCount_ = 20;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->setSurfaceParam_ = true;
     vdec->releaseOtherBuffer_ = true;
     vdec->outPath_ = GetTestName();
@@ -434,11 +434,11 @@ HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main1
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_Create_AVBuffer_Main10_004
+ * @tc.name: VideoDecoder_wmv3decoder_Create_AVBuffer_Main_004
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
  */
-HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main10_004, TestSize.Level1,
+HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main_004, TestSize.Level1,
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -446,9 +446,9 @@ HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main1
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "11";
@@ -473,14 +473,14 @@ HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main1
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_Create_AVBuffer_Main10_005
+ * @tc.name: VideoDecoder_wmv3decoder_Create_AVBuffer_Main_005
  * @tc.desc: 1. push buffer in callback;
  *           2. operate in input callback;
  *           3. render buffer in queue;
  *           4. set rotation maxOut/InputBufferCount defaultmaxBufferCount scaleMode;
  *           5. set surface;
  */
-HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main10_005, TestSize.Level1,
+HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main_005, TestSize.Level1,
           VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -495,9 +495,9 @@ HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main1
     vdec->lowLatency_ = true;
     vdec->setPixelFormat_ = false;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "11";
@@ -526,10 +526,10 @@ void InitAVCodecCallback(OH_AVCodecCallback &cb)
     cb.onNewOutputBuffer = OutBufferHandle;
 }
 /**
- * @tc.name: VideoDecoder_wmv3decoder_Create_AVBuffer_Main10_006
+ * @tc.name: VideoDecoder_wmv3decoder_Create_AVBuffer_Main_006
  * @tc.desc: 1. 2 codec use same surface;
  */
-HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main10_006, TestSize.Level1,
+HWMTEST_F(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_Create_AVBuffer_Main_006, TestSize.Level1,
           VideoDecSample::threadNum_)
 {
     auto vdec1 = make_shared<VideoDecSample>();
@@ -753,11 +753,11 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_005, TestSize.L
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_main10_001
+ * @tc.name: VideoDecoder_wmv3decoder_main_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main10_001, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main_001, TestSize.Level1,
     VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -766,9 +766,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main10_001, Tes
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -789,11 +789,11 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main10_001, Tes
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_main10_002
+ * @tc.name: VideoDecoder_wmv3decoder_main_002
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main10_002,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main_002,
                                 TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -802,9 +802,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main10_002,
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -824,11 +824,11 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main10_002,
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_main10_003
+ * @tc.name: VideoDecoder_wmv3decoder_main_003
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main10_003, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main_003, TestSize.Level1,
     VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -837,9 +837,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main10_003, Tes
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -859,12 +859,12 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main10_003, Tes
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_main10_004
+ * @tc.name: VideoDecoder_wmv3decoder_main_004
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main10_004, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main_004, TestSize.Level1,
     VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -873,9 +873,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main10_004, Tes
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -897,12 +897,12 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main10_004, Tes
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_main10_005
+ * @tc.name: VideoDecoder_wmv3decoder_main_005
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main10_005,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main_005,
                                 TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -911,9 +911,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_main10_005,
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -1119,11 +1119,11 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_005,
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_With_Queue_main10_001
+ * @tc.name: VideoDecoder_wmv3decoder_With_Queue_Main_001
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_main10_001, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_Main_001, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1132,9 +1132,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_main
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -1157,11 +1157,11 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_main
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_With_Queue_main10_002
+ * @tc.name: VideoDecoder_wmv3decoder_With_Queue_Main_002
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_main10_002, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_Main_002, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1170,9 +1170,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_main
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -1193,12 +1193,12 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_main
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_With_Queue_main10_003
+ * @tc.name: VideoDecoder_wmv3decoder_With_Queue_Main_003
  * @tc.desc: 1. push buffer in callback;
  *           2. operate in output callback;
  *           3. free buffer in queue;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_main10_003, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_Main_003, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1207,9 +1207,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_main
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -1230,13 +1230,13 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_main
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_With_Queue_main10_004
+ * @tc.name: VideoDecoder_wmv3decoder_With_Queue_Main_004
  * @tc.desc: 1. push buffer in callback;
  *           2. operate not in callback;
  *           3. render buffer in queue;
  *           4. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_main10_004, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_Main_004, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1245,9 +1245,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_main
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -1270,13 +1270,13 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_main
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_With_Queue_main10_005
+ * @tc.name: VideoDecoder_wmv3decoder_With_Queue_Main_005
  * @tc.desc: 1. push buffer in callback;
  *           2. operate in input callback;
  *           3. render buffer in queue;
  *           4. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_main10_005, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_Main_005, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1285,9 +1285,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_With_Queue_main
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -1485,11 +1485,11 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_005, T
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_main10_001
+ * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_Main_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_main10_001, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_Main_001, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1498,9 +1498,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_main10
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -1521,11 +1521,11 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_main10
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_main10_002
+ * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_Main_002
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_main10_002, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_Main_002, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1534,9 +1534,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_main10
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -1556,11 +1556,11 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_main10
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_main10_003
+ * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_Main_003
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_main10_003, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_Main_003, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1569,9 +1569,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_main10
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -1591,12 +1591,12 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_main10
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_main10_004
+ * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_Main_004
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_main10_004, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_Main_004, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1605,9 +1605,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_main10
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -1629,12 +1629,12 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_main10
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_main10_005
+ * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_Main_005
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_main10_005, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_Main_005, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1643,9 +1643,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_main10
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -1851,11 +1851,11 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Q
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_With_Queue_main10_001
+ * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_With_Queue_Main_001
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Queue_main10_001, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Queue_Main_001, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1864,9 +1864,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Q
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -1889,11 +1889,11 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Q
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_With_Queue_main10_002
+ * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_With_Queue_Main_002
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Queue_main10_002, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Queue_Main_002, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1902,9 +1902,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Q
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -1925,12 +1925,12 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Q
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_With_Queue_main10_003
+ * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_With_Queue_Main_003
  * @tc.desc: 1. push buffer in callback;
  *           2. operate in output callback;
  *           3. free buffer in queue;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Queue_main10_003, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Queue_Main_003, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1939,9 +1939,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Q
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -1962,13 +1962,13 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Q
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_With_Queue_main10_004
+ * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_With_Queue_Main_004
  * @tc.desc: 1. push buffer in callback;
  *           2. operate not in callback;
  *           3. render buffer in queue;
  *           4. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Queue_main10_004, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Queue_Main_004, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1977,9 +1977,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Q
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
@@ -2002,13 +2002,13 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Q
 }
 
 /**
- * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_With_Queue_main10_005
+ * @tc.name: VideoDecoder_wmv3decoder_AVBuffer_With_Queue_Main_005
  * @tc.desc: 1. push buffer in callback;
  *           2. operate in input callback;
  *           3. render buffer in queue;
  *           4. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Queue_main10_005, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Queue_Main_005, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -2017,9 +2017,9 @@ AVCODEC_MTEST_P(VideoDecStableTestWmv3, VideoDecoder_wmv3decoder_AVBuffer_With_Q
     vdec->frameCount_ = 21; // 21: input frame num
     vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
-    vdec->inPath_ = WMV3_HDR_STREAM_FILE_NAME;
-    vdec->sampleWidth_ = WMV3_HDR_WIDTH;
-    vdec->sampleHeight_ = WMV3_HDR_HEIGHT;
+    vdec->inPath_ = WMV3_MAIN_STREAM_FILE_NAME;
+    vdec->sampleWidth_ = WMV3_MAIN_WIDTH;
+    vdec->sampleHeight_ = WMV3_MAIN_HEIGHT;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = WMV3_DECODER_DUMP_FILE_NAME;
     vdec->dumpValue_ = "0";
