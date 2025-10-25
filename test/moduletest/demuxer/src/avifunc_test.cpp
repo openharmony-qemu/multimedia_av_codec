@@ -40,6 +40,7 @@ public:
     // TearDown: Called after each test cases
     void TearDown(void);
 protected:
+    const char *INP_DIR_ADPCM_YAMAHA = "/data/test/media/adpcm_yamaha.avi";
     const char *INP_DIR_1 = "/data/test/media/AVI_H263_baseline@level10_352_288_AAC_2.avi";
     const char *INP_DIR_2 = "/data/test/media/AVI_H263_baseline@level20_352_288_MP2_1.avi";
     const char *INP_DIR_3 = "/data/test/media/AVI_H263_baseline@level60_704_576_MP3_2.avi";
@@ -337,6 +338,59 @@ static void DemuxerResultRaw(const char *fileName)
     close(g_fd);
     g_fd = -1;
 }
+
+/**
+ * @tc.number    : DEMUXER_AVI_YAMAHA_FUNC_0100
+ * @tc.name      : demuxer AVI, audio track adpcm yamaha
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_ADPCM_YAMAHA_FUNC_0100, TestSize.Level2)
+{
+    DemuxerResult(INP_DIR_ADPCM_YAMAHA);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_YAMAHA_FUNC_0200
+ * @tc.name      : demuxer AVI, audio track adpcm yamaha check seek mode
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_ADPCM_YAMAHA_FUNC_0200, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_ADPCM_YAMAHA, SEEK_MODE_NEXT_SYNC, 0, 29, 47};
+    CheckSeekMode(fileTest1);
+    seekInfo fileTest2{INP_DIR_ADPCM_YAMAHA, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 47};
+    CheckSeekMode(fileTest2);
+    seekInfo fileTest3{INP_DIR_ADPCM_YAMAHA, SEEK_MODE_CLOSEST_SYNC, 0, 29, 47};
+    CheckSeekMode(fileTest3);
+}
+
+/**
+ * @tc.number    : DEMUXER_AVI_YAMAHA_FUNC_0300
+ * @tc.name      : demuxer AVI, audio track adpcm yamaha get track format
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAviFuncNdkTest, DEMUXER_AVI_ADPCM_YAMAHA_FUNC_0300, TestSize.Level2)
+{
+    const char *mimeType = nullptr;
+    const char *file = INP_DIR_ADPCM_YAMAHA;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 1);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    ASSERT_EQ(memcmp(mimeType, "audio/adpcm_yamaha", strlen("audio/adpcm_yamaha")), 0);
+    int32_t channel = 0;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &channel));
+    ASSERT_EQ(channel, TWO);
+    int32_t sampleRate = 0;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sampleRate));
+    ASSERT_EQ(sampleRate, 48000); // 48000: source sample rate
+    close(g_fd);
+    g_fd = -1;
+}
+
 /**
  * @tc.number    : DEMUXER_AVI_FUNC_0100
  * @tc.name      : demuxer AVI ,GetVideoTrackFormat,MD_KEY_HEIGHT
