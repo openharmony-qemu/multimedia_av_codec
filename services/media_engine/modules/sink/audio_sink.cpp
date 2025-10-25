@@ -560,7 +560,7 @@ void AudioSink::UpdateAudioWriteTimeMayWait()
 void AudioSink::SetThreadGroupId(const std::string& groupId)
 {
     eosTask_ = std::make_unique<Task>("OS_EOSa", groupId, TaskType::AUDIO, TaskPriority::HIGH, false);
-    changeTrackTask_ = std::make_unique<Task>("CHANGE_TRACK", groupId, TaskType::AUDIO, TaskPriority::HIGH, false);
+    changeTrackTask_ = std::make_unique<Task>("CHANGE_TRACK", groupId, TaskType::GLOBAL, TaskPriority::HIGH, false);
 }
 
 void AudioSink::HandleEosInner(bool drain)
