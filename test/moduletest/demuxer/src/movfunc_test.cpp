@@ -39,8 +39,11 @@ public:
     void SetUp(void);
     // TearDown: Called after each test cases
     void TearDown(void);
+protected:
+    const char *INP_DIR_ADPCM_YAMAHA = "/data/test/media/adpcm_yamaha.mov";
 };
 
+static int g_fd = -1;
 static OH_AVMemory *memory = nullptr;
 static OH_AVSource *source = nullptr;
 static OH_AVErrCode ret = AV_ERR_OK;
@@ -104,6 +107,14 @@ using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
+
+struct seekInfo {
+    const char *fileName;
+    OH_AVSeekMode seekmode;
+    int64_t millisecond;
+    int32_t videoCount;
+    int32_t audioCount;
+};
 
 static int64_t GetFileSize(const char *fileName)
 {
@@ -214,6 +225,96 @@ static void CheckFrames(int videoFrameNum, int videoKey, int audioFrameNum, int 
     ASSERT_EQ(aKeyCount, audioKey);
     ASSERT_EQ(videoFrame, videoFrameNum);
     ASSERT_EQ(vKeyCount, videoKey);
+}
+
+static void CheckSeekMode(seekInfo seekInfo)
+{
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    g_fd = open(seekInfo.fileName, O_RDONLY);
+    int64_t size = GetFileSize(seekInfo.fileName);
+    cout << seekInfo.fileName << "-------" << g_fd << "-------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    cout << "g_trackCount----" << g_trackCount << endl;
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        trackFormat = OH_AVSource_GetTrackFormat(source, index);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, seekInfo.millisecond / 1000, seekInfo.seekmode));
+        bool readEnd = false;
+        int32_t frameNum = 0;
+        while (!readEnd) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                readEnd = true;
+                break;
+            }
+            frameNum++;
+        }
+        if (tarckType == MEDIA_TYPE_VID) {
+            cout << "frameNum---" << frameNum << endl;
+            ASSERT_EQ(seekInfo.videoCount, frameNum);
+        } else if (tarckType == MEDIA_TYPE_AUD) {
+            cout << "frameNum---" << frameNum << endl;
+            ASSERT_EQ(seekInfo.audioCount, frameNum);
+        }
+    }
+    close(g_fd);
+    g_fd = -1;
+}
+
+static void DemuxerResult(const char *fileName)
+{
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    g_fd = open(fileName, O_RDONLY);
+    int64_t size = GetFileSize(fileName);
+    cout << fileName << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(g_trackCount, 2);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int aKeyCount = 0;
+    int vKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == MEDIA_TYPE_AUD) {
+                SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == MEDIA_TYPE_VID) {
+                SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    close(g_fd);
+    g_fd = -1;
 }
 
 static void InitTrkPara(int index, int *trackType)
@@ -361,6 +462,59 @@ static void CheckMPGAudioKey()
     int sampleRateResult = 44100;
     ASSERT_EQ(sampleRateResult, sampleRate);
 }
+
+/**
+ * @tc.number    : DEMUXER_MOV_ADPCM_YAMAHA_FUNC_0100
+ * @tc.name      : demuxer MOV, audio track adpcm yamaha
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, DEMUXER_MOV_ADPCM_YAMAHA_FUNC_0100, TestSize.Level2)
+{
+    DemuxerResult(INP_DIR_ADPCM_YAMAHA);
+}
+
+/**
+ * @tc.number    : DEMUXER_MOV_ADPCM_YAMAHA_FUNC_0200
+ * @tc.name      : demuxer MOV, audio track adpcm yamaha check seek mode
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, DEMUXER_MOV_ADPCM_YAMAHA_FUNC_0200, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_ADPCM_YAMAHA, SEEK_MODE_NEXT_SYNC, 0, 29, 47};
+    CheckSeekMode(fileTest1);
+    seekInfo fileTest2{INP_DIR_ADPCM_YAMAHA, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 47};
+    CheckSeekMode(fileTest2);
+    seekInfo fileTest3{INP_DIR_ADPCM_YAMAHA, SEEK_MODE_CLOSEST_SYNC, 0, 29, 47};
+    CheckSeekMode(fileTest3);
+}
+
+/**
+ * @tc.number    : DEMUXER_MOV_ADPCM_YAMAHA_FUNC_0300
+ * @tc.name      : demuxer MOV, audio track adpcm yamaha get track format
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerMovFuncNdkTest, DEMUXER_MOV_ADPCM_YAMAHA_FUNC_0300, TestSize.Level2)
+{
+    const char *mimeType = nullptr;
+    const char *file = INP_DIR_ADPCM_YAMAHA;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 1);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    ASSERT_EQ(memcmp(mimeType, "audio/adpcm_yamaha", strlen("audio/adpcm_yamaha")), 0);
+    int32_t channel = 0;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &channel));
+    ASSERT_EQ(channel, 2);
+    int32_t sampleRate = 0;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sampleRate));
+    ASSERT_EQ(sampleRate, 48000); // 48000: source sample rate
+    close(g_fd);
+    g_fd = -1;
+}
+
 
 /**
  * @tc.number    : MOV_DEMUXER_FUNCTION_TEST_0100
