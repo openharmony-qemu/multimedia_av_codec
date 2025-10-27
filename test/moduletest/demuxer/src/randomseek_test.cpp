@@ -1276,3 +1276,123 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_AVI_RANDOM_SEEK_1600, TestSize.Level2
 {
     CheckSeekResult("/data/test/media/AVI_MPEG4_main@level5_720_576_PCM_s32_1.avi", SEEKTIMES);
 }
+
+/**
+ * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_1700
+ * @tc.name      : demuxer random seek, ALAC_16bit_44100Hz.m4a
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_1700, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/ALAC_16bit_44100Hz.m4a", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_1800
+ * @tc.name      : demuxer random seek, ALAC_24bit_48000Hz.m4a
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_1800, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/ALAC_24bit_48000Hz.m4a", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_1900
+ * @tc.name      : demuxer random seek, ALAC_32bit_96000Hz.m4a
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_1900, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/ALAC_32bit_96000Hz.m4a", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_2000
+ * @tc.name      : demuxer random seek, ALAC_16bit_44100Hz_mp4.m4a
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2000, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/ALAC_16bit_44100Hz_mp4.m4a", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_1800
+ * @tc.name      : demuxer random seek, ALAC_24bit_48000Hz_mp4.m4a
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2100, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/ALAC_24bit_48000Hz_mp4.m4a", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_2200
+ * @tc.name      : demuxer random seek, ALAC_32bit_96000Hz_mp4.m4a
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2200, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/ALAC_32bit_96000Hz_mp4.m4a", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_2300
+ * @tc.name      : demuxer random seek, ALAC_16bit_44100Hz_mkv.mkv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2300, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/ALAC_16bit_44100Hz_mkv.mkv", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_2400
+ * @tc.name      : demuxer random seek, ALAC_24bit_48000Hz_mkv.mkv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2400, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/ALAC_24bit_48000Hz_mkv.mkv", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_2500
+ * @tc.name      : demuxer random seek, ALAC_32bit_96000Hz_mkv.mkv
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2500, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/ALAC_32bit_96000Hz_mkv.mkv", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_2600
+ * @tc.name      : demuxer random seek, ALAC_16bit_44100Hz_mov.mov
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2600, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/ALAC_16bit_44100Hz_mov.mov", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_2700
+ * @tc.name      : demuxer random seek, ALAC_24bit_48000Hz_mov.mov
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2700, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/ALAC_24bit_48000Hz_mov.mov", SEEKTIMES);
+}
+
+/**
+ * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_2800
+ * @tc.name      : demuxer random seek, ALAC_32bit_96000Hz_mov.mov
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2800, TestSize.Level2)
+{
+    CheckSeekResult("/data/test/media/ALAC_32bit_96000Hz_mov.mov", SEEKTIMES);
+}
