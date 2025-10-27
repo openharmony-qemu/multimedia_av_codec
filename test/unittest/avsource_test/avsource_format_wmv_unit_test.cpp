@@ -129,7 +129,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_WMV_GetFormat_0002, TestSize.Level1)
 
 /**
  * @tc.name: AVSource_WMV_GetFormat_0003
- * @tc.desc: get source format when the file is asf(wmv2, wmapro)
+ * @tc.desc: get source format when the file is asf(wmv3, wmapro)
  * @tc.type: FUNC
  */
 HWTEST_F(AVSourceUnitTest, AVSource_WMV_GetFormat_0003, TestSize.Level1)
@@ -180,7 +180,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_WMV_GetFormat_0003, TestSize.Level1)
 
 /**
  * @tc.name: AVSource_WMV_GetFormat_0004
- * @tc.desc: get source format when the file is asf(wmv2, wmapro)
+ * @tc.desc: get source format when the file is asf(wmv3, wmapro)
  * @tc.type: FUNC
  */
 HWTEST_F(AVSourceUnitTest, AVSource_WMV_GetFormat_0004, TestSize.Level1)
