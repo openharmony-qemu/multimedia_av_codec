@@ -127,7 +127,7 @@ private:
     bool isAvcStream_ = true; // true: AVC; false: HEVC
     bool isMpeg2Stream_ = true; // true: Mpeg2; false: Mpeg4
     bool needExtraData_ = false;
-    bool isWmv3HdrStream_ = false;
+    bool isWmv3MainStream_ = false;
 
 private:
     OH_AVCodecAsyncCallback asyncCallback_;

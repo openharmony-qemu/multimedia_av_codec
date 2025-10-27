@@ -1545,8 +1545,8 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoWidthRangeForHeight_001, TestSize.Level1)
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoWidthRangeForHeight(cap, DEFAULT_HEIGHT, &range), AV_ERR_OK);
-    EXPECT_EQ(range.minVal, 2);
-    EXPECT_EQ(range.maxVal, 4096);
+    EXPECT_EQ(16, range.minVal);
+    EXPECT_EQ(1920, range.maxVal);
 }
 
 /**
@@ -1561,8 +1561,8 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoHeightRangeForWidth_001, TestSize.Level1)
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoHeightRangeForWidth(cap, DEFAULT_WIDTH, &range), AV_ERR_OK);
-    EXPECT_EQ(range.minVal, 2);
-    EXPECT_EQ(range.maxVal, 4096);
+    EXPECT_EQ(16, range.minVal);
+    EXPECT_EQ(1920, range.maxVal);
 }
 
 /**
@@ -1577,8 +1577,8 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoWidthRange_001, TestSize.Level1)
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoWidthRange(cap, &range), AV_ERR_OK);
-    EXPECT_EQ(range.minVal, 2);
-    EXPECT_EQ(range.maxVal, 4096);
+    EXPECT_EQ(16, range.minVal);
+    EXPECT_EQ(1920, range.maxVal);
 }
 
 /**
@@ -1593,8 +1593,8 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoHeightRange_001, TestSize.Level1)
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoHeightRange(cap, &range), AV_ERR_OK);
-    EXPECT_EQ(range.minVal, 2);
-    EXPECT_EQ(range.maxVal, 4096);
+    EXPECT_EQ(16, range.minVal);
+    EXPECT_EQ(1920, range.maxVal);
 }
 
 /**
@@ -1679,8 +1679,8 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoFrameRateRange_001, TestSize.Level1)
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoFrameRateRange(cap, &range), AV_ERR_OK);
-    EXPECT_EQ(range.minVal, 0);
-    EXPECT_EQ(range.maxVal, 60);
+    EXPECT_EQ(0, range.minVal);
+    EXPECT_EQ(30, range.maxVal);
 }
 
 /**
@@ -1695,8 +1695,8 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoFrameRateRangeForSize_001, TestSize.Level1
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoFrameRateRangeForSize(cap, DEFAULT_WIDTH, DEFAULT_HEIGHT, &range), AV_ERR_OK);;
-    EXPECT_EQ(range.minVal, 0);
-    EXPECT_EQ(range.maxVal, 60);
+    EXPECT_EQ(0, range.minVal);
+    EXPECT_EQ(30, range.maxVal);
 }
 
 /**

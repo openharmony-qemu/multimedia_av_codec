@@ -46,6 +46,15 @@ constexpr int32_t VC1_BLOCKPERSEC_SIZE = 491520;
 constexpr int32_t MSVIDEO1_MIN_WIDTH_SIZE = 4;
 constexpr int32_t MSVIDEO1_MIN_HEIGHT_SIZE = 4;
 constexpr int32_t MSVIDEO1_BLOCKPERSEC_SIZE = 3932160;
+constexpr int32_t WMV3_ALIGNMENT_SIZE = 2;
+constexpr int32_t WMV3_MAX_FRAMERATE_SIZE = 30;
+constexpr int32_t WMV3_MIN_WIDTH_SIZE = 16;
+constexpr int32_t WMV3_MAX_WIDTH_SIZE = 1920;
+constexpr int32_t WMV3_MIN_HEIGHT_SIZE = 16;
+constexpr int32_t WMV3_MAX_HEIGHT_SIZE = 1080;
+constexpr int32_t WMV3_BITRATE_MAX_SIZE = 20000000;
+constexpr int32_t WMV3_MAX_BLOCKPERFRAME_SIZE = 8192;
+constexpr int32_t WMV3_MAX_BLOCKPERSEC_SIZE = 245760;
 } // namespace
 using namespace OHOS::Media;
 
@@ -275,6 +284,16 @@ void GetWmv3CapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
         CapabilityData& capsData = capaArray.back();
+        capsData.alignment.width = WMV3_ALIGNMENT_SIZE;
+        capsData.alignment.height = WMV3_ALIGNMENT_SIZE;
+        capsData.width.minVal = WMV3_MIN_WIDTH_SIZE;
+        capsData.height.minVal = WMV3_MIN_HEIGHT_SIZE;
+        capsData.width.maxVal = WMV3_MAX_WIDTH_SIZE;
+        capsData.height.maxVal = WMV3_MAX_HEIGHT_SIZE;
+        capsData.bitrate.maxVal = WMV3_BITRATE_MAX_SIZE;
+        capsData.blockPerFrame.maxVal = WMV3_MAX_BLOCKPERFRAME_SIZE;
+        capsData.blockPerSecond.maxVal = WMV3_MAX_BLOCKPERSEC_SIZE;
+        capsData.frameRate.maxVal = WMV3_MAX_FRAMERATE_SIZE;
         capsData.profiles = {static_cast<int32_t>(WMV3_PROFILE_SIMPLE), static_cast<int32_t>(WMV3_PROFILE_MAIN)};
         std::vector<int32_t> levels_s;
         std::vector<int32_t> levels_m;

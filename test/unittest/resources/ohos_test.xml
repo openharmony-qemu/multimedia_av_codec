@@ -284,7 +284,7 @@
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/352_288_10.wmv3 -> /data/test/media" src="res"/>
-            <option name="push" value="video_res/1280_720_24.hdr.wmv3 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/profile1_1280_720_24.wmv3 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
