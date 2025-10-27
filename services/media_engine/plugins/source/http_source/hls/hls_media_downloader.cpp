@@ -2010,7 +2010,7 @@ uint64_t HlsMediaDownloader::GetCrossTsBuffersize()
         return bufferSize;
     }
     bufferSize = cacheMediaBuffer_->GetBufferSize(readOffset_);
-    if (!backPlayList_.empty() && readTsIndex_ < backPlayList_.size() - 1) {
+    if (!backPlayList_.empty() && readTsIndex_ + 1 < backPlayList_.size()) {
         uint64_t nextTsOffset = SpliceOffset(readTsIndex_ + 1, 0);
         uint64_t nextTsBuffersize = cacheMediaBuffer_->GetBufferSize(nextTsOffset);
         bufferSize += nextTsBuffersize;
