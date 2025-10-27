@@ -159,6 +159,7 @@ public:
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
     Status SetTranscoderMode();
+    Status SetPlayerMode();
     Status SetSkippingAudioDecAndEnc();
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
@@ -225,6 +226,7 @@ private:
 
     Status InnerPrepare();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
+    void UpdateMjpegMediaMetaData(Plugins::MediaInfo& mediaInfo);
     void InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, int32_t& videoTrackId,
         int32_t& audioTrackId, int32_t& subtitleTrackId, std::string& videoMime);
     bool IsOffsetValid(int64_t offset) const;
@@ -468,6 +470,7 @@ private:
     SyncFrameInfo syncFrameInfo_ {};
     std::mutex syncFrameInfoMutex_ {};
     bool isTranscoderMode_ {false};
+    bool isPlayerMode_ {false};
     bool isSkippingAudioDecAndEnc_ {false};
     bool perfRecEnabled_ { false };
     PerfRecorder perfRecorder_ {};
