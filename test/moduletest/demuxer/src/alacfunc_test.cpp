@@ -56,7 +56,6 @@ protected:
 
 static OH_AVMemory* memory = nullptr;
 static OH_AVSource* source = nullptr;
-static OH_AVErrCode ret = AV_ERR_OK;
 static OH_AVDemuxer* demuxer = nullptr;
 static OH_AVFormat* sourceFormat = nullptr;
 static OH_AVFormat* trackFormat = nullptr;
@@ -109,37 +108,6 @@ struct seekInfo {
     int64_t millisecond;
     int32_t audioCount;
 };
-
-static void CheckSeekModeFromEnd(seekInfo seekInfo) {
-    int trackType = 0;
-    int fd = open(seekInfo.fileName, O_RDONLY);
-    int64_t size = GetFileSize(seekInfo.fileName);
-    cout << seekInfo.fileName << "-------fd:" << fd << "-------size:" << size << endl;
-    
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
-    ASSERT_NE(source, nullptr);
-    
-    demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer, nullptr);
-    
-    sourceFormat = OH_AVSource_GetSourceFormat(source);
-    ASSERT_NE(sourceFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    cout << "track count: " << g_trackCount << endl;
-    
-    for (int32_t index = 0; index < g_trackCount; index++) {
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
-    }
-    
-    for (int32_t index = 0; index < g_trackCount; index++) {
-        trackFormat = OH_AVSource_GetTrackFormat(source, index);
-        ASSERT_NE(trackFormat, nullptr);
-        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &trackType));
-        ASSERT_EQ(AV_ERR_UNKNOWN, OH_AVDemuxer_SeekToTime(
-            demuxer, seekInfo.millisecond / THOUSAND, seekInfo.seekmode));
-    }
-    close(fd);
-}
 
 static void CheckSeekMode(seekInfo seekInfo) {
     int trackType = 0;
@@ -238,7 +206,7 @@ static void DemuxerAlacResult(const char* fileName, int32_t expectedFrames, int3
 
 /**
  * @tc.number    : DEMUXER_ALAC_FUNC_0001
- * @tc.name      : demuxer ALAC ,GetTrackFormat,OH_MD_KEY_COMMENT
+ * @tc.name      : demuxer ALAC ,GetTrackFormat,OH_MD_KEY_BITS_PER_CODED_SAMPLE
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0001, TestSize.Level2) {
@@ -253,7 +221,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0001, TestSize.Level2) {
     
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_COMMENT, &bitDepth));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &bitDepth));
     ASSERT_EQ(bitDepth, 16);
     
     close(fd);
@@ -419,7 +387,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0009, TestSize.Level2) {
 
 /**
  * @tc.number    : DEMUXER_ALAC_FUNC_0010
- * @tc.name      : demuxer ALAC ,GetTrackFormat,OH_MD_KEY_AUD_CHANNEL_LAYOUT
+ * @tc.name      : demuxer ALAC ,GetTrackFormat,OH_MD_KEY_CHANNEL_LAYOUT
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0010, TestSize.Level2) {
@@ -434,7 +402,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0010, TestSize.Level2) {
     
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_LAYOUT, &channelLayout));
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_CHANNEL_LAYOUT, &channelLayout));
     ASSERT_EQ(channelLayout, 0x3F);
     
     close(fd);
@@ -442,7 +410,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0010, TestSize.Level2) {
 
 /**
  * @tc.number    : DEMUXER_ALAC_FUNC_0011
- * @tc.name      : demuxer ALAC(MP4) ,GetTrackFormat,OH_MD_KEY_COMMENT
+ * @tc.name      : demuxer ALAC(MP4) ,GetTrackFormat,OH_MD_KEY_BITS_PER_CODED_SAMPLE
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0011, TestSize.Level2) {
@@ -457,7 +425,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0011, TestSize.Level2) {
     
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_COMMENT, &bitDepth));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &bitDepth));
     ASSERT_EQ(bitDepth, 16);
     
     close(fd);
@@ -633,7 +601,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0020, TestSize.Level2) {
 
 /**
  * @tc.number    : DEMUXER_ALAC_FUNC_0021
- * @tc.name      : demuxer ALAC(MKV) ,GetTrackFormat,OH_MD_KEY_COMMENT
+ * @tc.name      : demuxer ALAC(MKV) ,GetTrackFormat,OH_MD_KEY_BITS_PER_CODED_SAMPLE
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0021, TestSize.Level2) {
@@ -648,7 +616,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0021, TestSize.Level2) {
     
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_COMMENT, &bitDepth));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &bitDepth));
     ASSERT_EQ(bitDepth, 16);
     
     close(fd);
@@ -824,7 +792,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0030, TestSize.Level2) {
 
 /**
  * @tc.number    : DEMUXER_ALAC_FUNC_0031
- * @tc.name      : demuxer ALAC(MOV) ,GetTrackFormat,OH_MD_KEY_COMMENT
+ * @tc.name      : demuxer ALAC(MOV) ,GetTrackFormat,OH_MD_KEY_BITS_PER_CODED_SAMPLE
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0031, TestSize.Level2) {
@@ -839,7 +807,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0031, TestSize.Level2) {
     
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_COMMENT, &bitDepth));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &bitDepth));
     ASSERT_EQ(bitDepth, 16);
     
     close(fd);
