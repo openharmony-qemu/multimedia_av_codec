@@ -377,7 +377,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0006, TestSize.Level2) {
  * @tc.name      : demuxer ALAC ,ReadSample,check sample size
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0007, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0007, TestSize.Level2) {
     OH_AVCodecBufferAttr attr{};
     const char* file = ALAC_M4A_1;
     int fd = open(file, O_RDONLY);
@@ -403,7 +403,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0007, TestSize.Level3) {
  * @tc.name      : demuxer ALAC ,full demux,16bit stereo
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0008, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0008, TestSize.Level2) {
     DemuxerAlacResult(ALAC_M4A_1, 128, 8);
 }
 
@@ -412,7 +412,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0008, TestSize.Level3) {
  * @tc.name      : demuxer ALAC ,full demux,24bit 5.1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0009, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0009, TestSize.Level2) {
     DemuxerAlacResult(ALAC_M4A_2, 96, 6);
 }
 
@@ -604,7 +604,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0017, TestSize.Level2) {
  * @tc.name      : demuxer ALAC(MP4) ,ReadSample,check sample size
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0018, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0018, TestSize.Level2) {
     OH_AVCodecBufferAttr attr{};
     const char* file = ALAC_MP4_1;
     int fd = open(file, O_RDONLY);
@@ -630,7 +630,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0018, TestSize.Level3) {
  * @tc.name      : demuxer ALAC(MP4) ,full demux,16bit stereo
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0019, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0019, TestSize.Level2) {
     DemuxerAlacResult(ALAC_MP4_1, 128, 8);
 }
 
@@ -639,7 +639,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0019, TestSize.Level3) {
  * @tc.name      : demuxer ALAC(MP4) ,full demux,24bit 5.1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0020, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0020, TestSize.Level2) {
     DemuxerAlacResult(ALAC_MP4_2, 96, 6);
 }
 
@@ -672,7 +672,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0021, TestSize.Level2) {
  * @tc.name      : demuxer ALAC(MP4) ,seek to middle,SEEK_MODE_NEXT_SYNC
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0022, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0022, TestSize.Level2) {
     seekInfo testInfo{ALAC_MP4_1, SEEK_MODE_NEXT_SYNC, 5000, 180};
     CheckSeekMode(testInfo);
 }
@@ -818,7 +818,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0028, TestSize.Level2) {
  * @tc.name      : demuxer ALAC(MKV) ,ReadSample,check sample size
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0029, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0029, TestSize.Level2) {
     OH_AVCodecBufferAttr attr{};
     const char* file = ALAC_MKV_1;
     int fd = open(file, O_RDONLY);
@@ -844,7 +844,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0029, TestSize.Level3) {
  * @tc.name      : demuxer ALAC(MKV) ,full demux,16bit stereo
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0030, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0030, TestSize.Level2) {
     DemuxerAlacResult(ALAC_MKV_1, 128, 8);
 }
 
@@ -853,7 +853,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0030, TestSize.Level3) {
  * @tc.name      : demuxer ALAC(MKV) ,full demux,24bit 5.1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0031, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0031, TestSize.Level2) {
     DemuxerAlacResult(ALAC_MKV_2, 96, 6);
 }
 
@@ -886,7 +886,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0032, TestSize.Level2) {
  * @tc.name      : demuxer ALAC(MKV) ,seek to near end,SEEK_MODE_CLOSEST_SYNC
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0033, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0033, TestSize.Level2) {
     seekInfo testInfo{ALAC_MKV_2, SEEK_MODE_CLOSEST_SYNC, 9000, 35};
     CheckSeekMode(testInfo);
 }
@@ -1032,7 +1032,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0039, TestSize.Level2) {
  * @tc.name      : demuxer ALAC(MOV) ,ReadSample,check sample size
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0040, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0040, TestSize.Level2) {
     OH_AVCodecBufferAttr attr{};
     const char* file = ALAC_MOV_1;
     int fd = open(file, O_RDONLY);
@@ -1058,7 +1058,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0040, TestSize.Level3) {
  * @tc.name      : demuxer ALAC(MOV) ,full demux,16bit stereo
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0041, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0041, TestSize.Level2) {
     DemuxerAlacResult(ALAC_MOV_1, 128, 8);
 }
 
@@ -1067,7 +1067,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0041, TestSize.Level3) {
  * @tc.name      : demuxer ALAC(MOV) ,full demux,24bit 5.1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0042, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0042, TestSize.Level2) {
     DemuxerAlacResult(ALAC_MOV_2, 96, 6);
 }
 
@@ -1100,7 +1100,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0043, TestSize.Level2) {
  * @tc.name      : demuxer ALAC(MOV) ,seek to start,SEEK_MODE_PREVIOUS_SYNC
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0044, TestSize.Level3) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0044, TestSize.Level2) {
     seekInfo testInfo{ALAC_MOV_1, SEEK_MODE_PREVIOUS_SYNC, 0, 320};
     CheckSeekMode(testInfo);
 }
