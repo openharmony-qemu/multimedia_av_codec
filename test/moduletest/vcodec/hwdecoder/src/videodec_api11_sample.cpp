@@ -146,6 +146,12 @@ void VdecAPI11Error(OH_AVCodec *codec, int32_t errorCode, void *userData)
         dec_sample->signal_->inCond_.notify_all();
         dec_sample->signal_->outCond_.notify_all();
     }
+    if (dec_sample->checkErrCode && errorCode == AV_ERR_UNKNOWN) {
+        dec_sample->errCodeIsRight = true;
+        dec_sample->isRunning_.store(false);
+        dec_sample->signal_->inCond_.notify_all();
+        dec_sample->signal_->outCond_.notify_all();
+    }
     cout << "Error errorCode=" << errorCode << endl;
 }
 
@@ -909,7 +915,11 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
     (void)inFile_->read(reinterpret_cast<char *>(fileBuffer) + START_CODE_SIZE, bufferSize);
     if ((fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == SPS ||
         (fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == PPS) {
-        attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
+        if (!needXpsEmpty) {
+            attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
+        } else {
+            return 0;
+        }
     } else {
         attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
     }
@@ -929,6 +939,17 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
         delete[] fileBuffer;
         return 0;
     }
+    
+    if (frameCount_ == 0 && noNeedFirstFrame) {
+        frameCount_ = frameCount_ + 1;
+        return 0;
+    }
+
+    if (needSendOneFrame && frameCount_ >= 1) {
+        frameCount_ = frameCount_ + 1;
+        return 0;
+    }
+    
     int64_t startPts = GetSystemTimeUs();
     attr.pts = startPts;
     attr.size = bufferSize + START_CODE_SIZE;

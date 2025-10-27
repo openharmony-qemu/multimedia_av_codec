@@ -115,6 +115,21 @@ void VDecInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
         innersignal_->outCond_.notify_all();
         cout << "AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION" << endl;
     }
+    if (dec_sample->checkErrCode) {
+        if (errorCode == AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION) {
+            dec_sample->errCodeResult = AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION;
+            cout << "AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION" << endl;
+        } else if (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS) {
+            dec_sample->errCodeResult = AVCS_ERR_ILLEGAL_PARAMETER_SETS;
+            cout << "AVCS_ERR_ILLEGAL_PARAMETER_SETS" << endl;
+        } else if (errorCode == AVCS_ERR_MINSSING_PARAMETER_SETS) {
+            dec_sample->errCodeResult = AVCS_ERR_MINSSING_PARAMETER_SETS;
+            cout << "AVCS_ERR_MINSSING_PARAMETER_SETS" << endl;
+        }
+        dec_sample->isRunning_.store(false);
+        innersignal_->inCond_.notify_all();
+        innersignal_->outCond_.notify_all();
+    }
     cout << "Error errorType:" << errorType << " errorCode:" << errorCode << endl;
 }
 
@@ -570,7 +585,11 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
     (void)inFile_->read((char *)fileBuffer + START_CODE_SIZE, bufferSize);
     if ((fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == SPS ||
         (fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == PPS) {
-        flag = AVCODEC_BUFFER_FLAG_CODEC_DATA;
+        if (!needXpsEmpty) {
+            flag = AVCODEC_BUFFER_FLAG_CODEC_DATA;
+        } else {
+            return 0;
+        }
     } else {
         flag = AVCODEC_BUFFER_FLAG_NONE;
     }
@@ -591,6 +610,15 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
     }
     if (memcpy_s(avBuffer, size, fileBuffer, bufferSize + START_CODE_SIZE) != EOK) {
         delete[] fileBuffer;
+        return 0;
+    }
+
+    if (frameCount == 0 && noNeedFirstFrame) {
+        frameCount = frameCount + 1;
+        return 0;
+    }
+    if (needSendOneFrame && frameCount >= 1) {
+        frameCount = frameCount + 1;
         return 0;
     }
 

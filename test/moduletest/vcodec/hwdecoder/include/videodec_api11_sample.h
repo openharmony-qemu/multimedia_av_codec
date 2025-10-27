@@ -188,6 +188,11 @@ public:
     int64_t end_time = 0;
     int32_t FLUSH_COUNTS = 0;
     int enbleBlankFrame = 0;
+    bool checkErrCode = false;
+    bool errCodeIsRight = false;
+    bool needXpsEmpty = false;
+    bool noNeedFirstFrame = false;
+    bool needSendOneFrame = false;
     bool autoSwitchSurface = false;
     std::atomic<bool> isFlushing_ { false };
     int32_t switchSurfaceFlag = 0;
