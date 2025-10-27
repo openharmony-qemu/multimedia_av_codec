@@ -261,7 +261,7 @@ void DownloadRequest::GetLocation(std::string& location) const
 
 void DownloadRequest::SetBitRateToRequestSize(const int32_t videoBitrate)
 {
-    bitRateToRequestSize_ = videoBitrate * BITRATE_REQUEST_SIZE;
+    bitRateToRequestSize_ = videoBitrate / BITRATE_REQUEST_SIZE;
 }
 
 Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name))
