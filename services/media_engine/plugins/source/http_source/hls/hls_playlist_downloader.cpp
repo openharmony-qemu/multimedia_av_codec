@@ -113,19 +113,20 @@ Seekable HlsPlayListDownloader::GetSeekable() const
     return master_->bLive_ ? Seekable::UNSEEKABLE : Seekable::SEEKABLE;
 }
 
-void HlsPlayListDownloader::NotifyListChange()
+void HlsPlayListDownloader::KeyChange()
 {
     if (currentVariant_ == nullptr || callback_ == nullptr) {
         return;
     }
-    if (currentVariant_->m3u8_ == nullptr) {
-        return;
-    }
-    auto files = currentVariant_->m3u8_->files_;
-    auto playList = std::vector<PlayInfo>();
+
     if (currentVariant_->m3u8_->isDecryptAble_) {
+        int32_t times = 0;
         while (!currentVariant_->m3u8_->isDecryptKeyReady_ && !isInterruptNeeded_) {
-            Task::SleepInTask(10); // sleep 10ms
+            Task::SleepInTask(5); // sleep 5ms
+            if ((times++) >= RETRY_TIMES) {
+                MEDIA_LOG_E("Download decrypkey failed.");
+                break;
+            }
         }
         callback_->OnSourceKeyChange(currentVariant_->m3u8_->key_, currentVariant_->m3u8_->keyLen_,
             currentVariant_->m3u8_->iv_);
@@ -137,6 +138,22 @@ void HlsPlayListDownloader::NotifyListChange()
             callback_->OnSourceKeyChange(nullptr, 0, nullptr);
         }
     }
+
+}
+
+void HlsPlayListDownloader::NotifyListChange()
+{
+    if (currentVariant_ == nullptr || callback_ == nullptr) {
+        return;
+    }
+    if (currentVariant_->m3u8_ == nullptr) {
+        return;
+    }
+    auto files = currentVariant_->m3u8_->files_;
+    auto playList = std::vector<PlayInfo>();
+
+    KeyChange();
+
     FALSE_RETURN_MSG(!isInterruptNeeded_, "HLS Seek return, isInterruptNeeded_.");
     playList.reserve(files.size());
     for (const auto &file: files) {
@@ -295,6 +312,7 @@ void HlsPlayListDownloader::SelectBitRate(uint32_t bitRate)
 
 bool HlsPlayListDownloader::IsBitrateSame(uint32_t bitRate)
 {
+    FALSE_RETURN_V(master_ != nullptr, false);
     uint32_t maxGap = 0;
     bool isFirstSelect = true;
     for (const auto &item : master_->variants_) {
@@ -317,6 +335,8 @@ bool HlsPlayListDownloader::IsBitrateSame(uint32_t bitRate)
 std::vector<uint32_t> HlsPlayListDownloader::GetBitRates()
 {
     std::vector<uint32_t> bitRates;
+    FALSE_RETURN_V(master_ != nullptr, bitRates);
+
     for (const auto &item : master_->variants_) {
         if (item) {
             bitRates.push_back(item->bandWidth_);
