@@ -69,19 +69,42 @@ constexpr int32_t DEFAULT_TRACK_COUNT = 1;
 void DemuxerAlacFuncNdkTest::SetUpTestCase() {}
 void DemuxerAlacFuncNdkTest::TearDownTestCase() {}
 
-void DemuxerAlacFuncNdkTest::SetUp() {
+void DemuxerAlacFuncNdkTest::SetUp()
+{
     memory = OH_AVMemory_Create(g_memorySize);
     g_trackCount = 0;
 }
 
-void DemuxerAlacFuncNdkTest::TearDown() {
-    if (trackFormat != nullptr) { OH_AVFormat_Destroy(trackFormat); trackFormat = nullptr; }
-    if (sourceFormat != nullptr) { OH_AVFormat_Destroy(sourceFormat); sourceFormat = nullptr; }
-    if (format != nullptr) { OH_AVFormat_Destroy(format); format = nullptr; }
-    if (memory != nullptr) { OH_AVMemory_Destroy(memory); memory = nullptr; }
-    if (source != nullptr) { OH_AVSource_Destroy(source); source = nullptr; }
-    if (demuxer != nullptr) { OH_AVDemuxer_Destroy(demuxer); demuxer = nullptr; }
-    if (avBuffer != nullptr) { OH_AVBuffer_Destroy(avBuffer); avBuffer = nullptr; }
+void DemuxerAlacFuncNdkTest::TearDown()
+{
+    if (trackFormat != nullptr) {
+        OH_AVFormat_Destroy(trackFormat);
+        trackFormat = nullptr;
+    }
+    if (sourceFormat != nullptr) {
+        OH_AVFormat_Destroy(sourceFormat);
+        sourceFormat = nullptr;
+    }
+    if (format != nullptr) {
+        OH_AVFormat_Destroy(format);
+        format = nullptr;
+    }
+    if (memory != nullptr) {
+        OH_AVMemory_Destroy(memory);
+        memory = nullptr;
+    }
+    if (source != nullptr) {
+        OH_AVSource_Destroy(source);
+        source = nullptr;
+    }
+    if (demuxer != nullptr) {
+        OH_AVDemuxer_Destroy(demuxer);
+        demuxer = nullptr;
+    }
+    if (avBuffer != nullptr) {
+        OH_AVBuffer_Destroy(avBuffer);
+        avBuffer = nullptr;
+    }
 }
 } // namespace Media
 } // namespace OHOS
@@ -91,7 +114,8 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
 
-static int64_t GetFileSize(const char* fileName) {
+static int64_t GetFileSize(const char* fileName)
+{
     int64_t fileSize = 0;
     if (fileName != nullptr) {
         struct stat fileStatus {};
@@ -109,7 +133,8 @@ struct seekInfo {
     int32_t audioCount;
 };
 
-static void CheckSeekMode(seekInfo seekInfo) {
+static void CheckSeekMode(seekInfo seekInfo)
+{
     int trackType = 0;
     OH_AVCodecBufferAttr attr;
     int fd = open(seekInfo.fileName, O_RDONLY);
@@ -158,7 +183,8 @@ static void CheckSeekMode(seekInfo seekInfo) {
     close(fd);
 }
 
-static void DemuxerAlacResult(const char* fileName, int32_t expectedFrames, int32_t expectedKeyFrames) {
+static void DemuxerAlacResult(const char* fileName, int32_t expectedFrames, int32_t expectedKeyFrames)
+{
     int trackType = 0;
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
