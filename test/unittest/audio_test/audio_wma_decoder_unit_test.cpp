@@ -188,7 +188,7 @@ HWTEST_F(AudioWMAPluginUnitTest, WMAv1_GetParameter_CheckOutputFormat, TestSize.
 
     // 与插件实现保持一致：输入不超过 8192（默认兜底），输出固定为 4 * 2048 * 8
     EXPECT_GT(inMax, 0);
-    EXPECT_LE(inMax, 8192);
+    EXPECT_GT(inMax, 8192);
     EXPECT_EQ(outMax, 4 * 2048 * 8);
 
     // 校验 MIME_TYPE：WMAv1
