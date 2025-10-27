@@ -238,7 +238,7 @@ static void DemuxerAlacResult(const char* fileName, int32_t expectedFrames, int3
 
 /**
  * @tc.number    : DEMUXER_ALAC_FUNC_0001
- * @tc.name      : demuxer ALAC ,GetTrackFormat,OH_MD_KEY_AUD_BIT_DEPTH
+ * @tc.name      : demuxer ALAC ,GetTrackFormat,OH_MD_KEY_COMMENT
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0001, TestSize.Level2) {
@@ -253,7 +253,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0001, TestSize.Level2) {
     
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_BIT_DEPTH, &bitDepth));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_COMMENT, &bitDepth));
     ASSERT_EQ(bitDepth, 16);
     
     close(fd);
@@ -307,33 +307,10 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0003, TestSize.Level2) {
 
 /**
  * @tc.number    : DEMUXER_ALAC_FUNC_0004
- * @tc.name      : demuxer ALAC ,GetTrackFormat,OH_MD_KEY_CODEC_MIME
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0004, TestSize.Level2) {
-    const char* mimeType = nullptr;
-    const char* file = ALAC_M4A_1;
-    int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
-    cout << file << "-------fd:" << fd << "-------size:" << size << endl;
-    
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
-    ASSERT_NE(source, nullptr);
-    
-    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
-    ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-    ASSERT_STREQ(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_ALAC);
-    
-    close(fd);
-}
-
-/**
- * @tc.number    : DEMUXER_ALAC_FUNC_0005
  * @tc.name      : demuxer ALAC ,GetSourceFormat,OH_MD_KEY_TRACK_COUNT
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0005, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0004, TestSize.Level2) {
     const char* file = ALAC_M4A_3;
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -350,11 +327,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0005, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0006
+ * @tc.number    : DEMUXER_ALAC_FUNC_0005
  * @tc.name      : demuxer ALAC ,GetTrackFormat,OH_MD_KEY_TRACK_TYPE
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0006, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0005, TestSize.Level2) {
     int32_t trackType = 0;
     const char* file = ALAC_M4A_1;
     int fd = open(file, O_RDONLY);
@@ -373,11 +350,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0006, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0007
+ * @tc.number    : DEMUXER_ALAC_FUNC_0006
  * @tc.name      : demuxer ALAC ,ReadSample,check sample size
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0007, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0006, TestSize.Level2) {
     OH_AVCodecBufferAttr attr{};
     const char* file = ALAC_M4A_1;
     int fd = open(file, O_RDONLY);
@@ -399,29 +376,29 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0007, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0008
+ * @tc.number    : DEMUXER_ALAC_FUNC_0007
  * @tc.name      : demuxer ALAC ,full demux,16bit stereo
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0008, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0007, TestSize.Level2) {
     DemuxerAlacResult(ALAC_M4A_1, 128, 8);
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0009
+ * @tc.number    : DEMUXER_ALAC_FUNC_0008
  * @tc.name      : demuxer ALAC ,full demux,24bit 5.1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0009, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0008, TestSize.Level2) {
     DemuxerAlacResult(ALAC_M4A_2, 96, 6);
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0010
+ * @tc.number    : DEMUXER_ALAC_FUNC_0009
  * @tc.name      : demuxer ALAC ,GetTrackFormat,OH_MD_KEY_BITRATE
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0010, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0009, TestSize.Level2) {
     int64_t bitRate = 0;
     const char* file = ALAC_M4A_1;
     int fd = open(file, O_RDONLY);
@@ -441,11 +418,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0010, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0011
+ * @tc.number    : DEMUXER_ALAC_FUNC_0010
  * @tc.name      : demuxer ALAC ,GetTrackFormat,OH_MD_KEY_AUD_CHANNEL_LAYOUT
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0011, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0010, TestSize.Level2) {
     int64_t channelLayout = 0;
     const char* file = ALAC_M4A_2;
     int fd = open(file, O_RDONLY);
@@ -464,11 +441,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0011, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0012
- * @tc.name      : demuxer ALAC(MP4) ,GetTrackFormat,OH_MD_KEY_AUD_BIT_DEPTH
+ * @tc.number    : DEMUXER_ALAC_FUNC_0011
+ * @tc.name      : demuxer ALAC(MP4) ,GetTrackFormat,OH_MD_KEY_COMMENT
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0012, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0011, TestSize.Level2) {
     int32_t bitDepth = 0;
     const char* file = ALAC_MP4_1;
     int fd = open(file, O_RDONLY);
@@ -480,18 +457,18 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0012, TestSize.Level2) {
     
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_BIT_DEPTH, &bitDepth));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_COMMENT, &bitDepth));
     ASSERT_EQ(bitDepth, 16);
     
     close(fd);
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0013
+ * @tc.number    : DEMUXER_ALAC_FUNC_0012
  * @tc.name      : demuxer ALAC(MP4) ,GetTrackFormat,OH_MD_KEY_AUD_SAMPLE_RATE
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0013, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0012, TestSize.Level2) {
     int32_t sampleRate = 0;
     const char* file = ALAC_MP4_2;
     int fd = open(file, O_RDONLY);
@@ -510,11 +487,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0013, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0014
+ * @tc.number    : DEMUXER_ALAC_FUNC_0013
  * @tc.name      : demuxer ALAC(MP4) ,GetTrackFormat,OH_MD_KEY_AUD_CHANNEL_COUNT
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0014, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0013, TestSize.Level2) {
     int32_t channelCount = 0;
     const char* file = ALAC_MP4_2;
     int fd = open(file, O_RDONLY);
@@ -533,34 +510,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0014, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0015
- * @tc.name      : demuxer ALAC(MP4) ,GetTrackFormat,OH_MD_KEY_CODEC_MIME
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0015, TestSize.Level2) {
-    const char* mimeType = nullptr;
-    const char* file = ALAC_MP4_1;
-    int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
-    cout << file << "-------fd:" << fd << "-------size:" << size << endl;
-    
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
-    ASSERT_NE(source, nullptr);
-    
-    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
-    ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-    ASSERT_STREQ(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_ALAC);
-    
-    close(fd);
-}
-
-/**
- * @tc.number    : DEMUXER_ALAC_FUNC_0016
+ * @tc.number    : DEMUXER_ALAC_FUNC_0014
  * @tc.name      : demuxer ALAC(MP4) ,GetSourceFormat,OH_MD_KEY_TRACK_COUNT
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0016, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0014, TestSize.Level2) {
     const char* file = ALAC_MP4_3;
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -577,11 +531,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0016, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0017
+ * @tc.number    : DEMUXER_ALAC_FUNC_0015
  * @tc.name      : demuxer ALAC(MP4) ,GetTrackFormat,OH_MD_KEY_TRACK_TYPE
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0017, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0015, TestSize.Level2) {
     int32_t trackType = 0;
     const char* file = ALAC_MP4_1;
     int fd = open(file, O_RDONLY);
@@ -600,11 +554,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0017, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0018
+ * @tc.number    : DEMUXER_ALAC_FUNC_0016
  * @tc.name      : demuxer ALAC(MP4) ,ReadSample,check sample size
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0018, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0016, TestSize.Level2) {
     OH_AVCodecBufferAttr attr{};
     const char* file = ALAC_MP4_1;
     int fd = open(file, O_RDONLY);
@@ -626,29 +580,29 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0018, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0019
+ * @tc.number    : DEMUXER_ALAC_FUNC_0017
  * @tc.name      : demuxer ALAC(MP4) ,full demux,16bit stereo
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0019, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0017, TestSize.Level2) {
     DemuxerAlacResult(ALAC_MP4_1, 128, 8);
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0020
+ * @tc.number    : DEMUXER_ALAC_FUNC_0018
  * @tc.name      : demuxer ALAC(MP4) ,full demux,24bit 5.1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0020, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0018, TestSize.Level2) {
     DemuxerAlacResult(ALAC_MP4_2, 96, 6);
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0021
+ * @tc.number    : DEMUXER_ALAC_FUNC_0029
  * @tc.name      : demuxer ALAC(MP4) ,GetTrackFormat,OH_MD_KEY_BITRATE
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0021, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0019, TestSize.Level2) {
     int64_t bitRate = 0;
     const char* file = ALAC_MP4_1;
     int fd = open(file, O_RDONLY);
@@ -668,21 +622,21 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0021, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0022
+ * @tc.number    : DEMUXER_ALAC_FUNC_0020
  * @tc.name      : demuxer ALAC(MP4) ,seek to middle,SEEK_MODE_NEXT_SYNC
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0022, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0020, TestSize.Level2) {
     seekInfo testInfo{ALAC_MP4_1, SEEK_MODE_NEXT_SYNC, 5000, 180};
     CheckSeekMode(testInfo);
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0023
- * @tc.name      : demuxer ALAC(MKV) ,GetTrackFormat,OH_MD_KEY_AUD_BIT_DEPTH
+ * @tc.number    : DEMUXER_ALAC_FUNC_0021
+ * @tc.name      : demuxer ALAC(MKV) ,GetTrackFormat,OH_MD_KEY_COMMENT
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0023, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0021, TestSize.Level2) {
     int32_t bitDepth = 0;
     const char* file = ALAC_MKV_1;
     int fd = open(file, O_RDONLY);
@@ -694,18 +648,18 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0023, TestSize.Level2) {
     
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_BIT_DEPTH, &bitDepth));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_COMMENT, &bitDepth));
     ASSERT_EQ(bitDepth, 16);
     
     close(fd);
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0024
+ * @tc.number    : DEMUXER_ALAC_FUNC_0022
  * @tc.name      : demuxer ALAC(MKV) ,GetTrackFormat,OH_MD_KEY_AUD_SAMPLE_RATE
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0024, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0022, TestSize.Level2) {
     int32_t sampleRate = 0;
     const char* file = ALAC_MKV_2;
     int fd = open(file, O_RDONLY);
@@ -724,11 +678,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0024, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0025
+ * @tc.number    : DEMUXER_ALAC_FUNC_0023
  * @tc.name      : demuxer ALAC(MKV) ,GetTrackFormat,OH_MD_KEY_AUD_CHANNEL_COUNT
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0025, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0023, TestSize.Level2) {
     int32_t channelCount = 0;
     const char* file = ALAC_MKV_2;
     int fd = open(file, O_RDONLY);
@@ -747,34 +701,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0025, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0026
- * @tc.name      : demuxer ALAC(MKV) ,GetTrackFormat,OH_MD_KEY_CODEC_MIME
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0026, TestSize.Level2) {
-    const char* mimeType = nullptr;
-    const char* file = ALAC_MKV_1;
-    int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
-    cout << file << "-------fd:" << fd << "-------size:" << size << endl;
-    
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
-    ASSERT_NE(source, nullptr);
-    
-    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
-    ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-    ASSERT_STREQ(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_ALAC);
-    
-    close(fd);
-}
-
-/**
- * @tc.number    : DEMUXER_ALAC_FUNC_0027
+ * @tc.number    : DEMUXER_ALAC_FUNC_0024
  * @tc.name      : demuxer ALAC(MKV) ,GetSourceFormat,OH_MD_KEY_TRACK_COUNT
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0027, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0024, TestSize.Level2) {
     const char* file = ALAC_MKV_3;
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -791,11 +722,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0027, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0028
+ * @tc.number    : DEMUXER_ALAC_FUNC_0025
  * @tc.name      : demuxer ALAC(MKV) ,GetTrackFormat,OH_MD_KEY_TRACK_TYPE
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0028, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0025, TestSize.Level2) {
     int32_t trackType = 0;
     const char* file = ALAC_MKV_1;
     int fd = open(file, O_RDONLY);
@@ -814,11 +745,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0028, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0029
+ * @tc.number    : DEMUXER_ALAC_FUNC_0026
  * @tc.name      : demuxer ALAC(MKV) ,ReadSample,check sample size
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0029, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0026, TestSize.Level2) {
     OH_AVCodecBufferAttr attr{};
     const char* file = ALAC_MKV_1;
     int fd = open(file, O_RDONLY);
@@ -840,29 +771,29 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0029, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0030
+ * @tc.number    : DEMUXER_ALAC_FUNC_0027
  * @tc.name      : demuxer ALAC(MKV) ,full demux,16bit stereo
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0030, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0027, TestSize.Level2) {
     DemuxerAlacResult(ALAC_MKV_1, 128, 8);
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0031
+ * @tc.number    : DEMUXER_ALAC_FUNC_0028
  * @tc.name      : demuxer ALAC(MKV) ,full demux,24bit 5.1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0031, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0028, TestSize.Level2) {
     DemuxerAlacResult(ALAC_MKV_2, 96, 6);
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0032
+ * @tc.number    : DEMUXER_ALAC_FUNC_0029
  * @tc.name      : demuxer ALAC(MKV) ,GetTrackFormat,OH_MD_KEY_BITRATE
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0032, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0029, TestSize.Level2) {
     int64_t bitRate = 0;
     const char* file = ALAC_MKV_1;
     int fd = open(file, O_RDONLY);
@@ -882,21 +813,21 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0032, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0033
+ * @tc.number    : DEMUXER_ALAC_FUNC_0030
  * @tc.name      : demuxer ALAC(MKV) ,seek to near end,SEEK_MODE_CLOSEST_SYNC
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0033, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0030, TestSize.Level2) {
     seekInfo testInfo{ALAC_MKV_2, SEEK_MODE_CLOSEST_SYNC, 9000, 35};
     CheckSeekMode(testInfo);
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0034
- * @tc.name      : demuxer ALAC(MOV) ,GetTrackFormat,OH_MD_KEY_AUD_BIT_DEPTH
+ * @tc.number    : DEMUXER_ALAC_FUNC_0031
+ * @tc.name      : demuxer ALAC(MOV) ,GetTrackFormat,OH_MD_KEY_COMMENT
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0034, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0031, TestSize.Level2) {
     int32_t bitDepth = 0;
     const char* file = ALAC_MOV_1;
     int fd = open(file, O_RDONLY);
@@ -908,18 +839,18 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0034, TestSize.Level2) {
     
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_BIT_DEPTH, &bitDepth));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_COMMENT, &bitDepth));
     ASSERT_EQ(bitDepth, 16);
     
     close(fd);
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0035
+ * @tc.number    : DEMUXER_ALAC_FUNC_0032
  * @tc.name      : demuxer ALAC(MOV) ,GetTrackFormat,OH_MD_KEY_AUD_SAMPLE_RATE
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0035, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0032, TestSize.Level2) {
     int32_t sampleRate = 0;
     const char* file = ALAC_MOV_2;
     int fd = open(file, O_RDONLY);
@@ -938,11 +869,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0035, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0036
+ * @tc.number    : DEMUXER_ALAC_FUNC_0033
  * @tc.name      : demuxer ALAC(MOV) ,GetTrackFormat,OH_MD_KEY_AUD_CHANNEL_COUNT
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0036, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0033, TestSize.Level2) {
     int32_t channelCount = 0;
     const char* file = ALAC_MOV_2;
     int fd = open(file, O_RDONLY);
@@ -961,34 +892,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0036, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0037
- * @tc.name      : demuxer ALAC(MOV) ,GetTrackFormat,OH_MD_KEY_CODEC_MIME
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0037, TestSize.Level2) {
-    const char* mimeType = nullptr;
-    const char* file = ALAC_MOV_1;
-    int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
-    cout << file << "-------fd:" << fd << "-------size:" << size << endl;
-    
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
-    ASSERT_NE(source, nullptr);
-    
-    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
-    ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-    ASSERT_STREQ(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_ALAC);
-    
-    close(fd);
-}
-
-/**
- * @tc.number    : DEMUXER_ALAC_FUNC_0038
+ * @tc.number    : DEMUXER_ALAC_FUNC_0034
  * @tc.name      : demuxer ALAC(MOV) ,GetSourceFormat,OH_MD_KEY_TRACK_COUNT
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0038, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0034, TestSize.Level2) {
     const char* file = ALAC_MOV_3;
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -1005,11 +913,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0038, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0039
+ * @tc.number    : DEMUXER_ALAC_FUNC_0035
  * @tc.name      : demuxer ALAC(MOV) ,GetTrackFormat,OH_MD_KEY_TRACK_TYPE
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0039, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0035, TestSize.Level2) {
     int32_t trackType = 0;
     const char* file = ALAC_MOV_1;
     int fd = open(file, O_RDONLY);
@@ -1028,11 +936,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0039, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0040
+ * @tc.number    : DEMUXER_ALAC_FUNC_0036
  * @tc.name      : demuxer ALAC(MOV) ,ReadSample,check sample size
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0040, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0036, TestSize.Level2) {
     OH_AVCodecBufferAttr attr{};
     const char* file = ALAC_MOV_1;
     int fd = open(file, O_RDONLY);
@@ -1054,29 +962,29 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0040, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0041
+ * @tc.number    : DEMUXER_ALAC_FUNC_0037
  * @tc.name      : demuxer ALAC(MOV) ,full demux,16bit stereo
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0041, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0037, TestSize.Level2) {
     DemuxerAlacResult(ALAC_MOV_1, 128, 8);
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0042
+ * @tc.number    : DEMUXER_ALAC_FUNC_0038
  * @tc.name      : demuxer ALAC(MOV) ,full demux,24bit 5.1
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0042, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0038, TestSize.Level2) {
     DemuxerAlacResult(ALAC_MOV_2, 96, 6);
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0043
+ * @tc.number    : DEMUXER_ALAC_FUNC_0039
  * @tc.name      : demuxer ALAC(MOV) ,GetTrackFormat,OH_MD_KEY_BITRATE
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0043, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0039, TestSize.Level2) {
     int64_t bitRate = 0;
     const char* file = ALAC_MOV_1;
     int fd = open(file, O_RDONLY);
@@ -1096,11 +1004,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0043, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0044
+ * @tc.number    : DEMUXER_ALAC_FUNC_0040
  * @tc.name      : demuxer ALAC(MOV) ,seek to start,SEEK_MODE_PREVIOUS_SYNC
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0044, TestSize.Level2) {
+HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0040, TestSize.Level2) {
     seekInfo testInfo{ALAC_MOV_1, SEEK_MODE_PREVIOUS_SYNC, 0, 320};
     CheckSeekMode(testInfo);
 }
