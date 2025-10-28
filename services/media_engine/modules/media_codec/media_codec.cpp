@@ -1228,7 +1228,7 @@ void MediaCodec::ResetIOStat()
 {
     if (state_ == CodecState::RUNNING || state_ == CodecState::END_OF_STREAM) {
         AVCODEC_LOGI(
-            "MediaCodec::ResetIOStat, input: %{public}zu bytes in %{public}zu times, output: %{public}zu bytes in "
+            "MediaCodec::ResetIOStat, input: %{public}lld bytes in %{public}zu times, output: %{public}lld bytes in "
             "%{public}zu times utill last run",
             inputBytesSum_,
             inputCount_,
