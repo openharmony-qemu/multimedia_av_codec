@@ -170,7 +170,7 @@ Status FFmpegAC3DecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
 
 int32_t FFmpegAC3DecoderPlugin::GetInputBufferSize()
 {
-    int32_t inputBufferSize = SAMPLES * channels * MAX_BYTES_PER_SAMPLE;
+    int32_t inputBufferSize = SAMPLES * MAX_CHANNELS * MAX_BYTES_PER_SAMPLE;
     int32_t maxSize = basePlugin->GetMaxInputSize();
     if (maxSize < 0 || maxSize > inputBufferSize) {
         maxSize = inputBufferSize;
@@ -180,7 +180,7 @@ int32_t FFmpegAC3DecoderPlugin::GetInputBufferSize()
 
 int32_t FFmpegAC3DecoderPlugin::GetOutputBufferSize()
 {
-    int32_t outputBufferSize = SAMPLES * channels * MAX_BYTES_PER_SAMPLE;
+    int32_t outputBufferSize = SAMPLES * MAX_CHANNELS * MAX_BYTES_PER_SAMPLE;
     return outputBufferSize;
 }
 } // namespace Ffmpeg
