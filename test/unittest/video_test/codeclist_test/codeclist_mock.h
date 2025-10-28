@@ -122,10 +122,10 @@ const std::vector<int32_t> DEFAULT_VIDEO_AVC_PIXFORMATS = {
     static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
     static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_GRAPHIC_FORMATS = {
-    static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P),
-    static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP),
-    static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP),
-    static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888)};
+    static_cast<int32_t>(OH_NativeBuffer_Format::NATIVEBUFFER_PIXEL_FMT_YCBCR_420_P),
+    static_cast<int32_t>(OH_NativeBuffer_Format::NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP),
+    static_cast<int32_t>(OH_NativeBuffer_Format::NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP),
+    static_cast<int32_t>(OH_NativeBuffer_Format::NATIVEBUFFER_PIXEL_FMT_RGBA_8888)};
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_PROFILES = {AVC_PROFILE_BASELINE, AVC_PROFILE_HIGH, AVC_PROFILE_MAIN};
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_LEVELS = {
     AVC_LEVEL_1,  AVC_LEVEL_1b, AVC_LEVEL_11, AVC_LEVEL_12, AVC_LEVEL_13, AVC_LEVEL_2,  AVC_LEVEL_21,
