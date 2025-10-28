@@ -439,7 +439,7 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
     }
     switch (level) {
         case AV_LOG_WARNING:
-            AVCODEC_LOG_LIMIT_IN_TIME(MEDIA_LOG_D, LOG_INTERVAL_MS, LOG_MAX_COUNT, "[FFLogW] " PUBLIC_LOG_S, buf);
+            MEDIA_LOG_D("[FFLogW] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_ERROR:
             AVCODEC_LOG_LIMIT_IN_TIME(MEDIA_LOG_E, LOG_INTERVAL_MS, LOG_MAX_COUNT, "[FFLogE] " PUBLIC_LOG_S, buf);
@@ -451,10 +451,10 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
             AVCODEC_LOG_LIMIT_IN_TIME(MEDIA_LOG_E, LOG_INTERVAL_MS, LOG_MAX_COUNT, "[FFLogP] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_INFO:
-            AVCODEC_LOG_LIMIT_IN_TIME(MEDIA_LOG_D, LOG_INTERVAL_MS, LOG_MAX_COUNT, "[FFLogI] " PUBLIC_LOG_S, buf);
+            MEDIA_LOG_D("[FFLogI] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_DEBUG:
-            AVCODEC_LOG_LIMIT_IN_TIME(MEDIA_LOG_D, LOG_INTERVAL_MS, LOG_MAX_COUNT, "[FFLogD] " PUBLIC_LOG_S, buf);
+            MEDIA_LOG_D("[FFLogD] " PUBLIC_LOG_S, buf);
             break;
         default:
             break;
