@@ -812,6 +812,9 @@ Status MediaDemuxer::InnerPrepare()
     Plugins::MediaInfo mediaInfo;
     Status ret = demuxerPluginManager_->LoadCurrentAllPlugin(streamDemuxer_, mediaInfo);
     if (ret == Status::OK) {
+        if (isTranscoderMode_ || isPlayerMode_) {
+            UpdateMjpegMediaMetaData(mediaInfo);
+        }
         InitMediaMetaData(mediaInfo);
         InitDefaultTrack(mediaInfo, videoTrackId_, audioTrackId_, subtitleTrackId_, videoMime_);
         InitIsAudioDemuxDecodeAsync();
@@ -2203,6 +2206,25 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
     }
 }
 
+void MediaDemuxer::UpdateMjpegMediaMetaData(Plugins::MediaInfo& mediaInfo)
+{
+    AutoLock lock(mapMutex_);
+    int32_t trackSize = static_cast<int32_t>(mediaInfo.tracks.size());
+    for (int32_t index = 0; index < trackSize; index++) {
+        auto& trackMeta = mediaInfo.tracks[index];
+        std::string mimeType;
+        bool ret = trackMeta.Get<Tag::MIME_TYPE>(mimeType);
+        if (ret && mimeType.find("image/jpeg") == 0) {
+            auto isCover = trackMeta.Find(Tag::MEDIA_COVER);
+            if (isCover != trackMeta.end())
+                continue;
+            mimeType = "video/mjpeg";
+            MEDIA_LOG_I("MediaMetaData update to: " PUBLIC_LOG_S, mimeType.c_str());
+            trackMeta.Set<Tag::MIME_TYPE>(mimeType);
+        }
+    }
+}
+
 void MediaDemuxer::InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, int32_t& videoTrackId,
     int32_t& audioTrackId, int32_t& subtitleTrackId, std::string& videoMime)
 {
@@ -3460,6 +3482,12 @@ Status MediaDemuxer::PauseDemuxerReadLoop()
 Status MediaDemuxer::SetTranscoderMode()
 {
     isTranscoderMode_ = true;
+    return Status::OK;
+}
+
+Status MediaDemuxer::SetPlayerMode()
+{
+    isPlayerMode_ = true;
     return Status::OK;
 }
 
