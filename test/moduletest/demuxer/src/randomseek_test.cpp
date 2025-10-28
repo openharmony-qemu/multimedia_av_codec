@@ -1314,7 +1314,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_1900, TestSize.Level
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2000, TestSize.Level2)
 {
-    CheckSeekResult("/data/test/media/ALAC_16bit_44100Hz_mp4.m4a", SEEKTIMES);
+    CheckSeekResult("/data/test/media/ALAC_16bit_44100Hz_mp4.mp4", SEEKTIMES);
 }
 
 /**
@@ -1324,7 +1324,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2000, TestSize.Level
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2100, TestSize.Level2)
 {
-    CheckSeekResult("/data/test/media/ALAC_24bit_48000Hz_mp4.m4a", SEEKTIMES);
+    CheckSeekResult("/data/test/media/ALAC_24bit_48000Hz_mp4.mp4", SEEKTIMES);
 }
 
 /**
@@ -1334,7 +1334,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2100, TestSize.Level
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2200, TestSize.Level2)
 {
-    CheckSeekResult("/data/test/media/ALAC_32bit_96000Hz_mp4.m4a", SEEKTIMES);
+    CheckSeekResult("/data/test/media/ALAC_32bit_96000Hz_mp4.mp4", SEEKTIMES);
 }
 
 /**
