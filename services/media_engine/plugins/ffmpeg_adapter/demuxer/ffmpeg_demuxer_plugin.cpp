@@ -88,7 +88,7 @@ const int32_t MPEGPS_START_CODE_SIZE = 4;
 const uint8_t MPEGPS_START_CODE[] = {0x00, 0x00, 0x01, 0xBA};
 const uint32_t SETTIMER_TIMEOUT = 5; // second
 constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
-constexpr uint32_t LOG_MAX_COUNT = 5; // 5 times
+constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
