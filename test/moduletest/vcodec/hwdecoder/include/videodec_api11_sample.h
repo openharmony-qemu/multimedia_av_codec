@@ -169,6 +169,8 @@ public:
     bool isCheckLowLatency = false;
     bool is8bitYuv = true;
     void FlushStatus();
+    int32_t SetXps(OH_AVCodecBufferAttr &attr, uint8_t *fileBuffer);
+    int32_t SetSendFrame();
     std::vector<uint8_t> LoadHashFile();
     std::vector<uint8_t> LoadMetaDataHashFile(std::string file);
     VDecAPI11Signal *signal_;

@@ -913,15 +913,8 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
         cout << "Fatal: memory copy failed" << endl;
     }
     (void)inFile_->read(reinterpret_cast<char *>(fileBuffer) + START_CODE_SIZE, bufferSize);
-    if ((fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == SPS ||
-        (fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == PPS) {
-        if (!needXpsEmpty) {
-            attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
-        } else {
-            return 0;
-        }
-    } else {
-        attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
+    if (SetXps(attr, fileBuffer) == 0) {
+        return 0;
     }
     int32_t size = CheckAndReturnBufferSize(buffer);
     if (size < bufferSize + START_CODE_SIZE) {
@@ -939,17 +932,9 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
         delete[] fileBuffer;
         return 0;
     }
-    
-    if (frameCount_ == 0 && noNeedFirstFrame) {
-        frameCount_ = frameCount_ + 1;
+    if (SetSendFrame() == 0) {
         return 0;
     }
-
-    if (needSendOneFrame && frameCount_ >= 1) {
-        frameCount_ = frameCount_ + 1;
-        return 0;
-    }
-    
     int64_t startPts = GetSystemTimeUs();
     attr.pts = startPts;
     attr.size = bufferSize + START_CODE_SIZE;
@@ -1590,4 +1575,34 @@ bool VDecAPI11Sample::GetHdrMetaDataType(int &metaDataType)
         return false;
     }
     return true;
+}
+
+int32_t VDecAPI11Sample::SetXps(OH_AVCodecBufferAttr &attr, uint8_t *fileBuffer)
+{
+    if ((fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == SPS ||
+        (fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == PPS) {
+        if (!needXpsEmpty) {
+            attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
+            return 1;
+        } else {
+            return 0;
+        }
+    } else {
+        attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
+        return 1;
+    }
+}
+
+int32_t VDecAPI11Sample::SetSendFrame()
+{
+    if (frameCount_ == 0 && noNeedFirstFrame) {
+        frameCount_ = frameCount_ + 1;
+        return 0;
+    }
+
+    if (needSendOneFrame && frameCount_ >= 1) {
+        frameCount_ = frameCount_ + 1;
+        return 0;
+    }
+    return 1;
 }

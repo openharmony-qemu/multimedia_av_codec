@@ -113,6 +113,8 @@ public:
     void CreateSurface();
     int32_t SetOutputSurface();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
+    int32_t SetXps(AVCodecBufferFlag &flag, uint8_t *fileBuffer);
+    int32_t SetSendFrame();
     bool PREPARE_FLAG = true;
     bool P3_FULL_FLAG = false;
     bool BT709_LIMIT_FLAG = false;
