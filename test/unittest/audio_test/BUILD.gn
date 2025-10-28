@@ -853,6 +853,9 @@ ohos_unittest("audio_raw_decoder_plugin_unit_test") {
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/interfaces/kits/c:native_media_avdemuxer",
+    "$av_codec_root_dir/interfaces/kits/c:native_media_avsource",
+    "$av_codec_root_dir/interfaces/kits/c:native_media_codecbase",
     "$av_codec_root_dir/services/engine/codec/audio:av_codec_audio_ffmpeg_codec",
     "$av_codec_root_dir/services/services:av_codec_service",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
@@ -861,6 +864,8 @@ ohos_unittest("audio_raw_decoder_plugin_unit_test") {
   external_deps = [
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
+    "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   if (target_cpu == "arm64") {
