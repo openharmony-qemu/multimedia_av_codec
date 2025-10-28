@@ -430,7 +430,6 @@ bool IsHevcSyncFrame(const uint8_t *sample, int32_t size)
 
 void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
 {
-    AVCODEC_LOG_LIMIT_IN_TIME
     (void)avcl;
     char buf[500] = {0}; // 500
     int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, fmt, vl);
