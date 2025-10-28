@@ -441,13 +441,13 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
             MEDIA_LOG_D("[FFLogW] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_ERROR:
-            AVCODEC_LOG_LIMIT_IN_TIME(MEDIA_LOG_E, LOG_INTERVAL_MS, LOG_MAX_COUNT, "[FFLogE] " PUBLIC_LOG_S, buf);
+            AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGE, LOG_INTERVAL_MS, LOG_MAX_COUNT, "[FFLogE] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_FATAL:
-            AVCODEC_LOG_LIMIT_IN_TIME(MEDIA_LOG_E, LOG_INTERVAL_MS, LOG_MAX_COUNT, "[FFLogF] " PUBLIC_LOG_S, buf);
+            AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGE, LOG_INTERVAL_MS, LOG_MAX_COUNT, "[FFLogF] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_PANIC:
-            AVCODEC_LOG_LIMIT_IN_TIME(MEDIA_LOG_E, LOG_INTERVAL_MS, LOG_MAX_COUNT, "[FFLogP] " PUBLIC_LOG_S, buf);
+            AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGE, LOG_INTERVAL_MS, LOG_MAX_COUNT, "[FFLogP] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_INFO:
             MEDIA_LOG_D("[FFLogI] " PUBLIC_LOG_S, buf);
