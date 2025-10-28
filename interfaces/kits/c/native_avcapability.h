@@ -41,6 +41,7 @@
 #include "native_averrors.h"
 #include "native_avformat.h"
 #include "native_avcodec_base.h"
+#include "buffer_common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -400,23 +401,25 @@ OH_AVErrCode OH_AVCapability_GetVideoSupportedPixelFormats(OH_AVCapability *capa
                                                            uint32_t *pixelFormatNum);
 
 /**
- * @brief Get the video codec's supported native buffer format.
- * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @param capability Video codec capability pointer. If an audio codec capability pointer is given,
- * undefined behavior occurs
+ * @brief Get the native buffer formats supported by the video codec.
+ *
+ * This function provides information about the native buffer formats that the video codec can handle.
+ *
+ * @param capability A pointer to a valid video codec capability instance.
  * @param nativeBufferFormats Output parameter. A pointer to the native buffer format array,
  * refer to {@link OH_NativeBuffer_Format}
  * @param nativeBufferFormatNum Output parameter. The element number of the native buffer format array
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
- * {@link AV_ERR_INVALID_VAL}, the capability is invalid, the nativeBufferFormats is nullptr,
- * or the nativeBufferFormatNum is nullptr.
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, the capability is an audio codec capability pointer,
+ * the nativeBufferFormats is nullptr, or the nativeBufferFormatNum is nullptr.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_NO_MEMORY}, internal use memory malloc failed.
+ *
  * @since 22
  */
 OH_AVErrCode OH_AVCapability_GetVideoSupportedNativeBufferFormats(OH_AVCapability *capability,
-                                                                  const int32_t **nativeBufferFormats,
+                                                                  const OH_NativeBuffer_Format **nativeBufferFormats,
                                                                   uint32_t *nativeBufferFormatNum);
 
 /**

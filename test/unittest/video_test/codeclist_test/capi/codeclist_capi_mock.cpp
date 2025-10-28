@@ -340,7 +340,7 @@ std::vector<int32_t> CodecListCapiMock::GetVideoSupportedPixelFormats()
 std::vector<int32_t> CodecListCapiMock::GetVideoSupportedGraphicPixelFormats()
 {
     if (codeclist_ != nullptr) {
-        const int32_t *graphicFormats = nullptr;
+        const OH_NativeBuffer_Format *graphicFormats = nullptr;
         uint32_t graphicFormatNum = 0;
         int32_t ret =
             OH_AVCapability_GetVideoSupportedNativeBufferFormats(codeclist_, &graphicFormats, &graphicFormatNum);
@@ -350,7 +350,10 @@ std::vector<int32_t> CodecListCapiMock::GetVideoSupportedGraphicPixelFormats()
         }
 
         StackMemOverWrite();
-        std::vector<int32_t> retVector = std::vector<int32_t>(graphicFormats, graphicFormats + graphicFormatNum);
+        std::vector<int32_t> retVector = std::vector<int32_t>(graphicFormatNum);
+        for (uint32_t i = 0; i < graphicFormatNum; i++) {
+            retVector[i] = static_cast<int32_t>(graphicFormats[i]);
+        }
         std::sort(retVector.begin(), retVector.end());
         return retVector;
     }
