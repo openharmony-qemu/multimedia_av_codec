@@ -44,6 +44,11 @@ protected:
     const char *INP_DIR_3 = "/data/test/media/ADPCM_G722.avi";
     const char *INP_DIR_4 = "/data/test/media/ADPCM_G722.mkv";
     const char *INP_DIR_5 = "/data/test/media/ADPCM_G726.wav";
+    const char *INP_DIR_QT_MOV = "/data/test/media/adpcm_ima_qt.mov";
+    const char *INP_DIR_WAV_WAV = "/data/test/media/adpcm_ima_wav.wav";
+    const char *INP_DIR_WAV_MOV = "/data/test/media/adpcm_ima_wav.mov";
+    const char *INP_DIR_WAV_AVI = "/data/test/media/adpcm_ima_wav.avi";
+    const char *INP_DIR_WAV_MKV = "/data/test/media/adpcm_ima_wav.mkv";
 
 };
 
@@ -163,7 +168,6 @@ static void CheckSeekMode(seekInfo seekInfo)
         int32_t frameNum = 0;
         while (!readEnd) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            //cout << "frameNum---" << frameNum << "---PTS---" << attr.pts << "---tarckType---" << tarckType << endl;
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 readEnd = true;
                 break;
@@ -334,6 +338,111 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0304, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0305
+ * @tc.name      : demuxer wav, check source format, OH_MD_KEY_TITLE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0305, TestSize.Level2)
+{
+    const char *stringVal;
+    const char *file = INP_DIR_QT_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0306
+ * @tc.name      : demuxer wav, check source format, OH_MD_KEY_TITLE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0306, TestSize.Level2)
+{
+    const char *stringVal;
+    const char *file = INP_DIR_WAV_WAV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0307
+ * @tc.name      : demuxer wav, check source format, OH_MD_KEY_TITLE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0307, TestSize.Level2)
+{
+    const char *stringVal;
+    const char *file = INP_DIR_WAV_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0308
+ * @tc.name      : demuxer wav, check source format, OH_MD_KEY_TITLE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0308, TestSize.Level2)
+{
+    const char *stringVal;
+    const char *file = INP_DIR_WAV_AVI;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0309
+ * @tc.name      : demuxer wav, check source format, OH_MD_KEY_TITLE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0309, TestSize.Level2)
+{
+    const char *stringVal;
+    const char *file = INP_DIR_WAV_MKV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
  * @tc.number    : DEMUXER_ADPCM_FUNC_0400
  * @tc.name      : demuxer wav, check source format, OH_MD_KEY_ALBUM_ARTIST
  * @tc.desc      : function test
@@ -425,6 +534,111 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0403, TestSize.Level2)
 HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0404, TestSize.Level2)
 {
     const char *file = INP_DIR_5;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM_ARTIST, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0405
+ * @tc.name      : demuxer wav, check source format, OH_MD_KEY_ALBUM_ARTIST
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0405, TestSize.Level2)
+{
+    const char *file = INP_DIR_QT_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM_ARTIST, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0406
+ * @tc.name      : demuxer wav, check source format, OH_MD_KEY_ALBUM_ARTIST
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0406, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_WAV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM_ARTIST, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0407
+ * @tc.name      : demuxer wav, check source format, OH_MD_KEY_ALBUM_ARTIST
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0407, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM_ARTIST, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0408
+ * @tc.name      : demuxer wav, check source format, OH_MD_KEY_ALBUM_ARTIST
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0408, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_AVI;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM_ARTIST, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0409
+ * @tc.name      : demuxer wav, check source format, OH_MD_KEY_ALBUM_ARTIST
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0409, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_MKV;
     g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << g_fd << "---------" << size << endl;
@@ -544,8 +758,113 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest,  DEMUXER_ADPCM_FUNC_0504, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0505
+ * @tc.name      : demuxer wav, check track format, OH_MD_KEY_DATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest,  DEMUXER_ADPCM_FUNC_0505, TestSize.Level2)
+{
+    const char *file = INP_DIR_QT_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_DATE, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0506
+ * @tc.name      : demuxer wav, check track format, OH_MD_KEY_DATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest,  DEMUXER_ADPCM_FUNC_0506, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_WAV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_DATE, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0507
+ * @tc.name      : demuxer wav, check track format, OH_MD_KEY_DATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest,  DEMUXER_ADPCM_FUNC_0507, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_DATE, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0508
+ * @tc.name      : demuxer wav, check track format, OH_MD_KEY_DATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest,  DEMUXER_ADPCM_FUNC_0508, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_AVI;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_DATE, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0509
+ * @tc.name      : demuxer wav, check track format, OH_MD_KEY_DATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest,  DEMUXER_ADPCM_FUNC_0509, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_MKV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_DATE, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
  * @tc.number    : DEMUXER_ADPCM_FUNC_0600
- * @tc.name      : demuxer wav, check track format,OH_MD_KEY_COMMENT
+ * @tc.name      : demuxer wav, check track format, OH_MD_KEY_COMMENT
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0600, TestSize.Level2)
@@ -566,7 +885,7 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0600, TestSize.Level2)
 
 /**
  * @tc.number    : DEMUXER_ADPCM_FUNC_0601
- * @tc.name      : demuxer mov, check track format,OH_MD_KEY_COMMENT
+ * @tc.name      : demuxer mov, check track format, OH_MD_KEY_COMMENT
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0601, TestSize.Level2)
@@ -587,7 +906,7 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0601, TestSize.Level2)
 
 /**
  * @tc.number    : DEMUXER_ADPCM_FUNC_0602
- * @tc.name      : demuxer avi, check track format,OH_MD_KEY_COMMENT
+ * @tc.name      : demuxer avi, check track format, OH_MD_KEY_COMMENT
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0602, TestSize.Level2)
@@ -608,7 +927,7 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0602, TestSize.Level2)
 
 /**
  * @tc.number    : DEMUXER_ADPCM_FUNC_0603
- * @tc.name      : demuxer mkv, check track format,OH_MD_KEY_COMMENT
+ * @tc.name      : demuxer mkv, check track format, OH_MD_KEY_COMMENT
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0603, TestSize.Level2)
@@ -629,12 +948,117 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0603, TestSize.Level2)
 
 /**
  * @tc.number    : DEMUXER_ADPCM_FUNC_0604
- * @tc.name      : demuxer wav, check track format,OH_MD_KEY_COMMENT
+ * @tc.name      : demuxer wav, check track format, OH_MD_KEY_COMMENT
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0604, TestSize.Level2)
 {
     const char *file = INP_DIR_5;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0605
+ * @tc.name      : demuxer wav, check track format, OH_MD_KEY_COMMENT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0605, TestSize.Level2)
+{
+    const char *file = INP_DIR_QT_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0606
+ * @tc.name      : demuxer wav, check track format, OH_MD_KEY_COMMENT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0606, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_WAV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0607
+ * @tc.name      : demuxer wav, check track format, OH_MD_KEY_COMMENT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0607, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0608
+ * @tc.name      : demuxer wav, check track format, OH_MD_KEY_COMMENT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0608, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_AVI;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *stringVal;
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal));
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0609
+ * @tc.name      : demuxer wav, check track format, OH_MD_KEY_COMMENT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0609, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_MKV;
     g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << g_fd << "---------" << size << endl;
@@ -740,6 +1164,111 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0903, TestSize.Level2)
 HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0904, TestSize.Level2)
 {
     const char *file = INP_DIR_5;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(g_trackCount, 1);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0905
+ * @tc.name      : demuxer wav, GetSourceFormat, OH_MD_KEY_TRACK_COUNT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0905, TestSize.Level2)
+{
+    const char *file = INP_DIR_QT_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(g_trackCount, 1);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0906
+ * @tc.name      : demuxer wav, GetSourceFormat, OH_MD_KEY_TRACK_COUNT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0906, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_WAV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(g_trackCount, 1);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0907
+ * @tc.name      : demuxer wav, GetSourceFormat, OH_MD_KEY_TRACK_COUNT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0907, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(g_trackCount, 1);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0908
+ * @tc.name      : demuxer wav, GetSourceFormat, OH_MD_KEY_TRACK_COUNT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0908, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_AVI;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(g_trackCount, 1);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_0909
+ * @tc.name      : demuxer wav, GetSourceFormat, OH_MD_KEY_TRACK_COUNT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_0909, TestSize.Level2)
+{
+    const char *file = INP_DIR_WAV_MKV;
     g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << g_fd << "---------" << size << endl;
@@ -864,6 +1393,116 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1004, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1005
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_BITRATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1005, TestSize.Level2)
+{
+    int64_t br = 0;
+    const char *file = INP_DIR_QT_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &br));
+    ASSERT_EQ(br, 187425);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1006
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_BITRATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1006, TestSize.Level2)
+{
+    int64_t br = 0;
+    const char *file = INP_DIR_WAV_WAV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &br));
+    ASSERT_EQ(br, 128000);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1007
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_BITRATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1007, TestSize.Level2)
+{
+    int64_t br = 0;
+    const char *file = INP_DIR_WAV_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &br));
+    ASSERT_EQ(br, 176400);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1008
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_BITRATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1008, TestSize.Level2)
+{
+    int64_t br = 0;
+    const char *file = INP_DIR_WAV_AVI;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &br));
+    ASSERT_EQ(br, 128000);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1009
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_BITRATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1009, TestSize.Level2)
+{
+    int64_t br = 0;
+    const char *file = INP_DIR_WAV_MKV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &br));
+    ASSERT_EQ(br, 128000);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
  * @tc.number    : DEMUXER_ADPCM_FUNC_1100
  * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_CHANNEL_COUNT
  * @tc.desc      : function test
@@ -960,6 +1599,116 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1104, TestSize.Level2)
 {
     int32_t cc = 0;
     const char *file = INP_DIR_5;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &cc));
+    ASSERT_EQ(cc, 1);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1105
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_CHANNEL_COUNT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1105, TestSize.Level2)
+{
+    int32_t cc = 0;
+    const char *file = INP_DIR_QT_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &cc));
+    ASSERT_EQ(cc, 1);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1106
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_CHANNEL_COUNT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1106, TestSize.Level2)
+{
+    int32_t cc = 0;
+    const char *file = INP_DIR_WAV_WAV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &cc));
+    ASSERT_EQ(cc, 1);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1107
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_CHANNEL_COUNT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1107, TestSize.Level2)
+{
+    int32_t cc = 0;
+    const char *file = INP_DIR_WAV_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &cc));
+    ASSERT_EQ(cc, 1);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1108
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_CHANNEL_COUNT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1108, TestSize.Level2)
+{
+    int32_t cc = 0;
+    const char *file = INP_DIR_WAV_AVI;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &cc));
+    ASSERT_EQ(cc, 1);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1109
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_CHANNEL_COUNT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1109, TestSize.Level2)
+{
+    int32_t cc = 0;
+    const char *file = INP_DIR_WAV_MKV;
     g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << g_fd << "---------" << size << endl;
@@ -1084,6 +1833,116 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1204, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1205
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_SAMPLE_RATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1205, TestSize.Level2)
+{
+    int32_t sr = 0;
+    const char *file = INP_DIR_QT_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sr));
+    ASSERT_EQ(sr, 44100);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1206
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_SAMPLE_RATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1206, TestSize.Level2)
+{
+    int32_t sr = 0;
+    const char *file = INP_DIR_WAV_WAV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sr));
+    ASSERT_EQ(sr, 44100);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1207
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_SAMPLE_RATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1207, TestSize.Level2)
+{
+    int32_t sr = 0;
+    const char *file = INP_DIR_WAV_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sr));
+    ASSERT_EQ(sr, 44100);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1208
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_SAMPLE_RATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1208, TestSize.Level2)
+{
+    int32_t sr = 0;
+    const char *file = INP_DIR_WAV_AVI;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sr));
+    ASSERT_EQ(sr, 44100);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1209
+ * @tc.name      : demuxer wav, GetAudioTrackFormat, MD_KEY_SAMPLE_RATE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1209, TestSize.Level2)
+{
+    int32_t sr = 0;
+    const char *file = INP_DIR_WAV_MKV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sr));
+    ASSERT_EQ(sr, 44100);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
  * @tc.number    : DEMUXER_ADPCM_FUNC_1400
  * @tc.name      : demuxer wav, GetPublicTrackFormat, MD_KEY_TRACK_TYPE
  * @tc.desc      : function test
@@ -1180,6 +2039,116 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1404, TestSize.Level2)
 {
     int32_t type = 0;
     const char *file = INP_DIR_5;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &type));
+    ASSERT_EQ(type, MEDIA_TYPE_AUD);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1405
+ * @tc.name      : demuxer wav, GetPublicTrackFormat, MD_KEY_TRACK_TYPE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1405, TestSize.Level2)
+{
+    int32_t type = 0;
+    const char *file = INP_DIR_QT_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &type));
+    ASSERT_EQ(type, MEDIA_TYPE_AUD);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1406
+ * @tc.name      : demuxer wav, GetPublicTrackFormat, MD_KEY_TRACK_TYPE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1406, TestSize.Level2)
+{
+    int32_t type = 0;
+    const char *file = INP_DIR_WAV_WAV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &type));
+    ASSERT_EQ(type, MEDIA_TYPE_AUD);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1407
+ * @tc.name      : demuxer wav, GetPublicTrackFormat, MD_KEY_TRACK_TYPE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1407, TestSize.Level2)
+{
+    int32_t type = 0;
+    const char *file = INP_DIR_WAV_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &type));
+    ASSERT_EQ(type, MEDIA_TYPE_AUD);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1408
+ * @tc.name      : demuxer wav, GetPublicTrackFormat, MD_KEY_TRACK_TYPE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1408, TestSize.Level2)
+{
+    int32_t type = 0;
+    const char *file = INP_DIR_WAV_AVI;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &type));
+    ASSERT_EQ(type, MEDIA_TYPE_AUD);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1409
+ * @tc.name      : demuxer wav, GetPublicTrackFormat, MD_KEY_TRACK_TYPE
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1409, TestSize.Level2)
+{
+    int32_t type = 0;
+    const char *file = INP_DIR_WAV_MKV;
     g_fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << g_fd << "---------" << size << endl;
@@ -1424,6 +2393,236 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1504, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1505
+ * @tc.name      : create source with g_fd
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1505, TestSize.Level2)
+{
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    const char *file = INP_DIR_QT_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(g_trackCount, 1);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int aKeyCount = 0;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+        }
+    }
+    ASSERT_EQ(audioFrame, 6912);
+    ASSERT_EQ(aKeyCount, 6912);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1506
+ * @tc.name      : create source with g_fd
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1506, TestSize.Level2)
+{
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    const char *file = INP_DIR_WAV_WAV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(g_trackCount, 1);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int aKeyCount = 0;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+        }
+    }
+    ASSERT_EQ(audioFrame, 55);
+    ASSERT_EQ(aKeyCount, 55);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1507
+ * @tc.name      : create source with g_fd
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1507, TestSize.Level2)
+{
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    const char *file = INP_DIR_WAV_MOV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(g_trackCount, 1);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int aKeyCount = 0;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+        }
+    }
+    ASSERT_EQ(audioFrame, 217);
+    ASSERT_EQ(aKeyCount, 217);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1508
+ * @tc.name      : create source with g_fd
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1508, TestSize.Level2)
+{
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    const char *file = INP_DIR_WAV_AVI;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(g_trackCount, 1);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int aKeyCount = 0;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+        }
+    }
+    ASSERT_EQ(audioFrame, 217);
+    ASSERT_EQ(aKeyCount, 217);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1509
+ * @tc.name      : create source with g_fd
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1509, TestSize.Level2)
+{
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    const char *file = INP_DIR_WAV_MKV;
+    g_fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << g_fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(g_fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(g_trackCount, 1);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int aKeyCount = 0;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            OH_AVFormat_Destroy(trackFormat);
+            trackFormat = nullptr;
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+        }
+    }
+    ASSERT_EQ(audioFrame, 217);
+    ASSERT_EQ(aKeyCount, 217);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
  * @tc.number    : DEMUXER_ADPCM_FUNC_1600
  * @tc.name      : create source with g_fd, ADPCM_G722.wav
  * @tc.desc      : function test
@@ -1437,6 +2636,28 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1600, TestSize.Level3)
     DemuxerResult(INP_DIR_5);
 }
 
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1601
+ * @tc.name      : create source with g_fd, ADPCM_IMA_QT
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1601, TestSize.Level3)
+{
+    DemuxerResult(INP_DIR_QT_MOV);
+}
+
+/**
+ * @tc.number    : DEMUXER_ADPCM_FUNC_1602
+ * @tc.name      : create source with g_fd, ADPCM_IMA_WAV
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_1602, TestSize.Level3)
+{
+    DemuxerResult(INP_DIR_WAV_WAV);
+    DemuxerResult(INP_DIR_WAV_MOV);
+    DemuxerResult(INP_DIR_WAV_AVI);
+    DemuxerResult(INP_DIR_WAV_MKV);
+}
 
 /**
  * @tc.number    : DEMUXER_ADPCM_FUNC_3200
@@ -1455,6 +2676,16 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_3200, TestSize.Level1)
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{INP_DIR_5, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 10};
     CheckSeekMode(fileTest5);
+    seekInfo fileTest6{INP_DIR_QT_MOV, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 6912};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{INP_DIR_WAV_WAV, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 55};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{INP_DIR_WAV_MOV, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 217};
+    CheckSeekMode(fileTest8);
+    seekInfo fileTest9{INP_DIR_WAV_AVI, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 217};
+    CheckSeekMode(fileTest9);
+    seekInfo fileTest10{INP_DIR_WAV_MKV, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 217};
+    CheckSeekMode(fileTest10);
 }
 
 /**
@@ -1474,6 +2705,16 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_3300, TestSize.Level1)
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{INP_DIR_5, SEEK_MODE_NEXT_SYNC, 0, 29, 10};
     CheckSeekMode(fileTest5);
+    seekInfo fileTest6{INP_DIR_QT_MOV, SEEK_MODE_NEXT_SYNC, 0, 29, 6912};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{INP_DIR_WAV_WAV, SEEK_MODE_NEXT_SYNC, 0, 29, 55};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{INP_DIR_WAV_MOV, SEEK_MODE_NEXT_SYNC, 0, 29, 217};
+    CheckSeekMode(fileTest8);
+    seekInfo fileTest9{INP_DIR_WAV_AVI, SEEK_MODE_NEXT_SYNC, 0, 29, 217};
+    CheckSeekMode(fileTest9);
+    seekInfo fileTest10{INP_DIR_WAV_MKV, SEEK_MODE_NEXT_SYNC, 0, 29, 217};
+    CheckSeekMode(fileTest10);
 }
 
 /**
@@ -1493,6 +2734,16 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_3400, TestSize.Level1)
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{INP_DIR_5, SEEK_MODE_CLOSEST_SYNC, 0, 29, 10};
     CheckSeekMode(fileTest5);
+    seekInfo fileTest6{INP_DIR_QT_MOV, SEEK_MODE_CLOSEST_SYNC, 0, 29, 6912};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{INP_DIR_WAV_WAV, SEEK_MODE_CLOSEST_SYNC, 0, 29, 55};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{INP_DIR_WAV_MOV, SEEK_MODE_CLOSEST_SYNC, 0, 29, 217};
+    CheckSeekMode(fileTest8);
+    seekInfo fileTest9{INP_DIR_WAV_AVI, SEEK_MODE_CLOSEST_SYNC, 0, 29, 217};
+    CheckSeekMode(fileTest9);
+    seekInfo fileTest10{INP_DIR_WAV_MKV, SEEK_MODE_CLOSEST_SYNC, 0, 29, 217};
+    CheckSeekMode(fileTest10);
 }
 
 /**
@@ -1512,6 +2763,16 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_3500, TestSize.Level1)
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{INP_DIR_5, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 9};
     CheckSeekMode(fileTest5);
+    seekInfo fileTest6{INP_DIR_QT_MOV, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 6247};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{INP_DIR_WAV_WAV, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 51};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{INP_DIR_WAV_MOV, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 197};
+    CheckSeekMode(fileTest8);
+    seekInfo fileTest9{INP_DIR_WAV_AVI, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 196};
+    CheckSeekMode(fileTest9);
+    seekInfo fileTest10{INP_DIR_WAV_MKV, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 217};
+    CheckSeekMode(fileTest10);
 }
 
 /**
@@ -1531,6 +2792,16 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_3600, TestSize.Level1)
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{INP_DIR_5, SEEK_MODE_NEXT_SYNC, 966667, 1, 9};
     CheckSeekMode(fileTest5);
+    seekInfo fileTest6{INP_DIR_QT_MOV, SEEK_MODE_NEXT_SYNC, 966667, 1, 6246};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{INP_DIR_WAV_WAV, SEEK_MODE_NEXT_SYNC, 966667, 1, 51};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{INP_DIR_WAV_MOV, SEEK_MODE_NEXT_SYNC, 966667, 1, 196};
+    CheckSeekMode(fileTest8);
+    seekInfo fileTest9{INP_DIR_WAV_AVI, SEEK_MODE_NEXT_SYNC, 966667, 1, 196};
+    CheckSeekMode(fileTest9);
+    seekInfo fileTest10{INP_DIR_WAV_MKV, SEEK_MODE_NEXT_SYNC, 966667, 1, 109};
+    CheckSeekMode(fileTest10);
 }
 
 /**
@@ -1550,6 +2821,16 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_3700, TestSize.Level1)
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{INP_DIR_5, SEEK_MODE_CLOSEST_SYNC, 966667, 1, 9};
     CheckSeekMode(fileTest5);
+    seekInfo fileTest6{INP_DIR_QT_MOV, SEEK_MODE_CLOSEST_SYNC, 966667, 1, 6247};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{INP_DIR_WAV_WAV, SEEK_MODE_CLOSEST_SYNC, 966667, 1, 51};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{INP_DIR_WAV_MOV, SEEK_MODE_CLOSEST_SYNC, 966667, 1, 197};
+    CheckSeekMode(fileTest8);
+    seekInfo fileTest9{INP_DIR_WAV_AVI, SEEK_MODE_CLOSEST_SYNC, 966667, 1, 196};
+    CheckSeekMode(fileTest9);
+    seekInfo fileTest10{INP_DIR_WAV_MKV, SEEK_MODE_CLOSEST_SYNC, 966667, 1, 217};
+    CheckSeekMode(fileTest10);
 }
 
 /**
@@ -1569,6 +2850,16 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_3800, TestSize.Level1)
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{INP_DIR_5, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 10};
     CheckSeekMode(fileTest5);
+    seekInfo fileTest6{INP_DIR_QT_MOV, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 6568};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{INP_DIR_WAV_WAV, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 53};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{INP_DIR_WAV_MOV, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 207};
+    CheckSeekMode(fileTest8);
+    seekInfo fileTest9{INP_DIR_WAV_AVI, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 206};
+    CheckSeekMode(fileTest9);
+    seekInfo fileTest10{INP_DIR_WAV_MKV, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 217};
+    CheckSeekMode(fileTest10);
 }
 
 /**
@@ -1588,6 +2879,16 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_3900, TestSize.Level1)
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{INP_DIR_5, SEEK_MODE_NEXT_SYNC, 500000, 15, 10};
     CheckSeekMode(fileTest5);
+    seekInfo fileTest6{INP_DIR_QT_MOV, SEEK_MODE_NEXT_SYNC, 500000, 15, 6567};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{INP_DIR_WAV_WAV, SEEK_MODE_NEXT_SYNC, 500000, 15, 53};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{INP_DIR_WAV_MOV, SEEK_MODE_NEXT_SYNC, 500000, 15, 206};
+    CheckSeekMode(fileTest8);
+    seekInfo fileTest9{INP_DIR_WAV_AVI, SEEK_MODE_NEXT_SYNC, 500000, 15, 206};
+    CheckSeekMode(fileTest9);
+    seekInfo fileTest10{INP_DIR_WAV_MKV, SEEK_MODE_NEXT_SYNC, 500000, 15, 109};
+    CheckSeekMode(fileTest10);
 }
 
 /**
@@ -1607,4 +2908,14 @@ HWTEST_F(DemuxerAdpcmFuncNdkTest, DEMUXER_ADPCM_FUNC_4000, TestSize.Level1)
     CheckSeekMode(fileTest4);
     seekInfo fileTest5{INP_DIR_5, SEEK_MODE_CLOSEST_SYNC, 500000, 15, 10};
     CheckSeekMode(fileTest5);
+    seekInfo fileTest6{INP_DIR_QT_MOV, SEEK_MODE_CLOSEST_SYNC, 500000, 15, 6568};
+    CheckSeekMode(fileTest6);
+    seekInfo fileTest7{INP_DIR_WAV_WAV, SEEK_MODE_CLOSEST_SYNC, 500000, 15, 53};
+    CheckSeekMode(fileTest7);
+    seekInfo fileTest8{INP_DIR_WAV_MOV, SEEK_MODE_CLOSEST_SYNC, 500000, 15, 207};
+    CheckSeekMode(fileTest8);
+    seekInfo fileTest9{INP_DIR_WAV_AVI, SEEK_MODE_CLOSEST_SYNC, 500000, 15, 206};
+    CheckSeekMode(fileTest9);
+    seekInfo fileTest10{INP_DIR_WAV_MKV, SEEK_MODE_CLOSEST_SYNC, 500000, 15, 217};
+    CheckSeekMode(fileTest10);
 }
