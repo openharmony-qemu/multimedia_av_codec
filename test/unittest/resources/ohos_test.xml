@@ -669,6 +669,40 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="audio_truehd_decoder_capi_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/truehd.mkv -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/truehd_44100_stereo.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/truehd_48000_50side.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/truehd_192000_51side.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/truehd_88200_21.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/truehd_96000_30.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/truehd_176400_31.mp4 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_sync_mode_truehd_capi_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/truehd.mkv -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_truehd_capi_decoder_unit_stable_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/truehd.mkv -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_truehd_decoder_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/truehd_44100_stereo.dat -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="av_audio_inner_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>

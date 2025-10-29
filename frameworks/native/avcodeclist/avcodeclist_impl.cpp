@@ -90,7 +90,8 @@ const std::vector<std::string> AUDIO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_APE),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_MIMETYPE_L2HC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_VIVID),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ILBC)};
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ILBC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_TRUEHD)};
 }
 namespace OHOS {
 namespace MediaAVCodec {

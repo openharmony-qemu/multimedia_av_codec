@@ -54,6 +54,10 @@ group("av_codec_unit_test") {
         "unittest/audio_test:audio_sync_mode_capi_unit_test",
         "unittest/audio_test:audio_sync_mode_gsm_capi_unit_test",
         "unittest/audio_test:audio_sync_mode_gsm_ms_capi_unit_test",
+        "unittest/audio_test:audio_sync_mode_truehd_capi_unit_test",
+        "unittest/audio_test:audio_truehd_capi_decoder_unit_stable_test",
+        "unittest/audio_test:audio_truehd_decoder_unit_test",
+        "unittest/audio_test:audio_truehd_decoder_capi_unit_test",
         "unittest/audio_test:av_audio_capi_unit_test",
         "unittest/audio_test:av_audio_codecbase_unit_test",
         "unittest/audio_test:av_audio_decode_ability_unit_test",
@@ -203,6 +207,7 @@ group("av_codec_fuzz_test") {
   deps = []
   if (av_codec_support_test) {
     deps += [
+      "fuzztest/audiodecodertruehd_fuzzer:AudioDecoderTruehdFuzzTest",
       "fuzztest/audiodecoder_fuzzer:AudioDecoderFuzzTest",
       "fuzztest/audiodecoderaac_fuzzer:AudioDecoderAacFuzzTest",
       "fuzztest/audiodecoderamrnb_fuzzer:AudioDecoderAmrnbFuzzTest",
