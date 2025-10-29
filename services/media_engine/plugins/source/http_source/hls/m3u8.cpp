@@ -656,7 +656,7 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
     ChooseStreamByResolution();
 }
 
-void M3U8MasterPlaylist::ProcessAllTags(std::vector<std::shared_ptr<Tag>>& tags)
+void M3U8MasterPlaylist::ProcessAllTags(std::list<std::shared_ptr<Tag>>& tags)
 {
     std::for_each(tags.begin(), tags.end(), [this] (std::shared_ptr<Tag>& tag) {
         switch (tag->GetType()) {

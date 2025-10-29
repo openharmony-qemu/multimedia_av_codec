@@ -620,7 +620,7 @@ HWTEST_F(M3u8UnitTest, SetInterruptState_001, TestSize.Level1)
     EXPECT_EQ(master->defaultVariant_, nullptr);
 }
 
-HWTEST_F(M3u8UnitTest, UPDATE_MEDIA_PLAYLIST_001, TestSize.Level1)
+HWTEST_F(M3u8UnitTest, IsVideoStream_001, TestSize.Level1)
 {
     std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
     master->StartParsing();
