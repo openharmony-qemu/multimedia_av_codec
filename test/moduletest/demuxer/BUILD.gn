@@ -92,6 +92,7 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/seek2_test.cpp",
       "./src/seek_test.cpp",
       "./src/wmafunc_test.cpp",
+      "./src/adpcm_ms_test.cpp",
 
       #"./src/net_test.cpp",
       #"./src/net2_test.cpp",
