@@ -276,7 +276,7 @@ HWTEST_F(GSMUnitTest, Decode_With_Invalid_File_001, TestSize.Level1)
     // This causes ffmpeg complaining 'Packet is too small'
     const int invalidSize = 16;
     auto inputBuffer = CreateAVBuffer(invalidSize, invalidSize);
-    std::fill_n(inputBuffer->memory_->GetAddr(), 0xAB, invalidSize);
+    std::fill_n(inputBuffer->memory_->GetAddr(), invalidSize, 0xAB);
     auto st = plugin_->QueueInputBuffer(inputBuffer);
     ASSERT_NE(st, Status::OK);
     auto outputBuffer = CreateAVBuffer(GSM_MAX_INPUT_SIZE, 0);
