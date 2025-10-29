@@ -184,6 +184,8 @@ struct M3U8MasterPlaylist {
     uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
     void SetInterruptState(bool isInterruptNeeded);
     bool IsVideoStream(const std::string& codecs);
+    void ProcessAllTags(std::vector<std::shared_ptr<Tag>>& tags);
+    void ProcessStreamInfoTag(std::shared_ptr<Tag> tag);
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
     std::shared_ptr<M3U8VariantStream> firstVideoStream_;
@@ -209,7 +211,7 @@ struct M3U8MasterPlaylist {
     StatusCallbackFunc monitorStatusCallback_;
     static inline const std::set<std::string> VIDEO_CODECS = {
         "mp4v", "avc1", "hev1", "svc1", "mvc1", "mvc2", "sevc", "s263"
-    }
+    };
 };
 }
 }

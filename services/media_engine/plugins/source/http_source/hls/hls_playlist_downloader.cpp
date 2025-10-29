@@ -326,12 +326,11 @@ bool HlsPlayListDownloader::IsBitrateSame(uint32_t bitRate)
                 isFirstSelect = false;
                 maxGap = tempGap;
                 newVariant_ = item;
-            } else {
-                if (item->isVideo_) {
-                    isFirstSelect = false;
-                    maxGap = tempGap;
-                    newVariant_ = item;
-                }
+            }
+            if (item->isVideo_) {
+                isFirstSelect = false;
+                maxGap = tempGap;
+                newVariant_ = item;
             }
         }
     }
