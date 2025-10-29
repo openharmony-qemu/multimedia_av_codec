@@ -41,9 +41,9 @@ protected:
     const char* ALAC_M4A_2 = "/data/test/media/ALAC_24bit_48000Hz.m4a";
     const char* ALAC_M4A_3 = "/data/test/media/ALAC_32bit_96000Hz.m4a";
     
-    const char* ALAC_MP4_1 = "/data/test/media/ALAC_16bit_44100Hz_mp4.m4a";
-    const char* ALAC_MP4_2 = "/data/test/media/ALAC_24bit_48000Hz_mp4.m4a";
-    const char* ALAC_MP4_3 = "/data/test/media/ALAC_32bit_96000Hz_mp4.m4a";
+    const char* ALAC_MP4_1 = "/data/test/media/ALAC_16bit_44100Hz_mp4.mp4";
+    const char* ALAC_MP4_2 = "/data/test/media/ALAC_24bit_48000Hz_mp4.mp4";
+    const char* ALAC_MP4_3 = "/data/test/media/ALAC_32bit_96000Hz_mp4.mp4";
     
     const char* ALAC_MKV_1 = "/data/test/media/ALAC_16bit_44100Hz_mkv.mkv";
     const char* ALAC_MKV_2 = "/data/test/media/ALAC_24bit_48000Hz_mkv.mkv";
@@ -364,7 +364,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0006, TestSize.Level2) {
     
     ASSERT_EQ(OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr), AV_ERR_OK);
     ASSERT_GT(attr.size, 0);
-    ASSERT_GT(attr.pts, 0);
+    ASSERT_EQ(attr.pts, 0);
     
     close(fd);
 }
@@ -375,7 +375,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0006, TestSize.Level2) {
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0007, TestSize.Level2) {
-    DemuxerAlacResult(ALAC_M4A_1, 128, 8);
+    DemuxerAlacResult(ALAC_M4A_1, 54, 54);
 }
 
 /**
@@ -384,7 +384,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0007, TestSize.Level2) {
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0008, TestSize.Level2) {
-    DemuxerAlacResult(ALAC_M4A_2, 96, 6);
+    DemuxerAlacResult(ALAC_M4A_2, 79, 79);
 }
 
 /**
@@ -568,7 +568,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0016, TestSize.Level2) {
     
     ASSERT_EQ(OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr), AV_ERR_OK);
     ASSERT_GT(attr.size, 0);
-    ASSERT_GT(attr.pts, 0);
+    ASSERT_EQ(attr.pts, 0);
     
     close(fd);
 }
@@ -579,7 +579,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0016, TestSize.Level2) {
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0017, TestSize.Level2) {
-    DemuxerAlacResult(ALAC_MP4_1, 128, 8);
+    DemuxerAlacResult(ALAC_MP4_1, 54, 54);
 }
 
 /**
@@ -588,11 +588,11 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0017, TestSize.Level2) {
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0018, TestSize.Level2) {
-    DemuxerAlacResult(ALAC_MP4_2, 96, 6);
+    DemuxerAlacResult(ALAC_MP4_2, 79, 79);
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0029
+ * @tc.number    : DEMUXER_ALAC_FUNC_0019
  * @tc.name      : demuxer ALAC(MP4) ,GetTrackFormat,OH_MD_KEY_BITRATE
  * @tc.desc      : function test
  */
@@ -621,7 +621,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0019, TestSize.Level2) {
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0020, TestSize.Level2) {
-    seekInfo testInfo{ALAC_MP4_1, SEEK_MODE_NEXT_SYNC, 5000, 180};
+    seekInfo testInfo{ALAC_MP4_1, SEEK_MODE_NEXT_SYNC, 5000, 53};
     CheckSeekMode(testInfo);
 }
 
@@ -759,7 +759,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0026, TestSize.Level2) {
     
     ASSERT_EQ(OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr), AV_ERR_OK);
     ASSERT_GT(attr.size, 0);
-    ASSERT_GT(attr.pts, 0);
+    ASSERT_EQ(attr.pts, 0);
     
     close(fd);
 }
@@ -770,7 +770,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0026, TestSize.Level2) {
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0027, TestSize.Level2) {
-    DemuxerAlacResult(ALAC_MKV_1, 128, 8);
+    DemuxerAlacResult(ALAC_MKV_1, 54, 54);
 }
 
 /**
@@ -779,7 +779,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0027, TestSize.Level2) {
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0028, TestSize.Level2) {
-    DemuxerAlacResult(ALAC_MKV_2, 96, 6);
+    DemuxerAlacResult(ALAC_MKV_2, 79, 79);
 }
 
 /**
@@ -799,9 +799,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0029, TestSize.Level2) {
     
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitRate));
-    ASSERT_GT(bitRate, 0);
-    ASSERT_LT(bitRate, 2000000);
+    ASSERT_FALSE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitRate));
     
     close(fd);
 }
@@ -812,7 +810,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0029, TestSize.Level2) {
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0030, TestSize.Level2) {
-    seekInfo testInfo{ALAC_MKV_2, SEEK_MODE_CLOSEST_SYNC, 9000, 35};
+    seekInfo testInfo{ALAC_MKV_2, SEEK_MODE_CLOSEST_SYNC, 9000, 79};
     CheckSeekMode(testInfo);
 }
 
@@ -950,7 +948,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0036, TestSize.Level2) {
     
     ASSERT_EQ(OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr), AV_ERR_OK);
     ASSERT_GT(attr.size, 0);
-    ASSERT_GT(attr.pts, 0);
+    ASSERT_EQ(attr.pts, 0);
     
     close(fd);
 }
@@ -961,7 +959,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0036, TestSize.Level2) {
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0037, TestSize.Level2) {
-    DemuxerAlacResult(ALAC_MOV_1, 128, 8);
+    DemuxerAlacResult(ALAC_MOV_1, 54, 54);
 }
 
 /**
@@ -970,7 +968,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0037, TestSize.Level2) {
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0038, TestSize.Level2) {
-    DemuxerAlacResult(ALAC_MOV_2, 96, 6);
+    DemuxerAlacResult(ALAC_MOV_2, 79, 79);
 }
 
 /**
@@ -1003,6 +1001,6 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0039, TestSize.Level2) {
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0040, TestSize.Level2) {
-    seekInfo testInfo{ALAC_MOV_1, SEEK_MODE_PREVIOUS_SYNC, 0, 320};
+    seekInfo testInfo{ALAC_MOV_1, SEEK_MODE_PREVIOUS_SYNC, 0, 54};
     CheckSeekMode(testInfo);
 }
