@@ -711,7 +711,6 @@ void M3U8MasterPlaylist::ProcessStreamInfoTag(std::shared_ptr<Tag> tag)
             defaultVariant_ = stream; // play last stream
         }
     }
-    break;
 }
 
 bool M3U8MasterPlaylist::IsVideoStream(const std::string& codecs)
