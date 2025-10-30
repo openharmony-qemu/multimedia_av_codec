@@ -738,7 +738,7 @@ bool M3U8MasterPlaylist::IsVideoStream(const std::string& codecs)
         while (std::getline(subIss, subToken, '.')) {
             auto subStart = subToken.find_first_not_of(" \t\r\n");
             auto subEnd = subToken.find_first_not_of(" \t\r\n");
-            if (s == std::string::npos) {
+            if (subStart == std::string::npos) {
                 continue;
             }
             std::string targetCodecs = subToken.substr(subStart, subEnd - subStart + 1);
