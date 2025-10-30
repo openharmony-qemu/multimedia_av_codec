@@ -33,7 +33,7 @@ namespace HttpPlugin {
  
 namespace {
 static const std::string MPD_MULTI_AUDIO_SUB = "http://127.0.0.1:46666/test_dash/segment_base1/index_audio_subtitle.mpd";
-constexpr int32_t WAIT_FOR_SIDX_TIME = 100 * 1000; // wait sidx download and parse for 100ms
+constexpr int32_t WAIT_FOR_SIDX_TIME = 1000 * 1000; 
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr uint32_t DEFAULT_DURATION = 20;
@@ -44,14 +44,14 @@ bool DashMediaDownloader2FuzzTest(const uint8_t *data, size_t size)
     if (data == nullptr || size < sizeof(int64_t)) {
         return false;
     }
-    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr); // 创建实例
-    mediaDownloader->Init();    //初始化下载
-    std::string testUrl = MPD_MULTI_AUDIO_SUB;      //要下载的源
-    std::map<std::string, std::string> httpHeader = { //可以置空
+    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr); 
+    mediaDownloader->Init();    
+    std::string testUrl = MPD_MULTI_AUDIO_SUB;      
+    std::map<std::string, std::string> httpHeader = { 
         {"User-Agent", "ABC"},
         {"Referer", "DEF"},
     };
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader, //设置回调
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader, 
         std::shared_ptr<DownloadRequest>& request) {
     };
     mediaDownloader->SetStatusCallback(statusCallback);
@@ -61,12 +61,12 @@ bool DashMediaDownloader2FuzzTest(const uint8_t *data, size_t size)
     playStrategy->duration = DEFAULT_DURATION;
     playStrategy->audioLanguage = "eng";
     playStrategy->subtitleLanguage = "en_GB";
-    mediaDownloader->SetPlayStrategy(playStrategy);  //没有意义，用户自定义设置下载规则
+    mediaDownloader->SetPlayStrategy(playStrategy);  
  
-    mediaDownloader->Open(testUrl, httpHeader); //设置下载源
+    mediaDownloader->Open(testUrl, httpHeader); 
     mediaDownloader->GetSeekable();
     std::vector<StreamInfo> streams;
-    mediaDownloader->GetStreamInfo(streams); //调用参数添加在这里
+    mediaDownloader->GetStreamInfo(streams); 
     
     mediaDownloader->Pause();
     mediaDownloader->Resume();
@@ -98,12 +98,12 @@ bool DashMediaDownloader2FuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    if (!InitServer()) {    //开启服务器
+    if (!InitServer()) {   
         cout << "Init server error" << endl;
         return -1;
     }
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownloader2FuzzTest(data, size);
-    if (!CloseServer()) {   //关闭服务器
+    if (!CloseServer()) {   
         cout << "Close server error" << endl;
         return -1;
     }
