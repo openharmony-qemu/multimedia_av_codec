@@ -727,7 +727,7 @@ bool M3U8MasterPlaylist::IsVideoStream(const std::string& codecs)
 
     while (std::getline(iss, token, ',')) {
         auto start = token.find_first_not_of(" \t\r\n");
-        auto end = token.find_first_not_of(" \t\r\n");
+        auto end = token.find_last_not_of(" \t\r\n");
         if (start == std::string::npos) {
             continue;
         }
@@ -737,7 +737,7 @@ bool M3U8MasterPlaylist::IsVideoStream(const std::string& codecs)
         std::string subToken;
         while (std::getline(subIss, subToken, '.')) {
             auto subStart = subToken.find_first_not_of(" \t\r\n");
-            auto subEnd = subToken.find_first_not_of(" \t\r\n");
+            auto subEnd = subToken.find_last_not_of(" \t\r\n");
             if (subStart == std::string::npos) {
                 continue;
             }
