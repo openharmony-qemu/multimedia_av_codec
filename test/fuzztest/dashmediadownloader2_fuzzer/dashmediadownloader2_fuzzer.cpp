@@ -19,31 +19,39 @@
 #include <string>
 #include <thread>
 #include "dash_media_downloader.h"
-#define FUZZ_PROJECT_NAME "dashmediadownseektotime_fuzzer"
-
+#include <fuzzer/FuzzedDataProvider.h>
+#include "http_server_demo.h"
+#include "http_server_mock.h"
+#define FUZZ_PROJECT_NAME "dashmediadownloader2_fuzzer"
+using namespace std;
+using namespace OHOS::Media;
+using namespace OHOS::Media::Plugins::HttpPlugin;
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-
-using namespace std;
-using namespace OHOS::Media;
+ 
 namespace {
-static const std::string MPD_MULTI_AUDIO_SUB = "http://127.0.0.1:47777/test_dash/segment_base/index_audio_subtitle.mpd";
+static const std::string MPD_MULTI_AUDIO_SUB = "http://127.0.0.1:46666/test_dash/segment_base1/index_audio_subtitle.mpd";
 constexpr int32_t WAIT_FOR_SIDX_TIME = 100 * 1000; // wait sidx download and parse for 100ms
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr uint32_t DEFAULT_DURATION = 20;
-constexpr uint32_t BUFFER_SIZE = 1024;
 }
-
-bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
+ 
+bool DashMediaDownloader2FuzzTest(const uint8_t *data, size_t size)
 {
-    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
-    mediaDownloader->Init();
-    std::string testUrl = MPD_MULTI_AUDIO_SUB;
-    std::map<std::string, std::string> httpHeader;
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return false;
+    }
+    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr); // 创建实例
+    mediaDownloader->Init();    //初始化下载
+    std::string testUrl = MPD_MULTI_AUDIO_SUB;      //要下载的源
+    std::map<std::string, std::string> httpHeader = { //可以置空
+        {"User-Agent", "ABC"},
+        {"Referer", "DEF"},
+    };
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader, //设置回调
         std::shared_ptr<DownloadRequest>& request) {
     };
     mediaDownloader->SetStatusCallback(statusCallback);
@@ -53,39 +61,51 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
     playStrategy->duration = DEFAULT_DURATION;
     playStrategy->audioLanguage = "eng";
     playStrategy->subtitleLanguage = "en_GB";
-    mediaDownloader->SetPlayStrategy(playStrategy);
-
-    mediaDownloader->Open(testUrl, httpHeader);
+    mediaDownloader->SetPlayStrategy(playStrategy);  //没有意义，用户自定义设置下载规则
+ 
+    mediaDownloader->Open(testUrl, httpHeader); //设置下载源
     mediaDownloader->GetSeekable();
-
     std::vector<StreamInfo> streams;
-    mediaDownloader->GetStreamInfo(streams);
-    unsigned char buff[BUFFER_SIZE];
-    ReadDataInfo readDataInfo;
-    if (streams.size() > 0) {
-        readDataInfo.streamId_ = streams[0].streamId;
-        readDataInfo.nextStreamId_ = streams[0].streamId;
+    mediaDownloader->GetStreamInfo(streams); //调用参数添加在这里
+    
+    mediaDownloader->Pause();
+    mediaDownloader->Resume();
+    {
+        int64_t seekTime = *reinterpret_cast<const int64_t*>(data);
+        SeekMode seekMode{0};
+        mediaDownloader->SeekToTime(seekTime, seekMode);
     }
-    readDataInfo.wantReadLength_ = BUFFER_SIZE;
-    mediaDownloader->Read(buff, readDataInfo);
-
-    mediaDownloader->SeekToTime(1, SeekMode::SEEK_NEXT_SYNC);
-
+    {
+        ReadDataInfo readDataInfo;
+        unsigned char* buff = const_cast<unsigned char*>(data);
+        mediaDownloader->Read(buff, readDataInfo);
+    }
+    mediaDownloader->GetContentLength();
+    mediaDownloader->GetDuration();
+    
     usleep(WAIT_FOR_SIDX_TIME);
     mediaDownloader->Close(false);
     mediaDownloader = nullptr;
     return true;
 }
-
+ 
 }
 }
 }
 }
-
+ 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::Media::Plugins::HttpPlugin::DashMediaDownSeekToTimeFuzzerTest(data, size);
+    if (!InitServer()) {    //开启服务器
+        cout << "Init server error" << endl;
+        return -1;
+    }
+    OHOS::Media::Plugins::HttpPlugin::DashMediaDownloader2FuzzTest(data, size);
+    if (!CloseServer()) {   //关闭服务器
+        cout << "Close server error" << endl;
+        return -1;
+    }
     return 0;
 }
