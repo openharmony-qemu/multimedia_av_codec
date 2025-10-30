@@ -848,7 +848,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Mp3_Reset_04, TestSize.Lev
         signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
     }
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(audioDec_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_MP3));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Start(audioDec_));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
     Release();
