@@ -327,6 +327,10 @@ void AudioCodecWorker::ConsumerOutputBuffer()
         uint32_t index;
         if (outputBuffer_->RequestAvailableIndex(index)) {
             auto outBuffer = GetOutputBufferInfo(index);
+            if (!outBuffer) {
+                AVCODEC_LOGE("outBuffer is null!");
+                continue;
+            }
             SetFirstAndEosStatus(outBuffer, isEos, index);
             ret = codec_->ProcessRecieveData(outBuffer);
             if (ret == AVCodecServiceErrCode::AVCS_ERR_NOT_ENOUGH_DATA) {
