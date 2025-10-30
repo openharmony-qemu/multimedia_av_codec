@@ -19,17 +19,21 @@
 #include <string>
 #include <thread>
 #include "dash_media_downloader.h"
+#include <fuzzer/FuzzedDataProvider.h>
+#include "http_server_demo.h"
+#include "http_server_mock.h"
+#include "test_template.h"
 #define FUZZ_PROJECT_NAME "dashmediadownseektotime_fuzzer"
-
+using namespace std;
+using namespace OHOS::Media;
+using namespace OHOS::Media::Plugins::HttpPlugin;
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 
-using namespace std;
-using namespace OHOS::Media;
 namespace {
-static const std::string MPD_MULTI_AUDIO_SUB = "http://127.0.0.1:47777/test_dash/segment_base/index_audio_subtitle.mpd";
+static const std::string MPD_MULTI_AUDIO_SUB = "http://127.0.0.1:46666/test_dash/segment_base/index_audio_subtitle.mpd";
 constexpr int32_t WAIT_FOR_SIDX_TIME = 100 * 1000; // wait sidx download and parse for 100ms
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
@@ -42,7 +46,10 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
-    std::map<std::string, std::string> httpHeader;
+    std::map<std::string, std::string> httpHeader ={
+        {"User-Agent", "ABC"},
+        {"Referer", "DEF"},
+    };
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
     };
@@ -56,8 +63,9 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
     mediaDownloader->SetPlayStrategy(playStrategy);
 
     mediaDownloader->Open(testUrl, httpHeader);
+    std::vector<StreamInfo> streams;
     mediaDownloader->GetSeekable();
-
+    
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
     unsigned char buff[BUFFER_SIZE];
@@ -70,7 +78,7 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
     mediaDownloader->Read(buff, readDataInfo);
 
     mediaDownloader->SeekToTime(1, SeekMode::SEEK_NEXT_SYNC);
-
+  
     usleep(WAIT_FOR_SIDX_TIME);
     mediaDownloader->Close(false);
     mediaDownloader = nullptr;

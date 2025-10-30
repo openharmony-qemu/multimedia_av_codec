@@ -54,6 +54,8 @@ dash_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
   "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
+  "$av_codec_root_dir/test/fuzztest/common/http_server_demo.cpp",
+  "$av_codec_root_dir/test/fuzztest/common/http_server_mock.cpp",
 ]
 config("dash_test_cfg") {
   defines = [
@@ -91,6 +93,7 @@ config("dash_test_cfg") {
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
     "$av_codec_root_dir/test/unittest/common",
+    "$av_codec_root_dir/test/common_fuzzer/common",
   ]
 }
 
@@ -129,6 +132,8 @@ ohos_fuzztest("DashMediaDownSeekToTimeFuzzTest") {
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
   ]
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
 
 ###############################################################################
