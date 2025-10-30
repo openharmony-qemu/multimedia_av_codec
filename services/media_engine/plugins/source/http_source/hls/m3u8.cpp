@@ -650,7 +650,7 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
         if (firstVideoStream_ != nullptr) {
             defaultVariant_ = firstVideoStream_;
         } else {
-           defaultVariant_ = variants_.back(); 
+            defaultVariant_ = variants_.back();
         }
     }
     tags.clear();
