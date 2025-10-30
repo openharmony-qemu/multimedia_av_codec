@@ -649,8 +649,9 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
     if (defaultVariant_ == nullptr && !variants_.empty()) {
         if (firstVideoStream_ != nullptr) {
             defaultVariant_ = firstVideoStream_;
+        } else {
+           defaultVariant_ = variants_.back(); 
         }
-        defaultVariant_ = variants_.back();
     }
     tags.clear();
     ChooseStreamByResolution();
