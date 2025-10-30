@@ -38,19 +38,18 @@ constexpr int32_t WAIT_FOR_SIDX_TIME = 100 * 1000; // wait sidx download and par
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr uint32_t DEFAULT_DURATION = 20;
-constexpr uint32_t BUFFER_SIZE = 1024;
 }
 
 bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
 {
-    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
-    mediaDownloader->Init();
-    std::string testUrl = MPD_MULTI_AUDIO_SUB;
-    std::map<std::string, std::string> httpHeader ={
+    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr); // 创建实例
+    mediaDownloader->Init();    //初始化下载
+    std::string testUrl = MPD_MULTI_AUDIO_SUB;      //要下载的源
+    std::map<std::string, std::string> httpHeader = { //可以置空
         {"User-Agent", "ABC"},
         {"Referer", "DEF"},
     };
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader, //设置回调
         std::shared_ptr<DownloadRequest>& request) {
     };
     mediaDownloader->SetStatusCallback(statusCallback);
@@ -60,25 +59,103 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
     playStrategy->duration = DEFAULT_DURATION;
     playStrategy->audioLanguage = "eng";
     playStrategy->subtitleLanguage = "en_GB";
-    mediaDownloader->SetPlayStrategy(playStrategy);
+    mediaDownloader->SetPlayStrategy(playStrategy);  //没有意义，用户自定义设置下载规则
 
-    mediaDownloader->Open(testUrl, httpHeader);
+    mediaDownloader->Open(testUrl, httpHeader); //设置下载源
     std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams); //调用参数添加在这里
+    
+    usleep(WAIT_FOR_SIDX_TIME);
+    mediaDownloader->Close(false);
+    mediaDownloader = nullptr;
+    return true;
+}
+
+bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
+{
+    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr); // 创建实例
+    mediaDownloader->Init();    //初始化下载
+    std::string testUrl = MPD_MULTI_AUDIO_SUB;      //要下载的源
+    std::map<std::string, std::string> httpHeader = { //可以置空
+        {"User-Agent", "ABC"},
+        {"Referer", "DEF"},
+    };
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader, //设置回调
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    mediaDownloader->SetStatusCallback(statusCallback);
+    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
+    playStrategy->width = DEFAULT_WIDTH;
+    playStrategy->height = DEFAULT_HEIGHT;
+    playStrategy->duration = DEFAULT_DURATION;
+    playStrategy->audioLanguage = "eng";
+    playStrategy->subtitleLanguage = "en_GB";
+    mediaDownloader->SetPlayStrategy(playStrategy);  //没有意义，用户自定义设置下载规则
+
+    mediaDownloader->Open(testUrl, httpHeader); //设置下载源
     mediaDownloader->GetSeekable();
+    mediaDownloader->SetInterruptState(true);
+    mediaDownloader->GetBufferSize();
+    mediaDownloader->GetContentType();
+    mediaDownloader->SetInterruptState(false);
+    mediaDownloader->GetBufferSize();
+    mediaDownloader->GetBufferingTimeOut();
+    mediaDownloader->GetContentType();
+    std::vector<StreamInfo> streams;
+    mediaDownloader->GetStreamInfo(streams);
+    for(auto u:streams) {
+        int32_t bitrate = GetData<int32_t>();
+        int32_t streamid = u.streamId;
+        mediaDownloader->SetDemuxerState(streamid);
+        mediaDownloader->SetCurrentBitRate(bitrate, streamid);
+    }
+    mediaDownloader->GetContentLength();
+    mediaDownloader->GetDuration();
+    mediaDownloader->GetStartedStatus();
+    mediaDownloader->GetBitRates();
+    mediaDownloader->SetDownloadErrorState();
+    usleep(WAIT_FOR_SIDX_TIME);
+    mediaDownloader->Close(false);
+    mediaDownloader = nullptr;
+    return true;
+}
+
+bool DashMediaDownGetFuzzerTest(const uint8_t *data, size_t size)
+{
+    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr); // 创建实例
+    mediaDownloader->Init();    //初始化下载
+    std::string testUrl = MPD_MULTI_AUDIO_SUB;      //要下载的源
+    std::map<std::string, std::string> httpHeader = { //可以置空
+        {"User-Agent", "ABC"},
+        {"Referer", "DEF"},
+    };
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader, //设置回调
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    mediaDownloader->SetStatusCallback(statusCallback);
+    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
+    playStrategy->width = DEFAULT_WIDTH;
+    playStrategy->height = DEFAULT_HEIGHT;
+    playStrategy->duration = DEFAULT_DURATION;
+    playStrategy->audioLanguage = "eng";
+    playStrategy->subtitleLanguage = "en_GB";
+    mediaDownloader->SetPlayStrategy(playStrategy);  //没有意义，用户自定义设置下载规则
+
+    mediaDownloader->Open(testUrl, httpHeader); //设置下载源
     
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
-    unsigned char buff[BUFFER_SIZE];
-    ReadDataInfo readDataInfo;
-    if (streams.size() > 0) {
-        readDataInfo.streamId_ = streams[0].streamId;
-        readDataInfo.nextStreamId_ = streams[0].streamId;
+    for(auto u:streams) {
+        int32_t bitrate = GetData<int32_t>();
+        int32_t streamid = u.streamId;
+        mediaDownloader->SetDemuxerState(streamid);
+        mediaDownloader->SetCurrentBitRate(bitrate, streamid);
+        mediaDownloader->UpdateDownloadFinished(streamid);
     }
-    readDataInfo.wantReadLength_ = BUFFER_SIZE;
-    mediaDownloader->Read(buff, readDataInfo);
-
-    mediaDownloader->SeekToTime(1, SeekMode::SEEK_NEXT_SYNC);
-  
+    mediaDownloader->GetContentType();
+    mediaDownloader->GetPlayable();
+    int64_t seektime = GetData<int64_t>();
+    mediaDownloader->SeekToTs(seektime);
     usleep(WAIT_FOR_SIDX_TIME);
     mediaDownloader->Close(false);
     mediaDownloader = nullptr;
@@ -94,6 +171,16 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    if (!InitServer()) {    //开启服务器
+        cout << "Init server error" << endl;
+        return -1;
+    }
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownSeekToTimeFuzzerTest(data, size);
+    OHOS::Media::Plugins::HttpPlugin::DashMediaDownBitrateFuzzerTest(data, size);
+    OHOS::Media::Plugins::HttpPlugin::DashMediaDownGetFuzzerTest(data, size);
+    if (!CloseServer()) {   //关闭服务器
+        cout << "Close server error" << endl;
+        return -1;
+    }
     return 0;
 }
