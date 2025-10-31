@@ -672,10 +672,7 @@ int32_t FCodec::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize)
     }
     CHECK_AND_RETURN_RET_LOGD(valBufferCnt < DEFAULT_MIN_BUFFER_CNT, AVCS_ERR_OK, "Allocate input buffers successful");
     AVCODEC_LOGE("Allocate input buffer failed: only %{public}d buffer is allocated, no memory", valBufferCnt);
-    {
-        std::lock_guard<std::mutex> iLock(inputMutex_);
-        buffers_[INDEX_INPUT].clear();
-    }
+    buffers_[INDEX_INPUT].clear();
     return AVCS_ERR_NO_MEMORY;
 }
 
@@ -809,14 +806,8 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
     }
     CHECK_AND_RETURN_RET_LOGD(valBufferCnt < DEFAULT_MIN_BUFFER_CNT, AVCS_ERR_OK, "Allocate output buffers successful");
     AVCODEC_LOGE("Allocate output buffer failed: only %{public}d buffer is allocated, no memory", valBufferCnt);
-    {
-        std::lock_guard<std::mutex> iLock(inputMutex_);
-        buffers_[INDEX_INPUT].clear();
-    }
-    {
-        std::lock_guard<std::mutex> oLock(outputMutex_);
-        buffers_[INDEX_OUTPUT].clear();
-    }
+    buffers_[INDEX_INPUT].clear();
+    buffers_[INDEX_OUTPUT].clear();
     return AVCS_ERR_NO_MEMORY;
 }
 
