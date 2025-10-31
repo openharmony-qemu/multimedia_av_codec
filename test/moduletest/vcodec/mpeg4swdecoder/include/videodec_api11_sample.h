@@ -34,6 +34,7 @@
 #include "native_averrors.h"
 #include "window.h"
 #include "iconsumer_surface.h"
+#include "native_avcapability.h"
 
 namespace OHOS {
 namespace Media {
@@ -144,6 +145,18 @@ int32_t SyncOutputFuncEos(OH_AVCodecBufferAttr attr, uint32_t index);
     bool IsRender();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
     void FlushStatus();
+    void GetVideoSupportedPixelFormats();
+    void GetFormatKey();
+    bool isGetVideoSupportedPixelFormats = false;
+    bool isGetFormatKey = false;
+    int isGetVideoSupportedPixelFormatsNum = 0;
+    int isGetFormatKeyNum = 0;
+    const char *avcodecMimeType = nullptr;
+    bool isEncoder = true;
+    const OH_NativeBuffer_Format *pixlFormats = nullptr;
+    uint32_t pixlFormatNum = 0;
+    int firstCallBackKey = 0;
+    int onStreamChangedKey = 0;
     VDecAPI11Signal *signal_;
     uint32_t errCount = 0;
     uint32_t outCount = 0;

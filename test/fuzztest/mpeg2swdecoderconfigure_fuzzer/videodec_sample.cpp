@@ -16,6 +16,7 @@
 #include <sys/time.h>
 #include <utility>
 #include "videodec_sample.h"
+#include "native_avcapability.h"
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
@@ -501,6 +502,17 @@ OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
     OH_AVErrCode ret = OH_VideoDecoder_PushInputData(vdec_, index, attr);
+    const OH_NativeBuffer_Format *pixlFormats = nullptr;
+    uint32_t pixlFormatNum = 0;
+    const char *avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_MPEG2;
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(avcodecMimeType, false);
+    OH_AVCapability_GetVideoSupportedNativeBufferFormats(capability, &pixlFormats, &pixlFormatNum);
+    int firstCallBackKey = 0;
+    OH_AVFormat *format = OH_AVFormat_Create();
+    OH_VideoDecoder_Configure(vdec_, format);
+    format = OH_VideoDecoder_GetOutputDescription(vdec_);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &firstCallBackKey);
+    OH_AVFormat_Destroy(format);
     return ret;
 }
 

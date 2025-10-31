@@ -667,6 +667,17 @@ void VEncNdkFuzzSample::InputDataFuzz(bool &runningFlag, uint32_t index)
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
     OH_VideoEncoder_PushInputData(venc_, index, attr);
+    const OH_NativeBuffer_Format *pixlFormats = nullptr;
+    uint32_t pixlFormatNum = 0;
+    const char *avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(avcodecMimeType, false);
+    OH_AVCapability_GetVideoSupportedNativeBufferFormats(capability, &pixlFormats, &pixlFormatNum);
+    int firstCallBackKey = 0;
+    OH_AVFormat *format = OH_AVFormat_Create();
+    OH_VideoEncoder_Configure(venc_, format);
+    format = OH_VideoEncoder_GetOutputDescription(venc_);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &firstCallBackKey);
+    OH_AVFormat_Destroy(format);
     unique_lock<mutex> lock(signal_->inMutex_);
     signal_->inIdxQueue_.pop();
     signal_->inBufferQueue_.pop();
