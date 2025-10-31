@@ -24,6 +24,7 @@
 #include "avcodec_log.h"
 #include "utils.h"
 #include "avcodec_codec_name.h"
+#include "dma_swap.h"
 #include "fcodec_surport_codec.h"
 
 namespace OHOS {
@@ -671,7 +672,10 @@ int32_t FCodec::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize)
     }
     CHECK_AND_RETURN_RET_LOGD(valBufferCnt < DEFAULT_MIN_BUFFER_CNT, AVCS_ERR_OK, "Allocate input buffers successful");
     AVCODEC_LOGE("Allocate input buffer failed: only %{public}d buffer is allocated, no memory", valBufferCnt);
-    buffers_[INDEX_INPUT].clear();
+    {
+        std::lock_guard<std::mutex> iLock(inputMutex_);
+        buffers_[INDEX_INPUT].clear();
+    }
     return AVCS_ERR_NO_MEMORY;
 }
 
@@ -805,8 +809,14 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
     }
     CHECK_AND_RETURN_RET_LOGD(valBufferCnt < DEFAULT_MIN_BUFFER_CNT, AVCS_ERR_OK, "Allocate output buffers successful");
     AVCODEC_LOGE("Allocate output buffer failed: only %{public}d buffer is allocated, no memory", valBufferCnt);
-    buffers_[INDEX_INPUT].clear();
-    buffers_[INDEX_OUTPUT].clear();
+    {
+        std::lock_guard<std::mutex> iLock(inputMutex_);
+        buffers_[INDEX_INPUT].clear();
+    }
+    {
+        std::lock_guard<std::mutex> oLock(outputMutex_);
+        buffers_[INDEX_OUTPUT].clear();
+    }
     return AVCS_ERR_NO_MEMORY;
 }
 
@@ -1092,7 +1102,7 @@ int32_t FCodec::QueueInputBuffer(uint32_t index)
 void FCodec::SendFrame()
 {
     CHECK_AND_RETURN_LOG_LIMIT(state_ != State::STOPPING && state_ != State::FLUSHING, LOG_FREQUENCE, "Invalid state");
-    if (state_ != State::RUNNING || isSendEos_) {
+    if (state_ != State::RUNNING || isSendEos_ || inputAvailQue_->Size() == 0u) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
@@ -1485,7 +1495,6 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
                 ownedBySurfaceBufferIndex.push_back(index);
             }
         } else {
-            RequestSurfaceBufferOnce(index);
             surfaceBuffer = buffers_[INDEX_OUTPUT][index]->sMemory_->GetSurfaceBuffer();
         }
         CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get old surface buffer error!");
@@ -1664,7 +1673,7 @@ bool FCodec::CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer)
     CHECK_AND_RETURN_RET_LOGD(surfaceMemory != nullptr, false, "Current buffer->sMemory error!");
     Owner ownerValue = surfaceMemory->owner;
     AVCODEC_LOGD("Buffer type: [%{public}u], fBuffer->owner_: [%{public}d], fBuffer->hasSwapedOut_: [%{public}d].",
-                 isOutputBuffer, ownerValue, fBuffer->hasSwapedOut_);
+                 isOutputBuffer, ownerValue, fBuffer->hasSwapedOut_.load());
     return !(ownerValue == Owner::OWNED_BY_SURFACE || fBuffer->hasSwapedOut_);
 }
 
@@ -1676,7 +1685,7 @@ int32_t FCodec::SwapOutBuffers(bool isOutputBuffer, State curState)
         std::shared_ptr<FBuffer> fBuffer = buffers_[bufferType][i];
         if (!CanSwapOut(isOutputBuffer, fBuffer)) {
             AVCODEC_LOGW("Buf: [%{public}u] can't freeze, owner: [%{public}d] swaped out: [%{public}d]!", i,
-                         fBuffer->owner_.load(), fBuffer->hasSwapedOut_);
+                         fBuffer->owner_.load(), fBuffer->hasSwapedOut_.load());
             continue;
         }
         std::shared_ptr<FSurfaceMemory> surfaceMemory = fBuffer->sMemory_;
@@ -1724,7 +1733,7 @@ int32_t FCodec::SwapInBuffers(bool isOutputBuffer)
 int32_t FCodec::FreezeBuffers(State curState)
 {
     CHECK_AND_RETURN_RET_LOGD(state_ != State::FROZEN, AVCS_ERR_OK, "FCodec had been frozen!");
-    std::lock_guard<std::mutex> sLock(surfaceMutex_);
+    std::lock_guard<std::mutex> sLock(outputMutex_);
     int32_t ret = SwapOutBuffers(INDEX_INPUT, curState);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Input buffers swap out failed!");
     ret = SwapOutBuffers(INDEX_OUTPUT, curState);
@@ -1746,7 +1755,6 @@ int32_t FCodec::ActiveBuffers()
 int32_t FCodec::NotifyMemoryRecycle()
 {
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
-    CHECK_AND_RETURN_RET_LOG(!disableDmaSwap_, 0, "FCodec dma swap has been diabled!");
     CHECK_AND_RETURN_RET_LOGD(state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS,
                               AVCS_ERR_INVALID_STATE, "Current state can't recycle memory!");
     AVCODEC_LOGI("Begin to freeze this codec!");
