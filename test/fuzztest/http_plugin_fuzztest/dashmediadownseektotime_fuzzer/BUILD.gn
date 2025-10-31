@@ -54,8 +54,8 @@ dash_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
   "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
-  "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/common_fuzzer/common/http_server_mock.cpp",
-  "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/common_fuzzer/common/http_server_fuzz_demo.cpp",
+  "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/common/http_server_mock.cpp",
+  "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/common/http_server_fuzz_demo.cpp",
 ]
 config("dash_test_cfg") {
   defines = [
@@ -93,7 +93,7 @@ config("dash_test_cfg") {
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
     "$av_codec_root_dir/test/unittest/common",
-    "$av_codec_root_dir/test/fuzztest/common_fuzzer/common",
+    "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/common",
   ]
 }
 
