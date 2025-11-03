@@ -34,7 +34,7 @@ namespace HttpPlugin {
 
 namespace {
 static const std::string MPD_MULTI_AUDIO_SUB = "http://127.0.0.1:46666/test_dash/segment_base/index_audio_subtitle.mpd";
-constexpr int32_t WAIT_FOR_SIDX_TIME = 1000 * 1000; 
+constexpr int32_t WAIT_FOR_SIDX_TIME = 1000 * 1000;
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr uint32_t DEFAULT_DURATION = 20;
@@ -42,14 +42,14 @@ constexpr uint32_t DEFAULT_DURATION = 20;
 
 bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
 {
-    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr); 
-    mediaDownloader->Init();    
-    std::string testUrl = MPD_MULTI_AUDIO_SUB;      
-    std::map<std::string, std::string> httpHeader = { 
+    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
+    std::string testUrl = MPD_MULTI_AUDIO_SUB;
+    std::map<std::string, std::string> httpHeader = {
         {"User-Agent", "ABC"},
         {"Referer", "DEF"},
     };
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader, 
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
     };
     mediaDownloader->SetStatusCallback(statusCallback);
@@ -59,11 +59,11 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
     playStrategy->duration = DEFAULT_DURATION;
     playStrategy->audioLanguage = "eng";
     playStrategy->subtitleLanguage = "en_GB";
-    mediaDownloader->SetPlayStrategy(playStrategy);  
+    mediaDownloader->SetPlayStrategy(playStrategy); 
 
-    mediaDownloader->Open(testUrl, httpHeader); 
+    mediaDownloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
-    mediaDownloader->GetStreamInfo(streams); 
+    mediaDownloader->GetStreamInfo(streams);
     
     usleep(WAIT_FOR_SIDX_TIME);
     mediaDownloader->Close(false);
@@ -73,14 +73,14 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
 
 bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
 {
-    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr); 
-    mediaDownloader->Init();    
-    std::string testUrl = MPD_MULTI_AUDIO_SUB;      
-    std::map<std::string, std::string> httpHeader = { 
+    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
+    std::string testUrl = MPD_MULTI_AUDIO_SUB;
+    std::map<std::string, std::string> httpHeader = {
         {"User-Agent", "ABC"},
         {"Referer", "DEF"},
     };
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader, 
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
     };
     mediaDownloader->SetStatusCallback(statusCallback);
@@ -90,9 +90,9 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
     playStrategy->duration = DEFAULT_DURATION;
     playStrategy->audioLanguage = "eng";
     playStrategy->subtitleLanguage = "en_GB";
-    mediaDownloader->SetPlayStrategy(playStrategy);  
+    mediaDownloader->SetPlayStrategy(playStrategy);
 
-    mediaDownloader->Open(testUrl, httpHeader); 
+    mediaDownloader->Open(testUrl, httpHeader);
     mediaDownloader->GetSeekable();
     mediaDownloader->SetInterruptState(true);
     mediaDownloader->GetBufferSize();
@@ -103,7 +103,7 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
     mediaDownloader->GetContentType();
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
-    for(auto u:streams) {
+    for(auto u : streams) {
         int32_t bitrate = GetData<int32_t>();
         int32_t streamid = u.streamId;
         mediaDownloader->SetDemuxerState(streamid);
@@ -122,14 +122,14 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
 
 bool DashMediaDownGetFuzzerTest(const uint8_t *data, size_t size)
 {
-    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr); 
-    mediaDownloader->Init();    
-    std::string testUrl = MPD_MULTI_AUDIO_SUB;      
-    std::map<std::string, std::string> httpHeader = { 
+    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    mediaDownloader->Init();
+    std::string testUrl = MPD_MULTI_AUDIO_SUB;
+    std::map<std::string, std::string> httpHeader = {
         {"User-Agent", "ABC"},
         {"Referer", "DEF"},
     };
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader, 
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
     };
     mediaDownloader->SetStatusCallback(statusCallback);
@@ -139,13 +139,13 @@ bool DashMediaDownGetFuzzerTest(const uint8_t *data, size_t size)
     playStrategy->duration = DEFAULT_DURATION;
     playStrategy->audioLanguage = "eng";
     playStrategy->subtitleLanguage = "en_GB";
-    mediaDownloader->SetPlayStrategy(playStrategy);  
+    mediaDownloader->SetPlayStrategy(playStrategy);
 
-    mediaDownloader->Open(testUrl, httpHeader); 
+    mediaDownloader->Open(testUrl, httpHeader);
     
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
-    for(auto u:streams) {
+    for(auto u : streams) {
         int32_t bitrate = GetData<int32_t>();
         int32_t streamid = u.streamId;
         mediaDownloader->SetDemuxerState(streamid);
@@ -171,14 +171,14 @@ bool DashMediaDownGetFuzzerTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    if (!InitServer()) {    
+    if (! InitServer()) {
         cout << "Init server error" << endl;
         return -1;
     }
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownSeekToTimeFuzzerTest(data, size);
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownBitrateFuzzerTest(data, size);
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownGetFuzzerTest(data, size);
-    if (!CloseServer()) {   
+    if (! CloseServer()) { 
         cout << "Close server error" << endl;
         return -1;
     }
