@@ -791,8 +791,8 @@ int32_t CodecServiceStub::SetDecryptConfig(MessageParcel &data, MessageParcel &r
                                       "SetDecryptConfig read object is null");
     bool svpFlag = data.ReadBool();
 
-    sptr<DrmStandard::MediaKeySessionServiceProxy> keySessionServiceProxy =
-        iface_cast<DrmStandard::MediaKeySessionServiceProxy>(object);
+    sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy =
+        iface_cast<DrmStandard::IMediaKeySessionService>(object);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(keySessionServiceProxy != nullptr, AVCS_ERR_INVALID_OPERATION,
                                       "SetDecryptConfig cast object to proxy failed");
     bool ret = reply.WriteInt32(SetDecryptConfig(keySessionServiceProxy, svpFlag));

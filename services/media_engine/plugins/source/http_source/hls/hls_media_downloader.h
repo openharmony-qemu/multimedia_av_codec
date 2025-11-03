@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -104,8 +104,6 @@ private:
     void OnMasterReady(bool needAudioManager, bool needSubTitleManager);
 
 private:
-    constexpr static uint32_t AUDIO_BUFFERING_FLAG = 1;
-    constexpr static uint32_t VIDEO_BUFFERING_FLAG = 2;
     Callback* callback_ {nullptr};
     std::shared_ptr<HlsSegmentManager> videoSegManager_ {nullptr};
     std::shared_ptr<HlsSegmentManager> audioSegManager_ {nullptr};

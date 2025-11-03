@@ -61,7 +61,7 @@ constexpr float DEFAULT_CACHE_TIME = 5;
 constexpr int TRANSFER_SIZE_RATE_2 = 2;
 constexpr int TRANSFER_SIZE_RATE_3 = 3;
 constexpr int TRANSFER_SIZE_RATE_4 = 4;
-constexpr int SLEEP_TIME_100 = 100;
+constexpr int CACHE_BUFFER_FULL_LOOP_INTERVAL = 100;
 constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 constexpr size_t MAX_BUFFERING_TIME_OUT_DELAY = 60 * 1000;
 constexpr int32_t HUNDRED_PERCENTS = 100;
@@ -121,7 +121,7 @@ HlsSegmentManager::HlsSegmentManager(int expectBufferDuration, bool userDefinedD
     timeoutInterval_ = MAX_BUFFERING_TIME_OUT;
     if (sourceLoader != nullptr) {
         sourceLoader_ = sourceLoader;
-        MEDIA_LOG_I("HLS app download.");
+        MEDIA_LOG_I("HLS app download, type: %{public}d", type_);
     }
     MEDIA_LOG_I("HLS constructor size: " PUBLIC_LOG_ZU " userDefinedDuration:" PUBLIC_LOG_D32 ", type: %{public}d",
         totalBufferSize_, userDefinedDuration, type_);
@@ -299,6 +299,7 @@ void HlsSegmentManager::SaveHttpHeader(const std::map<std::string, std::string>&
 
 bool HlsSegmentManager::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
+    FALSE_RETURN_V_MSG(playlistDownloader_ != nullptr, false, "Open no playlistDownloader_");
     isDownloadFinish_ = false;
     SaveHttpHeader(httpHeader);
     writeBitrateCaculator_->StartClock();
@@ -316,30 +317,12 @@ void HlsSegmentManager::InitCacheWithDuration()
     if (!userDefinedBufferDuration_) {
         return;
     }
-    MEDIA_LOG_I("HLS User setting buffer duration playListDownloader_ opened, type: %{public}d", type_);
-    totalBufferSize_ = expectDuration_ * CURRENT_BIT_RATE;
-    if (totalBufferSize_ < minBufferSize_) {
-        MEDIA_LOG_I("HLS Failed setting buffer size: " PUBLIC_LOG_ZU ". already lower than the min buffer size: "
-            PUBLIC_LOG_ZU ", setting buffer size: " PUBLIC_LOG_ZU ", type: %{public}d",
-            totalBufferSize_, minBufferSize_, minBufferSize_, type_);
-        cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
-        cacheMediaBuffer_->Init(minBufferSize_, CHUNK_SIZE);
-        totalBufferSize_ = minBufferSize_;
-        memorySize_ = minBufferSize_;
-    } else if (totalBufferSize_ > maxCacheBufferSize_) {
-        MEDIA_LOG_I("HLS Failed setting buffer size: " PUBLIC_LOG_ZU ". already exceed the max buffer size: "
-            PUBLIC_LOG_ZU ", setting buffer size: " PUBLIC_LOG_ZU ", type: %{public}d",
-            totalBufferSize_, maxCacheBufferSize_, maxCacheBufferSize_, type_);
-        cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
-        cacheMediaBuffer_->Init(maxCacheBufferSize_, CHUNK_SIZE);
-        totalBufferSize_ = maxCacheBufferSize_;
-        memorySize_ = maxCacheBufferSize_;
-    } else {
-        cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
-        cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
-        memorySize_ = totalBufferSize_;
-        MEDIA_LOG_I("HLS Success setted buffer size: " PUBLIC_LOG_ZU ", type: %{public}d", totalBufferSize_, type_);
-    }
+    MEDIA_LOG_I("HLS setting buffer size: %{public}zu, min: %{public}zu, max: %{public}zu, type: %{public}d",
+        totalBufferSize_, minBufferSize_, maxCacheBufferSize_, type_);
+    totalBufferSize_ = std::max(std::min(expectDuration_ * CURRENT_BIT_RATE, maxCacheBufferSize_), minBufferSize_);
+    cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
+    memorySize_ = totalBufferSize_;
 }
 
 void HlsSegmentManager::Close(bool isAsync)
@@ -368,12 +351,14 @@ void HlsSegmentManager::Close(bool isAsync)
 
 void HlsSegmentManager::Pause()
 {
+    FALSE_RETURN_MSG(playlistDownloader_ != nullptr, "Pause no playlistDownloader_");
     MEDIA_LOG_I("HLS Pause enter, type: %{public}d", type_);
     playlistDownloader_->Pause();
 }
 
 void HlsSegmentManager::Resume()
 {
+    FALSE_RETURN_MSG(playlistDownloader_ != nullptr, "Resume no playlistDownloader_");
     MEDIA_LOG_I("HLS Resume enter, type: %{public}d", type_);
     playlistDownloader_->Resume();
 }
@@ -383,10 +368,9 @@ bool HlsSegmentManager::CheckReadStatus()
     // eos:palylist is empty, request is finished, hls is vod, do not select bitrate
     FALSE_RETURN_V(playlistDownloader_ != nullptr, false);
     FALSE_RETURN_V(downloadRequest_ != nullptr, false);
-    isEos_ = playList_->Empty() && (downloadRequest_ != nullptr) &&
-                 downloadRequest_->IsEos() && playlistDownloader_ != nullptr &&
-                 (playlistDownloader_->GetDuration() > 0) &&
-                 playlistDownloader_->IsParseAndNotifyFinished();
+    isEos_ = playList_->Empty() && (downloadRequest_ != nullptr) && downloadRequest_->IsEos() &&
+        playlistDownloader_ != nullptr && (playlistDownloader_->GetDuration() > 0) &&
+        playlistDownloader_->IsParseAndNotifyFinished();
     if (isEos_) {
         return true;
     }
@@ -709,7 +693,7 @@ bool HlsSegmentManager::CheckTsEndOrEos(ReadDataInfo& readDataInfo)
 
 bool HlsSegmentManager::ReadHeaderData(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (playlistDownloader_ == nullptr || (playlistDownloader_ && !playlistDownloader_->IsHlsFmp4())) {
+    if (playlistDownloader_ == nullptr || !playlistDownloader_->IsHlsFmp4()) {
         return false;
     }
     if (curStreamId_ <= 0 && readDataInfo.streamId_ > 0) {
@@ -829,8 +813,7 @@ Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLISECONDS;
         if (readDuration > ZERO_THRESHOLD) {
             double readSpeed = readTotalBytes_ * BYTES_TO_BIT / readDuration;    // bps
-            int32_t temp = static_cast<int32_t>(readSpeed);
-            readBitrate_ = temp > 0 ? static_cast<uint64_t>(temp) : readBitrate_;
+            readBitrate_ = readSpeed > 0 ? static_cast<uint64_t>(readSpeed) : readBitrate_;
             MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64 " KByte"
                 ", type: %{public}d", static_cast<int32_t>(readSpeed / KILO),
                 static_cast<uint64_t>(GetBufferSize() / KILO), type_);
@@ -986,12 +969,11 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
         auto fragment = playList[i];
         PlaylistBackup(fragment);
         if (isSelectingBitrate_ && (GetSeekable() == Seekable::SEEKABLE)) {
+            fragmentDownloadStart[fragment.url_] = true;
             if (writeTsIndex_ == i) {
                 MEDIA_LOG_I("HLS Switch bitrate, type: %{public}d", type_);
                 isSelectingBitrate_ = false;
-                fragmentDownloadStart[fragment.url_] = true;
             } else {
-                fragmentDownloadStart[fragment.url_] = true;
                 continue;
             }
         }
@@ -1037,7 +1019,7 @@ bool HlsSegmentManager::CacheBufferFullLoop()
         MEDIA_LOG_I("HLS CacheMediaBuffer full, isSeeking, return true, type: %{public}d", type_);
         return true;
     }
-    OSAL::SleepFor(SLEEP_TIME_100);
+    OSAL::SleepFor(CACHE_BUFFER_FULL_LOOP_INTERVAL);
     return false;
 }
 
@@ -1941,7 +1923,7 @@ std::pair<int32_t, int32_t> HlsSegmentManager::GetDownloadRateAndSpeed()
 Status HlsSegmentManager::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("HLS SetCurrentBitRate: " PUBLIC_LOG_D32 ", type: %{public}d", bitRate, type_);
-    if (bitRate <= 0 && currentBitRate_ == 0) {
+    if ((bitRate <= 0 && currentBitRate_ == 0) || playlistDownloader_ == nullptr) {
         currentBitRate_ = -1; // -1
     } else {
         int32_t playlistBitrate = static_cast<int32_t>(playlistDownloader_->GetCurBitrate());
@@ -1979,7 +1961,7 @@ void HlsSegmentManager::UpdateWaterLineAbove()
     if (!isFirstFrameArrived_) {
         return;
     }
-    if (currentBitRate_ == 0) {
+    if (currentBitRate_ == 0 && playlistDownloader_ != nullptr) {
         currentBitRate_ = static_cast<int32_t>(playlistDownloader_->GetCurBitrate());
         MEDIA_LOG_I("HLS use playlist bitrate: " PUBLIC_LOG_D32 ", type: %{public}d", currentBitRate_, type_);
     }
@@ -2119,7 +2101,7 @@ uint64_t HlsSegmentManager::GetCrossTsBuffersize()
         return bufferSize;
     }
     bufferSize = cacheMediaBuffer_->GetBufferSize(readOffset_);
-    if (!backPlayList_.empty() && readTsIndex_ < backPlayList_.size() - 1) {
+    if (!backPlayList_.empty() && readTsIndex_ + 1 < backPlayList_.size()) {
         uint64_t nextTsOffset = SpliceOffset(readTsIndex_ + 1, 0);
         uint64_t nextTsBuffersize = cacheMediaBuffer_->GetBufferSize(nextTsOffset);
         bufferSize += nextTsBuffersize;
@@ -2487,7 +2469,9 @@ void HlsSegmentManager::Clone(const std::shared_ptr<HlsSegmentManager> &other)
     bufferingCbFunc_ = other->bufferingCbFunc_;
     segEventCb_ = other->segEventCb_;
     InitCacheWithDuration();
+    FALSE_RETURN_MSG(playlistDownloader_ != nullptr, "Clone no playlistDownloader_");
     playlistDownloader_->SetPlayListCallback(std::weak_ptr<PlayListChangeCallback>(weak_from_this()));
+    FALSE_RETURN_MSG(other->playlistDownloader_ != nullptr, "Clone no other playlistDownloader_");
     playlistDownloader_->Clone(other->playlistDownloader_);
 }
 
@@ -2528,6 +2512,7 @@ bool HlsSegmentManager::SelectAudio(int32_t streamId)
 
 bool HlsSegmentManager::StartAudioDownload(int32_t streamId)
 {
+    FALSE_RETURN_V_MSG(playlistDownloader_ != nullptr, false, "StartAudioDownload no playlistDownloader_");
     playlistDownloader_->SelectAudio(streamId);
     playlistDownloader_->UpdateAudio();
     return true;

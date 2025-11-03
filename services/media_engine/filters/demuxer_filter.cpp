@@ -180,6 +180,14 @@ Status DemuxerFilter::SetTranscoderMode()
     return status;
 }
 
+Status DemuxerFilter::SetPlayerMode()
+{
+    FALSE_RETURN_V(demuxer_ != nullptr, Status::ERROR_NULL_POINTER);
+    Status status = demuxer_->SetPlayerMode();
+    FALSE_RETURN_V(status == Status::OK, status);
+    return status;
+}
+
 Status DemuxerFilter::SetSkippingAudioDecAndEnc()
 {
     FALSE_RETURN_V(demuxer_ != nullptr, Status::ERROR_NULL_POINTER);

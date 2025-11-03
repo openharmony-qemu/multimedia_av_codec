@@ -421,7 +421,7 @@ int32_t VideoDecSyncSample::CreateWmv3Reader()
 {
     std::shared_ptr<Wmv3ReaderInfo> info = std::make_shared<Wmv3ReaderInfo>();
     info->inPath = inPath_;
-    info->isHdrStream = false;
+    info->isMainStream = false;
 
     wmv3Reader_ = std::make_shared<Wmv3Reader>();
     int32_t ret = wmv3Reader_->Init(info);

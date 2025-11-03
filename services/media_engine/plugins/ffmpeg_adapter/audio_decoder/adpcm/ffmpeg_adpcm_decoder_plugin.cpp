@@ -54,7 +54,7 @@ static const std::unordered_map<std::string_view, const char*> kAdpcmName2Ff = {
     { AVCodecCodecName::AUDIO_DECODER_ADPCM_DTK_NAME,        "adpcm_dtk"        },
     { AVCodecCodecName::AUDIO_DECODER_ADPCM_G722_NAME,       "g722"             },
     { AVCodecCodecName::AUDIO_DECODER_ADPCM_G726_NAME,       "g726"             },
-    { AVCodecCodecName::AUDIO_DECODER_ADPCM_G726LE_NAME,     "adpcm_g726le"     },
+    { AVCodecCodecName::AUDIO_DECODER_ADPCM_G726LE_NAME,     "g726le"     },
     { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_AMV_NAME,    "adpcm_ima_amv"    },
     { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_APC_NAME,    "adpcm_ima_apc"    },
     { AVCodecCodecName::AUDIO_DECODER_ADPCM_IMA_ISS_NAME,    "adpcm_ima_iss"    },

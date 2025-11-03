@@ -965,7 +965,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_READ_null, TestSize.Level1)
 
 HWTEST_F(HlsSegmentManagerUnitTest, GetSegmentOffset, TestSize.Level1)
 {
-    std::shared_ptr<HlsSegmentManager> downloader = 
+    std::shared_ptr<HlsSegmentManager> downloader =
         std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
     downloader->Init();
     downloader->GetSegmentOffset();

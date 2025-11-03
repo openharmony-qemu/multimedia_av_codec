@@ -230,7 +230,7 @@ const uint32_t ES_WMV3_NORMAL[] = {
 };
 const uint32_t ES_WMV3_NORMAL_LEN = sizeof(ES_WMV3_NORMAL) / sizeof(ES_WMV3_NORMAL[0]);
 
-const uint32_t ES_WMV3_HDR[] = {
+const uint32_t ES_WMV3_MAIN[] = {
     96567, 28373, 28624, 29924, 28891, 29772, 30359, 29766, 31042, 34215,
     30812, 33766, 32173, 23693, 29794, 29307, 31815, 31160, 32350, 32360,
     23243, 31439, 32176, 31647, 31064, 31641, 33174, 21929, 29088, 31025,
@@ -239,7 +239,7 @@ const uint32_t ES_WMV3_HDR[] = {
     28567, 29755, 31127, 29116, 51264, 31911, 31241, 28658, 30101, 30472,
     30589
 };
-const uint32_t ES_WMV3_HDR_LEN = sizeof(ES_WMV3_HDR) / sizeof(ES_WMV3_HDR[0]);
+const uint32_t ES_WMV3_MAIN_LEN = sizeof(ES_WMV3_MAIN) / sizeof(ES_WMV3_MAIN[0]);
 
 int32_t MpegReader::Init(const std::shared_ptr<MpegReaderInfo> &info)
 {
@@ -1293,7 +1293,7 @@ int32_t Wmv3Reader::Init(const std::shared_ptr<Wmv3ReaderInfo> &info)
     UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile != nullptr && inputFile->is_open(),
                                       AV_ERR_INVALID_VAL, "Open input file failed");
     wmv3UnitReader_= std::static_pointer_cast<Wmv3UnitReader>(std::make_shared<Wmv3MetaUnitReader>(
-                                      inputFile, info->isHdrStream));
+                                      inputFile, info->isMainStream));
     UNITTEST_CHECK_AND_RETURN_RET_LOG(wmv3UnitReader_, AV_ERR_INVALID_VAL, "wmv3 unit reader create failed");
     return AV_ERR_OK;
 }
@@ -1343,7 +1343,7 @@ int32_t Wmv3Reader::Wmv3MetaUnitReader::ReadWmv3Unit(uint8_t *bufferAddr, int32_
     UNITTEST_CHECK_AND_RETURN_RET_LOG(wmv3Unit_, AV_ERR_INVALID_VAL, "wmv3 unit buffer is nullptr");
     bufferSize = wmv3Unit_->size();
     memcpy_s(bufferAddr, bufferSize, wmv3Unit_->data(), bufferSize);
-    std::cout << "wuwenbin bufferSize = " << (bufferSize) << std::endl;
+    std::cout << "bufferSize = " << (bufferSize) << std::endl;
 
     if (!IsEOF()) {
         isEosFrame = false;
@@ -1398,10 +1398,10 @@ void Msvideo1Reader::Msvideo1MetaUnitReader::PrereadMsvideo1Unit()
     frameIndex_++;
 }
 
-Wmv3Reader::Wmv3MetaUnitReader::Wmv3MetaUnitReader(std::shared_ptr<std::ifstream> inputFile, bool isHdrStream)
+Wmv3Reader::Wmv3MetaUnitReader::Wmv3MetaUnitReader(std::shared_ptr<std::ifstream> inputFile, bool isMainStream)
 {
     inputFile_ = inputFile;
-    isHdrStream_ = isHdrStream;
+    isMainStream_ = isMainStream;
     prereadBuffer_ = std::make_unique<uint8_t []>(PREREAD_BUFFER_SIZE);
 
     wmv3Unit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
@@ -1415,16 +1415,16 @@ bool Wmv3Reader::Wmv3MetaUnitReader::IsEOS()
 
 bool Wmv3Reader::Wmv3MetaUnitReader::IsEOF()
 {
-    if (isHdrStream_) {
-        return frameIndex_ >= ES_WMV3_HDR_LEN;
+    if (isMainStream_) {
+        return frameIndex_ >= ES_WMV3_MAIN_LEN;
     }
     return frameIndex_ >= ES_WMV3_NORMAL_LEN;
 }
 
 uint32_t Wmv3Reader::Wmv3MetaUnitReader::GetFrameLenth(uint32_t index)
 {
-    if (isHdrStream_) {
-        return ES_WMV3_HDR[index];
+    if (isMainStream_) {
+        return ES_WMV3_MAIN[index];
     }
     return ES_WMV3_NORMAL[index];
 }
@@ -1433,7 +1433,7 @@ void Wmv3Reader::Wmv3MetaUnitReader::PrereadWmv3Unit()
 {
     CHECK_AND_RETURN_LOG(inputFile_ && inputFile_->is_open(), "Input file not open");
     CHECK_AND_RETURN_LOG(wmv3Unit_ != nullptr, "wmv3 unit buffer is nullptr");
-    CHECK_AND_RETURN_LOG(frameIndex_ < (isHdrStream_ ? ES_WMV3_HDR_LEN : ES_WMV3_NORMAL_LEN),
+    CHECK_AND_RETURN_LOG(frameIndex_ < (isMainStream_ ? ES_WMV3_MAIN_LEN : ES_WMV3_NORMAL_LEN),
         "All wmv3 frames have been read");
 
     uint32_t frameSize = GetFrameLenth(frameIndex_);

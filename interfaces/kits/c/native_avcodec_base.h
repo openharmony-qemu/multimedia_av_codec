@@ -1644,7 +1644,7 @@ typedef enum OH_VVCLevel {
  *
  * @since 22
  */
-typedef enum VC1Level {
+typedef enum OH_VC1Level {
     /** L0 level */
     VC1_LEVEL_L0 = 0,
     /** L1 level */

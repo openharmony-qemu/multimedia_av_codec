@@ -79,6 +79,7 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/InnerAPI/parser_test.cpp",
       "./src/api_test.cpp",
       "./src/avifunc_test.cpp",
+      "./src/adpcmfunc_test.cpp",
       "./src/func2_test.cpp",
       "./src/func3_test.cpp",
       "./src/func4_test.cpp",
@@ -91,6 +92,7 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/seek2_test.cpp",
       "./src/seek_test.cpp",
       "./src/wmafunc_test.cpp",
+      "./src/adpcm_ms_test.cpp",
 
       #"./src/net_test.cpp",
       #"./src/net2_test.cpp",
@@ -105,7 +107,8 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/3g2func_test.cpp",
       "./src/3gpfunc_test.cpp",
       "./src/m4vfunc_test.cpp",
-      "./src/wmvfunc_test.cpp"
+      "./src/wmvfunc_test.cpp",
+      "./src/alacfunc_test.cpp"
     ]
   }
 

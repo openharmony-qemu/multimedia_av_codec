@@ -25,6 +25,8 @@ using namespace testing::ext;
 namespace {
 constexpr uint32_t CHUNK_SIZE_UT = 16 * 1024;
 constexpr uint64_t MAX_CACHE_BUFFER_SIZE_UT = 19 * 1024 * 1024;
+constexpr uint32_t DELAY_AFTER_OPEN = 1 * 1000;
+constexpr uint32_t TEST_APP_UID = 100;
 const std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "ABC"},
     {"Referer", "DEF"},
@@ -78,8 +80,8 @@ std::shared_ptr<HlsMediaDownloader> OpenHlsDetachAudioVideo(std::string url = "t
 
     std::string testUrl = TEST_URI_PATH + url;
     downloader->Open(testUrl, httpHeader);
-    OSAL::SleepFor(1 * 1000);
-    downloader->SetAppUid(100);
+    OSAL::SleepFor(DELAY_AFTER_OPEN);
+    downloader->SetAppUid(TEST_APP_UID);
     
     return downloader;
 }
@@ -219,7 +221,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_OPEN_001, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsMediaDownloader>("", header_);
     downloader->Init();
-    downloader->SetAppUid(100);
+    downloader->SetAppUid(TEST_APP_UID);
     EXPECT_TRUE(downloader->videoSegManager_);
     downloader = nullptr;
 }
@@ -273,7 +275,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_READ_001, TestSize.Level1)
     readDataInfo.isEos_ = true;
     downloader->Read(buff, readDataInfo);
 
-    OSAL::SleepFor(1 * 1000);
+    OSAL::SleepFor(DELAY_AFTER_OPEN);
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -291,7 +293,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_READ_002, TestSize.Level1)
     readDataInfo.isEos_ = true;
     downloader->Read(buff, readDataInfo);
 
-    OSAL::SleepFor(1 * 1000);
+    OSAL::SleepFor(DELAY_AFTER_OPEN);
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_EQ(readDataInfo.realReadLength_, 0);
@@ -317,7 +319,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_READ_003, TestSize.Level1)
     downloader->bufferingFlag_ = 1;
     auto ret = downloader->Read(buff, readDataInfo);
 
-    OSAL::SleepFor(1 * 1000);
+    OSAL::SleepFor(DELAY_AFTER_OPEN);
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_EQ(ret, Status::ERROR_AGAIN);
@@ -347,7 +349,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_READ_004, TestSize.Level1)
     EXPECT_GT(readDataInfo.realReadLength_, 0);
     EXPECT_LE(readDataInfo.realReadLength_, len);
 
-    OSAL::SleepFor(1 * 1000);
+    OSAL::SleepFor(DELAY_AFTER_OPEN);
     downloader->Close(true);
     CloseHlsDetachAudioVideo(downloader);
 }
@@ -374,7 +376,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_001, TestSize.Level1)
     readDataInfo.isEos_ = true;
     downloader->Read(buff, readDataInfo);
     EXPECT_GE(readDataInfo.realReadLength_, 0);
-    OSAL::SleepFor(1 * 1000);
+    OSAL::SleepFor(DELAY_AFTER_OPEN);
 
     downloader->SetCurrentBitRate(-1, 0);
     downloader->SetCurrentBitRate(10, 0);
@@ -411,7 +413,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_002, TestSize.Level1)
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
     downloader->Read(buff, readDataInfo);
-    OSAL::SleepFor(1 * 1000);
+    OSAL::SleepFor(DELAY_AFTER_OPEN);
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -440,7 +442,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_003, TestSize.Level1)
     readDataInfo.isEos_ = true;
     downloader->Read(buff, readDataInfo);
     EXPECT_GE(readDataInfo.realReadLength_, 0);
-    OSAL::SleepFor(1 * 1000);
+    OSAL::SleepFor(DELAY_AFTER_OPEN);
 
     downloader->SetCurrentBitRate(-1, 0);
     downloader->SetCurrentBitRate(10, 0);
@@ -476,7 +478,7 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_CALLBACK_004, TestSize.Level1)
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
     downloader->Read(buff, readDataInfo);
-    OSAL::SleepFor(1 * 1000);
+    OSAL::SleepFor(DELAY_AFTER_OPEN);
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -1054,7 +1056,7 @@ HWTEST_F(HlsMediaDownloaderTest, SET_IS_TRIGGER_AUTO_MODE_001, TestSize.Level1)
 
     downloader->videoSegManager_ = nullptr;
     downloader->SetIsTriggerAutoMode(false);
-    downloader->SetAppUid(100);
+    downloader->SetAppUid(TEST_APP_UID);
     delete sourceCallback;
     sourceCallback = nullptr;
 }

@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <functional>
 #include <map>
+#include <set>
 #include "hls_tags.h"
 #include "playlist_downloader.h"
 #include "download/downloader.h"
@@ -171,6 +172,7 @@ struct M3U8VariantStream {
     std::list<std::shared_ptr<M3U8Media>> media_;
     uint32_t streamId_ {0};
     std::shared_ptr<M3U8Media> defaultMedia_;
+    bool isVideo_ {false};
 };
 
 struct M3U8MasterPlaylist {
@@ -191,8 +193,12 @@ struct M3U8MasterPlaylist {
     const std::shared_ptr<M3U8VariantStream> &currentStream);
     uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
     void SetInterruptState(bool isInterruptNeeded);
+    bool IsVideoStream(const std::string& codecs);
+    void ProcessAllTags(std::list<std::shared_ptr<Tag>>& tags);
+    void ProcessStreamInfoTag(std::shared_ptr<Tag> tag);
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
+    std::shared_ptr<M3U8VariantStream> firstVideoStream_;
     std::string uri_;
     std::string playList_;
     double duration_ {0};
@@ -214,6 +220,9 @@ struct M3U8MasterPlaylist {
     uint32_t defaultStreamId_ {0};
     StatusCallbackFunc monitorStatusCallback_;
     std::list<std::shared_ptr<M3U8Media>> mediaList_;
+    static inline const std::set<std::string> VIDEO_CODECS = {
+        "mp4v", "avc1", "hev1", "svc1", "mvc1", "mvc2", "sevc", "s263"
+    };
 };
 }
 }

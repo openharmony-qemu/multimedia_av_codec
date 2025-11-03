@@ -224,8 +224,8 @@ private:
     std::shared_ptr<std::ofstream> dumpDataOutputFs_;
     std::shared_ptr<std::ofstream> dumpDataInputFs_;
 
-    size_t inputBytesSum_;
-    size_t outputBytesSum_;
+    int64_t inputBytesSum_;
+    int64_t outputBytesSum_;
     size_t inputCount_;
     size_t outputCount_;
 };

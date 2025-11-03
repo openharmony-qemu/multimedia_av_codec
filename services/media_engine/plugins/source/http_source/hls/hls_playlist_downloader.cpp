@@ -198,7 +198,7 @@ void HlsPlayListDownloader::NotifyListChange()
         return;
     }
     auto files = currentVariant_->m3u8_->files_;
-    if (currentAudio_ != nullptr) {
+    if (currentAudio_ != nullptr && currentAudio_->m3u8_ != nullptr) {
         files = currentAudio_->m3u8_->files_;
     }
     auto playList = std::vector<PlayInfo>();
@@ -388,9 +388,16 @@ bool HlsPlayListDownloader::IsBitrateSame(uint32_t bitRate)
         }
         uint32_t tempGap = (item->bandWidth_ > bitRate) ? (item->bandWidth_ - bitRate) : (bitRate - item->bandWidth_);
         if (isFirstSelect || (tempGap < maxGap)) {
-            isFirstSelect = false;
-            maxGap = tempGap;
-            newVariant_ = item;
+            if (master_->firstVideoStream_ == nullptr) {
+                isFirstSelect = false;
+                maxGap = tempGap;
+                newVariant_ = item;
+            }
+            if (item->isVideo_) {
+                isFirstSelect = false;
+                maxGap = tempGap;
+                newVariant_ = item;
+            }
         }
     }
     if (currentVariant_ != nullptr && newVariant_->bandWidth_ == currentVariant_->bandWidth_) {
@@ -574,6 +581,9 @@ void HlsPlayListDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
     }
 
     for (const auto &audioStream : master_->mediaList_) {
+        if (audioStream == nullptr) {
+            continue;
+        }
         StreamInfo streamInfo;
         streamInfo.streamId = static_cast<int32_t>(audioStream->streamId_);
         streamInfo.type = StreamType::AUDIO;
@@ -586,6 +596,9 @@ void HlsPlayListDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
         }
     }
     for (const auto &stream : master_->variants_) {
+        if (stream == nullptr) {
+            continue;
+        }
         StreamInfo streamInfo;
         streamInfo.streamId = static_cast<int32_t>(stream->streamId_);
         streamInfo.type = StreamType::VIDEO;
@@ -655,7 +668,7 @@ std::shared_ptr<StreamInfo> HlsPlayListDownloader::GetStreamInfoById(int32_t str
 
 int32_t HlsPlayListDownloader::GetDefaultAudioStreamId()
 {
-    if (currentVariant_ == nullptr || master_ == nullptr) {
+    if (currentVariant_ == nullptr || currentVariant_->defaultMedia_ == nullptr || master_ == nullptr) {
         return -1;
     }
     auto streamId = currentVariant_->defaultMedia_->streamId_;
@@ -664,7 +677,8 @@ int32_t HlsPlayListDownloader::GetDefaultAudioStreamId()
 
 void HlsPlayListDownloader::SetDefaultAudio()
 {
-    if (master_ == nullptr) {
+    if (master_ == nullptr || master_->defaultVariant_ == nullptr ||
+        master_->defaultVariant_->defaultMedia_ == nullptr) {
         return;
     }
     std::lock_guard<std::mutex> lock(audioMutex_);
@@ -682,6 +696,9 @@ void HlsPlayListDownloader::SelectAudio(int32_t streamId)
         return;
     }
     for (const auto &audio : currentVariant_->media_) {
+        if (audio == nullptr) {
+            continue;
+        }
         if (streamId == audio->streamId_) {
             std::lock_guard<std::mutex> lock(audioMutex_);
             MEDIA_LOG_W("SelectAudio stream id: %{public}u", streamId);
@@ -715,9 +732,15 @@ void HlsPlayListDownloader::UpdateStreamInfo()
     videoStreamIds_.clear();
     audioStreamIds_.clear();
     for (const auto &stream: master_->variants_) {
+        if (stream == nullptr) {
+            continue;
+        }
         MEDIA_LOG_I("UpdateStreamInfo stream: %{public}u", stream->streamId_);
         videoStreamIds_.insert(stream->streamId_);
         for (const auto &media: stream->media_) {
+            if (media == nullptr) {
+                continue;
+            }
             MEDIA_LOG_I("UpdateStreamInfo stream: %{public}u, media: %{public}u", stream->streamId_, media->streamId_);
             audioStreamIds_.insert(media->streamId_);
             needAudioManager_ = true;

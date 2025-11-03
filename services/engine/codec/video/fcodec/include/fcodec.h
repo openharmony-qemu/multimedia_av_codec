@@ -32,7 +32,6 @@
 #include "block_queue.h"
 #include "codec_utils.h"
 #include "codecbase.h"
-#include "dma_swap.h"
 #include "media_description.h"
 #include "fsurface_memory.h"
 #include "surface_tools.h"
@@ -82,7 +81,7 @@ private:
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
         int32_t width_ = 0;
         int32_t height_ = 0;
-        bool hasSwapedOut_ = false;
+        std::atomic<bool> hasSwapedOut_ = false;
     };
 
     enum struct State : int32_t {
@@ -153,7 +152,6 @@ private:
     bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
     int32_t SwapInBuffers(bool isOutputBuffer);
-    bool disableDmaSwap_ = false;
     int32_t pid_ = -1;
 
     int32_t instanceId_ = -1;

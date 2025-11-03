@@ -650,6 +650,21 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
 {
     MEDIA_LOG_I("master playlist");
     auto tags = ParseEntries(playList_);
+    ProcessAllTags(tags);
+    BindVideoAudio();
+    if (defaultVariant_ == nullptr && !variants_.empty()) {
+        if (firstVideoStream_ != nullptr) {
+            defaultVariant_ = firstVideoStream_;
+        } else {
+            defaultVariant_ = variants_.back();
+        }
+    }
+    tags.clear();
+    ChooseStreamByResolution();
+}
+
+void M3U8MasterPlaylist::ProcessAllTags(std::list<std::shared_ptr<Tag>>& tags)
+{
     std::for_each(tags.begin(), tags.end(), [this] (std::shared_ptr<Tag>& tag) {
         switch (tag->GetType()) {
             case HlsTag::EXTXSESSIONKEY:
@@ -669,17 +684,11 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
                 break;
         }
     });
-    
-    BindVideoAudio();
-    if (defaultVariant_ == nullptr && !variants_.empty()) {
-        defaultVariant_ = variants_.front();
-    }
-    tags.clear();
-    ChooseStreamByResolution();
 }
 
 void M3U8MasterPlaylist::CreateVariantStream(const std::shared_ptr<Tag>& tag)
 {
+    FALSE_RETURN(tag != nullptr);
     auto item = std::static_pointer_cast<AttributesTag>(tag);
     auto uriAttribute = item->GetAttributeByName("URI");
     if (uriAttribute) {
@@ -710,15 +719,22 @@ void M3U8MasterPlaylist::CreateVariantStream(const std::shared_ptr<Tag>& tag)
             stream->audio_ = audioAttribute->QuotedString();
         }
         variants_.emplace_back(stream);
-        if (stream->bandWidth_ <= BAND_WIDTH_LIMIT) {
-            defaultVariant_ = stream; // play last stream
+        auto codecs = item->GetAttributeByName("CODECS");
+        if (codecs && IsVideoStream(codecs->QuotedString())) {
+            stream->isVideo_ = true;
+            if (firstVideoStream_ == nullptr) {
+                firstVideoStream_= stream;
+            }
+            if (stream->bandWidth_ <= BAND_WIDTH_LIMIT) {
+                defaultVariant_ = stream; // play last stream
+            }
         }
-        MEDIA_LOG_I("HLS Variant: %{public}s", uri.c_str());
     }
 }
 
 void M3U8MasterPlaylist::ParseMediaStreamInfo(std::shared_ptr<Tag> &tag)
 {
+    FALSE_RETURN(tag != nullptr);
     auto item = std::static_pointer_cast<AttributesTag>(tag);
     auto uriAttribute = item->GetAttributeByName("URI");
     if (uriAttribute) {
@@ -765,6 +781,10 @@ void M3U8MasterPlaylist::ParseMediaStreamInfo(std::shared_ptr<Tag> &tag)
 
 void M3U8MasterPlaylist::BindVideoAudio()
 {
+    if (mediaList_.empty()) {
+        MEDIA_LOG_I("BindVideoAudio, no audio");
+        return;
+    }
     for (auto &videoStream : variants_) {
         if (videoStream->audio_.empty()) {
             videoStream->media_.insert(videoStream->media_.end(), mediaList_.begin(), mediaList_.end());
@@ -778,7 +798,7 @@ void M3U8MasterPlaylist::BindVideoAudio()
             }
             videoStream->media_.push_back(audioStream);
         }
-        if (videoStream->media_.empty() && !mediaList_.empty()) {
+        if (videoStream->media_.empty()) {
             videoStream->media_.push_back(mediaList_.back());
         }
         GetDefaultAudioStream(videoStream);
@@ -815,6 +835,43 @@ void M3U8MasterPlaylist::GetDefaultAudioStream(std::shared_ptr<M3U8VariantStream
 
     videoStream->defaultMedia_ = videoStream->media_.back();
     MEDIA_LOG_I("GetDefaultAudioStream, last audio: %{public}u", videoStream->defaultMedia_->streamId_);
+}
+
+bool M3U8MasterPlaylist::IsVideoStream(const std::string& codecs)
+{
+    if (codecs.empty()) {
+        return false;
+    }
+    std::string lowerCodecs = codecs;
+    std::transform(lowerCodecs.begin(), lowerCodecs.end(), lowerCodecs.begin(), ::tolower);
+
+    std::vector<std::string> parts;
+    std::istringstream iss(lowerCodecs);
+    std::string token;
+
+    while (std::getline(iss, token, ',')) {
+        auto start = token.find_first_not_of(" \t\r\n");
+        auto end = token.find_last_not_of(" \t\r\n");
+        if (start == std::string::npos) {
+            continue;
+        }
+        token = token.substr(start, end - start + 1);
+
+        std::istringstream subIss(token);
+        std::string subToken;
+        while (std::getline(subIss, subToken, '.')) {
+            auto subStart = subToken.find_first_not_of(" \t\r\n");
+            auto subEnd = subToken.find_last_not_of(" \t\r\n");
+            if (subStart == std::string::npos) {
+                continue;
+            }
+            std::string targetCodecs = subToken.substr(subStart, subEnd - subStart + 1);
+            if (M3U8MasterPlaylist::VIDEO_CODECS.find(targetCodecs) != M3U8MasterPlaylist::VIDEO_CODECS.end()) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void M3U8MasterPlaylist::ChooseStreamByResolution()

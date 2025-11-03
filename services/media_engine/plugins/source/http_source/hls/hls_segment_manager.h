@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -39,18 +39,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-
-enum BufferingTimes : int32_t {
-    FIRST_TIMES = 1,
-    SECOND_TIMES = 2,
-};
-
-enum SLEEP_TIME : int32_t {
-    REQUEST_SLEEP_TIME = 5, // 5ms
-    BUFFERING_SLEEP_TIME = 10, // 10ms
-    CACHE_DATA_SLEEP_TIME = 100, // 100ms
-    BUFFERING_TIME_OUT = 1000, // 1s
-};
 
 struct HlsSegEvent {
     HlsSegmentType segType {HlsSegmentType::SEG_VIDEO};
@@ -261,7 +249,7 @@ private:
     uint64_t readBitrate_ {1 * 1024 * 1024}; // bps
     bool userDefinedBufferDuration_ {false};
     uint64_t expectDuration_ {0};
-    bool autoBufferSize_ {true}; // 默认为false
+    bool autoBufferSize_ {true};
     uint64_t lastCheckTime_ {0};
     uint32_t recordCount_ {0};
     uint64_t lastRecordTime_ {0};

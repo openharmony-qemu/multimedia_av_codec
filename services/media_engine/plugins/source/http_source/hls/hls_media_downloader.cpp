@@ -33,6 +33,12 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+
+namespace {
+    constexpr uint32_t AUDIO_BUFFERING_FLAG = 1;
+    constexpr uint32_t VIDEO_BUFFERING_FLAG = 2;
+}
+
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
 //   fragment --- one item in play list, download media data according to the fragment address.
 HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, bool userDefinedDuration,
@@ -87,7 +93,7 @@ void HlsMediaDownloader::OnMasterReady(bool needAudioManager, bool needSubTitleM
         MEDIA_LOG_I("already create audio seg manager.");
         return;
     }
-    MEDIA_LOG_I("HlsMediaDownloader OnMasterReady", FAKE_POINTER(this));
+    MEDIA_LOG_I("HlsMediaDownloader OnMasterReady: 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
     audioSegManager_ = std::make_shared<HlsSegmentManager>(videoSegManager_, HlsSegmentType::SEG_AUDIO);
     audioSegManager_->Init();
     audioSegManager_->Clone(videoSegManager_);
@@ -482,7 +488,8 @@ Status HlsMediaDownloader::SelectStream(int32_t streamId)
 
 void HlsMediaDownloader::PostAllEvent(HlsSegEvent event)
 {
-    FALSE_RETURN_MSG(callback_, "PostAllEvent no callback");
+    FALSE_RETURN_MSG(callback_, "PostAllEvent no callback, %{public}d", event.type);
+    MEDIA_LOG_I("PostAllEvent: %{public}d, msg: %{public}s", event.type, event.str.c_str());
     switch (event.type) {
         case PluginEventType::CLIENT_ERROR:
             callback_->OnEvent({event.type, event.networkError, event.str});

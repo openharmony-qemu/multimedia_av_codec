@@ -370,7 +370,7 @@ private:
 
 struct Wmv3ReaderInfo {
     std::string inPath;
-    bool isHdrStream = false;
+    bool isMainStream = false;
 };
 
 class Wmv3Reader : public DataProducerBase {
@@ -396,12 +396,12 @@ private:
         virtual bool IsEOF() = 0;
         std::unique_ptr<std::vector<uint8_t>> wmv3Unit_ = nullptr;
         std::shared_ptr<std::ifstream> inputFile_ = nullptr;
-        bool isHdrStream_ = false;
+        bool isMainStream_ = false;
     };
 
     class Wmv3MetaUnitReader : public Wmv3UnitReader {
     public:
-        explicit Wmv3MetaUnitReader(std::shared_ptr<std::ifstream> inputFile, bool isHdrStream);
+        explicit Wmv3MetaUnitReader(std::shared_ptr<std::ifstream> inputFile, bool isMainStream);
         int32_t ReadWmv3Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
         bool IsEOS() override;
         void PrereadFile() override;

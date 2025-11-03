@@ -1020,6 +1020,31 @@ HWTEST_F(CapsUnitTest, AVCaps_GetPreferredFrameRate_002, TestSize.Level1)
 #ifdef CODECLIST_CAPI_UNIT_TEST
 
 /**
+ * @tc.name: AVCaps_NormalFormatsCapi_001
+ * @tc.desc: supported formats normal get
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_NormalFormatsCapi_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+
+    const int32_t *pixFormats = nullptr;
+    uint32_t pixFormatNum = 0;
+    EXPECT_EQ(OH_AVCapability_GetVideoSupportedPixelFormats(cap, &pixFormats, &pixFormatNum), AV_ERR_OK);
+    EXPECT_NE(pixFormats, nullptr);
+    EXPECT_GT(pixFormatNum, 0);
+
+    const OH_NativeBuffer_Format *graphicFormats = nullptr;
+    uint32_t graphicFormatNum = 0;
+    EXPECT_EQ(OH_AVCapability_GetVideoSupportedNativeBufferFormats(cap, &graphicFormats, &graphicFormatNum),
+              AV_ERR_OK);
+    EXPECT_NE(graphicFormats, nullptr);
+    EXPECT_GT(graphicFormatNum, 0);
+}
+
+/**
  * @tc.name: AVCaps_NullvalToCapi_001
  * @tc.desc: AVCdecList GetCapi for not null val
  * @tc.type: FUNC
@@ -1051,10 +1076,13 @@ HWTEST_F(CapsUnitTest, AVCaps_NullvalToCapi_001, TestSize.Level1)
     EXPECT_EQ(pixFormats, nullptr);
     EXPECT_EQ(pixFormatNum, 0);
 
-    EXPECT_EQ(OH_AVCapability_GetVideoSupportedNativeBufferFormats(nullptr, &pixFormats, &pixFormatNum),
+    const OH_NativeBuffer_Format *graphicFormats = nullptr;
+    uint32_t graphicFormatNum = -1;
+    EXPECT_EQ(OH_AVCapability_GetVideoSupportedNativeBufferFormats(nullptr, &graphicFormats, &graphicFormatNum),
               AV_ERR_INVALID_VAL);
-    EXPECT_EQ(pixFormats, nullptr);
-    EXPECT_EQ(pixFormatNum, 0);
+    EXPECT_EQ(graphicFormats, nullptr);
+    EXPECT_EQ(graphicFormatNum, 0);
+
 
     const int32_t *profiles = nullptr;
     uint32_t profileNum = -1;
@@ -1424,6 +1452,13 @@ HWTEST_F(CapsUnitTest, AVCaps_MixedUse_002, TestSize.Level1)
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoWidthRange(cap, &range), AV_ERR_OK);
+
+    const OH_NativeBuffer_Format *graphicFormats = nullptr;
+    uint32_t graphicFormatNum = -1;
+    EXPECT_EQ(OH_AVCapability_GetVideoSupportedNativeBufferFormats(cap, &graphicFormats, &graphicFormatNum),
+              AV_ERR_INVALID_VAL);
+    EXPECT_EQ(graphicFormats, nullptr);
+    EXPECT_EQ(graphicFormatNum, 0);
 }
 
 /**
@@ -1545,8 +1580,8 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoWidthRangeForHeight_001, TestSize.Level1)
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoWidthRangeForHeight(cap, DEFAULT_HEIGHT, &range), AV_ERR_OK);
-    EXPECT_EQ(range.minVal, 2);
-    EXPECT_EQ(range.maxVal, 4096);
+    EXPECT_EQ(16, range.minVal);
+    EXPECT_EQ(1920, range.maxVal);
 }
 
 /**
@@ -1561,8 +1596,8 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoHeightRangeForWidth_001, TestSize.Level1)
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoHeightRangeForWidth(cap, DEFAULT_WIDTH, &range), AV_ERR_OK);
-    EXPECT_EQ(range.minVal, 2);
-    EXPECT_EQ(range.maxVal, 4096);
+    EXPECT_EQ(16, range.minVal);
+    EXPECT_EQ(1920, range.maxVal);
 }
 
 /**
@@ -1577,8 +1612,8 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoWidthRange_001, TestSize.Level1)
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoWidthRange(cap, &range), AV_ERR_OK);
-    EXPECT_EQ(range.minVal, 2);
-    EXPECT_EQ(range.maxVal, 4096);
+    EXPECT_EQ(16, range.minVal);
+    EXPECT_EQ(1920, range.maxVal);
 }
 
 /**
@@ -1593,8 +1628,8 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoHeightRange_001, TestSize.Level1)
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoHeightRange(cap, &range), AV_ERR_OK);
-    EXPECT_EQ(range.minVal, 2);
-    EXPECT_EQ(range.maxVal, 4096);
+    EXPECT_EQ(16, range.minVal);
+    EXPECT_EQ(1920, range.maxVal);
 }
 
 /**
@@ -1679,8 +1714,8 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoFrameRateRange_001, TestSize.Level1)
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoFrameRateRange(cap, &range), AV_ERR_OK);
-    EXPECT_EQ(range.minVal, 0);
-    EXPECT_EQ(range.maxVal, 60);
+    EXPECT_EQ(0, range.minVal);
+    EXPECT_EQ(30, range.maxVal);
 }
 
 /**
@@ -1695,8 +1730,8 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoFrameRateRangeForSize_001, TestSize.Level1
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoFrameRateRangeForSize(cap, DEFAULT_WIDTH, DEFAULT_HEIGHT, &range), AV_ERR_OK);;
-    EXPECT_EQ(range.minVal, 0);
-    EXPECT_EQ(range.maxVal, 60);
+    EXPECT_EQ(0, range.minVal);
+    EXPECT_EQ(30, range.maxVal);
 }
 
 /**
