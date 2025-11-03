@@ -177,7 +177,7 @@ private:
     uint8_t *scaleData_[AV_NUM_DATA_POINTERS] = {nullptr};
     int32_t scaleLineSize_[AV_NUM_DATA_POINTERS] = {0};
     std::shared_ptr<Scale> scale_ = nullptr;
-    std::atomic<bool> isConverted_ = false;
+    bool isConverted_ = false;
     bool isOutBufSetted_ = false;
     VideoPixelFormat outputPixelFmt_ = VideoPixelFormat::UNKNOWN;
     // Running

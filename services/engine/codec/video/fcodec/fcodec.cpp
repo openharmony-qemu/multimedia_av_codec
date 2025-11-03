@@ -1724,7 +1724,7 @@ int32_t FCodec::SwapInBuffers(bool isOutputBuffer)
 int32_t FCodec::FreezeBuffers(State curState)
 {
     CHECK_AND_RETURN_RET_LOGD(state_ != State::FROZEN, AVCS_ERR_OK, "FCodec had been frozen!");
-    std::lock_guard<std::mutex> sLock(outputMutex_);
+    std::lock_guard<std::mutex> sLock(surfaceMutex_);
     int32_t ret = SwapOutBuffers(INDEX_INPUT, curState);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Input buffers swap out failed!");
     ret = SwapOutBuffers(INDEX_OUTPUT, curState);
