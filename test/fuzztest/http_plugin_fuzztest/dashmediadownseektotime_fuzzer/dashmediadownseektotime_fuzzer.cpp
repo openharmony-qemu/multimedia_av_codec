@@ -59,7 +59,7 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
     playStrategy->duration = DEFAULT_DURATION;
     playStrategy->audioLanguage = "eng";
     playStrategy->subtitleLanguage = "en_GB";
-    mediaDownloader->SetPlayStrategy(playStrategy); 
+    mediaDownloader->SetPlayStrategy(playStrategy);
 
     mediaDownloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
@@ -145,7 +145,7 @@ bool DashMediaDownGetFuzzerTest(const uint8_t *data, size_t size)
     
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
-    for(auto u : streams) {
+    for (auto u : streams) {
         int32_t bitrate = GetData<int32_t>();
         int32_t streamid = u.streamId;
         mediaDownloader->SetDemuxerState(streamid);
@@ -171,14 +171,14 @@ bool DashMediaDownGetFuzzerTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    if (! InitServer()) {
+    if (!InitServer()) {
         cout << "Init server error" << endl;
         return -1;
     }
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownSeekToTimeFuzzerTest(data, size);
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownBitrateFuzzerTest(data, size);
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownGetFuzzerTest(data, size);
-    if (! CloseServer()) { 
+    if (!CloseServer()) { 
         cout << "Close server error" << endl;
         return -1;
     }
