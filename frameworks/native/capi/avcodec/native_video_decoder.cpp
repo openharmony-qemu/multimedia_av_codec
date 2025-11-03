@@ -815,8 +815,6 @@ OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySess
 
     CHECK_AND_RETURN_RET_LOG(sessionObject->sessionImpl_ != nullptr, AV_ERR_INVALID_VAL,
                              "sessionObject->impl is nullptr!");
-    AVCODEC_LOGD("DRM impl :0x%{public}06" PRIXPTR " Instances create",
-                 FAKE_POINTER(sessionObject->sessionImpl_.GetRefPtr()));
 
     int32_t ret = videoDecObj->videoDecoder_->SetDecryptConfig(
         sessionObject->sessionImpl_->GetMediaKeySessionServiceProxy(), secureVideoPath);
