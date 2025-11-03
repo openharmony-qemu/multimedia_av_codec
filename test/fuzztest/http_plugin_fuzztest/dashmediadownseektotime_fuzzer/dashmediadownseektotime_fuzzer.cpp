@@ -103,7 +103,7 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
     mediaDownloader->GetContentType();
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
-    for(auto u : streams) {
+    for (auto u : streams) {
         int32_t bitrate = GetData<int32_t>();
         int32_t streamid = u.streamId;
         mediaDownloader->SetDemuxerState(streamid);
@@ -178,7 +178,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownSeekToTimeFuzzerTest(data, size);
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownBitrateFuzzerTest(data, size);
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownGetFuzzerTest(data, size);
-    if (!CloseServer()) { 
+    if (!CloseServer()) {
         cout << "Close server error" << endl;
         return -1;
     }
