@@ -47,7 +47,7 @@ bool DashMediaDownloader2FuzzTest(const uint8_t *data, size_t size)
     }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
-    std::string testUrl = MPD_MULTI_AUDIO_SUB;    
+    std::string testUrl = MPD_MULTI_AUDIO_SUB;
     std::map<std::string, std::string> httpHeader = {
         {"User-Agent", "ABC"},
         {"Referer", "DEF"},
@@ -99,12 +99,12 @@ bool DashMediaDownloader2FuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    if (! InitServer()) {
+    if (!InitServer()) {
         cout << "Init server error" << endl;
         return -1;
     }
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownloader2FuzzTest(data, size);
-    if (! CloseServer()) {
+    if (!CloseServer()) {
         cout << "Close server error" << endl;
         return -1;
     }
