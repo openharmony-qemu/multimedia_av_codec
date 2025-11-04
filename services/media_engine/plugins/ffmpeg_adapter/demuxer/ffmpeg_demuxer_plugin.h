@@ -363,7 +363,7 @@ private:
     std::atomic<bool> isAsyncReadThreadPrioritySet_ = false;
     void UpdateAsyncReadThreadPriority();
     Status InitFileFirstFrameInfo(AVPacket *pkt);
-    AVPacket *FileFirstFrame_ {nullptr};
+    AVPacket *fileFirstFrame_ {nullptr};
 };
 
 typedef struct DtsFinder {
