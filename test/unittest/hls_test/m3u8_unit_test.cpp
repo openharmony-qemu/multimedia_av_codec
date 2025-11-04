@@ -632,7 +632,7 @@ HWTEST_F(M3u8UnitTest, IsVideoStream_001, TestSize.Level1)
     EXPECT_EQ(master->IsVideoStream(codecs), true);
     codecs = "";
     EXPECT_EQ(master->IsVideoStream(codecs), false);
-    codecs = "  ,  ,  ";
+    codecs = "   ,   ,   ";
     EXPECT_EQ(master->IsVideoStream(codecs), false);
     codecs = "  ,  .  ,  .  ";
     EXPECT_EQ(master->IsVideoStream(codecs), false);
