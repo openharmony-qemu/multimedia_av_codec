@@ -48,8 +48,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
             buf.data(),
             static_cast<uint32_t>(size),
             candidates[i],
-            table
-        );
+            table);
         table.clear(); // 重置容器，反复覆盖 push_back 路径
     }
     return 0;
