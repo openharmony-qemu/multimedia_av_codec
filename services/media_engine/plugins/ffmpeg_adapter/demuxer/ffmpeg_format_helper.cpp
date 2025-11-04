@@ -839,6 +839,8 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
             fileType = FileType::FT_3G2;
         } else if (StartWith(type->value, "3gp")) {
             fileType = FileType::FT_3GP;
+        } else if (StartWith(type->value, "dat")) {
+            fileType = FileType::DAT;
         } else if (StartWith(type->value, "qt") || StartWith(type->value, "QT")) {
             fileType = FileType::MOV;
         } else {
