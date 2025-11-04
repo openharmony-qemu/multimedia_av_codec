@@ -66,7 +66,7 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
 bool DemuxerFuzzTest(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider fdp(data, size);
-    if (!CheckDataValidity(&fdp, size) {
+    if (!CheckDataValidity(&fdp, size)) {
         return false;
     }
     struct Params params;
