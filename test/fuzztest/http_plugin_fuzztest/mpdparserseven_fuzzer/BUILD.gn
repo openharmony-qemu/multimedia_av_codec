@@ -111,62 +111,6 @@ ohos_fuzztest("MpdParserSevenFuzzTest") {
   ]
 }
 
-action("lpm_mpd_util_proto_gen") {
-  script = "//out/generic_generic_arm_64only/general_all_phone_standard/clang_x64/thirdparty/protobuf/protoc"
-
-  args = [
-    # 正确设置proto文件的搜索路径。
-    # rebase_path(".", root_build_dir) 会获取当前BUILD.gn文件所在目录
-    # 相对于构建根目录的路径。
-    "--proto_path=" + rebase_path(".", root_build_dir),
-    "--cpp_out=" + rebase_path(target_gen_dir, root_build_dir),
-    "mpd_util_input.proto",
-  ]
-
-  inputs = [ "mpd_util_input.proto" ]
-  outputs = [
-    "$target_gen_dir/mpd_util_input.pb.cc",
-    "$target_gen_dir/mpd_util_input.pb.h",
-    ]
-}
-
-ohos_fuzztest("dash_mpd_util_lpm_fuzzer") {
-  module_out_path = "player_framework/stream_player_framework"
-  testonly = true
-  configs = [ ":fuzz_config" ]
-
-  # 包含生成的头文件
-  include_dirs = [
-    target_gen_dir,
-  ]
-
-  sources = dash_sources + [
-    "dash_mpd_util_lpm_fuzzer.cpp"
-  ]
-  sources += get_target_outputs(":lpm_mpd_util_proto_gen")
-
-  deps = [
-    ":lpm_mpd_util_proto_gen", # 依赖proto生成action
-  ]
-
-  external_deps = [
-    "c_utils:utils",
-    "curl:curl_shared",
-    "graphic_surface:surface",
-    "googletest:gmock",
-    "hilog:libhilog",
-    "init:libbegetutil",
-    "ipc:ipc_single",
-    "libxml2:libxml2",
-    "media_foundation:media_foundation",
-    "netmanager_base:net_conn_manager_if",
-    "openssl:libcrypto_shared",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
-    "protobuf:protobuf_static",
-  ]
-}
-
 ########################## dash utils fuzz ###########################
 
 ############################## SIDX解析器fuzz测试 ##############################
