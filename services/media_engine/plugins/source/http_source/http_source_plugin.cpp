@@ -630,7 +630,7 @@ uint64_t HttpSourcePlugin::GetMemorySize()
 
 std::string HttpSourcePlugin::GetCurUrl()
 {
-    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, nullptr, "downloader_ is nullptr");
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, "", "downloader_ is nullptr");
     return downloader_->GetCurUrl();
 }
 
