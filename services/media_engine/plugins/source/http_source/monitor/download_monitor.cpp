@@ -150,10 +150,9 @@ Status DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     return ret;
 }
 
-bool DownloadMonitor::SeekToPos(int64_t offset, bool& isSeekHIt)
+bool DownloadMonitor::SeekToPos(int64_t offset, bool& isSeekHit)
 {
     isPlaying_ = true;
-    bool isSeekHit = false;
     bool res = downloader_->SeekToPos(offset, isSeekHit);
     if (!isSeekHit) {
         AutoLock lock(taskMutex_);
