@@ -1632,20 +1632,17 @@ HWTEST_F(HlsMediaDownloaderUnitTest, REMOVE_FMP4_PADDING_DATA_001, TestSize.Leve
     readDataInfo.streamId_ = 1;
     readDataInfo.wantReadLength_ = 100;
     readDataInfo.realReadLength_ = 16;
-    unsigned int originRealReadLength = 16;
     downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
-    EXPECT_EQ(readDataInfo.realReadLength_, originRealReadLength);
+    EXPECT_EQ(readDataInfo.realReadLength_, 16);
     downloader->keyLen_ = 1;
     downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
     EXPECT_NE(readDataInfo.realReadLength_, 16);
     readDataInfo.realReadLength_ = 0;
-    originRealReadLength = 0;
     downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
-    EXPECT_EQ(readDataInfo.realReadLength_, originRealReadLength);
+    EXPECT_EQ(readDataInfo.realReadLength_, 0);
     readDataInfo.realReadLength_ = 5;
-    originRealReadLength = 5
     downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
-    EXPECT_EQ(readDataInfo.realReadLength_, originRealReadLength);
+    EXPECT_EQ(readDataInfo.realReadLength_, 5);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, READ_HEADER_DATA_001, TestSize.Level1)
