@@ -93,6 +93,7 @@ public:
         const int32_t probSize) override;
     Status BoostReadThreadPriority() override;
     Status SetAVReadPacketStopState(bool state) override;
+    Status SeekToFirstFrame() override;
 private:
     enum ThreadState : unsigned int {
         NOT_STARTED,
@@ -361,6 +362,8 @@ private:
 
     std::atomic<bool> isAsyncReadThreadPrioritySet_ = false;
     void UpdateAsyncReadThreadPriority();
+    Status InitFileFirstFrameInfo(AVPacket *pkt);
+    AVPacket *FileFirstFrame_ {nullptr};
 };
 
 typedef struct DtsFinder {

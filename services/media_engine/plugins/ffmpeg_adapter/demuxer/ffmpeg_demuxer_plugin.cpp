@@ -2526,6 +2526,19 @@ void FFmpegDemuxerPlugin::SetInterruptState(bool isInterruptNeeded)
     isInterruptNeeded_ = isInterruptNeeded;
 }
 
+Status FFmpegDemuxerPlugin::InitFileFirstFrameInfo(AVPacket *pkt)
+{
+    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "AVPacket is nullptr");
+    FALSE_RETURN_V_MSG_E(FileFirstFrame_ == nullptr, Status::OK, "FileFirstFrame_ has been initialized");
+    FileFirstFrame_ = av_packet_alloc();
+    FALSE_RETURN_V_MSG_E(FileFirstFrame_ != nullptr, Status::ERROR_NO_MEMORY, "av_packet_alloc failed");
+    av_init_packet(FileFirstFrame_);
+    FileFirstFrame_->stream_index = pkt->stream_index;
+    FileFirstFrame_->pts = pkt->pts;
+    FileFirstFrame_->dts = pkt->dts;
+    return Status::OK;
+}
+
 namespace { // plugin set
 
 int IsStartWithID3(const uint8_t *buf, const char *tagName)
