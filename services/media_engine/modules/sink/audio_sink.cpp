@@ -1059,7 +1059,7 @@ void AudioSink::GetAvailableOutputBuffers()
         if (ret != Status::OK || filledInputBuffer == nullptr) {
             break;
         }
-        if (filledInputBuffer->memory_ == nullptr || filledInputBuffer->pts_ < 0) {
+        if (filledInputBuffer->memory_ == nullptr || filledInputBuffer->pts_ < 0 || isEosBuffer_) {
             inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
             continue;
         }
