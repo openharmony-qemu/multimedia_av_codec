@@ -322,9 +322,16 @@ bool HlsPlayListDownloader::IsBitrateSame(uint32_t bitRate)
         }
         uint32_t tempGap = (item->bandWidth_ > bitRate) ? (item->bandWidth_ - bitRate) : (bitRate - item->bandWidth_);
         if (isFirstSelect || (tempGap < maxGap)) {
-            isFirstSelect = false;
-            maxGap = tempGap;
-            newVariant_ = item;
+            if (master_->firstVideoStream_ == nullptr) {
+                isFirstSelect = false;
+                maxGap = tempGap;
+                newVariant_ = item;
+            }
+            if (item->isVideo_) {
+                isFirstSelect = false;
+                maxGap = tempGap;
+                newVariant_ = item;
+            }
         }
     }
     if (currentVariant_ != nullptr && newVariant_->bandWidth_ == currentVariant_->bandWidth_) {

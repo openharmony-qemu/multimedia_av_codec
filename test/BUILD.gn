@@ -420,9 +420,10 @@ group("av_codec_fuzz_test") {
       "fuzztest/http_plugin_fuzztest/httpdownloader_fuzzer:HttpDownloaderFuzzTest",
       "fuzztest/http_plugin_fuzztest/httpdownloaderopen_fuzzer:HttpDownloaderOpenFuzzTest",
       "fuzztest/dashmediadownappuid_fuzzer:DashMediaDownAppUidFuzzTest",
-      "fuzztest/dashmediadownseektotime_fuzzer:DashMediaDownSeekToTimeFuzzTest",
+      "fuzztest/http_plugin_fuzztest/dashmediadownseektotime_fuzzer:DashMediaDownSeekToTimeFuzzTest",
       "fuzztest/dashmpddownfinished_fuzzer:DashMpdDownFinishedFuzzTest",
       "fuzztest/hlstagsattronly_fuzzer:HlsTagsAttrOnlyFuzzTest",
+      "fuzztest/http_plugin_fuzztest/dashmediadownloader2_fuzzer:DashMediaDownloader2FuzzTest",
       "fuzztest/http_plugin_fuzztest/mpdparserseven_fuzzer:MpdParserSevenFuzzTest",
     ]
     if(av_codec_enable_codec_eac3) {

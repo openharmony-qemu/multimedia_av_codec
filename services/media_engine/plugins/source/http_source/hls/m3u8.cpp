@@ -645,50 +645,110 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
 {
     MEDIA_LOG_I("master playlist");
     auto tags = ParseEntries(playList_);
+    ProcessAllTags(tags);
+    if (defaultVariant_ == nullptr && !variants_.empty()) {
+        if (firstVideoStream_ != nullptr) {
+            defaultVariant_ = firstVideoStream_;
+        } else {
+            defaultVariant_ = variants_.back();
+        }
+    }
+    tags.clear();
+    ChooseStreamByResolution();
+}
+
+void M3U8MasterPlaylist::ProcessAllTags(std::list<std::shared_ptr<Tag>>& tags)
+{
     std::for_each(tags.begin(), tags.end(), [this] (std::shared_ptr<Tag>& tag) {
         switch (tag->GetType()) {
             case HlsTag::EXTXSESSIONKEY:
                 DownloadSessionKey(tag);
                 break;
             case HlsTag::EXTXSTREAMINF:
-            case HlsTag::EXTXIFRAMESTREAMINF: {
-                auto item = std::static_pointer_cast<AttributesTag>(tag);
-                auto uriAttribute = item->GetAttributeByName("URI");
-                if (uriAttribute) {
-                    auto name = uriAttribute->QuotedString();
-                    auto uri = UriJoin(uri_, name);
-                    auto stream = std::make_shared<M3U8VariantStream>(name, uri, std::make_shared<M3U8>(uri, name,
-                                                                      monitorStatusCallback_));
-                    FALSE_RETURN_MSG(stream != nullptr, "UpdateMasterPlaylist memory not enough");
-                    stream->streamId_ = ++defaultStreamId_;
-                    if (tag->GetType() == HlsTag::EXTXIFRAMESTREAMINF) {
-                        stream->iframe_ = true;
-                    }
-                    auto bandWidthAttribute = item->GetAttributeByName("BANDWIDTH");
-                    if (bandWidthAttribute) {
-                        stream->bandWidth_ = bandWidthAttribute->Decimal();
-                    }
-                    auto resolutionAttribute = item->GetAttributeByName("RESOLUTION");
-                    if (resolutionAttribute) {
-                        stream->width_ = resolutionAttribute->GetResolution().first;
-                        stream->height_ = resolutionAttribute->GetResolution().second;
-                    }
-                    variants_.emplace_back(stream);
-                    if (stream->bandWidth_ <= BAND_WIDTH_LIMIT) {
-                        defaultVariant_ = stream; // play last stream
-                    }
-                }
+            case HlsTag::EXTXIFRAMESTREAMINF:
+                ProcessStreamInfoTag(tag);
                 break;
-            }
             default:
                 break;
         }
     });
-    if (defaultVariant_ == nullptr && !variants_.empty()) {
-        defaultVariant_ = variants_.front();
+}
+
+void M3U8MasterPlaylist::ProcessStreamInfoTag(std::shared_ptr<Tag> tag)
+{
+    auto item = std::static_pointer_cast<AttributesTag>(tag);
+    auto uriAttribute = item->GetAttributeByName("URI");
+    if (uriAttribute) {
+        auto name = uriAttribute->QuotedString();
+        auto uri = UriJoin(uri_, name);
+        auto stream = std::make_shared<M3U8VariantStream>(name, uri, std::make_shared<M3U8>(uri, name,
+                                                            monitorStatusCallback_));
+        FALSE_RETURN_MSG(stream != nullptr, "UpdateMasterPlaylist memory not enough");
+        stream->streamId_ = ++defaultStreamId_;
+        if (tag->GetType() == HlsTag::EXTXIFRAMESTREAMINF) {
+            stream->iframe_ = true;
+        }
+        auto bandWidthAttribute = item->GetAttributeByName("BANDWIDTH");
+        if (bandWidthAttribute) {
+            stream->bandWidth_ = bandWidthAttribute->Decimal();
+        }
+        auto resolutionAttribute = item->GetAttributeByName("RESOLUTION");
+        if (resolutionAttribute) {
+            stream->width_ = resolutionAttribute->GetResolution().first;
+            stream->height_ = resolutionAttribute->GetResolution().second;
+        }
+        variants_.emplace_back(stream);
+        auto codecs = item->GetAttributeByName("CODECS");
+        if (codecs) {
+            auto codecsString = codecs->QuotedString();
+            if (IsVideoStream(codecsString)) {
+                stream->isVideo_ = true;
+            }
+        }
+        if (stream->isVideo_ && firstVideoStream_ == nullptr) {
+            firstVideoStream_ = stream;
+        }
+        if (stream->bandWidth_ <= BAND_WIDTH_LIMIT && stream->isVideo_) {
+            defaultVariant_ = stream; // play last stream
+        }
     }
-    tags.clear();
-    ChooseStreamByResolution();
+}
+
+bool M3U8MasterPlaylist::IsVideoStream(const std::string& codecs)
+{
+    if (codecs.empty()) {
+        return false;
+    }
+    std::string lowerCodecs = codecs;
+    std::transform(lowerCodecs.begin(), lowerCodecs.end(), lowerCodecs.begin(), ::tolower);
+
+    std::vector<std::string> parts;
+    std::istringstream iss(lowerCodecs);
+    std::string token;
+
+    while (std::getline(iss, token, ',')) {
+        auto start = token.find_first_not_of(" \t\r\n");
+        auto end = token.find_last_not_of(" \t\r\n");
+        if (start == std::string::npos) {
+            continue;
+        }
+        token = token.substr(start, end - start + 1);
+
+        std::istringstream subIss(token);
+        std::string subToken;
+        while (std::getline(subIss, subToken, '.')) {
+            auto subStart = subToken.find_first_not_of(" \t\r\n");
+            auto subEnd = subToken.find_last_not_of(" \t\r\n");
+            if (subStart == std::string::npos) {
+                continue;
+            }
+            std::string targetCodecs = subToken.substr(subStart, subEnd - subStart + 1);
+            if (M3U8MasterPlaylist::VIDEO_CODECS.find(targetCodecs) != M3U8MasterPlaylist::VIDEO_CODECS.end()) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void M3U8MasterPlaylist::ChooseStreamByResolution()
