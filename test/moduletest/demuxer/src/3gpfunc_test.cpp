@@ -52,6 +52,14 @@ protected:
     const char *INP_URI_2 = "http://127.0.0.1:46666/3gp_h264_high@level6__940_400_aac_31.3gp";
     const char *INP_DIR_3 = "/data/test/media/3gp_h264_high@level6__940_400_aac_13.3gp";
     const char *INP_URI_3 = "http://127.0.0.1:46666/3gp_h264_high@level6__940_400_aac_13.3gp";
+    const char *INP_DIR_4 = "/data/test/media/3gp_mpeg4_aac_high@level6__940_400_aac_2.3gp";
+    const char *INP_URI_4 = "http://127.0.0.1:46666/3gp_mpeg4_aac_high@level6__940_400_aac_2.3gp";
+    const char *INP_DIR_5 = "/data/test/media/3gp_h263_aac_high@level6__940_400_aac_2.3gp";
+    const char *INP_URI_5 = "http://127.0.0.1:46666/3gp_h263_aac_high@level6__940_400_aac_2.3gp";
+    const char *INP_DIR_7 = "/data/test/media/3gp_amr_wb.3gp";
+    const char *INP_URI_7 = "http://127.0.0.1:46666/3gp_amr_wb.3gp";
+    const char *INP_DIR_8 = "/data/test/media/3gp_amr_nb.3gp";
+    const char *INP_URI_8 = "http://127.0.0.1:46666/3gp_amr_nb.3gp";
 };
 
 static unique_ptr<FileServerDemo> server = nullptr;
@@ -69,6 +77,7 @@ static int32_t g_width = 3840;
 static int32_t g_height = 2160;
 static constexpr int32_t TWO = 2;
 static constexpr int32_t FOUR = 4;
+static constexpr int32_t ONE = 1;
 
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 void Demuxer3gpFuncNdkTest::SetUpTestCase()
@@ -231,12 +240,18 @@ static void SetVideoValue(OH_AVCodecBufferAttr attr, bool &videoIsEnd, int &vide
     }
 }
 
-static void DemuxerResult()
+static void DestroyTrackFormat()
+{
+    OH_AVFormat_Destroy(trackFormat);
+    trackFormat = nullptr;
+}
+
+static void DemuxerResult(int trackCount)
 {
     int tarckType = 0;
     OH_AVCodecBufferAttr attr;
-    bool audioIsEnd = false;
-    bool videoIsEnd = false;
+    bool audioIsEnd = true;
+    bool videoIsEnd = true;
     int audioFrame = 0;
     int videoFrame = 0;
     ASSERT_NE(source, nullptr);
@@ -244,19 +259,32 @@ static void DemuxerResult()
     ASSERT_NE(demuxer, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    ASSERT_EQ(g_trackCount, TWO);
+    ASSERT_EQ(g_trackCount, trackCount);
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
     int aKeyCount = 0;
     int vKeyCount = 0;
+
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        trackFormat = OH_AVSource_GetTrackFormat(source, index);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        DestroyTrackFormat();
+
+        if (tarckType == MEDIA_TYPE_AUD) {
+            audioIsEnd = false;
+        } else if (tarckType == MEDIA_TYPE_VID) {
+            videoIsEnd = false;
+        }
+    }
+
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            OH_AVFormat_Destroy(trackFormat);
-            trackFormat = nullptr;
+            DestroyTrackFormat();
             if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
@@ -556,7 +584,7 @@ HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_FUNC_URI_1400, TestSize.Level0)
 HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_FUNC_1600, TestSize.Level3)
 {
     CreateFdSource(INP_DIR_1);
-    DemuxerResult();
+    DemuxerResult(TWO);
 }
 
 /**
@@ -567,7 +595,7 @@ HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_FUNC_1600, TestSize.Level3)
 HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_FUNC_URI_1600, TestSize.Level3)
 {
     CreateUriSource(INP_URI_1);
-    DemuxerResult();
+    DemuxerResult(TWO);
 }
 
 /**
@@ -759,4 +787,207 @@ HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_FUNC_4600, TestSize.Level2)
     ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
     close(g_fd);
     g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_FUNC_4700
+ * @tc.name      : demuxer 3gp, Seek to the time when there is no I frame, next mode, Local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_FUNC_4700, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_1);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    ASSERT_NE(demuxer, nullptr);
+    int64_t pts = 9930;
+    ret = OH_AVDemuxer_SeekToTime(demuxer, pts, SEEK_MODE_NEXT_SYNC);
+    ASSERT_EQ(ret, AV_ERR_UNKNOWN);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_FUNC_4800
+ * @tc.name      : demuxer 3gp, demuxer 3gp_mpeg4_aac_high@level6__940_400_aac_2 basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_FUNC_4800, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_4);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_URI_FUNC_4800
+ * @tc.name      : demuxer 3gp, demuxer 3gp_mpeg4_aac_high@level6__940_400_aac_2 basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_URI_FUNC_4800, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_4);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_FUNC_4900
+ * @tc.name      : demuxer 3gp, demuxer 3gp_mpeg4_aac_high@level6__940_400_aac_2 seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_FUNC_4900, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_4, SEEK_MODE_PREVIOUS_SYNC, 0, 1116, 2185};
+    CreateFdSource(INP_DIR_4);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_URI_FUNC_4900
+ * @tc.name      : demuxer 3gp, demuxer 3gp_mpeg4_aac_high@level6__940_400_aac_2 seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_URI_FUNC_4900, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_4, SEEK_MODE_PREVIOUS_SYNC, 0, 1116, 2185};
+    CreateUriSource(INP_URI_4);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_FUNC_5000
+ * @tc.name      : demuxer 3gp, demuxer 3gp_h263_aac_high@level6__940_400_aac_2 basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_FUNC_5000, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_5);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_URI_FUNC_5000
+ * @tc.name      : demuxer 3gp, demuxer 3gp_h263_aac_high@level6__940_400_aac_2 basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_URI_FUNC_5000, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_5);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_FUNC_5100
+ * @tc.name      : demuxer 3gp, demuxer 3gp_h263_aac_high@level6__940_400_aac_2 seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_FUNC_5100, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_5, SEEK_MODE_PREVIOUS_SYNC, 0, 300, 216};
+    CreateFdSource(INP_DIR_5);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_URI_FUNC_5100
+ * @tc.name      : demuxer 3gp, demuxer 3gp_h263_aac_high@level6__940_400_aac_2 seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_URI_FUNC_5100, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_5, SEEK_MODE_PREVIOUS_SYNC, 0, 300, 216};
+    CreateUriSource(INP_URI_5);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_FUNC_5400
+ * @tc.name      : demuxer 3gp, demuxer 3gp_amr_wb basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_FUNC_5400, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_7);
+    DemuxerResult(ONE);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_URI_FUNC_5400
+ * @tc.name      : demuxer 3gp, demuxer 3gp_amr_wb basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_URI_FUNC_5400, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_7);
+    DemuxerResult(ONE);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_FUNC_5500
+ * @tc.name      : demuxer 3gp, demuxer 3gp_amr_wb seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_FUNC_5500, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_7, SEEK_MODE_PREVIOUS_SYNC, 0, 0, 2331};
+    CreateFdSource(INP_DIR_7);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_URI_FUNC_5500
+ * @tc.name      : demuxer 3gp, demuxer 3gp_amr_wb seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_URI_FUNC_5500, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_7, SEEK_MODE_PREVIOUS_SYNC, 0, 0, 2331};
+    CreateUriSource(INP_URI_7);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_FUNC_5600
+ * @tc.name      : demuxer 3gp, demuxer 3gp_amr_nb basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_FUNC_5600, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_8);
+    DemuxerResult(ONE);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_URI_FUNC_5600
+ * @tc.name      : demuxer 3gp, demuxer 3gp_amr_nb basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_URI_FUNC_5600, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_8);
+    DemuxerResult(ONE);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_FUNC_5700
+ * @tc.name      : demuxer 3gp, demuxer 3gp_amr_nb seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_FUNC_5700, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_8, SEEK_MODE_PREVIOUS_SYNC, 0, 0, 2331};
+    CreateFdSource(INP_DIR_8);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_3GP_URI_FUNC_5700
+ * @tc.name      : demuxer 3gp, demuxer 3gp_amr_nb seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3gpFuncNdkTest, DEMUXER_3GP_URI_FUNC_5700, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_8, SEEK_MODE_PREVIOUS_SYNC, 0, 0, 2331};
+    CreateUriSource(INP_URI_8);
+    CheckSeekMode(fileTest1);
 }

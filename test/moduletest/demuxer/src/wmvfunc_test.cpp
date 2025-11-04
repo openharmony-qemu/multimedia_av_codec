@@ -52,6 +52,18 @@ protected:
     const char *INP_URI_2 = "http://127.0.0.1:46666/wmv_h264_main@level99_720_380_eac3_31.wmv";
     const char *INP_DIR_3 = "/data/test/media/wmv_h264_main@level99_720_380_eac3_13.wmv";
     const char *INP_URI_3 = "http://127.0.0.1:46666/wmv_h264_main@level99_720_380_eac3_13.wmv";
+    const char *INP_DIR_4 = "/data/test/media/wmv_wmv3_wmapro.wmv";
+    const char *INP_URI_4 = "http://127.0.0.1:46666/wmv_wmv3_wmapro.wmv";
+    const char *INP_DIR_5 = "/data/test/media/wmv_wmv2_wma.wmv";
+    const char *INP_URI_5 = "http://127.0.0.1:46666/wmv_wmv2_wma.wmv";
+    const char *INP_DIR_6 = "/data/test/media/wmv_wmv2_main@level99_720_380_eac3_2.wmv";
+    const char *INP_URI_6 = "http://127.0.0.1:46666/wmv_wmv2_main@level99_720_380_eac3_2.wmv";
+    const char *INP_DIR_7 = "/data/test/media/wmv_wmv1_main@level99_720_380_eac3_2.wmv";
+    const char *INP_URI_7 = "http://127.0.0.1:46666/wmv_wmv1_main@level99_720_380_eac3_2.wmv";
+    const char *INP_DIR_8 = "/data/test/media/wmv_h264_wmav2.wmv";
+    const char *INP_URI_8 = "http://127.0.0.1:46666/wmv_h264_wmav2.wmv";
+    const char *INP_DIR_9 = "/data/test/media/wmv_h264_wmav1.wmv";
+    const char *INP_URI_9 = "http://127.0.0.1:46666/wmv_h264_wmav1.wmv";
 };
 
 static unique_ptr<FileServerDemo> server = nullptr;
@@ -69,6 +81,7 @@ static int32_t g_width = 3840;
 static int32_t g_height = 2160;
 static constexpr int32_t ONE = 1;
 static constexpr int32_t FOUR = 4;
+static constexpr int32_t TWO = 2;
 
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 void DemuxerWmvFuncNdkTest::SetUpTestCase()
@@ -693,4 +706,280 @@ HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_FUNC_4600, TestSize.Level2)
     ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
     close(g_fd);
     g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_FUNC_4700
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv3_wmapro basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_FUNC_4700, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_4);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_URI_FUNC_4700
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv3_wmapro basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_URI_FUNC_4700, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_4);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_FUNC_4800
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv3_wmapro seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_FUNC_4800, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_4, SEEK_MODE_PREVIOUS_SYNC, 0, 480, 122};
+    CreateFdSource(INP_DIR_4);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_URI_FUNC_4800
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv3_wmapro seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_URI_FUNC_4800, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_4, SEEK_MODE_PREVIOUS_SYNC, 0, 480, 122};
+    CreateUriSource(INP_URI_4);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_FUNC_4900
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv2_wma basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_FUNC_4900, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_5);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_URI_FUNC_4900
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv2_wma basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_URI_FUNC_4900, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_5);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_FUNC_5000
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv2_wma seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_FUNC_5000, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_5, SEEK_MODE_PREVIOUS_SYNC, 0, 300, 216};
+    CreateFdSource(INP_DIR_5);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_URI_FUNC_5000S
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv2_wma seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_URI_FUNC_5000, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_5, SEEK_MODE_PREVIOUS_SYNC, 0, 300, 216};
+    CreateUriSource(INP_URI_5);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_FUNC_5100
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv2_main@level99_720_380_eac3_2 basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_FUNC_5100, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_6);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_URI_FUNC_5100
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv2_main@level99_720_380_eac3_2 basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_URI_FUNC_5100, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_6);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_FUNC_5200
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv2_main@level99_720_380_eac3_2 seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_FUNC_5200, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_6, SEEK_MODE_PREVIOUS_SYNC, 0, 604, 289};
+    CreateFdSource(INP_DIR_6);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_URI_FUNC_5200
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv2_main@level99_720_380_eac3_2 seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_URI_FUNC_5200, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_6, SEEK_MODE_PREVIOUS_SYNC, 0, 604, 289};
+    CreateUriSource(INP_URI_6);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_FUNC_5300
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv1_main@level99_720_380_eac3_2 basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_FUNC_5300, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_7);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_URI_FUNC_5300
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv1_main@level99_720_380_eac3_2 basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_URI_FUNC_5300, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_7);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_FUNC_5400
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv1_main@level99_720_380_eac3_2 seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_FUNC_5400, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_7, SEEK_MODE_PREVIOUS_SYNC, 0, 604, 289};
+    CreateFdSource(INP_DIR_7);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_URI_FUNC_5400
+ * @tc.name      : demuxer WMV, demuxer wmv_wmv1_main@level99_720_380_eac3_2 seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_URI_FUNC_5400, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_7, SEEK_MODE_PREVIOUS_SYNC, 0, 604, 289};
+    CreateUriSource(INP_URI_7);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_FUNC_5500
+ * @tc.name      : demuxer WMV, demuxer wmv_h264_wmav2 basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_FUNC_5500, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_8);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_URI_FUNC_5500
+ * @tc.name      : demuxer WMV, demuxer wmv_h264_wmav2 basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_URI_FUNC_5500, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_8);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_FUNC_5600
+ * @tc.name      : demuxer WMV, demuxer wmv_h264_wmav2 seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_FUNC_5600, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_8, SEEK_MODE_PREVIOUS_SYNC, 0, 602, 218};
+    CreateFdSource(INP_DIR_8);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_URI_FUNC_5600
+ * @tc.name      : demuxer WMV, wmv_h264_wmav2 seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_URI_FUNC_5600, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_8, SEEK_MODE_PREVIOUS_SYNC, 0, 602, 218};
+    CreateUriSource(INP_URI_8);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_FUNC_5700
+ * @tc.name      : demuxer WMV, demuxer wmv_h264_wmav1 basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_FUNC_5700, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_9);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_URI_FUNC_5700
+ * @tc.name      : demuxer WMV, demuxer wmv_h264_wmav1 basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_URI_FUNC_5700, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_9);
+    DemuxerResult(TWO);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_FUNC_5800
+ * @tc.name      : demuxer WMV, demuxer wmv_h264_wmav1 seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_FUNC_5800, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_9, SEEK_MODE_PREVIOUS_SYNC, 0, 602, 218};
+    CreateFdSource(INP_DIR_9);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_WMV_URI_FUNC_5800
+ * @tc.name      : demuxer WMV, wmv_h264_wmav1 seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerWmvFuncNdkTest, DEMUXER_WMV_URI_FUNC_5800, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_9, SEEK_MODE_PREVIOUS_SYNC, 0, 602, 218};
+    CreateUriSource(INP_URI_9);
+    CheckSeekMode(fileTest1);
 }
