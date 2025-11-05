@@ -81,7 +81,7 @@ typedef struct TestInfo {
     string testFile;
     vector<int32_t> frameCnt;
     TestInfo(string name, string file, vector<int32_t> &&cnt)
-        : pluginName(name), testFile(file), frameCnt(cnt) {}
+        : pluginName(name), testFile(file), frameCnt(std::move(cnt)) {}
 } TestInfo;
 
 static std::vector<TestInfo> TEST_LIST = {
@@ -920,6 +920,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, SeekToFirstFrame_0001, TestSize.Level1)
         ASSERT_EQ(ResultAssert(item.frameCnt[0], item.frameCnt[1], item.frameCnt[2], item.frameCnt[3]), true);
         RemoveValue();
 
+        printf("SeekToFirstFrame:\n");
         ASSERT_EQ(demuxerPlugin_->SeekToFirstFrame(), Status::OK);
         ASSERT_EQ(PluginSelectTracks(), true);
         ASSERT_EQ(PluginReadAllSample(), true);

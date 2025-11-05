@@ -89,6 +89,8 @@ const uint8_t MPEGPS_START_CODE[] = {0x00, 0x00, 0x01, 0xBA};
 const uint32_t SETTIMER_TIMEOUT = 5; // second
 constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
 constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
+constexpr int32_t SEEK_TRACK_DEFAULT = 0;
+constexpr int64_t SEEK_TIME_0 = 0;
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -511,8 +513,8 @@ FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin()
         }
     }
 
-    if (fileFirstFrame_) {
-        FreeAVPacket(fileFirstFrame_);
+    if (fileFirstPacket_) {
+        FreeAVPacket(fileFirstPacket_);
     }
     MEDIA_LOG_D("Out");
 }
@@ -1556,21 +1558,8 @@ Status FFmpegDemuxerPlugin::GetMediaInfo()
     Status ret = ParseVideoFirstFrames();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse video info failed");
 
-    if (!fileFirstFrame_) {
-        AVPacket *pkt = av_packet_alloc();
-        FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Alloc AVPacket failed");
-        std::unique_lock<std::mutex> sLock(syncMutex_);
-        int ffRet = av_read_frame(formatContext_.get(), pkt);
-        sLock.unlock();
-        if (ffRet < 0) {
-            FreeAVPacket(pkt);
-            FALSE_RETURN_V_MSG_E(ffRet == 0, Status::ERROR_WRONG_STATE, "Call av_read_frame failed");
-        }
-        ret = InitFileFirstFrameInfo(pkt);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Init file first frame failed");
-        ret = AddPacketToCacheQueue(pkt);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add packet to cache failed");
-    }
+    ret = GetFileFirstPacket();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Get file first packet failed");
 
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo_.general);
     DemuxerLogCompressor::StringifyMeta(mediaInfo_.general, -1); // source meta
@@ -1849,9 +1838,10 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_NULL_POINTER,
             "Stream " PUBLIC_LOG_D32 " is invalid", trackId);
         
-        ret = InitFileFirstFrameInfo(pkt);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "InitFileFirstFrameInfo failed");
-
+        if (!fileFirstPacket_ && pkt->dts != AV_NOPTS_VALUE) {
+            ret = InitFileFirstPacketInfo(pkt);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "InitFileFirstPacketInfo failed");
+        }
         ret = AddPacketToCacheQueue(pkt);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add to cache failed");
         bool isSpecialStreamType = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
@@ -2550,26 +2540,58 @@ void FFmpegDemuxerPlugin::SetInterruptState(bool isInterruptNeeded)
     isInterruptNeeded_ = isInterruptNeeded;
 }
 
-Status FFmpegDemuxerPlugin::InitFileFirstFrameInfo(AVPacket *pkt)
+Status FFmpegDemuxerPlugin::GetFileFirstPacket()
+{
+    Status ret = Status::OK;
+    while (!fileFirstPacket_) {
+        AVPacket *pkt = av_packet_alloc();
+        FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Alloc AVPacket failed");
+        std::unique_lock<std::mutex> sLock(syncMutex_);
+        int ffRet = av_read_frame(formatContext_.get(), pkt);
+        sLock.unlock();
+        if (ffRet < 0) {
+            FreeAVPacket(pkt);
+            FALSE_RETURN_V_MSG_E(ffRet == 0, Status::ERROR_WRONG_STATE, "Call av_read_frame failed");
+        }
+
+        if (pkt->dts != AV_NOPTS_VALUE) {
+            ret = InitFileFirstPacketInfo(pkt);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Init file first frame failed");
+        }
+        ret = AddPacketToCacheQueue(pkt);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add packet to cache failed");
+    }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::InitFileFirstPacketInfo(AVPacket *pkt)
 {
     FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "AVPacket is nullptr");
-    FALSE_RETURN_V_MSG_I(fileFirstFrame_ == nullptr, Status::OK, "fileFirstFrame_ has been initialized");
-    fileFirstFrame_ = av_packet_alloc();
-    FALSE_RETURN_V_MSG_E(fileFirstFrame_ != nullptr, Status::ERROR_NO_MEMORY, "av_packet_alloc failed");
-    av_init_packet(fileFirstFrame_);
-    fileFirstFrame_->stream_index = pkt->stream_index;
-    fileFirstFrame_->pts = pkt->pts;
-    fileFirstFrame_->dts = pkt->dts;
+    FALSE_RETURN_V_MSG_I(pkt->dts != AV_NOPTS_VALUE, Status::ERROR_INVALID_OPERATION, "pkt dts is AV_NOPTS_VALUE");
+    FALSE_RETURN_V_MSG_I(fileFirstPacket_ == nullptr, Status::ERROR_WRONG_STATE,
+        "fileFirstPacket_ has been initialized");
+    fileFirstPacket_ = av_packet_alloc();
+    FALSE_RETURN_V_MSG_E(fileFirstPacket_ != nullptr, Status::ERROR_NO_MEMORY, "av_packet_alloc failed");
+    av_init_packet(fileFirstPacket_);
+    fileFirstPacket_->stream_index = pkt->stream_index;
+    fileFirstPacket_->pts = pkt->pts;
+    fileFirstPacket_->dts = pkt->dts;
     return Status::OK;
 }
 
 Status FFmpegDemuxerPlugin::SeekToFirstFrame()
 {
-    FALSE_RETURN_V_MSG_E(fileFirstFrame_ != nullptr, Status::ERROR_INVALID_OPERATION, "fileFirstFrame_ is nullptr");
-
-    int ret = av_seek_frame(formatContext_.get(), fileFirstFrame_->stream_index,
-        std::min(fileFirstFrame_->pts, fileFirstFrame_->dts), AVSEEK_FLAG_ANY);
-    FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_INVALID_OPERATION, "av_seek_frame failed");
+    MEDIA_LOG_D("in");
+    FALSE_RETURN_V_MSG_E(fileFirstPacket_ != nullptr, Status::ERROR_INVALID_OPERATION, "fileFirstPacket_ is nullptr");
+    int ffRet = av_seek_frame(formatContext_.get(),
+        fileFirstPacket_->stream_index, fileFirstPacket_->dts, AVSEEK_FLAG_ANY);
+    if (ffRet < 0) {
+        MEDIA_LOG_E("av_seek_frame failed index[" PUBLIC_LOG_U32 "] pts[" PUBLIC_LOG_D64 "] dts[" PUBLIC_LOG_D64 "]",
+            fileFirstPacket_->stream_index, fileFirstPacket_->pts, fileFirstPacket_->dts);
+        int64_t realSeekTime = 0;
+        Status ret = SeekTo(SEEK_TRACK_DEFAULT, SEEK_TIME_0, SeekMode::SEEK_CLOSEST, realSeekTime);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekTo failed " PUBLIC_LOG_D64, realSeekTime);
+    }
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
