@@ -1560,15 +1560,15 @@ Status FFmpegDemuxerPlugin::GetMediaInfo()
         AVPacket *pkt = av_packet_alloc();
         FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Alloc AVPacket failed");
         std::unique_lock<std::mutex> sLock(syncMutex_);
-        ret = av_read_frame(formatContext_, pkt);
+        int ffRet = av_read_frame(formatContext_.get(), pkt);
         sLock.unlock();
-        if (ret < 0) {
+        if (ffRet < 0) {
             FreeAVPacket(pkt);
-            FALSE_RETURN_V_MSG_E(ret == 0, Status::ERROR_WRONG_STATE, "Call av_read_frame failed");
+            FALSE_RETURN_V_MSG_E(ffRet == 0, Status::ERROR_WRONG_STATE, "Call av_read_frame failed");
         }
-        ret = InitFileFirstFrame(pkt);
+        ret = InitFileFirstFrameInfo(pkt);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Init file first frame failed");
-        ret = AddPacketToCaChe(pkt);
+        ret = AddPacketToCacheQueue(pkt);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add packet to cache failed");
     }
 
