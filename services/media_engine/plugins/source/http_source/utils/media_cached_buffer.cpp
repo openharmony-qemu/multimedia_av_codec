@@ -36,6 +36,8 @@ constexpr double TO_PERCENT = 100;
 constexpr int64_t MAX_TOTAL_READ_SIZE = 2000000;
 constexpr int64_t UP_LIMIT_MAX_TOTAL_READ_SIZE = 3000000;
 constexpr int64_t ACCESS_OFFSET_MAX_LENGTH = 2 * 1024;
+constexpr uint32_t CHUNK_SIZE = 16 * 1024;
+constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
 
 inline constexpr bool BoundedIntervalComp(int64_t mid, uint64_t start, int64_t end)
 {
@@ -63,7 +65,11 @@ inline void InitChunkInfo(CacheChunk& chunkInfo, uint64_t offset)
 CacheMediaChunkBufferImpl::CacheMediaChunkBufferImpl()
     : totalBuffSize_(0), totalReadSize_(0), chunkMaxNum_(0), chunkSize_(0), bufferAddr_(nullptr),
       fragmentMaxNum_(CACHE_FRAGMENT_MAX_NUM_DEFAULT),
-      lruCache_(CACHE_FRAGMENT_MAX_NUM_DEFAULT) {}
+      lruCache_(CACHE_FRAGMENT_MAX_NUM_DEFAULT)
+{
+    readPos_ = fragmentCacheBuffer_.end();
+    writePos_ = fragmentCacheBuffer_.end();
+}
 
 CacheMediaChunkBufferImpl::~CacheMediaChunkBufferImpl()
 {

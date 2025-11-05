@@ -793,7 +793,7 @@ void Downloader::HandleRetOK()
     } else {
         remaining = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
     }
-    if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 0) { // Check whether the playback ends.
+    if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 1) { // Check whether the playback ends.
         MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
         currentRequest_->isEos_ = true;
         HandlePlayingFinish();

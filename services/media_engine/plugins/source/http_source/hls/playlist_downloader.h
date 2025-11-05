@@ -37,9 +37,15 @@ struct PlayInfo {
 };
 struct PlayListChangeCallback {
     virtual ~PlayListChangeCallback() = default;
+    virtual void OnMasterReady(bool needAudioManager, bool needSubTitleManager) = 0;
     virtual void OnPlayListChanged(const std::vector<PlayInfo>& playList) = 0;
     virtual void OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv) = 0;
     virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) = 0;
+};
+enum class HlsSegmentType : int {
+    SEG_VIDEO = 0,
+    SEG_AUDIO = 1,
+    SEG_SUBTITLE = 2,
 };
 class PlayListDownloader : public std::enable_shared_from_this<PlayListDownloader> {
 public:
@@ -51,6 +57,7 @@ public:
     virtual ~PlayListDownloader() = default;
 
     virtual void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
+    virtual void Clone(std::shared_ptr<PlayListDownloader> other) = 0;
     virtual void UpdateManifest() = 0;
     virtual void ParseManifest(const std::string& location, bool isPreParse = false) = 0;
     virtual void SetPlayListCallback(std::weak_ptr<PlayListChangeCallback> callback) = 0;
@@ -62,6 +69,7 @@ public:
     virtual int GetVideoHeight() = 0;
     virtual int GetVideoWidth() = 0;
     virtual bool IsBitrateSame(uint32_t bitRate) = 0;
+    virtual bool IsAudioSame(uint32_t streamId) = 0;
     virtual uint32_t GetCurBitrate() = 0;
     virtual bool IsLive() const = 0;
     virtual void SetMimeType(const std::string& mimeType) = 0;
@@ -70,10 +78,15 @@ public:
     virtual bool IsParseFinished() = 0;
     virtual void SetInitResolution(uint32_t width, uint32_t height) = 0;
     virtual void GetStreamInfo(std::vector<StreamInfo>& streams) = 0;
-    virtual bool ReadFmp4Header(uint8_t* buffer, uint32_t& readLen, uint32_t streamId) = 0;
+    virtual bool ReadFmp4Header(uint8_t* buffer, uint32_t wantLen, uint32_t& readLen, uint32_t streamId) = 0;
     virtual bool IsHlsFmp4() = 0;
     virtual bool IsPureByteRange() = 0;
     virtual void ReOpen(void) = 0;
+    virtual std::shared_ptr<StreamInfo> GetStreamInfoById(int32_t streamId) = 0;
+    virtual int32_t GetDefaultAudioStreamId() = 0;
+    virtual void SelectAudio(int32_t streamId) = 0;
+    virtual void SetDefaultAudio() = 0;
+    virtual void UpdateAudio() = 0;
 
     void SetInterruptState(bool isInterruptNeeded);
     void Resume();
@@ -105,6 +118,9 @@ public:
         return 0;
     }
     virtual void InterruptM3U8Parse(bool isInterruptNeeded) {}
+
+    virtual void UpdateStreamInfo() = 0;
+    virtual HlsSegmentType GetSegType(uint32_t streamId) = 0;
 
 protected:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);

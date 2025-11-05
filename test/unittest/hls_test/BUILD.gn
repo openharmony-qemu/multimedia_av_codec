@@ -23,6 +23,7 @@ hls_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/media_source_loading_request.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/network_client/http_curl_client.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_media_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_playlist_downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/m3u8.cpp",
@@ -87,6 +88,35 @@ ohos_unittest("hls_media_downloader_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = hls_test_sources + [ "hls_media_downloader_unit_test.cpp" ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "curl:curl_shared",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "ipc:ipc_single",
+    "libxml2:libxml2",
+    "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
+    "openssl:libcrypto_shared",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}
+
+ohos_unittest("hls_segment_manager_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  testonly = true
+  configs = [
+    ":hls_unittest_cfg",
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+  sources = hls_test_sources + [ "hls_segment_manager_unit_test.cpp" ]
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [

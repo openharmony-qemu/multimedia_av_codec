@@ -49,6 +49,7 @@ test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/media_source_loading_request.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/network_client/http_curl_client.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_media_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_playlist_downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/m3u8.cpp",
