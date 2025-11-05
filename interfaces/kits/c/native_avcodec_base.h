@@ -524,6 +524,11 @@ extern const char *OH_MD_KEY_I_FRAME_INTERVAL;
 extern const char *OH_MD_KEY_ROTATION;
 
 /**
+ * @since 22
+ */
+extern const char *OH_MD_KEY_VIDEO_TRANSFORM_TYPE;
+
+/**
  * @brief Provides the uniform key for storing the media description.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
