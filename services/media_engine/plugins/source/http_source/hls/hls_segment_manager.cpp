@@ -215,6 +215,9 @@ HlsSegmentManager::~HlsSegmentManager()
     if (playlistDownloader_ != nullptr) {
         playlistDownloader_ = nullptr;
     }
+    NZERO_LOG(memset_s(iv_, 1, 0, DECRYPT_UNIT_LEN));
+    NZERO_LOG(memset_s(initIv_, 1, 0, DECRYPT_UNIT_LEN));
+    NZERO_LOG(memset_s(key_, 1, 0, DECRYPT_UNIT_LEN));
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor out, type: %{public}d", FAKE_POINTER(this), type_);
 }
 
