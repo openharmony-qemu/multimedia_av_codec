@@ -424,6 +424,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/dashmpddownfinished_fuzzer:DashMpdDownFinishedFuzzTest",
       "fuzztest/hlstagsattronly_fuzzer:HlsTagsAttrOnlyFuzzTest",
       "fuzztest/http_plugin_fuzztest/dashmediadownloader2_fuzzer:DashMediaDownloader2FuzzTest",
+      "fuzztest/http_plugin_fuzztest/mpdparserseven_fuzzer:MpdParserSevenFuzzTest",
       "fuzztest/demuxervobapi11_fuzzer:DemuxerVopAPI11FuzzTest",
       "fuzztest/demuxer3g2api11_fuzzer:Demuxer3g2API11FuzzTest",
       "fuzztest/demuxer3gpapi11_fuzzer:Demuxer3gpAPI11FuzzTest",

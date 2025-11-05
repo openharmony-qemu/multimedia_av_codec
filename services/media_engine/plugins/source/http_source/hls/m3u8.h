@@ -22,7 +22,7 @@
 #include <unordered_map>
 #include <functional>
 #include <map>
-#include <set>
+#include <unordered_set>
 #include "hls_tags.h"
 #include "playlist_downloader.h"
 #include "download/downloader.h"
@@ -209,7 +209,7 @@ struct M3U8MasterPlaylist {
     std::atomic<bool> isPureByteRange_ {false};
     uint32_t defaultStreamId_ {0};
     StatusCallbackFunc monitorStatusCallback_;
-    static inline const std::set<std::string> VIDEO_CODECS = {
+    static inline const std::unordered_set<std::string> VIDEO_CODECS = {
         "mp4v", "avc1", "hev1", "svc1", "mvc1", "mvc2", "sevc", "s263"
     };
 };
