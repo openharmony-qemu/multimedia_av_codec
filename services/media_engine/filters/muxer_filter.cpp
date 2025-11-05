@@ -288,6 +288,7 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
     }
     trackIndexMap_.emplace(std::make_pair(mimeType, trackIndex));
     sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
+    FALSE_RETURN_V_MSG(inputBufferQueue != nullptr, Status::ERROR_NULL_POINTER, "inputBufferQueue is nullptr");
     FALSE_RETURN_V_MSG(callback != nullptr, Status::ERROR_NULL_POINTER, "callback is nullptr");
     callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
     sptr<IBrokerListener> listener = new MuxerBrokerListener(shared_from_this(), trackIndex,
