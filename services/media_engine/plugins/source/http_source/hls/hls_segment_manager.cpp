@@ -319,7 +319,8 @@ void HlsSegmentManager::InitCacheWithDuration()
     }
     MEDIA_LOG_I("HLS setting buffer size: %{public}zu, min: %{public}zu, max: %{public}zu, type: %{public}d",
         totalBufferSize_, minBufferSize_, maxCacheBufferSize_, type_);
-    totalBufferSize_ = std::max(std::min(expectDuration_ * CURRENT_BIT_RATE, maxCacheBufferSize_), minBufferSize_);
+    size_t expectBufferSize = expectDuration_ * CURRENT_BIT_RATE;
+    totalBufferSize_ = std::max(std::min(expectBufferSize, maxCacheBufferSize_), minBufferSize_);
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
     memorySize_ = totalBufferSize_;

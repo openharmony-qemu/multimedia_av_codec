@@ -624,7 +624,7 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_1010, TestSize.Level2)
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &br));
-    ASSERT_EQ(br, 88000);
+    ASSERT_EQ(br, 128000);
     close(g_fd);
     g_fd = -1;
 }
@@ -646,7 +646,7 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_1011, TestSize.Level2)
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &br));
-    ASSERT_EQ(br, 88000);
+    ASSERT_EQ(br, 128000);
     close(g_fd);
     g_fd = -1;
 }
@@ -668,7 +668,7 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_1012, TestSize.Level2)
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &br));
-    ASSERT_EQ(br, 88000);
+    ASSERT_EQ(br, 88200);
     close(g_fd);
     g_fd = -1;
 }
@@ -690,7 +690,7 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_1013, TestSize.Level2)
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &br));
-    ASSERT_EQ(br, 88000);
+    ASSERT_EQ(br, 128000);
     close(g_fd);
     g_fd = -1;
 }
@@ -800,7 +800,7 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_1210, TestSize.Level2)
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sr));
-    ASSERT_EQ(sr, 44100);
+    ASSERT_EQ(sr, 22050);
     close(g_fd);
     g_fd = -1;
 }
@@ -822,7 +822,7 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_1211, TestSize.Level2)
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sr));
-    ASSERT_EQ(sr, 44100);
+    ASSERT_EQ(sr, 22050);
     close(g_fd);
     g_fd = -1;
 }
@@ -844,7 +844,7 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_1212, TestSize.Level2)
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sr));
-    ASSERT_EQ(sr, 44100);
+    ASSERT_EQ(sr, 22050);
     close(g_fd);
     g_fd = -1;
 }
@@ -866,7 +866,7 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_1213, TestSize.Level2)
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sr));
-    ASSERT_EQ(sr, 44100);
+    ASSERT_EQ(sr, 22050);
     close(g_fd);
     g_fd = -1;
 }
@@ -1150,13 +1150,13 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_1513, TestSize.Level2)
  */
 HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3200, TestSize.Level1)
 {
-    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 33};
+    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
     CheckSeekMode(fileTest11);
-    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 33};
+    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
     CheckSeekMode(fileTest12);
-    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 33};
+    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
     CheckSeekMode(fileTest13);
-    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 33};
+    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
     CheckSeekMode(fileTest14);
 }
 
@@ -1167,13 +1167,13 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3200, TestSize.Level1)
  */
 HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3300, TestSize.Level1)
 {
-    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 33};
+    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
     CheckSeekMode(fileTest11);
-    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 33};
+    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
     CheckSeekMode(fileTest12);
-    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 33};
+    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
     CheckSeekMode(fileTest13);
-    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 33};
+    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
     CheckSeekMode(fileTest14);
 }
 
@@ -1184,13 +1184,13 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3300, TestSize.Level1)
  */
 HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3400, TestSize.Level1)
 {
-    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 33};
+    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
     CheckSeekMode(fileTest11);
-    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 33};
+    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
     CheckSeekMode(fileTest12);
-    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 33};
+    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
     CheckSeekMode(fileTest13);
-    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 0, 29, 33};
+    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
     CheckSeekMode(fileTest14);
 }
 
@@ -1201,13 +1201,13 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3400, TestSize.Level1)
  */
 HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3500, TestSize.Level1)
 {
-    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 33};
+    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 966667, 33, 23};
     CheckSeekMode(fileTest11);
-    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 33};
+    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 966667, 33, 23};
     CheckSeekMode(fileTest12);
-    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 33};
+    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 966667, 33, 23};
     CheckSeekMode(fileTest13);
-    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 33};
+    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 966667, 33, 23};
     CheckSeekMode(fileTest14);
 }
 
@@ -1218,13 +1218,13 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3500, TestSize.Level1)
  */
 HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3600, TestSize.Level1)
 {
-    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 32};
+    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 966667, 32, 23};
     CheckSeekMode(fileTest11);
-    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 33};
+    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 966667, 32, 23};
     CheckSeekMode(fileTest12);
-    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 32};
+    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 966667, 32, 23};
     CheckSeekMode(fileTest13);
-    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 32};
+    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 966667, 32, 23};
     CheckSeekMode(fileTest14);
 }
 
@@ -1235,13 +1235,13 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3600, TestSize.Level1)
  */
 HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3700, TestSize.Level1)
 {
-    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 32};
+    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 966667, 32, 23};
     CheckSeekMode(fileTest11);
-    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 33};
+    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 966667, 32, 23};
     CheckSeekMode(fileTest12);
-    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 32};
+    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 966667, 32, 23};
     CheckSeekMode(fileTest13);
-    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 966667, 1, 32};
+    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 966667, 32, 23};
     CheckSeekMode(fileTest14);
 }
 
@@ -1252,13 +1252,13 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3700, TestSize.Level1)
  */
 HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3800, TestSize.Level1)
 {
-    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 33};
+    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 500000, 33, 28};
     CheckSeekMode(fileTest11);
-    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 33};
+    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 500000, 33, 28};
     CheckSeekMode(fileTest12);
-    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 33};
+    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 500000, 33, 28};
     CheckSeekMode(fileTest13);
-    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 33};
+    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 500000, 33, 28};
     CheckSeekMode(fileTest14);
 }
 
@@ -1269,13 +1269,13 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3800, TestSize.Level1)
  */
 HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3900, TestSize.Level1)
 {
-    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 31};
+    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 500000, 31, 28};
     CheckSeekMode(fileTest11);
-    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 31};
+    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 500000, 31, 28};
     CheckSeekMode(fileTest12);
-    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 32};
+    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 500000, 31, 28};
     CheckSeekMode(fileTest13);
-    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 32};
+    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 500000, 31, 28};
     CheckSeekMode(fileTest14);
 }
 
@@ -1286,12 +1286,12 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3900, TestSize.Level1)
  */
 HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_4000, TestSize.Level1)
 {
-    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 31};
+    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 500000, 31, 28};
     CheckSeekMode(fileTest11);
-    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 31};
+    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 500000, 31, 28};
     CheckSeekMode(fileTest12);
-    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 32};
+    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 500000, 31, 28};
     CheckSeekMode(fileTest13);
-    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 500000, 15, 32};
+    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 500000, 31, 28};
     CheckSeekMode(fileTest14);
 }

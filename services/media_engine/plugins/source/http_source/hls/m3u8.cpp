@@ -18,6 +18,7 @@
 #include <utility>
 #include <sstream>
 #include <iomanip>
+#include <unordered_set>
 #include "m3u8.h"
 #include "base64_utils.h"
 
@@ -42,6 +43,10 @@ static const std::unordered_map<std::string, M3U8MediaType> kTypeMap = {
     {"SUBTITLES", M3U8MediaType::M3U8_MEDIA_TYPE_SUBTITLES},
     {"CLOSED-CAPTIONS", M3U8MediaType::M3U8_MEDIA_TYPE_CLOSED_CAPTIONS}
 };
+static const std::unordered_set<std::string> VIDEO_CODECS = {
+    "mp4v", "avc1", "hev1", "svc1", "mvc1", "mvc2", "sevc", "s263"
+};
+
 bool StrHasPrefix(const std::string &str, const std::string &prefix)
 {
     return str.find(prefix) == 0;
@@ -866,7 +871,7 @@ bool M3U8MasterPlaylist::IsVideoStream(const std::string& codecs)
                 continue;
             }
             std::string targetCodecs = subToken.substr(subStart, subEnd - subStart + 1);
-            if (M3U8MasterPlaylist::VIDEO_CODECS.find(targetCodecs) != M3U8MasterPlaylist::VIDEO_CODECS.end()) {
+            if (VIDEO_CODECS.find(targetCodecs) != VIDEO_CODECS.end()) {
                 return true;
             }
         }

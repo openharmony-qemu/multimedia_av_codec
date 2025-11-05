@@ -22,7 +22,6 @@
 #include <unordered_map>
 #include <functional>
 #include <map>
-#include <set>
 #include "hls_tags.h"
 #include "playlist_downloader.h"
 #include "download/downloader.h"
@@ -220,9 +219,6 @@ struct M3U8MasterPlaylist {
     uint32_t defaultStreamId_ {0};
     StatusCallbackFunc monitorStatusCallback_;
     std::list<std::shared_ptr<M3U8Media>> mediaList_;
-    static inline const std::set<std::string> VIDEO_CODECS = {
-        "mp4v", "avc1", "hev1", "svc1", "mvc1", "mvc2", "sevc", "s263"
-    };
 };
 }
 }
