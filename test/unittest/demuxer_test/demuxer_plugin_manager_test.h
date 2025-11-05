@@ -62,6 +62,7 @@ private:
     std::shared_ptr<Media::MediaSource> mediaSource_{ nullptr };
     std::shared_ptr<Media::Source> realSource_{ nullptr };
     std::shared_ptr<Media::PluginBase> pluginBase_{ nullptr };
+    std::shared_ptr<Media::DemuxerPlugin> demuxerPlugin_{ nullptr };
 };
 }  // namespace Media
 }  // namespace OHOS

@@ -76,6 +76,38 @@ static const string TEST_FILE_URI_WAV = TEST_FILE_PATH + "audio/wav_48000_1.wav"
 static const string TEST_FILE_URI_RM = TEST_FILE_PATH + "rv40_cook.rmvb";
 static const string TEST_FILE_URI_AC3 = TEST_FILE_PATH + "audio/ac3_test.ac3";
 
+typedef struct TestInfo {
+    string pluginName;
+    string testFile;
+    vector<int32_t> frameCnt;
+    TestInfo(string name, string file, vector<int32_t> &&cnt)
+        : pluginName(name), testFile(file), frameCnt(cnt) {}
+} TestInfo;
+
+static std::vector<TestInfo> TEST_LIST = {
+    {DEMUXER_PLUGIN_NAME_AAC, TEST_FILE_URI_AAC, {1293, 0, 1293, 0}},
+    {DEMUXER_PLUGIN_NAME_AMR, TEST_FILE_URI_AMR, {1501, 0, 1501, 0}},
+    {DEMUXER_PLUGIN_NAME_AMR, TEST_FILE_URI_AMRNB, {1501, 0, 1501, 0}},
+    {DEMUXER_PLUGIN_NAME_AMR, TEST_FILE_URI_AMRWB, {1500, 0, 1500, 0}},
+    {DEMUXER_PLUGIN_NAME_APE, TEST_FILE_URI_APE, {7, 0, 7, 0}},
+    {DEMUXER_PLUGIN_NAME_FLAC, TEST_FILE_URI_FLAC, {313, 0, 313, 0}},
+    {DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV, {76, 113, 1, 113}},
+    {DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_URI_MATROSKA, {240, 199, 4, 199}},
+    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MOV, {602, 434, 3, 434}},
+    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4, {1875, 0, 1875, 0}},
+    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_FMP4, {604, 433, 3, 433}},
+    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_M4A, {433, 0, 433, 0}},
+    {DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_URI_MP3, {1251, 0, 1251, 0}},
+    {DEMUXER_PLUGIN_NAME_MPEG, TEST_FILE_URI_MPEG, {1253, 2164, 19, 2164}},
+    {DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS, {103, 174, 5, 174}},
+    {DEMUXER_PLUGIN_NAME_AVI, TEST_FILE_URI_AVI, {602, 433, 3, 433}},
+    {DEMUXER_PLUGIN_NAME_SRT, TEST_FILE_URI_SRT, {5, 0, 5, 0}},
+    {DEMUXER_PLUGIN_NAME_WEBVTT, TEST_FILE_URI_WEBVTT, {4, 0, 4, 0}},
+    {DEMUXER_PLUGIN_NAME_OGG, TEST_FILE_URI_OGG, {1598, 0, 1598, 0}},
+    {DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_URI_WAV, {704, 0, 704, 0}}
+};
+
+
 void DemuxerPluginManagerUnitTest::SetUpTestCase(void) {}
 
 void DemuxerPluginManagerUnitTest::TearDownTestCase(void) {}
@@ -514,8 +546,8 @@ bool DemuxerPluginManagerUnitTest::CreateDemuxerPluginByName(
         printf("CreatePluginByName failed for type: %s\n", typeName.c_str());
         return false;
     }
-    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    if (demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_, probSize) != Status::OK) {
+    demuxerPlugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    if (demuxerPlugin_->SetDataSourceWithProbSize(dataSourceImpl_, probSize) != Status::OK) {
         printf("SetDataSourceWithProbSize failed for type: %s\n", typeName.c_str());
         return false;
     }
@@ -528,8 +560,7 @@ bool DemuxerPluginManagerUnitTest::CreateDemuxerPluginByName(
 bool DemuxerPluginManagerUnitTest::PluginSelectTracks()
 {
     MediaInfo mediaInfo;
-    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    if (demuxerPlugin->GetMediaInfo(mediaInfo) != Status::OK) {
+    if (demuxerPlugin_->GetMediaInfo(mediaInfo) != Status::OK) {
         printf("GetMediaInfo failed for plugin\n");
         return false;
     }
@@ -539,7 +570,7 @@ bool DemuxerPluginManagerUnitTest::PluginSelectTracks()
         mediaInfo.tracks[i].GetData(Tag::MIME_TYPE, mime);
         if (mime.find("video/") == 0 || mime.find("audio/") == 0 ||
             mime.find("application/") == 0 || mime.find("text/vtt") == 0) {
-            demuxerPlugin->SelectTrack(static_cast<uint32_t>(i));
+            demuxerPlugin_->SelectTrack(static_cast<uint32_t>(i));
             selectedTrackIds_.push_back(static_cast<uint32_t>(i));
             frames_[i] = 0;
             keyFrames_[i] = 0;
@@ -553,8 +584,7 @@ bool DemuxerPluginManagerUnitTest::PluginSelectTracks()
 bool DemuxerPluginManagerUnitTest::PluginReadSample(uint32_t idx, uint32_t& flag)
 {
     int bufSize = 0;
-    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    demuxerPlugin->GetNextSampleSize(idx, bufSize);
+    demuxerPlugin_->GetNextSampleSize(idx, bufSize);
     if (static_cast<uint32_t>(bufSize) > buffer_.size()) {
         buffer_.resize(bufSize + BUFFER_PADDING_SIZE);
     }
@@ -565,7 +595,7 @@ bool DemuxerPluginManagerUnitTest::PluginReadSample(uint32_t idx, uint32_t& flag
         return false;
     }
     
-    demuxerPlugin->ReadSample(idx, avBuf);
+    demuxerPlugin_->ReadSample(idx, avBuf);
     flag = avBuf->flag_;
 
     return true;
@@ -615,6 +645,9 @@ void DemuxerPluginManagerUnitTest::RemoveValue()
     }
     if (!eosFlag_.empty()) {
         eosFlag_.clear();
+    }
+    if (!selectedTrackIds_.empty()) {
+        selectedTrackIds_.clear();
     }
 }
 
@@ -873,9 +906,26 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0024, TestSize.
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0025, TestSize.Level1)
 {
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AAC, TEST_FILE_URI_AAC, DEF_PROB_SIZE), true);
-    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    ASSERT_EQ(demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_, DEF_PROB_SIZE), Status::ERROR_WRONG_STATE);
+    ASSERT_EQ(demuxerPlugin_->SetDataSourceWithProbSize(dataSourceImpl_, DEF_PROB_SIZE), Status::ERROR_WRONG_STATE);
     RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, SeekToFirstFrame_0001, TestSize.Level1)
+{
+    for (auto &item : TEST_LIST) {
+        printf("#####pluginName: %s, testFile: %s#####\n", item.pluginName.c_str(), item.testFile.c_str());
+        ASSERT_EQ(CreateDemuxerPluginByName(item.pluginName.c_str(), item.testFile.c_str(), DEF_PROB_SIZE), true);
+        ASSERT_EQ(PluginSelectTracks(), true);
+        ASSERT_EQ(PluginReadAllSample(), true);
+        ASSERT_EQ(ResultAssert(item.frameCnt[0], item.frameCnt[1], item.frameCnt[2], item.frameCnt[3]), true);
+        RemoveValue();
+
+        ASSERT_EQ(demuxerPlugin_->SeekToFirstFrame(), Status::OK);
+        ASSERT_EQ(PluginSelectTracks(), true);
+        ASSERT_EQ(PluginReadAllSample(), true);
+        ASSERT_EQ(ResultAssert(item.frameCnt[0], item.frameCnt[1], item.frameCnt[2], item.frameCnt[3]), true);
+        RemoveValue();
+    }
 }
 
 }
