@@ -1,7 +1,7 @@
 import("//build/config/features.gni")
 import("//build/test.gni")
 
-module_output_path = "multimedia_av_codec/m3u8_comprehensive_fuzzer"
+module_output_path = "player_framework/stream_player_framework"
 AV_CODEC_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
 hls_sources = [

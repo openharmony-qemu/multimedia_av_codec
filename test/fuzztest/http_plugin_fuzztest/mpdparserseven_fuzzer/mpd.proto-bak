@@ -1,0 +1,306 @@
+syntax = "proto3";
+package ohos.mpd;
+
+// ============================== 基础枚举 ==============================
+// 对应 C++: enum class DashType { DASH_TYPE_STATIC, DASH_TYPE_DYNAMIC };
+enum DashType {
+  DASH_TYPE_STATIC  = 0;  // 对应 DashType::DASH_TYPE_STATIC
+  DASH_TYPE_DYNAMIC = 1;  // 对应 DashType::DASH_TYPE_DYNAMIC
+}
+
+// 对应 C++: enum class VideoScanType { VIDEO_SCAN_PROGRESSIVE, VIDEO_SCAN_INTERLACED, VIDEO_SCAN_UNKNOW };
+enum VideoScanType {
+  VIDEO_SCAN_PROGRESSIVE = 0;
+  VIDEO_SCAN_INTERLACED  = 1;
+  VIDEO_SCAN_UNKNOW      = 2; // 注意：C++拼写为 UNKNOW
+}
+
+// ============================== 叶子结构 ==============================
+// 对应 C++: struct DashUrlType { std::string sourceUrl_; std::string range_; }
+message UrlType {
+  // 对应 DashUrlType::sourceUrl_
+  string source_url = 1;
+  // 对应 DashUrlType::range_
+  string range = 2;
+}
+
+// 对应 C++: struct DashSegUrl { std::string media_; std::string mediaRange_; std::string index_; std::string indexRange_; }
+message SegmentURL {
+  // 对应 DashSegUrl::media_
+  string media = 1;
+  // 对应 DashSegUrl::mediaRange_
+  string media_range = 2;
+  // 对应 DashSegUrl::index_
+  string index = 3;
+  // 对应 DashSegUrl::indexRange_
+  string index_range = 4;
+}
+
+// 对应 C++: struct DashDescriptor { std::string schemeIdUrl_; std::string value_; std::string defaultKid_; std::map<std::string,std::string> elementMap_; }
+message Descriptor {
+  // 对应 DashDescriptor::schemeIdUrl_
+  string scheme_id_url = 1;
+  // 对应 DashDescriptor::value_
+  string value = 2;
+  // 对应 DashDescriptor::defaultKid_
+  string default_kid = 3;
+  // 对应 DashDescriptor::elementMap_（常用于 cenc:pssh 等子元素）：
+  // 这里简化：若只需一个 <cenc:pssh> 可直接放到 element_map["cenc:pssh"]
+  map<string,string> element_map = 4;
+}
+
+// 对应 C++: struct DashSegTimeline { uint64_t t_{0}; uint64_t d_{0}; int32_t r_{0}; }
+message SegmentTimelineEntry {
+  // 对应 DashSegTimeline::t_
+  uint64 t = 1;
+  // 对应 DashSegTimeline::d_
+  uint64 d = 2;
+  // 对应 DashSegTimeline::r_
+  int32 r = 3;
+}
+
+// ============================== Segment 基类 ==============================
+// 对应 C++: struct DashSegBaseInfo {...}
+message SegBaseInfo {
+  // 对应 DashSegBaseInfo::timeScale_
+  uint32 time_scale = 1;
+  // 对应 DashSegBaseInfo::presentationTimeOffset_
+  uint32 presentation_time_offset = 2;
+  // 对应 DashSegBaseInfo::indexRange_
+  string index_range = 3;
+  // 对应 DashSegBaseInfo::indexRangeExact_
+  bool index_range_exact = 4;
+
+  // 对应 DashSegBaseInfo::initialization_
+  UrlType initialization = 10;
+  // 对应 DashSegBaseInfo::representationIndex_
+  UrlType representation_index = 11;
+}
+
+// 对应 C++: struct DashMultSegBaseInfo {...}
+message MultSegBaseInfo {
+  // 对应 DashMultSegBaseInfo::duration_
+  uint32 duration = 1;
+  // 对应 DashMultSegBaseInfo::startNumber_
+  string start_number = 2;
+
+  // 对应 DashMultSegBaseInfo::bitstreamSwitching_
+  UrlType bitstream_switching = 3;
+
+  // 对应 DashMultSegBaseInfo::segTimeline_（若干 S 节点）
+  repeated SegmentTimelineEntry timeline = 4;
+
+  // 对应 DashMultSegBaseInfo::segBaseInfo_
+  SegBaseInfo seg_base = 5;
+}
+
+// 对应 C++: struct DashSegTmpltInfo {...}
+message SegTemplateInfo {
+  // 对应 DashSegTmpltInfo::segTmpltMedia_
+  string media = 1;
+  // 对应 DashSegTmpltInfo::segTmpltIndex_
+  string index = 2;
+  // 对应 DashSegTmpltInfo::segTmpltInitialization_
+  string initialization = 3;
+  // 对应 DashSegTmpltInfo::segTmpltBitstreamSwitching_
+  string bitstream_switching_attr = 4;
+
+  // 对应 DashSegTmpltInfo::multSegBaseInfo_
+  MultSegBaseInfo mult = 10;
+}
+
+// 对应 C++: struct DashSegListInfo {...}
+message SegListInfo {
+  // 对应 DashSegListInfo::segmentUrl_
+  repeated SegmentURL segment_urls = 1;
+  // 对应 DashSegListInfo::multSegBaseInfo_
+  MultSegBaseInfo mult = 2;
+}
+
+// ============================== 公共属性块 ==============================
+// 对应 C++: struct DashCommonAttrsAndElements {...}
+message CommonAE {
+  // 对应 DashCommonAttrsAndElements::codingDependency_
+  bool coding_dependency = 1;
+  // 对应 DashCommonAttrsAndElements::width_
+  uint32 width = 2;
+  // 对应 DashCommonAttrsAndElements::height_
+  uint32 height = 3;
+  // 对应 DashCommonAttrsAndElements::startWithSAP_
+  uint32 start_with_sap = 4;
+  // 对应 DashCommonAttrsAndElements::maxPlayoutRate_
+  double max_playout_rate = 5;
+  // 对应 DashCommonAttrsAndElements::profiles_
+  string profiles = 6;
+  // 对应 DashCommonAttrsAndElements::sar_
+  string sar = 7;
+  // 对应 DashCommonAttrsAndElements::frameRate_
+  string frame_rate = 8;
+  // 对应 DashCommonAttrsAndElements::audioSamplingRate_
+  string audio_sampling_rate = 9;
+  // 对应 DashCommonAttrsAndElements::audioChannelConfigurationList_
+  repeated Descriptor audio_channel_configuration = 10;
+  // 对应 DashCommonAttrsAndElements::mimeType_
+  string mime_type = 11;
+  // 对应 DashCommonAttrsAndElements::codecs_
+  string codecs = 12;
+  // 对应 DashCommonAttrsAndElements::cuvvVersion_
+  string cuvv_version = 13;
+  // 对应 DashCommonAttrsAndElements::scanType_
+  VideoScanType scan_type = 14;
+  // 对应 DashCommonAttrsAndElements::contentProtectionList_
+  repeated Descriptor content_protection = 15;
+  // 对应 DashCommonAttrsAndElements::essentialPropertyList_
+  repeated Descriptor essential_property = 16;
+}
+
+// ============================== 树形节点 ==============================
+// 对应 C++: struct DashRepresentationInfo {...}
+message Representation {
+  // 对应 DashRepresentationInfo::id_
+  string id = 1;
+  // 对应 DashRepresentationInfo::bandwidth_
+  uint32 bandwidth = 2;
+  // 对应 DashRepresentationInfo::qualityRanking_
+  uint32 quality_ranking = 3;
+  // 对应 DashRepresentationInfo::baseUrl_
+  repeated string base_url = 4;
+  // 对应 DashRepresentationInfo::volumeAdjust_（字符串）
+  string volume_adjust = 5;
+
+  // 对应 DashRepresentationInfo::representationSegBase_
+  SegBaseInfo seg_base = 10;
+  // 对应 DashRepresentationInfo::representationSegList_
+  SegListInfo seg_list = 11;
+  // 对应 DashRepresentationInfo::representationSegTmplt_
+  SegTemplateInfo seg_template = 12;
+
+  // 对应 DashRepresentationInfo::commonAttrsAndElements_
+  CommonAE common = 20;
+}
+
+// 对应 C++: struct DashContentCompInfo {...}
+message ContentComponent {
+  // 对应 DashContentCompInfo::id_
+  uint32 id = 1;
+  // 对应 DashContentCompInfo::lang_
+  string lang = 2;
+  // 对应 DashContentCompInfo::contentType_
+  string content_type = 3;
+  // 对应 DashContentCompInfo::par_
+  string par = 4;
+  // 对应 DashContentCompInfo::roleList_
+  repeated Descriptor role = 5;
+}
+
+// 对应 C++: struct DashAdptSetInfo {...}
+message AdaptationSet {
+  // 对应 DashAdptSetInfo::segmentAlignment_
+  bool segment_alignment = 1;
+  // 对应 DashAdptSetInfo::subSegmentAlignment_
+  bool subsegment_alignment = 2;
+  // 对应 DashAdptSetInfo::bitstreamSwitching_
+  bool bitstream_switching = 3;
+
+  // 对应 DashAdptSetInfo::id_
+  uint32 id = 4;
+  // 对应 DashAdptSetInfo::group_
+  uint32 group = 5;
+  // 对应 DashAdptSetInfo::minBandwidth_/maxBandwidth_
+  uint32 min_bandwidth = 6;
+  uint32 max_bandwidth = 7;
+  // 对应 DashAdptSetInfo::minWidth_/maxWidth_
+  uint32 min_width = 8;
+  uint32 max_width = 9;
+  // 对应 DashAdptSetInfo::minHeight_/maxHeight_
+  uint32 min_height = 10;
+  uint32 max_height = 11;
+  // 对应 DashAdptSetInfo::cameraIndex_
+  uint32 camera_index = 12;
+  // 对应 DashAdptSetInfo::subSegmentStartsWithSAP_
+  int32 subsegment_starts_with_sap = 13;
+
+  // 对应 DashAdptSetInfo::lang_/contentType_/par_/minFrameRate_/maxFrameRate_/mimeType_/videoType_
+  string lang = 20;
+  string content_type = 21;
+  string par = 22;
+  string min_frame_rate= 23;
+  string max_frame_rate= 24;
+  string mime_type = 25;
+  string video_type = 26;
+
+  // 对应 DashAdptSetInfo::adptSetSegBase_
+  SegBaseInfo seg_base = 30;
+  // 对应 DashAdptSetInfo::adptSetSegList_
+  SegListInfo seg_list = 31;
+  // 对应 DashAdptSetInfo::adptSetSegTmplt_
+  SegTemplateInfo seg_template = 32;
+
+  // 对应 DashAdptSetInfo::baseUrl_
+  repeated string base_url = 40;
+  // 对应 DashAdptSetInfo::contentCompList_
+  repeated ContentComponent content_components = 41;
+  // 对应 DashAdptSetInfo::representationList_
+  repeated Representation representations = 42;
+  // 对应 DashAdptSetInfo::roleList_
+  repeated Descriptor role = 43;
+
+  // 对应 DashAdptSetInfo::commonAttrsAndElements_
+  CommonAE common = 50;
+}
+
+// 对应 C++: struct DashPeriodInfo {...}
+message Period {
+  // 对应 DashPeriodInfo::start_
+  uint32 start_sec = 1;
+  // 对应 DashPeriodInfo::duration_
+  uint32 duration_sec = 2;
+  // 对应 DashPeriodInfo::bitstreamSwitching_
+  bool bitstream_switching = 3;
+  // 对应 DashPeriodInfo::id_
+  string id = 4;
+  // 对应 DashPeriodInfo::baseUrl_
+  repeated string base_url = 5;
+
+  // 对应 DashPeriodInfo::periodSegBase_
+  SegBaseInfo seg_base = 10;
+  // 对应 DashPeriodInfo::periodSegList_
+  SegListInfo seg_list = 11;
+  // 对应 DashPeriodInfo::periodSegTmplt_
+  SegTemplateInfo seg_template = 12;
+
+  // 对应 DashPeriodInfo::adptSetList_
+  repeated AdaptationSet adaptation_sets = 20;
+}
+
+// 对应 C++: struct DashMpdInfo {...}
+message MpdDoc {
+  // 对应 DashMpdInfo::type_
+  DashType type = 1;
+
+  // 对应 DashMpdInfo::*（单位秒，生成 XML 时转 ISO8601）
+  uint32 media_presentation_duration_sec = 10;
+  uint32 minimum_update_period_sec = 11;
+  uint32 min_buffer_time_sec = 12;
+  uint32 time_shift_buffer_depth_sec = 13;
+  uint32 suggested_presentation_delay_sec = 14;
+  uint32 max_segment_duration_sec = 15;
+  uint32 max_subsegment_duration_sec = 16;
+
+  // 对应 DashMpdInfo::hwTotalViewNumber_/hwDefaultViewIndex_
+  uint32 hw_total_view_number = 17;
+  uint32 hw_default_view_index = 18;
+
+  // 对应 DashMpdInfo::availabilityStartTime_（毫秒时间戳；若不填则不输出）
+  int64 availability_start_time_ms = 19;
+
+  // 对应 DashMpdInfo::mediaType_
+  string media_type = 30;
+  // 对应 DashMpdInfo::profile_
+  string profile = 31;
+
+  // 对应 DashMpdInfo::baseUrl_
+  repeated string base_url = 40;
+  // 对应 DashMpdInfo::periodInfoList_
+  repeated Period periods = 41;
+}
