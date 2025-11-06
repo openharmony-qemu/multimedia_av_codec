@@ -1237,9 +1237,9 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Encoder_Utils_003, TestSize.Level1)
 HWTEST_F(AvcCodecCoverageUnitTest, Test_Encoder_Utils_004, TestSize.Level1)
 {
     COLOR_RANGE range = TranslateRange(0);
-    EXPECT_EQ(range, COLOR_RANGE::RANGE_FULL);
-    range = TranslateRange(1);
     EXPECT_EQ(range, COLOR_RANGE::RANGE_LIMITED);
+    range = TranslateRange(1);
+    EXPECT_EQ(range, COLOR_RANGE::RANGE_FULL);
     range = TranslateRange(2);
     EXPECT_EQ(range, COLOR_RANGE::RANGE_UNSPECIFIED);
 }
