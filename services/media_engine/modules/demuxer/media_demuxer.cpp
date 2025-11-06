@@ -1534,7 +1534,8 @@ Status MediaDemuxer::HandleHlsRebootPlugin(int32_t trackId)
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         FALSE_RETURN_V_MSG_E(streamID != INVALID_STREAM_OR_TRACK_ID, Status::ERROR_INVALID_PARAMETER,
             "Invalid streamId");
-        TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
+        TrackType trackType = IsAVInOneStream() ? TrackType::TRACK_VIDEO :
+            demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
         MEDIA_LOG_D("TrackType " PUBLIC_LOG_D32 " TrackId " PUBLIC_LOG_D32, static_cast<int32_t>(trackType), trackId);
         FALSE_RETURN_V_MSG_E(trackType != TRACK_INVALID, Status::ERROR_INVALID_PARAMETER, "TrackType is invalid");
         StreamType streamType = TRACK_TO_STREAM_MAP[trackType];
