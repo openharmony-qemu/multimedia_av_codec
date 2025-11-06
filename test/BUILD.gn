@@ -427,6 +427,11 @@ group("av_codec_fuzz_test") {
       "fuzztest/http_plugin_fuzztest/dashmediadownloader2_fuzzer:DashMediaDownloader2FuzzTest",
       "fuzztest/http_plugin_fuzztest/mpdparserthird_fuzzer:MpdParserThirdFuzzTest",
       "fuzztest/http_plugin_fuzztest/mpdparserseven_fuzzer:MpdParserSevenFuzzTest",
+      "fuzztest/demuxervobapi11_fuzzer:DemuxerVopAPI11FuzzTest",
+      "fuzztest/demuxer3g2api11_fuzzer:Demuxer3g2API11FuzzTest",
+      "fuzztest/demuxer3gpapi11_fuzzer:Demuxer3gpAPI11FuzzTest",
+      "fuzztest/demuxerwmvapi11_fuzzer:DemuxerWmvAPI11FuzzTest",
+      "fuzztest/demuxerm4vapi11_fuzzer:DemuxerM4vAPI11FuzzTest",
     ]
     if(av_codec_enable_codec_eac3) {
       deps += [ "fuzztest/audiodecodereac3_fuzzer:AudioDecoderEac3FuzzTest" ]

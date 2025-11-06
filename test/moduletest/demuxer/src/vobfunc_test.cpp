@@ -52,6 +52,14 @@ protected:
     const char *INP_URI_2 = "http://127.0.0.1:46666/vob_mpeg2_main@level6_1280_720_mp2_31.vob";
     const char *INP_DIR_3 = "/data/test/media/vob_mpeg2_main@level6_1280_720_mp2_13.vob";
     const char *INP_URI_3 = "http://127.0.0.1:46666/vob_mpeg2_main@level6_1280_720_mp2_13.vob";
+    const char *INP_DIR_4 = "/data/test/media/vob_mpeg1_main@level6_960_400_mp2_2.vob";
+    const char *INP_URI_4 = "http://127.0.0.1:46666/vob_mpeg1_main@level6_960_400_mp2_2.vob";
+    const char *INP_DIR_5 = "/data/test/media/vob_mpeg2_main@level6_960_400_mp3_2.vob";
+    const char *INP_URI_5 = "http://127.0.0.1:46666/vob_mpeg2_main@level6_960_400_mp3_2.vob";
+    const char *INP_DIR_6 = "/data/test/media/vob_mpeg2_main@level6_960_400_ac3_2.vob";
+    const char *INP_URI_6 = "http://127.0.0.1:46666/vob_mpeg2_main@level6_960_400_ac3_2.vob";
+    const char *INP_DIR_7 = "/data/test/media/vob_mpeg2_main@level6_960_400_pcm_2.vob";
+    const char *INP_URI_7 = "http://127.0.0.1:46666/vob_mpeg2_main@level6_960_400_pcm_2.vob";
 };
 
 static unique_ptr<FileServerDemo> server = nullptr;
@@ -777,4 +785,188 @@ HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_FUNC_4600, TestSize.Level2)
     ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
     close(g_fd);
     g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_FUNC_4700
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg1_main@level6_960_400_mp2_2 basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_FUNC_4700, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_4);
+    DemuxerResult();
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_URI_FUNC_4700
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg1_main@level6_960_400_mp2_2 basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_URI_FUNC_4700, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_4);
+    DemuxerResult();
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_FUNC_4800
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg1_main@level6_960_400_mp2_2 seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_FUNC_4800, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_4, SEEK_MODE_PREVIOUS_SYNC, 0, 1116, 1941};
+    CreateFdSource(INP_DIR_4);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_URI_FUNC_4800
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg1_main@level6_960_400_mp2_2 seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_URI_FUNC_4800, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_4, SEEK_MODE_PREVIOUS_SYNC, 0, 1116, 1941};
+    CreateUriSource(INP_URI_4);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_FUNC_4900
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg2_main@level6_960_400_mp3_2 basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_FUNC_4900, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_5);
+    DemuxerResult();
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_URI_FUNC_4900
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg2_main@level6_960_400_mp3_2 basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_URI_FUNC_4900, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_5);
+    DemuxerResult();
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_FUNC_5000
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg2_main@level6_960_400_mp3_2 seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_FUNC_5000, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_5, SEEK_MODE_PREVIOUS_SYNC, 0, 1116, 1938};
+    CreateFdSource(INP_DIR_5);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_URI_FUNC_5000
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg2_main@level6_960_400_mp3_2 seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_URI_FUNC_5000, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_5, SEEK_MODE_PREVIOUS_SYNC, 0, 1116, 1938};
+    CreateUriSource(INP_URI_5);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_FUNC_5100
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg2_main@level6_960_400_ac3_2 basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_FUNC_5100, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_6);
+    DemuxerResult();
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_URI_FUNC_5100
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg2_main@level6_960_400_ac3_2 basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_URI_FUNC_5100, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_6);
+    DemuxerResult();
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_FUNC_5200
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg2_main@level6_960_400_ac3_2 seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_FUNC_5200, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_6, SEEK_MODE_PREVIOUS_SYNC, 0, 1116, 1456};
+    CreateFdSource(INP_DIR_6);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_URI_FUNC_5200
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg2_main@level6_960_400_ac3_2 seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_URI_FUNC_5200, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_6, SEEK_MODE_PREVIOUS_SYNC, 0, 1116, 1456};
+    CreateUriSource(INP_URI_6);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_FUNC_5300
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg2_main@level6_960_400_pcm_2 basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_FUNC_5300, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_7);
+    DemuxerResult();
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_URI_FUNC_5300
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg2_main@level6_960_400_pcm_2 basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_URI_FUNC_5300, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_7);
+    DemuxerResult();
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_FUNC_5400
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg2_main@level6_960_400_pcm_2 seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_FUNC_5400, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_7, SEEK_MODE_PREVIOUS_SYNC, 0, 699, 2713};
+    CreateFdSource(INP_DIR_7);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_VOB_URI_FUNC_5400
+ * @tc.name      : demuxer VOB, demuxer vob_mpeg2_main@level6_960_400_pcm_2 seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerVobFuncNdkTest, DEMUXER_VOB_URI_FUNC_5400, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_7, SEEK_MODE_PREVIOUS_SYNC, 0, 699, 2713};
+    CreateUriSource(INP_URI_7);
+    CheckSeekMode(fileTest1);
 }
