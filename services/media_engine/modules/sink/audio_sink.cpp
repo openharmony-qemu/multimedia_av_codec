@@ -1545,6 +1545,7 @@ Status AudioSink::ChangeTrackForFormatChange()
     hasPluginCreateTaskFinished_ = false;
     FALSE_RETURN_V(newPlugin_ != nullptr, Status::ERROR_NULL_POINTER);
     plugin_ = std::move(newPlugin_);
+    SetAudioSinkPluginParameters(plugin_);
 
     forceUpdateTimeAnchorNextTime_ = true;
 
@@ -1697,9 +1698,6 @@ std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::PreCreateAndStartNewPlugin(
     FALSE_RETURN_V(plugin != nullptr, nullptr);
     Status ret = Status::OK;
     ret = InitAudioSinkPlugin(meta, receiver, plugin);
-    FALSE_RETURN_V(ret == Status::OK, nullptr);
-
-    ret = SetAudioSinkPluginParameters(plugin);
     FALSE_RETURN_V(ret == Status::OK, nullptr);
     return plugin;
 }
