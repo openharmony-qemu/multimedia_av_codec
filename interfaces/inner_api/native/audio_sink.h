@@ -155,7 +155,7 @@ private:
         const std::shared_ptr<Plugins::AudioSinkPlugin>& plugin);
     Status InitAudioSinkInfo(std::shared_ptr<Meta>& meta);
     Status SetAudioSinkPluginParameters(const std::shared_ptr<Plugins::AudioSinkPlugin>& plugin);
-    std::shared_ptr<Plugins::AudioSinkPlugin> PreCreateAndStartNewPlugin(const std::shared_ptr<Meta>& meta,
+    std::shared_ptr<Plugins::AudioSinkPlugin> PreCreateNewPlugin(const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     void FlushForChangeTrack();
     Status ChangeTrackForFormatChange();
