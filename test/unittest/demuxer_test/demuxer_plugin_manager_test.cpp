@@ -51,6 +51,7 @@ static const std::string DEMUXER_PLUGIN_NAME_WAV = "avdemux_wav";
 static const std::string DEMUXER_PLUGIN_NAME_RM = "avdemux_rm";
 static const std::string DEMUXER_PLUGIN_NAME_AC3 = "avdemux_ac3";
 static const std::string DEMUXER_PLUGIN_NAME_ERR = "avdemux_err";
+static const std::string DEMUXER_PLUGIN_NAME_ASF = "avdemux_asf";
 
 static const string TEST_FILE_PATH = "/data/test/media/";
 static const string TEST_FILE_URI_AAC = TEST_FILE_PATH + "audio/aac_44100_1.aac";
@@ -75,6 +76,10 @@ static const string TEST_FILE_URI_OGG = TEST_FILE_PATH + "audio/ogg_48000_1.ogg"
 static const string TEST_FILE_URI_WAV = TEST_FILE_PATH + "audio/wav_48000_1.wav";
 static const string TEST_FILE_URI_RM = TEST_FILE_PATH + "rv40_cook.rmvb";
 static const string TEST_FILE_URI_AC3 = TEST_FILE_PATH + "audio/ac3_test.ac3";
+static const string TEST_FILE_URI_ASF = TEST_FILE_PATH + "wmv_wmv3_wmapro.wmv";
+static const string TEST_FILE_URI_3GP = TEST_FILE_PATH + "3gp_h264_aac.3gp";
+static const string TEST_FILE_URI_3G2 = TEST_FILE_PATH + "3g2_mp4v_mp4a.3g2";
+static const string TEST_FILE_URI_VOB = TEST_FILE_PATH + "vob_mpeg2_mp2.vob";
 
 typedef struct TestInfo {
     string pluginName;
@@ -104,7 +109,11 @@ static std::vector<TestInfo> TEST_LIST = {
     {DEMUXER_PLUGIN_NAME_SRT, TEST_FILE_URI_SRT, {5, 0, 5, 0}},
     {DEMUXER_PLUGIN_NAME_WEBVTT, TEST_FILE_URI_WEBVTT, {4, 0, 4, 0}},
     {DEMUXER_PLUGIN_NAME_OGG, TEST_FILE_URI_OGG, {1598, 0, 1598, 0}},
-    {DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_URI_WAV, {704, 0, 704, 0}}
+    {DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_URI_WAV, {704, 0, 704, 0}},
+    {DEMUXER_PLUGIN_NAME_ASF, TEST_FILE_URI_ASF, {122, 480, 122, 8}},
+    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_3GP, {1116, 2186, 23, 2186}},
+    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_3G2, {937, 1121, 81, 1121}},
+    {DEMUXER_PLUGIN_NAME_MPEG, TEST_FILE_URI_VOB, {300, 417, 25, 417}},
 };
 
 
