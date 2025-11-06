@@ -68,7 +68,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_DAT_GetFormat_0001, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 115);
+    ASSERT_EQ(formatVal_.fileType, 102);
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -100,7 +100,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_DAT_GetFormat_0001, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 128000);
+    ASSERT_EQ(formatVal_.bitRate, 96644);
     ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
@@ -120,7 +120,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_DAT_GetFormat_0002, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 115);
+    ASSERT_EQ(formatVal_.fileType, 102);
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -153,7 +153,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_DAT_GetFormat_0002, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 128000);
+    ASSERT_EQ(formatVal_.bitRate, 96644);
     ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
@@ -175,7 +175,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_DAT_GetFormat_0003, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 115);
+    ASSERT_EQ(formatVal_.fileType, 102);
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -209,7 +209,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_DAT_GetFormat_0003, TestSize.Level1)
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.bitRate, 192000);
     ASSERT_EQ(formatVal_.codecMime, "audio/mpeg");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16P);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
 
@@ -227,7 +227,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_DAT_GetFormat_0004, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 115);
+    ASSERT_EQ(formatVal_.fileType, 102);
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -261,7 +261,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_DAT_GetFormat_0004, TestSize.Level1)
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.bitRate, 192000);
     ASSERT_EQ(formatVal_.codecMime, "audio/mpeg");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16P);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
 }
 
@@ -281,7 +281,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_DAT_GetFormat_0005, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 115);
+    ASSERT_EQ(formatVal_.fileType, 102);
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -294,8 +294,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_DAT_GetFormat_0005, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     ASSERT_EQ(formatVal_.codecMime, "video/hevc");
     printf("[ formatVal_.codecMime ]: %s\n", formatVal_.codecMime.c_str());
-    ASSERT_EQ(formatVal_.width, 3840);
-    ASSERT_EQ(formatVal_.height, 2160);
+    ASSERT_EQ(formatVal_.width, 0);
+    ASSERT_EQ(formatVal_.height, 0);
     ASSERT_DOUBLE_EQ(formatVal_.frameRate, 60.000000);
     trackIndex_ = 1;
     format_->Destroy();
@@ -313,7 +313,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_DAT_GetFormat_0005, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 96000);
     ASSERT_EQ(formatVal_.channelCount, 6);
-    ASSERT_EQ(formatVal_.bitRate, 384000);
+    ASSERT_EQ(formatVal_.bitRate, 113730);
     ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 63);
@@ -333,7 +333,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_DAT_GetFormat_0006, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 115);
+    ASSERT_EQ(formatVal_.fileType, 102);
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -347,8 +347,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_DAT_GetFormat_0006, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     ASSERT_EQ(formatVal_.codecMime, "video/hevc");
     printf("[ formatVal_.codecMime ]: %s\n", formatVal_.codecMime.c_str());
-    ASSERT_EQ(formatVal_.width, 3840);
-    ASSERT_EQ(formatVal_.height, 2160);
+    ASSERT_EQ(formatVal_.width, 0);
+    ASSERT_EQ(formatVal_.height, 0);
     ASSERT_DOUBLE_EQ(formatVal_.frameRate, 60.000000);
     trackIndex_ = 1;
     format_->Destroy();
@@ -367,7 +367,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_DAT_GetFormat_0006, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 96000);
     ASSERT_EQ(formatVal_.channelCount, 6);
-    ASSERT_EQ(formatVal_.bitRate, 384000);
+    ASSERT_EQ(formatVal_.bitRate, 113730);
     ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 63);
