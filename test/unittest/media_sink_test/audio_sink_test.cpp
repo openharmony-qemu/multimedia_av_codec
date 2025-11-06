@@ -1342,7 +1342,7 @@ HWTEST(TestAudioSink, audio_sink_SetAudioSinkPluginParameters_001, TestSize.Leve
     ASSERT_TRUE(ret == Status::OK);
 }
 
-HWTEST(TestAudioSink, audio_sink_PreCreateAndStartNewPlugin_001, TestSize.Level1)
+HWTEST(TestAudioSink, audio_sink_PreCreateNewPlugin_001, TestSize.Level1)
 {
     auto audioSink = AudioSinkCreate();
     ASSERT_TRUE(audioSink != nullptr);
@@ -1351,7 +1351,7 @@ HWTEST(TestAudioSink, audio_sink_PreCreateAndStartNewPlugin_001, TestSize.Level1
     audioSink->effectMode_ = -1;
     audioSink->state_  = Pipeline::FilterState::RUNNING;
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
-    auto plugin = audioSink->PreCreateAndStartNewPlugin(meta, nullptr);
+    auto plugin = audioSink->PreCreateNewPlugin(meta, nullptr);
     ASSERT_TRUE(plugin != nullptr);
 }
 
