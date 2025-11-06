@@ -1161,40 +1161,6 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3200, TestSize.Level1)
 }
 
 /**
- * @tc.number    : DEMUXER_ADPCM_FUNC_3300
- * @tc.name      : seek to the start time, next mode
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3300, TestSize.Level1)
-{
-    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
-    CheckSeekMode(fileTest11);
-    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
-    CheckSeekMode(fileTest12);
-    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
-    CheckSeekMode(fileTest13);
-    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
-    CheckSeekMode(fileTest14);
-}
-
-/**
- * @tc.number    : DEMUXER_ADPCM_FUNC_3400
- * @tc.name      : seek to the start time, closest mode
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3400, TestSize.Level1)
-{
-    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
-    CheckSeekMode(fileTest11);
-    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
-    CheckSeekMode(fileTest12);
-    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
-    CheckSeekMode(fileTest13);
-    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 0, 33, 9};
-    CheckSeekMode(fileTest14);
-}
-
-/**
  * @tc.number    : DEMUXER_ADPCM_FUNC_3500
  * @tc.name      : seek to the end time, previous mode
  * @tc.desc      : function test
@@ -1229,23 +1195,6 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3600, TestSize.Level1)
 }
 
 /**
- * @tc.number    : DEMUXER_ADPCM_FUNC_3700
- * @tc.name      : seek to the end time, closest mode
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3700, TestSize.Level1)
-{
-    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 966667, 32, 23};
-    CheckSeekMode(fileTest11);
-    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 966667, 32, 23};
-    CheckSeekMode(fileTest12);
-    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 966667, 32, 23};
-    CheckSeekMode(fileTest13);
-    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 966667, 32, 23};
-    CheckSeekMode(fileTest14);
-}
-
-/**
  * @tc.number    : DEMUXER_ADPCM_FUNC_3800
  * @tc.name      : seek to the middle time, previous mode
  * @tc.desc      : function test
@@ -1268,23 +1217,6 @@ HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3800, TestSize.Level1)
  * @tc.desc      : function testZHE
  */
 HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_3900, TestSize.Level1)
-{
-    seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 500000, 31, 28};
-    CheckSeekMode(fileTest11);
-    seekInfo fileTest12{INP_DIR_MS_2, SEEK_MODE_PREVIOUS_SYNC, 500000, 31, 28};
-    CheckSeekMode(fileTest12);
-    seekInfo fileTest13{INP_DIR_MS_3, SEEK_MODE_PREVIOUS_SYNC, 500000, 31, 28};
-    CheckSeekMode(fileTest13);
-    seekInfo fileTest14{INP_DIR_MS_4, SEEK_MODE_PREVIOUS_SYNC, 500000, 31, 28};
-    CheckSeekMode(fileTest14);
-}
-
-/**
- * @tc.number    : DEMUXER_ADPCM_FUNC_4000
- * @tc.name      : seek to the middle time, closest mode
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerAdpcmMsFuncNdkTest, DEMUXER_ADPCM_FUNC_4000, TestSize.Level1)
 {
     seekInfo fileTest11{INP_DIR_MS_1, SEEK_MODE_PREVIOUS_SYNC, 500000, 31, 28};
     CheckSeekMode(fileTest11);
