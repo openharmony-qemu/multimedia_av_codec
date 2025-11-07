@@ -269,6 +269,13 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MSVIDEO1;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VC1;
 
 /**
+ * @brief Enumerates the MIME type of video MJPEG codec.
+ *
+ * @since 22
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MJPEG;
+
+/**
  * @brief Enumerates the MIME types of audio and video codecs
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
