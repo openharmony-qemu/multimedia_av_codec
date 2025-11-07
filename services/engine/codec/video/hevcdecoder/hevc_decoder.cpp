@@ -22,6 +22,7 @@
 #include "securec.h"
 #include "avcodec_trace.h"
 #include "avcodec_log.h"
+#include "dma_swap.h"
 #include "utils.h"
 #include "avcodec_codec_name.h"
 #include "hevc_decoder.h"
@@ -1139,7 +1140,7 @@ void HevcDecoder::SendFrame()
 {
     if (state_ == State::STOPPING || state_ == State::FLUSHING) {
         return;
-    } else if (state_ != State::RUNNING || isSendEos_ || codecAvailQue_->Size() == 0u) {
+    } else if (state_ != State::RUNNING || isSendEos_ || codecAvailQue_->Size() == 0u || inputAvailQue_->Size() == 0u) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
@@ -1744,7 +1745,6 @@ int32_t HevcDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
                 ownedBySurfaceBufferIndex.push_back(index);
             }
         } else {
-            RequestSurfaceBufferOnce(index);
             surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         }
         CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get old surface buffer error!");
@@ -1917,7 +1917,6 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 int32_t HevcDecoder::NotifyMemoryRecycle()
 {
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
-    CHECK_AND_RETURN_RET_LOG(!disableDmaSwap_, 0, "HevcCodec dma swap has been disabled!");
     CHECK_AND_RETURN_RET_LOGD(state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS,
                               AVCS_ERR_INVALID_STATE, "Current state can't recycle memory!");
     AVCODEC_LOGI("Begin to freeze this codec");
@@ -1971,7 +1970,7 @@ int32_t HevcDecoder::SwapOutBuffers(bool isOutputBuffer, State curState)
         std::shared_ptr<HBuffer> hBuffer = buffers_[bufferType][i];
         if (!CanSwapOut(isOutputBuffer, hBuffer)) {
             AVCODEC_LOGW("Buf: [%{public}u] can't freeze, owner: [%{public}d] swaped out: [%{public}d]!", i,
-                         hBuffer->owner_.load(), hBuffer->hasSwapedOut);
+                         hBuffer->owner_.load(), hBuffer->hasSwapedOut.load());
             continue;
         }
         std::shared_ptr<FSurfaceMemory> surfaceMemory = hBuffer->sMemory;
@@ -1989,7 +1988,7 @@ int32_t HevcDecoder::SwapOutBuffers(bool isOutputBuffer, State curState)
             return ret;
         }
         AVCODEC_LOGI("Buf[%{public}u] fd[%{public}u] swap out success!", i, fd);
-        hBuffer->hasSwapedOut = true;
+        hBuffer->hasSwapedOut.store(true);
     }
     return AVCS_ERR_OK;
 }
@@ -2004,8 +2003,8 @@ bool HevcDecoder::CanSwapOut(bool isOutputBuffer, std::shared_ptr<HBuffer> &hBuf
     CHECK_AND_RETURN_RET_LOGD(surfaceMemory != nullptr, false, "Current buffer->sMemory error!");
     Owner ownerValue = surfaceMemory->owner;
     AVCODEC_LOGD("Buffer type: [%{public}u], hBuffer->owner_: [%{public}d], hBuffer->hasSwapedOut: [%{public}d].",
-                 isOutputBuffer, ownerValue, hBuffer->hasSwapedOut);
-    return !(ownerValue == Owner::OWNED_BY_SURFACE || hBuffer->hasSwapedOut);
+                 isOutputBuffer, ownerValue, hBuffer->hasSwapedOut.load());
+    return !(ownerValue == Owner::OWNED_BY_SURFACE || hBuffer->hasSwapedOut.load());
 }
 
 int32_t HevcDecoder::SwapInBuffers(bool isOutputBuffer)
@@ -2014,7 +2013,7 @@ int32_t HevcDecoder::SwapInBuffers(bool isOutputBuffer)
     CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped in!");
     for (uint32_t i = 0u; i < buffers_[bufferType].size(); i++) {
         std::shared_ptr<HBuffer> hBuffer = buffers_[bufferType][i];
-        if (!hBuffer->hasSwapedOut) {
+        if (!hBuffer->hasSwapedOut.load()) {
             continue;
         }
         std::shared_ptr<FSurfaceMemory> surfaceMemory = hBuffer->sMemory;
@@ -2025,7 +2024,7 @@ int32_t HevcDecoder::SwapInBuffers(bool isOutputBuffer)
         int32_t ret = DmaSwaper::GetInstance().SwapInDma(pid_, fd);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Buf[%{public}u] fd[%{public}u] swap in error!", i, fd);
         AVCODEC_LOGI("Buf[%{public}u] fd[%{public}u] swap in success!", i, fd);
-        hBuffer->hasSwapedOut = false;
+        hBuffer->hasSwapedOut.store(false);
     }
     return AVCS_ERR_OK;
 }
