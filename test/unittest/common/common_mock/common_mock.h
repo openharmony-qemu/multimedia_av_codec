@@ -34,6 +34,8 @@ namespace MediaAVCodec {
 class SurfaceMock : public NoCopyable {
 public:
     virtual ~SurfaceMock() = default;
+    virtual void GetTransform(int32_t &transform) = 0;
+    virtual void SetTransform(int32_t &transform) = 0;
 };
 
 class AVMemoryMock : public NoCopyable {
@@ -47,7 +49,7 @@ public:
 
 class __attribute__((visibility("default"))) SurfaceMockFactory {
 public:
-    static std::shared_ptr<SurfaceMock> CreateSurface(sptr<Surface> &surface);
+    static std::shared_ptr<SurfaceMock> CreateSurface(sptr<Surfaces> &surface);
 
 private:
     SurfaceMockFactory() = delete;
