@@ -531,6 +531,25 @@ extern const char *OH_MD_KEY_I_FRAME_INTERVAL;
 extern const char *OH_MD_KEY_ROTATION;
 
 /**
+ * @brief Key for video transform type, value type is int32_t, see {@link OH_NativeBuffer_TransformType}.
+ *
+ * This key is used to set the surface transform for video decoders (surface mode).
+ * If not specified, the default value is 0 ({@link NATIVEBUFFER_ROTATE_NONE}).
+ * This key and {@link OH_MD_KEY_ROTATION} are mutually exclusive. If both are provided,
+ * OH_MD_KEY_VIDEO_TRANSFORM_TYPE takes precedence.
+ * Note that the degrees specified in {@link OH_NativeBuffer_TransformType} represent counter-clockwise rotation,
+ * which are opposite to the direction of rotation defined by {@link OH_MD_KEY_ROTATION}.
+ * The correspondence is:
+ * - {@link NATIVEBUFFER_ROTATE_NONE}  => same as OH_MD_KEY_ROTATION = 0
+ * - {@link NATIVEBUFFER_ROTATE_90}    => same as OH_MD_KEY_ROTATION = 270
+ * - {@link NATIVEBUFFER_ROTATE_180}   => same as OH_MD_KEY_ROTATION = 180
+ * - {@link NATIVEBUFFER_ROTATE_270}   => same as OH_MD_KEY_ROTATION = 90
+ *
+ * @since 22
+ */
+extern const char *OH_MD_KEY_VIDEO_TRANSFORM_TYPE;
+
+/**
  * @brief Provides the uniform key for storing the media description.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
