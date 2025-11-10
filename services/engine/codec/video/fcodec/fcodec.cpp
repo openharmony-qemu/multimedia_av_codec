@@ -688,7 +688,6 @@ int32_t FCodec::SetSurfaceCfg()
     GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(static_cast<VideoPixelFormat>(pixelFormat));
     CHECK_AND_RETURN_RET_LOG(surfacePixelFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT, AVCS_ERR_UNSUPPORT,
                              "Failed to allocate output buffer: unsupported surface format");
-    format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
     if (format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
         CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, scaleType) &&
             scaleType >= 0 && scaleType <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
