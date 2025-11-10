@@ -890,7 +890,9 @@ bool HlsSegmentManager::SeekToTime(int64_t seekTime, SeekMode mode)
     bufferingTime_ = 0;
     PrepareToSeek();
     FALSE_RETURN_V_MSG(!isInterruptNeeded_, true, "HLS Seek return, isInterruptNeeded_.");
-    if (seekTime_ < static_cast<uint64_t>(playlistDownloader_->GetDuration())) {
+    auto totalDuration = playlistDownloader_->GetDuration();
+    FALSE_RETURN_V(totalDuration != -1, false);
+    if (seekTime_ < totalDuration) {
         if (playlistDownloader_->IsHlsFmp4()) {
             isNeedReadHeader_.store(true);
         }

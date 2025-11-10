@@ -55,7 +55,7 @@ DashMpdDownloader::DashMpdDownloader(std::shared_ptr<MediaSourceLoaderCombinatio
     representationManager_ = std::make_shared<DashRepresentationManager>();
 }
 
-DashMpdDownloader::~DashMpdDownloader() noexcept
+DashMpdDownloader::~DashMpdDownloader()
 {
     if (downloader_ != nullptr) {
         downloader_->Stop(false);
