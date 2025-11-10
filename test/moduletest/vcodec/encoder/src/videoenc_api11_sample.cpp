@@ -82,10 +82,14 @@ static void VencError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 static void VencFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
     cout << "Format Changed" << endl;
+    int currentFormat = 0;
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_WIDTH, &g_picWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_HEIGHT, &g_picHeight);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &g_keyWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &g_keyHeight);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &currentFormat);
+    std::cout << "currentFormat:" << currentFormat << std::endl;
+    enc_sample->onStreamChangedKey = currentFormat;
     cout << "format info: " << OH_AVFormat_DumpInfo(format) << ", OH_MD_KEY_VIDEO_PIC_WIDTH: " << g_picWidth
     << ", OH_MD_KEY_VIDEO_PIC_HEIGHT: "<< g_picHeight << ", OH_MD_KEY_WIDTH: " << g_keyWidth
     << ", OH_MD_KEY_HEIGHT: " << g_keyHeight << endl;
@@ -1241,6 +1245,8 @@ void VEncAPI11Sample::OutputFunc()
         if (!isRunning_.load()) {
             break;
         }
+        GetVideoSupportedPixelFormats();
+        GetFormatKey();
         uint32_t index = signal_->outIdxQueue_.front();
         OH_AVBuffer *buffer = signal_->outBufferQueue_.front();
         signal_->outBufferQueue_.pop();
@@ -1455,4 +1461,29 @@ void VEncAPI11Sample::FlushStatus()
     StopInloop();
     StopOutloop();
     Flush_buffer();
+}
+
+void VEncAPI11Sample::GetVideoSupportedPixelFormats()
+{
+    if (!isGetVideoSupportedPixelFormats || isGetVideoSupportedPixelFormatsNum != 0) {
+        return;
+    }
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(avcodecMimeType, isEncoder);
+    OH_AVCapability_GetVideoSupportedNativeBufferFormats(capability, &pixlFormats, &pixlFormatNum);
+    std::cout << "pixlFormats:" << *pixlFormats << "pixlFormatNum:" << pixlFormatNum << std::endl;
+    isGetVideoSupportedPixelFormatsNum++;
+}
+
+void VEncAPI11Sample::GetFormatKey()
+{
+    if (!isGetFormatKey || isGetFormatKeyNum != 0) {
+        return;
+    }
+    OH_AVFormat *format = OH_AVFormat_Create();
+    OH_VideoEncoder_Configure(venc_, format);
+    format = OH_VideoEncoder_GetOutputDescription(venc_);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &firstCallBackKey);
+    OH_AVFormat_Destroy(format);
+    std::cout << "firstCallBackKey:" << firstCallBackKey << std::endl;
+    isGetFormatKeyNum++;
 }

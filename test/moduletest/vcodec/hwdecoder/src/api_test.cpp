@@ -2308,4 +2308,42 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_DECODE_SYNC_API_0080, TestSize.Level2)
 {
     ASSERT_EQ(nullptr, OH_VideoDecoder_GetOutputBuffer(nullptr, 1));
 }
+
+/**
+ * @tc.number    : VIDEO_HWDEC_FORMAT_API_0010
+ * @tc.name      : h265 pixelformat query key OH_AVCapability == nullptr
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_FORMAT_API_0010, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    OH_AVCapability_GetVideoSupportedNativeBufferFormats(
+        nullptr, &(vDecSample->pixlFormats), &(vDecSample->pixlFormatNum));
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_FORMAT_API_0020
+ * @tc.name      : h265 pixelformat query key nativeBufferFormatNum == nullptr
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_FORMAT_API_0020, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    const char *avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(avcodecMimeType, false);
+    OH_AVCapability_GetVideoSupportedNativeBufferFormats(capability, &(vDecSample->pixlFormats), nullptr);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_FORMAT_API_0030
+ * @tc.name      : h265 pixelformat query key OH_NativeBuffer_Format == nullptr
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_FORMAT_API_0030, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    const char *avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(avcodecMimeType, false);
+    OH_AVCapability_GetVideoSupportedNativeBufferFormats(capability, nullptr, &(vDecSample->pixlFormatNum));
+}
 } // namespace
