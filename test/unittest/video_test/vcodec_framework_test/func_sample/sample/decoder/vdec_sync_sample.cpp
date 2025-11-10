@@ -143,7 +143,8 @@ int32_t VideoDecSyncSample::SetOutputSurface()
     return ret;
 }
 
-int32_t VideoDecSyncSample::SetOutputSurface(std::shared_ptr<SurfaceMock> surface) {
+int32_t VideoDecSyncSample::SetOutputSurface(std::shared_ptr<SurfaceMock> surface)
+{
     int32_t ret = videoDec_->SetOutputSurface(surface);
     isSurfaceMode_ = (ret == AV_ERR_OK);
     return ret;
