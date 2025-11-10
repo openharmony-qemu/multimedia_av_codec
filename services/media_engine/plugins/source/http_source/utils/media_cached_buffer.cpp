@@ -340,8 +340,8 @@ bool CacheMediaChunkBufferImpl::WriteMergerPre(uint64_t offset, size_t writeSize
 
 void CacheMediaChunkBufferImpl::WriteMergerPost(FragmentIterator& nextFragmentPos)
 {
-    if (nextFragmentPos == fragmentCacheBuffer_.end() || writePos_->chunks.empty() ||
-        nextFragmentPos->chunks.empty()) {
+    if (nextFragmentPos == fragmentCacheBuffer_.end() || writePos_ == fragmentCacheBuffer_.end() ||
+        writePos_->chunks.empty() || nextFragmentPos->chunks.empty()) {
         return;
     }
     auto preChunkInfo = writePos_->chunks.back();
