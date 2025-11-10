@@ -49,7 +49,7 @@ public:
 
 class __attribute__((visibility("default"))) SurfaceMockFactory {
 public:
-    static std::shared_ptr<SurfaceMock> CreateSurface(sptr<Surfaces> &surface);
+    static std::shared_ptr<SurfaceMock> CreateSurface(sptr<Surface> &surface);
 
 private:
     SurfaceMockFactory() = delete;
