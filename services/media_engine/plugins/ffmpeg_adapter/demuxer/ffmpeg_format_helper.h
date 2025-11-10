@@ -92,7 +92,8 @@ private:
 
     static void ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format);
 
-    static void ParseInfoFromMetadata(const AVDictionary* metadata, Meta &format);
+    static void ParseInfoFromMetadata(
+        const AVDictionary* metadata, Meta &format, std::map<std::string, TagType> tagRange);
     static void ParseRotationFromMatrix(const AVStream& avStream, Meta &format);
     static void ParseOrientationFromMatrix(const AVStream& avStream, Meta &format);
     static void ParseTrackType(const AVFormatContext& avFormatContext, Meta& format);
@@ -100,8 +101,6 @@ private:
     static void ParseAv3aInfo(const AVStream& avStream, Meta &format);
     static void ConvertAv3aSampleFormat(const AVStream& avStream, Meta &format);
     static void ParseGltfInfo(const AVFormatContext& avFormatContext, Meta &format);
-    static void UpdateCharset(
-        const AVDictionary* metadata, AVDictionaryEntry *valPtr, TagType key, std::string value, Meta &format);
 };
 extern std::vector<TagType> g_supportSourceFormat;
 } // namespace Ffmpeg
