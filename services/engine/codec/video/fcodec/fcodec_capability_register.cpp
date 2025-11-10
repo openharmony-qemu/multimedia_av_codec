@@ -35,17 +35,6 @@ constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
 constexpr int32_t VIDEO_FRAMERATE_DEFAULT_SIZE = 60;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 139264;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
-constexpr int32_t VC1_ALIGNMENT_SIZE = 2;
-constexpr int32_t VC1_MIN_WIDTH_SIZE = 176;
-constexpr int32_t VC1_MIN_HEIGHT_SIZE = 144;
-constexpr int32_t VC1_MAX_WIDTH_SIZE = 2048;
-constexpr int32_t VC1_MAX_HEIGHT_SIZE = 2048;
-constexpr int32_t VC1_BITRATE_MAX_SIZE = 135000000;
-constexpr int32_t VC1_BLOCKPERFRAME_SIZE = 16384;
-constexpr int32_t VC1_BLOCKPERSEC_SIZE = 983040;
-constexpr int32_t MSVIDEO1_MIN_WIDTH_SIZE = 4;
-constexpr int32_t MSVIDEO1_MIN_HEIGHT_SIZE = 4;
-constexpr int32_t MSVIDEO1_BLOCKPERSEC_SIZE = 3932160;
 } // namespace
 using namespace OHOS::Media;
 
@@ -247,11 +236,6 @@ void GetCapabilityData(CapabilityData &capsData, uint32_t index)
     capsData.pixFormat = {
         static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
         static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
-    capsData.graphicPixFormat = {
-        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P),
-        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP),
-        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP),
-        static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888)};
 }
 
 int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
