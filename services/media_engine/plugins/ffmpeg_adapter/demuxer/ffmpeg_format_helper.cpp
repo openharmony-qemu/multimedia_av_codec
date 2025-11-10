@@ -790,7 +790,7 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format, 
         }
     }
     FileType fileType = GetFileTypeByName(avFormatContext);
-    if(std::count(g_typeForTrackLevelBaseInfo.begin(), g_typeForTrackLevelBaseInfo.end(), fileType) > 0) {
+    if (std::count(g_typeForTrackLevelBaseInfo.begin(), g_typeForTrackLevelBaseInfo.end(), fileType) > 0) {
         ParseInfoFromMetadata(avStream.metadata, format, g_trackLevelBaseInfo);
     }
 }
