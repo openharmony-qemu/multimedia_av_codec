@@ -220,6 +220,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_001, TestSize.Level1)
     EXPECT_EQ(1, transform);
 
     CreateVideoCodecByName("OMX.hisi.video.decoder.avc");
+    SetFormatWithParam(0);
+    PrepareSource(HW_AVC);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface(surface));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -244,11 +246,12 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_002, TestSize.Level1)
     std::shared_ptr<SurfaceMock> surface = SurfaceMockFactory::CreateSurface(producer_);
 
     CreateVideoCodecByName("OMX.hisi.video.decoder.avc");
+    PrepareSource(HW_AVC);
     std::shared_ptr<OHOS::MediaAVCodec::FormatMock> formatCfg = FormatMockFactory::CreateFormat();
     ASSERT_NE(nullptr, formatCfg);
     formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUV420P));
+    formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     formatCfg->PutIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, 1);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(formatCfg));
     videoDec_->SetOutputSurface(surface);
