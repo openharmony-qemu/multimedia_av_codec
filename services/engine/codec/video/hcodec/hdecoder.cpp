@@ -194,6 +194,10 @@ int32_t HDecoder::UpdateOutPortFormat()
     OHOS::Rect damage{};
     GetCropFromOmx(w, h, damage);
     outBufferCnt_ = def.nBufferCountActual;
+    if (outBufferCnt_ > MAX_BUFFER_COUNT) {
+        HLOGE("output buffer count %u is invalid", outBufferCnt_);
+        return AVCS_ERR_UNSUPPORT;
+    }
     requestCfg_.timeout = 0; // never wait when request
     requestCfg_.width = isNeedUseDecResolution ?  static_cast<int32_t>(def.format.video.nFrameWidth) : damage.w;
     requestCfg_.height = isNeedUseDecResolution ? static_cast<int32_t>(def.format.video.nFrameHeight) : damage.h;
