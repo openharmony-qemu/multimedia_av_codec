@@ -24,6 +24,8 @@
 #include "avcodec_log.h"
 #include "utils.h"
 #include "avcodec_codec_name.h"
+#include "dma_swap.h"
+#include "fcodec_surport_codec.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -39,44 +41,19 @@ constexpr int32_t DEFAULT_MIN_BUFFER_CNT = 2;
 constexpr uint32_t VIDEO_PIX_DEPTH_YUV = 3;
 constexpr int32_t VIDEO_MIN_BUFFER_SIZE = 1474560;
 constexpr int32_t VIDEO_MIN_SIZE = 2;
-constexpr int32_t VIDEO_ALIGNMENT_SIZE = 2;
 constexpr int32_t VIDEO_MAX_WIDTH_SIZE = 4096;
 constexpr int32_t VIDEO_MAX_HEIGHT_SIZE = 4096;
-constexpr int32_t VIDEO_MAX_WIDTH_H263_SIZE = 2048;
-constexpr int32_t VIDEO_MAX_HEIGHT_H263_SIZE = 1152;
-constexpr int32_t VIDEO_MIN_WIDTH_H263_SIZE = 20;
-constexpr int32_t VIDEO_MIN_HEIGHT_H263_SIZE = 20;
 constexpr int32_t DEFAULT_VIDEO_WIDTH = 1920;
 constexpr int32_t DEFAULT_VIDEO_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
 constexpr uint32_t DEFAULT_DECODE_WAIT_TIME = 200;
 constexpr uint32_t LOG_FREQUENCE = 200;
-constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
-constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 300000000;
-constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
-constexpr int32_t VIDEO_FRAMERATE_DEFAULT_SIZE = 60;
-constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 139264;
-constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
 constexpr int32_t DEFAULT_THREAD_COUNT = 2;
+
 #ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/fcodecdump";
 #endif // BUILD_ENG_VERSION
-constexpr struct {
-    const std::string_view codecName;
-    const std::string_view mimeType;
-    const char *ffmpegCodec;
-} SUPPORT_VCODEC[] = {
-    {AVCodecCodecName::VIDEO_DECODER_AVC_NAME, CodecMimeType::VIDEO_AVC, "h264"},
-    {AVCodecCodecName::VIDEO_DECODER_H263_NAME, CodecMimeType::VIDEO_H263, "h263"},
-    {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME, CodecMimeType::VIDEO_MPEG2, "mpeg2video"},
-    {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4"},
-#ifdef SUPPORT_CODEC_RV
-    {AVCodecCodecName::VIDEO_DECODER_RV30_NAME, CodecMimeType::VIDEO_RV30, "rv30"},
-    {AVCodecCodecName::VIDEO_DECODER_RV40_NAME, CodecMimeType::VIDEO_RV40, "rv40"},
-#endif
-};
-constexpr uint32_t SUPPORT_VCODEC_NUM = sizeof(SUPPORT_VCODEC) / sizeof(SUPPORT_VCODEC[0]);
 } // namespace
 using namespace OHOS::Media;
 
@@ -150,7 +127,7 @@ int32_t FCodec::Initialize()
     fDecInfo_.instanceId = std::to_string(instanceId_);
     decName_ = "fdecoder_[" + std::to_string(instanceId_) + "]";
     AVCODEC_LOGI("current codec name: %{public}s", decName_.c_str());
-    CHECK_AND_RETURN_RET_LOG(!codecName_.empty(), AVCS_ERR_INVALID_VAL, "Init codec failed:  empty name");
+    CHECK_AND_RETURN_RET_LOG(!codecName_.empty(), AVCS_ERR_INVALID_VAL, "Init codec failed: empty name");
     pid_ = getpid();
     std::string fcodecName;
     std::string_view mime;
@@ -169,7 +146,7 @@ int32_t FCodec::Initialize()
     avCodec_ = std::shared_ptr<AVCodec>(const_cast<AVCodec *>(avcodec_find_decoder_by_name(fcodecName.c_str())),
                                         [](void *ptr) {});
     CHECK_AND_RETURN_RET_LOG(avCodec_ != nullptr, AVCS_ERR_INVALID_VAL,
-                             "Init codec failed:  cannot find codec with name %{public}s", codecName_.c_str());
+                             "Init codec failed: cannot find codec with name %{public}s", codecName_.c_str());
     sendTask_ = std::make_shared<TaskThread>("SendFrame");
     sendTask_->RegisterHandler([this] { SendFrame(); });
     receiveTask_ = std::make_shared<TaskThread>("ReceiveFrame");
@@ -178,7 +155,7 @@ int32_t FCodec::Initialize()
     OpenDumpFile();
 #endif // BUILD_ENG_VERSION
     state_ = State::INITIALIZED;
-    AVCODEC_LOGI("Init codec successful,  state: Uninitialized -> Initialized");
+    AVCODEC_LOGI("Init codec successful, state: Uninitialized -> Initialized");
     return AVCS_ERR_OK;
 }
 
@@ -209,6 +186,8 @@ void FCodec::ConfigureSurface(const Format &format, const std::string_view &form
                              "Set parameter failed: pixel format value %{public}d invalid", val);
         outputPixelFmt_ = vpf;
         format_.PutIntValue(formatKey, val);
+        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
     } else if (formatKey == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
         VideoRotation sr = static_cast<VideoRotation>(val);
         CHECK_AND_RETURN_LOG(sr == VideoRotation::VIDEO_ROTATION_0 || sr == VideoRotation::VIDEO_ROTATION_90 ||
@@ -254,14 +233,14 @@ int32_t FCodec::ConfigureContext(const Format &format)
     avCodecContext_->width = width_;
     avCodecContext_->height = height_;
     avCodecContext_->thread_count = DEFAULT_THREAD_COUNT;
-#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES)
+#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     return SetCodecExtradata(format);
 #else
     return AVCS_ERR_OK;
 #endif
 }
 
-#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES)
+#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
 int32_t FCodec::SetCodecExtradata(const Format &format)
 {
     size_t extraSize = 0;
@@ -343,20 +322,29 @@ bool FCodec::IsActive() const
     return state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS;
 }
 
-void FCodec::ResetContext(bool isFlush)
+void FCodec::FreeExtraData()
 {
-    CHECK_AND_RETURN_LOG(avCodecContext_ != nullptr, "Avcodec context is nullptr");
     if (avCodecContext_->extradata) {
         av_free(avCodecContext_->extradata);
         avCodecContext_->extradata = nullptr;
+        avCodecContext_->extradata_size = 0;
     }
     avCodecContext_->coded_width = 0;
     avCodecContext_->coded_height = 0;
-    avCodecContext_->extradata_size = 0;
-    if (!isFlush) {
+}
+
+void FCodec::ResetContext(bool isNeedFree)
+{
+    CHECK_AND_RETURN_LOG(avCodecContext_ != nullptr, "Avcodec context is nullptr");
+    if (isNeedFree) {
+        FreeExtraData();
         avCodecContext_->width = 0;
         avCodecContext_->height = 0;
         avCodecContext_->get_buffer2 = nullptr;
+        return;
+    }
+    if (codecName_ == AVCodecCodecName::VIDEO_DECODER_AVC_NAME) {
+        FreeExtraData();
     }
 }
 
@@ -408,6 +396,7 @@ void FCodec::InitBuffers()
         AVCODEC_LOGI("%{public}s OnInputBufferAvailable frame index = %{public}u, owner = %{public}d",
                      decName_.c_str(), i, buffers_[INDEX_INPUT][i]->owner_.load());
     }
+    std::lock_guard<std::mutex> oLock(outputMutex_);
     CHECK_AND_RETURN_LOG(buffers_[INDEX_OUTPUT].size() > 0, "Output buffers is null!");
     // for buffer mode or state is CONFIGURED
     if (sInfo_.surface == nullptr || state_ == State::CONFIGURED) {
@@ -418,7 +407,6 @@ void FCodec::InitBuffers()
         return;
     }
     // for surface mode on FlUSHED
-    std::lock_guard<std::mutex> sLock(surfaceMutex_);
     for (uint32_t i = 0u; i < buffers_[INDEX_OUTPUT].size(); i++) {
         if (buffers_[INDEX_OUTPUT][i]->owner_ != Owner::OWNED_BY_SURFACE) {
             buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
@@ -488,7 +476,7 @@ int32_t FCodec::Stop()
     AVCODEC_LOGI("step into STOPPING status");
     StopThread();
     avcodec_close(avCodecContext_.get());
-    ResetContext(true);
+    ResetContext(false);
     ReleaseBuffers();
     state_ = State::CONFIGURED;
     AVCODEC_LOGI("Stop codec successful, state: Configured");
@@ -515,7 +503,7 @@ int32_t FCodec::Flush()
     receiveTask_->Pause();
 
     avcodec_flush_buffers(avCodecContext_.get());
-    ResetContext(true);
+    ResetContext(false);
     FlushBuffers();
     state_ = State::FLUSHED;
     AVCODEC_LOGI("%{public}s Flush codec successful, state: Flushed", decName_.c_str());
@@ -543,9 +531,12 @@ void FCodec::ReleaseResource()
     }
     ReleaseBuffers();
     format_ = Format();
-    CHECK_AND_RETURN_LOG(sInfo_.surface != nullptr, "Surface is nullptr!");
-    UnRegisterListenerToSurface(sInfo_.surface);
-    sInfo_.surface = nullptr;
+    {
+        std::lock_guard<std::mutex> sLock(surfaceMutex_);
+        CHECK_AND_RETURN_LOG(sInfo_.surface != nullptr, "Surface is nullptr!");
+        UnRegisterListenerToSurface(sInfo_.surface);
+        sInfo_.surface = nullptr;
+    }
     StopRequestSurfaceBufferThread();
 }
 
@@ -571,11 +562,12 @@ void FCodec::SetSurfaceParameter(const Format &format, const std::string_view &f
                              vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21,
                              "Set parameter failed: pixel format value %{public}d invalid", val);
         outputPixelFmt_ = vpf;
+        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(vpf);
         {
             std::lock_guard<std::mutex> lock(formatMutex_);
             format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val);
+            format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
         }
-        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(vpf);
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
         sInfo_.requestConfig.format = surfacePixelFmt;
     } else if (formatKey == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
@@ -626,9 +618,9 @@ int32_t FCodec::SetParameter(const Format &format)
 int32_t FCodec::GetOutputFormat(Format &format)
 {
     AVCODEC_SYNC_TRACE;
+    std::lock_guard<std::mutex> lock(formatMutex_);
     if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_BITRATE)) {
         if (avCodecContext_ != nullptr) {
-            std::lock_guard<std::mutex> lock(formatMutex_);
             format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, avCodecContext_->bit_rate);
         }
     }
@@ -636,20 +628,15 @@ int32_t FCodec::GetOutputFormat(Format &format)
         if (avCodecContext_ != nullptr && avCodecContext_->framerate.den > 0) {
             double value = static_cast<double>(avCodecContext_->framerate.num) /
                            static_cast<double>(avCodecContext_->framerate.den);
-            std::lock_guard<std::mutex> lock(formatMutex_);
             format_.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, value);
         }
     }
     if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE)) {
         int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
         int32_t maxInputSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) / UV_SCALE_FACTOR);
-        std::lock_guard<std::mutex> lock(formatMutex_);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     }
-    {
-        std::lock_guard<std::mutex> lock(formatMutex_);
-        format = format_;
-    }
+    format = format_;
     AVCODEC_LOGI("Get outputFormat successful");
     return AVCS_ERR_OK;
 }
@@ -691,29 +678,45 @@ int32_t FCodec::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize)
 
 int32_t FCodec::SetSurfaceCfg()
 {
+    int32_t pixelFormat = 0;
+    int32_t scaleType = 0;
+    int32_t rotationAngle = 0;
+    std::optional<int32_t> scalingMode = std::nullopt;
+    std::optional<int32_t> rotation = std::nullopt;
+    std::unique_lock<std::mutex> fLock(formatMutex_);
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     }
-    int32_t val32 = 0;
-    format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val32);
-    GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(static_cast<VideoPixelFormat>(val32));
+    format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, pixelFormat);
+    GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(static_cast<VideoPixelFormat>(pixelFormat));
     CHECK_AND_RETURN_RET_LOG(surfacePixelFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT, AVCS_ERR_UNSUPPORT,
                              "Failed to allocate output buffer: unsupported surface format");
-    sInfo_.requestConfig.width = width_;
-    sInfo_.requestConfig.height = height_;
-    sInfo_.requestConfig.format = surfacePixelFmt;
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
     if (format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
-        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32) && val32 >= 0 &&
-                                 val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
-                                 AVCS_ERR_INVALID_VAL, "Invalid scaling mode %{public}d", val32);
-        sInfo_.scalingMode = val32;
-        sInfo_.surface->SetScalingMode(static_cast<ScalingMode>(val32));
+        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, scaleType) &&
+            scaleType >= 0 && scaleType <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
+            AVCS_ERR_INVALID_VAL, "Invalid scaling mode %{public}d", scaleType);
+        scalingMode = scaleType;
     }
     if (format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
-        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
-                                 val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
-                                 AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
-        sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
+        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, rotationAngle) &&
+            rotationAngle >= 0 && rotationAngle <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
+            AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", rotationAngle);
+        rotation = rotationAngle;
+    }
+    fLock.unlock();
+    {
+        std::lock_guard<std::mutex> sLock(surfaceMutex_);
+        sInfo_.requestConfig.width = width_;
+        sInfo_.requestConfig.height = height_;
+        sInfo_.requestConfig.format = surfacePixelFmt;
+        if (scalingMode) {
+            sInfo_.scalingMode = scaleType;
+            sInfo_.surface->SetScalingMode(static_cast<ScalingMode>(scaleType));
+        }
+        if (rotation) {
+            sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(rotationAngle)));
+        }
     }
     return AVCS_ERR_OK;
 }
@@ -732,6 +735,7 @@ void FCodec::RequestSurfaceBufferThread()
         }
         auto index = requestSurfaceBufferQue_->Front();
         requestSurfaceBufferQue_->Pop();
+        std::lock_guard<std::mutex> oLock(outputMutex_);
         std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
         std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
         sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
@@ -807,15 +811,18 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
     return AVCS_ERR_NO_MEMORY;
 }
 
-int32_t FCodec::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, int32_t bufferCnt)
+int32_t FCodec::ClearSurfaceAndSetQueueSize(int32_t bufferCnt)
 {
-    surface->Connect();
-    surface->CleanCache(); // clean cache will work only if the surface is connected by us.
-    int32_t ret = SetQueueSize(surface, bufferCnt);
+    std::unique_lock<std::mutex> sLock(surfaceMutex_);
+    sInfo_.surface->Connect();
+    sInfo_.surface->CleanCache(); // clean cache will work only if the surface is connected by us.
+    sInfo_.surface->Disconnect();
+    int32_t ret = SetQueueSize(sInfo_.surface, bufferCnt);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set surface queue size failed!");
+    sLock.unlock();
     ret = SetSurfaceCfg();
-    surface->Disconnect();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set surface cfg failed!");
+    std::lock_guard<std::mutex> oLock(outputMutex_);
     CHECK_AND_RETURN_RET_LOGD(buffers_[INDEX_OUTPUT].size() > 0u, AVCS_ERR_OK, "Set surface cfg & queue size success.");
     int32_t valBufferCnt = 0;
     for (auto &it : buffers_[INDEX_OUTPUT]) {
@@ -831,7 +838,7 @@ int32_t FCodec::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, int32_
 int32_t FCodec::AllocateOutputBuffersFromSurface(int32_t bufferCnt)
 {
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Not in surface mode!");
-    int32_t ret = ClearSurfaceAndSetQueueSize(sInfo_.surface, bufferCnt);
+    int32_t ret = ClearSurfaceAndSetQueueSize(bufferCnt);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Clean surface and set queue size failed!");
     requestSurfaceBufferQue_->Clear();
     requestSurfaceBufferQue_->SetActive(true);
@@ -923,14 +930,11 @@ int32_t FCodec::UpdateBuffers(uint32_t index, int32_t bufferSize, uint32_t buffe
 int32_t FCodec::UpdateSurfaceMemory(uint32_t index)
 {
     AVCODEC_SYNC_TRACE;
-    std::unique_lock<std::mutex> oLock(outputMutex_);
     std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
-    oLock.unlock();
     if (width_ != outputBuffer->width_ || height_ != outputBuffer->height_) {
         std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
         CHECK_AND_RETURN_RET_LOG(surfaceMemory != nullptr, AVCS_ERR_UNKNOWN, "Surface memory is nullptr!");
         AVCODEC_LOGI("Update surface memory, width=%{public}d, height=%{public}d", width_, height_);
-        std::lock_guard<std::mutex> sLock(surfaceMutex_);
         if (surfaceMemory->isAttached) {
             sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
             CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get surface buffer failed!");
@@ -939,7 +943,9 @@ int32_t FCodec::UpdateSurfaceMemory(uint32_t index)
             surfaceMemory->isAttached = false;
         }
         surfaceMemory->ReleaseSurfaceBuffer();
+        std::unique_lock<std::mutex> sLock(surfaceMutex_);
         int32_t ret = surfaceMemory->AllocSurfaceBuffer(width_, height_);
+        sLock.unlock();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Alloc surface buffer failed!");
         sptr<SurfaceBuffer> newSurfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         CHECK_AND_RETURN_RET_LOG(newSurfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Alloc surface buffer failed!");
@@ -974,18 +980,21 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
             format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, width_);
             format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, height_);
         }
-        if (sInfo_.surface) {
+        {
             std::lock_guard<std::mutex> sLock(surfaceMutex_);
-            sInfo_.requestConfig.width = width_;
-            sInfo_.requestConfig.height = height_;
+            if (sInfo_.surface) {
+                sInfo_.requestConfig.width = width_;
+                sInfo_.requestConfig.height = height_;
+            }
         }
         callback_->OnOutputFormatChanged(format_);
     }
     if (sInfo_.surface == nullptr) {
         std::lock_guard<std::mutex> oLock(outputMutex_);
         CHECK_AND_RETURN_RET_LOG((UpdateBuffers(index, outputBufferSize_, INDEX_OUTPUT) == AVCS_ERR_OK),
-                                 AVCS_ERR_NO_MEMORY, "Update  output buffer failed, index=%{public}u", index);
+                                 AVCS_ERR_NO_MEMORY, "Update output buffer failed, index=%{public}u", index);
     } else {
+        std::lock_guard<std::mutex> oLock(outputMutex_);
         CHECK_AND_RETURN_RET_LOG((UpdateSurfaceMemory(index) == AVCS_ERR_OK), AVCS_ERR_NO_MEMORY,
                                  "Update buffer failed");
     }
@@ -1011,19 +1020,14 @@ void FCodec::ReleaseBuffers()
         StopRequestSurfaceBufferThread();
         renderAvailQue_->Clear();
         requestSurfaceBufferQue_->Clear();
-        std::unique_lock<std::mutex> mLock(renderBufferMapMutex_);
-        renderSurfaceBufferMap_.clear();
-        mLock.unlock();
-        std::lock_guard<std::mutex> oLock(outputMutex_);
-        for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
-            std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][i];
-            if (outputBuffer->owner_ == Owner::OWNED_BY_CODEC) {
-                std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
-                surfaceMemory->ReleaseSurfaceBuffer();
-                outputBuffer->owner_ = Owner::OWNED_BY_SURFACE;
-            }
+        {
+            std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
+            renderSurfaceBufferMap_.clear();
         }
-        sInfo_.surface->CleanCache();
+        {
+            std::lock_guard<std::mutex> sLock(surfaceMutex_);
+            sInfo_.surface->CleanCache();
+        }
         AVCODEC_LOGI("surface cleancache success");
     }
     std::unique_lock<std::mutex> oLock(outputMutex_);
@@ -1089,7 +1093,7 @@ int32_t FCodec::QueueInputBuffer(uint32_t index)
 void FCodec::SendFrame()
 {
     CHECK_AND_RETURN_LOG_LIMIT(state_ != State::STOPPING && state_ != State::FLUSHING, LOG_FREQUENCE, "Invalid state");
-    if (state_ != State::RUNNING || isSendEos_) {
+    if (state_ != State::RUNNING || isSendEos_ || inputAvailQue_->Size() == 0u) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
@@ -1159,6 +1163,8 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
     {
         std::lock_guard<std::mutex> lock(formatMutex_);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(targetPixelFmt));
+        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(targetPixelFmt);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
     }
     std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
     CHECK_AND_RETURN_RET_LOG(bufferMemory != nullptr, AVCS_ERR_INVALID_VAL, "bufferMemory is nullptr");
@@ -1244,13 +1250,13 @@ void FCodec::ReceiveFrame()
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
-    auto index = codecAvailQue_->Front();
     CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
-    std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
     std::unique_lock<std::mutex> sLock(syncMutex_);
     int ret = avcodec_receive_frame(avCodecContext_.get(), cachedFrame_.get());
     sLock.unlock();
     int32_t status = AVCS_ERR_OK;
+    auto index = codecAvailQue_->Front();
+    std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
     CHECK_AND_RETURN_LOG(ret != AVERROR_INVALIDDATA, "ffmpeg ret = %{public}s", AVStrError(ret).c_str());
     if (ret >= 0) {
         DumpOutputBuffer();
@@ -1261,6 +1267,7 @@ void FCodec::ReceiveFrame()
         } else {
             CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
             callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
+            state_ = State::ERROR;
             return;
         }
         frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_NONE;
@@ -1321,6 +1328,7 @@ int32_t FCodec::ReleaseOutputBuffer(uint32_t index)
 
 int32_t FCodec::Attach(sptr<SurfaceBuffer> surfaceBuffer)
 {
+    std::lock_guard<std::mutex> sLock(surfaceMutex_);
     int32_t err = sInfo_.surface->AttachBufferToQueue(surfaceBuffer);
     CHECK_AND_RETURN_RET_LOG(
         err == 0, err, "Surface(%{public}" PRIu64 "), attach buffer(%{public}u) to queue failed, GSError=%{public}d",
@@ -1330,6 +1338,7 @@ int32_t FCodec::Attach(sptr<SurfaceBuffer> surfaceBuffer)
 
 int32_t FCodec::Detach(sptr<SurfaceBuffer> surfaceBuffer)
 {
+    std::lock_guard<std::mutex> sLock(surfaceMutex_);
     int32_t err = sInfo_.surface->DetachBufferFromQueue(surfaceBuffer);
     CHECK_AND_RETURN_RET_LOG(
         err == 0, err, "Surface(%{public}" PRIu64 "), detach buffer(%{public}u) to queue failed, GSError=%{public}d",
@@ -1354,15 +1363,20 @@ int32_t FCodec::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemor
             flushConfig.desiredPresentTimestamp);
         outAVBuffer4Surface_[index]->meta_->Remove(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP);
     }
-    auto res = sInfo_.surface->FlushBuffer(surfaceBuffer, -1, flushConfig);
+    GSError res = GSERROR_OK;
+    {
+        std::lock_guard<std::mutex> sLock(surfaceMutex_);
+        res = sInfo_.surface->FlushBuffer(surfaceBuffer, -1, flushConfig);
+    }
     if (res == GSERROR_BUFFER_NOT_INCACHE) {
         AVCODEC_LOGW("Surface(%{public}" PRIu64 "), flush buffer(seq=%{public}u) failed, try to recover",
                      sInfo_.surface->GetUniqueId(), surfaceBuffer->GetSeqNum());
-        int32_t ret = ClearSurfaceAndSetQueueSize(sInfo_.surface, outputBufferCnt_);
+        int32_t ret = ClearSurfaceAndSetQueueSize(outputBufferCnt_);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Clean surface and set queue size failed!");
         ret = Attach(surfaceBuffer);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Surface buffer attach failed!");
         surfaceMemory->isAttached = true;
+        std::lock_guard<std::mutex> sLock(surfaceMutex_);
         res = sInfo_.surface->FlushBuffer(surfaceBuffer, -1, flushConfig);
     }
     surfaceMemory->owner = Owner::OWNED_BY_SURFACE;
@@ -1388,7 +1402,6 @@ int32_t FCodec::RenderOutputBuffer(uint32_t index)
                              "Failed to render output buffer: invalid index");
     std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
     oLock.unlock();
-    std::lock_guard<std::mutex> sLock(surfaceMutex_);
     std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
     CHECK_AND_RETURN_RET_LOG(bufferMemory != nullptr, AVCS_ERR_INVALID_VAL, "bufferMemory is nullptr");
     int32_t size = bufferMemory->GetSize();
@@ -1456,7 +1469,6 @@ int32_t FCodec::SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize)
 
 int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
 {
-    sptr<Surface> curSurface = sInfo_.surface;
     newSurface->Connect(); // cleancache will work only if the surface is connected by us
     newSurface->CleanCache(); // make sure new surface is empty
     newSurface->Disconnect();
@@ -1468,12 +1480,12 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         }
         sptr<SurfaceBuffer> surfaceBuffer = nullptr;
         if (buffers_[INDEX_OUTPUT][index]->owner_ == Owner::OWNED_BY_SURFACE) {
+            std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
             if (renderSurfaceBufferMap_.count(index)) {
                 surfaceBuffer = renderSurfaceBufferMap_[index].first;
                 ownedBySurfaceBufferIndex.push_back(index);
             }
         } else {
-            RequestSurfaceBufferOnce(index);
             surfaceBuffer = buffers_[INDEX_OUTPUT][index]->sMemory_->GetSurfaceBuffer();
         }
         CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get old surface buffer error!");
@@ -1488,8 +1500,9 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
                                  val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
                                  AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
-        sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
+        newSurface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
     }
+    sptr<Surface> curSurface = sInfo_.surface;
     sInfo_.surface = newSurface;
     CombineConsumerUsage();
     for (uint32_t index: ownedBySurfaceBufferIndex) {
@@ -1503,9 +1516,10 @@ int32_t FCodec::SwitchBetweenSurface(const sptr<Surface> &newSurface)
 
 int32_t FCodec::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, uint32_t index)
 {
-    std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory_;
+    std::unique_lock<std::mutex> mLock(renderBufferMapMutex_);
     sptr<SurfaceBuffer> surfaceBuffer = renderSurfaceBufferMap_[index].first;
     OHOS::BufferFlushConfig flushConfig = renderSurfaceBufferMap_[index].second;
+    mLock.unlock();
     if (sInfo_.scalingMode >= 0) {
         newSurface->SetScalingMode(surfaceBuffer->GetSeqNum(), static_cast<ScalingMode>(sInfo_.scalingMode));
     }
@@ -1521,12 +1535,14 @@ GSError FCodec::BufferReleasedByConsumer(uint64_t surfaceId)
 {
     CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING || state_ == State::EOS || state_ == State::FLUSHING ||
                              state_ == State::FLUSHED, GSERROR_NO_PERMISSION, "Invalid state");
-    std::unique_lock<std::mutex> sLock(surfaceMutex_);
     CHECK_AND_RETURN_RET_LOG(renderAvailQue_->Size() > 0, GSERROR_NO_BUFFER, "No available buffer");
+    std::unique_lock<std::mutex> sLock(surfaceMutex_);
     CHECK_AND_RETURN_RET_LOG(surfaceId == sInfo_.surface->GetUniqueId(), GSERROR_INVALID_ARGUMENTS,
                              "Ignore callback from old surface");
+    sLock.unlock();
     auto index = renderAvailQue_->Front();
     RequestSurfaceBufferOnce(index);
+    std::unique_lock<std::mutex> oLock(outputMutex_);
     std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
     std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
     auto queSize = renderAvailQue_->Size();
@@ -1554,9 +1570,9 @@ GSError FCodec::BufferReleasedByConsumer(uint64_t surfaceId)
     if (state_ == State::RUNNING || state_ == State::EOS) {
         codecAvailQue_->Push(curIndex);
     }
-    sLock.unlock();
+    oLock.unlock();
+    std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
     if (renderSurfaceBufferMap_.count(curIndex)) {
-        std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
         renderSurfaceBufferMap_.erase(curIndex);
     }
     AVCODEC_LOGD("Request output buffer success, available index = %{public}u, queSize=%{public}zu, i=%{public}d",
@@ -1648,7 +1664,7 @@ bool FCodec::CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer)
     CHECK_AND_RETURN_RET_LOGD(surfaceMemory != nullptr, false, "Current buffer->sMemory error!");
     Owner ownerValue = surfaceMemory->owner;
     AVCODEC_LOGD("Buffer type: [%{public}u], fBuffer->owner_: [%{public}d], fBuffer->hasSwapedOut_: [%{public}d].",
-                 isOutputBuffer, ownerValue, fBuffer->hasSwapedOut_);
+                 isOutputBuffer, ownerValue, fBuffer->hasSwapedOut_.load());
     return !(ownerValue == Owner::OWNED_BY_SURFACE || fBuffer->hasSwapedOut_);
 }
 
@@ -1660,7 +1676,7 @@ int32_t FCodec::SwapOutBuffers(bool isOutputBuffer, State curState)
         std::shared_ptr<FBuffer> fBuffer = buffers_[bufferType][i];
         if (!CanSwapOut(isOutputBuffer, fBuffer)) {
             AVCODEC_LOGW("Buf: [%{public}u] can't freeze, owner: [%{public}d] swaped out: [%{public}d]!", i,
-                         fBuffer->owner_.load(), fBuffer->hasSwapedOut_);
+                         fBuffer->owner_.load(), fBuffer->hasSwapedOut_.load());
             continue;
         }
         std::shared_ptr<FSurfaceMemory> surfaceMemory = fBuffer->sMemory_;
@@ -1730,7 +1746,6 @@ int32_t FCodec::ActiveBuffers()
 int32_t FCodec::NotifyMemoryRecycle()
 {
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
-    CHECK_AND_RETURN_RET_LOG(!disableDmaSwap_, 0, "FCodec dma swap has been diabled!");
     CHECK_AND_RETURN_RET_LOGD(state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS,
                               AVCS_ERR_INVALID_STATE, "Current state can't recycle memory!");
     AVCODEC_LOGI("Begin to freeze this codec!");
@@ -1749,218 +1764,6 @@ int32_t FCodec::NotifyMemoryWriteBack()
     int32_t errCode = ActiveBuffers();
     CHECK_AND_RETURN_RET_LOG(errCode == AVCS_ERR_OK, errCode, "Fcodec active buffers failed!");
     state_ = State::RUNNING;
-    return AVCS_ERR_OK;
-}
-
-void FCodec::GetMpeg2CapProf(std::vector<CapabilityData> &capaArray)
-{
-    if (!capaArray.empty()) {
-        CapabilityData& capsData = capaArray.back();
-        capsData.profiles = {static_cast<int32_t>(MPEG2_PROFILE_422), static_cast<int32_t>(MPEG2_PROFILE_HIGH),
-                            static_cast<int32_t>(MPEG2_PROFILE_MAIN), static_cast<int32_t>(MPEG2_PROFILE_SNR),
-                            static_cast<int32_t>(MPEG2_PROFILE_SIMPLE), static_cast<int32_t>(MPEG2_PROFILE_SPATIAL)};
-        std::vector<int32_t> levels_sp;
-        std::vector<int32_t> levels_mp;
-        std::vector<int32_t> levels_snr;
-        std::vector<int32_t> levels_422p;
-        for (int32_t j = 0; j <= static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_ML); ++j) {
-            levels_sp.emplace_back(j);
-        }
-        for (int32_t j = 0; j <= static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_HL); ++j) {
-            levels_mp.emplace_back(j);
-        }
-        for (int32_t j = 0; j <= static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_H14); ++j) {
-            levels_snr.emplace_back(j);
-        }
-        for (int32_t j = static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_ML);
-                j <= static_cast<int32_t>(MPEG2Level::MPEG2_LEVEL_HL); ++j) {
-            levels_422p.emplace_back(j);
-        }
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(MPEG2_PROFILE_SIMPLE), levels_sp));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(MPEG2_PROFILE_MAIN), levels_mp));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(MPEG2_PROFILE_SNR), levels_snr));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(MPEG2_PROFILE_SPATIAL), levels_mp));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(MPEG2_PROFILE_HIGH), levels_mp));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(MPEG2_PROFILE_422), levels_422p));
-    }
-}
-
-void FCodec::SetMpeg4Profiles(CapabilityData& capsData)
-{
-    capsData.profiles = {
-        static_cast<int32_t>(MPEG4_PROFILE_SIMPLE),
-        static_cast<int32_t>(MPEG4_PROFILE_SIMPLE_SCALABLE),
-        static_cast<int32_t>(MPEG4_PROFILE_CORE),
-        static_cast<int32_t>(MPEG4_PROFILE_MAIN),
-        static_cast<int32_t>(MPEG4_PROFILE_NBIT),
-        static_cast<int32_t>(MPEG4_PROFILE_HYBRID),
-        static_cast<int32_t>(MPEG4_PROFILE_BASIC_ANIMATED_TEXTURE),
-        static_cast<int32_t>(MPEG4_PROFILE_SCALABLE_TEXTURE),
-        static_cast<int32_t>(MPEG4_PROFILE_SIMPLE_FA),
-        static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_REAL_TIME_SIMPLE),
-        static_cast<int32_t>(MPEG4_PROFILE_CORE_SCALABLE),
-        static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_CODING_EFFICIENCY),
-        static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_CORE),
-        static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_SCALABLE_TEXTURE),
-        static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_SIMPLE),
-    };
-}
-
-void FCodec::SetMpeg4LevelsProfileGroup1(CapabilityData& capsData)
-{
-    capsData.profileLevelsMap = {
-        {static_cast<int32_t>(MPEG4_PROFILE_SIMPLE), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_0), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_0B),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_4A),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_5), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_6)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_SIMPLE_SCALABLE), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_0), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_CORE), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_MAIN), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_4)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_NBIT), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_HYBRID), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_BASIC_ANIMATED_TEXTURE), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_SCALABLE_TEXTURE), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1)
-        }}
-    };
-}
-
-void FCodec::SetMpeg4LevelsProfileGroup2(CapabilityData& capsData)
-{
-    capsData.profileLevelsMap.insert({
-        {static_cast<int32_t>(MPEG4_PROFILE_SIMPLE_FA), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_REAL_TIME_SIMPLE), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_4)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_CORE_SCALABLE), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_CODING_EFFICIENCY), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_4)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_CORE), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_SCALABLE_TEXTURE), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3)
-        }},
-        {static_cast<int32_t>(MPEG4_PROFILE_ADVANCED_SIMPLE), {
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_0), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_1),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_2), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_3B), static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_4),
-            static_cast<int32_t>(MPEG4Level::MPEG4_LEVEL_5)
-        }}
-    });
-}
-
-void FCodec::GetMpeg4esCapProf(std::vector<CapabilityData>& capaArray)
-{
-    if (!capaArray.empty()) {
-        CapabilityData& capsData = capaArray.back();
-        SetMpeg4Profiles(capsData);
-        SetMpeg4LevelsProfileGroup1(capsData);
-        SetMpeg4LevelsProfileGroup2(capsData);
-    }
-}
-
-void FCodec::GetH263CapProf(std::vector<CapabilityData> &capaArray)
-{
-    if (!capaArray.empty()) {
-        CapabilityData& capsData = capaArray.back();
-        capsData.profiles = {static_cast<int32_t>(H263_PROFILE_BASELINE),
-                             static_cast<int32_t>(H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY)};
-        std::vector<int32_t> levels;
-        for (int32_t j = 0; j <= static_cast<int32_t>(H263Level::H263_LEVEL_70); ++j) {
-            levels.emplace_back(j);
-        }
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(H263_PROFILE_BASELINE), levels));
-        capsData.profileLevelsMap.insert(
-            std::make_pair(static_cast<int32_t>(H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY), levels));
-    }
-    return;
-}
-
-void FCodec::GetAvcCapProf(std::vector<CapabilityData> &capaArray)
-{
-    if (!capaArray.empty()) {
-        CapabilityData& capsData = capaArray.back();
-        capsData.profiles = {static_cast<int32_t>(AVC_PROFILE_BASELINE), static_cast<int32_t>(AVC_PROFILE_MAIN),
-                                    static_cast<int32_t>(AVC_PROFILE_HIGH)};
-        std::vector<int32_t> levels;
-        for (int32_t j = 0; j <= static_cast<int32_t>(AVCLevel::AVC_LEVEL_62); ++j) {
-            levels.emplace_back(j);
-        }
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_MAIN), levels));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_HIGH), levels));
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVC_PROFILE_BASELINE), levels));
-    }
-}
-
-int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
-{
-    for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {
-        CapabilityData capsData;
-        capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[i].codecName);
-        capsData.mimeType = static_cast<std::string>(SUPPORT_VCODEC[i].mimeType);
-        capsData.codecType = AVCODEC_TYPE_VIDEO_DECODER;
-        capsData.isVendor = false;
-        capsData.maxInstance = VIDEO_INSTANCE_SIZE;
-        capsData.alignment.width = VIDEO_ALIGNMENT_SIZE;
-        capsData.alignment.height = VIDEO_ALIGNMENT_SIZE;
-        capsData.width.minVal = capsData.mimeType == "video/h263" ? VIDEO_MIN_WIDTH_H263_SIZE : VIDEO_MIN_SIZE;
-        capsData.height.minVal = capsData.mimeType == "video/h263" ? VIDEO_MIN_HEIGHT_H263_SIZE : VIDEO_MIN_SIZE;
-        capsData.width.maxVal = capsData.mimeType == "video/h263" ? VIDEO_MAX_WIDTH_H263_SIZE : VIDEO_MAX_WIDTH_SIZE;
-        capsData.height.maxVal = capsData.mimeType == "video/h263" ? VIDEO_MAX_HEIGHT_H263_SIZE : VIDEO_MAX_HEIGHT_SIZE;
-        capsData.frameRate.minVal = 0;
-        capsData.frameRate.maxVal = VIDEO_FRAMERATE_DEFAULT_SIZE;
-        capsData.bitrate.minVal = 1;
-        capsData.bitrate.maxVal = VIDEO_BITRATE_MAX_SIZE;
-        capsData.blockPerFrame.minVal = 1;
-        capsData.blockPerFrame.maxVal = VIDEO_BLOCKPERFRAME_SIZE;
-        capsData.blockPerSecond.minVal = 1;
-        capsData.blockPerSecond.maxVal = VIDEO_BLOCKPERSEC_SIZE;
-        capsData.blockSize.width = VIDEO_ALIGN_SIZE;
-        capsData.blockSize.height = VIDEO_ALIGN_SIZE;
-        capsData.pixFormat = {
-            static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
-            static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
-        if (capsData.mimeType == "video/mpeg2") {
-            capaArray.emplace_back(capsData);
-            GetMpeg2CapProf(capaArray);
-        } else if (capsData.mimeType == "video/mp4v-es") {
-            capaArray.emplace_back(capsData);
-            GetMpeg4esCapProf(capaArray);
-        } else if (capsData.mimeType == "video/h263") {
-            capaArray.emplace_back(capsData);
-            GetH263CapProf(capaArray);
-        } else {
-            capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
-            capaArray.emplace_back(capsData);
-            GetAvcCapProf(capaArray);
-        }
-    }
     return AVCS_ERR_OK;
 }
 } // namespace Codec

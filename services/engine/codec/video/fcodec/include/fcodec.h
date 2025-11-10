@@ -32,7 +32,6 @@
 #include "block_queue.h"
 #include "codec_utils.h"
 #include "codecbase.h"
-#include "dma_swap.h"
 #include "media_description.h"
 #include "fsurface_memory.h"
 #include "surface_tools.h"
@@ -65,8 +64,10 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
+    // for memory recycle
     int32_t NotifyMemoryRecycle() override;
     int32_t NotifyMemoryWriteBack() override;
+    // for capability register
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
 
 private:
@@ -80,7 +81,7 @@ private:
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
         int32_t width_ = 0;
         int32_t height_ = 0;
-        bool hasSwapedOut_ = false;
+        std::atomic<bool> hasSwapedOut_ = false;
     };
 
     enum struct State : int32_t {
@@ -98,7 +99,8 @@ private:
     };
     void DumpOutputBuffer();
     bool IsActive() const;
-    void ResetContext(bool isFlush = false);
+    void FreeExtraData();
+    void ResetContext(bool isNeedFree = true);
     void CalculateBufferSize();
     int32_t AllocateBuffers();
     void InitBuffers();
@@ -116,20 +118,13 @@ private:
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
     int32_t ConfigureContext(const Format &format);
-    static void GetMpeg2CapProf(std::vector<CapabilityData> &capaArray);
-    static void GetMpeg4esCapProf(std::vector<CapabilityData> &capaArray);
-    static void SetMpeg4LevelsProfileGroup1(CapabilityData& capsData);
-    static void SetMpeg4LevelsProfileGroup2(CapabilityData& capsData);
-    static void SetMpeg4Profiles(CapabilityData& capsData);
-    static void GetAvcCapProf(std::vector<CapabilityData> &capaArray);
-    static void GetH263CapProf(std::vector<CapabilityData> &capaArray);
-#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES)
+#if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     int32_t SetCodecExtradata(const Format &format);
 #endif
     void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
     int32_t AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize);
     int32_t AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize);
-    int32_t ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, int32_t bufferCnt);
+    int32_t ClearSurfaceAndSetQueueSize(int32_t bufferCnt);
     int32_t AllocateOutputBuffersFromSurface(int32_t bufferCnt);
     int32_t FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height);
@@ -157,7 +152,6 @@ private:
     bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
     int32_t SwapInBuffers(bool isOutputBuffer);
-    bool disableDmaSwap_ = false;
     int32_t pid_ = -1;
 
     int32_t instanceId_ = -1;
