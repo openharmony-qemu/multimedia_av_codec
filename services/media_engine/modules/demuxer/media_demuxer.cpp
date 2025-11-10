@@ -2843,7 +2843,8 @@ bool MediaDemuxer::HandleDashChangeStream(int32_t trackId)
 
     MEDIA_LOG_I("Change stream begin, currentStreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
         currentStreamID, newStreamID);
-    if ((trackId == videoTrackId_ || isHlsFmp4_) && demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
+    if ((trackId == videoTrackId_ || (isHlsFmp4_ && IsAVInOneStream())) &&
+        demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
         ret = SelectBitRateChangeStream(trackId);
         if (ret) {
             streamDemuxer_->SetChangeFlag(true);
