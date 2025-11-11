@@ -180,9 +180,9 @@ int32_t HDecoder::UpdateOutPortFormat()
         return AVCS_ERR_UNKNOWN;
     }
     PrintPortDefinition(def);
-    if (def.nBufferCountActual == 0) {
-        HLOGE("invalid bufferCount");
-        return AVCS_ERR_UNKNOWN;
+    if (def.nBufferCountActual == 0 || def.nBufferCountActual > MAX_BUFFER_COUNT) {
+        HLOGE("output buffer count %u is invalid", def.nBufferCountActual);
+        return AVCS_ERR_UNSUPPORT;
     }
     (void)UpdateConfiguredFmt(def.format.video.eColorFormat);
 
@@ -193,11 +193,6 @@ int32_t HDecoder::UpdateOutPortFormat()
     // save into member variable
     OHOS::Rect damage{};
     GetCropFromOmx(w, h, damage);
-    outBufferCnt_ = def.nBufferCountActual;
-    if (outBufferCnt_ > MAX_BUFFER_COUNT) {
-        HLOGE("output buffer count %u is invalid", outBufferCnt_);
-        return AVCS_ERR_UNSUPPORT;
-    }
     requestCfg_.timeout = 0; // never wait when request
     requestCfg_.width = isNeedUseDecResolution ?  static_cast<int32_t>(def.format.video.nFrameWidth) : damage.w;
     requestCfg_.height = isNeedUseDecResolution ? static_cast<int32_t>(def.format.video.nFrameHeight) : damage.h;
