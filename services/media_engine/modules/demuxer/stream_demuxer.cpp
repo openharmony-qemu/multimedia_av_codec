@@ -61,8 +61,8 @@ Status StreamDemuxer::ReadFrameData(int32_t streamID, uint64_t offset, size_t si
     std::shared_ptr<Buffer>& bufferPtr)
 {
     if (IsDash() || GetIsDataSrcNoSeek()) {
-        std::unique_lock<std::mutex> lock(cacheDataMutex_);
         MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64 " streamID: " PUBLIC_LOG_D32, offset, streamID);
+        std::unique_lock<std::mutex> lock(cacheDataMutex_);
         if (cacheDataMap_.find(streamID) != cacheDataMap_.end() && cacheDataMap_[streamID].CheckCacheExist(offset)) {
             MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
             auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
@@ -131,7 +131,6 @@ Status StreamDemuxer::Init(const std::string& uri)
 Status StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Buffer>& bufferPtr)
 {
-    std::unique_lock<std::mutex> lock(cacheDataMutex_);
     FALSE_RETURN_V_MSG_E(bufferPtr->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "bufferPtr invalid");
     auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
     FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "memory invalid");
@@ -181,7 +180,6 @@ Status StreamDemuxer::ProcInnerDash(int32_t streamID,  uint64_t offset, std::sha
 {
     FALSE_RETURN_V_MSG_E(bufferPtr != nullptr, Status::ERROR_UNKNOWN, "bufferPtr invalid");
     if (IsDash()) {
-        std::unique_lock<std::mutex> lock(cacheDataMutex_);
         MEDIA_LOG_D("dash PullDataWithoutCache, cacheDataMap_ exist streamID , merge it.");
         FALSE_RETURN_V_MSG_E(cacheDataMap_[streamID].GetData() != nullptr, Status::ERROR_UNKNOWN, "getdata invalid");
         auto cacheMemory = cacheDataMap_[streamID].GetData()->GetMemory();
@@ -212,7 +210,6 @@ Status StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, si
         MEDIA_LOG_D("PullDataWithoutCache, PullData error " PUBLIC_LOG_D32, static_cast<int32_t>(ret));
         return ret;
     }
-    std::unique_lock<std::mutex> lock(cacheDataMutex_);
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
         MEDIA_LOG_D("PullDataWithoutCache, cacheDataMap_ exist streamID , do nothing.");
         ret = ProcInnerDash(streamID, offset, bufferPtr);
