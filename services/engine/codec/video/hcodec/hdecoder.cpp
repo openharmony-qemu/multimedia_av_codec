@@ -193,6 +193,7 @@ int32_t HDecoder::UpdateOutPortFormat()
     // save into member variable
     OHOS::Rect damage{};
     GetCropFromOmx(w, h, damage);
+    outBufferCnt_ = def.nBufferCountActual;
     requestCfg_.timeout = 0; // never wait when request
     requestCfg_.width = isNeedUseDecResolution ?  static_cast<int32_t>(def.format.video.nFrameWidth) : damage.w;
     requestCfg_.height = isNeedUseDecResolution ? static_cast<int32_t>(def.format.video.nFrameHeight) : damage.h;
