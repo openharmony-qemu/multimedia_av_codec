@@ -185,9 +185,9 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     codecBaseCb_ = std::make_shared<CodecBaseCallback>(shared_from_this());
     ret = codecBase_->SetCallback(codecBaseCb_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "SetCallback failed");
-    AVCODEC_LOGI_WITH_TAG("Create codec %{public}s by %{public}s success", codecName_.c_str(),
+    AVCODEC_LOGI_WITH_TAG("Create %{public}s by %{public}s success", codecName_.c_str(),
                           (isMimeType ? "mime" : "name"));
-    StatusChanged(INITIALIZED);
+    StatusChanged(INITIALIZED, false);
     InitFramerateCalculator(callerInfo);
     return AVCS_ERR_OK;
 }
@@ -1034,7 +1034,7 @@ inline const std::string &CodecServer::GetStatusDescription(CodecStatus status)
     return CODEC_STATE_MAP.at(status);
 }
 
-inline void CodecServer::StatusChanged(CodecStatus newStatus)
+inline void CodecServer::StatusChanged(CodecStatus newStatus, bool statusFlag)
 {
     if (status_ == newStatus) {
         return;
@@ -1043,8 +1043,10 @@ inline void CodecServer::StatusChanged(CodecStatus newStatus)
         (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) {
         videoCb_->OnError(AVCODEC_ERROR_FRAMEWORK_FAILED, AVCS_ERR_INVALID_STATE);
     }
-    AVCODEC_LOGI_WITH_TAG("Status %{public}s -> %{public}s", GetStatusDescription(status_).data(),
+    if(statusFlag){
+        AVCODEC_LOGI_WITH_TAG("Status %{public}s -> %{public}s", GetStatusDescription(status_).data(),
                           GetStatusDescription(newStatus).data());
+    }    
     status_ = newStatus;
 }
 

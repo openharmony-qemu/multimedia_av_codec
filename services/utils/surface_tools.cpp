@@ -41,7 +41,7 @@ bool SurfaceTools::RegisterReleaseListener(int32_t instanceId, sptr<Surface> sur
             err, instanceId, id);
         return false;
     }
-    AVCODEC_LOGI("instanceId=%{public}d register listener to surface id=%{public}" PRIu64,
+    AVCODEC_LOGI("instanceId=%{public}d surface id=%{public}" PRIu64,
         instanceId, id);
     surface->SetSurfaceSourceType(type);
     surfaceProducerMap_[id] = instanceId;
@@ -58,7 +58,7 @@ void SurfaceTools::CleanCache(int32_t instanceId, sptr<Surface> surface, bool cl
     auto iter = surfaceProducerMap_.find(id);
     if (iter != surfaceProducerMap_.end() && iter->second == instanceId) {
         surface->CleanCache(cleanAll);
-        AVCODEC_LOGI("instanceId=%{public}d CleanCache to surface id=%{public}" PRIu64,
+        AVCODEC_LOGI("instanceId=%{public}d surface id=%{public}" PRIu64,
             instanceId, id);
     }
 }
