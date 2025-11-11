@@ -151,7 +151,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     do {
         if (isInterrupted_ || isExitRead_) {
             retryTimes_ = 0;
-            isBufferingStart = false;
+            HandleBufferingEnd();
             return Status::OK;
         }
         FALSE_RETURN_V_MSG(dataSrc_ != nullptr, Status::ERROR_WRONG_STATE, "dataSrc_ is nullptr!");
