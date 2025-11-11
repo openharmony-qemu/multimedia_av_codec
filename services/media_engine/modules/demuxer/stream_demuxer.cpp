@@ -331,7 +331,7 @@ Status StreamDemuxer::ResetCache(int32_t streamID)
 
 Status StreamDemuxer::ResetAllCache()
 {
-    std::unique_lock<std::mutex> lock(cacheDataMutex_); 
+    std::unique_lock<std::mutex> lock(cacheDataMutex_);
     for (auto& iter : cacheDataMap_) {
         iter.second.Reset();
     }
