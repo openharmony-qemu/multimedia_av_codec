@@ -28,6 +28,8 @@ public:
     ~SurfaceInnerMock();
     sptr<Surface> GetSurface();
 
+    void SetTransform(int32_t transform);
+    void GetTransform(int32_t &transform);
 private:
     sptr<Surface> surface_ = nullptr;
 };
