@@ -82,7 +82,7 @@ DashSegmentDownloader::DashSegmentDownloader(Callback *callback, int streamId, M
     recordData_ = std::make_shared<RecordData>();
 }
 
-DashSegmentDownloader::~DashSegmentDownloader() noexcept
+DashSegmentDownloader::~DashSegmentDownloader()
 {
     if (buffer_ != nullptr) {
         buffer_->SetActive(false, true);
