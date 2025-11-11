@@ -57,6 +57,10 @@ void VDecServerSample::CallBack::OnInputBufferAvailable(uint32_t index, std::sha
 
 void VDecServerSample::CallBack::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    if (tester->codec_ == nullptr) {
+        cout << "OnOutputBufferAvailable Error: codec is nullptr" << endl;
+        return;
+    }
     tester->codec_->ReleaseOutputBuffer(index);
 }
 
@@ -72,6 +76,10 @@ VDecServerSample::~VDecServerSample()
 
 int32_t VDecServerSample::ConfigServerDecoder()
 {
+    if (codec_ == nullptr) {
+        cout << "ConfigServerDecoder Error: codec is nullptr" << endl;
+        return AVCS_ERR_INVALID_VAL;
+    }
     Format fmt;
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, WIDTH);
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, HIGHT);
@@ -84,6 +92,10 @@ int32_t VDecServerSample::ConfigServerDecoder()
 
 int32_t VDecServerSample::SetCallback()
 {
+    if (codec_ == nullptr) {
+        cout << "SetCallback Error: codec is nullptr" << endl;
+        return AVCS_ERR_INVALID_VAL;
+    }
     shared_ptr<CallBack> cb = make_shared<CallBack>(this);
     return codec_->SetCallback(cb);
 }
@@ -133,6 +145,10 @@ void VDecServerSample::RunVideoServerDecoder()
 
 void VDecServerSample::InputFunc()
 {
+    if (codec_ == nullptr) {
+        cout << "InputFunc Error: codec is nullptr" << endl;
+        return;
+    }
     while (sendFrameIndex < MAX_SEND_FRAMES) {
         if (!isRunning_.load()) {
             break;
@@ -183,6 +199,10 @@ void VDecServerSample::WaitForEos()
 
 void VDecServerSample::GetOutputFormat()
 {
+    if (codec_ == nullptr) {
+        cout << "GetOutputFormat Error: codec is nullptr" << endl;
+        return;
+    }
     Format fmt;
     int32_t err = codec_->GetOutputFormat(fmt);
     if (err != AVCS_ERR_OK) {
@@ -194,6 +214,10 @@ void VDecServerSample::GetOutputFormat()
 
 void VDecServerSample::Start()
 {
+    if (codec_ == nullptr) {
+        cout << "Start Error: codec is nullptr" << endl;
+        return;
+    }
     int32_t err = codec_->Start();
     if (err != AVCS_ERR_OK) {
         cout << "Start fail" << endl;
@@ -212,6 +236,10 @@ void VDecServerSample::Start()
 
 void VDecServerSample::Flush()
 {
+    if (codec_ == nullptr) {
+        cout << "Flush Error: codec is nullptr" << endl;
+        return;
+    }
     int32_t err = codec_->Flush();
     if (err != AVCS_ERR_OK) {
         cout << "Flush fail" << endl;
@@ -222,6 +250,10 @@ void VDecServerSample::Flush()
 
 void VDecServerSample::Reset()
 {
+    if (codec_ == nullptr) {
+        cout << "Reset Error: codec is nullptr" << endl;
+        return;
+    }
     int32_t err = codec_->Reset();
     if (err != AVCS_ERR_OK) {
         cout << "Reset fail" << endl;
@@ -232,6 +264,10 @@ void VDecServerSample::Reset()
 
 void VDecServerSample::Stop()
 {
+    if (codec_ == nullptr) {
+        cout << "Stop Error: codec is nullptr" << endl;
+        return;
+    }
     int32_t err = codec_->Stop();
     if (err != AVCS_ERR_OK) {
         cout << "Stop fail" << endl;
