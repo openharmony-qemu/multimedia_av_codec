@@ -1034,7 +1034,7 @@ inline const std::string &CodecServer::GetStatusDescription(CodecStatus status)
     return CODEC_STATE_MAP.at(status);
 }
 
-inline void CodecServer::StatusChanged(CodecStatus newStatus, bool statusFlag)
+inline void CodecServer::StatusChanged(CodecStatus newStatus, bool printLog)
 {
     if (status_ == newStatus) {
         return;
@@ -1043,10 +1043,8 @@ inline void CodecServer::StatusChanged(CodecStatus newStatus, bool statusFlag)
         (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) {
         videoCb_->OnError(AVCODEC_ERROR_FRAMEWORK_FAILED, AVCS_ERR_INVALID_STATE);
     }
-    if(statusFlag){
-        AVCODEC_LOGI_WITH_TAG("Status %{public}s -> %{public}s", GetStatusDescription(status_).data(),
-                          GetStatusDescription(newStatus).data());
-    }    
+    EXPECT_AND_LOGI_WITH_TAG(printLog, "Status %{public}s -> %{public}s", GetStatusDescription(status_).data(),
+                             GetStatusDescription(newStatus).data());   
     status_ = newStatus;
 }
 

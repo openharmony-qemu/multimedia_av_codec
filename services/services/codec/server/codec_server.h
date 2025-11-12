@@ -128,7 +128,7 @@ private:
     int32_t CodecScenarioInit(Format &config);
     void StartInputParamTask();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
-    void StatusChanged(CodecStatus newStatus, bool statusFlag = true);
+    void StatusChanged(CodecStatus newStatus, bool printLog = true);
     void SetFreeStatus(bool isFree);
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
     int32_t DrmVideoCencDecrypt(uint32_t index);
