@@ -1683,6 +1683,10 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
 #endif
     auto trackId = pkt->stream_index;
     Status ret = Status::OK;
+    
+    ret = UpdateFileFirstPacketInfo(pkt);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Update file first packet info failed");
+
     if (NeedCombineFrame(trackId) && !IsBeginAsAnnexb(pkt->data, pkt->size) && cacheQueue_.HasCache(trackId)) {
         std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
         if (cacheSamplePacket != nullptr) {
@@ -2538,6 +2542,16 @@ void FFmpegDemuxerPlugin::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("SetInterruptState %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
+}
+
+Status FFmpegDemuxerPlugin::UpdateFileFirstPacketInfo(AVPacket *pkt)
+{
+    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "AVPacket is nullptr");
+    if (fileFirstPacket_ && pkt->dts < fileFirstPacket_->dts && pkt->dts != AV_NOPTS_VALUE) {
+        fileFirstPacket_->stream_index = pkt->stream_index;
+        fileFirstPacket_->dts = pkt->dts;
+    }
+    return Status::OK;
 }
 
 Status FFmpegDemuxerPlugin::GetFileFirstPacket()
