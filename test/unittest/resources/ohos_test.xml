@@ -1687,4 +1687,16 @@
             <option name="shell" value="restorecon /data/test/media/test_dash/segment_base1"/>
         </preparer>
     </target>
+    <target name="DashMediaDownSeekToTimeFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media/test_dash/segment_base2"/>
+            <option name="push" value="video_res/test_dash/segment_base/media-audio-und-mp4a.mp4 -> /data/test/media/test_dash/segment_base2" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index_audio_subtitle.mpd -> /data/test/media/test_dash/segment_base2" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index_period.mpd -> /data/test/media/test_dash/segment_base2" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index.mpd -> /data/test/media/test_dash/segment_base2" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/media-video-1.mp4 -> /data/test/media/test_dash/segment_base2" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/media-video-2.mp4 -> /data/test/media/test_dash/segment_base2" src="res"/>
+            <option name="shell" value="restorecon /data/test/media/test_dash/segment_base2"/>
+        </preparer>
+    </target>
 </configuration>
