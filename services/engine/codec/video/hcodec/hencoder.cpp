@@ -497,8 +497,11 @@ int32_t HEncoder::UpdateInPortFormat()
     PrintPortDefinition(def);
     uint32_t w = def.format.video.nFrameWidth;
     uint32_t h = def.format.video.nFrameHeight;
+    if (def.nBufferCountActual == 0 || def.nBufferCountActual > MAX_BUFFER_COUNT) {
+        HLOGE("input buffer count %u is invalid", def.nBufferCountActual);
+        return AVCS_ERR_UNKNOWN;
+    }
     inBufferCnt_ = def.nBufferCountActual;
-
     // save into member variable
     requestCfg_.timeout = 0;
     requestCfg_.width = static_cast<int32_t>(w);
