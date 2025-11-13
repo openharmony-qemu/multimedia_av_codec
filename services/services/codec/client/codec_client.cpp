@@ -95,7 +95,7 @@ int32_t CodecClient::CreateListenerObject()
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
     } else {
-        AVCODEC_LOGI_WITH_TAG("%{public}s", ErrorToStr(ret).c_str());
+        AVCODEC_LOGE_WITH_TAG("%{public}s", ErrorToStr(ret).c_str());
     }
     auto codecProxy = static_cast<CodecServiceProxy *>(codecProxy_.GetRefPtr());
     codecProxy->SetListener(listenerStub_);

@@ -1043,7 +1043,7 @@ inline void CodecServer::StatusChanged(CodecStatus newStatus, bool printLog)
         (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) {
         videoCb_->OnError(AVCODEC_ERROR_FRAMEWORK_FAILED, AVCS_ERR_INVALID_STATE);
     }
-    EXPECT_AND_LOGI_WITH_TAG(printLog, "Status %{public}s -> %{public}s", GetStatusDescription(status_).data(),
+    EXPECT_AND_LOGI_WITH_TAG(printLog, "%{public}s -> %{public}s", GetStatusDescription(status_).data(),
                              GetStatusDescription(newStatus).data());
     status_ = newStatus;
 }

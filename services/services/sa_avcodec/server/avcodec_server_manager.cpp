@@ -174,7 +174,7 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
             CHECK_AND_BREAK_LOG(it != codecStubMap_.end(), "find codec object failed, pid(%{public}d)", pid);
 
             auto preSize = codecStubMap_.size();
-            AVCODEC_LOGI("pid(%{public}d) codec services(%{public}zu) ", pid, preSize - 1);
+            AVCODEC_LOGI("Erase from pid:%{public}d, left:%{public}zu ", pid, preSize - 1);
             codecStubMap_.erase(it);
             break;
         }
