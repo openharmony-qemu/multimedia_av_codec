@@ -33,6 +33,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeVideoEncoder"};
 constexpr size_t MAX_TEMPNUM = 64;
+constexpr uint32_t MAX_LENGTH = 255;
 
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
@@ -415,6 +416,7 @@ extern "C" {
 struct OH_AVCodec *OH_VideoEncoder_CreateByMime(const char *mime)
 {
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "Mime is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(strlen(mime) < MAX_LENGTH, nullptr, "Mime is too long!");
 
     std::shared_ptr<AVCodecVideoEncoder> videoEncoder = VideoEncoderFactory::CreateByMime(mime);
     CHECK_AND_RETURN_RET_LOG(videoEncoder != nullptr, nullptr, "Video encoder create by mime failed");
@@ -428,6 +430,7 @@ struct OH_AVCodec *OH_VideoEncoder_CreateByMime(const char *mime)
 struct OH_AVCodec *OH_VideoEncoder_CreateByName(const char *name)
 {
     CHECK_AND_RETURN_RET_LOG(name != nullptr, nullptr, "Name is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(strlen(name) < MAX_LENGTH, nullptr, "Name is too long!");
 
     std::shared_ptr<AVCodecVideoEncoder> videoEncoder = VideoEncoderFactory::CreateByName(name);
     CHECK_AND_RETURN_RET_LOG(videoEncoder != nullptr, nullptr, "Video encoder create by name failed");

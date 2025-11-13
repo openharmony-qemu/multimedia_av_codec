@@ -37,6 +37,7 @@
 #include "av_common.h"
 #include "external_window.h"
 #include "native_buffer.h"
+#include "native_avcapability.h"
 namespace OHOS {
 namespace Media {
 class VEncAPI11Signal {
@@ -155,6 +156,18 @@ public:
     OH_AVBuffer *GetOutputBuffer(uint32_t index);
     void SetConfigureEnc(OH_AVFormat *format);
     void FlushStatus();
+    void GetVideoSupportedPixelFormats();
+    void GetFormatKey();
+    bool isGetVideoSupportedPixelFormats = false;
+    bool isGetFormatKey = false;
+    int isGetVideoSupportedPixelFormatsNum = 0;
+    int isGetFormatKeyNum = 0;
+    const char *avcodecMimeType = nullptr;
+    bool isEncoder = true;
+    const OH_NativeBuffer_Format *pixlFormats = nullptr;
+    uint32_t pixlFormatNum = 0;
+    int firstCallBackKey = 0;
+    int onStreamChangedKey = 0;
     VEncAPI11Signal *signal_;
     uint32_t errCount = 0;
     bool enableForceIDR = false;

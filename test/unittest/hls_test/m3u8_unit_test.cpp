@@ -619,4 +619,22 @@ HWTEST_F(M3u8UnitTest, SetInterruptState_001, TestSize.Level1)
     master->SetInterruptState(true);
     EXPECT_EQ(master->defaultVariant_, nullptr);
 }
+
+HWTEST_F(M3u8UnitTest, IsVideoStream_001, TestSize.Level1)
+{
+    std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", "https://example.com/key");
+    master->StartParsing();
+    std::string codecs = "mp4a.40.2,avc1.77.31";
+    EXPECT_EQ(master->IsVideoStream(codecs), true);
+    codecs = "mp4a.40.2";
+    EXPECT_EQ(master->IsVideoStream(codecs), false);
+    codecs = "avc1.77.31";
+    EXPECT_EQ(master->IsVideoStream(codecs), true);
+    codecs = "";
+    EXPECT_EQ(master->IsVideoStream(codecs), false);
+    codecs = "   ,   ,   ";
+    EXPECT_EQ(master->IsVideoStream(codecs), false);
+    codecs = "  ,  .  ,  .  ";
+    EXPECT_EQ(master->IsVideoStream(codecs), false);
+}
 }

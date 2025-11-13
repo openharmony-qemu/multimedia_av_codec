@@ -56,6 +56,12 @@ protected:
     const char *INP_URI_2 = "http://127.0.0.1:46666/m4v_h264_high@level31_1280_720_aac_31.m4v";
     const char *INP_DIR_3 = "/data/test/media/m4v_h264_high@level31_1280_720_aac_13.m4v";
     const char *INP_URI_3 = "http://127.0.0.1:46666/m4v_h264_high@level31_1280_720_aac_13.m4v";
+    const char *INP_DIR_4 = "/data/test/media/m4v_mpeg4_ac3_alac.m4v";
+    const char *INP_URI_4 = "http://127.0.0.1:46666/m4v_mpeg4_ac3_alac.m4v";
+    const char *INP_DIR_5 = "/data/test/media/m4v_hevc_aac.m4v";
+    const char *INP_URI_5 = "http://127.0.0.1:46666/m4v_hevc_aac.m4v";
+    const char *INP_DIR_6 = "/data/test/media/m4v_h264_alac.m4v";
+    const char *INP_URI_6 = "http://127.0.0.1:46666/m4v_h264_alac.m4v";
 };
 
 static int g_fd = -1;
@@ -806,3 +812,140 @@ HWTEST_F(DemuxerM4vFuncNdkTest, DEMUXER_M4V_FUNC_4600, TestSize.Level2)
     g_fd = -1;
 }
 
+/**
+ * @tc.number    : DEMUXER_M4V_FUNC_4700
+ * @tc.name      : demuxer m4v, demuxer m4v_mpeg4_ac3_alac basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM4vFuncNdkTest, DEMUXER_M4V_FUNC_4700, TestSize.Level2)
+{
+    OH_AVSource *av_source = CreateFdSource(INP_DIR_4);
+    DemuxerResult(av_source);
+}
+
+/**
+ * @tc.number    : DEMUXER_M4V_URI_FUNC_4700
+ * @tc.name      : demuxer m4v, demuxer m4v_mpeg4_ac3_alac basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM4vFuncNdkTest, DEMUXER_M4V_URI_FUNC_4700, TestSize.Level2)
+{
+    OH_AVSource *av_source = CreateUriSource(INP_URI_4);
+    DemuxerResult(av_source);
+}
+
+/**
+ * @tc.number    : DEMUXER_M4V_FUNC_4800
+ * @tc.name      : demuxer m4v, demuxer m4v_mpeg4_ac3_alac seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM4vFuncNdkTest, DEMUXER_M4V_FUNC_4800, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_4, SEEK_MODE_PREVIOUS_SYNC, 0, 454, 435};
+    OH_AVSource *av_source = CreateFdSource(INP_DIR_4);
+    CheckSeekMode(av_source, fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_M4V_URI_FUNC_4800
+ * @tc.name      : demuxer m4v, demuxer m4v_mpeg4_ac3_alac seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM4vFuncNdkTest, DEMUXER_M4V_URI_FUNC_4800, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_4, SEEK_MODE_PREVIOUS_SYNC, 0, 454, 435};
+    OH_AVSource *av_source = CreateUriSource(INP_URI_4);
+    CheckSeekMode(av_source, fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_M4V_FUNC_4900
+ * @tc.name      : demuxer m4v, demuxer m4v_hevc_aac basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM4vFuncNdkTest, DEMUXER_M4V_FUNC_4900, TestSize.Level2)
+{
+    OH_AVSource *av_source = CreateFdSource(INP_DIR_5);
+    DemuxerResult(av_source);
+}
+
+/**
+ * @tc.number    : DEMUXER_M4V_URI_FUNC_4900
+ * @tc.name      : demuxer m4v, demuxer m4v_hevc_aac basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM4vFuncNdkTest, DEMUXER_M4V_URI_FUNC_4900, TestSize.Level2)
+{
+    OH_AVSource *av_source = CreateUriSource(INP_URI_5);
+    DemuxerResult(av_source);
+}
+
+/**
+ * @tc.number    : DEMUXER_M4V_FUNC_5000
+ * @tc.name      : demuxer m4v, demuxer m4v_hevc_aac seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM4vFuncNdkTest, DEMUXER_M4V_FUNC_5000, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_5, SEEK_MODE_PREVIOUS_SYNC, 0, 300, 217};
+    OH_AVSource *av_source = CreateFdSource(INP_DIR_5);
+    CheckSeekMode(av_source, fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_M4V_URI_FUNC_5000
+ * @tc.name      : demuxer m4v, demuxer m4v_hevc_aac seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM4vFuncNdkTest, DEMUXER_M4V_URI_FUNC_5000, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_5, SEEK_MODE_PREVIOUS_SYNC, 0, 300, 217};
+    OH_AVSource *av_source = CreateUriSource(INP_URI_5);
+    CheckSeekMode(av_source, fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_M4V_FUNC_5100
+ * @tc.name      : demuxer m4v, demuxer m4v_h264_alac basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM4vFuncNdkTest, DEMUXER_M4V_FUNC_5100, TestSize.Level2)
+{
+    OH_AVSource *av_source = CreateFdSource(INP_DIR_6);
+    DemuxerResult(av_source);
+}
+
+/**
+ * @tc.number    : DEMUXER_M4V_URI_FUNC_5100
+ * @tc.name      : demuxer m4v, demuxer m4v_h264_alac basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM4vFuncNdkTest, DEMUXER_M4V_URI_FUNC_5100, TestSize.Level2)
+{
+    OH_AVSource *av_source = CreateUriSource(INP_URI_6);
+    DemuxerResult(av_source);
+}
+
+/**
+ * @tc.number    : DEMUXER_M4V_FUNC_5200
+ * @tc.name      : demuxer m4v, demuxer m4v_h264_alac seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM4vFuncNdkTest, DEMUXER_M4V_FUNC_5200, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_6, SEEK_MODE_PREVIOUS_SYNC, 0, 602, 109};
+    OH_AVSource *av_source = CreateFdSource(INP_DIR_6);
+    CheckSeekMode(av_source, fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_M4V_URI_FUNC_5200
+ * @tc.name      : demuxer m4v, demuxer m4v_h264_alac seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerM4vFuncNdkTest, DEMUXER_M4V_URI_FUNC_5200, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_6, SEEK_MODE_PREVIOUS_SYNC, 0, 602, 109};
+    OH_AVSource *av_source = CreateUriSource(INP_URI_6);
+    CheckSeekMode(av_source, fileTest1);
+}

@@ -1309,7 +1309,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_1900, TestSize.Level
 
 /**
  * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_2000
- * @tc.name      : demuxer random seek, ALAC_16bit_44100Hz_mp4.m4a
+ * @tc.name      : demuxer random seek, ALAC_16bit_44100Hz_mp4.mp4
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2000, TestSize.Level2)
@@ -1319,7 +1319,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2000, TestSize.Level
 
 /**
  * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_1800
- * @tc.name      : demuxer random seek, ALAC_24bit_48000Hz_mp4.m4a
+ * @tc.name      : demuxer random seek, ALAC_24bit_48000Hz_mp4.mp4
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2100, TestSize.Level2)
@@ -1329,7 +1329,7 @@ HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2100, TestSize.Level
 
 /**
  * @tc.number    : DEMUXER_ALAC_RANDOM_SEEK_2200
- * @tc.name      : demuxer random seek, ALAC_32bit_96000Hz_mp4.m4a
+ * @tc.name      : demuxer random seek, ALAC_32bit_96000Hz_mp4.mp4
  * @tc.desc      : function test
  */
 HWTEST_F(DemuxerRandomSeekNdkTest, DEMUXER_ALAC_RANDOM_SEEK_2200, TestSize.Level2)

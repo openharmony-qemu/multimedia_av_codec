@@ -52,6 +52,13 @@ protected:
     const char *INP_URI_2 = "http://127.0.0.1:46666/3g2_mp4v_simple@level1_720_480_mp4a_31.3g2";
     const char *INP_DIR_3 = "/data/test/media/3g2_mp4v_simple@level1_720_480_mp4a_13.3g2";
     const char *INP_URI_3 = "http://127.0.0.1:46666/3g2_mp4v_simple@level1_720_480_mp4a_13.3g2";
+    const char *INP_DIR_4 = "/data/test/media/3g2_h264_amrwb_simple@level1_720_480_mp4a_2.3g2";
+    const char *INP_URI_4 = "http://127.0.0.1:46666/3g2_h264_amrwb_simple@level1_720_480_mp4a_2.3g2";
+    const char *INP_DIR_5 = "/data/test/media/3g2_h264_amrnb_simple@level1_720_480_mp4a_2.3g2";
+    const char *INP_URI_5 = "http://127.0.0.1:46666/3g2_h264_amrnb_simple@level1_720_480_mp4a_2.3g2";
+    const char *INP_DIR_6 = "/data/test/media/3g2_h263_simple@level1_720_480_mp4a_2.3g2";
+    const char *INP_URI_6 = "http://127.0.0.1:46666/3g2_h263_simple@level1_720_480_mp4a_2.3g2";
+    const char *INP_DIR_7 = "/data/test/media/3g2_h264_720_480_mp4a_31.3g2";
 };
 
 static unique_ptr<FileServerDemo> server = nullptr;
@@ -865,4 +872,161 @@ HWTEST_F(Demuxer3G2FuncNdkTest, DEMUXER_3G2_FUNC_4600, TestSize.Level2)
     ASSERT_EQ(ret, AV_ERR_OPERATE_NOT_PERMIT);
     close(g_fd);
     g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_3G2_FUNC_4700
+ * @tc.name      : demuxer 3g2, Seek to the time when there is no I frame, next mode, Local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3G2FuncNdkTest, DEMUXER_3G2_FUNC_4700, TestSize.Level0)
+{
+    CreateFdSource(INP_DIR_7);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    ASSERT_NE(demuxer, nullptr);
+    int64_t pts = 9500;
+    ret = OH_AVDemuxer_SeekToTime(demuxer, pts, SEEK_MODE_NEXT_SYNC);
+    ASSERT_EQ(ret, AV_ERR_UNKNOWN);
+    close(g_fd);
+    g_fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_3G2_FUNC_4800
+ * @tc.name      : demuxer 3g2, demuxer 3g2_h264_amrwb_simple@level1_720_480_mp4a_2 basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3G2FuncNdkTest, DEMUXER_3G2_FUNC_4800, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_4);
+    DemuxerResult();
+}
+
+/**
+ * @tc.number    : DEMUXER_3G2_URI_FUNC_4800
+ * @tc.name      : demuxer 3g2, demuxer 3g2_h264_amrwb_simple@level1_720_480_mp4a_2 basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3G2FuncNdkTest, DEMUXER_3G2_URI_FUNC_4800, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_4);
+    DemuxerResult();
+}
+
+/**
+ * @tc.number    : DEMUXER_3G2_FUNC_4900
+ * @tc.name      : demuxer 3g2, demuxer 3g2_h264_amrwb_simple@level1_720_480_mp4a_2 seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3G2FuncNdkTest, DEMUXER_3G2_FUNC_4900, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_4, SEEK_MODE_PREVIOUS_SYNC, 0, 180, 502};
+    CreateFdSource(INP_DIR_4);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_3G2_URI_FUNC_4900
+ * @tc.name      : demuxer 3g2, demuxer 3g2_h264_amrwb_simple@level1_720_480_mp4a_2 seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3G2FuncNdkTest, DEMUXER_3G2_URI_FUNC_4900, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_4, SEEK_MODE_PREVIOUS_SYNC, 0, 180, 502};
+    CreateUriSource(INP_URI_4);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_3G2_FUNC_5000
+ * @tc.name      : demuxer 3g2, demuxer 3g2_h264_amrnb_simple@level1_720_480_mp4a_2 basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3G2FuncNdkTest, DEMUXER_3G2_FUNC_5000, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_5);
+    DemuxerResult();
+}
+
+/**
+ * @tc.number    : DEMUXER_3G2_URI_FUNC_5000
+ * @tc.name      : demuxer 3g2, demuxer 3g2_h264_amrnb_simple@level1_720_480_mp4a_2 basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3G2FuncNdkTest, DEMUXER_3G2_URI_FUNC_5000, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_5);
+    DemuxerResult();
+}
+
+/**
+ * @tc.number    : DEMUXER_3G2_FUNC_5100
+ * @tc.name      : demuxer 3g2, demuxer 3g2_h264_amrnb_simple@level1_720_480_mp4a_2 seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3G2FuncNdkTest, DEMUXER_3G2_FUNC_5100, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_5, SEEK_MODE_PREVIOUS_SYNC, 0, 180, 502};
+    CreateFdSource(INP_DIR_5);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_3G2_URI_FUNC_5100
+ * @tc.name      : demuxer 3g2, demuxer 3g2_h264_amrnb_simple@level1_720_480_mp4a_2 seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3G2FuncNdkTest, DEMUXER_3G2_URI_FUNC_5100, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_5, SEEK_MODE_PREVIOUS_SYNC, 0, 180, 502};
+    CreateUriSource(INP_URI_5);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_3G2_FUNC_5200
+ * @tc.name      : demuxer 3g2, demuxer 3g2_h263_simple@level1_720_480_mp4a_2 basic process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3G2FuncNdkTest, DEMUXER_3G2_FUNC_5200, TestSize.Level2)
+{
+    CreateFdSource(INP_DIR_6);
+    DemuxerResult();
+}
+
+/**
+ * @tc.number    : DEMUXER_3G2_URI_FUNC_5200
+ * @tc.name      : demuxer 3g2, demuxer 3g2_h263_simple@level1_720_480_mp4a_2 basic process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3G2FuncNdkTest, DEMUXER_3G2_URI_FUNC_5200, TestSize.Level2)
+{
+    CreateUriSource(INP_URI_6);
+    DemuxerResult();
+}
+
+/**
+ * @tc.number    : DEMUXER_3G2_FUNC_5300
+ * @tc.name      : demuxer 3g2, demuxer 3g2_h263_simple@level1_720_480_mp4a_2 seek process, local
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3G2FuncNdkTest, DEMUXER_3G2_FUNC_5300, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_DIR_6, SEEK_MODE_PREVIOUS_SYNC, 0, 300, 216};
+    CreateFdSource(INP_DIR_6);
+    CheckSeekMode(fileTest1);
+}
+
+/**
+ * @tc.number    : DEMUXER_3G2_URI_FUNC_5300
+ * @tc.name      : demuxer 3g2, demuxer 3g2_h263_simple@level1_720_480_mp4a_2 seek process, uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(Demuxer3G2FuncNdkTest, DEMUXER_3G2_URI_FUNC_5300, TestSize.Level2)
+{
+    seekInfo fileTest1{INP_URI_6, SEEK_MODE_PREVIOUS_SYNC, 0, 300, 216};
+    CreateUriSource(INP_URI_6);
+    CheckSeekMode(fileTest1);
 }

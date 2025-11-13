@@ -113,10 +113,17 @@ public:
     void CreateSurface();
     int32_t SetOutputSurface();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
+    int32_t SetXps(AVCodecBufferFlag &flag, uint8_t *fileBuffer);
+    int32_t SetSendFrame();
     bool PREPARE_FLAG = true;
     bool P3_FULL_FLAG = false;
     bool BT709_LIMIT_FLAG = false;
     bool BT709_FULL_FLAG = false;
+    bool checkErrCode = false;
+    int32_t errCodeResult = 0;
+    bool needXpsEmpty = false;
+    bool noNeedFirstFrame = false;
+    bool needSendOneFrame = false;
 
     const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
     const char *OUT_DIR = "/data/test/media/VDecTest.yuv";

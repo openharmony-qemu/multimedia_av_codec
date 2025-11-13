@@ -50,7 +50,7 @@ public:
         if (auto videoCaptureFilter = videoCaptureFilter_.lock()) {
             videoCaptureFilter->OnLinkedResult(queue, meta);
         } else {
-            MEDIA_LOG_I("invalid videoCaptureFilter");
+            MEDIA_LOG_E("invalid videoCaptureFilter");
         }
     }
 
@@ -59,7 +59,7 @@ public:
         if (auto videoCaptureFilter = videoCaptureFilter_.lock()) {
             videoCaptureFilter->OnUnlinkedResult(meta);
         } else {
-            MEDIA_LOG_I("invalid videoCaptureFilter");
+            MEDIA_LOG_E("invalid videoCaptureFilter");
         }
     }
 
@@ -68,7 +68,7 @@ public:
         if (auto videoCaptureFilter = videoCaptureFilter_.lock()) {
             videoCaptureFilter->OnUpdatedResult(meta);
         } else {
-            MEDIA_LOG_I("invalid videoCaptureFilter");
+            MEDIA_LOG_E("invalid videoCaptureFilter");
         }
     }
 private:
@@ -87,7 +87,7 @@ public:
         if (auto videoCaptureFilter = videoCaptureFilter_.lock()) {
             videoCaptureFilter->OnBufferAvailable();
         } else {
-            MEDIA_LOG_I("invalid videoCaptureFilter");
+            MEDIA_LOG_E("invalid videoCaptureFilter");
         }
     }
 

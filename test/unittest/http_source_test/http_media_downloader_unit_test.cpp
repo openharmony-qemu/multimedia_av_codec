@@ -25,7 +25,9 @@ using namespace testing::ext;
 const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:46666/dewu.mp4";
 const std::string MP4_NULL_SEGMENT_BASE = "http://127.0.0.1:46666/dewuNull.mp4";
 const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/h264.flv";
-
+namespace {
+    constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
+}
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server;
 std::shared_ptr<HttpMediaDownloader> MP4httpMediaDownloader;
 std::shared_ptr<HttpMediaDownloader> FLVhttpMediaDownloader;

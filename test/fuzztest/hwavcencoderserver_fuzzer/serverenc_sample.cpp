@@ -55,7 +55,9 @@ void VEncServerSample::CallBack::OnInputBufferAvailable(uint32_t index, std::sha
 
 void VEncServerSample::CallBack::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    tester->codec_->ReleaseOutputBuffer(index);
+    unique_lock<mutex> lock(tester->signal_->outMutex_);
+    tester->signal_->outIdxQueue_.push(index);
+    tester->signal_->outCond_.notify_all();
 }
 
 VEncServerSample::~VEncServerSample()
@@ -135,6 +137,11 @@ void VEncServerSample::RunVideoServerDecoder()
         cout << "Failed to create input loop" << endl;
         isRunning_.store(false);
     }
+    outputLoop_ = make_unique<thread>(&VEncServerSample::OutputFunc, this);
+    if (outputLoop_ == nullptr) {
+        cout << "Failed to create output loop" << endl;
+        isRunning_.store(false);
+    }
 }
 
 void VEncServerSample::InputFunc()
@@ -177,10 +184,43 @@ void VEncServerSample::InputFunc()
     }
 }
 
+void VEncServerSample::OutputFunc()
+{
+    int32_t time = 1000;
+    bool flag = true;
+    while (flag) {
+        if (!isRunning_.load()) {
+            flag = false;
+            break;
+        }
+        unique_lock<mutex> lock(signal_->outMutex_);
+        signal_->outCond_.wait_for(lock, std::chrono::milliseconds(time), [this]() {
+            if (!isRunning_.load()) {
+                return true;
+            }
+            return signal_->outIdxQueue_.size() > 0;
+        });
+        if (!isRunning_.load() || signal_->outIdxQueue_.size() == 0) {
+            break;
+        }
+        uint32_t index = signal_->outIdxQueue_.front();
+        signal_->outIdxQueue_.pop();
+        lock.unlock();
+        int32_t err = codec_->ReleaseOutputBuffer(index);
+        if (err != AVCS_ERR_OK) {
+            cout << "ReleaseOutputBuffer fail" << endl;
+            break;
+        }
+    }
+}
+
 void VEncServerSample::WaitForEos()
 {
     if (inputLoop_ && inputLoop_->joinable()) {
         inputLoop_->join();
+    }
+    if (outputLoop_ && outputLoop_->joinable()) {
+        outputLoop_->join();
     }
 }
 

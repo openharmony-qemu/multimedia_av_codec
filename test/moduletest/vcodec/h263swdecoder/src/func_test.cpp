@@ -1181,4 +1181,29 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_FLUSH_0020, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_DECODE_PIXE_FORMAT_0010
+ * @tc.name      : h263 pixelformat query key
+ * @tc.desc      : function test
+ */
+HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_PIXE_FORMAT_0010, TestSize.Level2)
+{
+    if (cap_263 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/20x20.h263";
+        vDecSample->isGetVideoSupportedPixelFormats = true;
+        vDecSample->isGetFormatKey = true;
+        vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_H263;
+        vDecSample->isEncoder = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName263));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_LT(1, vDecSample->pixlFormatNum);
+        ASSERT_EQ(24, vDecSample->firstCallBackKey);
+        ASSERT_EQ(24, vDecSample->onStreamChangedKey);
+    }
+}
 } // namespace

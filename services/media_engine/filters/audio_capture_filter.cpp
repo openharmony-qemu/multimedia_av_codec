@@ -141,7 +141,10 @@ Status AudioCaptureFilter::PrepareAudioCapture()
             return 0;
         });
     }
-
+    if (audioCaptureModule_ == nullptr) {
+        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot Prepare");
+        return Status::ERROR_NULL_POINTER;
+    }
     Status err = audioCaptureModule_->Prepare();
     if (err != Status::OK) {
         MEDIA_LOG_E("audioCaptureModule prepare fail");
@@ -318,7 +321,9 @@ void AudioCaptureFilter::GetParameter(std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("GetParameter");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::GetParameter");
-    audioCaptureModule_->GetParameter(meta);
+    if (audioCaptureModule_) {
+        audioCaptureModule_->GetParameter(meta);
+    }
 }
 
 Status AudioCaptureFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
@@ -428,6 +433,10 @@ void AudioCaptureFilter::ReadLoop()
 
 void AudioCaptureFilter::CalculateAVTime()
 {
+    if (audioCaptureModule_ == nullptr) {
+        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot CalculateAVTime");
+        return;
+    }
     uint64_t bufferSize = 0;
     audioCaptureModule_->GetSize(bufferSize);
 
@@ -465,6 +474,10 @@ void AudioCaptureFilter::CalculateAVTime()
 
 void AudioCaptureFilter::FillLostFrame(int32_t lostCount)
 {
+    if (audioCaptureModule_ == nullptr) {
+        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot FillLostFrame");
+        return;
+    }
     uint64_t bufferSize = 0;
     audioCaptureModule_->GetSize(bufferSize);
     auto cachedAudioData = AllocateAudioDataBuffer(bufferSize);
@@ -480,6 +493,10 @@ void AudioCaptureFilter::FillLostFrame(int32_t lostCount)
 
 void AudioCaptureFilter::RecordAudioFrame()
 {
+    if (audioCaptureModule_ == nullptr) {
+        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot RecordAudioFrame");
+        return;
+    }
     uint64_t bufferSize = 0;
     audioCaptureModule_->GetSize(bufferSize);
 
@@ -544,6 +561,10 @@ int32_t AudioCaptureFilter::FillLostFrameNum()
 
 void AudioCaptureFilter::RecordOneAudioFrame(uint64_t bufferSize)
 {
+    if (audioCaptureModule_ == nullptr) {
+        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot RecordOneAudioFrame");
+        return;
+    }
     std::shared_ptr<AVBuffer> buffer;
     AVBufferConfig avBufferConfig;
     avBufferConfig.size = static_cast<int32_t>(bufferSize);
@@ -582,6 +603,10 @@ void AudioCaptureFilter::RecordOneAudioFrame(uint64_t bufferSize)
 
 void AudioCaptureFilter::RecordCachedData(int32_t recordFrameNum)
 {
+    if (audioCaptureModule_ == nullptr) {
+        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot RecordCachedData");
+        return;
+    }
     uint64_t bufferSize = 0;
     audioCaptureModule_->GetSize(bufferSize);
 

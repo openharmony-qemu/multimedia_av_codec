@@ -1,0 +1,123 @@
+import("//build/config/features.gni")
+import("//build/test.gni")
+
+AV_CODEC_ROOT_DIR = "//foundation/multimedia/av_codec/"
+
+config("fuzz_config") {
+  defines = [
+    "HST_ANY_WITH_NO_RTTI",
+    "MEDIA_OHOS",
+  ]
+
+  cflags = [
+    "-g",
+    "-O0",
+    "-Wno-unused-variable",
+    "-fno-omit-frame-pointer",
+    "-Wno-sign-compare",
+    "-fno-exceptions",
+    "-fno-common",
+    "-fstack-protector-all",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+
+  cflags_cc = [
+    "-std=c++17",
+    "-fno-rtti",
+  ]
+
+  include_dirs = [
+    ".",
+    "$AV_CODEC_ROOT_DIR/interfaces",
+    "$AV_CODEC_ROOT_DIR/interfaces/inner_api/native",
+    "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source",
+    "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/download",
+    "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/xml",
+    "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/base64",
+    "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash",
+    "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/include",
+    "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
+    "$AV_CODEC_ROOT_DIR/test/unittest/common",
+  ]
+}  
+
+dash_sources = [
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/base64/base64_utils.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_manager.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_node.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_com_attrs_elements.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_content_comp_node.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_descriptor_node.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_manager_util.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_manager.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_node.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/i_dash_mpd_node.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_parser.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_util.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mult_seg_base_node.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_period_manager.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_period_node.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_representation_manager.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_representation_node.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_base_node.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_list_node.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_template_node.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_tmline_node.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_url_node.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_url_type_node.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/mpd_parser/sidx_box_parser.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
+  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
+]
+
+########################## xml fuzz ###########################
+
+########################## dash utils fuzz ###########################
+
+ohos_fuzztest("MpdParserSevenFuzzTest") {
+  module_out_path = "player_framework/stream_player_framework"
+  testonly = true
+  configs = [ ":fuzz_config" ]
+  fuzz_config_file = "../mpdparserseven_fuzzer"
+  sources = dash_sources + [
+    "dash_mpd_util_raw_fuzzer.cpp"
+  ]
+
+  deps = [
+    "$AV_CODEC_ROOT_DIR/services/dfx:av_codec_service_dfx",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "curl:curl_shared",
+    "graphic_surface:surface",
+    "googletest:gmock",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "ipc:ipc_single",
+    "libxml2:libxml2",
+    "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
+    "openssl:libcrypto_shared",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+}
+
+########################## dash utils fuzz ###########################
+
+############################## SIDX解析器fuzz测试 ##############################
+
+group("fuzztests") {
+  testonly = true
+  deps = [
+    ":MpdParserSevenFuzzTest",
+  ]
+}

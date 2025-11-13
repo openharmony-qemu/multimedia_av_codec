@@ -159,6 +159,7 @@ public:
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
     Status SetTranscoderMode();
+    Status SetPlayerMode();
     Status SetSkippingAudioDecAndEnc();
     void SetCacheLimit(uint32_t limitSize);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
@@ -225,6 +226,7 @@ private:
 
     Status InnerPrepare();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
+    void UpdateMjpegMediaMetaData(Plugins::MediaInfo& mediaInfo);
     void InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, int32_t& videoTrackId,
         int32_t& audioTrackId, int32_t& subtitleTrackId, std::string& videoMime);
     bool IsOffsetValid(int64_t offset) const;
@@ -303,8 +305,11 @@ private:
     Status HandleDashSelectTrack(int32_t trackId);
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
     Status HandleRebootPlugin(int32_t trackId, bool& isRebooted);
-    Status HandleHlsRebootPlugin();
-    Status HandleSegmentChange();
+    Status HandleHlsRebootPlugin(int32_t trackId);
+    Status HandleSegmentChange(int32_t trackId);
+    Status HandleSegmentEos(int32_t trackId);
+    Status HandleHlsSeek();
+    bool IsAVInOneStream();
     Status HandleSeekChangeStream(int32_t currentStreamId, int32_t newStreamId, int32_t trackId);
     bool IsSubtitleMime(const std::string& mime);
     void HandleAutoMaintainPts(int32_t trackeId, std::shared_ptr<AVBuffer> sample);
@@ -468,6 +473,7 @@ private:
     SyncFrameInfo syncFrameInfo_ {};
     std::mutex syncFrameInfoMutex_ {};
     bool isTranscoderMode_ {false};
+    bool isPlayerMode_ {false};
     bool isSkippingAudioDecAndEnc_ {false};
     bool perfRecEnabled_ { false };
     PerfRecorder perfRecorder_ {};

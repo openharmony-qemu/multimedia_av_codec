@@ -26,6 +26,7 @@
 #include <chrono>
 #include <limits>
 #include "avcodec_trace.h"
+#include "avcodec_log.h"
 #include "securec.h"
 #include "ffmpeg_format_helper.h"
 #include "ffmpeg_utils.h"
@@ -86,6 +87,8 @@ const uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 const int32_t MPEGPS_START_CODE_SIZE = 4;
 const uint8_t MPEGPS_START_CODE[] = {0x00, 0x00, 0x01, 0xBA};
 const uint32_t SETTIMER_TIMEOUT = 5; // second
+constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
+constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -438,13 +441,13 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
             MEDIA_LOG_D("[FFLogW] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_ERROR:
-            MEDIA_LOG_E("[FFLogE] " PUBLIC_LOG_S, buf);
+            AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGE, LOG_INTERVAL_MS, LOG_MAX_COUNT, "[FFLogE] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_FATAL:
-            MEDIA_LOG_E("[FFLogF] " PUBLIC_LOG_S, buf);
+            AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGE, LOG_INTERVAL_MS, LOG_MAX_COUNT, "[FFLogF] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_PANIC:
-            MEDIA_LOG_E("[FFLogP] " PUBLIC_LOG_S, buf);
+            AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGE, LOG_INTERVAL_MS, LOG_MAX_COUNT, "[FFLogP] " PUBLIC_LOG_S, buf);
             break;
         case AV_LOG_INFO:
             MEDIA_LOG_D("[FFLogI] " PUBLIC_LOG_S, buf);

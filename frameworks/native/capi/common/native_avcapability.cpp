@@ -377,7 +377,7 @@ OH_AVErrCode OH_AVCapability_GetVideoSupportedPixelFormats(OH_AVCapability *capa
 }
 
 OH_AVErrCode OH_AVCapability_GetVideoSupportedNativeBufferFormats(OH_AVCapability *capability,
-                                                                  const int32_t **nativeBufferFormats,
+                                                                  const OH_NativeBuffer_Format **nativeBufferFormats,
                                                                   uint32_t *nativeBufferFormatNum)
 {
     CHECK_AND_RETURN_RET_LOG(nativeBufferFormats != nullptr && nativeBufferFormatNum != nullptr, AV_ERR_INVALID_VAL,
@@ -387,24 +387,25 @@ OH_AVErrCode OH_AVCapability_GetVideoSupportedNativeBufferFormats(OH_AVCapabilit
     CHECK_AND_RETURN_RET_LOG(capability != nullptr && capability->magic_ == AVMagic::AVCODEC_MAGIC_AVCAPABILITY,
         AV_ERR_INVALID_VAL, "Invalid parameter");
     CapabilityData *capData = capability->capabilityData_;
-    if (!AVCodecInfo::isVideo(capData->codecType)) {
-        AVCODEC_LOGW("The capability provided is not expected, should be the video capability");
-    }
+    CHECK_AND_RETURN_RET_LOG(AVCodecInfo::isVideo(capData->codecType), AV_ERR_INVALID_VAL,
+        "The capability provided is not expected, should be the video capability");
     std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capData);
     const auto &vec = codecInfo->GetSupportedGraphicFormats();
-    if (vec.size() == 0) {
+    size_t vecSize = vec.size();
+    if (vecSize == 0) {
         return AV_ERR_OK;
     }
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
     CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, AV_ERR_UNKNOWN,
         "Get video supported graphic pixel formats failed: CreateAVCodecList failed");
-    size_t vecSize = vec.size() * sizeof(int32_t);
-    int32_t *buf = static_cast<int32_t *>(codeclist->NewBuffer(vecSize));
+    size_t newBufferSize = vecSize * sizeof(OH_NativeBuffer_Format);
+    OH_NativeBuffer_Format *buf = static_cast<OH_NativeBuffer_Format *>(codeclist->NewBuffer(newBufferSize));
     CHECK_AND_RETURN_RET_LOG(buf != nullptr, AV_ERR_NO_MEMORY, "new buffer failed");
-    errno_t ret = memcpy_s(buf, vecSize, vec.data(), vecSize);
-    CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_UNKNOWN, "memcpy_s failed");
+    for (size_t i = 0; i < vecSize; i++) {
+        buf[i] = static_cast<OH_NativeBuffer_Format>(vec[i]);
+    }
     *nativeBufferFormats = buf;
-    *nativeBufferFormatNum = vec.size();
+    *nativeBufferFormatNum = static_cast<uint32_t>(vecSize);
     return AV_ERR_OK;
 }
 

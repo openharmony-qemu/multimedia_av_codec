@@ -146,6 +146,12 @@ void VdecAPI11Error(OH_AVCodec *codec, int32_t errorCode, void *userData)
         dec_sample->signal_->inCond_.notify_all();
         dec_sample->signal_->outCond_.notify_all();
     }
+    if (dec_sample->checkErrCode && errorCode == AV_ERR_UNKNOWN) {
+        dec_sample->errCodeIsRight = true;
+        dec_sample->isRunning_.store(false);
+        dec_sample->signal_->inCond_.notify_all();
+        dec_sample->signal_->outCond_.notify_all();
+    }
     cout << "Error errorCode=" << errorCode << endl;
 }
 
@@ -160,18 +166,22 @@ void VdecAPI11FormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userDa
     int32_t sliceHeight = 0;
     int32_t picWidth = 0;
     int32_t picHeight = 0;
+    int currentFormat = 0;
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &currentWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &currentHeight);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_STRIDE, &stride);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_SLICE_HEIGHT, &sliceHeight);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_WIDTH, &picWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_HEIGHT, &picHeight);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &currentFormat);
+    std::cout << "currentFormat:" << currentFormat << std::endl;
     dec_sample->DEFAULT_WIDTH = currentWidth;
     dec_sample->DEFAULT_HEIGHT = currentHeight;
     dec_sample->stride_ = stride;
     dec_sample->sliceHeight_ = sliceHeight;
     dec_sample->picWidth_ = picWidth;
     dec_sample->picHeight_ = picHeight;
+    dec_sample->onStreamChangedKey = currentFormat;
     g_strideSurface = stride;
     g_sliceSurface = sliceHeight;
     if (dec_sample->isResChangeStream) {
@@ -907,11 +917,8 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
         cout << "Fatal: memory copy failed" << endl;
     }
     (void)inFile_->read(reinterpret_cast<char *>(fileBuffer) + START_CODE_SIZE, bufferSize);
-    if ((fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == SPS ||
-        (fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == PPS) {
-        attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
-    } else {
-        attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
+    if (SetXps(attr, fileBuffer) == 0) {
+        return 0;
     }
     int32_t size = CheckAndReturnBufferSize(buffer);
     if (size < bufferSize + START_CODE_SIZE) {
@@ -927,6 +934,9 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
     }
     if (memcpy_s(avBuffer, size, fileBuffer, bufferSize + START_CODE_SIZE) != EOK) {
         delete[] fileBuffer;
+        return 0;
+    }
+    if (SetSendFrame() == 0) {
         return 0;
     }
     int64_t startPts = GetSystemTimeUs();
@@ -1259,6 +1269,8 @@ void VDecAPI11Sample::CopyFrom10BitYuv(OH_AVBuffer *buffer, uint32_t index)
 
 void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index)
 {
+    GetVideoSupportedPixelFormats();
+    GetFormatKey();
     if (!SF_OUTPUT) {
         GetStride();
         if (is8bitYuv) {
@@ -1569,4 +1581,59 @@ bool VDecAPI11Sample::GetHdrMetaDataType(int &metaDataType)
         return false;
     }
     return true;
+}
+
+int32_t VDecAPI11Sample::SetXps(OH_AVCodecBufferAttr &attr, uint8_t *fileBuffer)
+{
+    if ((fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == SPS ||
+        (fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == PPS) {
+        if (!needXpsEmpty) {
+            attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
+            return 1;
+        } else {
+            return 0;
+        }
+    } else {
+        attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
+        return 1;
+    }
+}
+
+int32_t VDecAPI11Sample::SetSendFrame()
+{
+    if (frameCount_ == 0 && noNeedFirstFrame) {
+        frameCount_ = frameCount_ + 1;
+        return 0;
+    }
+
+    if (needSendOneFrame && frameCount_ >= 1) {
+        frameCount_ = frameCount_ + 1;
+        return 0;
+    }
+    return 1;
+}
+
+void VDecAPI11Sample::GetVideoSupportedPixelFormats()
+{
+    if (!isGetVideoSupportedPixelFormats || isGetVideoSupportedPixelFormatsNum != 0) {
+        return;
+    }
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(avcodecMimeType, isEncoder);
+    OH_AVCapability_GetVideoSupportedNativeBufferFormats(capability, &pixlFormats, &pixlFormatNum);
+    std::cout << "pixlFormats:" << *pixlFormats << "pixlFormatNum:" << pixlFormatNum << std::endl;
+    isGetVideoSupportedPixelFormatsNum++;
+}
+
+void VDecAPI11Sample::GetFormatKey()
+{
+    if (!isGetFormatKey || isGetFormatKeyNum != 0) {
+        return;
+    }
+    OH_AVFormat *format = OH_AVFormat_Create();
+    OH_VideoDecoder_Configure(vdec_, format);
+    format = OH_VideoDecoder_GetOutputDescription(vdec_);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &firstCallBackKey);
+    OH_AVFormat_Destroy(format);
+    std::cout << "firstCallBackKey:" << firstCallBackKey << std::endl;
+    isGetFormatKeyNum++;
 }

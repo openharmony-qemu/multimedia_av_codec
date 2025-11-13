@@ -115,6 +115,21 @@ void VDecInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
         innersignal_->outCond_.notify_all();
         cout << "AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION" << endl;
     }
+    if (dec_sample->checkErrCode) {
+        if (errorCode == AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION) {
+            dec_sample->errCodeResult = AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION;
+            cout << "AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION" << endl;
+        } else if (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS) {
+            dec_sample->errCodeResult = AVCS_ERR_ILLEGAL_PARAMETER_SETS;
+            cout << "AVCS_ERR_ILLEGAL_PARAMETER_SETS" << endl;
+        } else if (errorCode == AVCS_ERR_MINSSING_PARAMETER_SETS) {
+            dec_sample->errCodeResult = AVCS_ERR_MINSSING_PARAMETER_SETS;
+            cout << "AVCS_ERR_MINSSING_PARAMETER_SETS" << endl;
+        }
+        dec_sample->isRunning_.store(false);
+        innersignal_->inCond_.notify_all();
+        innersignal_->outCond_.notify_all();
+    }
     cout << "Error errorType:" << errorType << " errorCode:" << errorCode << endl;
 }
 
@@ -568,13 +583,9 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
     }
 
     (void)inFile_->read((char *)fileBuffer + START_CODE_SIZE, bufferSize);
-    if ((fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == SPS ||
-        (fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == PPS) {
-        flag = AVCODEC_BUFFER_FLAG_CODEC_DATA;
-    } else {
-        flag = AVCODEC_BUFFER_FLAG_NONE;
+    if (SetXps(flag, fileBuffer) == 0) {
+        return 0;
     }
-
     int32_t size = buffer->GetSize();
     if (size < (int32_t)(bufferSize + START_CODE_SIZE)) {
         delete[] fileBuffer;
@@ -593,7 +604,9 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
         delete[] fileBuffer;
         return 0;
     }
-
+    if (SetSendFrame() == 0) {
+        return 0;
+    }
     info.presentationTimeUs = GetSystemTimeUs();
     info.size = bufferSize + START_CODE_SIZE;
     info.offset = 0;
@@ -890,4 +903,33 @@ void VDecNdkInnerSample::SetRunning()
 int32_t VDecNdkInnerSample::SetOutputSurface()
 {
     return vdec_->SetOutputSurface(ps[0]);
+}
+
+int32_t VDecNdkInnerSample::SetXps(AVCodecBufferFlag &flag, uint8_t *fileBuffer)
+{
+    if ((fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == SPS ||
+        (fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == PPS) {
+        if (!needXpsEmpty) {
+            flag = AVCODEC_BUFFER_FLAG_CODEC_DATA;
+            return 1;
+        } else {
+            return 0;
+        }
+    } else {
+        flag = AVCODEC_BUFFER_FLAG_NONE;
+        return 1;
+    }
+}
+
+int32_t VDecNdkInnerSample::SetSendFrame()
+{
+    if (frameCount == 0 && noNeedFirstFrame) {
+        frameCount = frameCount + 1;
+        return 0;
+    }
+    if (needSendOneFrame && frameCount >= 1) {
+        frameCount = frameCount + 1;
+        return 0;
+    }
+    return 1;
 }

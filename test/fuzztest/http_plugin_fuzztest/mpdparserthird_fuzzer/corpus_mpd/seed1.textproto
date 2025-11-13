@@ -1,0 +1,18 @@
+type: DASH_TYPE_DYNAMIC
+profile: "urn:mpeg:dash:profile:isoff-live:2011"
+base_url: "http://ex.com/"
+media_presentation_duration_sec: 120
+periods: {
+    id: "p0"
+    start_sec: 0
+    duration_sec: 60
+    adaptation_sets: {
+        mime_type: "video/mp4"
+        common { mime_type: "video/mp4" codecs: "avc1.64001f" width: 1280 height: 720 frame_rate: "30" }
+        representations: {
+            id: "v1" bandwidth: 800000
+            common { mime_type: "video/mp4" }
+            seg_base { time_scale: 1000 initialization { source_url: "init.mp4" } }
+        }
+    }
+}

@@ -592,7 +592,7 @@ HWTEST_F(DemuxerAlacFuncNdkTest, DEMUXER_ALAC_FUNC_0018, TestSize.Level2) {
 }
 
 /**
- * @tc.number    : DEMUXER_ALAC_FUNC_0029
+ * @tc.number    : DEMUXER_ALAC_FUNC_0019
  * @tc.name      : demuxer ALAC(MP4) ,GetTrackFormat,OH_MD_KEY_BITRATE
  * @tc.desc      : function test
  */
