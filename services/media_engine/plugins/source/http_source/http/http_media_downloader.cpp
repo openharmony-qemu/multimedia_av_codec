@@ -1722,8 +1722,10 @@ bool HttpMediaDownloader::IsNeedBufferForPlaying()
         return false;
     }
     if (GetBufferingTimeOut()) {
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
-                            "buffer for playing"});
+        if (callback_) {
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
+                "buffer for playing"});
+        }
         isTimeoutErrorNotified_.store(true);
         AutoLock lk(bufferingEndMutex_);
         isBuffering_.store(false);
