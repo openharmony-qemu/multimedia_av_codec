@@ -33,7 +33,8 @@ namespace Plugins {
 namespace HttpPlugin {
 
 namespace {
-static const std::string MPD_MULTI_AUDIO_SUB = "http://127.0.0.1:46666/test_dash/segment_base2/index_audio_subtitle.mpd";
+static const std::string MPD_MULTI_AUDIO_SUB =
+    "http://127.0.0.1:46666/test_dash/segment_base2/index_audio_subtitle.mpd";
 constexpr int32_t WAIT_FOR_SIDX_TIME = 1000 * 1000;
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
