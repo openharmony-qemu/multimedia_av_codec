@@ -1,0 +1,39 @@
+<?xml version=\1.0\ encoding=\utf-8\ ?>\n
+    <MPD xmlns:xsi=\http://www.w3.org/2001/XMLSchema-instance\ 
+    xmlns=\urn:mpeg:DASH:schema:MPD:2011\ schemaLocation=\urn:mpeg:DASH:schema:MPD:2011 
+    http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd\
+     type=\static\ availabilityStartTime=\2022-10-05T19:38:39.263Z\ 
+    mediaPresentationDuration=\PT0H2M32S\ minBufferTime=\PT10S\ 
+    profiles=\urn:mpeg:dash:profile:isoff-on-demand:2011\ >\n
+        <Period>\n
+            <AdaptationSet id=\1\ group=\1\ contentType=\video\ par=\4:3\ 
+    segmentAlignment=\true\ subsegmentAlignment=\true\ subsegmentStartsWithSAP=\1\ startWithSAP=\1\>\n
+                <Representation id=\5\ bandwidth=\7342976\ width=\1920\ 
+    height=\1080\ codecs=\avc1.640028\>\n
+                   <BaseURL>http://127.0.0.1:47777/test_dash/segment_base/2_video_1_1920X1080_6000_0_0.mp4</BaseURL>\n
+                    <SegmentBase timescale=\90000\ indexRangeExact=\true\ 
+    indexRange=\851-1166\>\n
+                        <Initialization range=\0-850\/>\n
+                    </SegmentBase>\n
+                </Representation>\n
+            </AdaptationSet>\n
+            <AdaptationSet id=\2\ contentType=\audio\ lang=\und\ group=\2\ 
+    segmentAlignment=\true\ subsegmentAlignment=\true\ subsegmentStartsWithSAP=\1\ 
+    mimeType=\audio/mp4\>\n
+                <Representation id=\8\ bandwidth=\67135\ audioSamplingRate=\44100\ 
+    codecs=\mp4a.40.5\>\n
+                    <AudioChannelConfiguration 
+    schemeIdUri=\urn:dolby:dash:audio_channel_configuration:2011\ value=\0\/>\n
+                    <BaseURL>http://127.0.0.1:47777/test_dash/segment_base/2_audio_6.mp4</BaseURL>\n
+                    <SegmentBase timescale=\44100\ indexRangeExact=\true\ 
+    indexRange=\756-1167\>\n
+                        <Initialization range=\0-755\/>\n
+                    </SegmentBase>\n
+                </Representation>\n
+            </AdaptationSet>\n
+            <AdaptationSet id=\3\ contentType=\audio\ lang=\und\ group=\2\ 
+    segmentAlignment=\true\ subsegmentAlignment=\true\ subsegmentStartsWithSAP=\1\ 
+    mimeType=\audio/mp4\>\n
+            </AdaptationSet>\n
+        </Period>\n
+    </MPD>
