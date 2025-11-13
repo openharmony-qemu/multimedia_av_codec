@@ -1453,7 +1453,8 @@ void FFmpegDemuxerPlugin::SetAVReadFrameLimitDefault()
     ioContext_.isLimitType = true;
     ioContext_.sizeLimit = FLV_READ_SIZE_LIMIT_DEFAULT;
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
-        if (formatContext_->streams[trackIndex] == nullptr || formatContext_->streams[trackIndex]->codecpar == nullptr) {
+        if (formatContext_->streams[trackIndex] == nullptr ||
+            formatContext_->streams[trackIndex]->codecpar == nullptr) {
             MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " info is nullptr", trackIndex);
             continue;
         }
@@ -1770,7 +1771,7 @@ static bool IsSyncFrameCheckNeeded(std::shared_ptr<AVFormatContext> formatContex
 }
 
 bool FFmpegDemuxerPlugin::Mp4checkKeyFrame(AVStream* stream)
-{   
+{
     FALSE_RETURN_V_MSG_E(stream != nullptr, false, "AVStream is nullptr");
     const AVIndexEntry *entry = avformat_index_get_entry(stream, POS_0);
     FALSE_RETURN_V_MSG_E(entry != nullptr, false, "First AVIndexEntry is nullptr");
