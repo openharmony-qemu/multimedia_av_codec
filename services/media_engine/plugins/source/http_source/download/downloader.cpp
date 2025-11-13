@@ -383,9 +383,12 @@ void Downloader::Pause(bool isAsync)
     MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " Pause Begin", FAKE_POINTER(this));
     requestQue_->SetActive(false, false);
-    if (client_ != nullptr) {
-        isClientClose_ = true;
-        client_->Close(isAsync);
+    {
+        AutoLock lock(operatorMutex_);
+        if (client_ != nullptr) {
+            isClientClose_ = true;
+            client_->Close(isAsync);
+        }
     }
     PauseLoop(true);
     if (!isAsync) {
@@ -513,7 +516,7 @@ void Downloader::GetIp(std::string &ip)
 // Pause download thread before use currentRequest_
 bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
-    FALSE_RETURN_V_MSG(client_ != nullptr && !isDestructor_ && !isInterruptNeeded_, false,
+    FALSE_RETURN_V_MSG(!isDestructor_ && !isInterruptNeeded_, false,
         "not Retry, client null or isDestructor or isInterruptNeeded");
     if (isAppBackground_) {
         Pause(true);
