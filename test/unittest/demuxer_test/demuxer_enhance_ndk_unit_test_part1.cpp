@@ -67,13 +67,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_CheckSkipInfo_0011, TestSize.Level1
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_, true), AV_ERR_OK);
         CountFrames(idx);
-        if (skipInfoMap.count(frames_[0]) > 0) {
+        if (!isEOS(eosFlag_) && skipInfoMap.count(frames_[0]) > 0) {
             BufferInfo currentBufferInfo = GetCurrentBufferInfo();
-            printf("check frame %d skip info size %d\n", frames_[0], currentBufferInfo.skipSize);
+            printf("check frame %d skip info size %zu\n", frames_[0], currentBufferInfo.skipSize);
             ASSERT_EQ(currentBufferInfo.skipSize, skipInfoMap[frames_[0]].size());
-            printf("check frame %d skip info data", frames_[0])
+            printf("check frame %d skip info data", frames_[0]);
             for (auto i = 0; i < currentBufferInfo.skipSize; i++) {
-                printf(" %02x", currentBufferInfo.skipData[i])
+                printf(" %02x", currentBufferInfo.skipData[i]);
                 ASSERT_EQ(currentBufferInfo.skipData[i], skipInfoMap[frames_[0]][i]);
             }
             printf("\n");
@@ -102,13 +102,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_CheckSkipInfo_0012, TestSize.Level1
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_, true), AV_ERR_OK);
         CountFrames(idx);
-        if (skipInfoMap.count(frames_[0]) > 0) {
+        if (!isEOS(eosFlag_) && skipInfoMap.count(frames_[0]) > 0) {
             BufferInfo currentBufferInfo = GetCurrentBufferInfo();
-            printf("check frame %d skip info size %d\n", frames_[0], currentBufferInfo.skipSize);
+            printf("check frame %d skip info size %zu\n", frames_[0], currentBufferInfo.skipSize);
             ASSERT_EQ(currentBufferInfo.skipSize, skipInfoMap[frames_[0]].size());
-            printf("check frame %d skip info data", frames_[0])
+            printf("check frame %d skip info data", frames_[0]);
             for (auto i = 0; i < currentBufferInfo.skipSize; i++) {
-                printf(" %02x", currentBufferInfo.skipData[i])
+                printf(" %02x", currentBufferInfo.skipData[i]);
                 ASSERT_EQ(currentBufferInfo.skipData[i], skipInfoMap[frames_[0]][i]);
             }
             printf("\n");
@@ -138,13 +138,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_CheckSkipInfo_0021, TestSize.Level1
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_, true), AV_ERR_OK);
         CountFrames(idx);
-        if (skipInfoMap.count(frames_[0]) > 0) {
+        if (!isEOS(eosFlag_) && skipInfoMap.count(frames_[0]) > 0) {
             BufferInfo currentBufferInfo = GetCurrentBufferInfo();
-            printf("check frame %d skip info size %d\n", frames_[0], currentBufferInfo.skipSize);
+            printf("check frame %d skip info size %zu\n", frames_[0], currentBufferInfo.skipSize);
             ASSERT_EQ(currentBufferInfo.skipSize, skipInfoMap[frames_[0]].size());
-            printf("check frame %d skip info data", frames_[0])
+            printf("check frame %d skip info data", frames_[0]);
             for (auto i = 0; i < currentBufferInfo.skipSize; i++) {
-                printf(" %02x", currentBufferInfo.skipData[i])
+                printf(" %02x", currentBufferInfo.skipData[i]);
                 ASSERT_EQ(currentBufferInfo.skipData[i], skipInfoMap[frames_[0]][i]);
             }
             printf("\n");
@@ -174,13 +174,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_CheckSkipInfo_0022, TestSize.Level1
     while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_, true), AV_ERR_OK);
         CountFrames(idx);
-        if (skipInfoMap.count(frames_[0]) > 0) {
+        if (!isEOS(eosFlag_) && skipInfoMap.count(frames_[0]) > 0) {
             BufferInfo currentBufferInfo = GetCurrentBufferInfo();
-            printf("check frame %d skip info size %d\n", frames_[0], currentBufferInfo.skipSize);
+            printf("check frame %d skip info size %zu\n", frames_[0], currentBufferInfo.skipSize);
             ASSERT_EQ(currentBufferInfo.skipSize, skipInfoMap[frames_[0]].size());
-            printf("check frame %d skip info data", frames_[0])
+            printf("check frame %d skip info data", frames_[0]);
             for (auto i = 0; i < currentBufferInfo.skipSize; i++) {
-                printf(" %02x", currentBufferInfo.skipData[i])
+                printf(" %02x", currentBufferInfo.skipData[i]);
                 ASSERT_EQ(currentBufferInfo.skipData[i], skipInfoMap[frames_[0]][i]);
             }
             printf("\n");
