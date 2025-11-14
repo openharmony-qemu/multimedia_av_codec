@@ -1017,7 +1017,7 @@ void DemuxerPluginManager::SetInterruptState(bool isInterruptNeeded)
 
 void DemuxerPluginManager::NotifyInitialBufferingEnd(bool isInitialBufferingSucc)
 {
-    MEDIA_LOG_I("NotifyInitialBufferingEnd, bufferingEndCond NotifyAll.");
+    MEDIA_LOG_D("NotifyInitialBufferingEnd, bufferingEndCond NotifyAll.");
     AutoLock lk(initialBufferingEndMutex_);
     isInitialBufferingNotified_.store(true);
     isInitialBufferingSucc_.store(isInitialBufferingSucc);
