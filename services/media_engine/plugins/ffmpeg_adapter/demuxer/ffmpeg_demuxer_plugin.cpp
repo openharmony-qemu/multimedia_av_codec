@@ -168,6 +168,11 @@ static const std::vector<FileType> g_streamCheckFileTypeVec = {
     FileType::VOB
 };
 
+static const std::vector<FileType> g_fileContainSkipInfo = {
+    FileType::OGG,
+    FileType::MP3
+};
+
 static const std::unordered_map<std::string, PluginSnifferFunc> g_pluginSnifferMap = {
     {std::string(PLUGIN_NAME_MPEGPS), SniffMPEGPS},
 };
@@ -806,6 +811,18 @@ void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std:
         samplePacket->pkts[0]->dts == videoFirstFrameMap_[avStream->index]->dts) {
         if (streamParsers_ != nullptr) {
             streamParsers_->ResetXPSSendStatus(avStream->index);
+        }
+    }
+
+    if (std::find(
+        g_fileContainSkipInfo.cbegin(), g_fileContainSkipInfo.cend(), fileType_) != g_fileContainSkipInfo.cend()) {
+        uint8_t* skipInfoData = nullptr;
+        size_t skipInfoDataSize = 0;
+        skipInfoData = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_SKIP_SAMPLES, &skipInfoDataSize);
+        if (skipInfoData != nullptr && skipInfoDataSize > 0) {
+            std::vector<uint8_t> skipInfo(skipInfoDataSize);
+            skipInfo.assign(skipInfoData, skipInfoData + skipInfoDataSize);
+            sample->meta_->SetData(Tag::BUFFER_SKIP_SAMPLES_INFO, skipInfo);
         }
     }
 }
