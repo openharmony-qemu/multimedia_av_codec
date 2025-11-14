@@ -28,8 +28,6 @@
 
 namespace OHOS {
 namespace Media {
-constexpr uint32_t CHUNK_SIZE = 16 * 1024;
-constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
 constexpr int64_t LOOP_TIMEOUT = 60; // s
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
 using Clock = std::chrono::steady_clock;
@@ -130,13 +128,13 @@ protected:
             }
         }
         int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
-        bool isTimeOut = false;
+        bool isTimeout = false;
         auto fragmentCachePos = std::find_if(fragmentCacheBuffer_.begin(), fragmentCacheBuffer_.end(),
-            [offset, pred, &isTimeOut, &loopStartTime, this](const auto& fragment) {
+            [offset, pred, &isTimeout, &loopStartTime, this](const auto& fragment) {
                 int64_t now = this->loopInterruptClock_.ElapsedSeconds();
                 int64_t loopDuration = now > loopStartTime ? now - loopStartTime : 0;
                 if (loopDuration > LOOP_TIMEOUT) {
-                    isTimeOut = true;
+                    isTimeout = true;
                     MEDIA_LOG_E("loop timeout");
                     return true;
                 }
@@ -145,7 +143,7 @@ protected:
                 }
                 return false;
         });
-        if (isTimeOut) {
+        if (isTimeout) {
             return fragmentCacheBuffer_.end();
         }
         return fragmentCachePos;

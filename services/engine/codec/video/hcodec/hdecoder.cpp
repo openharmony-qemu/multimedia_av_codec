@@ -180,8 +180,8 @@ int32_t HDecoder::UpdateOutPortFormat()
         return AVCS_ERR_UNKNOWN;
     }
     PrintPortDefinition(def);
-    if (def.nBufferCountActual == 0) {
-        HLOGE("invalid bufferCount");
+    if (def.nBufferCountActual == 0 || def.nBufferCountActual > MAX_BUFFER_COUNT) {
+        HLOGE("output buffer count %u is invalid", def.nBufferCountActual);
         return AVCS_ERR_UNKNOWN;
     }
     (void)UpdateConfiguredFmt(def.format.video.eColorFormat);

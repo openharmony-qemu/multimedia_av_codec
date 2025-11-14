@@ -151,6 +151,7 @@ int32_t MediaSourceLoadingRequest::FinishLoading(int64_t uuid, LoadingRequestErr
 int64_t MediaSourceLoaderCombinations::Open(const std::string &url, const std::map<std::string, std::string> &header,
     std::shared_ptr<NetworkClient> &client)
 {
+    FALSE_RETURN_V_MSG(loader_ != nullptr, 0, "Open no loader!");
     if (request_ == nullptr) {
         request_ = std::make_shared<MediaSourceLoadingRequest>();
         FALSE_RETURN_V_MSG(request_ != nullptr, 0, "MediaSourceLoaderCombinations Open, no enough memory.");
@@ -167,6 +168,7 @@ int64_t MediaSourceLoaderCombinations::Open(const std::string &url, const std::m
 
 int32_t MediaSourceLoaderCombinations::Close(int64_t uuid)
 {
+    FALSE_RETURN_V_MSG(loader_ != nullptr, 0, "Close no loader!");
     request_->Close(uuid);
     int32_t ret = loader_->Close(uuid);
     return ret;

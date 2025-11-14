@@ -18,6 +18,7 @@
 
 #include "playlist_downloader.h"
 #include "m3u8.h"
+#include <set>
 
 namespace OHOS {
 namespace Media {
@@ -29,6 +30,7 @@ public:
     ~HlsPlayListDownloader() override;
 
     void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
+    void Clone(std::shared_ptr<PlayListDownloader> other) override;
     void UpdateManifest() override;
     void ParseManifest(const std::string& location, bool isPreParse = false) override;
     void SetPlayListCallback(std::weak_ptr<PlayListChangeCallback> callback) override;
@@ -40,6 +42,7 @@ public:
     int GetVideoHeight() override;
     int GetVideoWidth() override;
     bool IsBitrateSame(uint32_t bitRate) override;
+    bool IsAudioSame(uint32_t streamId) override;
     uint32_t GetCurBitrate() override;
     bool IsLive() const override;
     void NotifyListChange();
@@ -57,16 +60,24 @@ public:
     size_t GetLiveUpdateGap() const override;
     void InterruptM3U8Parse(bool isInterruptNeeded) override;
     void GetStreamInfo(std::vector<StreamInfo>& streams) override;
-    bool ReadFmp4Header(uint8_t* buffer, uint32_t& readLen, uint32_t streamId) override;
+    bool ReadFmp4Header(uint8_t* buffer, uint32_t wantLen, uint32_t& readLen, uint32_t streamId) override;
     bool IsHlsFmp4() override;
     bool IsPureByteRange() override;
     void ReOpen(void) override;
+    std::shared_ptr<StreamInfo> GetStreamInfoById(int32_t streamId) override;
+    int32_t GetDefaultAudioStreamId() override;
+    void SelectAudio(int32_t streamId) override;
+    void SetDefaultAudio() override;
+    void UpdateAudio() override;
+    void UpdateStreamInfo() override;
+    HlsSegmentType GetSegType(uint32_t streamId) override;
 
 private:
     void UpdateMasterInfo(bool isPreParse);
     void UpdateMasterAndNotifyList(bool isPreParse);
     void CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file);
     void KeyChange(void);
+    void OnMasterReady(bool needAudioManager, bool needSubTitleManager);
 
 private:
     std::string url_ {};
@@ -79,7 +90,14 @@ private:
     std::atomic<bool> isParseFinished_ {false};
     std::atomic<bool> isNotifyPlayListFinished_ {false};
     std::atomic<bool> isLiveUpdateTaskStarted_ {false};
+    std::atomic<bool> needAudioManager_ {false};
+    std::atomic<bool> needSubTitleManager_ {false};
     uint32_t initResolution_ {0};
+    std::mutex audioMutex_;
+    std::shared_ptr<M3U8Media> currentAudio_;
+    std::mutex streamIdMutex;
+    std::set<uint32_t> videoStreamIds_ = std::set<uint32_t>();
+    std::set<uint32_t> audioStreamIds_ = std::set<uint32_t>();
 };
 }
 }

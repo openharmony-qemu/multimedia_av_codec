@@ -1059,7 +1059,7 @@ void AudioSink::GetAvailableOutputBuffers()
         if (ret != Status::OK || filledInputBuffer == nullptr) {
             break;
         }
-        if (filledInputBuffer->memory_ == nullptr || filledInputBuffer->pts_ < 0) {
+        if (filledInputBuffer->memory_ == nullptr || filledInputBuffer->pts_ < 0 || isEosBuffer_) {
             inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
             continue;
         }
@@ -1545,6 +1545,7 @@ Status AudioSink::ChangeTrackForFormatChange()
     hasPluginCreateTaskFinished_ = false;
     FALSE_RETURN_V(newPlugin_ != nullptr, Status::ERROR_NULL_POINTER);
     plugin_ = std::move(newPlugin_);
+    SetAudioSinkPluginParameters(plugin_);
 
     forceUpdateTimeAnchorNextTime_ = true;
 
@@ -1591,7 +1592,7 @@ Status AudioSink::HandleFormatChange(std::shared_ptr<Meta>& meta,
         auto strongPtr = weakPtr.lock();
         FALSE_RETURN(strongPtr != nullptr);
         std::unique_lock<std::mutex> preCreateLock(strongPtr->preCreatePluginMutex_);
-        strongPtr->newPlugin_ = strongPtr->PreCreateAndStartNewPlugin(meta, receiver);
+        strongPtr->newPlugin_ = strongPtr->PreCreateNewPlugin(meta, receiver);
         strongPtr->hasPluginCreateTaskFinished_ = true;
         strongPtr->preCreatePluginCond_.notify_one();
     });
@@ -1689,17 +1690,14 @@ Status AudioSink::SetLoudnessGain(float loudnessGain)
     return plugin_->SetLoudnessGain(loudnessGain);
 }
 
-std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::PreCreateAndStartNewPlugin(const std::shared_ptr<Meta>& meta,
+std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::PreCreateNewPlugin(const std::shared_ptr<Meta>& meta,
     const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {
-    MEDIA_LOG_I("AudioSink PreCreateAndStartNewPlugin.");
+    MEDIA_LOG_I("AudioSink PreCreateNewPlugin.");
     auto plugin = CreatePlugin();
     FALSE_RETURN_V(plugin != nullptr, nullptr);
     Status ret = Status::OK;
     ret = InitAudioSinkPlugin(meta, receiver, plugin);
-    FALSE_RETURN_V(ret == Status::OK, nullptr);
-
-    ret = SetAudioSinkPluginParameters(plugin);
     FALSE_RETURN_V(ret == Status::OK, nullptr);
     return plugin;
 }

@@ -24,7 +24,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-class HlsMediaDownloaderUnitTest : public testing::Test {
+class HlsMediaDownloaderTest : public testing::Test {
 
 public:
     // SetUpTestCase: Called before all test cases
@@ -36,11 +36,9 @@ public:
     // TearDown: Called after each test cases
     void TearDown(void);
 protected:
-    HlsMediaDownloader* hlsMediaDownloader;
+    std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader_ {nullptr};
     std::map<std::string, std::string> header_;
 };
-constexpr uint32_t RING_BUFFER_SIZE = 5 * 1024 * 1024;
-constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
 }
 }
 }

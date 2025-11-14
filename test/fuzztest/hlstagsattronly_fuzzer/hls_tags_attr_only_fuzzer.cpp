@@ -29,7 +29,7 @@ static inline std::string RandToken(FuzzedDataProvider& fdp, size_t maxLen = 24)
     std::string s = fdp.ConsumeRandomLengthString(maxLen);
 
     // 避免把换行塞进同一行
-    s.erase(std::remove_if(s.begin(), s.end(), [](unsigned char c){
+    s.erase(std::remove_if(s.begin(), s.end(), [](unsigned char c) {
         return c == '\r' || c == '\n';
     }), s.end());
     return s;
@@ -74,13 +74,13 @@ static inline std::string RandFloat(FuzzedDataProvider& fdp, double lo, double h
 
 static inline std::string RandHexIV(FuzzedDataProvider& fdp, bool oddLen = false)
 {
-    static const char* HEX = "0123456789ABCDEF";
+    static const char* hex = "0123456789ABCDEF";
     int n = fdp.ConsumeIntegralInRange<int>(2, 32);
     if (oddLen) {
         n |= 1;
     }
     std::string s = "0x";
-    for (int i = 0; i < n; i++) s.push_back(HEX[fdp.ConsumeIntegralInRange<int>(0, 15)]);
+    for (int i = 0; i < n; i++) s.push_back(hex[fdp.ConsumeIntegralInRange<int>(0, 15)]);
     return s;
 }
 
@@ -113,7 +113,7 @@ static inline std::string RandURI(FuzzedDataProvider& fdp)
 
 static inline std::string KV(const std::string& k, const std::string& v, FuzzedDataProvider& fdp)
 {
-    auto sp = [&](void){
+    auto sp = [&](void) {
         return fdp.ConsumeBool() ? " " : "";
     };
     return k + sp() + "=" + sp() + v;
@@ -123,7 +123,7 @@ static inline std::string KV(const std::string& k, const std::string& v, FuzzedD
 static std::string BuildAttributesLine(FuzzedDataProvider& fdp, HlsTag tagType)
 {
     std::vector<std::string> parts;
-    auto push = [&](const std::string& k, const std::string& v){
+    auto push = [&](const std::string& k, const std::string& v) {
         parts.emplace_back(KV(k, v, fdp));
     };
 
@@ -297,7 +297,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
                 if (at) {
                     // 常见/可疑键全打
                     static const char* keys[] = {
-                        "BANDWIDTH", "AVERAGE-BANDWIDTH", "RESOLUTIOIN", "FRAME-RATE", "CODECS",
+                        "BANDWIDTH", "AVERAGE-BANDWIDTH", "RESOLUTION", "FRAME-RATE", "CODECS",
                         "URI", "BYTERANGE", "IV", "TIME-OFFSET", "LANGUAGE", "KEYFORMAT", "KEYFORMATVERSIONS",
                         "GROUP-ID", "NAME", "DEFAULT", "AUTOSELECT", "FORCED", "CLOSED-CAPTIONS", "AUDIO", "VIDEO",
                         "SUBTITLES", "STRANGE_KEY"  // 有意的未知键

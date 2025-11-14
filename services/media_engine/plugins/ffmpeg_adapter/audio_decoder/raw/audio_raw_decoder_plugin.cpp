@@ -130,7 +130,7 @@ AudioRawDecoderPlugin::AudioRawDecoderPlugin(const std::string &name)
     : CodecPlugin(std::move(name)), audioSampleFormat_(AudioSampleFormat::INVALID_WIDTH),
       srcSampleFormat_(AudioSampleFormat::INVALID_WIDTH), pts_(0), channels_(0), sampleRate_(0), offset_(0),
       frameSize_(0), maxInputSize_(0), maxOutputSize_(0), durationTime_(0), eosFlag_(false), dataCallback_(nullptr),
-      format_(nullptr), inputBuffer_(0)
+      format_(nullptr), inputBuffer_(0), layout_(AudioChannelLayout::UNKNOWN)
 {
     AVCODEC_LOGI("AudioRawDecoderPlugin init");
 }
@@ -685,6 +685,13 @@ Status AudioRawDecoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
         int32_t audioBits = 16;
         if (!meta->Get<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(audioBits)) {
             AVCODEC_LOGW("AudioRawDecoderPlugin no AUDIO_BITS_PER_CODED_SAMPLE");
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+    }
+
+    if (srcSampleFormat_ == AudioSampleFormat::SAMPLE_BLURAY) {
+        if (!meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout_)) {
+            AVCODEC_LOGE("AudioRawDecoderPlugin no AUDIO_CHANNEL_LAYOUT");
             return Status::ERROR_INVALID_PARAMETER;
         }
     }

@@ -1451,12 +1451,12 @@ HWTEST_F(Vc1decApiNdkTest, VIDEO_VC1DEC_CAP_API_2900, TestSize.Level1)
     ASSERT_EQ(range.minVal, 0);
     ASSERT_EQ(range.maxVal, 60);
     width = 2048;
-    height = 1152;
+    height = 2048;
     ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, width, height, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_EQ(range.minVal, 0);
-    ASSERT_EQ(range.maxVal, 60);
+    ASSERT_EQ(range.maxVal, 30);
 }
 
 /**

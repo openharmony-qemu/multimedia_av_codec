@@ -75,6 +75,8 @@ constexpr size_t IGNORE_BUFFERING_WITH_START_TIME_MS = 5000;
 constexpr size_t IGNORE_BUFFERING_EXTRA_CACHE_BEYOND_MS = 300;
 constexpr float FLV_AUTO_SELECT_SMOOTH_FACTOR = 0.8;
 constexpr size_t FLV_AUTO_SELECT_TIME_GAP = 3;
+constexpr uint32_t CHUNK_SIZE = 16 * 1024;
+constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
 
 }
 void HttpMediaDownloader::InitRingBuffer(uint32_t expectBufferDuration)
@@ -964,7 +966,7 @@ void HttpMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
 
 uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len, bool notBlock)
 {
-    FALSE_RETURN_V(ringBuffer_->WriteBuffer(data, len), false);
+    FALSE_RETURN_V(ringBuffer_->WriteBuffer(data, len), 0);
     cvReadWrite_.NotifyOne();
     size_t bufferSize = ringBuffer_->GetSize();
     double ratio = (static_cast<double>(bufferSize)) / RING_BUFFER_SIZE;
@@ -1720,8 +1722,10 @@ bool HttpMediaDownloader::IsNeedBufferForPlaying()
         return false;
     }
     if (GetBufferingTimeOut()) {
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
-                            "buffer for playing"});
+        if (callback_) {
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
+                "buffer for playing"});
+        }
         isTimeoutErrorNotified_.store(true);
         AutoLock lk(bufferingEndMutex_);
         isBuffering_.store(false);

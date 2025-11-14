@@ -32,7 +32,6 @@
 #include "block_queue.h"
 #include "codec_utils.h"
 #include "codecbase.h"
-#include "dma_swap.h"
 #include "media_description.h"
 #include "fsurface_memory.h"
 #include "task_thread.h"
@@ -81,7 +80,7 @@ public:
         int32_t width = 0;
         int32_t height = 0;
         int32_t bitDepth = BIT_DEPTH8BIT;
-        bool hasSwapedOut = false;
+        std::atomic<bool> hasSwapedOut = false;
     };
 
 private:
@@ -180,7 +179,6 @@ private:
     bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<HBuffer> &hBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
     int32_t SwapInBuffers(bool isOutputBuffer);
-    bool disableDmaSwap_ = false;
     int pid_ = -1;
 
     CallerInfo hevcDecInfo_;

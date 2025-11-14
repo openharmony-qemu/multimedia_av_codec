@@ -151,7 +151,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     do {
         if (isInterrupted_ || isExitRead_) {
             retryTimes_ = 0;
-            isBufferingStart = false;
+            HandleBufferingEnd();
             return Status::OK;
         }
         FALSE_RETURN_V_MSG(dataSrc_ != nullptr, Status::ERROR_WRONG_STATE, "dataSrc_ is nullptr!");
@@ -159,7 +159,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         FALSE_RETURN_V(ret == Status::OK, ret);
         FALSE_RETURN_V_MSG(realLen > MediaDataSourceError::SOURCE_ERROR_IO, Status::ERROR_UNKNOWN,
             "read data error! realLen:" PUBLIC_LOG_D32, realLen);
-        FALSE_RETURN_V_MSG_W(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM, "eos reached!");
+        FALSE_RETURN_V_MSG_W(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, HandleEos(), "eos reached!");
         if (realLen > 0) {
             FALSE_LOG_MSG_W(realLen == static_cast<int32_t>(expectedLen), "realLen != expectedLen, realLen:"
                 PUBLIC_LOG_D32 ", expectedLen: " PUBLIC_LOG_ZU, realLen, expectedLen);
@@ -185,6 +185,12 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         buffer->GetMemory()->GetSize() : -100, realLen, retryTimes_); // -100 invalid size
     FALSE_RETURN_V(realLen != 0, Status::ERROR_AGAIN);
     return Status::OK;
+}
+
+Status DataStreamSourcePlugin::HandleEos()
+{
+    HandleBufferingEnd();
+    return Status::END_OF_STREAM;
 }
 
 Status DataStreamSourcePlugin::ReadAt(std::shared_ptr<AVSharedMemory> memory, size_t &expectedLen, int32_t &realLen)

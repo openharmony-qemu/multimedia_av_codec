@@ -592,7 +592,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, HandleHlsRebootPlugin_001, TestSize.Level1)
     mediaDemuxer_->subStreamDemuxer_ = nullptr;
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), RebootPlugin(_, _, _, _)).Times(0);
 
-    auto ret = mediaDemuxer_->HandleHlsRebootPlugin();
+    auto ret = mediaDemuxer_->HandleHlsRebootPlugin(mediaDemuxer_->videoTrackId_);
     EXPECT_EQ(ret, Status::OK);
 }
 
@@ -613,9 +613,9 @@ HWTEST_F(MediaDemuxerExtUnitTest, HandleHlsRebootPlugin_002, TestSize.Level1)
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), RebootPlugin(_, _, _, _))
         .WillRepeatedly(Return(Status::OK));
     mediaDemuxer_->seekReadyStreamInfo_.clear();
-    mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::MIXED)] = {NUM_100, false};
+    mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = {NUM_100, false};
 
-    mediaDemuxer_->HandleHlsRebootPlugin();
+    mediaDemuxer_->HandleHlsRebootPlugin(mediaDemuxer_->videoTrackId_);
 }
 
 /**
@@ -634,13 +634,13 @@ HWTEST_F(MediaDemuxerExtUnitTest, HandleHlsRebootPlugin_003, TestSize.Level1)
     EXPECT_EQ(ret, NUM_100);
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), RebootPlugin(_, _, _, _)).Times(0);
     mediaDemuxer_->seekReadyStreamInfo_.clear();
-    mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::MIXED)] = {NUM_1, true};
-    EXPECT_TRUE(mediaDemuxer_->seekReadyStreamInfo_.find(static_cast<int32_t>(StreamType::MIXED)) !=
+    mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = {NUM_1, true};
+    EXPECT_TRUE(mediaDemuxer_->seekReadyStreamInfo_.find(static_cast<int32_t>(StreamType::VIDEO)) !=
         mediaDemuxer_->seekReadyStreamInfo_.end());
-    auto seekReadyInfo = mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::MIXED)];
+    auto seekReadyInfo = mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)];
     EXPECT_EQ(seekReadyInfo.first, NUM_1);
     EXPECT_EQ(seekReadyInfo.second, true);
-    mediaDemuxer_->HandleHlsRebootPlugin();
+    mediaDemuxer_->HandleHlsRebootPlugin(mediaDemuxer_->videoTrackId_);
 }
 
 /**
@@ -659,9 +659,9 @@ HWTEST_F(MediaDemuxerExtUnitTest, HandleHlsRebootPlugin_004, TestSize.Level1)
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), RebootPlugin(_, _, _, _))
         .WillRepeatedly(Return(Status::OK));
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), RebootPlugin(_, _, _, _)).Times(NUM_1);
-    mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::MIXED)] = {-1, false};
+    mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = {-1, false};
     
-    mediaDemuxer_->HandleHlsRebootPlugin();
+    mediaDemuxer_->HandleHlsRebootPlugin(mediaDemuxer_->videoTrackId_);
 }
 
 /**
@@ -678,8 +678,8 @@ HWTEST_F(MediaDemuxerExtUnitTest, HandleHlsRebootPlugin_005, TestSize.Level1)
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
         .WillOnce(Return(NUM_100));
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), RebootPlugin(_, _, _, _)).Times(0);
-    mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::MIXED)] = {200, false};
-    Status ret = mediaDemuxer_->HandleHlsRebootPlugin();
+    mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = {200, false};
+    Status ret = mediaDemuxer_->HandleHlsRebootPlugin(mediaDemuxer_->videoTrackId_);
     EXPECT_EQ(ret, Status::OK);
 }
 
@@ -3072,5 +3072,181 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_HandleEosDrag_004, TestSize.Level
     bool isDiscardable = true;
     mediaDemuxer_->HandleEosDrag(trackId, isDiscardable);
     EXPECT_EQ(mediaDemuxer_->eosMap_[trackId], false);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_OnHlsSeekReadyEvent_001
+ * @tc.number: MediaDemuxerExt_OnHlsSeekReadyEvent_001
+ * @tc.desc  : Test currentStreamType == MEDIA_TYPE_AUD
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_OnHlsSeekReadyEvent_001, TestSize.Level1)
+{
+    Format format;
+    format.PutIntValue("currentStreamType", static_cast<int32_t>(MediaAVCodec::MediaType::MEDIA_TYPE_AUD));
+    format.PutIntValue("currentStreamId", 1);
+    format.PutIntValue("isEOS", 0);
+    PluginEvent event;
+    event.param = format;
+    mediaDemuxer_->videoTrackId_ = 0;
+    mediaDemuxer_->OnHlsSeekReadyEvent(event);
+    EXPECT_EQ(mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::AUDIO)].first, 1);
+    EXPECT_EQ(mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::AUDIO)].second, 0);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_OnHlsSeekReadyEvent_002
+ * @tc.number: MediaDemuxerExt_OnHlsSeekReadyEvent_002
+ * @tc.desc  : Test currentStreamType == MEDIA_TYPE_VID
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_OnHlsSeekReadyEvent_002, TestSize.Level1)
+{
+    Format format;
+    format.PutIntValue("currentStreamType", static_cast<int32_t>(MediaAVCodec::MediaType::MEDIA_TYPE_VID));
+    format.PutIntValue("currentStreamId", 1);
+    format.PutIntValue("isEOS", 0);
+    PluginEvent event;
+    event.param = format;
+    mediaDemuxer_->videoTrackId_ = 0;
+    mediaDemuxer_->OnHlsSeekReadyEvent(event);
+    EXPECT_EQ(mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)].first, 1);
+    EXPECT_EQ(mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)].second, 0);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_IsSegmentEos_001
+ * @tc.number: MediaDemuxerExt_IsSegmentEos_001
+ * @tc.desc  : Test IsSegmentEos() == true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_IsSegmentEos_001, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->segmentEosMap_[NUM_0] = true;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    mediaDemuxer_->segmentEosMap_[NUM_1] = true;
+    EXPECT_EQ(mediaDemuxer_->IsSegmentEos(), true);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleSegmentEos_001
+ * @tc.number: MediaDemuxerExt_HandleSegmentEos_001
+ * @tc.desc  : Test isAVStreamIsSame is false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentEos_001, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+
+    // IsAVStreamIdSame return false
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillOnce(Return(NUM_1)).WillRepeatedly(Return(NUM_0));
+
+    // HandleSegmentChange return Status::OK
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTrackTypeByTrackID(_))
+        .WillOnce(Return(TrackType::TRACK_VIDEO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), RebootPlugin(_, _, _, _))
+        .WillOnce(Return(Status::OK));
+    
+    // InnerSelectTrack return Status::OK
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    EXPECT_CALL(*plugin, SelectTrack(_)).WillRepeatedly(Return(Status::OK));
+
+    int32_t trackId = NUM_0;
+    Status ret = mediaDemuxer_->HandleSegmentEos(trackId);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleSegmentEos_002
+ * @tc.number: MediaDemuxerExt_HandleSegmentEos_002
+ * @tc.desc  : Test isAVStreamIdSame is true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentEos_002, TestSize.Level1)
+{
+    // IsSegmentEos return true
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->segmentEosMap_[NUM_0] = true;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    mediaDemuxer_->segmentEosMap_[NUM_1] = true;
+
+    // IsAVStreamIdSame return true
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NUM_0));
+
+    // HandleSegmentChange return Status::OK
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTrackTypeByTrackID(_))
+        .WillOnce(Return(TrackType::TRACK_VIDEO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), RebootPlugin(_, _, _, _))
+        .WillOnce(Return(Status::OK));
+    
+    // InnerSelectTrack return Status::OK
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    EXPECT_CALL(*plugin, SelectTrack(_)).WillRepeatedly(Return(Status::OK));
+
+    int32_t trackId = NUM_0;
+    Status ret = mediaDemuxer_->HandleSegmentEos(trackId);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleHlsSeek_001
+ * @tc.number: MediaDemuxerExt_HandleHlsSeek_001
+ * @tc.desc  : Test isAVStreamIdSame is true
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleHlsSeek_001, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+
+    // IsAVStreamIdSame return true
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillRepeatedly(Return(NUM_100));
+
+    // HandleHlsRebootPlugin return Status::OK
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTrackTypeByTrackID(_))
+        .WillOnce(Return(TrackType::TRACK_VIDEO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), RebootPlugin(_, _, _, _)).Times(0);
+    mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = {200, false};
+
+    // InnerSelectTrack return Status::OK
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    EXPECT_CALL(*plugin, SelectTrack(_)).WillRepeatedly(Return(Status::OK));
+
+    Status ret = mediaDemuxer_->HandleHlsSeek();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_HandleHlsSeek_002
+ * @tc.number: MediaDemuxerExt_HandleHlsSeek_002
+ * @tc.desc  : Test isAVStreamIdIsSame is false
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleHlsSeek_002, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+
+    // IsAVStreamIdSame return false
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
+        .WillOnce(Return(NUM_100)).WillOnce(Return(NUM_0)).WillRepeatedly(Return(NUM_100));
+
+    // HandleHlsRebootPlugin return Status::OK
+    mediaDemuxer_->subStreamDemuxer_ = nullptr;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTrackTypeByTrackID(_))
+        .WillOnce(Return(TrackType::TRACK_AUDIO)).WillOnce(Return(TrackType::TRACK_VIDEO));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), RebootPlugin(_, _, _, _)).Times(0);
+    mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::AUDIO)] = {200, false};
+    mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = {200, false};
+
+    // InnerSelectTrack return Status::OK
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetPluginByStreamID(_)).WillRepeatedly(Return(plugin));
+    EXPECT_CALL(*plugin, SelectTrack(_)).WillRepeatedly(Return(Status::OK));
+
+    Status ret = mediaDemuxer_->HandleHlsSeek();
+    EXPECT_EQ(ret, Status::OK);
 }
 }  // namespace OHOS::Media

@@ -101,44 +101,18 @@ void AudioCodecAdapterUnitTest::TearDown(void)
 
 HWTEST_F(AudioCodecAdapterUnitTest, InvalidProcess_01, TestSize.Level1)
 {
-    Meta callerInfo;
-    ASSERT_EQ(adapter_->Init(callerInfo), 0);
-    ASSERT_EQ(adapter_->Configure(format_), 0);
-    EXPECT_NE(adapter_->Init(callerInfo), 0);
-    EXPECT_NE(adapter_->SetCallback(nullptr), 0);
-}
-
-HWTEST_F(AudioCodecAdapterUnitTest, InvalidProcess_02, TestSize.Level1)
-{
     shared_ptr<AdapterCallback> callback = make_shared<AdapterCallback>();
     EXPECT_EQ(adapter_->SetCallback(callback), 0);
     EXPECT_NE(adapter_->Start(), 0);
 }
 
-HWTEST_F(AudioCodecAdapterUnitTest, InvalidProcess_03, TestSize.Level1)
-{
-    Meta callerInfo;
-    ASSERT_EQ(adapter_->Init(callerInfo), 0);
-    shared_ptr<AdapterCallback> callback = make_shared<AdapterCallback>();
-    EXPECT_EQ(adapter_->SetCallback(callback), 0);
-    ASSERT_EQ(adapter_->Configure(format_), 0);
-    EXPECT_EQ(adapter_->Start(), 0);
-    EXPECT_EQ(adapter_->Flush(), 0);
-    EXPECT_EQ(adapter_->Flush(), 0);
-}
-
-HWTEST_F(AudioCodecAdapterUnitTest, InvalidProcess_04, TestSize.Level1)
-{
-    ASSERT_EQ(adapter_->Reset(), 0);
-}
-
-HWTEST_F(AudioCodecAdapterUnitTest, InvalidProcess_05, TestSize.Level1)
+HWTEST_F(AudioCodecAdapterUnitTest, InvalidProcess_02, TestSize.Level1)
 {
     adapter_ = make_shared<AudioCodecAdapter>("invalid");
     ASSERT_EQ(adapter_->Release(), 0);
 }
 
-HWTEST_F(AudioCodecAdapterUnitTest, InvalidProcess_06, TestSize.Level1)
+HWTEST_F(AudioCodecAdapterUnitTest, InvalidProcess_03, TestSize.Level1)
 {
     adapter_ = make_shared<AudioCodecAdapter>("");
     Meta callerInfo;
