@@ -157,12 +157,6 @@ void HlsMediaDownloader::Resume()
 
 Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    {
-        std::lock_guard<std::mutex> bufferingLock(bufferingMutex_);
-        if (bufferingFlag_) {
-            return Status::ERROR_AGAIN;
-        }
-    }
     auto segManager = GetSegmentManager(readDataInfo.streamId_);
     FALSE_RETURN_V_MSG(segManager != nullptr, Status::ERROR_AGAIN, "Read no segment manager found!");
     return segManager->Read(buff, readDataInfo);
