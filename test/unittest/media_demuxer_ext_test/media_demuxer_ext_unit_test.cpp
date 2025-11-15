@@ -676,7 +676,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, HandleHlsRebootPlugin_005, TestSize.Level1)
     mediaDemuxer_->videoTrackId_ = NUM_1;
     mediaDemuxer_->subStreamDemuxer_ = nullptr;
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
-        .WillOnce(Return(NUM_100));
+        .WillRepeatedly(Return(NUM_100));
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), RebootPlugin(_, _, _, _)).Times(0);
     mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = {200, false};
     Status ret = mediaDemuxer_->HandleHlsRebootPlugin(mediaDemuxer_->videoTrackId_);
@@ -3205,8 +3205,6 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleHlsSeek_001, TestSize.Le
 
     // HandleHlsRebootPlugin return Status::OK
     mediaDemuxer_->subStreamDemuxer_ = nullptr;
-    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTrackTypeByTrackID(_))
-        .WillOnce(Return(TrackType::TRACK_VIDEO));
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), RebootPlugin(_, _, _, _)).Times(0);
     mediaDemuxer_->seekReadyStreamInfo_[static_cast<int32_t>(StreamType::VIDEO)] = {200, false};
 
@@ -3231,7 +3229,10 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleHlsSeek_002, TestSize.Le
 
     // IsAVStreamIdSame return false
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpStreamIDByTrackID(_))
-        .WillOnce(Return(NUM_100)).WillOnce(Return(NUM_0)).WillRepeatedly(Return(NUM_100));
+        .WillOnce(Return(NUM_100)).WillOnce(Return(NUM_0))
+        .WillOnce(Return(NUM_100)).WillOnce(Return(NUM_100)).WillOnce(Return(NUM_0))
+        .WillOnce(Return(NUM_0)).WillOnce(Return(NUM_100)).WillOnce(Return(NUM_0))
+        .WillRepeatedly(Return(NUM_100));
 
     // HandleHlsRebootPlugin return Status::OK
     mediaDemuxer_->subStreamDemuxer_ = nullptr;
