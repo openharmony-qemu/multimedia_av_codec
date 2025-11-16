@@ -2895,7 +2895,8 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
         MEDIA_LOG_I("HandleDashChangeStream success");
         return Status::OK;
     }
-    if (isHls_ && ret == Status::END_OF_STREAM && !source_->IsHlsEnd()) {
+    int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
+    if (isHls_ && ret == Status::END_OF_STREAM && !source_->IsHlsEnd(streamId)) {
         return HandleSegmentEos(trackId);
     }
     SetTrackNotifyFlag(trackId, true);

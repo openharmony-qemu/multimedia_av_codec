@@ -2577,6 +2577,28 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_CopyFrameToUserQueue_002, Test
 }
 
 /**
+ * @tc.name  : MediaDemuxerExt_CopyFrameToUserQueue_003
+ * @tc.number: MediaDemuxerExt_CopyFrameToUserQueue_003
+ * @tc.desc  : Test case for returning error when HandleSegmentChange fails
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_CopyFrameToUserQueue_003, TestSize.Level1)
+{
+    auto plugin = std::make_shared<DemuxerPlugin>("MockPlugin");
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetTmpStreamIDByTrackID(_)).WillRepeatedly(Return(-1));
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, GetPluginByStreamID(_)).WillOnce(Return(plugin));
+
+    EXPECT_CALL(*mediaDemuxer_->demuxerPluginManager_, IsDash()).WillRepeatedly(Return(false));
+    mediaDemuxer_->isFlvLiveStream_ = false;
+
+    mediaDemuxer_->eventReceiver_ = nullptr;
+    EXPECT_CALL(*plugin, GetNextSampleSize(_, _, _)).WillOnce(Return(Status::END_OF_STREAM));
+
+    mediaDemuxer_->isHls_ = true;
+    EXPECT_CALL(*mediaDemuxer_->source_, IsHlsEnd(_)).WillRepeatedly(Return(false));
+    EXPECT_EQ(mediaDemuxer_->CopyFrameToUserQueue(1), Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
  * @tc.name  : MediaDemuxerExt_ReadSampleWithPerfRecord_001
  * @tc.number: MediaDemuxerExt_ReadSampleWithPerfRecord_001
  * @tc.desc  : isAVDemuxer == true && perfRecEnabled_ == true
