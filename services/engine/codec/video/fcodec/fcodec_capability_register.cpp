@@ -35,6 +35,7 @@ constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
 constexpr int32_t VIDEO_FRAMERATE_DEFAULT_SIZE = 60;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 139264;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
+#ifdef SUPPORT_CODEC_VC1
 constexpr int32_t VC1_ALIGNMENT_SIZE = 2;
 constexpr int32_t VC1_MIN_WIDTH_SIZE = 176;
 constexpr int32_t VC1_MIN_HEIGHT_SIZE = 144;
@@ -43,6 +44,7 @@ constexpr int32_t VC1_MAX_HEIGHT_SIZE = 2048;
 constexpr int32_t VC1_BITRATE_MAX_SIZE = 135000000;
 constexpr int32_t VC1_BLOCKPERFRAME_SIZE = 16384;
 constexpr int32_t VC1_BLOCKPERSEC_SIZE = 491520;
+#endif
 constexpr int32_t MSVIDEO1_MIN_WIDTH_SIZE = 4;
 constexpr int32_t MSVIDEO1_MIN_HEIGHT_SIZE = 4;
 constexpr int32_t MSVIDEO1_BLOCKPERSEC_SIZE = 3932160;
@@ -228,6 +230,7 @@ void GetAvcCapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
+#ifdef SUPPORT_CODEC_VC1
 void GetVc1CapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
@@ -266,6 +269,7 @@ void GetVc1CapProf(std::vector<CapabilityData> &capaArray)
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_ADVANCED), advlevels));
     }
 }
+#endif
 
 void GetMsVideo1CapProf(std::vector<CapabilityData> &capaArray)
 {
@@ -359,9 +363,11 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
             GetH263CapProf(capaArray);
         } else if (capsData.mimeType == "video/mjpeg") {
             capaArray.emplace_back(capsData);
+#ifdef SUPPORT_CODEC_VC1
         } else if (capsData.mimeType == "video/vc1") {
             capaArray.emplace_back(capsData);
             GetVc1CapProf(capaArray);
+#endif
         } else if (capsData.mimeType == "video/msvideo1") {
             capaArray.emplace_back(capsData);
             GetMsVideo1CapProf(capaArray);

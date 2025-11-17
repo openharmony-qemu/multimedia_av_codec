@@ -111,7 +111,7 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, extradata, extradatasize);
 }
 
-
+#ifdef SUPPORT_CODEC_VC1
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(SW_VC1));
 
 /**
@@ -1136,6 +1136,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_RenderOutputBufferAtTime_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
+#endif
 } // namespace
 
 int main(int argc, char **argv)
