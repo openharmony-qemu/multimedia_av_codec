@@ -99,7 +99,7 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     uint32_t createSize = fdp.ConsumeIntegral<uint32_t>();
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
     demuxerSample->filePath = EAC3_PATH;
-#ifndef SUPPORT_DEMUXER_EAC3    
+#ifndef SUPPORT_DEMUXER_EAC3
     demuxerSample->RunNormalDemuxerApi11(createSize, uri, setLanguage, params);
 #endif
     delete[] uri;
