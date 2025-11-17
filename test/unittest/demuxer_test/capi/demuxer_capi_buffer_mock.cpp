@@ -57,6 +57,11 @@ int32_t DemuxerCapiMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemor
                 OH_AVFormat_GetLongValue(format, OH_MD_KEY_BUFFER_DURATION, &duration);
                 OH_AVFormat_GetLongValue(format, OH_MD_KEY_DECODING_TIMESTAMP, &dts);
                 printf("[track %d] duration %" PRId64 " dts %" PRId64 "\n", trackIndex, duration, dts);
+                uint8_t *codecConfig = nullptr;
+                size_t bufferSize;
+                OH_AVFormat_GetBuffer(format, Media::Tag::BUFFER_SKIP_SAMPLES_INFO, &codecConfig, &bufferSize);
+                currentBufferInfo_.skipData.assign(codecConfig, codecConfig + bufferSize);
+                currentBufferInfo_.skipSize = bufferSize;
             }
             OH_AVFormat_Destroy(format);
         }

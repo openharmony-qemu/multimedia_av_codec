@@ -36,6 +36,7 @@ public:
     int32_t UnselectTrackByID(uint32_t trackIndex) override;
     int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemoryMock> sample,
         AVCodecBufferInfo *bufferInfo, uint32_t &flag, bool checkBufferInfo) override;
+    BufferInfo GetCurrentBufferInfo() override;
     int32_t ReadSampleBuffer(
         uint32_t trackIndex, std::shared_ptr<AVBufferMock> sample, bool checkBufferInfo) override;
     int32_t SeekToTime(int64_t mSeconds, Media::SeekMode mode) override;
@@ -48,6 +49,7 @@ public:
         const uint32_t index, uint64_t &relativePresentationTimeUs) override;
 private:
     OH_AVDemuxer *demuxer_ = nullptr;
+    BufferInfo currentBufferInfo_ = {0, {}};
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
