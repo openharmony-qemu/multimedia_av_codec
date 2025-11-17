@@ -593,7 +593,7 @@ void FileFdSourcePlugin::SetDemuxerState(int32_t streamId)
 Status FileFdSourcePlugin::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("bitRate: " PUBLIC_LOG_D32, bitRate);
-    currentBitRate_ = (currentBitRate_ > bitRate ? currentBitRate_ : bitRate) / TO_BYTE; // 8b
+    currentBitRate_ = std::max(currentBitRate_, bitRate / TO_BYTE); // 8b
     // default cache 0.3s
     waterLineAbove_ = CACHE_LEVEL_1 * currentBitRate_;
     return Status::OK;
