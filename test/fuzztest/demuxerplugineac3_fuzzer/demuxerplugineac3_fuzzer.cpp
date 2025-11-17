@@ -42,7 +42,9 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t size)
     free(pstream);
     pstream = nullptr;
     if (ret) {
-        demuxerTest->RunDemuxerInterfaceFuzz();
+        #ifndef SUPPORT_DEMUXER_EAC3
+            demuxerTest->RunDemuxerInterfaceFuzz();
+        #endif   
     }
 }
 }
@@ -51,8 +53,6 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-#ifndef SUPPORT_DEMUXER_EAC3
     OHOS::DemuxerPluginFuzzWithFunc(data, size);
-#endif
     return 0;
 }
