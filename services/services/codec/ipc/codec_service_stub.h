@@ -35,6 +35,7 @@ public:
     virtual ~CodecServiceStub();
 
     int OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
+    using CodecStubFunc = int32_t(CodecServiceStub::*)(MessageParcel &data, MessageParcel &reply);
     int32_t SetListenerObject(const sptr<IRemoteObject> &object) override;
 
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Media::Meta &callerInfo) override;
@@ -94,22 +95,22 @@ private:
     int32_t SetParameter(MessageParcel &data, MessageParcel &reply);
     int32_t GetInputFormat(MessageParcel &data, MessageParcel &reply);
     int32_t GetCodecInfo(MessageParcel &data, MessageParcel &reply);
-
     int32_t DestroyStub(MessageParcel &data, MessageParcel &reply);
-#ifdef SUPPORT_DRM
     int32_t SetDecryptConfig(MessageParcel &data, MessageParcel &reply);
-#endif
     int32_t SetCustomBuffer(MessageParcel &data, MessageParcel &reply);
     int32_t NotifyMemoryExchange(MessageParcel &data, MessageParcel &reply);
+    int32_t NotifyMemoryRecycle(MessageParcel &data, MessageParcel &reply);
+    int32_t NotifyMemoryWriteBack(MessageParcel &data, MessageParcel &reply);
+    int32_t NotifySuspend(MessageParcel &data, MessageParcel &reply);
+    int32_t NotifyResume(MessageParcel &data, MessageParcel &reply);
+    int32_t NotifyFreeze(MessageParcel &data, MessageParcel &reply);
+    int32_t NotifyActive(MessageParcel &data, MessageParcel &reply);
     int32_t InnerRelease();
-    void NotifyMemoryRecycle(MessageParcel &data, MessageParcel &reply);
-    void NotifyMemoryWriteBack(MessageParcel &data, MessageParcel &reply);
-    void NotifySuspend(MessageParcel &data, MessageParcel &reply);
-    void NotifyResume(MessageParcel &data, MessageParcel &reply);
     void OnActive();
 
     bool isServerReleased_ = false;
     std::shared_ptr<ICodecService> codecServer_ = nullptr;
+    std::map<CodecServiceInterfaceCode, CodecStubFunc> recFuncs_;
     std::shared_mutex mutex_;
     sptr<IStandardCodecListener> listener_ = nullptr;
     std::atomic<bool> isMemoryRecycleFlag_{false};

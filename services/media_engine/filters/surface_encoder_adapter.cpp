@@ -626,8 +626,8 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     releaseBufferCondition_.notify_all();
     if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
         MEDIA_LOG_I("EOS received, ready to stop.");
-        hasReceivedEOS_ = true;
         std::unique_lock<std::mutex> lock(stopMutex_);
+        hasReceivedEOS_ = true;
         stopCondition_.notify_all();
     }
 }

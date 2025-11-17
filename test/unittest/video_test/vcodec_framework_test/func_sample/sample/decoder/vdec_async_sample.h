@@ -29,6 +29,7 @@ public:
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb);
     int32_t SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb);
     int32_t SetOutputSurface();
+    int32_t SetOutputSurface(std::shared_ptr<SurfaceMock> surface);
     int32_t Configure(std::shared_ptr<FormatMock> format);
     int32_t Prepare();
     int32_t Start();

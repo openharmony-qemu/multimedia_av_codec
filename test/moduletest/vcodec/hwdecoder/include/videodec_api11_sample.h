@@ -35,6 +35,7 @@
 #include "window.h"
 #include "iconsumer_surface.h"
 #include <map>
+#include "native_avcapability.h"
 
 namespace OHOS {
 namespace Media {
@@ -169,6 +170,18 @@ public:
     bool isCheckLowLatency = false;
     bool is8bitYuv = true;
     void FlushStatus();
+    void GetVideoSupportedPixelFormats();
+    void GetFormatKey();
+    bool isGetVideoSupportedPixelFormats = false;
+    bool isGetFormatKey = false;
+    int isGetVideoSupportedPixelFormatsNum = 0;
+    int isGetFormatKeyNum = 0;
+    const char *avcodecMimeType = nullptr;
+    bool isEncoder = true;
+    const OH_NativeBuffer_Format *pixlFormats = nullptr;
+    uint32_t pixlFormatNum = 0;
+    int firstCallBackKey = 0;
+    int onStreamChangedKey = 0;
     int32_t SetXps(OH_AVCodecBufferAttr &attr, uint8_t *fileBuffer);
     int32_t SetSendFrame();
     std::vector<uint8_t> LoadHashFile();

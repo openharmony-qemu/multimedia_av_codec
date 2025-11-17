@@ -128,7 +128,7 @@ FileFdSourcePlugin::FileFdSourcePlugin(std::string name)
 
 FileFdSourcePlugin::~FileFdSourcePlugin()
 {
-    MEDIA_LOG_I("~FileFdSourcePlugin in.");
+    MEDIA_LOG_D("~FileFdSourcePlugin in.");
     steadyClock_.Reset();
     SetInterruptState(true);
     MEDIA_LOG_D("~FileFdSourcePlugin isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
@@ -507,7 +507,7 @@ bool FileFdSourcePlugin::HandleBuffering()
 
 void FileFdSourcePlugin::HandleReadResult(size_t bufferSize, int size)
 {
-    MEDIA_LOG_I("HandleReadResult size " PUBLIC_LOG_D32 ", fd " PUBLIC_LOG_D32 ", cachePosition_" PUBLIC_LOG_U64
+    MEDIA_LOG_D("HandleReadResult size " PUBLIC_LOG_D32 ", fd " PUBLIC_LOG_D32 ", cachePosition_" PUBLIC_LOG_U64
         ", position_ " PUBLIC_LOG_U64 ", bufferSize " PUBLIC_LOG_ZU ", size_ " PUBLIC_LOG_U64 ", offset_ "
         PUBLIC_LOG_D64, size, fd_, cachePosition_.load(), position_.load(), bufferSize, size_, offset_);
     if (size < 0) {

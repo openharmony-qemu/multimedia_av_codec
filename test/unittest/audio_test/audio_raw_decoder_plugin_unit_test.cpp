@@ -204,6 +204,9 @@ public:
         } else {
             meta_->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48000);
         }
+        if (inputFormat == AudioSampleFormat::SAMPLE_BLURAY) {
+            meta_->Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
+        }
         meta_->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNELS);
         meta_->Set<Tag::AUDIO_RAW_SAMPLE_FORMAT>(inputFormat);
         meta_->Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(AUDIO_BITS_16);

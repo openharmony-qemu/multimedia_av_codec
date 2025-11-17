@@ -170,6 +170,11 @@ static const std::vector<FileType> g_streamCheckFileTypeVec = {
     FileType::VOB
 };
 
+static const std::vector<FileType> g_fileContainSkipInfo = {
+    FileType::OGG,
+    FileType::MP3
+};
+
 static const std::unordered_map<std::string, PluginSnifferFunc> g_pluginSnifferMap = {
     {std::string(PLUGIN_NAME_MPEGPS), SniffMPEGPS},
 };
@@ -814,6 +819,18 @@ void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std:
             streamParsers_->ResetXPSSendStatus(avStream->index);
         }
     }
+
+    if (std::find(
+        g_fileContainSkipInfo.cbegin(), g_fileContainSkipInfo.cend(), fileType_) != g_fileContainSkipInfo.cend()) {
+        uint8_t* skipInfoData = nullptr;
+        size_t skipInfoDataSize = 0;
+        skipInfoData = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_SKIP_SAMPLES, &skipInfoDataSize);
+        if (skipInfoData != nullptr && skipInfoDataSize > 0) {
+            std::vector<uint8_t> skipInfo(skipInfoDataSize);
+            skipInfo.assign(skipInfoData, skipInfoData + skipInfoDataSize);
+            sample->meta_->SetData(Tag::BUFFER_SKIP_SAMPLES_INFO, skipInfo);
+        }
+    }
 }
 
 Status FFmpegDemuxerPlugin::BufferIsValid(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
@@ -1337,6 +1354,8 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     fileType_ = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
     InitParser();
 
+    SetAVReadFrameLimitDefault();
+
     // parse media info
     GetMediaInfo();
 
@@ -1449,10 +1468,34 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     return Status::OK;
 }
 
+void FFmpegDemuxerPlugin::SetAVReadFrameLimitDefault()
+{
+    if (!FFmpegFormatHelper::IsMpeg4File(fileType_)) {
+        return;
+    }
+    ioContext_.isLimitType = true;
+    ioContext_.sizeLimit = FLV_READ_SIZE_LIMIT_DEFAULT;
+    for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        if (formatContext_->streams[trackIndex] == nullptr ||
+            formatContext_->streams[trackIndex]->codecpar == nullptr) {
+            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " info is nullptr", trackIndex);
+            continue;
+        }
+        if (FFmpegFormatHelper::IsVideoType(*(formatContext_->streams[trackIndex]))) {
+            auto codecpar = formatContext_->streams[trackIndex]->codecpar;
+            int32_t limitSize = codecpar->width * codecpar->height * DEFAULT_CHANNEL_CNT * FLV_READ_SIZE_LIMIT_FACTOR;
+            ioContext_.sizeLimit = std::max(ioContext_.sizeLimit, limitSize);
+            MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " hei:" PUBLIC_LOG_D32 ", wid:" PUBLIC_LOG_D32
+                " limit " PUBLIC_LOG_D32, trackIndex, codecpar->height, codecpar->width, limitSize);
+        }
+    }
+    return;
+}
+
 Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
-    if (fileType_ != FileType::FLV) {
+    if (fileType_ != FileType::FLV && !FFmpegFormatHelper::IsMpeg4File(fileType_)) {
         return Status::OK;
     }
 
@@ -1753,11 +1796,24 @@ static bool IsSyncFrameCheckNeeded(std::shared_ptr<AVFormatContext> formatContex
         fileType) == g_streamCheckFileTypeVec.cend());
 }
 
+bool FFmpegDemuxerPlugin::Mp4checkKeyFrame(AVStream* stream)
+{
+    FALSE_RETURN_V_MSG_E(stream != nullptr, false, "AVStream is nullptr");
+    const AVIndexEntry *entry = avformat_index_get_entry(stream, POS_0);
+    FALSE_RETURN_V_MSG_E(entry != nullptr, false, "First AVIndexEntry is nullptr");
+    int keyIndex = av_index_search_timestamp(stream, entry->timestamp, AVINDEX_KEYFRAME);
+    FALSE_RETURN_V_MSG_E(keyIndex >= 0, false, "KeyIndex is invalid");
+    return true;
+}
+
 bool FFmpegDemuxerPlugin::AllSupportTrackFramesReady()
 {
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         AVStream* stream = formatContext_->streams[trackIndex];
         if (stream == nullptr || stream->codecpar == nullptr || !IsSupportedGetFirstFrame(*stream)) {
+            continue;
+        }
+        if (FFmpegFormatHelper::IsMpeg4File(fileType_) && !Mp4checkKeyFrame(stream)) {
             continue;
         }
         if (!TrackIsChecked(trackIndex)) {
@@ -1826,7 +1882,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
             FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");
         }
         std::unique_lock<std::mutex> sLock(syncMutex_);
-        int ffmpegRet = av_read_frame(formatContext_.get(), pkt);
+        int ffmpegRet = AVReadFrameLimit(pkt);
         sLock.unlock();
         if (ffmpegRet < 0) {
             MEDIA_LOG_E("Call av_read_frame failed, ret:" PUBLIC_LOG_D32, ffmpegRet);

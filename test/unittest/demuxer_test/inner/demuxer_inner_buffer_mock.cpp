@@ -57,6 +57,10 @@ int32_t DemuxerInnerMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemo
                 bufferMeta->GetData(Tag::BUFFER_DURATION, duration);
                 bufferMeta->GetData(Tag::BUFFER_DECODING_TIMESTAMP, dts);
                 printf("[track %d] duration %" PRId64 " dts %" PRId64 "\n", trackIndex, duration, dts);
+                std::vector<uint8_t> skipData;
+                bufferMeta->GetData(Tag::BUFFER_SKIP_SAMPLES_INFO, skipData);
+                currentBufferInfo_.skipData = skipData;
+                currentBufferInfo_.skipSize = skipData.size();
             }
         }
         return ret;

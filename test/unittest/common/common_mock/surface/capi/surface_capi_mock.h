@@ -29,6 +29,8 @@ public:
     ~SurfaceCapiMock();
     OHNativeWindow *GetSurface();
 
+    void SetTransform(int32_t transform);
+    void GetTransform(int32_t &transform);
 private:
     OHNativeWindow *nativeWindow_ = nullptr;
 };

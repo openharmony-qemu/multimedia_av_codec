@@ -294,6 +294,7 @@ void GetWmv3CapProf(std::vector<CapabilityData> &capaArray)
         capsData.blockPerFrame.maxVal = WMV3_MAX_BLOCKPERFRAME_SIZE;
         capsData.blockPerSecond.maxVal = WMV3_MAX_BLOCKPERSEC_SIZE;
         capsData.frameRate.maxVal = WMV3_MAX_FRAMERATE_SIZE;
+        capsData.supportSwapWidthHeight = true;
         capsData.profiles = {static_cast<int32_t>(WMV3_PROFILE_SIMPLE), static_cast<int32_t>(WMV3_PROFILE_MAIN)};
         std::vector<int32_t> levels_s;
         std::vector<int32_t> levels_m;

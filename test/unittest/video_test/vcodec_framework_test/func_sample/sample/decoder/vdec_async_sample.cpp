@@ -254,6 +254,13 @@ int32_t VideoDecAsyncSample::SetOutputSurface()
     return ret;
 }
 
+int32_t VideoDecAsyncSample::SetOutputSurface(std::shared_ptr<SurfaceMock> surface)
+{
+    int32_t ret = videoDec_->SetOutputSurface(surface);
+    isSurfaceMode_ = (ret == AV_ERR_OK);
+    return ret;
+}
+
 int32_t VideoDecAsyncSample::Configure(std::shared_ptr<FormatMock> format)
 {
     if (videoDec_ == nullptr) {

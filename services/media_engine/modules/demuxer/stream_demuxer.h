@@ -70,6 +70,7 @@ private:
     std::map<int32_t, CacheData> cacheDataMap_;
     uint64_t position_;
     std::mutex mutex_;
+    std::mutex cacheDataMutex_;
     std::condition_variable readCond_;
 };
 } // namespace Media

@@ -93,6 +93,10 @@ void VDecServerSample::CallBack::OnInputBufferAvailable(uint32_t index, std::sha
 
 void VDecServerSample::CallBack::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    if (tester->codec_ == nullptr) {
+        cout << "OnOutputBufferAvailable Error: codec is nullptr" << endl;
+        return;
+    }
     if (buffer->flag_ == AVCODEC_BUFFER_FLAGS_EOS) {
         tester->isEOS_.store(true);
         tester->signal_->endCond_.notify_all();
@@ -113,6 +117,10 @@ VDecServerSample::~VDecServerSample()
 
 int32_t VDecServerSample::ConfigServerDecoder()
 {
+    if (codec_ == nullptr) {
+        cout << "ConfigServerDecoder Error: codec is nullptr" << endl;
+        return AVCS_ERR_INVALID_VAL;
+    }
     Format fmt;
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, defaultWidth);
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, defaultHeight);
@@ -125,12 +133,20 @@ int32_t VDecServerSample::ConfigServerDecoder()
 
 int32_t VDecServerSample::SetCallback()
 {
+    if (codec_ == nullptr) {
+        cout << "SetCallback Error: codec is nullptr" << endl;
+        return AVCS_ERR_INVALID_VAL;
+    }
     shared_ptr<CallBack> cb = make_shared<CallBack>(this);
     return codec_->SetCallback(cb);
 }
 
 int32_t VDecServerSample::SetOutputSurface()
 {
+    if (codec_ == nullptr) {
+        cout << "SetOutputSurface Error: codec is nullptr" << endl;
+        return AVCS_ERR_INVALID_VAL;
+    }
     auto cs = Surface::CreateSurfaceAsConsumer();
     cs_vector.push_back(cs);
     sptr<IBufferConsumerListener> listener = new ConsumerListener(cs);
@@ -143,6 +159,10 @@ int32_t VDecServerSample::SetOutputSurface()
 
 int32_t VDecServerSample::InitDecoder()
 {
+    if (codec_ == nullptr) {
+        cout << "InitDecoder Error: codec is nullptr" << endl;
+        return AVCS_ERR_INVALID_VAL;
+    }
     int32_t err;
     Media::Meta codecInfo;
     int32_t instanceid = 0;
@@ -233,6 +253,10 @@ void VDecServerSample::WaitForEos()
 
 void VDecServerSample::GetOutputFormat()
 {
+    if (codec_ == nullptr) {
+        cout << "GetOutputFormat Error: codec is nullptr" << endl;
+        return;
+    }
     Format fmt;
     int32_t err = codec_->GetOutputFormat(fmt);
     if (err != AVCS_ERR_OK) {
@@ -245,6 +269,10 @@ void VDecServerSample::GetOutputFormat()
 
 void VDecServerSample::Flush()
 {
+    if (codec_ == nullptr) {
+        cout << "Flush Error: codec is nullptr" << endl;
+        return;
+    }
     int32_t err = codec_->Flush();
     if (err != AVCS_ERR_OK) {
         cout << "Flush fail" << endl;
@@ -256,6 +284,10 @@ void VDecServerSample::Flush()
 
 void VDecServerSample::Reset()
 {
+    if (codec_ == nullptr) {
+        cout << "Reset Error: codec is nullptr" << endl;
+        return;
+    }
     int32_t err = codec_->Reset();
     if (err != AVCS_ERR_OK) {
         cout << "Reset fail" << endl;
@@ -267,6 +299,10 @@ void VDecServerSample::Reset()
 
 void VDecServerSample::Stop()
 {
+    if (codec_ == nullptr) {
+        cout << "Stop Error: codec is nullptr" << endl;
+        return;
+    }
     StopInloop();
     ReleaseInFile();
     int32_t err = codec_->Stop();
@@ -280,6 +316,10 @@ void VDecServerSample::Stop()
 
 void VDecServerSample::SetEOS(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    if (codec_ == nullptr) {
+        cout << "SetEOS Error: codec is nullptr" << endl;
+        return;
+    }
     buffer->pts_ = GetSystemTimeUs();
     buffer->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
     int32_t res = codec_->QueueInputBuffer(index);
@@ -334,6 +374,10 @@ int32_t VDecServerSample::ReadData(uint32_t index, std::shared_ptr<AVBuffer> buf
 
 int32_t VDecServerSample::SendData(uint32_t bufferSize, uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    if (codec_ == nullptr) {
+        cout << "SendData Error: codec is nullptr" << endl;
+        return AVCS_ERR_INVALID_VAL;
+    }
     uint8_t *frameBuffer = new uint8_t[bufferSize + START_CODE_SIZE];
     (void)inFile_->read(reinterpret_cast<char *>(frameBuffer + START_CODE_SIZE), bufferSize);
     int32_t size = buffer->memory_->GetCapacity();
@@ -367,6 +411,10 @@ int32_t VDecServerSample::SendData(uint32_t bufferSize, uint32_t index, std::sha
 
 int32_t VDecServerSample::SendFuzzData(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    if (codec_ == nullptr) {
+        cout << "SendFuzzData Error: codec is nullptr" << endl;
+        return AVCS_ERR_INVALID_VAL;
+    }
     uint8_t *bufferAddr = buffer->memory_->GetAddr();
     if (memcpy_s(bufferAddr, buffer->memory_->GetCapacity(), fuzzData, fuzzSize) != EOK) {
         cout << "Fatal: memcpy fail" << endl;
@@ -425,6 +473,10 @@ void VDecServerSample::InputFunc()
 
 void VDecServerSample::NotifyMemoryRecycle()
 {
+    if (codec_ == nullptr) {
+        cout << "NotifyMemoryRecycle Error: codec is nullptr" << endl;
+        return;
+    }
     int32_t err = codec_->NotifyMemoryRecycle();
     if (err != AVCS_ERR_OK) {
         cout << "NotifyMemoryRecycle fail" << endl;
@@ -436,6 +488,10 @@ void VDecServerSample::NotifyMemoryRecycle()
 
 void VDecServerSample::NotifyMemoryWriteBack()
 {
+    if (codec_ == nullptr) {
+        cout << "NotifyMemoryWriteBack Error: codec is nullptr" << endl;
+        return;
+    }
     int32_t err = codec_->NotifyMemoryWriteBack();
     if (err != AVCS_ERR_OK) {
         cout << "NotifyMemoryWriteBack fail" << endl;
@@ -447,7 +503,7 @@ void VDecServerSample::NotifyMemoryWriteBack()
 
 void VDecServerSample::StopInloop()
 {
-    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+    if (signal_ != nullptr && inputLoop_ != nullptr && inputLoop_->joinable()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         clearIntqueue(signal_->inIdxQueue_);
         signal_->inCond_.notify_all();

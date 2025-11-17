@@ -1,0 +1,205 @@
+syntax = "proto3";
+package ohos.mpd;
+
+// ============================== 基础枚举（避免与业务同名）=============================
+// 对应 C++: enum class DashType { DASH_TYPE_STATIC, DASH_TYPE_DYNAMIC };
+enum ProtoDashType {
+  PROTO_DASH_TYPE_STATIC  = 0;  // 对应 DashType::DASH_TYPE_STATIC
+  PROTO_DASH_TYPE_DYNAMIC = 1;  // 对应 DashType::DASH_TYPE_DYNAMIC
+}
+
+// 对应 C++: enum class VideoScanType { VIDEO_SCAN_PROGRESSIVE, VIDEO_SCAN_INTERLACED, VIDEO_SCAN_UNKNOW };
+enum ProtoVideoScanType {
+  PROTO_SCAN_PROGRESSIVE = 0;
+  PROTO_SCAN_INTERLACED  = 1;
+  PROTO_SCAN_UNKNOW      = 2; // 注意：业务枚举拼写为 UNKNOW，这里保持一致含义
+}
+
+// ============================== 叶子结构 ==============================
+// 对应 C++: DashUrlType { std::string sourceUrl_; std::string range_; }
+message UrlType {
+  string source_url = 1; // -> DashUrlType::sourceUrl_
+  string range      = 2; // -> DashUrlType::range_
+}
+
+// 对应 C++: DashSegUrl { media_, mediaRange_, index_, indexRange_ }
+message SegmentURL {
+  string media       = 1; // -> DashSegUrl::media_
+  string media_range = 2; // -> DashSegUrl::mediaRange_
+  string index       = 3; // -> DashSegUrl::index_
+  string index_range = 4; // -> DashSegUrl::indexRange_
+}
+
+// 对应 C++: DashDescriptor { schemeIdUrl_, value_, defaultKid_, elementMap_ }
+message Descriptor {
+  string scheme_id_url = 1;                 // -> schemeIdUrl_
+  string value         = 2;                 // -> value_
+  string default_kid   = 3;                 // -> defaultKid_
+  map<string,string> element_map = 4;       // -> elementMap_（如 "cenc:pssh" -> base64）
+}
+
+// 对应 C++: DashSegTimeline { t_, d_, r_ }
+message SegmentTimelineEntry {
+  uint64 t = 1; // -> t_
+  uint64 d = 2; // -> d_
+  int32  r = 3; // -> r_
+}
+
+// ============================== Segment 基类 ==============================
+// 对应 C++: DashSegBaseInfo
+message SegBaseInfo {
+  uint32 time_scale                = 1; // -> timeScale_
+  uint32 presentation_time_offset  = 2; // -> presentationTimeOffset_
+  string index_range               = 3; // -> indexRange_
+  bool   index_range_exact         = 4; // -> indexRangeExact_
+  UrlType initialization           = 10; // -> initialization_
+  UrlType representation_index     = 11; // -> representationIndex_
+}
+
+// 对应 C++: DashMultSegBaseInfo
+message MultSegBaseInfo {
+  uint32 duration                  = 1; // -> duration_
+  string start_number              = 2; // -> startNumber_
+  UrlType bitstream_switching      = 3; // -> bitstreamSwitching_
+  repeated SegmentTimelineEntry timeline = 4; // -> segTimeline_
+  SegBaseInfo seg_base             = 5; // -> segBaseInfo_
+}
+
+// 对应 C++: DashSegTmpltInfo
+message SegTemplateInfo {
+  string media                     = 1;  // -> segTmpltMedia_
+  string index                     = 2;  // -> segTmpltIndex_
+  string initialization            = 3;  // -> segTmpltInitialization_
+  string bitstream_switching_attr  = 4;  // -> segTmpltBitstreamSwitching_（属性式）
+
+  MultSegBaseInfo mult             = 10; // -> multSegBaseInfo_
+}
+
+// 对应 C++: DashSegListInfo
+message SegListInfo {
+  repeated SegmentURL segment_urls = 1;  // -> segmentUrl_
+  MultSegBaseInfo mult             = 2; // -> multSegBaseInfo_
+}
+
+// ============================== 公共属性块 ==============================
+// 对应 C++: DashCommonAttrsAndElements
+message CommonAE {
+  bool   coding_dependency   = 1;  // -> codingDependency_
+  uint32 width               = 2;  // -> width_
+  uint32 height              = 3;  // -> height_
+  uint32 start_with_sap      = 4;  // -> startWithSAP_
+  double max_playout_rate    = 5;  // -> maxPlayoutRate_
+  string profiles            = 6;  // -> profiles_
+  string sar                 = 7;  // -> sar_
+  string frame_rate          = 8;  // -> frameRate_
+  string audio_sampling_rate = 9;  // -> audioSamplingRate_
+  repeated Descriptor audio_channel_configuration = 10; // -> audioChannelConfigurationList_
+  string mime_type           = 11; // -> mimeType_
+  string codecs              = 12; // -> codecs_
+  string cuvv_version        = 13; // -> cuvvVersion_
+  ProtoVideoScanType scan_type = 14; // -> scanType_
+  repeated Descriptor content_protection = 15;  // -> contentProtectionList_
+  repeated Descriptor essential_property = 16;  // -> essentialPropertyList_
+}
+
+// ============================== 树形节点 ==============================
+// 对应 C++: DashRepresentationInfo
+message Representation {
+  string id                = 1;  // -> id_
+  uint32 bandwidth         = 2;  // -> bandwidth_
+  uint32 quality_ranking   = 3;  // -> qualityRanking_
+  repeated string base_url = 4;  // -> baseUrl_
+  string volume_adjust     = 5;  // -> volumeAdjust_（字符串）
+
+  SegBaseInfo     seg_base     = 10; // -> representationSegBase_
+  SegListInfo     seg_list     = 11; // -> representationSegList_
+  SegTemplateInfo seg_template = 12; // -> representationSegTmplt_
+
+  CommonAE common = 20; // -> commonAttrsAndElements_
+}
+
+// 对应 C++: DashContentCompInfo
+message ContentComponent {
+  uint32 id          = 1; // -> id_
+  string lang        = 2; // -> lang_
+  string content_type= 3; // -> contentType_
+  string par         = 4; // -> par_
+  repeated Descriptor role = 5; // -> roleList_
+}
+
+// 对应 C++: DashAdptSetInfo
+message AdaptationSet {
+  bool segment_alignment    = 1; // -> segmentAlignment_
+  bool subsegment_alignment = 2; // -> subsegmentAlignment_
+  bool bitstream_switching  = 3; // -> bitstreamSwitching_
+
+  uint32 id           = 4; // -> id_
+  uint32 group        = 5; // -> group_
+  uint32 min_bandwidth= 6; // -> minBandwidth_
+  uint32 max_bandwidth= 7; // -> maxBandwidth_
+  uint32 min_width    = 8; // -> minWidth_
+  uint32 max_width    = 9; // -> maxWidth_
+  uint32 min_height   = 10; // -> minHeight_
+  uint32 max_height   = 11; // -> maxHeight_
+  uint32 camera_index = 12; // -> cameraIndex_
+  int32 subsegment_starts_with_sap = 13; // -> subSegmentStartsWithSAP_
+
+  string lang          = 20; // -> lang_
+  string content_type  = 21; // -> contentType_
+  string par           = 22; // -> par_
+  string min_frame_rate= 23; // -> minFrameRate_
+  string max_frame_rate= 24; // -> maxFrameRate_
+  string mime_type     = 25; // -> mimeType_
+  string video_type    = 26; // -> videoType_
+
+  SegBaseInfo     seg_base     = 30; // -> adptSetSegBase_
+  SegListInfo     seg_list     = 31; // -> adptSetSegList_
+  SegTemplateInfo seg_template = 32; // -> adptSetSegTmplt_
+
+  repeated string base_url = 40;                 // -> baseUrl_
+  repeated ContentComponent content_components = 41; // -> contentCompList_
+  repeated Representation  representations     = 42; // -> representationList_
+  repeated Descriptor      role                = 43; // -> roleList_
+
+  CommonAE common = 50; // -> commonAttrsAndElements_
+}
+
+// 对应 C++: DashPeriodInfo
+message Period {
+  uint32 start_sec      = 1; // -> start_（生成XML用 PT{start}S）
+  uint32 duration_sec   = 2; // -> duration_（生成XML用 PT{duration}S）
+  bool   bitstream_switching = 3; // -> bitstreamSwitching_
+  string id             = 4; // -> id_
+  repeated string base_url = 5; // -> baseUrl_
+
+  SegBaseInfo     seg_base     = 10; // -> periodSegBase_
+  SegListInfo     seg_list     = 11; // -> periodSegList_
+  SegTemplateInfo seg_template = 12; // -> periodSegTmplt_
+
+  repeated AdaptationSet adaptation_sets = 20; // -> adptSetList_
+}
+
+// 对应 C++: DashMpdInfo
+message MpdDoc {
+  ProtoDashType type = 1; // -> type_
+
+  // 下列单位为“秒”，生成XML时写为 ISO8601 (PT…S)
+  uint32 media_presentation_duration_sec = 10; // -> mediaPresentationDuration_
+  uint32 minimum_update_period_sec       = 11; // -> minimumUpdatePeriod_
+  uint32 min_buffer_time_sec             = 12; // -> minBufferTime_
+  uint32 time_shift_buffer_depth_sec     = 13; // -> timeShiftBufferDepth_
+  uint32 suggested_presentation_delay_sec= 14; // -> suggestedPresentationDelay_
+  uint32 max_segment_duration_sec        = 15; // -> maxSegmentDuration_
+  uint32 max_subsegment_duration_sec     = 16; // -> maxSubSegmentDuration_
+ 
+  uint32 hw_total_view_number            = 17; // -> hwTotalViewNumber_
+  uint32 hw_default_view_index           = 18; // -> hwDefaultViewIndex_
+
+  int64 availability_start_time_ms       = 19; // -> availabilityStartTime_（可选）
+
+  string media_type = 30;  // -> mediaType_
+  string profile    = 31;  // -> profile_
+
+  repeated string base_url = 40; // -> baseUrl_
+  repeated Period periods  = 41; // -> periodInfoList_
+}
