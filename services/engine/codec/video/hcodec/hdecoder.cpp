@@ -780,7 +780,7 @@ uint64_t HDecoder::GetProducerUsage()
 
 void HDecoder::CombineConsumerUsage()
 {
-    uint32_t consumerUsage = currSurface_.surface_->GetDefaultUsage();
+    uint64_t consumerUsage = currSurface_.surface_->GetDefaultUsage();
     if (currSurface_.surface_->GetName().find("SurfaceImage") != string::npos) {
         consumerUsage |= BUFFER_USAGE_HW_COMPOSER;
     }
