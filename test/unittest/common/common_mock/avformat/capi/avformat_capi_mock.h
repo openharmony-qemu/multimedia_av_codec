@@ -49,6 +49,7 @@ public:
     const char *DumpInfo() override;
     bool AVFormat_Copy(struct OH_AVFormat *to, struct OH_AVFormat *from);
     OH_AVFormat *GetFormat();
+    void RemoveKey(const std::string_view &key) override;
 
 private:
     OH_AVFormat *format_;

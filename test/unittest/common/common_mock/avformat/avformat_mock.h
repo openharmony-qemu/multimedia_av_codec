@@ -48,6 +48,7 @@ public:
         const std::string_view &mimeType, const std::string_view &key, int32_t srcTrackID) = 0;
     virtual const char *DumpInfo() = 0;
     virtual void Destroy() = 0;
+    virtual void RemoveKey(const std::string_view &key) = 0;
 };
 
 class __attribute__((visibility("default"))) FormatMockFactory {
