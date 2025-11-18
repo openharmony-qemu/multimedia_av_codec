@@ -2725,7 +2725,7 @@ int SniffMPEGPS(const std::string& pluginName, std::shared_ptr<DataSource> dataS
     return psScore;
 }
 
-static PluginSnifferFunc FindSniffer(const std::string& pluginName)
+inline static PluginSnifferFunc FindSniffer(const std::string& pluginName)
 {
     return (pluginName == std::string(PLUGIN_NAME_MPEGPS) ) ? SniffMPEGPS : Sniff;
 }
