@@ -24,6 +24,7 @@
 #include "v1_0/buffer_handle_meta_key_type.h"
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
+#include "v2_2/buffer_handle_meta_key_type.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -325,7 +326,7 @@ void TesterCommon::EncoderInputLoop()
             opt_.resourceParamsMap.erase(opt_.resourceParamsMap.begin());
         }
         BufInfo buf {};
-        bool ret = opt_.isBufferMode ? WaitForInput(buf) : WaitForInputSurfaceBuffer(buf);
+        bool ret = opt_.isBufferMode ? WaitForInput(buf) : WaitForInputSurfaceBuffer(buf, opt_.enableROIByNb);
         if (!ret) {
             continue;
         }
@@ -442,7 +443,7 @@ bool TesterCommon::NativeBufferToBufferInfo(BufInfo& buf, OH_NativeBuffer* nativ
     return true;
 }
 
-bool TesterCommon::WaitForInputSurfaceBuffer(BufInfo& buf)
+bool TesterCommon::WaitForInputSurfaceBuffer(BufInfo& buf, bool enableROIByNb)
 {
     BufferRequestConfig cfg = {w_, h_, 32, displayFmt_,
                                BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA, 0, };
@@ -453,6 +454,13 @@ bool TesterCommon::WaitForInputSurfaceBuffer(BufInfo& buf)
         return false;
     }
     buf.surfaceBuf = surfaceBuffer;
+    if (enableROIByNb) {
+        using namespace OHOS::HDI::Display::Graphic::Common::V2_2;
+        std::string roiStr = "0,0-32,32=30";
+        const uint8_t* data = reinterpret_cast<const uint8_t*>(roiStr.c_str());
+        std::vector<uint8_t> metadataSet = vector<uint8_t>(data, data + roiStr.size());
+        surfaceBuffer->SetMetadata(ATTRKEY_ROI_METADATA, metadataSet);
+    }
     return SurfaceBufferToBufferInfo(buf, surfaceBuffer);
 }
 
