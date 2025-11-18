@@ -92,7 +92,7 @@ public:
     bool IsHlsFmp4() override;
     uint64_t GetMemorySize() override;
     std::string GetContentType() override;
-    bool IsHlsEnd() override;
+    bool IsHlsEnd(int32_t streamId = -1) override;
     Status SelectStream(int32_t streamId) override;
     void PostAllEvent(HlsSegEvent event);
     void PostBufferingEvent(HlsSegmentType mediaType, BufferingInfoType type);

@@ -93,7 +93,7 @@ public:
     uint64_t GetMemorySize() override;
     std::string GetContentType() override;
     std::string GetCurUrl() override;
-    bool IsHlsEnd() override;
+    bool IsHlsEnd(int32_t streamId = -1) override;
 
 private:
     int64_t HttpMonitorLoop();

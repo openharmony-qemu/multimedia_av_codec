@@ -433,10 +433,11 @@ uint64_t HlsMediaDownloader::GetMemorySize()
     return videoSegManager_->GetMemorySize();
 }
 
-bool HlsMediaDownloader::IsHlsEnd()
+bool HlsMediaDownloader::IsHlsEnd(int32_t streamId)
 {
-    FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "IsHlsEnd no video segment manager found!");
-    return videoSegManager_->IsHlsEnd();
+    auto segManager = GetSegmentManager(streamId);
+    FALSE_RETURN_V_MSG(segManager != nullptr, false, "IsHlsEnd no segment manager found!");
+    return segManager->IsHlsEnd();
 }
 
 std::shared_ptr<HlsSegmentManager> HlsMediaDownloader::GetSegmentManager(uint32_t streamId)
