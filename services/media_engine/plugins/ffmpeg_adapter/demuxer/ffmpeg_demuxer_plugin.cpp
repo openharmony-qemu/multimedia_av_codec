@@ -136,9 +136,9 @@ inline std::string ProcessPluginName(const std::string& pluginName)
 {
     size_t pos = pluginName.find("avdemux_");
     if (pos != std::string::npos) {
-        return pluginName.substr(pos + strlen("avdemux_"));
+        return pluginName.substr(pos + strlen("avdemux_")); // Get the name after avdemux_
     }
-    return pluginName; // Get the name after avdemux_
+    return pluginName;
 }
 
 static const std::map<SeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
