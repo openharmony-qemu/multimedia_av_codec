@@ -90,6 +90,7 @@ ohos_unittest("demuxer_capi_unit_test") {
       "./demuxer_video_m4v_unit_test.cpp",
       "./demuxer_video_wmv_unit_test.cpp",
       "./demuxer_video_dat_unit_test.cpp",
+      "./demuxer_video_caf_unit_test.cpp",
     ]
   }
 
@@ -184,6 +185,7 @@ ohos_unittest("demuxer_inner_unit_test") {
       "./demuxer_video_m4v_unit_test.cpp",
       "./demuxer_video_wmv_unit_test.cpp",
       "./demuxer_video_dat_unit_test.cpp",
+      "./demuxer_video_caf_unit_test.cpp",
     ]
   }
 
@@ -257,6 +259,7 @@ ohos_unittest("demuxer_capi_buffer_unit_test") {
       "./demuxer_video_m4v_unit_test.cpp",
       "./demuxer_video_wmv_unit_test.cpp",
       "./demuxer_video_dat_unit_test.cpp",
+      "./demuxer_video_caf_unit_test.cpp",
     ]
   }
 
@@ -335,6 +338,7 @@ ohos_unittest("demuxer_inner_buffer_unit_test") {
       "./demuxer_video_m4v_unit_test.cpp",
       "./demuxer_video_wmv_unit_test.cpp",
       "./demuxer_video_dat_unit_test.cpp",
+      "./demuxer_video_caf_unit_test.cpp",
     ]
   }
 
