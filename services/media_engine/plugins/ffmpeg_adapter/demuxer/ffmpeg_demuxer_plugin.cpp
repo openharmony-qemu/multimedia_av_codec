@@ -132,7 +132,7 @@ void FreeAVPacket(AVPacket* pkt)
     pkt = nullptr;
 }
 
-const char* ProcessPluginName(const std::string& pluginName)
+inline const char* ProcessPluginName(const std::string& pluginName)
 {
     static std::string result;
     size_t pos = pluginName.find("avdemux_");
