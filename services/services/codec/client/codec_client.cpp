@@ -94,10 +94,11 @@ int32_t CodecClient::CreateListenerObject()
     int32_t ret = codecProxy_->SetListenerObject(object);
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
+    } else {
+        AVCODEC_LOGE_WITH_TAG("%{public}s", ErrorToStr(ret).c_str());
     }
     auto codecProxy = static_cast<CodecServiceProxy *>(codecProxy_.GetRefPtr());
     codecProxy->SetListener(listenerStub_);
-    AVCODEC_LOGI_WITH_TAG("%{public}s", ErrorToStr(ret).c_str());
     return ret;
 }
 
@@ -484,7 +485,7 @@ int32_t CodecClient::SetParameter(const Format &format)
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->SetParameter(format);
-    AVCODEC_LOGI_WITH_TAG("%{public}s", ErrorToStr(ret).c_str());
+    AVCODEC_LOGD_WITH_TAG("%{public}s", ErrorToStr(ret).c_str());
     return ret;
 }
 
