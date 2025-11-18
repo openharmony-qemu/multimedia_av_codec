@@ -2669,7 +2669,7 @@ int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dat
     {
         std::lock_guard<std::mutex> lock(g_mtx);
         auto inputFormat = av_find_input_format(ProcessPluginName(pluginName));
-        pluginImpl_ = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
+        plugin = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
     }
     FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
         "Get plugin for " PUBLIC_LOG_S " failed", pluginName.c_str());
