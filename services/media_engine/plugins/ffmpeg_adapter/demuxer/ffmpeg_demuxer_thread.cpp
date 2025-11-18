@@ -279,6 +279,9 @@ void FFmpegDemuxerPlugin::FFmpegReadLoop()
         if (!ReadAndProcessFrame(pkt)) {
             break;
         }
+        if (!ProcessSamplePacket()){
+            break;
+        }
         pkt = nullptr;
     }
     {
