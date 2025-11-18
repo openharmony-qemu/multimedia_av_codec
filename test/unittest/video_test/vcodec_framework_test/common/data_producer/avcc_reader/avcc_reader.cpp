@@ -39,11 +39,18 @@ constexpr uint8_t MPEG4_FRAME_HEAD_LEN = sizeof(MPEG4_FRAME_HEAD);
 constexpr uint8_t MPEG4_SEQUENCE_HEAD[] = {0x00, 0x00, 0x01, 0xb0};
 constexpr uint8_t MPEG4_SEQUENCE_HEAD_LEN = sizeof(MPEG4_SEQUENCE_HEAD);
 constexpr uint32_t PREREAD_BUFFER_SIZE = 5 * 1024 * 1024;
+#ifdef SUPPORT_CODEC_VC1
 constexpr uint8_t VC1_FRAME_HEAD[] = {0x00, 0x00, 0x01, 0x0D};
 constexpr uint8_t VC1_FRAME_HEAD_LEN = sizeof(VC1_FRAME_HEAD);
 constexpr uint8_t VC1_SEQUENCE_HEAD[] = {0x00, 0x00, 0x01, 0x0F};
 constexpr uint8_t VC1_SEQUENCE_HEAD_LEN = sizeof(VC1_SEQUENCE_HEAD);
-
+constexpr uint8_t VC1_FRAME_TYPE_OFFSET = 4;
+constexpr uint8_t VC1_FRAME_TYPE_MASK = 0xC0;
+constexpr uint8_t VC1_FRAME_TYPE_I_BITS = 0x00;
+constexpr uint8_t VC1_FRAME_TYPE_P_BITS = 0x40;
+constexpr uint8_t VC1_FRAME_TYPE_B_BITS = 0x80;
+constexpr uint8_t VC1_FRAME_TYPE_BI_BITS = 0xC0;
+#endif
 constexpr uint8_t H263_HEAD_0[] = {0x00, 0x00, 0x80};
 constexpr uint8_t H263_HEAD_1[] = {0x00, 0x00, 0x81};
 constexpr uint8_t H263_HEAD_2[] = {0x00, 0x00, 0x82};
@@ -56,12 +63,6 @@ constexpr uint8_t H263_HEAD_MASK_5_2 = 0x70;
 constexpr uint8_t H263_OFFSET_4 = 4;
 constexpr uint8_t H263_OFFSET_5 = 5;
 constexpr uint8_t H263_OFFSET_7 = 7;
-constexpr uint8_t VC1_FRAME_TYPE_OFFSET = 4;
-constexpr uint8_t VC1_FRAME_TYPE_MASK = 0xC0;
-constexpr uint8_t VC1_FRAME_TYPE_I_BITS = 0x00;
-constexpr uint8_t VC1_FRAME_TYPE_P_BITS = 0x40;
-constexpr uint8_t VC1_FRAME_TYPE_B_BITS = 0x80;
-constexpr uint8_t VC1_FRAME_TYPE_BI_BITS = 0xC0;
 
 static inline int64_t GetTimeUs()
 {
@@ -137,7 +138,7 @@ enum H263Type {
 };
 
 }
-
+#ifdef SUPPORT_CODEC_VC1
 enum Vc1Type {
     VC1_UNSPECIFIED = 0,
     VC1_I = 1,
@@ -168,7 +169,7 @@ const uint32_t ES_VC1[] = {
     14784,  7229, 17461,  7132, 17121,  6489, 16583,  6504, 14229,  9211};
 
 const uint32_t ES_VC1_LENGTH = sizeof(ES_VC1) / sizeof(ES_VC1[0]);
-
+#endif
 enum Msvideo1Type {
     MSVIDEO1_UNSPECIFIED = 0,
     MSVIDEO1_I = 1,
@@ -1008,6 +1009,7 @@ bool AvccReader::HEVCNalDetector::IsFirstSlice(const uint8_t *nalTypeAddr)
     return *(nalTypeAddr + 2) & 0x80; // *(nalTypeAddr + 2) & 0x80: HEVC first_slice_segment_in_pic_flag
 }
 
+#ifdef SUPPORT_CODEC_VC1
 int32_t Vc1Reader::Init(const std::shared_ptr<Vc1ReaderInfo>& info)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -1196,7 +1198,7 @@ void Vc1Reader::Vc1UnitReader::PrereadVc1Unit()
 {
     std::cout << "[Vc1UnitReader::PrereadVc1Unit] Base class implementation - should be overridden" << std::endl;
 }
-
+#endif
 int32_t Msvideo1Reader::Init(const std::shared_ptr<Msvideo1ReaderInfo>& info)
 {
     std::lock_guard<std::mutex> lock(mutex_);
