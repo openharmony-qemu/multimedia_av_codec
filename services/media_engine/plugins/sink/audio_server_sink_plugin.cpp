@@ -517,9 +517,9 @@ bool AudioServerSinkPlugin::AssignSampleRateIfSupported(uint32_t sampleRate)
         }
     }
     FALSE_RETURN_V_MSG(OHOS::AudioStandard::AudioRenderer::CheckSupportedSamplingRates(sampleRate), false,
-        "mimeType is FLAC sampleRate is invaild");
+        "sampleRate is invaild %{public}d", sampleRate);
     customSampleRate_ = sampleRate;
-    MEDIA_LOG_I_SHORT("mimeType is FLAC, customSampleRate: " PUBLIC_LOG_U32, customSampleRate_);
+    MEDIA_LOG_I_SHORT("customSampleRate: " PUBLIC_LOG_U32, customSampleRate_);
     return true;
 }
 
