@@ -360,6 +360,55 @@ HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_codecbase_roi, TestSize.Level
     ASSERT_TRUE(ret);
 }
 
+HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_codecbase_roi_byNb, TestSize.Level1)
+{
+    OHOS::system::SetParameter("hcodec.dump", "0100");
+    CommandOpt opt = {
+        .apiType = ApiType::TEST_CODEC_BASE,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H265,
+        .pixFmt = VideoPixelFormat::NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = false,
+        .paramsFeedback = true,
+        .iFrameInterval = 0,
+        .bitRate = 1000000, // target bitrate : 1M
+        .enableROIByNb = true,
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+
+HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_codecbase_roi_both, TestSize.Level1)
+{
+    OHOS::system::SetParameter("hcodec.dump", "0100");
+    CommandOpt opt = {
+        .apiType = ApiType::TEST_CODEC_BASE,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H265,
+        .pixFmt = VideoPixelFormat::NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = false,
+        .paramsFeedback = true,
+        .enableROIByNb = true,
+        .iFrameInterval = 0,
+        .bitRate = 1000000, // target bitrate : 1M
+        .perFrameParamsMap = {
+            {0, PerFrameParams{ .roiParams = "0,0-32,32=20", }},
+        },
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+
 HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_codecbase_roi_empty, TestSize.Level1)
 {
     OHOS::system::SetParameter("hcodec.dump", "0100");

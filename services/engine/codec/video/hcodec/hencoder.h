@@ -119,6 +119,7 @@ private:
     void SendRepeatMsg(uint64_t generation);
     bool GetOneBufferFromSurface();
     void TraverseAvaliableBuffers();
+    bool GetROIBySurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, std::string &roiStr);
     void SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info);
     void SetBufferPts(BufferInfo* info);
     void ResetSlot(BufferInfo& info);
@@ -129,7 +130,7 @@ private:
 
     // per frame param
     void WrapPerFrameParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
-                                        const std::shared_ptr<Media::Meta> &meta);
+                                        const std::shared_ptr<Media::Meta> &meta, sptr<SurfaceBuffer> surfaceBuffer);
     void WrapLTRParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                    const std::shared_ptr<Media::Meta> &meta);
     void WrapRequestIFrameParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
@@ -144,7 +145,7 @@ private:
                                       const std::shared_ptr<Media::Meta> &meta);
     void ParseRoiStringValid(const std::string &roiValue, std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer);
     void WrapRoiParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
-                                  const std::shared_ptr<Media::Meta> &meta);
+                                  const std::shared_ptr<Media::Meta> &meta, sptr<SurfaceBuffer> surfaceBuffer);
     void BeforeCbOutToUser(BufferInfo &info) override;
     void ExtractPerFrameLTRParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
     void ExtractPerFrameMadParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);

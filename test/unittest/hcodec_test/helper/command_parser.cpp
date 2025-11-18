@@ -67,6 +67,7 @@ enum ShortOption {
     OPT_QP_MAP_VALUE,
     OPT_TARGET_QP,
     OPT_GOP_B_MODE,
+    OPT_ENABLE_ROI_BY_NB,
     // decoder only
     OPT_DEC_THEN_ENC,
     OPT_ROTATION,
@@ -117,6 +118,7 @@ static struct option g_longOptions[] = {
     {"isAbsQpMap",       required_argument,  nullptr, OPT_IS_ABS_QP_MAP},
     {"qpMapValue",      required_argument,  nullptr, OPT_QP_MAP_VALUE},
     {"gopBMode",        required_argument,  nullptr, OPT_GOP_B_MODE},
+    {"enableROIByNb",   required_argument,  nullptr, OPT_ENABLE_ROI_BY_NB},
     // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"decThenEnc",      required_argument,  nullptr, OPT_DEC_THEN_ENC},
@@ -306,6 +308,9 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_GOP_B_MODE:
                 opt.gopBMode = stol(optarg);
+                break;
+            case OPT_ENABLE_ROI_BY_NB:
+                opt.enableROIByNb = stol(optarg);
                 break;
             // decoder only
             case OPT_DEC_THEN_ENC:
