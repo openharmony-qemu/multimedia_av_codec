@@ -136,12 +136,8 @@ const char* ProcessPluginName(const std::string& pluginName)
 {
     static std::string result;
     size_t pos = pluginName.find("avdemux_");
-    if (pos != std::string::npos) {
-        result = pluginName.substr(pos + strlen("avdemux_"));
-    } else {
-        result = pluginName;
-    }
-    return result.c_str(); // 取出avdemux_后面的名称
+    result = (pos != std::string::npos) ? pluginName.substr(pos + strlen("avdemux_")) : pluginName;
+    return result.c_str(); // Get the name after avdemux_
 }
 
 static const std::map<SeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
