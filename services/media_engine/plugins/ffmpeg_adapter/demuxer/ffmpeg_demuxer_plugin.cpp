@@ -132,12 +132,12 @@ void FreeAVPacket(AVPacket* pkt)
     pkt = nullptr;
 }
 
-inline const char* ProcessPluginName(const std::string& pluginName)
+inline std::string ProcessPluginName(const std::string& pluginName)
 {
     static std::string result;
     size_t pos = pluginName.find("avdemux_");
     result = (pos != std::string::npos) ? pluginName.substr(pos + strlen("avdemux_")) : pluginName;
-    return result.c_str(); // Get the name after avdemux_
+    return result; // Get the name after avdemux_
 }
 
 static const std::map<SeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
@@ -1336,7 +1336,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     InitIoContextInDemuxer(source);
     {
         std::lock_guard<std::mutex> glock(g_mtx);
-        auto inputFormat = av_find_input_format(ProcessPluginName(pluginName_));
+        auto inputFormat = av_find_input_format(ProcessPluginName(pluginName_).c_str());
         pluginImpl_ = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
     }
     FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT, "No match inputformat");
@@ -2668,7 +2668,7 @@ int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dat
     std::shared_ptr<AVInputFormat> plugin;
     {
         std::lock_guard<std::mutex> lock(g_mtx);
-        auto inputFormat = av_find_input_format(ProcessPluginName(pluginName));
+        auto inputFormat = av_find_input_format(ProcessPluginName(pluginName).c_str());
         plugin = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
     }
     FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
@@ -2723,7 +2723,7 @@ int SniffMPEGPS(const std::string& pluginName, std::shared_ptr<DataSource> dataS
 
 inline static PluginSnifferFunc FindSniffer(const std::string& pluginName)
 {
-    return (pluginName == std::string(PLUGIN_NAME_MPEGPS) ) ? SniffMPEGPS : Sniff;
+    return (pluginName == std::string(PLUGIN_NAME_MPEGPS)) ? SniffMPEGPS : Sniff;
 }
 
 void ReplaceDelimiter(const std::string& delmiters, char newDelimiter, std::string& str)
