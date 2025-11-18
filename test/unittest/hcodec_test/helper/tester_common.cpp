@@ -457,8 +457,7 @@ bool TesterCommon::WaitForInputSurfaceBuffer(BufInfo& buf, bool enableROIByNb)
     if (enableROIByNb) {
         using namespace OHOS::HDI::Display::Graphic::Common::V2_2;
         std::string roiStr = "0,0-32,32=30";
-        const uint8_t* data = reinterpret_cast<const uint8_t*>(roiStr.c_str());
-        std::vector<uint8_t> metadataSet = vector<uint8_t>(data, data + roiStr.size());
+        std::vector<uint8_t> metadataSet(roiStr.begin(), roiStr.end());
         surfaceBuffer->SetMetadata(ATTRKEY_ROI_METADATA, metadataSet);
     }
     return SurfaceBufferToBufferInfo(buf, surfaceBuffer);
