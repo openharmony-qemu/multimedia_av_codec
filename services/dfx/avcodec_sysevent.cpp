@@ -16,13 +16,13 @@
 #include <avcodec_sysevent.h>
 #include <unistd.h>
 #include <unordered_map>
-#include "securec.h"
+#include <cstring>
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "hisysevent.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecDFX"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecSysEvent"};
 constexpr char HISYSEVENT_DOMAIN_AVCODEC[] = "AV_CODEC";
 
 const std::unordered_map<OHOS::MediaAVCodec::FaultType, std::string> FAULT_TYPE_TO_STRING = {
@@ -135,6 +135,15 @@ void FaultRecordAudioEventWrite(AudioSourceFaultInfo& audioSourceFaultInfo)
                     "INSTANCE_ID",       audioSourceFaultInfo.instanceId,
                     "AUDIO_SOURCE_TYPE", audioSourceFaultInfo.audioSourceType,
                     "ERROR_MESG",        audioSourceFaultInfo.errMsg);
+}
+
+void StatisticEventWrite(const std::string &eventName, const char *eventValue)
+{
+    CHECK_AND_RETURN_LOG(eventValue != nullptr && strlen(eventValue) > 0,
+        "Invalid event value: nullptr or empty string");
+    HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA, eventName,
+                    OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
+                    "PAYLOAD", eventValue);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

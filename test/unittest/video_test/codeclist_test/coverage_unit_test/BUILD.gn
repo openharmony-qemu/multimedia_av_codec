@@ -60,6 +60,8 @@ codeclist_coverage_include_dirs = [
   "$av_codec_root_dir/services/engine/codec/include",
   "$av_codec_root_dir/services/engine/common/include/",
   "$av_codec_root_dir/services/include",
+  "$av_codec_root_dir/services/services/common",
+  "$av_codec_root_dir/services/services/common/event_manager",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/",
   "$av_codec_root_dir/services/services/sa_avcodec/ipc",
   "$av_codec_root_dir/services/utils/include",

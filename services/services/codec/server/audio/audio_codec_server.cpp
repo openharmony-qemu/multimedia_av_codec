@@ -139,8 +139,7 @@ int32_t AudioCodecServer::InitByName(Meta &callerInfo, API_VERSION apiVersion)
 int32_t AudioCodecServer::InitByMime(Meta &callerInfo, API_VERSION apiVersion)
 {
     int32_t ret = AVCS_ERR_NO_MEMORY;
-    bool isEncoder = (codecType_ == AVCODEC_TYPE_AUDIO_ENCODER);
-    std::vector<std::string> nameArray = CodecFactory::Instance().GetCodecNameArrayByMime(codecName_, isEncoder);
+    std::vector<std::string> nameArray = CodecFactory::Instance().GetCodecNameArrayByMime(codecType_, codecName_);
     std::vector<std::string>::iterator iter;
     for (iter = nameArray.begin(); iter != nameArray.end(); ++iter) {
         ret = AVCS_ERR_NO_MEMORY;

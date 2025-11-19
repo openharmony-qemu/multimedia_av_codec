@@ -20,24 +20,16 @@
 #include <memory>
 #include <string>
 #include "meta.h"
+#include "event_type.h"
+#include "event_info_extented_key.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-enum class EventType {
-    UNKNOWN,
-    INSTANCE_INIT,
-    INSTANCE_RELEASE,
-    INSTANCE_MEMORY_UPDATE,
-    INSTANCE_MEMORY_RESET,
-    INSTANCE_ENCODE_BEGIN,
-    INSTANCE_ENCODE_END,
-    END,
-};
-
 class EventManager {
 public:
     static EventManager &GetInstance();
     void OnInstanceEvent(EventType type, Media::Meta &meta);
+    void OnInstanceEvent(StatisticsEventType type, Media::Meta &meta);
 
 private:
     EventManager() {}
@@ -50,6 +42,8 @@ private:
     void OnInstanceMemoryResetEvent(Media::Meta &meta);
     void OnInstanceEncodeBeginEvent(Media::Meta &meta);
     void OnInstanceEncodeEndEvent(Media::Meta &meta);
+    void OnStatisticsEvent(StatisticsEventType type, Media::Meta &meta);
+    void OnStatisticsEventSubmit();
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

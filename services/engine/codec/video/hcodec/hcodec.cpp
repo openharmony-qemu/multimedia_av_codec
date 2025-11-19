@@ -1449,7 +1449,7 @@ int32_t HCodec::OnAllocateComponent()
         compMgr_ = nullptr;
         HLOGE("CreateComponent failed, ret=%d", ret);
         PrintAllCaller();
-        return AVCS_ERR_UNKNOWN;
+        return ret == OMX_ErrorInsufficientResources ? AVCS_ERR_INSUFFICIENT_HARDWARE_RESOURCES : AVCS_ERR_UNKNOWN;
     }
     compUniqueStr_ = to_string(componentId_) + (isEncoder_ ? "_e" : "_d");
     record_[OMX_DirInput].ownerTraceTag_ = { "[" + compUniqueStr_ + "]in_us", "[" + compUniqueStr_ + "]in_user",

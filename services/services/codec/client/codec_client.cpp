@@ -101,10 +101,8 @@ int32_t CodecClient::CreateListenerObject()
     return ret;
 }
 
-int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo,
-                          API_VERSION apiVersion)
+int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo)
 {
-    (void)apiVersion;
     using namespace OHOS::Media;
     callerInfo.SetData(Tag::AV_CODEC_CALLER_PID, getprocpid());
     callerInfo.SetData(Tag::AV_CODEC_CALLER_UID, getuid());

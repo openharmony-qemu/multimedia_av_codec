@@ -264,7 +264,7 @@ int32_t CodecListCore::GetCapability(CapabilityData &capData, const std::string 
     return AVCS_ERR_OK;
 }
 
-std::vector<std::string> CodecListCore::FindCodecNameArray(const std::string &mime, bool isEncoder)
+std::vector<std::string> CodecListCore::FindCodecNameArray(const AVCodecType type, const std::string &mime)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     auto &codecAbility = CodecAbilitySingleton::GetInstance();
@@ -275,16 +275,9 @@ std::vector<std::string> CodecListCore::FindCodecNameArray(const std::string &mi
     auto iter = mimeCapIdxMap.find(mime);
     CHECK_AND_RETURN_RET_LOG(iter != mimeCapIdxMap.end(), nameArray, "Can not find input mime type, %{public}s.",
                              mime.c_str());
-    AVCodecType codecType = AVCODEC_TYPE_NONE;
-    bool isVideo = mime.find("video") != std::string::npos;
-    if (isVideo) {
-        codecType = isEncoder ? AVCODEC_TYPE_VIDEO_ENCODER : AVCODEC_TYPE_VIDEO_DECODER;
-    } else {
-        codecType = isEncoder ? AVCODEC_TYPE_AUDIO_ENCODER : AVCODEC_TYPE_AUDIO_DECODER;
-    }
 
     for (auto index : iter->second) {
-        if (capabilityArray[index].codecType == codecType) {
+        if (capabilityArray[index].codecType == type) {
             nameArray.push_back(capabilityArray[index].codecName);
         }
     }

@@ -20,8 +20,11 @@
 #include "avcodec_server_manager.h"
 #include "syspara/parameters.h"
 #include "av_codec_service_ipc_interface_code.h"
+#include "event_manager.h"
+#include "event_info_extented_key.h"
 
 namespace {
+using namespace OHOS::Media;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "BackGroundEventHandler"};
 constexpr auto CODEC_STUB_INTERFACE_DESCRIPTOR = u"IStandardCodecService";
 } // namespace
@@ -46,11 +49,22 @@ ObjectList::const_iterator GetObjectFromList(const ObjectList &list, pid_t pid, 
 {
     auto range = list.equal_range(pid);
     for (auto iter = range.first; iter != range.second; iter++) {
-        if (iter->second == instanceId) {
+        if (iter->second.first == instanceId) {
             return iter;
         }
     }
     return list.end();
+}
+
+FreezeStartTimeType GetObjectFreezeStartTime(const ObjectList &list, pid_t pid, InstanceId instanceId)
+{
+    auto range = list.equal_range(pid);
+    for (auto iter = range.first; iter != range.second; iter++) {
+        if (iter->second.first == instanceId) {
+            return iter->second.second;
+        }
+    }
+    return std::chrono::system_clock::now();
 }
 
 int32_t SendRequest2CodecStub(sptr<IRemoteObject> &instance, CodecServiceInterfaceCode code)
@@ -76,7 +90,7 @@ void MemoryRecycleHandler(ObjectList &list, pid_t actualPid, CodecInstance &code
     }
     auto ret = SendRequest2CodecStub(instance, CodecServiceInterfaceCode::NOTIFY_MEMORY_RECYCLE);
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Error, ret: %{public}d", ret);
-    list.emplace(actualPid, instanceInfo.instanceId);
+    list.emplace(actualPid, std::make_pair(instanceInfo.instanceId, std::chrono::system_clock::now()));
 
     AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
@@ -105,7 +119,7 @@ void SuspendHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInsta
     }
     auto ret = SendRequest2CodecStub(instance, CodecServiceInterfaceCode::NOTIFY_SUSPEND);
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Error, ret: %{public}d", ret);
-    list.emplace(actualPid, instanceInfo.instanceId);
+    list.emplace(actualPid, std::make_pair(instanceInfo.instanceId, std::chrono::system_clock::now()));
 
     AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
@@ -143,9 +157,7 @@ void BackGroundEventHandler::NotifyFreeze(InstanceId instanceId)
         mutex_.unlock();
         return;
     }
-    auto &callerPid = codecInstance->second.caller.pid;
-    auto &forwardPid = codecInstance->second.forwardCaller.pid;
-    auto &actualPid = forwardPid == MediaAVCodec::INVALID_PID ? callerPid : forwardPid;
+    auto actualPid = codecInstance->second.GetActualCallerPid();
     MemoryRecycleHandler(memoryRecycleList_, actualPid, codecInstance.value());
     SuspendHandler(suspendList_, actualPid, codecInstance.value());
     mutex_.unlock();
@@ -155,9 +167,7 @@ void BackGroundEventHandler::NotifyFreeze(const std::vector<pid_t> &pidList)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     for (auto &codecInstance : GetDirectlyInvokedCodecInstanceListByPidList(pidList)) {
-        auto &callerPid = codecInstance.second.caller.pid;
-        auto &forwardPid = codecInstance.second.forwardCaller.pid;
-        auto &actualPid = forwardPid == MediaAVCodec::INVALID_PID ? callerPid : forwardPid;
+        auto actualPid = codecInstance.second.GetActualCallerPid();
         MemoryRecycleHandler(memoryRecycleList_, actualPid, codecInstance);
         SuspendHandler(suspendList_, actualPid, codecInstance);
     }
@@ -173,23 +183,43 @@ void BackGroundEventHandler::NotifyActive(InstanceId instanceId)
         mutex_.unlock();
         return;
     }
-    auto &callerPid = codecInstance->second.caller.pid;
-    auto &forwardPid = codecInstance->second.forwardCaller.pid;
-    auto &actualPid = forwardPid == MediaAVCodec::INVALID_PID ? callerPid : forwardPid;
+    auto actualPid = codecInstance->second.GetActualCallerPid();
+    auto freezeStartTime = GetObjectFreezeStartTime(suspendList_, actualPid, codecInstance->second.instanceId);
+
     MemoryWriteBackHandler(memoryRecycleList_, actualPid, codecInstance.value());
     ResumeHandler(suspendList_, actualPid, codecInstance.value());
+
+    auto actualProcessName = codecInstance->second.GetActualCallerProcessName();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::system_clock::now() - freezeStartTime).count();
+    Meta eventMeta;
+    eventMeta.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, actualProcessName);
+    eventMeta.SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), static_cast<int32_t>(elapsedTime));
+    EventManager::GetInstance().OnInstanceEvent(
+        StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, eventMeta);
     mutex_.unlock();
 }
 
 void BackGroundEventHandler::NotifyActive(const std::vector<pid_t> &pidList)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
+    std::unordered_map<std::string, int32_t> activeAppList; //  AppName, elapsedTime
     for (auto &codecInstance : GetDirectlyInvokedCodecInstanceListByPidList(pidList)) {
-        auto &callerPid = codecInstance.second.caller.pid;
-        auto &forwardPid = codecInstance.second.forwardCaller.pid;
-        auto &actualPid = forwardPid == MediaAVCodec::INVALID_PID ? callerPid : forwardPid;
+        auto actualPid = codecInstance.second.GetActualCallerPid();
+        auto freezeStartTime = GetObjectFreezeStartTime(suspendList_, actualPid, codecInstance.second.instanceId);
         MemoryWriteBackHandler(memoryRecycleList_, actualPid, codecInstance);
         ResumeHandler(suspendList_, actualPid, codecInstance);
+
+        auto elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now() - freezeStartTime).count();
+        activeAppList.emplace(codecInstance.second.GetActualCallerProcessName(), static_cast<int32_t>(elapsedTime));
+    }
+    for (const auto &[appName, elapsedTime] : activeAppList) {
+        Meta eventMeta;
+        eventMeta.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, appName);
+        eventMeta.SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), static_cast<int32_t>(elapsedTime));
+        EventManager::GetInstance().OnInstanceEvent(
+            StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, eventMeta);
     }
 }
 
@@ -233,7 +263,7 @@ void BackGroundEventHandler::EraseInstance(InstanceId instanceId)
     }
     auto eraser = [instanceId](ObjectList &list, std::string_view name) {
         for (auto iter = list.begin(); iter != list.end();) {
-            if (iter->second == instanceId) {
+            if (iter->second.first == instanceId) {
                 list.erase(iter);
                 AVCODEC_LOGI("Erased instanceId: %{public}d from %{public}s", instanceId, name.data());
                 break;

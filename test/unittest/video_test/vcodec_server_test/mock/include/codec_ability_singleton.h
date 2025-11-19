@@ -36,6 +36,7 @@ public:
     std::string GetMimeByCodecName(const std::string &name);
     std::unordered_map<std::string, CodecType> GetNameCodecTypeMap();
     std::unordered_map<std::string, std::vector<size_t>> GetMimeCapIdxMap();
+    int32_t GetVideoCodecTypeByCodecName(const std::string &codecName);
 
 private:
     std::vector<CapabilityData> capabilityDataArray_;
@@ -54,6 +55,7 @@ public:
     std::string GetMimeByCodecName(const std::string &name);
     std::unordered_map<std::string, CodecType> GetNameCodecTypeMap();
     std::unordered_map<std::string, std::vector<size_t>> GetMimeCapIdxMap();
+    int32_t GetVideoCodecTypeByCodecName(const std::string &codecName);
 };
 #endif
 } // namespace MediaAVCodec

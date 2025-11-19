@@ -25,6 +25,7 @@
 #include "avcodec_log.h"
 #include "avcodec_trace.h"
 #include "avcodec_xcollie.h"
+#include "event_manager.h"
 #include "system_ability_definition.h"
 #ifdef SUPPORT_CODEC
 #include "codec_service_stub.h"
@@ -50,6 +51,14 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
     if (fd < 0) {
         return OHOS::NO_ERROR;
     }
+
+    if (!args.empty()) {
+        if (args[0] == u"report_statistics_event") {
+            Media::Meta eventMeta;
+            EventManager::GetInstance().OnInstanceEvent(EventType::STATISTICS_EVENT_SUBMIT, eventMeta);
+        }
+    }
+
     AVCodecXCollie::GetInstance().Dump(fd);
 
     std::unordered_multimap<pid_t, std::pair<sptr<IRemoteObject>, InstanceInfo>> codecStubMapTemp;
@@ -366,6 +375,25 @@ std::optional<CodecInstance> AVCodecServerManager::GetCodecInstanceByInstanceId(
         }
     }
     return std::nullopt;
+}
+
+std::unordered_map<std::string, uint32_t> AVCodecServerManager::GetDecoderUsageStatistics()
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    std::unordered_map<std::string, uint32_t> usageStatistics;
+    for (const auto& iter : codecStubMap_) {
+        const InstanceInfo& info = iter.second.second;
+        if (info.codecType != AVCODEC_TYPE_VIDEO_DECODER) {
+            continue;
+        }
+        std::string callerName = info.forwardCaller.processName == "" ?
+            info.caller.processName : info.forwardCaller.processName;
+        if (callerName.empty()) {
+            continue;
+        }
+        usageStatistics[callerName] += 1;
+    }
+    return usageStatistics;
 }
 
 void AVCodecServerManager::SetInstanceInfoByInstanceId(int32_t instanceId, const InstanceInfo &info)

@@ -38,6 +38,7 @@ ohos_source_set("event_manager") {
     "$av_codec_root_dir/services/services/sa_avcodec:sa_manager",
     "./event_handler/instance_memory_update_event_handler:instance_memory_update_event_handler",
     "./event_handler/instance_operation_event_handler:instance_operation_event_handler",
+    "./event_handler/statistics_event_handler:statistics_event_handler"
   ]
 
   subsystem_name = "multimedia"

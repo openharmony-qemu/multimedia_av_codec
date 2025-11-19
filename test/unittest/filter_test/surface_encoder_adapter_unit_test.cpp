@@ -17,7 +17,6 @@
 #include "surface_encoder_adapter.h"
 #include "avcodec_info.h"
 #include "avcodec_common.h"
-#include "codec_server.h"
 #include "meta/format.h"
 #include "media_description.h"
 #include "native_avcapability.h"

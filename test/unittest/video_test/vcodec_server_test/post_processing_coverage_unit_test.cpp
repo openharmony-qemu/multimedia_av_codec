@@ -51,8 +51,7 @@ void CodecServerUnitTest::CreateCodecByMime()
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
 
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, true, codecMime, *validFormat_.GetMeta(),
-                                API_VERSION::API_VERSION_11);
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, true, codecMime, *validFormat_.GetMeta());
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
 

@@ -35,8 +35,7 @@ public:
     explicit CodecClient(const sptr<IStandardCodecService> &ipcProxy);
     ~CodecClient();
     // 业务
-    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Media::Meta &callerInfo,
-                 API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
+    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Media::Meta &callerInfo) override;
     int32_t Configure(const Format &format) override;
     int32_t Prepare() override;
     int32_t Start() override;
