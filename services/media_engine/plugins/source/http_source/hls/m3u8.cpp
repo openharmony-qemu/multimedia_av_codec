@@ -793,6 +793,7 @@ void M3U8MasterPlaylist::BindVideoAudio()
     for (auto &videoStream : variants_) {
         if (videoStream->audio_.empty()) {
             videoStream->media_.insert(videoStream->media_.end(), mediaList_.begin(), mediaList_.end());
+            GetDefaultAudioStream(videoStream);
             continue;
         }
         for (const auto &audioStream : mediaList_) {
