@@ -215,7 +215,7 @@ int32_t VEncNdkInnerSample::Configure()
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     if (DEFAULT_BITRATE_MODE == CQ) {
-        format.PutLongValue(MediaDescriptionKey::MD_KEY_QUALITY, DEFAULT_QUALITY);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, DEFAULT_QUALITY);
     } else {
         format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
     }
