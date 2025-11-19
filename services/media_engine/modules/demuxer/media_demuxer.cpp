@@ -2844,7 +2844,7 @@ bool MediaDemuxer::HandleDashChangeStream(int32_t trackId)
     bool ret = false;
     FALSE_RETURN_V_NOLOG(newStreamID != -1 && currentStreamID != newStreamID, ret);
 
-    AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGE, LOG_INTERVAL_MS, LOG_MAX_COUNT, 
+    AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGE, LOG_INTERVAL_MS, LOG_MAX_COUNT,
         "Change stream begin, currentStreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
         currentStreamID, newStreamID);
     if ((trackId == videoTrackId_ || (isHlsFmp4_ && IsAVInOneStream())) &&
