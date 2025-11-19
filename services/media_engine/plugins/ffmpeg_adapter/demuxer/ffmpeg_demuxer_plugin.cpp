@@ -116,7 +116,6 @@ const std::vector<AVCodecID> g_streamContainedXPS = {
     AV_CODEC_ID_VVC
 };
 namespace {
-std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
 std::mutex g_mtx;
 
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource);
@@ -131,6 +130,15 @@ void FreeAVPacket(AVPacket* pkt)
 {
     av_packet_free(&pkt);
     pkt = nullptr;
+}
+
+inline std::string ProcessPluginName(const std::string& pluginName)
+{
+    size_t pos = pluginName.find("avdemux_");
+    if (pos != std::string::npos) {
+        return pluginName.substr(pos + strlen("avdemux_")); // Get the name after avdemux_
+    }
+    return pluginName;
 }
 
 static const std::map<SeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
@@ -171,10 +179,6 @@ static const std::vector<FileType> g_streamCheckFileTypeVec = {
 static const std::vector<FileType> g_fileContainSkipInfo = {
     FileType::OGG,
     FileType::MP3
-};
-
-static const std::unordered_map<std::string, PluginSnifferFunc> g_pluginSnifferMap = {
-    {std::string(PLUGIN_NAME_MPEGPS), SniffMPEGPS},
 };
 
 bool HaveValidParser(const AVCodecID codecId)
@@ -1333,7 +1337,8 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     InitIoContextInDemuxer(source);
     {
         std::lock_guard<std::mutex> glock(g_mtx);
-        pluginImpl_ = g_pluginInputFormat[pluginName_];
+        auto inputFormat = av_find_input_format(ProcessPluginName(pluginName_).c_str());
+        pluginImpl_ = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
     }
     FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT, "No match inputformat");
     formatContext_ = InitAVFormatContext(&ioContext_);
@@ -2664,7 +2669,8 @@ int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dat
     std::shared_ptr<AVInputFormat> plugin;
     {
         std::lock_guard<std::mutex> lock(g_mtx);
-        plugin = g_pluginInputFormat[pluginName];
+        auto inputFormat = av_find_input_format(ProcessPluginName(pluginName).c_str());
+        plugin = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
     }
     FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
         "Get plugin for " PUBLIC_LOG_S " failed", pluginName.c_str());
@@ -2716,13 +2722,9 @@ int SniffMPEGPS(const std::string& pluginName, std::shared_ptr<DataSource> dataS
     return psScore;
 }
 
-static PluginSnifferFunc FindSniffer(const std::string& pluginName)
+inline static PluginSnifferFunc FindSniffer(const std::string& pluginName)
 {
-    if (g_pluginSnifferMap.find(pluginName) != g_pluginSnifferMap.end()) {
-        return g_pluginSnifferMap.at(pluginName);
-    }
-
-    return Sniff;
+    return (pluginName == std::string(PLUGIN_NAME_MPEGPS)) ? SniffMPEGPS : Sniff;
 }
 
 void ReplaceDelimiter(const std::string& delmiters, char newDelimiter, std::string& str)
@@ -2756,8 +2758,6 @@ Status RegisterPlugins(const std::shared_ptr<Register>& reg)
         regInfo.description = "ffmpeg demuxer plugin";
         regInfo.rank = RANK_MAX;
         regInfo.AddExtensions(SplitString(plugin->extensions, ','));
-        g_pluginInputFormat[pluginName] =
-            std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(plugin), [](void*) {});
         auto func = [](const std::string& name) -> std::shared_ptr<DemuxerPlugin> {
             return std::make_shared<FFmpegDemuxerPlugin>(name);
         };
@@ -2770,7 +2770,6 @@ Status RegisterPlugins(const std::shared_ptr<Register>& reg)
             MEDIA_LOG_D("Add plugin " PUBLIC_LOG_S, pluginName.c_str());
         }
     }
-    FALSE_RETURN_V_MSG_E(!g_pluginInputFormat.empty(), Status::ERROR_UNKNOWN, "Can not load any ffmpeg demuxer");
     return Status::OK;
 }
 } // namespace
