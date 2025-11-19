@@ -41,11 +41,11 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t size)
     bool ret = demuxerTest->InitWithData(pstream, framesize);
     free(pstream);
     pstream = nullptr;
+#ifndef SUPPORT_DEMUXER_EAC3
     if (ret) {
-        #ifndef SUPPORT_DEMUXER_EAC3
-            demuxerTest->RunDemuxerInterfaceFuzz();
-        #endif
+        demuxerTest->RunDemuxerInterfaceFuzz();
     }
+#endif
 }
 }
 
