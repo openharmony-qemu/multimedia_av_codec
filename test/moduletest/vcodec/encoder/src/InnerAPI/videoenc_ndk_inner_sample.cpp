@@ -214,7 +214,11 @@ int32_t VEncNdkInnerSample::Configure()
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
+    if (DEFAULT_BITRATE_MODE == CQ) {
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_QUALITY, DEFAULT_QUALITY);
+    } else {
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
+    }
     if (configMain10) {
         format.PutIntValue(OH_MD_KEY_PROFILE, HEVC_PROFILE_MAIN_10);
     } else if (configMain) {
@@ -595,7 +599,6 @@ int32_t VEncNdkInnerSample::SyncPushData(std::shared_ptr<AVBuffer> buffer, uint3
     info.presentationTimeUs = GetSystemTimeUs();
     info.size = yuvSize;
     info.offset = 0;
-    AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
 
     int32_t size = buffer->memory_->GetCapacity();
     if (size < (int32_t)yuvSize) {
@@ -608,7 +611,7 @@ int32_t VEncNdkInnerSample::SyncPushData(std::shared_ptr<AVBuffer> buffer, uint3
         format.PutIntValue(MediaDescriptionKey::MD_KEY_REQUEST_I_FRAME, 1);
         venc_->SetParameter(format);
     }
-    result = venc_->QueueInputBuffer(index, info, flag);
+    result = venc_->QueueInputBuffer(index);
     if (enbleSyncMode == 0) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inIdxQueue_.pop();
