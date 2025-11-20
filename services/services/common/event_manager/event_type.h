@@ -37,7 +37,7 @@ enum class EventType : uint32_t {
     STATISTICS_EVENT            = (7 << 24),
     STATISTICS_EVENT_SUBMIT     = (8 << 24),
     END,
-    MASk                        = 0xFF000000,
+    MASK                        = 0xFF000000,
 };
 
 inline constexpr EventType operator&(const EventType a, const EventType b)

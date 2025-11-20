@@ -27,6 +27,7 @@ ohos_source_set("event_manager") {
 
   include_dirs = [
     "./",
+    "./event_handler/statistics_event_handler/",
     "../",
     "../../../../interfaces/inner_api/native/",
   ]

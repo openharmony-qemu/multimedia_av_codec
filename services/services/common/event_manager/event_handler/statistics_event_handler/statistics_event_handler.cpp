@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "statistics_event_handler.h"
 #include <mutex>
 #include "cJSON.h"
@@ -16,8 +31,7 @@ struct HashPair {
     template <class T1, class T2>
     std::size_t operator()(const std::pair<T1, T2>& p) const
     {
-        return std::hash<T1>{}(p.first) ^
-               std::hash<T2>{}(p.second);
+        return std::hash<T1>{}(p.first) ^ std::hash<T2>{}(p.second);
     }
 };
 struct HashTuple {
@@ -25,9 +39,7 @@ struct HashTuple {
     std::size_t operator()(const std::tuple<T1, T2, T3>& t) const
     {
         auto &[a, b, c] = t;
-        return std::hash<T1>{}(a) ^
-               std::hash<T2>{}(b) ^
-               std::hash<T3>{}(c);
+        return std::hash<T1>{}(a) ^ std::hash<T2>{}(b) ^ std::hash<T3>{}(c);
     }
 };
 
@@ -50,10 +62,10 @@ inline void CreateOrIncrementMapCount(T1 &map, T2 &key)
 }
 
 using AppNameIndex = int32_t;
-constexpr AppNameIndex InvalidAppNameIndex = -1;
+constexpr AppNameIndex invalidAppNameIndex = -1;
 class AppNameIndexInfo {
 public:
-    constexpr static size_t MaxAppNameCount = 50;
+    constexpr static size_t maxAppNameCount = 50;
 
     static AppNameIndexInfo &GetInstance()
     {
@@ -63,10 +75,10 @@ public:
 
     AppNameIndex GetIndexByAppName(const std::string &appName)
     {
-        AppNameIndex appIndex = InvalidAppNameIndex;
+        AppNameIndex appIndex = invalidAppNameIndex;
         auto dictIter = appNameDict_.find(appName);
         if (dictIter == appNameDict_.end()) {
-            if (appNameDict_.size() < MaxAppNameCount) {
+            if (appNameDict_.size() < maxAppNameCount) {
                 appIndex = static_cast<AppNameIndex>(appNameDict_.size());
                 appNameDict_.emplace(appName, appIndex);
             }
@@ -105,7 +117,7 @@ private:
 
 class StatisticsMainEventInfoBase : public StatisticsEventInfoBase {
 public:
-    virtual void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) override
+    void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) override
     {
         auto iter = eventInfoMap_.find(eventType & StatisticsEventType::SUB_EVENT_TYPE_MASK);
         if (iter != eventInfoMap_.end()) {
@@ -113,7 +125,7 @@ public:
         }
     }
 
-    virtual void OnSubmitEventInfo() override
+    void OnSubmitEventInfo() override
     {
         auto mainEventJsonObj = std::shared_ptr<cJSON>(cJSON_CreateObject(), cJSON_Delete);
         for (auto &[eventType, eventInfo] : eventInfoMap_) {
@@ -125,7 +137,7 @@ public:
 
     virtual void OnSummateEventInfo(std::shared_ptr<cJSON> jsonObj) {};
 
-    virtual void ResetEventInfo() override
+    void ResetEventInfo() override
     {
         for (auto &eventInfo : eventInfoMap_) {
             eventInfo.second->ResetEventInfo();
@@ -237,13 +249,13 @@ public:
         auto type = std::make_pair(isEncoder, mimeType);
         switch (eventType) {
             case StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO:
-                if (queryCapUnsupportedInfo_.size() >= MaxUnsupportedTypeCount) {
+                if (queryCapUnsupportedInfo_.size() >= maxUnsupportedTypeCount) {
                     break;
                 }
                 CreateOrIncrementMapCount(queryCapUnsupportedInfo_, type);
                 break;
             case StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO:
-                if (createCodecUnsupportedInfo_.size() >= MaxUnsupportedTypeCount) {
+                if (createCodecUnsupportedInfo_.size() >= maxUnsupportedTypeCount) {
                     break;
                 }
                 CreateOrIncrementMapCount(createCodecUnsupportedInfo_, type);
@@ -308,7 +320,7 @@ private:
         return true;
     }
 
-    constexpr static size_t MaxUnsupportedTypeCount = 50;
+    constexpr static size_t maxUnsupportedTypeCount = 50;
     std::unordered_map<AVCodecSpecifiedType, uint32_t, HashPair> queryCapUnsupportedInfo_;
     std::unordered_map<AVCodecSpecifiedType, uint32_t, HashPair> createCodecUnsupportedInfo_;
 };
@@ -342,13 +354,13 @@ public:
             return;
         }
         AppNameIndex callerNameIndex = AppNameIndexInfo::GetInstance().GetIndexByAppName(callerName);
-        if (callerNameIndex == InvalidAppNameIndex) {
+        if (callerNameIndex == invalidAppNameIndex) {
             return;
         }
 
         switch (eventType) {
             case StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO: {
-                if (hdecLimitExceededInfo_.size() < MaxOccupationHDecRecordCount &&
+                if (hdecLimitExceededInfo_.size() < maxOccupationHDecRecordCount &&
                     !isInOccupationHDecEvent_.load()) {
                     auto usageStatistics = AVCodecServerManager::GetInstance().GetDecoderUsageStatistics();
                     for (const auto& [holder, count] : usageStatistics) {
@@ -363,7 +375,7 @@ public:
             }
             case StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO: {
                 int32_t elapsedTime = 0;
-                if (longTimeInBgInfo_.size() < MaxOccupationHDecRecordCount &&
+                if (longTimeInBgInfo_.size() < maxOccupationHDecRecordCount &&
                     eventMeta.GetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), elapsedTime) &&
                     elapsedTime >= appInBackgroundElapsedTimeThreadshold) {
                     longTimeInBgInfo_.emplace(callerNameIndex, static_cast<uint32_t>(elapsedTime));
@@ -411,26 +423,28 @@ private:
     {
         StatisticsEventInfo::GetInstance().RegisterEventHooker(
             StatisticsEventType::BASIC_CREATE_CODEC_INFO,
-            [this, callerNameIndex](const Media::Meta &eventMeta) -> bool {
-                if (!isInOccupationHDecEvent_.load()) {
+            [this, callerNameIndex] (const Media::Meta &eventMeta) -> bool
+            {
+                if (!isInOccupationHDecEvent_.load())
+                {
                     return true;
                 }
 
                 VideoCodecType vcodecType = VideoCodecType::UNKNOWN;
                 if (!eventMeta.GetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), vcodecType) ||
-                    vcodecType != VideoCodecType::DECODER_HARDWARE) {
+                    vcodecType != VideoCodecType::DECODER_HARDWARE)
+                {
                     return false;
                 }
                 std::lock_guard<std::mutex> lock(mutex_);
                 hdecLimitExceededInfo_.emplace(callerNameIndex, lastOccupationHDecAppInfoVec_);
                 isInOccupationHDecEvent_.store(false);
                 return true;
-            }
-        );
+            });
     }
 
     using HDecLimitExceededAppInfoVector = std::vector<std::pair<AppNameIndex, uint32_t>>; // AppNameIndex, count
-    constexpr static size_t MaxOccupationHDecRecordCount = 200;
+    constexpr static size_t maxOccupationHDecRecordCount = 200;
     constexpr static int32_t appInBackgroundElapsedTimeThreadshold = 600; // seconds
     std::atomic<bool> isInOccupationHDecEvent_{ false };
     HDecLimitExceededAppInfoVector lastOccupationHDecAppInfoVec_;
@@ -449,12 +463,10 @@ public:
 
     void OnSummateEventInfo(std::shared_ptr<cJSON> jsonObj) override
     {
-
     }
 
     void ResetEventInfo() override
     {
-
     }
 };
 

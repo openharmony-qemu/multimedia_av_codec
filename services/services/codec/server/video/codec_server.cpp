@@ -193,7 +193,7 @@ int32_t CodecServer::InitInner(AVCodecType type, bool isMimeType, const std::str
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret,
                                       "Init failed. isMimeType:(%{public}d), name:(%{public}s), error:(%{public}d)",
                                       isMimeType, name.c_str(), ret);
-    
+
     codecBaseCb_ = std::make_shared<CodecBaseCallback>(shared_from_this());
     ret = codecBase_->SetCallback(codecBaseCb_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "SetCallback failed");

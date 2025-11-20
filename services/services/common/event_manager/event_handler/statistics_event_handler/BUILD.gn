@@ -14,14 +14,9 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-config("statistics_event_handler_public_config") {
-  include_dirs = [ "./" ]
-}
-
 ohos_source_set("statistics_event_handler") {
   branch_protector_ret = "pac_ret"
   sanitize = av_codec_sanitize
-  public_configs = [ ":statistics_event_handler_public_config" ]
 
   public_external_deps = [ "media_foundation:media_foundation" ]
 
@@ -39,7 +34,10 @@ ohos_source_set("statistics_event_handler") {
     "$av_codec_root_dir/services/services/sa_avcodec:sa_manager",
   ]
 
-  external_deps = [ "cJSON:cjson" ]
+  external_deps = [
+    "cJSON:cjson",
+    "media_foundation:media_foundation",
+  ]
 
   subsystem_name = "multimedia"
   part_name = "av_codec"
