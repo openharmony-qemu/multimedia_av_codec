@@ -999,6 +999,10 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
         }
         PutRequestIntoDownloader(playInfo);
     }
+    if (!isDownloadStarted_ && playList_->Empty()) {
+        MEDIA_LOG_I("HLS OnPlayListChanged no new playinfo, type: %{public}d", type_);
+        HandleBuffering();
+    }
 }
 
 bool HlsSegmentManager::GetStartedStatus()
