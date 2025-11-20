@@ -39,7 +39,7 @@ void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
 {
     CHECK_AND_RETURN_LOG(type > EventType::UNKNOWN && type < EventType::END, "Unknown event type, ignore");
 
-    switch (type & EventType::MASk) {
+    switch (type & EventType::MASK) {
         case EventType::INSTANCE_INIT:
             OnInstanceInitEvent(meta);
             break;
