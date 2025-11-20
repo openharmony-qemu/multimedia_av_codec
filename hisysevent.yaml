@@ -47,18 +47,18 @@ CODEC_STOP_INFO:
   CLIENT_UID: {type: INT32, desc: Codec client uid}
   CODEC_INSTANCE_ID: {type: INT32, desc: Codec instance id}
 
-STATISTICS_BASIC_INFO:
+BASIC_INFO:
   __BASE: {type: STATISTIC, level: CRITICAL, desc: AVCodec statistics basic info}
   PAYLOAD: {type: STRING, desc: Statistics basic info}
 
-STATISTICS_APP_SPECIFICATIONS_INFO:
+APP_SPECIFICATIONS_INFO:
   __BASE: {type: STATISTIC, level: CRITICAL, desc: AVCodec statistics app specification info}
   PAYLOAD: {type: STRING, desc: Statistics app specification info}
 
-STATISTICS_APP_BEHAVIORS_INFO:
+APP_BEHAVIORS_INFO:
   __BASE: {type: STATISTIC, level: CRITICAL, desc: AVCodec statistics app behaviors info}
   PAYLOAD: {type: STRING, desc: Statistics app behaviors info}
 
-STATISTICS_CODEC_ABNORMAL_INFO:
+CODEC_ABNORMAL_INFO:
   __BASE: {type: STATISTIC, level: CRITICAL, desc: AVCodec statistics codec abnormal info}
   PAYLOAD: {type: STRING, desc: Statistics codec abnormal info}
