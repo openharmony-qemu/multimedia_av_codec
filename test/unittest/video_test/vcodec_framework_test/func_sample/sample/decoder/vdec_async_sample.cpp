@@ -42,7 +42,7 @@ VDecCallbackTest::~VDecCallbackTest() {}
 
 void VDecCallbackTest::CheckDetailedErrorCode(int32_t errorCode)
 {
-    if (errorCode != AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION && detailedErrorCode_.unsupportedSpecification_)
+    if (errorCode != AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION && detailedErrorCode_.unsupportedSpecification_) {
         detailedErrorCode_.verification_ = false;
     }
     if (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS && detailedErrorCode_.illegalParam_) {
@@ -105,7 +105,7 @@ VDecCallbackTestExt::~VDecCallbackTestExt() {}
 
 void VDecCallbackTestExt::CheckDetailedErrorCode(int32_t errorCode)
 {
-    if (errorCode != AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION && detailedErrorCode_.unsupportedSpecification_)
+    if (errorCode != AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION && detailedErrorCode_.unsupportedSpecification_) {
         detailedErrorCode_.verification_ = false;
     }
     if (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS && detailedErrorCode_.illegalParam_) {
