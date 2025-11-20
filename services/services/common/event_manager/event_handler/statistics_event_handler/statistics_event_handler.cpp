@@ -62,7 +62,7 @@ inline void CreateOrIncrementMapCount(T1 &map, T2 &key)
 }
 
 using AppNameIndex = int32_t;
-constexpr AppNameIndex invalidAppNameIndex = -1;
+constexpr AppNameIndex INVALID_APP_NAME_INDEX = -1;
 class AppNameIndexInfo {
 public:
     constexpr static size_t maxAppNameCount = 50;
@@ -75,7 +75,7 @@ public:
 
     AppNameIndex GetIndexByAppName(const std::string &appName)
     {
-        AppNameIndex appIndex = invalidAppNameIndex;
+        AppNameIndex appIndex = INVALID_APP_NAME_INDEX;
         auto dictIter = appNameDict_.find(appName);
         if (dictIter == appNameDict_.end()) {
             if (appNameDict_.size() < maxAppNameCount) {
@@ -354,7 +354,7 @@ public:
             return;
         }
         AppNameIndex callerNameIndex = AppNameIndexInfo::GetInstance().GetIndexByAppName(callerName);
-        if (callerNameIndex == invalidAppNameIndex) {
+        if (callerNameIndex == INVALID_APP_NAME_INDEX) {
             return;
         }
 
@@ -432,8 +432,7 @@ private:
 
                 VideoCodecType vcodecType = VideoCodecType::UNKNOWN;
                 if (!eventMeta.GetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), vcodecType) ||
-                    vcodecType != VideoCodecType::DECODER_HARDWARE)
-                {
+                    vcodecType != VideoCodecType::DECODER_HARDWARE) {
                     return false;
                 }
                 std::lock_guard<std::mutex> lock(mutex_);
