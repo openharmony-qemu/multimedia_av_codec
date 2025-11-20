@@ -42,10 +42,14 @@ VDecCallbackTest::~VDecCallbackTest() {}
 
 void VDecCallbackTest::CheckDetailedErrorCode(int32_t errorCode)
 {
-    if ((errorCode == AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION && detailedErrorCode_.unsupportedSpecification_) ||
-        (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS && detailedErrorCode_.illegalParam_) ||
-        (errorCode == AVCS_ERR_MINSSING_PARAMETER_SETS && detailedErrorCode_.missingParam_)) {
-            detailedErrorCode_.verification_ = true;
+    if (errorCode != AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION && detailedErrorCode_.unsupportedSpecification_)
+        detailedErrorCode_.verification_ = false;
+    }
+    if (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS && detailedErrorCode_.illegalParam_) {
+        detailedErrorCode_.verification_ = false;
+    }
+    if (errorCode == AVCS_ERR_MINSSING_PARAMETER_SETS && detailedErrorCode_.missingParam_) {
+        detailedErrorCode_.verification_ = false;
     }
 }
 
@@ -101,10 +105,14 @@ VDecCallbackTestExt::~VDecCallbackTestExt() {}
 
 void VDecCallbackTestExt::CheckDetailedErrorCode(int32_t errorCode)
 {
-    if ((errorCode == AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION && detailedErrorCode_.unsupportedSpecification_) ||
-        (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS && detailedErrorCode_.illegalParam_) ||
-        (errorCode == AVCS_ERR_MINSSING_PARAMETER_SETS && detailedErrorCode_.missingParam_)) {
-            detailedErrorCode_.verification_ = true;
+    if (errorCode != AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION && detailedErrorCode_.unsupportedSpecification_)
+        detailedErrorCode_.verification_ = false;
+    }
+    if (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS && detailedErrorCode_.illegalParam_) {
+        detailedErrorCode_.verification_ = false;
+    }
+    if (errorCode == AVCS_ERR_MINSSING_PARAMETER_SETS && detailedErrorCode_.missingParam_) {
+        detailedErrorCode_.verification_ = false;
     }
 }
 

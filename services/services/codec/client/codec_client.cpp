@@ -625,6 +625,9 @@ void CodecClient::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
     AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     AVCODEC_LOGW_WITH_TAG("%{public}s", AVCSErrorToString(static_cast<AVCodecServiceErrCode>(errorCode)).c_str());
+    if (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS || errorCode == AVCS_ERR_MINSSING_PARAMETER_SETS) {
+        return;
+    }
     circular_.OnError(errorType, errorCode);
 }
 
