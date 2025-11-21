@@ -37,6 +37,8 @@ declare_args() {
   av_codec_support_fcodec = true
   av_codec_support_avc_encoder = true
   av_codec_support_hevc_decoder = true
+  av_codec_support_vp8_decoder = false
+  av_codec_support_vp9_decoder = false
   av_codec_support_mp4v_decoder = true
   av_codec_support_vc1_decoder = false
   av_codec_enable_start_stop_on_demand = false
@@ -152,6 +154,14 @@ if (av_codec_support_mp4v_decoder) {
 
 if (av_codec_support_vc1_decoder) {
   av_codec_defines += ["SUPPORT_CODEC_VC1"]
+}
+
+if (av_codec_support_vp8_decoder) {
+  av_codec_defines += ["SUPPORT_CODEC_VP8"]
+}
+
+if (av_codec_support_vp9_decoder) {
+  av_codec_defines += ["SUPPORT_CODEC_VP9"]
 }
 
 if (!av_codec_support_software_codec) {

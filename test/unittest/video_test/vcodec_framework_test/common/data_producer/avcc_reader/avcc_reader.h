@@ -94,7 +94,7 @@ private:
         virtual uint8_t GetMpegType(const uint8_t *bufferAddr) = 0;
         virtual bool IsI(uint8_t mpegType) = 0;
     };
-    
+
     class Mpeg2Detector : public MpegDetector {
     public:
         const uint8_t *GetMpegTypeAddr(const uint8_t *bufferAddr) override;
@@ -159,7 +159,7 @@ private:
         uint32_t prereadBufferSize_ = 0;
         uint32_t pPrereadBuffer_ = 0;
     };
-    
+
     class H263Detector {
     public:
         uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
@@ -420,6 +420,162 @@ private:
 
     std::shared_ptr<Wmv3UnitReader> wmv3UnitReader_ = nullptr;
 };
+
+#ifdef SUPPORT_CODEC_VP8
+struct Vp8ReaderInfo {
+    std::string inPath;
+};
+
+class Vp8Reader : public DataProducerBase {
+public:
+    int32_t Init(const std::shared_ptr<Vp8ReaderInfo>& info);
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t vp8Type, bool isEosFrame);
+    bool IsEOS();
+
+    std::mutex mutex_;
+    int32_t frameInputCount_ = 0;
+
+private:
+    class Vp8UnitReader {
+    public:
+        explicit Vp8UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        virtual ~Vp8UnitReader() = default;
+        uint8_t const *GetNextVp8UnitAddr();
+        virtual int32_t ReadVp8Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame) = 0;
+        virtual bool IsEOS() = 0;
+
+    protected:
+        Vp8UnitReader() = default;
+        virtual bool IsEOF() = 0;
+        virtual void PrereadVp8Unit() = 0;
+
+        std::unique_ptr<std::vector<uint8_t>> vp8Unit_ = nullptr;
+        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+    };
+
+    class Vp8MetaUnitReader : public Vp8UnitReader {
+    public:
+        explicit Vp8MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        bool IsEOS() override;
+        int32_t ReadVp8Unit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame) override;
+
+    private:
+        bool IsEOF() override;
+        void PrereadVp8Unit() override;
+
+        std::unique_ptr<uint8_t[]> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+        uint32_t frameIndex_ = 0;
+    };
+
+    class Vp8Detector {
+    public:
+        virtual ~Vp8Detector() = default;
+        const uint8_t *GetVp8TypeAddr(const uint8_t *bufferAddr);
+        uint8_t GetVp8Type(const uint8_t *bufferAddr);
+        bool IsKeyFrame(uint8_t vp8Type);
+    };
+
+    class IvfUnitReader : public Vp8UnitReader {
+    public:
+        explicit IvfUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        bool IsEOS() override;
+        int32_t ReadVp8Unit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame) override;
+
+    private:
+        bool IsEOF() override;
+        void PrereadVp8Unit() override;
+        bool ParseIvfFileHeader();
+        bool ParseIvfFrameHeader(uint32_t& frameSize);
+
+        bool fileHeaderParsed_ = false;
+        uint32_t frameIndex_ = 0;
+        uint32_t totalFrames_ = 0;
+    };
+
+    std::shared_ptr<Vp8UnitReader> vp8UnitReader_ = nullptr;
+    std::shared_ptr<Vp8Detector> vp8Detector_ = nullptr;
+};
+#endif
+
+#ifdef SUPPORT_CODEC_VP9
+struct Vp9ReaderInfo {
+    std::string inPath;
+};
+
+class Vp9Reader : public DataProducerBase {
+public:
+    int32_t Init(const std::shared_ptr<Vp9ReaderInfo>& info);
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t vp9Type, bool isEosFrame);
+    bool IsEOS();
+
+    std::mutex mutex_;
+    int32_t frameInputCount_ = 0;
+
+private:
+    class Vp9UnitReader {
+    public:
+        explicit Vp9UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        virtual ~Vp9UnitReader() = default;
+        uint8_t const *GetNextVp9UnitAddr();
+        virtual int32_t ReadVp9Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame) = 0;
+        virtual bool IsEOS() = 0;
+
+    protected:
+        Vp9UnitReader() = default;
+        virtual bool IsEOF() = 0;
+        virtual void PrereadVp9Unit() = 0;
+
+        std::unique_ptr<std::vector<uint8_t>> vp9Unit_ = nullptr;
+        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+    };
+
+    class Vp9MetaUnitReader : public Vp9UnitReader {
+    public:
+        explicit Vp9MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        bool IsEOS() override;
+        int32_t ReadVp9Unit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame) override;
+
+    private:
+        bool IsEOF() override;
+        void PrereadVp9Unit() override;
+        std::unique_ptr<uint8_t[]> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+        uint32_t frameIndex_ = 0;
+    };
+
+    class Vp9Detector {
+    public:
+        virtual ~Vp9Detector() = default;
+        const uint8_t *GetVp9TypeAddr(const uint8_t *bufferAddr);
+        uint8_t GetVp9Type(const uint8_t *bufferAddr);
+        bool IsKeyFrame(uint8_t vp9Type);
+    };
+
+    class IvfUnitReader : public Vp9UnitReader {
+    public:
+        explicit IvfUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        bool IsEOS() override;
+        int32_t ReadVp9Unit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame) override;
+
+    private:
+        bool IsEOF() override;
+        void PrereadVp9Unit() override;
+        bool ParseIvfFileHeader();
+        bool ParseIvfFrameHeader(uint32_t& frameSize);
+        bool fileHeaderParsed_ = false;
+        uint32_t frameIndex_ = 0;
+        uint32_t totalFrames_ = 0;
+    };
+
+    std::shared_ptr<Vp9UnitReader> vp9UnitReader_ = nullptr;
+    std::shared_ptr<Vp9Detector> vp9Detector_ = nullptr;
+};
+#endif
 } // MediaAVCodec
 } // OHOS
 #endif // AVCC_READER_H

@@ -121,6 +121,15 @@ group("vcodec_framework_test") {
       ":videodec_VC1_stable_unit_test",
       ":videodec_msvideo1dec_stable_unit_test",
     ]
+
+    if (av_codec_support_vp8_decoder) {
+      deps += [ ":videodec_vp8dec_unit_test", ]
+    }
+
+    if (av_codec_support_vp9_decoder) {
+      deps += [ ":videodec_vp9dec_unit_test", ]
+    }
+
     if (target_cpu == "arm64" && av_codec_support_hcodec) {
       deps += [
         ":videoenc_bframe_capi_async_unit_test",
@@ -1049,6 +1058,26 @@ ohos_unittest("videoenc_bitrate_mode_capi_unit_test") {
   deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
   external_deps = av_codec_capi_external_deps
 
+  resource_config_file = resource_configuration_file
+}
+
+#################################################################################################################videodec
+ohos_unittest("videodec_vp8dec_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  include_dirs = []
+  sources = [ "./videodec_vp8dec_unit_test.cpp" ]
+  deps = [ "./stable_sample:video_sample" ]
+  resource_config_file = resource_configuration_file
+}
+
+#################################################################################################################videodec
+ohos_unittest("videodec_vp9dec_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  include_dirs = []
+  sources = [ "./videodec_vp9dec_unit_test.cpp" ]
+  deps = [ "./stable_sample:video_sample" ]
   resource_config_file = resource_configuration_file
 }
 

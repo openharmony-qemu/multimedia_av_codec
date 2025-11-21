@@ -2909,7 +2909,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1804, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
     ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, "video/x-vnd.on2.vp8");
+    ASSERT_EQ(formatVal_.codecMime, "video/vp8");
     ASSERT_EQ(formatVal_.width, 720);
     ASSERT_EQ(formatVal_.height, 480);
     ASSERT_DOUBLE_EQ(formatVal_.frameRate, 60.000000);
@@ -4336,7 +4336,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_18041, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
     ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, "video/x-vnd.on2.vp8");
+    ASSERT_EQ(formatVal_.codecMime, "video/vp8");
     ASSERT_EQ(formatVal_.width, 480);
     ASSERT_EQ(formatVal_.height, 854);
     ASSERT_DOUBLE_EQ(formatVal_.frameRate, 30.000000);
@@ -4392,7 +4392,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_18042, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
     ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, "video/x-vnd.on2.vp9");
+    ASSERT_EQ(formatVal_.codecMime, "video/vp9");
     ASSERT_EQ(formatVal_.width, 480);
     ASSERT_EQ(formatVal_.height, 854);
     ASSERT_DOUBLE_EQ(formatVal_.frameRate, 30.000000);
@@ -4448,7 +4448,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_18043, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
     ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, "video/x-vnd.on2.vp9");
+    ASSERT_EQ(formatVal_.codecMime, "video/vp9");
     ASSERT_EQ(formatVal_.width, 480);
     ASSERT_EQ(formatVal_.height, 854);
     ASSERT_DOUBLE_EQ(formatVal_.frameRate, 30.000000);

@@ -111,6 +111,8 @@ private:
     int32_t CreateVc1Reader();
     int32_t CreateMsvideo1Reader();
     int32_t CreateWmv3Reader();
+    int32_t CreateVp8Reader();
+    int32_t CreateVp9Reader();
 
     OH_AVCodec *codec_ = nullptr;
     std::shared_ptr<VCodecSignal> signal_ = nullptr;

@@ -18,6 +18,12 @@
 #include "fcodec_loader.h"
 #include "hevc_decoder_loader.h"
 #include "hcodec_loader.h"
+#ifdef SUPPORT_CODEC_VP8
+#include "vp8_decoder_loader.h"
+#endif
+#ifdef SUPPORT_CODEC_VP9
+#include "vp9_decoder_loader.h"
+#endif
 #include "avc_encoder_loader.h"
 #include "unittest_log.h"
 namespace {
@@ -27,6 +33,28 @@ std::weak_ptr<OHOS::MediaAVCodec::CodecBaseMock> g_mockObject;
 
 namespace OHOS {
 namespace MediaAVCodec {
+#ifdef SUPPORT_CODEC_VP9
+std::shared_ptr<CodecBase> Vp9DecoderLoader::CreateByName(const std::string &name)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("name: %s", name.c_str());
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, nullptr, "mock object is nullptr");
+    return mock->CreateVpxDecoderByName(name);
+}
+#endif
+
+#ifdef SUPPORT_CODEC_VP8
+std::shared_ptr<CodecBase> Vp8DecoderLoader::CreateByName(const std::string &name)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("name: %s", name.c_str());
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, nullptr, "mock object is nullptr");
+    return mock->CreateVpxDecoderByName(name);
+}
+#endif
+
 std::shared_ptr<CodecBase> HCodecLoader::CreateByName(const std::string &name)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
@@ -62,6 +90,32 @@ std::shared_ptr<CodecBase> AvcEncoderLoader::CreateByName(const std::string &nam
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, nullptr, "mock object is nullptr");
     return mock->CreateAvcEncoderByName(name);
 }
+
+#ifdef SUPPORT_CODEC_VP9
+int32_t Vp9DecoderLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("VP9Codec");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    auto item = mock->GetVpxDecoderCapabilityList();
+    caps = item.second;
+    return item.first;
+}
+#endif
+
+#ifdef SUPPORT_CODEC_VP8
+int32_t Vp8DecoderLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("VP8Codec");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    auto item = mock->GetVpxDecoderCapabilityList();
+    caps = item.second;
+    return item.first;
+}
+#endif
 
 int32_t HCodecLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
 {

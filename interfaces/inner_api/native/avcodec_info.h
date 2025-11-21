@@ -388,7 +388,8 @@ public:
      * returns {@link HEVCProfile} array if codec is h265,
      * returns {@link MPEG2Profile} array if codec is mpeg2,
      * returns {@link MPEG4Profile} array if codec is mpeg4,
-     * returns {@link VP8Profile} array if codec is vp8.
+     * returns {@link VP8Profile} array if codec is vp8,
+     * returns {@link VP9Profile} array if codec is vp9.
      * @since 3.1
      * @version 4.0
      */
@@ -616,8 +617,8 @@ public:
     static constexpr std::string_view VIDEO_MPEG2 = "video/mpeg2";
     static constexpr std::string_view VIDEO_HEVC = "video/hevc";
     static constexpr std::string_view VIDEO_MPEG4 = "video/mp4v-es";
-    static constexpr std::string_view VIDEO_VP8 = "video/x-vnd.on2.vp8";
-    static constexpr std::string_view VIDEO_VP9 = "video/x-vnd.on2.vp9";
+    static constexpr std::string_view VIDEO_VP8 = "video/vp8";
+    static constexpr std::string_view VIDEO_VP9 = "video/vp9";
     static constexpr std::string_view VIDEO_RV30 = "video/rv30";
     static constexpr std::string_view VIDEO_RV40 = "video/rv40";
     static constexpr std::string_view VIDEO_WMV3 = "video/wmv3";
@@ -838,6 +839,22 @@ enum VP8Profile : int32_t {
 };
 
 /**
+ * @brief VP9 Profile.
+ *
+ * @since 23
+ */
+enum VP9Profile {
+    /** profile 0 */
+    VP9_PROFILE_0 = 0,
+    /** profile 1 */
+    VP9_PROFILE_1 = 1,
+    /** profile 2 */
+    VP9_PROFILE_2 = 2,
+    /** profile 3 */
+    VP9_PROFILE_3 = 3,
+};
+
+/**
  * @brief
  *
  * @since 3.1
@@ -943,6 +960,42 @@ enum MPEG4Level : int32_t {
     MPEG4_LEVEL_4A = 7,
     MPEG4_LEVEL_5  = 8,
     MPEG4_LEVEL_6  = 9,
+};
+
+/**
+ * @brief VP9 Level.
+ *
+ * @since 23
+ */
+enum VP9Level {
+    /** 1 level */
+    VP9_LEVEL_1 = 0,
+    /** 1.1 level */
+    VP9_LEVEL_1_1 = 1,
+    /** 2 level */
+    VP9_LEVEL_2 = 2,
+    /** 2.1 level */
+    VP9_LEVEL_2_1 = 3,
+    /** 3 level */
+    VP9_LEVEL_3 = 4,
+    /** 3.1 level */
+    VP9_LEVEL_3_1 = 5,
+    /** 4 level */
+    VP9_LEVEL_4 = 6,
+    /** 4.1 level */
+    VP9_LEVEL_4_1 = 7,
+    /** 5 level */
+    VP9_LEVEL_5 = 8,
+    /** 5.1 level */
+    VP9_LEVEL_5_1 = 9,
+    /** 5.2 level */
+    VP9_LEVEL_5_2 = 10,
+    /** 6 level */
+    VP9_LEVEL_6 = 11,
+    /** 6.1 level */
+    VP9_LEVEL_6_1 = 12,
+    /** 6.2 level */
+    VP9_LEVEL_6_2 = 13,
 };
 
 /**

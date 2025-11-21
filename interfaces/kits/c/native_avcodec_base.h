@@ -276,6 +276,20 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VC1;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MJPEG;
 
 /**
+ * @brief Enumerates the MIME type of video vp8 codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VP8;
+
+/**
+ * @brief Enumerates the MIME type of video vp9 codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VP9;
+
+/**
  * @brief Enumerates the MIME types of audio and video codecs
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
@@ -1297,6 +1311,22 @@ typedef enum OH_VC1Profile {
 } OH_VC1Profile;
 
 /**
+ * @brief VP9 Profile
+ *
+ * @since 23
+ */
+typedef enum OH_VP9Profile {
+    /** profile 0 */
+    VP9_PROFILE_0 = 0,
+    /** profile 1 */
+    VP9_PROFILE_1 = 1,
+    /** profile 2 */
+    VP9_PROFILE_2 = 2,
+    /** profile 3 */
+    VP9_PROFILE_3 = 3,
+} OH_VP9Profile;
+
+/**
  * @brief Enumerates the muxer output file format.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
@@ -1695,6 +1725,42 @@ typedef enum OH_VC1Level {
     /** HIGH level */
     VC1_LEVEL_HIGH = 7,
 } OH_VC1Level;
+
+/**
+ * @brief VP9 Level.
+ *
+ * @since 23
+ */
+typedef enum OH_VP9Level {
+    /** 1 level */
+    VP9_LEVEL_1 = 0,
+    /** 1.1 level */
+    VP9_LEVEL_1_1 = 1,
+    /** 2 level */
+    VP9_LEVEL_2 = 2,
+    /** 2.1 level */
+    VP9_LEVEL_2_1 = 3,
+    /** 3 level */
+    VP9_LEVEL_3 = 4,
+    /** 3.1 level */
+    VP9_LEVEL_3_1 = 5,
+    /** 4 level */
+    VP9_LEVEL_4 = 6,
+    /** 4.1 level */
+    VP9_LEVEL_4_1 = 7,
+    /** 5 level */
+    VP9_LEVEL_5 = 8,
+    /** 5.1 level */
+    VP9_LEVEL_5_1 = 9,
+    /** 5.2 level */
+    VP9_LEVEL_5_2 = 10,
+    /** 6 level */
+    VP9_LEVEL_6 = 11,
+    /** 6.1 level */
+    VP9_LEVEL_6_1 = 12,
+    /** 6.2 level */
+    VP9_LEVEL_6_2 = 13,
+} OH_VP9Level;
 
 /**
  * @brief The bitrate mode of encoder.
