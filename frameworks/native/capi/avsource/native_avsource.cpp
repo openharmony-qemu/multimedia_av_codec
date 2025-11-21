@@ -111,7 +111,7 @@ std::string static GetHostnameFromURL(const std::string &url)
         posStart = 0;
     }
     size_t notSlash = tempUrl.find_first_not_of('/', posStart);
-    if(notSlash != std::string::npos) {
+    if (notSlash != std::string::npos) {
         posStart = notSlash;
     }
     size_t posEnd = std::min({ tempUrl.find(':', posStart),
@@ -127,12 +127,16 @@ struct OH_AVSource *OH_AVSource_CreateWithURI(char *uri)
     CHECK_AND_RETURN_RET_LOG(uri != nullptr, nullptr, "Uri is nullptr");
     bool isComponentCfg = false;
     std::string protocol = GetProtocolFromURL(uri);
-    int32_t ret = OHOS::NetManagerStandard::NetworkSecurityConfig::GetInstance().IsCleartextCfgByComponent("Media kit", isComponentCfg);
-    MEDIA_LOG_D("Media kit, ret: %{public}d, isComponentCfg: %{public}d, protocol: %{public}s", ret, isComponentCfg, protocol.c_str());
+    int32_t ret = OHOS::NetManagerStandard::NetworkSecurityConfig::
+        GetInstance().IsCleartextCfgByComponent("Media kit", isComponentCfg);
+    MEDIA_LOG_D("Media kit, ret: %{public}d,
+        isComponentCfg: %{public}d, protocol: %{public}s",
+            ret, isComponentCfg, protocol.c_str());
     if (isComponentCfg && protocol == "http") {
-        bool isCleartextPermitted =true;
+        bool isCleartextPermitted = true;
         std::string hostName = GetHostnameFromURL(uri);
-        OHOS::NetManagerStandard::NetworkSecurityConfig::GetInstance().IsCleartextPermitted(hostName, isCleartextPermitted);
+        OHOS::NetManagerStandard::NetworkSecurityConfig::
+            GetInstance().IsCleartextPermitted(hostName, isCleartextPermitted);
         if (!isCleartextPermitted) {
             return nullptr;
         }
