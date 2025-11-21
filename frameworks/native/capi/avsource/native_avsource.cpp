@@ -130,7 +130,7 @@ struct OH_AVSource *OH_AVSource_CreateWithURI(char *uri)
     int32_t ret = OHOS::NetManagerStandard::NetworkSecurityConfig::
         GetInstance().IsCleartextCfgByComponent("Media kit", isComponentCfg);
     MEDIA_LOG_D("Media kit, ret: %{public}d, isComponentCfg: %{public}d, protocol: %{public}s",
-            ret, isComponentCfg, protocol.c_str());
+                ret, isComponentCfg, protocol.c_str());
     if (isComponentCfg && protocol == "http") {
         bool isCleartextPermitted = true;
         std::string hostName = GetHostnameFromURL(uri);
