@@ -22,6 +22,8 @@
 #include "native_avmagic.h"
 #include "native_object.h"
 #include "avbuffer.h"
+#include "network_security_config.h"
+#include "common/log.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "NativeAVSource"};
@@ -84,10 +86,57 @@ private:
     void* userData_ = nullptr;
 };
 
+std::string static GetProtocolFromURL(const std::string &url)
+{
+    std::string delimiter = "://";
+    size_t pos = url.find(delimiter);
+    if (pos != std::string::npos) {
+        return url.substr(0, pos);
+    }
+    return "";
+}
+
+std::string static GetHostnameFromURL(const std::string &url) 
+{
+    if (url.empty()) {
+        return "";
+    }
+    std::string delimiter = "://";
+    std::string tempUrl = url;
+    std::replace(tempUrl.begin(), tempUrl.end(), '\\', '/');
+    size_t posStart = tempUrl.find(delimiter);
+    if (posStart != std::string::nops) {
+        posStart += delimiter.length();
+    } else {
+        posStart = 0;
+    }
+    size_t notSlash = tempUrl.find_first_not_of('/', posStart);
+    if(notSlash != std::string::npos) {
+        posStart = notSlash;
+    }
+    size_t posEnd = std::min({ tempUrl.find(':', posStart),
+                            tempUrl.find('/', posStart), tempUrl.find('?', posStart)});
+    if (posEnd != std::string::npos) {
+        return tempUrl.substr(posStart, posEnd - posStart);
+    }
+    return tempUrl.substr(posStart);
+}
+
 struct OH_AVSource *OH_AVSource_CreateWithURI(char *uri)
 {
     CHECK_AND_RETURN_RET_LOG(uri != nullptr, nullptr, "Uri is nullptr");
-    
+    bool isComponentCfg = false;
+    std::string protocol = GetProtocolFromURL(uri);
+    int32_t ret = OHOS::NetManagerStandard::NetworkSecurityConfig::GetInstance().IsCleartextCfgByComponent("Media kit", isComponentCfg);
+    MEDIA_LOG_D("Media kit, ret: %{public}d, isComponentCfg: %{public}d, protocol: %{public}s", ret, isComponentCfg, protocol.c_str());
+    if (isComponentCfg && protocol == "http") {
+        bool isCleartextPermitted =true;
+        std::string hostName = GetHostnameFromURL(uri);
+        OHOS::NetManagerStandard::NetworkSecurityConfig::GetInstance().IsCleartextPermitted(hostName, isCleartextPermitted);
+        if (!isCleartextPermitted) {
+            return nullptr;
+        }
+    }
     std::shared_ptr<AVSource> source = AVSourceFactory::CreateWithURI(uri);
     CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "New avsource failed");
 
