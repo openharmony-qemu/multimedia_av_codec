@@ -161,7 +161,7 @@ HWTEST_F(DashXmlUnitTest, Test_ParseFromFile_Failed_001, TestSize.Level1)
     EXPECT_EQ(ret, -1);
 }
 
-HWTEST_F(DashXmlUnitTest, Test_ParseFromFile_Success_001, TestSize.Level1)
+HWTEST_F(DashXmlUnitTest, Test_ParseFromFile_Failed_002, TestSize.Level1)
 {
     std::string xml = "/test/index.mpd";
     double ret = xmlParser_->ParseFromFile(xml);
