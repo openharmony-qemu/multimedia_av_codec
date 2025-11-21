@@ -366,6 +366,7 @@ private:
     void UpdateAsyncReadThreadPriority();
     Status GetFileFirstPacket();
     Status InitFileFirstPacketInfo(AVPacket *pkt);
+    void UdpFileFirstPacketInfo(AVPacket *pkt);
     AVPacket *fileFirstPacket_ {nullptr};
 };
 
