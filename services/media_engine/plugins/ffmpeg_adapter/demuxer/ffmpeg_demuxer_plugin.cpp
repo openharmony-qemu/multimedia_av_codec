@@ -2601,16 +2601,6 @@ void FFmpegDemuxerPlugin::SetInterruptState(bool isInterruptNeeded)
     isInterruptNeeded_ = isInterruptNeeded;
 }
 
-Status FFmpegDemuxerPlugin::UpdFileFirstPacketInfo(AVPacket *pkt)
-{
-    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "AVPacket is nullptr");
-    if (fileFirstPacket_ && pkt->dts < fileFirstPacket_->dts && pkt->dts != AV_NOPTS_VALUE) {
-        fileFirstPacket_->stream_index = pkt->stream_index;
-        fileFirstPacket_->dts = pkt->dts;
-    }
-    return Status::OK;
-}
-
 Status FFmpegDemuxerPlugin::GetFileFirstPacket()
 {
     Status ret = Status::OK;
@@ -2650,7 +2640,7 @@ Status FFmpegDemuxerPlugin::InitFileFirstPacketInfo(AVPacket *pkt)
     return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::UdpFileFirstPacketInfo(AVPacket *pkt)
+void FFmpegDemuxerPlugin::UpdFileFirstPacketInfo(AVPacket *pkt)
 {
     FALSE_RETURN_MSG_W(pkt != nullptr || fileFirstPacket_ != nullptr, "AVPacket or fileFirstPacket_ is nullptr");
     if (pluginImpl_->flags & AVFMT_SEEK_TO_PTS && !FFmpegFormatHelper::IsMpeg4File(fileType_) &&
@@ -2681,9 +2671,8 @@ Status FFmpegDemuxerPlugin::SeekToFirstFrame()
     MEDIA_LOG_D("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
         fileFirstPacket_->stream_index, seekTs, ffRet);
     if (ffRet < 0) {
-        int64_t realSeekTime = 0;
-        ffRet = av_seek_frame(SEEK_TRACK_DEFAULT, formatContext_->start_time, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
-        FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_INVALID_OPERATION, "av_seek_frame default track failed.");
+        ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT, formatContext_->start_time, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
+        FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_INVALID_OPERATION, "av_seek_frame default track failed.");
     }
     for (auto track : selectedTrackIds_) {
         cacheQueue_.RemoveTrackQueue(track);
