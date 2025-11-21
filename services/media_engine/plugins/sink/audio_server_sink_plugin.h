@@ -282,7 +282,7 @@ private:
     std::mutex mutex_;
     std::condition_variable writeCond_;
     std::shared_ptr<AudioRendererWriteCallbackImpl> audioRenderWriteCallback_ {nullptr};
-    std::mutex audioRenderMutex_;
+    std::mutex releaseRenderMutex_;
     bool isReleasingRender_ {false};
     std::weak_ptr<AudioSinkDataCallback> audioSinkDataCallback_;
     bool isAudioVivid_ {false};

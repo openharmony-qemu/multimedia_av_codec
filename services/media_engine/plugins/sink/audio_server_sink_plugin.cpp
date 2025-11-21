@@ -294,7 +294,6 @@ Status AudioServerSinkPlugin::Init()
                 " sampleFormat " PUBLIC_LOG_D32 " channels " PUBLIC_LOG_D32,
                 rendererOptions_.streamInfo.samplingRate, rendererOptions_.streamInfo.encoding,
                 rendererOptions_.streamInfo.format, rendererOptions_.streamInfo.channels);
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     audioRenderer_ = AudioStandard::AudioRenderer::Create(rendererOptions_, appInfo);
     if (audioRenderer_ == nullptr && playerEventReceiver_ != nullptr) {
         playerEventReceiver_->OnEvent({"audioSinkPlugin", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_SAMPLE_RATE});
@@ -333,7 +332,7 @@ AudioSampleFormat AudioServerSinkPlugin::GetSampleFormat()
 
 void AudioServerSinkPlugin::ReleaseRender()
 {
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
+    std::unique_lock<std::mutex> lock(releaseRenderMutex_);
     ScopedTimer timer("ReleaseRender", RELEASE_RENDER_WARNING_MS);
     if (audioRenderer_ != nullptr && audioRenderer_->GetStatus() != AudioStandard::RendererState::RENDERER_RELEASED) {
         MEDIA_LOG_I_T("AudioRenderer::Release start");
@@ -375,7 +374,6 @@ Status AudioServerSinkPlugin::Prepare()
     });
     FALSE_RETURN_V_MSG(ret, Status::ERROR_INVALID_PARAMETER, "audio renderer do not support pcm encoding");
     {
-        std::unique_lock<std::mutex> lock(audioRenderMutex_);
         FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
         if (audioRendererCallback_ == nullptr) {
             audioRendererCallback_ = std::make_shared<AudioRendererCallbackImpl>(playerEventReceiver_, isForcePaused_);
@@ -398,7 +396,6 @@ Status AudioServerSinkPlugin::Prepare()
 
 bool AudioServerSinkPlugin::StopRender()
 {
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     if (audioRenderer_) {
         //The audio stop interface cannot be quickly stopped.
         if (audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING) {
@@ -441,7 +438,6 @@ Status AudioServerSinkPlugin::Start()
         return Status::ERROR_WRONG_STATE;
     }
     ApplyAudioHapticsSyncId();
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     bool ret = audioRenderer_->Start();
     FALSE_RETURN_V_MSG(ret, Status::ERROR_UNKNOWN, "AudioRenderer::Start failed");
     MEDIA_LOG_I_SHORT("AudioRenderer::Start end");
@@ -462,7 +458,6 @@ int32_t AudioServerSinkPlugin::SetVolumeWithRamp(float targetVolume, int32_t dur
     MEDIA_LOG_D_SHORT("SetVolumeWithRamp entered.");
     int32_t ret = 0;
     {
-        std::unique_lock<std::mutex> lock(audioRenderMutex_);
         if (audioRenderer_ == nullptr) {
             return 0;
         }
@@ -483,7 +478,6 @@ Status AudioServerSinkPlugin::GetParameter(std::shared_ptr<Meta> &meta)
 {
     AudioStandard::AudioRendererParams params;
     meta->Set<Tag::MEDIA_BITRATE>(bitRate_);
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     if (audioRenderer_ && audioRenderer_->GetParams(params) == AudioStandard::SUCCESS) {
         MEDIA_LOG_I_SHORT("get param with fmt " PUBLIC_LOG_D32 " sampleRate " PUBLIC_LOG_D32 " channel " PUBLIC_LOG_D32
                     " encode type " PUBLIC_LOG_D32,
@@ -602,7 +596,6 @@ bool AudioServerSinkPlugin::IsFormatSupported(const std::shared_ptr<Meta> &meta)
 void AudioServerSinkPlugin::SetInterruptMode(AudioStandard::InterruptMode interruptMode)
 {
     if (audioRenderer_) {
-        std::unique_lock<std::mutex> lock(audioRenderMutex_);
         audioRenderer_->SetInterruptMode(interruptMode);
     }
 }
@@ -819,7 +812,6 @@ Status AudioServerSinkPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 
 Status AudioServerSinkPlugin::GetVolume(float &volume)
 {
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     MEDIA_LOG_I_SHORT("GetVolume entered.");
     if (audioRenderer_ != nullptr) {
         volume = audioRenderer_->GetVolume();
@@ -832,12 +824,9 @@ Status AudioServerSinkPlugin::SetVolume(float volume)
 {
     MEDIA_LOG_D("SetVolume entered.");
     if (audioRenderer_ != nullptr) {
-        {
-            std::unique_lock<std::mutex> lock(audioRenderMutex_);
-            int32_t ret = audioRenderer_->SetVolume(volume);
-            FALSE_RETURN_V_MSG_E(ret == OHOS::AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
-                "set volume failed with code " PUBLIC_LOG_D32, ret);
-        }
+        int32_t ret = audioRenderer_->SetVolume(volume);
+        FALSE_RETURN_V_MSG_E(ret == OHOS::AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
+            "set volume failed with code " PUBLIC_LOG_D32, ret);
         MEDIA_LOG_D("SetVolume succ");
         audioRendererVolume_ = volume;
         return Status::OK;
@@ -854,7 +843,6 @@ Status AudioServerSinkPlugin::SetVolumeMode(int32_t mode)
 
 Status AudioServerSinkPlugin::GetAudioEffectMode(int32_t &effectMode)
 {
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     MEDIA_LOG_I_SHORT("GetAudioEffectMode entered.");
     if (audioRenderer_ != nullptr) {
         effectMode = audioRenderer_->GetAudioEffectMode();
@@ -866,7 +854,6 @@ Status AudioServerSinkPlugin::GetAudioEffectMode(int32_t &effectMode)
 
 Status AudioServerSinkPlugin::SetAudioEffectMode(int32_t effectMode)
 {
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     MEDIA_LOG_I_SHORT("SetAudioEffectMode %{public}d", effectMode);
     if (audioRenderer_ != nullptr) {
         int32_t ret = audioRenderer_->SetAudioEffectMode(static_cast<OHOS::AudioStandard::AudioEffectMode>(effectMode));
@@ -879,7 +866,6 @@ Status AudioServerSinkPlugin::SetAudioEffectMode(int32_t effectMode)
 
 Status AudioServerSinkPlugin::GetSpeed(float &speed)
 {
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     MEDIA_LOG_I_SHORT("GetSpeed entered.");
     if (audioRenderer_ != nullptr) {
         speed = audioRenderer_->GetSpeed();
@@ -890,7 +876,6 @@ Status AudioServerSinkPlugin::GetSpeed(float &speed)
 
 Status AudioServerSinkPlugin::SetSpeed(float speed)
 {
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     MEDIA_LOG_I_SHORT("SetSpeed entered.");
     if (audioRenderer_ != nullptr) {
         int32_t ret = audioRenderer_->SetSpeed(speed);
@@ -910,7 +895,7 @@ Status AudioServerSinkPlugin::Resume()
 
 Status AudioServerSinkPlugin::Pause()
 {
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
+    std::unique_lock<std::mutex> lock(releaseRenderMutex_);
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Pause");
     MEDIA_LOG_I_SHORT("Pause entered");
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audio renderer pause fail");
@@ -924,7 +909,7 @@ Status AudioServerSinkPlugin::Pause()
 
 Status AudioServerSinkPlugin::PauseTransitent()
 {
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
+    std::unique_lock<std::mutex> lock(releaseRenderMutex_);
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::PauseTransitent");
     MEDIA_LOG_I_SHORT("PauseTransitent entered.");
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audio renderer pauseTransitent fail");
@@ -938,7 +923,6 @@ Status AudioServerSinkPlugin::PauseTransitent()
 
 Status AudioServerSinkPlugin::GetLatency(uint64_t &hstTime)
 {
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
     audioRenderer_->GetLatency(hstTime); // audioRender->getLatency lack accuracy
     return Status::OK;
@@ -955,15 +939,11 @@ Status AudioServerSinkPlugin::DrainCacheData(bool render)
     if (cachedBuffers_.empty()) {
         return Status::OK;
     }
-    AudioStandard::RendererState rendererState;
-    {
-        std::unique_lock<std::mutex> lock(audioRenderMutex_);
-        rendererState = (audioRenderer_ != nullptr) ?
-            audioRenderer_->GetStatus() : AudioStandard::RendererState::RENDERER_INVALID;
-        FALSE_RETURN_V_MSG(rendererState != AudioStandard::RendererState::RENDERER_PAUSED
-            && rendererState != AudioStandard::RendererState::RENDERER_STOPPED,
-            Status::ERROR_AGAIN, "audioRenderer_ is still paused or stopped, try again later");
-    }
+    AudioStandard::RendererState rendererState = (audioRenderer_ != nullptr) ?
+        audioRenderer_->GetStatus() : AudioStandard::RendererState::RENDERER_INVALID;
+    FALSE_RETURN_V_MSG(rendererState != AudioStandard::RendererState::RENDERER_PAUSED
+        && rendererState != AudioStandard::RendererState::RENDERER_STOPPED,
+        Status::ERROR_AGAIN, "audioRenderer_ is still paused or stopped, try again later");
     if (rendererState != AudioStandard::RendererState::RENDERER_RUNNING) {
         cachedBuffers_.clear();
         MEDIA_LOG_W("Drop cache buffer because audioRenderer_ state invalid");
@@ -1017,19 +997,11 @@ size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t buff
     while (destLength > 0) {
         MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::WriteAudioBuffer: " + std::to_string(destLength));
         auto systemTimeBeforeWriteMs = Plugins::GetCurrentMillisecond();
-        int32_t ret;
-        {
-            std::unique_lock<std::mutex> lock(audioRenderMutex_);
-            ret = audioRenderer_->Write(destBuffer, destLength);
-        }
+        int32_t ret = audioRenderer_->Write(destBuffer, destLength);
         writeDuration_ = std::max(Plugins::GetCurrentMillisecond() - systemTimeBeforeWriteMs, writeDuration_);
         if (ret < 0) {
-            AudioStandard::RendererState rendererState;
-            {
-                std::unique_lock<std::mutex> lock(audioRenderMutex_);
-                rendererState = (audioRenderer_ != nullptr) ?
-                    audioRenderer_->GetStatus() : AudioStandard::RendererState::RENDERER_INVALID;
-            }
+            AudioStandard::RendererState rendererState = (audioRenderer_ != nullptr) ?
+                audioRenderer_->GetStatus() : AudioStandard::RendererState::RENDERER_INVALID;
             if (rendererState == AudioStandard::RendererState::RENDERER_PAUSED ||
                 rendererState == AudioStandard::RendererState::RENDERER_STOPPED) {
                 MEDIA_LOG_W("WriteAudioBuffer error because audioRenderer_ paused or stopped, cache data.");
@@ -1112,7 +1084,6 @@ int32_t AudioServerSinkPlugin::WriteAudioVivid(const std::shared_ptr<OHOS::Media
     auto meta = inputBuffer->meta_;
     std::vector<uint8_t> metaData;
     meta->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData);
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     FALSE_RETURN_V(audioRenderer_ != nullptr, -1);
     return audioRenderer_->Write(pcmBuffer, pcmBufferSize, metaData.data(), metaData.size());
 }
@@ -1121,7 +1092,6 @@ Status AudioServerSinkPlugin::Flush()
 {
     MEDIA_LOG_D_SHORT("Flush entered.");
     DrainCacheData(false);
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     if (audioRenderer_ == nullptr) {
         return Status::ERROR_WRONG_STATE;
     }
@@ -1142,7 +1112,6 @@ Status AudioServerSinkPlugin::Drain()
     }
     DrainCacheData(true); // try to drain
     cachedBuffers_.clear(); // force clear cached data, no matter drain success or not
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     if (!audioRenderer_->Drain()) {
         uint64_t latency = 0;
         audioRenderer_->GetLatency(latency);
@@ -1162,7 +1131,6 @@ int64_t AudioServerSinkPlugin::GetPlayedOutDurationUs(int64_t nowUs)
     FALSE_RETURN_V(audioRenderer_ != nullptr && (rendererParams_.sampleRate != 0 || customSampleRate_ != 0), -1);
     uint32_t numFramesPlayed = 0;
     AudioStandard::Timestamp ts;
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     bool res = audioRenderer_->GetAudioTime(ts, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
     if (res) {
         numFramesPlayed = ts.framePosition;
@@ -1176,7 +1144,6 @@ Status AudioServerSinkPlugin::GetFramePosition(int32_t &framePosition)
     if (audioRenderer_ == nullptr) {
         return Status::ERROR_WRONG_STATE;
     }
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     bool res = audioRenderer_->GetAudioTime(ts, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
     if (!res) {
         return Status::ERROR_UNKNOWN;
@@ -1251,7 +1218,6 @@ Status AudioServerSinkPlugin::SetMuted(bool isMuted)
 {
     FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
     MEDIA_LOG_D("SetMuted in");
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     audioRenderer_->SetSilentModeAndMixWithOthers(isMuted);
     MEDIA_LOG_I("SetMuted out");
     return Status::OK;
@@ -1294,7 +1260,7 @@ void AudioServerSinkPlugin::UnFreeze()
 void AudioServerSinkPlugin::OnWriteData(size_t length)
 {
     // First check if can get lock
-    std::unique_lock<std::mutex> lock(audioRenderMutex_, std::try_to_lock);
+    std::unique_lock<std::mutex> lock(releaseRenderMutex_, std::try_to_lock);
     FALSE_RETURN_MSG(lock.owns_lock(), "AudioServerSinkPlugin OnWriteData try to get lock failed");
 
     // Then check if callback untied
@@ -1353,7 +1319,6 @@ Status AudioServerSinkPlugin::MuteAudioBuffer(uint8_t *addr, size_t offset, size
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audioRender_ is nullptr");
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::MuteAudioBuffer");
     FALSE_RETURN_V_MSG(addr != nullptr, Status::ERROR_UNKNOWN, "addr is nullptr");
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     int32_t ret = audioRenderer_->MuteAudioBuffer(addr, offset, length, rendererOptions_.streamInfo.format);
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
         "MuteAudioBuffer failed, ret=" PUBLIC_LOG_D32, ret);
@@ -1371,7 +1336,6 @@ Status AudioServerSinkPlugin::EnqueueBufferDesc(const AudioStandard::BufferDesc 
     } else {
         enqueueNumber_ = 0;
     }
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     ret = audioRenderer_->Enqueue(bufferDesc);
     MEDIA_LOG_DD("EnqueueBufferDesc out");
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
@@ -1383,7 +1347,6 @@ Status AudioServerSinkPlugin::GetBufferDesc(AudioStandard::BufferDesc &bufferDes
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "GetBufferDesc audioRender_ is nullptr");
     int32_t ret = 0;
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     ret = audioRenderer_->GetBufferDesc(bufferDesc);
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
         "Get BufferDesc failed, ret=" PUBLIC_LOG_D32, ret);
@@ -1407,7 +1370,6 @@ Status AudioServerSinkPlugin::SetRequestDataCallback(const std::shared_ptr<Audio
     isAudioVivid_ = mimeType_ == MimeType::AUDIO_AVS3DA;
     audioRenderWriteCallback_ = std::make_shared<AudioRendererWriteCallbackImpl>(shared_from_this());
     int32_t ret = 0;
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     ret = audioRenderer_->SetRenderMode(AudioStandard::RENDER_MODE_CALLBACK);
     FALSE_RETURN_V_MSG(ret == AudioStandard::SUCCESS, Status::ERROR_UNKNOWN, "audioRender_->SetRenderMode fail.");
     ret = audioRenderer_->SetRendererWriteCallback(audioRenderWriteCallback_);
@@ -1436,13 +1398,9 @@ bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosi
     ScopedTimer timer("GetAudioPosition", GET_AUDIO_POSITION_WARNING_MS);
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, false, "GetAudioPosition audioRender_ is nullptr");
     AudioStandard::Timestamp audioPositionTimestamp;
-    bool ret;
-    {
-        std::unique_lock<std::mutex> lock(audioRenderMutex_);
-        ret = audioRenderer_->GetAudioPosition(audioPositionTimestamp,
-            AudioStandard::Timestamp::Timestampbase::MONOTONIC);
-        FALSE_RETURN_V_MSG(ret, false, "GetAudioPosition failed");
-    }
+    bool ret = audioRenderer_->GetAudioPosition(audioPositionTimestamp,
+        AudioStandard::Timestamp::Timestampbase::MONOTONIC);
+    FALSE_RETURN_V_MSG(ret, false, "GetAudioPosition failed");
     time = audioPositionTimestamp.time;
     framePosition = audioPositionTimestamp.framePosition;
     return ret;
@@ -1451,7 +1409,6 @@ bool AudioServerSinkPlugin::GetAudioPosition(timespec &time, uint32_t &framePosi
 bool AudioServerSinkPlugin::IsOffloading()
 {
     FALSE_RETURN_V(audioRenderer_ != nullptr, false);
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     return audioRenderer_->IsOffloadEnable();
 }
 
@@ -1466,7 +1423,6 @@ void AudioServerSinkPlugin::ApplyAudioHapticsSyncId()
 {
     FALSE_RETURN_W(audioRenderer_ != nullptr);
     MEDIA_LOG_D("ApplyAHapSyncId " PUBLIC_LOG_D32, audioHapticsSyncId_);
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     audioRenderer_->SetAudioHapticsSyncId(audioHapticsSyncId_);
 }
 
@@ -1474,7 +1430,6 @@ Status AudioServerSinkPlugin::SetLoudnessGain(float loudnessGain)
 {
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN,
         "SetLoudnessGain audioRender_ is nullptr");
-    std::unique_lock<std::mutex> lock(audioRenderMutex_);
     int32_t ret = audioRenderer_->SetLoudnessGain(loudnessGain);
     FALSE_RETURN_V_MSG_E(ret == OHOS::AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
         "set loudnessGain failed with code " PUBLIC_LOG_D32, ret);
