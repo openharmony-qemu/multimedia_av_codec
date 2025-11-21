@@ -6,6 +6,7 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
+
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -1581,6 +1582,49 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_WriteSample_005, TestSize.Level0)
         ret = WriteSample(trackId, inputFile_, eosFlag, flag);
     }
     ASSERT_EQ(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_Hevc_Optimize_Filler_Data_001
+ * @tc.desc: Muxer Hevc Optimize Filler Data
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_Optimize_Filler_Data_001, TestSize.Level0)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        int32_t trackId = -1;
+        std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Optimize_Filler_Data.mp4");
+        OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+        fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+        bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+        ASSERT_TRUE(isCreated);
+
+        std::shared_ptr<FormatMock> videoParams =
+            FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, TEST_WIDTH, TEST_HEIGHT);
+
+        int32_t ret = avmuxer_->AddTrack(trackId, videoParams);
+        ASSERT_EQ(ret, 0);
+        ASSERT_GE(trackId, 0);
+        ASSERT_EQ(avmuxer_->Start(), 0);
+
+        inputFile_ = std::make_shared<std::ifstream>(LOGINFO_INPUT_FILE_PATH, std::ios::binary);
+
+        int32_t extSize = 0;
+        inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
+        if (extSize > 0) {
+            std::vector<uint8_t> buffer(extSize);
+            inputFile_->read(reinterpret_cast<char*>(buffer.data()), extSize);
+        }
+
+        bool eosFlag = false;
+        uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
+        ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+        while (!eosFlag && (ret == 0)) {
+            ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+        }
+        ASSERT_EQ(ret, 0);   
+    }
 }
 
 /**
