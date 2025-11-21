@@ -95,6 +95,7 @@ std::string static GetProtocolFromURL(const std::string &url)
     }
     return "";
 }
+
 std::string static GetHostnameFromURL(const std::string &url)
 {
     if (url.empty()) {
