@@ -72,6 +72,13 @@ HWTEST_F(DashXmlUnitTest, Test_ParseFromBuffer_Failed_003, TestSize.Level1)
     EXPECT_GE(ret, -1);
 }
 
+HWTEST_F(DashXmlUnitTest, Test_ParseFromBuffer_Failed_004, TestSize.Level1)
+{
+    std::string xml = "<test>123</test>";
+    double ret = xmlParser_->ParseFromBuffer(xml.c_str(), 0);
+    EXPECT_EQ(ret, -1);
+}
+
 HWTEST_F(DashXmlUnitTest, Test_ParseFromBuffer_Success_001, TestSize.Level1)
 {
     std::string xml = "<test>123</test>";
@@ -145,6 +152,20 @@ HWTEST_F(DashXmlUnitTest, Test_ParseFromFile_Success_001, TestSize.Level1)
     std::string xml = "/data/test/media/test_dash/segment_base/index.mpd";
     double ret = xmlParser_->ParseFromFile(xml);
     EXPECT_GE(ret, -1);
+}
+
+HWTEST_F(DashXmlUnitTest, Test_ParseFromFile_Failed_001, TestSize.Level1)
+{
+    std::string xml = "";
+    double ret = xmlParser_->ParseFromFile(xml);
+    EXPECT_EQ(ret, -1);
+}
+
+HWTEST_F(DashXmlUnitTest, Test_ParseFromFile_Failed_002, TestSize.Level1)
+{
+    std::string xml = "/test/index.mpd";
+    double ret = xmlParser_->ParseFromFile(xml);
+    EXPECT_EQ(ret, -1);
 }
 }
 }
