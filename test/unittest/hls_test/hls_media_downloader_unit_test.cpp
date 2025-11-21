@@ -44,6 +44,23 @@ const std::map<PluginEventType, int> POST_ALL_EVENT_STATUS = {
     {PluginEventType::HLS_SEEK_READY, 8},
 };
 
+const std::map<std::string, int32_t> AUDIO_START_STREAM_ID = {
+    {"test_detach_hls/audio_default_auto.m3u8", 2},
+    {"test_detach_hls/audio_default.m3u8", 3},
+    {"test_detach_hls/audio.m3u8", 4},
+    {"test_detach_hls/audio_auto.m3u8", 3},
+
+    {"test_detach_hls/invalidaudio_default_auto.m3u8", 4},
+    {"test_detach_hls/invalidaudio_default.m3u8", 4},
+    {"test_detach_hls/invalidaudio.m3u8", 4},
+    {"test_detach_hls/invalidaudio_auto.m3u8", 4},
+
+    {"test_detach_hls/noaudio_default_auto.m3u8", 2},
+    {"test_detach_hls/noaudio_default.m3u8", 3},
+    {"test_detach_hls/noaudio.m3u8", 4},
+    {"test_detach_hls/noaudio_auto.m3u8", 3},
+};
+
 class EventCallback : public Plugins::Callback {
 public:
     void OnEvent(const Plugins::PluginEvent &event)
@@ -1244,5 +1261,24 @@ HWTEST_F(HlsMediaDownloaderTest, INIT_SOURCE_LOADER_001, TestSize.Level1)
     EXPECT_TRUE(downloader->videoSegManager_->sourceLoader_ != nullptr);
 
     downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderTest, TEST_AUDIO_START_STREAM_ID, TestSize.Level1)
+{
+    for (const auto &[k, v]: AUDIO_START_STREAM_ID) {
+        std::cout << "TEST_AUDIO_START_STREAM_ID start: " << k << ", start audio id: " << v << std::endl;
+        auto downloader = OpenHlsDetachAudioVideo(k);
+        ASSERT_TRUE(downloader != nullptr);
+        ASSERT_TRUE(downloader->audioSegManager_ != nullptr);
+        ASSERT_TRUE(downloader->audioSegManager_->playlistDownloader_ != nullptr);
+        auto playlistDownloader =
+            std::static_pointer_cast<HlsPlayListDownloader>(downloader->audioSegManager_->playlistDownloader_);
+        ASSERT_TRUE(playlistDownloader->currentAudio_ != nullptr);
+        auto audioStreamId = playlistDownloader->currentAudio_->streamId_;
+        EXPECT_EQ(audioStreamId, v);
+        downloader->Close(true);
+        CloseHlsDetachAudioVideo(downloader);
+        std::cout << "TEST_AUDIO_START_STREAM_ID end: " << k << ", start audio id: " << v << std::endl;
+    }
 }
 }
