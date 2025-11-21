@@ -78,8 +78,8 @@ const int32_t MS_TO_US = 1000;
 const int32_t MS_TO_NS = 1000 * 1000;
 const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000;
 const int DEFAULT_CHANNEL_CNT = 3;
-const int FLV_READ_SIZE_LIMIT_FACTOR = 2;
-const int FLV_READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2;
+const int READ_SIZE_LIMIT_FACTOR = 2;
+const int READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2;
 const char* PLUGIN_NAME_PREFIX = "avdemux_";
 const char* PLUGIN_NAME_MP3 = "mp3";
 const char* PLUGIN_NAME_MPEGPS = "mpeg";
@@ -1473,7 +1473,7 @@ void FFmpegDemuxerPlugin::SetAVReadFrameLimitDefault()
         return;
     }
     ioContext_.isLimitType = true;
-    ioContext_.sizeLimit = FLV_READ_SIZE_LIMIT_DEFAULT;
+    ioContext_.sizeLimit = READ_SIZE_LIMIT_DEFAULT;
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         if (formatContext_->streams[trackIndex] == nullptr ||
             formatContext_->streams[trackIndex]->codecpar == nullptr) {
@@ -1482,7 +1482,7 @@ void FFmpegDemuxerPlugin::SetAVReadFrameLimitDefault()
         }
         if (FFmpegFormatHelper::IsVideoType(*(formatContext_->streams[trackIndex]))) {
             auto codecpar = formatContext_->streams[trackIndex]->codecpar;
-            int32_t limitSize = codecpar->width * codecpar->height * DEFAULT_CHANNEL_CNT * FLV_READ_SIZE_LIMIT_FACTOR;
+            int32_t limitSize = codecpar->width * codecpar->height * DEFAULT_CHANNEL_CNT * READ_SIZE_LIMIT_FACTOR;
             ioContext_.sizeLimit = std::max(ioContext_.sizeLimit, limitSize);
             MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " hei:" PUBLIC_LOG_D32 ", wid:" PUBLIC_LOG_D32
                 " limit " PUBLIC_LOG_D32, trackIndex, codecpar->height, codecpar->width, limitSize);
@@ -1499,7 +1499,7 @@ Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
     }
 
     ioContext_.isLimitType = true;
-    ioContext_.sizeLimit = FLV_READ_SIZE_LIMIT_DEFAULT;
+    ioContext_.sizeLimit = READ_SIZE_LIMIT_DEFAULT;
     FALSE_RETURN_V_MSG_E(static_cast<size_t>(formatContext_->nb_streams) == mediaInfo_.tracks.size(), Status::OK,
         "mediaInfo size is error");
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
@@ -1514,7 +1514,7 @@ Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
             format.GetData(Tag::VIDEO_WIDTH, width);
             format.GetData(Tag::VIDEO_HEIGHT, height);
             if (width * height > 0) {
-                int32_t limitSize = width * height * DEFAULT_CHANNEL_CNT * FLV_READ_SIZE_LIMIT_FACTOR;
+                int32_t limitSize = width * height * DEFAULT_CHANNEL_CNT * READ_SIZE_LIMIT_FACTOR;
                 ioContext_.sizeLimit = std::max(ioContext_.sizeLimit, limitSize);
                 MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " hei:" PUBLIC_LOG_D32 ", wid:" PUBLIC_LOG_D32
                     " limit " PUBLIC_LOG_D32, trackIndex, height, width, limitSize);
@@ -1792,7 +1792,7 @@ static bool IsSyncFrameCheckNeeded(std::shared_ptr<AVFormatContext> formatContex
         fileType) == g_streamCheckFileTypeVec.cend());
 }
 
-bool FFmpegDemuxerPlugin::Mp4checkKeyFrame(AVStream* stream)
+bool FFmpegDemuxerPlugin::Mp4CheckKeyFrame(AVStream* stream)
 {
     FALSE_RETURN_V_MSG_E(stream != nullptr, false, "AVStream is nullptr");
     const AVIndexEntry *entry = avformat_index_get_entry(stream, POS_0);
@@ -1809,7 +1809,7 @@ bool FFmpegDemuxerPlugin::AllSupportTrackFramesReady()
         if (stream == nullptr || stream->codecpar == nullptr || !IsSupportedGetFirstFrame(*stream)) {
             continue;
         }
-        if (FFmpegFormatHelper::IsMpeg4File(fileType_) && !Mp4checkKeyFrame(stream)) {
+        if (FFmpegFormatHelper::IsMpeg4File(fileType_) && !Mp4CheckKeyFrame(stream)) {
             continue;
         }
         if (!TrackIsChecked(trackIndex)) {
