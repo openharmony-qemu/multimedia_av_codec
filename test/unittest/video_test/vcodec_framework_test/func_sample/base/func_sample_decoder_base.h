@@ -130,7 +130,7 @@ public:
 };
 
 struct DetailedErrorCode {
-    bool verification_{false};
+    bool verification_{true};
     bool unsupportedSpecification_{false};
     bool illegalParam_ {false};
     bool missingParam_{false};

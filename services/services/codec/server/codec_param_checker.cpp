@@ -69,9 +69,9 @@ inline void PrintCodecScenario(CodecScenario scenario)
 {
     auto scenarioName = CODEC_SCENARIO_TO_STRING.find(scenario);
     if (scenarioName != CODEC_SCENARIO_TO_STRING.end()) {
-        AVCODEC_LOGI("Codec scenario is %{public}s", scenarioName->second.data());
+        AVCODEC_LOGD("Codec scenario is %{public}s", scenarioName->second.data());
     } else {
-        AVCODEC_LOGI("Codec scenario is %{public}d", scenario);
+        AVCODEC_LOGD("Codec scenario is %{public}d", scenario);
     }
 }
 

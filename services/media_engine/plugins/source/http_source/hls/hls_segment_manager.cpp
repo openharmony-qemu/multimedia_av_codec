@@ -379,7 +379,7 @@ bool HlsSegmentManager::CheckReadStatus()
         return true;
     }
     if (playlistDownloader_->GetDuration() > 0 && playlistDownloader_->IsParseAndNotifyFinished() &&
-        static_cast<int64_t>(seekTime_) >= playlistDownloader_->GetDuration()) {
+        seekTime_ >= static_cast<uint64_t>(playlistDownloader_->GetDuration())) {
         MEDIA_LOG_I("HLS seek to tail, type: %{public}d", type_);
         return true;
     }

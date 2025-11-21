@@ -219,7 +219,7 @@ public:
         return "";
     }
 
-    virtual bool IsHlsEnd()
+    virtual bool IsHlsEnd(int32_t streamId = -1)
     {
         return false;
     }

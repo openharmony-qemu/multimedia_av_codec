@@ -330,7 +330,7 @@ private:
     int AVReadFrameLimit(AVPacket *pkt);
     Status SetAVReadFrameLimit();
     void SetAVReadFrameLimitDefault();
-    bool Mp4checkKeyFrame(AVStream* stream);
+    bool Mp4CheckKeyFrame(AVStream* stream);
 
     Status WaitForLoop(const uint32_t trackId, const uint32_t timeout);
     bool ShouldWaitForRead(uint32_t trackId);

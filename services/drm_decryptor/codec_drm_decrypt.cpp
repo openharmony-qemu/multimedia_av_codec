@@ -737,7 +737,7 @@ int32_t CodecDrmDecrypt::SetDrmBuffer(const MetaDrmCencInfo * const cencInfo, co
 int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo * const cencInfo, std::shared_ptr<AVBuffer> &inBuf,
     std::shared_ptr<AVBuffer> &outBuf)
 {
-    AVCODEC_LOGI("CodecDrmDecrypt DecryptMediaData");
+    AVCODEC_LOGD("CodecDrmDecrypt DecryptMediaData");
 #ifdef SUPPORT_DRM
     std::lock_guard<std::mutex> drmLock(configMutex_);
     int32_t retCode = AVCS_ERR_INVALID_VAL;

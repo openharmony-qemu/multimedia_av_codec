@@ -202,7 +202,7 @@ private:
 #endif
     bool svpFlag_ = false;
     std::atomic<bool> isPaused_{false};
-    std::list<std::pair<int, std::shared_ptr<AVBuffer>>> outputBuffers_;
+    std::list<std::pair<uint32_t, std::shared_ptr<AVBuffer>>> outputBuffers_;
     std::mutex mutex_;
     std::unique_ptr<std::thread> readThread_ = nullptr;
     std::atomic<bool> isThreadExit_ = true;

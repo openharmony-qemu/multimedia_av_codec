@@ -1157,7 +1157,7 @@ int32_t HEncoder::OnSetInputSurface(sptr<Surface> &inputSurface)
 }
 
 void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
-                                              const shared_ptr<Media::Meta> &meta)
+                                              const shared_ptr<Media::Meta> &meta, sptr<SurfaceBuffer> surfaceBuffer)
 {
     omxBuffer->alongParam.clear();
     WrapLTRParamIntoOmxBuffer(omxBuffer, meta);
@@ -1165,7 +1165,7 @@ void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffe
     WrapQPRangeParamIntoOmxBuffer(omxBuffer, meta);
     WrapStartQPIntoOmxBuffer(omxBuffer, meta);
     WrapIsSkipFrameIntoOmxBuffer(omxBuffer, meta);
-    WrapRoiParamIntoOmxBuffer(omxBuffer, meta);
+    WrapRoiParamIntoOmxBuffer(omxBuffer, meta, surfaceBuffer);
     WrapQPMapParamIntoOmxBuffer(omxBuffer, meta);
     meta->Clear();
 }
@@ -1422,15 +1422,17 @@ void HEncoder::ParseRoiStringValid(const std::string &roiValue, shared_ptr<Codec
         param.roiInfo[vaildCount].roiWidth = static_cast<int32_t>(roiWidth);
         param.roiInfo[vaildCount].roiHeight = static_cast<int32_t>(roiHeight);
         vaildCount++;
+        HLOGD("Get a valid roi: %d,%d-%d,%d=%d", top, left, bottom, right, qpOffset);
     }
     AppendToVector(omxBuffer->alongParam, param);
 }
 
 void HEncoder::WrapRoiParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
-                                         const shared_ptr<Media::Meta> &meta)
+                                         const shared_ptr<Media::Meta> &meta, sptr<SurfaceBuffer> surfaceBuffer)
 {
     std::string roiValue;
-    if (!meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiValue)) { // historical configuration
+    if (!meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiValue) &&
+        (!GetROIBySurfaceBuffer(surfaceBuffer, roiValue))) { // historical configuration
         return;
     }
     ParseRoiStringValid(roiValue, omxBuffer);
@@ -1631,7 +1633,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     if (enableVariableFrameRate_ && CalculateFrameRateParamIntoOmxBuffer(bufferInfo->omxBuffer->pts) != 0) {
         ReplyErrorCode(msg.id, AVCS_ERR_INPUT_DATA_ERROR);
     }
-    WrapPerFrameParamIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->avBuffer->meta_);
+    WrapPerFrameParamIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->avBuffer->meta_, bufferInfo->surfaceBuffer);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
     int32_t err = HCodec::OnQueueInputBuffer(mode, bufferInfo);
     if (err != AVCS_ERR_OK) {
@@ -1730,6 +1732,32 @@ void HEncoder::TraverseAvaliableBuffers()
     }
 }
 
+bool HEncoder::GetROIBySurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, string &roiStr)
+{
+    using namespace OHOS::HDI::Display::Graphic::Common::V2_2;
+    if (surfaceBuffer == nullptr) {
+        return false;
+    }
+    vector<uint8_t> vec;
+    GSError err = surfaceBuffer->GetMetadata(ATTRKEY_ROI_METADATA, vec);
+    if (err != GSERROR_OK || vec.empty()) {
+        return false;
+    }
+    if (vec.back() != 0) {
+        vec.push_back(static_cast<uint8_t>('\0'));
+    }
+    roiStr.assign(vec.begin(), vec.end());
+    size_t pos = roiStr.find('\0');
+    if (pos != std::string::npos) {
+        roiStr.erase(pos);
+    }
+    HLOGD("Get roiStr %s, len %zu, vecSize %zu", roiStr.c_str(), roiStr.length(), vec.size());
+    if (surfaceBuffer->EraseMetadataKey(ATTRKEY_ROI_METADATA) != GSERROR_OK) {
+        HLOGW("erase roi key failed");
+    }
+    return true;
+}
+
 void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
 {
     if (entry.item == nullptr) {
@@ -1748,27 +1776,16 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
     }
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     WrapSurfaceBufferToSlot(info, entry.item->buffer, entry.pts, 0);
-    using namespace OHOS::HDI::Display::Graphic::Common::V2_2;
-    vector<uint8_t> vec;
-    GSError err = info.surfaceBuffer->GetMetadata(ATTRKEY_ROI_METADATA, vec);
-    if (err == GSERROR_OK && !vec.empty()) {
-        if (vec.back() != 0) {
-            vec.push_back(static_cast<uint8_t>('\0'));
-        }
-        string roiStr(vec.begin(), vec.end());
-        info.avBuffer->meta_->SetData(OHOS::Media::Tag::VIDEO_ENCODER_ROI_PARAMS, roiStr);
-        if (info.surfaceBuffer->EraseMetadataKey(ATTRKEY_ROI_METADATA) != GSERROR_OK) {
-            HLOGW("erase roi key failed");
-        }
-    }
     encodingBuffers_[info.bufferId] = entry;
     if (enableSurfaceModeInputCb_) {
         info.avBuffer->pts_ = entry.pts;
         NotifyUserToFillThisInBuffer(info);
     } else {
-        info.omxBuffer->alongParam.clear();
-        WrapRoiParamIntoOmxBuffer(info.omxBuffer, info.avBuffer->meta_);
-        info.avBuffer->meta_->Clear();
+        string roiStr;
+        if (GetROIBySurfaceBuffer(info.surfaceBuffer, roiStr)) {
+            info.omxBuffer->alongParam.clear();
+            ParseRoiStringValid(roiStr, info.omxBuffer);
+        }
         CheckPts(info.omxBuffer->pts);
         int32_t err = InBufUsToOmx(info);
         if (err != AVCS_ERR_OK) {

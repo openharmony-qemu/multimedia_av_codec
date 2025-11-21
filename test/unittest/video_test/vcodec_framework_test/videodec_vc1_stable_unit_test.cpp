@@ -93,6 +93,7 @@ std::string getVC1InputPath(VC1VideoPaths path)
     }
 }
 
+#ifdef SUPPORT_CODEC_VC1
 /**
  * @tc.name: VideoDecoder_Multithread_Release_AVBuffer
  * @tc.desc: 1. push/free buffer in callback;
@@ -879,6 +880,7 @@ AVCODEC_MTEST_P(VideoDecStableTestVC1, VideoDecoder_Multithread_AVBuffer_With_Qu
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
+#endif
 } // namespace
 
 int main(int argc, char **argv)

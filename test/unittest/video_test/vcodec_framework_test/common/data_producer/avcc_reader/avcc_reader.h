@@ -251,6 +251,7 @@ private:
     std::shared_ptr<NalDetector> nalDetector_ = nullptr;
 };
 
+#ifdef SUPPORT_CODEC_VC1
 struct Vc1ReaderInfo {
     std::string inPath;
 };
@@ -309,6 +310,7 @@ private:
     std::shared_ptr<Vc1UnitReader> vc1UnitReader_ = nullptr;
     std::shared_ptr<Vc1Detector> vc1Detector_ = nullptr;
 };
+#endif
 
 struct Msvideo1ReaderInfo {
     std::string inPath;

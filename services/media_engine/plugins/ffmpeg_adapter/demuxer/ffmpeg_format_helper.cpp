@@ -142,7 +142,9 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
     {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
     {AV_CODEC_ID_MSVIDEO1, MimeType::VIDEO_MSVIDEO1},
+#ifdef SUPPORT_CODEC_VC1
     {AV_CODEC_ID_VC1, MimeType::VIDEO_VC1},
+#endif
     {AV_CODEC_ID_AV1, MimeType::VIDEO_AV1},
 
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
@@ -154,6 +156,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_WMAV1, MimeType::AUDIO_WMAV1},
     {AV_CODEC_ID_WMAV2, MimeType::AUDIO_WMAV2},
     {AV_CODEC_ID_WMAPRO, MimeType::AUDIO_WMAPRO},
+    {AV_CODEC_ID_ILBC, MimeType::AUDIO_ILBC},
 #ifdef SUPPORT_CODEC_COOK
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
 #endif
