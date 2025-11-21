@@ -318,7 +318,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, CheckBreakCondition, TestSize.Level1)
     downloader = nullptr;
 }
 
-HWTEST_F(HlsSegmentManagerUnitTest, HandleBuffering, TestSize.Level1)
+HWTEST_F(HlsSegmentManagerUnitTest, HandleBuffering_001, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
     downloader->isBuffering_ = false;
@@ -2051,5 +2051,65 @@ HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_DOWNLOADER_005, TestSize.Level1)
     downloader->Close(true);
     downloader = nullptr;
     delete sourceCallback;
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, HandleBuffering_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->isBuffering_ = true;
+    EXPECT_FALSE(downloader->HandleBuffering());
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_DATA_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    EXPECT_EQ(downloader->SaveData(nullptr, 0, true), 0);
+    downloader = nullptr;
+}
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_ENCRYPT_DATA_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    uint8_t data[1] = {1};
+    EXPECT_EQ(downloader->SaveEncryptData(data, 1, true), 1);
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TIME_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT,
+        true, header_);
+    downloader->Init();
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    bool result = downloader->SeekToTime(1000000000, SeekMode::SEEK_NEXT_SYNC);
+    downloader->Close(true);
+    downloader = nullptr;
+    EXPECT_TRUE(result);
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
+{
+    std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT,
+        true, header_);
+    downloader->Init();
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    bool result = downloader->SeekToTime(1, SeekMode::SEEK_PREVIOUS_SYNC);
+    downloader->Close(true);
+    downloader = nullptr;
+    EXPECT_TRUE(result);
 }
 }
