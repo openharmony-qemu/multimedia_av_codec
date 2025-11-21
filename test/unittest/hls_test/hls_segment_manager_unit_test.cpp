@@ -2077,7 +2077,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SAVE_ENCRYPT_DATA_001, TestSize.Level1)
     downloader = nullptr;
 }
 
-HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TIME_001, TestSize.Level1)
+HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TIME_002, TestSize.Level1)
 {
     std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT,
         true, header_);
@@ -2095,7 +2095,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TIME_001, TestSize.Level1)
     EXPECT_TRUE(result);
 }
 
-HWTEST_F(HlsSegmentManagerUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
+HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TIME_003, TestSize.Level1)
 {
     std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT,
         true, header_);
