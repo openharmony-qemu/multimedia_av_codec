@@ -507,13 +507,6 @@ Status AudioServerSinkPlugin::GetParameter(std::shared_ptr<Meta> &meta)
 bool AudioServerSinkPlugin::AssignSampleRateIfSupported(uint32_t sampleRate)
 {
     sampleRate_ = sampleRate;
-    if (mimeType_ == MimeType::AUDIO_FLAC) {
-        FALSE_RETURN_V_MSG(OHOS::AudioStandard::AudioRenderer::CheckSupportedSamplingRates(sampleRate), false,
-            "mimeType is FLAC sampleRate is invaild");
-        customSampleRate_ = sampleRate;
-        MEDIA_LOG_I_SHORT("mimeType is FLAC, customSampleRate: " PUBLIC_LOG_U32, customSampleRate_);
-        return true;
-    }
     auto supportedSampleRateList = OHOS::AudioStandard::AudioRenderer::GetSupportedSamplingRates();
     FALSE_RETURN_V_MSG(!supportedSampleRateList.empty(), false, "GetSupportedSamplingRates fail");
     for (const auto &rate : supportedSampleRateList) {
@@ -523,8 +516,11 @@ bool AudioServerSinkPlugin::AssignSampleRateIfSupported(uint32_t sampleRate)
             return true;
         }
     }
-    MEDIA_LOG_E_SHORT("sample rate " PUBLIC_LOG_U32 "not supported", sampleRate);
-    return false;
+    FALSE_RETURN_V_MSG(OHOS::AudioStandard::AudioRenderer::CheckSupportedSamplingRates(sampleRate), false,
+        "sampleRate is invaild %{public}d", sampleRate);
+    customSampleRate_ = sampleRate;
+    MEDIA_LOG_I_SHORT("customSampleRate: " PUBLIC_LOG_U32, customSampleRate_);
+    return true;
 }
 
 bool AudioServerSinkPlugin::AssignChannelNumIfSupported(uint32_t channelNum)

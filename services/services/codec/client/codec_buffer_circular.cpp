@@ -361,7 +361,7 @@ void CodecBufferCircular::PrintCaches(bool isOutput)
     const std::string userInfo = getCacheInfo(ownerArrays[OWNED_BY_USER], "user");
     const std::string clientInfo = HasFlag(FLAG_IS_SYNC) ? getCacheInfo(ownerArrays[OWNED_BY_CLIENT], ",client") : "";
     const std::string serverInfo = getCacheInfo(ownerArrays[OWNED_BY_SERVER], ",server");
-    AVCODEC_LOGI_WITH_TAG("%{public}s cache:%{public}s%{public}s%{public}s", (isOutput ? "out" : "in"),
+    AVCODEC_LOGI_WITH_TAG("%{public}s:%{public}s%{public}s%{public}s", (isOutput ? "out" : "in"),
                           userInfo.c_str(), clientInfo.c_str(), serverInfo.c_str());
 }
 

@@ -28,5 +28,15 @@ sptr<Surface> SurfaceInnerMock::GetSurface()
 {
     return surface_;
 }
+
+void SurfaceInnerMock::SetTransform(int32_t transform)
+{
+    surface_->SetTransform(static_cast<GraphicTransformType>(transform));
+}
+
+void SurfaceInnerMock::GetTransform(int32_t &transform)
+{
+    transform = static_cast<int32_t>(surface_->GetTransform());
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

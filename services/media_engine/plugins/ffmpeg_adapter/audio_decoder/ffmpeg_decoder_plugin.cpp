@@ -77,7 +77,8 @@ static const std::vector<std::string_view> codecVec = {
     AVCodecCodecName::AUDIO_DECODER_WMAV1_NAME,            // 40: wmav1
     AVCodecCodecName::AUDIO_DECODER_WMAV2_NAME,            // 41: wmav2
     AVCodecCodecName::AUDIO_DECODER_WMAPRO_NAME,           // 42: wmapro
-    AVCodecCodecName::AUDIO_DECODER_ALAC_NAME			   // 43: alac
+    AVCodecCodecName::AUDIO_DECODER_ALAC_NAME,			   // 43: alac
+    AVCodecCodecName::AUDIO_DECODER_ILBC_NAME              // 44: ilbc
 };
 
 template <class T>
@@ -135,7 +136,8 @@ static const std::vector<std::string> codecMimeMap = {
     MimeType::AUDIO_WMAV1,            // 40: wmav1
     MimeType::AUDIO_WMAV2,            // 41: wmav2
     MimeType::AUDIO_WMAPRO,           // 42: wmapro
-    MimeType::AUDIO_ALAC              // 43: alac
+    MimeType::AUDIO_ALAC,             // 43: alac
+    MimeType::AUDIO_ILBC              // 44: ilbc
 };
 
 static const std::vector<void(*)(const std::string&, const std::string_view&,
@@ -183,7 +185,8 @@ static const std::vector<void(*)(const std::string&, const std::string_view&,
     InitDefinition<FFmpegWMADecoderPlugin>,    // 40: wmav1
     InitDefinition<FFmpegWMADecoderPlugin>,    // 41: wmav2
     InitDefinition<FFmpegWMADecoderPlugin>,    // 42: wmapro
-    InitDefinition<FFmpegAlacDecoderPlugin>    // 43: alac
+    InitDefinition<FFmpegAlacDecoderPlugin>,   // 43: alac
+    InitDefinition<FFmpegILBCDecoderPlugin>    // 44: ilbc
 };
 
 void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap)

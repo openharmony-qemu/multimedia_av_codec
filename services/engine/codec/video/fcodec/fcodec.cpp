@@ -1146,7 +1146,7 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
 {
     VideoPixelFormat targetPixelFmt = outputPixelFmt_;
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
-        targetPixelFmt = sInfo_.surface ? VideoPixelFormat::NV12 : ConvertPixelFormatFromFFmpeg(cachedFrame_->format);
+        targetPixelFmt = VideoPixelFormat::NV12;
     }
     AVPixelFormat ffmpegFormat = ConvertPixelFormatToFFmpeg(targetPixelFmt);
     int32_t ret;

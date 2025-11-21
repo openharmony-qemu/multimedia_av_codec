@@ -116,5 +116,10 @@ int32_t DemuxerCapiMock::ReadSampleBuffer(
     OH_AVBuffer_Destroy(avBuffer);
     return AV_ERR_OK;
 }
+
+BufferInfo DemuxerCapiMock::GetCurrentBufferInfo()
+{
+    return currentBufferInfo_;
+}
 }
 }

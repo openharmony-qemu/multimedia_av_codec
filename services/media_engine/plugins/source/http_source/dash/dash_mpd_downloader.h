@@ -112,7 +112,7 @@ struct DashMpdCallback {
 class DashMpdDownloader : public std::enable_shared_from_this<DashMpdDownloader> {
 public:
     explicit DashMpdDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
-    virtual ~DashMpdDownloader() noexcept;
+    virtual ~DashMpdDownloader();
 
     void Init();
     void Open(const std::string &url);

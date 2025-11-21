@@ -1,0 +1,34 @@
+syntax = "proto2";
+package ohos.mpdutil;
+
+message UrlCase {
+  optional string src       = 1;
+  repeated string base_list = 2;
+  optional string base_one  = 3;
+}
+
+message AttrSet {
+  repeated string dict      = 1; // 节点属性词典
+  repeated string query     = 2; // 要查询的属性名
+}
+
+message RangeCase {
+  optional string range     = 1;
+}
+
+message DurationCase {
+  optional string duration  = 1;
+}
+
+message Descriptor {
+  optional string scheme    = 1; // e.g. "cicp:MatrixCoefficients"
+  optional string value     = 2; // e.g. "9"
+}
+
+message UtilInput {
+  optional UrlCase url      = 1;
+  optional AttrSet attrs    = 2;
+  optional RangeCase range  = 3;
+  optional DurationCase dur = 4;
+  repeated Descriptor desc  = 5;
+}

@@ -446,6 +446,7 @@ protected:
     int pid_ = -1;
     bool isLpp_ = false;
     double codecRate_ = 0.0;
+    static constexpr uint32_t MAX_BUFFER_COUNT = 32;
 
     // VRR
     bool isVrrInitialized_ = false;

@@ -1674,6 +1674,9 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1140, TestSize.Level1)
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_TITLE, formatVal_.title));
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ARTIST, formatVal_.artist));
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ALBUM, formatVal_.album));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
@@ -1681,6 +1684,9 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1140, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_EQ(formatVal_.title, "test");
+    ASSERT_EQ(formatVal_.artist, "元数据测试");
+    ASSERT_EQ(formatVal_.album, "media");
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.channelLayout, 4);
     ASSERT_EQ(formatVal_.sampleRate, 48000);

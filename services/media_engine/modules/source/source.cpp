@@ -643,10 +643,10 @@ Status Source::StopBufferring(bool isAppBackground)
     return plugin_->StopBufferring(isAppBackground);
 }
 
-bool Source::IsHlsEnd()
+bool Source::IsHlsEnd(int32_t streamId)
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");
-    return plugin_->IsHlsEnd();
+    return plugin_->IsHlsEnd(streamId);
 }
 
 bool Source::IsHls()

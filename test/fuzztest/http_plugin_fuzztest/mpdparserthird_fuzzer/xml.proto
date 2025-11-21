@@ -1,0 +1,15 @@
+syntax = "proto2";
+package ohos.xml;
+
+message XmlInput {
+  optional bytes  xml             = 1;
+  repeated string attr_name       = 2;
+  optional uint32 max_walk        = 3 [default = 1000];
+  optional bool   parse_twice     = 4 [default = true];
+
+  // 新增：文件相关
+  optional bool   use_file        = 5 [default = true];
+  optional bool   perm_deny       = 6 [default = false];
+  optional bool   use_bad_path    = 7 [default = false];
+  optional bool   empty_file      = 8 [default = false];
+}

@@ -76,6 +76,7 @@ static const string TEST_FILE_URI_OGG = TEST_FILE_PATH + "audio/ogg_48000_1.ogg"
 static const string TEST_FILE_URI_WAV = TEST_FILE_PATH + "audio/wav_48000_1.wav";
 static const string TEST_FILE_URI_RM = TEST_FILE_PATH + "rv40_cook.rmvb";
 static const string TEST_FILE_URI_AC3 = TEST_FILE_PATH + "audio/ac3_test.ac3";
+static const string TEST_FILE_URI_MP4_2 = TEST_FILE_PATH + "noframe.mp4";
 static const string TEST_FILE_URI_ASF = TEST_FILE_PATH + "wmv_wmv3_wmapro.wmv";
 static const string TEST_FILE_URI_3GP = TEST_FILE_PATH + "3gp_h264_aac.3gp";
 static const string TEST_FILE_URI_3G2 = TEST_FILE_PATH + "3g2_mp4v_mp4a.3g2";
@@ -917,6 +918,11 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0025, TestSize.
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_AAC, TEST_FILE_URI_AAC, DEF_PROB_SIZE), true);
     ASSERT_EQ(demuxerPlugin_->SetDataSourceWithProbSize(dataSourceImpl_, DEF_PROB_SIZE), Status::ERROR_WRONG_STATE);
     RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, Demuxer_Mp4InitCheck_0001, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4_2, DEF_PROB_SIZE), true);
 }
 
 HWTEST_F(DemuxerPluginManagerUnitTest, SeekToFirstFrame_0001, TestSize.Level1)

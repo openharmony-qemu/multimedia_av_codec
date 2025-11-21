@@ -148,10 +148,10 @@ COLOR_RANGE TranslateRange(uint8_t range)
 {
     switch (range) {
         case 0: {
-            return COLOR_RANGE::RANGE_FULL;
+            return COLOR_RANGE::RANGE_LIMITED;
         }
         case 1: {
-            return COLOR_RANGE::RANGE_LIMITED;
+            return COLOR_RANGE::RANGE_FULL;
         }
         default:
             AVCODEC_LOGE("Invalid range format:%{public}d", range);

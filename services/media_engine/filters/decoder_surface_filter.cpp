@@ -951,10 +951,10 @@ bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, 
     std::unique_lock<std::mutex> lock(mutex_);
     if (!byIdx) {
         FALSE_RETURN_V(!outputBuffers_.empty(), false);
-        std::pair<int, std::shared_ptr<AVBuffer>> task = std::move(outputBuffers_.front());
+        std::pair<uint32_t, std::shared_ptr<AVBuffer>> task = std::move(outputBuffers_.front());
         outputBuffers_.pop_front();
         FALSE_RETURN_V(task.first >= 0, false);
-        index = static_cast<uint32_t>(task.first);
+        index = task.first;
         outBuffer = task.second;
         if (isFirstFrameAfterResume_) {
             int64_t curTimeNs = GetSystimeTimeNs();
@@ -963,7 +963,7 @@ bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, 
             isFirstFrameAfterResume_ = false;
         }
         if (!outputBuffers_.empty()) {
-            std::pair<int, std::shared_ptr<AVBuffer>> nextTask = outputBuffers_.front();
+            std::pair<uint32_t, std::shared_ptr<AVBuffer>> nextTask = outputBuffers_.front();
             RenderNextOutput(nextTask.first, nextTask.second);
         }
         return true;

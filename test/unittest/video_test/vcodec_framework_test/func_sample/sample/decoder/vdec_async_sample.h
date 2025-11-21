@@ -29,6 +29,7 @@ public:
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb);
     int32_t SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb);
     int32_t SetOutputSurface();
+    int32_t SetOutputSurface(std::shared_ptr<SurfaceMock> surface);
     int32_t Configure(std::shared_ptr<FormatMock> format);
     int32_t Prepare();
     int32_t Start();
@@ -83,7 +84,9 @@ private:
     int32_t CreateAvccReader();
     int32_t CreateMpegReader();
     int32_t CreateH263Reader();
+#ifdef SUPPORT_CODEC_VC1
     int32_t CreateVc1Reader();
+#endif
     int32_t CreateMsvideo1Reader();
     int32_t CreateWmv3Reader();
     int32_t CreateReader(const std::string& inPath);
@@ -111,7 +114,9 @@ private:
     std::shared_ptr<AvccReader> avccReader_ = nullptr;
     std::shared_ptr<MpegReader> mpegReader_ = nullptr;
     std::shared_ptr<H263Reader> h263Reader_ = nullptr;
+#ifdef SUPPORT_CODEC_VC1
     std::shared_ptr<Vc1Reader> vc1Reader_ = nullptr;
+#endif
     std::shared_ptr<Msvideo1Reader> msvideo1Reader_ = nullptr;
     std::shared_ptr<Wmv3Reader> wmv3Reader_ = nullptr;
     std::shared_ptr<std::ifstream> dynamicMetadataFile_ = nullptr;

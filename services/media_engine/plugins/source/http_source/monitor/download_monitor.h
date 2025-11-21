@@ -48,7 +48,7 @@ public:
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
-    bool SeekToPos(int64_t offset, bool& isSeekHIt) override;
+    bool SeekToPos(int64_t offset, bool& isSeekHit) override;
     void Pause() override;
     void Resume() override;
     size_t GetContentLength() const override;
@@ -93,7 +93,7 @@ public:
     uint64_t GetMemorySize() override;
     std::string GetContentType() override;
     std::string GetCurUrl() override;
-    bool IsHlsEnd() override;
+    bool IsHlsEnd(int32_t streamId = -1) override;
 
 private:
     int64_t HttpMonitorLoop();

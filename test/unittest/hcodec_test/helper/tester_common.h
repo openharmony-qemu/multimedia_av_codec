@@ -109,7 +109,7 @@ protected:
     virtual std::optional<uint32_t> GetInputStride() = 0;
     static bool SurfaceBufferToBufferInfo(BufInfo& buf, sptr<SurfaceBuffer> surfaceBuffer);
     static bool NativeBufferToBufferInfo(BufInfo& buf, OH_NativeBuffer* nativeBuffer);
-    bool WaitForInputSurfaceBuffer(BufInfo& buf);
+    bool WaitForInputSurfaceBuffer(BufInfo& buf, bool enableROIByNb);
     bool ReturnInputSurfaceBuffer(BufInfo& buf);
     uint32_t ReadOneFrame(ImgBuf& dstImg);
     static uint32_t ReadOneFrameYUV420P(std::ifstream& src, ImgBuf& dstImg);

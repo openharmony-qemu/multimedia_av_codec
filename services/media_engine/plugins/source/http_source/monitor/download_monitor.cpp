@@ -150,10 +150,9 @@ Status DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     return ret;
 }
 
-bool DownloadMonitor::SeekToPos(int64_t offset, bool& isSeekHIt)
+bool DownloadMonitor::SeekToPos(int64_t offset, bool& isSeekHit)
 {
     isPlaying_ = true;
-    bool isSeekHit = false;
     bool res = downloader_->SeekToPos(offset, isSeekHit);
     if (!isSeekHit) {
         AutoLock lock(taskMutex_);
@@ -553,10 +552,10 @@ std::string DownloadMonitor::GetCurUrl()
     return downloader_->GetCurUrl();
 }
 
-bool DownloadMonitor::IsHlsEnd()
+bool DownloadMonitor::IsHlsEnd(int32_t streamId)
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
-    return downloader_->IsHlsEnd();
+    return downloader_->IsHlsEnd(streamId);
 }
 }
 }

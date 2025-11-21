@@ -384,6 +384,10 @@ void PlayListDownloader::StopBufferring(bool isAppBackground)
     downloader_->StopBufferring();
 }
 
+void PlayListDownloader::Clone(std::shared_ptr<PlayListDownloader> other)
+{
+    (void)other;
+}
 }
 }
 }

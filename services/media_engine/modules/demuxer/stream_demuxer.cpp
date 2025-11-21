@@ -62,6 +62,7 @@ Status StreamDemuxer::ReadFrameData(int32_t streamID, uint64_t offset, size_t si
 {
     if (IsDash() || GetIsDataSrcNoSeek()) {
         MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64 " streamID: " PUBLIC_LOG_D32, offset, streamID);
+        std::unique_lock<std::mutex> lock(cacheDataMutex_);
         if (cacheDataMap_.find(streamID) != cacheDataMap_.end() && cacheDataMap_[streamID].CheckCacheExist(offset)) {
             MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
             auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
@@ -77,6 +78,7 @@ Status StreamDemuxer::ReadFrameData(int32_t streamID, uint64_t offset, size_t si
 Status StreamDemuxer::ReadHeaderData(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Buffer>& bufferPtr)
 {
+    std::unique_lock<std::mutex> lock(cacheDataMutex_);
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end() && cacheDataMap_[streamID].CheckCacheExist(offset)) {
         MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
         auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
@@ -189,12 +191,12 @@ Status StreamDemuxer::ProcInnerDash(int32_t streamID,  uint64_t offset, std::sha
         FALSE_RETURN_V_MSG_E(mergedBuffer != nullptr, Status::ERROR_UNKNOWN, "mergedBuffer invalid");
         auto mergeMemory = mergedBuffer->GetMemory();
         FALSE_RETURN_V_MSG_E(mergeMemory != nullptr, Status::ERROR_UNKNOWN, "mergeMemory invalid");
-        MEDIA_LOG_I("dash PullDataWithoutCache merge before: cache offset: " PUBLIC_LOG_U64
+        MEDIA_LOG_D("dash PullDataWithoutCache merge before: cache offset: " PUBLIC_LOG_U64
             ", cache size: " PUBLIC_LOG_ZU, cacheDataMap_[streamID].GetOffset(), cacheMemory->GetSize());
         mergeMemory->Write(cacheMemory->GetReadOnlyData(), cacheMemory->GetSize(), 0);
         mergeMemory->Write(bufferMemory->GetReadOnlyData(), bufferMemory->GetSize(), cacheMemory->GetSize());
         cacheDataMap_[streamID].SetData(mergedBuffer);
-        MEDIA_LOG_I("dash PullDataWithoutCache merge after: " PUBLIC_LOG_U64 ", cache offset: " PUBLIC_LOG_U64,
+        MEDIA_LOG_D("dash PullDataWithoutCache merge after: " PUBLIC_LOG_U64 ", cache offset: " PUBLIC_LOG_U64,
             offset, cacheDataMap_[streamID].GetOffset());
     }
     return Status::OK;
@@ -319,6 +321,7 @@ Status StreamDemuxer::PullData(int32_t streamID, uint64_t offset, size_t size,
 
 Status StreamDemuxer::ResetCache(int32_t streamID)
 {
+    std::unique_lock<std::mutex> lock(cacheDataMutex_);
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
         cacheDataMap_[streamID].Reset();
         cacheDataMap_.erase(streamID);
@@ -328,6 +331,7 @@ Status StreamDemuxer::ResetCache(int32_t streamID)
 
 Status StreamDemuxer::ResetAllCache()
 {
+    std::unique_lock<std::mutex> lock(cacheDataMutex_);
     for (auto& iter : cacheDataMap_) {
         iter.second.Reset();
     }

@@ -56,6 +56,7 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_GSM = "audio/gsm";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAV1 = "audio/wmav1";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAV2 = "audio/wmav2";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAPRO = "audio/wmapro";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_ILBC = "audio/ilbc";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";
@@ -76,6 +77,7 @@ const char *OH_MD_KEY_AUD_CHANNEL_COUNT = "channel_count";
 const char *OH_MD_KEY_AUD_SAMPLE_RATE = "sample_rate";
 const char *OH_MD_KEY_I_FRAME_INTERVAL = "i_frame_interval";
 const char *OH_MD_KEY_ROTATION = "rotation_angle";
+const char *OH_MD_KEY_VIDEO_TRANSFORM_TYPE = "video_orientation_type";
 const char *OH_MD_KEY_CODEC_CONFIG = "codec_config";
 const char *OH_MD_KEY_REQUEST_I_FRAME = "req_i_frame";
 const char *OH_MD_KEY_RANGE_FLAG = "range_flag";
