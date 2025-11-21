@@ -105,7 +105,7 @@ std::string static GetHostnameFromURL(const std::string &url)
     std::string tempUrl = url;
     std::replace(tempUrl.begin(), tempUrl.end(), '\\', '/');
     size_t posStart = tempUrl.find(delimiter);
-    if (posStart != std::string::nops) {
+    if (posStart != std::string::npos) {
         posStart += delimiter.length();
     } else {
         posStart = 0;
@@ -129,8 +129,7 @@ struct OH_AVSource *OH_AVSource_CreateWithURI(char *uri)
     std::string protocol = GetProtocolFromURL(uri);
     int32_t ret = OHOS::NetManagerStandard::NetworkSecurityConfig::
         GetInstance().IsCleartextCfgByComponent("Media kit", isComponentCfg);
-    MEDIA_LOG_D("Media kit, ret: %{public}d,
-        isComponentCfg: %{public}d, protocol: %{public}s",
+    MEDIA_LOG_D("Media kit, ret: %{public}d, isComponentCfg: %{public}d, protocol: %{public}s",
             ret, isComponentCfg, protocol.c_str());
     if (isComponentCfg && protocol == "http") {
         bool isCleartextPermitted = true;
