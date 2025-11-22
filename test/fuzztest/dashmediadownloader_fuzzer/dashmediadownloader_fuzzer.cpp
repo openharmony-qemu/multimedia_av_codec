@@ -58,7 +58,7 @@ bool DashMediaDownloaderFuzzerTest(const uint8_t *data, size_t size)
 
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
-    int32_t usingStreamId = *reinterpret_cast<int32_t *>(data);
+    int32_t usingStreamId = *reinterpret_cast<const int32_t *>(data);
     int32_t switchingStreamId = -1;
     for (auto stream : streams) {
         if (stream.type != SUBTITLE) {

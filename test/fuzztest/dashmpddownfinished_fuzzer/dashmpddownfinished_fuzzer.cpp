@@ -46,7 +46,7 @@ bool DashMpdDownFinishedFuzzerTest(const uint8_t *data, size_t size)
     downloader->GetSeekable();
     downloader->GetDuration();
     downloader->UpdateDownloadFinished(testUrl);
-    bool isAsyan = *reinterpret_cast<bool *>(data);
+    bool isAsyan = *reinterpret_cast<const bool *>(data);
     downloader->Close(isAsyan);
     if (!isAsyan) {
         usleep(WAIT_FOR_SIDX_TIME);

@@ -49,7 +49,7 @@ bool DashMediaDownSelectBitFuzzerTest(const uint8_t *data, size_t size)
     g_mediaDownloader->GetStreamInfo(streams);
 
     unsigned int switchingBitrate = 0;
-    int32_t usingStreamId = *reinterpret_cast<int32_t *>(data);
+    int32_t usingStreamId = *reinterpret_cast<const int32_t *>(data);
     for (auto stream : streams) {
         if (stream.type != VIDEO) {
             continue;
