@@ -46,7 +46,7 @@ bool DashMpdDownFinishedFuzzerTest(const uint8_t *data, size_t size)
     downloader->GetSeekable();
     downloader->GetDuration();
     downloader->UpdateDownloadFinished(testUrl);
-    downloader->Close(true);
+    downloader->Close(*reinterpret_cast<bool *>(data););
     downloader = nullptr;
     return false;
 }

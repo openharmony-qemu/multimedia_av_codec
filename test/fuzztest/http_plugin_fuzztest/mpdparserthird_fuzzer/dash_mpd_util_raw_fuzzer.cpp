@@ -41,10 +41,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
         return 0;
     }
 
-    // 限长防OOM
-    if (size > (1 << 20)) {
-        return 0;
-    }
+    size = min(size, static_cast<size_t>(1 << 20));
 
     const uint8_t* p = data;
     size_t n = size;

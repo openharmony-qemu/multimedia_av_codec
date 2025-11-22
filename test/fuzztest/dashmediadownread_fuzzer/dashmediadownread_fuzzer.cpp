@@ -51,7 +51,7 @@ bool DashMediaDownReadFuzzerTest(const uint8_t *data, size_t size)
 
     unsigned char buff[BUFFER_SIZE];
     ReadDataInfo readDataInfo;
-    readDataInfo.streamId_ = streams[0].streamId;
+    readDataInfo.streamId_ = *reinterpret_cast<int32_t *>(data);
     readDataInfo.nextStreamId_ = streams[0].streamId;
     readDataInfo.wantReadLength_ = BUFFER_SIZE;
     mediaDownloader->Read(buff, readDataInfo);
