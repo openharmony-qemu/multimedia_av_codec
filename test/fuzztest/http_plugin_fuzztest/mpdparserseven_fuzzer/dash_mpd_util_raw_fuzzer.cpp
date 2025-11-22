@@ -41,7 +41,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
         return 0;
     }
 
-    size = min(size, SIZE_MAX);
+    size = std::min(size, SIZE_MAX);
     const uint8_t* p = data;
     size_t n = size;
 
