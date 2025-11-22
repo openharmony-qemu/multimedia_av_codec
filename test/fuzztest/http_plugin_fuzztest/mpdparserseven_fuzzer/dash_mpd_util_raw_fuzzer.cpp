@@ -23,7 +23,7 @@
 #include "dash/include/mpd_parser/dash_mpd_util.h"
 
 using namespace OHOS::Media::Plugins::HttpPlugin;
-const size_t sizeMax = 1 << 20; 
+const size_t sizeMax = 1 << 20;
 static std::string TakeStr(const uint8_t*& p, size_t& n, size_t max_len) {
     if (n == 0) {
         return {};
