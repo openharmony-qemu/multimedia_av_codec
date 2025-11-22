@@ -346,7 +346,7 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_SEEKABLE_001, TestSize.Level0)
     EXPECT_EQ(downloader->GetSeekable(), Seekable::SEEKABLE);
 }
 
-HWTEST_F(HlsPlayListDownloaderUnitTest, IS_HLS_FMP4_002, TestSize.Level0)
+HWTEST_F(HlsPlayListDownloaderUnitTest, GET_SEEKABLE_002, TestSize.Level0)
 {
     auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
     downloader->Init();
