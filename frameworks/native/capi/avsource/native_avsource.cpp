@@ -127,11 +127,12 @@ struct OH_AVSource *OH_AVSource_CreateWithURI(char *uri)
     CHECK_AND_RETURN_RET_LOG(uri != nullptr, nullptr, "Uri is nullptr");
     bool isComponentCfg = false;
     std::string protocol = GetProtocolFromURL(uri);
+    string protocol_low = protocol.ToLower();
     int32_t ret = OHOS::NetManagerStandard::NetworkSecurityConfig::
         GetInstance().IsCleartextCfgByComponent("Media kit", isComponentCfg);
     MEDIA_LOG_D("Media kit, ret: %{public}d, isComponentCfg: %{public}d, protocol: %{public}s",
                 ret, isComponentCfg, protocol.c_str());
-    if (isComponentCfg && protocol == "http") {
+    if (isComponentCfg && protocol_low == "http") {
         bool isCleartextPermitted = true;
         std::string hostName = GetHostnameFromURL(uri);
         OHOS::NetManagerStandard::NetworkSecurityConfig::
