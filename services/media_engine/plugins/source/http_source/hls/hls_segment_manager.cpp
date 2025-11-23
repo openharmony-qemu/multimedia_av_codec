@@ -40,7 +40,6 @@ constexpr int SECOND_WIDTH = 720;
 constexpr int THIRD_WIDTH = 1080;
 constexpr uint64_t MAX_BUFFER_SIZE = 19 * 1024 * 1024;
 constexpr uint32_t SAMPLE_INTERVAL = 1000; // Sampling time interval: ms
-constexpr int MAX_RECORD_COUNT = 10;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_INTERVAL = 300 * 1000;
 constexpr double ZERO_THRESHOLD = 1e-9;
@@ -1221,47 +1220,22 @@ uint32_t HlsSegmentManager::SaveEncryptData(uint8_t* data, uint32_t len, bool no
 
 void HlsSegmentManager::DownloadRecordHistory(int64_t nowTime)
 {
-    if ((static_cast<uint64_t>(nowTime) - lastWriteTime_) >= SAMPLE_INTERVAL) {
-        MEDIA_LOG_I("HLS OnWriteRingBuffer nowTime: " PUBLIC_LOG_D64
-            " lastWriteTime:" PUBLIC_LOG_D64  ", type: %{public}d", nowTime, lastWriteTime_, type_);
-        BufferDownRecord* record = new BufferDownRecord();
-        record->dataBits = lastWriteBit_;
-        record->timeoff = static_cast<uint64_t>(nowTime) - lastWriteTime_;
-        record->next = bufferDownRecord_;
-        bufferDownRecord_ = record;
-        lastWriteBit_ = 0;
-        lastWriteTime_ = static_cast<uint64_t>(nowTime);
-        BufferDownRecord* tmpRecord = bufferDownRecord_;
-        int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
-        for (int i = 0; i < MAX_RECORD_COUNT; i++) {
-            if (CheckLoopTimeout(loopStartTime)) {
-                break;
-            }
-            if (tmpRecord->next) {
-                tmpRecord = tmpRecord->next;
-            } else {
-                break;
-            }
-        }
-        BufferDownRecord* next = tmpRecord->next;
-        tmpRecord->next = nullptr;
-        tmpRecord = next;
-        loopStartTime = loopInterruptClock_.ElapsedSeconds();
-        while (tmpRecord) {
-            if (CheckLoopTimeout(loopStartTime)) {
-                break;
-            }
-            next = tmpRecord->next;
-            delete tmpRecord;
-            tmpRecord = next;
-        }
-        if (autoBufferSize_ && !userDefinedBufferDuration_) {
-            if (CheckRiseBufferSize()) {
-                RiseBufferSize();
-            } else if (CheckPulldownBufferSize()) {
-                DownBufferSize();
-            }
-        }
+    if ((static_cast<uint64_t>(nowTime) - lastWriteTime_) < SAMPLE_INTERVAL) {
+        return;
+    }
+    MEDIA_LOG_I("HLS OnWriteRingBuffer nowTime: " PUBLIC_LOG_D64
+        " lastWriteTime:" PUBLIC_LOG_D64  ", type: %{public}d", nowTime, lastWriteTime_, type_);
+    lastWriteBit_ = 0;
+    lastWriteTime_ = static_cast<uint64_t>(nowTime);
+    if (!autoBufferSize_ || userDefinedBufferDuration_) {
+        return;
+    }
+    if (CheckRiseBufferSize()) {
+        RiseBufferSize();
+    } else if (CheckPulldownBufferSize()) {
+        DownBufferSize();
+    } else {
+        MEDIA_LOG_D("DownloadRecordHistory, no rise, no down, type: %{public}d", type_);
     }
 }
 
@@ -1759,51 +1733,12 @@ void HlsSegmentManager::DownBufferSize()
 
 void HlsSegmentManager::OnReadBuffer(uint32_t len)
 {
-    static uint32_t minDuration = 0;
-    uint64_t nowTime = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     // Bytes to bit
     uint32_t duration = len * 8;
     if (duration >= bufferedDuration_) {
         bufferedDuration_ = 0;
     } else {
         bufferedDuration_ -= duration;
-    }
-
-    if (minDuration == 0 || bufferedDuration_ < minDuration) {
-        minDuration = bufferedDuration_;
-    }
-    if ((nowTime - lastReadTime_) >= SAMPLE_INTERVAL || bufferedDuration_ == 0) {
-        BufferLeastRecord* record = new BufferLeastRecord();
-        record->minDuration = minDuration;
-        record->next = bufferLeastRecord_;
-        bufferLeastRecord_ = record;
-        lastReadTime_ = nowTime;
-        minDuration = 0;
-        // delete all after bufferLeastRecord_[MAX_RECORD_CT]
-        BufferLeastRecord* tmpRecord = bufferLeastRecord_;
-        int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
-        for (int i = 0; i < MAX_RECORD_COUNT; i++) {
-            if (CheckLoopTimeout(loopStartTime)) {
-                break;
-            }
-            if (tmpRecord->next) {
-                tmpRecord = tmpRecord->next;
-            } else {
-                break;
-            }
-        }
-        BufferLeastRecord* next = tmpRecord->next;
-        tmpRecord->next = nullptr;
-        tmpRecord = next;
-        loopStartTime = loopInterruptClock_.ElapsedSeconds();
-        while (tmpRecord) {
-            if (CheckLoopTimeout(loopStartTime)) {
-                break;
-            }
-            next = tmpRecord->next;
-            delete tmpRecord;
-            tmpRecord = next;
-        }
     }
 }
 

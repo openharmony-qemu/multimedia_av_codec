@@ -228,27 +228,25 @@ HWTEST_F(HlsSegmentManagerUnitTest, OnReadRingBuffer2, TestSize.Level1)
     uint32_t len = 50;
     hlsSegmentManager_->bufferedDuration_ = 100;
     hlsSegmentManager_->OnReadBuffer(len);
-    EXPECT_LT(hlsSegmentManager_->bufferedDuration_, 100);
+    EXPECT_EQ(hlsSegmentManager_->bufferedDuration_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, OnReadRingBuffer3, TestSize.Level1)
 {
     uint32_t len = 50;
     hlsSegmentManager_->bufferedDuration_ = 0;
-    hlsSegmentManager_->lastReadTime_ = 0;
     hlsSegmentManager_->OnReadBuffer(len);
-    EXPECT_NE(hlsSegmentManager_->bufferLeastRecord_, nullptr);
+    EXPECT_EQ(hlsSegmentManager_->bufferedDuration_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, OnReadRingBuffer4, TestSize.Level1)
 {
     uint32_t len = 50;
     hlsSegmentManager_->bufferedDuration_ = 0;
-    hlsSegmentManager_->lastReadTime_ = 0;
     for (int i = 0; i < MAX_RECORD_COUNT + 1; i++) {
         hlsSegmentManager_->OnReadBuffer(len);
     }
-    EXPECT_NE(hlsSegmentManager_->bufferLeastRecord_->next, nullptr);
+    EXPECT_EQ(hlsSegmentManager_->bufferedDuration_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, DownBufferSize1, TestSize.Level1)
