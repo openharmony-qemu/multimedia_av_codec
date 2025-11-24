@@ -185,20 +185,21 @@ void FCodec::GetSurfaceCfgFromFmt(const Format &format)
             AVCODEC_LOGE("Invalid scale_type: %{public}d.", val);
         }
     }
-    if (format.GetIntValue(FMTKey::VIDEO_ROTATION, val)) {
-        if (IsValidRotation(val)) {
-            rotation = static_cast<int32_t>(TranslateSurfaceRotation(static_cast<VideoRotation>(val)));
-            AVCODEC_LOGI("Get parameter rotation_angle: %{public}d success.", rotation.value());
-        } else {
-            AVCODEC_LOGE("Invalid rotation_angle: %{public}d.", val);
-        }
-    }
     if (format.GetIntValue(FMTKey::VIDEO_ORIENTATION_TYPE, val)) {
         if (IsValidOrientation(val)) {
             orientation = val;
             AVCODEC_LOGI("Get parameter video_orientation_type: %{public}d success.", orientation.value());
         } else {
+            orientation = static_cast<int32_t>(GraphicTransformType::GRAPHIC_ROTATE_NONE);
             AVCODEC_LOGE("Invalid video_orientation_type: %{public}d.", val);
+        }
+    }
+    if (!orientation.has_value() && format.GetIntValue(FMTKey::VIDEO_ROTATION, val)) {
+        if (IsValidRotation(val)) {
+            rotation = static_cast<int32_t>(TranslateSurfaceRotation(static_cast<VideoRotation>(val)));
+            AVCODEC_LOGI("Get parameter rotation_angle: %{public}d success.", rotation.value());
+        } else {
+            AVCODEC_LOGE("Invalid rotation_angle: %{public}d.", val);
         }
     }
     if (orientation) {
