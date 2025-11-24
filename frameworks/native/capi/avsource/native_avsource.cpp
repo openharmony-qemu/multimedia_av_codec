@@ -131,7 +131,7 @@ struct OH_AVSource *OH_AVSource_CreateWithURI(char *uri)
         u = std::tolower(u);
     }
     int32_t ret = OHOS::NetManagerStandard::NetworkSecurityConfig::
-        GetInstance().IsCleartextCfgByComponent("Media kit", isComponentCfg);
+        GetInstance().IsCleartextCfgByComponent("Media Kit", isComponentCfg);
     MEDIA_LOG_I("Media kit, ret: %{public}d, isComponentCfg: %{public}d, protocol: %{public}s",
         ret, isComponentCfg, protocol.c_str());
     if (isComponentCfg && protocol == "http") {
