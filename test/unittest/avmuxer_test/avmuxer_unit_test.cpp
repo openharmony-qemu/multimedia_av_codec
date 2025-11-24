@@ -1622,7 +1622,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_Optimize_Filler_Data_001, TestSize.Level0)
         while (!eosFlag && (ret == 0)) {
             ret = WriteSample(trackId, inputFile_, eosFlag, flag);
         }
-        ASSERT_EQ(ret, 0);   
+        ASSERT_EQ(ret, 0);
     }
 }
 
