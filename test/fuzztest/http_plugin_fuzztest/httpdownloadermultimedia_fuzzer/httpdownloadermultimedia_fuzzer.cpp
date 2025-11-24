@@ -121,7 +121,7 @@ void TestHttpDownloaderFuzz(FuzzedDataProvider &fdp)
     stream2->height = 1080;  // 1080
     stream2->bitrate = 40000;  // 40000
     mediaStreams.push_back(stream2);
-    httpMediaDownloader.SetMediaStreams(mediaStreams);
+    httpMediaDownloader->SetMediaStreams(mediaStreams);
     httpMediaDownloader->Open(testUriPath, g_httpHeader);
     httpMediaDownloader->SetPlayStrategy(playStrategy);
     httpMediaDownloader->Read(g_buffer, readDataInfo);
