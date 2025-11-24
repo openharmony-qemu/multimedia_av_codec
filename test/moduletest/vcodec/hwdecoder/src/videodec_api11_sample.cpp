@@ -1091,7 +1091,9 @@ void VDecAPI11Sample::OutputFuncTest()
             }
             return signal_->outIdxQueue_.size() > 0 && !isFlushing_.load();
         });
-        StopOutPut();
+        if (!StopOutPut()) {
+            break;
+        }
         uint32_t index = signal_->outIdxQueue_.front();
         OH_AVBuffer *buffer = signal_->outBufferQueue_.front();
         signal_->outBufferQueue_.pop();
@@ -1639,13 +1641,14 @@ void VDecAPI11Sample::GetFormatKey()
     isGetFormatKeyNum++;
 }
 
-void VDecAPI11Sample::StopOutPut()
+bool VDecAPI11Sample::StopOutPut()
 {
     if (!isRunning_.load()) {
-            break;
+            return false;
     }
     if (outNoFrameLoss) {
         inNoFrameLoss = true;
-        break;
+        return false;
     }
+    return true;
 }
