@@ -110,6 +110,8 @@ public:
     bool getOutputBufferIndexNoExisted = false;
     bool abnormalIndexValue = false;
     bool isCheckFlush = false;
+    bool outNoFrameLoss = false;
+    bool inNoFrameLoss = false;
     int32_t Start();
     int32_t Stop();
     int32_t Flush();

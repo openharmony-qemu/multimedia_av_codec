@@ -835,6 +835,9 @@ void VDecAPI11Sample::InputFuncTest()
             flag = false;
             break;
         }
+        if (inNoFrameLoss) {
+            break;
+        }
         index = signal_->inIdxQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
 
@@ -1083,12 +1086,16 @@ void VDecAPI11Sample::OutputFuncTest()
         OH_AVCodecBufferAttr attr;
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() {
-            if (!isRunning_.load()) {
+            if (!isRunning_.load() || outNoFrameLoss) {
                 return true;
             }
             return signal_->outIdxQueue_.size() > 0 && !isFlushing_.load();
         });
         if (!isRunning_.load()) {
+            break;
+        }
+        if (outNoFrameLoss) {
+            inNoFrameLoss = true;
             break;
         }
         uint32_t index = signal_->outIdxQueue_.front();

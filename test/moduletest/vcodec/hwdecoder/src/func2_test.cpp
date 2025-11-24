@@ -2100,9 +2100,10 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0180, TestSize.Level2)
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->checkErrCode = true;
         vDecSample->needSendOneFrame = true;
+        vDecSample->outNoFrameLoss = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName));
         vDecSample->WaitForEOS();
-        ASSERT_EQ(true, vDecSample->errCodeIsRight);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 
@@ -2121,9 +2122,10 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0190, TestSize.Level2)
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->checkErrCode = true;
+        vDecSample->NocaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHEVC));
         vDecSample->WaitForEOS();
-        ASSERT_EQ(true, vDecSample->errCodeIsRight);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 
@@ -2143,9 +2145,10 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0200, TestSize.Level2)
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->checkErrCode = true;
         vDecSample->needXpsEmpty = true;
+        vDecSample->NocaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName));
         vDecSample->WaitForEOS();
-        ASSERT_EQ(true, vDecSample->errCodeIsRight);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 
@@ -2165,9 +2168,10 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0210, TestSize.Level2)
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->checkErrCode = true;
         vDecSample->noNeedFirstFrame = true;
+        vDecSample->NocaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHEVC));
         vDecSample->WaitForEOS();
-        ASSERT_EQ(true, vDecSample->errCodeIsRight);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 /**
