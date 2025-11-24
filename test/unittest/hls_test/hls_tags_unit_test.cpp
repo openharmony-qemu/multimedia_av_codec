@@ -267,8 +267,8 @@ HWTEST_F(AttributeUnitTest, FloatingPointScientific, TestSize.Level1)
     Attribute attr("name", "1.23e4");
     EXPECT_EQ(attr.FloatingPoint(), 12300.0);
 
-    Attribute attr("name", "1.23E-5");
-    EXPECT_EQ(attr.FloatingPoint(), 1.23e-5);
+    Attribute attr2("name", "1.23E-5");
+    EXPECT_EQ(attr2.FloatingPoint(), 1.23e-5);
 }
 
 HWTEST_F(AttributeUnitTest, FloatingPointEmptyString, TestSize.Level1)
@@ -301,7 +301,7 @@ HWTEST_F(AttributeUnitTest, HexSequenceNormalEven, TestSize.Level1)
 
 HWTEST_F(AttributeUnitTest, HexSequenceCaseInsensitive, TestSize.Level1)
 {
-    Attribute attr("name", "0x1a2B3c");
+    Attribute attr("name", "0X1a2B3c");
     auto result = attr.HexSequence();
     EXPECT_EQ(result.size(), 3);
     EXPECT_EQ(result[0], 0x1A);
@@ -330,14 +330,14 @@ HWTEST_F(AttributeUnitTest, HexSequenceEmpty, TestSize.Level1)
 {
     Attribute attr("name", "");
     auto result = attr.HexSequence();
-    EXPECT_EQ(result.empty());
+    EXPECT_TRUE(result.empty());
 }
 
 HWTEST_F(AttributeUnitTest, HexSequenceOnlyPrefix, TestSize.Level1)
 {
     Attribute attr("name", "0x");
     auto result = attr.HexSequence();
-    EXPECT_EQ(result.empty());
+    EXPECT_TRUE(result.empty());
 }
 
 HWTEST_F(AttributeUnitTest, GetByteRangeNormalWithOffset, TestSize.Level1)
@@ -345,7 +345,7 @@ HWTEST_F(AttributeUnitTest, GetByteRangeNormalWithOffset, TestSize.Level1)
     Attribute attr("name", "123@456");
     auto result = attr.GetByteRange();
     EXPECT_EQ(result.first, 456);
-    EXPECT_EQ(result.first, 123);
+    EXPECT_EQ(result.second, 123);
 }
 
 HWTEST_F(AttributeUnitTest, GetByteRangeOnlyLength, TestSize.Level1)
@@ -353,7 +353,7 @@ HWTEST_F(AttributeUnitTest, GetByteRangeOnlyLength, TestSize.Level1)
     Attribute attr("name", "123");
     auto result = attr.GetByteRange();
     EXPECT_EQ(result.first, 0);
-    EXPECT_EQ(result.first, 123);
+    EXPECT_EQ(result.second, 123);
 }
 
 HWTEST_F(AttributeUnitTest, GetByteRangeInvalidOffset, TestSize.Level1)
@@ -361,7 +361,7 @@ HWTEST_F(AttributeUnitTest, GetByteRangeInvalidOffset, TestSize.Level1)
     Attribute attr("name", "123@abc");
     auto result = attr.GetByteRange();
     EXPECT_EQ(result.first, 0);
-    EXPECT_EQ(result.first, 123);
+    EXPECT_EQ(result.second, 123);
 }
 
 HWTEST_F(AttributeUnitTest, GetByteRangeInvalidLength, TestSize.Level1)
@@ -369,7 +369,7 @@ HWTEST_F(AttributeUnitTest, GetByteRangeInvalidLength, TestSize.Level1)
     Attribute attr("name", "abc@123");
     auto result = attr.GetByteRange();
     EXPECT_EQ(result.first, 0);
-    EXPECT_EQ(result.first, 0);
+    EXPECT_EQ(result.second, 0);
 }
 
 HWTEST_F(AttributeUnitTest, GetByteRangeMultipleAt, TestSize.Level1)
@@ -377,7 +377,7 @@ HWTEST_F(AttributeUnitTest, GetByteRangeMultipleAt, TestSize.Level1)
     Attribute attr("name", "123@456@789");
     auto result = attr.GetByteRange();
     EXPECT_EQ(result.first, 456);
-    EXPECT_EQ(result.first, 123);
+    EXPECT_EQ(result.second, 123);
 }
 
 HWTEST_F(AttributeUnitTest, GetByteRangeOnlyAt, TestSize.Level1)
@@ -385,7 +385,7 @@ HWTEST_F(AttributeUnitTest, GetByteRangeOnlyAt, TestSize.Level1)
     Attribute attr("name", "@123");
     auto result = attr.GetByteRange();
     EXPECT_EQ(result.first, 0);
-    EXPECT_EQ(result.first, 0);
+    EXPECT_EQ(result.second, 0);
 }
 
 HWTEST_F(AttributeUnitTest, GetResolutionNormal, TestSize.Level1)
@@ -393,7 +393,7 @@ HWTEST_F(AttributeUnitTest, GetResolutionNormal, TestSize.Level1)
     Attribute attr("name", "1920x1080");
     auto result = attr.GetResolution();
     EXPECT_EQ(result.first, 1920);
-    EXPECT_EQ(result.first, 1080);
+    EXPECT_EQ(result.second, 1080);
 }
 
 HWTEST_F(AttributeUnitTest, GetResolutionOnlyWidth, TestSize.Level1)
@@ -401,7 +401,7 @@ HWTEST_F(AttributeUnitTest, GetResolutionOnlyWidth, TestSize.Level1)
     Attribute attr("name", "1920");
     auto result = attr.GetResolution();
     EXPECT_EQ(result.first, 1920);
-    EXPECT_EQ(result.first, 0);
+    EXPECT_EQ(result.second, 0);
 }
 
 HWTEST_F(AttributeUnitTest, GetResolutionInvalidCharacters, TestSize.Level1)
@@ -409,7 +409,7 @@ HWTEST_F(AttributeUnitTest, GetResolutionInvalidCharacters, TestSize.Level1)
     Attribute attr("name", "abcx123");
     auto result = attr.GetResolution();
     EXPECT_EQ(result.first, 0);
-    EXPECT_EQ(result.first, 0);
+    EXPECT_EQ(result.second, 0);
 }
 
 HWTEST_F(AttributeUnitTest, GetResolutionEmptyString TestSize.Level1)
@@ -417,7 +417,7 @@ HWTEST_F(AttributeUnitTest, GetResolutionEmptyString TestSize.Level1)
     Attribute attr("name", "");
     auto result = attr.GetResolution();
     EXPECT_EQ(result.first, 0);
-    EXPECT_EQ(result.first, 0);
+    EXPECT_EQ(result.second, 0);
 }
 
 HWTEST_F(AttributeUnitTest, GetResolutionSpaceAroundX, TestSize.Level1)
@@ -425,7 +425,7 @@ HWTEST_F(AttributeUnitTest, GetResolutionSpaceAroundX, TestSize.Level1)
     Attribute attr("name", " 1920 x 1080");
     auto result = attr.GetResolution();
     EXPECT_EQ(result.first, 1920);
-    EXPECT_EQ(result.first, 0);
+    EXPECT_EQ(result.second, 0);
 }
 
 HWTEST_F(AttributeUnitTest, QuotedStringNormal, TestSize.Level1)
