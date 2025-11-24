@@ -84,7 +84,8 @@ bool IsValidRotation(int32_t val)
 
 bool IsValidOrientation(int32_t val)
 {
-    return val >= 0 && val < static_cast<int32_t>(GraphicTransformType::GRAPHIC_ROTATE_BUTT);
+    return val >= static_cast<int32_t>(GraphicTransformType::GRAPHIC_ROTATE_NONE) &&
+           val < static_cast<int32_t>(GraphicTransformType::GRAPHIC_ROTATE_BUTT);
 }
 
 int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale, std::shared_ptr<AVFrame> frame, uint8_t **dstData,
