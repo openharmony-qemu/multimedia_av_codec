@@ -167,7 +167,7 @@ void FCodec::GetSurfaceCfgFromFmt(const Format &format)
     std::optional<int32_t> orientation = std::nullopt;
     std::lock_guard<std::mutex> fLock(formatMutex_);
     if (format.GetIntValue(FMTKey::VIDEO_PIXEL_FORMAT, val)) {
-        if (IsValidPixelFormat(val) && val != static_cast<int32_t>(outputPixelFmt_)) {
+        if (IsValidPixelFormat(val)) {
             outputPixelFmt_ = static_cast<VideoPixelFormat>(val);
             GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
             format_.PutIntValue(FMTKey::VIDEO_PIXEL_FORMAT, val);
