@@ -119,6 +119,7 @@ public:
     int32_t Prepare();
     int32_t state_EOS();
     void SetEOS(uint32_t index, OH_AVBuffer *buffer);
+    void StopOutPut();
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
     int32_t StartDecoder();

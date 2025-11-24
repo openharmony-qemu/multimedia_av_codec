@@ -1091,13 +1091,7 @@ void VDecAPI11Sample::OutputFuncTest()
             }
             return signal_->outIdxQueue_.size() > 0 && !isFlushing_.load();
         });
-        if (!isRunning_.load()) {
-            break;
-        }
-        if (outNoFrameLoss) {
-            inNoFrameLoss = true;
-            break;
-        }
+        StopOutPut();
         uint32_t index = signal_->outIdxQueue_.front();
         OH_AVBuffer *buffer = signal_->outBufferQueue_.front();
         signal_->outBufferQueue_.pop();
@@ -1643,4 +1637,15 @@ void VDecAPI11Sample::GetFormatKey()
     OH_AVFormat_Destroy(format);
     std::cout << "firstCallBackKey:" << firstCallBackKey << std::endl;
     isGetFormatKeyNum++;
+}
+
+void VDecAPI11Sample::StopOutPut()
+{
+    if (!isRunning_.load()) {
+            break;
+    }
+    if (outNoFrameLoss) {
+        inNoFrameLoss = true;
+        break;
+    }
 }
