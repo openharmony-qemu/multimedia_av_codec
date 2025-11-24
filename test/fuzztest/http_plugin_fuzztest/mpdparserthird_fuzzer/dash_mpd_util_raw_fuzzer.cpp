@@ -23,7 +23,7 @@
 #include "dash/include/mpd_parser/dash_mpd_util.h"
 
 using namespace OHOS::Media::Plugins::HttpPlugin;
-
+const size_t FUZZ_SIZE_MAX = 1 << 20;
 static std::string TakeStr(const uint8_t*& p, size_t& n, size_t max_len) {
     if (n == 0) {
         return {};
@@ -41,10 +41,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
         return 0;
     }
 
-    // 限长防OOM
-    if (size > (1 << 20)) {
-        return 0;
-    }
+    size = std::min(size, FUZZ_SIZE_MAX);
 
     const uint8_t* p = data;
     size_t n = size;

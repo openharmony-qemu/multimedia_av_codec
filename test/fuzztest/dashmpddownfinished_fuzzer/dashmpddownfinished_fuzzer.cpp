@@ -36,7 +36,7 @@ static const std::string MPD_SEGMENT_LIST_TIMELINE = "http://127.0.0.1:47777/tes
 }
 using namespace std;
 using namespace OHOS::Media;
-
+constexpr int32_t WAIT_FOR_SIDX_TIME = 1000 * 1000;
 bool DashMpdDownFinishedFuzzerTest(const uint8_t *data, size_t size)
 {
     auto downloader = std::make_shared<DashMpdDownloader>();
@@ -46,7 +46,11 @@ bool DashMpdDownFinishedFuzzerTest(const uint8_t *data, size_t size)
     downloader->GetSeekable();
     downloader->GetDuration();
     downloader->UpdateDownloadFinished(testUrl);
-    downloader->Close(true);
+    bool isAsyan = *reinterpret_cast<const bool *>(data);
+    downloader->Close(isAsyan);
+    if (!isAsyan) {
+        usleep(WAIT_FOR_SIDX_TIME);
+    }
     downloader = nullptr;
     return false;
 }
