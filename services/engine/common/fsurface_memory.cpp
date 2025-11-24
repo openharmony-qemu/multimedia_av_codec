@@ -128,6 +128,8 @@ void FSurfaceMemory::SetCallerToBuffer(int32_t w, int32_t h)
     }
     std::string name = std::to_string(w) + "x" + std::to_string(h) + "-" + mime + "-" + decInfo_.instanceId;
     ioctl(fd, DMA_BUF_SET_LEAK_TYPE, type.c_str());
+    std::string pid = std::to_string(decInfo_.pid);
+    ioctl(fd, DMA_BUF_SET_NAME_A, pid.c_str());
     ioctl(fd, DMA_BUF_SET_NAME_A, name.c_str());
 }
 } // namespace MediaAVCodec
