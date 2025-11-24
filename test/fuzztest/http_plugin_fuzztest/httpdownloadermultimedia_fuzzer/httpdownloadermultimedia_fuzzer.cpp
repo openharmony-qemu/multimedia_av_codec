@@ -111,15 +111,15 @@ void TestHttpDownloaderFuzz(FuzzedDataProvider &fdp)
     MediaStreamList mediaStreams;
     auto stream1 = std::make_shared<PlayMediaStream>();
     stream1->url = "http://127.0.0.1:46666/dewu.mp4";
-    stream1->width = 1280;
-    stream1->height = 720;
-    stream1->bitrate = 30000;
+    stream1->width = 1280;  // 1280
+    stream1->height = 720;  // 720
+    stream1->bitrate = 30000;  // 30000
     mediaStreams.push_back(stream1);
     auto stream2 = std::make_shared<PlayMediaStream>();
     stream2->url = "http://127.0.0.1:46666/dewu.mp4";
-    stream2->width = 1920;
-    stream2->height = 1080;
-    stream2->bitrate = 40000;
+    stream2->width = 1920;  // 1920
+    stream2->height = 1080;  // 1080
+    stream2->bitrate = 40000;  // 40000
     mediaStreams.push_back(stream2);
     httpMediaDownloader.SetMediaStreams(mediaStreams);
     httpMediaDownloader->Open(testUriPath, g_httpHeader);
