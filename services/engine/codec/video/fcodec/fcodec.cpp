@@ -163,8 +163,6 @@ int32_t FCodec::Initialize()
 void FCodec::GetSurfaceCfgFromFmt(const Format &format)
 {
     int32_t val = -1;
-    std::optional<int32_t> rotation = std::nullopt;
-    std::optional<int32_t> orientation = std::nullopt;
     std::lock_guard<std::mutex> fLock(formatMutex_);
     if (format.GetIntValue(FMTKey::VIDEO_PIXEL_FORMAT, val)) {
         if (IsValidPixelFormat(val)) {
@@ -185,6 +183,7 @@ void FCodec::GetSurfaceCfgFromFmt(const Format &format)
             AVCODEC_LOGE("Invalid scale_type: %{public}d.", val);
         }
     }
+    std::optional<int32_t> orientation = std::nullopt;
     if (format.GetIntValue(FMTKey::VIDEO_ORIENTATION_TYPE, val)) {
         if (IsValidOrientation(val)) {
             orientation = val;
@@ -196,18 +195,14 @@ void FCodec::GetSurfaceCfgFromFmt(const Format &format)
     }
     if (!orientation.has_value() && format.GetIntValue(FMTKey::VIDEO_ROTATION, val)) {
         if (IsValidRotation(val)) {
-            rotation = static_cast<int32_t>(TranslateSurfaceRotation(static_cast<VideoRotation>(val)));
-            AVCODEC_LOGI("Get parameter rotation_angle: %{public}d success.", rotation.value());
+            orientation = static_cast<int32_t>(TranslateSurfaceRotation(static_cast<VideoRotation>(val)));
+            AVCODEC_LOGI("Get parameter rotation_angle: %{public}d success.", orientation.value());
         } else {
             AVCODEC_LOGE("Invalid rotation_angle: %{public}d.", val);
         }
     }
     if (orientation) {
         format_.PutIntValue(FMTKey::VIDEO_ORIENTATION_TYPE, orientation.value());
-    } else if (rotation) {
-        format_.PutIntValue(FMTKey::VIDEO_ORIENTATION_TYPE, rotation.value());
-    } else {
-        return;
     }
 }
 
