@@ -167,7 +167,7 @@ void FCodec::GetSurfaceCfgFromFmt(const Format &format)
     std::optional<int32_t> orientation = std::nullopt;
     std::lock_guard<std::mutex> fLock(formatMutex_);
     if (format.GetIntValue(FMTKey::VIDEO_PIXEL_FORMAT, val)) {
-        if (IsValidPixelFormat(val)) {
+        if (IsValidPixelFormat(val) && val != static_cast<int32_t>(outputPixelFmt_)) {
             outputPixelFmt_ = static_cast<VideoPixelFormat>(val);
             GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
             format_.PutIntValue(FMTKey::VIDEO_PIXEL_FORMAT, val);
@@ -584,13 +584,7 @@ void FCodec::SetSurfaceParameter()
     std::optional<GraphicTransformType> orientation = std::nullopt;
     std::unique_lock<std::mutex> fLock(formatMutex_);
     if (format_.GetIntValue(FMTKey::VIDEO_PIXEL_FORMAT, val)) {
-        VideoPixelFormat vpf = static_cast<VideoPixelFormat>(val);
-        if (vpf != outputPixelFmt_) {
-            outputPixelFmt_ = vpf;
-            surfacePixelFmt = TranslateSurfaceFormat(vpf);
-            format_.PutIntValue(FMTKey::VIDEO_PIXEL_FORMAT, val);
-            format_.PutIntValue(FMTKey::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt.value()));
-        }
+        surfacePixelFmt = TranslateSurfaceFormat(static_cast<VideoPixelFormat>(val));
     }
     if (format_.GetIntValue(FMTKey::VIDEO_SCALE_TYPE, val)) {
         scaling = static_cast<ScalingMode>(val);
