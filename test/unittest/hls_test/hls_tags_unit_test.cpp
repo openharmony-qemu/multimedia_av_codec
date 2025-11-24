@@ -412,7 +412,7 @@ HWTEST_F(AttributeUnitTest, GetResolutionInvalidCharacters, TestSize.Level1)
     EXPECT_EQ(result.second, 0);
 }
 
-HWTEST_F(AttributeUnitTest, GetResolutionEmptyString TestSize.Level1)
+HWTEST_F(AttributeUnitTest, GetResolutionEmptyString, TestSize.Level1)
 {
     Attribute attr("name", "");
     auto result = attr.GetResolution();
