@@ -19,7 +19,6 @@
 #include "data_stream_source_plugin.h"
 #include "common/log.h"
 #include "common/media_core.h"
-#include "osal/utils/util.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };

@@ -18,22 +18,22 @@
 
 #include <mutex>
 #include <thread>
+#include <unistd.h>
+#include <utility>
 #include "playlist_downloader.h"
+#include "av_common.h"
 #include "download/downloader.h"
 #include "media_downloader.h"
-#include "osal/utils/ring_buffer.h"
-#include "osal/utils/steady_clock.h"
 #include "openssl/aes.h"
 #include "osal/task/task.h"
+#include "osal/utils/ring_buffer.h"
+#include "osal/utils/steady_clock.h"
 #include "common/media_source.h"
-#include <unistd.h>
 #include "common/media_core.h"
 #include "utils/media_cached_buffer.h"
 #include "utils/write_bitrate_caculator.h"
-#include <utility>
 #include "osal/task/mutex.h"
 #include "osal/task/condition_variable.h"
-#include "av_common.h"
 
 namespace OHOS {
 namespace Media {
@@ -53,10 +53,6 @@ struct HlsSegEvent {
     Format seekReadyInfo {};
     std::string str;
 };
-
-constexpr size_t VIDEO_MIN_BUFFER_SIZE = 5 * 1024 * 1024;
-constexpr size_t VIDEO_MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
-constexpr uint64_t DECRYPT_UNIT_LEN = 16;
 
 using HlsSegmentBufferingCbFunc = std::function<void(HlsSegmentType, BufferingInfoType)>;
 using HlsSegmentEventCbFunc = std::function<void(HlsSegEvent)>;
@@ -139,6 +135,13 @@ public:
     void SetDownloadErrorState();
     void SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc);
     void SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback);
+
+public:
+    static constexpr size_t VIDEO_MIN_BUFFER_SIZE = 5 * 1024 * 1024;
+    static constexpr size_t VIDEO_MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
+    static constexpr uint64_t DECRYPT_UNIT_LEN = 16;
+    static const std::map<HlsSegmentType, size_t> MIN_BUFFER_SIZE;
+    static const std::map<HlsSegmentType, size_t> MAX_CACHE_BUFFER_SIZE;
 
 private:
     void InitCacheWithDuration();

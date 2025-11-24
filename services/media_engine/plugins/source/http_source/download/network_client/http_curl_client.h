@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,15 +18,15 @@
 
 #include <string>
 #include <list>
+#include <iostream>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include "network/network_client.h"
 #include "network/network_typs.h"
 #include "curl/curl.h"
 #include "osal/task/mutex.h"
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <iostream>
 
 namespace OHOS {
 namespace Media {
