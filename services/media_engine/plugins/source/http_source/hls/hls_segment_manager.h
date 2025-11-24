@@ -255,23 +255,7 @@ private:
     uint64_t lastRecordTime_ {0};
     std::atomic<bool> isInterruptNeeded_{false};
 
-    struct BufferDownRecord {
-        /* data */
-        uint64_t dataBits {0};
-        uint64_t timeoff {0};
-        BufferDownRecord* next {nullptr};
-    };
-    // std::unique_ptr<BufferDownRecord> bufferDownRecord_;
-    BufferDownRecord* bufferDownRecord_ {nullptr};
-    // buffer least
-    struct BufferLeastRecord {
-        uint64_t minDuration {0};
-        BufferLeastRecord* next {nullptr};
-    };
-    // std::unique_ptr<BufferLeastRecord> bufferLeastRecord_;
-    BufferLeastRecord* bufferLeastRecord_ {nullptr};
     uint64_t lastWriteTime_ {0};
-    uint64_t lastReadTime_ {0};
     uint64_t lastWriteBit_ {0};
     SteadyClock steadyClock_;
 
