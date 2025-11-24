@@ -110,6 +110,7 @@ enum ThreadSleepMode {
 struct SampleInfo {
     CodecType codecType = VIDEO_HW_DECODER;
     std::string inputFilePath;
+    bool createCodecByMime = false;
     std::string codecMime = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     int32_t videoWidth = 1280;
     int32_t videoHeight = 720;
@@ -118,6 +119,7 @@ struct SampleInfo {
 
     CodecRunMode codecRunMode = API11_SURFACE;
     int32_t frameInterval = -1;
+    int32_t sampleCount = 1;
     int32_t sampleRepeatTimes = 0;
     int32_t demoRepeatTimes = 1;
     OH_AVPixelFormat pixelFormat = AV_PIXEL_FORMAT_NV12;

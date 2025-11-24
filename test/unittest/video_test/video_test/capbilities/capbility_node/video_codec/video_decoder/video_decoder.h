@@ -24,7 +24,7 @@ namespace MediaAVCodec {
 namespace Sample {
 class VideoDecoder : public VideoCodecBase {
 public:
-    int32_t Create(const std::string &codecMime, bool isSoftware = false) override;
+    int32_t Create(bool createByMime, const std::string &codecMime, bool isSoftware = false) override;
     int32_t DealWithSurface(std::shared_ptr<WindowWrapper> &windowWrapper) override;
     int32_t Configure(const SampleInfo &sampleInfo) override;
     int32_t Prepare() override;
