@@ -274,39 +274,48 @@ void HevcDecoder::ConfigureDefaultVal(const Format &format, const std::string_vi
     }
 }
 
-void HevcDecoder::ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType)
+void HevcDecoder::GetSurfaceCfgFromFmt(const Format &format)
 {
-    CHECK_AND_RETURN_LOG(formatType == FORMAT_TYPE_INT32, "Set parameter failed: type should be int32");
-
-    int32_t val = 0;
-    CHECK_AND_RETURN_LOG(format.GetIntValue(formatKey, val), "Set parameter failed: get value fail");
-
-    if (formatKey == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT) {
-        VideoPixelFormat vpf = static_cast<VideoPixelFormat>(val);
-        CHECK_AND_RETURN_LOG(vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21,
-            "Set parameter failed: pixel format value %{public}d invalid", val);
-        std::lock_guard<std::mutex> runlock(decRunMutex_);
-        outputPixelFmt_ = vpf;
-        format_.PutIntValue(formatKey, val);
-        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
-    } else if (formatKey == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
-        VideoRotation sr = static_cast<VideoRotation>(val);
-        CHECK_AND_RETURN_LOG(sr == VideoRotation::VIDEO_ROTATION_0 || sr == VideoRotation::VIDEO_ROTATION_90 ||
-                                 sr == VideoRotation::VIDEO_ROTATION_180 || sr == VideoRotation::VIDEO_ROTATION_270,
-                             "Set parameter failed: rotation angle value %{public}d invalid", val);
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val);
-    } else if (formatKey == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
-        ScalingMode scaleMode = static_cast<ScalingMode>(val);
-        CHECK_AND_RETURN_LOG(scaleMode == ScalingMode::SCALING_MODE_SCALE_TO_WINDOW ||
-                                 scaleMode == ScalingMode::SCALING_MODE_SCALE_CROP,
-                             "Set parameter failed: scale type value %{public}d invalid", val);
-        format_.PutIntValue(formatKey, val);
-    } else {
-        AVCODEC_LOGW("Set parameter failed: %{public}s, please check your parameter key", formatKey.data());
-        return;
+    int32_t val = -1;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val)) {
+        if (val == static_cast<int32_t>(VideoPixelFormat::NV12) ||
+            val == static_cast<int32_t>(VideoPixelFormat::NV21)) {
+            std::lock_guard<std::mutex> runlock(decRunMutex_);
+            outputPixelFmt_ = static_cast<VideoPixelFormat>(val);
+            format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val);
+        } else {
+            AVCODEC_LOGI("Invalid pixel_format: %{public}d.", val);
+        }
     }
-    AVCODEC_LOGI("Set parameter  %{public}s success, val %{public}d", formatKey.data(), val);
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val)) {
+        if (IsValidScaleType(val)) {
+            format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val);
+            AVCODEC_LOGI("Set parameter scale_type: %{public}d success.", val);
+        } else {
+            AVCODEC_LOGE("Invalid scale_type: %{public}d.", val);
+        }
+    }
+    std::optional<int32_t> orientation = std::nullopt;
+    if (format.GetIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, val)) {
+        if (IsValidOrientation(val)) {
+            orientation = val;
+            AVCODEC_LOGI("Set parameter video_orientation_type: %{public}d success.", orientation.value());
+        } else {
+            orientation = static_cast<int32_t>(GraphicTransformType::GRAPHIC_ROTATE_NONE);
+            AVCODEC_LOGE("Invalid video_orientation_type: %{public}d.", val);
+        }
+    }
+    if (!orientation.has_value() && format.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val)) {
+        if (IsValidRotation(val)) {
+            orientation = static_cast<int32_t>(TranslateSurfaceRotation(static_cast<VideoRotation>(val)));
+            AVCODEC_LOGI("Set parameter rotation_angle: %{public}d success.", orientation.value());
+        } else {
+            AVCODEC_LOGE("Invalid rotation_angle: %{public}d.", val);
+        }
+    }
+    if (orientation) {
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, orientation.value());
+    }
 }
 
 int32_t HevcDecoder::Configure(const Format &format)
@@ -330,12 +339,14 @@ int32_t HevcDecoder::Configure(const Format &format)
             ConfigureDefaultVal(format, it.first, VIDEO_MIN_SIZE, VIDEO_MAX_HEIGHT_SIZE);
         } else if (it.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT ||
                    it.first == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE ||
-                   it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
-            ConfigureSurface(format, it.first, it.second.type);
+                   it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE ||
+                   it.first == OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE) {
+            continue;
         } else {
             AVCODEC_LOGW("Set parameter failed: size:%{public}s, unsupport key", it.first.data());
         }
     }
+    GetSurfaceCfgFromFmt(format);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
 
@@ -581,6 +592,8 @@ void HevcDecoder::ReleaseResource()
     ReleaseBuffers();
     format_ = Format();
     if (sInfo_.surface != nullptr) {
+        transform_.store(GraphicTransformType::GRAPHIC_ROTATE_NONE);
+        sInfo_.surface->SetTransform(transform_.load());
         UnRegisterListenerToSurface(sInfo_.surface);
         StopRequestSurfaceBufferThread();
     }
@@ -610,59 +623,44 @@ int32_t HevcDecoder::Release()
     return AVCS_ERR_OK;
 }
 
-void HevcDecoder::SetSurfaceParameter(const Format &format, const std::string_view &formatKey,
-                                      FormatDataType formatType)
+void HevcDecoder::SetSurfaceParameter()
 {
-    CHECK_AND_RETURN_LOG(formatType == FORMAT_TYPE_INT32, "Set parameter failed: type should be int32");
-    int32_t val = 0;
-    CHECK_AND_RETURN_LOG(format.GetIntValue(formatKey, val), "Set parameter failed: get value fail");
-    if (formatKey == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT) {
-        VideoPixelFormat vpf = static_cast<VideoPixelFormat>(val);
-        CHECK_AND_RETURN_LOG(vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21,
-            "Set parameter failed: pixel format value %{public}d invalid", val);
-        std::lock_guard<std::mutex> runLock(decRunMutex_);
-        outputPixelFmt_ = vpf;
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val);
-        std::lock_guard<std::mutex> sLock(surfaceMutex_);
+    int32_t val = -1;
+    bool setSurfacePixelFormat = false;
+    std::optional<ScalingMode> scaling = std::nullopt;
+    std::optional<GraphicTransformType> orientation = std::nullopt;
+    if (format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val)) {
+        setSurfacePixelFormat = true;
+    }
+    if (format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val)) {
+        scaling = static_cast<ScalingMode>(val);
+    }
+    if (format_.GetIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, val)) {
+        orientation = static_cast<GraphicTransformType>(val);
+    }
+    std::lock_guard<std::mutex> sLock(surfaceMutex_);
+    if (setSurfacePixelFormat) {
         CHECK_AND_RETURN_LOG(SetSurfaceFormat() == AVCS_ERR_OK,
                              "set surface format failed: unsupported surface format");
-    } else if (formatKey == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
-        VideoRotation sr = static_cast<VideoRotation>(val);
-        CHECK_AND_RETURN_LOG(sr == VideoRotation::VIDEO_ROTATION_0 || sr == VideoRotation::VIDEO_ROTATION_90 ||
-                                 sr == VideoRotation::VIDEO_ROTATION_180 || sr == VideoRotation::VIDEO_ROTATION_270,
-                             "Set parameter failed: rotation angle value %{public}d invalid", val);
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val);
-        std::lock_guard<std::mutex> sLock(surfaceMutex_);
-        sInfo_.surface->SetTransform(TranslateSurfaceRotation(sr));
-    } else if (formatKey == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
-        ScalingMode scaleMode = static_cast<ScalingMode>(val);
-        CHECK_AND_RETURN_LOG(scaleMode == ScalingMode::SCALING_MODE_SCALE_TO_WINDOW ||
-                                 scaleMode == ScalingMode::SCALING_MODE_SCALE_CROP,
-                             "Set parameter failed: scale type value %{public}d invalid", val);
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val);
-        std::lock_guard<std::mutex> sLock(surfaceMutex_);
-        sInfo_.scalingMode = scaleMode;
-        sInfo_.surface->SetScalingMode(sInfo_.scalingMode.value());
-    } else {
-        AVCODEC_LOGW("Set parameter failed: %{public}s", formatKey.data());
-        return;
     }
-    AVCODEC_LOGI("Set parameter %{public}s success, val %{public}d", formatKey.data(), val);
+    if (scaling) {
+        sInfo_.scalingMode = scaling.value();
+        sInfo_.surface->SetScalingMode(sInfo_.scalingMode.value());
+    }
+    if (orientation) {
+        transform_.store(orientation.value());
+        AVCODEC_LOGI("Set surface video_orientation_type: %{public}d success.",
+                     static_cast<int32_t>(transform_.load()));
+        sInfo_.surface->SetTransform(transform_.load());
+    }
 }
 
 int32_t HevcDecoder::SetParameter(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    for (auto &it : format.GetFormatMap()) {
-        if (sInfo_.surface != nullptr && it.second.type == FORMAT_TYPE_INT32) {
-            if (it.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT ||
-                it.first == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE ||
-                it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
-                SetSurfaceParameter(format, it.first, it.second.type);
-            }
-        } else {
-            AVCODEC_LOGW("Current Version, %{public}s is not supported", it.first.data());
-        }
+    if (sInfo_.surface != nullptr) {
+        GetSurfaceCfgFromFmt(format);
+        SetSurfaceParameter();
     }
     AVCODEC_LOGI("Set parameter successful");
     return AVCS_ERR_OK;
@@ -749,19 +747,18 @@ int32_t HevcDecoder::SetSurfaceCfg()
     CHECK_AND_RETURN_RET_LOG(SetSurfaceFormat() == AVCS_ERR_OK, AVCS_ERR_UNSUPPORT,
                              "set surface format failed: unsupported surface format");
     CHECK_AND_RETURN_RET_LOGD(sInfo_.surface != nullptr, AVCS_ERR_OK, "Buffer mode not need to set surface config.");
-    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
-        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32) && val32 >= 0 &&
-                                 val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
-                                 AVCS_ERR_INVALID_VAL, "Invalid scaling mode %{public}d", val32);
+    if (format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32)) {
+        CHECK_AND_RETURN_RET_LOG(IsValidScaleType(val32), AVCS_ERR_INVALID_VAL,
+                                 "Invalid scaling mode %{public}d", val32);
         sInfo_.scalingMode = static_cast<ScalingMode>(val32);
         sInfo_.surface->SetScalingMode(sInfo_.scalingMode.value());
     }
-    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
-        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
-                                 val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
-                                 AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
-        sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
+    if (format_.GetIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, val32)) {
+        CHECK_AND_RETURN_RET_LOG(IsValidOrientation(val32), AVCS_ERR_INVALID_VAL,
+                                 "Invalid video_orientation_type %{public}d", val32);
+        transform_.store(static_cast<GraphicTransformType>(val32));
     }
+    sInfo_.surface->SetTransform(transform_.load());
     return AVCS_ERR_OK;
 }
 
@@ -1756,13 +1753,7 @@ int32_t HevcDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         }
         buffers_[INDEX_OUTPUT][index]->sMemory->isAttached = true;
     }
-    int32_t val32 = 0;
-    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
-        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
-                                 val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
-                                 AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
-        sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
-    }
+    newSurface->SetTransform(transform_.load());
     sInfo_.surface = newSurface;
     CombineConsumerUsage();
     for (uint32_t index: ownedBySurfaceBufferIndex) {
@@ -1770,6 +1761,7 @@ int32_t HevcDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Old surface buffer render failed!");
     }
     UnRegisterListenerToSurface(curSurface);
+    curSurface->SetTransform(GraphicTransformType::GRAPHIC_ROTATE_NONE);
     curSurface->CleanCache(true); // make sure old surface is empty and go black
     return AVCS_ERR_OK;
 }
