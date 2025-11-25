@@ -333,6 +333,7 @@ AudioSampleFormat AudioServerSinkPlugin::GetSampleFormat()
 void AudioServerSinkPlugin::ReleaseRender()
 {
     std::unique_lock<std::mutex> lock(releaseRenderMutex_);
+    OHOS::Media::AutoLock lock(renderMutex_);
     ScopedTimer timer("ReleaseRender", RELEASE_RENDER_WARNING_MS);
     if (audioRenderer_ != nullptr && audioRenderer_->GetStatus() != AudioStandard::RendererState::RENDERER_RELEASED) {
         MEDIA_LOG_I_T("AudioRenderer::Release start");
@@ -895,9 +896,9 @@ Status AudioServerSinkPlugin::Resume()
 
 Status AudioServerSinkPlugin::Pause()
 {
-    std::unique_lock<std::mutex> lock(releaseRenderMutex_);
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Pause");
     MEDIA_LOG_I_SHORT("Pause entered");
+    OHOS::Media::AutoLock lock(renderMutex_);
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audio renderer pause fail");
     FALSE_RETURN_V_MSG(audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING,
         Status::OK, "audio renderer no need pause");
@@ -909,9 +910,9 @@ Status AudioServerSinkPlugin::Pause()
 
 Status AudioServerSinkPlugin::PauseTransitent()
 {
-    std::unique_lock<std::mutex> lock(releaseRenderMutex_);
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::PauseTransitent");
     MEDIA_LOG_I_SHORT("PauseTransitent entered.");
+    OHOS::Media::AutoLock lock(renderMutex_);
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audio renderer pauseTransitent fail");
     FALSE_RETURN_V_MSG(audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING,
         Status::OK, "audio renderer no need pauseTransitent");
