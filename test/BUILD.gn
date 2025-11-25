@@ -436,6 +436,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/http_plugin_fuzztest/dashmediadownloader2_fuzzer:DashMediaDownloader2FuzzTest",
       "fuzztest/http_plugin_fuzztest/mpdparserthird_fuzzer:MpdParserThirdFuzzTest",
       "fuzztest/http_plugin_fuzztest/mpdparserseven_fuzzer:MpdParserSevenFuzzTest",
+      "fuzztest/http_plugin_fuzztest/mpddown_fuzzer:MpdDownFuzzTest",
       "fuzztest/http_plugin_fuzztest/dashmediadownfinished_fuzzer:DashMediaDownFinishedFuzzTest",
       "fuzztest/http_plugin_fuzztest/mpddown_fuzzer:MpdDownFuzzTest",
       "fuzztest/demuxervobapi11_fuzzer:DemuxerVopAPI11FuzzTest",
