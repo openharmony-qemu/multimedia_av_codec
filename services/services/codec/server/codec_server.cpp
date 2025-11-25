@@ -1099,6 +1099,7 @@ int32_t CodecServer::SetOutputBufferQueue(const sptr<Media::AVBufferQueueProduce
 int32_t CodecServer::Prepare()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "codecBase_ is nullptr");
     switch (codecType_) {
         case AVCODEC_TYPE_VIDEO_DECODER:
             // Post processing is only available for video decoder.
