@@ -136,6 +136,11 @@ void DemuxerUnitTest::ReadSample(const std::string &path, bool local, bool check
     }
 }
 
+BufferInfo DemuxerUnitTest::GetCurrentBufferInfo()
+{
+    return demuxer_->GetCurrentBufferInfo();
+}
+
 namespace {
 /**
  * @tc.name: Demuxer_ReadSample_1220

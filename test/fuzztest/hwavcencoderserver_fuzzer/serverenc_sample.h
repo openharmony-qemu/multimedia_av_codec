@@ -33,8 +33,11 @@ namespace MediaAVCodec {
 class VEncSignal {
 public:
     std::mutex inMutex_;
+    std::mutex outMutex_;
     std::condition_variable inCond_;
+    std::condition_variable outCond_;
     std::queue<uint32_t> inIdxQueue_;
+    std::queue<uint32_t> outIdxQueue_;
     std::queue<std::shared_ptr<AVBuffer>> inBufferQueue_;
 };
 
@@ -51,6 +54,7 @@ public:
     void Reset();
     int32_t SetParameter();
     void InputFunc();
+    void OutputFunc();
     void WaitForEos();
     VEncSignal *signal_;
     const uint8_t *fuzzData;
@@ -65,6 +69,7 @@ protected:
     std::shared_ptr<CodecBase> codec_;
     std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::thread> inputLoop_;
+    std::unique_ptr<std::thread> outputLoop_;
     struct CallBack : public MediaCodecCallback {
         explicit CallBack(VEncServerSample* tester) : tester(tester) {}
         ~CallBack() override = default;

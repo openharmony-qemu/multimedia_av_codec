@@ -1597,7 +1597,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoHeightRangeForWidth_001, TestSize.Level1)
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoHeightRangeForWidth(cap, DEFAULT_WIDTH, &range), AV_ERR_OK);
     EXPECT_EQ(16, range.minVal);
-    EXPECT_EQ(1920, range.maxVal);
+    EXPECT_EQ(1080, range.maxVal);
 }
 
 /**

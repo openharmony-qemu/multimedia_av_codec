@@ -81,6 +81,11 @@ uint32_t GetMetaDataTypeByTransFunc(uint32_t transferCharacteristic);
 std::string AVStrError(int errnum);
 bool IsYuvFormat(VideoPixelFormat &format);
 bool IsRgbFormat(VideoPixelFormat &format);
+// for surface parameter check
+bool IsValidPixelFormat(int32_t val);
+bool IsValidScaleType(int32_t val);
+bool IsValidRotation(int32_t val);
+bool IsValidOrientation(int32_t val);
 } // namespace Codec
 } // namespace MediaAVCodec
 } // namespace OHOS

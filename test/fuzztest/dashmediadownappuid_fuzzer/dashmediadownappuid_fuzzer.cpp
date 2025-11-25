@@ -59,7 +59,7 @@ bool DashMediaDownAppUidFuzzerTest(const uint8_t *data, size_t size)
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
 
-    int32_t appUid = 1;
+    int32_t appUid = *reinterpret_cast<const int32_t *>(data);
     mediaDownloader->SetAppUid(appUid);
 
     usleep(WAIT_FOR_SIDX_TIME);

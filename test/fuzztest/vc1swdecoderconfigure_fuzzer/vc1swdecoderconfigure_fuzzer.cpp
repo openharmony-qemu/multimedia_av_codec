@@ -91,6 +91,8 @@ bool Vc1SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
+#ifdef SUPPORT_CODEC_VC1
     OHOS::Vc1SwdecoderConfigureFuzzTest(data, size);
+#endif
     return 0;
 }

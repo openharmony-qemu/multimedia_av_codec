@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,20 +14,13 @@
  */
 #define HST_LOG_TAG "HlsMediaDownloader"
 
-#include "hls_media_downloader.h"
-#include "media_downloader.h"
-#include "hls_playlist_downloader.h"
-#include "securec.h"
 #include <algorithm>
-#include "plugin/plugin_time.h"
-#include "openssl/aes.h"
-#include "osal/task/task.h"
-#include "network/network_typs.h"
-#include "common/media_core.h"
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <regex>
-#include "avcodec_trace.h"
+#include "hls_media_downloader.h"
+#include "media_downloader.h"
+#include "common/media_core.h"
 
 namespace OHOS {
 namespace Media {
@@ -157,12 +150,6 @@ void HlsMediaDownloader::Resume()
 
 Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    {
-        std::lock_guard<std::mutex> bufferingLock(bufferingMutex_);
-        if (bufferingFlag_) {
-            return Status::ERROR_AGAIN;
-        }
-    }
     auto segManager = GetSegmentManager(readDataInfo.streamId_);
     FALSE_RETURN_V_MSG(segManager != nullptr, Status::ERROR_AGAIN, "Read no segment manager found!");
     return segManager->Read(buff, readDataInfo);
@@ -439,10 +426,11 @@ uint64_t HlsMediaDownloader::GetMemorySize()
     return videoSegManager_->GetMemorySize();
 }
 
-bool HlsMediaDownloader::IsHlsEnd()
+bool HlsMediaDownloader::IsHlsEnd(int32_t streamId)
 {
-    FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "IsHlsEnd no video segment manager found!");
-    return videoSegManager_->IsHlsEnd();
+    auto segManager = GetSegmentManager(streamId);
+    FALSE_RETURN_V_MSG(segManager != nullptr, false, "IsHlsEnd no segment manager found!");
+    return segManager->IsHlsEnd();
 }
 
 std::shared_ptr<HlsSegmentManager> HlsMediaDownloader::GetSegmentManager(uint32_t streamId)

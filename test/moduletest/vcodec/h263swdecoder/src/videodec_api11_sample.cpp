@@ -120,12 +120,16 @@ void VdecAPI11FormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userDa
     int32_t currentHeight = 0;
     int32_t stride = 0;
     int32_t sliceHeight = 0;
+    int currentFormat = 0;
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &currentWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &currentHeight);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_STRIDE, &stride);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_SLICE_HEIGHT, &sliceHeight);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &currentFormat);
+    std::cout << "currentFormat:" << currentFormat << std::endl;
     dec_sample->DEFAULT_WIDTH = currentWidth;
     dec_sample->DEFAULT_HEIGHT = currentHeight;
+    dec_sample->onStreamChangedKey = currentFormat;
     g_strideSurface = stride;
     g_sliceSurface = sliceHeight;
     if (stride <= 0 || sliceHeight <= 0) {
@@ -905,6 +909,8 @@ int32_t VDecAPI11Sample::SyncOutputFuncEos(OH_AVCodecBufferAttr attr, uint32_t i
 
 void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index, int32_t size)
 {
+    GetVideoSupportedPixelFormats();
+    GetFormatKey();
     if (!SF_OUTPUT) {
         if (size >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
             uint8_t *cropBuffer = new uint8_t[size];
@@ -1073,4 +1079,29 @@ void VDecAPI11Sample::FlushStatus()
     StopInloop();
     StopOutloop();
     Flush_buffer();
+}
+
+void VDecAPI11Sample::GetVideoSupportedPixelFormats()
+{
+    if (!isGetVideoSupportedPixelFormats || isGetVideoSupportedPixelFormatsNum != 0) {
+        return;
+    }
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(avcodecMimeType, isEncoder);
+    OH_AVCapability_GetVideoSupportedNativeBufferFormats(capability, &pixlFormats, &pixlFormatNum);
+    std::cout << "pixlFormats:" << *pixlFormats << "pixlFormatNum:" << pixlFormatNum << std::endl;
+    isGetVideoSupportedPixelFormatsNum++;
+}
+
+void VDecAPI11Sample::GetFormatKey()
+{
+    if (!isGetFormatKey || isGetFormatKeyNum != 0) {
+        return;
+    }
+    OH_AVFormat *format = OH_AVFormat_Create();
+    OH_VideoDecoder_Configure(vdec_, format);
+    format = OH_VideoDecoder_GetOutputDescription(vdec_);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &firstCallBackKey);
+    OH_AVFormat_Destroy(format);
+    std::cout << "firstCallBackKey:" << firstCallBackKey << std::endl;
+    isGetFormatKeyNum++;
 }

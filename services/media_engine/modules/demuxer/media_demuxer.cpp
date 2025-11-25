@@ -106,6 +106,8 @@ const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType
 };
 constexpr uint32_t LIMIT_MEMORY_REPORT_COUNT = 1000;
 constexpr int32_t DFX_BUFFER_QUEUE_SIZE_MAX = 50;
+constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
+constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 
 static const std::map<TrackType, DemuxerTrackType> TRACK_MAP = {
     {TrackType::TRACK_AUDIO, DemuxerTrackType::AUDIO},
@@ -1534,7 +1536,8 @@ Status MediaDemuxer::HandleHlsRebootPlugin(int32_t trackId)
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         FALSE_RETURN_V_MSG_E(streamID != INVALID_STREAM_OR_TRACK_ID, Status::ERROR_INVALID_PARAMETER,
             "Invalid streamId");
-        TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
+        TrackType trackType = IsAVInOneStream() ? TrackType::TRACK_VIDEO :
+            demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
         MEDIA_LOG_D("TrackType " PUBLIC_LOG_D32 " TrackId " PUBLIC_LOG_D32, static_cast<int32_t>(trackType), trackId);
         FALSE_RETURN_V_MSG_E(trackType != TRACK_INVALID, Status::ERROR_INVALID_PARAMETER, "TrackType is invalid");
         StreamType streamType = TRACK_TO_STREAM_MAP[trackType];
@@ -2841,9 +2844,11 @@ bool MediaDemuxer::HandleDashChangeStream(int32_t trackId)
     bool ret = false;
     FALSE_RETURN_V_NOLOG(newStreamID != -1 && currentStreamID != newStreamID, ret);
 
-    MEDIA_LOG_I("Change stream begin, currentStreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
+    AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGE, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+        "Change stream begin, currentStreamID: " PUBLIC_LOG_D32 " newStreamID: " PUBLIC_LOG_D32,
         currentStreamID, newStreamID);
-    if ((trackId == videoTrackId_ || isHlsFmp4_) && demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
+    if ((trackId == videoTrackId_ || (isHlsFmp4_ && IsAVInOneStream())) &&
+        demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
         ret = SelectBitRateChangeStream(trackId);
         if (ret) {
             streamDemuxer_->SetChangeFlag(true);
@@ -2862,7 +2867,7 @@ bool MediaDemuxer::HandleDashChangeStream(int32_t trackId)
         }
         isSelectTrack_.store(false);
     }
-    MEDIA_LOG_I("Change stream success");
+    AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGE, LOG_INTERVAL_MS, LOG_MAX_COUNT, "Change stream success");
     return ret;
 }
 
@@ -2893,7 +2898,8 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
         MEDIA_LOG_I("HandleDashChangeStream success");
         return Status::OK;
     }
-    if (isHls_ && ret == Status::END_OF_STREAM && !source_->IsHlsEnd()) {
+    int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
+    if (isHls_ && ret == Status::END_OF_STREAM && !source_->IsHlsEnd(streamId)) {
         return HandleSegmentEos(trackId);
     }
     SetTrackNotifyFlag(trackId, true);

@@ -2100,9 +2100,10 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0180, TestSize.Level2)
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->checkErrCode = true;
         vDecSample->needSendOneFrame = true;
+        vDecSample->outNoFrameLoss = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName));
         vDecSample->WaitForEOS();
-        ASSERT_EQ(true, vDecSample->errCodeIsRight);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 
@@ -2121,9 +2122,10 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0190, TestSize.Level2)
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->checkErrCode = true;
+        vDecSample->NocaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHEVC));
         vDecSample->WaitForEOS();
-        ASSERT_EQ(true, vDecSample->errCodeIsRight);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 
@@ -2143,9 +2145,10 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0200, TestSize.Level2)
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->checkErrCode = true;
         vDecSample->needXpsEmpty = true;
+        vDecSample->NocaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName));
         vDecSample->WaitForEOS();
-        ASSERT_EQ(true, vDecSample->errCodeIsRight);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 
@@ -2165,9 +2168,86 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0210, TestSize.Level2)
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->checkErrCode = true;
         vDecSample->noNeedFirstFrame = true;
+        vDecSample->NocaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHEVC));
         vDecSample->WaitForEOS();
-        ASSERT_EQ(true, vDecSample->errCodeIsRight);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+/**
+ * @tc.number    : VIDEO_HWDEC_PIXE_FORMAT_0010
+ * @tc.name      : h265 pixelformat query key
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_PIXE_FORMAT_0010, TestSize.Level1)
+{
+    if (cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/change_8bit_h265.h265";
+        vDecSample->isGetVideoSupportedPixelFormats = true;
+        vDecSample->isGetFormatKey = true;
+        vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+        vDecSample->isEncoder = false;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_LT(1, vDecSample->pixlFormatNum);
+        ASSERT_EQ(24, vDecSample->firstCallBackKey);
+        ASSERT_EQ(24, vDecSample->onStreamChangedKey);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_PIXE_FORMAT_0020
+ * @tc.name      : h264 pixelformat query key
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_PIXE_FORMAT_0020, TestSize.Level1)
+{
+    if (cap != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/resolutionChange.h264";
+        vDecSample->isGetVideoSupportedPixelFormats = true;
+        vDecSample->isGetFormatKey = true;
+        vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+        vDecSample->isEncoder = false;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_LT(1, vDecSample->pixlFormatNum);
+        ASSERT_EQ(24, vDecSample->firstCallBackKey);
+        ASSERT_EQ(24, vDecSample->onStreamChangedKey);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_PIXE_FORMAT_0030
+ * @tc.name      : h266 pixelformat query key
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_PIXE_FORMAT_0030, TestSize.Level1)
+{
+    if (cap_vvc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_VVC_1080;
+        vDecSample->isGetVideoSupportedPixelFormats = true;
+        vDecSample->isGetFormatKey = true;
+        vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_VVC;
+        vDecSample->isEncoder = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_LT(1, vDecSample->pixlFormatNum);
+        ASSERT_EQ(35, vDecSample->firstCallBackKey);
+        ASSERT_EQ(35, vDecSample->onStreamChangedKey);
     }
 }
 } // namespace

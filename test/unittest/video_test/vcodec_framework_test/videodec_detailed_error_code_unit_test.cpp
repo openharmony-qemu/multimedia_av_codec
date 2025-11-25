@@ -80,7 +80,7 @@ void SetDetailedErrorCodeParmater(std::shared_ptr<VDecCallbackTestExt> vdecCallb
                                   Scenario scenario)
 {
     auto& target = isAVBufferMode ? vdecCallbackExt->detailedErrorCode_ : vdecCallback->detailedErrorCode_;
-    target.verification_ = false;
+    target.verification_ = true;
 
     switch (scenario) {
         case Scenario::UNSUPPORT_CODEC_SPECIFICATION:

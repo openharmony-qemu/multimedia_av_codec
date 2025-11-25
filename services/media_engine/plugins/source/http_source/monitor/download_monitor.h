@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -48,7 +48,7 @@ public:
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
-    bool SeekToPos(int64_t offset, bool& isSeekHIt) override;
+    bool SeekToPos(int64_t offset, bool& isSeekHit) override;
     void Pause() override;
     void Resume() override;
     size_t GetContentLength() const override;
@@ -93,7 +93,7 @@ public:
     uint64_t GetMemorySize() override;
     std::string GetContentType() override;
     std::string GetCurUrl() override;
-    bool IsHlsEnd() override;
+    bool IsHlsEnd(int32_t streamId = -1) override;
 
 private:
     int64_t HttpMonitorLoop();
@@ -113,24 +113,6 @@ private:
     Mutex taskMutex_ {};
     uint64_t haveReadData_ {0};
     bool isNeedClearBuffer_ {false};
-
-    std::set<int32_t> clientNotRetryErrorSet = {
-        6,  // CURLE_COULDNT_RESOLVE_HOST
-        22, // CURLE_HTTP_RETURNED_ERROR
-        26, // CURLE_READ_ERROR
-        34, // CURLE_HTTP_POST_ERROR
-        35, // CURLE_SSL_CONNECT_ERROR
-        52, // CURLE_GOT_NOTHING
-        58, // CURLE_SSL_CERTPROBLM
-        60, // CURLE_SSL_CACERT
-        77, // CURLE_SSL_CACERT_BADFILE
-    };
-
-    std::set<int32_t> serverNotRetryErrorSet = {
-        400, // Bad Request
-        401, // Unauthorized
-        403, // Forbidden
-    };
 
     std::map<int32_t, MediaServiceErrCode> clientErrorCodeMap_ = {
         {-6, MediaServiceErrCode::MSERR_IO_SSL_SERVER_CERT_UNTRUSTED},

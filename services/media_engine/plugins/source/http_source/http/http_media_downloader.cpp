@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,11 +14,11 @@
  */
 #define HST_LOG_TAG "HttpMediaDownloader"
 
-#include "http/http_media_downloader.h"
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <regex>
 #include <climits>
+#include "http_media_downloader.h"
 #include "network/network_typs.h"
 #include "common/media_core.h"
 #include "avcodec_trace.h"
@@ -1722,8 +1722,10 @@ bool HttpMediaDownloader::IsNeedBufferForPlaying()
         return false;
     }
     if (GetBufferingTimeOut()) {
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
-                            "buffer for playing"});
+        if (callback_) {
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
+                "buffer for playing"});
+        }
         isTimeoutErrorNotified_.store(true);
         AutoLock lk(bufferingEndMutex_);
         isBuffering_.store(false);

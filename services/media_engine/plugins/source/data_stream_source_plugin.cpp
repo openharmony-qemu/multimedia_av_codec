@@ -19,7 +19,6 @@
 #include "data_stream_source_plugin.h"
 #include "common/log.h"
 #include "common/media_core.h"
-#include "osal/utils/util.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
@@ -151,7 +150,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     do {
         if (isInterrupted_ || isExitRead_) {
             retryTimes_ = 0;
-            isBufferingStart = false;
+            HandleBufferingEnd();
             return Status::OK;
         }
         FALSE_RETURN_V_MSG(dataSrc_ != nullptr, Status::ERROR_WRONG_STATE, "dataSrc_ is nullptr!");

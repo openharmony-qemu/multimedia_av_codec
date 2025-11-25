@@ -189,7 +189,7 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
             }
 
             auto preSize = codecStubMap_.size();
-            AVCODEC_LOGI("codec stub services(%{public}zu->%{public}zu) pid(%{public}d)", preSize, preSize - 1, pid);
+            AVCODEC_LOGI("Erase from pid:%{public}d, left:%{public}zu", pid, preSize - 1);
             codecStubMap_.erase(it);
             break;
         }

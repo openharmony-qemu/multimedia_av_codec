@@ -44,5 +44,7 @@ test/moduletest/resources/demuxer/wmv_wmv1_main@level99_720_380_eac3_2.wmv filte
 test/moduletest/resources/demuxer/wmv_wmv2_main@level99_720_380_eac3_2.wmv filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/wmv_wmv2_wma.wmv filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/wmv_wmv3_wmapro.wmv filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/noframe.mp4 filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/audio/skip_ogg.ogg filter=lfs diff=lfs merge=lfs -text
 /test/moduletest/resources/demuxer/mkv.mkv filter=lfs diff=lfs merge=lfs -text
 /test/unittest/resources/reference_parser_test/mp4/ippp_0.mp4 filter=lfs diff=lfs merge=lfs -text

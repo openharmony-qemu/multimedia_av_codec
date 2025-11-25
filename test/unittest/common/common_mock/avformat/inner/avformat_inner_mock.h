@@ -48,6 +48,7 @@ public:
         const std::string_view &mimeType, const std::string_view &key, int32_t srcTrackID) override;
     const char *DumpInfo() override;
     Format &GetFormat();
+    void RemoveKey(const std::string_view &key) override;
 
 private:
     Format format_;

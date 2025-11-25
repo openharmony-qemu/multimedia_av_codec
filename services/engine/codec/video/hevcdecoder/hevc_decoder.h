@@ -32,7 +32,6 @@
 #include "block_queue.h"
 #include "codec_utils.h"
 #include "codecbase.h"
-#include "dma_swap.h"
 #include "media_description.h"
 #include "fsurface_memory.h"
 #include "task_thread.h"
@@ -81,7 +80,7 @@ public:
         int32_t width = 0;
         int32_t height = 0;
         int32_t bitDepth = BIT_DEPTH8BIT;
-        bool hasSwapedOut = false;
+        std::atomic<bool> hasSwapedOut = false;
     };
 
 private:
@@ -129,7 +128,6 @@ private:
     int32_t UpdateOutputBuffer(uint32_t index);
     int32_t UpdateSurfaceMemory(uint32_t index);
     void SendFrame();
-    void ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
     void FindAvailIndex(uint32_t index);
@@ -142,7 +140,9 @@ private:
     int32_t CheckFormatChange(uint32_t index, int width, int height, int bitDepth);
     void UpdateColorAspects(const HEVC_COLOR_SPACE_INFO &colorInfo);
     void FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer);
-    void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
+    void SetSurfaceParameter();
+    // surface config
+    void GetSurfaceCfgFromFmt(const Format &format);
     int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
     int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
     int32_t SwitchBetweenSurface(const sptr<Surface> &newSurface);
@@ -180,7 +180,6 @@ private:
     bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<HBuffer> &hBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
     int32_t SwapInBuffers(bool isOutputBuffer);
-    bool disableDmaSwap_ = false;
     int pid_ = -1;
 
     CallerInfo hevcDecInfo_;
@@ -247,6 +246,8 @@ private:
     std::atomic<bool> requestBufferThreadExit_ = false;
     std::thread mRequestSurfaceBufferThread_;
     HEVC_COLOR_SPACE_INFO colorSpaceInfo_;
+    // surface config
+    std::atomic<GraphicTransformType> transform_ = GraphicTransformType::GRAPHIC_ROTATE_NONE;
 #ifdef BUILD_ENG_VERSION
     std::shared_ptr<std::ofstream> dumpInFile_ = nullptr;
     std::shared_ptr<std::ofstream> dumpOutFile_ = nullptr;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,10 +14,10 @@
  */
 #define HST_LOG_TAG "HlsPlayListDownloader"
 #include <mutex>
+#include <unistd.h>
 #include "plugin/plugin_time.h"
 #include "hls_playlist_downloader.h"
 #include "common/media_source.h"
-#include <unistd.h>
 
 namespace OHOS {
 namespace Media {
@@ -198,8 +198,11 @@ void HlsPlayListDownloader::NotifyListChange()
         return;
     }
     auto files = currentVariant_->m3u8_->files_;
-    if (currentAudio_ != nullptr && currentAudio_->m3u8_ != nullptr) {
-        files = currentAudio_->m3u8_->files_;
+    {
+        std::lock_guard<std::mutex> lock(audioMutex_);
+        if (currentAudio_ != nullptr && currentAudio_->m3u8_ != nullptr) {
+            files = currentAudio_->m3u8_->files_;
+        }
     }
     auto playList = std::vector<PlayInfo>();
 
@@ -283,6 +286,7 @@ void HlsPlayListDownloader::UpdateMasterAndNotifyList(bool isPreParse)
 {
     bool ret = false;
     if (!master_->isSimple_) {
+        std::lock_guard<std::mutex> lock(audioMutex_);
         if (currentAudio_ == nullptr) {
             currentVariant_ = master_->defaultVariant_;
             if (currentVariant_ && currentVariant_->m3u8_) {
@@ -297,10 +301,14 @@ void HlsPlayListDownloader::UpdateMasterAndNotifyList(bool isPreParse)
     if (currentVariant_ && currentVariant_->m3u8_) {
         currentVariant_->m3u8_->httpHeader_ = httpHeader_;
     }
-    if (currentAudio_ && currentAudio_->m3u8_) {
-        currentAudio_->m3u8_->httpHeader_ = httpHeader_;
+    {
+        std::lock_guard<std::mutex> lock(audioMutex_);
+        if (currentAudio_ && currentAudio_->m3u8_) {
+            currentAudio_->m3u8_->httpHeader_ = httpHeader_;
+        }
     }
     if (master_->isSimple_) {
+        std::lock_guard<std::mutex> lock(audioMutex_);
         if (currentAudio_ && currentAudio_->m3u8_) {
             ret = currentAudio_->m3u8_->Update(playList_, isParseFinished_);
             master_->isParseSuccess_ = ret;
@@ -320,6 +328,7 @@ void HlsPlayListDownloader::UpdateMasterAndNotifyList(bool isPreParse)
 
 void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
 {
+    std::lock_guard<std::mutex> lock(audioMutex_);
     auto m3u8 = currentAudio_ == nullptr ? currentVariant_->m3u8_ : currentAudio_->m3u8_;
     master_->bLive_ = m3u8->IsLive();
     master_->isFmp4_ = m3u8->isHeaderReady_.load();
@@ -408,6 +417,7 @@ bool HlsPlayListDownloader::IsBitrateSame(uint32_t bitRate)
 
 bool HlsPlayListDownloader::IsAudioSame(uint32_t streamId)
 {
+    std::lock_guard<std::mutex> lock(audioMutex_);
     FALSE_RETURN_V(currentAudio_ != nullptr, true);
     return streamId == currentAudio_->streamId_;
 }
@@ -653,15 +663,16 @@ std::shared_ptr<StreamInfo> HlsPlayListDownloader::GetStreamInfoById(int32_t str
         return nullptr;
     }
     for (const auto &variant : master_->variants_) {
-        if (variant->streamId_ == streamId) {
-            auto streamInfo = std::make_shared<StreamInfo>();
-            streamInfo->streamId = static_cast<int32_t>(variant->streamId_);
-            streamInfo->type = StreamType::VIDEO;
-            streamInfo->bitRate = variant->bandWidth_;
-            streamInfo->videoWidth = variant->width_;
-            streamInfo->videoHeight = variant->height_;
-            return streamInfo;
+        if (variant == nullptr || variant->streamId_ != static_cast<uint32_t>(streamId)) {
+            continue;
         }
+        auto streamInfo = std::make_shared<StreamInfo>();
+        streamInfo->streamId = static_cast<int32_t>(variant->streamId_);
+        streamInfo->type = StreamType::VIDEO;
+        streamInfo->bitRate = variant->bandWidth_;
+        streamInfo->videoWidth = variant->width_;
+        streamInfo->videoHeight = variant->height_;
+        return streamInfo;
     }
     return nullptr;
 }
@@ -699,7 +710,7 @@ void HlsPlayListDownloader::SelectAudio(int32_t streamId)
         if (audio == nullptr) {
             continue;
         }
-        if (streamId == audio->streamId_) {
+        if (static_cast<uint32_t>(streamId) == audio->streamId_) {
             std::lock_guard<std::mutex> lock(audioMutex_);
             MEDIA_LOG_W("SelectAudio stream id: %{public}u", streamId);
             currentAudio_ = audio;

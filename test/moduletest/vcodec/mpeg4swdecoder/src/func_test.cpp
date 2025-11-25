@@ -1365,4 +1365,29 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_SWDEC_MPEG4_FLUSH_0020, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_SWDEC_PIXE_FORMAT_MPEG4_0010
+ * @tc.name      : mpeg4 pixelformat query key
+ * @tc.desc      : function test
+ */
+HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_SWDEC_PIXE_FORMAT_MPEG4_0010, TestSize.Level2)
+{
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->isGetVideoSupportedPixelFormats = true;
+        vDecSample->isGetFormatKey = true;
+        vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
+        vDecSample->isEncoder = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_LT(1, vDecSample->pixlFormatNum);
+        ASSERT_EQ(24, vDecSample->firstCallBackKey);
+        ASSERT_EQ(24, vDecSample->onStreamChangedKey);
+    }
+}
 } // namespace

@@ -276,9 +276,11 @@ bool VideoDecSample::InitInputFile()
         } else if (inPath_.find("h264") != std::string::npos || inPath_.find("h265") != std::string::npos) {
             int32_t ret = CreateAvccReader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateAvccReader failed");
+#ifdef SUPPORT_CODEC_VC1
         } else if (inPath_.find("vc1") != std::string::npos) {
             int32_t ret = CreateVc1Reader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateH263Reader failed");
+#endif
         } else if (inPath_.find("msvideo1") != std::string::npos) {
             int32_t ret = CreateMsvideo1Reader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMsvideo1Reader failed");
@@ -325,6 +327,7 @@ int32_t VideoDecSample::CreateMpegReader()
     return ret;
 }
 
+#ifdef SUPPORT_CODEC_VC1
 int32_t VideoDecSample::CreateVc1Reader()
 {
     std::shared_ptr<Vc1ReaderInfo> info = std::make_shared<Vc1ReaderInfo>();
@@ -334,6 +337,7 @@ int32_t VideoDecSample::CreateVc1Reader()
     int32_t ret = std::static_pointer_cast<Vc1Reader>(signal_->reader_)->Init(info);
     return ret;
 }
+#endif
 
 int32_t VideoDecSample::CreateMsvideo1Reader()
 {

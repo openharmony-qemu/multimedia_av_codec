@@ -119,6 +119,7 @@ private:
     void SendRepeatMsg(uint64_t generation);
     bool GetOneBufferFromSurface();
     void TraverseAvaliableBuffers();
+    bool GetROIBySurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, std::string &roiStr);
     void SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info);
     void SetBufferPts(BufferInfo* info);
     void ResetSlot(BufferInfo& info);
@@ -129,7 +130,7 @@ private:
 
     // per frame param
     void WrapPerFrameParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
-                                        const std::shared_ptr<Media::Meta> &meta);
+                                        const std::shared_ptr<Media::Meta> &meta, sptr<SurfaceBuffer> surfaceBuffer);
     void WrapLTRParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                    const std::shared_ptr<Media::Meta> &meta);
     void WrapRequestIFrameParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
@@ -144,7 +145,7 @@ private:
                                       const std::shared_ptr<Media::Meta> &meta);
     void ParseRoiStringValid(const std::string &roiValue, std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer);
     void WrapRoiParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
-                                  const std::shared_ptr<Media::Meta> &meta);
+                                  const std::shared_ptr<Media::Meta> &meta, sptr<SurfaceBuffer> surfaceBuffer);
     void BeforeCbOutToUser(BufferInfo &info) override;
     void ExtractPerFrameLTRParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
     void ExtractPerFrameMadParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
@@ -189,7 +190,7 @@ private:
     uint32_t inBufferCnt_ = 0;
     static constexpr size_t MAX_LIST_SIZE = 256;
     static constexpr uint32_t THIRTY_MILLISECONDS_IN_US = 30'000;
-    static constexpr uint32_t SURFACE_MODE_CONSUMER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_ENCODER;
+    static constexpr uint64_t SURFACE_MODE_CONSUMER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_ENCODER;
     static constexpr uint64_t BUFFER_MODE_REQUEST_USAGE =
         SURFACE_MODE_CONSUMER_USAGE | BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_MMZ_CACHE;
 

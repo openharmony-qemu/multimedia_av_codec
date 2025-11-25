@@ -78,8 +78,8 @@ const int32_t MS_TO_US = 1000;
 const int32_t MS_TO_NS = 1000 * 1000;
 const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000;
 const int DEFAULT_CHANNEL_CNT = 3;
-const int FLV_READ_SIZE_LIMIT_FACTOR = 2;
-const int FLV_READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2;
+const int READ_SIZE_LIMIT_FACTOR = 2;
+const int READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2;
 const char* PLUGIN_NAME_PREFIX = "avdemux_";
 const char* PLUGIN_NAME_MP3 = "mp3";
 const char* PLUGIN_NAME_MPEGPS = "mpeg";
@@ -116,7 +116,6 @@ const std::vector<AVCodecID> g_streamContainedXPS = {
     AV_CODEC_ID_VVC
 };
 namespace {
-std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
 std::mutex g_mtx;
 
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource);
@@ -131,6 +130,15 @@ void FreeAVPacket(AVPacket* pkt)
 {
     av_packet_free(&pkt);
     pkt = nullptr;
+}
+
+inline std::string ProcessPluginName(const std::string& pluginName)
+{
+    size_t pos = pluginName.find("avdemux_");
+    if (pos != std::string::npos) {
+        return pluginName.substr(pos + strlen("avdemux_")); // Get the name after avdemux_
+    }
+    return pluginName;
 }
 
 static const std::map<SeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
@@ -168,8 +176,9 @@ static const std::vector<FileType> g_streamCheckFileTypeVec = {
     FileType::VOB
 };
 
-static const std::unordered_map<std::string, PluginSnifferFunc> g_pluginSnifferMap = {
-    {std::string(PLUGIN_NAME_MPEGPS), SniffMPEGPS},
+static const std::vector<FileType> g_fileContainSkipInfo = {
+    FileType::OGG,
+    FileType::MP3
 };
 
 bool HaveValidParser(const AVCodecID codecId)
@@ -808,6 +817,18 @@ void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std:
             streamParsers_->ResetXPSSendStatus(avStream->index);
         }
     }
+
+    if (std::find(
+        g_fileContainSkipInfo.cbegin(), g_fileContainSkipInfo.cend(), fileType_) != g_fileContainSkipInfo.cend()) {
+        uint8_t* skipInfoData = nullptr;
+        size_t skipInfoDataSize = 0;
+        skipInfoData = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_SKIP_SAMPLES, &skipInfoDataSize);
+        if (skipInfoData != nullptr && skipInfoDataSize > 0) {
+            std::vector<uint8_t> skipInfo(skipInfoDataSize);
+            skipInfo.assign(skipInfoData, skipInfoData + skipInfoDataSize);
+            sample->meta_->SetData(Tag::BUFFER_SKIP_SAMPLES_INFO, skipInfo);
+        }
+    }
 }
 
 Status FFmpegDemuxerPlugin::BufferIsValid(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
@@ -1316,7 +1337,8 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     InitIoContextInDemuxer(source);
     {
         std::lock_guard<std::mutex> glock(g_mtx);
-        pluginImpl_ = g_pluginInputFormat[pluginName_];
+        auto inputFormat = av_find_input_format(ProcessPluginName(pluginName_).c_str());
+        pluginImpl_ = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
     }
     FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT, "No match inputformat");
     formatContext_ = InitAVFormatContext(&ioContext_);
@@ -1330,6 +1352,8 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     }
     fileType_ = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
     InitParser();
+
+    SetAVReadFrameLimitDefault();
 
     // parse media info
     GetMediaInfo();
@@ -1443,15 +1467,39 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     return Status::OK;
 }
 
+void FFmpegDemuxerPlugin::SetAVReadFrameLimitDefault()
+{
+    if (!FFmpegFormatHelper::IsMpeg4File(fileType_)) {
+        return;
+    }
+    ioContext_.isLimitType = true;
+    ioContext_.sizeLimit = READ_SIZE_LIMIT_DEFAULT;
+    for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        if (formatContext_->streams[trackIndex] == nullptr ||
+            formatContext_->streams[trackIndex]->codecpar == nullptr) {
+            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " info is nullptr", trackIndex);
+            continue;
+        }
+        if (FFmpegFormatHelper::IsVideoType(*(formatContext_->streams[trackIndex]))) {
+            auto codecpar = formatContext_->streams[trackIndex]->codecpar;
+            int32_t limitSize = codecpar->width * codecpar->height * DEFAULT_CHANNEL_CNT * READ_SIZE_LIMIT_FACTOR;
+            ioContext_.sizeLimit = std::max(ioContext_.sizeLimit, limitSize);
+            MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " hei:" PUBLIC_LOG_D32 ", wid:" PUBLIC_LOG_D32
+                " limit " PUBLIC_LOG_D32, trackIndex, codecpar->height, codecpar->width, limitSize);
+        }
+    }
+    return;
+}
+
 Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
-    if (fileType_ != FileType::FLV) {
+    if (fileType_ != FileType::FLV && !FFmpegFormatHelper::IsMpeg4File(fileType_)) {
         return Status::OK;
     }
 
     ioContext_.isLimitType = true;
-    ioContext_.sizeLimit = FLV_READ_SIZE_LIMIT_DEFAULT;
+    ioContext_.sizeLimit = READ_SIZE_LIMIT_DEFAULT;
     FALSE_RETURN_V_MSG_E(static_cast<size_t>(formatContext_->nb_streams) == mediaInfo_.tracks.size(), Status::OK,
         "mediaInfo size is error");
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
@@ -1466,7 +1514,7 @@ Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
             format.GetData(Tag::VIDEO_WIDTH, width);
             format.GetData(Tag::VIDEO_HEIGHT, height);
             if (width * height > 0) {
-                int32_t limitSize = width * height * DEFAULT_CHANNEL_CNT * FLV_READ_SIZE_LIMIT_FACTOR;
+                int32_t limitSize = width * height * DEFAULT_CHANNEL_CNT * READ_SIZE_LIMIT_FACTOR;
                 ioContext_.sizeLimit = std::max(ioContext_.sizeLimit, limitSize);
                 MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " hei:" PUBLIC_LOG_D32 ", wid:" PUBLIC_LOG_D32
                     " limit " PUBLIC_LOG_D32, trackIndex, height, width, limitSize);
@@ -1744,11 +1792,24 @@ static bool IsSyncFrameCheckNeeded(std::shared_ptr<AVFormatContext> formatContex
         fileType) == g_streamCheckFileTypeVec.cend());
 }
 
+bool FFmpegDemuxerPlugin::Mp4CheckKeyFrame(AVStream* stream)
+{
+    FALSE_RETURN_V_MSG_E(stream != nullptr, false, "AVStream is nullptr");
+    const AVIndexEntry *entry = avformat_index_get_entry(stream, POS_0);
+    FALSE_RETURN_V_MSG_E(entry != nullptr, false, "First AVIndexEntry is nullptr");
+    int keyIndex = av_index_search_timestamp(stream, entry->timestamp, AVINDEX_KEYFRAME);
+    FALSE_RETURN_V_MSG_E(keyIndex >= 0, false, "KeyIndex is invalid");
+    return true;
+}
+
 bool FFmpegDemuxerPlugin::AllSupportTrackFramesReady()
 {
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         AVStream* stream = formatContext_->streams[trackIndex];
         if (stream == nullptr || stream->codecpar == nullptr || !IsSupportedGetFirstFrame(*stream)) {
+            continue;
+        }
+        if (FFmpegFormatHelper::IsMpeg4File(fileType_) && !Mp4CheckKeyFrame(stream)) {
             continue;
         }
         if (!TrackIsChecked(trackIndex)) {
@@ -1817,7 +1878,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
             FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Call av_packet_alloc failed");
         }
         std::unique_lock<std::mutex> sLock(syncMutex_);
-        int ffmpegRet = av_read_frame(formatContext_.get(), pkt);
+        int ffmpegRet = AVReadFrameLimit(pkt);
         sLock.unlock();
         if (ffmpegRet < 0) {
             MEDIA_LOG_E("Call av_read_frame failed, ret:" PUBLIC_LOG_D32, ffmpegRet);
@@ -2608,7 +2669,8 @@ int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dat
     std::shared_ptr<AVInputFormat> plugin;
     {
         std::lock_guard<std::mutex> lock(g_mtx);
-        plugin = g_pluginInputFormat[pluginName];
+        auto inputFormat = av_find_input_format(ProcessPluginName(pluginName).c_str());
+        plugin = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
     }
     FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
         "Get plugin for " PUBLIC_LOG_S " failed", pluginName.c_str());
@@ -2660,13 +2722,9 @@ int SniffMPEGPS(const std::string& pluginName, std::shared_ptr<DataSource> dataS
     return psScore;
 }
 
-static PluginSnifferFunc FindSniffer(const std::string& pluginName)
+inline static PluginSnifferFunc FindSniffer(const std::string& pluginName)
 {
-    if (g_pluginSnifferMap.find(pluginName) != g_pluginSnifferMap.end()) {
-        return g_pluginSnifferMap.at(pluginName);
-    }
-
-    return Sniff;
+    return (pluginName == std::string(PLUGIN_NAME_MPEGPS)) ? SniffMPEGPS : Sniff;
 }
 
 void ReplaceDelimiter(const std::string& delmiters, char newDelimiter, std::string& str)
@@ -2700,8 +2758,6 @@ Status RegisterPlugins(const std::shared_ptr<Register>& reg)
         regInfo.description = "ffmpeg demuxer plugin";
         regInfo.rank = RANK_MAX;
         regInfo.AddExtensions(SplitString(plugin->extensions, ','));
-        g_pluginInputFormat[pluginName] =
-            std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(plugin), [](void*) {});
         auto func = [](const std::string& name) -> std::shared_ptr<DemuxerPlugin> {
             return std::make_shared<FFmpegDemuxerPlugin>(name);
         };
@@ -2714,7 +2770,6 @@ Status RegisterPlugins(const std::shared_ptr<Register>& reg)
             MEDIA_LOG_D("Add plugin " PUBLIC_LOG_S, pluginName.c_str());
         }
     }
-    FALSE_RETURN_V_MSG_E(!g_pluginInputFormat.empty(), Status::ERROR_UNKNOWN, "Can not load any ffmpeg demuxer");
     return Status::OK;
 }
 } // namespace

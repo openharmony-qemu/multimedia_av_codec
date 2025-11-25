@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Copyright (c) 2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -54,6 +54,8 @@ dash_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
   "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
+  "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/common/http_server_mock.cpp",
+  "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/common/http_server_fuzz_demo.cpp",
 ]
 config("dash_test_cfg") {
   defines = [
@@ -91,12 +93,13 @@ config("dash_test_cfg") {
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
     "$av_codec_root_dir/test/unittest/common",
+    "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/common",
   ]
 }
 
-ohos_fuzztest("DashMediaDownReadFuzzTest") {
+ohos_fuzztest("DashMediaDownFinishedFuzzTest") {
   module_out_path = module_output_path
-  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/dashmediadownread_fuzzer"
+  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/http_plugin_fuzztest/dashmediadownfinished_fuzzer"
   include_dirs = [ "$MEDIA_ROOT_DIR/interfaces/kits/c" ]
   configs = [
     ":dash_test_cfg",
@@ -111,7 +114,7 @@ ohos_fuzztest("DashMediaDownReadFuzzTest") {
   ]
   cflags_cc = [ "-fno-rtti" ]
 
-  sources = dash_test_sources + [ "dashmediadownread_fuzzer.cpp" ]
+  sources = dash_test_sources + [ "dashmediadownfinished_fuzzer.cpp" ]
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
   external_deps = [
     "c_utils:utils",
@@ -129,6 +132,8 @@ ohos_fuzztest("DashMediaDownReadFuzzTest") {
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
   ]
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
 
 ###############################################################################
@@ -137,7 +142,7 @@ group("fuzztest") {
   deps = []
   deps += [
     # deps file
-    ":DashMediaDownReadFuzzTest",
+    ":DashMediaDownFinishedFuzzTest",
   ]
 }
 ###############################################################################

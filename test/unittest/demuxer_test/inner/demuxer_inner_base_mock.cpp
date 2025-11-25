@@ -127,5 +127,10 @@ int32_t DemuxerInnerMock::ReadSampleBuffer(
 
     return AV_ERR_OK;
 }
+
+BufferInfo DemuxerInnerMock::GetCurrentBufferInfo()
+{
+    return currentBufferInfo_;
+}
 }
 }

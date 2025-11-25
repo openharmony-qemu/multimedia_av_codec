@@ -166,18 +166,22 @@ void VdecAPI11FormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userDa
     int32_t sliceHeight = 0;
     int32_t picWidth = 0;
     int32_t picHeight = 0;
+    int currentFormat = 0;
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &currentWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &currentHeight);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_STRIDE, &stride);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_SLICE_HEIGHT, &sliceHeight);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_WIDTH, &picWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_HEIGHT, &picHeight);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &currentFormat);
+    std::cout << "currentFormat:" << currentFormat << std::endl;
     dec_sample->DEFAULT_WIDTH = currentWidth;
     dec_sample->DEFAULT_HEIGHT = currentHeight;
     dec_sample->stride_ = stride;
     dec_sample->sliceHeight_ = sliceHeight;
     dec_sample->picWidth_ = picWidth;
     dec_sample->picHeight_ = picHeight;
+    dec_sample->onStreamChangedKey = currentFormat;
     g_strideSurface = stride;
     g_sliceSurface = sliceHeight;
     if (dec_sample->isResChangeStream) {
@@ -831,6 +835,9 @@ void VDecAPI11Sample::InputFuncTest()
             flag = false;
             break;
         }
+        if (inNoFrameLoss) {
+            break;
+        }
         index = signal_->inIdxQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
 
@@ -1079,12 +1086,12 @@ void VDecAPI11Sample::OutputFuncTest()
         OH_AVCodecBufferAttr attr;
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() {
-            if (!isRunning_.load()) {
+            if (!isRunning_.load() || outNoFrameLoss) {
                 return true;
             }
             return signal_->outIdxQueue_.size() > 0 && !isFlushing_.load();
         });
-        if (!isRunning_.load()) {
+        if (!StopOutPut()) {
             break;
         }
         uint32_t index = signal_->outIdxQueue_.front();
@@ -1265,6 +1272,8 @@ void VDecAPI11Sample::CopyFrom10BitYuv(OH_AVBuffer *buffer, uint32_t index)
 
 void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index)
 {
+    GetVideoSupportedPixelFormats();
+    GetFormatKey();
     if (!SF_OUTPUT) {
         GetStride();
         if (is8bitYuv) {
@@ -1605,4 +1614,41 @@ int32_t VDecAPI11Sample::SetSendFrame()
         return 0;
     }
     return 1;
+}
+
+void VDecAPI11Sample::GetVideoSupportedPixelFormats()
+{
+    if (!isGetVideoSupportedPixelFormats || isGetVideoSupportedPixelFormatsNum != 0) {
+        return;
+    }
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(avcodecMimeType, isEncoder);
+    OH_AVCapability_GetVideoSupportedNativeBufferFormats(capability, &pixlFormats, &pixlFormatNum);
+    std::cout << "pixlFormats:" << *pixlFormats << "pixlFormatNum:" << pixlFormatNum << std::endl;
+    isGetVideoSupportedPixelFormatsNum++;
+}
+
+void VDecAPI11Sample::GetFormatKey()
+{
+    if (!isGetFormatKey || isGetFormatKeyNum != 0) {
+        return;
+    }
+    OH_AVFormat *format = OH_AVFormat_Create();
+    OH_VideoDecoder_Configure(vdec_, format);
+    format = OH_VideoDecoder_GetOutputDescription(vdec_);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &firstCallBackKey);
+    OH_AVFormat_Destroy(format);
+    std::cout << "firstCallBackKey:" << firstCallBackKey << std::endl;
+    isGetFormatKeyNum++;
+}
+
+bool VDecAPI11Sample::StopOutPut()
+{
+    if (!isRunning_.load()) {
+            return false;
+    }
+    if (outNoFrameLoss) {
+        inNoFrameLoss = true;
+        return false;
+    }
+    return true;
 }

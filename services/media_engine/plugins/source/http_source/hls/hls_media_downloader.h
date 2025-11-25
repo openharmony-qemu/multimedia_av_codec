@@ -18,6 +18,8 @@
 
 #include <mutex>
 #include <thread>
+#include <unistd.h>
+#include <utility>
 #include "playlist_downloader.h"
 #include "download/downloader.h"
 #include "media_downloader.h"
@@ -26,11 +28,9 @@
 #include "openssl/aes.h"
 #include "osal/task/task.h"
 #include "common/media_source.h"
-#include <unistd.h>
 #include "common/media_core.h"
 #include "utils/media_cached_buffer.h"
 #include "utils/write_bitrate_caculator.h"
-#include <utility>
 #include "osal/task/mutex.h"
 #include "osal/task/condition_variable.h"
 #include "av_common.h"
@@ -92,7 +92,7 @@ public:
     bool IsHlsFmp4() override;
     uint64_t GetMemorySize() override;
     std::string GetContentType() override;
-    bool IsHlsEnd() override;
+    bool IsHlsEnd(int32_t streamId = -1) override;
     Status SelectStream(int32_t streamId) override;
     void PostAllEvent(HlsSegEvent event);
     void PostBufferingEvent(HlsSegmentType mediaType, BufferingInfoType type);

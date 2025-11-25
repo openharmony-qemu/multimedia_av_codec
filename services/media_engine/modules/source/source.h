@@ -132,7 +132,7 @@ public:
     bool IsHlsFmp4();
     uint64_t GetMemorySize();
     Status StopBufferring(bool isAppBackground);
-    bool IsHlsEnd();
+    bool IsHlsEnd(int32_t streamId = -1);
     bool IsHls();
 
 private:

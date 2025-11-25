@@ -75,7 +75,7 @@ public:
     bool IsHlsFmp4() override;
     uint64_t GetMemorySize() override;
     std::string GetContentType() override;
-    bool IsHlsEnd() override;
+    bool IsHlsEnd(int32_t streamId = -1) override;
     bool IsHls() override;
 
 private:

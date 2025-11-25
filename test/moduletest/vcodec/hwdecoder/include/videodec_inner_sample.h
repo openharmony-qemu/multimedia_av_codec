@@ -124,6 +124,9 @@ public:
     bool needXpsEmpty = false;
     bool noNeedFirstFrame = false;
     bool needSendOneFrame = false;
+    bool outNoFrameLoss = false;
+    bool inNoFrameLoss = false;
+    bool NocaleHash = false;
 
     const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
     const char *OUT_DIR = "/data/test/media/VDecTest.yuv";

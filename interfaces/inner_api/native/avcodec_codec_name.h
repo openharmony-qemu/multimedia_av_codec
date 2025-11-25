@@ -79,6 +79,8 @@ public:
     static constexpr std::string_view AUDIO_DECODER_ADPCM_THP_LE_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.THP.LE";
     static constexpr std::string_view AUDIO_DECODER_ADPCM_XA_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.XA";
     static constexpr std::string_view AUDIO_DECODER_ADPCM_YAMAHA_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.YAMAHA";
+    static constexpr std::string_view AUDIO_DECODER_ILBC_NAME = "OH.Media.Codec.Decoder.Audio.ILBC";
+    static constexpr std::string_view AUDIO_DECODER_TRUEHD_NAME = "OH.Media.Codec.Decoder.Audio.TrueHD";
     static constexpr std::string_view AUDIO_ENCODER_FLAC_NAME = "OH.Media.Codec.Encoder.Audio.Flac";
     static constexpr std::string_view AUDIO_ENCODER_OPUS_NAME = "OH.Media.Codec.Encoder.Audio.Opus";
     static constexpr std::string_view AUDIO_ENCODER_G711MU_NAME = "OH.Media.Codec.Encoder.Audio.G711mu";
@@ -129,7 +131,9 @@ public:
             AUDIO_DECODER_WMAV1_NAME,
             AUDIO_DECODER_WMAV2_NAME,
             AUDIO_DECODER_WMAPRO_NAME,
-            
+            AUDIO_DECODER_ILBC_NAME,
+            AUDIO_DECODER_TRUEHD_NAME,
+
 #ifdef SUPPORT_CODEC_EAC3
             AUDIO_DECODER_EAC3_NAME,
 #endif

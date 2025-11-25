@@ -142,7 +142,9 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
     {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
     {AV_CODEC_ID_MSVIDEO1, MimeType::VIDEO_MSVIDEO1},
+#ifdef SUPPORT_CODEC_VC1
     {AV_CODEC_ID_VC1, MimeType::VIDEO_VC1},
+#endif
     {AV_CODEC_ID_AV1, MimeType::VIDEO_AV1},
 
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
@@ -154,6 +156,8 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_WMAV1, MimeType::AUDIO_WMAV1},
     {AV_CODEC_ID_WMAV2, MimeType::AUDIO_WMAV2},
     {AV_CODEC_ID_WMAPRO, MimeType::AUDIO_WMAPRO},
+    {AV_CODEC_ID_ILBC, MimeType::AUDIO_ILBC},
+    {AV_CODEC_ID_TRUEHD, MimeType::AUDIO_TRUEHD},
 #ifdef SUPPORT_CODEC_COOK
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
 #endif
@@ -230,6 +234,12 @@ static std::map<std::string, TagType> g_formatToString = {
     {"aigc",          Tag::MEDIA_AIGC}
 };
 
+static std::map<std::string, TagType> g_trackLevelBaseInfo = {
+    {"title",         Tag::MEDIA_TITLE},
+    {"artist",        Tag::MEDIA_ARTIST},
+    {"album",         Tag::MEDIA_ALBUM},
+};
+
 static const char* g_gltfKeys[] = {
     "meta_hdlr",
     "meta_iloc",
@@ -254,6 +264,10 @@ std::vector<TagType> g_supportSourceFormat = {
     Tag::MEDIA_COMPOSER,
     Tag::MEDIA_CREATION_TIME,
     Tag::MEDIA_AIGC
+};
+
+std::vector<FileType> g_typeForTrackLevelBaseInfo = {
+    FileType::OGG
 };
 
 std::vector<std::string> SplitByChar(const char* str, const char* pattern)
@@ -688,7 +702,7 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
         MEDIA_LOG_W("Parse container start time failed");
     }
     ParseLocationInfo(avFormatContext, format);
-    ParseInfoFromMetadata(avFormatContext.metadata, format);
+    ParseInfoFromMetadata(avFormatContext.metadata, format, g_formatToString);
     ParseGltfInfo(avFormatContext, format);
 }
 
@@ -778,6 +792,10 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format, 
         } else if (IsAudioType(avStream)) {
             ParseAudioTrackInfo(avStream, format, avFormatContext);
         }
+    }
+    FileType fileType = GetFileTypeByName(avFormatContext);
+    if (std::count(g_typeForTrackLevelBaseInfo.begin(), g_typeForTrackLevelBaseInfo.end(), fileType) > 0) {
+        ParseInfoFromMetadata(avStream.metadata, format, g_trackLevelBaseInfo);
     }
 }
 
@@ -918,7 +936,8 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         ParseOrientationFromMatrix(avStream, format);
     }
 
-    AVRational sar = avStream.sample_aspect_ratio;
+    AVRational sar = av_guess_sample_aspect_ratio(&const_cast<AVFormatContext&>(avFormatContext),
+        &const_cast<AVStream&>(avStream), nullptr);
     if (sar.num && sar.den) {
         format.Set<Tag::VIDEO_SAR>(static_cast<double>(av_q2d(sar)));
     }
@@ -1317,28 +1336,29 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
     }
 }
 
-void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Meta &format)
+void FFmpegFormatHelper::ParseInfoFromMetadata(
+    const AVDictionary* metadata, Meta &format, std::map<std::string, TagType> tagRange)
 {
     AVDictionaryEntry *valPtr = nullptr;
     while ((valPtr = av_dict_get(metadata, "", valPtr, AV_DICT_IGNORE_SUFFIX)) != nullptr) {
         std::string tempKey = ToLower(std::string(valPtr->key));
         if (tempKey.find("moov_level_meta_key_") == 0) {
             MEDIA_LOG_D("UserMeta:" PUBLIC_LOG_S, valPtr->key);
-            if (g_formatToString.count(tempKey.c_str() + KEY_PREFIX_LEN) > 0 &&
+            if (tagRange.count(tempKey.c_str() + KEY_PREFIX_LEN) > 0 &&
                 strlen(valPtr->value) > VALUE_PREFIX_LEN) {
-                    format.SetData(g_formatToString[tempKey.c_str() + KEY_PREFIX_LEN],
+                    format.SetData(tagRange[tempKey.c_str() + KEY_PREFIX_LEN],
                                    std::string(valPtr->value + VALUE_PREFIX_LEN));
                 }
             continue;
         }
-        if (g_formatToString.count(tempKey) <= 0) {
+        if (tagRange.count(tempKey) <= 0) {
             MEDIA_LOG_D("UnsupportMeta:" PUBLIC_LOG_S, valPtr->key);
             continue;
         }
         MEDIA_LOG_D("SupportMeta:" PUBLIC_LOG_S, valPtr->key);
         // ffmpeg use ';' to contact all single value in vorbis-comment, need to remove duplicates
         std::string value = RemoveDuplication(std::string(valPtr->value));
-        format.SetData(g_formatToString[tempKey], value);
+        format.SetData(tagRange[tempKey], value);
         AVDictionaryEntry *textEncodingPtr = nullptr;
         std::string keyEncoding = ToLower(std::string(valPtr->key)) + std::string("encoding");
         textEncodingPtr = av_dict_get(metadata, keyEncoding.c_str(), NULL, 0);
@@ -1346,7 +1366,7 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, Met
             (textEncodingPtr != nullptr && !strcmp(textEncodingPtr->value, "0"))) { // if encoding is 0, means GBK
             std::string resultStr = ConvertGBKToUTF8(value);
             if (resultStr.length() > 0) {
-                format.SetData(g_formatToString[tempKey], resultStr);
+                format.SetData(tagRange[tempKey], resultStr);
             } else {
                 MEDIA_LOG_D("Convert utf8 failed");
             }

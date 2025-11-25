@@ -32,5 +32,7 @@
 #include "alac/ffmpeg_alac_decoder_plugin.h"
 #include "wma/ffmpeg_wma_decoder_plugin.h"
 #include "adpcm/ffmpeg_adpcm_decoder_plugin.h"
+#include "ilbc/ffmpeg_ilbc_decoder_plugin.h"
+#include "truehd/ffmpeg_truehd_decoder_plugin.h"
 
 #endif // FFMPEG_DECODER_PLUGIN_H

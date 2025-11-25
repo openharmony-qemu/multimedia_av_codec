@@ -120,6 +120,17 @@ void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer,
     } else {
         ret = OH_VideoDecoder_FreeOutputBuffer(codec, index);
     }
+    const OH_NativeBuffer_Format *pixlFormats = nullptr;
+    uint32_t pixlFormatNum = 0;
+    const char *avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(avcodecMimeType, false);
+    OH_AVCapability_GetVideoSupportedNativeBufferFormats(capability, &pixlFormats, &pixlFormatNum);
+    int firstCallBackKey = 0;
+    OH_AVFormat *format = OH_AVFormat_Create();
+    OH_VideoDecoder_Configure(codec, format);
+    format = OH_VideoDecoder_GetOutputDescription(codec);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT, &firstCallBackKey);
+    OH_AVFormat_Destroy(format);
     if (ret != AV_ERR_OK) {
         g_decSample->Flush();
         g_decSample->Start();
