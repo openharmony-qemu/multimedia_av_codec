@@ -49,6 +49,7 @@ public:
     CapabilityData GetWMAV2DecoderCapability();
     CapabilityData GetWMAProDecoderCapability();
     CapabilityData GetIlbcDecoderCapability();
+    CapabilityData GetTruehdDecoderCapability();
 #ifdef SUPPORT_CODEC_EAC3
     CapabilityData GetEac3DecoderCapability();
 #endif
