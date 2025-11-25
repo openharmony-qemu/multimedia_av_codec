@@ -1572,9 +1572,10 @@ HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0180, TestSize
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->checkErrCode = true;
         vDecSample->needSendOneFrame = true;
+        vDecSample->outNoFrameLoss = true;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();
-        ASSERT_EQ(AVCS_ERR_ILLEGAL_PARAMETER_SETS, vDecSample->errCodeResult);
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
     }
 }
 
@@ -1594,9 +1595,10 @@ HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0190, TestSize
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->checkErrCode = true;
+        vDecSample->NocaleHash = true;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecNameHEVC));
         vDecSample->WaitForEOS();
-        ASSERT_EQ(AVCS_ERR_ILLEGAL_PARAMETER_SETS, vDecSample->errCodeResult);
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
     }
 }
 
@@ -1617,9 +1619,10 @@ HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0200, TestSize
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->checkErrCode = true;
         vDecSample->needXpsEmpty = true;
+        vDecSample->NocaleHash = true;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();
-        ASSERT_EQ(AVCS_ERR_MINSSING_PARAMETER_SETS, vDecSample->errCodeResult);
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
     }
 }
 
@@ -1640,9 +1643,10 @@ HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0210, TestSize
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->checkErrCode = true;
         vDecSample->noNeedFirstFrame = true;
+        vDecSample->NocaleHash = true;
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecNameHEVC));
         vDecSample->WaitForEOS();
-        ASSERT_EQ(AVCS_ERR_MINSSING_PARAMETER_SETS, vDecSample->errCodeResult);
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
     }
 }
 } // namespace

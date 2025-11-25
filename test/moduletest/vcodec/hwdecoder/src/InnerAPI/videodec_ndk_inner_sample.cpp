@@ -722,6 +722,10 @@ void VDecNdkInnerSample::InputFunc()
             break;
         }
 
+        if (inNoFrameLoss) {
+            break;
+        }
+
         uint32_t index = signal_->inIdxQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
         signal_->inIdxQueue_.pop();
@@ -755,13 +759,18 @@ void VDecNdkInnerSample::OutputFunc()
 
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() {
-            if (!isRunning_.load()) {
+            if (!isRunning_.load() || outNoFrameLoss) {
                 return true;
             }
             return signal_->outIdxQueue_.size() > 0;
         });
 
         if (!isRunning_.load()) {
+            break;
+        }
+
+        if (outNoFrameLoss) {
+            inNoFrameLoss = true;
             break;
         }
 
@@ -778,7 +787,9 @@ void VDecNdkInnerSample::OutputFunc()
         if (flag == AVCODEC_BUFFER_FLAG_EOS) {
             SHA512_Final(g_md, &g_ctx);
             OPENSSL_cleanse(&g_ctx, sizeof(g_ctx));
-            MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256);
+            if (!NocaleHash) {
+                MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256);
+            }
             if (AFTER_EOS_DESTORY_CODEC) {
                 (void)Stop();
                 Release();

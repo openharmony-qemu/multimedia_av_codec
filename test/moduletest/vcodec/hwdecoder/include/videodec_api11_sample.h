@@ -110,6 +110,8 @@ public:
     bool getOutputBufferIndexNoExisted = false;
     bool abnormalIndexValue = false;
     bool isCheckFlush = false;
+    bool outNoFrameLoss = false;
+    bool inNoFrameLoss = false;
     int32_t Start();
     int32_t Stop();
     int32_t Flush();
@@ -117,6 +119,7 @@ public:
     int32_t Prepare();
     int32_t state_EOS();
     void SetEOS(uint32_t index, OH_AVBuffer *buffer);
+    bool StopOutPut();
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
     int32_t StartDecoder();
