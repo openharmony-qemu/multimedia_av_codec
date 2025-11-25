@@ -58,7 +58,6 @@ public:
     } DrmDecryptVideoBuf;
 
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo) override;
-    int32_t InitInner(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo);
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
     int32_t Stop() override;
@@ -91,7 +90,7 @@ public:
 #endif
     int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
     int32_t DumpInfo(int32_t fd);
-    void SetCallerInfo(const Meta &callerInfo);
+    void SetInstanceInfo(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo);
     std::shared_ptr<Media::Meta> GetCallerInfo();
 
     void OnError(int32_t errorType, int32_t errorCode);

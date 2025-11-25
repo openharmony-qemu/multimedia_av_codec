@@ -62,7 +62,7 @@ struct InstanceInfo {
             forwardCaller.pid, forwardCaller.processName.c_str(), codecType, memoryUsage);
     }
 
-    pid_t GetActualCallerPid()
+    pid_t GetActualCallerPid() const
     {
         if (forwardCaller.pid != INVALID_INSTANCE_ID) {
             return forwardCaller.pid;
@@ -71,7 +71,7 @@ struct InstanceInfo {
         }
     }
 
-    std::string GetActualCallerProcessName()
+    std::string GetActualCallerProcessName() const
     {
         if (forwardCaller.pid != INVALID_INSTANCE_ID) {
             return forwardCaller.processName;

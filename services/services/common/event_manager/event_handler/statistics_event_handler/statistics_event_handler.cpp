@@ -44,10 +44,10 @@ struct HashTuple {
 };
 
 std::unordered_map<VideoCodecType, std::string> videoCodecTypeToString = {
-    { VideoCodecType::DECODER_HARDWARE, "HVDec" },
-    { VideoCodecType::DECODER_SOFTWARE, "SVDec" },
-    { VideoCodecType::ENCODER_HARDWARE, "HVEnc" },
-    { VideoCodecType::ENCODER_SOFTWARE, "SVEnc" },
+    { VideoCodecType::DECODER_HARDWARE, "HDec" },
+    { VideoCodecType::DECODER_SOFTWARE, "SDec" },
+    { VideoCodecType::ENCODER_HARDWARE, "HEnc" },
+    { VideoCodecType::ENCODER_SOFTWARE, "SEnc" },
 };
 
 template<typename T1, typename T2>
@@ -102,7 +102,7 @@ public:
     {
         auto appDictArrayJsonObj = cJSON_AddArrayToObject(jsonObj.get(), "AppNameDict");
         for (const auto &[name, index] : appNameDict_) {
-            cJSON_AddNumberToObject(appDictArrayJsonObj, name.c_str(), index);
+            cJSON_AddNumberToObject(cJSON_AddObjectToObject(appDictArrayJsonObj, name.c_str()), name.c_str(), index);
         }
     };
 
@@ -155,7 +155,7 @@ class BasicInfo : public StatisticsMainEventInfoBase {
 public:
     BasicInfo()
     {
-        mainEventName_ = "BasicInfo";
+        mainEventName_ = "BASIC_INFO";
     }
 
     void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) override
@@ -200,7 +200,7 @@ public:
                     continue;
                 }
                 std::string key = videoCodecTypeToString[vcodecType] + "_" + mimeType;
-                cJSON_AddNumberToObject(codecSpecInfoJsonObj, key.c_str(), count);
+                cJSON_AddNumberToObject(cJSON_AddObjectToObject(codecSpecInfoJsonObj, key.c_str()), key.c_str(), count);
             }
             AppNameIndexInfo::GetInstance().OnSummateEventInfo(basicInfoJsonObj);
         }
@@ -229,11 +229,11 @@ public:
     AppSpecificationsInfo()
     {
         eventInfoMap_.emplace(StatisticsEventType::CAP_UNSUPPORTED_INFO, std::make_shared<CapUnsupportedInfo>());
-        mainEventName_ = "AppSpecificationsInfo";
+        mainEventName_ = "APP_SPECIFICATIONS_INFO";
     }
 };
 
-class CapUnsupportedInfo : public AppSpecificationsInfo {
+class CapUnsupportedInfo : public StatisticsMainEventInfoBase {
 public:
     CapUnsupportedInfo() = default;
 
@@ -336,11 +336,11 @@ public:
         eventInfoMap_.emplace(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO,
                               std::make_shared<DecAbnormalOccupationInfo>());
         eventInfoMap_.emplace(StatisticsEventType::SPEED_DECODING_INFO, std::make_shared<SpeedDecodingInfo>());
-        mainEventName_ = "AppBehaviorsInfo";
+        mainEventName_ = "APP_BEHAVIORS_INFO";
     }
 };
 
-class DecAbnormalOccupationInfo : public AppBehaviorsInfo {
+class DecAbnormalOccupationInfo : public StatisticsMainEventInfoBase {
 public:
     DecAbnormalOccupationInfo() = default;
 
@@ -362,7 +362,7 @@ public:
             case StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO: {
                 if (hdecLimitExceededInfo_.size() < maxOccupationHDecRecordCount &&
                     !isInOccupationHDecEvent_.load()) {
-                    auto usageStatistics = AVCodecServerManager::GetInstance().GetDecoderUsageStatistics();
+                    auto usageStatistics = AVCodecServerManager::GetInstance().GetHDecUsageStatistics();
                     for (const auto& [holder, count] : usageStatistics) {
                         AppNameIndex appIndex = AppNameIndexInfo::GetInstance().GetIndexByAppName(holder);
                         lastOccupationHDecAppInfoVec_.emplace_back(appIndex, count);
@@ -394,18 +394,18 @@ public:
         auto hdecLimitExceededInfoJsonObj =
             cJSON_AddObjectToObject(decAbnormalOccupationInfoJsonObj, "HDecLimitExceededInfo");
         for (const auto &[appIndex, appInfoVec] : hdecLimitExceededInfo_) {
-            std::string appName = AppNameIndexInfo::GetInstance().GetAppNameByIndex(appIndex);
-            auto appInfoArrayJsonObj = cJSON_AddArrayToObject(hdecLimitExceededInfoJsonObj, appName.c_str());
+            auto appInfoArrayJsonObj = cJSON_AddArrayToObject(
+                hdecLimitExceededInfoJsonObj, std::to_string(appIndex).c_str());
             for (const auto &[holderAppIndex, count] : appInfoVec) {
-                std::string holderAppName = AppNameIndexInfo::GetInstance().GetAppNameByIndex(holderAppIndex);
-                cJSON_AddNumberToObject(appInfoArrayJsonObj, holderAppName.c_str(), count);
+                std::string holderAppIdxStr = std::to_string(holderAppIndex);
+                cJSON_AddNumberToObject(cJSON_AddObjectToObject(appInfoArrayJsonObj, holderAppIdxStr.c_str()),
+                    holderAppIdxStr.c_str(), count);
             }
         }
 
         auto longTimeInBgInfoJsonObj = cJSON_AddObjectToObject(decAbnormalOccupationInfoJsonObj, "LongTimeInBgInfo");
         for (const auto &[appIndex, elapsedTime] : longTimeInBgInfo_) {
-            std::string appName = AppNameIndexInfo::GetInstance().GetAppNameByIndex(appIndex);
-            cJSON_AddNumberToObject(longTimeInBgInfoJsonObj, appName.c_str(), elapsedTime);
+            cJSON_AddNumberToObject(longTimeInBgInfoJsonObj, std::to_string(appIndex).c_str(), elapsedTime);
         }
     }
 
@@ -422,7 +422,7 @@ private:
     void RegisterOccupationHDecLimitExceededEventHooker(AppNameIndex callerNameIndex)
     {
         StatisticsEventInfo::GetInstance().RegisterEventHooker(
-            StatisticsEventType::BASIC_CREATE_CODEC_INFO,
+            StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO,
             [this, callerNameIndex] (const Media::Meta &eventMeta) -> bool
             {
                 if (!isInOccupationHDecEvent_.load())
@@ -430,11 +430,6 @@ private:
                     return true;
                 }
 
-                VideoCodecType vcodecType = VideoCodecType::UNKNOWN;
-                if (!eventMeta.GetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), vcodecType) ||
-                    vcodecType != VideoCodecType::DECODER_HARDWARE) {
-                    return false;
-                }
                 std::lock_guard<std::mutex> lock(mutex_);
                 hdecLimitExceededInfo_.emplace(callerNameIndex, lastOccupationHDecAppInfoVec_);
                 isInOccupationHDecEvent_.store(false);
@@ -451,7 +446,7 @@ private:
     std::unordered_multimap<AppNameIndex, uint32_t> longTimeInBgInfo_;  // AppNameIndex, elapsedTime
 };
 
-class SpeedDecodingInfo : public AppBehaviorsInfo {
+class SpeedDecodingInfo : public StatisticsMainEventInfoBase {
 public:
     SpeedDecodingInfo() = default;
 
@@ -477,11 +472,11 @@ public:
     CodecAbnormalInfo()
     {
         eventInfoMap_.emplace(StatisticsEventType::CODEC_ERROR_INFO, std::make_shared<CodecErrorInfo>());
-        mainEventName_ = "CodecAbnormalInfo";
+        mainEventName_ = "CODEC_ABNORMAL_INFO";
     }
 };
 
-class CodecErrorInfo : public CodecAbnormalInfo {
+class CodecErrorInfo : public StatisticsMainEventInfoBase {
 public:
     CodecErrorInfo() = default;
 

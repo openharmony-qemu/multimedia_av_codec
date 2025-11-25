@@ -15,6 +15,7 @@
 
 #include "codeclist_core.h"
 #include <cmath> // fabs
+#include <algorithm>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "codec_ability_singleton.h"
@@ -22,6 +23,78 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListCore"};
 constexpr float EPSINON = 0.0001;
+
+const std::vector<std::string> MIME_VEC = {
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MSVIDEO1),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VC1),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_AVC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_HEVC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VVC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MPEG2),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_H263),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MPEG4),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV30),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV40),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MJPEG),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP8),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP9),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_WMV3),
+
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_NB),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_WB),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_MPEG),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AAC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_VORBIS),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_OPUS),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_FLAC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_RAW),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_G711MU),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_G711A),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_GSM_MS),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_GSM),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_COOK),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AC3),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_WMAV1),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_WMAV2),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_WMAPRO),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_MS),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_QT),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_WAV),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_DK3),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_DK4),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_WS),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_SMJPEG),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_DAT4),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_MTAF),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_ADX),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_AFC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_AICA),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_CT),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_DTK),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_G722),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_G726),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_G726LE),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_AMV),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_APC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_ISS),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_OKI),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_RAD),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_PSX),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_SBPRO_2),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_SBPRO_3),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_SBPRO_4),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_THP),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_THP_LE),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_XA),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_YAMAHA),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_EAC3),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ALAC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AVS3DA),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_LBVC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_APE),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_MIMETYPE_L2HC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_VIVID)
+};
 } // namespace
 
 namespace OHOS {
@@ -232,7 +305,8 @@ int32_t CodecListCore::GetCapability(CapabilityData &capData, const std::string 
                                      const AVCodecCategory &category)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(!mime.empty(), AVCS_ERR_INVALID_VAL, "mime is empty");
+    CHECK_AND_RETURN_RET_LOG(!mime.empty() && std::find(MIME_VEC.begin(), MIME_VEC.end(), mime) != MIME_VEC.end(),
+        AVCS_ERR_INVALID_VAL, "mime is invalid");
     AVCodecType codecType = AVCODEC_TYPE_NONE;
     bool isVideo = mime.find("video") != std::string::npos;
     if (isVideo) {

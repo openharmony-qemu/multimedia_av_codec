@@ -165,34 +165,12 @@ int32_t CodecServer::InitServer(int32_t instanceId)
 int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    codecType_ = type;
-    callerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
     EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::BASIC_CREATE_CODEC_INFO, callerInfo);
 
-    int32_t ret = InitInner(type, isMimeType, name, callerInfo);
-    if (ret != AVCS_ERR_OK) {
-        return ret;
-    }
-
-    codecMime_ = isMimeType ? name : CodecAbilitySingleton::GetInstance().GetMimeByCodecName(name);
-    vcodecType_ = static_cast<VideoCodecType>(
-        CodecAbilitySingleton::GetInstance().GetVideoCodecTypeByCodecName(codecName_));
-    SetCallerInfo(callerInfo);
-    callerInfo.SetData(Tag::MEDIA_CODEC_NAME, codecName_);
-    callerInfo.SetData(Tag::MIME_TYPE, codecMime_);
-    callerInfo.SetData(EventInfoExtentedKey::CODEC_TYPE.data(), type);
-    callerInfo.SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), vcodecType_);
-    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_INIT, callerInfo);
-    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, callerInfo);
-    return ret;
-}
-
-int32_t CodecServer::InitInner(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo)
-{
     int32_t ret = isMimeType ? InitByMime(type, name, callerInfo) : InitByName(name, callerInfo);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret,
-                                      "Init failed. isMimeType:(%{public}d), name:(%{public}s), error:(%{public}d)",
-                                      isMimeType, name.c_str(), ret);
+        "Init failed, ret: %{public}d, %{public}s, %{public}s: %{public}s",
+        ret, type == AVCODEC_TYPE_VIDEO_ENCODER ? "enc" : "dec", isMimeType ? "mime" : "name", name.c_str());
 
     codecBaseCb_ = std::make_shared<CodecBaseCallback>(shared_from_this());
     ret = codecBase_->SetCallback(codecBaseCb_);
@@ -201,21 +179,7 @@ int32_t CodecServer::InitInner(AVCodecType type, bool isMimeType, const std::str
                           (isMimeType ? "mime" : "name"));
     StatusChanged(INITIALIZED);
     InitFramerateCalculator(callerInfo);
-    return AVCS_ERR_OK;
-}
-
-int32_t CodecServer::SetLowPowerPlayerMode(bool isLpp)
-{
-    std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(status_ == INITIALIZED, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
-                             GetStatusDescription(status_).data());
-    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    isLpp_ = isLpp;
-    AVCODEC_LOGI("CodecServer::SetLowPowerPlayerMode: %{public}d", isLpp_);
-    int32_t ret = codecBase_->SetLowPowerPlayerMode(isLpp);
-    if (ret != AVCS_ERR_OK) {
-        isLpp_ = false;
-    }
+    SetInstanceInfo(type, isMimeType, name, callerInfo);
     return ret;
 }
 
@@ -243,6 +207,7 @@ int32_t CodecServer::InitByMime(const AVCodecType type, const std::string &codec
         eventMeta.SetData(Tag::MIME_TYPE, codecMime);
         eventMeta.SetData(EventInfoExtentedKey::IS_ENCODER.data(), type == AVCODEC_TYPE_VIDEO_ENCODER);
         EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, eventMeta);
+        return AVCS_ERR_NO_MEMORY;
     }
 
     for (const auto &name : nameArray) {
@@ -604,6 +569,21 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     config_emulator.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::RGBA));
     codecBase_->SetParameter(config_emulator);
 #endif
+    return ret;
+}
+
+int32_t CodecServer::SetLowPowerPlayerMode(bool isLpp)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(status_ == INITIALIZED, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
+                             GetStatusDescription(status_).data());
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    isLpp_ = isLpp;
+    AVCODEC_LOGI("CodecServer::SetLowPowerPlayerMode: %{public}d", isLpp_);
+    int32_t ret = codecBase_->SetLowPowerPlayerMode(isLpp);
+    if (ret != AVCS_ERR_OK) {
+        isLpp_ = false;
+    }
     return ret;
 }
 
@@ -1007,19 +987,30 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     return AVCS_ERR_OK;
 }
 
-void CodecServer::SetCallerInfo(const Meta &callerInfo)
+void CodecServer::SetInstanceInfo(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo)
 {
-    (void)callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, caller_.pid);
-    (void)callerInfo.GetData(Tag::AV_CODEC_CALLER_UID, caller_.uid);
-    (void)callerInfo.GetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, caller_.processName);
-    (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller_.pid);
-    (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_UID, forwardCaller_.uid);
-    (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardCaller_.processName);
-
+    callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, caller_.pid);
+    callerInfo.GetData(Tag::AV_CODEC_CALLER_UID, caller_.uid);
+    callerInfo.GetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, caller_.processName);
+    callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller_.pid);
+    callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_UID, forwardCaller_.uid);
+    callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardCaller_.processName);
     if (caller_.pid == -1) {
         caller_.pid = getprocpid();
         caller_.uid = getuid();
     }
+
+    codecType_ = type;
+    codecMime_ = isMimeType ? name : CodecAbilitySingleton::GetInstance().GetMimeByCodecName(name);
+    vcodecType_ = static_cast<VideoCodecType>(
+        CodecAbilitySingleton::GetInstance().GetVideoCodecTypeByCodecName(codecName_));
+    callerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    callerInfo.SetData(Tag::MEDIA_CODEC_NAME, codecName_);
+    callerInfo.SetData(Tag::MIME_TYPE, codecMime_);
+    callerInfo.SetData(EventInfoExtentedKey::CODEC_TYPE.data(), type);
+    callerInfo.SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), vcodecType_);
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_INIT, callerInfo);
+    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, callerInfo);
 
     EXPECT_AND_LOGI_WITH_TAG((forwardCaller_.pid >= 0) || (!forwardCaller_.processName.empty()),
                              "Forward caller pid: %{public}d, process name: %{public}s", forwardCaller_.pid,

@@ -69,16 +69,17 @@ enum class StatisticsEventType : uint32_t {
     CAP_UNSUPPORTED_CREATE_CODEC_INFO                   = EventType::STATISTICS_EVENT | (1 << 16) | (1 << 8) | 2,
 
     APP_BEHAVIORS_INFO                                  = EventType::STATISTICS_EVENT | (2 << 16) | (0 << 8) | 0,
-    DEC_ABNORMAL_OCCUPATION_INFO                        = EventType::STATISTICS_EVENT | (2 << 16) | (1 << 8) | 0,
-    DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO    = EventType::STATISTICS_EVENT | (2 << 16) | (1 << 8) | 1,
-    DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO        = EventType::STATISTICS_EVENT | (2 << 16) | (1 << 8) | 2,
-    SPEED_DECODING_INFO                                 = EventType::STATISTICS_EVENT | (2 << 16) | (2 << 8) | 0,
+    APP_BEHAVIORS_RELEASE_HDEC_INFO                     = EventType::STATISTICS_EVENT | (2 << 16) | (1 << 8) | 1,
+    DEC_ABNORMAL_OCCUPATION_INFO                        = EventType::STATISTICS_EVENT | (2 << 16) | (2 << 8) | 0,
+    DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO    = EventType::STATISTICS_EVENT | (2 << 16) | (2 << 8) | 1,
+    DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO        = EventType::STATISTICS_EVENT | (2 << 16) | (2 << 8) | 2,
+    SPEED_DECODING_INFO                                 = EventType::STATISTICS_EVENT | (2 << 16) | (3 << 8) | 0,
 
     CODEC_ABNORMAL_INFO                                 = EventType::STATISTICS_EVENT | (3 << 16) | (0 << 8) | 0,
     CODEC_ERROR_INFO                                    = EventType::STATISTICS_EVENT | (3 << 16) | (1 << 8) | 0,
 
-    MAIN_EVENT_TYPE_MASK                                = 0x00FF0000,
-    SUB_EVENT_TYPE_MASK                                 = 0x00FFFF00,
+    MAIN_EVENT_TYPE_MASK                                = EventType::STATISTICS_EVENT | 0x00FF0000,
+    SUB_EVENT_TYPE_MASK                                 = EventType::STATISTICS_EVENT | 0x00FFFF00,
 };
 
 inline constexpr StatisticsEventType operator&(StatisticsEventType a, StatisticsEventType b)

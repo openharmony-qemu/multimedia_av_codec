@@ -182,6 +182,12 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
                     bool { return objectPair.second.first == object; });
             CHECK_AND_BREAK_LOG(it != codecStubMap_.end(), "find codec object failed, pid(%{public}d)", pid);
 
+            if (it->second.second.videoCodecType == VideoCodecType::DECODER_HARDWARE) {
+                Media::Meta eventMeta;
+                EventManager::GetInstance().OnInstanceEvent(
+                    StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO, eventMeta);
+            }
+
             auto preSize = codecStubMap_.size();
             AVCODEC_LOGI("codec stub services(%{public}zu->%{public}zu) pid(%{public}d)", preSize, preSize - 1, pid);
             codecStubMap_.erase(it);
@@ -226,6 +232,11 @@ void AVCodecServerManager::EraseCodecObjectByPid(pid_t pid)
 {
     for (auto it = codecStubMap_.begin(); it != codecStubMap_.end();) {
         if (it->first == pid) {
+            if (it->second.second.videoCodecType == VideoCodecType::DECODER_HARDWARE) {
+                Media::Meta eventMeta;
+                EventManager::GetInstance().OnInstanceEvent(
+                    StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO, eventMeta);
+            }
             executor_.Commit(it->second.first);
             it = codecStubMap_.erase(it);
         } else {
@@ -377,17 +388,16 @@ std::optional<CodecInstance> AVCodecServerManager::GetCodecInstanceByInstanceId(
     return std::nullopt;
 }
 
-std::unordered_map<std::string, uint32_t> AVCodecServerManager::GetDecoderUsageStatistics()
+std::unordered_map<std::string, uint32_t> AVCodecServerManager::GetHDecUsageStatistics()
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     std::unordered_map<std::string, uint32_t> usageStatistics;
     for (const auto& iter : codecStubMap_) {
         const InstanceInfo& info = iter.second.second;
-        if (info.codecType != AVCODEC_TYPE_VIDEO_DECODER) {
+        if (info.videoCodecType != VideoCodecType::DECODER_HARDWARE) {
             continue;
         }
-        std::string callerName = info.forwardCaller.processName == "" ?
-            info.caller.processName : info.forwardCaller.processName;
+        std::string callerName = info.GetActualCallerProcessName();
         if (callerName.empty()) {
             continue;
         }

@@ -141,8 +141,7 @@ void StatisticEventWrite(const std::string &eventName, const char *eventValue)
 {
     CHECK_AND_RETURN_LOG(eventValue != nullptr && strlen(eventValue) > 0,
         "Invalid event value: nullptr or empty string");
-    HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA, eventName,
-                    OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
+    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, eventName, OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
                     "PAYLOAD", eventValue);
 }
 } // namespace MediaAVCodec
