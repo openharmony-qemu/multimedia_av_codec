@@ -469,6 +469,13 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAPRO;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_ILBC;
 
 /**
+ * @brief Enumerates the mime types of audio TrueHD codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_TRUEHD;
+
+/**
  * @brief Key for timeStamp in surfacebuffer, value type is int64_t.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9

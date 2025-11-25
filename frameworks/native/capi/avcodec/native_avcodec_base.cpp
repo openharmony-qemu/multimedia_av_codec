@@ -57,6 +57,7 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAV1 = "audio/wmav1";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAV2 = "audio/wmav2";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAPRO = "audio/wmapro";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_ILBC = "audio/ilbc";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_TRUEHD = "audio/truehd";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";

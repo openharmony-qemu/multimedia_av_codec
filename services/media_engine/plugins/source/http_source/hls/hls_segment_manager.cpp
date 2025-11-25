@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,19 +14,18 @@
  */
 #define HST_LOG_TAG "HlsSegmentManager"
 
-#include "hls_media_downloader.h"
-#include "media_downloader.h"
-#include "hls_playlist_downloader.h"
-#include "securec.h"
-#include <algorithm>
-#include "plugin/plugin_time.h"
-#include "openssl/aes.h"
-#include "osal/task/task.h"
-#include "network/network_typs.h"
-#include "common/media_core.h"
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <regex>
+#include <algorithm>
+#include "hls_segment_manager.h"
+#include "media_downloader.h"
+#include "hls_playlist_downloader.h"
+#include "securec.h"
+#include "plugin/plugin_time.h"
+#include "openssl/aes.h"
+#include "network/network_typs.h"
+#include "common/media_core.h"
 #include "avcodec_trace.h"
 
 namespace OHOS {
@@ -40,7 +39,6 @@ constexpr int SECOND_WIDTH = 720;
 constexpr int THIRD_WIDTH = 1080;
 constexpr uint64_t MAX_BUFFER_SIZE = 19 * 1024 * 1024;
 constexpr uint32_t SAMPLE_INTERVAL = 1000; // Sampling time interval: ms
-constexpr int MAX_RECORD_COUNT = 10;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_INTERVAL = 300 * 1000;
 constexpr double ZERO_THRESHOLD = 1e-9;
@@ -76,18 +74,6 @@ constexpr uint32_t MAX_LOOP_TIMES = 100;
 constexpr uint64_t MAX_EXPECT_DURATION = 19;
 constexpr uint32_t POP_TIME_OUT_MS = 1;
 
-std::map<HlsSegmentType, size_t> MIN_BUFFER_SIZE = {
-    { HlsSegmentType::SEG_VIDEO, VIDEO_MIN_BUFFER_SIZE },
-    { HlsSegmentType::SEG_AUDIO, 2 * 1024 * 1024 },
-    { HlsSegmentType::SEG_SUBTITLE, 1 * 1024 * 1024 },
-};
-
-std::map<HlsSegmentType, size_t> MAX_CACHE_BUFFER_SIZE = {
-    {HlsSegmentType::SEG_VIDEO, VIDEO_MAX_CACHE_BUFFER_SIZE},
-    {HlsSegmentType::SEG_AUDIO, 5 * 1024 * 1024},
-    {HlsSegmentType::SEG_SUBTITLE, 2 * 1024 * 1024},
-};
-
 uint64_t SpliceOffset(uint32_t tsIndex, uint32_t offset32)
 {
     uint64_t offset64 = 0;
@@ -97,6 +83,18 @@ uint64_t SpliceOffset(uint32_t tsIndex, uint32_t offset32)
     return offset64;
 }
 }
+
+const std::map<HlsSegmentType, size_t> HlsSegmentManager::MIN_BUFFER_SIZE = {
+    { HlsSegmentType::SEG_VIDEO, VIDEO_MIN_BUFFER_SIZE },
+    { HlsSegmentType::SEG_AUDIO, 2 * 1024 * 1024 },
+    { HlsSegmentType::SEG_SUBTITLE, 1 * 1024 * 1024 },
+};
+
+const std::map<HlsSegmentType, size_t> HlsSegmentManager::MAX_CACHE_BUFFER_SIZE = {
+    {HlsSegmentType::SEG_VIDEO, VIDEO_MAX_CACHE_BUFFER_SIZE},
+    {HlsSegmentType::SEG_AUDIO, 5 * 1024 * 1024},
+    {HlsSegmentType::SEG_SUBTITLE, 2 * 1024 * 1024},
+};
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
 //   fragment --- one item in play list, download media data according to the fragment address.
@@ -168,8 +166,18 @@ HlsSegmentManager::HlsSegmentManager(const std::shared_ptr<HlsSegmentManager> &o
 void HlsSegmentManager::SetType(HlsSegmentType type)
 {
     type_ = type;
-    minBufferSize_ = MIN_BUFFER_SIZE[type_];
-    maxCacheBufferSize_ = MAX_CACHE_BUFFER_SIZE[type_];
+    auto minBufferSizeIt = MIN_BUFFER_SIZE.find(type_);
+    if (minBufferSizeIt != MIN_BUFFER_SIZE.end()) {
+        minBufferSize_ = minBufferSizeIt->second;
+    } else {
+        minBufferSize_ = VIDEO_MIN_BUFFER_SIZE;
+    }
+    auto maxCacheBufferSizeIt = MAX_CACHE_BUFFER_SIZE.find(type_);
+    if (maxCacheBufferSizeIt != MAX_CACHE_BUFFER_SIZE.end()) {
+        maxCacheBufferSize_ = maxCacheBufferSizeIt->second;
+    } else {
+        maxCacheBufferSize_ = VIDEO_MAX_CACHE_BUFFER_SIZE;
+    }
 }
 
 void HlsSegmentManager::Init()
@@ -703,12 +711,12 @@ bool HlsSegmentManager::ReadHeaderData(unsigned char* buff, ReadDataInfo& readDa
     if (curStreamId_ <= 0 && readDataInfo.streamId_ > 0) {
         curStreamId_ = static_cast<uint32_t>(readDataInfo.streamId_);
         isNeedReadHeader_.store(true);
-        MEDIA_LOG_D("HLS read curStreamId_ " PUBLIC_LOG_U32 ", type: %{public}d", curStreamId_, type_);
+        MEDIA_LOG_D("HLS first read stream id: %{public}u, type: %{public}d", curStreamId_, type_);
     } else if (readDataInfo.streamId_ > 0 && readDataInfo.streamId_ != static_cast<int32_t>(curStreamId_)) {
         readDataInfo.nextStreamId_ = static_cast<int32_t>(curStreamId_);
         isNeedReadHeader_.store(true);
-        MEDIA_LOG_I("HLS read curStreamId_ " PUBLIC_LOG_U32 " curStreamId_ " PUBLIC_LOG_U32 ", type: %{public}d",
-                    curStreamId_, readDataInfo.streamId_, type_);
+        MEDIA_LOG_I("HLS read change stream, current: %{public}u, next: %{public}u, type: %{public}d",
+                    readDataInfo.streamId_, curStreamId_, type_);
         return true;
     }
     if (readDataInfo.streamId_ > 0 && curStreamId_ == static_cast<uint32_t>(readDataInfo.streamId_) &&
@@ -717,7 +725,7 @@ bool HlsSegmentManager::ReadHeaderData(unsigned char* buff, ReadDataInfo& readDa
             readDataInfo.realReadLength_, readDataInfo.streamId_);
         FALSE_RETURN_V_MSG(headerRet, true, "HLS read fmp4 header failed, type: %{public}d", type_);
         isNeedReadHeader_.store(false);
-        MEDIA_LOG_I("HLS read fmp4 header, type: %{public}d", type_);
+        MEDIA_LOG_I("HLS read fmp4 header, len: %{public}u, type: %{public}d", readDataInfo.realReadLength_, type_);
         return true;
     }
     return false;
@@ -999,6 +1007,10 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
         }
         PutRequestIntoDownloader(playInfo);
     }
+    if (!isDownloadStarted_ && playList_->Empty()) {
+        MEDIA_LOG_I("HLS OnPlayListChanged no new playinfo, type: %{public}d", type_);
+        HandleBuffering();
+    }
 }
 
 bool HlsSegmentManager::GetStartedStatus()
@@ -1217,47 +1229,22 @@ uint32_t HlsSegmentManager::SaveEncryptData(uint8_t* data, uint32_t len, bool no
 
 void HlsSegmentManager::DownloadRecordHistory(int64_t nowTime)
 {
-    if ((static_cast<uint64_t>(nowTime) - lastWriteTime_) >= SAMPLE_INTERVAL) {
-        MEDIA_LOG_I("HLS OnWriteRingBuffer nowTime: " PUBLIC_LOG_D64
-            " lastWriteTime:" PUBLIC_LOG_D64  ", type: %{public}d", nowTime, lastWriteTime_, type_);
-        BufferDownRecord* record = new BufferDownRecord();
-        record->dataBits = lastWriteBit_;
-        record->timeoff = static_cast<uint64_t>(nowTime) - lastWriteTime_;
-        record->next = bufferDownRecord_;
-        bufferDownRecord_ = record;
-        lastWriteBit_ = 0;
-        lastWriteTime_ = static_cast<uint64_t>(nowTime);
-        BufferDownRecord* tmpRecord = bufferDownRecord_;
-        int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
-        for (int i = 0; i < MAX_RECORD_COUNT; i++) {
-            if (CheckLoopTimeout(loopStartTime)) {
-                break;
-            }
-            if (tmpRecord->next) {
-                tmpRecord = tmpRecord->next;
-            } else {
-                break;
-            }
-        }
-        BufferDownRecord* next = tmpRecord->next;
-        tmpRecord->next = nullptr;
-        tmpRecord = next;
-        loopStartTime = loopInterruptClock_.ElapsedSeconds();
-        while (tmpRecord) {
-            if (CheckLoopTimeout(loopStartTime)) {
-                break;
-            }
-            next = tmpRecord->next;
-            delete tmpRecord;
-            tmpRecord = next;
-        }
-        if (autoBufferSize_ && !userDefinedBufferDuration_) {
-            if (CheckRiseBufferSize()) {
-                RiseBufferSize();
-            } else if (CheckPulldownBufferSize()) {
-                DownBufferSize();
-            }
-        }
+    if ((static_cast<uint64_t>(nowTime) - lastWriteTime_) < SAMPLE_INTERVAL) {
+        return;
+    }
+    MEDIA_LOG_I("HLS OnWriteRingBuffer nowTime: " PUBLIC_LOG_D64
+        " lastWriteTime:" PUBLIC_LOG_D64  ", type: %{public}d", nowTime, lastWriteTime_, type_);
+    lastWriteBit_ = 0;
+    lastWriteTime_ = static_cast<uint64_t>(nowTime);
+    if (!autoBufferSize_ || userDefinedBufferDuration_) {
+        return;
+    }
+    if (CheckRiseBufferSize()) {
+        RiseBufferSize();
+    } else if (CheckPulldownBufferSize()) {
+        DownBufferSize();
+    } else {
+        MEDIA_LOG_D("DownloadRecordHistory, no rise, no down, type: %{public}d", type_);
     }
 }
 
@@ -1755,51 +1742,12 @@ void HlsSegmentManager::DownBufferSize()
 
 void HlsSegmentManager::OnReadBuffer(uint32_t len)
 {
-    static uint32_t minDuration = 0;
-    uint64_t nowTime = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     // Bytes to bit
     uint32_t duration = len * 8;
     if (duration >= bufferedDuration_) {
         bufferedDuration_ = 0;
     } else {
         bufferedDuration_ -= duration;
-    }
-
-    if (minDuration == 0 || bufferedDuration_ < minDuration) {
-        minDuration = bufferedDuration_;
-    }
-    if ((nowTime - lastReadTime_) >= SAMPLE_INTERVAL || bufferedDuration_ == 0) {
-        BufferLeastRecord* record = new BufferLeastRecord();
-        record->minDuration = minDuration;
-        record->next = bufferLeastRecord_;
-        bufferLeastRecord_ = record;
-        lastReadTime_ = nowTime;
-        minDuration = 0;
-        // delete all after bufferLeastRecord_[MAX_RECORD_CT]
-        BufferLeastRecord* tmpRecord = bufferLeastRecord_;
-        int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
-        for (int i = 0; i < MAX_RECORD_COUNT; i++) {
-            if (CheckLoopTimeout(loopStartTime)) {
-                break;
-            }
-            if (tmpRecord->next) {
-                tmpRecord = tmpRecord->next;
-            } else {
-                break;
-            }
-        }
-        BufferLeastRecord* next = tmpRecord->next;
-        tmpRecord->next = nullptr;
-        tmpRecord = next;
-        loopStartTime = loopInterruptClock_.ElapsedSeconds();
-        while (tmpRecord) {
-            if (CheckLoopTimeout(loopStartTime)) {
-                break;
-            }
-            next = tmpRecord->next;
-            delete tmpRecord;
-            tmpRecord = next;
-        }
     }
 }
 

@@ -135,7 +135,7 @@ struct DetailedErrorCode {
     bool illegalParam_ {false};
     bool missingParam_{false};
 
-    DetailedErrorCode(bool verification = false,
+    DetailedErrorCode(bool verification = true,
                       bool unsupportedSpecification = false,
                       bool illegalParam = false,
                       bool missingParam = false)

@@ -157,6 +157,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_WMAV2, MimeType::AUDIO_WMAV2},
     {AV_CODEC_ID_WMAPRO, MimeType::AUDIO_WMAPRO},
     {AV_CODEC_ID_ILBC, MimeType::AUDIO_ILBC},
+    {AV_CODEC_ID_TRUEHD, MimeType::AUDIO_TRUEHD},
 #ifdef SUPPORT_CODEC_COOK
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
 #endif
@@ -935,7 +936,8 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         ParseOrientationFromMatrix(avStream, format);
     }
 
-    AVRational sar = avStream.sample_aspect_ratio;
+    AVRational sar = av_guess_sample_aspect_ratio(&const_cast<AVFormatContext&>(avFormatContext),
+        &const_cast<AVStream&>(avStream), nullptr);
     if (sar.num && sar.den) {
         format.Set<Tag::VIDEO_SAR>(static_cast<double>(av_q2d(sar)));
     }

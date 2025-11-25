@@ -218,4 +218,237 @@ HWTEST_F(AttributeUnitTest, CreateTagByName, TestSize.Level1)
     EXPECT_EQ(extxkeyTag->GetType(), HlsTag::EXTXKEY);
     EXPECT_EQ(invalidTag, nullptr);
 }
+
+HWTEST_F(AttributeUnitTest, DecimalEmptyString, TestSize.Level1)
+{
+    Attribute attr("name", "");
+    EXPECT_EQ(attr.Decimal(), 0);
+}
+
+HWTEST_F(AttributeUnitTest, DecimalWhiteSpaceOnly, TestSize.Level1)
+{
+    Attribute attr("name", "   ");
+    EXPECT_EQ(attr.Decimal(), 0);
+}
+
+HWTEST_F(AttributeUnitTest, DecimalInvalidStart, TestSize.Level1)
+{
+    Attribute attr("name", "abc123");
+    EXPECT_EQ(attr.Decimal(), 0);
+}
+
+HWTEST_F(AttributeUnitTest, DecimalWithDecimalPoint, TestSize.Level1)
+{
+    Attribute attr("name", "123.45");
+    EXPECT_EQ(attr.Decimal(), 123);
+}
+
+HWTEST_F(AttributeUnitTest, DecimalMaxValue, TestSize.Level1)
+{
+    // UINT64_MAX = 18446744073709551615
+    Attribute attr("name", "18446744073709551615");
+    EXPECT_EQ(attr.Decimal(), 18446744073709551615ULL);
+}
+
+HWTEST_F(AttributeUnitTest, FloatingPointInteger, TestSize.Level1)
+{
+    Attribute attr("name", "123");
+    EXPECT_EQ(attr.FloatingPoint(), 123.0);
+}
+
+HWTEST_F(AttributeUnitTest, FloatingPointDecimal, TestSize.Level1)
+{
+    Attribute attr("name", "123.45");
+    EXPECT_EQ(attr.FloatingPoint(), 123.45);
+}
+
+HWTEST_F(AttributeUnitTest, FloatingPointScientific, TestSize.Level1)
+{
+    Attribute attr("name", "1.23e4");
+    EXPECT_EQ(attr.FloatingPoint(), 12300.0);
+
+    Attribute attr2("name", "1.23E-5");
+    EXPECT_EQ(attr2.FloatingPoint(), 1.23e-5);
+}
+
+HWTEST_F(AttributeUnitTest, FloatingPointEmptyString, TestSize.Level1)
+{
+    Attribute attr("name", "");
+    EXPECT_EQ(attr.FloatingPoint(), 0.0);
+}
+
+HWTEST_F(AttributeUnitTest, FloatingPointWhiteSpaceOnly, TestSize.Level1)
+{
+    Attribute attr("name", "   ");
+    EXPECT_EQ(attr.FloatingPoint(), 0.0);
+}
+
+HWTEST_F(AttributeUnitTest, FloatingPointInvalidStart, TestSize.Level1)
+{
+    Attribute attr("name", "abc123");
+    EXPECT_EQ(attr.FloatingPoint(), 0.0);
+}
+
+HWTEST_F(AttributeUnitTest, HexSequenceNormalEven, TestSize.Level1)
+{
+    Attribute attr("name", "0x1A2B3C");
+    auto result = attr.HexSequence();
+    EXPECT_EQ(result.size(), 3);
+    EXPECT_EQ(result[0], 0x1A);
+    EXPECT_EQ(result[1], 0x2B);
+    EXPECT_EQ(result[2], 0x3C);
+}
+
+HWTEST_F(AttributeUnitTest, HexSequenceCaseInsensitive, TestSize.Level1)
+{
+    Attribute attr("name", "0X1a2B3c");
+    auto result = attr.HexSequence();
+    EXPECT_EQ(result.size(), 3);
+    EXPECT_EQ(result[0], 0x1A);
+    EXPECT_EQ(result[1], 0x2B);
+    EXPECT_EQ(result[2], 0x3C);
+}
+
+HWTEST_F(AttributeUnitTest, HexSequenceSingleByte, TestSize.Level1)
+{
+    Attribute attr("name", "0x1A");
+    auto result = attr.HexSequence();
+    EXPECT_EQ(result.size(), 1);
+    EXPECT_EQ(result[0], 0x1A);
+}
+
+HWTEST_F(AttributeUnitTest, HexSequenceOddLength, TestSize.Level1)
+{
+    Attribute attr("name", "0x1A2B3");
+    auto result = attr.HexSequence();
+    EXPECT_EQ(result.size(), 2);
+    EXPECT_EQ(result[0], 0x1A);
+    EXPECT_EQ(result[1], 0x2B);
+}
+
+HWTEST_F(AttributeUnitTest, HexSequenceEmpty, TestSize.Level1)
+{
+    Attribute attr("name", "");
+    auto result = attr.HexSequence();
+    EXPECT_TRUE(result.empty());
+}
+
+HWTEST_F(AttributeUnitTest, HexSequenceOnlyPrefix, TestSize.Level1)
+{
+    Attribute attr("name", "0x");
+    auto result = attr.HexSequence();
+    EXPECT_TRUE(result.empty());
+}
+
+HWTEST_F(AttributeUnitTest, GetByteRangeNormalWithOffset, TestSize.Level1)
+{
+    Attribute attr("name", "123@456");
+    auto result = attr.GetByteRange();
+    EXPECT_EQ(result.first, 456);
+    EXPECT_EQ(result.second, 123);
+}
+
+HWTEST_F(AttributeUnitTest, GetByteRangeOnlyLength, TestSize.Level1)
+{
+    Attribute attr("name", "123");
+    auto result = attr.GetByteRange();
+    EXPECT_EQ(result.first, 0);
+    EXPECT_EQ(result.second, 123);
+}
+
+HWTEST_F(AttributeUnitTest, GetByteRangeInvalidOffset, TestSize.Level1)
+{
+    Attribute attr("name", "123@abc");
+    auto result = attr.GetByteRange();
+    EXPECT_EQ(result.first, 0);
+    EXPECT_EQ(result.second, 123);
+}
+
+HWTEST_F(AttributeUnitTest, GetByteRangeInvalidLength, TestSize.Level1)
+{
+    Attribute attr("name", "abc@123");
+    auto result = attr.GetByteRange();
+    EXPECT_EQ(result.first, 0);
+    EXPECT_EQ(result.second, 0);
+}
+
+HWTEST_F(AttributeUnitTest, GetByteRangeMultipleAt, TestSize.Level1)
+{
+    Attribute attr("name", "123@456@789");
+    auto result = attr.GetByteRange();
+    EXPECT_EQ(result.first, 456);
+    EXPECT_EQ(result.second, 123);
+}
+
+HWTEST_F(AttributeUnitTest, GetByteRangeOnlyAt, TestSize.Level1)
+{
+    Attribute attr("name", "@123");
+    auto result = attr.GetByteRange();
+    EXPECT_EQ(result.first, 0);
+    EXPECT_EQ(result.second, 0);
+}
+
+HWTEST_F(AttributeUnitTest, GetResolutionNormal, TestSize.Level1)
+{
+    Attribute attr("name", "1920x1080");
+    auto result = attr.GetResolution();
+    EXPECT_EQ(result.first, 1920);
+    EXPECT_EQ(result.second, 1080);
+}
+
+HWTEST_F(AttributeUnitTest, GetResolutionOnlyWidth, TestSize.Level1)
+{
+    Attribute attr("name", "1920");
+    auto result = attr.GetResolution();
+    EXPECT_EQ(result.first, 1920);
+    EXPECT_EQ(result.second, 0);
+}
+
+HWTEST_F(AttributeUnitTest, GetResolutionInvalidCharacters, TestSize.Level1)
+{
+    Attribute attr("name", "abcx123");
+    auto result = attr.GetResolution();
+    EXPECT_EQ(result.first, 0);
+    EXPECT_EQ(result.second, 0);
+}
+
+HWTEST_F(AttributeUnitTest, GetResolutionEmptyString, TestSize.Level1)
+{
+    Attribute attr("name", "");
+    auto result = attr.GetResolution();
+    EXPECT_EQ(result.first, 0);
+    EXPECT_EQ(result.second, 0);
+}
+
+HWTEST_F(AttributeUnitTest, GetResolutionSpaceAroundX, TestSize.Level1)
+{
+    Attribute attr("name", " 1920 x 1080");
+    auto result = attr.GetResolution();
+    EXPECT_EQ(result.first, 1920);
+    EXPECT_EQ(result.second, 0);
+}
+
+HWTEST_F(AttributeUnitTest, QuotedStringNormal, TestSize.Level1)
+{
+    Attribute attr("name", "\"hello\"");
+    EXPECT_EQ(attr.QuotedString(), "hello");
+}
+
+HWTEST_F(AttributeUnitTest, QuotedStringWithDoubleQuote, TestSize.Level1)
+{
+    Attribute attr("name", "\"hello\\\"world\"");
+    EXPECT_EQ(attr.QuotedString(), "hello\"world");
+}
+
+HWTEST_F(AttributeUnitTest, QuotedStringEmpty_001, TestSize.Level1)
+{
+    Attribute attr("name", "\"\"");
+    EXPECT_EQ(attr.QuotedString(), "");
+}
+
+HWTEST_F(AttributeUnitTest, QuotedStringNoQuotes_001, TestSize.Level1)
+{
+    Attribute attr("name", "hello");
+    EXPECT_EQ(attr.QuotedString(), "hello");
+}
 }

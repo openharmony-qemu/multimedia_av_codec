@@ -82,6 +82,7 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_ADPCM_XA = "audio/adpcm_xa";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_ADPCM_YAMAHA = "audio/adpcm_yamaha";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_ILBC = "audio/ilbc";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_TRUEHD = "audio/truehd";
 
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_MSVIDEO1 = "video/msvideo1";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_VC1 = "video/vc1";
@@ -131,6 +132,7 @@ public:
             MEDIA_MIMETYPE_AUDIO_WMAV2,
             MEDIA_MIMETYPE_AUDIO_WMAPRO,
             MEDIA_MIMETYPE_AUDIO_ILBC,
+            MEDIA_MIMETYPE_AUDIO_TRUEHD,
 #ifdef SUPPORT_CODEC_EAC3
             MEDIA_MIMETYPE_AUDIO_EAC3,
 #endif

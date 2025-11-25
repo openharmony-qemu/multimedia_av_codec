@@ -43,7 +43,7 @@ bool DashMediaDownSetBitFuzzerTest(const uint8_t *data, size_t size)
     std::string testUrl = MPD_SEGMENT_BASE;
     std::map<std::string, std::string> httpHeader;
     g_result = g_mediaDownloader->Open(testUrl, httpHeader);
-    g_mediaDownloader->SetCurrentBitRate(1, 0);
+    g_mediaDownloader->SetCurrentBitRate(*reinterpret_cast<const int32_t *>(data), 0);
     return true;
 }
 

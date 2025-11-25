@@ -18,6 +18,8 @@
 
 #include <mutex>
 #include <thread>
+#include <unistd.h>
+#include <utility>
 #include "playlist_downloader.h"
 #include "download/downloader.h"
 #include "media_downloader.h"
@@ -26,11 +28,9 @@
 #include "openssl/aes.h"
 #include "osal/task/task.h"
 #include "common/media_source.h"
-#include <unistd.h>
 #include "common/media_core.h"
 #include "utils/media_cached_buffer.h"
 #include "utils/write_bitrate_caculator.h"
-#include <utility>
 #include "osal/task/mutex.h"
 #include "osal/task/condition_variable.h"
 #include "av_common.h"

@@ -156,6 +156,7 @@ ohos_shared_library("native_media_avsource") {
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
+    "netmanager_base:net_security_config_if",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
