@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -233,9 +233,7 @@ void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
     sleepCond_.WaitFor(lock, WAIT_KEY_SLEEP_TIME * MAX_DOWNLOAD_TIME, [this]() {
         return isInterruptNeeded_.load() || isHeaderReady_.load();
     });
-    if (isHeaderReady_.load()) {
-        MEDIA_LOG_I("x-map ready download " PUBLIC_LOG_U32, downloadHeaderLen_);
-    }
+    MEDIA_LOG_I("x-map download %{public}u, is ready: %{public}d", downloadHeaderLen_, isHeaderReady_.load());
 }
 
 void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
@@ -605,7 +603,7 @@ void M3U8MasterPlaylist::StartParsing()
 
 void M3U8MasterPlaylist::UpdateMediaPlaylist()
 {
-    MEDIA_LOG_I("This is a simple media playlist, not a master playlist: %{public}s", uri_.c_str());
+    MEDIA_LOG_I("This is a simple media playlist, not a master playlist");
     auto m3u8 = std::make_shared<M3U8>(uri_, "", monitorStatusCallback_);
     FALSE_RETURN_NOLOG(m3u8 != nullptr);
     auto stream = std::make_shared<M3U8VariantStream>(uri_, uri_, m3u8);

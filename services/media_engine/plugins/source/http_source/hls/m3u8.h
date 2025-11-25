@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -37,12 +37,6 @@ enum class M3U8MediaType : int32_t {
     M3U8_MEDIA_TYPE_SUBTITLES,
     M3U8_MEDIA_TYPE_CLOSED_CAPTIONS,
     M3U8_N_MEDIA_TYPES,
-};
-
-struct M3U8InitFile {
-    std::string uri;
-    int offset;
-    int size;
 };
 
 struct M3U8Fragment {

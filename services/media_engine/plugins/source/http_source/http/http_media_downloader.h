@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,14 +18,14 @@
 
 #include <string>
 #include <memory>
+#include <unistd.h>
+#include "timer.h"
 #include "osal/utils/ring_buffer.h"
 #include "osal/utils/steady_clock.h"
 #include "download/downloader.h"
 #include "media_downloader.h"
 #include "common/media_source.h"
-#include "timer.h"
 #include "utils/media_cached_buffer.h"
-#include <unistd.h>
 #include "common/media_core.h"
 #include "utils/write_bitrate_caculator.h"
 #include "osal/task/mutex.h"
@@ -209,7 +209,7 @@ private:
         uint64_t bufferDuring {0};
     };
     std::shared_ptr<RecordData> recordData_ {};
-    uint64_t readBitrate_ {1 * 1024 * 1024};         //bps
+    uint64_t readBitrate_ {1 * 1024 * 1024}; // bps
     uint64_t lastReadCheckTime_ {0};
     uint64_t readTotalBytes_ {0};
     uint64_t readRecordDuringTime_ {0};

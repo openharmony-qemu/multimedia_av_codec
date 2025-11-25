@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,9 +16,6 @@
 
 #include <algorithm>
 #include "dash_media_downloader.h"
-#include "securec.h"
-#include "plugin/plugin_time.h"
-#include "osal/task/task.h"
 #include "utils/time_utils.h"
 #include "utils/bitrate_process_utils.h"
 #include "format.h"
