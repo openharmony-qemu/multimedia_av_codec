@@ -267,8 +267,8 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
     requestInfo.url = playInfo.rangeUrl_.empty() ? playInfo.url_ : playInfo.rangeUrl_;
     requestInfo.httpHeader = httpHeader_;
     bool isRequestWholeFile = playInfo.rangeUrl_.empty() ? true : playInfo.length_ <= 0;
-    downloadRequest_ = std::make_shared<DownloadRequest>(playInfo.duration_, dataSave_,
-                                                         realStatusCallback, requestInfo, isRequestWholeFile);
+    SetDownloadRequest(std::make_shared<DownloadRequest>(playInfo.duration_, dataSave_,
+                                                         realStatusCallback, requestInfo, isRequestWholeFile));
     fragmentDownloadStart[playInfo.url_] = true;
     int64_t startTimePos = playInfo.startTimePos_;
     curUrl_ = playInfo.rangeUrl_.empty() ? playInfo.url_ : playInfo.rangeUrl_;
@@ -290,16 +290,17 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
             tsStorageInfo_[writeTsIndex_] = std::make_pair(0, false);
         }
     }
+    auto downloadRequest = GetDownloadRequest();
     if (!playInfo.rangeUrl_.empty()) {
         tsStreamIdInfo_[writeTsIndex_] = playInfo.streamId_;
         if (!isRequestWholeFile) {
-            downloadRequest_->SetRangePos(playInfo.offset_, playInfo.offset_ + playInfo.length_ - 1); // 1
+            downloadRequest->SetRangePos(playInfo.offset_, playInfo.offset_ + playInfo.length_ - 1); // 1
         }
     }
-    downloadRequest_->SetRequestProtocolType(RequestProtocolType::HLS);
-    downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
-    downloadRequest_->SetStartTimePos(startTimePos);
-    downloader_->Download(downloadRequest_, -1); // -1
+    downloadRequest->SetRequestProtocolType(RequestProtocolType::HLS);
+    downloadRequest->SetDownloadDoneCb(downloadDoneCallback);
+    downloadRequest->SetStartTimePos(startTimePos);
+    downloader_->Download(downloadRequest, -1); // -1
     downloader_->Start();
 }
 
@@ -379,8 +380,9 @@ bool HlsSegmentManager::CheckReadStatus()
 {
     // eos:palylist is empty, request is finished, hls is vod, do not select bitrate
     FALSE_RETURN_V(playlistDownloader_ != nullptr, false);
-    FALSE_RETURN_V(downloadRequest_ != nullptr, false);
-    isEos_ = playList_->Empty() && (downloadRequest_ != nullptr) && downloadRequest_->IsEos() &&
+    auto downloadRequest = GetDownloadRequest();
+    FALSE_RETURN_V(downloadRequest != nullptr, false);
+    isEos_ = playList_->Empty() && (downloadRequest != nullptr) && downloadRequest->IsEos() &&
         playlistDownloader_ != nullptr && (playlistDownloader_->GetDuration() > 0) &&
         playlistDownloader_->IsParseAndNotifyFinished();
     if (isEos_) {
@@ -607,8 +609,9 @@ bool HlsSegmentManager::CheckDataIntegrity()
 Status HlsSegmentManager::CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     bool isFinishedPlay = CheckReadStatus() || isStopped;
-    if (downloadRequest_ != nullptr) {
-        readDataInfo.isEos_ = downloadRequest_->IsEos();
+    auto downloadRequest = GetDownloadRequest();
+    if (downloadRequest != nullptr) {
+        readDataInfo.isEos_ = downloadRequest->IsEos();
     }
     if (isFinishedPlay && readTsIndex_ + 1 < backPlayList_.size()) {
         return Status::ERROR_UNKNOWN;
@@ -1546,7 +1549,8 @@ int64_t HlsSegmentManager::RequestNewTsForRead(const PlayInfo& item)
 
 void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std::string& location)
 {
-    uint32_t bitRate = downloadRequest_->GetBitRate();
+    auto downloadRequest = GetDownloadRequest();
+    uint32_t bitRate = downloadRequest->GetBitRate();
     {
         AutoLock lock(tsStorageInfoMutex_);
         tsStorageInfo_[writeTsIndex_].second = true;
@@ -1557,8 +1561,8 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
     auto playInfo = playList_->Pop(POP_TIME_OUT_MS);
     if (!playInfo.url_.empty()) {
         writeTsIndex_++;
-        size_t fragmentSize = downloadRequest_->GetFileContentLength();
-        double duration = downloadRequest_->GetDuration();
+        size_t fragmentSize = downloadRequest->GetFileContentLength();
+        double duration = downloadRequest->GetDuration();
         CalculateBitRate(fragmentSize, duration);
         PutRequestIntoDownloader(playInfo);
     } else {
@@ -1889,8 +1893,9 @@ Status HlsSegmentManager::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
         waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(currentBitRate_) /
             static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
     }
-    if (downloadRequest_) {
-        downloadRequest_->SetBitRateToRequestSize(currentBitRate_);
+    auto downloadRequest = GetDownloadRequest();
+    if (downloadRequest) {
+        downloadRequest->SetBitRateToRequestSize(currentBitRate_);
     }
     return Status::OK;
 }
@@ -2198,7 +2203,8 @@ bool HlsSegmentManager::SetInitialBufferSize(int32_t offset, int32_t size)
 {
     AutoLock lock(initCacheMutex_);
     bool isInitBufferSizeOk = IsCachedInitSizeReady(size) || CheckBreakCondition();
-    if (isInitBufferSizeOk || !downloader_ || !downloadRequest_ || isTimeoutErrorNotified_.load()) {
+    auto downloadRequest = GetDownloadRequest();
+    if (isInitBufferSizeOk || !downloader_ || !downloadRequest || isTimeoutErrorNotified_.load()) {
         MEDIA_LOG_I("HLS SetInitialBufferSize initCacheSize ok, type: %{public}d", type_);
         return false;
     }
@@ -2507,6 +2513,18 @@ void HlsSegmentManager::SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bu
 void HlsSegmentManager::SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback)
 {
     segEventCb_ = segEventCallback;
+}
+
+void HlsSegmentManager::SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest)
+{
+    std::unique_lock<std::shared_mutex> lock(downloadRequestMutex_);
+    downloadRequest_ = std::move(downloadRequest);
+}
+
+std::shared_ptr<DownloadRequest> HlsSegmentManager::GetDownloadRequest()
+{
+    std::shared_lock<std::shared_mutex> lock(downloadRequestMutex_);
+    return downloadRequest_;
 }
 
 }
