@@ -2515,13 +2515,13 @@ void HlsSegmentManager::SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCall
     segEventCb_ = segEventCallback;
 }
 
-void HlsSegmentManager::SetDownloadRequest(std::shared_ptr<SetDownloadRequest> downloadRequest)
+void HlsSegmentManager::SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest)
 {
     std::unique_lock<std::shared_mutex> lock(downloadRequestMutex_);
     downloadRequest_ = std::move(downloadRequest);
 }
 
-std::shared_ptr<SetDownloadRequest> HlsSegmentManager::GetDownloadRequest()
+std::shared_ptr<DownloadRequest> HlsSegmentManager::GetDownloadRequest()
 {
     std::shared_lock<std::shared_mutex> lock(downloadRequestMutex_);
     return downloadRequest_;

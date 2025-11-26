@@ -209,7 +209,7 @@ private:
     void HandleBufferingState();
     void HandleBufferingEnd();
     bool CheckTsEndOrEos(ReadDataInfo& readDataInfo);
-    void SetDownloadRequest(std::shared_ptr<SetDownloadRequest> downloadRequest);
+    void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
 
 private:
