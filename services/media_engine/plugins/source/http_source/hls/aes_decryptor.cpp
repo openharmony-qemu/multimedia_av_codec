@@ -20,16 +20,16 @@
 #include "common/log.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HilogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "AesDecryptor" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "AesDecryptor" };
 }
 
 namespace OHOS {
 namespace Media {
 AesDecryptor::~AesDecryptor()
 {
-    NZERO_LOG(memset_s(iv_, 1, 0, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memset_s(initIv_, 1, 0, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memset_s(key_, 1, 0, DECRYPT_UNIT_LEN));
+    NZERO_LOG(memset_s(iv_, DECRYPT_UNIT_LEN, 0, DECRYPT_UNIT_LEN));
+    NZERO_LOG(memset_s(initIv_, DECRYPT_UNIT_LEN, 0, DECRYPT_UNIT_LEN));
+    NZERO_LOG(memset_s(key_, DECRYPT_UNIT_LEN, 0, DECRYPT_UNIT_LEN));
 
 }
 
@@ -51,7 +51,6 @@ void AesDecryptor::OnSourceKeyChange(const uint8_t* key, size_t keyLen, const ui
     NZERO_LOG(memcpy_s(initIv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN));
     NZERO_LOG(memcpy_s(key_, DECRYPT_UNIT_LEN, key, keyLen > DECRYPT_UNIT_LEN ? DECRYPT_UNIT_LEN : keyLen));
     AES_set_decrypt_key(key_, DECRYPT_COPY_LEN, &aesKey_);
-
 }
 
 void AesDecryptor::Decrypt(uint8_t* decryptBuffer, uint8_t* decryptCache, uint32_t realLen)
@@ -62,6 +61,5 @@ void AesDecryptor::Decrypt(uint8_t* decryptBuffer, uint8_t* decryptCache, uint32
     AES_cbc_encrypt(decryptBuffer, decryptCache, realLen, &aesKey_, iv_, AES_DECRYPT);
 }
 
-}
-}
-#endif
+} // namespace Media
+} // namespace OHOS

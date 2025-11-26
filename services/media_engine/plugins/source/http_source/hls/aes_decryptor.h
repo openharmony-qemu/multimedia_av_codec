@@ -20,13 +20,13 @@
 #include <mutex>
 #include <atomic>
 #include <unistd.h>
-#include <openssl/aes.h>
+#include "openssl/aes.h"
 
 namespace OHOS {
 namespace Media {
 
 constexpr uint64_t DECRYPT_UNIT_LEN = 16;
-constexpr uint64_t DECRYPT_COPY_LEN = 128;
+constexpr uint32_t DECRYPT_COPY_LEN = 128;
 
 class AesDecryptor {
 public:
