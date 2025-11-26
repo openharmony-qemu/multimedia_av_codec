@@ -221,7 +221,7 @@ HlsSegmentManager::~HlsSegmentManager()
         playlistDownloader_ = nullptr;
     }
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor out, type: %{public}d, "
-        "writeTsIndex: %{public}u, writeOffset: %{public}lu", FAKE_POINTER(this), type_, writeTsIndex_, writeOffset_);
+        "writeTsIndex: " PUBLIC_LOG_U32 " writeOffset: " PUBLIC_LOG_U64, FAKE_POINTER(this), type_, writeTsIndex_, writeOffset_);
 }
 
 std::string HlsSegmentManager::GetContentType()
@@ -2394,7 +2394,9 @@ void HlsSegmentManager::Clone(const std::shared_ptr<HlsSegmentManager> &other)
     totalBufferSize_ = other->totalBufferSize_;
     callback_ = other->callback_;
     statusCallback_ = other->statusCallback_;
-    OnSourceKeyChange(other->aesDecryptor_->key_, other->aesDecryptor_->keyLen_, other->aesDecryptor_->iv_);
+    if (other->aesDecryptor_ != nullptr) {
+        OnSourceKeyChange(other->aesDecryptor_->key_, other->aesDecryptor_->keyLen_, other->aesDecryptor_->iv_);
+    }
     isAutoSelectBitrate_ = other->isAutoSelectBitrate_;
     seekTime_ = other->seekTime_;
     downloadErrorState_ = other->downloadErrorState_;
