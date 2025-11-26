@@ -87,63 +87,71 @@ static const std::string BASE_MPD = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>
     "</MPD>";
 }
 
+void RunMpdDownloaderTests(DashMpdInfo *mpdInfo)
+{
+    std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
+    std::shared_ptr<DashMpdManager> mpdManager = std::make_shared<DashMpdManager>(mpdInfo, "http://1.0.0.1/1.mpd");
+    mpdManager->GetMpdInfo();
+    mpdManager->GetPeriods();
+    std::list<std::string> baseUrlList;
+    mpdManager->GetBaseUrlList(baseUrlList);
+    std::string mpdUrlBase;
+    std::string urlSchem;
+    mpdManager->MakeBaseUrl(mpdUrlBase, urlSchem);
+    DashPeriodInfo *first = mpdManager->GetFirstPeriod();
+    if (first != nullptr) {
+        std::shared_ptr<DashPeriodManager> periodMr = std::make_shared<DashPeriodManager>(first);
+        DashList<DashAdptSetInfo*> adptSetList = first->adptSetList_;
+        std::list<std::string> periodBaseUrlList;
+        periodMr->GetBaseUrlList(periodBaseUrlList);
+        int32_t flag = GetData<int32_t>();
+        periodMr->GetInitSegment(flag);
+        periodMr->GetPeriod();
+        periodMr->GetPreviousPeriod();
+    }
+    int streamId = GetData<int>();
+    std::shared_ptr<DashMpdBitrateParam> paramNext = std::make_shared<DashMpdBitrateParam>();
+    mpdMpddownload->GetNextVideoStream(*paramNext, streamId);
+    mpdMpddownload->GetContentType();
+    mpdMpddownload->GetUrl();
+    bool isInterruptNeeded = GetData<bool>();
+    mpdMpddownload->SetInterruptState(isInterruptNeeded);
+    unsigned int width = GetData<unsigned int>();
+    unsigned int height = GetData<unsigned int>();
+    mpdMpddownload->SetInitResolution(width, height);
+    bool isHdrStart = GetData<bool>();
+    mpdMpddownload->SetHdrStart(isHdrStart);
+    std::shared_ptr<DashStreamDescription> streamDesc = std::make_shared<DashStreamDescription>();
+    uint32_t nextSegTime = GetData<uint32_t>();
+    mpdMpddownload->UpdateCurrentNumberSeqByTime(streamDesc, nextSegTime);
+    mpdMpddownload->GetInitSegmentByStreamId(streamId);
+    mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
+    mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+    mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE);
+    mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_TIMED_METADATA);
+    mpdMpddownload->GetStreamByStreamId(streamId);
+    mpdMpddownload->GetInUseVideoStreamId();
+    int64_t seekTime = GetData<int64_t>();
+    std::shared_ptr<DashSegment> seg = nullptr;
+    mpdMpddownload->SeekToTs(streamId, seekTime, seg);
+    usleep(WAIT_FOR_SIDX_TIME);
+    mpdMpddownload->Close(false);
+    mpdMpddownload = nullptr;
+}
+
 bool DashMediaFuzzerTest(const uint8_t *data, size_t size)
 {
     std::string mpd = BASE_MPD;
     std::shared_ptr<DashMpdParser> mpdParser = std::make_shared<DashMpdParser>();
     mpdParser->ParseMPD(mpd.c_str(), mpd.length());
+
     DashMpdInfo *mpdInfo{nullptr};
     mpdParser->GetMPD(mpdInfo);
+
     if (mpdInfo != nullptr) {
-        std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
-        std::shared_ptr<DashMpdManager> mpdManager = std::make_shared<DashMpdManager>(mpdInfo, "http://1.0.0.1/1.mpd");
-        mpdManager->GetMpdInfo();
-        mpdManager->GetPeriods();
-        std::list<std::string> baseUrlList;
-        mpdManager->GetBaseUrlList(baseUrlList);
-        std::string mpdUrlBase;
-        std::string urlSchem;
-        mpdManager->MakeBaseUrl(mpdUrlBase, urlSchem);
-        DashPeriodInfo *first = mpdManager->GetFirstPeriod();
-        if (first != nullptr) {
-            std::shared_ptr<DashPeriodManager> periodMr = std::make_shared<DashPeriodManager>(first);
-            DashList<DashAdptSetInfo*> adptSetList = first->adptSetList_;
-            std::list<std::string> periodBaseUrlList;
-            periodMr->GetBaseUrlList(periodBaseUrlList);
-            int32_t flag = GetData<int32_t>();
-            periodMr->GetInitSegment(flag);
-            periodMr->GetPeriod();
-            periodMr->GetPreviousPeriod();
-        }
-        int streamId = GetData<int>();
-        std::shared_ptr<DashMpdBitrateParam> paramNext = std::make_shared<DashMpdBitrateParam>();
-        mpdMpddownload->GetNextVideoStream(*paramNext, streamId);
-        mpdMpddownload->GetContentType();
-        mpdMpddownload->GetUrl();
-        bool isInterruptNeeded = GetData<bool>();
-        mpdMpddownload->SetInterruptState(isInterruptNeeded);
-        unsigned int width = GetData<unsigned int>();
-        unsigned int height = GetData<unsigned int>();
-        mpdMpddownload->SetInitResolution(width, height);
-        bool isHdrStart = GetData<bool>();
-        mpdMpddownload->SetHdrStart(isHdrStart);
-        std::shared_ptr<DashStreamDescription> streamDesc = std::make_shared<DashStreamDescription>();
-        uint32_t nextSegTime = GetData<uint32_t>();
-        mpdMpddownload->UpdateCurrentNumberSeqByTime(streamDesc, nextSegTime);
-        mpdMpddownload->GetInitSegmentByStreamId(streamId);
-        mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
-        mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
-        mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE);
-        mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_TIMED_METADATA);
-        mpdMpddownload->GetStreamByStreamId(streamId);
-        mpdMpddownload->GetInUseVideoStreamId();
-        int64_t seekTime = GetData<int64_t>();
-        std::shared_ptr<DashSegment> seg = nullptr;
-        mpdMpddownload->SeekToTs(streamId, seekTime, seg);
-        usleep(WAIT_FOR_SIDX_TIME);
-        mpdMpddownload->Close(false);
-        mpdMpddownload = nullptr;
+        RunMpdDownloaderTests(mpdInfo);
     }
+
     usleep(WAIT_FOR_SIDX_TIME);
     return true;
 }
