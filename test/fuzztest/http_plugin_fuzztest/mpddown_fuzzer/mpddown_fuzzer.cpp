@@ -87,7 +87,7 @@ static const std::string BASE_MPD = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>
     "</MPD>";
 }
 
-bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
+bool DashMediaFuzzerTest(const uint8_t *data, size_t size)
 {
     std::string mpd = BASE_MPD;
     std::shared_ptr<DashMpdParser> mpdParser = std::make_shared<DashMpdParser>();
@@ -148,7 +148,7 @@ bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
     return true;
 }
 
-bool DashAdptRun(const uint8_t *data, size_t size) 
+bool DashAdptRun(const uint8_t *data, size_t size)
 {
     if (size <= sizeof(int64_t)) {
         return false;
@@ -168,7 +168,7 @@ bool DashAdptRun(const uint8_t *data, size_t size)
     return true;
 }
 
-bool DashDescriptorNodeRun(const uint8_t *data, size_t size) 
+bool DashDescriptorNodeRun(const uint8_t *data, size_t size)
 {
     if (size <= sizeof(int64_t)) {
         return false;
@@ -314,7 +314,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         cout << "Init server error" << endl;
         return -1;
     }
-    OHOS::Media::Plugins::DashMediaDownFinishedFuzzerTest(data, size);
+    OHOS::Media::Plugins::DashMediaFuzzerTest(data, size);
     OHOS::Media::Plugins::DashAdptRun(data, size);
     OHOS::Media::Plugins::DashDescriptorNodeRun(data, size);
     OHOS::Media::Plugins::MpdMangerRun(data, size);
