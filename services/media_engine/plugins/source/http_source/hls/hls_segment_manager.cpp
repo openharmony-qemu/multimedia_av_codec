@@ -220,7 +220,8 @@ HlsSegmentManager::~HlsSegmentManager()
     if (playlistDownloader_ != nullptr) {
         playlistDownloader_ = nullptr;
     }
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor out, type: %{public}d", FAKE_POINTER(this), type_);
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor out, type: %{public}d, "
+        "writeTsIndex: %{public}u, writeOffset: %{public}lu", FAKE_POINTER(this), type_, writeTsIndex_, writeOffset_);
 }
 
 std::string HlsSegmentManager::GetContentType()
