@@ -31,7 +31,6 @@ AesDecryptor::~AesDecryptor()
     NZERO_LOG(memset_s(iv_, DECRYPT_UNIT_LEN, 0, DECRYPT_UNIT_LEN));
     NZERO_LOG(memset_s(initIv_, DECRYPT_UNIT_LEN, 0, DECRYPT_UNIT_LEN));
     NZERO_LOG(memset_s(key_, DECRYPT_UNIT_LEN, 0, DECRYPT_UNIT_LEN));
-
 }
 
 void AesDecryptor::Init()
