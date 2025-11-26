@@ -17,6 +17,7 @@
 #define HISTREAMER_HLS_SEG_MANAGER_H
 
 #include <mutex>
+#include <shared_mutex>
 #include <thread>
 #include <unistd.h>
 #include <utility>
@@ -208,6 +209,8 @@ private:
     void HandleBufferingState();
     void HandleBufferingEnd();
     bool CheckTsEndOrEos(ReadDataInfo& readDataInfo);
+    void SetDownloadRequest(std::shared_ptr<SetDownloadRequest> downloadRequest);
+    std::shared_ptr<DownloadRequest> GetDownloadRequest();
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;
@@ -351,6 +354,7 @@ private:
     HlsSegmentBufferingCbFunc bufferingCbFunc_;
     std::string masterString_;
     bool isEos_ {false};
+    std::shared_mutex downloadRequestMutex_;
 };
 }
 }
