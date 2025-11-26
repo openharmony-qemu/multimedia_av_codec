@@ -30,11 +30,11 @@
 #include "osal/utils/steady_clock.h"
 #include "common/media_source.h"
 #include "common/media_core.h"
+#include "utils/aes_decryptor.h"
 #include "utils/media_cached_buffer.h"
 #include "utils/write_bitrate_caculator.h"
 #include "osal/task/mutex.h"
 #include "osal/task/condition_variable.h"
-#include "aes_decryptor.h"
 
 namespace OHOS {
 namespace Media {

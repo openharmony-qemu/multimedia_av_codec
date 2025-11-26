@@ -18,6 +18,7 @@
 #include "aes_decryptor.h"
 #include "openssl/aes.h"
 #include "common/log.h"
+#include "securec.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "AesDecryptor" };
