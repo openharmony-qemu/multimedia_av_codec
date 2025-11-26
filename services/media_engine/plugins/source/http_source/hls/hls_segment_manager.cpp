@@ -33,7 +33,6 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-constexpr uint32_t DECRYPT_COPY_LEN = 128;
 constexpr int MIN_WIDTH = 480;
 constexpr int SECOND_WIDTH = 720;
 constexpr int THIRD_WIDTH = 1080;
@@ -207,10 +206,8 @@ void HlsSegmentManager::Init()
     waterLineAbove_ = PLAY_WATER_LINE;
     steadyClock_.Reset();
     loopInterruptClock_.Reset();
-    aesKey_.rounds = 0;
-    for (size_t i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
-        aesKey_.rd_key[i] = 0;
-    }
+    aesDecryptor_ = std::make_shared<AesDecryptor>();
+    aesDecryptor_->Init();
 }
 
 HlsSegmentManager::~HlsSegmentManager()
@@ -223,9 +220,6 @@ HlsSegmentManager::~HlsSegmentManager()
     if (playlistDownloader_ != nullptr) {
         playlistDownloader_ = nullptr;
     }
-    NZERO_LOG(memset_s(iv_, 1, 0, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memset_s(initIv_, 1, 0, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memset_s(key_, 1, 0, DECRYPT_UNIT_LEN));
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor out, type: %{public}d", FAKE_POINTER(this), type_);
 }
 
@@ -282,7 +276,7 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
             readTsIndexTempValue, type_);
     }
     writeOffset_ = SpliceOffset(writeTsIndex_, 0);
-    MEDIA_LOG_I("HLS PutRequestIntoDwonloader update writeOffset_: " PUBLIC_LOG_U64 " writeTsIndex_: " PUBLIC_LOG_U32
+    MEDIA_LOG_I("HLS PutRequestIntoDownloader update writeOffset_: " PUBLIC_LOG_U64 " writeTsIndex_: " PUBLIC_LOG_U32
         ", type: %{public}d", writeOffset_, writeTsIndex_, type_);
     {
         AutoLock lock(tsStorageInfoMutex_);
@@ -741,7 +735,7 @@ void HlsSegmentManager::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readD
     ffmpegOffset_ = readDataInfo.ffmpegOffset + readDataInfo.realReadLength_;
     if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
         uint64_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
-        if (remain > 0 && remain < DECRYPT_UNIT_LEN && keyLen_ > 0) {
+        if (remain > 0 && remain < DECRYPT_UNIT_LEN && aesDecryptor_->keyLen_ > 0) {
             size_t readRemain = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
             readOffset_ += readRemain;
             ffmpegOffset_ += readRemain;
@@ -777,7 +771,7 @@ void HlsSegmentManager::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readD
 
 void HlsSegmentManager::RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (keyLen_ <= 0 || readDataInfo.realReadLength_ < 1) {
+    if (aesDecryptor_->keyLen_ <= 0 || readDataInfo.realReadLength_ < 1) {
         return;
     }
     if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
@@ -878,7 +872,7 @@ void HlsSegmentManager::PrepareToSeek()
     memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
     memset_s(decryptCache_, minBufferSize_, 0x00, minBufferSize_);
     memset_s(decryptBuffer_, minBufferSize_, 0x00, minBufferSize_);
-    auto ret = memcpy_s(iv_, DECRYPT_UNIT_LEN, initIv_, DECRYPT_UNIT_LEN);
+    auto ret = memcpy_s(aesDecryptor_->iv_, DECRYPT_UNIT_LEN, aesDecryptor_->initIv_, DECRYPT_UNIT_LEN);
     if (ret != 0) {
         MEDIA_LOG_E("iv copy error, type: %{public}d", type_);
     }
@@ -1136,7 +1130,7 @@ uint32_t HlsSegmentManager::SaveData(uint8_t* data, uint32_t len, bool notBlock)
     }
     startedPlayStatus_ = true;
     uint32_t res = 0;
-    if (keyLen_ == 0) {
+    if (aesDecryptor_->keyLen_ == 0) {
         res = SaveCacheBufferData(data, len, notBlock);
     } else {
         res = SaveEncryptData(data, len, notBlock);
@@ -1171,7 +1165,7 @@ uint32_t HlsSegmentManager::GetDecrptyRealLen(uint8_t* writeDataPoint, uint32_t 
         MEDIA_LOG_D("minWriteLen: " PUBLIC_LOG_D32 ", type: %{public}d", minWriteLen, type_);
     }
     realLen = minWriteLen + afterAlignRemainedLength_;
-    AES_cbc_encrypt(decryptBuffer_, decryptCache_, realLen, &aesKey_, iv_, AES_DECRYPT);
+    aesDecryptor_->Decrypt(decryptBuffer_, decryptCache_, realLen);
     return realLen;
 }
 
@@ -1338,14 +1332,9 @@ void HlsSegmentManager::DownloadReport()
 
 void HlsSegmentManager::OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv)
 {
-    keyLen_ = keyLen;
-    if (keyLen <= 0) {
-        return;
+    if (aesDecryptor_ != nullptr) {
+        aesDecryptor_->OnSourceKeyChange(key, keyLen, iv);
     }
-    NZERO_LOG(memcpy_s(iv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memcpy_s(initIv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memcpy_s(key_, DECRYPT_UNIT_LEN, key, keyLen > DECRYPT_UNIT_LEN ? DECRYPT_UNIT_LEN : keyLen));
-    AES_set_decrypt_key(key_, DECRYPT_COPY_LEN, &aesKey_);
 }
 
 void HlsSegmentManager::OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos)
@@ -1551,8 +1540,8 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
         AutoLock lock(tsStorageInfoMutex_);
         tsStorageInfo_[writeTsIndex_].second = true;
     }
-    if (keyLen_ > 0) {
-        NZERO_LOG(memcpy_s(iv_, DECRYPT_UNIT_LEN, initIv_, DECRYPT_UNIT_LEN));
+    if (aesDecryptor_->keyLen_ > 0) {
+        NZERO_LOG(memcpy_s(aesDecryptor_->iv_, DECRYPT_UNIT_LEN, aesDecryptor_->initIv_, DECRYPT_UNIT_LEN));
     }
     auto playInfo = playList_->Pop(POP_TIME_OUT_MS);
     if (!playInfo.url_.empty()) {
@@ -2404,7 +2393,7 @@ void HlsSegmentManager::Clone(const std::shared_ptr<HlsSegmentManager> &other)
     totalBufferSize_ = other->totalBufferSize_;
     callback_ = other->callback_;
     statusCallback_ = other->statusCallback_;
-    OnSourceKeyChange(other->key_, other->keyLen_, other->iv_);
+    OnSourceKeyChange(other->aesDecryptor_->key_, other->aesDecryptor_->keyLen_, other->aesDecryptor_->iv_);
     isAutoSelectBitrate_ = other->isAutoSelectBitrate_;
     seekTime_ = other->seekTime_;
     downloadErrorState_ = other->downloadErrorState_;
