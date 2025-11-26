@@ -57,6 +57,7 @@ test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http/http_media_downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http_source_plugin.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/monitor/download_monitor.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/aes_decryptor.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",

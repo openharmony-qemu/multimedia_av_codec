@@ -1653,7 +1653,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, REMOVE_FMP4_PADDING_DATA_001, TestSize.Level
     readDataInfo.realReadLength_ = 16;
     downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
     EXPECT_EQ(readDataInfo.realReadLength_, 16);
-    downloader->keyLen_ = 1;
+    downloader->aesDecryptor_->keyLen_ = 1;
     downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
     EXPECT_NE(readDataInfo.realReadLength_, 16);
     readDataInfo.realReadLength_ = 0;

@@ -31,6 +31,7 @@
 #include "osal/utils/steady_clock.h"
 #include "common/media_source.h"
 #include "common/media_core.h"
+#include "utils/aes_decryptor.h"
 #include "utils/media_cached_buffer.h"
 #include "utils/write_bitrate_caculator.h"
 #include "osal/task/mutex.h"
@@ -231,17 +232,13 @@ private:
     std::map<std::string, bool> fragmentDownloadStart;
     std::map<std::string, bool> fragmentPushed;
     std::deque<PlayInfo> backPlayList_;
+    std::shared_ptr<AesDecryptor> aesDecryptor_;
     bool isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
     uint8_t afterAlignRemainedBuffer_[DECRYPT_UNIT_LEN] {0};
     uint64_t afterAlignRemainedLength_ = 0;
     uint64_t totalLen_ = 0;
     std::string curUrl_;
-    uint8_t key_[DECRYPT_UNIT_LEN] = {0};
-    size_t keyLen_ {0};
-    uint8_t iv_[DECRYPT_UNIT_LEN] = {0};
-    uint8_t initIv_[DECRYPT_UNIT_LEN] = {0};
-    AES_KEY aesKey_;
     uint8_t decryptCache_[VIDEO_MIN_BUFFER_SIZE] {0};
     uint8_t decryptBuffer_[VIDEO_MIN_BUFFER_SIZE] {0};
     uint32_t writeTsIndex_ = 0;

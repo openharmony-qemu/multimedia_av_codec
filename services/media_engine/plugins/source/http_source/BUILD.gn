@@ -120,6 +120,7 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "http/http_media_downloader.cpp",
     "http_source_plugin.cpp",
     "monitor/download_monitor.cpp",
+    "utils/aes_decryptor.cpp",
     "utils/media_cached_buffer.cpp",
     "xml/xml_element.cpp",
     "xml/xml_parser.cpp",
