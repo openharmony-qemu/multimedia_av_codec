@@ -221,7 +221,8 @@ HlsSegmentManager::~HlsSegmentManager()
         playlistDownloader_ = nullptr;
     }
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor out, type: %{public}d, "
-        "writeTsIndex: " PUBLIC_LOG_U32 " writeOffset: " PUBLIC_LOG_U64, FAKE_POINTER(this), type_, writeTsIndex_, writeOffset_);
+        "writeTsIndex: " PUBLIC_LOG_U32 " writeOffset: " PUBLIC_LOG_U64, FAKE_POINTER(this), type_,
+        writeTsIndex_, writeOffset_);
 }
 
 std::string HlsSegmentManager::GetContentType()
