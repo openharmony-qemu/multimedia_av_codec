@@ -810,6 +810,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::INVALID_TYPE));
         MEDIA_LOG_W("Parse mime type failed: " PUBLIC_LOG_S, avcodec_get_name(avStream.codecpar->codec_id));
     }
+    format.Set<Tag::ORIGINAL_CODEC_NAME>(std::string(avcodec_get_name(avStream.codecpar->codec_id)));
 
     AVMediaType mediaType = avStream.codecpar->codec_type;
     if (g_convertFfmpegTrackType.count(mediaType) > 0) {
