@@ -185,13 +185,8 @@ void FCodec::GetSurfaceCfgFromFmt(const Format &format)
     }
     std::optional<int32_t> orientation = std::nullopt;
     if (format.GetIntValue(FMTKey::VIDEO_ORIENTATION_TYPE, val)) {
-        if (IsValidOrientation(val)) {
-            orientation = val;
-            AVCODEC_LOGI("Get parameter video_orientation_type: %{public}d success.", orientation.value());
-        } else {
-            orientation = static_cast<int32_t>(GraphicTransformType::GRAPHIC_ROTATE_NONE);
-            AVCODEC_LOGE("Invalid video_orientation_type: %{public}d.", val);
-        }
+        orientation = val;
+        AVCODEC_LOGI("Get parameter video_orientation_type: %{public}d success.", orientation.value());
     }
     if (!orientation.has_value() && format.GetIntValue(FMTKey::VIDEO_ROTATION, val)) {
         if (IsValidRotation(val)) {
@@ -695,8 +690,6 @@ int32_t FCodec::SetSurfaceCfg()
         scaling = static_cast<ScalingMode>(val);
     }
     if (format_.GetIntValue(FMTKey::VIDEO_ORIENTATION_TYPE, val)) {
-        CHECK_AND_RETURN_RET_LOG(
-            IsValidOrientation(val), AVCS_ERR_INVALID_VAL, "Invalid video_orientation_type: %{public}d", val);
         orientation = static_cast<GraphicTransformType>(val);
     }
     fLock.unlock();

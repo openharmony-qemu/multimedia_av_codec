@@ -85,7 +85,6 @@ bool IsRgbFormat(VideoPixelFormat &format);
 bool IsValidPixelFormat(int32_t val);
 bool IsValidScaleType(int32_t val);
 bool IsValidRotation(int32_t val);
-bool IsValidOrientation(int32_t val);
 } // namespace Codec
 } // namespace MediaAVCodec
 } // namespace OHOS
