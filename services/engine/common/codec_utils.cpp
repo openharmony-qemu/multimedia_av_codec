@@ -82,12 +82,6 @@ bool IsValidRotation(int32_t val)
            val == static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270);
 }
 
-bool IsValidOrientation(int32_t val)
-{
-    return val >= static_cast<int32_t>(GraphicTransformType::GRAPHIC_ROTATE_NONE) &&
-           val < static_cast<int32_t>(GraphicTransformType::GRAPHIC_ROTATE_BUTT);
-}
-
 int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale, std::shared_ptr<AVFrame> frame, uint8_t **dstData,
                           int32_t *dstLineSize, AVPixelFormat dstPixFmt)
 {

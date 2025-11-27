@@ -297,13 +297,8 @@ void HevcDecoder::GetSurfaceCfgFromFmt(const Format &format)
     }
     std::optional<int32_t> orientation = std::nullopt;
     if (format.GetIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, val)) {
-        if (IsValidOrientation(val)) {
-            orientation = val;
-            AVCODEC_LOGI("Set parameter video_orientation_type: %{public}d success.", orientation.value());
-        } else {
-            orientation = static_cast<int32_t>(GraphicTransformType::GRAPHIC_ROTATE_NONE);
-            AVCODEC_LOGE("Invalid video_orientation_type: %{public}d.", val);
-        }
+        orientation = val;
+        AVCODEC_LOGI("Set parameter video_orientation_type: %{public}d success.", orientation.value());
     }
     if (!orientation.has_value() && format.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val)) {
         if (IsValidRotation(val)) {
@@ -754,8 +749,6 @@ int32_t HevcDecoder::SetSurfaceCfg()
         sInfo_.surface->SetScalingMode(sInfo_.scalingMode.value());
     }
     if (format_.GetIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, val32)) {
-        CHECK_AND_RETURN_RET_LOG(IsValidOrientation(val32), AVCS_ERR_INVALID_VAL,
-                                 "Invalid video_orientation_type %{public}d", val32);
         transform_.store(static_cast<GraphicTransformType>(val32));
     }
     sInfo_.surface->SetTransform(transform_.load());
