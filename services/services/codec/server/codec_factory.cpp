@@ -28,6 +28,12 @@
 #else
 #include "fcodec_loader.h"
 #include "hevc_decoder_loader.h"
+#ifdef SUPPORT_CODEC_VP8
+#include "vp8_decoder_loader.h"
+#endif
+#ifdef SUPPORT_CODEC_VP9
+#include "vp9_decoder_loader.h"
+#endif
 #include "hcodec_loader.h"
 #include "avc_encoder_loader.h"
 #endif
@@ -76,6 +82,16 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
         case CodecType::AVCODEC_VIDEO_AVC_ENCODER:
             codec = AvcEncoderLoader::CreateByName(name);
             break;
+#ifdef SUPPORT_CODEC_VP8
+        case CodecType::AVCODEC_VIDEO_VP8_DECODER:
+            codec = Vp8DecoderLoader::CreateByName(name);
+            break;
+#endif
+#ifdef SUPPORT_CODEC_VP9
+        case CodecType::AVCODEC_VIDEO_VP9_DECODER:
+            codec = Vp9DecoderLoader::CreateByName(name);
+            break;
+#endif
 #else
         case CodecType::AVCODEC_AUDIO_CODEC:
             if (apiVersion == API_VERSION::API_VERSION_10) {

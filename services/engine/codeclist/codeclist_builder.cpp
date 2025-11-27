@@ -17,6 +17,12 @@
 #ifndef CLIENT_SUPPORT_CODEC
 #include "fcodec_loader.h"
 #include "hevc_decoder_loader.h"
+#ifdef SUPPORT_CODEC_VP8
+#include "vp8_decoder_loader.h"
+#endif
+#ifdef SUPPORT_CODEC_VP9
+#include "vp9_decoder_loader.h"
+#endif
 #include "avc_encoder_loader.h"
 #endif
 #include "avcodec_errors.h"
@@ -46,6 +52,28 @@ int32_t VideoHevcDecoderList::GetCapabilityList(std::vector<CapabilityData> &cap
     }
     return ret;
 }
+
+#ifdef SUPPORT_CODEC_VP8
+int32_t VideoVp8DecoderList::GetCapabilityList(std::vector<CapabilityData> &caps)
+{
+    auto ret = Vp8DecoderLoader::GetCapabilityList(caps);
+    if (ret == AVCS_ERR_OK) {
+        AVCODEC_LOGI("Get capability from vp8 decoder successful");
+    }
+    return ret;
+}
+#endif
+
+#ifdef SUPPORT_CODEC_VP9
+int32_t VideoVp9DecoderList::GetCapabilityList(std::vector<CapabilityData> &caps)
+{
+    auto ret = Vp9DecoderLoader::GetCapabilityList(caps);
+    if (ret == AVCS_ERR_OK) {
+        AVCODEC_LOGI("Get capability from vp9 decoder successful");
+    }
+    return ret;
+}
+#endif
 
 int32_t VideoAvcEncoderList::GetCapabilityList(std::vector<CapabilityData> &caps)
 {
