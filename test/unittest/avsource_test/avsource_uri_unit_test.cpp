@@ -57,6 +57,8 @@ string g_fmp4m4aUri = TEST_URI_PATH + string("audio/h264_fmp4.m4a");
 string g_srt = TEST_URI_PATH + string("subtitle.srt");
 string g_mp4VvcUri = TEST_URI_PATH + string("vvc.mp4");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
+string g_mkvSnowUri = TEST_URI_PATH + string("snow.mkv");
+string g_mkvSnowPath = TEST_FILE_PATH + string("snow.mkv");
 
 /**********************************source URI**************************************/
 /**
@@ -1237,5 +1239,36 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1611, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     ASSERT_EQ(formatVal_.width, 640);
     ASSERT_EQ(formatVal_.height, 360);
+}
+
+/**
+ * @tc.name: AVSource_Unsupport_0002
+ * @tc.desc: get track format(snow), url
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_Unsupport_0002, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_mkvSnowUri.data());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mkvSnowUri.data()));
+    ASSERT_NE(source_, nullptr);
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ track %d ]: %s\n", trackIndex_, format_->DumpInfo());
+    std::string unsupportMime = "";
+    ASSERT_TRUE(format_->GetStringValue(Media::Tag::MIME_TYPE, formatVal_.codecMime));
+    ASSERT_EQ(formatVal_.codecMime, Media::Plugins::MimeType::INVALID_TYPE);
+    ASSERT_TRUE(format_->GetStringValue(Media::Tag::ORIGINAL_CODEC_NAME, unsupportMime));
+    ASSERT_EQ(unsupportMime, "snow");
+
+    trackIndex_ = 1;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ track %d ]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(Media::Tag::MIME_TYPE, formatVal_.codecMime));
+    ASSERT_EQ(formatVal_.codecMime, Media::Plugins::MimeType::AUDIO_MPEG);
+
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
 }
 } // namespace

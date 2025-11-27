@@ -4604,35 +4604,4 @@ HWTEST_F(AVSourceUnitTest, AVSource_Unsupport_0001, TestSize.Level1)
 
     ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
 }
-
-/**
- * @tc.name: AVSource_Unsupport_0002
- * @tc.desc: get track format(snow), url
- * @tc.type: FUNC
- */
-HWTEST_F(AVSourceUnitTest, AVSource_Unsupport_0002, TestSize.Level1)
-{
-    ASSERT_EQ(access(g_mkvSnowUri.c_str(), F_OK), 0);
-    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mkvSnowUri.data()));
-    ASSERT_NE(source_, nullptr);
-
-    trackIndex_ = 0;
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ track %d ]: %s\n", trackIndex_, format_->DumpInfo());
-    std::string unsupportMime = "";
-    ASSERT_TRUE(format_->GetStringValue(Media::Tag::MIME_TYPE, formatVal_.codecMime));
-    ASSERT_EQ(formatVal_.codecMime, Media::Plugins::MimeType::INVALID_TYPE);
-    ASSERT_TRUE(format_->GetStringValue(Media::Tag::ORIGINAL_CODEC_NAME, unsupportMime));
-    ASSERT_EQ(unsupportMime, "snow");
-
-    trackIndex_ = 1;
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ track %d ]: %s\n", trackIndex_, format_->DumpInfo());
-    ASSERT_TRUE(format_->GetStringValue(Media::Tag::MIME_TYPE, formatVal_.codecMime));
-    ASSERT_EQ(formatVal_.codecMime, Media::Plugins::MimeType::AUDIO_MPEG);
-
-    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
-}
 } // namespace
