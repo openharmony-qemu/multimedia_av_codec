@@ -78,8 +78,10 @@ void SegMentFuzzTest(const uint8_t *data, size_t size)
         {"User-Agent", "ABC"},
         {"Referer", "DEF"},
     };
-    std::shared_ptr<HlsSegmentManager> hlsSegmentManager = std::make_shared<HlsSegmentManager>(mimeType, HlsSegmentType::SEG_VIDEO, httpHeader);
-    std::shared_ptr<HlsSegmentManager> otherSegmentManager = std::make_shared<HlsSegmentManager>(mimeType, HlsSegmentType::SEG_AUDIO, httpHeader);
+    std::shared_ptr<HlsSegmentManager> hlsSegmentManager = std::make_shared<HlsSegmentManager>(mimeType,
+        HlsSegmentType::SEG_VIDEO, httpHeader);
+    std::shared_ptr<HlsSegmentManager> otherSegmentManager = std::make_shared<HlsSegmentManager>(mimeType,
+        HlsSegmentType::SEG_AUDIO, httpHeader);
     std::multimap<std::string, std::vector<uint8_t>> drmInfos;
     hlsSegmentManager->Clone(otherSegmentManager);
     std::string url = "http://127.0.0.1:46666/test_cbr/";
