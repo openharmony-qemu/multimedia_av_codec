@@ -49,11 +49,14 @@ constexpr int32_t REDIRECT_CODE = 302;
 constexpr uint32_t MAX_LOOP_TIMES = 100;
 }
 
+std::atomic<uint64_t> DownloadRequest::idCounter_ {0};
+
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                                  bool requestWholeFile)
     : url_(url), saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)),
     requestWholeFile_(requestWholeFile)
 {
+    GenerateId();
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
     headerInfo_.fileContentLen = 0;
     headerInfo_.contentLen = 0;
@@ -67,6 +70,7 @@ DownloadRequest::DownloadRequest(const std::string& url,
     : url_(url), duration_(duration), saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)),
     requestWholeFile_(requestWholeFile)
 {
+    GenerateId();
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
     headerInfo_.fileContentLen = 0;
     headerInfo_.contentLen = 0;
@@ -77,6 +81,7 @@ DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statu
     : saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)), requestInfo_(requestInfo),
     requestWholeFile_(requestWholeFile)
 {
+    GenerateId();
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
     headerInfo_.fileContentLen = 0;
     headerInfo_.contentLen = 0;
@@ -92,6 +97,7 @@ DownloadRequest::DownloadRequest(double duration,
     : duration_(duration), saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)),
     requestInfo_(requestInfo), requestWholeFile_(requestWholeFile)
 {
+    GenerateId();
     (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
     headerInfo_.fileContentLen = 0;
     headerInfo_.contentLen = 0;
@@ -522,35 +528,29 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
         MEDIA_LOG_I("Retry avoid, forground to background.");
         return true;
     }
-    {
-        AutoLock lock(operatorMutex_);
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR " Retry Begin", FAKE_POINTER(this));
-        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest_ && !isDestructor_ && !isInterruptNeeded_, false);
+    // reponse error, shouldStartNextRequest_ should be false.
+    FALSE_RETURN_V(!shouldStartNextRequest_, false);
+    if (currentRequest_ != nullptr) {
+        auto isSameRequest = currentRequest_->IsSame(request);
+        // currentRequest_ is not closed, isSameRequest should be true.
+        FALSE_RETURN_V(isSameRequest, false);
         requestQue_->SetActive(false, false);
-    }
-    PauseLoop(true);
-    WaitLoopPause();
-    {
-        AutoLock lock(operatorMutex_);
-        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest_ && !isDestructor_ && !isInterruptNeeded_, false);
         client_->Close(false);
-        if (currentRequest_ != nullptr) {
-            if (currentRequest_->IsSame(request) && !shouldStartNextRequest_) {
-                currentRequest_->retryTimes_++;
-                currentRequest_->retryOnGoing_ = true;
-                currentRequest_->dropedDataLen_ = 0;
-            }
-            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
-            requestQue_->SetActive(true);
-            currentRequest_->isEos_ = false;
-            if (currentRequest_->endPos_ > 0 && currentRequest_->startPos_ >= 0 &&
-                currentRequest_->endPos_ >= currentRequest_->startPos_) {
-                currentRequest_->requestSize_ = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
-            }
+        currentRequest_->retryTimes_++;
+        currentRequest_->retryOnGoing_ = true;
+        currentRequest_->dropedDataLen_ = 0;
+
+        client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
+        requestQue_->SetActive(true);
+        currentRequest_->isEos_ = false;
+        if (currentRequest_->endPos_ > 0 && currentRequest_->startPos_ >= 0 &&
+            currentRequest_->endPos_ >= currentRequest_->startPos_) {
+            currentRequest_->requestSize_ = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
         }
+        MEDIA_LOG_I("0x%{public}06" PRIXPTR "Do retry, id:" PUBLIC_LOG_U64 ",retry times:" PUBLIC_LOG_D32,
+                    FAKE_POINTER(this), currentRequest_->id_, currentRequest_->retryTimes_);
     }
     task_->Start();
-    MEDIA_LOG_I("Do retry.");
     return true;
 }
 
@@ -745,7 +745,8 @@ void Downloader::RequestData()
         FALSE_RETURN_MSG(shareDownloader != nullptr, "handleResponseCb, Downloader is nullptr!");
         shareDownloader->HandleResponseCb(clientCode, serverCode, ret);
     };
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData enter.", FAKE_POINTER(this));
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData enter.Id:" PUBLIC_LOG_U64 ",retryTimes:" PUBLIC_LOG_D32,
+                FAKE_POINTER(this), currentRequest_->GetId(), currentRequest_->retryTimes_);
 
     int len = currentRequest_->requestSize_;
     if (currentRequest_->requestWholeFile_) {
