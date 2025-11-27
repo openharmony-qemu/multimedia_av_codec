@@ -90,14 +90,14 @@ static const std::map<std::string, std::string> g_httpHeader = {
     {"Referer", "DEF"},
 };
 
-void HttpDownloaderFlvRun(uint8_t *data, size_t size)
+std::shared_ptr<HttpMediaDownloader> InitializeAndDownload()
 {
     const std::map<std::string, std::string> httpHeader = {
         {"User-Agent", "ABC"},
         {"Referer", "DEF"},
     };
     std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
-        std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE, 4, nullptr);  // 4
+        std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE, 4, nullptr);
     httpMediaDownloader->Init();
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
@@ -107,17 +107,22 @@ void HttpDownloaderFlvRun(uint8_t *data, size_t size)
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
     httpMediaDownloader->GetSeekable();
     ReadDataInfo readDataInfo;
-    for (int i = 0; i < 800; i++) {  // 800
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));  // 10ms
+    for (int i = 0; i < 800; i++) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
         httpMediaDownloader->DownloadReport();
         readDataInfo.streamId_ = 0;
-        readDataInfo.wantReadLength_ = 10240;  // 10240
+        readDataInfo.wantReadLength_ = 10240;
         readDataInfo.isEos_ = false;
         httpMediaDownloader->Read(g_buffer, readDataInfo);
-        if (i == 3) {  // 3
+        if (i == 3) {
             httpMediaDownloader->SetDemuxerState(0);
         }
     }
+    return httpMediaDownloader;
+}
+
+void PostDownloadSetup(std::shared_ptr<HttpMediaDownloader> httpMediaDownloader)
+{
     httpMediaDownloader->GetCurUrl();
     httpMediaDownloader->GetMemorySize();
     httpMediaDownloader->ClearBuffer();
@@ -135,7 +140,6 @@ void HttpDownloaderFlvRun(uint8_t *data, size_t size)
     httpMediaDownloader->NotifyInitSuccess();
     int32_t offset = GetData<int32_t>();
     int32_t cursize = GetData<int32_t>();
-    
     httpMediaDownloader->SetInitialBufferSize(offset, cursize);
     httpMediaDownloader->IsNotRetry(httpMediaDownloader->downloadRequest_);
     httpMediaDownloader->SetIsReportedErrorCode();
@@ -161,6 +165,10 @@ void HttpDownloaderFlvRun(uint8_t *data, size_t size)
     httpMediaDownloader->GetReadFrame();
     httpMediaDownloader->GetBuffer();
     httpMediaDownloader->GetDownloadInfo();
+}
+
+void PostDownloadCleanup(std::shared_ptr<HttpMediaDownloader> httpMediaDownloader)
+{
     bool isInterruptNeeded = GetData<bool>();
     httpMediaDownloader->SetInterruptState(isInterruptNeeded);
     httpMediaDownloader->SetDownloadErrorState();
@@ -182,6 +190,12 @@ void HttpDownloaderFlvRun(uint8_t *data, size_t size)
     httpMediaDownloader = nullptr;
 }
 
+void HttpDownloaderFlvRun(uint8_t *data, size_t size)
+{
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader = InitializeAndDownload();
+    PostDownloadSetup(httpMediaDownloader);
+    PostDownloadCleanup(httpMediaDownloader);
+}
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
