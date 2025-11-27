@@ -97,7 +97,7 @@ std::shared_ptr<HttpMediaDownloader> InitializeAndDownload()
         {"Referer", "DEF"},
     };
     std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
-        std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE, 4, nullptr);
+        std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE, 4, nullptr); // 4
     httpMediaDownloader->Init();
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
@@ -107,14 +107,14 @@ std::shared_ptr<HttpMediaDownloader> InitializeAndDownload()
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
     httpMediaDownloader->GetSeekable();
     ReadDataInfo readDataInfo;
-    for (int i = 0; i < 800; i++) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    for (int i = 0; i < 800; i++) { // 800
+        std::this_thread::sleep_for(std::chrono::milliseconds(10)); // 10
         httpMediaDownloader->DownloadReport();
         readDataInfo.streamId_ = 0;
-        readDataInfo.wantReadLength_ = 10240;
+        readDataInfo.wantReadLength_ = 10240; // 10240
         readDataInfo.isEos_ = false;
         httpMediaDownloader->Read(g_buffer, readDataInfo);
-        if (i == 3) {
+        if (i == 3) { // 3
             httpMediaDownloader->SetDemuxerState(0);
         }
     }
