@@ -88,11 +88,11 @@ bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
 
 bool DashMpdParse(const uint8_t *data, size_t size)
 {
-	std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
+    std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
     const std::string url = MPD_MULTI_AUDIO_SUB;
     mpdMpddownload->Open(MPD_MULTI_AUDIO_SUB);
-	mpdMpddownload->Init();
-	std::shared_ptr<DashSegment> seg = std::make_shared<DashSegment>();
+    mpdMpddownload->Init();
+    std::shared_ptr<DashSegment> seg = std::make_shared<DashSegment>();
     int streamId = *reinterpret_cast<const int *>(data);
     int64_t breakpoint = *reinterpret_cast<const int64_t *>(data);
     mpdMpddownload->GetBreakPointSegment(streamId, breakpoint, seg);
