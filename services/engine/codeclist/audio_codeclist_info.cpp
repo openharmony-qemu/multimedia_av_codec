@@ -87,7 +87,7 @@ constexpr int MAX_BIT_RATE_AAC_ENCODER = 500000;
 
 constexpr int MAX_BIT_RATE_RAW = 1536000;
 
-#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
 const std::vector<int32_t> AUDIO_VIVID_SAMPLE_RATE = {32000, 44100, 48000, 96000, 192000};
 constexpr int MIN_BIT_RATE_VIVID_DECODER = 16000;
 constexpr int MAX_BIT_RATE_VIVID_DECODER = 3075000;
@@ -97,6 +97,8 @@ constexpr int MIN_BITRATE_L2HC = 160000;
 constexpr int MAX_BITRATE_L2HC = 10000000;
 constexpr int MAX_CHANNEL_COUNT_L2HC = 12;
 constexpr int MAX_SUPPORT_L2HC_VERSION = 4;
+#endif
+#ifdef SUPPORT_CODEC_OPUS
 constexpr int MIN_BIT_RATE_OPUS = 6000;
 constexpr int MAX_BIT_RATE_OPUS = 510000;
 constexpr int MIN_OPUS_COMPLIANCE_LEVEL = 1;
@@ -473,7 +475,7 @@ CapabilityData AudioCodeclistInfo::GetRawDecoderCapability()
     return audioRawCapability;
 }
 
-#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
 CapabilityData AudioCodeclistInfo::GetVividDecoderCapability()
 {
     CapabilityData audioVividCapability;
@@ -628,7 +630,9 @@ CapabilityData AudioCodeclistInfo::GetVendorAacEncoderCapability()
     audioAacCapability.rank = 1; // larger than default rank 0
     return audioAacCapability;
 }
+#endif
 
+#ifdef SUPPORT_CODEC_OPUS
 CapabilityData AudioCodeclistInfo::GetOpusEncoderCapability()
 {
     CapabilityData audioOpusCapability;
@@ -806,9 +810,6 @@ CapabilityData AudioCodeclistInfo::GetAlacDecoderCapability()
 AudioCodeclistInfo::AudioCodeclistInfo()
 {
     audioCapabilities_ = {
-#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
-                          GetVendorAacEncoderCapability(),
-#endif
                           GetMP3DecoderCapability(),   GetAacDecoderCapability(),    GetFlacDecoderCapability(),
                           GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(), GetAmrwbDecoderCapability(),
                           GetG711muDecoderCapability(), GetRawDecoderCapability(), GetAacEncoderCapability(),
@@ -817,10 +818,13 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetGsmMsDecoderCapability(), GetGsmDecoderCapability(), GetAlacDecoderCapability(),
                           GetWMAV1DecoderCapability(), GetWMAV2DecoderCapability(), GetWMAProDecoderCapability(),
                           GetIlbcDecoderCapability(), GetTruehdDecoderCapability(),
-#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),
-                          GetL2hcDecoderCapability(), GetOpusDecoderCapability(), GetOpusEncoderCapability(),
+                          GetL2hcDecoderCapability(), GetVendorAacEncoderCapability(),
+#endif
+#ifdef SUPPORT_CODEC_OPUS
+                          GetOpusDecoderCapability(), GetOpusEncoderCapability(),
 #endif
 #ifdef SUPPORT_CODEC_COOK
     GetCookDecoderCapability(),
