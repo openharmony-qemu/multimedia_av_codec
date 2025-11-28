@@ -67,6 +67,7 @@ constexpr int32_t DEFAULT_VIDEO_BITRATE = 6000000;
 constexpr double DEFAULT_VIDEO_FRAMERATE = 30.0;
 constexpr int32_t VIDEO_ALIGN_SIZE = 16;
 constexpr uint32_t VIDEO_PIX_DEPTH_RGBA = 4;
+constexpr int32_t EVEN_NUMBER_DIVISOR = 2;
 
 constexpr struct {
     const std::string_view codecName;
@@ -686,6 +687,10 @@ int32_t AvcEncoder::SetupPort(const Format &format)
         height <= 0 || height > VIDEO_MAX_HEIGHT_SIZE) {
         AVCODEC_LOGE("format should contain height");
         return AVCS_ERR_INVALID_VAL;
+    }
+    if ((width % EVEN_NUMBER_DIVISOR != 0) || (height % EVEN_NUMBER_DIVISOR != 0)) {
+        AVCODEC_LOGE("The frame's width amd jeogjt must both be even numbers");
+        return AVCS_ERR_UNKNOWN;
     }
     encWidth_ = width;
     encHeight_ = height;
