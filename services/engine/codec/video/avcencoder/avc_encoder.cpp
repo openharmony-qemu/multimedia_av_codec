@@ -689,7 +689,7 @@ int32_t AvcEncoder::SetupPort(const Format &format)
         return AVCS_ERR_INVALID_VAL;
     }
     if ((width % EVEN_NUMBER_DIVISOR != 0) || (height % EVEN_NUMBER_DIVISOR != 0)) {
-        AVCODEC_LOGE("The frame's width amd jeogjt must both be even numbers");
+        AVCODEC_LOGE("The frame's width and height must both be even numbers");
         return AVCS_ERR_UNKNOWN;
     }
     encWidth_ = width;
