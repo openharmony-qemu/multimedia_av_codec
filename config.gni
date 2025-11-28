@@ -47,6 +47,7 @@ declare_args() {
   av_codec_enable_codec_rv = false
   av_codec_enable_codec_cook = false
   av_codec_enable_codec_eac3 = false
+  av_codec_enable_codec_opus = false
   av_codec_enable_demuxer_lrc = false
   av_codec_enable_demuxer_eac3 = false
   av_codec_enable_demuxer_sami = false
