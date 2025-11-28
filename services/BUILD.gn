@@ -26,6 +26,9 @@ group("av_codec_services_package") {
   if (av_codec_support_avc_encoder) {
     deps += [ "engine/codec/video/avcencoder:avc_encoder" ]
   }
+  if (av_codec_support_av1_decoder) {
+    deps += [ "engine/codec/video/av1decoder:av1_decoder" ]
+  }
   if (av_codec_support_hevc_decoder) {
     deps += [ "engine/codec/video/hevcdecoder:hevc_decoder" ]
   }
@@ -42,4 +45,5 @@ group("av_codec_services_package") {
   print("av_codec_support_hcodec =", av_codec_support_hcodec)
   print("av_codec_support_vp8_decoder =", av_codec_support_vp8_decoder)
   print("av_codec_support_vp9_decoder =", av_codec_support_vp9_decoder)
+  print("av_codec_support_av1_decoder =", av_codec_support_av1_decoder)
 }

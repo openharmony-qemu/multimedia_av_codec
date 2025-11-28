@@ -375,7 +375,8 @@ void VideoDecoder::CalculateBufferSize()
 {
     if (codecName_ == AVCodecCodecName::VIDEO_DECODER_VP8_NAME) {
         inputBufferSize_ = static_cast<UINT32>(width_ * height_ * VIDEO_PLANE_COUNT_YUV) >> 1;
-    } else if (codecName_ == AVCodecCodecName::VIDEO_DECODER_VP9_NAME) {
+    } else if (codecName_ == AVCodecCodecName::VIDEO_DECODER_VP9_NAME ||
+               codecName_ == AVCodecCodecName::VIDEO_DECODER_AV1_NAME) {
         inputBufferSize_ =
             static_cast<UINT32>(width_ * height_ * VIDEO_PLANE_COUNT_YUV * VIDEO_PLANE_SIZE_YUVP10) >> 3; // 3: 8bit
     }
@@ -598,8 +599,8 @@ void VideoDecoder::SetSurfaceParameter(const Format &format, const std::string_v
                              "Set parameter failed: scale type value %{public}d invalid", val);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val);
         std::lock_guard<std::mutex> sLock(outputMutex_);
-        sInfo_.scalingMode = val;
-        sInfo_.surface->SetScalingMode(scaleMode);
+        sInfo_.scalingMode = scaleMode;
+        sInfo_.surface->SetScalingMode(sInfo_.scalingMode.value());
     } else {
         AVCODEC_LOGW("Set parameter failed: %{public}s", formatKey.data());
         return;

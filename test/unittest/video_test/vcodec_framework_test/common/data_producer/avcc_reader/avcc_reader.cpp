@@ -72,6 +72,14 @@ constexpr int IVF_HEADER_TOTAL_FRAMES_OFFSET_2 = 16;
 constexpr int IVF_HEADER_TOTAL_FRAMES_OFFSET_3 = 24;
 #endif
 
+#ifdef SUPPORT_CODEC_AV1
+constexpr uint32_t IVF_FILE_AV1_HEADER_SIZE = 32;
+constexpr uint8_t IVF_AV1_SIGNATURE[] = {'D', 'K', 'I', 'F'};
+constexpr int IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_1 = 8;
+constexpr int IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_2 = 16;
+constexpr int IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_3 = 24;
+#endif
+
 static inline int64_t GetTimeUs()
 {
     struct timespec now;
@@ -339,6 +347,79 @@ const uint32_t ES_VP9[] = {
 };
 
 const uint32_t ES_VP9_LENGTH = sizeof(ES_VP9) / sizeof(ES_VP9[0]);
+#endif
+
+#ifdef SUPPORT_CODEC_AV1
+enum Av1Type {
+    AV1_UNSPECIFIED = 0,
+    AV1_KEY_FRAME = 1,
+    AV1_INTER_FRAME = 2
+};
+
+const uint32_t ES_AV1[] = {
+    64780, 38706, 5, 130, 5, 737, 5, 161, 5, 2384,
+    5, 231, 5, 936, 5, 157, 5, 6277, 5, 345,
+    5, 1052, 5, 320, 5, 2022, 5, 447, 5, 942,
+    5, 315, 38, 31925, 5, 484, 5, 947, 5, 360,
+    5, 3187, 5, 413, 5, 831, 5, 488, 5, 5964,
+    5, 547, 5, 1091, 5, 434, 5, 2739, 5, 385,
+    5, 1145, 5, 407, 5, 41496, 5, 360, 5, 854,
+    5, 254, 5, 2344, 5, 575, 5, 1405, 5, 449,
+    5, 9628, 5, 599, 5, 1331, 5, 512, 5, 3084,
+    5, 588, 5, 1313, 5, 533, 47, 49787, 5, 493,
+    5, 1539, 5, 658, 5, 5396, 5, 603, 5, 1390,
+    5, 560, 5, 11572, 5, 912, 5, 1755, 5, 679,
+    5, 4073, 5, 1061, 5, 1819, 5, 702, 5, 45156,
+    5, 999, 5, 2015, 5, 871, 5, 4198, 5, 982,
+    5, 1911, 5, 750, 5, 11412, 5, 752, 5, 1692,
+    5, 717, 5, 3414, 5, 807, 5, 1641, 5, 593,
+    5, 44515, 5, 734, 5, 1531, 5, 608, 5, 3389,
+    5, 574, 5, 1515, 5, 566, 5, 9172, 5, 635,
+    5, 1343, 5, 588, 5, 2983, 5, 608, 5, 1483,
+    5, 579, 43, 42079, 5, 479, 5, 1198, 5, 394,
+    5, 2706, 5, 474, 5, 1176, 5, 381, 5, 7978,
+    5, 429, 5, 983, 5, 341, 5, 2561, 5, 322,
+    5, 898, 5, 269, 5, 50343, 5, 364, 5, 925,
+    5, 318, 5, 3115, 5, 342, 5, 1150, 5, 465,
+    5, 8199, 5, 350, 5, 993, 5, 341, 5, 3961,
+    5, 310, 5, 1091, 5, 287, 35, 38893, 5, 289,
+    5, 1141, 5, 297, 5, 3034, 5, 297, 5, 1130,
+    5, 264, 5, 8008, 5, 374, 5, 1139, 5, 290,
+    5, 2755, 5, 330, 5, 1280, 5, 324, 5, 44344,
+    474, 5, 1273, 5, 433, 5, 2917, 5, 342, 5,
+    1236, 5, 374, 5, 7551, 299, 5, 854, 5, 285,
+    5, 2966, 5, 291, 5, 799, 5, 297, 31, 40034,
+    343, 5, 919, 5, 432, 5, 3120, 5, 396, 5, 943,
+    5, 523, 5, 9097, 384, 5, 1521, 5, 405, 5,
+    2948, 5, 387, 5, 1170, 5, 434, 5, 39015, 348,
+    5, 1327, 5, 422, 5, 1830, 380, 5, 981, 5,
+    359, 5, 8422, 521, 5, 1095, 5, 472, 5, 2157,
+    504, 5, 1456, 5, 412, 5, 35181, 436, 5, 552,
+    411, 5, 1724, 611, 5, 586, 454, 5, 5643, 450,
+    5, 520, 373, 5, 1760, 563, 5, 507, 456, 5,
+    35588, 5, 388, 568, 5, 1687, 454, 5, 635, 501,
+    5, 5420, 5, 568, 456, 5, 2161, 538, 5, 620,
+    393, 5, 39853, 5, 668, 575, 5, 2180, 5, 523,
+    432, 5, 6685, 5, 680, 694, 5, 1532, 5, 630,
+    456, 5, 37577, 5, 433, 5, 1810, 5, 821, 520,
+    5, 6494, 5, 538, 5, 2031, 5, 626, 521, 5,
+    39900, 5, 488, 5, 3116, 5, 744, 764, 5, 6923,
+    5, 824, 5, 2051, 5, 884, 615, 38, 46413, 5,
+    577, 5, 1732, 5, 573, 5, 6650, 5, 541, 5,
+    1946, 5, 537, 38, 59074, 5, 569, 5, 6470, 5,
+    656, 5, 12916, 5, 733, 5, 4445, 5, 731, 44,
+    51868, 5, 702, 5, 4316, 5, 799, 5, 9986, 5,
+    658, 5, 4542, 5, 673, 40, 53191, 5, 834, 5,
+    2713, 5, 855, 5, 9314, 5, 898, 5, 2913, 5,
+    913, 38, 40617, 952, 5, 4093, 5, 1035, 5, 6010,
+    784, 5, 2651, 5, 738, 37, 47479, 958, 5, 2385,
+    5, 1031, 5, 6694, 1044, 5, 3541, 5, 1011, 40,
+    54026, 5, 1121, 5, 3559, 5, 1357, 5, 9848,
+    5, 1044, 5, 3559, 5, 1095, 44, 30099, 1001, 5,
+    3106, 5, 809, 5, 5054, 975, 5, 2739, 5, 996,
+    5, 1390
+};
+const uint32_t ES_AV1_LENGTH = sizeof(ES_AV1) / sizeof(ES_AV1[0]);
 #endif
 
 enum Msvideo1Type {
@@ -1871,9 +1952,9 @@ bool Vp8Reader::IvfUnitReader::ParseIvfFileHeader()
     }
 
     totalFrames_ = fileHeader[NUM_24] |
-                   (fileHeader[NUM_25] << IVF_HEADER_TOTAL_FRAMES_OFFSET_1) |
-                   (fileHeader[NUM_26] << IVF_HEADER_TOTAL_FRAMES_OFFSET_2) |
-                   (fileHeader[NUM_27] << IVF_HEADER_TOTAL_FRAMES_OFFSET_3);
+                   (fileHeader[NUM_25] << IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_1) |
+                   (fileHeader[NUM_26] << IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_2) |
+                   (fileHeader[NUM_27] << IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_3);
 
     std::cout << "IVF file parsed - Total frames: " << totalFrames_ << std::endl;
     fileHeaderParsed_ = true;
@@ -2259,6 +2340,296 @@ int32_t Vp9Reader::IvfUnitReader::ReadVp9Unit(uint8_t* bufferAddr, int32_t& buff
     } else {
         isEosFrame = true;
         vp9Unit_->clear();
+    }
+
+    return AV_ERR_OK;
+}
+#endif
+
+#ifdef SUPPORT_CODEC_AV1
+int32_t Av1Reader::Init(const std::shared_ptr<Av1ReaderInfo>& info)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(info, AV_ERR_INVALID_VAL, "Av1ReaderInfo is null");
+
+    std::shared_ptr<std::ifstream> inputFile = std::make_shared<std::ifstream>(
+        info->inPath, std::ios::binary | std::ios::in);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile && inputFile->is_open(),
+        AV_ERR_INVALID_VAL, "Open input file failed");
+
+    av1UnitReader_ = std::static_pointer_cast<Av1UnitReader>(
+        std::make_shared<IvfUnitReader>(inputFile));
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(av1UnitReader_, AV_ERR_INVALID_VAL, "AV1 unit reader create failed");
+
+    av1Detector_ = std::static_pointer_cast<Av1Detector>(
+        std::make_shared<Av1Detector>());
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(av1Detector_, AV_ERR_INVALID_VAL, "AV1 detector create failed");
+
+    return AV_ERR_OK;
+}
+
+int32_t Av1Reader::FillBuffer(uint8_t* bufferAddr, OH_AVCodecBufferAttr& attr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr, AV_ERR_INVALID_VAL, "Buffer address is null");
+
+    int32_t frameSize = 0;
+    bool isEosFrame = false;
+    auto ret = av1UnitReader_->ReadAv1Unit(bufferAddr, frameSize, isEosFrame);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCS_ERR_INVALID_OPERATION, "ReadAV1Unit failed");
+
+    uint8_t av1Type = av1Detector_->GetAv1Type(av1Detector_->GetAv1TypeAddr(bufferAddr));
+    bufferAddr += frameSize;
+    FillBufferAttr(attr, frameSize, av1Type, isEosFrame);
+    frameInputCount_++;
+    return AV_ERR_OK;
+}
+
+bool Av1Reader::IsEOS()
+{
+    return av1UnitReader_ ? av1UnitReader_->IsEOS() : true;
+}
+
+void Av1Reader::FillBufferAttr(OH_AVCodecBufferAttr& attr, int32_t frameSize, uint8_t av1Type, bool isEosFrame)
+{
+    attr.size = frameSize;
+    attr.pts = GetTimeUs();
+    attr.flags = 0;
+
+    if (isEosFrame) {
+        attr.flags |= AVCODEC_BUFFER_FLAG_EOS;
+        std::cout << "Input EOS Frame, frameCount = " << (frameInputCount_) << std::endl;
+    } else {
+        if (av1Detector_->IsKeyFrame(av1Type)) {
+            attr.flags |= AVCODEC_BUFFER_FLAG_SYNC_FRAME;
+        }
+    }
+}
+
+uint8_t const *Av1Reader::Av1UnitReader::GetNextAv1UnitAddr()
+{
+    CHECK_AND_RETURN_RET_LOG(av1Unit_ != nullptr, nullptr, "av1Unit_ is nullptr");
+    return av1Unit_->data();
+}
+
+int32_t Av1Reader::Av1UnitReader::ReadAv1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL, "Got a invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(av1Unit_, AV_ERR_INVALID_VAL, "AV1 unit buffer is nullptr");
+    bufferSize = static_cast<int32_t>(av1Unit_->size());
+    if (bufferSize > 0) {
+        memcpy_s(bufferAddr, bufferSize, av1Unit_->data(), bufferSize);
+    }
+
+    if (!IsEOF()) {
+        isEosFrame = false;
+        PrereadAv1Unit();
+    } else {
+        isEosFrame = true;
+        av1Unit_->clear();
+    }
+    return AV_ERR_OK;
+}
+
+void Av1Reader::Av1UnitReader::PrereadAv1Unit()
+{
+    std::cout << "[Av1UnitReader::PrereadAv1Unit] Base class implementation - should be overridden" << std::endl;
+}
+
+Av1Reader::Av1MetaUnitReader::Av1MetaUnitReader(std::shared_ptr<std::ifstream> inputFile)
+{
+    inputFile_ = inputFile;
+    prereadBuffer_ = std::make_unique<uint8_t[]>(PREREAD_BUFFER_SIZE);
+    av1Unit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+    frameIndex_ = 0;
+    PrereadAv1Unit();
+}
+
+int32_t Av1Reader::Av1MetaUnitReader::ReadAv1Unit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr, AV_ERR_INVALID_VAL, "Got an invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(av1Unit_, AV_ERR_INVALID_VAL, "AV1 unit buffer is nullptr");
+    bufferSize = static_cast<int32_t>(av1Unit_->size());
+    if (bufferSize > 0) {
+        memcpy_s(bufferAddr, bufferSize, av1Unit_->data(), bufferSize);
+    }
+
+    if (frameIndex_ < ES_AV1_LENGTH) {
+        isEosFrame = false;
+        PrereadAv1Unit();
+    } else {
+        isEosFrame = true;
+        av1Unit_->clear();
+    }
+    return AV_ERR_OK;
+}
+
+bool Av1Reader::Av1MetaUnitReader::IsEOS()
+{
+    return frameIndex_ >= ES_AV1_LENGTH;
+}
+
+bool Av1Reader::Av1MetaUnitReader::IsEOF()
+{
+    return frameIndex_ >= ES_AV1_LENGTH;
+}
+
+void Av1Reader::Av1MetaUnitReader::PrereadAv1Unit()
+{
+    CHECK_AND_RETURN_LOG(inputFile_ && inputFile_->is_open(), "Input file not open");
+    CHECK_AND_RETURN_LOG(av1Unit_ != nullptr, "av1 unit buffer is nullptr");
+    CHECK_AND_RETURN_LOG(frameIndex_ < ES_AV1_LENGTH, "All AV1 frames have been read");
+
+    uint32_t frameSize = ES_AV1[frameIndex_];
+    av1Unit_->resize(frameSize);
+    auto pBuffer = av1Unit_->data();
+
+    inputFile_->read(reinterpret_cast<char*>(pBuffer), frameSize);
+    uint32_t bytesRead = static_cast<uint32_t>(inputFile_->gcount());
+
+    CHECK_AND_RETURN_LOG(bytesRead == frameSize,
+        "Failed to read full frame. Expected: %u, Got: %u", frameSize, bytesRead);
+    frameIndex_++;
+}
+
+const uint8_t* Av1Reader::Av1Detector::GetAv1TypeAddr(const uint8_t* bufferAddr)
+{
+    return bufferAddr;
+}
+
+uint8_t Av1Reader::Av1Detector::GetAv1Type(const uint8_t* bufferAddr)
+{
+    if (!bufferAddr) {
+        return Av1Type::AV1_UNSPECIFIED;
+    }
+    uint8_t frameTypeBit = bufferAddr[0] & 0x01;
+    return (frameTypeBit == 0) ? AV1_KEY_FRAME : AV1_INTER_FRAME;
+}
+
+bool Av1Reader::Av1Detector::IsKeyFrame(uint8_t av1Type)
+{
+    return (av1Type == AV1_KEY_FRAME);
+}
+
+Av1Reader::IvfUnitReader::IvfUnitReader(std::shared_ptr<std::ifstream> inputFile)
+{
+    inputFile_ = inputFile;
+    av1Unit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+
+    if (!ParseIvfFileHeader()) {
+        std::cout << "Failed to parse IVF file header" << std::endl;
+        return;
+    }
+
+    PrereadAv1Unit();
+}
+
+bool Av1Reader::IvfUnitReader::ParseIvfFileHeader()
+{
+    int NUM_4 = 4; // 4
+    int NUM_24 = 24; // 24
+    int NUM_25 = 25; // 25
+    int NUM_26 = 26; // 26
+    int NUM_27 = 27; // 27
+    if (!inputFile_ || !inputFile_->is_open()) {
+        return false;
+    }
+
+    std::vector<uint8_t> fileHeader(IVF_FILE_AV1_HEADER_SIZE);
+    inputFile_->read(reinterpret_cast<char*>(fileHeader.data()), IVF_FILE_AV1_HEADER_SIZE);
+
+    if (inputFile_->gcount() != IVF_FILE_AV1_HEADER_SIZE) {
+        return false;
+    }
+
+    if (memcmp(fileHeader.data(), IVF_AV1_SIGNATURE, NUM_4) != 0) {
+        std::cout << "Invalid IVF signature" << std::endl;
+        return false;
+    }
+
+    totalFrames_ = fileHeader[NUM_24] |
+                (fileHeader[NUM_25] << IVF_HEADER_TOTAL_FRAMES_OFFSET_1) |
+                (fileHeader[NUM_26] << IVF_HEADER_TOTAL_FRAMES_OFFSET_2) |
+                (fileHeader[NUM_27] << IVF_HEADER_TOTAL_FRAMES_OFFSET_3);
+
+    std::cout << "IVF file parsed - Total frames: " << totalFrames_ << std::endl;
+    fileHeaderParsed_ = true;
+    return true;
+}
+
+bool Av1Reader::IvfUnitReader::ParseIvfFrameHeader(uint32_t& frameSize)
+{
+    if (!inputFile_ || inputFile_->eof()) {
+        return false;
+    }
+
+    std::vector<uint8_t> frameHeader(IVF_FILE_AV1_HEADER_SIZE);
+    inputFile_->read(reinterpret_cast<char*>(frameHeader.data()), IVF_FILE_AV1_HEADER_SIZE);
+
+    if (inputFile_->gcount() != IVF_FILE_AV1_HEADER_SIZE) {
+        return false;
+    }
+
+    frameSize = frameHeader[0] |                                            // 0： offset 0
+                (frameHeader[1] << IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_1) |  // 1： offset 1
+                (frameHeader[2] << IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_2) |  // 2： offset 2
+                (frameHeader[3] << IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_3);   // 3： offset 3
+
+    return frameSize > 0;
+}
+
+void Av1Reader::IvfUnitReader::PrereadAv1Unit()
+{
+    if (!fileHeaderParsed_ || !inputFile_ || inputFile_->eof()) {
+        av1Unit_->clear();
+        return;
+    }
+
+    uint32_t frameSize = 0;
+    if (!ParseIvfFrameHeader(frameSize)) {
+        av1Unit_->clear();
+        return;
+    }
+
+    av1Unit_->resize(frameSize);
+    inputFile_->read(reinterpret_cast<char*>(av1Unit_->data()), frameSize);
+
+    uint32_t bytesRead = static_cast<uint32_t>(inputFile_->gcount());
+    if (bytesRead != frameSize) {
+        std::cout << "Frame read mismatch - Expected: " << frameSize
+                  << ", Got: " << bytesRead << std::endl;
+        av1Unit_->clear();
+        return;
+    }
+    frameIndex_++;
+}
+
+bool Av1Reader::IvfUnitReader::IsEOS()
+{
+    return inputFile_->eof() || av1Unit_->empty();
+}
+
+bool Av1Reader::IvfUnitReader::IsEOF()
+{
+    return inputFile_->eof();
+}
+
+int32_t Av1Reader::IvfUnitReader::ReadAv1Unit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr, AV_ERR_INVALID_VAL, "Got an invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(av1Unit_, AV_ERR_INVALID_VAL, "AV1 unit buffer is nullptr");
+
+    bufferSize = static_cast<int32_t>(av1Unit_->size());
+    if (bufferSize > 0) {
+        memcpy_s(bufferAddr, bufferSize, av1Unit_->data(), bufferSize);
+    }
+
+    if (!IsEOF()) {
+        isEosFrame = false;
+        PrereadAv1Unit();
+    } else {
+        isEosFrame = true;
+        av1Unit_->clear();
     }
 
     return AV_ERR_OK;
