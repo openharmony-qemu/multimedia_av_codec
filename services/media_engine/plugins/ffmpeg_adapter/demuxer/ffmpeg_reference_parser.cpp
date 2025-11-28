@@ -256,8 +256,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
     InsertIframePtsMap(pkt, parserCurGopId_, parserRefIdx_, iFramePtsMap_);
     FALSE_RETURN_V_MSG_D(pkt->stream_index == parserRefIdx_ || ffmpegRet == AVERROR_EOF, Status::OK,
                          "eos or not video");
-    int64_t dts = AvTime2Us(
-        ConvertTimeFromFFmpeg(pkt->dts, parserRefCtx_->streams[parserRefIdx_]->time_base));
+    int64_t dts = AvTime2Us(ConvertTimeFromFFmpeg(pkt->dts, parserRefCtx_->streams[parserRefIdx_]->time_base));
     Status result = referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
     FALSE_RETURN_V_MSG_E(result == Status::OK, Status::ERROR_UNKNOWN, "parse nal units error!");
     int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
