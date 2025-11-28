@@ -239,6 +239,7 @@ static void InsertIframePtsMap(AVPacket *pkt, int32_t gopId, int32_t trackIdx,
 Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId)
 {
     std::unique_lock<std::mutex> sLock(syncMutex_);
+    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_UNKNOWN, "Packet is nullptr!");
     int ffmpegRet = av_read_frame(parserRefCtx_.get(), pkt);
     sLock.unlock();
     if (ffmpegRet < 0 && ffmpegRet != AVERROR_EOF) {
@@ -356,6 +357,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
         ", processingIFrame_ size: " PUBLIC_LOG_ZU ", duration: " PUBLIC_LOG_D64, curStreamId, parserCurGopId_,
         IFramePos_.size(), processingIFrame_.size(), duration);
     AVPacket *pkt = av_packet_alloc();
+    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_UNKNOWN, "Packet is nullptr!");
     while (formatContext_ != nullptr && parserState_ && parserCurGopId_ != -1) {
         Status rlt = ParserRefInfoLoop(pkt, curStreamId);
         duration = std::chrono::duration_cast<std::chrono::milliseconds>(
