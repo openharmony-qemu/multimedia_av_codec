@@ -850,7 +850,8 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         ParseOrientationFromMatrix(avStream, format);
     }
 
-    AVRational sar = avStream.sample_aspect_ratio;
+    AVRational sar = av_guess_sample_aspect_ratio(&const_cast<AVFormatContext&>(avFormatContext),
+        &const_cast<AVStream&>(avStream), nullptr);
     if (sar.num && sar.den) {
         format.Set<Tag::VIDEO_SAR>(static_cast<double>(av_q2d(sar)));
     }
