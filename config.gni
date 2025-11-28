@@ -182,8 +182,13 @@ if (av_codec_enable_codec_rv) {
 if (av_codec_enable_codec_cook) {
   av_codec_defines += [ "SUPPORT_CODEC_COOK" ]
 }
+
 if (av_codec_enable_codec_eac3) {
   av_codec_defines += [ "SUPPORT_CODEC_EAC3" ]
+}
+
+if (av_codec_enable_codec_opus) {
+  av_codec_defines += [ "SUPPORT_CODEC_OPUS" ]
 }
 
 if (av_codec_enable_demuxer_lrc) {
