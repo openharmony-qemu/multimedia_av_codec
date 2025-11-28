@@ -22,6 +22,8 @@
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
 #include "background_event_handler.h"
+#include "codec_ability_singleton.h"
+#include "avcodec_xcollie.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecServer"};
@@ -167,11 +169,18 @@ int32_t AVCodecServer::Dump(int32_t fd, const std::vector<std::u16string> &args)
         AVCODEC_LOGW("Failed to check fd");
         return OHOS::INVALID_OPERATION;
     }
-    if (AVCodecServerManager::GetInstance().Dump(fd, args) != OHOS::NO_ERROR) {
-        AVCODEC_LOGW("Failed to call AVCodecServerManager::Dump");
-        return OHOS::INVALID_OPERATION;
+    AVCodecXCollie::GetInstance().Dump(fd);
+    if (args.size() == 0) {
+        AVCodecServerManager::GetInstance().Dump(fd, args);
+        return OHOS::NO_ERROR;
     }
 
+    auto firstArg = args[0];
+    if (firstArg == u"Codec") {
+        AVCodecServerManager::GetInstance().Dump(fd, args);
+    } else if (firstArg == u"QueryCap") {
+        CodecAbilitySingleton::GetInstance().Dump(fd, args);
+    }
     return OHOS::NO_ERROR;
 }
 } // namespace MediaAVCodec

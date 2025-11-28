@@ -49,6 +49,7 @@ ohos_static_library("av_codec_engine_codeclist") {
     "codec_ability_singleton.cpp",
     "codeclist_builder.cpp",
     "codeclist_core.cpp",
+    "codeclist_dump.cpp",
   ]
 
   deps = [
