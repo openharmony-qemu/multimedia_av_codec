@@ -90,7 +90,9 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_AAC, MimeType::AUDIO_AAC},
     {AV_CODEC_ID_AAC_LATM, MimeType::AUDIO_AAC},
     {AV_CODEC_ID_VORBIS, MimeType::AUDIO_VORBIS},
+#ifdef SUPPORT_CODEC_EAC3
     {AV_CODEC_ID_OPUS, MimeType::AUDIO_OPUS},
+#endif
     {AV_CODEC_ID_AMR_NB, MimeType::AUDIO_AMR_NB},
     {AV_CODEC_ID_AMR_WB, MimeType::AUDIO_AMR_WB},
     {AV_CODEC_ID_ADPCM_MS, MimeType::AUDIO_ADPCM_MS},
