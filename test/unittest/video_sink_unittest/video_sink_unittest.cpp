@@ -27,6 +27,7 @@ static const int64_t WAITTIME_2 = 50000;
 static const int32_t DEFAULT_CAPACITY = 30;
 static const double FRAMERATE = 1;
 static const int32_t NUM_0 = 0;
+static const int32_t NUM_2 = 2;
 
 void VideoSinkUnitTest::SetUpTestCase(void)
 {
@@ -108,6 +109,28 @@ HWTEST_F(VideoSinkUnitTest, SetMediaMuted, TestSize.Level0)
     sink_->SetMediaMuted(true);
     EXPECT_EQ(sink_->needDropOnMute_, true);
     EXPECT_EQ(sink_->isMuted_, true);
+}
+
+/**
+ * @tc.name  : Test RecordStallingTimestamp
+ * @tc.number: RecordStallingTimestamp
+ * @tc.desc  : Test RecordStallingTimestamp
+ */
+HWTEST_F(VideoSinkUnitTest, RecordStallingTimestamp, TestSize.Level0)
+{
+    ASSERT_NE(sink_, nullptr);
+    AVBuffer buffer;
+    buffer.meta_ = std::make_shared<Meta>();
+    int64_t stage = NUM_0;
+    int64_t timeStamp = WAITTIME_1;
+    sink_->RecordStallingTimestamp(buffer, stage, timeStamp);
+    std::vector<int64_t> timeStampList;
+    bool ret = buffer.meta_->GetData(Tag::STALLING_TIMESTAMP, timeStampList);
+    
+    ASSERT_TRUE(ret);
+    ASSERT_EQ(timeStampList.size(), NUM_2);
+    EXPECT_EQ(timeStampList[0], stage);
+    EXPECT_EQ(timeStampList[1], timeStamp);
 }
 } // namespace Pipeline
 } // namespace Media

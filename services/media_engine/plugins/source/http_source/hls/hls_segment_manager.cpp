@@ -1808,6 +1808,16 @@ void HlsSegmentManager::GetDownloadInfo(DownloadInfo& downloadInfo)
     downloadInfo.avgDownloadSpeed = avgDownloadSpeed_;
     downloadInfo.totalDownLoadBits = totalBits_;
     downloadInfo.isTimeOut = isTimeOut_;
+    if (playlistDownloader_ != nullptr) {
+        playlistDownloader_->GetDownloadInfo(downloadInfo);
+    }
+    if (downloader_ != nullptr) {
+        DownloadInfo tmpDownloadInfo;
+        downloader_->GetDownloadInfo(tmpDownloadInfo);
+        downloadInfo.totalDownLoadBytes += tmpDownloadInfo.totalDownLoadBytes;
+        downloadInfo.totalLoadingTime += tmpDownloadInfo.totalLoadingTime;
+        downloadInfo.loadingCount += tmpDownloadInfo.loadingCount;
+    }
 }
 
 void HlsSegmentManager::GetPlaybackInfo(PlaybackInfo& playbackInfo)

@@ -291,6 +291,25 @@ void M3U8::UpdateDownloadFinished(const std::string& url, const std::string& loc
     sleepCond_.NotifyOne();
 }
 
+void M3U8::GetDownloadInfo(DownloadInfo& downloadInfo)
+{
+    if (downloader_) {
+        downloader_->GetDownloadInfo(downloadInfo);
+    }
+    if (downloaderHeader_) {
+        DownloadInfo tmpDownloadInfo;
+        downloaderHeader_->GetDownloadInfo(tmpDownloadInfo);
+        if (tmpDownloadInfo.firstFrameDecapsulationTime < downloadInfo.firstFrameDecapsulationTime) {
+            downloadInfo.firstFrameDecapsulationTime = tmpDownloadInfo.firstFrameDecapsulationTime;
+            downloadInfo.firstDownloadTime = tmpDownloadInfo.firstDownloadTime;
+
+        }
+        downloadInfo.totalDownLoadBytes += tmpDownloadInfo.totalDownLoadBytes;
+        downloadInfo.totalLoadingTime += tmpDownloadInfo.totalLoadingTime;
+        downloadInfo.loadingCount += tmpDownloadInfo.loadingCount;
+    }
+}
+
 uint32_t M3U8::SaveMapData(uint8_t* data, uint32_t len, bool notBlock)
 {
     if (fmp4Header_ == nullptr && downloadHeaderRequest_) {

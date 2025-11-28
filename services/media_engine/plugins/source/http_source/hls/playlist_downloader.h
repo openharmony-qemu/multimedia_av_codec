@@ -121,6 +121,7 @@ public:
 
     virtual void UpdateStreamInfo() = 0;
     virtual HlsSegmentType GetSegType(uint32_t streamId) = 0;
+    virtual void GetDownloadInfo(DownloadInfo& downloadInfo) = 0;
 
 protected:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);

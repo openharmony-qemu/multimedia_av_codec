@@ -216,6 +216,7 @@ public:
     void StopBufferring();
     std::string GetContentType();
     void ReStart();
+    void GetDownloadInfo(DownloadInfo& downloadInfo);
 
 private:
     bool BeginDownload();
@@ -245,6 +246,8 @@ private:
     void HandleRetErrorCode();
     void OpenAppUri();
     void HandleRedirect(Status& ret);
+    int64_t GetCurrentMillisecond();
+    static void UpdateDownloadInfo(Downloader *downloader, size_t dataLen);
 
     std::string name_;
     std::shared_ptr<NetworkClient> client_;
@@ -279,6 +282,13 @@ private:
     bool isContentTypeUpdated_{false};
     ConditionVariable sleepCond_;
     FairMutex sleepMutex_;
+    int64_t totalDownLoadBytes_ {0};
+    int32_t toalDownloadCount_ {0};
+    int64_t firstDownloadTime_ {0};
+    int64_t lastDownloadTime_ {0};
+    int64_t firstDownloadTimestamp_ {0};
+    int64_t startDownTime_ {0};
+    int64_t totalDownloadDuringTime_ {0};
 };
 }
 }

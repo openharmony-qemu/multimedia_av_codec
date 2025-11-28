@@ -966,6 +966,7 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     bufferInfo->omxBuffer->offset = static_cast<uint32_t>(bufferInfo->avBuffer->memory_->GetOffset());
     bufferInfo->omxBuffer->pts = bufferInfo->avBuffer->pts_;
     bufferInfo->omxBuffer->flag = UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_));
+    RecordProcessTimeOfUpstream(bufferInfo->avBuffer);
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
     int32_t ret = OnQueueInputBuffer(mode, bufferInfo);
@@ -1136,8 +1137,9 @@ void HCodec::OutBufUsToUser(BufferInfo &info)
         info.avBuffer->memory_->SetOffset(static_cast<int32_t>(omxBuffer->offset));
     }
     BeforeCbOutToUser(info);
+    TimePoint now = ChangeOwner(info, BufferOwner::OWNED_BY_USER);
+    AppendProcessTimeOfUs(info.avBuffer, omxBuffer->pts, now);
     callback_->OnOutputBufferAvailable(info.bufferId, info.avBuffer);
-    ChangeOwner(info, BufferOwner::OWNED_BY_USER);
 }
 
 void HCodec::OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)

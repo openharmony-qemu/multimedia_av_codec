@@ -526,7 +526,16 @@ Status MediaDemuxer::GetMediaKeySystemInfo(std::multimap<std::string, std::vecto
 Status MediaDemuxer::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     FALSE_RETURN_V_MSG(source_ != nullptr, Status::ERROR_INVALID_OPERATION, "Source is nullptr");
-    return source_->GetDownloadInfo(downloadInfo);
+    Status ret = Status::OK;
+    ret = source_->GetDownloadInfo(downloadInfo);
+    if (streamDemuxer_ != nullptr) {
+        downloadInfo.firstFrameDecapsulationTime =
+            streamDemuxer_->GetFirstFrameDecapsulationTime() - downloadInfo.firstFrameDecapsulationTime;
+        if (downloadInfo.firstFrameDecapsulationTime < 0) {
+            downloadInfo.firstFrameDecapsulationTime = 0;
+        }
+    }
+    return ret;
 }
 
 Status MediaDemuxer::GetPlaybackInfo(PlaybackInfo& playbackInfo)
@@ -2872,6 +2881,22 @@ bool MediaDemuxer::HandleDashChangeStream(int32_t trackId)
     return ret;
 }
 
+void MediaDemuxer::RecordDemuxerTimeStamp(AVBuffer &buffer, StallingStage stage)
+{
+    int64_t nowTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+    std::vector<int64_t> timeStampList;
+    buffer.meta_->GetData(Tag::STALLING_TIMESTAMP, timeStampList);
+
+    if (stage == StallingStage::DEMUXER_START) {
+        timeStampList.clear();
+    }
+    timeStampList.push_back(static_cast<int64_t>(stage));
+    timeStampList.push_back(nowTime);
+    buffer.meta_->SetData(Tag::STALLING_TIMESTAMP, timeStampList);
+    MEDIA_LOG_D("demuxer set stalling stage:" PUBLIC_LOG_D64 ", nowTimeMs:" PUBLIC_LOG_D64, stage, nowTime);
+}
+
 Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
 {
     MediaAVCodec::AVCodecTrace trace("MediaDemuxer::CopyFrameToUserQueue");
@@ -2916,7 +2941,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
 Status MediaDemuxer::InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> sample, bool isAVDemuxer)
 {
     MEDIA_LOG_DD("InnerReadSample In, track " PUBLIC_LOG_D32, trackId);
-
+    RecordDemuxerTimeStamp(*sample, StallingStage::DEMUXER_START);
     int32_t innerTrackID = trackId;
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
     if (IsNeedMapToInnerTrackID()) {
@@ -2945,6 +2970,7 @@ Status MediaDemuxer::InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> 
 
     // to get DrmInfo
     ProcessDrmInfos();
+    RecordDemuxerTimeStamp(*sample, StallingStage::DEMUXER_END);
     return ret;
 }
 
