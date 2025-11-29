@@ -23,6 +23,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 const std::vector<std::string> VIDEO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MSVIDEO1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VC1),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_WVC1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_AVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_HEVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VVC),

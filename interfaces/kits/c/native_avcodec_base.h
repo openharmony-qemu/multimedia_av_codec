@@ -269,6 +269,13 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MSVIDEO1;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VC1;
 
 /**
+ * @brief Enumerates the MIME type of video WVC1 codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_WVC1;
+
+/**
  * @brief Enumerates the MIME type of video MJPEG codec.
  *
  * @since 22
@@ -1318,6 +1325,16 @@ typedef enum OH_VC1Profile {
 } OH_VC1Profile;
 
 /**
+ * @brief WVC1 Profile
+ *
+ * @since 23
+ */
+typedef enum OH_WVC1Profile {
+    /** Advanced profile */
+    WVC1_PROFILE_ADVANCED = 0,
+} OH_WVC1Profile;
+
+/**
  * @brief VP9 Profile
  *
  * @since 23
@@ -1732,6 +1749,24 @@ typedef enum OH_VC1Level {
     /** HIGH level */
     VC1_LEVEL_HIGH = 7,
 } OH_VC1Level;
+
+/**
+ * @brief WVC1 Level.
+ *
+ * @since 23
+ */
+typedef enum OH_WVC1Level {
+    /** L0 level */
+    WVC1_LEVEL_L0 = 0,
+    /** L1 level */
+    WVC1_LEVEL_L1 = 1,
+    /** L2 level */
+    WVC1_LEVEL_L2 = 2,
+    /** L3 level */
+    WVC1_LEVEL_L3 = 3,
+    /** L4 level */
+    WVC1_LEVEL_L4 = 4,
+} OH_WVC1Level;
 
 /**
  * @brief VP9 Level.
