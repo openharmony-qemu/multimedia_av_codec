@@ -1939,7 +1939,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AAC_001, TestSize.Level0)
     ASSERT_GE(trackId, 0);
     ASSERT_EQ(avmuxer_->Start(), 0);
 
-    inputFile_ = std::make_shared<std::ifstream>("/data/test/media/aac_2c_44100hz_199k.dat", std::ios::binary);
+    inputFile_ = std::make_shared<std::ifstream>("/data/test/media/aac_2c_44100hz_199k_muxer.dat", std::ios::binary);
 
     int32_t extSize = 0;
     inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
@@ -2394,7 +2394,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Audio_Auxiliary, TestSize.Level0) {
 
     ASSERT_EQ(avmuxer_->Start(), 0);
 
-    std::string inputFilePath = "/data/test/media/aac_2c_44100hz_199k.dat";
+    std::string inputFilePath = "/data/test/media/aac_2c_44100hz_199k_muxer.dat";
     TrackWriteSample(inputFilePath, trackId);
     TrackWriteSample(inputFilePath, trackIdAudio);
 
