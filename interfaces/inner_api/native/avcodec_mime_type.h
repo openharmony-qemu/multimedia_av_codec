@@ -107,10 +107,12 @@ public:
             MEDIA_MIMETYPE_AUDIO_FLAC,
             MEDIA_MIMETYPE_AUDIO_G711MU,
             MEDIA_MIMETYPE_AUDIO_MPEG,
-#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
+#ifdef SUPPORT_CODEC_OPUS
             MEDIA_MIMETYPE_AUDIO_OPUS,
+#endif
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
             MEDIA_MIMETYPE_AUDIO_AMRNB,
-            MEDIA_MIMETYPE_AUDIO_AMRWB
+            MEDIA_MIMETYPE_AUDIO_AMRWB,
 #endif
         };
         static const std::unordered_set<std::string_view> DECODE_OUTER_SUPPORT_TABLE = {
@@ -136,8 +138,10 @@ public:
 #ifdef SUPPORT_CODEC_EAC3
             MEDIA_MIMETYPE_AUDIO_EAC3,
 #endif
-#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
+#ifdef SUPPORT_CODEC_OPUS
             MEDIA_MIMETYPE_AUDIO_OPUS,
+#endif
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
             MEDIA_MIMETYPE_AUDIO_VIVID
 #endif
         };

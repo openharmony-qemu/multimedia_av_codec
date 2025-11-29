@@ -121,7 +121,7 @@ config("av_codec_client_public_config") {
   }
 
   if (av_codec_enable_special_codec) {
-    defines += [ "AV_CODEC_AUDIO_VIVID_CAPACITY" ]
+    defines += [ "AV_CODEC_AUDIO_SPECIAL_CAPACITY" ]
   }
 }
 
