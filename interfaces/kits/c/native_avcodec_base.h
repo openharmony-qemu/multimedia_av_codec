@@ -1089,6 +1089,13 @@ extern const char *OH_MD_KEY_VIDEO_NATIVE_BUFFER_FORMAT;
 extern const char *OH_MD_KEY_BLOCK_ALIGN;
 
 /**
+ * @brief Key for skip samples of audio frame. value type is a uint8_t pointer.
+ *
+ * @since 23
+ */
+extern const char *OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO;
+
+/**
  * @brief Media type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9

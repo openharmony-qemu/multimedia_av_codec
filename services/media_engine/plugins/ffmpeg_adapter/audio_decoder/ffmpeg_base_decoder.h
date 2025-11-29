@@ -116,6 +116,7 @@ private:
     void EnableResample(AVSampleFormat destFmt);
     Status SetCodecExtradata(const std::shared_ptr<Meta> &format);
     void CheckFormatChange();
+    void SetSampleSikpInfo(const std::shared_ptr<AVBuffer> &inputBuffer);
 };
 } // namespace Ffmpeg
 } // namespace Plugins
