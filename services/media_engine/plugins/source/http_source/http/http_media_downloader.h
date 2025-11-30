@@ -118,7 +118,7 @@ private:
     void OnClientErrorEvent();
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
-    bool HandleSeekHit(int64_t offest);
+    bool HandleSeekHit(int64_t offset);
     Status ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status ReadCacheBufferLoop(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);

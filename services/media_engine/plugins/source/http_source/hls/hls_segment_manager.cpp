@@ -874,9 +874,9 @@ void HlsSegmentManager::PrepareToSeek()
         tsStreamIdInfo_.clear();
     }
     
-    memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
-    memset_s(decryptCache_, minBufferSize_, 0x00, minBufferSize_);
-    memset_s(decryptBuffer_, minBufferSize_, 0x00, minBufferSize_);
+    NZERO_LOG(memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN));
+    NZERO_LOG(memset_s(decryptCache_, DECRYPT_BUFFER_SIZE, 0x00, DECRYPT_BUFFER_SIZE));
+    NZERO_LOG(memset_s(decryptBuffer_, DECRYPT_BUFFER_SIZE, 0x00, DECRYPT_BUFFER_SIZE));
     auto ret = memcpy_s(aesDecryptor_->iv_, DECRYPT_UNIT_LEN, aesDecryptor_->initIv_, DECRYPT_UNIT_LEN);
     if (ret != 0) {
         MEDIA_LOG_E("iv copy error, type: %{public}d", type_);
@@ -1199,7 +1199,7 @@ uint32_t HlsSegmentManager::SaveEncryptData(uint8_t* data, uint32_t len, bool no
 
     uint32_t writeSuccessLen = SaveCacheBufferData(decryptCache_, realLen, notBlock);
 
-    err = memset_s(decryptCache_, realLen, 0x00, realLen);
+    err = memset_s(decryptCache_, DECRYPT_BUFFER_SIZE, 0x00, realLen);
     if (err != 0) {
         MEDIA_LOG_E("realLen: " PUBLIC_LOG_D32 ", type: %{public}d", realLen, type_);
     }
