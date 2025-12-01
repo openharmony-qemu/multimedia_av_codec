@@ -51,6 +51,7 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_WMAV1 = "audio/wmav1";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_WMAV2 = "audio/wmav2";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_WMAPRO = "audio/wmapro";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_TWINVQ = "audio/twinvq";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_ADPCM_MS = "audio/adpcm_ms";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_QT = "audio/adpcm_ima_qt";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_WAV = "audio/adpcm_ima_wav";
@@ -135,6 +136,7 @@ public:
             MEDIA_MIMETYPE_AUDIO_WMAPRO,
             MEDIA_MIMETYPE_AUDIO_ILBC,
             MEDIA_MIMETYPE_AUDIO_TRUEHD,
+            MEDIA_MIMETYPE_AUDIO_TWINVQ,
 #ifdef SUPPORT_CODEC_EAC3
             MEDIA_MIMETYPE_AUDIO_EAC3,
 #endif

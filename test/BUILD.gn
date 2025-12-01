@@ -75,6 +75,13 @@ group("av_codec_unit_test") {
         "unittest/audio_test:audio_wma_decoder_unit_test",
         "unittest/audio_test:audio_adpcm_decoder_unit_test",
         "unittest/audio_test:audio_ilbc_decoder_unit_test",
+        "unittest/audio_test:audio_ilbc_capi_decoder_unit_stable_test",
+        "unittest/audio_test:audio_ilbc_decoder_capi_unit_test",
+        "unittest/audio_test:audio_sync_mode_ilbc_capi_unit_test",
+        "unittest/audio_test:audio_twinvq_decoder_unit_test",
+        "unittest/audio_test:audio_twinvq_capi_decoder_unit_test",
+        "unittest/audio_test:audio_sync_mode_twinvq_capi_unit_test",
+        "unittest/audio_test:audio_twinvq_capi_decoder_unit_stable_test",
         "unittest/audio_test:audio_decoder_skip_info_unit_test",
         "unittest/audio_test:audio_decoder_skip_info_innter_unit_test",
         "unittest/avcenc_info_test:avcenc_info_capi_unit_test",
@@ -210,6 +217,7 @@ group("av_codec_fuzz_test") {
   if (av_codec_support_test) {
     deps += [
       "fuzztest/audiodecodertruehd_fuzzer:AudioDecoderTruehdFuzzTest",
+      "fuzztest/audiodecodertwinvq_fuzzer:AudioDecoderTwinvqFuzzTest",
       "fuzztest/audiodecoder_fuzzer:AudioDecoderFuzzTest",
       "fuzztest/audiodecoderaac_fuzzer:AudioDecoderAacFuzzTest",
       "fuzztest/audiodecoderamrnb_fuzzer:AudioDecoderAmrnbFuzzTest",

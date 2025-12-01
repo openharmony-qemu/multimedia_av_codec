@@ -683,6 +683,7 @@ public:
     static constexpr std::string_view AUDIO_GSM = "audio/gsm";
     static constexpr std::string_view AUDIO_ILBC = "audio/ilbc";
     static constexpr std::string_view AUDIO_TRUEHD = "audio/truehd";
+    static constexpr std::string_view AUDIO_TWINVQ = "audio/twinvq";
 };
 
 /**
