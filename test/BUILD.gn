@@ -75,6 +75,8 @@ group("av_codec_unit_test") {
         "unittest/audio_test:audio_wma_decoder_unit_test",
         "unittest/audio_test:audio_adpcm_decoder_unit_test",
         "unittest/audio_test:audio_ilbc_decoder_unit_test",
+        "unittest/audio_test:audio_decoder_skip_info_unit_test",
+        "unittest/audio_test:audio_decoder_skip_info_innter_unit_test",
         "unittest/avcenc_info_test:avcenc_info_capi_unit_test",
         "unittest/avmuxer_test:avmuxer_capi_unit_test",
         "unittest/avmuxer_test:avmuxer_inner_unit_test",
