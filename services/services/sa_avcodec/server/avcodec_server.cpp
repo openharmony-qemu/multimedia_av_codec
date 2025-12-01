@@ -169,7 +169,6 @@ int32_t AVCodecServer::Dump(int32_t fd, const std::vector<std::u16string> &args)
         AVCODEC_LOGW("Failed to check fd");
         return OHOS::INVALID_OPERATION;
     }
-    AVCodecXCollie::GetInstance().Dump(fd);
     if (args.size() == 0) {
         AVCodecServerManager::GetInstance().Dump(fd, args);
         return OHOS::NO_ERROR;
@@ -180,6 +179,8 @@ int32_t AVCodecServer::Dump(int32_t fd, const std::vector<std::u16string> &args)
         AVCodecServerManager::GetInstance().Dump(fd, args);
     } else if (firstArg == u"QueryCap") {
         CodecAbilitySingleton::GetInstance().Dump(fd, args);
+    } else if (firstArg == u"Collie") {
+        AVCodecXCollie::GetInstance().Dump(fd);
     }
     return OHOS::NO_ERROR;
 }

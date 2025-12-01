@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "avcodec_dump_utils.h"
 #include "avcodec_errors.h"
 #include "avcodec_info.h"
@@ -136,7 +151,7 @@ std::map<std::string_view, std::map<int32_t, std::string_view>> profileMap = {
         {AVC_PROFILE_HIGH_444, "HIGH_444"},
         {AVC_PROFILE_MAIN, "MAIN"}
     }},
-    {CodecMimeType::VIDEO_HEVC, {  
+    {CodecMimeType::VIDEO_HEVC, {
         {HEVC_PROFILE_MAIN, "MAIN"},
         {HEVC_PROFILE_MAIN_10, "MAIN_10"},
         {HEVC_PROFILE_MAIN_STILL, "MAIN_STILL"},
@@ -193,12 +208,12 @@ std::map<std::string_view, std::map<int32_t, std::string_view>> profileMap = {
     }},
     {CodecMimeType::VIDEO_H263, {
         {H263_PROFILE_BASELINE, "BASELINE"},
-        {H263_PROFILE_H320_CODING_EFFICIENCY_VERSION2_BACKWARD_COMPATIBILITY, 
+        {H263_PROFILE_H320_CODING_EFFICIENCY_VERSION2_BACKWARD_COMPATIBILITY,
          "H320_CODING_EFFICIENCY_VERSION2_BACKWARD_COMPATIBILITY"},
         {H263_PROFILE_VERSION_1_BACKWARD_COMPATIBILITY, "H263_VERSION_1_BACKWARD_COMPATIBILITY"},
-        {H263_PROFILE_VERSION_2_INTERACTIVE_AND_STREAMING_WIRELESS, 
+        {H263_PROFILE_VERSION_2_INTERACTIVE_AND_STREAMING_WIRELESS,
          "VERSION_2_INTERACTIVE_AND_STREAMING_WIRELESS"},
-        {H263_PROFILE_VERSION_3_INTERACTIVE_AND_STREAMING_WIRELESS, 
+        {H263_PROFILE_VERSION_3_INTERACTIVE_AND_STREAMING_WIRELESS,
          "VERSION_3_INTERACTIVE_AND_STREAMING_WIRELESS"},
         {H263_PROFILE_CONVERSATIONAL_HIGH_COMPRESSION, "CONVERSATIONAL_HIGH_COMPRESSION"},
         {H263_PROFILE_CONVERSATIONAL_INTERNET, "CONVERSATIONAL_INTERNET"},
@@ -319,7 +334,7 @@ std::map<std::string_view, std::map<int32_t, std::string_view>> profileLevelMap 
         {WMV3_LEVEL_MEDIUM, ProfileLevelType::LEVEL_MEDIUM},
         {WMV3_LEVEL_HIGH, ProfileLevelType::LEVEL_HIGH}
     }}
-}; 
+};
 
 std::string FormatRange(const Range& range)
 {
@@ -363,7 +378,7 @@ std::string FormatMeasuredFrameRateMap(const std::map<ImgSize, Range>& map)
 {
     std::string retStr;
     bool isFirstPair = true;
-    for (auto iter : map){
+    for (auto iter : map) {
         if (!isFirstPair) {
             retStr += ", ";
         }
@@ -373,7 +388,7 @@ std::string FormatMeasuredFrameRateMap(const std::map<ImgSize, Range>& map)
     return retStr;
 }
 
-std::string FormatProfileLevelsMap(std::string_view mimeType, std::string spaceStr, 
+std::string FormatProfileLevelsMap(std::string_view mimeType, std::string spaceStr,
                                    const std::map<int32_t, std::vector<int32_t>>& map)
 {
     std::string retStr;
@@ -421,7 +436,7 @@ std::string FormatSampleRateRange(const std::vector<Range>& vec)
     return retStr;
 }
 
-void AddInfo(AVCodecDumpControler& dumpCtrl, const uint32_t dumpIdex, 
+void AddInfo(AVCodecDumpControler& dumpCtrl, const uint32_t dumpIdex,
              const std::string& name, const std::string& value)
 {
     if (!value.empty()) {
@@ -429,20 +444,20 @@ void AddInfo(AVCodecDumpControler& dumpCtrl, const uint32_t dumpIdex,
     }
 }
 
-bool startsWith(const std::string& self, const std::string& prefix)
+bool StartsWith(const std::string& self, const std::string& prefix)
 {
-    if(self.size() < prefix.size()){
+    if (self.size() < prefix.size()){
         return false;
     }
     return self.compare(0, prefix.size(), prefix) == 0;
 }
 
 void AddCapabilityDataDump(AVCodecDumpControler& dumpCtrl, CapabilityData& capability)
-{    
+{
     dumpCtrl.AddInfo(INDEX_CODEC_NAME, capability.codecName, "");
     AddInfo(dumpCtrl, INDEX_CODEC_TYPE, "codecType", ToString(capability.codecType, codecTypeMap));
     AddInfo(dumpCtrl, INDEX_MIME_TYPE, "mimeType", capability.mimeType);
-    AddInfo(dumpCtrl, INDEX_IS_VENDOR, "isVendor", capability.isVendor ? "True" : "False");        
+    AddInfo(dumpCtrl, INDEX_IS_VENDOR, "isVendor", capability.isVendor ? "True" : "False");
     AddInfo(dumpCtrl, INDEX_BITRATE, "bitrate", FormatRange(capability.bitrate));
     AddInfo(dumpCtrl, INDEX_CHANNELS, "channels", FormatRange(capability.channels));
     AddInfo(dumpCtrl, INDEX_COMPLEXITY, "complexity", FormatRange(capability.complexity));
@@ -457,26 +472,26 @@ void AddCapabilityDataDump(AVCodecDumpControler& dumpCtrl, CapabilityData& capab
     std::map<int32_t, std::string_view> emptyMap;
     AddInfo(dumpCtrl, INDEX_SAMPLE_RATE, "sampleRate", FormatVector(capability.sampleRate, emptyMap));
     AddInfo(dumpCtrl, INDEX_PIX_FORMAT, "pixFormat", FormatVector(capability.pixFormat, pixFormatMap));
-    AddInfo(dumpCtrl, INDEX_GRAPHIC_PIX_FORMAT, "graphicPixFormat", 
+    AddInfo(dumpCtrl, INDEX_GRAPHIC_PIX_FORMAT, "graphicPixFormat",
             FormatVector(capability.graphicPixFormat, graphicPixFormatMap));
     AddInfo(dumpCtrl, INDEX_BIT_DEPTH, "bitDepth", FormatVector(capability.bitDepth, emptyMap));
     AddInfo(dumpCtrl, INDEX_BITRATE_MODE, "bitrateMode", FormatVector(capability.bitrateMode, bitrateModeMap));
-    AddInfo(dumpCtrl, INDEX_MEASURE_FRAME_RATE, "measuredFrameRate", 
+    AddInfo(dumpCtrl, INDEX_MEASURE_FRAME_RATE, "measuredFrameRate",
             FormatMeasuredFrameRateMap(capability.measuredFrameRate));
-    if (capability.codecType == AVCODEC_TYPE_VIDEO_ENCODER || capability.codecType == AVCODEC_TYPE_VIDEO_DECODER ) {
+    if (capability.codecType == AVCODEC_TYPE_VIDEO_ENCODER || capability.codecType == AVCODEC_TYPE_VIDEO_DECODER) {
         AddInfo(dumpCtrl, INDEX_MAX_INSTANCE, "maxInstance", std::to_string(capability.maxInstance));
         std::string suportSwap = capability.supportSwapWidthHeight ? "True" : "False";
         AddInfo(dumpCtrl, INDEX_SUPPORT_SWAP_WIDTH_HEIGHT, "supportSwapWidthHeight", suportSwap);
-    }        
+    }
     std::string spaceStr = std::string(dumpCtrl.GetSpaceLength(INDEX_PROFILE_LEVELS_MAP), ' ');
-    AddInfo(dumpCtrl, INDEX_PROFILE_LEVELS_MAP, "profileLevelsMap", 
+    AddInfo(dumpCtrl, INDEX_PROFILE_LEVELS_MAP, "profileLevelsMap",
             FormatProfileLevelsMap(capability.mimeType, spaceStr, capability.profileLevelsMap));
     AddInfo(dumpCtrl, INDEX_RANK, "rank", capability.rank ? std::to_string(capability.rank) : "");
     AddInfo(dumpCtrl, INDEX_MAX_BITRATE, "maxBitrate", FormatRange(capability.maxBitrate));
     AddInfo(dumpCtrl, INDEX_SQR_FACTOR, "sqrFactor", FormatRange(capability.sqrFactor));
     std::string maxVersionStr = capability.maxVersion ? std::to_string(capability.maxVersion) : "";
     AddInfo(dumpCtrl, INDEX_MAX_VERSION, "maxVersion", maxVersionStr);
-    AddInfo(dumpCtrl, INDEX_SAMPLE_RATE_RANGES, "sampleRateRanges", 
+    AddInfo(dumpCtrl, INDEX_SAMPLE_RATE_RANGES, "sampleRateRanges",
             FormatSampleRateRange(capability.sampleRateRanges));
 }
 
@@ -497,7 +512,7 @@ int32_t CodecAbilitySingleton::Dump(int32_t fd, const std::vector<std::u16string
     write(fd, capabilityStr.data(), capabilityStr.size());
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto iter : capabilityDataArray_) {
-        if (!startsWith(iter.mimeType, typeStr)) {
+        if (!StartsWith(iter.mimeType, typeStr)) {
             continue;
         }
         AVCodecDumpControler dumpCtrl;
@@ -506,8 +521,8 @@ int32_t CodecAbilitySingleton::Dump(int32_t fd, const std::vector<std::u16string
         dumpCtrl.GetDumpString(dumpString);
         dumpString += "\n";
         write(fd, dumpString.c_str(), dumpString.size());
-    }  
+    }
     return AVCS_ERR_OK;
-} 
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

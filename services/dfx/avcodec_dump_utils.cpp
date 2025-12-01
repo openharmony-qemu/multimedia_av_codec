@@ -132,7 +132,7 @@ int32_t AVCodecDumpControler::GetDumpString(std::string &dumpString)
 uint32_t AVCodecDumpControler::GetSpaceLength(const uint32_t dumpIdx)
 {
     auto level = GetLevel(dumpIdx);
-    return (level - 1) * DUMP_SPACE_LENGTH + length_[level - 1] + 3;//3: the length of " - "
+    return (level - 1) * DUMP_SPACE_LENGTH + length_[level - 1] + 3; //3: the length of " - "
 }
 
 uint32_t AVCodecDumpControler::GetLevel(const uint32_t dumpIdx)
