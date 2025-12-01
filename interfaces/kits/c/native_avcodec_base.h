@@ -276,6 +276,13 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VC1;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MJPEG;
 
 /**
+ * @brief Enumerates the MIME type of video av1 codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_AV1;
+
+/**
  * @brief Enumerates the MIME type of video vp8 codec.
  *
  * @since 23
@@ -1271,6 +1278,77 @@ typedef enum OH_HEVCProfile {
     */
     HEVC_PROFILE_MAIN_10_HDR10_PLUS = 4,
 } OH_HEVCProfile;
+
+/**
+ * @brief AV1 Profile
+ *
+ * @since 23
+ */
+typedef enum OH_AV1Profile {
+    /** Main profile */
+    AV1_PROFILE_MAIN = 0,
+
+    /** High profile */
+    AV1_PROFILE_HIGH = 1,
+    /** Professional profile */
+    AV1_PROFILE_PROFESSIONAL = 2,
+} OH_AV1Profile;
+
+/**
+ * @brief AV1 Level.
+ *
+ * @since 23
+ */
+typedef enum OH_AV1Level {
+    /** 2.0 level */
+    AV1_LEVEL_20 = 0,
+    /** 2.1 level */
+    AV1_LEVEL_21 = 1,
+    /** 2.2 level */
+    AV1_LEVEL_22 = 2,
+    /** 2.3 level */
+    AV1_LEVEL_23 = 3,
+    /** 3.0 level */
+    AV1_LEVEL_30 = 4,
+    /** 3.1 level */
+    AV1_LEVEL_31 = 5,
+    /** 3.2 level */
+    AV1_LEVEL_32 = 6,
+    /** 3.3 level */
+    AV1_LEVEL_33 = 7,
+    /** 4.0 level */
+    AV1_LEVEL_40 = 8,
+    /** 4.1 level */
+    AV1_LEVEL_41 = 9,
+    /** 4.2 level */
+    AV1_LEVEL_42 = 10,
+    /** 4.3 level */
+    AV1_LEVEL_43 = 11,
+    /** 5.0 level */
+    AV1_LEVEL_50 = 12,
+    /** 5.1 level */
+    AV1_LEVEL_51 = 13,
+    /** 5.2 level */
+    AV1_LEVEL_52 = 14,
+    /** 5.3 level */
+    AV1_LEVEL_53 = 15,
+    /** 6.0 level */
+    AV1_LEVEL_60 = 16,
+    /** 6.1 level */
+    AV1_LEVEL_61 = 17,
+    /** 6.2 level */
+    AV1_LEVEL_62 = 18,
+    /** 6.3 level */
+    AV1_LEVEL_63 = 19,
+    /** 7.0 level */
+    AV1_LEVEL_70 = 20,
+    /** 7.1 level */
+    AV1_LEVEL_71 = 21,
+    /** 7.2 level */
+    AV1_LEVEL_72 = 22,
+    /** 7.3 level */
+    AV1_LEVEL_73 = 23,
+} OH_AV1Level;
 
 /**
  * @brief VVC Profile: A specified subset of the syntax of VVC.

@@ -182,9 +182,8 @@ int32_t RenderSurface::RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSur
     std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][index]->sMemory;
     sptr<SurfaceBuffer> surfaceBuffer = renderSurfaceBufferMap_[index].first;
     OHOS::BufferFlushConfig flushConfig = renderSurfaceBufferMap_[index].second;
-    if (sInfo_.scalingMode >= 0) {
-        newSurface->SetScalingMode(surfaceBuffer->GetSeqNum(),
-            static_cast<ScalingMode>(sInfo_.scalingMode));
+    if (sInfo_.scalingMode) {
+        newSurface->SetScalingMode(surfaceBuffer->GetSeqNum(), sInfo_.scalingMode.value());
     }
     auto res = newSurface->FlushBuffer(surfaceBuffer, -1, flushConfig);
     if (res != OHOS::SurfaceError::SURFACE_ERROR_OK) {
@@ -284,8 +283,8 @@ int32_t RenderSurface::SetSurfaceCfg()
         CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32) && val32 >= 0 &&
                                  val32 <= static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_FIT),
                                  AVCS_ERR_INVALID_VAL, "Invalid scaling mode %{public}d", val32);
-        sInfo_.scalingMode = val32;
-        sInfo_.surface->SetScalingMode(static_cast<ScalingMode>(val32));
+        sInfo_.scalingMode = static_cast<ScalingMode>(val32);
+        sInfo_.surface->SetScalingMode(sInfo_.scalingMode.value());
     }
     if (format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
         CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&

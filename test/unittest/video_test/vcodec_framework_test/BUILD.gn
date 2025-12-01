@@ -130,6 +130,10 @@ group("vcodec_framework_test") {
       deps += [ ":videodec_vp9dec_unit_test", ]
     }
 
+    if (av_codec_support_av1_decoder) {
+      deps += [ ":videodec_av1dec_unit_test", ]
+    }
+
     if (target_cpu == "arm64" && av_codec_support_hcodec) {
       deps += [
         ":videoenc_bframe_capi_async_unit_test",
@@ -1088,6 +1092,16 @@ ohos_unittest("videodec_msvideo1dec_stable_unit_test") {
   include_dirs = []
   sources = [ "./videodec_msvideo1dec_stable_unit_test.cpp" ]
   deps = [ "./stable_sample:video_sample" ]
+  resource_config_file = resource_configuration_file
+}
+
+#################################################################################################################videodec
+ohos_unittest("videodec_av1dec_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  include_dirs = []
+  sources = [ "./videodec_av1dec_unit_test.cpp" ]
+  public_deps = [ "./stable_sample:video_sample" ]
   resource_config_file = resource_configuration_file
 }
 

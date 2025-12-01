@@ -31,6 +31,7 @@ enum class CodecType : int32_t {
     AVCODEC_VIDEO_AVC_ENCODER,
     AVCODEC_VIDEO_VP8_DECODER,
     AVCODEC_VIDEO_VP9_DECODER,
+    AVCODEC_VIDEO_AV1_DECODER,
     AVCODEC_AUDIO_CODEC,
 };
 } // namespace MediaAVCodec

@@ -576,6 +576,83 @@ private:
     std::shared_ptr<Vp9Detector> vp9Detector_ = nullptr;
 };
 #endif
+
+#ifdef SUPPORT_CODEC_AV1
+struct Av1ReaderInfo {
+    std::string inPath;
+};
+
+class Av1Reader : public DataProducerBase {
+public:
+    int32_t Init(const std::shared_ptr<Av1ReaderInfo>& info);
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t av1Type, bool isEosFrame);
+    bool IsEOS();
+
+    std::mutex mutex_;
+    int32_t frameInputCount_ = 0;
+
+private:
+    class Av1UnitReader {
+    public:
+        explicit Av1UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        virtual ~Av1UnitReader() = default;
+        uint8_t const *GetNextAv1UnitAddr();
+        int32_t ReadAv1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame);
+        virtual bool IsEOS() = 0;
+
+    protected:
+        Av1UnitReader() = default;
+        virtual bool IsEOF() = 0;
+        virtual void PrereadAv1Unit() = 0;
+
+        std::unique_ptr<std::vector<uint8_t>> av1Unit_ = nullptr;
+        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+    };
+
+    class Av1MetaUnitReader : public Av1UnitReader {
+    public:
+        explicit Av1MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        bool IsEOS() override;
+        int32_t ReadAv1Unit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame);
+
+    private:
+        bool IsEOF() override;
+        void PrereadAv1Unit() override;
+        std::unique_ptr<uint8_t[]> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+        uint32_t frameIndex_ = 0;
+    };
+
+    class Av1Detector {
+    public:
+        virtual ~Av1Detector() = default;
+        const uint8_t *GetAv1TypeAddr(const uint8_t *bufferAddr);
+        uint8_t GetAv1Type(const uint8_t *bufferAddr);
+        bool IsKeyFrame(uint8_t av1Type);
+    };
+
+    class IvfUnitReader : public Av1UnitReader {
+    public:
+        explicit IvfUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        bool IsEOS() override;
+        int32_t ReadAv1Unit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame);
+
+    private:
+        bool IsEOF() override;
+        void PrereadAv1Unit() override;
+        bool ParseIvfFileHeader();
+        bool ParseIvfFrameHeader(uint32_t& frameSize);
+        bool fileHeaderParsed_ = false;
+        uint32_t frameIndex_ = 0;
+        uint32_t totalFrames_ = 0;
+    };
+
+    std::shared_ptr<Av1UnitReader> av1UnitReader_ = nullptr;
+    std::shared_ptr<Av1Detector> av1Detector_ = nullptr;
+};
+#endif
 } // MediaAVCodec
 } // OHOS
 #endif // AVCC_READER_H

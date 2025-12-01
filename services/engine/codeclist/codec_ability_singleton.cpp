@@ -44,6 +44,10 @@ std::unordered_map<CodecType, std::shared_ptr<CodecListBase>> GetCodecLists()
     std::shared_ptr<CodecListBase> vp9DecoderList = std::make_shared<VideoVp9DecoderList>();
     codecLists.insert(std::make_pair(CodecType::AVCODEC_VIDEO_VP9_DECODER, vp9DecoderList));
 #endif
+#ifdef SUPPORT_CODEC_AV1
+    std::shared_ptr<CodecListBase> av1DecoderList = std::make_shared<VideoAv1DecoderList>();
+    codecLists.insert(std::make_pair(CodecType::AVCODEC_VIDEO_AV1_DECODER, av1DecoderList));
+#endif
     std::shared_ptr<CodecListBase> avcEncoderList = std::make_shared<VideoAvcEncoderList>();
     codecLists.insert(std::make_pair(CodecType::AVCODEC_VIDEO_AVC_ENCODER, avcEncoderList));
 #endif

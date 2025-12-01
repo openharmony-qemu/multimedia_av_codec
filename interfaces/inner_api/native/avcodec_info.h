@@ -614,6 +614,7 @@ public:
     static constexpr std::string_view VIDEO_VC1 = "video/vc1";
     static constexpr std::string_view VIDEO_H263 = "video/h263";
     static constexpr std::string_view VIDEO_AVC = "video/avc";
+    static constexpr std::string_view VIDEO_AV1 = "video/av1";
     static constexpr std::string_view VIDEO_MPEG2 = "video/mpeg2";
     static constexpr std::string_view VIDEO_HEVC = "video/hevc";
     static constexpr std::string_view VIDEO_MPEG4 = "video/mp4v-es";
@@ -716,6 +717,17 @@ enum HEVCProfile : int32_t {
     HEVC_PROFILE_MAIN_10_HDR10 = 3,
     HEVC_PROFILE_MAIN_10_HDR10_PLUS = 4,
     HEVC_PROFILE_UNKNOW = -1,
+};
+
+/**
+ * @brief AV1 Profile.
+ *
+ * @since 23
+ */
+enum AV1Profile : int32_t {
+    AV1_PROFILE_MAIN = 0,
+    AV1_PROFILE_HIGH = 1,
+    AV1_PROFILE_PROFESSIONAL = 2,
 };
 
 /**
@@ -905,6 +917,38 @@ enum HEVCLevel : int32_t {
     HEVC_LEVEL_61 = 11,
     HEVC_LEVEL_62 = 12,
     HEVC_LEVEL_UNKNOW = -1,
+};
+
+/**
+ * @brief AV1 Level.
+ *
+ * @since 23
+ */
+enum AV1Level : int32_t {
+    AV1_LEVEL_20 = 0,
+    AV1_LEVEL_21 = 1,
+    AV1_LEVEL_22 = 2,
+    AV1_LEVEL_23 = 3,
+    AV1_LEVEL_30 = 4,
+    AV1_LEVEL_31 = 5,
+    AV1_LEVEL_32 = 6,
+    AV1_LEVEL_33 = 7,
+    AV1_LEVEL_40 = 8,
+    AV1_LEVEL_41 = 9,
+    AV1_LEVEL_42 = 10,
+    AV1_LEVEL_43 = 11,
+    AV1_LEVEL_50 = 12,
+    AV1_LEVEL_51 = 13,
+    AV1_LEVEL_52 = 14,
+    AV1_LEVEL_53 = 15,
+    AV1_LEVEL_60 = 16,
+    AV1_LEVEL_61 = 17,
+    AV1_LEVEL_62 = 18,
+    AV1_LEVEL_63 = 19,
+    AV1_LEVEL_70 = 20,
+    AV1_LEVEL_71 = 21,
+    AV1_LEVEL_72 = 22,
+    AV1_LEVEL_73 = 23,
 };
 
 /**

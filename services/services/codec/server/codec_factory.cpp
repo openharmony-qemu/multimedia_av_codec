@@ -34,6 +34,9 @@
 #ifdef SUPPORT_CODEC_VP9
 #include "vp9_decoder_loader.h"
 #endif
+#ifdef SUPPORT_CODEC_AV1
+#include "av1_decoder_loader.h"
+#endif
 #include "hcodec_loader.h"
 #include "avc_encoder_loader.h"
 #endif
@@ -76,6 +79,11 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
         case CodecType::AVCODEC_VIDEO_CODEC:
             codec = FCodecLoader::CreateByName(name);
             break;
+#ifdef SUPPORT_CODEC_AV1
+        case CodecType::AVCODEC_VIDEO_AV1_DECODER:
+            codec = Av1DecoderLoader::CreateByName(name);
+            break;
+#endif
         case CodecType::AVCODEC_VIDEO_HEVC_DECODER:
             codec = HevcDecoderLoader::CreateByName(name);
             break;

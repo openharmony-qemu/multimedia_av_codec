@@ -297,6 +297,11 @@ bool VideoDecSample::InitInputFile()
             int32_t ret = CreateVp9Reader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateVp9Reader failed");
 #endif
+#ifdef SUPPORT_CODEC_AV1
+        } else if (inPath_.find("av1") != std::string::npos) {
+            int32_t ret = CreateAv1Reader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateAv1Reader failed");
+#endif
         } else {
             int32_t ret = CreateMpegReader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMpegReader failed");
@@ -400,6 +405,18 @@ int32_t VideoDecSample::CreateVp9Reader()
 
     signal_->reader_ = std::make_shared<Vp9Reader>();
     int32_t ret = std::static_pointer_cast<Vp9Reader>(signal_->reader_)->Init(info);
+    return ret;
+}
+#endif
+
+#ifdef SUPPORT_CODEC_AV1
+int32_t VideoDecSample::CreateAv1Reader()
+{
+    std::shared_ptr<Av1ReaderInfo> info = std::make_shared<Av1ReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<Av1Reader>();
+    int32_t ret = std::static_pointer_cast<Av1Reader>(signal_->reader_)->Init(info);
     return ret;
 }
 #endif
