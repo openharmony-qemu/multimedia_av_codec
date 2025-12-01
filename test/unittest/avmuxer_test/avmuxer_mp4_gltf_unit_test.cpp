@@ -18,7 +18,6 @@
 #include <vector>
 #include <fcntl.h>
 #include <fstream>
-#include "avmuxer_sample.h"
 #include "buffer/avbuffer.h"
 #include "buffer/avbuffer_queue_producer.h"
 #include "nocopyable.h"
@@ -26,13 +25,19 @@
 #include "native_avbuffer.h"
 #include "native_avmuxer.h"
 #include "native_avformat.h"
+#include "stream_demuxer.h"
+#include "common/media_source.h"
+#include "avsource.h"
+
 
 using namespace testing::ext;
 using namespace OHOS::Media;
+using namespace OHOS::Media::Plugins;
+
 namespace OHOS {
 namespace MediaAVCodec {
-const std::string INPUT_AUDIO_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k_lc.dat";
-const std::string INPUT_GLTF_BIN_PATH = "/data/test/media/mp4_gltf.bin";
+const std::string INPUT_AUDIO_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k_muxer.dat";
+const std::string OUTPUT_MP4_FILE_PATH = "/data/test/media/Muxer_AAC_44100_1.mp4";
 const std::string TEST_FILE_PATH = "/data/test/media/";
 
 class AVMuxerMp4GltfUnitTest : public testing::Test {
@@ -41,12 +46,16 @@ public:
     static void TearDownTestCase(void);
     void SetUp(void);
     void TearDown(void);
-    int32_t WriteSample(int32_t trackId, std::shared_ptr<std::ifstream> file, bool &eosFlag, uint32_t flag);
+    virtual int32_t WriteSample(int32_t trackId, std::shared_ptr<std::ifstream> file, bool &eosFlag, uint32_t flag);
+    virtual void InitResource(const std::string &filePath, std::string pluginName);
 
 protected:
     std::shared_ptr<AVMuxer> avmuxer_ {nullptr};
     std::shared_ptr<std::ifstream> inputFile_ = nullptr;
     int32_t fd_ {-1};
+    std::shared_ptr<AVSource> avsource_ = nullptr;
+    bool initStatus_ = false;
+    MediaInfo mediaInfo_;
 };
 
 void AVMuxerMp4GltfUnitTest::SetUpTestCase()
@@ -113,8 +122,25 @@ int32_t AVMuxerMp4GltfUnitTest::WriteSample(int32_t trackId, std::shared_ptr<std
         buffer->flag_ = info.flags;
         buffer->memory_->SetSize(info.size);
     }
-    
-    return avmuxer_->WriteSample(trackId, buffer);
+    int32_t ret = avmuxer_->WriteSample(trackId, buffer);
+    return ret;
+}
+
+void AVMuxerMp4GltfUnitTest::InitResource(const std::string &filePath, std::string pluginName)
+{
+    struct stat fileStatus {};
+    if (stat(filePath.c_str(), &fileStatus) != 0) {
+        printf("Failed to get file status for path: %s\n", filePath.c_str());
+        return;
+    }
+    int64_t fileSize = static_cast<int64_t>(fileStatus.st_size);
+    int fd = open(filePath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        printf("Failed to open file: %s\n", filePath.c_str());
+        return;
+    }
+    avsource_ = AVSourceFactory::CreateWithFD(fd, 0, fileSize);
+    initStatus_ = true;
 }
 
 /**
@@ -125,10 +151,9 @@ int32_t AVMuxerMp4GltfUnitTest::WriteSample(int32_t trackId, std::shared_ptr<std
 HWTEST_F(AVMuxerMp4GltfUnitTest, Muxer_MP4_GLTF_001, TestSize.Level0)
 {
     int32_t trackId = -1;
-    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AAC_44100_1.mp4");
     Plugins::OutputFormat outputFormat = Plugins::OutputFormat::MPEG_4;
 
-    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    fd_ = open(OUTPUT_MP4_FILE_PATH.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     avmuxer_ = AVMuxerFactory::CreateAVMuxer(fd_, outputFormat);
 
     std::shared_ptr<Meta> audioParams = std::make_shared<Meta>();
@@ -136,7 +161,7 @@ HWTEST_F(AVMuxerMp4GltfUnitTest, Muxer_MP4_GLTF_001, TestSize.Level0)
     audioParams->Set<Tag::AUDIO_SAMPLE_RATE>(44100); // 44100 sample rate
     audioParams->Set<Tag::AUDIO_CHANNEL_COUNT>(2); // 2 channel count
     audioParams->Set<Tag::MEDIA_PROFILE>(AAC_PROFILE_LC);
-    audioParams->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    audioParams->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
     int32_t ret = avmuxer_->AddTrack(trackId, audioParams);
     ASSERT_EQ(ret, 0);
     ASSERT_GE(trackId, 0);
@@ -152,13 +177,12 @@ HWTEST_F(AVMuxerMp4GltfUnitTest, Muxer_MP4_GLTF_001, TestSize.Level0)
     }
     ASSERT_EQ(ret, 0);
 
-    std::shared_ptr<std::ifstream> gltfBin = std::make_shared<std::ifstream>(INPUT_GLTF_BIN_PATH, std::ios::binary);
-    gltfBin->seekg(0, std::ios::end);
-    size_t binSize = gltfBin->tellg();
-    gltfBin->seekg(0);
-    std::vector<uint8_t> binVec(binSize);
-    gltfBin->read(reinterpret_cast<char*>(binVec.data()), binSize);
-    std::cout << "binSize:" << binSize << std::endl;
+    std::vector<uint8_t> binVec = {
+        0x89, 0x47, 0x4C, 0x42, 0x02, 0x00, 0x00, 0x00,
+        0x10, 0x00, 0x00, 0x00, 0x4E, 0x4F, 0x53, 0x4A,
+        0x08, 0x00, 0x00, 0x00
+    };
+    std::cout << "binSize:" << binVec.size() << std::endl;
 
     // 添加文件级元数据
     std::shared_ptr<Meta> param = std::make_shared<Meta>();
@@ -171,6 +195,18 @@ HWTEST_F(AVMuxerMp4GltfUnitTest, Muxer_MP4_GLTF_001, TestSize.Level0)
     ASSERT_EQ(avmuxer_->SetUserMeta(param), 0);
  
     ASSERT_EQ(avmuxer_->Stop(), 0);
+
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    InitResource(OUTPUT_MP4_FILE_PATH, pluginName);
+    Format format;
+    ret = avsource_->GetSourceFormat(format);
+    EXPECT_EQ(ret, 0);
+    int32_t isGltf = 0;
+    int64_t gltfOffset = 0;
+    format.GetIntValue(Tag::IS_GLTF, isGltf);
+    format.GetLongValue(Tag::GLTF_OFFSET, gltfOffset);
+    EXPECT_NE(isGltf, 0);
+    EXPECT_EQ(gltfOffset, 4417);
 }
 
 /**
@@ -192,7 +228,7 @@ HWTEST_F(AVMuxerMp4GltfUnitTest, Muxer_MP4_GLTF_002, TestSize.Level0)
     audioParams->Set<Tag::AUDIO_SAMPLE_RATE>(44100); // 44100 sample rate
     audioParams->Set<Tag::AUDIO_CHANNEL_COUNT>(2); // 2 channel count
     audioParams->Set<Tag::MEDIA_PROFILE>(AAC_PROFILE_LC);
-    audioParams->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    audioParams->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
     int32_t ret = avmuxer_->AddTrack(trackId, audioParams);
     ASSERT_EQ(ret, 0);
     ASSERT_GE(trackId, 0);
