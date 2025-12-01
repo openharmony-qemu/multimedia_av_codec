@@ -446,7 +446,7 @@ void AddInfo(AVCodecDumpControler& dumpCtrl, const uint32_t dumpIdex,
 
 bool StartsWith(const std::string& self, const std::string& prefix)
 {
-    if (self.size() < prefix.size()){
+    if (self.size() < prefix.size()) {
         return false;
     }
     return self.compare(0, prefix.size(), prefix) == 0;
