@@ -54,7 +54,7 @@ string g_aacPath = TEST_FILE_PATH + string("audio/aac_44100_1.aac");
 string g_amrPath = TEST_FILE_PATH + string("audio/amr_nb_8000_1.amr");
 string g_flacPath = TEST_FILE_PATH + string("audio/flac_48000_1_cover.flac");
 // subtitle
-string g_vttPath = TEST_FILE_PATH + string("webvtt_test.vtt");
+string g_vttPath = TEST_FILE_PATH + string("webvtt_test_ut.vtt");
 
 // cache check
 const double CACHE_LIMIT_RANGE_MAX = 1.1; // +10%
