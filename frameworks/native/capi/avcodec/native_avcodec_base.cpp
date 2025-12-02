@@ -21,6 +21,7 @@ extern "C" {
 
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MSVIDEO1 = "video/msvideo1";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_VC1 = "video/vc1";
+const char *OH_AVCODEC_MIMETYPE_VIDEO_WVC1 = "video/wvc1";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_VP8 = "video/vp8";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_VP9 = "video/vp9";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_AV1 = "video/av1";

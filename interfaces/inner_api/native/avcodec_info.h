@@ -612,6 +612,7 @@ class CodecMimeType {
 public:
     static constexpr std::string_view VIDEO_MSVIDEO1 = "video/msvideo1";
     static constexpr std::string_view VIDEO_VC1 = "video/vc1";
+    static constexpr std::string_view VIDEO_WVC1 = "video/wvc1";
     static constexpr std::string_view VIDEO_H263 = "video/h263";
     static constexpr std::string_view VIDEO_AVC = "video/avc";
     static constexpr std::string_view VIDEO_AV1 = "video/av1";
@@ -828,6 +829,16 @@ enum VC1Profile {
     VC1_PROFILE_MAIN = 1,
     /** Advanced profile */
     VC1_PROFILE_ADVANCED = 2,
+};
+
+/**
+ * @brief WVC1 Profile.
+ *
+ * @since 23
+ */
+enum WVC1Profile {
+    /** Advanced profile */
+    WVC1_PROFILE_ADVANCED = 0,
 };
 
 /**
@@ -1090,6 +1101,24 @@ enum VC1Level {
     VC1_LEVEL_MEDIUM = 6,
     /** HIGH level */
     VC1_LEVEL_HIGH = 7,
+};
+
+/**
+ * @brief WVC1 Level.
+ *
+ * @since 23
+ */
+enum WVC1Level {
+    /** L0 level */
+    WVC1_LEVEL_L0 = 0,
+    /** L1 level */
+    WVC1_LEVEL_L1 = 1,
+    /** L2 level */
+    WVC1_LEVEL_L2 = 2,
+    /** L3 level */
+    WVC1_LEVEL_L3 = 3,
+    /** L4 level */
+    WVC1_LEVEL_L4 = 4,
 };
 
 /**
