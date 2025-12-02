@@ -55,6 +55,14 @@ constexpr uint32_t MAIN_MATCH_STRIDE = 4;
 constexpr uint32_t NAL_START_PATTERN = 0x01000100;
 constexpr uint32_t BITWISE_NOT_NAL_START_PATTERN = ~0x01000100;
 constexpr uint32_t NAL_MATCH_MASK = 0x80008000U;
+static const std::vector<TagType> gltfTags = {
+    Tag::MEDIA_GLTF_VERSION,
+    Tag::MEDIA_GLTF_DATA,
+    Tag::MEDIA_GLTF_ITEM_NAME,
+    Tag::MEDIA_GLTF_CONTENT_TYPE,
+    Tag::MEDIA_GLTF_CONTENT_ENCODING,
+    Tag::MEDIA_GLTF_ITEM_TYPE
+};
 
 bool IsMuxerSupported(const char *name)
 {
@@ -399,15 +407,57 @@ Status FFmpegMuxerPlugin::SetMetaData(std::shared_ptr<Meta> param)
     return Status::NO_ERROR;
 }
 
+bool FFmpegMuxerPlugin::CheckGltfParam(std::shared_ptr<Meta> param)
+{
+    for (const auto& tag : gltfTags) {
+        if (param->Find(tag) == param->end()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+Status FFmpegMuxerPlugin::SetGltfInfo(std::shared_ptr<Meta> param)
+{
+    static std::map<TagType, std::string> gltf_info = {
+        {Tag::MEDIA_GLTF_ITEM_NAME, "gltf_item_name"},
+        {Tag::MEDIA_GLTF_CONTENT_TYPE, "gltf_content_type"},
+        {Tag::MEDIA_GLTF_CONTENT_ENCODING, "gltf_content_encoding"},
+        {Tag::MEDIA_GLTF_ITEM_TYPE, "gltf_item_type"}
+    };
+
+    int32_t version = 0;
+    if (param->GetData(Tag::MEDIA_GLTF_VERSION, version)) {
+        std::string versionTag = "gltf_version";
+        std::string versionStr = std::to_string(version);
+        av_dict_set(&formatContext_->metadata, versionTag.c_str(), versionStr.c_str(), 0);
+    }
+
+    std::vector<uint8_t> dataBinary = {};
+    if (param->GetData(Tag::MEDIA_GLTF_DATA, dataBinary)) {
+        std::string dataTag = "gltf_data";
+        std::string dataStr = hexEncode(dataBinary);
+        av_dict_set(&formatContext_->metadata, dataTag.c_str(), dataStr.c_str(), 0);
+    }
+
+    for (auto& key : gltf_info) {
+        std::string value;
+        if (param->GetData(key.first, value)) {
+            av_dict_set(&formatContext_->metadata, key.second.c_str(), value.c_str(), 0);
+        }
+    }
+    return Status::NO_ERROR;
+}
+
 Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
 {
     std::vector<std::string> keys;
+    bool isSetUserMeta = false;
     userMeta->GetKeys(keys);
     FALSE_RETURN_V_MSG_E(keys.size() > 0, Status::ERROR_INVALID_DATA, "user meta is empty!");
-    av_dict_set(&formatContext_->metadata, "moov_level_meta_flag", "1", 0);
     for (auto& k: keys) {
         if (k.compare(0, 16, "com.openharmony.") != 0) { // 16 "com.openharmony." length
-            MEDIA_LOG_E("the meta key %{public}s must com.openharmony.xxx!", k.c_str());
+            MEDIA_LOG_W("the meta key %{public}s must com.openharmony.xxx!", k.c_str());
             continue;
         }
         std::string key = "moov_level_meta_key_" + k;
@@ -439,6 +489,14 @@ Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
             continue;
         }
         av_dict_set(&formatContext_->metadata, key.c_str(), value.c_str(), 0);
+        isSetUserMeta = true;
+    }
+    if (isSetUserMeta) {
+        av_dict_set(&formatContext_->metadata, "moov_level_meta_flag", "1", 0);
+    }
+    if (CheckGltfParam(userMeta)) {
+        Status ret = SetGltfInfo(userMeta);
+        FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter GLTF failed");
     }
     return Status::NO_ERROR;
 }
@@ -1436,17 +1494,17 @@ uint8_t *FFmpegMuxerPlugin::FindNalStartCode(const uint8_t *buf, const uint8_t *
                 startCodeLen = (p > buf && *(p - 1) == 0) ? LONG_STARTCODELEN : SHORT_STARTCODELEN;
                 return const_cast<uint8_t*>(p - (startCodeLen - SHORT_STARTCODELEN));
             }
-            if (p[2] == 0 && p[3] == 1) { // 2， 3 is byte index
+            if (p[2] == 0 && p[3] == 1) { // 2, 3 is byte index
                 startCodeLen = (p[0] == 0) ? LONG_STARTCODELEN : SHORT_STARTCODELEN;
                 return const_cast<uint8_t*>(p + 1 - (startCodeLen - SHORT_STARTCODELEN));
             }
         }
         if (p[3] == 0) { // 3 is the third byte index
-            if (p[2] == 0 && p[4] == 1) { // 2， 4 is byte index
+            if (p[2] == 0 && p[4] == 1) { // 2, 4 is byte index
                 startCodeLen = (p[1] == 0) ? LONG_STARTCODELEN : SHORT_STARTCODELEN;
                 return const_cast<uint8_t*>(p + 2 - (startCodeLen - SHORT_STARTCODELEN));
             }
-            if (p[4] == 0 && p[5] == 1) { // 4， 5 is byte index
+            if (p[4] == 0 && p[5] == 1) { // 4, 5 is byte index
                 startCodeLen = (p[2] == 0) ? LONG_STARTCODELEN : SHORT_STARTCODELEN; // 2 is the second byte index
                 return const_cast<uint8_t*>(p + 3 - (startCodeLen - SHORT_STARTCODELEN));
             }

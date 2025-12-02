@@ -56,6 +56,7 @@ private:
     Status SetRotation(std::shared_ptr<Meta> param);
     Status SetLocation(std::shared_ptr<Meta> param);
     Status SetMetaData(std::shared_ptr<Meta> param);
+    Status SetGltfInfo(std::shared_ptr<Meta> param);
 
 private:
     Status CheckAacParam(const std::shared_ptr<Meta> &trackDesc);
@@ -97,6 +98,7 @@ private:
     static int32_t IoOpen(AVFormatContext *s, AVIOContext **pb, const char *url, int flags, AVDictionary **options);
     static void IoClose(AVFormatContext *s, AVIOContext *pb);
     void CheckChannelLayout(uint64_t channelLayout, const std::shared_ptr<Meta> &trackDesc);
+    bool CheckGltfParam(std::shared_ptr<Meta> param);
 
 private:
     struct IOContext {
