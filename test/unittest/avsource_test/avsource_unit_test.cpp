@@ -3064,4 +3064,28 @@ HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSourceExt_1000, TestSize
     delete infile1;
     delete infile2;
 }
+
+/**
+ * @tc.name: AVSource_GetFormat_1860
+ * @tc.desc: get source format(VIDEO_SAR)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1860, TestSize.Level1)
+{
+    ASSERT_EQ(access(g_mp4Path.c_str(), F_OK), 0);
+    fd_ = OpenFile(g_mp4Path);
+    size_ = GetFileSize(g_mp4Path);
+    printf("---- %s ----\n", g_mp4Path.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    double sar = 0;
+    ASSERT_TRUE(format_->GetDoubleValue(OH_MD_KEY_VIDEO_SAR, sar));
+    ASSERT_EQ(sar, 1.0);
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
 } // namespace
