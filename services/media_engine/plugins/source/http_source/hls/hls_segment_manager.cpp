@@ -352,7 +352,7 @@ void HlsSegmentManager::Close(bool isAsync)
         MEDIA_LOG_D("HLS Download close, average download speed: " PUBLIC_LOG_D32 " bit/s, type: %{public}d",
             avgDownloadSpeed_, type_);
         int64_t nowTime = steadyClock_.ElapsedMilliseconds();
-        auto downloadTime = nowTime - startDownloadTime_;
+        auto downloadTime = std::abs(nowTime - startDownloadTime_);
         MEDIA_LOG_D("HLS Download close, Data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms, type: %{public}d",
             totalBits_, downloadTime, type_);
     }
@@ -1228,7 +1228,7 @@ uint32_t HlsSegmentManager::SaveEncryptData(uint8_t* data, uint32_t len, bool no
 
 void HlsSegmentManager::DownloadRecordHistory(int64_t nowTime)
 {
-    if ((static_cast<uint64_t>(nowTime) - lastWriteTime_) < SAMPLE_INTERVAL) {
+    if (std::abs(nowTime - static_cast<int64_t>(lastWriteTime_)) < SAMPLE_INTERVAL) {
         return;
     }
     MEDIA_LOG_I("HLS OnWriteRingBuffer nowTime: " PUBLIC_LOG_D64
@@ -1565,7 +1565,7 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
         MEDIA_LOG_D("Download done, average download speed : " PUBLIC_LOG_D32 " bit/s, type: %{public}d",
             avgDownloadSpeed_, type_);
         int64_t nowTime = steadyClock_.ElapsedMilliseconds();
-        auto downloadTime = (nowTime - startDownloadTime_) / 1000;
+        auto downloadTime = std::abs(nowTime - startDownloadTime_) / 1000;
         MEDIA_LOG_D("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms, type: %{public}d",
             totalBits_, downloadTime * 1000, type_);
         HandleBuffering();
