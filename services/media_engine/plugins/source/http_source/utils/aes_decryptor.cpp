@@ -21,11 +21,19 @@
 #include "securec.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "AesDecryptor" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "HiStreamerAesDec" };
 }
 
 namespace OHOS {
 namespace Media {
+AesDecryptor::AesDecryptor()
+{
+    aesKey_.rounds = 0;
+    for (size_t i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
+        aesKey_.rd_key[i] = 0;
+    }
+}
+
 AesDecryptor::~AesDecryptor()
 {
     NZERO_LOG(memset_s(iv_, DECRYPT_UNIT_LEN, 0, DECRYPT_UNIT_LEN));
@@ -35,10 +43,6 @@ AesDecryptor::~AesDecryptor()
 
 void AesDecryptor::Init()
 {
-    aesKey_.rounds = 0;
-    for (size_t i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
-        aesKey_.rd_key[i] = 0;
-    }
 }
 
 void AesDecryptor::OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv)
