@@ -1383,7 +1383,6 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0160, TestSize.Level3)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_COVER_INNER_FUNC_0010, TestSize.Level2)
 {
-    bool isGetCoverData = false;
     int32_t trackCount = 0;
     Format trackFormat_;
     Format sourceFormat_;
