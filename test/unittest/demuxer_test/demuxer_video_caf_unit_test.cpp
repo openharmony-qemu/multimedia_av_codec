@@ -71,7 +71,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CAF_ReadSample_0001, TestSize.Level1)
 
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
-            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK) 
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK)
                 << "Read CAF(PCM) sample failed, track ID=" << idx;
             CountFrames(idx);
         }
@@ -259,7 +259,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CAF_SeekToTime_0007, TestSize.Level1)
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
             ret_ = demuxer_->SeekToTime(*toPts, *mode);
             if (ret_ != AV_ERR_OK) {
-                printf("CAF(PCM) seek failed, time = %" PRId64 "ms | mode = %d | ret = %d\n", 
+                printf("CAF(PCM) seek failed, time = %" PRId64 "ms | mode = %d | ret = %d\n",
                        *toPts, static_cast<int>(*mode), ret_);
                 continue;
             }
@@ -267,7 +267,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CAF_SeekToTime_0007, TestSize.Level1)
             printf("CAF(PCM) seek time = %" PRId64 "ms | mode = %d | remaining frames = %d\n",
                    *toPts, static_cast<int>(*mode), frames_[0]);
             
-            ASSERT_EQ(frames_[0], audioVals[numbers_]) << "PCM seek remaining frames not match (expected " << audioVals[numbers_] << ")";
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
         }
         numbers_ += 1;
         RemoveValue();
@@ -300,7 +300,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CAF_SeekToTime_0008, TestSize.Level1)
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
             ret_ = demuxer_->SeekToTime(*toPts, *mode);
             if (ret_ != AV_ERR_OK) {
-                printf("CAF(PCM) URI seek failed, time = %" PRId64 "ms | mode = %d | ret = %d\n", 
+                printf("CAF(PCM) URI seek failed, time = %" PRId64 "ms | mode = %d | ret = %d\n",
                        *toPts, static_cast<int>(*mode), ret_);
                 continue;
             }
@@ -308,7 +308,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CAF_SeekToTime_0008, TestSize.Level1)
             printf("CAF(PCM) URI seek time = %" PRId64 "ms | mode = %d | remaining frames = %d\n",
                    *toPts, static_cast<int>(*mode), frames_[0]);
             
-            ASSERT_EQ(frames_[0], audioVals[numbers_]) << "PCM URI seek remaining frames not match (expected " << audioVals[numbers_] << ")";
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
         }
         numbers_ += 1;
         RemoveValue();
@@ -341,7 +341,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CAF_SeekToTime_0009, TestSize.Level1)
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
             ret_ = demuxer_->SeekToTime(*toPts, *mode);
             if (ret_ != AV_ERR_OK) {
-                printf("CAF(Opus) seek failed, time = %" PRId64 "ms | mode = %d | ret = %d\n", 
+                printf("CAF(Opus) seek failed, time = %" PRId64 "ms | mode = %d | ret = %d\n",
                        *toPts, static_cast<int>(*mode), ret_);
                 continue;
             }
@@ -349,7 +349,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CAF_SeekToTime_0009, TestSize.Level1)
             printf("CAF(Opus) seek time = %" PRId64 "ms | mode = %d | remaining frames = %d\n",
                    *toPts, static_cast<int>(*mode), frames_[0]);
             
-            ASSERT_EQ(frames_[0], audioVals[numbers_]) << "Opus seek remaining frames not match (expected " << audioVals[numbers_] << ")";
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
         }
         numbers_ += 1;
         RemoveValue();
@@ -382,7 +382,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CAF_SeekToTime_0010, TestSize.Level1)
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
             ret_ = demuxer_->SeekToTime(*toPts, *mode);
             if (ret_ != AV_ERR_OK) {
-                printf("CAF(Opus) URI seek failed, time = %" PRId64 "ms | mode = %d | ret = %d\n", 
+                printf("CAF(Opus) URI seek failed, time = %" PRId64 "ms | mode = %d | ret = %d\n",
                        *toPts, static_cast<int>(*mode), ret_);
                 continue;
             }
@@ -390,7 +390,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CAF_SeekToTime_0010, TestSize.Level1)
             printf("CAF(Opus) URI seek time = %" PRId64 "ms | mode = %d | remaining frames = %d\n",
                    *toPts, static_cast<int>(*mode), frames_[0]);
             
-            ASSERT_EQ(frames_[0], audioVals[numbers_]) << "Opus URI seek remaining frames not match (expected " << audioVals[numbers_] << ")";
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
         }
         numbers_ += 1;
         RemoveValue();
@@ -439,22 +439,22 @@ HWTEST_F(DemuxerUnitTest, Demuxer_CAF_RepeatRead_0012, TestSize.Level1)
     const int repeatCount = 3;
     for (int i = 0; i < repeatCount; i++) {
         InitResource(g_cafOpusPath, LOCAL);
-        ASSERT_TRUE(initStatus_) << "Repeat read init resource failed, times=" << i+1;
+        ASSERT_TRUE(initStatus_) << "Repeat read init resource failed, times=" << i + 1;
         
-        ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK) << "Repeat read select track failed, times=" << i+1;
+        ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK) << "Repeat read select track failed, times=" << i + 1;
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
-        ASSERT_NE(sharedMem_, nullptr) << "Repeat read create AVMemory failed, times=" << i+1;
-        ASSERT_TRUE(SetInitValue()) << "Repeat read set init value failed, times=" << i+1;
+        ASSERT_NE(sharedMem_, nullptr) << "Repeat read create AVMemory failed, times=" << i + 1;
+        ASSERT_TRUE(SetInitValue()) << "Repeat read set init value failed, times=" << i + 1;
 
         while (!isEOS(eosFlag_)) {
             for (auto idx : selectedTrackIds_) {
                 ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK)
-                    << "Repeat read sample failed, times=" << i+1 << ", track ID=" << idx;
+                    << "Repeat read sample failed, times=" << i + 1 << ", track ID=" << idx;
                 CountFrames(idx);
             }
         }
 
-        printf("CAF repeat read times=%d | frames_[0]=%d | keyFrames_[0]=%d\n", i+1, frames_[0], keyFrames_[0]);
+        printf("CAF repeat read times=%d | frames_[0]=%d | keyFrames_[0]=%d\n", i + 1, frames_[0], keyFrames_[0]);
         ASSERT_EQ(frames_[0], 501);
         ASSERT_EQ(keyFrames_[0], 501);
 
