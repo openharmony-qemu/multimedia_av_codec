@@ -200,7 +200,7 @@ public:
     {
         return mapStatus_[name_];
     }
-    Status SeekToFirstFrame() override
+    Status SeekToStart() override
     {
         return mapStatus_[name_];
     }

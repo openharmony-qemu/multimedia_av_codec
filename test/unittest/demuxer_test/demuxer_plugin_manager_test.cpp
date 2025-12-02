@@ -117,6 +117,13 @@ static std::vector<TestInfo> TEST_LIST = {
     {DEMUXER_PLUGIN_NAME_MPEG, TEST_FILE_URI_VOB, {300, 417, 25, 417}},
 };
 
+static std::vector<TestInfo> TEST_LIST2 = {
+    {DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_PATH + "aigc_str.flv", {1800, 0, 9, 0}},
+    {DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_PATH + "vp8_vorbis.webm", {602, 594, 5, 594}},
+    {DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_PATH + "vp9_opus.webm", {598, 996, 5, 996}},
+    {DEMUXER_PLUGIN_NAME_ASF, TEST_FILE_PATH + "wmv_h264_wmav1.wmv", {602, 218, 3, 218}}
+};
+
 
 void DemuxerPluginManagerUnitTest::SetUpTestCase(void) {}
 
@@ -935,11 +942,30 @@ HWTEST_F(DemuxerPluginManagerUnitTest, SeekToFirstFrame_0001, TestSize.Level1)
         ASSERT_EQ(ResultAssert(item.frameCnt[0], item.frameCnt[1], item.frameCnt[2], item.frameCnt[3]), true);
         RemoveValue();
 
-        printf("SeekToFirstFrame:\n");
-        ASSERT_EQ(demuxerPlugin_->SeekToFirstFrame(), Status::OK);
+        printf("SeekToStart:\n");
+        ASSERT_EQ(demuxerPlugin_->SeekToStart(), Status::OK);
         ASSERT_EQ(PluginSelectTracks(), true);
         ASSERT_EQ(PluginReadAllSample(), true);
         ASSERT_EQ(ResultAssert(item.frameCnt[0], item.frameCnt[1], item.frameCnt[2], item.frameCnt[3]), true);
+        RemoveValue();
+    }
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, SeekToFirstFrame_0002, TestSize.Level1)
+{
+    for (auto &item : TEST_LIST2) {
+        printf("#####pluginName: %s, testFile: %s#####\n", item.pluginName.c_str(), item.testFile.c_str());
+        ASSERT_EQ(CreateDemuxerPluginByName(item.pluginName.c_str(), item.testFile.c_str(), DEF_PROB_SIZE), true);
+        ASSERT_EQ(PluginSelectTracks(), true);
+        ASSERT_EQ(PluginReadAllSample(), true);
+        EXPECT_EQ(ResultAssert(item.frameCnt[0], item.frameCnt[1], item.frameCnt[2], item.frameCnt[3]), true);
+        RemoveValue();
+
+        printf("SeekToStart:\n");
+        ASSERT_EQ(demuxerPlugin_->SeekToStart(), Status::OK);
+        ASSERT_EQ(PluginSelectTracks(), true);
+        ASSERT_EQ(PluginReadAllSample(), true);
+        EXPECT_EQ(ResultAssert(item.frameCnt[0], item.frameCnt[1], item.frameCnt[2], item.frameCnt[3]), true);
         RemoveValue();
     }
 }

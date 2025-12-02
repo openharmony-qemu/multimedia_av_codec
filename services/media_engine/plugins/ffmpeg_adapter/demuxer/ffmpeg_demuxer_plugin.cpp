@@ -182,6 +182,13 @@ static const std::vector<FileType> g_fileContainSkipInfo = {
     FileType::MP3
 };
 
+static const std::vector<FileType> g_fileSkipGetMinTsPktInfo = {
+    FileType::FLV,
+    FileType::MKV,
+    FileType::WMV,
+    FileType::WMA
+};
+
 bool HaveValidParser(const AVCodecID codecId)
 {
     return g_streamParserMap.count(codecId) != 0;
@@ -519,10 +526,6 @@ FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin()
         if (item.second != nullptr) {
             FreeAVPacket(item.second);
         }
-    }
-
-    if (fileFirstPacket_) {
-        FreeAVPacket(fileFirstPacket_);
     }
     MEDIA_LOG_D("Out");
 }
@@ -1728,7 +1731,7 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
         avpacketIndex_++, pkt->pts, pkt->pos};
     Dump(dumpParam);
 #endif
-    UpdFileFirstPacketInfo(pkt);
+    UpdMinTsPacketInfo(pkt);
     auto trackId = pkt->stream_index;
     Status ret = Status::OK;
     if (NeedCombineFrame(trackId) && !IsBeginAsAnnexb(pkt->data, pkt->size) && cacheQueue_.HasCache(trackId)) {
@@ -1899,10 +1902,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_NULL_POINTER,
             "Stream " PUBLIC_LOG_D32 " is invalid", trackId);
         
-        if (!fileFirstPacket_ && pkt->dts != AV_NOPTS_VALUE) {
-            ret = InitFileFirstPacketInfo(pkt);
-            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "InitFileFirstPacketInfo failed");
-        }
+        InitMinTsPacketInfo(pkt);
         ret = AddPacketToCacheQueue(pkt);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add to cache failed");
         bool isSpecialStreamType = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
@@ -2601,10 +2601,18 @@ void FFmpegDemuxerPlugin::SetInterruptState(bool isInterruptNeeded)
     isInterruptNeeded_ = isInterruptNeeded;
 }
 
+bool FFmpegDemuxerPlugin::IsSkipGetMinTsPktInfo()
+{
+    return std::find(g_fileSkipGetMinTsPktInfo.begin(), g_fileSkipGetMinTsPktInfo.end(), fileType_) !=
+        g_fileSkipGetMinTsPktInfo.end();
+}
+
 Status FFmpegDemuxerPlugin::GetFileFirstPacket()
 {
+    bool isSkip = IsSkipGetMinTsPktInfo();
+    FALSE_RETURN_V_MSG_I(!isSkip, Status::OK, "File skip get first packet info");
     Status ret = Status::OK;
-    while (!fileFirstPacket_) {
+    while (!minTsPktInfo_.isInit) {
         AVPacket *pkt = av_packet_alloc();
         FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "Alloc AVPacket failed");
         std::unique_lock<std::mutex> sLock(syncMutex_);
@@ -2615,63 +2623,68 @@ Status FFmpegDemuxerPlugin::GetFileFirstPacket()
             FALSE_RETURN_V_MSG_E(ffRet == 0, Status::ERROR_WRONG_STATE, "Call av_read_frame failed");
         }
 
-        if (pkt->dts != AV_NOPTS_VALUE) {
-            ret = InitFileFirstPacketInfo(pkt);
-            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Init file first frame failed");
-        }
+        InitMinTsPacketInfo(pkt);
         ret = AddPacketToCacheQueue(pkt);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add packet to cache failed");
     }
     return Status::OK;
 }
 
-Status FFmpegDemuxerPlugin::InitFileFirstPacketInfo(AVPacket *pkt)
+void FFmpegDemuxerPlugin::InitMinTsPacketInfo(AVPacket *pkt)
 {
-    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "AVPacket is nullptr");
-    FALSE_RETURN_V_MSG_I(pkt->dts != AV_NOPTS_VALUE, Status::ERROR_INVALID_OPERATION, "pkt dts is AV_NOPTS_VALUE");
-    FALSE_RETURN_V_MSG_I(fileFirstPacket_ == nullptr, Status::ERROR_WRONG_STATE,
-        "fileFirstPacket_ has been initialized");
-    fileFirstPacket_ = av_packet_alloc();
-    FALSE_RETURN_V_MSG_E(fileFirstPacket_ != nullptr, Status::ERROR_NO_MEMORY, "av_packet_alloc failed");
-    av_init_packet(fileFirstPacket_);
-    fileFirstPacket_->stream_index = pkt->stream_index;
-    fileFirstPacket_->pts = pkt->pts;
-    fileFirstPacket_->dts = pkt->dts;
-    return Status::OK;
+    bool isSkip = IsSkipGetMinTsPktInfo();
+    FALSE_RETURN_MSG_W(!isSkip, "File skip init");
+    FALSE_RETURN_MSG_W(pkt != nullptr, "AVPacket is nullptr");
+    FALSE_RETURN_MSG_W(pkt->dts != AV_NOPTS_VALUE || pkt->pts != AV_NOPTS_VALUE,
+        "pkt dts and pts is AV_NOPTS_VALUE");
+    FALSE_RETURN_MSG_W(!minTsPktInfo_.isInit, "minTsPktInfo_ has been initialized");
+    minTsPktInfo_.streamIndex = pkt->stream_index;
+    minTsPktInfo_.minPts = pkt->pts;
+    minTsPktInfo_.minDts = pkt->dts;
+    minTsPktInfo_.isInit = true;
 }
 
-void FFmpegDemuxerPlugin::UpdFileFirstPacketInfo(AVPacket *pkt)
+void FFmpegDemuxerPlugin::UpdMinTsPacketInfo(AVPacket *pkt)
 {
-    FALSE_RETURN_MSG_W(pkt != nullptr || fileFirstPacket_ != nullptr, "AVPacket or fileFirstPacket_ is nullptr");
-    if (pluginImpl_->flags & AVFMT_SEEK_TO_PTS && !FFmpegFormatHelper::IsMpeg4File(fileType_) &&
-        pkt->pts != AV_NOPTS_VALUE && pkt->pts < fileFirstPacket_->pts) {
-        fileFirstPacket_->stream_index = pkt->stream_index;
-        fileFirstPacket_->pts = pkt->pts;
-    } else if (pkt->dts != AV_NOPTS_VALUE && pkt->dts < fileFirstPacket_->dts) {
-        fileFirstPacket_->stream_index = pkt->stream_index;
-        fileFirstPacket_->dts = pkt->dts;
+    FALSE_RETURN_MSG_W(pkt != nullptr, "AVPacket is nullptr");
+    FALSE_RETURN_MSG_D(minTsPktInfo_.isInit, "minTsPktInfo_ is not init");
+    if ((pluginImpl_->flags & AVFMT_SEEK_TO_PTS) && !FFmpegFormatHelper::IsMpeg4File(fileType_) &&
+        pkt->pts != AV_NOPTS_VALUE && pkt->pts < minTsPktInfo_.minPts) {
+        minTsPktInfo_.streamIndex = pkt->stream_index;
+        minTsPktInfo_.minPts = pkt->pts;
+    } else if (pkt->dts != AV_NOPTS_VALUE && pkt->dts < minTsPktInfo_.minDts) {
+        minTsPktInfo_.streamIndex = pkt->stream_index;
+        minTsPktInfo_.minDts = pkt->dts;
     }
-    MEDIA_LOG_D("Upd fileFirstPacket_ stream_index " PUBLIC_LOG_U32 " pts " PUBLIC_LOG_D64 " dts " PUBLIC_LOG_D64,
-        fileFirstPacket_->stream_index, fileFirstPacket_->pts, fileFirstPacket_->dts);
 }
 
-Status FFmpegDemuxerPlugin::SeekToFirstFrame()
+Status FFmpegDemuxerPlugin::SeekToStart()
 {
     MEDIA_LOG_D("in");
-    FALSE_RETURN_V_MSG_E(fileFirstPacket_ != nullptr, Status::ERROR_INVALID_OPERATION, "fileFirstPacket_ is nullptr");
-    int64_t seekTs = pluginImpl_->flags & AVFMT_SEEK_TO_PTS ? fileFirstPacket_->pts : fileFirstPacket_->dts;
-    if (FFmpegFormatHelper::IsMpeg4File(fileType_)) {
-        seekTs = fileFirstPacket_->dts;
-    } else if (fileType_ == FileType::WMA || fileType_ == FileType::WMV) {
-        seekTs = 0;
+    int64_t seekTs = AV_NOPTS_VALUE;
+    int ffRet = 0;
+    bool isSkip = IsSkipGetMinTsPktInfo();
+    printf("%s cur file type %d, isSkipGetMinTsPktInfo %d\n", __FUNCTION__, static_cast<int32_t>(fileType_), isSkip);
+    if (isSkip) {
+        printf("%s file type av_dict_set_int.\n", __FUNCTION__);
+        av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
+        ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
+        av_dict_set_int(&formatContext_->metadata, "seekToStart", 0, 0);
+    } else {
+        FALSE_RETURN_V_MSG_E(minTsPktInfo_.isInit, Status::ERROR_INVALID_OPERATION, "minTsPktInfo_ is not init");
+        seekTs = pluginImpl_->flags & AVFMT_SEEK_TO_PTS ? minTsPktInfo_.minPts : minTsPktInfo_.minDts;
+        if (FFmpegFormatHelper::IsMpeg4File(fileType_)) {
+            seekTs = minTsPktInfo_.minDts;
+        }
+        ffRet = av_seek_frame(formatContext_.get(),
+            minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
     }
-
-    int ffRet = av_seek_frame(formatContext_.get(),
-        fileFirstPacket_->stream_index, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
     MEDIA_LOG_D("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
-        fileFirstPacket_->stream_index, seekTs, ffRet);
+        minTsPktInfo_.streamIndex, seekTs, ffRet);
+    printf("%s stream_index %d seekTs %ld ffRet %d\n", __FUNCTION__, minTsPktInfo_.streamIndex, seekTs, ffRet);
     if (ffRet < 0) {
-        ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT, formatContext_->start_time, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
+        ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT,
+            formatContext_->start_time, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
         FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_INVALID_OPERATION, "av_seek_frame default track failed.");
     }
     for (auto track : selectedTrackIds_) {

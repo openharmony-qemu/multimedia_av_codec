@@ -249,7 +249,7 @@ struct DemuxerPlugin : public PluginBase {
      */
     virtual Status BoostReadThreadPriority() = 0;
     virtual Status SetAVReadPacketStopState(bool state) = 0;
-    virtual Status SeekToFirstFrame() = 0;
+    virtual Status SeekToStart() = 0;
 };
 
 /// Demuxer plugin api major number.
