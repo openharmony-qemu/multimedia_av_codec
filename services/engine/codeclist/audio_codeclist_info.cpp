@@ -160,6 +160,10 @@ constexpr int MIN_BIT_RATE_TRUEHD = 640000;
 constexpr int MAX_BIT_RATE_TRUEHD = 18000000;
 constexpr int MAX_CHANNEL_COUNT_TRUEHD = 8;
 const std::vector<int32_t> AUDIO_TRUEHD_SAMPLE_RATE = {44100, 48000, 88200, 96000, 176400, 192000};
+constexpr int MIN_BIT_RATE_TWINVQ = 8000;
+constexpr int MAX_BIT_RATE_TWINVQ = 48000;
+constexpr int MAX_CHANNEL_COUNT_TWINVQ = 2;
+const std::vector<int32_t> AUDIO_TWINVQ_SAMPLE_RATE = {8000, 11025, 16000, 22050, 44100};
 
 static std::vector<Range> convertVectorToRange(const std::vector<int32_t> sampleRate)
 {
@@ -337,6 +341,21 @@ CapabilityData AudioCodeclistInfo::GetTruehdDecoderCapability()
     audioTruehdCapability.sampleRateRanges = convertVectorToRange(AUDIO_TRUEHD_SAMPLE_RATE);
     audioTruehdCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioTruehdCapability;
+}
+
+CapabilityData AudioCodeclistInfo::GetTwinVQDecoderCapability()
+{
+    CapabilityData audioTwinVQCapability;
+    audioTwinVQCapability.codecName = AVCodecCodecName::AUDIO_DECODER_TWINVQ_NAME;
+    audioTwinVQCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioTwinVQCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_TWINVQ;
+    audioTwinVQCapability.isVendor = false;
+    audioTwinVQCapability.bitrate = Range(MIN_BIT_RATE_TWINVQ, MAX_BIT_RATE_TWINVQ);
+    audioTwinVQCapability.channels = Range(1, MAX_CHANNEL_COUNT_TWINVQ);
+    audioTwinVQCapability.sampleRate = AUDIO_TWINVQ_SAMPLE_RATE;
+    audioTwinVQCapability.sampleRateRanges = convertVectorToRange(AUDIO_TWINVQ_SAMPLE_RATE);
+    audioTwinVQCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioTwinVQCapability;
 }
 
 CapabilityData AudioCodeclistInfo::GetMP3DecoderCapability()
@@ -817,7 +836,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetMP3EncoderCapability(), GetG711aDecoderCapability(), GetAc3DecoderCapability(),
                           GetGsmMsDecoderCapability(), GetGsmDecoderCapability(), GetAlacDecoderCapability(),
                           GetWMAV1DecoderCapability(), GetWMAV2DecoderCapability(), GetWMAProDecoderCapability(),
-                          GetIlbcDecoderCapability(), GetTruehdDecoderCapability(),
+                          GetIlbcDecoderCapability(), GetTruehdDecoderCapability(), GetTwinVQDecoderCapability(),
 #ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),
