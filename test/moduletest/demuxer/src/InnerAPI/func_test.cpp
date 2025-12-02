@@ -1386,7 +1386,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_COVER_INNER_FUNC_0010, TestSize.Level2
     int32_t trackCount = 0;
     Format trackFormat_;
     Format sourceFormat_;
-    uint8_t *add = nullptr;
+    uint8_t *addr = nullptr;
     size_t buffSize = 0;
     fd_ = open("/data/test/media/cover_jpg.mp4", O_RDONLY);
     struct stat fileStatus {};
@@ -1415,7 +1415,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_COVER_INNER_FUNC_0010, TestSize.Level2
                 continue;
             }
             if (i == 2) {
-                ASSERT_EQ(true, trackFormat_.GetBuffer(MediaDescriptionKey::MD_KEY_COVER, &add, buffSize));
+                ASSERT_EQ(true, trackFormat_.GetBuffer(MediaDescriptionKey::MD_KEY_COVER, &addr, buffSize));
                 continue;
             }
             ret = demuxer->ReadSampleBuffer(i, avBuf_);
