@@ -34,7 +34,8 @@ enum VCodecDataProducerType : int32_t {
     MPEG4_STREAM = 1 << 4,
     VC1_STREAM = 1 << 5,
     WMV3_STREAM = 1 << 6,
-    MSVIDEO1_STREAM = 1 << 7
+    MSVIDEO1_STREAM = 1 << 7,
+    AV1_STREAM = 1 << 8
 };
 
 inline std::unordered_map<std::string, int32_t> fileTypeMap = {

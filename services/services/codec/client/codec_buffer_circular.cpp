@@ -233,8 +233,8 @@ int32_t CodecBufferCircular::HandleInputBuffer(uint32_t index)
         return HasFlag(FLAG_IS_SYNC) ? AVCS_ERR_INVALID_VAL : AVCS_ERR_OK;
     }
     BufferItem &item = iter->second;
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(item.owner == OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
-                                      "Invalid ownership:%{public}s", OwnerToString(item.owner).c_str());
+    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(item.owner == OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
+        LOG_INTERVAL_MS, LOG_MAX_COUNT, "Invalid ownership:%{public}s", OwnerToString(item.owner).c_str());
     item.owner = OWNED_BY_SERVER;
     if (item.buffer != nullptr) {
         item.pts = item.buffer->pts_;
@@ -254,8 +254,8 @@ int32_t CodecBufferCircular::HandleOutputBuffer(uint32_t index)
         return HasFlag(FLAG_IS_SYNC) ? AVCS_ERR_INVALID_VAL : AVCS_ERR_OK;
     }
     BufferItem &item = iter->second;
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(item.owner == OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
-                                      "Invalid ownership:%{public}s", OwnerToString(item.owner).c_str());
+    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(item.owner == OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
+        LOG_INTERVAL_MS, LOG_MAX_COUNT, "Invalid ownership:%{public}s", OwnerToString(item.owner).c_str());
     item.owner = OWNED_BY_SERVER;
     if (item.buffer != nullptr) {
         item.pts = item.buffer->pts_;

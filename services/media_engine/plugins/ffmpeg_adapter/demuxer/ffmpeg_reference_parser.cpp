@@ -239,6 +239,7 @@ static void InsertIframePtsMap(AVPacket *pkt, int32_t gopId, int32_t trackIdx,
 Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId)
 {
     std::unique_lock<std::mutex> sLock(syncMutex_);
+    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_UNKNOWN, "Packet is nullptr!");
     int ffmpegRet = av_read_frame(parserRefCtx_.get(), pkt);
     sLock.unlock();
     if (ffmpegRet < 0 && ffmpegRet != AVERROR_EOF) {
@@ -255,8 +256,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
     InsertIframePtsMap(pkt, parserCurGopId_, parserRefIdx_, iFramePtsMap_);
     FALSE_RETURN_V_MSG_D(pkt->stream_index == parserRefIdx_ || ffmpegRet == AVERROR_EOF, Status::OK,
                          "eos or not video");
-    int64_t dts = AvTime2Us(
-        ConvertTimeFromFFmpeg(pkt->dts, parserRefCtx_->streams[parserRefIdx_]->time_base));
+    int64_t dts = AvTime2Us(ConvertTimeFromFFmpeg(pkt->dts, parserRefCtx_->streams[parserRefIdx_]->time_base));
     Status result = referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
     FALSE_RETURN_V_MSG_E(result == Status::OK, Status::ERROR_UNKNOWN, "parse nal units error!");
     int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
@@ -356,6 +356,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
         ", processingIFrame_ size: " PUBLIC_LOG_ZU ", duration: " PUBLIC_LOG_D64, curStreamId, parserCurGopId_,
         IFramePos_.size(), processingIFrame_.size(), duration);
     AVPacket *pkt = av_packet_alloc();
+    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_UNKNOWN, "Packet is nullptr!");
     while (formatContext_ != nullptr && parserState_ && parserCurGopId_ != -1) {
         Status rlt = ParserRefInfoLoop(pkt, curStreamId);
         duration = std::chrono::duration_cast<std::chrono::milliseconds>(

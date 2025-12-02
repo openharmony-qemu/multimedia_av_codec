@@ -273,7 +273,7 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_AssignSampleRateIfSupported,
     std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
         CreateAudioServerSinkPlugin("AssignSampleRateIfSupported");
     ASSERT_TRUE(audioServerSinkPlugin != nullptr);
-    int32_t sampleRate1 = 16000;
+    int32_t sampleRate1 = 16010;
     int32_t sampleRate2 = 0;
     ASSERT_TRUE(audioServerSinkPlugin->AssignSampleRateIfSupported(sampleRate1));
     ASSERT_FALSE(audioServerSinkPlugin->AssignSampleRateIfSupported(sampleRate2));

@@ -79,7 +79,8 @@ static const std::vector<std::string_view> codecVec = {
     AVCodecCodecName::AUDIO_DECODER_WMAPRO_NAME,           // 42: wmapro
     AVCodecCodecName::AUDIO_DECODER_ALAC_NAME,			   // 43: alac
     AVCodecCodecName::AUDIO_DECODER_ILBC_NAME,             // 44: ilbc
-    AVCodecCodecName::AUDIO_DECODER_TRUEHD_NAME            // 44: truehd
+    AVCodecCodecName::AUDIO_DECODER_TRUEHD_NAME,           // 45: truehd
+    AVCodecCodecName::AUDIO_DECODER_TWINVQ_NAME			   // 46: twinvq
 };
 
 template <class T>
@@ -139,7 +140,9 @@ static const std::vector<std::string> codecMimeMap = {
     MimeType::AUDIO_WMAPRO,           // 42: wmapro
     MimeType::AUDIO_ALAC,             // 43: alac
     MimeType::AUDIO_ILBC,             // 44: ilbc
-    MimeType::AUDIO_TRUEHD            // 44: truehd
+    MimeType::AUDIO_TRUEHD,           // 45: truehd
+    MimeType::AUDIO_TWINVQ            // 46: twinvq
+
 };
 
 static const std::vector<void(*)(const std::string&, const std::string_view&,
@@ -189,7 +192,8 @@ static const std::vector<void(*)(const std::string&, const std::string_view&,
     InitDefinition<FFmpegWMADecoderPlugin>,    // 42: wmapro
     InitDefinition<FFmpegAlacDecoderPlugin>,   // 43: alac
     InitDefinition<FFmpegILBCDecoderPlugin>,   // 44: ilbc
-    InitDefinition<FFmpegTruehdDecoderPlugin>  // 44: truehd
+    InitDefinition<FFmpegTruehdDecoderPlugin>, // 45: truehd
+    InitDefinition<FFmpegTwinVQDecoderPlugin>  // 46: twinvq
 };
 
 void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap)

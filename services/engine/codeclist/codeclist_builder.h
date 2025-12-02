@@ -31,6 +31,30 @@ public:
     ~VideoHevcDecoderList() override = default;
     int32_t GetCapabilityList(std::vector<CapabilityData> &caps) override;
 };
+
+#ifdef SUPPORT_CODEC_AV1
+class VideoAv1DecoderList : public CodecListBase {
+public:
+    ~VideoAv1DecoderList() override = default;
+    int32_t GetCapabilityList(std::vector<CapabilityData> &caps) override;
+};
+#endif
+
+#ifdef SUPPORT_CODEC_VP8
+class VideoVp8DecoderList : public CodecListBase {
+public:
+    ~VideoVp8DecoderList() override = default;
+    int32_t GetCapabilityList(std::vector<CapabilityData> &caps) override;
+};
+#endif
+
+#ifdef SUPPORT_CODEC_VP9
+class VideoVp9DecoderList : public CodecListBase {
+public:
+    ~VideoVp9DecoderList() override = default;
+    int32_t GetCapabilityList(std::vector<CapabilityData> &caps) override;
+};
+#endif
 class VideoAvcEncoderList : public CodecListBase {
 public:
     ~VideoAvcEncoderList() override = default;

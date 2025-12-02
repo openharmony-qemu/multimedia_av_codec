@@ -51,6 +51,7 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_WMAV1 = "audio/wmav1";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_WMAV2 = "audio/wmav2";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_WMAPRO = "audio/wmapro";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_TWINVQ = "audio/twinvq";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_ADPCM_MS = "audio/adpcm_ms";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_QT = "audio/adpcm_ima_qt";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_ADPCM_IMA_WAV = "audio/adpcm_ima_wav";
@@ -107,10 +108,12 @@ public:
             MEDIA_MIMETYPE_AUDIO_FLAC,
             MEDIA_MIMETYPE_AUDIO_G711MU,
             MEDIA_MIMETYPE_AUDIO_MPEG,
-#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
+#ifdef SUPPORT_CODEC_OPUS
             MEDIA_MIMETYPE_AUDIO_OPUS,
+#endif
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
             MEDIA_MIMETYPE_AUDIO_AMRNB,
-            MEDIA_MIMETYPE_AUDIO_AMRWB
+            MEDIA_MIMETYPE_AUDIO_AMRWB,
 #endif
         };
         static const std::unordered_set<std::string_view> DECODE_OUTER_SUPPORT_TABLE = {
@@ -133,11 +136,14 @@ public:
             MEDIA_MIMETYPE_AUDIO_WMAPRO,
             MEDIA_MIMETYPE_AUDIO_ILBC,
             MEDIA_MIMETYPE_AUDIO_TRUEHD,
+            MEDIA_MIMETYPE_AUDIO_TWINVQ,
 #ifdef SUPPORT_CODEC_EAC3
             MEDIA_MIMETYPE_AUDIO_EAC3,
 #endif
-#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
+#ifdef SUPPORT_CODEC_OPUS
             MEDIA_MIMETYPE_AUDIO_OPUS,
+#endif
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
             MEDIA_MIMETYPE_AUDIO_VIVID
 #endif
         };

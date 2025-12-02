@@ -27,7 +27,10 @@ ohos_static_library("av_codec_engine_codeclist") {
     "$av_codec_root_dir/services/engine/codec/include/audio/",
     "$av_codec_root_dir/services/engine/codec/include/video/",
     "$av_codec_root_dir/services/engine/codec/video/fcodec/include",
+    "$av_codec_root_dir/services/engine/codec/video/decoderbase",
     "$av_codec_root_dir/services/engine/codec/video/hevcdecoder",
+    "$av_codec_root_dir/services/engine/codec/video/vpxdecoder",
+    "$av_codec_root_dir/services/engine/codec/video/av1decoder",
     "$av_codec_root_dir/services/engine/common/include/",
     "$av_codec_root_dir/services/services/common",
     "$av_codec_root_dir/services/services/common/event_manager",
@@ -35,7 +38,7 @@ ohos_static_library("av_codec_engine_codeclist") {
   ]
   defines = []
   if (av_codec_enable_special_codec) {
-    defines += [ "AV_CODEC_AUDIO_VIVID_CAPACITY" ]
+    defines += [ "AV_CODEC_AUDIO_SPECIAL_CAPACITY" ]
   }
   if (target_cpu == "arm64") {
     av_codec_path = "\"/system/lib64\""

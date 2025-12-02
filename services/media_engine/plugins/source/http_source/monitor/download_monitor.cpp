@@ -14,8 +14,7 @@
  */
 #define HST_LOG_TAG "DownloadMonitor"
 
-#include "monitor/download_monitor.h"
-#include "cpp_ext/algorithm_ext.h"
+#include "download_monitor.h"
 
 namespace OHOS {
 namespace Media {
@@ -26,8 +25,6 @@ namespace {
     constexpr int APP_DOWNLOAD_RETRY_TIMES = 60;
     constexpr int SERVER_ERROR_THRESHOLD = 500;
     constexpr int32_t READ_LOG_FEQUENCE = 50;
-    constexpr int64_t MICROSECONDS_TO_MILLISECOND = 1000;
-    constexpr int64_t RETRY_SEG = 50;
     constexpr int32_t REDIRECT_CODE = 302;
     const std::set<int32_t> CLIENT_NOT_RETRY_ERROR_CODES = {
         992,
@@ -74,25 +71,6 @@ void DownloadMonitor::Init()
             std::forward<decltype(request)>(request));
     };
     downloader_->SetStatusCallback(statusCallback);
-    task_ = std::make_shared<Task>(std::string("OS_HttpMonitor"));
-    task_->RegisterJob([this] { return HttpMonitorLoop(); });
-    task_->Start();
-}
-
-int64_t DownloadMonitor::HttpMonitorLoop()
-{
-    RetryRequest task;
-    {
-        AutoLock lock(taskMutex_);
-        if (!retryTasks_.empty()) {
-            task = retryTasks_.front();
-            retryTasks_.pop_front();
-        }
-    }
-    if (task.request && task.function) {
-        task.function();
-    }
-    return RETRY_SEG * MICROSECONDS_TO_MILLISECOND; // retry after 50ms
 }
 
 bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
@@ -128,9 +106,7 @@ void DownloadMonitor::Close(bool isAsync)
     }
     if (isAsync) {
         downloader_->Close(true);
-        task_->Stop();
     } else {
-        task_->Stop();
         downloader_->Close(false);
     }
     isPlaying_ = false;
@@ -253,7 +229,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     MEDIA_LOG_I("NeedRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
         ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
     if (CLIENT_NOT_RETRY_ERROR_CODES.find(static_cast<int32_t>(clientError)) != CLIENT_NOT_RETRY_ERROR_CODES.end()) {
-        MEDIA_LOG_I("Client error code is 23 or 992, not retry.");
+        MEDIA_LOG_I("Client error code is 992, not retry.");
         return false;
     }
 
@@ -302,14 +278,7 @@ void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
         if (isNeedClearBuffer_) {
             downloader_->ClearBuffer();
         }
-        AutoLock lock(taskMutex_);
-        bool exists = CppExt::AnyOf(retryTasks_.begin(), retryTasks_.end(), [&](const RetryRequest& item) {
-            return item.request->IsSame(request);
-        });
-        if (!exists) {
-            RetryRequest retryRequest {request, [downloader, request] { downloader->Retry(request); }};
-            retryTasks_.emplace_back(std::move(retryRequest));
-        }
+        downloader->Retry(request);
     }
 }
 

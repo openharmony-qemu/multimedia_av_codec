@@ -1953,7 +1953,7 @@ bool HttpMediaDownloader::CheckAutoSelectBitrate()
     for (const auto &speed : downloadSpeeds_) {
         sumSpeed += speed;
     }
-    uint64_t aveSpeed = sumSpeed / downloadSpeeds_.size();
+    uint64_t aveSpeed = downloadSpeeds_.size()? sumSpeed / downloadSpeeds_.size() : 0;
     uint32_t desBitRate = 0;
     for (const auto &item : playMediaStreams_) {
         if (defaultStream_->bitrate == item->bitrate) {

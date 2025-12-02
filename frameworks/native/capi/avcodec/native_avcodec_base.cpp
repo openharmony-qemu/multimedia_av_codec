@@ -21,6 +21,9 @@ extern "C" {
 
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MSVIDEO1 = "video/msvideo1";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_VC1 = "video/vc1";
+const char *OH_AVCODEC_MIMETYPE_VIDEO_VP8 = "video/vp8";
+const char *OH_AVCODEC_MIMETYPE_VIDEO_VP9 = "video/vp9";
+const char *OH_AVCODEC_MIMETYPE_VIDEO_AV1 = "video/av1";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_AVC = "video/avc";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4 = "video/mp4v-es";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2 = "video/mp4v-es";
@@ -58,6 +61,7 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAV2 = "audio/wmav2";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAPRO = "audio/wmapro";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_ILBC = "audio/ilbc";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_TRUEHD = "audio/truehd";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_TWINVQ = "audio/twinvq";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";
@@ -99,6 +103,7 @@ const char *OH_MD_MAX_INPUT_BUFFER_COUNT = "max_input_buffer_count";
 const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT = "max_output_buffer_count";
 const char *OH_MD_KEY_VIDEO_IS_HDR_VIVID = "video_is_hdr_vivid";
 const char *OH_MD_KEY_BLOCK_ALIGN = "audio_block_align";
+const char *OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO = "buffer_skip_samples_info";
 
 const char *OH_MD_KEY_TITLE = "title";
 const char *OH_MD_KEY_ARTIST = "artist";

@@ -298,6 +298,10 @@ int32_t VideoDecAsyncSample::CreateReader(const std::string &inPath)
     switch (dataProducerType) {
         case H263_STREAM:
             return CreateH263Reader();
+#ifdef SUPPORT_CODEC_AV1
+        case AV1_STREAM:
+            return CreateAv1Reader();
+#endif
         case AVC_STREAM:
         case HEVC_STREAM:
             return CreateAvccReader();
@@ -546,6 +550,18 @@ int32_t VideoDecAsyncSample::CreateMsvideo1Reader()
     return ret;
 }
 
+#ifdef SUPPORT_CODEC_AV1
+int32_t VideoDecAsyncSample::CreateAv1Reader()
+{
+    std::shared_ptr<Av1ReaderInfo> info = std::make_shared<Av1ReaderInfo>();
+    info->inPath = inPath_;
+
+    av1Reader_ = std::make_shared<Av1Reader>();
+    int32_t ret = av1Reader_->Init(info);
+    return ret;
+}
+#endif
+
 int32_t VideoDecAsyncSample::CreateWmv3Reader()
 {
     std::shared_ptr<Wmv3ReaderInfo> info = std::make_shared<Wmv3ReaderInfo>();
@@ -791,6 +807,10 @@ int32_t VideoDecAsyncSample::InputLoopInner()
 #endif
     } else if (wmv3Reader_ != nullptr) {
         wmv3Reader_->FillBuffer(buffer->GetAddr(), attr);
+#ifdef SUPPORT_CODEC_AV1
+    } else if (av1Reader_ != nullptr) {
+        av1Reader_->FillBuffer(buffer->GetAddr(), attr);
+#endif
     } else {
         msvideo1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }
@@ -1072,6 +1092,10 @@ int32_t VideoDecAsyncSample::InputLoopInnerExt()
 #endif
     } else if (wmv3Reader_ != nullptr) {
         wmv3Reader_->FillBuffer(buffer->GetAddr(), attr);
+#ifdef SUPPORT_CODEC_AV1
+    } else if (av1Reader_ != nullptr) {
+        av1Reader_->FillBuffer(buffer->GetAddr(), attr);
+#endif
     } else {
         msvideo1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }

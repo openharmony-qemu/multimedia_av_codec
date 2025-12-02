@@ -78,7 +78,7 @@ ohos_unittest("codeclist_core_coverage_unit_test") {
   include_dirs = codeclist_coverage_include_dirs
   defines = av_codec_defines
   if (av_codec_enable_special_codec) {
-    defines += [ "AV_CODEC_AUDIO_VIVID_CAPACITY" ]
+    defines += [ "AV_CODEC_AUDIO_SPECIAL_CAPACITY" ]
   }
 
   sources = [
@@ -122,7 +122,7 @@ ohos_unittest("codeclist_avcodec_info_coverage_unit_test") {
   include_dirs = []
   defines = av_codec_defines
   if (av_codec_enable_special_codec) {
-    defines += [ "AV_CODEC_AUDIO_VIVID_CAPACITY" ]
+    defines += [ "AV_CODEC_AUDIO_SPECIAL_CAPACITY" ]
   }
 
   sources = [ "./avcodec_info_coverage_unit_test.cpp" ]
@@ -150,7 +150,7 @@ ohos_static_library("av_codec_engine_codeclist_mock") {
   cflags_cc = cflags
   defines = [ "CodecAbilitySingleton=CodecAbilitySingletonImpl" ]
   if (av_codec_enable_special_codec) {
-    defines += [ "AV_CODEC_AUDIO_VIVID_CAPACITY" ]
+    defines += [ "AV_CODEC_AUDIO_SPECIAL_CAPACITY" ]
   }
   if (target_cpu == "arm64") {
     av_codec_path = "\"/system/lib64\""

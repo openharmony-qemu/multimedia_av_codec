@@ -28,6 +28,15 @@
 #else
 #include "fcodec_loader.h"
 #include "hevc_decoder_loader.h"
+#ifdef SUPPORT_CODEC_VP8
+#include "vp8_decoder_loader.h"
+#endif
+#ifdef SUPPORT_CODEC_VP9
+#include "vp9_decoder_loader.h"
+#endif
+#ifdef SUPPORT_CODEC_AV1
+#include "av1_decoder_loader.h"
+#endif
 #include "hcodec_loader.h"
 #include "avc_encoder_loader.h"
 #endif

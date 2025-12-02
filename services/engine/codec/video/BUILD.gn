@@ -25,7 +25,10 @@ ohos_static_library("av_codec_video_loader") {
     "$av_codec_root_dir/services/engine/codec/include/video",
     "$av_codec_root_dir/services/engine/codec/video/fcodec/include",
     "$av_codec_root_dir/services/engine/codec/video/avcencoder",
+    "$av_codec_root_dir/services/engine/codec/video/decoderbase",
     "$av_codec_root_dir/services/engine/codec/video/hevcdecoder",
+    "$av_codec_root_dir/services/engine/codec/video/vpxdecoder",
+    "$av_codec_root_dir/services/engine/codec/video/av1decoder",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/utils/include",
   ]
@@ -40,6 +43,18 @@ ohos_static_library("av_codec_video_loader") {
     "$av_codec_root_dir/services/engine/codec/video/hevc_decoder_loader.cpp",
     "$av_codec_root_dir/services/engine/codec/video/video_codec_loader.cpp",
   ]
+
+  if (av_codec_support_vp8_decoder) {
+    sources += [ "$av_codec_root_dir/services/engine/codec/video/vp8_decoder_loader.cpp", ]
+  }
+
+  if (av_codec_support_vp9_decoder) {
+    sources += [ "$av_codec_root_dir/services/engine/codec/video/vp9_decoder_loader.cpp", ]
+  }
+
+  if (av_codec_support_av1_decoder) {
+    sources += [ "$av_codec_root_dir/services/engine/codec/video/av1_decoder_loader.cpp" ]
+  }
 
   deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
 

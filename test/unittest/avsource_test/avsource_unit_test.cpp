@@ -21,6 +21,7 @@
 #include "meta/media_types.h"
 #include "meta/meta_key.h"
 #include "meta/meta.h"
+#include "meta/mime_type.h"
 #include "gtest/gtest.h"
 #include "avcodec_errors.h"
 #include "avcodec_audio_common.h"
@@ -131,6 +132,8 @@ string g_av1VorbisWebmPath = TEST_FILE_PATH + string("av1_vorbis.webm");
 string g_av1OpusWebmPath = TEST_FILE_PATH + string("av1_opus.webm");
 string g_webmUri = TEST_URI_PATH + string("av1_vorbis.webm");
 string g_webmErrorPath = TEST_FILE_PATH + string("test_error.webm");
+string g_mkvSnowUri = TEST_URI_PATH + string("snow.mkv");
+string g_mkvSnowPath = TEST_FILE_PATH + string("snow.mkv");
 } // namespace
 
 void AVSourceUnitTest::SetUpTestCase(void)
@@ -2909,7 +2912,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1804, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
     ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, "video/x-vnd.on2.vp8");
+    ASSERT_EQ(formatVal_.codecMime, "video/vp8");
     ASSERT_EQ(formatVal_.width, 720);
     ASSERT_EQ(formatVal_.height, 480);
     ASSERT_DOUBLE_EQ(formatVal_.frameRate, 60.000000);
@@ -4336,7 +4339,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_18041, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
     ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, "video/x-vnd.on2.vp8");
+    ASSERT_EQ(formatVal_.codecMime, "video/vp8");
     ASSERT_EQ(formatVal_.width, 480);
     ASSERT_EQ(formatVal_.height, 854);
     ASSERT_DOUBLE_EQ(formatVal_.frameRate, 30.000000);
@@ -4392,7 +4395,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_18042, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
     ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, "video/x-vnd.on2.vp9");
+    ASSERT_EQ(formatVal_.codecMime, "video/vp9");
     ASSERT_EQ(formatVal_.width, 480);
     ASSERT_EQ(formatVal_.height, 854);
     ASSERT_DOUBLE_EQ(formatVal_.frameRate, 30.000000);
@@ -4448,7 +4451,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_18043, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
     ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.codecMime, "video/x-vnd.on2.vp9");
+    ASSERT_EQ(formatVal_.codecMime, "video/vp9");
     ASSERT_EQ(formatVal_.width, 480);
     ASSERT_EQ(formatVal_.height, 854);
     ASSERT_DOUBLE_EQ(formatVal_.frameRate, 30.000000);
@@ -4568,4 +4571,37 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1860, TestSize.Level1)
     ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
 }
 
+/**
+ * @tc.name: AVSource_Unsupport_0001
+ * @tc.desc: get track format(snow), local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_Unsupport_0001, TestSize.Level1)
+{
+    ASSERT_EQ(access(g_mkvSnowPath.c_str(), F_OK), 0);
+    fd_ = OpenFile(g_mkvSnowPath);
+    size_ = GetFileSize(g_mkvSnowPath);
+    printf("---- %s ----\n", g_mkvSnowPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ track %d ]: %s\n", trackIndex_, format_->DumpInfo());
+    std::string unsupportMime = "";
+    ASSERT_TRUE(format_->GetStringValue(Media::Tag::MIME_TYPE, formatVal_.codecMime));
+    ASSERT_EQ(formatVal_.codecMime, Media::Plugins::MimeType::INVALID_TYPE);
+    ASSERT_TRUE(format_->GetStringValue(Media::Tag::ORIGINAL_CODEC_NAME, unsupportMime));
+    ASSERT_EQ(unsupportMime, "snow");
+
+    trackIndex_ = 1;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ track %d ]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(Media::Tag::MIME_TYPE, formatVal_.codecMime));
+    ASSERT_EQ(formatVal_.codecMime, Media::Plugins::MimeType::AUDIO_MPEG);
+
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
+}
 } // namespace

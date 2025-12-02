@@ -50,15 +50,18 @@ public:
     CapabilityData GetWMAProDecoderCapability();
     CapabilityData GetIlbcDecoderCapability();
     CapabilityData GetTruehdDecoderCapability();
+    CapabilityData GetTwinVQDecoderCapability();
 #ifdef SUPPORT_CODEC_EAC3
     CapabilityData GetEac3DecoderCapability();
 #endif
-#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
     CapabilityData GetVividDecoderCapability();
     CapabilityData GetAmrnbEncoderCapability();
     CapabilityData GetAmrwbEncoderCapability();
     CapabilityData GetL2hcEncoderCapability();
     CapabilityData GetL2hcDecoderCapability();
+#endif
+#ifdef SUPPORT_CODEC_OPUS
     CapabilityData GetOpusDecoderCapability();
     CapabilityData GetOpusEncoderCapability();
 #endif

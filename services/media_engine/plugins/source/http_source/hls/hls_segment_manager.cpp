@@ -33,7 +33,6 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-constexpr uint32_t DECRYPT_COPY_LEN = 128;
 constexpr int MIN_WIDTH = 480;
 constexpr int SECOND_WIDTH = 720;
 constexpr int THIRD_WIDTH = 1080;
@@ -207,10 +206,8 @@ void HlsSegmentManager::Init()
     waterLineAbove_ = PLAY_WATER_LINE;
     steadyClock_.Reset();
     loopInterruptClock_.Reset();
-    aesKey_.rounds = 0;
-    for (size_t i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
-        aesKey_.rd_key[i] = 0;
-    }
+    aesDecryptor_ = std::make_shared<AesDecryptor>();
+    aesDecryptor_->Init();
 }
 
 HlsSegmentManager::~HlsSegmentManager()
@@ -223,10 +220,9 @@ HlsSegmentManager::~HlsSegmentManager()
     if (playlistDownloader_ != nullptr) {
         playlistDownloader_ = nullptr;
     }
-    NZERO_LOG(memset_s(iv_, 1, 0, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memset_s(initIv_, 1, 0, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memset_s(key_, 1, 0, DECRYPT_UNIT_LEN));
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor out, type: %{public}d", FAKE_POINTER(this), type_);
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor out, type: %{public}d, "
+        "writeTsIndex: " PUBLIC_LOG_U32 " writeOffset: " PUBLIC_LOG_U64, FAKE_POINTER(this), type_,
+        writeTsIndex_, writeOffset_);
 }
 
 std::string HlsSegmentManager::GetContentType()
@@ -267,8 +263,8 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
     requestInfo.url = playInfo.rangeUrl_.empty() ? playInfo.url_ : playInfo.rangeUrl_;
     requestInfo.httpHeader = httpHeader_;
     bool isRequestWholeFile = playInfo.rangeUrl_.empty() ? true : playInfo.length_ <= 0;
-    downloadRequest_ = std::make_shared<DownloadRequest>(playInfo.duration_, dataSave_,
-                                                         realStatusCallback, requestInfo, isRequestWholeFile);
+    SetDownloadRequest(std::make_shared<DownloadRequest>(playInfo.duration_, dataSave_,
+                                                         realStatusCallback, requestInfo, isRequestWholeFile));
     fragmentDownloadStart[playInfo.url_] = true;
     int64_t startTimePos = playInfo.startTimePos_;
     curUrl_ = playInfo.rangeUrl_.empty() ? playInfo.url_ : playInfo.rangeUrl_;
@@ -282,7 +278,7 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
             readTsIndexTempValue, type_);
     }
     writeOffset_ = SpliceOffset(writeTsIndex_, 0);
-    MEDIA_LOG_I("HLS PutRequestIntoDwonloader update writeOffset_: " PUBLIC_LOG_U64 " writeTsIndex_: " PUBLIC_LOG_U32
+    MEDIA_LOG_I("HLS PutRequestIntoDownloader update writeOffset_: " PUBLIC_LOG_U64 " writeTsIndex_: " PUBLIC_LOG_U32
         ", type: %{public}d", writeOffset_, writeTsIndex_, type_);
     {
         AutoLock lock(tsStorageInfoMutex_);
@@ -290,16 +286,17 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
             tsStorageInfo_[writeTsIndex_] = std::make_pair(0, false);
         }
     }
+    auto downloadRequest = GetDownloadRequest();
     if (!playInfo.rangeUrl_.empty()) {
         tsStreamIdInfo_[writeTsIndex_] = playInfo.streamId_;
         if (!isRequestWholeFile) {
-            downloadRequest_->SetRangePos(playInfo.offset_, playInfo.offset_ + playInfo.length_ - 1); // 1
+            downloadRequest->SetRangePos(playInfo.offset_, playInfo.offset_ + playInfo.length_ - 1); // 1
         }
     }
-    downloadRequest_->SetRequestProtocolType(RequestProtocolType::HLS);
-    downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
-    downloadRequest_->SetStartTimePos(startTimePos);
-    downloader_->Download(downloadRequest_, -1); // -1
+    downloadRequest->SetRequestProtocolType(RequestProtocolType::HLS);
+    downloadRequest->SetDownloadDoneCb(downloadDoneCallback);
+    downloadRequest->SetStartTimePos(startTimePos);
+    downloader_->Download(downloadRequest, -1); // -1
     downloader_->Start();
 }
 
@@ -379,8 +376,9 @@ bool HlsSegmentManager::CheckReadStatus()
 {
     // eos:palylist is empty, request is finished, hls is vod, do not select bitrate
     FALSE_RETURN_V(playlistDownloader_ != nullptr, false);
-    FALSE_RETURN_V(downloadRequest_ != nullptr, false);
-    isEos_ = playList_->Empty() && (downloadRequest_ != nullptr) && downloadRequest_->IsEos() &&
+    auto downloadRequest = GetDownloadRequest();
+    FALSE_RETURN_V(downloadRequest != nullptr, false);
+    isEos_ = playList_->Empty() && (downloadRequest != nullptr) && downloadRequest->IsEos() &&
         playlistDownloader_ != nullptr && (playlistDownloader_->GetDuration() > 0) &&
         playlistDownloader_->IsParseAndNotifyFinished();
     if (isEos_) {
@@ -607,8 +605,9 @@ bool HlsSegmentManager::CheckDataIntegrity()
 Status HlsSegmentManager::CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     bool isFinishedPlay = CheckReadStatus() || isStopped;
-    if (downloadRequest_ != nullptr) {
-        readDataInfo.isEos_ = downloadRequest_->IsEos();
+    auto downloadRequest = GetDownloadRequest();
+    if (downloadRequest != nullptr) {
+        readDataInfo.isEos_ = downloadRequest->IsEos();
     }
     if (isFinishedPlay && readTsIndex_ + 1 < backPlayList_.size()) {
         return Status::ERROR_UNKNOWN;
@@ -741,7 +740,7 @@ void HlsSegmentManager::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readD
     ffmpegOffset_ = readDataInfo.ffmpegOffset + readDataInfo.realReadLength_;
     if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
         uint64_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
-        if (remain > 0 && remain < DECRYPT_UNIT_LEN && keyLen_ > 0) {
+        if (remain > 0 && remain < DECRYPT_UNIT_LEN && aesDecryptor_->keyLen_ > 0) {
             size_t readRemain = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
             readOffset_ += readRemain;
             ffmpegOffset_ += readRemain;
@@ -777,7 +776,7 @@ void HlsSegmentManager::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readD
 
 void HlsSegmentManager::RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (keyLen_ <= 0 || readDataInfo.realReadLength_ < 1) {
+    if (aesDecryptor_->keyLen_ <= 0 || readDataInfo.realReadLength_ < 1) {
         return;
     }
     if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
@@ -878,7 +877,7 @@ void HlsSegmentManager::PrepareToSeek()
     memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
     memset_s(decryptCache_, minBufferSize_, 0x00, minBufferSize_);
     memset_s(decryptBuffer_, minBufferSize_, 0x00, minBufferSize_);
-    auto ret = memcpy_s(iv_, DECRYPT_UNIT_LEN, initIv_, DECRYPT_UNIT_LEN);
+    auto ret = memcpy_s(aesDecryptor_->iv_, DECRYPT_UNIT_LEN, aesDecryptor_->initIv_, DECRYPT_UNIT_LEN);
     if (ret != 0) {
         MEDIA_LOG_E("iv copy error, type: %{public}d", type_);
     }
@@ -1136,7 +1135,7 @@ uint32_t HlsSegmentManager::SaveData(uint8_t* data, uint32_t len, bool notBlock)
     }
     startedPlayStatus_ = true;
     uint32_t res = 0;
-    if (keyLen_ == 0) {
+    if (aesDecryptor_->keyLen_ == 0) {
         res = SaveCacheBufferData(data, len, notBlock);
     } else {
         res = SaveEncryptData(data, len, notBlock);
@@ -1171,7 +1170,7 @@ uint32_t HlsSegmentManager::GetDecrptyRealLen(uint8_t* writeDataPoint, uint32_t 
         MEDIA_LOG_D("minWriteLen: " PUBLIC_LOG_D32 ", type: %{public}d", minWriteLen, type_);
     }
     realLen = minWriteLen + afterAlignRemainedLength_;
-    AES_cbc_encrypt(decryptBuffer_, decryptCache_, realLen, &aesKey_, iv_, AES_DECRYPT);
+    aesDecryptor_->Decrypt(decryptBuffer_, decryptCache_, realLen);
     return realLen;
 }
 
@@ -1338,14 +1337,9 @@ void HlsSegmentManager::DownloadReport()
 
 void HlsSegmentManager::OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv)
 {
-    keyLen_ = keyLen;
-    if (keyLen <= 0) {
-        return;
+    if (aesDecryptor_ != nullptr) {
+        aesDecryptor_->OnSourceKeyChange(key, keyLen, iv);
     }
-    NZERO_LOG(memcpy_s(iv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memcpy_s(initIv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memcpy_s(key_, DECRYPT_UNIT_LEN, key, keyLen > DECRYPT_UNIT_LEN ? DECRYPT_UNIT_LEN : keyLen));
-    AES_set_decrypt_key(key_, DECRYPT_COPY_LEN, &aesKey_);
 }
 
 void HlsSegmentManager::OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos)
@@ -1546,19 +1540,20 @@ int64_t HlsSegmentManager::RequestNewTsForRead(const PlayInfo& item)
 
 void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std::string& location)
 {
-    uint32_t bitRate = downloadRequest_->GetBitRate();
+    auto downloadRequest = GetDownloadRequest();
+    uint32_t bitRate = downloadRequest->GetBitRate();
     {
         AutoLock lock(tsStorageInfoMutex_);
         tsStorageInfo_[writeTsIndex_].second = true;
     }
-    if (keyLen_ > 0) {
-        NZERO_LOG(memcpy_s(iv_, DECRYPT_UNIT_LEN, initIv_, DECRYPT_UNIT_LEN));
+    if (aesDecryptor_->keyLen_ > 0) {
+        NZERO_LOG(memcpy_s(aesDecryptor_->iv_, DECRYPT_UNIT_LEN, aesDecryptor_->initIv_, DECRYPT_UNIT_LEN));
     }
     auto playInfo = playList_->Pop(POP_TIME_OUT_MS);
     if (!playInfo.url_.empty()) {
         writeTsIndex_++;
-        size_t fragmentSize = downloadRequest_->GetFileContentLength();
-        double duration = downloadRequest_->GetDuration();
+        size_t fragmentSize = downloadRequest->GetFileContentLength();
+        double duration = downloadRequest->GetDuration();
         CalculateBitRate(fragmentSize, duration);
         PutRequestIntoDownloader(playInfo);
     } else {
@@ -1889,8 +1884,9 @@ Status HlsSegmentManager::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
         waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(currentBitRate_) /
             static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
     }
-    if (downloadRequest_) {
-        downloadRequest_->SetBitRateToRequestSize(currentBitRate_);
+    auto downloadRequest = GetDownloadRequest();
+    if (downloadRequest) {
+        downloadRequest->SetBitRateToRequestSize(currentBitRate_);
     }
     return Status::OK;
 }
@@ -2198,7 +2194,8 @@ bool HlsSegmentManager::SetInitialBufferSize(int32_t offset, int32_t size)
 {
     AutoLock lock(initCacheMutex_);
     bool isInitBufferSizeOk = IsCachedInitSizeReady(size) || CheckBreakCondition();
-    if (isInitBufferSizeOk || !downloader_ || !downloadRequest_ || isTimeoutErrorNotified_.load()) {
+    auto downloadRequest = GetDownloadRequest();
+    if (isInitBufferSizeOk || !downloader_ || !downloadRequest || isTimeoutErrorNotified_.load()) {
         MEDIA_LOG_I("HLS SetInitialBufferSize initCacheSize ok, type: %{public}d", type_);
         return false;
     }
@@ -2404,7 +2401,9 @@ void HlsSegmentManager::Clone(const std::shared_ptr<HlsSegmentManager> &other)
     totalBufferSize_ = other->totalBufferSize_;
     callback_ = other->callback_;
     statusCallback_ = other->statusCallback_;
-    OnSourceKeyChange(other->key_, other->keyLen_, other->iv_);
+    if (other->aesDecryptor_ != nullptr) {
+        OnSourceKeyChange(other->aesDecryptor_->key_, other->aesDecryptor_->keyLen_, other->aesDecryptor_->iv_);
+    }
     isAutoSelectBitrate_ = other->isAutoSelectBitrate_;
     seekTime_ = other->seekTime_;
     downloadErrorState_ = other->downloadErrorState_;
@@ -2507,6 +2506,18 @@ void HlsSegmentManager::SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bu
 void HlsSegmentManager::SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback)
 {
     segEventCb_ = segEventCallback;
+}
+
+void HlsSegmentManager::SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest)
+{
+    std::unique_lock<std::shared_mutex> lock(downloadRequestMutex_);
+    downloadRequest_ = std::move(downloadRequest);
+}
+
+std::shared_ptr<DownloadRequest> HlsSegmentManager::GetDownloadRequest()
+{
+    std::shared_lock<std::shared_mutex> lock(downloadRequestMutex_);
+    return downloadRequest_;
 }
 
 }

@@ -287,6 +287,21 @@ bool VideoDecSample::InitInputFile()
         } else if (inPath_.find("wmv3") != std::string::npos) {
             int32_t ret = CreateWmv3Reader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateWmv3Reader failed");
+#ifdef SUPPORT_CODEC_VP8
+        } else if (inPath_.find("vp8") != std::string::npos) {
+            int32_t ret = CreateVp8Reader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateVp8Reader failed");
+#endif
+#ifdef SUPPORT_CODEC_VP9
+        } else if (inPath_.find("vp9") != std::string::npos) {
+            int32_t ret = CreateVp9Reader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateVp9Reader failed");
+#endif
+#ifdef SUPPORT_CODEC_AV1
+        } else if (inPath_.find("av1") != std::string::npos) {
+            int32_t ret = CreateAv1Reader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateAv1Reader failed");
+#endif
         } else {
             int32_t ret = CreateMpegReader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMpegReader failed");
@@ -369,6 +384,42 @@ int32_t VideoDecSample::CreateWmv3Reader()
     int32_t ret = std::static_pointer_cast<Wmv3Reader>(signal_->reader_)->Init(info);
     return ret;
 }
+
+#ifdef SUPPORT_CODEC_VP8
+int32_t VideoDecSample::CreateVp8Reader()
+{
+    std::shared_ptr<Vp8ReaderInfo> info = std::make_shared<Vp8ReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<Vp8Reader>();
+    int32_t ret = std::static_pointer_cast<Vp8Reader>(signal_->reader_)->Init(info);
+    return ret;
+}
+#endif
+
+#ifdef SUPPORT_CODEC_VP9
+int32_t VideoDecSample::CreateVp9Reader()
+{
+    std::shared_ptr<Vp9ReaderInfo> info = std::make_shared<Vp9ReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<Vp9Reader>();
+    int32_t ret = std::static_pointer_cast<Vp9Reader>(signal_->reader_)->Init(info);
+    return ret;
+}
+#endif
+
+#ifdef SUPPORT_CODEC_AV1
+int32_t VideoDecSample::CreateAv1Reader()
+{
+    std::shared_ptr<Av1ReaderInfo> info = std::make_shared<Av1ReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<Av1Reader>();
+    int32_t ret = std::static_pointer_cast<Av1Reader>(signal_->reader_)->Init(info);
+    return ret;
+}
+#endif
 
 int32_t VideoDecSample::SetCallback(OH_AVCodecAsyncCallback callback, shared_ptr<VCodecSignal> &signal)
 {

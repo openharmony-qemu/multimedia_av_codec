@@ -37,6 +37,18 @@ std::unordered_map<CodecType, std::shared_ptr<CodecListBase>> GetCodecLists()
     codecLists.insert(std::make_pair(CodecType::AVCODEC_VIDEO_CODEC, vcodecList));
     std::shared_ptr<CodecListBase> hevcDecoderList = std::make_shared<VideoHevcDecoderList>();
     codecLists.insert(std::make_pair(CodecType::AVCODEC_VIDEO_HEVC_DECODER, hevcDecoderList));
+#ifdef SUPPORT_CODEC_VP8
+    std::shared_ptr<CodecListBase> vp8DecoderList = std::make_shared<VideoVp8DecoderList>();
+    codecLists.insert(std::make_pair(CodecType::AVCODEC_VIDEO_VP8_DECODER, vp8DecoderList));
+#endif
+#ifdef SUPPORT_CODEC_VP9
+    std::shared_ptr<CodecListBase> vp9DecoderList = std::make_shared<VideoVp9DecoderList>();
+    codecLists.insert(std::make_pair(CodecType::AVCODEC_VIDEO_VP9_DECODER, vp9DecoderList));
+#endif
+#ifdef SUPPORT_CODEC_AV1
+    std::shared_ptr<CodecListBase> av1DecoderList = std::make_shared<VideoAv1DecoderList>();
+    codecLists.insert(std::make_pair(CodecType::AVCODEC_VIDEO_AV1_DECODER, av1DecoderList));
+#endif
     std::shared_ptr<CodecListBase> avcEncoderList = std::make_shared<VideoAvcEncoderList>();
     codecLists.insert(std::make_pair(CodecType::AVCODEC_VIDEO_AVC_ENCODER, avcEncoderList));
 #endif

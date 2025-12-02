@@ -69,6 +69,21 @@ std::shared_ptr<CodecBase> VCodecFactory::CreateCodecByName(const std::string &n
         case CodecType::AVCODEC_VIDEO_AVC_ENCODER:
             codec = AvcEncoderLoader::CreateByName(name);
             break;
+#ifdef SUPPORT_CODEC_AV1
+        case CodecType::AVCODEC_VIDEO_AV1_DECODER:
+            codec = Av1DecoderLoader::CreateByName(name);
+            break;
+#endif
+#ifdef SUPPORT_CODEC_VP8
+        case CodecType::AVCODEC_VIDEO_VP8_DECODER:
+            codec = Vp8DecoderLoader::CreateByName(name);
+            break;
+#endif
+#ifdef SUPPORT_CODEC_VP9
+        case CodecType::AVCODEC_VIDEO_VP9_DECODER:
+            codec = Vp9DecoderLoader::CreateByName(name);
+            break;
+#endif
         default:
             AVCODEC_LOGE("Create codec %{public}s failed", name.c_str());
             break;
