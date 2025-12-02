@@ -124,7 +124,7 @@ void DemuxerInnerFuncNdkTest::TearDown()
 
 bool DemuxerInnerFuncNdkTest::CreateBufferSize()
 {
-    uint32_t buffersize = 1024*1024;
+    uint32_t buffersize = 1024 * 1024;
     std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     avBuf_ = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, buffersize);
     if (!avBuf_) {
@@ -1387,8 +1387,8 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_COVER_INNER_FUNC_0010, TestSize.Level2
     int32_t trackCount = 0;
     Format trackFormat_;
     Format sourceFormat_;
-    uint8_t *add_ = nullptr;
-    size_t buffSize_ = 0;
+    uint8_t *add = nullptr;
+    size_t buffSize = 0;
     fd_ = open("/data/test/media/cover_jpg.mp4", O_RDONLY);
     struct stat fileStatus {};
     if (stat("/data/test/media/cover_jpg.mp4", &fileStatus) == 0) {
@@ -1415,16 +1415,13 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_COVER_INNER_FUNC_0010, TestSize.Level2
             if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
                 continue;
             }
-            if (i == 2 && !isGetCoverData) {
-                ASSERT_EQ(true, trackFormat_.GetBuffer(MediaDescriptionKey::MD_KEY_COVER, &add_, buffSize_));
-                isGetCoverData = true;
-
+            if (i == 2) {
+                ASSERT_EQ(true, trackFormat_.GetBuffer(MediaDescriptionKey::MD_KEY_COVER, &add, buffSize));
+                continue;
             }
-            if (i != 2) {
-                ret = demuxer->ReadSampleBuffer(i, avBuf_);
-                if (ret != 0) {
-                    cout << "ReadSampleBuffer failed" << i << endl;
-                } 
+            ret = demuxer->ReadSampleBuffer(i, avBuf_);
+            if (ret != 0) {
+                cout << "ReadSampleBuffer failed" << i << endl;
             }
             GetFrameNum(i);
         }
