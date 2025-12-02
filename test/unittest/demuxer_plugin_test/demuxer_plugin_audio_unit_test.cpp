@@ -40,7 +40,7 @@ using namespace OHOS::Media::Plugins;
 string g_m4aPath1 = string("/data/test/media/audio/h264_fmp4.m4a");
 string g_accPath1 = string("/data/test/media/audio/aac_44100_1.aac");
 string g_mp3Path1 = string("/data/test/media/audio/mp3_48000_1_cover.mp3");
-string g_oggPath1 = string("/data/test/media/audio/ogg_48000_1.ogg");
+string g_oggPath1 = string("/data/test/media/audio/ogg_48000_1_ut.ogg");
 string g_flacPath1 = string("/data/test/media/audio/flac_48000_1_cover.flac");
 string g_wavPath1 = string("/data/test/media/audio/wav_48000_1_ut.wav");
 string g_wavPath2 = string("/data/test/media/audio/wav_48000_1_pcm_alaw.wav");
