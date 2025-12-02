@@ -27,6 +27,10 @@ const std::string MP4_NULL_SEGMENT_BASE = "http://127.0.0.1:46666/dewuNull.mp4";
 const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/h264.flv";
 namespace {
     constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
+    constexpr uint64_t MAX_RING_BUFFER_SIZE = 19 * 1024 * 1024;
+    constexpr uint64_t MIN_CACHE_BUFFER_SIZE = 5 * 1024 * 1024;
+    constexpr uint64_t MIN_RING_BUFFER_SIZE = 5 * 1024 * 1024;
+    constexpr uint64_t DURATION_BUFFER_SIZE_RATIO = 1 * 1024 * 1024;
 }
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server;
 std::shared_ptr<HttpMediaDownloader> MP4httpMediaDownloader;
@@ -989,5 +993,71 @@ HWTEST_F(HttpMediaDownloaderUnitTest, IsAutoSelectConditionOk, TestSize.Level1)
     FLVhttpMediaDownloader->isSelectingBitrate_ = false;
     FLVhttpMediaDownloader->downloadSpeeds_.clear();
     EXPECT_FALSE(FLVhttpMediaDownloader->IsAutoSelectConditionOk());
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_RING_BUFFER_SIZE_MAX, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE, 100, nullptr);
+    downloader->Init();
+    EXPECT_EQ(downloader->totalBufferSize_, MAX_RING_BUFFER_SIZE);
+    EXPECT_TRUE(downloader->ringBuffer_ != nullptr);
+    if (downloader->ringBuffer_ != nullptr) {
+        EXPECT_EQ(downloader->ringBuffer_->bufferSize_, MAX_RING_BUFFER_SIZE);
+    }
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_RING_BUFFER_SIZE_MIN, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE, 1, nullptr);
+    downloader->Init();
+    EXPECT_EQ(downloader->totalBufferSize_, MIN_RING_BUFFER_SIZE);
+    EXPECT_TRUE(downloader->ringBuffer_ != nullptr);
+    if (downloader->ringBuffer_ != nullptr) {
+        EXPECT_EQ(downloader->ringBuffer_->bufferSize_, MIN_RING_BUFFER_SIZE);
+    }
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_RING_BUFFER_SIZE_NORMAL, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE, 8, nullptr);
+    downloader->Init();
+    EXPECT_EQ(downloader->totalBufferSize_, 8 * DURATION_BUFFER_SIZE_RATIO);
+    EXPECT_TRUE(downloader->ringBuffer_ != nullptr);
+    if (downloader->ringBuffer_ != nullptr) {
+        EXPECT_EQ(downloader->ringBuffer_->bufferSize_, 8 * DURATION_BUFFER_SIZE_RATIO);
+    }
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_CACHE_BUFFER_SIZE_MAX, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 100, nullptr);
+    downloader->Init();
+    EXPECT_EQ(downloader->totalBufferSize_, MAX_CACHE_BUFFER_SIZE);
+    EXPECT_TRUE(downloader->cacheMediaBuffer_ != nullptr);
+    if (downloader->cacheMediaBuffer_ != nullptr) {
+        EXPECT_EQ(downloader->cacheMediaBuffer_->totalBuffSize_, MAX_CACHE_BUFFER_SIZE);
+    }
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_CACHE_BUFFER_SIZE_MIN, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 1, nullptr);
+    downloader->Init();
+    EXPECT_EQ(downloader->totalBufferSize_, MIN_CACHE_BUFFER_SIZE);
+    EXPECT_TRUE(downloader->cacheMediaBuffer_ != nullptr);
+    if (downloader->cacheMediaBuffer_ != nullptr) {
+        EXPECT_EQ(downloader->cacheMediaBuffer_->totalBuffSize_, MIN_CACHE_BUFFER_SIZE);
+    }
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_CACHE_BUFFER_SIZE_NORMAL, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    downloader->Init();
+    EXPECT_EQ(downloader->totalBufferSize_, 8 * DURATION_BUFFER_SIZE_RATIO);
+    EXPECT_TRUE(downloader->cacheMediaBuffer_ != nullptr);
+    if (downloader->cacheMediaBuffer_ != nullptr) {
+        EXPECT_EQ(downloader->cacheMediaBuffer_->totalBuffSize_, 8 * DURATION_BUFFER_SIZE_RATIO);
+    }
 }
 }
