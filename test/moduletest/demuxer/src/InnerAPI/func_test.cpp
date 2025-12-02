@@ -91,6 +91,16 @@ public:
 public:
     int32_t fd_ = -1;
     int64_t size;
+    bool isVideoEosFlagForSave = false;
+    bool isAudioEosFlagForSave = false;
+    int32_t videoTrackIdx = 1;
+    int32_t audioTrackIdx = 0;
+    uint32_t videoIndexForRead = 0;
+    uint32_t audioIndexForRead = 0;
+private:
+    bool CreateBufferSize();
+    void GetFrameNum(int32_t i);
+    std::shared_ptr<AVBuffer> avBuf_{ nullptr };
 };
 
 void DemuxerInnerFuncNdkTest::SetUpTestCase() {}
@@ -109,6 +119,34 @@ void DemuxerInnerFuncNdkTest::TearDown()
 
     if (demuxer != nullptr) {
         demuxer = nullptr;
+    }
+}
+
+bool DemuxerInnerFuncNdkTest::CreateBufferSize()
+{
+    uint32_t buffersize = 1024*1024;
+    std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    avBuf_ = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, buffersize);
+    if (!avBuf_) {
+        return false;
+    }
+    return true;
+}
+
+void DemuxerInnerFuncNdkTest::GetFrameNum(int32_t i)
+{
+    if (avBuf_->flag_ == MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS) {
+        if (i == videoTrackIdx) {
+            isVideoEosFlagForSave = true;
+        } else if (i == audioTrackIdx) {
+            isAudioEosFlagForSave = true;
+        }
+    } else {
+        if (i == videoTrackIdx) {
+            videoIndexForRead++;
+        } else if (i == audioTrackIdx) {
+            audioIndexForRead++;
+        }
     }
 }
 } // namespace
@@ -1336,5 +1374,64 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0160, TestSize.Level3)
     ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
     ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+}
+
+/**
+ * @tc.number    : DEMUXER_COVER_INNER_FUNC_0010
+ * @tc.name      : demuxer track with audio\video\cover
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_COVER_INNER_FUNC_0010, TestSize.Level2)
+{
+    bool isGetCoverData = false;
+    int32_t trackCount = 0;
+    Format trackFormat_;
+    Format sourceFormat_;
+    uint8_t *add_ = nullptr;
+    size_t buffSize_ = 0;
+    fd_ = open("/data/test/media/cover_jpg.mp4", O_RDONLY);
+    struct stat fileStatus {};
+    if (stat("/data/test/media/cover_jpg.mp4", &fileStatus) == 0) {
+        size = static_cast<int64_t>(fileStatus.st_size);
+    }
+    source = AVSourceFactory::CreateWithFD(fd_, 0, size);
+    ASSERT_NE(nullptr, source);
+    demuxer = AVDemuxerFactory::CreateWithSource(source);
+    ASSERT_NE(nullptr, demuxer);
+    int32_t ret = source->GetSourceFormat(sourceFormat_);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    sourceFormat_.GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, trackCount);
+    ASSERT_EQ(3, trackCount);
+    for (int32_t i = 0; i < trackCount; i++) {
+        ret = demuxer->SelectTrackByID(i);
+    }
+    ASSERT_EQ(true, CreateBufferSize());
+    while (!isVideoEosFlagForSave || !isAudioEosFlagForSave) {
+        for (int32_t i = 0; i < trackCount; i++) {
+            ret = source->GetTrackFormat(trackFormat_, i);
+            if (ret != 0) {
+                cout << "GetTrackFormat failed!!!!" << endl;
+            }
+            if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
+                continue;
+            }
+            if (i == 2 && !isGetCoverData) {
+                ASSERT_EQ(true, trackFormat_.GetBuffer(MediaDescriptionKey::MD_KEY_COVER, &add_, buffSize_));
+                isGetCoverData = true;
+
+            }
+            if (i != 2) {
+                ret = demuxer->ReadSampleBuffer(i, avBuf_);
+                if (ret != 0) {
+                    cout << "ReadSampleBuffer failed" << i << endl;
+                } 
+            }
+            GetFrameNum(i);
+        }
+    }
+    ASSERT_EQ(602, videoIndexForRead);
+    ASSERT_EQ(433, audioIndexForRead);
+    close(fd_);
+    fd_ = -1;
 }
 } // namespace
