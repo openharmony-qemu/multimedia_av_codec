@@ -165,7 +165,7 @@ int32_t CodecServer::InitServer(int32_t instanceId)
 int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::BASIC_CREATE_CODEC_INFO, callerInfo);
+    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::BASIC_CREATE_CODEC_INFO);
 
     int32_t ret = isMimeType ? InitByMime(type, name, callerInfo) : InitByName(name, callerInfo);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret,

@@ -111,7 +111,7 @@ struct SampleInfo {
     CodecType codecType = VIDEO_HW_DECODER;
     std::string inputFilePath;
     bool createCodecByMime = false;
-    std::string codecMime = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    std::string codecMime;
     int32_t videoWidth = 1280;
     int32_t videoHeight = 720;
     double frameRate = SAMPLE_DEFAULT_FRAMERATE;

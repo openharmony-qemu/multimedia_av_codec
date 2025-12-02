@@ -27,6 +27,7 @@ namespace {
 using namespace OHOS::Media;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "BackGroundEventHandler"};
 constexpr auto CODEC_STUB_INTERFACE_DESCRIPTOR = u"IStandardCodecService";
+constexpr static int32_t APP_IN_BG_ELAPSED_TIME_THRESHOLD = 600; // seconds
 } // namespace
 
 namespace OHOS {
@@ -192,11 +193,13 @@ void BackGroundEventHandler::NotifyActive(InstanceId instanceId)
     auto actualProcessName = codecInstance->second.GetActualCallerProcessName();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(
         std::chrono::system_clock::now() - freezeStartTime).count();
-    Meta eventMeta;
-    eventMeta.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, actualProcessName);
-    eventMeta.SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), static_cast<int32_t>(elapsedTime));
-    EventManager::GetInstance().OnInstanceEvent(
-        StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, eventMeta);
+    if (elapsedTime >= APP_IN_BG_ELAPSED_TIME_THRESHOLD) {
+        Meta eventMeta;
+        eventMeta.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, actualProcessName);
+        eventMeta.SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), static_cast<int32_t>(elapsedTime));
+        EventManager::GetInstance().OnInstanceEvent(
+            StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, eventMeta);
+    }
     mutex_.unlock();
 }
 
@@ -215,11 +218,13 @@ void BackGroundEventHandler::NotifyActive(const std::vector<pid_t> &pidList)
         activeAppList.emplace(codecInstance.second.GetActualCallerProcessName(), static_cast<int32_t>(elapsedTime));
     }
     for (const auto &[appName, elapsedTime] : activeAppList) {
-        Meta eventMeta;
-        eventMeta.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, appName);
-        eventMeta.SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), static_cast<int32_t>(elapsedTime));
-        EventManager::GetInstance().OnInstanceEvent(
-            StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, eventMeta);
+        if (elapsedTime >= APP_IN_BG_ELAPSED_TIME_THRESHOLD) {
+            Meta eventMeta;
+            eventMeta.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, appName);
+            eventMeta.SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), static_cast<int32_t>(elapsedTime));
+            EventManager::GetInstance().OnInstanceEvent(
+                StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, eventMeta);
+        }
     }
 }
 

@@ -206,7 +206,7 @@ void InstanceMemoryUpdateEventHandler::DeterminAppMemoryExceedThresholdAndReport
     }
     if (appMemoryExceedThreshold && !appExistTimer && !appInExceedThresholdList) {
         auto timeName = std::string("Pid_") + std::to_string(actualCallerPid) + " memory exceeded threshold";
-        auto timer = std::make_shared<AVCodecXcollieTimer>(timeName, false, MEMORY_LEAK_UPLOAD_TIMEOUT,
+        auto timer = std::make_shared<AVCodecXcollieTimer>(timeName, false, true, MEMORY_LEAK_UPLOAD_TIMEOUT,
             [=](void *) -> void { ReportAppMemory(callerPid, actualCallerPid); });
         std::lock_guard<std::shared_mutex> timerLock(timerMutex_);
         timerMap_.emplace(actualCallerPid, timer);

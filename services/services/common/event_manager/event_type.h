@@ -27,17 +27,18 @@ namespace MediaAVCodec {
  *   +-------+-------------+-------------+-------------+-------------+
  */
 enum class EventType : uint32_t {
-    UNKNOWN                     = 0,
-    INSTANCE_INIT               = (1 << 24),
-    INSTANCE_RELEASE            = (2 << 24),
-    INSTANCE_MEMORY_UPDATE      = (3 << 24),
-    INSTANCE_MEMORY_RESET       = (4 << 24),
-    INSTANCE_ENCODE_BEGIN       = (5 << 24),
-    INSTANCE_ENCODE_END         = (6 << 24),
-    STATISTICS_EVENT            = (7 << 24),
-    STATISTICS_EVENT_SUBMIT     = (8 << 24),
+    UNKNOWN                             = 0,
+    INSTANCE_INIT                       = (1 << 24),
+    INSTANCE_RELEASE                    = (2 << 24),
+    INSTANCE_MEMORY_UPDATE              = (3 << 24),
+    INSTANCE_MEMORY_RESET               = (4 << 24),
+    INSTANCE_ENCODE_BEGIN               = (5 << 24),
+    INSTANCE_ENCODE_END                 = (6 << 24),
+    STATISTICS_EVENT                    = (7 << 24),
+    STATISTICS_EVENT_SUBMIT             = (8 << 24),
+    STATISTICS_EVENT_REGISTER_SUBMIT    = (9 << 24),
     END,
-    MASK                        = 0xFF000000,
+    MASK                                = 0xFF000000,
 };
 
 inline constexpr EventType operator&(const EventType a, const EventType b)

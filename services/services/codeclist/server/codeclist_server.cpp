@@ -68,9 +68,9 @@ int32_t CodecListServer::GetCapability(CapabilityData &capabilityData, const std
 {
     int32_t ret = codecListCore_->GetCapability(capabilityData, mime, isEncoder, category);
 
-    Media::Meta eventMeta;
-    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::BASIC_QUERY_CAP_INFO, eventMeta);
+    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::BASIC_QUERY_CAP_INFO);
     if (ret != AVCS_ERR_OK) {
+        Media::Meta eventMeta;
         eventMeta.SetData(Media::Tag::MIME_TYPE, mime);
         eventMeta.SetData(EventInfoExtentedKey::IS_ENCODER.data(), isEncoder);
         EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, eventMeta);

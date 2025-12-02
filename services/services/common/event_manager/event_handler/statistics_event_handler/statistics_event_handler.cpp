@@ -15,12 +15,15 @@
 
 #include "statistics_event_handler.h"
 #include <mutex>
+#include <ctime>
 #include "cJSON.h"
 #include "avcodec_log.h"
 #include "avcodec_server_manager.h"
 #include "event_info_extented_key.h"
 #include "avcodec_info.h"
 #include "avcodec_sysevent.h"
+#include "avcodec_xcollie.h"
+#include "syspara/parameters.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -75,7 +78,11 @@ public:
 
     AppNameIndex GetIndexByAppName(const std::string &appName)
     {
+        constexpr size_t maxAppNameLength = 127;
         AppNameIndex appIndex = INVALID_APP_NAME_INDEX;
+        if (appName.size() > maxAppNameLength) {
+            return INVALID_APP_NAME_INDEX;
+        }
         auto dictIter = appNameDict_.find(appName);
         if (dictIter == appNameDict_.end()) {
             if (appNameDict_.size() < maxAppNameCount) {
@@ -376,8 +383,7 @@ public:
             case StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO: {
                 int32_t elapsedTime = 0;
                 if (longTimeInBgInfo_.size() < maxOccupationHDecRecordCount &&
-                    eventMeta.GetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), elapsedTime) &&
-                    elapsedTime >= appInBackgroundElapsedTimeThreadshold) {
+                    eventMeta.GetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), elapsedTime)) {
                     longTimeInBgInfo_.emplace(callerNameIndex, static_cast<uint32_t>(elapsedTime));
                 }
                 break;
@@ -439,7 +445,6 @@ private:
 
     using HDecLimitExceededAppInfoVector = std::vector<std::pair<AppNameIndex, uint32_t>>; // AppNameIndex, count
     constexpr static size_t maxOccupationHDecRecordCount = 200;
-    constexpr static int32_t appInBackgroundElapsedTimeThreadshold = 600; // seconds
     std::atomic<bool> isInOccupationHDecEvent_{ false };
     HDecLimitExceededAppInfoVector lastOccupationHDecAppInfoVec_;
     std::unordered_multimap<AppNameIndex, HDecLimitExceededAppInfoVector> hdecLimitExceededInfo_;
@@ -553,6 +558,7 @@ void StatisticsEventInfo::OnSubmitEventInfo()
         eventInfo.second->OnSubmitEventInfo();
     }
     ResetEventInfo();
+    RegisterSubmitEventTimer();
 }
 
 void StatisticsEventInfo::ResetEventInfo()
@@ -568,6 +574,34 @@ void StatisticsEventInfo::RegisterEventHooker(StatisticsEventType eventType, Eve
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     eventHookers_[eventType] = hooker;
+}
+
+void StatisticsEventInfo::RegisterSubmitEventTimer()
+{
+    uint32_t timeout = 0;
+    time_t now = time(nullptr);
+    std::tm tmLocal{};
+    if (localtime_r(&now, &tmLocal) != nullptr) {
+        tmLocal.tm_hour = 0;
+        tmLocal.tm_min = 0;
+        tmLocal.tm_sec = 0;
+        time_t today = mktime(&tmLocal);
+        time_t target = today + 5 * 3600; // 5 * 3600 AM today
+        // Seek to next day if already past 5 AM
+        if (now >= target) {
+            target += 24 * 3600; // 24 * 3600 seconds
+        }
+        timeout = static_cast<uint32_t>(target - now);
+    } else {
+        timeout = 24 * 3600; // Fallback to 24 * 3600 seconds if localtime_r failed
+    }
+
+#ifdef BUILD_ENG_VERSION
+    timeout = OHOS::system::GetUintParameter("OHOS.MediaAVCodec.StatisticsEvent.SubmitTimeout", timeout);
+#endif
+
+    timer_ = std::make_shared<AVCodecXcollieTimer>("SubmitStatisticsEvent", false, false, timeout,
+                                                    [this](void *) { OnSubmitEventInfo(); });
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

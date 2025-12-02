@@ -32,8 +32,13 @@ ohos_source_set("statistics_event_handler") {
     "$av_codec_root_dir/services/services/sa_avcodec:sa_manager",
   ]
 
+  if (build_variant != "user") {
+    defines = [ "BUILD_ENG_VERSION" ]
+  }
+
   external_deps = [
     "cJSON:cjson",
+    "init:libbegetutil",
     "media_foundation:media_foundation",
   ]
 

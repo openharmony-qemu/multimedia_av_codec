@@ -35,6 +35,11 @@ EventManager &EventManager::GetInstance()
     return manager;
 }
 
+void EventManager::OnInstanceEvent(EventType type) {
+    Media::Meta eventMate;
+    OnInstanceEvent(type, eventMate);
+}
+
 void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
 {
     CHECK_AND_RETURN_LOG(type > EventType::UNKNOWN && type < EventType::END, "Unknown event type, ignore");
@@ -64,10 +69,19 @@ void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
         case EventType::STATISTICS_EVENT_SUBMIT:
             OnStatisticsEventSubmit();
             break;
+        case EventType::STATISTICS_EVENT_REGISTER_SUBMIT:
+            OnStatisticsEventRegisterSubmit();
+            break;
         default:
             AVCODEC_LOGW("Nothing to do with this event: %{public}d", static_cast<int32_t>(type));
             break;
     }
+}
+
+void EventManager::OnInstanceEvent(StatisticsEventType type)
+{
+    Media::Meta eventMate;
+    OnStatisticsEvent(type, eventMate);
 }
 
 void EventManager::OnInstanceEvent(StatisticsEventType type, Media::Meta &meta)
@@ -127,6 +141,11 @@ void EventManager::OnStatisticsEvent(StatisticsEventType type, Media::Meta &meta
 void EventManager::OnStatisticsEventSubmit()
 {
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+void EventManager::OnStatisticsEventRegisterSubmit()
+{
+    StatisticsEventInfo::GetInstance().RegisterSubmitEventTimer();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

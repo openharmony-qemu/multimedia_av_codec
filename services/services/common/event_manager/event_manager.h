@@ -28,7 +28,9 @@ namespace MediaAVCodec {
 class EventManager {
 public:
     static EventManager &GetInstance();
+    void OnInstanceEvent(EventType type);
     void OnInstanceEvent(EventType type, Media::Meta &meta);
+    void OnInstanceEvent(StatisticsEventType type);
     void OnInstanceEvent(StatisticsEventType type, Media::Meta &meta);
 
 private:
@@ -44,6 +46,7 @@ private:
     void OnInstanceEncodeEndEvent(Media::Meta &meta);
     void OnStatisticsEvent(StatisticsEventType type, Media::Meta &meta);
     void OnStatisticsEventSubmit();
+    void OnStatisticsEventRegisterSubmit();
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

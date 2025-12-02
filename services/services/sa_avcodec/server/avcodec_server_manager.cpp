@@ -52,11 +52,8 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
         return OHOS::NO_ERROR;
     }
 
-    if (!args.empty()) {
-        if (args[0] == u"report_statistics_event") {
-            Media::Meta eventMeta;
-            EventManager::GetInstance().OnInstanceEvent(EventType::STATISTICS_EVENT_SUBMIT, eventMeta);
-        }
+    if (!args.empty() && args[0] == u"report_statistics_event") {
+        EventManager::GetInstance().OnInstanceEvent(EventType::STATISTICS_EVENT_SUBMIT);
     }
 
     AVCodecXCollie::GetInstance().Dump(fd);
@@ -183,9 +180,7 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
             CHECK_AND_BREAK_LOG(it != codecStubMap_.end(), "find codec object failed, pid(%{public}d)", pid);
 
             if (it->second.second.videoCodecType == VideoCodecType::DECODER_HARDWARE) {
-                Media::Meta eventMeta;
-                EventManager::GetInstance().OnInstanceEvent(
-                    StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO, eventMeta);
+                EventManager::GetInstance().OnInstanceEvent( StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO);
             }
 
             auto preSize = codecStubMap_.size();
@@ -233,9 +228,7 @@ void AVCodecServerManager::EraseCodecObjectByPid(pid_t pid)
     for (auto it = codecStubMap_.begin(); it != codecStubMap_.end();) {
         if (it->first == pid) {
             if (it->second.second.videoCodecType == VideoCodecType::DECODER_HARDWARE) {
-                Media::Meta eventMeta;
-                EventManager::GetInstance().OnInstanceEvent(
-                    StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO, eventMeta);
+                EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO);
             }
             executor_.Commit(it->second.first);
             it = codecStubMap_.erase(it);

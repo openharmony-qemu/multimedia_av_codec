@@ -21,6 +21,7 @@
 #include <shared_mutex>
 #include "meta/meta.h"
 #include "event_type.h"
+#include "avcodec_xcollie.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -53,10 +54,12 @@ public:
     void OnSubmitEventInfo() override;
     void ResetEventInfo() override;
     void RegisterEventHooker(StatisticsEventType eventType, EventHooker hooker);
+    void RegisterSubmitEventTimer();
 
 private:
     std::shared_mutex mutex_;
     std::unordered_map<StatisticsEventType, EventHooker> eventHookers_;
+    std::shared_ptr<AVCodecXcollieTimer> timer_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
