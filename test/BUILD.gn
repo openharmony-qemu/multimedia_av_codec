@@ -489,11 +489,13 @@ group("video_codec_unit_test") {
   if (!use_libfuzzer) {
     if (av_codec_support_test) {
       deps += [
+        "unittest/video_test/avcencoder_test:video_avcencoder_coverage_unit_test",
         "unittest/video_test/avcodec_info_test:codeclist_avcodec_info_unit_test",
         "unittest/video_test/codec_param_checker_test:video_codec_param_checker_test",
         "unittest/video_test/codeclist_test:codeclist_capi_unit_test",
         "unittest/video_test/codeclist_test:codeclist_inner_unit_test",
         "unittest/video_test/codeclist_test/coverage_unit_test:codeclist_coverage_unit_test",
+        "unittest/video_test/dfx_statistics_event_test:video_codec_dfx_statics_event_test",
         "unittest/video_test/dfx_test:video_codec_dfx_test",
         "unittest/video_test/drm_decryptor_test:drm_decryptor_coverage_unit_test",
         "unittest/video_test/event_manager_unit_test:video_event_manager_coverage_unit_test",
@@ -503,7 +505,6 @@ group("video_codec_unit_test") {
         "unittest/video_test/sa_avcodec_test:video_sa_avcodec_unit_test",
         "unittest/video_test/vcodec_framework_test:vcodec_framework_test",
         "unittest/video_test/vcodec_server_test:codec_server_test",
-        "unittest/video_test/avcencoder_test:video_avcencoder_coverage_unit_test",
       ]
     }
   }
