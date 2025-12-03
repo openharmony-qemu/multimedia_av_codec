@@ -69,6 +69,7 @@ private:
 private:
     int channels;
     int sampleRate;
+    int32_t blockAlign;
     DataCallback *dataCallback_{nullptr};
     std::unique_ptr<FfmpegBaseDecoder> basePlugin;
 };

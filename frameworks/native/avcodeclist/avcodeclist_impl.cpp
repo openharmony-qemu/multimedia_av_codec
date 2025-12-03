@@ -95,7 +95,9 @@ const std::vector<std::string> AUDIO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_VIVID),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ILBC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_TRUEHD),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_TWINVQ)};
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_TWINVQ),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_DVAUDIO),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_DTS)};
 }
 namespace OHOS {
 namespace MediaAVCodec {
