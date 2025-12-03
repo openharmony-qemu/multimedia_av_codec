@@ -194,6 +194,10 @@ int32_t VideoDecSyncSample::CreateReader(const std::string &inPath)
         case VC1_STREAM:
             return CreateVc1Reader();
 #endif
+#ifdef SUPPORT_CODEC_AVS
+        case AVS_STREAM:
+            return CreateAvsReader();
+#endif
         case MSVIDEO1_STREAM:
             return CreateMsvideo1Reader();
         case WMV3_STREAM:
@@ -430,6 +434,18 @@ int32_t VideoDecSyncSample::CreateVc1Reader()
 
     vc1Reader_ = std::make_shared<Vc1Reader>();
     int32_t ret = vc1Reader_->Init(info);
+    return ret;
+}
+#endif
+
+#ifdef SUPPORT_CODEC_AVS
+int32_t VideoDecSyncSample::CreateAvsReader()
+{
+    std::shared_ptr<AvsReaderInfo> info = std::make_shared<AvsReaderInfo>();
+    info->inPath = inPath_;
+
+    avsReader_ = std::make_shared<AvsReader>();
+    int32_t ret = avsReader_->Init(info);
     return ret;
 }
 #endif
@@ -732,7 +748,7 @@ int32_t VideoDecSyncSample::OutputLoopInnerExt()
         int32_t size = (testParam_ == VCodecTestParam::SW_AVC || testParam_ == VCodecTestParam::SW_MPEG2 ||
                         testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263 ||
                         testParam_ == VCodecTestParam::SW_VC1 || testParam_ == VCodecTestParam::SW_MSVIDEO1 ||
-                        testParam_ == VCodecTestParam::SW_WMV3)
+                        testParam_ == VCodecTestParam::SW_WMV3 || testParam_ == VCodecTestParam::SW_AVS)
                            ? attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                           "Fatal: GetOutputBuffer fail, exit, index: %d", index);
@@ -793,6 +809,10 @@ int32_t VideoDecSyncSample::InputLoopInnerExt()
 #ifdef SUPPORT_CODEC_VC1
     } else if (vc1Reader_ != nullptr) {
         vc1Reader_->FillBuffer(buffer->GetAddr(), attr);
+#endif
+#ifdef SUPPORT_CODEC_AVS
+    } else if (avsReader_ != nullptr) {
+        avsReader_->FillBuffer(buffer->GetAddr(), attr);
 #endif
     } else if (wmv3Reader_ != nullptr) {
         wmv3Reader_->FillBuffer(buffer->GetAddr(), attr);
