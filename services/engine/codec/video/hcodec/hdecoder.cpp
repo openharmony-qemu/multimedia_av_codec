@@ -1210,6 +1210,9 @@ void HDecoder::OnEnterUninitializedState()
     currSurface_.Release();
     crop_ = {0};
     cfgedConsumerUsage = 0;
+    currGeneration_ = 0;
+    scaleMode_ = std::nullopt;
+    transform_ = GRAPHIC_ROTATE_NONE;
 }
 
 HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface, std::string codecId, int32_t instanceId)

@@ -118,14 +118,14 @@ private:
     void OnClientErrorEvent();
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
-    bool HandleSeekHit(int64_t offest);
+    bool HandleSeekHit(int64_t offset);
     Status ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status ReadCacheBufferLoop(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SeekRingBuffer(int64_t offset);
     bool SeekCacheBuffer(int64_t offset, bool& isSeekHit);
-    void InitRingBuffer(uint32_t expectBufferDuration);
-    void InitCacheBuffer(uint32_t expectBufferDuration);
+    void InitRingBuffer(size_t duration);
+    void InitCacheBuffer(size_t duration);
 
     Status HandleRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status HandleCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -174,7 +174,7 @@ private:
     bool startedPlayStatus_ {false};
     bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
-    int totalBufferSize_ {0};
+    size_t totalBufferSize_ {0};
     SteadyClock steadyClock_;
     uint64_t totalBits_ {0};
     uint64_t lastBits_ {0};

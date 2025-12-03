@@ -96,6 +96,7 @@ public:
 
     static constexpr std::string_view VIDEO_DECODER_MSVIDEO1_NAME = "OH.Media.Codec.Decoder.Video.MSVIDEO1";
     static constexpr std::string_view VIDEO_DECODER_VC1_NAME = "OH.Media.Codec.Decoder.Video.VC1";
+    static constexpr std::string_view VIDEO_DECODER_WVC1_NAME = "OH.Media.Codec.Decoder.Video.WVC1";
     static constexpr std::string_view VIDEO_ENCODER_AVC_NAME = "OH.Media.Codec.Encoder.Video.AVC";
     static constexpr std::string_view VIDEO_DECODER_AVC_NAME = "OH.Media.Codec.Decoder.Video.AVC";
     static constexpr std::string_view VIDEO_DECODER_HEVC_NAME = "OH.Media.Codec.Decoder.Video.HEVC";

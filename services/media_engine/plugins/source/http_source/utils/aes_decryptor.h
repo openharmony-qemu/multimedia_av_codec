@@ -24,23 +24,20 @@
 
 namespace OHOS {
 namespace Media {
-
-constexpr uint64_t DECRYPT_UNIT_LEN = 16;
-constexpr uint32_t DECRYPT_COPY_LEN = 128;
-
 class AesDecryptor {
 public:
-
-    AesDecryptor() = default;
+    AesDecryptor();
     ~AesDecryptor();
     void Init();
     void Decrypt(uint8_t* decryptBuffer, uint8_t* decryptCache, uint32_t realLen);
     void OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv);
     
-    uint8_t key_[DECRYPT_UNIT_LEN] = {0};
+    static constexpr uint64_t DECRYPT_UNIT_LEN = 16;
+    static constexpr uint32_t DECRYPT_COPY_LEN = 128;
+    uint8_t key_[AesDecryptor::DECRYPT_UNIT_LEN] = {0};
     size_t keyLen_ {0};
-    uint8_t iv_[DECRYPT_UNIT_LEN] = {0};
-    uint8_t initIv_[DECRYPT_UNIT_LEN] = {0};
+    uint8_t iv_[AesDecryptor::DECRYPT_UNIT_LEN] = {0};
+    uint8_t initIv_[AesDecryptor::DECRYPT_UNIT_LEN] = {0};
 
 private:
     AES_KEY aesKey_;

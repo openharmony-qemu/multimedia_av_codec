@@ -25,8 +25,6 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 constexpr float EPSINON = 0.0001;
 
 const std::vector<std::string> MIME_VEC = {
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MSVIDEO1),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VC1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_AVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_HEVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VVC),
@@ -38,7 +36,11 @@ const std::vector<std::string> MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MJPEG),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP8),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP9),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MSVIDEO1),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_AV1),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VC1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_WMV3),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_WVC1),
 
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_NB),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_WB),

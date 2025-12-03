@@ -141,6 +141,7 @@ public:
 public:
     static constexpr size_t VIDEO_MIN_BUFFER_SIZE = 5 * 1024 * 1024;
     static constexpr size_t VIDEO_MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
+    static constexpr size_t DECRYPT_BUFFER_SIZE = 5 * 1024 * 1024;
     static constexpr uint64_t DECRYPT_UNIT_LEN = 16;
     static const std::map<HlsSegmentType, size_t> MIN_BUFFER_SIZE;
     static const std::map<HlsSegmentType, size_t> MAX_CACHE_BUFFER_SIZE;
@@ -239,8 +240,8 @@ private:
     uint64_t afterAlignRemainedLength_ = 0;
     uint64_t totalLen_ = 0;
     std::string curUrl_;
-    uint8_t decryptCache_[VIDEO_MIN_BUFFER_SIZE] {0};
-    uint8_t decryptBuffer_[VIDEO_MIN_BUFFER_SIZE] {0};
+    uint8_t decryptCache_[DECRYPT_BUFFER_SIZE] {0};
+    uint8_t decryptBuffer_[DECRYPT_BUFFER_SIZE] {0};
     uint32_t writeTsIndex_ = 0;
     bool isAutoSelectBitrate_ {true};
     uint64_t seekTime_ = 0;
