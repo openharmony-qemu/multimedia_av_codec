@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "codec_factory.h"
+#include "audio_codec_factory.h"
 #include <cinttypes>
 #include <dlfcn.h>
 #include <limits>
@@ -42,27 +42,27 @@
 #endif
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecFactory"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AudioCodecFactory"};
 } // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
-CodecFactory &CodecFactory::Instance()
+AudioCodecFactory &AudioCodecFactory::Instance()
 {
-    static CodecFactory inst;
+    static AudioCodecFactory inst;
     return inst;
 }
 
-CodecFactory::~CodecFactory() {}
+AudioCodecFactory::~AudioCodecFactory() {}
 
-std::vector<std::string> CodecFactory::GetCodecNameArrayByMime(const AVCodecType type, const std::string &mime)
+std::vector<std::string> AudioCodecFactory::GetCodecNameArrayByMime(const AVCodecType type, const std::string &mime)
 {
     auto codecListCore = std::make_shared<CodecListCore>();
     auto nameArray = codecListCore->FindCodecNameArray(type, mime);
     return nameArray;
 }
 
-std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &name, API_VERSION apiVersion)
+std::shared_ptr<CodecBase> AudioCodecFactory::CreateCodecByName(const std::string &name, API_VERSION apiVersion)
 {
     std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
     CodecType codecType = codecListCore->FindCodecType(name);

@@ -102,7 +102,7 @@ ohos_unittest("video_codec_server_coverage_unit_test") {
     "$av_codec_root_dir/services/services/codec/server/video/post_processing/state_machine.cpp",
     "$av_codec_root_dir/services/services/codec/server/video/temporal_scalability.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
-    "$av_codec_root_dir/services/services/codec/server/video/vcodec_factory.cpp",
+    "$av_codec_root_dir/services/services/codec/server/video/codec_factory.cpp",
     "$av_codec_root_dir/services/services/common/event_manager/event_manager.cpp",
     "$event_handler_dir/background_event_handler/background_event_handler.cpp",
     "$event_handler_dir/instance_memory_update_event_handler/instance_memory_calculator.cpp",

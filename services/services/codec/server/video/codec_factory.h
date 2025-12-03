@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef VCODEC_FACTORY_H
-#define VCODEC_FACTORY_H
+#ifndef CODEC_FACTORY_H
+#define CODEC_FACTORY_H
 
 #include <memory>
 #include "codecbase.h"
@@ -23,16 +23,16 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class VCodecFactory {
+class CodecFactory {
 public:
-    static VCodecFactory &Instance();
+    static CodecFactory &Instance();
     std::vector<std::string> GetCodecNameArrayByMime(const AVCodecType type, const std::string &mime);
     std::shared_ptr<CodecBase> CreateCodecByName(const std::string &name);
 
 private:
-    VCodecFactory() = default;
-    ~VCodecFactory();
+    CodecFactory() = default;
+    ~CodecFactory();
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // VCODEC_FACTORY_H
+#endif // CODEC_FACTORY_H

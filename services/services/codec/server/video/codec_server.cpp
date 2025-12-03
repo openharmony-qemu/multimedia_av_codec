@@ -27,7 +27,7 @@
 #include "avcodec_sysevent.h"
 #include "buffer/avbuffer.h"
 #include "codec_ability_singleton.h"
-#include "vcodec_factory.h"
+#include "codec_factory.h"
 #include "media_description.h"
 #include "meta/meta_key.h"
 #include "surface_type.h"
@@ -185,7 +185,7 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
 
 int32_t CodecServer::InitByName(const std::string &codecName, Meta &callerInfo)
 {
-    codecBase_ = VCodecFactory::Instance().CreateCodecByName(codecName);
+    codecBase_ = CodecFactory::Instance().CreateCodecByName(codecName);
     if (codecBase_ == nullptr) {
         return AVCS_ERR_NO_MEMORY;
     }
@@ -201,7 +201,7 @@ int32_t CodecServer::InitByName(const std::string &codecName, Meta &callerInfo)
 int32_t CodecServer::InitByMime(const AVCodecType type, const std::string &codecMime, Meta &callerInfo)
 {
     int32_t ret = AVCS_ERR_OK;
-    auto nameArray = VCodecFactory::Instance().GetCodecNameArrayByMime(type, codecMime);
+    auto nameArray = CodecFactory::Instance().GetCodecNameArrayByMime(type, codecMime);
     if (nameArray.empty()) {
         Media::Meta eventMeta;
         eventMeta.SetData(Tag::MIME_TYPE, codecMime);
