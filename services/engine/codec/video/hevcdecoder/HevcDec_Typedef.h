@@ -32,11 +32,18 @@ typedef enum {
     IHW265VIDEO_ALG_LOG_DEBUG       // print debug info, used for developer debug
 } IHW265VIDEO_ALG_LOG_LEVEL;
 
+// input data type for decoding
+typedef enum {
+    IHW265_DECODE_VIDEO = 0,  // decoding video stream
+    IHW265_DECODE_HEIF,       // decoding Heif pic
+} IHW265_DECODE_MODE;
+
 typedef void (*IHW265D_VIDEO_ALG_LOG_FXN)(UINT32 uiChannelID, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pszMsg, ...);
 
 typedef struct TagHevcDecInitParam {
     UINT32 uiChannelID;  // [in] channel ID, used for channel info
     IHW265D_VIDEO_ALG_LOG_FXN logFxn;  // log output callback function
+    IHW265_DECODE_MODE uiDecodeMode;  // input data type for decoding
 } HEVC_DEC_INIT_PARAM;
 
 typedef struct TagHevcDecInArgs {
