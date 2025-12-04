@@ -17,10 +17,12 @@
 #include <gtest/gtest.h>
 #include <random>
 #include <unistd.h>
+#include "avcodec_info.h"
 #include "avcodec_log.h"
 #include "dump_usage.h"
 #include "hisysevent_manager_c.h"
 #include "hisysevent_record_c.h"
+#include "instance_info.h"
 #include "ret_code.h"
 #include "statistics_event_handler.h"
 
@@ -33,8 +35,8 @@ namespace {
 constexpr int32_t QUERY_INTERVAL_TIME = 2;
 constexpr int32_t QUERY_MAX_EVENTS = 100000;
 constexpr char TEST_DOMAIN[] = "AV_CODEC";
-constexpr char TEST_NAME[] = "STATISTIC";
-constexpr int32_t MAX_LEN_OF_DOMAIN = 16;
+constexpr int32_t MAX_LEN_OF_EVENT_DOMAIN = 16;
+constexpr int32_t MAX_LEN_OF_EVENT_NAME = 64;
 // constexpr int32_t DEFAULT_COUNT = 100000;
 // constexpr int32_t SPECIFICATIONS_INFO_THRESHOLD = 50;
 // constexpr int32_t BEHAVIORS_INFO_THRESHOLD = 200;
@@ -101,20 +103,20 @@ constexpr int32_t MAX_LEN_OF_DOMAIN = 16;
 //     return mimeType;
 // }
 
-// std::string generateRandomString(size_t length, std::string_view charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-//                                                                            "abcdefghijklmnopqrstuvwxyz"
-//                                                                            "0123456789")
-// {
-//     std::random_device rd;
-//     std::mt19937 gen(rd());
-//     std::uniform_int_distribution<size_t> dist(0, charset.size() - 1);
-//     std::string result;
-//     result.reserve(length);
-//     for (size_t i = 0; i < length; ++i) {
-//         result += charset[dist(gen)];
-//     }
-//     return result;
-// }
+std::string generateRandomString(size_t length, std::string_view charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                                                           "abcdefghijklmnopqrstuvwxyz"
+                                                                           "0123456789")
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<size_t> dist(0, charset.size() - 1);
+    std::string result;
+    result.reserve(length);
+    for (size_t i = 0; i < length; ++i) {
+        result += charset[dist(gen)];
+    }
+    return result;
+}
 
 class DfxStatisticsEventTest : public testing::Test {
 public:
@@ -122,11 +124,15 @@ public:
     static void TearDownTestCase(void);
     void SetUp(void);
     void TearDown(void);
+    void InitHiSysEvent(HiSysEventQueryArg &arg, HiSysEventQueryRule &rule, HiSysEventQueryCallback &callback,
+                        const char* name);
 
-    std::shared_ptr<StatisticsEventInfo> statisticsEventInfo_;
+    std::shared_ptr<Media::Meta> meta_ = nullptr;
+    HiSysEventQueryArg arg_{};
+    HiSysEventQueryRule rule_{};
+    HiSysEventQueryCallback callback_{};
     HiviewDFX::DumpUsage dumpUsage_;
-    static constexpr HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK,
-                                                          STRINGFY(DfxStatisticsEventTest)};
+    static constexpr HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(DfxStatisticsEventTest)};
 };
 
 void DfxStatisticsEventTest::SetUpTestCase(void) {}
@@ -137,7 +143,9 @@ void DfxStatisticsEventTest::SetUp(void)
 {
     pid_t pid = getpid();
     std::cout << "start memory = " << dumpUsage_.GetPss(pid) << std::endl;
-    statisticsEventInfo_ = std::make_shared<StatisticsEventInfo>();
+
+    meta_ = std::make_shared<Media::Meta>();
+    ASSERT_NE(nullptr, meta_);
 
     sleep(QUERY_INTERVAL_TIME);
     const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
@@ -147,7 +155,6 @@ void DfxStatisticsEventTest::SetUp(void)
 
 void DfxStatisticsEventTest::TearDown(void)
 {
-    statisticsEventInfo_ = nullptr;
     pid_t pid = getpid();
     std::cout << "end memory = " << dumpUsage_.GetPss(pid) << std::endl;
 }
@@ -194,29 +201,256 @@ int CopyCString(char *dst, const std::string &src, size_t len)
     return strcpy_s(dst, src.length() + 1, src.c_str());
 }
 
+void DfxStatisticsEventTest::InitHiSysEvent(HiSysEventQueryArg &arg, HiSysEventQueryRule &rule,
+                                            HiSysEventQueryCallback &callback, const char* name)
+{
+    InitQueryArg(arg);
+    (void)CopyCString(rule.domain, TEST_DOMAIN, MAX_LEN_OF_EVENT_DOMAIN);
+    (void)CopyCString(rule.eventList[0], name, MAX_LEN_OF_EVENT_NAME);
+    rule.eventListSize = 1;
+    InitHiSysEventCallback(callback);
+}
+
 /**
  * @tc.name: AddEventInfo_BasicInfo_001
- * @tc.desc: 1. mime is null
- *           2. type is invaild
+ * @tc.desc: eventType is BASIC_INFO
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_001, TestSize.Level1)
 {
-    HiSysEventQueryArg arg;
-    InitQueryArg(arg);
-    HiSysEventQueryRule rule;
-    (void)CopyCString(rule.domain, TEST_DOMAIN, MAX_LEN_OF_DOMAIN);
-    (void)CopyCString(rule.eventList[0], TEST_NAME, MAX_LEN_OF_DOMAIN);
-    rule.eventListSize = 1;
-    HiSysEventQueryRule rules[] = { rule };
+    constexpr char TEST_NAME[] = "BASIC_INFO";
+    InitHiSysEvent(arg_, rule_, callback_, TEST_NAME);
+    HiSysEventQueryRule rules[] = {rule_};
 
-    HiSysEventQueryCallback callback;
-    InitHiSysEventCallback(callback);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 
-    std::shared_ptr<Media::Meta> meta = std::make_shared<Media::Meta>();
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_INFO, *meta);
+    auto res = OH_HiSysEvent_Query(&arg_, rules, sizeof(rules) / sizeof(HiSysEventQueryRule), &callback_);
+    ASSERT_EQ(res, HiviewDFX::IPC_CALL_SUCCEED);
+}
 
-    auto res = OH_HiSysEvent_Query(&arg, rules, sizeof(rules) / sizeof(HiSysEventQueryRule), &callback);
+/**
+ * @tc.name: AddEventInfo_BasicInfo_002
+ * @tc.desc: eventType is BASIC_QUERY_CAP_INFO
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_002, TestSize.Level1)
+{
+    constexpr char TEST_NAME[] = "BASIC_INFO";
+    InitHiSysEvent(arg_, rule_, callback_, TEST_NAME);
+    HiSysEventQueryRule rules[] = {rule_};
+
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_QUERY_CAP_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+
+    auto res = OH_HiSysEvent_Query(&arg_, rules, sizeof(rules) / sizeof(HiSysEventQueryRule), &callback_);
+    ASSERT_EQ(res, HiviewDFX::IPC_CALL_SUCCEED);
+}
+
+/**
+ * @tc.name: AddEventInfo_BasicInfo_003
+ * @tc.desc: eventType is BASIC_CREATE_CODEC_INFO
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_003, TestSize.Level1)
+{
+    constexpr char TEST_NAME[] = "BASIC_INFO";
+    InitHiSysEvent(arg_, rule_, callback_, TEST_NAME);
+    HiSysEventQueryRule rules[] = {rule_};
+
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+
+    auto res = OH_HiSysEvent_Query(&arg_, rules, sizeof(rules) / sizeof(HiSysEventQueryRule), &callback_);
+    ASSERT_EQ(res, HiviewDFX::IPC_CALL_SUCCEED);
+}
+
+/**
+ * @tc.name: AddEventInfo_BasicInfo_004
+ * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
+ *           2. mimeType is invalid, codecType is valid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_004, TestSize.Level1)
+{
+    constexpr char TEST_NAME[] = "BASIC_INFO";
+    InitHiSysEvent(arg_, rule_, callback_, TEST_NAME);
+    HiSysEventQueryRule rules[] = {rule_};
+
+    std::string mime = generateRandomString(10); // 10: length
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
+    meta_->SetData(Media::Tag::MIME_TYPE, mime);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+
+    auto res = OH_HiSysEvent_Query(&arg_, rules, sizeof(rules) / sizeof(HiSysEventQueryRule), &callback_);
+    ASSERT_EQ(res, HiviewDFX::IPC_CALL_SUCCEED);
+}
+
+/**
+ * @tc.name: AddEventInfo_BasicInfo_005
+ * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
+ *           2. mimeType is invalid, codecType is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_005, TestSize.Level1)
+{
+    constexpr char TEST_NAME[] = "BASIC_INFO";
+    InitHiSysEvent(arg_, rule_, callback_, TEST_NAME);
+    HiSysEventQueryRule rules[] = {rule_};
+
+    std::string mime = generateRandomString(10); // 10: length
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1);
+    meta_->SetData(Media::Tag::MIME_TYPE, mime);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+
+    auto res = OH_HiSysEvent_Query(&arg_, rules, sizeof(rules) / sizeof(HiSysEventQueryRule), &callback_);
+    ASSERT_EQ(res, HiviewDFX::IPC_CALL_SUCCEED);
+}
+
+/**
+ * @tc.name: AddEventInfo_BasicInfo_006
+ * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
+ *           2. mimeType is invalid, codecType is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_006, TestSize.Level1)
+{
+    constexpr char TEST_NAME[] = "BASIC_INFO";
+    InitHiSysEvent(arg_, rule_, callback_, TEST_NAME);
+    HiSysEventQueryRule rules[] = {rule_};
+
+    std::string mime = generateRandomString(10); // 10: length
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
+    meta_->SetData(Media::Tag::MIME_TYPE, mime);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+
+    auto res = OH_HiSysEvent_Query(&arg_, rules, sizeof(rules) / sizeof(HiSysEventQueryRule), &callback_);
+    ASSERT_EQ(res, HiviewDFX::IPC_CALL_SUCCEED);
+}
+
+/**
+ * @tc.name: AddEventInfo_BasicInfo_007
+ * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
+ *           2. mimeType is valid, codecType is valid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_007, TestSize.Level1)
+{
+    constexpr char TEST_NAME[] = "BASIC_INFO";
+    InitHiSysEvent(arg_, rule_, callback_, TEST_NAME);
+    HiSysEventQueryRule rules[] = {rule_};
+
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
+    meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+
+    auto res = OH_HiSysEvent_Query(&arg_, rules, sizeof(rules) / sizeof(HiSysEventQueryRule), &callback_);
+    ASSERT_EQ(res, HiviewDFX::IPC_CALL_SUCCEED);
+}
+
+/**
+ * @tc.name: AddEventInfo_BasicInfo_008
+ * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
+ *           2. mimeType is valid, codecType is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_008, TestSize.Level1)
+{
+    constexpr char TEST_NAME[] = "BASIC_INFO";
+    InitHiSysEvent(arg_, rule_, callback_, TEST_NAME);
+    HiSysEventQueryRule rules[] = {rule_};
+
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1);
+    meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+
+    auto res = OH_HiSysEvent_Query(&arg_, rules, sizeof(rules) / sizeof(HiSysEventQueryRule), &callback_);
+    ASSERT_EQ(res, HiviewDFX::IPC_CALL_SUCCEED);
+}
+
+/**
+ * @tc.name: AddEventInfo_BasicInfo_009
+ * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
+ *           2. mimeType is valid, codecType is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_009, TestSize.Level1)
+{
+    constexpr char TEST_NAME[] = "BASIC_INFO";
+    InitHiSysEvent(arg_, rule_, callback_, TEST_NAME);
+    HiSysEventQueryRule rules[] = {rule_};
+
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
+    meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+
+    auto res = OH_HiSysEvent_Query(&arg_, rules, sizeof(rules) / sizeof(HiSysEventQueryRule), &callback_);
+    ASSERT_EQ(res, HiviewDFX::IPC_CALL_SUCCEED);
+}
+
+/**
+ * @tc.name: AddEventInfo_BasicInfo_010
+ * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
+ *           2. mimeType is empty, codecType is valid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_010, TestSize.Level1)
+{
+    constexpr char TEST_NAME[] = "BASIC_INFO";
+    InitHiSysEvent(arg_, rule_, callback_, TEST_NAME);
+    HiSysEventQueryRule rules[] = {rule_};
+
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+
+    auto res = OH_HiSysEvent_Query(&arg_, rules, sizeof(rules) / sizeof(HiSysEventQueryRule), &callback_);
+    ASSERT_EQ(res, HiviewDFX::IPC_CALL_SUCCEED);
+}
+
+/**
+ * @tc.name: AddEventInfo_BasicInfo_011
+ * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
+ *           2. mimeType is empty, codecType is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_011, TestSize.Level1)
+{
+    constexpr char TEST_NAME[] = "BASIC_INFO";
+    InitHiSysEvent(arg_, rule_, callback_, TEST_NAME);
+    HiSysEventQueryRule rules[] = {rule_};
+
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+
+    auto res = OH_HiSysEvent_Query(&arg_, rules, sizeof(rules) / sizeof(HiSysEventQueryRule), &callback_);
+    ASSERT_EQ(res, HiviewDFX::IPC_CALL_SUCCEED);
+}
+
+/**
+ * @tc.name: AddEventInfo_BasicInfo_012
+ * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
+ *           2. mimeType is empty, codecType is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_012, TestSize.Level1)
+{
+    constexpr char TEST_NAME[] = "BASIC_INFO";
+    InitHiSysEvent(arg_, rule_, callback_, TEST_NAME);
+    HiSysEventQueryRule rules[] = {rule_};
+
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+
+    auto res = OH_HiSysEvent_Query(&arg_, rules, sizeof(rules) / sizeof(HiSysEventQueryRule), &callback_);
     ASSERT_EQ(res, HiviewDFX::IPC_CALL_SUCCEED);
 }
 } // namespace
