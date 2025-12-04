@@ -30,7 +30,7 @@ ohos_unittest("video_codec_dfx_statics_event_test") {
 
   sources = [
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
-    "$event_handler_dir/statistics_event_handler/statistics_event_handler.cpp",
+    "$event_handler_dir/event_handler/statistics_event_handler/statistics_event_handler.cpp",
     "./dfx_statistics_event_test.cpp",
   ]
 
