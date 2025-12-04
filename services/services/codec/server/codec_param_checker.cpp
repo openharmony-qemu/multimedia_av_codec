@@ -803,14 +803,15 @@ void SQRDynamicParameterCheck(CapabilityData &capData, const Format &format, For
 
 int32_t TransformTypeChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
+    (void)capData;
     (void)scenario;
     int32_t videoOrientationType;
     bool videoOrientationTypeExist = format.GetIntValue(Tag::VIDEO_ORIENTATION_TYPE, videoOrientationType);
     if (!videoOrientationTypeExist) {
         return AVCS_ERR_OK;
     }
-    if (videoOrientationType < static_cast<int32_t>(GraphicTransformtype::GRAPHIC_ROTATE_NONE) ||
-        videoOrientationType >= static_cast<int32_t>(GraphicTransformtype::GRAPHIC_ROTATE_BUTT)) {
+    if (videoOrientationType < static_cast<int32_t>(OHOS::GraphicTransformType::GRAPHIC_ROTATE_NONE) ||
+        videoOrientationType >= static_cast<int32_t>(OHOS::GraphicTransformType::GRAPHIC_ROTATE_BUTT)) {
         AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_ORIENTATION_TYPE, videoOrientationType);
         return AVCS_ERR_INVALID_VAL;
     }
