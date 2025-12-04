@@ -57,6 +57,13 @@ constexpr int32_t WMV3_MAX_HEIGHT_SIZE = 1080;
 constexpr int32_t WMV3_BITRATE_MAX_SIZE = 20000000;
 constexpr int32_t WMV3_MAX_BLOCKPERFRAME_SIZE = 8192;
 constexpr int32_t WMV3_MAX_BLOCKPERSEC_SIZE = 245760;
+#ifdef SUPPORT_CODEC_AVS
+constexpr int32_t AVS_MAX_WIDTH_SIZE = 1920;
+constexpr int32_t AVS_MAX_HEIGHT_SIZE = 1080;
+constexpr int32_t AVS_BLOCKPERFRAME_MAX_SIZE = 8160; // (WidthMax / 16) * (HeightMax / 16)
+constexpr int32_t AVS_BLOCKPERSEC_MAX_SIZE = 489600; // (BlockPerFramemax * MaxFrameRate)
+#endif
+
 } // namespace
 using namespace OHOS::Media;
 
@@ -339,6 +346,26 @@ void GetWmv3CapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
+#ifdef SUPPORT_CODEC_AVS
+void GetAvsCapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.width.maxVal = AVS_MAX_WIDTH_SIZE;
+        capsData.height.maxVal = AVS_MAX_HEIGHT_SIZE;
+        capsData.blockPerFrame.maxVal = AVS_BLOCKPERFRAME_MAX_SIZE;
+        capsData.blockPerSecond.maxVal = AVS_BLOCKPERSEC_MAX_SIZE;
+        capsData.supportSwapWidthHeight = true;
+        capsData.profiles = {static_cast<int32_t>(AVS_PROFILE_JIZHUN)};
+        std::vector<int32_t> levels;
+        for (int32_t j = 0; j <= static_cast<int32_t>(AVSLevel::AVS_LEVEL_40); ++j) {
+            levels.emplace_back(j);
+        }
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(AVS_PROFILE_JIZHUN), levels));
+    }
+}
+#endif
+
 void GetCapabilityData(CapabilityData &capsData, uint32_t index)
 {
     capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[index].codecName);
@@ -404,6 +431,11 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         } else if (capsData.mimeType == "video/wmv3") {
             capaArray.emplace_back(capsData);
             GetWmv3CapProf(capaArray);
+#ifdef SUPPORT_CODEC_AVS
+        } else if (capsData.mimeType == "video/cavs") {
+            capaArray.emplace_back(capsData);
+            GetAvsCapProf(capaArray);
+#endif
         } else {
             capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
             capaArray.emplace_back(capsData);

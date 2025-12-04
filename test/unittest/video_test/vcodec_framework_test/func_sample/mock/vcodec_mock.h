@@ -157,7 +157,8 @@ enum VCodecTestCode : int32_t {
     SW_H263,
     SW_VC1,
     SW_MSVIDEO1,
-    SW_WMV3
+    SW_WMV3,
+    SW_AVS,
 };
 
 enum VCodecPixelFormat : int32_t {
@@ -179,7 +180,8 @@ const std::map<int32_t, std::string> decSourcePathMap_ = {{HW_AVC, "/data/test/m
                                                           {SW_H263, "/data/test/media/profile2_1920x1080.h263"},
                                                           {SW_VC1, "/data/test/media/test.vc1"},
                                                           {SW_MSVIDEO1, "/data/test/media/test_msvideo1_001.msvideo1"},
-                                                          {SW_WMV3, "/data/test/media/352_288_10.wmv3"}};
+                                                          {SW_WMV3, "/data/test/media/352_288_10.wmv3"},
+                                                          {SW_AVS, "/data/test/media/test.avs"}};
 
 constexpr uint32_t DEFAULT_BITRATE = 12000;
 

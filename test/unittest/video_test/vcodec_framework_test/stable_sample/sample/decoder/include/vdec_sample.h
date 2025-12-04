@@ -116,6 +116,9 @@ private:
 #ifdef SUPPORT_CODEC_AV1
     int32_t CreateAv1Reader();
 #endif
+#ifdef SUPPORT_CODEC_AVS
+    int32_t CreateAvsReader();
+#endif
 
     OH_AVCodec *codec_ = nullptr;
     std::shared_ptr<VCodecSignal> signal_ = nullptr;

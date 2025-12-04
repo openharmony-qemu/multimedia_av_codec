@@ -21,6 +21,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecListImpl"};
 const std::vector<std::string> VIDEO_MIME_VEC = {
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_AVS),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MSVIDEO1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VC1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_WVC1),
