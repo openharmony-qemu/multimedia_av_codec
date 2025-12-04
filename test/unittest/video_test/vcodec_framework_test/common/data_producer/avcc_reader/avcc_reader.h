@@ -712,6 +712,134 @@ private:
     std::shared_ptr<AvsDetector> avsDetector_ = nullptr;
 };
 #endif
+
+#ifdef SUPPORT_CODEC_RV
+struct Rv30ReaderInfo {
+    std::string inPath;
+};
+
+class Rv30Reader : public DataProducerBase {
+public:
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t rv30Type, bool isEosFrame);
+    bool IsEOS();
+    int32_t Init(const std::shared_ptr<Rv30ReaderInfo> &info);
+
+    std::mutex mutex_;
+    int32_t frameInputCount_ = 0;
+
+private:
+    class Rv30UnitReader {
+    public:
+        explicit Rv30UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        virtual ~Rv30UnitReader() = default;
+
+        uint8_t const *GetNextRv30UnitAddr();
+        virtual int32_t ReadRv30Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) = 0;
+        virtual bool IsEOS() = 0;
+        virtual void PrereadFile() = 0;
+        virtual void PrereadRv30Unit() = 0;
+
+    protected:
+        Rv30UnitReader() = default;
+        virtual bool IsEOF() = 0;
+
+        std::unique_ptr<std::vector<uint8_t>> rv30Unit_ = nullptr;
+        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+    };
+
+    class Rv30MetaUnitReader : public Rv30UnitReader {
+    public:
+        explicit Rv30MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        int32_t ReadRv30Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        bool IsEOS() override;
+        void PrereadFile() override;
+        void PrereadRv30Unit() override;
+
+    private:
+        bool IsEOF() override;
+
+        std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+        uint32_t frameIndex_ = 0;
+    };
+
+    class Rv30Detector {
+    public:
+        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
+        const uint8_t *GetRv30TypeAddr(const uint8_t *bufferAddr);
+        uint8_t GetRv30Type(const uint8_t *bufferAddr);
+        bool IsI(uint8_t rv30Type);
+    };
+
+    std::shared_ptr<Rv30UnitReader> rv30UnitReader_ = nullptr;
+    std::shared_ptr<Rv30Detector> rv30Detector_ = nullptr;
+};
+
+struct Rv40ReaderInfo {
+    std::string inPath;
+};
+
+class Rv40Reader : public DataProducerBase {
+public:
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t rv40Type, bool isEosFrame);
+    bool IsEOS();
+    int32_t Init(const std::shared_ptr<Rv40ReaderInfo> &info);
+
+    std::mutex mutex_;
+    int32_t frameInputCount_ = 0;
+
+private:
+    class Rv40UnitReader {
+    public:
+        explicit Rv40UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        virtual ~Rv40UnitReader() = default;
+
+        uint8_t const *GetNextRv40UnitAddr();
+        virtual int32_t ReadRv40Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) = 0;
+        virtual bool IsEOS() = 0;
+        virtual void PrereadFile() = 0;
+        virtual void PrereadRv40Unit() = 0;
+
+    protected:
+        Rv40UnitReader() = default;
+        virtual bool IsEOF() = 0;
+
+        std::unique_ptr<std::vector<uint8_t>> rv40Unit_ = nullptr;
+        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+    };
+
+    class Rv40MetaUnitReader : public Rv40UnitReader {
+    public:
+        explicit Rv40MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        int32_t ReadRv40Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        bool IsEOS() override;
+        void PrereadFile() override;
+        void PrereadRv40Unit() override;
+
+    private:
+        bool IsEOF() override;
+
+        std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+        uint32_t frameIndex_ = 0;
+    };
+
+    class Rv40Detector {
+    public:
+        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
+        const uint8_t *GetRv40TypeAddr(const uint8_t *bufferAddr);
+        uint8_t GetRv40Type(const uint8_t *bufferAddr);
+        bool IsI(uint8_t rv40Type);
+    };
+
+    std::shared_ptr<Rv40UnitReader> rv40UnitReader_ = nullptr;
+    std::shared_ptr<Rv40Detector> rv40Detector_ = nullptr;
+};
+#endif
 } // MediaAVCodec
 } // OHOS
 #endif // AVCC_READER_H

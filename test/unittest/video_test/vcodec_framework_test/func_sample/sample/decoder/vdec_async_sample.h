@@ -96,6 +96,10 @@ private:
 #ifdef SUPPORT_CODEC_AV1
     int32_t CreateAv1Reader();
 #endif
+#ifdef SUPPORT_CODEC_RV
+    int32_t CreateRv30Reader();
+    int32_t CreateRv40Reader();
+#endif
     int32_t CreateReader(const std::string& inPath);
     bool CompareHdrInfo(std::shared_ptr<AVBufferMock> buffer);
     bool CompareMetadata(std::shared_ptr<std::ifstream> file, int32_t size,
@@ -134,6 +138,10 @@ private:
     std::shared_ptr<Wmv3Reader> wmv3Reader_ = nullptr;
     std::shared_ptr<std::ifstream> dynamicMetadataFile_ = nullptr;
     std::shared_ptr<std::ifstream> staticMetadataFile_ = nullptr;
+#ifdef SUPPORT_CODEC_RV
+    std::shared_ptr<Rv30Reader> rv30Reader_ = nullptr;
+    std::shared_ptr<Rv40Reader> rv40Reader_ = nullptr;
+#endif
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

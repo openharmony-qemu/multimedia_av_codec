@@ -63,7 +63,11 @@ constexpr int32_t AVS_MAX_HEIGHT_SIZE = 1080;
 constexpr int32_t AVS_BLOCKPERFRAME_MAX_SIZE = 8160; // (WidthMax / 16) * (HeightMax / 16)
 constexpr int32_t AVS_BLOCKPERSEC_MAX_SIZE = 489600; // (BlockPerFramemax * MaxFrameRate)
 #endif
-
+#ifdef SUPPORT_CODEC_RV
+constexpr int32_t RV_MIN_SIZE = 1;
+constexpr int32_t RV_BLOCKPERFRAME_SIZE = 65536; // MaxPicSize / (block_width*block_height)
+constexpr int32_t RV_BLOCKPERSEC_SIZE = 3932160; // MaxDisplayRate / (block_width*block_height)
+#endif
 } // namespace
 using namespace OHOS::Media;
 
@@ -401,6 +405,30 @@ void GetCapabilityData(CapabilityData &capsData, uint32_t index)
         static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888)};
 }
 
+#ifdef SUPPORT_CODEC_RV
+void GetRv30CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.width.minVal = RV_MIN_SIZE;
+        capsData.height.minVal = RV_MIN_SIZE;
+        capsData.blockPerFrame.maxVal = RV_BLOCKPERFRAME_SIZE;
+        capsData.blockPerSecond.maxVal = RV_BLOCKPERSEC_SIZE;
+    }
+}
+
+void GetRv40CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.width.minVal = RV_MIN_SIZE;
+        capsData.height.minVal = RV_MIN_SIZE;
+        capsData.blockPerFrame.maxVal = RV_BLOCKPERFRAME_SIZE;
+        capsData.blockPerSecond.maxVal = RV_BLOCKPERSEC_SIZE;
+    }
+}
+#endif
+
 int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 {
     for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {
@@ -435,6 +463,14 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         } else if (capsData.mimeType == "video/cavs") {
             capaArray.emplace_back(capsData);
             GetAvsCapProf(capaArray);
+#endif
+#ifdef SUPPORT_CODEC_RV
+        } else if (capsData.mimeType == "video/rv30") {
+            capaArray.emplace_back(capsData);
+            GetRv30CapProf(capaArray);
+        } else if (capsData.mimeType == "video/rv40") {
+            capaArray.emplace_back(capsData);
+            GetRv40CapProf(capaArray);
 #endif
         } else {
             capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
