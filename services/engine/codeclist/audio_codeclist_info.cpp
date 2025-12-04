@@ -829,6 +829,11 @@ CapabilityData AudioCodeclistInfo::GetAlacDecoderCapability()
 AudioCodeclistInfo::AudioCodeclistInfo()
 {
     audioCapabilities_ = {
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
+                          GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
+                          GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),
+                          GetL2hcDecoderCapability(), GetVendorAacEncoderCapability(),
+#endif
                           GetMP3DecoderCapability(),   GetAacDecoderCapability(),    GetFlacDecoderCapability(),
                           GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(), GetAmrwbDecoderCapability(),
                           GetG711muDecoderCapability(), GetRawDecoderCapability(), GetAacEncoderCapability(),
@@ -837,11 +842,6 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetGsmMsDecoderCapability(), GetGsmDecoderCapability(), GetAlacDecoderCapability(),
                           GetWMAV1DecoderCapability(), GetWMAV2DecoderCapability(), GetWMAProDecoderCapability(),
                           GetIlbcDecoderCapability(), GetTruehdDecoderCapability(), GetTwinVQDecoderCapability(),
-#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
-                          GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
-                          GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),
-                          GetL2hcDecoderCapability(), GetVendorAacEncoderCapability(),
-#endif
 #ifdef SUPPORT_CODEC_OPUS
                           GetOpusDecoderCapability(), GetOpusEncoderCapability(),
 #endif
