@@ -2662,26 +2662,21 @@ Status FFmpegDemuxerPlugin::SeekToStart()
 {
     MEDIA_LOG_D("in");
     int64_t seekTs = AV_NOPTS_VALUE;
-    int ffRet = 0;
+    int ffRet = -1;
     bool isSkip = IsSkipGetMinTsPktInfo();
-    printf("%s cur file type %d, isSkipGetMinTsPktInfo %d\n", __FUNCTION__, static_cast<int32_t>(fileType_), isSkip);
     if (isSkip) {
-        printf("%s file type av_dict_set_int.\n", __FUNCTION__);
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
         ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 0, 0);
-    } else {
+    } else if (minTsPktInfo_.isInit) {
         FALSE_RETURN_V_MSG_E(minTsPktInfo_.isInit, Status::ERROR_INVALID_OPERATION, "minTsPktInfo_ is not init");
-        seekTs = pluginImpl_->flags & AVFMT_SEEK_TO_PTS ? minTsPktInfo_.minPts : minTsPktInfo_.minDts;
-        if (FFmpegFormatHelper::IsMpeg4File(fileType_)) {
-            seekTs = minTsPktInfo_.minDts;
-        }
+        seekTs = (pluginImpl_->flags & AVFMT_SEEK_TO_PTS) && !FFmpegFormatHelper::IsMpeg4File(fileType_) ?
+            minTsPktInfo_.minPts : minTsPktInfo_.minDts;
         ffRet = av_seek_frame(formatContext_.get(),
             minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
+        MEDIA_LOG_D("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
+            minTsPktInfo_.streamIndex, seekTs, ffRet);
     }
-    MEDIA_LOG_D("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
-        minTsPktInfo_.streamIndex, seekTs, ffRet);
-    printf("%s stream_index %d seekTs %ld ffRet %d\n", __FUNCTION__, minTsPktInfo_.streamIndex, seekTs, ffRet);
     if (ffRet < 0) {
         ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT,
             formatContext_->start_time, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
