@@ -20,13 +20,11 @@
 #include "avmuxer.h"
 #include "common/native_mfmagic.h"
 #include "native_avmagic.h"
-#include "avcodec_sysevent.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_MUXER, "NativeAVMuxer"};
 }
 
-using namespace std::chrono;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
@@ -40,15 +38,9 @@ struct AVMuxerObject : public OH_AVMuxer {
 
 struct OH_AVMuxer *OH_AVMuxer_Create(int32_t fd, OH_AVOutputFormat format)
 {
-    int64_t startTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     std::shared_ptr<AVMuxer> avmuxer = AVMuxerFactory::CreateAVMuxer(fd, static_cast<Plugins::OutputFormat>(format));
     CHECK_AND_RETURN_RET_LOG(avmuxer != nullptr, nullptr, "create muxer failed!");
     struct AVMuxerObject *object = new(std::nothrow) AVMuxerObject(avmuxer);
-    int64_t endTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-    AVAppEvent event;
-    event.apiName = "OH_AVMuxer_Create";
-    event.sumTime = endTime - startTime;
-    WriteCallStatusEvent(event);
     return object;
 }
 

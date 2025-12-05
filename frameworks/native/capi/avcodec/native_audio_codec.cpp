@@ -26,7 +26,6 @@
 #include "native_avmagic.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_audio_codec_impl.h"
-#include "avcodec_sysevent.h"
 #ifdef SUPPORT_DRM
 #include "native_drm_object.h"
 #endif
@@ -36,7 +35,6 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "Nati
 constexpr uint32_t MAX_LENGTH = 255;
 }
 
-using namespace std::chrono;
 using namespace OHOS::MediaAVCodec;
 class NativeAudioCodec;
 
@@ -162,7 +160,6 @@ extern "C" {
 
 struct OH_AVCodec *OH_AudioCodec_CreateByMime(const char *mime, bool isEncoder)
 {
-    int64_t startTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "input mime is nullptr!");
     CHECK_AND_RETURN_RET_LOG(strlen(mime) < MAX_LENGTH, nullptr, "input mime is too long!");
     std::shared_ptr<AVCodecAudioCodecImpl> audioCodec = std::make_shared<AVCodecAudioCodecImpl>();
@@ -176,17 +173,11 @@ struct OH_AVCodec *OH_AudioCodec_CreateByMime(const char *mime, bool isEncoder)
     struct AudioCodecObject *object = new (std::nothrow) AudioCodecObject(audioCodec);
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new AudioCodecObject");
 
-    int64_t endTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-    AVAppEvent event;
-    event.apiName = "OH_AudioCodec_CreateByMime";
-    event.sumTime = endTime - startTime;
-    WriteCallStatusEvent(event);
     return object;
 }
 
 struct OH_AVCodec *OH_AudioCodec_CreateByName(const char *name)
 {
-    int64_t startTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     CHECK_AND_RETURN_RET_LOG(name != nullptr, nullptr, "input name is nullptr!");
     CHECK_AND_RETURN_RET_LOG(strlen(name) < MAX_LENGTH, nullptr, "input name is too long!");
     std::shared_ptr<AVCodecAudioCodecImpl> audioCodec = std::make_shared<AVCodecAudioCodecImpl>();
@@ -209,11 +200,6 @@ struct OH_AVCodec *OH_AudioCodec_CreateByName(const char *name)
     struct AudioCodecObject *object = new(std::nothrow) AudioCodecObject(audioCodec);
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new AudioCodecObject");
 
-    int64_t endTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-    AVAppEvent event;
-    event.apiName = "OH_AudioCodec_CreateByName";
-    event.sumTime = endTime - startTime;
-    WriteCallStatusEvent(event);
     return object;
 }
 

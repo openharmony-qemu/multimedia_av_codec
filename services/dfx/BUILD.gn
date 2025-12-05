@@ -72,7 +72,6 @@ ohos_shared_library("av_codec_service_dfx") {
 
   external_deps = [
     "c_utils:utils",
-    "hiappevent:hiappevent_innerapi",
     "hicollie:libhicollie",
     "hisysevent:libhisysevent",
     "init:libbegetutil",
