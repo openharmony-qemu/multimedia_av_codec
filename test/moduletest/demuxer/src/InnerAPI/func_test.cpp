@@ -90,7 +90,7 @@ public:
 
 private:
     bool CreateBufferSize();
-    void GetFrameNum(int32_t i);
+    void GetFrameNum(int32_t trackIdx);
     std::shared_ptr<AVBuffer> avBuf_{ nullptr };
     int32_t fd_ = -1;
     int64_t size_;
