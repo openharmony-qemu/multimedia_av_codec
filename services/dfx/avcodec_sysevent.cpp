@@ -20,6 +20,8 @@
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "hisysevent.h"
+#include "app_event.h"
+#include "app_event_processor_mhr.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecDFX"};
@@ -34,6 +36,19 @@ const std::unordered_map<OHOS::MediaAVCodec::FaultType, std::string> FAULT_TYPE_
 
 namespace OHOS {
 namespace MediaAVCodec {
+
+using namespace HiviewDFX::HiAppEvent;
+void WriteCallStatusEvent(AVAppEvent event)
+{
+    AVCODEC_LOGI("report API invoke event");
+    Event eventOutput("api_diagnostic", "api_called_stat", BEHAVIOR);
+    eventOutput.Addparam("api_name", event.apiName);
+    eventOutput.Addparam("sdk_name", std::string"AVCodecKits");
+    eventOutput.Addparam("total_cost_time", event.sumTime);
+    Write(eventOutput);
+    
+}
+
 void FaultEventWrite(FaultType faultType, const std::string& msg, const std::string& module)
 {
     CHECK_AND_RETURN_LOG(faultType >= FaultType::FAULT_TYPE_FREEZE && faultType < FaultType::FAULT_TYPE_END,
