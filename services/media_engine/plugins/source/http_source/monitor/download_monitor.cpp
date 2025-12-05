@@ -14,7 +14,7 @@
  */
 #define HST_LOG_TAG "DownloadMonitor"
 
-#include "monitor/download_monitor.h"	
+#include "monitor/download_monitor.h"
 #include "cpp_ext/algorithm_ext.h"
 
 namespace OHOS {
@@ -302,7 +302,7 @@ void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
         if (isNeedClearBuffer_) {
             downloader_->ClearBuffer();
         }
-        AutoLock lock(taskMutex_);	
+        AutoLock lock(taskMutex_);
         bool exists = CppExt::AnyOf(retryTasks_.begin(), retryTasks_.end(), [&](const RetryRequest& item) {
             return item.request->IsSame(request);
         });

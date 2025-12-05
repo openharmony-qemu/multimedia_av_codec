@@ -510,42 +510,42 @@ void Downloader::GetIp(std::string &ip)
 }
 
 // Pause download thread before use currentRequest_
-bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)	
-{	
-    FALSE_RETURN_V_MSG(client_ != nullptr && !isDestructor_ && !isInterruptNeeded_, false,	
-        "not Retry, client null or isDestructor or isInterruptNeeded");	
-    if (isAppBackground_) {	
-        Pause(true);	
-        MEDIA_LOG_I("Retry avoid, forground to background.");	
-        return true;	
-    }	
-    {	
-        AutoLock lock(operatorMutex_);	
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR " Retry Begin", FAKE_POINTER(this));	
-        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest_ && !isDestructor_ && !isInterruptNeeded_, false);	
-        requestQue_->SetActive(false, false);	
+bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
+{
+    FALSE_RETURN_V_MSG(client_ != nullptr && !isDestructor_ && !isInterruptNeeded_, false,
+        "not Retry, client null or isDestructor or isInterruptNeeded");
+    if (isAppBackground_) {
+        Pause(true);
+        MEDIA_LOG_I("Retry avoid, forground to background.");
+        return true;
+    }
+    {
+        AutoLock lock(operatorMutex_);
+        MEDIA_LOG_I("0x%{public}06" PRIXPTR " Retry Begin", FAKE_POINTER(this));
+        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest_ && !isDestructor_ && !isInterruptNeeded_, false);
+        requestQue_->SetActive(false, false);
     }
     PauseLoop(true);
     WaitLoopPause();
     {
         AutoLock lock(operatorMutex_);
         FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest_ && !isDestructor_ && !isInterruptNeeded_, false);
-        client_->Close(false);	
-        if (currentRequest_ != nullptr) {	
-            if (currentRequest_->IsSame(request) && !shouldStartNextRequest_) {	
-                currentRequest_->retryTimes_++;	
-                currentRequest_->retryOnGoing_ = true;	
-                currentRequest_->dropedDataLen_ = 0;	
-            }	
-            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);	
-            requestQue_->SetActive(true);	
-            currentRequest_->isEos_ = false;	
-            if (currentRequest_->endPos_ > 0 && currentRequest_->startPos_ >= 0 &&	
+        client_->Close(false);
+        if (currentRequest_ != nullptr) {
+            if (currentRequest_->IsSame(request) && !shouldStartNextRequest_) {
+                currentRequest_->retryTimes_++;
+                currentRequest_->retryOnGoing_ = true;
+                currentRequest_->dropedDataLen_ = 0;
+            }
+            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
+            requestQue_->SetActive(true);
+            currentRequest_->isEos_ = false;
+            if (currentRequest_->endPos_ > 0 && currentRequest_->startPos_ >= 0 &&
                 currentRequest_->endPos_ >= currentRequest_->startPos_) {
                 currentRequest_->requestSize_ = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
             }
-        }	
-    }	
+        }
+    }
     task_->Start();	
     MEDIA_LOG_I("Do retry.");
     return true;	
