@@ -72,6 +72,7 @@
           "graphic_2d",
           "graphic_surface",
           "hdf_core",
+          "hiappevent",
           "hicollie",
           "hidumper",
           "hilog",
