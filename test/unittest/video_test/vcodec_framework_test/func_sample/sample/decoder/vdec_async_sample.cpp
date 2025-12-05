@@ -320,6 +320,12 @@ int32_t VideoDecAsyncSample::CreateReader(const std::string &inPath)
             return CreateMsvideo1Reader();
         case WMV3_STREAM:
             return CreateWmv3Reader();
+#ifdef SUPPORT_CODEC_RV
+        case RV30_STREAM:
+            return CreateRv30Reader();
+        case RV40_STREAM:
+            return CreateRv40Reader();
+#endif
         default:
             return CreateAvccReader();
     }
@@ -589,6 +595,28 @@ int32_t VideoDecAsyncSample::CreateWmv3Reader()
     return ret;
 }
 
+#ifdef SUPPORT_CODEC_RV
+int32_t VideoDecAsyncSample::CreateRv30Reader()
+{
+    std::shared_ptr<Rv30ReaderInfo> info = std::make_shared<Rv30ReaderInfo>();
+    info->inPath = inPath_;
+
+    rv30Reader_ = std::make_shared<Rv30Reader>();
+    int32_t ret = rv30Reader_->Init(info);
+    return ret;
+}
+
+int32_t VideoDecAsyncSample::CreateRv40Reader()
+{
+    std::shared_ptr<Rv40ReaderInfo> info = std::make_shared<Rv40ReaderInfo>();
+    info->inPath = inPath_;
+
+    rv40Reader_ = std::make_shared<Rv40Reader>();
+    int32_t ret = rv40Reader_->Init(info);
+    return ret;
+}
+#endif
+
 void VideoDecAsyncSample::FlushInner()
 {
     if (signal_ == nullptr) {
@@ -831,6 +859,12 @@ int32_t VideoDecAsyncSample::InputLoopInner()
     } else if (av1Reader_ != nullptr) {
         av1Reader_->FillBuffer(buffer->GetAddr(), attr);
 #endif
+#ifdef SUPPORT_CODEC_RV
+    } else if (rv30Reader_ != nullptr) {
+        rv30Reader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (rv40Reader_ != nullptr) {
+        rv40Reader_->FillBuffer(buffer->GetAddr(), attr);
+#endif
     } else {
         msvideo1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }
@@ -1036,7 +1070,8 @@ int32_t VideoDecAsyncSample::OutputLoopInnerExt()
         int32_t size = (testParam_ == VCodecTestParam::SW_AVC || testParam_ == VCodecTestParam::SW_MPEG2 ||
                         testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263 ||
                         testParam_ == VCodecTestParam::SW_VC1 || testParam_ == VCodecTestParam::SW_MSVIDEO1 ||
-                        testParam_ == VCodecTestParam::SW_WMV3 || testParam_ == VCodecTestParam::SW_AVS)
+                        testParam_ == VCodecTestParam::SW_WMV3 || testParam_ == VCodecTestParam::SW_AVS||
+                        testParam_ == VCodecTestParam::SW_RV30 || testParam_ == VCodecTestParam::SW_RV40)
                            ? attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                           "Fatal: GetOutputBuffer fail, exit, index: %d", index);
@@ -1123,6 +1158,12 @@ int32_t VideoDecAsyncSample::InputLoopInnerExt()
 #ifdef SUPPORT_CODEC_AV1
     } else if (av1Reader_ != nullptr) {
         av1Reader_->FillBuffer(buffer->GetAddr(), attr);
+#endif
+#ifdef SUPPORT_CODEC_RV
+    } else if (rv30Reader_ != nullptr) {
+        rv30Reader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (rv40Reader_ != nullptr) {
+        rv40Reader_->FillBuffer(buffer->GetAddr(), attr);
 #endif
     } else {
         msvideo1Reader_->FillBuffer(buffer->GetAddr(), attr);

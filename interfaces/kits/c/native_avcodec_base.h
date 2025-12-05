@@ -357,6 +357,20 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_H263;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
 
 /**
+ * @brief Enumerates the MIME type of video rv30 codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_RV30;
+
+/**
+ * @brief Enumerates the MIME type of video rv40 codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_RV40;
+
+/**
  * @brief Enumerates the types of audio and video muxer
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
