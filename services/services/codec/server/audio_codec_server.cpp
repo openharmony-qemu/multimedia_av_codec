@@ -99,7 +99,7 @@ int32_t AudioCodecServer::Init(AVCodecType type, bool isMimeType, const std::str
     std::lock_guard<std::shared_mutex> lock(mutex_);
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
-    CHECK_AND_RETURN_RET_LOG(name != nullptr,  AVCS_ERR_INVALID_OPERATION,  "name is nullptr");
+    CHECK_AND_RETURN_RET_LOG(name != "",  AVCS_ERR_INVALID_OPERATION,  "name is nullptr");
     codecType_ = type;
     codecName_ = name;
     codecMime_ = isMimeType ? name : CodecAbilitySingleton::GetInstance().GetMimeByCodecName(name);
