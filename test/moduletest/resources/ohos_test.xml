@@ -691,6 +691,22 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="WVc1SwdecoderResourceFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test_wvc1.wvc1 -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/glitch-ffvc1_vc1.avi -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="WVc1SwdecoderSetParameterFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test_wvc1.wvc1 -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/glitch-ffvc1_vc1.avi -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="Vp8SwdecoderConfigureFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>

@@ -310,6 +310,65 @@ private:
     std::shared_ptr<Vc1UnitReader> vc1UnitReader_ = nullptr;
     std::shared_ptr<Vc1Detector> vc1Detector_ = nullptr;
 };
+
+struct WVc1ReaderInfo {
+    std::string inPath;
+};
+class WVc1Reader : public DataProducerBase {
+public:
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t naluType, bool isEosFrame);
+    bool IsEOS();
+    int32_t Init(const std::shared_ptr<WVc1ReaderInfo> &info);
+    std::mutex mutex_;
+    int32_t frameInputCount_ = 0;
+private:
+    class WVc1UnitReader {
+    public:
+        explicit WVc1UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        virtual ~WVc1UnitReader() {};
+        uint8_t const *GetNextWVc1UnitAddr();
+        virtual int32_t ReadWVc1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos);
+        virtual bool IsEOS() = 0;
+        virtual void PrereadFile() = 0;
+        virtual void PrereadWVc1Unit();
+
+    protected:
+        WVc1UnitReader() {};
+        virtual bool IsEOF() = 0;
+
+        std::unique_ptr<std::vector<uint8_t>> wvc1Unit_ = nullptr;
+        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+    };
+
+    class WVc1MetaUnitReader : public WVc1UnitReader {
+    public:
+        explicit WVc1MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        int32_t ReadWVc1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        bool IsEOS() override;
+        void PrereadFile() override;
+        void PrereadWVc1Unit() override;
+    private:
+        bool IsEOF() override;
+        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
+        uint8_t* FindNextStartCode(uint8_t* start, uint8_t* end);
+        uint8_t GetWVc1UnitType(uint8_t* startCode);
+        std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+        uint32_t frameIndex_ = 0;
+    };
+    class WVc1Detector {
+    public:
+        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
+        const uint8_t *GetWVc1TypeAddr(const uint8_t *bufferAddr);
+        uint8_t GetWVc1Type(const uint8_t *bufferAddr);
+        bool IsI(uint8_t wvc1Type);
+    };
+
+    std::shared_ptr<WVc1UnitReader> wvc1UnitReader_ = nullptr;
+    std::shared_ptr<WVc1Detector> wvc1Detector_ = nullptr;
+};
 #endif
 
 struct Msvideo1ReaderInfo {
