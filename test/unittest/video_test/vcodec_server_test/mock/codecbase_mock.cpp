@@ -24,6 +24,9 @@
 #ifdef SUPPORT_CODEC_VP9
 #include "vp9_decoder_loader.h"
 #endif
+#ifdef SUPPORT_CODEC_AV1
+#include "av1_decoder_loader.h"
+#endif
 #include "avc_encoder_loader.h"
 #include "unittest_log.h"
 namespace {
@@ -33,6 +36,17 @@ std::weak_ptr<OHOS::MediaAVCodec::CodecBaseMock> g_mockObject;
 
 namespace OHOS {
 namespace MediaAVCodec {
+#ifdef SUPPORT_CODEC_AV1
+std::shared_ptr<CodecBase> Av1DecoderLoader::CreateByName(const std::string &name)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("name: %s", name.c_str());
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, nullptr, "mock object is nullptr");
+    return mock->CreateAv1DecoderByName(name);
+}
+#endif
+
 #ifdef SUPPORT_CODEC_VP9
 std::shared_ptr<CodecBase> Vp9DecoderLoader::CreateByName(const std::string &name)
 {
@@ -90,6 +104,19 @@ std::shared_ptr<CodecBase> AvcEncoderLoader::CreateByName(const std::string &nam
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, nullptr, "mock object is nullptr");
     return mock->CreateAvcEncoderByName(name);
 }
+
+#ifdef SUPPORT_CODEC_AV1
+int32_t Av1DecoderLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("AV1Codec");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    auto item = mock->GetAv1DecoderCapabilityList();
+    caps = item.second;
+    return item.first;
+}
+#endif
 
 #ifdef SUPPORT_CODEC_VP9
 int32_t Vp9DecoderLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
