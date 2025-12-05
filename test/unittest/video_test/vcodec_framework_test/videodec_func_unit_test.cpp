@@ -23,7 +23,7 @@
 #include "videodec_capi_mock.h"
 #endif
 #include "videodec_func_test_suit.h"
-
+#include "surface_type.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -423,6 +423,98 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_006, TestSize.Level1)
     videoDec_->Release();
     surface->GetTransform(transform);
     EXPECT_EQ(0, transform);
+}
+
+/**
+ * @tc.name: VideoDecoder_Configure_Transform_007
+ * @tc.desc: video codec Configure
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Configure_Transform_007, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    std::shared_ptr<OHOS::MediaAVCodec::FormatMock> formatCfg = FormatMockFactory::CreateFormat();
+    ASSERT_NE(nullptr, formatCfg);
+    formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    formatCfg->PutIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, -1);
+    EXPECT_NE(AV_ERR_OK, videoDec_->Configure(formatCfg));
+    videoDec_->Release();
+}
+
+/**
+ * @tc.name: VideoDecoder_Configure_Transform_008
+ * @tc.desc: video codec Configure
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Configure_Transform_008, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    std::shared_ptr<OHOS::MediaAVCodec::FormatMock> formatCfg = FormatMockFactory::CreateFormat();
+    ASSERT_NE(nullptr, formatCfg);
+    formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    formatCfg->PutIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE,
+        static_cast<int32_t>(OHOS::GraphicTransformType::GRAPHIC_ROTATE_BUTT));
+    EXPECT_NE(AV_ERR_OK, videoDec_->Configure(formatCfg));
+    videoDec_->Release();
+}
+
+/**
+ * @tc.name: VideoDecoder_SetParameter_Transform_001
+ * @tc.desc: video codec SetParameter
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_Transform_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    std::shared_ptr<OHOS::MediaAVCodec::FormatMock> formatCfg = FormatMockFactory::CreateFormat();
+    ASSERT_NE(nullptr, formatCfg);
+    formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    formatCfg->PutIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, 1);
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(formatCfg));
+    videoDec_->SetOutputSurface();
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+
+    std::shared_ptr<OHOS::MediaAVCodec::FormatMock> formatSep = FormatMockFactory::CreateFormat();
+    formatSep->PutIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, -1);
+    EXPECT_NE(AV_ERR_OK, videoDec_->SetParameter(formatSep));
+    videoDec_->Release();
+}
+
+/**
+ * @tc.name: VideoDecoder_SetParameter_Transform_002
+ * @tc.desc: video codec SetParameter
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_Transform_002, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    std::shared_ptr<OHOS::MediaAVCodec::FormatMock> formatCfg = FormatMockFactory::CreateFormat();
+    ASSERT_NE(nullptr, formatCfg);
+    formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    formatCfg->PutIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, 1);
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(formatCfg));
+    videoDec_->SetOutputSurface();
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+
+    std::shared_ptr<OHOS::MediaAVCodec::FormatMock> formatSep = FormatMockFactory::CreateFormat();
+    formatSep->PutIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE,
+        static_cast<int32_t>(OHOS::GraphicTransformType::GRAPHIC_ROTATE_BUTT));
+    EXPECT_NE(AV_ERR_OK, videoDec_->SetParameter(formatSep));
+    videoDec_->Release();
 }
 
 /**
