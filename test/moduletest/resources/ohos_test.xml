@@ -77,6 +77,14 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="vp8decoder_native_module_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/vp8/. -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/profile0_level10_I_128x96.h263 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="vp9decoder_native_module_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
@@ -101,6 +109,13 @@
         </preparer>
     </target>
     <target name="vc1decoder_native_module_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="wvc1decoder_native_module_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_decoder/. -> /data/test/media" src="res"/>
@@ -688,6 +703,22 @@
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_decoder/test_vc1.vc1 -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/glitch-ffvc1_vc1.avi -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="WVc1SwdecoderResourceFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test_wvc1.wvc1 -> /data/test/media" src="res"/>
+            <option name="push" value="video_decoder/glitch-ffvc1_vc1.avi -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="WVc1SwdecoderSetParameterFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test_wvc1.wvc1 -> /data/test/media" src="res"/>
             <option name="push" value="video_decoder/glitch-ffvc1_vc1.avi -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>

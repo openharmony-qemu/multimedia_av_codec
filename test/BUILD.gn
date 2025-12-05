@@ -208,7 +208,13 @@ group("av_codec_module_test") {
       "moduletest/vcodec/mjpegswdecoder:mjpegswdecoder_native_module_test",
     ]
     if (av_codec_support_vc1_decoder) {
-      deps += [ "moduletest/vcodec/vc1decoder:vc1decoder_native_module_test" ]
+      deps += [ 
+        "moduletest/vcodec/vc1decoder:vc1decoder_native_module_test",
+        "moduletest/vcodec/wvc1decoder:wvc1decoder_native_module_test", 
+      ]
+    }
+    if (av_codec_support_vp8_decoder) {
+      deps += [ "moduletest/vcodec/vp8decoder:vp8decoder_native_module_test" ]
     }
     if (av_codec_support_vp9_decoder) {
       deps += [ "moduletest/vcodec/vp9decoder:vp9decoder_native_module_test" ]
@@ -415,6 +421,8 @@ group("av_codec_fuzz_test") {
       "fuzztest/vc1swdecoderresource_fuzzer:Vc1SwdecoderResourceFuzzTest",
       "fuzztest/vc1swdecoderconfigure_fuzzer:Vc1SwdecoderConfigureFuzzTest",
       "fuzztest/vc1swdecodersetparameter_fuzzer:Vc1SwdecoderSetParameterFuzzTest",
+      "fuzztest/wvc1swdecoderresource_fuzzer:WVc1SwdecoderResourceFuzzTest",
+      "fuzztest/wvc1swdecodersetparameter_fuzzer:WVc1SwdecoderSetParameterFuzzTest",
       "fuzztest/softencoderapi11_fuzzer:SoftEncoderAPI11FuzzTest",
       "fuzztest/swdecoderconfigure_fuzzer:SwdecoderConfigureFuzzTest",
       "fuzztest/swdecoderresource_fuzzer:SwdecoderResourceFuzzTest",

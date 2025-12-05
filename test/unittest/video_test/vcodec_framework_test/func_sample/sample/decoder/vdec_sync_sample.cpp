@@ -193,6 +193,8 @@ int32_t VideoDecSyncSample::CreateReader(const std::string &inPath)
 #ifdef SUPPORT_CODEC_VC1
         case VC1_STREAM:
             return CreateVc1Reader();
+        case WVC1_STREAM:
+            return CreateWVc1Reader();
 #endif
 #ifdef SUPPORT_CODEC_AVS
         case AVS_STREAM:
@@ -440,6 +442,16 @@ int32_t VideoDecSyncSample::CreateVc1Reader()
 
     vc1Reader_ = std::make_shared<Vc1Reader>();
     int32_t ret = vc1Reader_->Init(info);
+    return ret;
+}
+
+int32_t VideoDecSyncSample::CreateWVc1Reader()
+{
+    std::shared_ptr<WVc1ReaderInfo> info = std::make_shared<WVc1ReaderInfo>();
+    info->inPath = inPath_;
+
+    wvc1Reader_ = std::make_shared<WVc1Reader>();
+    int32_t ret = wvc1Reader_->Init(info);
     return ret;
 }
 #endif
@@ -777,7 +789,8 @@ int32_t VideoDecSyncSample::OutputLoopInnerExt()
                         testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263 ||
                         testParam_ == VCodecTestParam::SW_VC1 || testParam_ == VCodecTestParam::SW_MSVIDEO1 ||
                         testParam_ == VCodecTestParam::SW_WMV3 || testParam_ == VCodecTestParam::SW_AVS ||
-                        testParam_ == VCodecTestParam::SW_RV30 || testParam_ == VCodecTestParam::SW_RV40)
+                        testParam_ == VCodecTestParam::SW_RV30 || testParam_ == VCodecTestParam::SW_RV40 ||
+                        testParam_ == VCodecTestParam::SW_WVC1)
                            ? attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                           "Fatal: GetOutputBuffer fail, exit, index: %d", index);
@@ -838,6 +851,8 @@ int32_t VideoDecSyncSample::InputLoopInnerExt()
 #ifdef SUPPORT_CODEC_VC1
     } else if (vc1Reader_ != nullptr) {
         vc1Reader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (wvc1Reader_ != nullptr) {
+        wvc1Reader_->FillBuffer(buffer->GetAddr(), attr);
 #endif
 #ifdef SUPPORT_CODEC_AVS
     } else if (avsReader_ != nullptr) {
