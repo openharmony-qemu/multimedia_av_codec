@@ -1382,7 +1382,6 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0160, TestSize.Level3)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_COVER_INNER_FUNC_0010, TestSize.Level2)
 {
-    bool isGetCoverData = false;
     int32_t trackCount = 0;
     Format trackFormat;
     Format sourceFormat;
@@ -1411,20 +1410,18 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_COVER_INNER_FUNC_0010, TestSize.Level2
             if (ret != 0) {
                 cout << "GetTrackFormat failed!!!!" << endl;
             }
-            if (((i == videoTrackIdx_) && isVideoEosFlagForSave_) || ((i == audioTrackIdx_) && isAudioEosFlagForSave_)) {
+            if (((i == videoTrackIdx_) && isVideoEosFlagForSave_) ||
+                ((i == audioTrackIdx_) && isAudioEosFlagForSave_)) {
                 continue;
             }
-            if (i == 2 && !isGetCoverData) {
+            if (i == 2) {
                 ASSERT_EQ(true, trackFormat.GetBuffer(MediaDescriptionKey::MD_KEY_COVER, &addr, buffSize));
-                isGetCoverData = true;
-
+                continue;
             }
-            if (i != 2) {
             ret = demuxer->ReadSampleBuffer(i, avBuf_);
             if (ret != 0) {
                 cout << "ReadSampleBuffer failed" << i << endl;
-                } 
-            }
+                }
             GetFrameNum(i);
         }
     }
