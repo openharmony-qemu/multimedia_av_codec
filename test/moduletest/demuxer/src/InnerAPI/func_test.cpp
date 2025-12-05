@@ -166,38 +166,38 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0100, TestSize.Level0)
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
 
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     float longitude = 0.0;
-    ASSERT_TRUE(format_.GetFloatValue(Media::Tag::MEDIA_LONGITUDE, longitude));
+    ASSERT_TRUE(format.GetFloatValue(Media::Tag::MEDIA_LONGITUDE, longitude));
     ASSERT_EQ(longitude, float(120.201302));
 
     float latitude = 0.0;
-    ASSERT_TRUE(format_.GetFloatValue(Media::Tag::MEDIA_LATITUDE, latitude));
+    ASSERT_TRUE(format.GetFloatValue(Media::Tag::MEDIA_LATITUDE, latitude));
     ASSERT_EQ(latitude, float(30.188101));
 
     string genre;
-    ASSERT_TRUE(format_.GetStringValue(Media::Tag::MEDIA_GENRE, genre));
+    ASSERT_TRUE(format.GetStringValue(Media::Tag::MEDIA_GENRE, genre));
     ASSERT_EQ(genre, "AAAAAA{marketing-name:\"AABBAABBAABBAABBAA\",param-hw-ext"\
     ":{camera-position-tag:2},param-use-tag:TypeNormalVideo}");
 
-    Format metaFormat_;
-    ret = source->GetUserMeta(metaFormat_);
+    Format metaFormat;
+    ret = source->GetUserMeta(metaFormat);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     std::string manufacturer;
-    ASSERT_TRUE(metaFormat_.GetStringValue("com.abababa.manufacturer", manufacturer));
+    ASSERT_TRUE(metaFormat.GetStringValue("com.abababa.manufacturer", manufacturer));
     ASSERT_EQ(manufacturer, "ABCDEF");
     std::string marketingName;
-    ASSERT_TRUE(metaFormat_.GetStringValue("com.abababa.marketing_name", marketingName));
+    ASSERT_TRUE(metaFormat.GetStringValue("com.abababa.marketing_name", marketingName));
     ASSERT_EQ(marketingName, "AABBAABBAABBAABBAA");
     std::string model;
-    ASSERT_TRUE(metaFormat_.GetStringValue("com.abababa.model", model));
+    ASSERT_TRUE(metaFormat.GetStringValue("com.abababa.model", model));
     ASSERT_EQ(model, "ABABABAB");
     std::string version;
-    ASSERT_TRUE(metaFormat_.GetStringValue("com.abababa.version", version));
+    ASSERT_TRUE(metaFormat.GetStringValue("com.abababa.version", version));
     ASSERT_EQ(version, "12");
 }
 
@@ -216,20 +216,20 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0200, TestSize.Level0)
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
 
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     float longitude = 0.0;
-    ASSERT_TRUE(format_.GetFloatValue(Media::Tag::MEDIA_LONGITUDE, longitude));
+    ASSERT_TRUE(format.GetFloatValue(Media::Tag::MEDIA_LONGITUDE, longitude));
     ASSERT_EQ(longitude, float(120.000000));
 
     float latitude = 0.0;
-    ASSERT_TRUE(format_.GetFloatValue(Media::Tag::MEDIA_LATITUDE, latitude));
+    ASSERT_TRUE(format.GetFloatValue(Media::Tag::MEDIA_LATITUDE, latitude));
     ASSERT_EQ(latitude, float(30.000000));
 
-    Format metaFormat_;
-    ret = source->GetUserMeta(metaFormat_);
+    Format metaFormat;
+    ret = source->GetUserMeta(metaFormat);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
@@ -247,16 +247,16 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0300, TestSize.Level2)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     float longitude = 0.0;
-    ASSERT_TRUE(format_.GetFloatValue(Media::Tag::MEDIA_LONGITUDE, longitude));
+    ASSERT_TRUE(format.GetFloatValue(Media::Tag::MEDIA_LONGITUDE, longitude));
     ASSERT_EQ(longitude, float(0.000000));
 
     float latitude = 0.0;
-    ASSERT_TRUE(format_.GetFloatValue(Media::Tag::MEDIA_LATITUDE, latitude));
+    ASSERT_TRUE(format.GetFloatValue(Media::Tag::MEDIA_LATITUDE, latitude));
     ASSERT_EQ(latitude, float(0.000000));
 }
 
@@ -274,17 +274,17 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0400, TestSize.Level2)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     float longitude = 0.0;
-    ASSERT_TRUE(format_.GetFloatValue(Media::Tag::MEDIA_LONGITUDE, longitude));
+    ASSERT_TRUE(format.GetFloatValue(Media::Tag::MEDIA_LONGITUDE, longitude));
     ASSERT_EQ(longitude, float(120.201302));
     float latitude = 0.0;
-    ASSERT_TRUE(format_.GetFloatValue(Media::Tag::MEDIA_LATITUDE, latitude));
+    ASSERT_TRUE(format.GetFloatValue(Media::Tag::MEDIA_LATITUDE, latitude));
     ASSERT_EQ(latitude, float(30.188101));
-    Format metaFormat_;
-    ret = source->GetUserMeta(metaFormat_);
+    Format metaFormat;
+    ret = source->GetUserMeta(metaFormat);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
@@ -303,20 +303,20 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0500, TestSize.Level2)
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
 
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     float longitude = 0.0;
-    ASSERT_TRUE(format_.GetFloatValue(Media::Tag::MEDIA_LONGITUDE, longitude));
+    ASSERT_TRUE(format.GetFloatValue(Media::Tag::MEDIA_LONGITUDE, longitude));
     ASSERT_EQ(longitude, float(120.201401));
 
     float latitude = 0.0;
-    ASSERT_TRUE(format_.GetFloatValue(Media::Tag::MEDIA_LATITUDE, latitude));
+    ASSERT_TRUE(format.GetFloatValue(Media::Tag::MEDIA_LATITUDE, latitude));
     ASSERT_EQ(latitude, float(30.188101));
 
     string genre;
-    ASSERT_TRUE(format_.GetStringValue(Media::Tag::MEDIA_GENRE, genre));
+    ASSERT_TRUE(format.GetStringValue(Media::Tag::MEDIA_GENRE, genre));
     ASSERT_EQ(genre, "AABBAA{marketing-name:\"AABBAABBAABBAABABA\",param-AA-ext"\
     ":{camera-position-tag:2},param-use-tag:TypeNormalVideo}");
 }
@@ -971,16 +971,16 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0010, TestSize.Level0)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_TRUE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_1, stringVal);
 }
 
@@ -998,16 +998,16 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0020, TestSize.Level1)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_TRUE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_1, stringVal);
 }
 
@@ -1025,16 +1025,16 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0030, TestSize.Level1)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_TRUE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_1, stringVal);
 }
 
@@ -1052,16 +1052,16 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0040, TestSize.Level1)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_TRUE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_1, stringVal);
 }
 
@@ -1079,16 +1079,16 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0050, TestSize.Level1)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_TRUE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_1, stringVal);
 }
 
@@ -1106,16 +1106,16 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0060, TestSize.Level1)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_TRUE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_1, stringVal);
 }
 
@@ -1133,16 +1133,16 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0070, TestSize.Level1)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_TRUE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_2, stringVal);
 }
 
@@ -1160,16 +1160,16 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0080, TestSize.Level2)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_TRUE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_3, stringVal);
 }
 
@@ -1187,16 +1187,16 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0090, TestSize.Level2)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     float longval = 0.0;
     int32_t intval;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     std::string stringVal = "";
-    ASSERT_TRUE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_TRUE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
     ASSERT_EQ(AIGC_TEST_4, stringVal);
 }
 
@@ -1214,15 +1214,15 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0100, TestSize.Level3)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_FALSE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
 }
 
 /**
@@ -1239,15 +1239,15 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0110, TestSize.Level3)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_FALSE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
 }
 
 /**
@@ -1264,15 +1264,15 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0120, TestSize.Level3)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_FALSE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
 }
 
 /**
@@ -1289,15 +1289,15 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0130, TestSize.Level3)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_FALSE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
 }
 
 /**
@@ -1314,15 +1314,15 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0140, TestSize.Level3)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_FALSE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
 }
 
 /**
@@ -1339,15 +1339,15 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0150, TestSize.Level3)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_FALSE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
 }
 
 /**
@@ -1364,15 +1364,15 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0160, TestSize.Level3)
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
-    Format format_;
-    int32_t ret = source->GetSourceFormat(format_);
+    Format format;
+    int32_t ret = source->GetSourceFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     float longval = 0.0;
     int32_t intval = 0;
-    ASSERT_FALSE(format_.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
-    ASSERT_FALSE(format_.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
+    ASSERT_FALSE(format.GetFloatValue(MediaDescriptionKey::MD_KEY_AIGC, longval));
+    ASSERT_FALSE(format.GetIntValue(MediaDescriptionKey::MD_KEY_AIGC, intval));
     string stringVal = "";
-    ASSERT_FALSE(format_.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
+    ASSERT_FALSE(format.GetStringValue(MediaDescriptionKey::MD_KEY_AIGC, stringVal));
 }
 
 /**
