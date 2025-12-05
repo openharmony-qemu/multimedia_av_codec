@@ -45,8 +45,7 @@ void WriteCallStatusEvent(AVAppEvent event)
     eventOutput.Addparam("api_name", event.apiName);
     eventOutput.Addparam("sdk_name", std::string"AVCodecKits");
     eventOutput.Addparam("total_cost_time", event.sumTime);
-    Write(eventOutput);
-    
+    Write(eventOutput);   
 }
 
 void FaultEventWrite(FaultType faultType, const std::string& msg, const std::string& module)
