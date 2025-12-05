@@ -17,8 +17,12 @@
 #include <cmath>
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
+#include "bundle_mgr_interface.h"
+#include "bundle_mgr_proxy.h"
 #include "codec_service_proxy.h"
 #include "meta/meta_key.h"
+#include "iservice_registry.h"
+#include "system_ability_definition.h"
 
 using namespace OHOS::Media;
 namespace {
@@ -26,6 +30,35 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 inline std::string ErrorToStr(int32_t ret)
 {
     return AVCSErrorToString(static_cast<OHOS::MediaAVCodec::AVCodecServiceErrCode>((ret)));
+}
+
+const std::string &GetBundleNameOrDefault()
+{
+    using namespace OHOS;
+    using namespace OHOS::AppExecFwk;
+    static std::string bundleName;
+    static std::mutex mutex;
+    std::lock_guard lock(mutex);
+    if (!bundleName.empty()) {
+        return bundleName;
+    }
+    bundleName = std::string(program_invocation_name); // default: process name
+    auto systemAbilityManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    CHECK_AND_RETURN_RET_LOG(systemAbilityManager != nullptr, bundleName, "systemAbilityManager is nullptr");
+
+    sptr<IRemoteObject> remoteObject = systemAbilityManager->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+    CHECK_AND_RETURN_RET_LOG(remoteObject != nullptr, bundleName, "remoteObject is nullptr");
+
+    sptr<IBundleMgr> bundleMgrProxy = iface_cast<IBundleMgr>(remoteObject);
+    CHECK_AND_RETURN_RET_LOG(bundleMgrProxy != nullptr, bundleName, "bundleMgrProxy is nullptr");
+
+    BundleInfo bundleInfo;
+    (void)bundleMgrProxy->GetBundleInfoV9(bundleName,
+                                          static_cast<uint32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_HAP_MODULE) |
+                                              static_cast<uint32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_METADATA) |
+                                              static_cast<uint32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_DISABLE),
+                                          bundleInfo, Constants::ALL_USERID);
+    return bundleName;
 }
 constexpr int64_t  LOG_INTERVAL_MS = 2000;  // 2s
 constexpr uint32_t LOG_MAX_COUNT   = 5;     // max 5 times in logIntervalMs
@@ -109,7 +142,7 @@ int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &
     using namespace OHOS::Media;
     callerInfo.SetData(Tag::AV_CODEC_CALLER_PID, getprocpid());
     callerInfo.SetData(Tag::AV_CODEC_CALLER_UID, getuid());
-    callerInfo.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, std::string(program_invocation_name));
+    callerInfo.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, GetBundleNameOrDefault());
 
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecProxy_ != nullptr && listenerStub_ != nullptr && converter_ != nullptr,
@@ -349,10 +382,11 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->QueueInputBuffer(index, info, flag);
     }
-    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(ret == AVCS_ERR_OK, ret, LOG_INTERVAL_MS, LOG_MAX_COUNT,
-        "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(), index);
-    circular_.QueueInputBufferDone(index);
-    return AVCS_ERR_OK;
+    bool isSuccess = (ret == AVCS_ERR_OK);
+    EXPECT_AND_LOGW_LIMIT_IN_TIME_WITH_TAG(!isSuccess, LOG_INTERVAL_MS, LOG_MAX_COUNT, "%{public}s.idx:%{public}u",
+                                           ErrorToStr(ret).c_str(), index);
+    circular_.QueueInputBufferDone(index, isSuccess);
+    return ret;
 }
 
 int32_t CodecClient::QueueInputBuffer(uint32_t index)
@@ -367,10 +401,11 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index)
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->QueueInputBuffer(index);
     }
-    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(ret == AVCS_ERR_OK, ret, LOG_INTERVAL_MS, LOG_MAX_COUNT,
-        "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(), index);
-    circular_.QueueInputBufferDone(index);
-    return AVCS_ERR_OK;
+    bool isSuccess = (ret == AVCS_ERR_OK);
+    EXPECT_AND_LOGW_LIMIT_IN_TIME_WITH_TAG(!isSuccess, LOG_INTERVAL_MS, LOG_MAX_COUNT, "%{public}s.idx:%{public}u",
+                                           ErrorToStr(ret).c_str(), index);
+    circular_.QueueInputBufferDone(index, isSuccess);
+    return ret;
 }
 
 int32_t CodecClient::QueueInputParameter(uint32_t index)
@@ -383,10 +418,11 @@ int32_t CodecClient::QueueInputParameter(uint32_t index)
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->QueueInputParameter(index);
     }
-    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(ret == AVCS_ERR_OK, ret, LOG_INTERVAL_MS, LOG_MAX_COUNT,
-        "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(), index);
-    circular_.QueueInputBufferDone(index);
-    return AVCS_ERR_OK;
+    bool isSuccess = (ret == AVCS_ERR_OK);
+    EXPECT_AND_LOGW_LIMIT_IN_TIME_WITH_TAG(!isSuccess, LOG_INTERVAL_MS, LOG_MAX_COUNT, "%{public}s.idx:%{public}u",
+                                           ErrorToStr(ret).c_str(), index);
+    circular_.QueueInputBufferDone(index, isSuccess);
+    return ret;
 }
 
 int32_t CodecClient::GetOutputFormat(Format &format)
@@ -424,10 +460,11 @@ int32_t CodecClient::ReleaseOutputBuffer(uint32_t index, bool render)
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->ReleaseOutputBuffer(index, render);
     }
-    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(ret == AVCS_ERR_OK, ret, LOG_INTERVAL_MS, LOG_MAX_COUNT,
-        "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(), index);
-    circular_.ReleaseOutputBufferDone(index);
-    return AVCS_ERR_OK;
+    bool isSuccess = (ret == AVCS_ERR_OK);
+    EXPECT_AND_LOGW_LIMIT_IN_TIME_WITH_TAG(!isSuccess, LOG_INTERVAL_MS, LOG_MAX_COUNT, "%{public}s.idx:%{public}u",
+                                           ErrorToStr(ret).c_str(), index);
+    circular_.ReleaseOutputBufferDone(index, isSuccess);
+    return ret;
 }
 
 int32_t CodecClient::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
@@ -444,10 +481,11 @@ int32_t CodecClient::RenderOutputBufferAtTime(uint32_t index, int64_t renderTime
     if (ret == AVCS_ERR_OK) {
         ret = codecProxy_->RenderOutputBufferAtTime(index, renderTimestampNs);
     }
-    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(ret == AVCS_ERR_OK, ret, LOG_INTERVAL_MS, LOG_MAX_COUNT,
-        "%{public}s.idx:%{public}u", ErrorToStr(ret).c_str(), index);
-    circular_.ReleaseOutputBufferDone(index);
-    return AVCS_ERR_OK;
+    bool isSuccess = (ret == AVCS_ERR_OK);
+    EXPECT_AND_LOGW_LIMIT_IN_TIME_WITH_TAG(!isSuccess, LOG_INTERVAL_MS, LOG_MAX_COUNT, "%{public}s.idx:%{public}u",
+                                           ErrorToStr(ret).c_str(), index);
+    circular_.ReleaseOutputBufferDone(index, isSuccess);
+    return ret;
 }
 
 int32_t CodecClient::QueryInputBuffer(uint32_t &index, int64_t timeoutUs)
