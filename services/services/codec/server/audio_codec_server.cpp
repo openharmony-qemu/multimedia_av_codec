@@ -99,13 +99,14 @@ int32_t AudioCodecServer::Init(AVCodecType type, bool isMimeType, const std::str
     std::lock_guard<std::shared_mutex> lock(mutex_);
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
+    CHECK_AND_RETURN_RET_LOG(name != nullptr, 
     codecType_ = type;
     codecName_ = name;
     codecMime_ = isMimeType ? name : CodecAbilitySingleton::GetInstance().GetMimeByCodecName(name);
     
     int32_t ret = isMimeType ? InitByMime(callerInfo, apiVersion) : InitByName(callerInfo, apiVersion);
 
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret,
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION,  "name is nullptr");
                              "Init failed. isMimeType:(%{public}d), name:(%{public}s), error:(%{public}d)",
                              isMimeType, name.c_str(), ret);
     shareBufCallback_ = std::make_shared<CodecBaseCallback>(shared_from_this());
