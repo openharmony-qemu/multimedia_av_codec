@@ -285,6 +285,9 @@ bool VideoDecSample::InitInputFile()
         } else if (inPath_.find("vc1") != std::string::npos) {
             int32_t ret = CreateVc1Reader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateH263Reader failed");
+        } else if (inPath_.find("wvc1") != std::string::npos) {
+            int32_t ret = CreateWVc1Reader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateH263Reader failed");
 #endif
 #ifdef SUPPORT_CODEC_AVS
         } else if (inPath_.find("avs") != std::string::npos || inPath_.find("avs") != std::string::npos) {
@@ -368,6 +371,16 @@ int32_t VideoDecSample::CreateVc1Reader()
 
     signal_->reader_ = std::make_shared<Vc1Reader>();
     int32_t ret = std::static_pointer_cast<Vc1Reader>(signal_->reader_)->Init(info);
+    return ret;
+}
+
+int32_t VideoDecSample::CreateWVc1Reader()
+{
+    std::shared_ptr<WVc1ReaderInfo> info = std::make_shared<WVc1ReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<WVc1Reader>();
+    int32_t ret = std::static_pointer_cast<WVc1Reader>(signal_->reader_)->Init(info);
     return ret;
 }
 #endif
