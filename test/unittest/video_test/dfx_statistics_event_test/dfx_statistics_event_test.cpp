@@ -20,10 +20,10 @@
 #include "avcodec_info.h"
 #include "avcodec_log.h"
 #include "dump_usage.h"
-#include "native_averrors.h"
 #include "hisysevent_manager_c.h"
 #include "hisysevent_record_c.h"
 #include "instance_info.h"
+#include "native_averrors.h"
 #include "ret_code.h"
 #include "statistics_event_handler.h"
 
@@ -37,7 +37,7 @@ constexpr int32_t QUERY_INTERVAL_TIME = 2;
 constexpr int32_t MAX_EVENT_ADD_COUNT = 100000;
 constexpr int32_t BEHAVIORSINFO_EVENT_ADD_COUNT = 200;
 constexpr int32_t ELAPSEDTIME_THREADSHOLD = 600;
-const char * TEST_DOMAIN = "AV_CODEC";
+const char *TEST_DOMAIN = "AV_CODEC";
 enum class RANDOM_MIME_TYPE : int32_t {
     VALID_VIDEO,
     VALID_AUDIO,
@@ -52,24 +52,8 @@ enum class RANDOM_MIME_TYPE : int32_t {
     MAX_CHAR_LENGTH,
 };
 const std::vector<std::string> FORMAT_COMPONENTS = {
-    "mpeg",
-    "avc",
-    "hevc",
-    "vp",
-    "av1",
-    "divx",
-    "xvid",
-    "flash",
-    "quicktime",
-    "real",
-    "windowsmedia",
-    "ogg",
-    "web",
-    "stream",
-    "media",
-    "digital",
-    "high",
-    "ultra",
+    "mpeg", "avc",          "hevc", "vp",  "av1",    "divx",  "xvid",    "flash", "quicktime",
+    "real", "windowsmedia", "ogg",  "web", "stream", "media", "digital", "high",  "ultra",
 };
 
 std::string GenerateRandomString(size_t length, std::string_view charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -187,14 +171,14 @@ void OnServiceDiedTest()
     std::cout << "OnServiceDied" << std::endl;
 }
 
-void InitWatcher(HiSysEventWatcher& watcher)
+void InitWatcher(HiSysEventWatcher &watcher)
 {
     watcher.OnEvent = OnEventTest;
     watcher.OnServiceDied = OnServiceDiedTest;
 }
 
-template<size_t N>
-void CheckHiSysEventWatcher(HiSysEventWatcher watcher, const char* name, HiSysEventWatchRule (&rules)[N])
+template <size_t N>
+void CheckHiSysEventWatcher(HiSysEventWatcher watcher, const char *name, HiSysEventWatchRule (&rules)[N])
 {
     auto ret = OH_HiSysEvent_Add_Watcher(&watcher, rules, N);
     ASSERT_EQ(ret, HiviewDFX::IPC_CALL_SUCCEED);
@@ -468,7 +452,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_002, TestSiz
     AddSpecificationInfoEvent(meta_, mime);
     mime = GenerateRandomString(200); // 200: more than mime type length
     AddSpecificationInfoEvent(meta_, mime);
-    mime = GenerateRandomString(50);  // 5: less than mime type length
+    mime = GenerateRandomString(50); // 50: less than mime type length
     AddSpecificationInfoEvent(meta_, mime);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
@@ -693,7 +677,8 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_014, TestSiz
         std::string mime = GenerateRandomMime();
         meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
         meta_->SetData(Media::Tag::MIME_TYPE, mime);
-        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO,
+                                                          *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
@@ -714,7 +699,8 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_015, TestSiz
         std::string mime = GenerateRandomMime();
         meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::ENCODER_HARDWARE);
         meta_->SetData(Media::Tag::MIME_TYPE, mime);
-        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO,
+                                                          *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
@@ -824,7 +810,8 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_006, TestSize.Lev
     for (int32_t i = 0; i < BEHAVIORSINFO_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = "callerProcess";
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
-        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(
+            StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
@@ -844,7 +831,8 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_007, TestSize.Lev
     for (int32_t i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = GenerateRandomString(20); // 20: clller name length
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
-        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(
+            StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
@@ -863,7 +851,8 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_008, TestSize.Lev
     HiSysEventWatchRule rules[] = {rule};
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO,
+                                                      *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
 }
@@ -882,7 +871,8 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_009, TestSize.Lev
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
     meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD / 2);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO,
+                                                      *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
 }
@@ -901,7 +891,8 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_010, TestSize.Lev
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
     meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD * 2);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO,
+                                                      *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
 }
@@ -921,7 +912,8 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_008, TestSize.Lev
         std::string callerProcessName = "callerProcess";
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
         meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD / 2);
-        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(
+            StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
@@ -942,7 +934,8 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_009, TestSize.Lev
         std::string callerProcessName = GenerateRandomString(20); // 20: clller name length
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
         meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD / 2);
-        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(
+            StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
@@ -963,7 +956,8 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_009, TestSize.Lev
         std::string callerProcessName = GenerateRandomString(20); // 20: clller name length
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
         meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD / 2);
-        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(
+            StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
