@@ -41,6 +41,7 @@ group("av_codec_unit_test") {
         "unittest/audio_server_sink_plugin_unittest:audio_server_sink_plugin_unittest",
         "unittest/audio_sink_filter_unittest:audio_sink_filter_unittest",
         "unittest/audio_sink_unit_test:av_audio_sink_test",
+        "unittest/audio_test:audio_amrnb_multiframe_decode_unit_test",
         "unittest/audio_test:audio_codec_inner_avbuffer_unit_test",
         "unittest/audio_test:audio_decoder_plugin_unit_test",
         "unittest/audio_test:audio_encoder_plugin_unit_test",
