@@ -1339,6 +1339,8 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
 
     SurfaceItem oldSurface = currSurface_;
     currSurface_ = SurfaceItem(newSurface, compUniqueStr_, instanceId_);
+    SetTransform();
+    SetScaleMode();
     CombineConsumerUsage();
     // if owned by old surface, we need to transfer them to new surface
     for (auto [flushTime, i] : ownedBySurfaceFlushTime2BufferIndex) {
@@ -1353,8 +1355,6 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     }
 
     oldSurface.Release(true); // make sure old surface is empty and go black
-    SetTransform();
-    SetScaleMode();
     HLOGI("set surface(%" PRIu64 ")(%s) succ", newId, newSurface->GetName().c_str());
 }
 
