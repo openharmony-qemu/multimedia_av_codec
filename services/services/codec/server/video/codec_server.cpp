@@ -409,7 +409,7 @@ int32_t CodecServer::Flush()
     }
     StatusChanged(FLUSHED);
     if (framerateCalculator_) {
-        framerateCalculator_->OnStopped();
+        framerateCalculator_->OnStopped(false);
     }
     return AVCS_ERR_OK;
 }
@@ -425,9 +425,6 @@ int32_t CodecServer::NotifyEos()
         CodecStatus newStatus = END_OF_STREAM;
         StatusChanged(newStatus);
         CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
-        if (framerateCalculator_) {
-            framerateCalculator_->OnStopped();
-        }
     }
     return ret;
 }
@@ -629,9 +626,6 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
         std::lock_guard<std::shared_mutex> lock(mutex_);
         ret = QueueInputBufferIn(index);
         if (ret == AVCS_ERR_OK) {
-            if (framerateCalculator_) {
-                framerateCalculator_->OnStopped();
-            }
             CodecStatus newStatus = END_OF_STREAM;
             StatusChanged(newStatus);
         }
@@ -758,7 +752,12 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
                                       "In invalid state, %{public}s", GetStatusDescription(status_).data());
 
     if (framerateCalculator_ && status_ == RUNNING) {
-        framerateCalculator_->OnFrameConsumed();
+        std::shared_ptr<AVBuffer> buffer = nullptr;
+        auto it = outBufMap_.find(index);
+        if (it != outBufMap_.end()) {
+            buffer = it->second;
+        }
+        framerateCalculator_->OnFrameConsumed(buffer);
     }
     if (postProcessing_) {
         return ReleaseOutputBufferOfPostProcessing(index, render);
@@ -842,21 +841,20 @@ void CodecServer::OnInstanceEncodeEndEvent(std::shared_ptr<Media::Meta> meta)
 
 void CodecServer::InitFramerateCalculator(Meta &callerInfo)
 {
-    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
-        framerateCalculator_ = std::make_shared<FramerateCalculator>(instanceId_,
-            [weakCodecBase = std::weak_ptr<CodecBase>(codecBase_)](double framerate) {
-                auto codecBase = weakCodecBase.lock();
-                if (!codecBase) {
-                    return;
-                }
-                Format format;
-                format.PutDoubleValue(Tag::VIDEO_OPERATING_RATE, framerate);
-                codecBase->SetParameter(format);
+    framerateCalculator_ = std::make_shared<FramerateCalculator>(instanceId_,
+        codecType_ == AVCODEC_TYPE_VIDEO_ENCODER,
+        [weakCodecBase = std::weak_ptr<CodecBase>(codecBase_)](double framerate) {
+            auto codecBase = weakCodecBase.lock();
+            if (!codecBase) {
+                return;
             }
-        );
-        if (framerateCalculator_) {
-            framerateCalculator_->SetTag(CreateVideoLogTag(callerInfo));
+            Format format;
+            format.PutDoubleValue(Tag::VIDEO_OPERATING_RATE, framerate);
+            codecBase->SetParameter(format);
         }
+    );
+    if (framerateCalculator_) {
+        framerateCalculator_->SetTag(CreateVideoLogTag(callerInfo));
     }
 }
 
@@ -1130,6 +1128,7 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "buffer is nullptr!");
 
+    outBufMap_[index] = buffer;
     if (temporalScalability_ != nullptr && !(buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
         temporalScalability_->SetDisposableFlag(buffer);
     }

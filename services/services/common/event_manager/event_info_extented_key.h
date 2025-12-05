@@ -32,6 +32,15 @@ public:
     static constexpr std::string_view CODEC_ERROR_CODE = "codec_error_code";
     static constexpr std::string_view VIDEO_CODEC_TYPE = "av_codec_event_info_video_codec_type";
     static constexpr std::string_view APP_ELAPSED_TIME_IN_BG = "app_elapsed_time_in_bg";
+    static constexpr std::string_view TOTAL_DECODING_DURATION = "total_decoding_duration";
+    static constexpr std::string_view TOTAL_DECODING_CNT = "total_decoding_cnt";
+    static constexpr std::string_view SPEED_DECODING_INFO_TOTAL = "speed_decoding_info_total";
+    static constexpr std::string_view SPEED_DECODING_INFO_0_75X = "speed_decoding_info_0_75x";
+    static constexpr std::string_view SPEED_DECODING_INFO_1_00X = "speed_decoding_info_1_00x";
+    static constexpr std::string_view SPEED_DECODING_INFO_1_25X = "speed_decoding_info_1_25x";
+    static constexpr std::string_view SPEED_DECODING_INFO_1_50X = "speed_decoding_info_1_50x";
+    static constexpr std::string_view SPEED_DECODING_INFO_2_00X = "speed_decoding_info_2_00x";
+    static constexpr std::string_view SPEED_DECODING_INFO_3_00X = "speed_decoding_info_3_00x";
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

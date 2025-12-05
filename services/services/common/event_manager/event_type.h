@@ -79,8 +79,8 @@ enum class StatisticsEventType : uint32_t {
     CODEC_ABNORMAL_INFO                                 = EventType::STATISTICS_EVENT | (3 << 16) | (0 << 8) | 0,
     CODEC_ERROR_INFO                                    = EventType::STATISTICS_EVENT | (3 << 16) | (1 << 8) | 0,
 
-    MAIN_EVENT_TYPE_MASK                                = EventType::STATISTICS_EVENT | 0x00FF0000,
-    SUB_EVENT_TYPE_MASK                                 = EventType::STATISTICS_EVENT | 0x00FFFF00,
+    MAIN_EVENT_TYPE_MASK                                = EventType::STATISTICS_EVENT | 0x00'FF'00'00,
+    SUB_EVENT_TYPE_MASK                                 = EventType::STATISTICS_EVENT | 0x00'FF'FF'00,
 };
 
 inline constexpr StatisticsEventType operator&(StatisticsEventType a, StatisticsEventType b)

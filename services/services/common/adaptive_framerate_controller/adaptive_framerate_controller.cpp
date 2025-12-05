@@ -32,14 +32,27 @@ constexpr uint8_t MAX_DECREASE_CHECK_TIMES = 2;
 
 namespace OHOS {
 namespace MediaAVCodec {
-FramerateCalculator::FramerateCalculator(int32_t instanceId, std::function<void(double)> &&handler)
-    : instanceId_(instanceId), resetFramerateHandler_(std::move(handler)) {}
+FramerateCalculator::FramerateCalculator(int32_t instanceId, bool isEnc, std::function<void(double)> &&handler)
+    : instanceId_(instanceId), resetFramerateHandler_(std::move(handler))
+{
+    if (!isEnc) {
+        behaviorAnalyzer_ = std::make_unique<DecodingBehaviorAnalyzer>();
+    }
+}
 
-void FramerateCalculator::OnFrameConsumed()
+FramerateCalculator::~FramerateCalculator()
+{
+    if (status_ != Status::STOPPED) {
+        OnStopped();
+    }
+}
+
+void FramerateCalculator::OnFrameConsumed(std::shared_ptr<AVBuffer> buffer)
 {
     if (!afcEnable) {
         return;
     }
+
     if (status_ == Status::INITIALIZED || status_ == Status::STOPPED) {
         lastAdjustmentTime_ = std::chrono::steady_clock::now();
         Register2AFC();
@@ -48,14 +61,21 @@ void FramerateCalculator::OnFrameConsumed()
     if (static_cast<int32_t>(lastFramerate_.load()) == MIN_FRAMERATE && configuredFramerate_ > MIN_FRAMERATE) {
         SetFramerate2ConfiguredFramerate();
     }
+    if (behaviorAnalyzer_) {
+        behaviorAnalyzer_->OnFrameConsumed(buffer);
+    }
     frameCount_++;
 }
 
-void FramerateCalculator::OnStopped()
+void FramerateCalculator::OnStopped(bool isDecEnd)
 {
     status_ = Status::STOPPED;
     frameCount_ = 0;
     UnregisterFromAFC();
+
+    if (behaviorAnalyzer_) {
+        behaviorAnalyzer_->OnStopped(isDecEnd);
+    }
 }
 
 bool FramerateCalculator::CheckAndResetFramerate()
@@ -68,6 +88,10 @@ bool FramerateCalculator::CheckAndResetFramerate()
         "Elapsed time is invalid, cannot calculate framerate");
 
     auto actualFramerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
+    if (behaviorAnalyzer_) {
+        behaviorAnalyzer_->OnChecked(actualFramerate);
+    }
+
     if (!allowLowFps && actualFramerate < DEFAULT_FRAMERATE && actualFramerate < configuredFramerate_) {
         actualFramerate = std::min(DEFAULT_FRAMERATE, configuredFramerate_);
     }

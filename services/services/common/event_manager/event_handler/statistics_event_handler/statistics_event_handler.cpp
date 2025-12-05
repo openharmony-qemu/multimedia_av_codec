@@ -458,15 +458,99 @@ public:
     void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) override
     {
         std::lock_guard<std::mutex> lock(mutex_);
+        ParseAndAccumulateSpeedData(
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_TOTAL.data(), decDurationTotal_, decCntTotal_);
+        ParseAndAccumulateSpeedData(
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_0_75X.data(), decDuration075x_, decCnt075x_);
+        ParseAndAccumulateSpeedData(
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_00X.data(), decDuration100x_, decCnt100x_);
+        ParseAndAccumulateSpeedData(
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_25X.data(), decDuration125x_, decCnt125x_);
+        ParseAndAccumulateSpeedData(
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_1_50X.data(), decDuration150x_, decCnt150x_);
+        ParseAndAccumulateSpeedData(
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_2_00X.data(), decDuration200x_, decCnt200x_);
+        ParseAndAccumulateSpeedData(
+            eventMeta, EventInfoExtentedKey::SPEED_DECODING_INFO_3_00X.data(), decDuration300x_, decCnt300x_);
     }
 
     void OnSummateEventInfo(std::shared_ptr<cJSON> jsonObj) override
     {
+        auto speedDecodingInfoJsonObj = cJSON_AddObjectToObject(jsonObj.get(), "SpeedDecodingInfo");
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto totalObj = cJSON_AddObjectToObject(speedDecodingInfoJsonObj, "Total");
+        cJSON_AddNumberToObject(totalObj, "Duration", decDurationTotal_);
+        cJSON_AddNumberToObject(totalObj, "Count", decCntTotal_);
+
+        auto speed075xObj = cJSON_AddObjectToObject(speedDecodingInfoJsonObj, "0.75x");
+        cJSON_AddNumberToObject(speed075xObj, "Duration", decDuration075x_);
+        cJSON_AddNumberToObject(speed075xObj, "Count", decCnt075x_);
+
+        auto speed100xObj = cJSON_AddObjectToObject(speedDecodingInfoJsonObj, "1.00x");
+        cJSON_AddNumberToObject(speed100xObj, "Duration", decDuration100x_);
+        cJSON_AddNumberToObject(speed100xObj, "Count", decCnt100x_);
+
+        auto speed125xObj = cJSON_AddObjectToObject(speedDecodingInfoJsonObj, "1.25x");
+        cJSON_AddNumberToObject(speed125xObj, "Duration", decDuration125x_);
+        cJSON_AddNumberToObject(speed125xObj, "Count", decCnt125x_);
+
+        auto speed150xObj = cJSON_AddObjectToObject(speedDecodingInfoJsonObj, "1.50x");
+        cJSON_AddNumberToObject(speed150xObj, "Duration", decDuration150x_);
+        cJSON_AddNumberToObject(speed150xObj, "Count", decCnt150x_);
+
+        auto speed200xObj = cJSON_AddObjectToObject(speedDecodingInfoJsonObj, "2.00x");
+        cJSON_AddNumberToObject(speed200xObj, "Duration", decDuration200x_);
+        cJSON_AddNumberToObject(speed200xObj, "Count", decCnt200x_);
+
+        auto speed300xObj = cJSON_AddObjectToObject(speedDecodingInfoJsonObj, "3.00x");
+        cJSON_AddNumberToObject(speed300xObj, "Duration", decDuration300x_);
+        cJSON_AddNumberToObject(speed300xObj, "Count", decCnt300x_);
     }
 
     void ResetEventInfo() override
     {
+        std::lock_guard<std::mutex> lock(mutex_);
+        decDurationTotal_ = 0U;
+        decCntTotal_ = 0U;
+        decDuration075x_ = 0U;
+        decCnt075x_ = 0U;
+        decDuration100x_ = 0U;
+        decCnt100x_ = 0U;
+        decDuration125x_ = 0U;
+        decCnt125x_ = 0U;
+        decDuration150x_ = 0U;
+        decCnt150x_ = 0U;
+        decDuration200x_ = 0U;
+        decCnt200x_ = 0U;
+        decDuration300x_ = 0U;
+        decCnt300x_ = 0U;
     }
+
+private:
+    void ParseAndAccumulateSpeedData(
+        const Media::Meta &eventMeta, const std::string_view& key, uint32_t& duration, uint32_t& count)
+    {
+        uint64_t combinedKey = 0;
+        if (eventMeta.GetData(key.data(), combinedKey)) {
+            duration += static_cast<uint32_t>(combinedKey & 0xFFFFFFFFULL);
+            count += static_cast<uint32_t>(combinedKey >> 32);
+        }
+    };
+
+    uint32_t decDurationTotal_ = 0U;
+    uint32_t decCntTotal_ = 0U;
+    uint32_t decDuration075x_ = 0U;
+    uint32_t decCnt075x_ = 0U;
+    uint32_t decDuration100x_ = 0U;
+    uint32_t decCnt100x_ = 0U;
+    uint32_t decDuration125x_ = 0U;
+    uint32_t decCnt125x_ = 0U;
+    uint32_t decDuration150x_ = 0U;
+    uint32_t decCnt150x_ = 0U;
+    uint32_t decDuration200x_ = 0U;
+    uint32_t decCnt200x_ = 0U;
+    uint32_t decDuration300x_ = 0U;
+    uint32_t decCnt300x_ = 0U;
 };
 
 /*----------------------------------- CodecAbnormalInfo -----------------------------------*/
@@ -578,6 +662,10 @@ void StatisticsEventInfo::RegisterEventHooker(StatisticsEventType eventType, Eve
 
 void StatisticsEventInfo::RegisterSubmitEventTimer()
 {
+#ifdef BUILD_ENG_VERSION
+    return;
+#endif
+
     uint32_t timeout = 0;
     time_t now = time(nullptr);
     std::tm tmLocal{};
@@ -595,13 +683,8 @@ void StatisticsEventInfo::RegisterSubmitEventTimer()
     } else {
         timeout = 24 * 3600; // Fallback to 24 * 3600 seconds if localtime_r failed
     }
-
-#ifdef BUILD_ENG_VERSION
-    timeout = OHOS::system::GetUintParameter("OHOS.MediaAVCodec.StatisticsEvent.SubmitTimeout", timeout);
-#endif
-
     timer_ = std::make_shared<AVCodecXcollieTimer>("SubmitStatisticsEvent", false, false, timeout,
-                                                    [this](void *) { OnSubmitEventInfo(); });
+                                                   [this](void *) { OnSubmitEventInfo(); });
 }
 } // namespace MediaAVCodec
-} // namespace OHOS
+} // namespace OHOS0
