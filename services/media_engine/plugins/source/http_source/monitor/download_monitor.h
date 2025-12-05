@@ -96,6 +96,7 @@ public:
     bool IsHlsEnd(int32_t streamId = -1) override;
 
 private:
+    int64_t HttpMonitorLoop();
     void OnDownloadStatus(std::shared_ptr<Downloader>& downloader, std::shared_ptr<DownloadRequest>& request);
     bool NeedRetry(const std::shared_ptr<DownloadRequest>& request);
     void NotifyError(int32_t clientErrorCode, int32_t serverErrorCode);
