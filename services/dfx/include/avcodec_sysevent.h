@@ -94,7 +94,7 @@ struct AVAppEvent {
     int64_t sumTime;
     std::string apiName;
     std::string errorType;
-}
+};
 
 __attribute__((visibility("default"))) void WriteCallStatusEvent(AVAppEvent event);
 __attribute__((visibility("default"))) void FaultEventWrite(FaultType faultType, const std::string& msg,
