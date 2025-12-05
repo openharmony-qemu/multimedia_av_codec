@@ -24,12 +24,14 @@
 #include "native_avcodec_audioencoder.h"
 #include "native_avcodec_base.h"
 #include "native_avmagic.h"
+#include "avcodec_sysevent.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "NativeAudioEncoder"};
 constexpr uint32_t MAX_LENGTH = 255;
 }
 
+using namespace std::chrono;
 using namespace OHOS::MediaAVCodec;
 class NativeAudioEncoderCallback;
 
@@ -188,6 +190,7 @@ extern "C" {
 
 struct OH_AVCodec *OH_AudioEncoder_CreateByMime(const char *mime)
 {
+    int64_t startTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "input mime is nullptr!");
     CHECK_AND_RETURN_RET_LOG(strlen(mime) < MAX_LENGTH, nullptr, "input mime is too long!");
 
@@ -196,12 +199,17 @@ struct OH_AVCodec *OH_AudioEncoder_CreateByMime(const char *mime)
 
     struct AudioEncoderObject *object = new (std::nothrow) AudioEncoderObject(audioEncoder);
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new AudioEncoderObject");
-
+    int64_t endTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    AVAppEvent event;
+    event.apiName = "OH_AudioEncoder_CreateByMime";
+    event.sumTime = endTime - startTime;
+    WriteCallStatusEvent(event);
     return object;
 }
 
 struct OH_AVCodec *OH_AudioEncoder_CreateByName(const char *name)
 {
+    int64_t startTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     CHECK_AND_RETURN_RET_LOG(name != nullptr, nullptr, "input name is nullptr!");
     CHECK_AND_RETURN_RET_LOG(strlen(name) < MAX_LENGTH, nullptr, "input name is too long!");
 
@@ -210,7 +218,11 @@ struct OH_AVCodec *OH_AudioEncoder_CreateByName(const char *name)
 
     struct AudioEncoderObject *object = new (std::nothrow) AudioEncoderObject(audioEncoder);
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new AudioEncoderObject");
-
+    int64_t endTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    AVAppEvent event;
+    event.apiName = "OH_AudioEncoder_CreateByName";
+    event.sumTime = endTime - startTime;
+    WriteCallStatusEvent(event);
     return object;
 }
 
