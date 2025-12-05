@@ -88,19 +88,18 @@ public:
     // TearDown: Called after each test cases
     void TearDown(void);
 
-public:
-    int32_t fd_ = -1;
-    int64_t size;
-    bool isVideoEosFlagForSave = false;
-    bool isAudioEosFlagForSave = false;
-    int32_t videoTrackIdx = 1;
-    int32_t audioTrackIdx = 0;
-    uint32_t videoIndexForRead = 0;
-    uint32_t audioIndexForRead = 0;
 private:
     bool CreateBufferSize();
     void GetFrameNum(int32_t i);
     std::shared_ptr<AVBuffer> avBuf_{ nullptr };
+    int32_t fd_ = -1;
+    int64_t size_;
+    bool isVideoEosFlagForSave_ = false;
+    bool isAudioEosFlagForSave_ = false;
+    int32_t videoTrackIdx_ = 1;
+    int32_t audioTrackIdx_ = 0;
+    uint32_t videoIndexForRead_ = 0;
+    uint32_t audioIndexForRead_ = 0;
 };
 
 void DemuxerInnerFuncNdkTest::SetUpTestCase() {}
@@ -133,19 +132,19 @@ bool DemuxerInnerFuncNdkTest::CreateBufferSize()
     return true;
 }
 
-void DemuxerInnerFuncNdkTest::GetFrameNum(int32_t i)
+void DemuxerInnerFuncNdkTest::GetFrameNum(int32_t trackIdx)
 {
     if (avBuf_->flag_ == MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS) {
-        if (i == videoTrackIdx) {
-            isVideoEosFlagForSave = true;
-        } else if (i == audioTrackIdx) {
-            isAudioEosFlagForSave = true;
+        if (trackIdx == videoTrackIdx_) {
+            isVideoEosFlagForSave_ = true;
+        } else if (trackIdx == audioTrackIdx_) {
+            isAudioEosFlagForSave_ = true;
         }
     } else {
-        if (i == videoTrackIdx) {
-            videoIndexForRead++;
-        } else if (i == audioTrackIdx) {
-            audioIndexForRead++;
+        if (trackIdx == videoTrackIdx_) {
+            videoIndexForRead_++;
+        } else if (trackIdx == audioTrackIdx_) {
+            audioIndexForRead_++;
         }
     }
 }
@@ -162,9 +161,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0100, TestSize.Level0)
     fd_ = open(g_doubleHevcPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_doubleHevcPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
 
     ASSERT_NE(nullptr, source);
     Format format_;
@@ -212,9 +211,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0200, TestSize.Level0)
     fd_ = open(g_singleHevcPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_singleHevcPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
 
     ASSERT_NE(nullptr, source);
     Format format_;
@@ -244,9 +243,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0300, TestSize.Level2)
     fd_ = open(g_singleRkPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_singleRkPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -271,9 +270,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0400, TestSize.Level2)
     fd_ = open(g_xmPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_xmPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -299,9 +298,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0500, TestSize.Level2)
     fd_ = open(g_doubleVividPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_doubleVividPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
 
     ASSERT_NE(nullptr, source);
     Format format_;
@@ -968,9 +967,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0010, TestSize.Level0)
     fd_ = open(g_aigcMp4Path.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_aigcMp4Path.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -995,9 +994,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0020, TestSize.Level1)
     fd_ = open(g_aigcFlvPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_aigcFlvPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1022,9 +1021,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0030, TestSize.Level1)
     fd_ = open(g_aigcMkvPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_aigcMkvPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1049,9 +1048,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0040, TestSize.Level1)
     fd_ = open(g_aigcMovPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_aigcMovPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1076,9 +1075,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0050, TestSize.Level1)
     fd_ = open(g_aigcM4vPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_aigcM4vPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1103,9 +1102,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0060, TestSize.Level1)
     fd_ = open(g_aigcM4aPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_aigcM4aPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1130,9 +1129,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0070, TestSize.Level1)
     fd_ = open(g_aigcAviPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_aigcAviPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1157,9 +1156,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0080, TestSize.Level2)
     fd_ = open(g_aigcMp4256Path.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_aigcMp4256Path.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1184,9 +1183,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0090, TestSize.Level2)
     fd_ = open(g_aigcMp4258Path.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_aigcMp4258Path.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1211,9 +1210,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0100, TestSize.Level3)
     fd_ = open(g_doubleHevcPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_doubleHevcPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1236,9 +1235,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0110, TestSize.Level3)
     fd_ = open(g_flvPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_flvPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1261,9 +1260,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0120, TestSize.Level3)
     fd_ = open(g_mkvPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_mkvPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1286,9 +1285,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0130, TestSize.Level3)
     fd_ = open(g_movPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_movPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1311,9 +1310,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0140, TestSize.Level3)
     fd_ = open(g_m4vPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_m4vPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1336,9 +1335,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0150, TestSize.Level3)
     fd_ = open(g_m4aPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_m4aPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1361,9 +1360,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0160, TestSize.Level3)
     fd_ = open(g_aviPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_aviPath.c_str(), &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format_;
     int32_t ret = source->GetSourceFormat(format_);
@@ -1383,50 +1382,54 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0160, TestSize.Level3)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_COVER_INNER_FUNC_0010, TestSize.Level2)
 {
+    bool isGetCoverData = false;
     int32_t trackCount = 0;
-    Format trackFormat_;
-    Format sourceFormat_;
+    Format trackFormat;
+    Format sourceFormat;
     uint8_t *addr = nullptr;
     size_t buffSize = 0;
     fd_ = open("/data/test/media/cover_jpg.mp4", O_RDONLY);
     struct stat fileStatus {};
     if (stat("/data/test/media/cover_jpg.mp4", &fileStatus) == 0) {
-        size = static_cast<int64_t>(fileStatus.st_size);
+        size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, 0, size);
+    source = AVSourceFactory::CreateWithFD(fd_, 0, size_);
     ASSERT_NE(nullptr, source);
     demuxer = AVDemuxerFactory::CreateWithSource(source);
     ASSERT_NE(nullptr, demuxer);
-    int32_t ret = source->GetSourceFormat(sourceFormat_);
+    int32_t ret = source->GetSourceFormat(sourceFormat);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    sourceFormat_.GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, trackCount);
+    sourceFormat.GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, trackCount);
     ASSERT_EQ(3, trackCount);
     for (int32_t i = 0; i < trackCount; i++) {
         ret = demuxer->SelectTrackByID(i);
     }
     ASSERT_EQ(true, CreateBufferSize());
-    while (!isVideoEosFlagForSave || !isAudioEosFlagForSave) {
+    while (!isVideoEosFlagForSave_ || !isAudioEosFlagForSave_) {
         for (int32_t i = 0; i < trackCount; i++) {
-            ret = source->GetTrackFormat(trackFormat_, i);
+            ret = source->GetTrackFormat(trackFormat, i);
             if (ret != 0) {
                 cout << "GetTrackFormat failed!!!!" << endl;
             }
-            if (((i == videoTrackIdx) && isVideoEosFlagForSave) || ((i == audioTrackIdx) && isAudioEosFlagForSave)) {
+            if (((i == videoTrackIdx_) && isVideoEosFlagForSave_) || ((i == audioTrackIdx_) && isAudioEosFlagForSave_)) {
                 continue;
             }
-            if (i == 2) {
-                ASSERT_EQ(true, trackFormat_.GetBuffer(MediaDescriptionKey::MD_KEY_COVER, &addr, buffSize));
-                continue;
+            if (i == 2 && !isGetCoverData) {
+                ASSERT_EQ(true, trackFormat.GetBuffer(MediaDescriptionKey::MD_KEY_COVER, &addr, buffSize));
+                isGetCoverData = true;
+
             }
+            if (i != 2) {
             ret = demuxer->ReadSampleBuffer(i, avBuf_);
             if (ret != 0) {
                 cout << "ReadSampleBuffer failed" << i << endl;
+                } 
             }
             GetFrameNum(i);
         }
     }
-    ASSERT_EQ(602, videoIndexForRead);
-    ASSERT_EQ(433, audioIndexForRead);
+    ASSERT_EQ(602, videoIndexForRead_);
+    ASSERT_EQ(433, audioIndexForRead_);
     close(fd_);
     fd_ = -1;
 }
