@@ -546,9 +546,9 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
             }
         }
     }
-    task_->Start();	
+    task_->Start();
     MEDIA_LOG_I("Do retry.");
-    return true;	
+    return true;
 }
 
 std::string GetSystemParam(const std::string &key)
