@@ -21,7 +21,7 @@
 #include "avcodec_errors.h"
 #include "hisysevent.h"
 #include "app_event.h"
-#include "app_event_processor_mhr.h"
+#include "app_event_processor_mgr.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecDFX"};
