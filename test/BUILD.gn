@@ -210,6 +210,9 @@ group("av_codec_module_test") {
     if (av_codec_support_vc1_decoder) {
       deps += [ "moduletest/vcodec/vc1decoder:vc1decoder_native_module_test" ]
     }
+    if (av_codec_support_av1_decoder) {
+      deps += [ "moduletest/vcodec/av1decoder:av1decoder_native_module_test" ]
+    }
   }
 }
 
