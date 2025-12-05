@@ -42,9 +42,9 @@ void WriteCallStatusEvent(AVAppEvent event)
 {
     AVCODEC_LOGI("report API invoke event");
     Event eventOutput("api_diagnostic", "api_called_stat", BEHAVIOR);
-    eventOutput.Addparam("api_name", event.apiName);
-    eventOutput.Addparam("sdk_name", std::string"AVCodecKits");
-    eventOutput.Addparam("total_cost_time", event.sumTime);
+    eventOutput.AddParam("api_name", event.apiName);
+    eventOutput.AddParam("sdk_name", std::string"AVCodecKits");
+    eventOutput.AddParam("total_cost_time", event.sumTime);
     Write(eventOutput);
 }
 
