@@ -22,17 +22,21 @@
 #include "securec.h"
 #include "native_avcapability.h"
 #include "common/native_mfmagic.h"
+#include "avcodec_sysevent.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeAVCapability"};
 constexpr uint32_t MAX_LENGTH = 255;
 }
+
+using namespace std::chrono;
 using namespace OHOS::MediaAVCodec;
 
 OH_AVCapability::~OH_AVCapability() {}
 
 OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder)
 {
+    int64_t startTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "Get capability failed: mime is nullptr");
     CHECK_AND_RETURN_RET_LOG(strlen(mime) != 0 && strlen(mime) < MAX_LENGTH, nullptr,
         "Get capability failed: invalid mime strlen, %{public}zu", strlen(mime));
@@ -50,6 +54,11 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder)
     obj->magic_ = AVMagic::AVCODEC_MAGIC_AVCAPABILITY;
     obj->capabilityData_ = capabilityData;
     AVCODEC_LOGD("OH_AVCodec_GetCapability successful");
+    int64_t endTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    AVAppEvent event;
+    event.apiName = "OH_AVCodec_GetCapability";
+    event.sumTime = endTime - startTime;
+    WriteCallStatusEvent(event);
     return obj;
 }
 
@@ -258,6 +267,7 @@ bool OH_AVCapability_IsEncoderBitrateModeSupported(OH_AVCapability *capability, 
 OH_AVErrCode OH_AVCapability_GetAudioSupportedSampleRates(OH_AVCapability *capability, const int32_t **sampleRates,
                                                           uint32_t *sampleRateNum)
 {
+    int64_t startTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     CHECK_AND_RETURN_RET_LOG(sampleRates != nullptr && sampleRateNum != nullptr, AV_ERR_INVALID_VAL,
                              "Get audio supported samplerates failed: null input");
     *sampleRates = nullptr;
@@ -285,6 +295,11 @@ OH_AVErrCode OH_AVCapability_GetAudioSupportedSampleRates(OH_AVCapability *capab
 
     *sampleRates = buf;
     *sampleRateNum = vec.size();
+    int64_t endTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    AVAppEvent event;
+    event.apiName = "OH_AVCapability_GetAudioSupportedSampleRates";
+    event.sumTime = endTime - startTime;
+    WriteCallStatusEvent(event);
     return AV_ERR_OK;
 }
 
