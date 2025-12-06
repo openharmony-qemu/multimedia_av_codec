@@ -43,11 +43,15 @@ vcodec_unittest_cflags = [
   "-Dprivate=public",
   "-Dprotected=public",
 ]
+
+av_codec_capi_deps = [
+  "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
+  "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+  "$av_codec_root_dir/interfaces/kits/c:native_media_vdec",
+  "$av_codec_root_dir/interfaces/kits/c:native_media_venc",
+]
+
 av_codec_capi_external_deps = [
-  "av_codec:av_codec_client",
-  "av_codec:capi_packages",
-  "av_codec:native_media_vdec",
-  "av_codec:native_media_venc",
   "bounds_checking_function:libsec_static",
   "c_utils:utils",
   "graphic_2d:libgraphic_utils",
@@ -63,8 +67,12 @@ av_codec_capi_external_deps = [
   "media_foundation:native_media_core",
   "openssl:libcrypto_shared",
 ]
+
+av_codec_inner_deps = [
+  "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
+]
+
 av_codec_inner_external_deps = [
-  "av_codec:av_codec_client",
   "bounds_checking_function:libsec_static",
   "c_utils:utils",
   "eventhandler:libeventhandler",
@@ -2101,6 +2109,7 @@ ohos_unittest("videodec_rv30_func_sync_unit_test") {
   ]
 
   deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps += av_codec_inner_deps
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -2153,6 +2162,7 @@ ohos_unittest("videodec_rv30_func_async_unit_test") {
   ]
 
   deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps += av_codec_inner_deps
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -2206,6 +2216,7 @@ ohos_unittest("videodec_rv40_func_sync_unit_test") {
   ]
 
   deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps += av_codec_inner_deps
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -2258,6 +2269,7 @@ ohos_unittest("videodec_rv40_func_async_unit_test") {
   ]
 
   deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps += av_codec_inner_deps
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -2308,6 +2320,7 @@ ohos_unittest("videodec_rv30_capi_async_unit_test") {
     "./videodec_rv30dec_fun_unit_test.cpp",
   ]
   deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps += av_codec_capi_deps
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -2365,6 +2378,7 @@ ohos_unittest("videodec_rv30_capi_sync_unit_test") {
   ]
 
   deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps += av_codec_capi_deps
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -2421,6 +2435,7 @@ ohos_unittest("videodec_rv40_capi_async_unit_test") {
     "./videodec_rv40dec_fun_unit_test.cpp",
   ]
   deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps += av_codec_capi_deps
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -2478,6 +2493,7 @@ ohos_unittest("videodec_rv40_capi_sync_unit_test") {
   ]
 
   deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps += av_codec_capi_deps
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
