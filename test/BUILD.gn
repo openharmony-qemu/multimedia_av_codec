@@ -207,6 +207,9 @@ group("av_codec_module_test") {
       "moduletest/vcodec/msvideo1decoder:msvideo1decoder_native_module_test",
       "moduletest/vcodec/mjpegswdecoder:mjpegswdecoder_native_module_test",
     ]
+    if (av_codec_enable_codec_rv) {
+      deps += [ "moduletest/vcodec/rv40decoder:rv40decoder_native_module_test" ]
+    }
     if (av_codec_support_vc1_decoder) {
       deps += [ 
         "moduletest/vcodec/vc1decoder:vc1decoder_native_module_test",

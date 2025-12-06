@@ -64,7 +64,6 @@ constexpr int32_t AVS_BLOCKPERFRAME_MAX_SIZE = 8160; // (WidthMax / 16) * (Heigh
 constexpr int32_t AVS_BLOCKPERSEC_MAX_SIZE = 489600; // (BlockPerFramemax * MaxFrameRate)
 #endif
 #ifdef SUPPORT_CODEC_RV
-constexpr int32_t RV_MIN_SIZE = 1;
 constexpr int32_t RV_BLOCKPERFRAME_SIZE = 65536; // MaxPicSize / (block_width*block_height)
 constexpr int32_t RV_BLOCKPERSEC_SIZE = 3932160; // MaxDisplayRate / (block_width*block_height)
 #endif
@@ -410,8 +409,6 @@ void GetRv30CapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
         CapabilityData& capsData = capaArray.back();
-        capsData.width.minVal = RV_MIN_SIZE;
-        capsData.height.minVal = RV_MIN_SIZE;
         capsData.blockPerFrame.maxVal = RV_BLOCKPERFRAME_SIZE;
         capsData.blockPerSecond.maxVal = RV_BLOCKPERSEC_SIZE;
     }
@@ -421,8 +418,6 @@ void GetRv40CapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
         CapabilityData& capsData = capaArray.back();
-        capsData.width.minVal = RV_MIN_SIZE;
-        capsData.height.minVal = RV_MIN_SIZE;
         capsData.blockPerFrame.maxVal = RV_BLOCKPERFRAME_SIZE;
         capsData.blockPerSecond.maxVal = RV_BLOCKPERSEC_SIZE;
     }
