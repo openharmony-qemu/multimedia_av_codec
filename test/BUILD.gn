@@ -216,6 +216,9 @@ group("av_codec_module_test") {
     if (av_codec_support_vp8_decoder) {
       deps += [ "moduletest/vcodec/vp8decoder:vp8decoder_native_module_test" ]
     }
+    if (av_codec_support_vp9_decoder) {
+      deps += [ "moduletest/vcodec/vp9decoder:vp9decoder_native_module_test" ]
+    }
   }
 }
 
