@@ -85,7 +85,6 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_ILBC = "audio/ilbc";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_TRUEHD = "audio/truehd";
 
-    static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_CAVS = "video/cavs";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_MSVIDEO1 = "video/msvideo1";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_VC1 = "video/vc1";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_WVC1 = "video/wvc1";

@@ -465,9 +465,6 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxer3gpapi11_fuzzer:Demuxer3gpAPI11FuzzTest",
       "fuzztest/demuxerwmvapi11_fuzzer:DemuxerWmvAPI11FuzzTest",
       "fuzztest/demuxerm4vapi11_fuzzer:DemuxerM4vAPI11FuzzTest",
-      "fuzztest/avsdecoderconfigure_fuzzer:AvsdecoderConfigureFuzzTest",
-      "fuzztest/avsdecoderresource_fuzzer:AvsdecoderResourceFuzzTest",
-      "fuzztest/avsdecodersetparameter_fuzzer:AvsdecoderSetParameterFuzzTest",
     ]
     if(av_codec_support_vp8_decoder) {
       deps += [

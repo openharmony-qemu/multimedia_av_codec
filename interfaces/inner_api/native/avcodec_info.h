@@ -610,7 +610,6 @@ private:
  */
 class CodecMimeType {
 public:
-    static constexpr std::string_view VIDEO_AVS = "video/cavs";
     static constexpr std::string_view VIDEO_MSVIDEO1 = "video/msvideo1";
     static constexpr std::string_view VIDEO_VC1 = "video/vc1";
     static constexpr std::string_view VIDEO_WVC1 = "video/wvc1";
@@ -881,16 +880,6 @@ enum VP9Profile {
 };
 
 /**
- * @brief AVS Profile.
- *
- * @since 23
- */
-enum AVSProfile : int32_t {
-    /** Jizhun Profile */
-    AVS_PROFILE_JIZHUN = 0,
-};
-
-/**
  * @brief
  *
  * @since 3.1
@@ -1144,18 +1133,6 @@ enum WMV3Level : int32_t {
     WMV3_LEVEL_MEDIUM = 1,
     /** HIGH level */
     WMV3_LEVEL_HIGH = 2
-};
-
-/**
- * @brief AVS Level
- *
- * @since 23
- */
-enum AVSLevel : int32_t {
-    AVS_LEVEL_40 = 0,
-    AVS_LEVEL_42 = 1,
-    AVS_LEVEL_60 = 2,
-    AVS_LEVEL_62 = 3,
 };
 
 /**
