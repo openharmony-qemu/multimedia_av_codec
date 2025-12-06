@@ -405,6 +405,12 @@
             <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
+    <target name="DemuxerRmAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
     <target name="EncoderConfigureFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
