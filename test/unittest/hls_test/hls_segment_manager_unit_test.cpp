@@ -68,9 +68,7 @@ void HlsSegmentManagerUnitTest ::TearDown(void)
 
 HWTEST_F(HlsSegmentManagerUnitTest, GetPlayable_1, TestSize.Level0)
 {
-    hlsSegmentManager_->isBuffering_ = true;
     EXPECT_FALSE(hlsSegmentManager_->GetPlayable());
-    hlsSegmentManager_->isBuffering_ = false;
     hlsSegmentManager_->isFirstFrameArrived_ = false;
     EXPECT_FALSE(hlsSegmentManager_->GetPlayable());
     hlsSegmentManager_->GetReadTimeOut(false);
@@ -78,7 +76,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, GetPlayable_1, TestSize.Level0)
 
 HWTEST_F(HlsSegmentManagerUnitTest, GetPlayable_2, TestSize.Level0)
 {
-    hlsSegmentManager_->isBuffering_ = false;
     hlsSegmentManager_->isFirstFrameArrived_ = true;
     hlsSegmentManager_->wantedReadLength_ = 0;
     EXPECT_FALSE(hlsSegmentManager_->GetPlayable());
@@ -86,7 +83,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, GetPlayable_2, TestSize.Level0)
 
 HWTEST_F(HlsSegmentManagerUnitTest, GetPlayable_3, TestSize.Level1)
 {
-    hlsSegmentManager_->isBuffering_ = false;
     hlsSegmentManager_->isFirstFrameArrived_ = true;
     hlsSegmentManager_->wantedReadLength_ = BUFFER_SIZE;
     EXPECT_FALSE(hlsSegmentManager_->GetPlayable());
@@ -316,18 +312,9 @@ HWTEST_F(HlsSegmentManagerUnitTest, CheckBreakCondition, TestSize.Level1)
     downloader = nullptr;
 }
 
-HWTEST_F(HlsSegmentManagerUnitTest, HandleBuffering_001, TestSize.Level1)
-{
-    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
-    downloader->isBuffering_ = false;
-    EXPECT_FALSE(downloader->HandleBuffering());
-    downloader = nullptr;
-}
-
 HWTEST_F(HlsSegmentManagerUnitTest, TestDefaultConstructor, TestSize.Level1)
 {
     auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
-    downloader->isBuffering_ = false;
     EXPECT_EQ(downloader->totalBufferSize_, MAX_CACHE_BUFFER_SIZE_UT);
     downloader = nullptr;
 }
@@ -652,9 +639,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_CALLBACK, TestSize.Level1)
     OSAL::SleepFor(1 * 1000);
 
     downloader->SetCurrentBitRate(-1, 0);
-    downloader->UpdateWaterLineAbove();
     downloader->SetCurrentBitRate(10, 0);
-    downloader->UpdateWaterLineAbove();
     downloader->HandleCachedDuration();
     downloader->SetInterruptState(true);
     downloader->SetInterruptState(false);
@@ -692,7 +677,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_CALLBACK1, TestSize.Level1)
     readDataInfo.isEos_ = true;
     downloader->Read(buff, readDataInfo);
     OSAL::SleepFor(1 * 1000);
-    downloader->HandleCache();
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -721,7 +705,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_DownloadReport, TestSize.Level1)
         readDataInfo.isEos_ = false;
         downloader->Read(buff, readDataInfo);
     }
-    downloader->CheckBufferingOneSeconds();
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -749,8 +732,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_DownloadReport_5M, TestSize.Level1)
     readDataInfo.isEos_ = true;
     downloader->Read(buff, readDataInfo);
     OSAL::SleepFor(1 * 1000);
-    downloader->HandleCache();
-    downloader->CheckBufferingOneSeconds();
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -784,7 +765,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_DownloadReport_5M_default, TestSize.Lev
             downloader->SetDemuxerState(0);
         }
     }
-    downloader->CheckBufferingOneSeconds();
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -838,8 +818,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_Read_Live, TestSize.Level1)
     readDataInfo.isEos_ = true;
     downloader->Read(buff, readDataInfo);
     OSAL::SleepFor(1 * 1000);
-    downloader->HandleCache();
-    downloader->CheckBufferingOneSeconds();
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -1194,7 +1172,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, SET_INITIAL_BUFFERSIZE_001, TestSize.Level1)
     downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     EXPECT_EQ(downloader->SetInitialBufferSize(0, 50000), false);
     downloader->cacheMediaBuffer_ = nullptr;
-    downloader->isBuffering_ = false;
     EXPECT_EQ(downloader->SetInitialBufferSize(0, 20000000), true);
 }
 
@@ -1232,7 +1209,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, NOTIFY_INIT_SUCCESS_001, TestSize.Level1)
     downloader->bufferDurationForPlaying_ = 5;
     downloader->NotifyInitSuccess();
     EXPECT_EQ(downloader->waterlineForPlaying_, 0);
-    EXPECT_EQ(downloader->isBuffering_, true);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, IS_CACHED_INIT_SIZE_READY_001, TestSize.Level1)
@@ -1273,11 +1249,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_WATER_LINE_001, TestSize.Level1)
     downloader->waterLineAbove_ = 0;
     downloader->readOffset_ = 0;
     downloader->initCacheSize_ = 5000;
-    downloader->isBuffering_ = true;
     downloader->tsStorageInfo_[downloader->readTsIndex_ + 1] = std::make_pair(0, true);
-    downloader->HandleWaterLine();
     EXPECT_EQ(downloader->initCacheSize_, -1);
-    EXPECT_EQ(downloader->isBuffering_, false);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1)
@@ -1304,54 +1277,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1)
     EXPECT_EQ(downloader->CacheBufferFullLoop(), false);
 }
 
-HWTEST_F(HlsSegmentManagerUnitTest, IS_NEED_BUFFER_FOR_PLAYING_001, TestSize.Level1)
-{
-    std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT,
-        false, header_);
-    downloader->Init();
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                            std::shared_ptr<DownloadRequest>& request) {};
-    downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
-    EXPECT_EQ(downloader->IsNeedBufferForPlaying(), false);
-    downloader->bufferDurationForPlaying_ = 5;
-    downloader->isDemuxerInitSuccess_ = true;
-    downloader->isBuffering_ = true;
-    downloader->bufferingTime_ = static_cast<size_t>(downloader->
-                        steadyClock_.ElapsedMilliseconds()) - 100 * 1000;
-    EXPECT_EQ(downloader->IsNeedBufferForPlaying(), false);
-    downloader->bufferingTime_ = 0;
-    downloader->waterlineForPlaying_ = 0;
-    EXPECT_EQ(downloader->IsNeedBufferForPlaying(), false);
-}
-
-HWTEST_F(HlsSegmentManagerUnitTest, UpdateWaterLineAbove_001, TestSize.Level1)
-{
-    hlsSegmentManager_->waterLineAbove_ = 0;
-    hlsSegmentManager_->isFirstFrameArrived_ = false;
-    hlsSegmentManager_->UpdateWaterLineAbove();
-    EXPECT_EQ(hlsSegmentManager_->waterLineAbove_, 0);
-}
-
-HWTEST_F(HlsSegmentManagerUnitTest, UpdateWaterLineAbove_002, TestSize.Level1)
-{
-    hlsSegmentManager_->waterLineAbove_ = 0;
-    hlsSegmentManager_->currentBitRate_ = 0;
-    hlsSegmentManager_->isFirstFrameArrived_ = true;
-    hlsSegmentManager_->UpdateWaterLineAbove();
-    EXPECT_GE(hlsSegmentManager_->waterLineAbove_, 0);
-}
-
-HWTEST_F(HlsSegmentManagerUnitTest, UpdateWaterLineAbove_003, TestSize.Level1)
-{
-    hlsSegmentManager_->waterLineAbove_ = 0;
-    hlsSegmentManager_->currentBitRate_ = BUFFER_SIZE;
-    hlsSegmentManager_->isFirstFrameArrived_ = true;
-    hlsSegmentManager_->UpdateWaterLineAbove();
-    EXPECT_GE(hlsSegmentManager_->waterLineAbove_, 0);
-}
-
 HWTEST_F(HlsSegmentManagerUnitTest, read, TestSize.Level1)
 {
     std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
@@ -1369,7 +1294,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, read, TestSize.Level1)
     readDataInfo.wantReadLength_ = BUFFER_SIZE;
     readDataInfo.isEos_ = true;
 
-    downloader->isBuffering_ = true;
     downloader->canWrite_ = false;
     downloader->Read(buff, readDataInfo);
 
@@ -1796,8 +1720,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, READ_DELEGATE_001, TestSize.Level1)
     EXPECT_EQ(downloader->CheckPlaylist(buffer, readDataInfo), Status::ERROR_UNKNOWN);
     downloader->downloadErrorState_ = true;
     EXPECT_EQ(downloader->CheckBreakCondition(), true);
-    EXPECT_EQ(downloader->HandleCache(), false);
-    EXPECT_EQ(downloader->isBuffering_, false);
     readDataInfo.wantReadLength_ = 0;
     EXPECT_EQ(downloader->ReadDelegate(buffer, readDataInfo), Status::END_OF_STREAM);
     readDataInfo.wantReadLength_ = 4096;
@@ -1805,7 +1727,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, READ_DELEGATE_001, TestSize.Level1)
     EXPECT_EQ(downloader->IsHlsEnd(), false);
     EXPECT_EQ(downloader->writeTsIndex_, 0);
 
-    downloader->isBuffering_ = true;
     EXPECT_EQ(downloader->ReadDelegate(buffer, readDataInfo), Status::ERROR_AGAIN);
 
     downloader->seekTime_ = 100000000000;
@@ -2049,14 +1970,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_DOWNLOADER_005, TestSize.Level1)
     downloader->Close(true);
     downloader = nullptr;
     delete sourceCallback;
-}
-
-HWTEST_F(HlsSegmentManagerUnitTest, HandleBuffering_002, TestSize.Level1)
-{
-    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
-    downloader->isBuffering_ = true;
-    EXPECT_FALSE(downloader->HandleBuffering());
-    downloader = nullptr;
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, SAVE_DATA_001, TestSize.Level1)

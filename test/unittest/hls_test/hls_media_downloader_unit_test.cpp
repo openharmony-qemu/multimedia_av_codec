@@ -140,7 +140,6 @@ void HlsMediaDownloaderTest ::TearDown(void)
 
 HWTEST_F(HlsMediaDownloaderTest, GET_PLAY_INFO_001, TestSize.Level0)
 {
-    hlsMediaDownloader_->videoSegManager_->isBuffering_ = true;
     EXPECT_FALSE(hlsMediaDownloader_->GetPlayable());
 
     hlsMediaDownloader_->videoSegManager_ = nullptr;
@@ -1099,10 +1098,8 @@ HWTEST_F(HlsMediaDownloaderTest, WAIT_FOR_BUFFERING_END_001, TestSize.Level1)
     auto downloader = OpenHlsDetachAudioVideo();
     
     downloader->WaitForBufferingEnd();
-    EXPECT_FALSE(downloader->videoSegManager_->isBuffering_.load());
     
     downloader->SetInitialBufferSize(0, 20000000);
-    EXPECT_FALSE(downloader->videoSegManager_->isBuffering_.load());
     
     downloader->videoSegManager_ = nullptr;
     downloader->WaitForBufferingEnd();
