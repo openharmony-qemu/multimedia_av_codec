@@ -81,6 +81,7 @@ private:
     int32_t InputLoopInnerExt();
     void CheckSHA();
     void UpdateSHA(const char *addr, int32_t size);
+    void ProcessEosFrame();
     int32_t CreateAvccReader();
     int32_t CreateMpegReader();
     int32_t CreateH263Reader();
