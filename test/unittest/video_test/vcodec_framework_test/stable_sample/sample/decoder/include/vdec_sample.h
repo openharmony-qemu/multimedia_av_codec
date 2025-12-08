@@ -119,9 +119,6 @@ private:
 #ifdef SUPPORT_CODEC_AV1
     int32_t CreateAv1Reader();
 #endif
-#ifdef SUPPORT_CODEC_AVS
-    int32_t CreateAvsReader();
-#endif
 #ifdef SUPPORT_CODEC_RV
     int32_t CreateRv30Reader();
     int32_t CreateRv40Reader();

@@ -255,13 +255,6 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_AVC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC;
 
 /**
- * @brief Enumerates the MIME type of video avs codec.
- *
- * @since 23
- */
-extern const char *OH_AVCODEC_MIMETYPE_VIDEO_AVS;
-
-/**
  * @brief Enumerates the MIME type of video MSVIDEO1 codec.
  *
  * @since 22
@@ -1448,16 +1441,6 @@ typedef enum OH_WVC1Profile {
 } OH_WVC1Profile;
 
 /**
- * @brief AVS Profile
- *
- * @since 23
- */
-typedef enum OH_AVSProfile {
-    /** Jizhun Profile */
-    AVS_PROFILE_JIZHUN = 0,
-} OH_AVSProfile;
-
-/**
  * @brief VP9 Profile
  *
  * @since 23
@@ -1872,18 +1855,6 @@ typedef enum OH_VC1Level {
     /** HIGH level */
     VC1_LEVEL_HIGH = 7,
 } OH_VC1Level;
-
-/**
- * @brief AVS Level.
- *
- * @since 23
- */
-typedef enum OH_AVSLevel {
-    AVS_LEVEL_40 = 0,
-    AVS_LEVEL_42 = 1,
-    AVS_LEVEL_60 = 2,
-    AVS_LEVEL_62 = 3,
-} OH_AVSLevel;
 
 /**
  * @brief WVC1 Level.
