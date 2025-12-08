@@ -139,6 +139,12 @@ bool MultiStreamParserManager::IsHdrVivid(uint32_t trackId)
     return streamMap_[trackId].parser->IsHdrVivid();
 }
 
+bool MultiStreamParserManager::IsHdr10Plus(uint32_t trackId)
+{
+    FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), false, "Stream parser is invalid");
+    return streamMap_[trackId].parser->IsHdr10Plus();
+}
+
 bool MultiStreamParserManager::IsSyncFrame(uint32_t trackId, const uint8_t *sample, int32_t size)
 {
     FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), false, "Stream parser is invalid");

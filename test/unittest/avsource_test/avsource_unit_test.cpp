@@ -222,7 +222,7 @@ void AVSourceUnitTest::ResetFormatValue()
     formatVal_.rotationAngle = 0;
     formatVal_.orientationType = 0;
     formatVal_.channelLayout = 0;
-    formatVal_.hdrType = 0;
+    formatVal_.hdrType = -1;
     formatVal_.codecProfile = 0;
     formatVal_.codecLevel = 0;
     formatVal_.colorPrimaries = 0;

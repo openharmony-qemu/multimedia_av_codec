@@ -1314,7 +1314,48 @@ void FFmpegFormatHelper::ParseColorBoxInfo(const AVFormatContext& avFormatContex
     }
 }
 
-void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, HevcParseFormat parse, Meta &format)
+void FFmpegFormatHelper::ParseHdrTypeInfo(const AVStream& avStream, Meta &format, HevcParseFormat parse)
+{
+    format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::NONE);
+
+    ColorPrimary colorPrimaries = ColorPrimary::UNSPECIFIED;
+    format.Get<Tag::VIDEO_COLOR_PRIMARIES>(colorPrimaries);
+    FALSE_RETURN_NOLOG(colorPrimaries == ColorPrimary::BT2020);
+
+    MatrixCoefficient colorMatrix = MatrixCoefficient::UNSPECIFIED;
+    format.Get<Tag::VIDEO_COLOR_MATRIX_COEFF>(colorMatrix);
+    FALSE_RETURN_NOLOG(colorMatrix == MatrixCoefficient::BT2020_CL || MatrixCoefficient::BT2020_NCL);
+
+    if (parse.isHdrVivid) {
+        format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_VIVID);
+        return;
+    } else if (parse.isHdr10Plus) {
+        format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
+        return;
+    }
+
+    const AVDictionaryEntry *type = av_dict_get(avStream.metadata, "hdr_type", NULL, 0);
+    if (type != nullptr && type->value != nullptr) {
+        if (StartWith(type->value, "dolbyVision")) {
+            format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
+            return;
+        } else if (StartWith(type->value, "hdrVivid")) {
+            format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_VIVID);
+            return;
+        }
+    }
+
+    TransferCharacteristic colorTrans = TransferCharacteristic::UNSPECIFIED;
+    format.Get<Tag::VIDEO_COLOR_TRC>(colorTrans);
+    if (colorTrans == TransferCharacteristic::HLG) {
+        format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HLG);
+    } else if (colorTrans == TransferCharacteristic::PQ) {
+        format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
+    }
+}
+
+void FFmpegFormatHelper::ParseHevcInfo(
+    const AVFormatContext &avFormatContext, const AVStream& avStream, HevcParseFormat parse, Meta &format)
 {
     if (parse.isHdrVivid) {
         format.Set<Tag::VIDEO_IS_HDR_VIVID>(true);
@@ -1334,11 +1375,14 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
     } else {
         MEDIA_LOG_D("Parse hevc level failed: " PUBLIC_LOG_D32, level);
     }
-    auto FileType = GetFileTypeByName(avFormatContext);
-    if (FileType == FileType::MPEGTS ||
-        FileType == FileType::FLV) {
+    auto fileType = GetFileTypeByName(avFormatContext);
+    if (fileType == FileType::MPEGTS ||
+        fileType == FileType::FLV) {
         format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(parse.picWidInLumaSamples));
         format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(parse.picHetInLumaSamples));
+    }
+    if (IsMpeg4File(fileType)) {
+        ParseHdrTypeInfo(avStream, format, parse);
     }
 }
 

@@ -39,6 +39,7 @@ public:
     bool AllParserInited();
 
     bool IsHdrVivid(uint32_t trackId);
+    bool IsHdr10Plus(uint32_t trackId);
     bool IsSyncFrame(uint32_t trackId, const uint8_t *sample, int32_t size);
     bool GetColorRange(uint32_t trackId);
     uint8_t GetColorPrimaries(uint32_t trackId);

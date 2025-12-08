@@ -27,6 +27,8 @@
 #include "media_description.h"
 #include "file_server_demo.h"
 #include "avsource_unit_test.h"
+#include "meta/meta_key.h"
+#include "meta/video_types.h"
 
 #define LOCAL true
 #define URI false
@@ -64,6 +66,19 @@ string g_265pcmPath = TEST_FILE_PATH + string("265_pcm_s16le.mov");
 string g_265pcmUri = TEST_URI_PATH + string("265_pcm_s16le.mov");
 string g_mp4AuxlPath = TEST_FILE_PATH + string("muxer_auxl_265.mp4");
 string g_mp4AuxlUri = TEST_URI_PATH + string("muxer_auxl_265.mp4");
+
+string g_hdrTypeH264Path = TEST_FILE_PATH + string("h264.mp4");
+string g_hdrTypeH264Uri = TEST_FILE_PATH + string("h264.mp4");
+string g_hdrTypeSdrPath = TEST_FILE_PATH + string("hdrType_sdr.mp4");
+string g_hdrTypeSdrUri = TEST_FILE_PATH + string("hdrType_sdr.mp4");
+string g_hdrTypeHlgPath = TEST_FILE_PATH + string("hdrType_hlg.mp4");
+string g_hdrTypeHlgUri = TEST_FILE_PATH + string("hdrType_hlg.mp4");
+string g_hdrTypeHdr10Path = TEST_FILE_PATH + string("hdrType_hdr10.mp4");
+string g_hdrTypeHdr10Uri = TEST_FILE_PATH + string("hdrType_hdr10.mp4");
+string g_hdrTypeHdrVividPath = TEST_FILE_PATH + string("hdrType_hdrVivid.mp4");
+string g_hdrTypeHdrVividUri = TEST_FILE_PATH + string("hdrType_hdrVivid.mp4");
+string g_hdrTypeDolbyPath = TEST_FILE_PATH + string("hdrType_db_no_image.mp4");
+string g_hdrTypeDolbyUri = TEST_FILE_PATH + string("hdrType_db_no_image.mp4");
 
 std::map<std::string, std::map<std::string, int32_t>> infoMap = {
     {"hdrVivid", {
@@ -133,7 +148,7 @@ std::map<std::string, std::map<std::string, int32_t>> infoMap = {
 };
 } // namespace
 
-void AVSourceUnitTest::InitResource(const std::string &path, bool local)
+void AVSourceUnitTest::InitResource(const std::string &path, bool local, bool checkTrack)
 {
     printf("---- %s ------\n", path.c_str());
     if (local) {
@@ -148,14 +163,16 @@ void AVSourceUnitTest::InitResource(const std::string &path, bool local)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, streamsCount_));
-    for (int i = 0; i < streamsCount_; i++) {
-        format_ = source_->GetTrackFormat(i);
-        ASSERT_NE(format_, nullptr);
-        ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
-        if (formatVal_.trackType == MediaType::MEDIA_TYPE_VID) {
-            vTrackIdx_ = i;
-        } else if (formatVal_.trackType == MediaType::MEDIA_TYPE_AUD) {
-            aTrackIdx_ = i;
+    if (checkTrack) {
+        for (int i = 0; i < streamsCount_; i++) {
+            format_ = source_->GetTrackFormat(i);
+            ASSERT_NE(format_, nullptr);
+            ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+            if (formatVal_.trackType == MediaType::MEDIA_TYPE_VID) {
+                vTrackIdx_ = i;
+            } else if (formatVal_.trackType == MediaType::MEDIA_TYPE_AUD) {
+                aTrackIdx_ = i;
+            }
         }
     }
     initStatus_ = true;
@@ -1103,4 +1120,296 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_Auxl_0002, TestSize.Level1)
         ASSERT_TRUE(checkPass_);
     }
 }
+
+#ifdef AVSOURCE_INNER_UNIT_TEST
+/**
+ * @tc.name: AVSource_GetFormat_HDRType_0011
+ * @tc.desc: Check hdr type for 264, local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0011, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_hdrTypeH264Path, LOCAL, false);
+        ASSERT_TRUE(initStatus_);
+        trackIndex_ = 0;
+        format_ = source_->GetTrackFormat(trackIndex_);
+        ASSERT_NE(format_, nullptr);
+        printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+    }
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_HDRType_0012
+ * @tc.desc: Check hdr type for 264, url
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0012, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_hdrTypeH264Uri, URI, false);
+        ASSERT_TRUE(initStatus_);
+        trackIndex_ = 0;
+        format_ = source_->GetTrackFormat(trackIndex_);
+        ASSERT_NE(format_, nullptr);
+        printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+    }
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_HDRType_0021
+ * @tc.desc: Check hdr type for sdr, local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0021, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_hdrTypeSdrPath, LOCAL, false);
+        ASSERT_TRUE(initStatus_);
+        trackIndex_ = 0;
+        format_ = source_->GetTrackFormat(trackIndex_);
+        ASSERT_NE(format_, nullptr);
+        printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::NONE);
+    }
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_HDRType_0022
+ * @tc.desc: Check hdr type for sdr, url
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0022, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_hdrTypeSdrUri, URI, false);
+        ASSERT_TRUE(initStatus_);
+        trackIndex_ = 0;
+        format_ = source_->GetTrackFormat(trackIndex_);
+        ASSERT_NE(format_, nullptr);
+        printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::NONE);
+    }
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_HDRType_0031
+ * @tc.desc: Check hdr type for hlg, local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0031, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_hdrTypeHlgPath, LOCAL, false);
+        ASSERT_TRUE(initStatus_);
+        trackIndex_ = 0;
+        format_ = source_->GetTrackFormat(trackIndex_);
+        ASSERT_NE(format_, nullptr);
+        printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_PRIMARIES, formatVal_.colorPri));
+        ASSERT_EQ(formatVal_.colorPri, static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_BT2020));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_TRC, formatVal_.colorTrans));
+        ASSERT_EQ(formatVal_.colorTrans, static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_MATRIX_COEFF, formatVal_.colorMatrix));
+        ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
+        ASSERT_EQ(formatVal_.colorRange, 0);
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HLG);
+    }
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_HDRType_0032
+ * @tc.desc: Check hdr type for hlg, url
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0032, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_hdrTypeHlgUri, URI, false);
+        ASSERT_TRUE(initStatus_);
+        trackIndex_ = 0;
+        format_ = source_->GetTrackFormat(trackIndex_);
+        ASSERT_NE(format_, nullptr);
+        printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_PRIMARIES, formatVal_.colorPri));
+        ASSERT_EQ(formatVal_.colorPri, static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_BT2020));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_TRC, formatVal_.colorTrans));
+        ASSERT_EQ(formatVal_.colorTrans, static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_MATRIX_COEFF, formatVal_.colorMatrix));
+        ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
+        ASSERT_EQ(formatVal_.colorRange, 0);
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HLG);
+    }
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_HDRType_0041
+ * @tc.desc: Check hdr type for hdr10, local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0041, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_hdrTypeHdr10Path, LOCAL, false);
+        ASSERT_TRUE(initStatus_);
+        trackIndex_ = 0;
+        format_ = source_->GetTrackFormat(trackIndex_);
+        ASSERT_NE(format_, nullptr);
+        printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_PRIMARIES, formatVal_.colorPri));
+        ASSERT_EQ(formatVal_.colorPri, static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_BT2020));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_TRC, formatVal_.colorTrans));
+        ASSERT_EQ(formatVal_.colorTrans, static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_PQ));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_MATRIX_COEFF, formatVal_.colorMatrix));
+        ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
+        ASSERT_EQ(formatVal_.colorRange, 0);
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HDR_10);
+    }
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_HDRType_0042
+ * @tc.desc: Check hdr type for hdr10, url
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0042, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_hdrTypeHdr10Uri, URI, false);
+        ASSERT_TRUE(initStatus_);
+        trackIndex_ = 0;
+        format_ = source_->GetTrackFormat(trackIndex_);
+        ASSERT_NE(format_, nullptr);
+        printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_PRIMARIES, formatVal_.colorPri));
+        ASSERT_EQ(formatVal_.colorPri, static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_BT2020));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_TRC, formatVal_.colorTrans));
+        ASSERT_EQ(formatVal_.colorTrans, static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_PQ));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_MATRIX_COEFF, formatVal_.colorMatrix));
+        ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
+        ASSERT_EQ(formatVal_.colorRange, 0);
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HDR_10);
+    }
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_HDRType_0051
+ * @tc.desc: Check hdr type for hdrVivid, local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0051, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_hdrTypeHdrVividPath, LOCAL, false);
+        ASSERT_TRUE(initStatus_);
+        trackIndex_ = 0;
+        format_ = source_->GetTrackFormat(trackIndex_);
+        ASSERT_NE(format_, nullptr);
+        printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_PRIMARIES, formatVal_.colorPri));
+        ASSERT_EQ(formatVal_.colorPri, static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_BT2020));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_TRC, formatVal_.colorTrans));
+        ASSERT_EQ(formatVal_.colorTrans, static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_MATRIX_COEFF, formatVal_.colorMatrix));
+        ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
+        ASSERT_EQ(formatVal_.colorRange, 0);
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HDR_VIVID);
+    }
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_HDRType_0052
+ * @tc.desc: Check hdr type for hdrVivid, url
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0052, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_hdrTypeHdrVividUri, URI, false);
+        ASSERT_TRUE(initStatus_);
+        trackIndex_ = 0;
+        format_ = source_->GetTrackFormat(trackIndex_);
+        ASSERT_NE(format_, nullptr);
+        printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_PRIMARIES, formatVal_.colorPri));
+        ASSERT_EQ(formatVal_.colorPri, static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_BT2020));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_TRC, formatVal_.colorTrans));
+        ASSERT_EQ(formatVal_.colorTrans, static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_MATRIX_COEFF, formatVal_.colorMatrix));
+        ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
+        ASSERT_EQ(formatVal_.colorRange, 0);
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HDR_VIVID);
+    }
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_HDRType_0061
+ * @tc.desc: Check hdr type for dolbyVision, local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0061, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_hdrTypeDolbyPath, LOCAL, false);
+        ASSERT_TRUE(initStatus_);
+        trackIndex_ = 0;
+        format_ = source_->GetTrackFormat(trackIndex_);
+        ASSERT_NE(format_, nullptr);
+        printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_PRIMARIES, formatVal_.colorPri));
+        ASSERT_EQ(formatVal_.colorPri, static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_BT2020));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_TRC, formatVal_.colorTrans));
+        ASSERT_EQ(formatVal_.colorTrans, static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_MATRIX_COEFF, formatVal_.colorMatrix));
+        ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
+        ASSERT_EQ(formatVal_.colorRange, 0);
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HDR_10);
+    }
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_HDRType_0062
+ * @tc.desc: Check hdr type for dolbyVision, url
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0062, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        InitResource(g_hdrTypeDolbyUri, URI, false);
+        ASSERT_TRUE(initStatus_);
+        trackIndex_ = 0;
+        format_ = source_->GetTrackFormat(trackIndex_);
+        ASSERT_NE(format_, nullptr);
+        printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_PRIMARIES, formatVal_.colorPri));
+        ASSERT_EQ(formatVal_.colorPri, static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_BT2020));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_TRC, formatVal_.colorTrans));
+        ASSERT_EQ(formatVal_.colorTrans, static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_MATRIX_COEFF, formatVal_.colorMatrix));
+        ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
+        ASSERT_EQ(formatVal_.colorRange, 0);
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HDR_10);
+    }
+}
+#endif
 } // namespace
