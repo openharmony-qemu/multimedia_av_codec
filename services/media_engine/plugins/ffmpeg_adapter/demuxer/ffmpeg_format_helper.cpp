@@ -1324,7 +1324,7 @@ void FFmpegFormatHelper::ParseHdrTypeInfo(const AVStream& avStream, Meta &format
 
     MatrixCoefficient colorMatrix = MatrixCoefficient::UNSPECIFIED;
     format.Get<Tag::VIDEO_COLOR_MATRIX_COEFF>(colorMatrix);
-    FALSE_RETURN_NOLOG(colorMatrix == MatrixCoefficient::BT2020_CL || MatrixCoefficient::BT2020_NCL);
+    FALSE_RETURN_NOLOG(colorMatrix == MatrixCoefficient::BT2020_CL || colorMatrix == MatrixCoefficient::BT2020_NCL);
 
     if (parse.isHdrVivid) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_VIVID);

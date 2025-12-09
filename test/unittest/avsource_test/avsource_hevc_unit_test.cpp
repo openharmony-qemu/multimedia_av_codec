@@ -1173,7 +1173,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0021, TestSize.Level1)
         ASSERT_NE(format_, nullptr);
         printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::NONE);
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::NONE));
     }
 }
 
@@ -1192,7 +1192,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0022, TestSize.Level1)
         ASSERT_NE(format_, nullptr);
         printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::NONE);
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::NONE));
     }
 }
 
@@ -1219,7 +1219,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0031, TestSize.Level1)
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HLG);
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HLG));
     }
 }
 
@@ -1246,7 +1246,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0032, TestSize.Level1)
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HLG);
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HLG));
     }
 }
 
@@ -1273,7 +1273,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0041, TestSize.Level1)
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HDR_10);
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
     }
 }
 
@@ -1300,7 +1300,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0042, TestSize.Level1)
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HDR_10);
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
     }
 }
 
@@ -1327,7 +1327,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0051, TestSize.Level1)
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HDR_VIVID);
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_VIVID));
     }
 }
 
@@ -1354,7 +1354,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0052, TestSize.Level1)
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HDR_VIVID);
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_VIVID));
     }
 }
 
@@ -1381,7 +1381,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0061, TestSize.Level1)
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HDR_10);
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
     }
 }
 
@@ -1408,7 +1408,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0062, TestSize.Level1)
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, Media::Plugins::HDRType::HDR_10);
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
     }
 }
 #endif
