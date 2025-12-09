@@ -220,7 +220,7 @@ int64_t VDecAPI11Sample::GetSystemTimeUs()
 
 int32_t VDecAPI11Sample::ConfigureVideoDecoder()
 {
-    if (autoSwitchSurface) {
+    if (autoSwitchSurface && needAutoSwitch) {
         switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
         if (OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]) != AV_ERR_INVALID_STATE) {
             errCount++;
@@ -242,6 +242,10 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     if (useHDRSource) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_PROFILE);
+    }
+    if (setTransform) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_TRANSFORM_TYPE, DEFAULT_TRANSFORM);
+        cout << "config transform: " << DEFAULT_TRANSFORM << endl;
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, enbleSyncMode);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, enbleBlankFrame);
@@ -297,6 +301,9 @@ int32_t VDecAPI11Sample::RunVideoDec_Surface(string codeName)
         cout << "Failed to setCallback" << endl;
         Release();
         return err;
+    }
+    if (setTransform && autoSwitchSurface) {
+        beforeSwitchTransform = GetSurfaceTransform(switchSurfaceFlag);
     }
     err = ConfigureVideoDecoder();
     if (err != AV_ERR_OK) {
@@ -715,6 +722,16 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
         if (autoSwitchSurface && (frameCount_ % (int32_t)DEFAULT_FRAME_RATE == 0)) {
             switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
             OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]) == AV_ERR_OK ? (0) : (errCount++);
+            if (setTransform) {
+                afterSwitchTransform = GetSurfaceTransform(0);
+                autoSwitchSurface = false;
+                cout << "switchSurfaceFlag: " << switchSurfaceFlag << endl;
+                GetSurfaceTransform(switchSurfaceFlag) == DEFAULT_TRANSFORM ? (0) : (errCount++);
+                DEFAULT_TRANSFORM = NATIVEBUFFER_FLIP_V_ROT270;
+                SetParameter() == AV_ERR_OK ? (0) : (errCount++);
+                cout << "switchSurfaceFlag: " << switchSurfaceFlag << endl;
+                GetSurfaceTransform(switchSurfaceFlag) == DEFAULT_TRANSFORM ? (0) : (errCount++);
+            }
         }
     }
     delete[] fileBuffer;
@@ -762,7 +779,7 @@ void VDecAPI11Sample::CheckOutputDescription()
 
 void VDecAPI11Sample::AutoSwitchSurface()
 {
-    if (autoSwitchSurface) {
+    if (autoSwitchSurface && needAutoSwitch) {
         switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
         if (OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]) != AV_ERR_OK) {
             errCount++;
@@ -1104,4 +1121,73 @@ void VDecAPI11Sample::GetFormatKey()
     OH_AVFormat_Destroy(format);
     std::cout << "firstCallBackKey:" << firstCallBackKey << std::endl;
     isGetFormatKeyNum++;
+}
+
+int32_t VDecAPI11Sample::SetConfigTransform()
+{
+    int32_t ret = ConfigureVideoDecoder();
+    if (ret != AV_ERR_OK) {
+        cout << "config failed" << endl;
+        return ret;
+    }
+    
+    ret = OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
+    if (ret != AV_ERR_OK) {
+        cout << "Failed to set surface" << endl;
+        return ret;
+    }
+    ret = OH_VideoDecoder_Prepare(vdec_);
+    if (ret != AV_ERR_OK) {
+        cout << "Failed to start codec, prepare failed!  " << ret << endl;
+        Release();
+        return ret;
+    }
+    ret = OH_VideoDecoder_Start(vdec_);
+    if (ret != AV_ERR_OK) {
+        cout << "Failed to start codec" << endl;
+        Release();
+        return ret;
+    }
+    return AV_ERR_OK;
+}
+
+int32_t VDecAPI11Sample::SetParameterTransform()
+{
+    int32_t ret = SetConfigTransform();
+    if (ret != AV_ERR_OK) {
+        return ret;
+    }
+    ret = SetParameter();
+    if (ret != AV_ERR_OK) {
+        cout << "set parameter failed" << endl;
+        return ret;
+    }
+    return ret;
+}
+
+int32_t VDecAPI11Sample::SetSurface()
+{
+    return OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
+}
+
+int32_t VDecAPI11Sample::SetParameter()
+{
+    OH_AVFormat *format = OH_AVFormat_Create();
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_TRANSFORM_TYPE, DEFAULT_TRANSFORM);
+    cout << "set parameter transform: " << DEFAULT_TRANSFORM << endl;
+    int32_t ret = OH_VideoDecoder_SetParameter(vdec_, format);
+    OH_AVFormat_Destroy(format);
+    return ret;
+}
+
+int32_t VDecAPI11Sample::GetSurfaceTransform(int32_t surfaceFlag)
+{
+    int32_t transform = -1;
+    int32_t ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow[surfaceFlag], GET_TRANSFORM, &transform);
+    if (ret != AV_ERR_OK) {
+        cout << "get " << surfaceFlag << "surface transform failed, ret = " << ret << endl;
+        return ret;
+    }
+    cout << "get  " << surfaceFlag << "  surface transform: " << transform << endl;
+    return transform;
 }

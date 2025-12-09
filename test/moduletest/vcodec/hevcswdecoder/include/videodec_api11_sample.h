@@ -97,7 +97,11 @@ public:
     int64_t syncOutputWaitTime = -1;
     bool queryOutputBufferEOS = false;
     bool queryInputBufferEOS = false;
-
+    bool setTransform = false;
+    int32_t DEFAULT_TRANSFORM = 0;
+    bool needAutoSwitch = true;
+    int32_t beforeSwitchTransform = -1;
+    int32_t afterSwitchTransform = -2;
     int32_t Start();
     int32_t Stop();
     int32_t Flush();
@@ -156,6 +160,11 @@ public:
     int firstCallBackKey = 0;
     int onStreamChangedKey = 0;
     std::vector<uint8_t> LoadHashFile();
+    int32_t SetConfigTransform();
+    int32_t SetSurface();
+    int32_t SetParameterTransform();
+    int32_t SetParameter();
+    int32_t GetSurfaceTransform(int32_t surfaceFlag);
     VDecAPI11Signal *signal_;
     uint32_t errCount = 0;
     uint32_t outCount = 0;

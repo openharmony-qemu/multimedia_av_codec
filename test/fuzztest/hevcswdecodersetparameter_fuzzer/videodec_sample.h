@@ -62,7 +62,7 @@ public:
     uint32_t defaultRotation = 0;
     const uint8_t *fuzzData;
     size_t fuzzSize;
-    
+    int32_t DEFAULT_TRANSFORM = 0;
     uint32_t defaultPixelFormat = 1;
     uint32_t frameCount_ = 0;
     const char *fileSourcesha256[64] = {"27", "6D", "A2", "D4", "18", "21", "A5", "CD", "50", "F6", "DD", "CA", "46",

@@ -112,6 +112,11 @@ public:
     bool isCheckFlush = false;
     bool outNoFrameLoss = false;
     bool inNoFrameLoss = false;
+    bool setTransform = false;
+    int32_t DEFAULT_TRANSFORM = 0;
+    bool needAutoSwitch = true;
+    int32_t beforeSwitchTransform = -1;
+    int32_t afterSwitchTransform = -2;
     int32_t Start();
     int32_t Stop();
     int32_t Flush();
@@ -149,6 +154,11 @@ public:
     void InFuncTest();
     void OutputFuncTest();
     void SyncOutputFunc();
+    int32_t SetConfigTransform();
+    int32_t SetSurface();
+    int32_t SetParameterTransform();
+    int32_t SetParameter();
+    int32_t GetSurfaceTransform(int32_t surfaceFlag);
     int32_t SyncOutputFuncEos(uint32_t &last_index, uint32_t &outFrames, uint32_t &index,
     OH_AVBuffer *buffer, OH_AVCodecBufferAttr &attr);
     int32_t QueryInputBuffer(uint32_t index, int64_t timeoutUs);
