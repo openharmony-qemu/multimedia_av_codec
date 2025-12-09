@@ -65,9 +65,9 @@ public:
     CapabilityData GetOpusDecoderCapability();
     CapabilityData GetOpusEncoderCapability();
 #endif
-#ifdef SUPPORT_CODEC_COOK
+    CapabilityData GetDVAudioDecoderCapability();
+    CapabilityData GetDtsDecoderCapability();
     CapabilityData GetCookDecoderCapability();
-#endif
 private:
     std::vector<CapabilityData> audioCapabilities_;
     AudioCodeclistInfo();

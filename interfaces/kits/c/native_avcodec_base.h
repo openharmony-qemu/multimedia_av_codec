@@ -525,6 +525,30 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_TRUEHD;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_TWINVQ;
 
 /**
+ * @brief Enumerates the mime types of audio DVAUDIO codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_DVAUDIO;
+
+/**
+ * @brief Enumerates the mime types of audio DTS codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_DTS;
+
+/**
+ * @brief Enumerates the mime types of audio COOK codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_COOK;
+
+/**
  * @brief Key for timeStamp in surfacebuffer, value type is int64_t.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9

@@ -65,6 +65,9 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_WMAPRO = "audio/wmapro";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_ILBC = "audio/ilbc";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_TRUEHD = "audio/truehd";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_TWINVQ = "audio/twinvq";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_DVAUDIO = "audio/dvaudio";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_DTS = "audio/dts";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_COOK = "audio/cook";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";
