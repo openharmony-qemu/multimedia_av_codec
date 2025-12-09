@@ -46,7 +46,6 @@ declare_args() {
   av_codec_hcodec_enable_qos_the_whole_time = false
   av_codec_enable_codec_rm = false
   av_codec_enable_codec_rv = true
-  av_codec_enable_codec_cook = false
   av_codec_enable_codec_eac3 = false
   av_codec_enable_codec_opus = false
   av_codec_enable_demuxer_lrc = false
@@ -54,7 +53,6 @@ declare_args() {
   av_codec_enable_demuxer_sami = false
   av_codec_enable_demuxer_ass = false
   av_codec_support_camera_post_processor = false
-  av_codec_support_avs_decoder = false
   if (defined(global_parts_info) &&
       defined(global_parts_info.hdf_drivers_interface_camera_ext)) {
     av_codec_support_camera_post_processor = true
@@ -171,10 +169,6 @@ if (av_codec_support_av1_decoder) {
   av_codec_defines += ["SUPPORT_CODEC_AV1"]
 }
 
-if (av_codec_support_avs_decoder) {
-  av_codec_defines += ["SUPPORT_CODEC_AVS"]
-}
-
 if (!av_codec_support_software_codec) {
   av_codec_support_fcodec = false
   av_codec_support_avc_encoder = false
@@ -187,10 +181,6 @@ if (av_codec_enable_codec_rm) {
 
 if (av_codec_enable_codec_rv) {
   av_codec_defines += [ "SUPPORT_CODEC_RV" ]
-}
-
-if (av_codec_enable_codec_cook) {
-  av_codec_defines += [ "SUPPORT_CODEC_COOK" ]
 }
 
 if (av_codec_enable_codec_eac3) {

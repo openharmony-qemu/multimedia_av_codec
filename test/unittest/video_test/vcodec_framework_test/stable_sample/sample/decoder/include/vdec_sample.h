@@ -108,16 +108,16 @@ private:
     int32_t CreateAvccReader();
     int32_t CreateMpegReader();
     int32_t CreateH263Reader();
+#ifdef SUPPORT_CODEC_VC1
     int32_t CreateVc1Reader();
+    int32_t CreateWVc1Reader();
+#endif
     int32_t CreateMsvideo1Reader();
     int32_t CreateWmv3Reader();
     int32_t CreateVp8Reader();
     int32_t CreateVp9Reader();
 #ifdef SUPPORT_CODEC_AV1
     int32_t CreateAv1Reader();
-#endif
-#ifdef SUPPORT_CODEC_AVS
-    int32_t CreateAvsReader();
 #endif
 #ifdef SUPPORT_CODEC_RV
     int32_t CreateRv30Reader();

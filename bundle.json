@@ -41,7 +41,6 @@
         "av_codec_hcodec_enable_qos_the_whole_time",
         "av_codec_enable_codec_rm",
         "av_codec_enable_codec_rv",
-        "av_codec_enable_codec_cook",
         "av_codec_enable_codec_eac3",
         "av_codec_enable_codec_opus",
         "av_codec_enable_demuxer_lrc",
@@ -51,8 +50,7 @@
         "av_codec_support_vc1_decoder",
         "av_codec_support_vp8_decoder",
         "av_codec_support_vp9_decoder",
-        "av_codec_support_av1_decoder",
-        "av_codec_support_avs_decoder"
+        "av_codec_support_av1_decoder"
       ],
       "adapted_system_type": [ "standard" ],
       "rom": "10000KB",

@@ -21,7 +21,6 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecListImpl"};
 const std::vector<std::string> VIDEO_MIME_VEC = {
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_AVS),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MSVIDEO1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VC1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_WVC1),
@@ -95,7 +94,9 @@ const std::vector<std::string> AUDIO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_VIVID),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ILBC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_TRUEHD),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_TWINVQ)};
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_TWINVQ),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_DVAUDIO),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_DTS)};
 }
 namespace OHOS {
 namespace MediaAVCodec {

@@ -349,6 +349,21 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="videodec_vp8dec_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/test.vp8 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="videodec_vp9dec_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_res/test.vp9 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test_hdr.vp9 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="videodec_VC1_stable_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
@@ -357,38 +372,27 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videodec_avs_func_sync_unit_test">
+    <target name="videodec_WVC1_func_async_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="video_res/test.avs -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test.wvc1 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/glitch-ffvc1.avi -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videodec_avs_func_async_unit_test">
+    <target name="videodec_WVC1_func_sync_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="video_res/test.avs -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test.wvc1 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/glitch-ffvc1.avi -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
-    <target name="videodec_avs_capi_sync_unit_test">
+    <target name="videodec_WVC1_stable_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="video_res/test.avs -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
-        </preparer>
-    </target>
-    <target name="videodec_avs_capi_async_unit_test">
-        <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="video_res/test.avs -> /data/test/media" src="res"/>
-            <option name="shell" value="restorecon /data/test/media"/>
-        </preparer>
-    </target>
-    <target name="videodec_avs_stable_unit_test">
-        <preparer>
-            <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="video_res/test.avs -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/test.wvc1 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/glitch-ffvc1.avi -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -1973,6 +1977,90 @@
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="audio_res/mp3_2c_44100hz_60k.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/vorbis_2c_44100hz_320k.dat -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_dvaudio_decoder_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/dvaudio_48000_stereo.wav -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+	<target name="audio_dts_decoder_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/dts_48000_mono.mp4 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+	<target name="audio_cook_decoder_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/cook_44100_stereo.dat -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_cook_capi_decoder_unit_stable_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_cook_capi_decoder_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_dts_capi_decoder_unit_stable_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_dts_capi_decoder_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_dvaudio_capi_decoder_unit_stable_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_dvaudio_capi_decoder_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_sync_mode_cook_capi_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_sync_mode_dts_capi_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="audio_sync_mode_dvaudio_capi_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>

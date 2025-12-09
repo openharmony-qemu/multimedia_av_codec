@@ -87,9 +87,7 @@ private:
     int32_t CreateH263Reader();
 #ifdef SUPPORT_CODEC_VC1
     int32_t CreateVc1Reader();
-#endif
-#ifdef SUPPORT_CODEC_AVS
-    int32_t CreateAvsReader();
+    int32_t CreateWVc1Reader();
 #endif
     int32_t CreateMsvideo1Reader();
     int32_t CreateWmv3Reader();
@@ -130,9 +128,7 @@ private:
 #endif
 #ifdef SUPPORT_CODEC_VC1
     std::shared_ptr<Vc1Reader> vc1Reader_ = nullptr;
-#endif
-#ifdef SUPPORT_CODEC_AVS
-    std::shared_ptr<AvsReader> avsReader_ = nullptr;
+    std::shared_ptr<WVc1Reader> wvc1Reader_ = nullptr;
 #endif
     std::shared_ptr<Msvideo1Reader> msvideo1Reader_ = nullptr;
     std::shared_ptr<Wmv3Reader> wmv3Reader_ = nullptr;

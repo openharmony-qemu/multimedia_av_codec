@@ -41,6 +41,8 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_L2HC = "audio/l2hc";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_APE = "audio/x-ape";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_LBVC = "audio/lbvc";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_DVAUDIO = "audio/dvaudio";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_DTS = "audio/dts";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_COOK = "audio/cook";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_AC3 = "audio/ac3";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_EAC3 = "audio/eac3";
@@ -85,7 +87,6 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_ILBC = "audio/ilbc";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_TRUEHD = "audio/truehd";
 
-    static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_CAVS = "video/cavs";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_MSVIDEO1 = "video/msvideo1";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_VC1 = "video/vc1";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_WVC1 = "video/wvc1";
@@ -139,6 +140,9 @@ public:
             MEDIA_MIMETYPE_AUDIO_ILBC,
             MEDIA_MIMETYPE_AUDIO_TRUEHD,
             MEDIA_MIMETYPE_AUDIO_TWINVQ,
+            MEDIA_MIMETYPE_AUDIO_DVAUDIO,
+            MEDIA_MIMETYPE_AUDIO_DTS,
+            MEDIA_MIMETYPE_AUDIO_COOK,
 #ifdef SUPPORT_CODEC_EAC3
             MEDIA_MIMETYPE_AUDIO_EAC3,
 #endif
