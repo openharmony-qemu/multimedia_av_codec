@@ -49,6 +49,7 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
 namespace {
+constexpr int32_t BLOCK_ALIGN = 93;
 constexpr int32_t DEFAULT_CHANNELS = 2;
 constexpr uint32_t DEFAULT_SAMPLE_RATE = 44100;
 constexpr string_view COOK_FILE_TODEMUX = "/data/test/media/cook.dat";
@@ -503,6 +504,7 @@ int32_t AudioSyncModeCapiUnitTest::Configure()
     OH_AVFormat_SetBuffer(format_, OH_MD_KEY_CODEC_CONFIG, extradata.data(), extradata.size());
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
         AVSampleFormat::AV_SAMPLE_FMT_FLTP);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_BLOCK_ALIGN, BLOCK_ALIGN);
     return OH_AudioCodec_Configure(audioDec_, format_);
 }
 

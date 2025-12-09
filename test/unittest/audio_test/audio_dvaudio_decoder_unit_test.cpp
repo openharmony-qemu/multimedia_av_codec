@@ -24,6 +24,8 @@
 #include <string>
 #include <thread>
 #include <fcntl.h>
+#include "plugin/codec_plugin.h"
+#include "plugin/plugin_manager_v2.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"
@@ -47,6 +49,7 @@ using namespace std;
 using namespace testing::ext;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
+using namespace OHOS::Media::Plugins;
 
 namespace {
 const string CODEC_DVAUDIO_NAME = std::string(std::string(AVCodecCodecName::AUDIO_DECODER_DVAUDIO_NAME));
@@ -124,12 +127,12 @@ static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuff
     signal->outCond_.notify_all();
 }
 
-class AudioCodeDvaudioDecoderUnitTest : public testing::Test {
+class AudioCodeDvaudioDecoderUnitTest : public testing::Test, public DataCallback {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
+    void SetUp() override;
+    void TearDown() override;
     int32_t InitFile(string_view input);
     int32_t InitFile(string_view input, string_view output);
     void InputFunc();
@@ -146,6 +149,21 @@ public:
     void SetEOS(uint32_t index, OH_AVBuffer *buffer);
     void CleanUp();
     void StopLoops();
+    shared_ptr<CodecPlugin> CreatePlugin();
+    shared_ptr<AVBuffer> CreateAVBuffer(size_t capacity, size_t size);
+
+    void OnInputBufferDone(const shared_ptr<Media::AVBuffer> &inputBuffer) override
+    {
+        (void)inputBuffer;
+    }
+    void OnOutputBufferDone(const shared_ptr<Media::AVBuffer> &outputBuffer) override
+    {
+        (void)outputBuffer;
+    }
+    void OnEvent(const shared_ptr<Plugins::PluginEvent> event) override
+    {
+        (void)event;
+    }
 
 protected:
     int fd_ = -1;
@@ -169,6 +187,7 @@ protected:
     std::atomic<bool> gotEos_ {false};
     size_t staleInputDiscarded_ = 0;
     size_t staleOutputDiscarded_ = 0;
+    shared_ptr<CodecPlugin> plugin_ = nullptr;
 };
 
 void AudioCodeDvaudioDecoderUnitTest::SetUpTestCase(void)
@@ -185,6 +204,7 @@ void AudioCodeDvaudioDecoderUnitTest::SetUp(void)
 {
     g_outputSampleRate = 0;
     g_outputChannels = 0;
+    plugin_ = CreatePlugin();
     cout << "[SetUp]: SetUp!!!" << endl;
 }
 
@@ -203,6 +223,23 @@ void AudioCodeDvaudioDecoderUnitTest::TearDown(void)
         OH_AVFormat_Destroy(format_);
         format_ = nullptr;
     }
+}
+
+shared_ptr<CodecPlugin> AudioCodeDvaudioDecoderUnitTest::CreatePlugin()
+{
+    auto plugin = PluginManagerV2::Instance().CreatePluginByName(CODEC_DVAUDIO_NAME);
+    if (!plugin) {
+        return nullptr;
+    }
+    return reinterpret_pointer_cast<CodecPlugin>(plugin);
+}
+
+shared_ptr<AVBuffer> AudioCodeDvaudioDecoderUnitTest::CreateAVBuffer(size_t capacity, size_t size)
+{
+    auto avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    auto avBuffer = AVBuffer::CreateAVBuffer(avAllocator, capacity);
+    avBuffer->memory_->SetSize(size);
+    return avBuffer;
 }
 
 void AudioCodeDvaudioDecoderUnitTest::Release()
@@ -640,273 +677,144 @@ HWTEST_F(AudioCodeDvaudioDecoderUnitTest, AudioDemuxAndDecode_Dvaudio_001, TestS
     Release();
 }
 
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, capability_001, TestSize.Level1)
+HWTEST_F(AudioCodeDvaudioDecoderUnitTest, SetParameter_001, TestSize.Level1)
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_AUDIO_DVAUDIO, false, SOFTWARE);
-    EXPECT_NE(cap, nullptr);
-    const int threadCnt = 10;
-    std::vector<std::thread> threadPool;
-    for (int32_t i = 0; i < threadCnt; i++) {
-        threadPool.emplace_back([&cap]() {
-            const int32_t *sampleRates = nullptr;
-            uint32_t sampleRateNum = 0;
-            OH_AVRange* sampleRateRanges[10];
-            uint32_t rangesNum = 0;
-            OH_AVRange channelCountRange = {0, 0};
-            for (int i = 0; i < 10; i++) {
-                sampleRateRanges[i] = nullptr;
-            }
-            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
-            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
-            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRates(cap, &sampleRates, &sampleRateNum), AV_ERR_OK);
-            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRateRanges(cap, sampleRateRanges, &rangesNum), AV_ERR_OK);
-            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRateRanges(cap, sampleRateRanges, &rangesNum), AV_ERR_OK);
-            EXPECT_EQ(OH_AVCapability_GetAudioSupportedSampleRateRanges(cap, sampleRateRanges, &rangesNum), AV_ERR_OK);
-            EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &channelCountRange), AV_ERR_OK);
-            EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &channelCountRange), AV_ERR_OK);
-            EXPECT_EQ(OH_AVCapability_GetAudioChannelCountRange(cap, &channelCountRange), AV_ERR_OK);
-        });
-    }
-    for (auto &th : threadPool) {
-        th.join();
-    }
+    auto meta = make_shared<Media::Meta>();
+    int32_t channels = 2;
+    int32_t sampleRate = 48000;
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(channels);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+    ASSERT_EQ(plugin_->Init(), Status::OK);
+    ASSERT_EQ(plugin_->SetParameter(meta), Status::OK);
 }
 
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_CreateByName_01, TestSize.Level1)
+HWTEST_F(AudioCodeDvaudioDecoderUnitTest, SetParameter_002, TestSize.Level1)
 {
-    audioDec_ = OH_AudioCodec_CreateByName((std::string(AVCodecCodecName::AUDIO_DECODER_DVAUDIO_NAME)).data());
-    EXPECT_NE(nullptr, audioDec_);
-    Release();
+    auto meta = make_shared<Media::Meta>();
+    ASSERT_EQ(plugin_->Init(), Status::OK);
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(0);
+    ASSERT_NE(plugin_->SetParameter(meta), Status::OK);
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(-1);
+    ASSERT_NE(plugin_->SetParameter(meta), Status::OK);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(0);
+    ASSERT_NE(plugin_->SetParameter(meta), Status::OK);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(-1);
+    ASSERT_NE(plugin_->SetParameter(meta), Status::OK);
 }
 
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_CreateByName_02, TestSize.Level1)
+HWTEST_F(AudioCodeDvaudioDecoderUnitTest, SetParameter_003, TestSize.Level1)
 {
-    audioDec_ = OH_AudioCodec_CreateByName(nullptr);
-    EXPECT_EQ(nullptr, audioDec_);
+    auto meta = make_shared<Media::Meta>();
+    int32_t channels = 2;
+    int32_t sampleRate = 48000;
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(channels);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+
+    ASSERT_EQ(plugin_->Init(), Status::OK);
+    meta->Remove(Tag::AUDIO_CHANNEL_COUNT);
+    ASSERT_NE(plugin_->SetParameter(meta), Status::OK);
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(channels);
+    meta->Remove(Tag::AUDIO_SAMPLE_RATE);
+    ASSERT_EQ(plugin_->SetParameter(meta), Status::OK);
 }
 
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_CreateByName_03, TestSize.Level1)
+HWTEST_F(AudioCodeDvaudioDecoderUnitTest, Lifecycle_001, TestSize.Level1)
 {
-    audioDec_ = OH_AudioCodec_CreateByName("audio_decoder.dvaudio");
-    EXPECT_EQ(nullptr, audioDec_);
+    auto meta = make_shared<Media::Meta>();
+    int32_t channels = 2;
+    int32_t sampleRate = 48000;
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(channels);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+
+    ASSERT_EQ(plugin_->Init(), Status::OK);
+    ASSERT_EQ(plugin_->SetParameter(meta), Status::OK);
+    ASSERT_EQ(plugin_->Start(), Status::OK);
+    ASSERT_EQ(plugin_->Flush(), Status::OK);
+    ASSERT_EQ(plugin_->Stop(), Status::OK);
+    ASSERT_EQ(plugin_->Reset(), Status::OK);
+    ASSERT_EQ(plugin_->Release(), Status::OK);
 }
 
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_CreateByMime_01, TestSize.Level1)
+HWTEST_F(AudioCodeDvaudioDecoderUnitTest, Eos_001, TestSize.Level1)
 {
-    audioDec_ = OH_AudioCodec_CreateByMime(std::string(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_DVAUDIO).data(), false);
-    EXPECT_NE(nullptr, audioDec_);
-    Release();
+    auto meta = make_shared<Media::Meta>();
+    int32_t channels = 2;
+    int32_t sampleRate = 48000;
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(channels);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+
+    ASSERT_EQ(plugin_->Init(), Status::OK);
+    ASSERT_EQ(plugin_->SetDataCallback(this), Status::OK);
+    ASSERT_EQ(plugin_->SetParameter(meta), Status::OK);
+    ASSERT_EQ(plugin_->Start(), Status::OK);
+    auto inputBuffer = CreateAVBuffer(1024, 0);
+    inputBuffer->flag_ = MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS;
+    ASSERT_EQ(plugin_->QueueInputBuffer(inputBuffer), Status::OK);
+    int32_t maxInputSize = 8192;
+    auto outputBuffer = CreateAVBuffer(maxInputSize * 4, 0);
+    ASSERT_EQ(plugin_->QueueOutputBuffer(outputBuffer), Status::END_OF_STREAM);
+    ASSERT_EQ(plugin_->Stop(), Status::OK);
 }
 
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_CreateByMime_02, TestSize.Level1)
+HWTEST_F(AudioCodeDvaudioDecoderUnitTest, GetParameter_001, TestSize.Level1)
 {
-    audioDec_ = OH_AudioCodec_CreateByMime(nullptr, false);
-    EXPECT_EQ(nullptr, audioDec_);
-    Release();
+    auto meta = make_shared<Media::Meta>();
+    int32_t channels = 2;
+    int32_t sampleRate = 48000;
+    int32_t maxInputSize = 8192;
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(channels);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+    meta->Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize);
+    ASSERT_EQ(plugin_->Init(), Status::OK);
+    ASSERT_EQ(plugin_->SetParameter(meta), Status::OK);
+    shared_ptr<Media::Meta> outMeta = make_shared<Media::Meta>();
+    ASSERT_EQ(plugin_->GetParameter(outMeta), Status::OK);
+    int32_t channelCount = 0;
+    int32_t getSampleRate = 0;
+    maxInputSize = 0;
+    ASSERT_TRUE(outMeta->Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount));
+    ASSERT_EQ(channelCount, channels);
+    ASSERT_TRUE(outMeta->Get<Tag::AUDIO_SAMPLE_RATE>(getSampleRate));
+    ASSERT_EQ(getSampleRate, sampleRate);
+    ASSERT_TRUE(outMeta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize));
+    ASSERT_GT(maxInputSize, 0);
 }
 
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_PushInputData_InvalidIndex_01, TestSize.Level1)
+HWTEST_F(AudioCodeDvaudioDecoderUnitTest, GetParameter_002, TestSize.Level1)
 {
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(DVAUDIO_FILE_TODEMUX));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-    const uint32_t index = 1024;
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_INVALID_VAL, OH_AudioCodec_PushInputBuffer(audioDec_, index));
-    Release();
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_ReleaseOutputBuffer_InvalidIndex_01, TestSize.Level1)
-{
-    isTestingFormat_ = true;
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(DVAUDIO_FILE_TODEMUX));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-    const uint32_t index = 100000;
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_INVALID_VAL, OH_AudioCodec_FreeOutputBuffer(audioDec_, index));
-    Release();
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_Configure_01, TestSize.Level1)
-{
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-    Release();
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_SetParameter_01, TestSize.Level1)
-{
-    isTestingFormat_ = true;
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(DVAUDIO_FILE_TODEMUX));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioDec_));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_SetParameter(audioDec_, format_));
-    Release();
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_SetParameter_02, TestSize.Level1)
-{
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_SetParameter(audioDec_, format_));
-    Release();
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_Start_01, TestSize.Level1)
-{
-    isTestingFormat_ = true;
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(DVAUDIO_FILE_TODEMUX));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-    Release();
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_Start_02, TestSize.Level1)
-{
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(DVAUDIO_FILE_TODEMUX));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Start(audioDec_));
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-    Release();
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_Stop_01, TestSize.Level1)
-{
-    isTestingFormat_ = true;
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(DVAUDIO_FILE_TODEMUX));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-    sleep(1);
-
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
-    Release();
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_Flush_01, TestSize.Level1)
-{
-    isTestingFormat_ = true;
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(DVAUDIO_FILE_TODEMUX));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioDec_));
-    Release();
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_Reset_01, TestSize.Level1)
-{
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
-    Release();
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_Reset_02, TestSize.Level1)
-{
-    isTestingFormat_ = true;
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(DVAUDIO_FILE_TODEMUX));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
-    Release();
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_Reset_03, TestSize.Level1)
-{
-    isTestingFormat_ = true;
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(DVAUDIO_FILE_TODEMUX));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
-    Release();
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_Destroy_01, TestSize.Level1)
-{
-    isTestingFormat_ = true;
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(DVAUDIO_FILE_TODEMUX));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioDec_));
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_Destroy_02, TestSize.Level1)
-{
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(DVAUDIO_FILE_TODEMUX));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioDec_));
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_GetOutputFormat_01, TestSize.Level1)
-{
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(DVAUDIO_FILE_TODEMUX));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-
-    EXPECT_NE(nullptr, OH_AudioCodec_GetOutputDescription(audioDec_));
-    Release();
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_IsValid_01, TestSize.Level1)
-{
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    bool isValid = false;
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_IsValid(audioDec_, &isValid));
-    Release();
-}
-
-HWTEST_F(AudioCodeDvaudioDecoderUnitTest, audioDecoder_Dvaudio_Prepare_01, TestSize.Level1)
-{
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Prepare(audioDec_));
-    Release();
+    auto meta = make_shared<Media::Meta>();
+    int32_t channels = 2;
+    int32_t sampleRate = 48000;
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(channels);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+    ASSERT_EQ(plugin_->Init(), Status::OK);
+    ASSERT_EQ(plugin_->SetDataCallback(this), Status::OK);
+    int32_t defaultInputSize = 8640;
+    shared_ptr<Media::Meta> outMeta = make_shared<Media::Meta>();
+    int32_t usrInputSize = 0;
+    meta->Set<Tag::AUDIO_MAX_INPUT_SIZE>(defaultInputSize);
+    ASSERT_EQ(plugin_->SetParameter(meta), Status::OK);
+    ASSERT_EQ(plugin_->GetParameter(outMeta), Status::OK);
+    ASSERT_TRUE(outMeta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(usrInputSize));
+    ASSERT_EQ(defaultInputSize, usrInputSize);
+    usrInputSize = 0;
+    meta->Set<Tag::AUDIO_MAX_INPUT_SIZE>(-1);
+    ASSERT_EQ(plugin_->SetParameter(meta), Status::OK);
+    ASSERT_EQ(plugin_->GetParameter(outMeta), Status::OK);
+    ASSERT_TRUE(outMeta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(usrInputSize));
+    ASSERT_EQ(defaultInputSize, usrInputSize);
+    usrInputSize = 0;
+    meta->Set<Tag::AUDIO_MAX_INPUT_SIZE>(defaultInputSize / 2);
+    ASSERT_EQ(plugin_->SetParameter(meta), Status::OK);
+    ASSERT_EQ(plugin_->GetParameter(outMeta), Status::OK);
+    ASSERT_TRUE(outMeta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(usrInputSize));
+    ASSERT_NE(defaultInputSize, usrInputSize);
+    usrInputSize = 0;
+    meta->Set<Tag::AUDIO_MAX_INPUT_SIZE>(defaultInputSize * 2);
+    ASSERT_EQ(plugin_->SetParameter(meta), Status::OK);
+    ASSERT_EQ(plugin_->GetParameter(outMeta), Status::OK);
+    ASSERT_TRUE(outMeta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(usrInputSize));
+    ASSERT_EQ(defaultInputSize, usrInputSize);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

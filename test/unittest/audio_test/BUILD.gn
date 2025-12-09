@@ -2140,7 +2140,19 @@ ohos_unittest("audio_pcm_capi_decoder_unit_stable_test") {
     "$av_codec_root_dir/services/engine/factory",
   ]
 
-  cflags = av_codec_unittest_cflags
+  cflags = [
+    "-fno-exceptions",
+    "-Wall",
+    "-fno-common",
+    "-fstack-protector-strong",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
+]
 
   cflags_cc = cflags
 
@@ -2748,7 +2760,19 @@ ohos_unittest("audio_dvaudio_decoder_unit_test") {
     "$av_codec_root_dir/test/unittest/common/common_mock/drm_mock/capi/",
   ]
 
-  cflags = av_codec_unittest_cflags
+  cflags = [
+    "-fno-exceptions",
+    "-Wall",
+    "-fno-common",
+    "-fstack-protector-strong",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
+]
 
   cflags_cc = cflags
 
@@ -2809,7 +2833,19 @@ ohos_unittest("audio_dts_decoder_unit_test") {
     "$av_codec_root_dir/test/unittest/common/common_mock/drm_mock/capi/",
   ]
 
-  cflags = av_codec_unittest_cflags
+  cflags = [
+    "-fno-exceptions",
+    "-Wall",
+    "-fno-common",
+    "-fstack-protector-strong",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
+]
 
   cflags_cc = cflags
 
