@@ -645,7 +645,8 @@ Status FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<S
 {
     size_t cencInfoSize = 0;
     uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
-    streamParsers_->ConvertPacketToAnnexb(pkt.stream_index, &(pkt.data), pkt.size, cencInfo, cencInfoSize, false);
+    PacketConvertInfo convertInfo {cencInfo, cencInfoSize, false};
+    streamParsers_->ConvertPacketToAnnexb(pkt.stream_index, &(pkt.data), pkt.size, convertInfo);
     if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
         streamParsers_->IsSyncFrame(pkt.stream_index, pkt.data, pkt.size)) {
         pkt.flags = static_cast<int32_t>(static_cast<uint32_t>(pkt.flags) | static_cast<uint32_t>(AV_PKT_FLAG_KEY));
@@ -655,7 +656,8 @@ Status FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<S
 
 Status FFmpegDemuxerPlugin::ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
 {
-    streamParsers_->ConvertPacketToAnnexb(pkt.stream_index, &(pkt.data), pkt.size, nullptr, 0, false);
+    PacketConvertInfo convertInfo {nullptr, 0, false};
+    streamParsers_->ConvertPacketToAnnexb(pkt.stream_index, &(pkt.data), pkt.size, convertInfo);
     return Status::OK;
 }
 
@@ -1611,19 +1613,20 @@ Status FFmpegDemuxerPlugin::GetMediaInfo()
             continue;
         }
         FFmpegFormatHelper::ParseTrackInfo(*avStream, meta, *formatContext_);
-        if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
-            if (streamParsers_ != nullptr && streamParsers_->ParserIsInited(trackId) && VideoFirstFrameValid(trackId)) {
-                auto firstFrame = videoFirstFrameMap_[trackId];
-                streamParsers_->ConvertPacketToAnnexb(
-                    trackId, &(firstFrame->data), firstFrame->size, nullptr, 0, false);
-                streamParsers_->ParseAnnexbExtraData(trackId, firstFrame->data, firstFrame->size);
-                // Parser only sends xps info when first call ConvertPacketToAnnexb
-                // readSample will call ConvertPacketToAnnexb again, so rest here
-                streamParsers_->ResetXPSSendStatus(trackId);
-                ParseHEVCMetadataInfo(*avStream, meta);
-            } else {
-                MEDIA_LOG_W("Parse hevc info failed");
-            }
+        bool isHevc = (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC);
+        bool canParseHevc = isHevc && streamParsers_ != nullptr && streamParsers_->ParserIsInited(trackId) &&
+                            VideoFirstFrameValid(trackId);
+        if (canParseHevc) {
+            auto firstFrame = videoFirstFrameMap_[trackId];
+            PacketConvertInfo convertInfo {nullptr, 0, false};
+            streamParsers_->ConvertPacketToAnnexb(trackId, &(firstFrame->data), firstFrame->size, convertInfo);
+            streamParsers_->ParseAnnexbExtraData(trackId, firstFrame->data, firstFrame->size);
+            // Parser only sends xps info when first call ConvertPacketToAnnexb
+            // readSample will call ConvertPacketToAnnexb again, so rest here
+            streamParsers_->ResetXPSSendStatus(trackId);
+            ParseHEVCMetadataInfo(*avStream, meta);
+        } else if (isHevc) {
+            MEDIA_LOG_W("Parse hevc info failed");
         }
         if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC ||
             avStream->codecpar->codec_id == AV_CODEC_ID_H264 ||
@@ -1697,7 +1700,8 @@ void FFmpegDemuxerPlugin::ConvertCsdToAnnexb(const AVStream& avStream, Meta &for
     int32_t extradataSize = avStream.codecpar->extradata_size;
     if (HaveValidParser(avStream.codecpar->codec_id) && streamParsers_ != nullptr &&
         streamParsers_->ParserIsInited(avStream.index)) {
-        streamParsers_->ConvertPacketToAnnexb(avStream.index, &(extradata), extradataSize, nullptr, 0, true);
+        PacketConvertInfo convertInfo {nullptr, 0, true};
+        streamParsers_->ConvertPacketToAnnexb(avStream.index, &(extradata), extradataSize, convertInfo);
     } else if (avStream.codecpar->codec_id == AV_CODEC_ID_H264 &&
         avbsfContexts_.count(avStream.index) > 0 && avbsfContexts_[avStream.index] != nullptr &&
         avbsfContexts_[avStream.index]->par_out->extradata != nullptr &&
