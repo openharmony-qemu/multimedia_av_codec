@@ -178,6 +178,7 @@ public:
     bool HasVideo();
     bool HasAudio();
     bool IsSeekToTimeSupported();
+    const std::string& GetOriginalCodecName() const;
 
     void SetIsCreatedByFilter(bool isCreatedByFilter);
 
@@ -217,6 +218,8 @@ private:
 
     bool isHttpSource_ = false;
     std::string videoMime_{};
+    std::string audioMime_{};
+    std::string originalCodecName_{};
 
     static constexpr int32_t TRACK_ID_INVALID = -1;
     static constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
@@ -364,6 +367,8 @@ private:
     bool IsSegmentEos();
     void ResetSegmentEosMap();
     void RecordDemuxerTimeStamp(AVBuffer& buffer, StallingStage stage);
+    std::string GetMime();
+
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
