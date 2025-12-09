@@ -2663,13 +2663,11 @@ Status FFmpegDemuxerPlugin::SeekToStart()
     MEDIA_LOG_D("in");
     int64_t seekTs = AV_NOPTS_VALUE;
     int ffRet = -1;
-    bool isSkip = IsSkipGetMinTsPktInfo();
-    if (isSkip) {
+    if (IsSkipGetMinTsPktInfo()) {
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
         ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 0, 0);
     } else if (minTsPktInfo_.isInit) {
-        FALSE_RETURN_V_MSG_E(minTsPktInfo_.isInit, Status::ERROR_INVALID_OPERATION, "minTsPktInfo_ is not init");
         seekTs = (pluginImpl_->flags & AVFMT_SEEK_TO_PTS) && !FFmpegFormatHelper::IsMpeg4File(fileType_) ?
             minTsPktInfo_.minPts : minTsPktInfo_.minDts;
         ffRet = av_seek_frame(formatContext_.get(),
