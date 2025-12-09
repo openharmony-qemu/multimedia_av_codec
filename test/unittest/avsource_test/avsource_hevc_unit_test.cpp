@@ -1314,7 +1314,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0051, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
         InitResource(g_hdrTypeHdrVividPath, LOCAL, false);
         ASSERT_TRUE(initStatus_);
-        trackIndex_ = 0;
+        trackIndex_ = 1;
         format_ = source_->GetTrackFormat(trackIndex_);
         ASSERT_NE(format_, nullptr);
         printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
@@ -1341,7 +1341,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0052, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
         InitResource(g_hdrTypeHdrVividUri, URI, false);
         ASSERT_TRUE(initStatus_);
-        trackIndex_ = 0;
+        trackIndex_ = 1;
         format_ = source_->GetTrackFormat(trackIndex_);
         ASSERT_NE(format_, nullptr);
         printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
