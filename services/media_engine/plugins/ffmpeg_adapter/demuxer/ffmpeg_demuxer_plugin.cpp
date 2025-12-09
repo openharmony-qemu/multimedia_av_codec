@@ -1613,19 +1613,20 @@ Status FFmpegDemuxerPlugin::GetMediaInfo()
             continue;
         }
         FFmpegFormatHelper::ParseTrackInfo(*avStream, meta, *formatContext_);
-        if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
-            if (streamParsers_ != nullptr && streamParsers_->ParserIsInited(trackId) && VideoFirstFrameValid(trackId)) {
-                auto firstFrame = videoFirstFrameMap_[trackId];
-                PacketConvertInfo convertInfo {nullptr, 0, false};
-                streamParsers_->ConvertPacketToAnnexb(trackId, &(firstFrame->data), firstFrame->size, convertInfo);
-                streamParsers_->ParseAnnexbExtraData(trackId, firstFrame->data, firstFrame->size);
-                // Parser only sends xps info when first call ConvertPacketToAnnexb
-                // readSample will call ConvertPacketToAnnexb again, so rest here
-                streamParsers_->ResetXPSSendStatus(trackId);
-                ParseHEVCMetadataInfo(*avStream, meta);
-            } else {
-                MEDIA_LOG_W("Parse hevc info failed");
-            }
+        bool isHevc = (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC);
+        bool canParseHevc = isHevc && streamParsers_ != nullptr && streamParsers_->ParserIsInited(trackId) &&
+                            VideoFirstFrameValid(trackId);
+        if (canParseHevc) {
+            auto firstFrame = videoFirstFrameMap_[trackId];
+            PacketConvertInfo convertInfo {nullptr, 0, false};
+            streamParsers_->ConvertPacketToAnnexb(trackId, &(firstFrame->data), firstFrame->size, convertInfo);
+            streamParsers_->ParseAnnexbExtraData(trackId, firstFrame->data, firstFrame->size);
+            // Parser only sends xps info when first call ConvertPacketToAnnexb
+            // readSample will call ConvertPacketToAnnexb again, so rest here
+            streamParsers_->ResetXPSSendStatus(trackId);
+            ParseHEVCMetadataInfo(*avStream, meta);
+        } else if (isHevc) {
+            MEDIA_LOG_W("Parse hevc info failed");
         }
         if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC ||
             avStream->codecpar->codec_id == AV_CODEC_ID_H264 ||
