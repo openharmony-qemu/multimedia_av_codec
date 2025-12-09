@@ -323,10 +323,6 @@ bool IsSupportedTrack(const AVStream& avStream)
         return false;
     }
     if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if (avStream.codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
-            MEDIA_LOG_E("Unsupport raw video track");
-            return false;
-        }
         if (FFmpegFormatHelper::IsImageTrack(avStream)) {
             MEDIA_LOG_E("Unsupport image track");
             return false;

@@ -324,6 +324,9 @@ bool VideoDecSample::InitInputFile()
         } else if (inPath_.find("dvvideo") != std::string::npos) {
             int32_t ret = CreateDvvideoReader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateDvvideoReader failed");
+        } else if (inPath_.find("rawvideo") != std::string::npos) {
+            int32_t ret = CreateRawvideoReader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateRawvideoReader failed");
         } else {
             int32_t ret = CreateMpegReader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMpegReader failed");
@@ -495,6 +498,16 @@ int32_t VideoDecSample::CreateDvvideoReader()
     return ret;
 }
 
+int32_t VideoDecSample::CreateRawvideoReader()
+{
+    std::shared_ptr<RawvideoReaderInfo> info = std::make_shared<RawvideoReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<RawvideoReader>();
+    int32_t ret = std::static_pointer_cast<RawvideoReader>(signal_->reader_)->Init(info);
+    return ret;
+}
+
 int32_t VideoDecSample::SetCallback(OH_AVCodecAsyncCallback callback, shared_ptr<VCodecSignal> &signal)
 {
     TITLE_LOG;
@@ -597,6 +610,9 @@ bool VideoDecSample::DoConfigure(OH_AVFormat* format)
     if (lowLatency_) {
         setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, 1);
         setFormatRet = setFormatRet && OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 1000000); // 1000000
+    }
+    if (setRawVideoPixFmt_) {
+        OH_AVFormat_SetIntValue(format, "rawvideo_input_pix_fmt", rawvideoPixFmt_);
     }
     return setFormatRet;
 }
