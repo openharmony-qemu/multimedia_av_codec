@@ -63,15 +63,15 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0001, TestSize.Level1)
     fd_ = OpenFile(g_cafPcmPath);
     size_ = GetFileSize(g_cafPcmPath);
     source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr) << "Create CAF(PCM) source with FD failed";
+    ASSERT_NE(source_, nullptr);
 
     format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr) <<"Get CAF(PCM) source format failed";
+    ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
 
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr) << "Get CAF(PCM) track 0 format failed";
+    ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
 
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
@@ -82,13 +82,13 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0001, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
 
-    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD) << "Track type is not audio";
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.codecMime, "audio/raw");
-    ASSERT_EQ(formatVal_.sampleRate, 44100) << "Sample rate should be 44100Hz";
-    ASSERT_EQ(formatVal_.channelCount, 2) << "Channel count should be 2(stereo)";
-    ASSERT_EQ(formatVal_.bitRate, 1411200) << "Bitrate should be 1411200bps";
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16LE) << "Sample format not S16LE";
-    ASSERT_EQ(formatVal_.channelLayout, 3) << "Channel layout should be stereo(3)";
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.bitRate, 1411200);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16LE);
+    ASSERT_EQ(formatVal_.channelLayout, 3);
 
     format_->Destroy();
 }
@@ -103,15 +103,15 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0002, TestSize.Level1)
     printf("---- %s ------\n", g_cafPcmUri.data());
     
     source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafPcmUri.data()));
-    ASSERT_NE(source_, nullptr) << "Create CAF(PCM) source with URI failed";
+    ASSERT_NE(source_, nullptr);
 
     format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr) << "Get CAF(PCM) source format failed";
+    ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
 
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr) << "Get CAF(PCM) track 0 format failed";
+    ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
 
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
@@ -137,15 +137,15 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0003, TestSize.Level1)
     printf("---- %s ----\n", g_cafAlacPath.c_str());
     
     source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr) << "Create CAF(ALAC) source with FD failed";
+    ASSERT_NE(source_, nullptr);
 
     format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr) << "Get CAF(ALAC) source format failed";
+    ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
 
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr) << "Get CAF(ALAC) track 0 format failed";
+    ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
 
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
@@ -155,11 +155,11 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0003, TestSize.Level1)
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
 
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.codecMime, "audio/alac") << "Codec mime not match ALAC";
-    ASSERT_EQ(formatVal_.sampleRate, 44100) << "Sample rate should be 44100Hz";
-    ASSERT_EQ(formatVal_.channelCount, 2) << "Channel count should be 2(stereo)";
-    ASSERT_GE(formatVal_.bitRate, 700000) << "ALAC bitrate should be ≥700kbps";
-    ASSERT_LE(formatVal_.bitRate, 900000) << "ALAC bitrate should be ≤900kbps";
+    ASSERT_EQ(formatVal_.codecMime, "audio/alac");
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_GE(formatVal_.bitRate, 700000);
+    ASSERT_LE(formatVal_.bitRate, 900000);
 
     format_->Destroy();
 }
@@ -174,15 +174,15 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0004, TestSize.Level1)
     printf("---- %s ------\n", g_cafAlacUri.data());
     
     source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafAlacUri.data()));
-    ASSERT_NE(source_, nullptr) << "Create CAF(ALAC) source with URI failed";
+    ASSERT_NE(source_, nullptr);
 
     format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr) << "Get CAF(ALAC) source format failed";
+    ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
 
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr) << "Get CAF(ALAC) track 0 format failed";
+    ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
 
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
@@ -208,15 +208,15 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0005, TestSize.Level1)
     printf("---- %s ----\n", g_cafOpusPath.c_str());
     
     source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr) << "Create CAF(Opus) source with FD failed";
+    ASSERT_NE(source_, nullptr);
 
     format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr) << "Get CAF(Opus) source format failed";
+    ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
 
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr) << "Get CAF(Opus) track 0 format failed";
+    ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
 
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
@@ -226,9 +226,9 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0005, TestSize.Level1)
     ASSERT_FALSE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
 
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.codecMime, "audio/opus") << "Codec mime not match Opus";
-    ASSERT_EQ(formatVal_.sampleRate, 48000) << "Sample rate should be 48000Hz";
-    ASSERT_EQ(formatVal_.channelCount, 2) << "Channel count should be 2(stereo)";
+    ASSERT_EQ(formatVal_.codecMime, "audio/opus");
+    ASSERT_EQ(formatVal_.sampleRate, 48000);
+    ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.bitRate, 0);
 
     format_->Destroy();
@@ -244,15 +244,15 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0006, TestSize.Level1)
     printf("---- %s ------\n", g_cafOpusUri.data());
     
     source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char *>(g_cafOpusUri.data()));
-    ASSERT_NE(source_, nullptr) << "Create CAF(Opus) source with URI failed";
+    ASSERT_NE(source_, nullptr);
 
     format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr) << "Get CAF(Opus) source format failed";
+    ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
 
     trackIndex_ = 0;
     format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr) << "Get CAF(Opus) track 0 format failed";
+    ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
 
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
@@ -261,7 +261,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0006, TestSize.Level1)
 
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.codecMime, "audio/opus");
-    ASSERT_EQ(formatVal_.sampleRate, 48000) << "Sample rate should be 48000Hz";
+    ASSERT_EQ(formatVal_.sampleRate, 48000);
 
     format_->Destroy();
 }
@@ -282,11 +282,11 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0007, TestSize.Level1)
 
     trackIndex_ = 1;
     format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_EQ(format_, nullptr) << "Get invalid track index should return nullptr";
+    ASSERT_EQ(format_, nullptr);
 
     trackIndex_ = -1;
     format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_EQ(format_, nullptr) << "Get negative track index should return nullptr";
+    ASSERT_EQ(format_, nullptr);
 }
 
 /**
@@ -304,7 +304,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetSourceFormat_0008, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 117) << "CAF source file type identifier mismatch";
+    ASSERT_EQ(formatVal_.fileType, 117);
     format_->Destroy();
 
     fd_ = OpenFile(g_cafOpusPath);
@@ -315,7 +315,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetSourceFormat_0008, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 117) << "CAF source file type identifier mismatch";
+    ASSERT_EQ(formatVal_.fileType, 117);
     format_->Destroy();
 }
 
