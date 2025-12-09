@@ -28,6 +28,7 @@
 #include "statistics_event_handler.h"
 
 using namespace OHOS;
+using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 using namespace testing;
 using namespace testing::ext;
@@ -38,7 +39,8 @@ constexpr int32_t MAX_EVENT_ADD_COUNT = 100000;
 constexpr int32_t BEHAVIORSINFO_EVENT_ADD_COUNT = 200;
 constexpr int32_t ELAPSEDTIME_THREADSHOLD = 600;
 const char *TEST_DOMAIN = "AV_CODEC";
-enum class RANDOM_MIME_TYPE : int32_t {
+std::string g_recordJson;
+enum class RANDOM_MIME_TYPE : int {
     VALID_VIDEO,
     VALID_AUDIO,
     INVALID_CHAR_1,
@@ -52,8 +54,24 @@ enum class RANDOM_MIME_TYPE : int32_t {
     MAX_CHAR_LENGTH,
 };
 const std::vector<std::string> FORMAT_COMPONENTS = {
-    "mpeg", "avc",          "hevc", "vp",  "av1",    "divx",  "xvid",    "flash", "quicktime",
-    "real", "windowsmedia", "ogg",  "web", "stream", "media", "digital", "high",  "ultra",
+    "mpeg",
+    "avc",
+    "hevc",
+    "vp",
+    "av1",
+    "divx",
+    "xvid",
+    "flash",
+    "quicktime",
+    "real",
+    "windowsmedia",
+    "ogg",
+    "web",
+    "stream",
+    "media",
+    "digital",
+    "high",
+    "ultra",
 };
 
 std::string GenerateRandomString(size_t length, std::string_view charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -82,42 +100,43 @@ int32_t GetRandomNum(int32_t min, int32_t max)
 std::string GenerateRandomMime()
 {
     std::string mimeType("");
-    int32_t switchIndex = GetRandomNum(0, 10); // 10: max length
+    int switchIndex = static_cast<int>(GetRandomNum(0, 10)); // 10: max length
     switch (switchIndex) {
-        case RANDOM_MIME_TYPE::VALID_VIDEO:
+        case static_cast<int>(RANDOM_MIME_TYPE::VALID_VIDEO):
             mimeType = "video/" + FORMAT_COMPONENTS[GetRandomNum(0, FORMAT_COMPONENTS.size() - 1)];
             break;
-        case RANDOM_MIME_TYPE::VALID_AUDIO:
+        case static_cast<int>(RANDOM_MIME_TYPE::VALID_AUDIO):
             mimeType = "audio/" + FORMAT_COMPONENTS[GetRandomNum(0, FORMAT_COMPONENTS.size() - 1)];
             break;
-        case RANDOM_MIME_TYPE::INVALID_CHAR_1:
+        case static_cast<int>(RANDOM_MIME_TYPE::INVALID_CHAR_1):
             mimeType = "video/-" + FORMAT_COMPONENTS[GetRandomNum(0, FORMAT_COMPONENTS.size() - 1)];
             break;
-        case RANDOM_MIME_TYPE::INVALID_CHAR_2:
+        case static_cast<int>(RANDOM_MIME_TYPE::INVALID_CHAR_2):
             mimeType = "video/+" + FORMAT_COMPONENTS[GetRandomNum(0, FORMAT_COMPONENTS.size() - 1)];
             break;
-        case RANDOM_MIME_TYPE::INVALID_CHAR_3:
+        case static_cast<int>(RANDOM_MIME_TYPE::INVALID_CHAR_3):
             mimeType = "video//" + FORMAT_COMPONENTS[GetRandomNum(0, FORMAT_COMPONENTS.size() - 1)];
             break;
-        case RANDOM_MIME_TYPE::INVALID_CHAR_4:
+        case static_cast<int>(RANDOM_MIME_TYPE::INVALID_CHAR_4):
             mimeType = "video/." + FORMAT_COMPONENTS[GetRandomNum(0, FORMAT_COMPONENTS.size() - 1)];
             break;
-        case RANDOM_MIME_TYPE::INVALID_CHAR_5:
+        case static_cast<int>(RANDOM_MIME_TYPE::INVALID_CHAR_5):
             mimeType = "video/*" + FORMAT_COMPONENTS[GetRandomNum(0, FORMAT_COMPONENTS.size() - 1)];
             break;
-        case RANDOM_MIME_TYPE::INVALID_SEPARATOR_POS_1:
+        case static_cast<int>(RANDOM_MIME_TYPE::INVALID_SEPARATOR_POS_1):
             mimeType = "/" + FORMAT_COMPONENTS[GetRandomNum(0, FORMAT_COMPONENTS.size() - 1)];
             break;
-        case RANDOM_MIME_TYPE::INVALID_SEPARATOR_POS_2:
+        case static_cast<int>(RANDOM_MIME_TYPE::INVALID_SEPARATOR_POS_2):
             mimeType = FORMAT_COMPONENTS[GetRandomNum(0, FORMAT_COMPONENTS.size() - 1)] + "/";
             break;
-        case RANDOM_MIME_TYPE::MIN_CHAR_LENGTH:
+        case static_cast<int>(RANDOM_MIME_TYPE::MIN_CHAR_LENGTH):
             mimeType = GenerateRandomString(200); // 200: more than mime type length
             break;
-        case RANDOM_MIME_TYPE::MAX_CHAR_LENGTH:
+        case static_cast<int>(RANDOM_MIME_TYPE::MAX_CHAR_LENGTH):
             mimeType = GenerateRandomString(5); // 5: less than mime type length
             break;
         default:
+            mimeType = "video/" + FORMAT_COMPONENTS[GetRandomNum(0, FORMAT_COMPONENTS.size() - 1)];
             break;
     }
     return mimeType;
@@ -163,6 +182,7 @@ void DfxStatisticsEventTest::TearDown(void)
 void OnEventTest(HiSysEventRecordC record)
 {
     ASSERT_GT(strlen(record.jsonStr), 0);
+    g_recordJson = record.jsonStr;
     std::cout << "OnEvent: event = " << record.jsonStr << std::endl;
 }
 
@@ -188,6 +208,79 @@ void CheckHiSysEventWatcher(HiSysEventWatcher watcher, const char *name, HiSysEv
     ret = OH_HiSysEvent_Remove_Watcher(&watcher);
     ASSERT_EQ(ret, HiviewDFX::IPC_CALL_SUCCEED);
 }
+
+// /**
+//  * @tc.name: RegisterEventHooker_Test_001
+//  * @tc.desc: 1. eventType key in range
+//  *           2. EventHooker func not exist
+//  *           3. add EventHooker func
+//  * @tc.type: FUNC
+//  */
+// HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_001, TestSize.Level1)
+// {
+//     auto eventHookerSize = StatisticsEventInfo::GetInstance().eventHookers_.size();
+//     StatisticsEventInfo::GetInstance().RegisterEventHooker(StatisticsEventType::MAIN_EVENT_TYPE_MASK,
+//                                                            [](const Media::Meta& meta) -> bool {return true;});
+//     ASSERT_EQ(eventHookerSize + 1, StatisticsEventInfo::GetInstance().eventHookers_.size());
+// }
+
+// /**
+//  * @tc.name: AddEventInfo_Invalid_Key_001
+//  * @tc.desc: 1. eventType key out of range
+//  *           2. EventHooker func not exist
+//  * @tc.type: FUNC
+//  */
+// HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_001, TestSize.Level1)
+// {
+//     StatisticsEventInfo::GetInstance().OnAddEventInfo(INT32_MAX, *meta_);
+//     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+//     ASSERT_EQ(0, StatisticsEventInfo::GetInstance().eventHookers_.size());
+// }
+
+// /**
+//  * @tc.name: AddEventInfo_Invalid_Key_002
+//  * @tc.desc: 1. eventType key out of range
+//  *           2. EventHooker func not exist
+//  * @tc.type: FUNC
+//  */
+// HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_002, TestSize.Level1)
+// {
+//     StatisticsEventInfo::GetInstance().OnAddEventInfo(-1, *meta_);
+//     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+//     ASSERT_EQ(0, StatisticsEventInfo::GetInstance().eventHookers_.size());
+// }
+
+// /**
+//  * @tc.name: AddEventInfo_Invalid_Key_003
+//  * @tc.desc: 1. eventType key out of range
+//  *           2. EventHooker func exist, needErase is true
+//  * @tc.type: FUNC
+//  */
+// HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_003, TestSize.Level1)
+// {
+//     auto eventHookerSize = StatisticsEventInfo::GetInstance().eventHookers_.size();
+//     StatisticsEventInfo::GetInstance().RegisterEventHooker(INT32_MAX,
+//                                                            [](const Media::Meta& meta) -> bool {return true;});
+//     StatisticsEventInfo::GetInstance().OnAddEventInfo(INT32_MAX, *meta_);
+//     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+//     ASSERT_EQ(eventHookerSize + 1, StatisticsEventInfo::GetInstance().eventHookers_.size());
+// }
+
+// /**
+//  * @tc.name: AddEventInfo_Invalid_Key_004
+//  * @tc.desc: 1. eventType key out of range
+//  *           2. EventHooker func exist, needErase is false
+//  * @tc.type: FUNC
+//  */
+// HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_004, TestSize.Level1)
+// {
+//     auto eventHookerSize = StatisticsEventInfo::GetInstance().eventHookers_.size();
+//     StatisticsEventInfo::GetInstance().RegisterEventHooker(INT32_MAX,
+//                                                            [](const Media::Meta& meta) -> bool {return false;});
+//     StatisticsEventInfo::GetInstance().OnAddEventInfo(INT32_MAX, *meta_);
+//     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+//     ASSERT_EQ(eventHookerSize + 1, StatisticsEventInfo::GetInstance().eventHookers_.size());
+// }
 
 /**
  * @tc.name: AddEventInfo_BasicInfo_001
@@ -898,12 +991,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_010, TestSize.Lev
 }
 
 /**
- * @tc.name: AddEventInfo_AppBehaviorsInfo_008
+ * @tc.name: AddEventInfo_AppBehaviorsInfo_011
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO
  *           2. caller process name is same, elapsed time less than threadshold, excute 200 times
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_008, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_011, TestSize.Level1)
 {
     InitWatcher(watcher_);
     HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
@@ -920,12 +1013,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_008, TestSize.Lev
 }
 
 /**
- * @tc.name: AddEventInfo_AppBehaviorsInfo_009
+ * @tc.name: AddEventInfo_AppBehaviorsInfo_012
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO
  *           2. caller process name is different, elapsed time less than threadshold, excute 100000 times
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_009, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_012, TestSize.Level1)
 {
     InitWatcher(watcher_);
     HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
@@ -942,12 +1035,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_009, TestSize.Lev
 }
 
 /**
- * @tc.name: AddEventInfo_AppBehaviorsInfo_009
+ * @tc.name: AddEventInfo_AppBehaviorsInfo_013
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO
- *           2. caller process name is different, elapsed time less than threadshold, excute 100000 times
+ *           2. caller process name is different, elapsed time more than threadshold, excute 100000 times
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_009, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_013, TestSize.Level1)
 {
     InitWatcher(watcher_);
     HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
@@ -955,10 +1048,25 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_009, TestSize.Lev
     for (int32_t i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = GenerateRandomString(20); // 20: clller name length
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
-        meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD / 2);
+        meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD * 2);
         StatisticsEventInfo::GetInstance().OnAddEventInfo(
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+}
+
+/**
+ * @tc.name: AddEventInfo_AppBehaviorsInfo_014
+ * @tc.desc: 1. eventType is SPEED_DECODING_INFO
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_014, TestSize.Level1)
+{
+    InitWatcher(watcher_);
+    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
+    HiSysEventWatchRule rules[] = {rule};
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SPEED_DECODING_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
 }
@@ -1147,7 +1255,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_010, TestSize.Le
  *           2. mime type is video/avc, codec type is invalid, error type is valid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_005, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_011, TestSize.Level1)
 {
     InitWatcher(watcher_);
     HiSysEventWatchRule rule = {"AV_CODEC", "CODEC_ABNORMAL_INFO", "", 1, 0};
