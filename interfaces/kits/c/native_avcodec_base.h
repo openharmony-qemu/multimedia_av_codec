@@ -349,6 +349,8 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_H263;
  */
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
 
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_CINEPAK;
+
 /**
  * @brief Enumerates the MIME type of video rv30 codec.
  *
