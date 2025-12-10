@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include "avcodec_info.h"
 #include "avcodec_log.h"
+#include "cJSON.h"
 #include "dump_usage.h"
 #include "hisysevent_manager_c.h"
 #include "hisysevent_record_c.h"
@@ -28,13 +29,14 @@
 #include "statistics_event_handler.h"
 
 using namespace OHOS;
+using namespace OHOS::HiviewDFX::HiSysEvent;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 using namespace testing;
 using namespace testing::ext;
 
 namespace {
-constexpr int32_t QUERY_INTERVAL_TIME = 2;
+constexpr int32_t QUERY_INTERVAL_TIME = 500;
 constexpr int32_t MAX_EVENT_ADD_COUNT = 100000;
 constexpr int32_t BEHAVIORSINFO_EVENT_ADD_COUNT = 200;
 constexpr int32_t ELAPSEDTIME_THREADSHOLD = 600;
@@ -142,43 +144,6 @@ std::string GenerateRandomMime()
     return mimeType;
 }
 
-class DfxStatisticsEventTest : public testing::Test {
-public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp(void);
-    void TearDown(void);
-
-    std::shared_ptr<Media::Meta> meta_ = nullptr;
-    HiSysEventWatcher watcher_{};
-    HiviewDFX::DumpUsage dumpUsage_;
-    static constexpr HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(DfxStatisticsEventTest)};
-};
-
-void DfxStatisticsEventTest::SetUpTestCase(void) {}
-
-void DfxStatisticsEventTest::TearDownTestCase(void) {}
-
-void DfxStatisticsEventTest::SetUp(void)
-{
-    pid_t pid = getpid();
-    std::cout << "start memory = " << dumpUsage_.GetPss(pid) << std::endl;
-
-    meta_ = std::make_shared<Media::Meta>();
-    ASSERT_NE(nullptr, meta_);
-
-    sleep(QUERY_INTERVAL_TIME);
-    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
-    std::string testCaseName = testInfo_->name();
-    AVCODEC_LOGI("%{public}s", testCaseName.c_str());
-}
-
-void DfxStatisticsEventTest::TearDown(void)
-{
-    pid_t pid = getpid();
-    std::cout << "end memory = " << dumpUsage_.GetPss(pid) << std::endl;
-}
-
 void OnEventTest(HiSysEventRecordC record)
 {
     ASSERT_GT(strlen(record.jsonStr), 0);
@@ -191,96 +156,150 @@ void OnServiceDiedTest()
     std::cout << "OnServiceDied" << std::endl;
 }
 
-void InitWatcher(HiSysEventWatcher &watcher)
+class DfxStatisticsEventTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp(void);
+    void TearDown(void);
+
+    std::shared_ptr<Media::Meta> meta_ = nullptr;
+    HiviewDFX::DumpUsage dumpUsage_;
+    static constexpr HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(DfxStatisticsEventTest)};
+};
+
+void DfxStatisticsEventTest::SetUpTestCase(void)
 {
+    HiSysEventWatcher watcher{};
     watcher.OnEvent = OnEventTest;
     watcher.OnServiceDied = OnServiceDiedTest;
+    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
+    HiSysEventWatchRule rules[] = {rule};
+    auto ret = OH_HiSysEvent_Add_Watcher(&watcher_, rules, sizeof(rules) / sizeof(HiSysEventWatchRule));
+    ASSERT_EQ(ret, HiviewDFX::IPC_CALL_SUCCEED);
+    this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+}
+
+void DfxStatisticsEventTest::TearDownTestCase(void) {}
+
+void DfxStatisticsEventTest::SetUp(void)
+{
+    pid_t pid = getpid();
+    std::cout << "start memory = " << dumpUsage_.GetPss(pid) << std::endl;
+
+    meta_ = std::make_shared<Media::Meta>();
+    ASSERT_NE(nullptr, meta_);
+
+    // this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+    std::string testCaseName = testInfo_->name();
+    AVCODEC_LOGI("%{public}s", testCaseName.c_str());
+}
+
+void DfxStatisticsEventTest::TearDown(void)
+{
+    pid_t pid = getpid();
+    std::cout << "end memory = " << dumpUsage_.GetPss(pid) << std::endl;
 }
 
 template <size_t N>
 void CheckHiSysEventWatcher(HiSysEventWatcher watcher, const char *name, HiSysEventWatchRule (&rules)[N])
 {
-    auto ret = OH_HiSysEvent_Add_Watcher(&watcher, rules, N);
-    ASSERT_EQ(ret, HiviewDFX::IPC_CALL_SUCCEED);
-    ret = OH_HiSysEvent_Write(TEST_DOMAIN, name, HISYSEVENT_BEHAVIOR, nullptr, 0);
-    ASSERT_EQ(ret, HiviewDFX::IPC_CALL_SUCCEED);
-    sleep(QUERY_INTERVAL_TIME);
-    ret = OH_HiSysEvent_Remove_Watcher(&watcher);
-    ASSERT_EQ(ret, HiviewDFX::IPC_CALL_SUCCEED);
+
 }
 
-// /**
-//  * @tc.name: RegisterEventHooker_Test_001
-//  * @tc.desc: 1. eventType key in range
-//  *           2. EventHooker func not exist
-//  *           3. add EventHooker func
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_001, TestSize.Level1)
-// {
-//     auto eventHookerSize = StatisticsEventInfo::GetInstance().eventHookers_.size();
-//     StatisticsEventInfo::GetInstance().RegisterEventHooker(StatisticsEventType::MAIN_EVENT_TYPE_MASK,
-//                                                            [](const Media::Meta& meta) -> bool {return true;});
-//     ASSERT_EQ(eventHookerSize + 1, StatisticsEventInfo::GetInstance().eventHookers_.size());
-// }
+/**
+ * @tc.name: RegisterEventHooker_Test_001
+ * @tc.desc: 1. eventType key in range
+ *           2. EventHooker func not exist
+ *           3. add EventHooker func
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, RegisterEventHooker_Test_001, TestSize.Level1)
+{
+    StatisticsEventInfo::GetInstance().RegisterEventHooker(
+        StatisticsEventType::MAIN_EVENT_TYPE_MASK, [](const Media::Meta &meta) -> bool {
+            HiSysEventWrite("AV_CODEC", "DFX_STATISTICS_EVENT_TEST", EventType::BEHAVIOR, "Test", "Success");
+            return true;
+        });
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 
-// /**
-//  * @tc.name: AddEventInfo_Invalid_Key_001
-//  * @tc.desc: 1. eventType key out of range
-//  *           2. EventHooker func not exist
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_001, TestSize.Level1)
-// {
-//     StatisticsEventInfo::GetInstance().OnAddEventInfo(INT32_MAX, *meta_);
-//     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-//     ASSERT_EQ(0, StatisticsEventInfo::GetInstance().eventHookers_.size());
-// }
+    auto test  = cJSON_GetObjectItem(data.get(), "Test");
+    std::cout << test << << std::endl;
+}
 
-// /**
-//  * @tc.name: AddEventInfo_Invalid_Key_002
-//  * @tc.desc: 1. eventType key out of range
-//  *           2. EventHooker func not exist
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_002, TestSize.Level1)
-// {
-//     StatisticsEventInfo::GetInstance().OnAddEventInfo(-1, *meta_);
-//     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-//     ASSERT_EQ(0, StatisticsEventInfo::GetInstance().eventHookers_.size());
-// }
+/**
+ * @tc.name: AddEventInfo_Invalid_Key_001
+ * @tc.desc: 1. eventType key out of range
+ *           2. EventHooker func not exist
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_001, TestSize.Level1)
+{
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(INT32_MAX, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_EQ(nullptr, data);
+}
 
-// /**
-//  * @tc.name: AddEventInfo_Invalid_Key_003
-//  * @tc.desc: 1. eventType key out of range
-//  *           2. EventHooker func exist, needErase is true
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_003, TestSize.Level1)
-// {
-//     auto eventHookerSize = StatisticsEventInfo::GetInstance().eventHookers_.size();
-//     StatisticsEventInfo::GetInstance().RegisterEventHooker(INT32_MAX,
-//                                                            [](const Media::Meta& meta) -> bool {return true;});
-//     StatisticsEventInfo::GetInstance().OnAddEventInfo(INT32_MAX, *meta_);
-//     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-//     ASSERT_EQ(eventHookerSize + 1, StatisticsEventInfo::GetInstance().eventHookers_.size());
-// }
+/**
+ * @tc.name: AddEventInfo_Invalid_Key_002
+ * @tc.desc: 1. eventType key out of range
+ *           2. EventHooker func not exist
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_002, TestSize.Level1)
+{
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(-1, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_EQ(nullptr, data);
+}
 
-// /**
-//  * @tc.name: AddEventInfo_Invalid_Key_004
-//  * @tc.desc: 1. eventType key out of range
-//  *           2. EventHooker func exist, needErase is false
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_004, TestSize.Level1)
-// {
-//     auto eventHookerSize = StatisticsEventInfo::GetInstance().eventHookers_.size();
-//     StatisticsEventInfo::GetInstance().RegisterEventHooker(INT32_MAX,
-//                                                            [](const Media::Meta& meta) -> bool {return false;});
-//     StatisticsEventInfo::GetInstance().OnAddEventInfo(INT32_MAX, *meta_);
-//     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-//     ASSERT_EQ(eventHookerSize + 1, StatisticsEventInfo::GetInstance().eventHookers_.size());
-// }
+/**
+ * @tc.name: AddEventInfo_Invalid_Key_003
+ * @tc.desc: 1. eventType key out of range
+ *           2. EventHooker func exist, needErase is true
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_003, TestSize.Level1)
+{
+    StatisticsEventInfo::GetInstance().RegisterEventHooker(
+        INT32_MAX, [](const Media::Meta &meta) -> bool {
+            HiSysEventWrite("AV_CODEC", "DFX_STATISTICS_EVENT_TEST", EventType::BEHAVIOR, "Test", "Success");
+            return true;
+        });
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(INT32_MAX, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
+
+    auto test  = cJSON_GetObjectItem(data.get(), "Test");
+    std::cout << test << << std::endl;
+}
+
+/**
+ * @tc.name: AddEventInfo_Invalid_Key_004
+ * @tc.desc: 1. eventType key out of range
+ *           2. EventHooker func exist, needErase is false
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_004, TestSize.Level1)
+{
+    StatisticsEventInfo::GetInstance().RegisterEventHooker(
+        INT32_MAX, [](const Media::Meta &meta) -> bool {
+            HiSysEventWrite("AV_CODEC", "DFX_STATISTICS_EVENT_TEST", EventType::BEHAVIOR, "Test", "Success");
+            return false;
+        });
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(INT32_MAX, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
+
+    auto test  = cJSON_GetObjectItem(data.get(), "Test");
+    std::cout << test << << std::endl;
+}
 
 /**
  * @tc.name: AddEventInfo_BasicInfo_001
@@ -289,12 +308,12 @@ void CheckHiSysEventWatcher(HiSysEventWatcher watcher, const char *name, HiSysEv
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_001, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "BASIC_INFO", rules);
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
+    auto test  = cJSON_GetObjectItem(data.get(), "QueryCapTimes");
+    std::cout << test << << std::endl;
 }
 
 /**
@@ -305,7 +324,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_001, TestSize.Level1)
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_002, TestSize.Level1)
 {
     InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"BASIC_INFO", "BASIC_INFO", "", 1, 0};
+    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
     HiSysEventWatchRule rules[] = {rule};
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
