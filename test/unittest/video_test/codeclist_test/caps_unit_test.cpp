@@ -37,6 +37,9 @@ const int MAX_WIDTH = 1920;
 const int MAX_HEIGHT = 1080;
 const int MAX_FRAME_RATE = 30;
 const int MAX_BITRATE = 2097000;
+const int MaxFHardIncluded = 240;
+const int MaxFramerateSoftIncluded = 120;
+const int MAX_SUPPORTED_INSTANCES = 64;
 
 void CapsUnitTest::SetUpTestCase(void) {}
 
@@ -224,6 +227,7 @@ void CapsUnitTest::CheckVideoCaps(const std::shared_ptr<VideoCaps> &videoCaps) c
         CheckAVDecWMV3(videoCaps);
     } else if (codecName.compare(AVCodecCodecName::VIDEO_DECODER_CINEPAK_NAME) == 0) {
         CheckAVDecCINEPAK(videoCaps);
+    }
 }
 
 void CapsUnitTest::CheckAVDecHEVC(const std::shared_ptr<VideoCaps> &videoCaps) const
@@ -337,10 +341,10 @@ void CapsUnitTest::CheckAVDecCINEPAK(const std::shared_ptr<VideoCaps> &videoCaps
     EXPECT_LE(MAX_BITRATE, videoCaps->GetSupportedBitrate().maxVal);
     EXPECT_LE(0, videoCaps->GetSupportedWidthAlignment());
     EXPECT_LE(0, videoCaps->GetSupportedHeightAlignment());
-    EXPECT_GE(MIN_HEIGHT , videoCaps->GetSupportedWidth().minVal);
-    EXPECT_LE(MAX_WIDTH , videoCaps->GetSupportedWidth().maxVal);
-    EXPECT_GE(MIN_HEIGHT , videoCaps->GetSupportedHeight().minVal);
-    EXPECT_LE(MAX_HEIGHT , videoCaps->GetSupportedHeight().maxVal);
+    EXPECT_GE(MIN_HEIGHT, videoCaps->GetSupportedWidth().minVal);
+    EXPECT_LE(MAX_WIDTH, videoCaps->GetSupportedWidth().maxVal);
+    EXPECT_GE(MIN_HEIGHT, videoCaps->GetSupportedHeight().minVal);
+    EXPECT_LE(MAX_HEIGHT, videoCaps->GetSupportedHeight().maxVal);
     EXPECT_GE(1, videoCaps->GetSupportedFrameRate().minVal);
     EXPECT_LE(MAX_FRAME_RATE, videoCaps->GetSupportedFrameRate().maxVal);
     EXPECT_LE(0, videoCaps->GetSupportedQuality().minVal);
@@ -975,9 +979,9 @@ HWTEST_F(CapsUnitTest, AVCaps_GetSupportedFrameRatesFor_001, TestSize.Level1)
         EXPECT_GE(ret.minVal, 0);
         int32_t maxVal;
         if (isHardIncluded_) {
-            maxVal = 240;
+            maxVal = MaxFHardIncluded;
         } else {
-            maxVal = 120;
+            maxVal = MaxFramerateSoftIncluded;
         }
         EXPECT_LE(ret.maxVal, maxVal); // 120: max framerate for video decoder
     }
@@ -1120,7 +1124,6 @@ HWTEST_F(CapsUnitTest, AVCaps_NullvalToCapi_001, TestSize.Level1)
               AV_ERR_INVALID_VAL);
     EXPECT_EQ(graphicFormats, nullptr);
     EXPECT_EQ(graphicFormatNum, 0);
-
 
     const int32_t *profiles = nullptr;
     uint32_t profileNum = -1;
@@ -1635,7 +1638,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoHeightRangeForWidth_001, TestSize.Level1)
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoHeightRangeForWidth(cap, DEFAULT_WIDTH, &range), AV_ERR_OK);
     EXPECT_EQ(16, range.minVal);
-    EXPECT_EQ(1080, range.maxVal);
+    EXPECT_EQ(MAX_HEIGHT, range.maxVal);
 }
 
 /**
@@ -1666,7 +1669,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoHeightRange_001, TestSize.Level1)
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoHeightRange(cap, &range), AV_ERR_OK);
-    EXPECT_EQ(16, range.minVal);
+    EXPECT_EQ(MIN_HEIGHT, range.minVal);
     EXPECT_EQ(1920, range.maxVal);
 }
 
@@ -1737,7 +1740,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetMaxSupportedInstances_001, TestSize.Level1)
 {
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     EXPECT_NE(cap, nullptr);
-    EXPECT_EQ(OH_AVCapability_GetMaxSupportedInstances(cap), 64);
+    EXPECT_EQ(OH_AVCapability_GetMaxSupportedInstances(cap), MAX_SUPPORTED_INSTANCES);
 }
 
 /**
@@ -1753,7 +1756,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoFrameRateRange_001, TestSize.Level1)
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoFrameRateRange(cap, &range), AV_ERR_OK);
     EXPECT_EQ(0, range.minVal);
-    EXPECT_EQ(30, range.maxVal);
+    EXPECT_EQ(MAX_FRAME_RATE, range.maxVal);
 }
 
 /**
