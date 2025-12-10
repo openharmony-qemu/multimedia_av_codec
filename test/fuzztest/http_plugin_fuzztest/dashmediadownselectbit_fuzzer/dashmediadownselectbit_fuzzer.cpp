@@ -37,6 +37,9 @@ bool g_result = false;
 
 bool DashMediaDownSelectBitFuzzerTest(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return false;
+    }
     g_mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                               std::shared_ptr<DownloadRequest>& request) {};
