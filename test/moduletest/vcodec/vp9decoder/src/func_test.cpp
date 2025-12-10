@@ -172,7 +172,6 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0001, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_1;
     vDecSample->outputYuvFlag = true;
-    vDecSample->needCheckHash = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VP9"));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -502,7 +501,6 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0018, TestSize.Level0)
     vDecSample->INP_DIR = INP_DIR_1;
     vDecSample->outputYuvFlag = true;
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
-    vDecSample->needCheckHash = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VP9"));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -1072,6 +1070,7 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0046, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_6;
     vDecSample->outputYuvFlag = true;
+    vDecSample->needCheckHash = true;
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VP9"));
@@ -2364,9 +2363,11 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0107, TestSize.Level0)
 HWTEST_F(Vp9decFuncNdkTest, VIDEO_VP9DEC_FUNCTION_0108, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_1;
+    vDecSample->INP_DIR = INP_DIR_6;
     vDecSample->outputYuvFlag = true;
     vDecSample->needCheckHash = true;
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1080;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VP9"));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoderNoPixelFormat());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -2387,7 +2388,6 @@ HWTEST_F(Vp9decFuncNdkTest, VIDEO_DECODE_SYNC_VP9_FUNC_0001, TestSize.Level1)
     vDecSample->INP_DIR = INP_DIR_1;
     vDecSample->enbleSyncMode = 1;
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
-    vDecSample->needCheckHash = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.VP9"));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
