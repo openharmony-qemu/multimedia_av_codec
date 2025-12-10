@@ -64,6 +64,7 @@ ohos_unittest("hwdecoder_native_module_test") {
       "./src/configure_test.cpp",
       "./src/func_test.cpp",
       "./src/func2_test.cpp",
+      "./src/func3_test.cpp",
       "./src/hwh265_hdr2sdr_state_test.cpp",
       "./src/hwh265_hdr2sdr_test.cpp",
 

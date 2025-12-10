@@ -49,7 +49,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         double  frameRate = fdp.ConsumeFloatingPoint<double>();
 
         auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
-        g_vDecSample->DEFAULT_TRANSFORM = fdp.ConsumeIntegral<int32_t>();
+        g_vDecSample->defaultTransform = fdp.ConsumeIntegral<int32_t>();
         g_vDecSample->fuzzData = remaining_data.data();
         g_vDecSample->fuzzSize = remaining_data.size();
         g_vDecSample->defaultWidth = DEFAULT_WIDTH;

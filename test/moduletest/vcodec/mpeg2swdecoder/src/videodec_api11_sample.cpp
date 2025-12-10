@@ -1177,7 +1177,6 @@ int32_t VDecAPI11Sample::SetConfigTransform()
         cout << "config failed" << endl;
         return ret;
     }
-    
     ret = OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
     if (ret != AV_ERR_OK) {
         cout << "Failed to set surface" << endl;

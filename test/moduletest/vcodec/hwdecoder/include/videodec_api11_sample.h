@@ -185,6 +185,7 @@ public:
     void FlushStatus();
     void GetVideoSupportedPixelFormats();
     void GetFormatKey();
+    void SwitchSurfaceGetTransform();
     bool isGetVideoSupportedPixelFormats = false;
     bool isGetFormatKey = false;
     int isGetVideoSupportedPixelFormatsNum = 0;
