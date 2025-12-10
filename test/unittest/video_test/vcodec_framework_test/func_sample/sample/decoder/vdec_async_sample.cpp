@@ -1167,7 +1167,7 @@ int32_t VideoDecAsyncSample::InputLoopInnerExt()
     } else if (av1Reader_ != nullptr) {
         av1Reader_->FillBuffer(buffer->GetAddr(), attr);
 #endif
-else if (cinepakReader_ != nullptr) {
+    } else if (cinepakReader_ != nullptr) {
         cinepakReader_->FillBuffer(buffer->GetAddr(), attr);
 #ifdef SUPPORT_CODEC_RV
     } else if (rv30Reader_ != nullptr) {
