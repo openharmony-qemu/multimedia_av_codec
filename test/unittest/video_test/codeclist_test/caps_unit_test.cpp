@@ -39,7 +39,6 @@ const int MAX_FRAME_RATE = 30;
 const int MAX_BITRATE = 2097000;
 const int MAX_F_HARD_INCLUDED  = 240;
 const int MAX_FRAMERATE_SOFT_INCLUDED  = 120;
-const int MAX_SUPPORTED_INSTANCES = 64;
 
 void CapsUnitTest::SetUpTestCase(void) {}
 
@@ -1740,7 +1739,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetMaxSupportedInstances_001, TestSize.Level1)
 {
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     EXPECT_NE(cap, nullptr);
-    EXPECT_EQ(OH_AVCapability_GetMaxSupportedInstances(cap), MAX_SUPPORTED_INSTANCES);
+    EXPECT_EQ(OH_AVCapability_GetMaxSupportedInstances(cap), 64);
 }
 
 /**
