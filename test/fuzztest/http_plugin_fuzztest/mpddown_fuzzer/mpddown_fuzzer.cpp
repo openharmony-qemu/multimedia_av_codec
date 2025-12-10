@@ -207,6 +207,9 @@ bool MpdMangerRun(const uint8_t *data, size_t size)
     std::string mpdUrl = MPD_MULTI_AUDIO_SUB;
     mpdMpddownload->SetMpdInfo(mangerInfo, mpdUrl);
     mpdMpddownload->GetNextPeriod(periodInfo);
+    mpdMpddownload->GetMpdInfo();
+    mpdMpddownload->GetFirstPeriod();
+    mpdMpddownload->GetBaseUrl();
     return true;
 }
 
@@ -252,8 +255,11 @@ bool DashRepresenRun(const uint8_t *data, size_t size)
         return false;
     }
     std::shared_ptr<DashRepresentationManager> mpdMpddownload = std::make_shared<DashRepresentationManager>();
+    int32_t flag = *reinterpret_cast<const int32_t *>(data);
+    mpdMpddownload->GetInitSegment(flag);
     mpdMpddownload->Reset();
     mpdMpddownload->GetRepresentationInfo();
+    mpdMpddownload->GetPreviousRepresentationInfo();
     return true;
 }
 

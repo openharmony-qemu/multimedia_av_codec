@@ -43,6 +43,9 @@ constexpr uint32_t DEFAULT_DURATION = 20;
 
 bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return false;
+    }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
@@ -75,9 +78,6 @@ bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
     PlaybackInfo playbackInfo;
     mediaDownloader->GetPlaybackInfo(playbackInfo);
     mediaDownloader->GetMemorySize();
-    bool isAppBackground = *reinterpret_cast<const bool *>(data);
-    mediaDownloader->StopBufferring(isAppBackground);
-    usleep(WAIT_FOR_SIDX_TIME);
     int32_t biterate = *reinterpret_cast<const int32_t *>(data);
     mediaDownloader->SelectBitRate(biterate);
     usleep(WAIT_FOR_SIDX_TIME);
@@ -88,10 +88,13 @@ bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
 
 bool DashMpdParse(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return false;
+    }
     std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
     const std::string url = MPD_MULTI_AUDIO_SUB;
-    mpdMpddownload->Open(MPD_MULTI_AUDIO_SUB);
     mpdMpddownload->Init();
+    mpdMpddownload->Open(MPD_MULTI_AUDIO_SUB);
     std::shared_ptr<DashSegment> seg = std::make_shared<DashSegment>();
     int streamId = *reinterpret_cast<const int *>(data);
     int64_t breakpoint = *reinterpret_cast<const int64_t *>(data);

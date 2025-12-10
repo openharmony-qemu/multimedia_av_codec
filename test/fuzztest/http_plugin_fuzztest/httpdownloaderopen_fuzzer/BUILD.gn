@@ -61,6 +61,9 @@ test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
+  "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
+  "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/common/http_server_mock.cpp",
+  "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/common/http_server_fuzz_demo.cpp",
 ]
 
 config("fuzz_cfg") {
@@ -104,7 +107,7 @@ config("fuzz_cfg") {
     "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/services/drm_decryptor",
     "$av_codec_root_dir/services/media_engine/modules",
-    "../common",
+    "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/common",
   ]
 }
 

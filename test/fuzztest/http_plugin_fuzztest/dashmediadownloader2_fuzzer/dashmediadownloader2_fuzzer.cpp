@@ -68,7 +68,6 @@ bool DashMediaDownloader2FuzzTest(const uint8_t *data, size_t size)
     mediaDownloader->GetSeekable();
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
-    todo
     mediaDownloader->Pause();
     mediaDownloader->Resume();
     {
@@ -77,9 +76,13 @@ bool DashMediaDownloader2FuzzTest(const uint8_t *data, size_t size)
         mediaDownloader->SeekToTime(seekTime, seekMode);
     }
     {
-        ReadDataInfo readDataInfo;
-        unsigned char* buff = const_cast<unsigned char*>(data);
-        mediaDownloader->Read(buff, readDataInfo);
+        for (auto u : streams) {
+            ReadDataInfo readDataInfo;
+            readDataInfo.streamId_ = u.streamId;
+            readDataInfo.wantReadLength_ = *reinterpret_cast<const unsigned int*>(data);
+            unsigned char* buff = const_cast<unsigned char*>(data);
+            mediaDownloader->Read(buff, readDataInfo);
+        }
     }
     mediaDownloader->GetContentLength();
     mediaDownloader->GetDuration();
