@@ -349,6 +349,11 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_H263;
  */
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
 
+/**
+ * @brief Enumerates the MIME type of video CINEPAK codec.
+ *
+ * @since 23
+ */
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_CINEPAK;
 
 /**
@@ -1227,11 +1232,8 @@ typedef enum OH_AVCProfile {
 } OH_AVCProfile;
 
 /**
- * @brief Cinepak Video Codec Format
- *
- * @brief Defines the Cinepak video codec format and its configurations.
- * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 22
+ * @brief CINEPAK Profile
+ * @since 23
  */
 typedef enum OH_CinepakFormat {
     CINEPAK_FORMAT_STANDARD = 0,
@@ -1782,14 +1784,14 @@ typedef enum OH_WMV3Level {
 
 /**
  * @brief Cinepak Video Codec Level
- *
- * @brief Defines the Cinepak video codec levels for different quality and performance trade-offs.
- * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 22
+ * @since 23
  */
 typedef enum OH_CinepakLevel {
+    /** LOW Level */
     CINEPAK_LEVEL_LOW = 0,
+    /** MEDIUM Level */
     CINEPAK_LEVEL_MEDIUM = 1,
+    /** HIGH Level */
     CINEPAK_LEVEL_HIGH = 2
 } OH_CinepakLevel;
 
