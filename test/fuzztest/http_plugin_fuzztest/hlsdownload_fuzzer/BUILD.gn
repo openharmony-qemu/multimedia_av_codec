@@ -15,8 +15,7 @@ import("//build/config/features.gni")
 import("//build/test.gni")
 
 av_codec_root_dir = "//foundation/multimedia/av_codec/"
-# module_output_path = "player_framework/stream_player_framework"
-module_output_path = "av_codec/av_codec"
+module_output_path = "player_framework/stream_player_framework"
 
 test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/base64/base64_utils.cpp",
