@@ -327,28 +327,31 @@ void HttpCurlClient::InitCurProxy(const std::string& url)
 
 void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeoutMs)
 {
-    curl_easy_setopt(easyHandle_, CURLOPT_URL, UrlParse(url).c_str());
-    curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 5); // 5
-    curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
-#ifndef CA_DIR
-    curl_easy_setopt(easyHandle_, CURLOPT_CAINFO, "/etc/ssl/certs/" "cacert.pem");
-#else
-    curl_easy_setopt(easyHandle_, CURLOPT_CAINFO, CA_DIR "cacert.pem");
-#endif
-    curl_easy_setopt(easyHandle_, CURLOPT_HTTPGET, 1L);
-    curl_easy_setopt(easyHandle_, CURLOPT_FORBID_REUSE, 0L);
-    curl_easy_setopt(easyHandle_, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(easyHandle_, CURLOPT_WRITEFUNCTION, rxBody_);
-    curl_easy_setopt(easyHandle_, CURLOPT_WRITEDATA, userParam_);
-    curl_easy_setopt(easyHandle_, CURLOPT_HEADERFUNCTION, rxHeader_);
-    curl_easy_setopt(easyHandle_, CURLOPT_HEADERDATA, userParam_);
-    curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
-    curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
-    int32_t timeout = timeoutMs > 0 ? timeoutMs / MILLS_TO_SECOND : DEFAULT_LOW_SPEED_TIME;
-    curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_LIMIT, DEFAULT_LOW_SPEED_LIMIT);
-    curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_TIME, timeout);
-    InitCurProxy(url);
+    AutoLock lock(mutex_);
+    if (easyHandle_ != nullptr) {
+        curl_easy_setopt(easyHandle_, CURLOPT_URL, UrlParse(url).c_str());
+        curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 5); // 5
+        curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
+    #ifndef CA_DIR
+        curl_easy_setopt(easyHandle_, CURLOPT_CAINFO, "/etc/ssl/certs/" "cacert.pem");
+    #else
+        curl_easy_setopt(easyHandle_, CURLOPT_CAINFO, CA_DIR "cacert.pem");
+    #endif
+        curl_easy_setopt(easyHandle_, CURLOPT_HTTPGET, 1L);
+        curl_easy_setopt(easyHandle_, CURLOPT_FORBID_REUSE, 0L);
+        curl_easy_setopt(easyHandle_, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(easyHandle_, CURLOPT_WRITEFUNCTION, rxBody_);
+        curl_easy_setopt(easyHandle_, CURLOPT_WRITEDATA, userParam_);
+        curl_easy_setopt(easyHandle_, CURLOPT_HEADERFUNCTION, rxHeader_);
+        curl_easy_setopt(easyHandle_, CURLOPT_HEADERDATA, userParam_);
+        curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
+        curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
+        int32_t timeout = timeoutMs > 0 ? timeoutMs / MILLS_TO_SECOND : DEFAULT_LOW_SPEED_TIME;
+        curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_LIMIT, DEFAULT_LOW_SPEED_LIMIT);
+        curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_TIME, timeout);
+        InitCurProxy(url);
+    }
 }
 
 std::string HttpCurlClient::UrlParse(const std::string& url) const
