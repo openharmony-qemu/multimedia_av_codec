@@ -754,7 +754,7 @@ AVCODEC_MTEST_P(VideoDecStableTestCinepak, VideoDecoder_cinepakdecoder_AVBuffer_
 bool CheckCapabilitySupport()
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-        OH_AVCODECIMETYPE_VIDEO_CINEPAK false, SOFTWARE);
+        OH_AVCODEC_MIMETYPE_VIDEO_CINEPAK, false, SOFTWARE);
     return capability != nullptr;
 }
 } // namespace
