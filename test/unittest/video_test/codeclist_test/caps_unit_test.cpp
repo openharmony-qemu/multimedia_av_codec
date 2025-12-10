@@ -32,13 +32,11 @@ namespace MediaAVCodec {
 
 constexpr uint32_t MAX_VIDEO_BITRATE = 300000000;
 constexpr uint32_t MAX_VIDEO_FRAME_RATE = 60;
-const int MIN_HEIGHT = 16;
-const int MAX_WIDTH = 1920;
-const int MAX_HEIGHT = 1080;
-const int MAX_FRAME_RATE = 30;
-const int MAX_BITRATE = 2097000;
-const int MAX_F_HARD_INCLUDED  = 240;
-const int MAX_FRAMERATE_SOFT_INCLUDED  = 120;
+const uint32_t MIN_HEIGHT = 16;
+const uint32_t MAX_WIDTH = 1920;
+const uint32_t MAX_HEIGHT = 1080;
+const uint32_t MAX_FRAME_RATE = 30;
+const uint32_t MAX_BITRATE = 2097000;
 
 void CapsUnitTest::SetUpTestCase(void) {}
 
@@ -978,9 +976,9 @@ HWTEST_F(CapsUnitTest, AVCaps_GetSupportedFrameRatesFor_001, TestSize.Level1)
         EXPECT_GE(ret.minVal, 0);
         int32_t maxVal;
         if (isHardIncluded_) {
-            maxVal = MAX_F_HARD_INCLUDED ;
+            maxVal = 240;
         } else {
-            maxVal = MAX_FRAMERATE_SOFT_INCLUDED ;
+            maxVal = 120;
         }
         EXPECT_LE(ret.maxVal, maxVal); // 120: max framerate for video decoder
     }
