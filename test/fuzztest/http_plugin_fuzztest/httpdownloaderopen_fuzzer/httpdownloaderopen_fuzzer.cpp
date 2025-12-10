@@ -17,16 +17,20 @@
 #include <test_template.h>
 #include <fuzzer/FuzzedDataProvider.h>
 #include "http/http_media_downloader.h"
-
+#include "http_server_mock.h"
+#include <iostream>
 using namespace OHOS;
 using namespace OHOS::Media::Plugins::HttpPlugin;
 using namespace OHOS::Media::Plugins;
 #define FUZZ_PROJECT_NAME "httpdownloader_fuzzer"
 
 static constexpr int32_t MAX_BUFFER_SIZE_FUZZ = 1024 * 1024 * 2;
-//todo
+
 bool TestHttpDownloaderOpenFuzz(uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return false;
+    }
     const std::string avsource_url = "http://127.0.0.1:46666/dewu.mp4";
     std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::HttpMediaDownloader> httpMediaDownloader =
         std::make_shared<OHOS::Media::Plugins::HttpPlugin::HttpMediaDownloader>(avsource_url, 4, nullptr);  // 4
@@ -44,6 +48,8 @@ bool TestHttpDownloaderOpenFuzz(uint8_t *data, size_t size)
     bool blockingFlag = GetData<bool>();
     httpMediaDownloader->Read(buff, readDataInfo);
     httpMediaDownloader->SetReadBlockingFlag(blockingFlag);
+    httpMediaDownloader->Close(true);
+    httpMediaDownloader = nullptr;
     return true;
 }
 
@@ -51,9 +57,17 @@ bool TestHttpDownloaderOpenFuzz(uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    if (!InitServer()) {
+        std::cout << "Init server error" << std::endl;
+        return -1;
+    }
     g_baseFuzzData = data;
     g_baseFuzzSize = size;
     g_baseFuzzPos = 0;
     TestHttpDownloaderOpenFuzz(data, size);
+    if (!CloseServer()) {
+        std::cout << "Close server error" << std::endl;
+        return -1;
+    }
     return 0;
 }
