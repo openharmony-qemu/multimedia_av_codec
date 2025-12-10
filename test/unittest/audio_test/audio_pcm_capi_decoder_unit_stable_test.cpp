@@ -27,15 +27,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 constexpr uint32_t CHANNELS = 2;
-constexpr uint32_t SAMPLE_RATE = 44100;
-constexpr uint32_t UNSUPPORTED_CHANNELS_MIN = 0;
-constexpr uint32_t UNSUPPORTED_CHANNELS_MAX = 256;
-constexpr uint32_t UNSUPPORTED_MAX_INPUT_SIZE = 80 * 1024 * 1024 + 1;
-constexpr uint32_t UNSUPPORTED_SAMPLE_RATE = 0;
-constexpr int32_t MAX_INPUT_SIZE = 4096;
-constexpr int32_t MIN_INPUT_SIZE = 16;
-constexpr AudioSampleFormat SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_S16LE;
-constexpr AudioSampleFormat RAW_SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_S16BE;
 constexpr uint32_t SAMPLE_RATE_48000 = 48000;
 const std::string OUTPUT_PREFIX = "/data/test/media/pcm_";
 const std::string OUTPUT_SUFFIX = ".pcm";

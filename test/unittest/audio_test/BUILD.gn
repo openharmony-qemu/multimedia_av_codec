@@ -1982,7 +1982,7 @@ ohos_unittest("audio_adpcm_decoder_unit_test") {
 }
 
 ##################################################################################################################
-ohos_unittest("audio_gms_ms_capi_decoder_unit_stable_test") {
+ohos_unittest("audio_gsm_ms_capi_decoder_unit_stable_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = av_codec_unittest_include_dirs
@@ -2010,7 +2010,7 @@ ohos_unittest("audio_gms_ms_capi_decoder_unit_stable_test") {
   defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
 
   if (av_codec_support_test) {
-    sources = [ "./audio_gms_ms_capi_decoder_unit_stable_test.cpp" ]
+    sources = [ "./audio_gsm_ms_capi_decoder_unit_stable_test.cpp" ]
   }
 
   deps = [
@@ -2141,6 +2141,8 @@ ohos_unittest("audio_pcm_capi_decoder_unit_stable_test") {
   ]
 
   cflags = av_codec_unittest_cflags
+
+  cflags += ["-Wno-unused-parameter"]
 
   cflags_cc = cflags
 
