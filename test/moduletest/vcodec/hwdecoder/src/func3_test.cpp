@@ -269,7 +269,7 @@ HWTEST_F(HwdecFunc3NdkTest, VIDEO_DECODE_TRANSFORM_0100, TestSize.Level0)
         vDecSample->DEFAULT_TRANSFORM = -1;
         ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->SetParameter());
         ASSERT_EQ(NATIVEBUFFER_ROTATE_90, vDecSample->GetSurfaceTransform(0));
-        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());        
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
         for (const auto& transformtype : transfromTypes) {
             vDecSample->DEFAULT_TRANSFORM = NATIVEBUFFER_ROTATE_90;
             ASSERT_EQ(AV_ERR_OK, vDecSample->SetConfigTransform());
@@ -504,5 +504,5 @@ HWTEST_F(HwdecFunc3NdkTest, VIDEO_DECODE_TRANSFORM_0240, TestSize.Level0)
         int32_t afterReleaseTroform = vDecSample->GetSurfaceTransform(0);
         ASSERT_EQ(beforeReleaseTroform, afterReleaseTroform);
     }
-} 
+}
 }

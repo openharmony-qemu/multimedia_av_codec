@@ -719,20 +719,7 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
         OH_VideoDecoder_PushInputBuffer(vdec_, index) == AV_ERR_OK ? (0) : (errCount++);
         frameCount_ = frameCount_ + 1;
         outCount = outCount + 1;
-        if (autoSwitchSurface && (frameCount_ % (int32_t)DEFAULT_FRAME_RATE == 0)) {
-            switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
-            OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]) == AV_ERR_OK ? (0) : (errCount++);
-            if (setTransform) {
-                afterSwitchTransform = GetSurfaceTransform(0);
-                autoSwitchSurface = false;
-                cout << "switchSurfaceFlag: " << switchSurfaceFlag << endl;
-                GetSurfaceTransform(switchSurfaceFlag) == DEFAULT_TRANSFORM ? (0) : (errCount++);
-                DEFAULT_TRANSFORM = NATIVEBUFFER_FLIP_V_ROT270;
-                SetParameter() == AV_ERR_OK ? (0) : (errCount++);
-                cout << "switchSurfaceFlag: " << switchSurfaceFlag << endl;
-                GetSurfaceTransform(switchSurfaceFlag) == DEFAULT_TRANSFORM ? (0) : (errCount++);
-            }
-        }
+        SwitchSurfaceGetTransform();
     }
     delete[] fileBuffer;
     return 0;
@@ -1189,4 +1176,22 @@ int32_t VDecAPI11Sample::GetSurfaceTransform(int32_t surfaceFlag)
     }
     cout << "get  " << surfaceFlag << "  surface transform: " << transform << endl;
     return transform;
+}
+
+void VDecAPI11Sample::SwitchSurfaceGetTransform()
+{
+    if (autoSwitchSurface && (frameCount_ % (int32_t)DEFAULT_FRAME_RATE == 0)) {
+        switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
+        OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]) == AV_ERR_OK ? (0) : (errCount++);
+        if (setTransform) {
+            afterSwitchTransform = GetSurfaceTransform(0);
+            autoSwitchSurface = false;
+            cout << "switchSurfaceFlag: " << switchSurfaceFlag << endl;
+            GetSurfaceTransform(switchSurfaceFlag) == DEFAULT_TRANSFORM ? (0) : (errCount++);
+            DEFAULT_TRANSFORM = NATIVEBUFFER_FLIP_V_ROT270;
+            SetParameter() == AV_ERR_OK ? (0) : (errCount++);
+            cout << "switchSurfaceFlag: " << switchSurfaceFlag << endl;
+            GetSurfaceTransform(switchSurfaceFlag) == DEFAULT_TRANSFORM ? (0) : (errCount++);
+        }
+    }
 }

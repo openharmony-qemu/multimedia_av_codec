@@ -152,6 +152,7 @@ public:
     int32_t GetSurfaceTransform(int32_t surfaceFlag);
     void GetVideoSupportedPixelFormats();
     void GetFormatKey();
+    void SwitchSurfaceGetTransform();
     bool isGetVideoSupportedPixelFormats = false;
     bool isGetFormatKey = false;
     int isGetVideoSupportedPixelFormatsNum = 0;
