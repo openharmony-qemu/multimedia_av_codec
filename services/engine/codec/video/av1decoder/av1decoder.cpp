@@ -38,6 +38,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 const char *AV1_DEC_CREATE_DECODER_FUNC_NAME = "dav1d_create_decoder_api";
 const char *AV1_DEC_DECODE_FRAME_FUNC_NAME = "dav1d_codec_decode_api";
 const char *AV1_DEC_GET_FRAME_FUNC_NAME = "dav1d_codec_get_frame_api";
+const char *AV1_DEC_PICTURE_UNREF_FUNC_NAME = "dav1d_picture_unref";
 const char *AV1_DEC_DELETE_FUNC_NAME = "dav1d_destroy_decoder_api";
 
 constexpr struct {
@@ -174,10 +175,13 @@ void Av1Decoder::DecoderFuncMatch()
             AV1_DEC_DECODE_FRAME_FUNC_NAME));
         av1DecoderGetFrameFunc_ = reinterpret_cast<Av1GetFrameFuncType>(dlsym(handle_,
             AV1_DEC_GET_FRAME_FUNC_NAME));
+        av1DecoderPictureUnrefFunc_ = reinterpret_cast<Av1PictureUnrefFuncType>(dlsym(handle_,
+            AV1_DEC_PICTURE_UNREF_FUNC_NAME));
         av1DecoderDestroyFunc_ = reinterpret_cast<Av1DestroyDecoderFuncType>(dlsym(handle_,
             AV1_DEC_DELETE_FUNC_NAME));
         if (av1DecoderCreateFunc_ == nullptr || av1DecoderFrameFunc_ == nullptr ||
-            av1DecoderGetFrameFunc_ == nullptr || av1DecoderDestroyFunc_ == nullptr) {
+            av1DecoderGetFrameFunc_ == nullptr || av1DecoderPictureUnrefFunc_ == nullptr ||
+            av1DecoderDestroyFunc_ == nullptr) {
                 AVCODEC_LOGE("Av1Decoder av1 DecoderFuncMatch failed!");
                 ReleaseHandle();
         }
@@ -193,6 +197,7 @@ void Av1Decoder::ReleaseHandle()
     av1DecoderCreateFunc_ = nullptr;
     av1DecoderFrameFunc_ = nullptr;
     av1DecoderGetFrameFunc_ = nullptr;
+    av1DecoderPictureUnrefFunc_ = nullptr;
     av1DecoderDestroyFunc_ = nullptr;
     if (handle_ != nullptr) {
         dlclose(handle_);
@@ -389,14 +394,17 @@ int32_t Av1Decoder::DecodeFrameOnce()
             ret = av1DecoderFrameFunc_(av1DecHandle_, av1DecoderInputArgs_.pStream, av1DecoderInputArgs_.uiStreamLen);
         }
     } else {
-        AVCODEC_LOGW("av1DecoderFrameFunc_ = nullptr || av1DecHandle_ = nullptr");
+        AVCODEC_LOGE("load libdav1d.z.so failed, send data to av1 decoder failed.");
         ret = -1;
     }
-    if (av1DecHandle_ != nullptr && av1DecoderGetFrameFunc_ != nullptr) {
-        if (!isSendEos_) {
-            ret = av1DecoderGetFrameFunc_(av1DecHandle_, &av1DecOutputImg_);
+    if (av1DecHandle_ != nullptr && av1DecoderGetFrameFunc_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
+        ret = av1DecoderGetFrameFunc_(av1DecHandle_, av1DecOutputImg_);
+        if (ret < 0 && ret != -EAGAIN) {
+            av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
+            av1DecOutputImg_ = nullptr;
         }
     } else {
+        AVCODEC_LOGE("load libdav1d.z.so failed, get generated picture form av1 decoder failed.");
         ret = -1;
     }
     if (ret == 0 && av1DecOutputImg_ != nullptr) {
@@ -420,6 +428,10 @@ int32_t Av1Decoder::DecodeFrameOnce()
         frameBuffer->avBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
         FramePostProcess(frameBuffer, index, status, AVCS_ERR_OK);
     }
+    if (av1DecOutputImg_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
+        av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
+        av1DecOutputImg_ = nullptr;
+    }
     return ret;
 }
 
@@ -433,14 +445,18 @@ int32_t Av1Decoder::CheckAv1DecLibStatus()
             dlsym(handle, AV1_DEC_DECODE_FRAME_FUNC_NAME));
         auto av1DecoderGetFrameFunc = reinterpret_cast<Av1GetFrameFuncType>(
             dlsym(handle, AV1_DEC_GET_FRAME_FUNC_NAME));
+        auto av1DecoderPictureUnrefFunc = reinterpret_cast<Av1PictureUnrefFuncType>(
+            dlsym(handle, AV1_DEC_PICTURE_UNREF_FUNC_NAME));
         auto av1DecoderDestroyFunc = reinterpret_cast<Av1DestroyDecoderFuncType>(
             dlsym(handle, AV1_DEC_DELETE_FUNC_NAME));
         if (av1DecoderCreateFunc == nullptr || av1DecoderDecodeFrameFunc == nullptr ||
-            av1DecoderGetFrameFunc == nullptr || av1DecoderDestroyFunc == nullptr) {
+            av1DecoderGetFrameFunc == nullptr || av1DecoderPictureUnrefFunc == nullptr ||
+            av1DecoderDestroyFunc == nullptr) {
                 AVCODEC_LOGE("Av1Decoder av1FuncMatch_ failed!");
                 av1DecoderCreateFunc = nullptr;
                 av1DecoderDecodeFrameFunc = nullptr;
                 av1DecoderGetFrameFunc = nullptr;
+                av1DecoderPictureUnrefFunc = nullptr;
                 av1DecoderDestroyFunc = nullptr;
                 dlclose(handle);
                 handle = nullptr;
@@ -459,7 +475,6 @@ int32_t Av1Decoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 {
     CHECK_AND_RETURN_RET_LOG(CheckAv1DecLibStatus() == AVCS_ERR_OK, AVCS_ERR_UNSUPPORT,
                              "av1 decoder libs not available");
-    //todo
     for (uint32_t i = 0; i < SUPPORT_AV1_DECODER_NUM; ++i) {
         CapabilityData capsData;
         capsData.codecName = static_cast<std::string>(SUPPORT_AV1_DECODER[i].codecName);
@@ -481,9 +496,9 @@ int32_t Av1Decoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.blockPerSecond.maxVal = VIDEO_BLOCKPERSEC_MAX_SIZE;
         capsData.blockSize.width = VIDEO_ALIGN_SIZE;
         capsData.blockSize.height = VIDEO_ALIGN_SIZE;
+        capsData.supportSwapWidthHeight = true;
         capsData.pixFormat = {
-            static_cast<int32_t>(VideoPixelFormat::NV12),
-            static_cast<int32_t>(VideoPixelFormat::NV21)
+            static_cast<int32_t>(VideoPixelFormat::NV12), static_cast<int32_t>(VideoPixelFormat::NV21)
         };
         capsData.graphicPixFormat = {
             static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP),
