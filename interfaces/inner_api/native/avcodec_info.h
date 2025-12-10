@@ -859,7 +859,7 @@ enum WMV3Profile : int32_t {
 /**
  * @brief CINEPAK Profile
  *
- * @since 3.1
+ * @since 6.1
  */
 enum CINEPAKProfile : int32_t {
     /** SIMPLE Profile */
@@ -1034,8 +1034,7 @@ enum MPEG4Level : int32_t {
 
 /**
  * @brief Cinepak Level
- * @since 5.0
- * @version 5.0
+ * @since 6.1
  */
 enum class CINEPAKLevel : int32_t {
     CINEPAK_LEVEL_1 = 1,
