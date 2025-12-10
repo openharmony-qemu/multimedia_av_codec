@@ -1872,6 +1872,7 @@ ohos_unittest("audio_wma_decoder_unit_test") {
     "$av_codec_root_dir/services/engine/codec/include/audio",
     "$av_codec_root_dir/services/engine/codec/include/audio/decoder",
     "$av_codec_root_dir/services/engine/factory",
+    "./skip_info_unit_test",
   ]
 
   cflags = [
@@ -1892,7 +1893,10 @@ ohos_unittest("audio_wma_decoder_unit_test") {
   public_configs = []
 
   if (av_codec_support_test) {
-    sources = [ "./audio_wma_decoder_unit_test.cpp" ]
+    sources = [
+      "./audio_wma_decoder_unit_test.cpp",
+      "./skip_info_unit_test/audio_decoder_inner_mock.cpp",
+    ]
   }
 
   deps = [
@@ -1906,6 +1910,8 @@ ohos_unittest("audio_wma_decoder_unit_test") {
   external_deps = [
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
+    "c_utils:utils",
+    "media_foundation:native_media_core",
   ]
 
   if (target_cpu == "arm64") {

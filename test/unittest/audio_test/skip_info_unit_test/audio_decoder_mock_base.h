@@ -29,7 +29,23 @@ public:
     virtual int32_t Stop() = 0;
     virtual int32_t DecodeInput(const uint8_t *dataIn, uint32_t inSizeBytes, std::vector<uint8_t> *skipInfo) = 0;
     virtual int32_t DecodeOutput(uint8_t *dataOut, int32_t &outSizeBytes) = 0;
+    void SetBlockAlign(int32_t blockAlign)
+    {
+        blockAlign_ = blockAlign;
+    }
+    void SetPts(int64_t pts)
+    {
+        pts_ = pts;
+    }
+    int64_t GetOutputPts()
+    {
+        return outputPts_;
+    }
     static std::unique_ptr<AudioDecoderMockBase> CreateDecoder();
+protected:
+    int32_t blockAlign_ = 0;
+    int64_t pts_ = 0;
+    int64_t outputPts_ = 0;
 };
 
 } // namespace MediaAVCodec
