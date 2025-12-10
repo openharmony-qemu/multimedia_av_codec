@@ -85,7 +85,7 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
 }
 
 #ifdef SUPPORT_CODEC_RV
-INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(SW_RV40));
+INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(SW_RV40_TEST));
 
 /**
  * @tc.name: VideoDecoder_Multithread_Create_001
@@ -922,9 +922,9 @@ HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_002, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, VideoDecoder_GetOutputDescription_001, TestSize.Level1)
 {
-    CreateByNameWithParam(SW_RV40);
-    SetFormatWithParam(SW_RV40);
-    PrepareSource(SW_RV40);
+    CreateByNameWithParam(SW_RV40_TEST);
+    SetFormatWithParam(SW_RV40_TEST);
+    PrepareSource(SW_RV40_TEST);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -969,7 +969,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_GetOutputDescription_004, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, VideoDecoder_SetDecryptionConfig_001, TestSize.Level1)
 {
-    VCodecTestCode param = VCodecTestCode::SW_RV40;
+    VCodecTestCode param = VCodecTestCode::SW_RV40_TEST;
     CreateByNameWithParam(param);
     SetFormatWithParam(param);
     PrepareSource(param);
