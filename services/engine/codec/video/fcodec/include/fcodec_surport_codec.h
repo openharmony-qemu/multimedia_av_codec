@@ -42,6 +42,7 @@ constexpr CodecInfo SUPPORT_VCODEC[] = {
     {AVCodecCodecName::VIDEO_DECODER_MSVIDEO1_NAME, CodecMimeType::VIDEO_MSVIDEO1, "msvideo1"}, // MS Video 1 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_WMV3_NAME, CodecMimeType::VIDEO_WMV3, "wmv3"},             // WMV3 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME, CodecMimeType::VIDEO_MJPEG, "mjpeg"},          // MJPEG 视频解码器
+    {AVCodecCodecName::VIDEO_DECODER_CINEPAK_NAME, CodecMimeType::VIDEO_CINEPAK, "cinepak"},    // CINEPAK 视频解码器
 #ifdef SUPPORT_CODEC_RV
     {AVCodecCodecName::VIDEO_DECODER_RV30_NAME, CodecMimeType::VIDEO_RV30, "rv30"}, // RV30 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_RV40_NAME, CodecMimeType::VIDEO_RV40, "rv40"}, // RV40 视频解码器

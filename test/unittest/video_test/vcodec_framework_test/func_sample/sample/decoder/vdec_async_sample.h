@@ -91,6 +91,7 @@ private:
 #endif
     int32_t CreateMsvideo1Reader();
     int32_t CreateWmv3Reader();
+    int32_t CreateCinepakReader();
 #ifdef SUPPORT_CODEC_AV1
     int32_t CreateAv1Reader();
 #endif
@@ -123,6 +124,7 @@ private:
     std::shared_ptr<AvccReader> avccReader_ = nullptr;
     std::shared_ptr<MpegReader> mpegReader_ = nullptr;
     std::shared_ptr<H263Reader> h263Reader_ = nullptr;
+    std::shared_ptr<CinepakReader> cinepakReader_ = nullptr;
 #ifdef SUPPORT_CODEC_AV1
     std::shared_ptr<Av1Reader> av1Reader_ = nullptr;
 #endif
