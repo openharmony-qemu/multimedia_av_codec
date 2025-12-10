@@ -713,65 +713,6 @@ private:
 };
 #endif
 
-#ifdef SUPPORT_CODEC_AVS
-struct AvsReaderInfo {
-    std::string inPath;
-};
-class AvsReader : public DataProducerBase {
-public:
-    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
-    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t naluType, bool isEosFrame);
-    bool IsEOS();
-    int32_t Init(const std::shared_ptr<AvsReaderInfo> &info);
-    std::mutex mutex_;
-    int32_t frameInputCount_ = 0;
-private:
-    class AvsUnitReader {
-    public:
-        explicit AvsUnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
-        virtual ~AvsUnitReader() {};
-        uint8_t const *GetNextAvsUnitAddr();
-        virtual int32_t ReadAvsUnit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos);
-        virtual bool IsEOS() = 0;
-        virtual void PrereadFile() = 0;
-        virtual void PrereadAvsUnit();
-
-    protected:
-        AvsUnitReader() {};
-        virtual bool IsEOF() = 0;
-
-        std::unique_ptr<std::vector<uint8_t>> avsUnit_ = nullptr;
-        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
-    };
-
-    class AvsMetaUnitReader : public AvsUnitReader {
-    public:
-        explicit AvsMetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
-        int32_t ReadAvsUnit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
-        bool IsEOS() override;
-        void PrereadFile() override;
-        void PrereadAvsUnit() override;
-    private:
-        bool IsEOF() override;
-        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
-        std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
-        uint32_t prereadBufferSize_ = 0;
-        uint32_t pPrereadBuffer_ = 0;
-        uint32_t frameIndex_ = 0;
-    };
-    class AvsDetector {
-    public:
-        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
-        const uint8_t *GetAvsTypeAddr(const uint8_t *bufferAddr);
-        uint8_t GetAvsType(const uint8_t *bufferAddr);
-        bool IsI(uint8_t avsType);
-    };
-
-    std::shared_ptr<AvsUnitReader> avsUnitReader_ = nullptr;
-    std::shared_ptr<AvsDetector> avsDetector_ = nullptr;
-};
-#endif
-
 #ifdef SUPPORT_CODEC_RV
 struct Rv30ReaderInfo {
     std::string inPath;
