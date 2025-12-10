@@ -37,8 +37,8 @@ const int MAX_WIDTH = 1920;
 const int MAX_HEIGHT = 1080;
 const int MAX_FRAME_RATE = 30;
 const int MAX_BITRATE = 2097000;
-const int Max_FHardIncluded = 240;
-const int Max_FramerateSoftIncluded = 120;
+const int MAX_F_HARD_INCLUDED  = 240;
+const int MAX_FRAMERATE_SOFT_INCLUDED  = 120;
 const int MAX_SUPPORTED_INSTANCES = 64;
 
 void CapsUnitTest::SetUpTestCase(void) {}
@@ -979,9 +979,9 @@ HWTEST_F(CapsUnitTest, AVCaps_GetSupportedFrameRatesFor_001, TestSize.Level1)
         EXPECT_GE(ret.minVal, 0);
         int32_t maxVal;
         if (isHardIncluded_) {
-            maxVal = Max_FHardIncluded;
+            maxVal = MAX_F_HARD_INCLUDED ;
         } else {
-            maxVal = Max_FramerateSoftIncluded;
+            maxVal = MAX_FRAMERATE_SOFT_INCLUDED ;
         }
         EXPECT_LE(ret.maxVal, maxVal); // 120: max framerate for video decoder
     }
