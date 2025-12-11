@@ -117,8 +117,6 @@ ohos_fuzztest("HttpDownloaderFlvFuzzTest") {
   ]
   sources = test_sources + [
     "httpdownloaderflv_fuzzer.cpp",
-    "../common/http_server_fuzz_demo.cpp",
-    "../common/http_server_mock.cpp",
   ]
 
   external_deps = [
