@@ -238,9 +238,8 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
         HttpHeaderParse(httpHeader);
         isFirstOpen_ = false;
     }
-    InitCurlEnvironment(url, timeoutMs);
     MEDIA_LOG_I("Open client out");
-    return Status::OK;
+    return InitCurlEnvironment(url, timeoutMs);;
 }
 
 Status HttpCurlClient::Close(bool isAsync)
@@ -351,6 +350,7 @@ Status HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeo
     curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_LIMIT, DEFAULT_LOW_SPEED_LIMIT);
     curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_TIME, timeout);
     InitCurProxy(url);
+    return Status::OK;
 }
 
 std::string HttpCurlClient::UrlParse(const std::string& url) const
