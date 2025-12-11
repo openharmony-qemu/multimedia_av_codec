@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
- #include <avcodec_hievent.h>
- #include <unistd.h>
- #include "avcodec_log.h"
- #include "app_event.h"
- #include "app_event_processor_mgr.h"
- 
+#include <avcodec_hievent.h>
+#include <unistd.h>
+#include "avcodec_log.h"
+#include "app_event.h"
+#include "app_event_processor_mgr.h"
+
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVcodec_hiappevent"};
 }
@@ -32,7 +32,7 @@ void WriteCallEvent(AVAppEvent event)
     Event eventOutput("api_diagnostic", "api_called_stat", BEHAVIOR);
     eventOutput.AddParam("api_name", event.apiName);
     eventOutput.AddParam("sdk_name", std:string("AVCodecKits"));
-    eventOutput.AddParam("total_codt_time", event.sumTime);
+    eventOutput.AddParam("total_cost_time", event.sumTime);
     Write(eventOutput);
 }
 } // namespace MediaAVCodec

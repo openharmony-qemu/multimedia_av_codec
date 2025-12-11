@@ -21,12 +21,14 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-using namespace HiviewDFX::HiAppEvent;
+
 struct AVAppEvent {
     int64_t sumTime;
     std::string apiName;
-    std::string errType;
+    std::string errorType;
 }
-}
-}
+
+__attribute__((visibility("default"))) void WriteCallEvent(AVAppEvent event);
+} // namespace MediaAVCodec
+} // namespace OHOS
 #endif // AVCODEC_HIEVENT_H

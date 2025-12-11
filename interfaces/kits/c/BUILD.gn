@@ -82,8 +82,9 @@ config("av_cenc_info_capi_config") {
 
 ohos_shared_library("avcodec_hiappevent") {
   install_enable = true
+  sanitize = av_codec_sanitize
   sources =
-      [ "$av_codec_root_dir/frameworks/native/capi/common/avcodec_hiappevent.cpp" ]
+      [ "$av_codec_root_dir/frameworks/native/capi/common/avcodec_hievent.cpp" ]
 
   public_configs = [ ":av_codec_capi_header_config" ]
   configs = [ ":av_codec_capi_compile_config" ]
@@ -98,7 +99,6 @@ ohos_shared_library("avcodec_hiappevent") {
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
-
 
 ohos_shared_library("native_media_avmuxer") {
   install_enable = true
