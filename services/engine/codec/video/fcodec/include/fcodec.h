@@ -113,7 +113,6 @@ private:
     int32_t UpdateSurfaceMemory(uint32_t index);
     void SendFrame();
     void ReceiveFrame();
-    void FindAvailIndex(uint32_t index);
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
     int32_t ConfigureContext(const Format &format);
@@ -121,10 +120,10 @@ private:
     int32_t SetCodecExtradata(const Format &format);
 #endif
     void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
-    int32_t AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize);
-    int32_t AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize);
-    int32_t ClearSurfaceAndSetQueueSize(int32_t bufferCnt);
-    int32_t AllocateOutputBuffersFromSurface(int32_t bufferCnt);
+    int32_t AllocateInputBuffer(int32_t inBufferSize);
+    int32_t AllocateOutputBuffer(int32_t outBufferSize);
+    int32_t ClearSurfaceAndSetQueueSize();
+    int32_t AllocateOutputBuffersFromSurface();
     int32_t FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height);
     void SetSurfaceParameter();
@@ -146,7 +145,9 @@ private:
     void RequestSurfaceBufferThread();
     void StartRequestSurfaceBufferThread();
     void StopRequestSurfaceBufferThread();
-    bool RequestSurfaceBufferOnce(uint32_t index);
+    void RequestSurfaceBufferOnce();
+    SurfaceBufferInfo RequestSurfaceBuffer();
+    void OnSurfaceBufferAvailable(SurfaceBufferInfo bufInfo);
     // for memory recycle
     int32_t FreezeBuffers(State curState);
     int32_t ActiveBuffers();
@@ -186,8 +187,8 @@ private:
     std::vector<std::shared_ptr<AVBuffer>> outAVBuffer4Surface_;
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> codecAvailQue_;
-    std::shared_ptr<BlockQueue<uint32_t>> renderAvailQue_;
-    std::shared_ptr<BlockQueue<uint32_t>> requestSurfaceBufferQue_;
+    // for surfacebuffer
+    std::unordered_map<uint32_t, uint32_t> seqNumToFbufMap_;
     std::map<uint32_t, std::pair<sptr<SurfaceBuffer>, OHOS::BufferFlushConfig>> renderSurfaceBufferMap_;
     std::optional<uint32_t> synIndex_ = std::nullopt;
     SurfaceControl sInfo_;
@@ -210,7 +211,6 @@ private:
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;
-    std::atomic<bool> requestSucceed_ = false;
     std::atomic<bool> requestBufferFinished_ = true;
     std::atomic<bool> requestBufferThreadExit_ = false;
     std::thread mRequestSurfaceBufferThread_;
