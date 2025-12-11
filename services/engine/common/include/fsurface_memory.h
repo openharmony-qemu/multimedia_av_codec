@@ -44,6 +44,12 @@ struct CallerInfo {
     bool calledByAvcodec = true;
 };
 
+struct SurfaceBufferInfo {
+    sptr<SurfaceBuffer> buf = nullptr;
+    sptr<SyncFence> fence = nullptr;
+    uint32_t seqNum = 0u;
+};
+
 struct SurfaceControl {
     sptr<Surface> surface = nullptr;
     BufferRequestConfig requestConfig = {.width = 0,
@@ -65,15 +71,16 @@ public:
     int32_t AllocSurfaceBuffer(int32_t width, int32_t height);
     void ReleaseSurfaceBuffer();
     sptr<SurfaceBuffer> GetSurfaceBuffer();
+    void SetSurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, Owner toChangeOwner, sptr<SyncFence> fence = nullptr);
     int32_t GetSurfaceBufferStride();
     sptr<SyncFence> GetFence();
     uint8_t *GetBase() const;
     int32_t GetSize() const;
+    uint32_t GetId() const;
     std::atomic<bool> isAttached = false;
     std::atomic<Owner> owner = Owner::OWNED_BY_US;
 
 private:
-    void SetSurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, Owner toChangeOwner);
     int32_t RequestSurfaceBuffer();
     void SetCallerToBuffer(int32_t w, int32_t h);
     CallerInfo decInfo_;
@@ -81,6 +88,7 @@ private:
     sptr<SyncFence> fence_ = nullptr;
     int32_t stride_ = 0;
     SurfaceControl *sInfo_ = nullptr;
+    uint32_t seqNum = 0u;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
