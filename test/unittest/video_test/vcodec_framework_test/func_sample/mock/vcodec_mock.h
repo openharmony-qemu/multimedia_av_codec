@@ -195,6 +195,9 @@ constexpr uint32_t DEFAULT_BITRATE = 12000;
 constexpr uint32_t DEFAULT_WIDTH = 720;
 constexpr uint32_t DEFAULT_HEIGHT = 1280;
 
+constexpr uint32_t DEFAULT_RV40_WIDTH = 352;
+constexpr uint32_t DEFAULT_RV40_HEIGHT = 288;
+
 constexpr uint32_t DEFAULT_WIDTH_HLG_FULL = 1920;
 constexpr uint32_t DEFAULT_HEIGHT_HLG_FULL = 1440;
 
