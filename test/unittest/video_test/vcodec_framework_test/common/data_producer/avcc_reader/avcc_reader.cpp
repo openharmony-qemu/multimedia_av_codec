@@ -84,6 +84,7 @@ constexpr int IVF_HEADER_TOTAL_FRAMES_OFFSET_3 = 24;
 
 #ifdef SUPPORT_CODEC_AV1
 constexpr uint32_t IVF_FILE_AV1_HEADER_SIZE = 32;
+constexpr uint32_t IVF_FRAME_AV1_HEADER_SIZE = 12;
 constexpr uint8_t IVF_AV1_SIGNATURE[] = {'D', 'K', 'I', 'F'};
 constexpr int IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_1 = 8;
 constexpr int IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_2 = 16;
@@ -2907,10 +2908,10 @@ bool Av1Reader::IvfUnitReader::ParseIvfFrameHeader(uint32_t& frameSize)
         return false;
     }
 
-    std::vector<uint8_t> frameHeader(IVF_FILE_AV1_HEADER_SIZE);
-    inputFile_->read(reinterpret_cast<char*>(frameHeader.data()), IVF_FILE_AV1_HEADER_SIZE);
+    std::vector<uint8_t> frameHeader(IVF_FRAME_AV1_HEADER_SIZE);
+    inputFile_->read(reinterpret_cast<char*>(frameHeader.data()), IVF_FRAME_AV1_HEADER_SIZE);
 
-    if (inputFile_->gcount() != IVF_FILE_AV1_HEADER_SIZE) {
+    if (inputFile_->gcount() != IVF_FRAME_AV1_HEADER_SIZE) {
         return false;
     }
 
