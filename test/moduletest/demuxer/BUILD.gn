@@ -109,7 +109,8 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/m4vfunc_test.cpp",
       "./src/wmvfunc_test.cpp",
       "./src/webmfunc_test.cpp",
-      "./src/alacfunc_test.cpp"
+      "./src/alacfunc_test.cpp",
+      "./src/dtsfunc_test.cpp"
     ]
   }
 

@@ -2625,4 +2625,64 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9500, TestSize.Level3)
         }
     }
 }
+
+/**
+ * @tc.number    : DEMUXER_RELI_9600
+ * @tc.name      : demuxer damaged dts video file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9600, TestSize.Level3)
+{
+    const char *file = "/data/test/media/test_error.dts";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_EQ(source, nullptr);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_9700
+ * @tc.name      : create source with fd, dts
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9700, TestSize.Level3)
+{
+    OH_AVCodecBufferAttr attr;
+    bool isEnd = false;
+    const char *file = "/data/test/media/dts.dts";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int audioFrame = 0;
+    int keyCount = 0;
+    while (!isEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, buffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(buffer, &attr));
+            cout << attr.size << "size---------------pts:" << attr.pts << endl;
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                isEnd = true;
+                cout << "isend !!!!!!!!!!!!!!!" << endl;
+                continue;
+            }
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
+            }
+        }
+    }
+    ASSERT_EQ(audioFrame, 469);
+    ASSERT_EQ(keyCount, 469);
+}
 }
