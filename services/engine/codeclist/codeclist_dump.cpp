@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,12 +13,17 @@
  * limitations under the License.
  */
 
+#include "codec_ability_singleton.h"
+#include <unistd.h>
+#include <string>
+#include <unordered_map>
+#include <map>
 #include "avcodec_dump_utils.h"
 #include "avcodec_errors.h"
 #include "avcodec_info.h"
-#include "codec_ability_singleton.h"
 #include "buffer_common.h"
-#include <unistd.h>
+
+
 namespace OHOS {
 namespace MediaAVCodec {
 enum DumpIndex : uint32_t {
@@ -101,7 +106,7 @@ public:
     static constexpr std::string_view LEVEL_UNKNOW = "UNKNOW";
 };
 
-std::map<int32_t, std::string_view> codecTypeMap = {
+std::unordered_map<int32_t, std::string_view> codecTypeMap = {
     {AVCODEC_TYPE_NONE, "NONE"},
     {AVCODEC_TYPE_VIDEO_ENCODER, "VIDEO_ENCODER"},
     {AVCODEC_TYPE_VIDEO_DECODER, "VIDEO_DECODER"},
@@ -109,7 +114,7 @@ std::map<int32_t, std::string_view> codecTypeMap = {
     {AVCODEC_TYPE_AUDIO_DECODER, "AUDIO_DECODER"}
 };
 
-std::map<int32_t, std::string_view> pixFormatMap = {
+std::unordered_map<int32_t, std::string_view> pixFormatMap = {
     {static_cast<int32_t>(VideoPixelFormat::UNKNOWN), "UNKNOWN"},
     {static_cast<int32_t>(VideoPixelFormat::YUV420P), "YUV420P"},
     {static_cast<int32_t>(VideoPixelFormat::YUVI420), "YUVI420"},
@@ -120,16 +125,14 @@ std::map<int32_t, std::string_view> pixFormatMap = {
     {static_cast<int32_t>(VideoPixelFormat::RGBA1010102), "RGBA1010102"}
 };
 
-std::map<int32_t, std::string_view> bitrateModeMap = {
+std::unordered_map<int32_t, std::string_view> bitrateModeMap = {
     {CBR, "CBR"},
     {VBR, "VBR"},
     {CQ, "CQ"},
-    {SQR, "SQR"},
-    {CBR_VIDEOCALL, "CBR_VIDEOCALL"},
-    {CRF, "CRF"}
+    {SQR, "SQR"}
 };
 
-std::map<int32_t, std::string_view> graphicPixFormatMap = {
+std::unordered_map<int32_t, std::string_view> graphicPixFormatMap = {
     {NATIVEBUFFER_PIXEL_FMT_RGBA_8888, "RGBA_8888"},
     {NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP, "YCBCR_420_SP"},
     {NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP, "YCRCB_420_SP"},
@@ -139,7 +142,7 @@ std::map<int32_t, std::string_view> graphicPixFormatMap = {
     {NATIVEBUFFER_PIXEL_FMT_YCRCB_P010, "YCRCB_P010"}
 };
 
-std::map<std::string_view, std::map<int32_t, std::string_view>> profileMap = {
+std::unordered_map<std::string_view, std::unordered_map<int32_t, std::string_view>> profileMap = {
     {CodecMimeType::VIDEO_AVC, {
         {AVC_PROFILE_BASELINE, "BASELINE"},
         {AVC_PROFILE_CONSTRAINED_BASELINE, "CONSTRAINED_BASELINE"},
@@ -234,7 +237,7 @@ std::map<std::string_view, std::map<int32_t, std::string_view>> profileMap = {
     }}
 };
 
-std::map<std::string_view, std::map<int32_t, std::string_view>> profileLevelMap = {
+std::unordered_map<std::string_view, std::unordered_map<int32_t, std::string_view>> profileLevelMap = {
     {CodecMimeType::VIDEO_AVC, {
         {AVC_LEVEL_1, ProfileLevelType::LEVEL_1},
         {AVC_LEVEL_1b, ProfileLevelType::LEVEL_1b},
@@ -352,13 +355,13 @@ std::string FormatImgSize(const ImgSize& imgSize)
     return std::to_string(imgSize.width) + "*" + std::to_string(imgSize.height);
 }
 
-std::string ToString(int32_t index, const std::map<int32_t, std::string_view>& map)
+std::string ToString(int32_t index, const std::unordered_map<int32_t, std::string_view>& map)
 {
     auto iter = map.find(index);
     return iter != map.end() ? iter->second.data() : std::to_string(index);
 }
 
-std::string FormatVector(const std::vector<int32_t>& vec, const std::map<int32_t, std::string_view>& map)
+std::string FormatVector(const std::vector<int32_t>& vec, const std::unordered_map<int32_t, std::string_view>& map)
 {
     if (vec.size() == 0) {
         return "";
@@ -409,7 +412,7 @@ std::string FormatProfileLevelsMap(std::string_view mimeType, std::string spaceS
         if (hasValueMapping) {
             retStr += FormatVector(iter.second, profileLevelMap[mimeType]) ;
         } else {
-            std::map<int32_t, std::string_view> emptyMap;
+            std::unordered_map<int32_t, std::string_view> emptyMap;
             retStr += FormatVector(iter.second, emptyMap) ;
         }
         retStr += ")";
@@ -469,7 +472,7 @@ void AddCapabilityDataDump(AVCodecDumpControler& dumpCtrl, CapabilityData& capab
     AddInfo(dumpCtrl, INDEX_BLOCK_PER_FRAME, "blockPerFrame", FormatRange(capability.blockPerFrame));
     AddInfo(dumpCtrl, INDEX_BLOCK_PER_SECOND, "blockPerSecond", FormatRange(capability.blockPerSecond));
     AddInfo(dumpCtrl, INDEX_BLOCK_SIZE, "blockSize", FormatImgSize(capability.blockSize));
-    std::map<int32_t, std::string_view> emptyMap;
+    std::unordered_map<int32_t, std::string_view> emptyMap;
     AddInfo(dumpCtrl, INDEX_SAMPLE_RATE, "sampleRate", FormatVector(capability.sampleRate, emptyMap));
     AddInfo(dumpCtrl, INDEX_PIX_FORMAT, "pixFormat", FormatVector(capability.pixFormat, pixFormatMap));
     AddInfo(dumpCtrl, INDEX_GRAPHIC_PIX_FORMAT, "graphicPixFormat",
