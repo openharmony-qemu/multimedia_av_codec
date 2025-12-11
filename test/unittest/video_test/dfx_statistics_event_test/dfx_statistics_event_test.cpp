@@ -16,11 +16,13 @@
 #include <chrono>
 #include <gtest/gtest.h>
 #include <random>
+#include <thread>
 #include <unistd.h>
 #include "avcodec_info.h"
 #include "avcodec_log.h"
 #include "cJSON.h"
 #include "dump_usage.h"
+#include "hisysevent.h"
 #include "hisysevent_manager_c.h"
 #include "hisysevent_record_c.h"
 #include "instance_info.h"
@@ -29,7 +31,6 @@
 #include "statistics_event_handler.h"
 
 using namespace OHOS;
-using namespace OHOS::HiviewDFX::HiSysEvent;
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 using namespace testing;
@@ -40,7 +41,7 @@ constexpr int32_t QUERY_INTERVAL_TIME = 500;
 constexpr int32_t MAX_EVENT_ADD_COUNT = 100000;
 constexpr int32_t BEHAVIORSINFO_EVENT_ADD_COUNT = 200;
 constexpr int32_t ELAPSEDTIME_THREADSHOLD = 600;
-const char *TEST_DOMAIN = "AV_CODEC";
+constexpr char TEST_DOMAIN[] = "AV_CODEC";
 std::string g_recordJson;
 enum class RANDOM_MIME_TYPE : int {
     VALID_VIDEO,
@@ -175,9 +176,9 @@ void DfxStatisticsEventTest::SetUpTestCase(void)
     watcher.OnServiceDied = OnServiceDiedTest;
     HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
     HiSysEventWatchRule rules[] = {rule};
-    auto ret = OH_HiSysEvent_Add_Watcher(&watcher_, rules, sizeof(rules) / sizeof(HiSysEventWatchRule));
+    auto ret = OH_HiSysEvent_Add_Watcher(&watcher, rules, sizeof(rules) / sizeof(HiSysEventWatchRule));
     ASSERT_EQ(ret, HiviewDFX::IPC_CALL_SUCCEED);
-    this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
 }
 
 void DfxStatisticsEventTest::TearDownTestCase(void) {}
@@ -190,7 +191,6 @@ void DfxStatisticsEventTest::SetUp(void)
     meta_ = std::make_shared<Media::Meta>();
     ASSERT_NE(nullptr, meta_);
 
-    // this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
     std::string testCaseName = testInfo_->name();
     AVCODEC_LOGI("%{public}s", testCaseName.c_str());
@@ -200,12 +200,6 @@ void DfxStatisticsEventTest::TearDown(void)
 {
     pid_t pid = getpid();
     std::cout << "end memory = " << dumpUsage_.GetPss(pid) << std::endl;
-}
-
-template <size_t N>
-void CheckHiSysEventWatcher(HiSysEventWatcher watcher, const char *name, HiSysEventWatchRule (&rules)[N])
-{
-
 }
 
 /**
@@ -219,14 +213,14 @@ HWTEST_F(DfxStatisticsEventTest, RegisterEventHooker_Test_001, TestSize.Level1)
 {
     StatisticsEventInfo::GetInstance().RegisterEventHooker(
         StatisticsEventType::MAIN_EVENT_TYPE_MASK, [](const Media::Meta &meta) -> bool {
-            HiSysEventWrite("AV_CODEC", "DFX_STATISTICS_EVENT_TEST", EventType::BEHAVIOR, "Test", "Success");
+            HiSysEventWrite("AV_CODEC", "DFX_STATISTICS_EVENT_TEST", OHOS::HiViewDFX::HiSysEvent::EventType::BEHAVIOR,
+                            "Test", "Success");
             return true;
         });
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
-
-    auto test  = cJSON_GetObjectItem(data.get(), "Test");
-    std::cout << test << << std::endl;
+    auto test = cJSON_GetObjectItem(data.get(), "Test");
 }
 
 /**
@@ -239,6 +233,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_001, TestSize.Level1)
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(INT32_MAX, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_EQ(nullptr, data);
 }
@@ -253,6 +248,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_002, TestSize.Level1)
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(-1, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_EQ(nullptr, data);
 }
@@ -265,18 +261,16 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_002, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_003, TestSize.Level1)
 {
-    StatisticsEventInfo::GetInstance().RegisterEventHooker(
-        INT32_MAX, [](const Media::Meta &meta) -> bool {
-            HiSysEventWrite("AV_CODEC", "DFX_STATISTICS_EVENT_TEST", EventType::BEHAVIOR, "Test", "Success");
-            return true;
-        });
+    StatisticsEventInfo::GetInstance().RegisterEventHooker(INT32_MAX, [](const Media::Meta &meta) -> bool {
+        HiSysEventWrite("AV_CODEC", "DFX_STATISTICS_EVENT_TEST", EventType::BEHAVIOR, "Test", "Success");
+        return true;
+    });
     StatisticsEventInfo::GetInstance().OnAddEventInfo(INT32_MAX, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
-
-    auto test  = cJSON_GetObjectItem(data.get(), "Test");
-    std::cout << test << << std::endl;
+    auto test = cJSON_GetObjectItem(data.get(), "Test");
 }
 
 /**
@@ -287,18 +281,17 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_003, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_004, TestSize.Level1)
 {
-    StatisticsEventInfo::GetInstance().RegisterEventHooker(
-        INT32_MAX, [](const Media::Meta &meta) -> bool {
-            HiSysEventWrite("AV_CODEC", "DFX_STATISTICS_EVENT_TEST", EventType::BEHAVIOR, "Test", "Success");
-            return false;
-        });
+    StatisticsEventInfo::GetInstance().RegisterEventHooker(INT32_MAX, [](const Media::Meta &meta) -> bool {
+        HiSysEventWrite("AV_CODEC", "DFX_STATISTICS_EVENT_TEST", EventType::BEHAVIOR, "Test", "Success");
+        return false;
+    });
     StatisticsEventInfo::GetInstance().OnAddEventInfo(INT32_MAX, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 
-    auto test  = cJSON_GetObjectItem(data.get(), "Test");
-    std::cout << test << << std::endl;
+    auto test = cJSON_GetObjectItem(data.get(), "Test");
 }
 
 /**
@@ -310,10 +303,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_001, TestSize.Level1)
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
-    auto test  = cJSON_GetObjectItem(data.get(), "QueryCapTimes");
-    std::cout << test << << std::endl;
 }
 
 /**
@@ -323,12 +315,11 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_001, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_002, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "BASIC_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -338,12 +329,11 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_002, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_003, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "BASIC_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -354,15 +344,14 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_003, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_004, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     std::string mime = GenerateRandomString(10); // 10: length
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     meta_->SetData(Media::Tag::MIME_TYPE, mime);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "BASIC_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -373,15 +362,14 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_004, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_005, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     std::string mime = GenerateRandomString(10); // 10: length
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1);
     meta_->SetData(Media::Tag::MIME_TYPE, mime);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "BASIC_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -392,15 +380,14 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_005, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_006, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     std::string mime = GenerateRandomString(10); // 10: length
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
     meta_->SetData(Media::Tag::MIME_TYPE, mime);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "BASIC_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -411,14 +398,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_006, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_007, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "BASIC_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -429,14 +415,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_007, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_008, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1);
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "BASIC_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -447,14 +432,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_008, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_009, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "BASIC_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -465,13 +449,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_009, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_010, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "BASIC_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -482,13 +465,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_010, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_011, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "BASIC_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -499,13 +481,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_011, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_012, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "BASIC_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -516,14 +497,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_012, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_001, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_SPECIFICATIONS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 void AddSpecificationInfoEvent(std::shared_ptr<Media::Meta> meta, std::string mime)
@@ -541,9 +521,6 @@ void AddSpecificationInfoEvent(std::shared_ptr<Media::Meta> meta, std::string mi
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_002, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     std::string mime = "video/" + FORMAT_COMPONENTS[GetRandomNum(0, FORMAT_COMPONENTS.size() - 1)];
     AddSpecificationInfoEvent(meta_, mime);
     mime = "audio/" + FORMAT_COMPONENTS[GetRandomNum(0, FORMAT_COMPONENTS.size() - 1)];
@@ -567,7 +544,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_002, TestSiz
     mime = GenerateRandomString(50); // 50: less than mime type length
     AddSpecificationInfoEvent(meta_, mime);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -578,14 +557,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_002, TestSiz
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_003, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -596,14 +574,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_003, TestSiz
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_004, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -615,13 +592,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_004, TestSiz
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_005, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -632,14 +608,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_005, TestSiz
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_006, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::ENCODER_HARDWARE);
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -651,13 +626,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_006, TestSiz
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_007, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::ENCODER_HARDWARE);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -668,9 +642,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_007, TestSiz
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_008, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     for (int i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string mime = GenerateRandomMime();
         meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
@@ -678,7 +649,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_008, TestSiz
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -689,9 +662,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_008, TestSiz
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_009, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     for (int i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string mime = GenerateRandomMime();
         meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::ENCODER_HARDWARE);
@@ -699,7 +669,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_009, TestSiz
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -710,14 +682,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_009, TestSiz
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_010, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -729,13 +700,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_010, TestSiz
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_011, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -746,14 +716,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_011, TestSiz
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_012, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::ENCODER_HARDWARE);
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -765,13 +734,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_012, TestSiz
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_013, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::ENCODER_HARDWARE);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -782,9 +750,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_013, TestSiz
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_014, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     for (int i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string mime = GenerateRandomMime();
         meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
@@ -793,7 +758,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_014, TestSiz
                                                           *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -804,9 +771,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_014, TestSiz
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_015, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_SPECIFICATIONS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     for (int i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string mime = GenerateRandomMime();
         meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::ENCODER_HARDWARE);
@@ -815,7 +779,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_015, TestSiz
                                                           *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_SPECIFICATIONS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -826,16 +792,15 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_015, TestSiz
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_001, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     std::string forwardProcessName = "forwardProcess";
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -846,14 +811,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_001, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_002, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     std::string forwardProcessName = "forwardProcess";
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -864,14 +828,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_002, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_003, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -882,12 +845,11 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_003, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_004, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -898,14 +860,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_004, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_005, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     std::string callerProcessName = GenerateRandomString(200); // 200: clller name length
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -916,9 +877,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_005, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_006, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     for (int32_t i = 0; i < BEHAVIORSINFO_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = "callerProcess";
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
@@ -926,7 +884,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_006, TestSize.Lev
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -937,9 +897,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_006, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_007, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     for (int32_t i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = GenerateRandomString(20); // 20: clller name length
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
@@ -947,7 +904,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_007, TestSize.Lev
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -958,15 +917,14 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_007, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_008, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO,
                                                       *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -977,16 +935,15 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_008, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_009, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
     meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD / 2);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO,
                                                       *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -997,16 +954,15 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_009, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_010, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
     meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD * 2);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO,
                                                       *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1017,9 +973,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_010, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_011, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     for (int32_t i = 0; i < BEHAVIORSINFO_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = "callerProcess";
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
@@ -1028,7 +981,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_011, TestSize.Lev
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1039,9 +994,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_011, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_012, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     for (int32_t i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = GenerateRandomString(20); // 20: clller name length
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
@@ -1050,7 +1002,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_012, TestSize.Lev
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1061,9 +1015,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_012, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_013, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     for (int32_t i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = GenerateRandomString(20); // 20: clller name length
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
@@ -1072,7 +1023,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_013, TestSize.Lev
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1082,12 +1035,11 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_013, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_014, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "APP_BEHAVIORS_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SPEED_DECODING_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "APP_BEHAVIORS_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1098,13 +1050,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_014, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_001, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "CODEC_ABNORMAL_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "CODEC_ABNORMAL_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1115,13 +1066,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_001, TestSize.Le
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_002, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "CODEC_ABNORMAL_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1); // -1: codec type is invalid
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "CODEC_ABNORMAL_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1132,13 +1082,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_002, TestSize.Le
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_003, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "CODEC_ABNORMAL_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "CODEC_ABNORMAL_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1149,14 +1098,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_003, TestSize.Le
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_004, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "CODEC_ABNORMAL_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), AV_ERR_INVALID_VAL);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "CODEC_ABNORMAL_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1167,14 +1115,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_004, TestSize.Le
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_005, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "CODEC_ABNORMAL_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1); // -1: codec type is invalid
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), AV_ERR_INVALID_VAL);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "CODEC_ABNORMAL_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1185,14 +1132,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_005, TestSize.Le
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_006, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "CODEC_ABNORMAL_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), AV_ERR_INVALID_VAL);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "CODEC_ABNORMAL_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1203,14 +1149,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_006, TestSize.Le
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_007, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "CODEC_ABNORMAL_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "CODEC_ABNORMAL_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1221,14 +1166,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_007, TestSize.Le
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_008, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "CODEC_ABNORMAL_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1); // -1: codec type is invalid
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "CODEC_ABNORMAL_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1239,14 +1183,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_008, TestSize.Le
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_009, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "CODEC_ABNORMAL_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "CODEC_ABNORMAL_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1257,15 +1200,14 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_009, TestSize.Le
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_010, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "CODEC_ABNORMAL_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), AV_ERR_INVALID_VAL);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "CODEC_ABNORMAL_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1276,15 +1218,14 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_010, TestSize.Le
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_011, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "CODEC_ABNORMAL_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1); // -1: codec type is invalid
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), AV_ERR_INVALID_VAL);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "CODEC_ABNORMAL_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -1295,14 +1236,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_011, TestSize.Le
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_012, TestSize.Level1)
 {
-    InitWatcher(watcher_);
-    HiSysEventWatchRule rule = {"AV_CODEC", "CODEC_ABNORMAL_INFO", "", 1, 0};
-    HiSysEventWatchRule rules[] = {rule};
     meta_->SetData(Media::Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), AV_ERR_INVALID_VAL);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckHiSysEventWatcher(watcher_, "CODEC_ABNORMAL_INFO", rules);
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shaed_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 } // namespace
