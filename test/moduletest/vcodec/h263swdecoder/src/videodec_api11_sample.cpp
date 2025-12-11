@@ -1190,7 +1190,6 @@ void VDecAPI11Sample::SwitchSurfaceGetTransform()
             GetSurfaceTransform(switchSurfaceFlag) == DEFAULT_TRANSFORM ? (0) : (errCount++);
             DEFAULT_TRANSFORM = NATIVEBUFFER_FLIP_V_ROT270;
             SetParameter() == AV_ERR_OK ? (0) : (errCount++);
-            cout << "switchSurfaceFlag: " << switchSurfaceFlag << endl;
             GetSurfaceTransform(switchSurfaceFlag) == DEFAULT_TRANSFORM ? (0) : (errCount++);
         }
     }
