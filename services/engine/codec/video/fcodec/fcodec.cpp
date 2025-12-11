@@ -733,7 +733,6 @@ void FCodec::OnSurfaceBufferAvailable(SurfaceBufferInfo bufInfo)
     } else {
         bufIdx = seqNumToFbufMap_[bufInfo.seqNum];
     }
-    AVCODEC_LOGI("surface buffer %{public}u, index %{public}d, map size: %{public}zu", bufInfo.seqNum, bufIdx, seqNumToFbufMap_.size());
     std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][bufIdx]->sMemory_;
     surfaceMemory->SetSurfaceBuffer(bufInfo.buf, Owner::OWNED_BY_CODEC, bufInfo.fence);
     buffers_[INDEX_OUTPUT][bufIdx]->owner_ = Owner::OWNED_BY_CODEC;
