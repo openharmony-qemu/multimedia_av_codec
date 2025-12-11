@@ -96,6 +96,10 @@ int32_t NUM_TWO = 2;
 int32_t NUM_THR = 3;
 #endif
 
+constexpr uint8_t CINEPAK_HEAD[] = { 0x00, 0x00, 0xB2, 0xED, 0x01, 0x68, 0x02, 0x80, 0x00, 0x03};
+constexpr uint8_t CINEPAK_HEAD_LEN = sizeof(CINEPAK_HEAD);
+constexpr uint8_t CINEPAK_FRAME_TYPE_MASK = 0x80;
+
 static inline int64_t GetTimeUs()
 {
     struct timespec now;
@@ -178,6 +182,12 @@ enum Vc1Type {
     VC1_B = 3,
     VC1_BI = 4,
     VC1_SEQUENCE_HEADER = 5
+};
+
+enum CinepakType {
+    CINEPAK_UNSPECIFIED = 0,
+    CINEPAK_I = 1,
+    CINEPAK_P = 2,
 };
 
 const uint32_t ES_VC1[] = {
@@ -610,6 +620,34 @@ const uint32_t ES_RV40[] = {
 };
 const uint32_t ES_RV40_LENGTH = sizeof(ES_RV40) / sizeof(ES_RV40[0]);
 #endif
+
+const uint32_t ES_CINEPAK_NORMAL[] = {
+    45805, 11777, 16835, 23437, 24320, 16984, 10992, 26782, 24353, 15395,
+    31367, 12311, 45475, 26134, 26832, 25823, 13917, 20160, 26802, 22101,
+    27422, 12736, 26313, 23796, 45487, 19720, 15140, 26785, 29394, 22241,
+    28554, 13567, 24418, 26126, 28024, 27277, 45472, 27292, 28699, 27100,
+    27406, 11289, 27572, 28018, 27051, 26539, 12831, 26535, 45514, 27465,
+    28484, 12691, 27044, 28057, 26569, 27387, 12506, 29146, 26802, 28389,
+    45652, 12570, 25763, 28007, 28348, 25237, 12190, 29124, 28154, 30224,
+    27787, 12342, 45844, 26404, 25496, 28006, 12258, 26574, 28131, 29143,
+    28108, 12206, 29082, 24388, 45781, 23964, 13626, 30186, 24499, 28011,
+    26799, 11662, 26614, 27369, 25292, 25434, 45772, 25100, 28161, 26406,
+    30837, 10893, 23782, 24003, 26144, 25005, 12863, 23694, 45757, 24625,
+    24841, 12213, 25744, 25236, 25913, 21970, 12575, 26980, 25586, 25781,
+    45754, 11945, 20411, 24676, 24424, 20926, 13424, 26745, 25174, 25461,
+    21868, 11915, 46075, 24853, 19461, 25441, 11870, 23077, 22104, 25385,
+    24903, 12009, 24077, 19553, 45751, 23882, 12994, 26893, 17765, 23255,
+    28790, 13019, 16187, 20133, 20696, 20792, 45784, 20571, 23848, 26653,
+    23938, 13527, 15275, 21242, 23477, 20104, 12180, 19967, 46189, 19837,
+    19710, 12261, 19617, 21197, 23225, 16084, 10862, 16959, 21011, 19682,
+    45802, 12737, 14051, 19709, 18581, 21291, 10969, 16652, 16988, 17546,
+    19574, 12545, 46192, 15306, 16286, 16374, 9973, 14476, 14782, 13011,
+    14793, 12056, 16157, 14493, 46039, 14690, 11327, 14347, 14196, 17056,
+    18294, 11601, 11773, 17663, 19142, 10615, 46162, 14423, 11247, 12107,
+    14162, 10850, 10651, 10963, 11602, 10408, 9440, 9438, 46366, 13188,
+    12925, 10367, 10357, 11122, 10265, 42703, 44554, 43515, 42103
+};
+const uint32_t ES_CINEPAK_NORMAL_LEN = sizeof(ES_CINEPAK_NORMAL) / sizeof(ES_CINEPAK_NORMAL[0]);
 
 int32_t MpegReader::Init(const std::shared_ptr<MpegReaderInfo> &info)
 {
@@ -3291,5 +3329,185 @@ bool Rv40Reader::Rv40Detector::IsI(uint8_t rv40Type)
 }
 #endif
 
+void CinepakReader::CinepakMetaUnitReader::PrereadFile()
+{
+    CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nallptr");
+    inputFile_->read((char *)prereadBuffer_.get(), PREREAD_BUFFER_SIZE);
+    prereadBufferSize_ = inputFile_->gcount();
+    pPrereadBuffer_ = 0;
+}
+
+int32_t CinepakReader::Init(const std::shared_ptr<CinepakReaderInfo> &info)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_ptr<std::ifstream> inputFile = std::make_unique<std::ifstream>(info->inPath.c_str(),
+                                                std::ios::binary | std::ios::in);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile != nullptr && inputFile->is_open(),
+                                      AV_ERR_INVALID_VAL, "Open input file failed");
+    cinepakUnitReader_= std::static_pointer_cast<CinepakUnitReader>(std::make_shared<CinepakMetaUnitReader>(
+                                      inputFile, info->isMainStream));
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(cinepakUnitReader_, AV_ERR_INVALID_VAL, "cinepak unit reader create failed");
+
+    cinepakDetector_ = std::static_pointer_cast<CinepakDetector>(
+        std::make_shared<CinepakDetector>());
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(cinepakDetector_, AV_ERR_INVALID_VAL, "Cinepak detector create failed");
+
+    return AV_ERR_OK;
+}
+
+uint8_t* CinepakReader::CinepakMetaUnitReader::GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend)
+{
+    return std::search(addrstart, addrend, std::begin(CINEPAK_HEAD), std::end(CINEPAK_HEAD));
+}
+
+const uint8_t* CinepakReader::CinepakDetector::GetCinepakTypeAddr(const uint8_t *bufferAddr)
+{
+    const uint32_t gSearchRange  = 1024;
+
+    auto pos = GetDelimiterPos(const_cast<uint8_t*>(bufferAddr), const_cast<uint8_t*>(bufferAddr + gSearchRange));
+    if (pos == const_cast<uint8_t*>(bufferAddr) + gSearchRange) {
+        return nullptr;
+    }
+    return pos;
+}
+
+uint8_t CinepakReader::CinepakDetector::GetCinepakType(const uint8_t *bufferAddr)
+{
+    const uint8_t *typeAddr = GetCinepakTypeAddr(bufferAddr);
+    if (typeAddr == nullptr) {
+        return MPEG4_UNSPECIFIED;
+    }
+    return (*typeAddr & CINEPAK_FRAME_TYPE_MASK) ? MPEG4_I : MPEG4_P;
+}
+
+void CinepakReader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize,
+                                   uint8_t frameType,
+                                   bool isEosFrame)
+{
+    (void) frameType;
+    attr.size = frameSize;
+    attr.pts = GetTimeUs();
+    attr.flags = isEosFrame ? AVCODEC_BUFFER_FLAG_EOS : 0;
+
+    if (isEosFrame) {
+        std::cout << "Input EOS Frame, frameCount = " << (frameInputCount_ + 1) << std::endl;
+    }
+}
+
+uint8_t* CinepakReader::CinepakDetector::GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend)
+{
+    return std::search(addrstart, addrend, std::begin(CINEPAK_HEAD), std::end(CINEPAK_HEAD));
+}
+
+int32_t CinepakReader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    int32_t frameSize = 0;
+    bool isEosFrame = false;
+
+    printf("[CinepakReader][FillBuffer] called frameIdx=%d, bufferAddr=0x%p\n",
+           frameInputCount_ + 1, bufferAddr);
+    if (bufferAddr == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(cinepakUnitReader_ != nullptr,
+        AV_ERR_INVALID_VAL,
+        "cinepakUnitReader");
+
+    auto ret = cinepakUnitReader_->ReadCinepakUnit(bufferAddr, frameSize, isEosFrame);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK,
+        AV_ERR_INVALID_VAL,
+        "ReadCinepakUnit failed");
+
+    uint8_t cinepakType = cinepakDetector_->GetCinepakType(bufferAddr);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(cinepakType != MPEG4_UNSPECIFIED, AVCS_ERR_INVALID_DATA,
+        "Failed to get cinepak type (frameInputCount_=%d)", frameInputCount_ + 1);
+    bufferAddr += frameSize;
+    FillBufferAttr(attr, frameSize, cinepakType, isEosFrame);
+    frameInputCount_++;
+
+    return AV_ERR_OK;
+}
+
+bool CinepakReader::CinepakDetector::IsI(uint8_t cinepakType)
+{
+    return (cinepakType == MPEG4_I);
+}
+
+bool CinepakReader::IsEOS()
+{
+    return cinepakUnitReader_ ? cinepakUnitReader_->IsEOS() : true;
+}
+
+uint8_t const *CinepakReader::CinepakUnitReader::GetNextCinepakUnitAddr()
+{
+    CHECK_AND_RETURN_RET_LOG(cinepakUnit_ != nullptr, nullptr, "cinepakUnit_ is nullptr");
+    return cinepakUnit_->data();
+}
+
+int32_t CinepakReader::CinepakMetaUnitReader::ReadCinepakUnit(uint8_t *bufferAddr,
+    int32_t &bufferSize, bool &isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL, "Got a invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(cinepakUnit_, AV_ERR_INVALID_VAL, "cinepak unit buffer is nullptr");
+    bufferSize = cinepakUnit_->size();
+    memcpy_s(bufferAddr, bufferSize, cinepakUnit_->data(), bufferSize);
+
+    if (!IsEOF()) {
+        isEosFrame = false;
+        PrereadCinepakUnit();
+    } else {
+        isEosFrame = true;
+        cinepakUnit_->clear();
+    }
+    return AV_ERR_OK;
+}
+
+CinepakReader::CinepakMetaUnitReader::CinepakMetaUnitReader(std::shared_ptr<std::ifstream> inputFile, bool isMainStream)
+{
+    inputFile_ = inputFile;
+    isMainStream_ = isMainStream;
+    prereadBuffer_ = std::make_unique<uint8_t []>(PREREAD_BUFFER_SIZE);
+    cinepakUnit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+    PrereadCinepakUnit();
+}
+
+bool CinepakReader::CinepakMetaUnitReader::IsEOS()
+{
+    return IsEOF() && cinepakUnit_->empty();
+}
+
+bool CinepakReader::CinepakMetaUnitReader::IsEOF()
+{
+    return frameIndex_ >= ES_CINEPAK_NORMAL_LEN;
+}
+
+uint32_t CinepakReader::CinepakMetaUnitReader::GetFrameLenth(uint32_t index)
+{
+    return ES_CINEPAK_NORMAL[index];
+}
+
+void CinepakReader::CinepakMetaUnitReader::PrereadCinepakUnit()
+{
+    CHECK_AND_RETURN_LOG(inputFile_ && inputFile_->is_open(), "Input file not open");
+    CHECK_AND_RETURN_LOG(cinepakUnit_ != nullptr, "cinepak unit buffer is nullptr");
+    CHECK_AND_RETURN_LOG(frameIndex_ < ES_CINEPAK_NORMAL_LEN,
+        "All cinepak frames have been read");
+
+    uint32_t frameSize = GetFrameLenth(frameIndex_);
+    cinepakUnit_->resize(frameSize + CINEPAK_HEAD_LEN);
+    auto pBuffer = cinepakUnit_->data();
+    CHECK_AND_RETURN_LOG(pBuffer != nullptr, "cinepakUnit_ data is nullptr");
+
+    memcpy_s(pBuffer, frameSize + CINEPAK_HEAD_LEN, CINEPAK_HEAD, CINEPAK_HEAD_LEN);
+    inputFile_->read(reinterpret_cast<char*>(pBuffer + CINEPAK_HEAD_LEN), frameSize);
+    uint32_t bytesRead = static_cast<uint32_t>(inputFile_->gcount());
+
+    CHECK_AND_RETURN_LOG(bytesRead == frameSize,
+        "Failed to read full frame. Expected: %u, Got: %u", frameSize, bytesRead);
+
+    frameIndex_++;
+}
 } // MediaAVCodec
 } // OHOS
