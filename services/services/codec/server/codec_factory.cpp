@@ -66,10 +66,8 @@ std::vector<std::string> CodecFactory::GetCodecNameArrayByMime(const std::string
     return nameArray;
 }
 
-std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &name, API_VERSION apiVersion)
+std::shared_ptr<CodecBase> CreateCodecByCodecType(const std::string &name, CodecType codecType, API_VERSION apiVersion)
 {
-    std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
-    CodecType codecType = codecListCore->FindCodecType(name);
     std::shared_ptr<CodecBase> codec = nullptr;
     switch (codecType) {
 #ifndef CLIENT_SUPPORT_CODEC
@@ -117,6 +115,14 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
             return codec;
     }
     (void)apiVersion;
+    return codec;
+}
+
+std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &name, API_VERSION apiVersion)
+{
+    std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
+    CodecType codecType = codecListCore->FindCodecType(name);
+    std::shared_ptr<CodecBase> codec = CreateCodecByCodecType(name, codecType, apiVersion);
     return codec;
 }
 } // namespace MediaAVCodec

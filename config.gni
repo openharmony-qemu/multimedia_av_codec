@@ -173,6 +173,9 @@ if (!av_codec_support_software_codec) {
   av_codec_support_fcodec = false
   av_codec_support_avc_encoder = false
   av_codec_support_hevc_decoder = false
+  av_codec_support_vp8_decoder = false
+  av_codec_support_vp9_decoder = false
+  av_codec_support_av1_decoder = false
 }
 
 if (av_codec_enable_codec_rm) {
