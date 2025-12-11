@@ -974,7 +974,6 @@ bool CheckCapabilitySupport()
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AV1, false, SOFTWARE);
     return capability != nullptr;
 }
-#endif
 } // namespace
 
 int main(int argc, char **argv)
@@ -1004,3 +1003,4 @@ int main(int argc, char **argv)
     }
     return RUN_ALL_TESTS();
 }
+#endif
