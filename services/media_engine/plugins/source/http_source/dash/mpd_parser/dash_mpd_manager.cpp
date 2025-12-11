@@ -168,7 +168,7 @@ void DashMpdManager::GetDuration(uint32_t *duration)
     // get duration from Period
     for (DashList<DashPeriodInfo *>::iterator it = this->mpdInfo_->periodInfoList_.begin();
         it != this->mpdInfo_->periodInfoList_.end(); ++it) {
-        dur += *it == nullptr ? 0 :(*it)->duration_;
+        dur += ((*it) == nullptr) ? 0 :(*it)->duration_;
     }
 
     // count duration by segments not implement

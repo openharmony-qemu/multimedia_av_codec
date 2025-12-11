@@ -239,7 +239,7 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
         isFirstOpen_ = false;
     }
     MEDIA_LOG_I("Open client out");
-    return InitCurlEnvironment(url, timeoutMs);;
+    return InitCurlEnvironment(url, timeoutMs);
 }
 
 Status HttpCurlClient::Close(bool isAsync)
