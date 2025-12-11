@@ -48,6 +48,8 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
 namespace {
+constexpr size_t FIELDSIZE = 8;
+constexpr int32_t BLOCK_ALIGN = 93;
 constexpr int32_t DEFAULT_CHANNELS = 2;
 constexpr uint32_t DEFAULT_SAMPLE_RATE = 44100;
 constexpr string_view COOK_FILE_TODEMUX = "/data/test/media/cook.dat";
@@ -145,6 +147,9 @@ protected:
     std::ifstream inputFile_;
     std::unique_ptr<std::ifstream> soFile_;
     std::ofstream pcmOutputFile_;
+    std::vector<uint8_t> rawData_;
+    size_t currentDataPos_ = 0;
+    bool headerParsed_ = false;
 };
 
 void AudioCodeCookDecoderUnitTest::SetUpTestCase(void)
@@ -207,26 +212,52 @@ void AudioCodeCookDecoderUnitTest::HandleInputEOS(const uint32_t index)
 
 bool AudioCodeCookDecoderUnitTest::ReadBuffer(OH_AVBuffer *buffer, uint32_t index)
 {
-    const size_t maxFrameSize = 1024;
-    if (inputFile_.eof()) {
-        buffer->buffer_->memory_->SetSize(0);
+    constexpr size_t headerSize = 12;
+    const size_t extradataLen = 0;
+    const size_t totalHeader = headerSize + extradataLen;
+    if (!headerParsed_) {
+        if (rawData_.size() < totalHeader) {
+            cout << "Error: file too small for header" << endl;
+            HandleInputEOS(index);
+            return false;
+        }
+        currentDataPos_ = totalHeader;
+        headerParsed_ = true;
+    }
+    constexpr size_t frameHeaderSize = 16;
+    if (currentDataPos_ + frameHeaderSize > rawData_.size()) {
+        buffer->buffer_->memory_->SetSize(1);
         buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
         HandleInputEOS(index);
         return false;
     }
 
-    inputFile_.read(reinterpret_cast<char*>(OH_AVBuffer_GetAddr(buffer)), maxFrameSize);
-    auto bytesRead = inputFile_.gcount();
-    if (bytesRead <= 0) {
-        buffer->buffer_->memory_->SetSize(0);
+    uint64_t frameSize = 0;
+    uint64_t pts = 0;
+
+    memcpy_s(&frameSize, sizeof(frameSize), rawData_.data() + currentDataPos_, FIELDSIZE);
+    memcpy_s(&pts, sizeof(pts), rawData_.data() + currentDataPos_ + FIELDSIZE, FIELDSIZE);
+    currentDataPos_ += frameHeaderSize;
+    if (currentDataPos_ + frameSize > rawData_.size()) {
+        cout << "Error: frame data exceeds file size" << endl;
+        buffer->buffer_->memory_->SetSize(1);
         buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
         HandleInputEOS(index);
         return false;
     }
 
-    buffer->buffer_->memory_->SetSize(bytesRead);
-    buffer->buffer_->pts_ = frameCount_ * maxFrameSize;
-    buffer->buffer_->flag_ = isFirstFrame_ ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : AVCODEC_BUFFER_FLAGS_NONE;
+    void *addr = OH_AVBuffer_GetAddr(buffer);
+    errno_t ret = memcpy_s(addr, buffer->buffer_->memory_->GetCapacity(), rawData_.data() + currentDataPos_, frameSize);
+    if (ret != EOK) {
+        cout << "Error: memcpy_s frame data failed, ret=" << ret << endl;
+        HandleInputEOS(index);
+        return false;
+    }
+    buffer->buffer_->memory_->SetSize(frameSize);
+    buffer->buffer_->pts_ = static_cast<int64_t>(pts);
+    buffer->buffer_->flag_ = isFirstFrame_ ? AVCODEC_BUFFER_FLAGS_CODEC_DATA
+                                           : AVCODEC_BUFFER_FLAGS_NONE;
+    currentDataPos_ += frameSize;
     isFirstFrame_ = false;
     return true;
 }
@@ -371,17 +402,30 @@ int32_t AudioCodeCookDecoderUnitTest::Stop()
 
 int32_t AudioCodeCookDecoderUnitTest::InitFile(string_view inputFilename, string_view outputFilename)
 {
-    inputFile_.open(inputFilename.data(), std::ios::binary);
-    if (!inputFile_.is_open()) {
-        cout << "Fatal: open input file failed:" << inputFilename << endl;
-        return OH_AVErrCode::AV_ERR_UNKNOWN;
-    }
     pcmOutputFile_.open(outputFilename.data(), std::ios::out | std::ios::binary);
     if (!pcmOutputFile_.is_open()) {
-        cout << "Fatal: open output file failed" << outputFilename << endl;
-        inputFile_.close();
+        cout << "Fatal: open output file failed: " << outputFilename << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
+    std::ifstream infile(inputFilename.data(), std::ios::binary);
+    if (!infile.is_open()) {
+        cout << "Fatal: open input file failed: " << inputFilename << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+
+    infile.seekg(0, std::ios::end);
+    size_t fileSize = infile.tellg();
+    infile.seekg(0, std::ios::beg);
+    rawData_.resize(fileSize);
+    infile.read(reinterpret_cast<char*>(rawData_.data()), fileSize);
+    infile.close();
+    if (infile.gcount() != static_cast<std::streamsize>(fileSize)) {
+        cout << "Error: Failed to read full input file" << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    currentDataPos_ = 0;
+    headerParsed_ = false;
+    isFirstFrame_ = true;
     return OH_AVErrCode::AV_ERR_OK;
 }
 
@@ -421,6 +465,7 @@ int32_t AudioCodeCookDecoderUnitTest::Configure()
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
     std::vector<uint8_t> extradata = {1, 0, 0, 3, 8, 0, 0, 32, 0, 0, 0, 0, 0, 2, 0, 4};
     OH_AVFormat_SetBuffer(format_, OH_MD_KEY_CODEC_CONFIG, extradata.data(), extradata.size());
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_BLOCK_ALIGN, BLOCK_ALIGN);
     return OH_AudioCodec_Configure(audioDec_, format_);
 }
 
