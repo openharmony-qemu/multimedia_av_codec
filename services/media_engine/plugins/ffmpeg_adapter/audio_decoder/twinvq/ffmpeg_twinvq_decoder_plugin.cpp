@@ -149,8 +149,8 @@ bool FFmpegTwinVQDecoderPlugin::CheckSampleRate(int32_t sampleRate) const noexce
 
 Status FFmpegTwinVQDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
 {
-    int32_t channelCount;
-    int32_t sampleRate;
+    int32_t channelCount = 0;
+    int32_t sampleRate = 0;
     std::vector<uint8_t> extradata;
     format->GetData(Tag::AUDIO_CHANNEL_COUNT, channelCount);
     format->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
