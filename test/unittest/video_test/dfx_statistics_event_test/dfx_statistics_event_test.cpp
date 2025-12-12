@@ -365,7 +365,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_004, TestSize.Level1)
     ASSERT_NE(nullptr, data);
     auto codecSpecifiedInfo = cJSON_GetObjectItem(data.get(), "CodecSpecifiedInfo");
     ASSERT_NE(nullptr, codecSpecifiedInfo);
-    ASSERT_TRUE(cJSON_GetArraySize(codecSpecifiedInfo));
+    ASSERT_LE(1, cJSON_GetArraySize(codecSpecifiedInfo));
 }
 
 /**
@@ -421,7 +421,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_007, TestSize.Level1)
     ASSERT_NE(nullptr, data);
     auto codecSpecifiedInfo = cJSON_GetObjectItem(data.get(), "CodecSpecifiedInfo");
     ASSERT_NE(nullptr, codecSpecifiedInfo);
-    ASSERT_TRUE(cJSON_GetArraySize(codecSpecifiedInfo));
+    ASSERT_LE(1, cJSON_GetArraySize(codecSpecifiedInfo));
 }
 
 /**
@@ -600,7 +600,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_004, TestSiz
     ASSERT_NE(nullptr, data);
     auto queryCapUnsupportedInfo = cJSON_GetObjectItem(data.get(), "QueryCapUnsupportedInfo");
     ASSERT_NE(nullptr, queryCapUnsupportedInfo);
-    ASSERT_TRUE(cJSON_GetArraySize(queryCapUnsupportedInfo));
+    ASSERT_LE(1, cJSON_GetArraySize(queryCapUnsupportedInfo));
 }
 
 /**
@@ -637,7 +637,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_006, TestSiz
     ASSERT_NE(nullptr, data);
     auto queryCapUnsupportedInfo = cJSON_GetObjectItem(data.get(), "QueryCapUnsupportedInfo");
     ASSERT_NE(nullptr, queryCapUnsupportedInfo);
-    ASSERT_TRUE(cJSON_GetArraySize(queryCapUnsupportedInfo));
+    ASSERT_LE(1, cJSON_GetArraySize(queryCapUnsupportedInfo));
 }
 
 /**
@@ -714,7 +714,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_010, TestSiz
     ASSERT_NE(nullptr, data);
     auto createCodecUnsupportedInfo = cJSON_GetObjectItem(data.get(), "CreateCodecUnsupportedInfo");
     ASSERT_NE(nullptr, createCodecUnsupportedInfo);
-    ASSERT_TRUE(cJSON_GetArraySize(createCodecUnsupportedInfo));
+    ASSERT_LE(1, cJSON_GetArraySize(createCodecUnsupportedInfo));
 }
 
 /**
@@ -751,7 +751,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_012, TestSiz
     ASSERT_NE(nullptr, data);
     auto createCodecUnsupportedInfo = cJSON_GetObjectItem(data.get(), "CreateCodecUnsupportedInfo");
     ASSERT_NE(nullptr, createCodecUnsupportedInfo);
-    ASSERT_TRUE(cJSON_GetArraySize(createCodecUnsupportedInfo));
+    ASSERT_LE(1, cJSON_GetArraySize(createCodecUnsupportedInfo));
 }
 
 /**
@@ -942,11 +942,15 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_006, TestSize.Lev
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
         StatisticsEventInfo::GetInstance().OnAddEventInfo(
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
+    auto decLimitExceededInfo = cJSON_GetObjectItem(data.get(), "HDecLimitExceededInfo");
+    ASSERT_NE(nullptr, decLimitExceededInfo);
+    ASSERT_LT(1, cJSON_GetArraySize(decLimitExceededInfo));
 }
 
 /**
@@ -962,11 +966,15 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_007, TestSize.Lev
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
         StatisticsEventInfo::GetInstance().OnAddEventInfo(
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
+    auto decLimitExceededInfo = cJSON_GetObjectItem(data.get(), "HDecLimitExceededInfo");
+    ASSERT_NE(nullptr, decLimitExceededInfo);
+    ASSERT_LT(1, cJSON_GetArraySize(decLimitExceededInfo));
 }
 
 /**
@@ -1027,7 +1035,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_010, TestSize.Lev
     ASSERT_NE(nullptr, decLimitExceededInfo);
     auto longTimeInBgInfo = cJSON_GetObjectItem(data.get(), "LongTimeInBgInfo");
     ASSERT_NE(nullptr, longTimeInBgInfo);
-    ASSERT_TRUE(cJSON_GetArraySize(longTimeInBgInfo));
+    ASSERT_LE(1, cJSON_GetArraySize(longTimeInBgInfo));
 }
 
 /**
@@ -1053,7 +1061,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_011, TestSize.Lev
     ASSERT_NE(nullptr, decLimitExceededInfo);
     auto longTimeInBgInfo = cJSON_GetObjectItem(data.get(), "LongTimeInBgInfo");
     ASSERT_NE(nullptr, longTimeInBgInfo);
-    ASSERT_TRUE(cJSON_GetArraySize(longTimeInBgInfo));
+    ASSERT_LE(1, cJSON_GetArraySize(longTimeInBgInfo));
 }
 
 /**
@@ -1079,7 +1087,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_012, TestSize.Lev
     ASSERT_NE(nullptr, decLimitExceededInfo);
     auto longTimeInBgInfo = cJSON_GetObjectItem(data.get(), "LongTimeInBgInfo");
     ASSERT_NE(nullptr, longTimeInBgInfo);
-    ASSERT_TRUE(cJSON_GetArraySize(longTimeInBgInfo));
+    ASSERT_LE(1, cJSON_GetArraySize(longTimeInBgInfo));
 }
 
 /**
@@ -1117,7 +1125,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_014, TestSize.Lev
     ASSERT_NE(nullptr, data);
     auto speedDecodingInfo = cJSON_GetObjectItem(data.get(), "SpeedDecodingInfo");
     ASSERT_NE(nullptr, speedDecodingInfo);
-    ASSERT_TRUE(cJSON_GetArraySize(speedDecodingInfo));
+    ASSERT_LE(1, cJSON_GetArraySize(speedDecodingInfo));
 }
 
 /**
@@ -1288,7 +1296,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_010, TestSize.Le
     ASSERT_NE(nullptr, data);
     auto codecErrorInfo = cJSON_GetObjectItem(data.get(), "CodecErrorInfo");
     ASSERT_NE(nullptr, codecErrorInfo);
-    ASSERT_TRUE(cJSON_GetArraySize(codecErrorInfo));
+    ASSERT_LE(1, cJSON_GetArraySize(codecErrorInfo));
 }
 
 /**
