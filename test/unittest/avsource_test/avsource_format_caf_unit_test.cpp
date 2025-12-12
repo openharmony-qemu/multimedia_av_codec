@@ -304,7 +304,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetSourceFormat_0008, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 210);
+    ASSERT_EQ(formatVal_.fileType, 211);
     format_->Destroy();
 
     fd_ = OpenFile(g_cafOpusPath);
@@ -315,7 +315,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetSourceFormat_0008, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.fileType, 210);
+    ASSERT_EQ(formatVal_.fileType, 211);
     format_->Destroy();
 }
 
