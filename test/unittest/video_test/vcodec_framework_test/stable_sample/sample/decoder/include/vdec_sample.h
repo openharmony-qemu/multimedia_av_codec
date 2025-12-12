@@ -116,6 +116,7 @@ private:
     int32_t CreateWmv3Reader();
     int32_t CreateVp8Reader();
     int32_t CreateVp9Reader();
+    int32_t CreateCinepakReader();
 #ifdef SUPPORT_CODEC_AV1
     int32_t CreateAv1Reader();
 #endif
@@ -141,6 +142,7 @@ private:
     bool needExtraData_ = false;
     bool isWmv3MainStream_ = false;
     bool rv30needExtraData_ = false;
+    bool isCinepakStream_ = false;
 
 private:
     OH_AVCodecAsyncCallback asyncCallback_;

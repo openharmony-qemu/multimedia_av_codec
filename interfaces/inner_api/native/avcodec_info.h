@@ -624,6 +624,7 @@ public:
     static constexpr std::string_view VIDEO_RV30 = "video/rv30";
     static constexpr std::string_view VIDEO_RV40 = "video/rv40";
     static constexpr std::string_view VIDEO_WMV3 = "video/wmv3";
+    static constexpr std::string_view VIDEO_CINEPAK = "video/cinepak";
     static constexpr std::string_view VIDEO_VVC = "video/vvc";
     static constexpr std::string_view VIDEO_MJPEG = "video/mjpeg";
     static constexpr std::string_view AUDIO_MIMETYPE_L2HC = "audio/l2hc";
@@ -856,6 +857,16 @@ enum WMV3Profile : int32_t {
 };
 
 /**
+ * @brief CINEPAK Profile
+ *
+ * @since 6.1
+ */
+enum CINEPAKProfile : int32_t {
+    /** SIMPLE Profile */
+    CINEPAK_PROFILE_SIMPLE = 0
+};
+
+/**
  * @brief
  *
  * @since 3.1
@@ -1019,6 +1030,15 @@ enum MPEG4Level : int32_t {
     MPEG4_LEVEL_4A = 7,
     MPEG4_LEVEL_5  = 8,
     MPEG4_LEVEL_6  = 9,
+};
+
+/**
+ * @brief Cinepak Level
+ * @since 6.1
+ */
+enum class CINEPAKLevel : int32_t {
+    CINEPAK_LEVEL_1 = 1,
+    CINEPAK_LEVEL_2 = 2,
 };
 
 /**

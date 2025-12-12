@@ -222,8 +222,9 @@ group("av_codec_module_test") {
     if (av_codec_enable_codec_rv) {
       deps += [
         "moduletest/vcodec/rv30decoder:rv30decoder_native_module_test",
+        "moduletest/vcodec/rv40decoder:rv40decoder_native_module_test",
       ]
-    }    
+    }
     if (av_codec_support_vc1_decoder) {
       deps += [ 
         "moduletest/vcodec/vc1decoder:vc1decoder_native_module_test",
@@ -235,6 +236,9 @@ group("av_codec_module_test") {
     }
     if (av_codec_support_vp9_decoder) {
       deps += [ "moduletest/vcodec/vp9decoder:vp9decoder_native_module_test" ]
+    }
+    if (av_codec_support_av1_decoder) {
+      deps += [ "moduletest/vcodec/av1decoder:av1decoder_native_module_test" ]
     }
   }
 }
@@ -378,6 +382,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxerwavapi11_fuzzer:DemuxerWavAPI11FuzzTest",
       "fuzztest/demuxerwebmapi11_fuzzer:DemuxerWebmAPI11FuzzTest",
       "fuzztest/demuxerwmaapi11_fuzzer:DemuxerWmaAPI11FuzzTest",
+      "fuzztest/demuxerrmapi11_fuzzer:DemuxerRmAPI11FuzzTest",
       "fuzztest/drmdecryptor_fuzzer:DrmDecryptorFuzzTest",
       "fuzztest/encoderapi10h264_fuzzer:EncoderAPI10H264FuzzTest",
       "fuzztest/encoderapi10h26510bit_fuzzer:EncoderAPI10H26510BitFuzzTest",
