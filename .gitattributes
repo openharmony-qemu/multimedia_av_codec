@@ -6,5 +6,14 @@ test/unittest/resources/demuxer_res/wmv_wmv3_wmapro.wmv filter=lfs diff=lfs merg
 test/moduletest/resources/demuxer/vob_mpeg2_main@level6_1280_720_mp2_2.vob filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/m4v_h264_high@level31_1280_720_aac_31.m4v filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/demuxer_res/3gp_amr_nb.3gp filter=lfs diff=lfs merge=lfs -text
+test/moduletest/resources/demuxer/dat_h264_mp3.dat filter=lfs diff=lfs merge=lfs -text
+test/moduletest/resources/demuxer/dat_h265_aac.dat filter=lfs diff=lfs merge=lfs -text
+test/moduletest/resources/demuxer/dat_mpeg4_aac.dat filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/caf_alac.caf filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/caf_opus.caf filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/caf_pcm_s16le.caf filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/dat_h264_mp3.dat filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/dat_h265_aac.dat filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/dat_mpeg4_aac.dat filter=lfs diff=lfs merge=lfs -text
 /test/moduletest/resources/demuxer/mkv.mkv filter=lfs diff=lfs merge=lfs -text
 /test/unittest/resources/reference_parser_test/mp4/ippp_0.mp4 filter=lfs diff=lfs merge=lfs -text
