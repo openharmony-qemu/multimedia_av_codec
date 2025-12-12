@@ -54,6 +54,9 @@ test/moduletest/resources/video_decoder/160x120_15.rm filter=lfs diff=lfs merge=
 test/moduletest/resources/video_decoder/rv40_cook.rmvb filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/demuxer_res/rv40_cook.rmvb filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/video_res/rv40.rm filter=lfs diff=lfs merge=lfs -text
+test/fuzztest/demuxerdtsapi11_fuzzer/corpus/dts.dts filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/dts.dts filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/test_error.dts filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/dat_h264_mp3.dat filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/dat_h265_aac.dat filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/dat_mpeg4_aac.dat filter=lfs diff=lfs merge=lfs -text
