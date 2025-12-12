@@ -22,7 +22,7 @@ group("av_codec_demo_test") {
     deps += [ "unittest/video_test/video_test:video_codec_demo" ]
   }
 }
-77
+
 group("av_codec_unit_test") {
   testonly = true
   deps = []
