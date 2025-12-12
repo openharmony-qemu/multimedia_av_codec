@@ -129,7 +129,7 @@ int32_t AVCodecDumpControler::GetDumpString(std::string &dumpString)
     return AVCS_ERR_OK;
 }
 
-uint32_t AVCodecDumpControler::GetSpaceLength(const uint32_t dumpIdx)
+uint32_t AVCodecDumpControler::GetSpaceLength(uint32_t dumpIdx)
 {
     auto level = GetLevel(dumpIdx);
     return (level - 1) * DUMP_SPACE_LENGTH + length_[level - 1] + 3; //3: the length of " - "
