@@ -196,7 +196,7 @@ bool HttpDownloaderFlvRun(uint8_t *data, size_t size)
     }
     std::shared_ptr<HttpMediaDownloader> httpMediaDownloader = InitializeAndDownload();
     PostDownloadSetup(httpMediaDownloader);
-    PostDownloadCleanup(httpMediaDownloader);\
+    PostDownloadCleanup(httpMediaDownloader);
     return true;
 }
 
