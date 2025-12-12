@@ -14,7 +14,6 @@
      limitations under the License.
 -->
 
-//todo
 <configuration ver="2.0">
     <target name="avmuxer_inner_unit_test">
         <preparer>
