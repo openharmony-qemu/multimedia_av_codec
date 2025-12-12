@@ -129,6 +129,8 @@ ohos_fuzztest("DashMpdDownFinishedFuzzTest") {
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
   ]
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
 
 ###############################################################################

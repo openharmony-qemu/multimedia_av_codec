@@ -136,6 +136,8 @@ ohos_fuzztest("HttpDownloaderOpenFuzzTest") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
   ]
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
 
 ###############################################################################
