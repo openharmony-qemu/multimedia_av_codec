@@ -1080,7 +1080,7 @@ int32_t VideoDecAsyncSample::OutputLoopInnerExt()
                         testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263 ||
                         testParam_ == VCodecTestParam::SW_VC1 || testParam_ == VCodecTestParam::SW_MSVIDEO1 ||
                         testParam_ == VCodecTestParam::SW_WMV3 || testParam_ == VCodecTestParam::SW_RV30 ||
-                        testParam_ == VCodecTestParam::SW_RV40 || testParam_ == VCodecTestParam::SW_WVC1 ||
+                        testParam_ == VCodecTestParam::SW_RV40_TEST || testParam_ == VCodecTestParam::SW_WVC1 ||
                         testParam_ == VCodecTestParam::SW_CINEPAK)
                            ? attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
