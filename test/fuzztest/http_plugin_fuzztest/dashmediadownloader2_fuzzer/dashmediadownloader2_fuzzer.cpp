@@ -68,6 +68,7 @@ bool DashMediaDownloader2FuzzTest(const uint8_t *data, size_t size)
     mediaDownloader->GetSeekable();
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
+    std::cout<<streams.size()<<std::endl;
     mediaDownloader->Pause();
     mediaDownloader->Resume();
     {
