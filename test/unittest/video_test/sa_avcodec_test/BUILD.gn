@@ -56,11 +56,29 @@ ohos_unittest("video_sa_avcodec_unit_test") {
     "$av_codec_root_dir/services/services/sa_avcodec/ipc",
     "$av_codec_root_dir/services/services/common",
     "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler/",
+    "$av_codec_root_dir/services/engine/codeclist",
+    "$av_codec_root_dir/services/engine/base/include",
+    "$av_codec_root_dir/services/engine/codec/include/video",
+    "$av_codec_root_dir/services/engine/codec/video/avcencoder",
+    "$av_codec_root_dir/services/engine/codec/video/hevcdecoder",
+    "$av_codec_root_dir/services/engine/codec/video/fcodec/include",
+    "$av_codec_root_dir/services/engine/common/include",
+    "$av_codec_root_dir/services/utils/include",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
   ]
 
   defines = av_codec_defines
 
   sources = [
+    "$av_codec_root_dir/services/engine/codec/video/avc_encoder_loader.cpp",
+    "$av_codec_root_dir/services/engine/codec/video/fcodec_loader.cpp",
+    "$av_codec_root_dir/services/engine/codec/video/hcodec_loader.cpp",
+    "$av_codec_root_dir/services/engine/codec/video/hevc_decoder_loader.cpp",
+    "$av_codec_root_dir/services/engine/codec/video/video_codec_loader.cpp",
+    "$av_codec_root_dir/services/engine/codeclist/audio_codeclist_info.cpp",
+    "$av_codec_root_dir/services/engine/codeclist/codec_ability_singleton.cpp",
+    "$av_codec_root_dir/services/engine/codeclist/codeclist_builder.cpp",
+    "$av_codec_root_dir/services/engine/codeclist/codeclist_dump.cpp",
     "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler/background_event_handler.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
@@ -78,8 +96,17 @@ ohos_unittest("video_sa_avcodec_unit_test") {
 
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
+  if (target_cpu == "arm64") {
+    av_codec_path = "\"/system/lib64\""
+  } else {
+    av_codec_path = "\"/system/lib\""
+  }
+  defines += [ "AV_CODEC_PATH=${av_codec_path}" ]
+
   external_deps = [
     "c_utils:utils",
+    "drivers_interface_codec:libcodec_proxy_4.0",
+    "ffmpeg:libohosffmpeg",
     "googletest:gmock_main",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
