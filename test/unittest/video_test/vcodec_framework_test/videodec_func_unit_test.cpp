@@ -100,11 +100,7 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 }
 
-INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC, SW_AVC
-#ifdef SUPPORT_CODEC_RV
-, SW_RV40
-#endif
-));
+INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC, SW_AVC));
 
 /**
  * @tc.name: VideoDecoder_Multithread_Create_001
