@@ -80,6 +80,7 @@ sptr<SurfaceBuffer> FSurfaceMemory::GetSurfaceBuffer()
 
 void FSurfaceMemory::SetSurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, Owner toChangeOwner, sptr<SyncFence> fence)
 {
+    CHECK_AND_RETURN_LOG(surfaceBuffer != nullptr, "Surface buffer is nullptr!");
     surfaceBuffer_ = surfaceBuffer;
     owner = toChangeOwner;
     seqNum = surfaceBuffer_->GetSeqNum();
