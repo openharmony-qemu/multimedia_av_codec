@@ -68,7 +68,7 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
     mediaDownloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
-    int64_t seektime = Getdata<int64_t>();
+    int64_t seektime = GetData<int64_t>();
     mediaDownloader->SeekToTs(seektime);
     usleep(WAIT_FOR_SIDX_TIME);
     mediaDownloader->Close(false);
@@ -122,7 +122,7 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
     mediaDownloader->GetStartedStatus();
     mediaDownloader->GetBitRates();
     mediaDownloader->SetDownloadErrorState();
-    int64_t seektime = Getdata<int64_t>();
+    int64_t seektime = GetData<int64_t>();
     mediaDownloader->SeekToTs(seektime);
     usleep(WAIT_FOR_SIDX_TIME);
     mediaDownloader->Close(false);
