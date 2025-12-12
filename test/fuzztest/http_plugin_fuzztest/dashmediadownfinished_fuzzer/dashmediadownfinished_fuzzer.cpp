@@ -81,8 +81,6 @@ bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
     mediaDownloader->GetMemorySize();
 	int32_t biterate = *reinterpret_cast<const int32_t *>(data);
     mediaDownloader->SelectBitRate(biterate);
-    bool isAppBackground = *reinterpret_cast<const bool *>(data);
-    //mediaDownloader->StopBufferring(isAppBackground);
     usleep(WAIT_FOR_SIDX_TIME);
     std::cout<<"close"<<endl;
     mediaDownloader->Close(false);

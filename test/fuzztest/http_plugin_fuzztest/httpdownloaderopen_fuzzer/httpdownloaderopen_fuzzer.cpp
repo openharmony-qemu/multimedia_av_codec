@@ -31,14 +31,14 @@ bool TestHttpDownloaderOpenFuzz(uint8_t *data, size_t size)
     if (data == nullptr || size < sizeof(int64_t)) {
         return false;
     }
-    const std::string avsource_url = "http://127.0.0.1:46666/dewu.mp4";
+    const std::string url = "http://127.0.0.1:46666/dewu.mp4";
     std::shared_ptr<OHOS::Media::Plugins::HttpPlugin::HttpMediaDownloader> httpMediaDownloader =
-        std::make_shared<OHOS::Media::Plugins::HttpPlugin::HttpMediaDownloader>(avsource_url, 4, nullptr);  // 4
+        std::make_shared<OHOS::Media::Plugins::HttpPlugin::HttpMediaDownloader>(url, 4, nullptr);  // 4
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
     std::map<std::string, std::string> httpHeader;
-    httpMediaDownloader->Open(avsource_url, httpHeader);
+    httpMediaDownloader->Open(url, httpHeader);
     unsigned char buff[MAX_BUFFER_SIZE_FUZZ];
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = GetData<int32_t>();

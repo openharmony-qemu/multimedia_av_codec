@@ -207,8 +207,6 @@ bool MpdMangerRun(const uint8_t *data, size_t size)
     std::string mpdUrl = MPD_MULTI_AUDIO_SUB;
     mpdMpddownload->SetMpdInfo(mangerInfo, mpdUrl);
     mpdMpddownload->GetNextPeriod(periodInfo);
-
-
     mpdMpddownload->GetMpdInfo();
     mpdMpddownload->GetFirstPeriod();
     mpdMpddownload->GetBaseUrl();
