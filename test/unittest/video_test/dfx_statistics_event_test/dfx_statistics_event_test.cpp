@@ -856,8 +856,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_001, TestSize.Lev
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::
-        , *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
