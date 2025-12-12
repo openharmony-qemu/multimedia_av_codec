@@ -221,7 +221,6 @@ HWTEST_F(DfxStatisticsEventTest, RegisterEventHooker_Test_001, TestSize.Level1)
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
-    auto test = cJSON_GetObjectItem(data.get(), "Test");
 }
 
 /**
@@ -273,7 +272,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_003, TestSize.Level1)
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
-    auto test = cJSON_GetObjectItem(data.get(), "Test");
 }
 
 /**
@@ -295,8 +293,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_004, TestSize.Level1)
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
-
-    auto test = cJSON_GetObjectItem(data.get(), "Test");
 }
 
 /**
@@ -325,7 +321,10 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_002, TestSize.Level1)
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
-    auto queryCapTimes = cJSON_GetObjectItem(data.get(), "QueryCapTimes");
+    auto item = cJSON_GetObjectItem(data.get(), "QueryCapTimes");
+    ASSERT_NE(nullptr, item);
+    ASSERT_TRUE(cJSON_IsNumber(item));
+    int32_t queryCapTimes = item->valueint;
     ASSERT_EQ(1, queryCapTimes);
 }
 
@@ -341,7 +340,10 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_003, TestSize.Level1)
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
-    auto createCodecTimes = cJSON_GetObjectItem(data.get(), "CreateCodecTimes");
+    auto item = cJSON_GetObjectItem(data.get(), "CreateCodecTimes");
+    ASSERT_NE(nullptr, item);
+    ASSERT_TRUE(cJSON_IsNumber(item));
+    int32_t createCodecTimes = item->valueint;
     ASSERT_EQ(1, createCodecTimes);
 }
 
@@ -596,6 +598,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_004, TestSiz
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
+    auto queryCapUnsupportedInfo = cJSON_GetObjectItem(data.get(), "QueryCapUnsupportedInfo");
+    ASSERT_NE(nullptr, queryCapUnsupportedInfo);
+    ASSERT_TRUE(cJSON_GetArraySize(queryCapUnsupportedInfo));
 }
 
 /**
@@ -630,6 +635,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_006, TestSiz
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
+    auto queryCapUnsupportedInfo = cJSON_GetObjectItem(data.get(), "QueryCapUnsupportedInfo");
+    ASSERT_NE(nullptr, queryCapUnsupportedInfo);
+    ASSERT_TRUE(cJSON_GetArraySize(queryCapUnsupportedInfo));
 }
 
 /**
@@ -704,6 +712,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_010, TestSiz
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
+    auto createCodecUnsupportedInfo = cJSON_GetObjectItem(data.get(), "CreateCodecUnsupportedInfo");
+    ASSERT_NE(nullptr, createCodecUnsupportedInfo);
+    ASSERT_TRUE(cJSON_GetArraySize(createCodecUnsupportedInfo));
 }
 
 /**
@@ -738,6 +749,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_012, TestSiz
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
+    auto createCodecUnsupportedInfo = cJSON_GetObjectItem(data.get(), "CreateCodecUnsupportedInfo");
+    ASSERT_NE(nullptr, createCodecUnsupportedInfo);
+    ASSERT_TRUE(cJSON_GetArraySize(createCodecUnsupportedInfo));
 }
 
 /**
@@ -800,6 +814,37 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_015, TestSiz
 }
 
 /**
+ * @tc.name: AddEventInfo_AppSpecificationsInfo_016
+ * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
+ *           2. mimeType is video/avc, isEncoder is empty
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_016, TestSize.Level1)
+{
+    meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_SPECIFICATIONS_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
+}
+
+/**
+ * @tc.name: AddEventInfo_AppSpecificationsInfo_017
+ * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
+ *           2. mimeType and isEncoder is empty
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_017, TestSize.Level1)
+{
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_SPECIFICATIONS_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
+}
+
+/**
  * @tc.name: AddEventInfo_AppBehaviorsInfo_001
  * @tc.desc: 1. eventType is APP_BEHAVIORS_INFO
  *           2. forward process and caller process exist
@@ -811,7 +856,8 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_001, TestSize.Lev
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::
+        , *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
@@ -978,12 +1024,17 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_010, TestSize.Lev
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
+    auto decLimitExceededInfo = std::shared_ptr<cJSON>(cJSON_Parse(data->valuestring), cJSON_Delete);
+    ASSERT_NE(nullptr, decLimitExceededInfo);
+    auto longTimeInBgInfo = cJSON_GetObjectItem(data.get(), "LongTimeInBgInfo");
+    ASSERT_NE(nullptr, longTimeInBgInfo);
+    ASSERT_TRUE(cJSON_GetArraySize(longTimeInBgInfo));
 }
 
 /**
  * @tc.name: AddEventInfo_AppBehaviorsInfo_011
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO
- *           2. caller process name is same, elapsed time less than threadshold, excute 200 times
+ *           2. caller process name is same, elapsed time more than threadshold, excute 200 times
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_011, TestSize.Level1)
@@ -991,7 +1042,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_011, TestSize.Lev
     for (int32_t i = 0; i < BEHAVIORSINFO_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = "callerProcess";
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
-        meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD / 2);
+        meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD * 2);
         StatisticsEventInfo::GetInstance().OnAddEventInfo(
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
@@ -999,12 +1050,17 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_011, TestSize.Lev
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
+    auto decLimitExceededInfo = std::shared_ptr<cJSON>(cJSON_Parse(data->valuestring), cJSON_Delete);
+    ASSERT_NE(nullptr, decLimitExceededInfo);
+    auto longTimeInBgInfo = cJSON_GetObjectItem(data.get(), "LongTimeInBgInfo");
+    ASSERT_NE(nullptr, longTimeInBgInfo);
+    ASSERT_TRUE(cJSON_GetArraySize(longTimeInBgInfo));
 }
 
 /**
  * @tc.name: AddEventInfo_AppBehaviorsInfo_012
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO
- *           2. caller process name is different, elapsed time less than threadshold, excute 100000 times
+ *           2. caller process name is different, elapsed time more than threadshold, excute 100000 times
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_012, TestSize.Level1)
@@ -1012,7 +1068,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_012, TestSize.Lev
     for (int32_t i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = GenerateRandomString(20); // 20: clller name length
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
-        meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD / 2);
+        meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD * 2);
         StatisticsEventInfo::GetInstance().OnAddEventInfo(
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
@@ -1020,12 +1076,17 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_012, TestSize.Lev
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
+    auto decLimitExceededInfo = std::shared_ptr<cJSON>(cJSON_Parse(data->valuestring), cJSON_Delete);
+    ASSERT_NE(nullptr, decLimitExceededInfo);
+    auto longTimeInBgInfo = cJSON_GetObjectItem(data.get(), "LongTimeInBgInfo");
+    ASSERT_NE(nullptr, longTimeInBgInfo);
+    ASSERT_TRUE(cJSON_GetArraySize(longTimeInBgInfo));
 }
 
 /**
  * @tc.name: AddEventInfo_AppBehaviorsInfo_013
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO
- *           2. caller process name is different, elapsed time more than threadshold, excute 100000 times
+ *           2. caller process name is different, elapsed time less than threadshold, excute 100000 times
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_013, TestSize.Level1)
@@ -1033,7 +1094,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_013, TestSize.Lev
     for (int32_t i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = GenerateRandomString(20); // 20: clller name length
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
-        meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD * 2);
+        meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), ELAPSEDTIME_THREADSHOLD / 2);
         StatisticsEventInfo::GetInstance().OnAddEventInfo(
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
@@ -1055,12 +1116,15 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_014, TestSize.Lev
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
+    auto speedDecodingInfo = cJSON_GetObjectItem(data.get(), "SpeedDecodingInfo");
+    ASSERT_NE(nullptr, speedDecodingInfo);
+    ASSERT_TRUE(cJSON_GetArraySize(speedDecodingInfo));
 }
 
 /**
  * @tc.name: AddEventInfo_CodecAbnormalInfo_001
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
- *           2. mime type is empty, codec type is valid, error type is empty
+ *           2. mime type is empty, codec type is valid, error code is empty
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_001, TestSize.Level1)
@@ -1076,7 +1140,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_001, TestSize.Le
 /**
  * @tc.name: AddEventInfo_CodecAbnormalInfo_002
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
- *           2. mime type is empty, codec type is invalid, error type is empty
+ *           2. mime type is empty, codec type is invalid, error code is empty
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_002, TestSize.Level1)
@@ -1092,7 +1156,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_002, TestSize.Le
 /**
  * @tc.name: AddEventInfo_CodecAbnormalInfo_003
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
- *           2. mime type is empty, codec type is invalid, error type is empty
+ *           2. mime type is empty, codec type is invalid, error code is empty
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_003, TestSize.Level1)
@@ -1108,13 +1172,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_003, TestSize.Le
 /**
  * @tc.name: AddEventInfo_CodecAbnormalInfo_004
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
- *           2. mime type is empty, codec type is valid, error type is valid
+ *           2. mime type is empty, codec type is valid, error code is valid
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_004, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
-    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), AV_ERR_INVALID_VAL);
+    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
@@ -1125,13 +1189,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_004, TestSize.Le
 /**
  * @tc.name: AddEventInfo_CodecAbnormalInfo_005
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
- *           2. mime type is empty, codec type is invalid, error type is valid
+ *           2. mime type is empty, codec type is invalid, error code is valid
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_005, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1); // -1: codec type is invalid
-    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), AV_ERR_INVALID_VAL);
+    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
@@ -1142,13 +1206,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_005, TestSize.Le
 /**
  * @tc.name: AddEventInfo_CodecAbnormalInfo_006
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
- *           2. mime type is empty, codec type is invalid, error type is valid
+ *           2. mime type is empty, codec type is invalid, error code is valid
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_006, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
-    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), AV_ERR_INVALID_VAL);
+    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
@@ -1159,7 +1223,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_006, TestSize.Le
 /**
  * @tc.name: AddEventInfo_CodecAbnormalInfo_007
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
- *           2. mime type is video/avc, codec type is valid, error type is empty
+ *           2. mime type is video/avc, codec type is valid, error code is empty
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_007, TestSize.Level1)
@@ -1176,7 +1240,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_007, TestSize.Le
 /**
  * @tc.name: AddEventInfo_CodecAbnormalInfo_008
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
- *           2. mime type is video/avc, codec type is invalid, error type is empty
+ *           2. mime type is video/avc, codec type is invalid, error code is empty
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_008, TestSize.Level1)
@@ -1193,7 +1257,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_008, TestSize.Le
 /**
  * @tc.name: AddEventInfo_CodecAbnormalInfo_009
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
- *           2. mime type is video/avc, codec type is invalid, error type is empty
+ *           2. mime type is video/avc, codec type is invalid, error code is empty
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_009, TestSize.Level1)
@@ -1210,32 +1274,35 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_009, TestSize.Le
 /**
  * @tc.name: AddEventInfo_CodecAbnormalInfo_010
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
- *           2. mime type is video/avc, codec type is valid, error type is valid
+ *           2. mime type is video/avc, codec type is valid, error code is valid
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_010, TestSize.Level1)
 {
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
-    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), AV_ERR_INVALID_VAL);
+    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
+    auto codecErrorInfo = cJSON_GetObjectItem(data.get(), "CodecErrorInfo");
+    ASSERT_NE(nullptr, codecErrorInfo);
+    ASSERT_TRUE(cJSON_GetArraySize(codecErrorInfo));
 }
 
 /**
  * @tc.name: AddEventInfo_CodecAbnormalInfo_011
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
- *           2. mime type is video/avc, codec type is invalid, error type is valid
+ *           2. mime type is video/avc, codec type is invalid, error code is valid
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_011, TestSize.Level1)
 {
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1); // -1: codec type is invalid
-    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), AV_ERR_INVALID_VAL);
+    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
@@ -1246,14 +1313,14 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_011, TestSize.Le
 /**
  * @tc.name: AddEventInfo_CodecAbnormalInfo_012
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
- *           2. mime type is video/avc, codec type is invalid, error type is valid
+ *           2. mime type is video/avc, codec type is invalid, error code is valid
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_012, TestSize.Level1)
 {
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
-    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), AV_ERR_INVALID_VAL);
+    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
