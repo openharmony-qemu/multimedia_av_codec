@@ -38,6 +38,7 @@ ohos_source_set("statistics_event_handler") {
 
   external_deps = [
     "cJSON:cjson",
+    "hisysevent:libhisysevent",
     "init:libbegetutil",
     "media_foundation:media_foundation",
   ]

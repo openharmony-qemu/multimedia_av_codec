@@ -136,13 +136,5 @@ void FaultRecordAudioEventWrite(AudioSourceFaultInfo& audioSourceFaultInfo)
                     "AUDIO_SOURCE_TYPE", audioSourceFaultInfo.audioSourceType,
                     "ERROR_MESG",        audioSourceFaultInfo.errMsg);
 }
-
-void StatisticEventWrite(const std::string &eventName, const char *eventValue)
-{
-    CHECK_AND_RETURN_LOG(eventValue != nullptr && strlen(eventValue) > 0,
-        "Invalid event value: nullptr or empty string");
-    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, eventName, OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
-                    "PAYLOAD", eventValue);
-}
 } // namespace MediaAVCodec
 } // namespace OHOS

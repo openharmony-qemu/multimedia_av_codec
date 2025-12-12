@@ -16,15 +16,25 @@
 #ifndef AVCODEC_DFX_EVENTINFO_STATISTICS_H
 #define AVCODEC_DFX_EVENTINFO_STATISTICS_H
 
+#include <functional>
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <shared_mutex>
 #include "meta/meta.h"
 #include "event_type.h"
 #include "avcodec_xcollie.h"
 
+struct cJSON;
+
 namespace OHOS {
 namespace MediaAVCodec {
+struct StatisticsSubmitInfo {
+    uint32_t queryCapTimes {0};
+    uint32_t createCodecTimes {0};
+    std::unordered_map<std::string, std::shared_ptr<cJSON>> jsonObjects;
+};
+
 class StatisticsEventInfoBase {
 public:
     StatisticsEventInfoBase() = default;
@@ -32,6 +42,7 @@ public:
 
     virtual void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) = 0;
     virtual void OnSubmitEventInfo() {};
+    virtual void OnSummateEventInfo(StatisticsSubmitInfo &submitInfo) { (void)submitInfo; };
     virtual void ResetEventInfo() {};
 
 protected:
@@ -40,7 +51,7 @@ protected:
 
 class StatisticsEventInfo : public StatisticsEventInfoBase {
 public:
-    using EventHooker = std::function<bool(const Media::Meta &)>;   // return true to erase hooker
+    using EventHook = std::function<bool(const Media::Meta &)>;   // return true to erase hook
 
     StatisticsEventInfo();
 
@@ -53,12 +64,12 @@ public:
     void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) override;
     void OnSubmitEventInfo() override;
     void ResetEventInfo() override;
-    void RegisterEventHooker(StatisticsEventType eventType, EventHooker hooker);
+    void RegisterEventHook(StatisticsEventType eventType, EventHook hook);
     void RegisterSubmitEventTimer();
 
 private:
     std::shared_mutex mutex_;
-    std::unordered_map<StatisticsEventType, EventHooker> eventHookers_;
+    std::unordered_map<StatisticsEventType, EventHook> eventHooks_;
     std::shared_ptr<AVCodecXcollieTimer> timer_;
 };
 } // namespace MediaAVCodec

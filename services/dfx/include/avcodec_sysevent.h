@@ -100,7 +100,6 @@ void FaultAudioCodecEventWrite(AudioCodecFaultInfo& audioCodecFaultInfo);
 void FaultVideoCodecEventWrite(VideoCodecFaultInfo& videoCodecFaultInfo);
 void FaultMuxerEventWrite(MuxerFaultInfo& muxerFaultInfo);
 void FaultRecordAudioEventWrite(AudioSourceFaultInfo& audioSourceFaultInfo);
-void StatisticEventWrite(const std::string& eventName, const char* eventValue);
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // AVCODEC_SYSEVENT_H
