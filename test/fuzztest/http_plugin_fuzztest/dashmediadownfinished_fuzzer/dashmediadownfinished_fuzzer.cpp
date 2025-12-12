@@ -68,6 +68,7 @@ bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
     mediaDownloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
+    std::cout << streams.size()<<endl;
     for (auto u : streams) {
         int32_t type = (*reinterpret_cast<const int32_t *>(data))%4;
         type += 1;
@@ -78,11 +79,15 @@ bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
     PlaybackInfo playbackInfo;
     mediaDownloader->GetPlaybackInfo(playbackInfo);
     mediaDownloader->GetMemorySize();
-    int32_t biterate = *reinterpret_cast<const int32_t *>(data);
+	int32_t biterate = *reinterpret_cast<const int32_t *>(data);
     mediaDownloader->SelectBitRate(biterate);
+    bool isAppBackground = *reinterpret_cast<const bool *>(data);
+    //mediaDownloader->StopBufferring(isAppBackground);
     usleep(WAIT_FOR_SIDX_TIME);
+    std::cout<<"close"<<endl;
     mediaDownloader->Close(false);
     mediaDownloader = nullptr;
+    std::cout<<"end"<<endl;
     return true;
 }
 
@@ -91,19 +96,23 @@ bool DashMpdParse(const uint8_t *data, size_t size)
     if (data == nullptr || size < sizeof(int64_t)) {
         return false;
     }
-    std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
+	std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
     const std::string url = MPD_MULTI_AUDIO_SUB;
     mpdMpddownload->Init();
     mpdMpddownload->Open(MPD_MULTI_AUDIO_SUB);
-    std::shared_ptr<DashSegment> seg = std::make_shared<DashSegment>();
+	std::shared_ptr<DashSegment> seg = std::make_shared<DashSegment>();
     int streamId = *reinterpret_cast<const int *>(data);
     int64_t breakpoint = *reinterpret_cast<const int64_t *>(data);
+    std::cout<<"GetBreakPointSegment "<<breakpoint<<" streamid: "<<streamId<<endl;
     mpdMpddownload->GetBreakPointSegment(streamId, breakpoint, seg);
     DashMpdTrackParam param;
+    std::cout<<"GetNextTrackStream "<<endl;
     mpdMpddownload->GetNextTrackStream(param);
     int64_t numberSeq = *reinterpret_cast<const int64_t *>(data);
+    std::cout<<"SetCurrentNumberSeqByStreamId "<<numberSeq<<endl;
     mpdMpddownload->SetCurrentNumberSeqByStreamId(streamId, numberSeq);
     usleep(WAIT_FOR_SIDX_TIME);
+    std::cout<<"close"<<endl;
     mpdMpddownload->Close(false);
     mpdMpddownload = nullptr;
     return true;
