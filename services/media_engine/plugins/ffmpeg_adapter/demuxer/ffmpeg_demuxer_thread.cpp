@@ -476,13 +476,12 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
         totalSize += pkt->size;
     }
 
-    FALSE_RETURN_V_MSG_E(trackId < formatContext_->nb_streams, Status::ERROR_UNKNOWN, "Track is out of range");
-    AVStream* avStream = formatContext_->streams[trackId];
-    FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr,
-        Status::ERROR_UNKNOWN, "AVStream is nullptr");
-    if ((std::count(g_streamContainedXPS.begin(), g_streamContainedXPS.end(), avStream->codecpar->codec_id) > 0) &&
+    const auto* snapshot = GetStreamSnapshot(trackId);
+    FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid,
+        Status::ERROR_UNKNOWN, "Stream snapshot is invalid");
+    if ((std::count(g_streamContainedXPS.begin(), g_streamContainedXPS.end(), snapshot->codecId) > 0) &&
         static_cast<uint32_t>(samplePacket->pkts[0]->flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY)) {
-        totalSize += avStream->codecpar->extradata_size;
+        totalSize += snapshot->extradataSize;
     }
     size = totalSize;
     return Status::OK;
