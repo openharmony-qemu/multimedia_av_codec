@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -41,6 +41,8 @@ constexpr int START_POS = 10;
 constexpr int ONE_KILO = 1024;
 constexpr int FIR_BUFFER = 128;
 constexpr long LIVE_CONTENT_LENGTH = 2147483646;
+static constexpr uint32_t CHUNK_SIZE = 16 * 1024;
+static constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
 
 void DownloaderUnitTest::SetUpTestCase(void)
 {
@@ -160,7 +162,7 @@ HWTEST_F(DownloaderUnitTest, Retry_5, TestSize.Level1)
     std::shared_ptr<DownloadRequest> Request_ =
         std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->isDestructor_ = false;
-    downloader->shouldStartNextRequest = false;
+    downloader->shouldStartNextRequest_ = false;
     EXPECT_TRUE(downloader->Retry(Request_));
 }
 
@@ -179,7 +181,7 @@ HWTEST_F(DownloaderUnitTest, Retry_6, TestSize.Level1)
     std::shared_ptr<DownloadRequest> Request_ =
         std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->isDestructor_ = false;
-    downloader->shouldStartNextRequest = false;
+    downloader->shouldStartNextRequest_ = false;
     downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     EXPECT_TRUE(downloader->Retry(Request_));
 }
@@ -840,7 +842,7 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_5, TestSize.Level1)
     downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->currentRequest_->startPos_ = START_POS;
     downloader->isAppBackground_ = false;
-    downloader->shouldStartNextRequest = false;
+    downloader->shouldStartNextRequest_ = false;
     downloader->StopBufferring();
     EXPECT_NE(downloader->client_, nullptr);
 }
@@ -860,7 +862,7 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_6, TestSize.Level1)
     };
     downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->isAppBackground_ = false;
-    downloader->shouldStartNextRequest = false;
+    downloader->shouldStartNextRequest_ = false;
     downloader->StopBufferring();
     EXPECT_NE(downloader->client_, nullptr);
 }
@@ -1296,7 +1298,7 @@ HWTEST_F(DownloaderUnitTest, HttpDownloadLoop001, TestSize.Level1)
     std::shared_ptr<DownloadRequest> Request_ =
         std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
 
-    downloader->shouldStartNextRequest.store(true);
+    downloader->shouldStartNextRequest_.store(true);
     downloader->requestQue_->Push(Request_, static_cast<int>(-1));
     downloader->isInterruptNeeded_ = true;
     EXPECT_NE(downloader->client_, nullptr);

@@ -60,6 +60,28 @@ std::map<MatrixCoefficient, CM_Matrix> g_matrixMap = {
 } // namespace
 
 using namespace OHOS::Media;
+// for surface parameter check
+bool IsValidPixelFormat(int32_t val)
+{
+    return val >= static_cast<int32_t>(VideoPixelFormat::YUVI420) &&
+           val <= static_cast<int32_t>(VideoPixelFormat::RGBA) &&
+           val != static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT);
+}
+
+bool IsValidScaleType(int32_t val)
+{
+    return val == static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_TO_WINDOW) ||
+           val == static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_CROP);
+}
+
+bool IsValidRotation(int32_t val)
+{
+    return val == static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_0) ||
+           val == static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_90) ||
+           val == static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_180) ||
+           val == static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270);
+}
+
 int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale, std::shared_ptr<AVFrame> frame, uint8_t **dstData,
                           int32_t *dstLineSize, AVPixelFormat dstPixFmt)
 {

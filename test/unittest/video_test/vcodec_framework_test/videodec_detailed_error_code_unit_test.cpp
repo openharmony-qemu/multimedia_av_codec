@@ -80,7 +80,7 @@ void SetDetailedErrorCodeParmater(std::shared_ptr<VDecCallbackTestExt> vdecCallb
                                   Scenario scenario)
 {
     auto& target = isAVBufferMode ? vdecCallbackExt->detailedErrorCode_ : vdecCallback->detailedErrorCode_;
-    target.verification_ = false;
+    target.verification_ = true;
 
     switch (scenario) {
         case Scenario::UNSUPPORT_CODEC_SPECIFICATION:
@@ -97,10 +97,27 @@ void SetDetailedErrorCodeParmater(std::shared_ptr<VDecCallbackTestExt> vdecCallb
     }
 }
 
-void CheckDetailedErrorCode(bool verification)
+void CheckDetailedErrorCode(bool verification, std::string_view param)
 {
 #ifdef HMOS_TEST
-    ASSERT_EQ(true, verification);
+    std::string codecName = "";
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    if (param == CodecMimeType::VIDEO_AVC) {
+        capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true,
+                                                        AVCodecCategory::AVCODEC_HARDWARE);
+    } else if (param == CodecMimeType::VIDEO_HEVC) {
+        capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_HEVC.data(), true,
+                                                        AVCodecCategory::AVCODEC_HARDWARE);
+    } else {
+        capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true,
+                                                        AVCodecCategory::AVCODEC_HARDWARE);
+    }
+
+    if (capabilityData &&
+        capabilityData->featuresMap.count(static_cast<int32_t>(AVCapabilityFeature::VIDEO_WATERMARK))) {
+        ASSERT_EQ(true, verification);
+    }
 #endif // HMOS_TEST
 }
 
@@ -123,7 +140,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Width_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_);
+    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_AVC);
 }
 
 /**
@@ -145,7 +162,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Width_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_);
+    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_AVC);
 }
 
 /**
@@ -167,7 +184,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Height_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_);
+    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_AVC);
 }
 
 /**
@@ -189,7 +206,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Height_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_);
+    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_AVC);
 }
 
 /**
@@ -211,7 +228,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_BitDepth_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_);
+    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_HEVC);
 }
 
 /**
@@ -233,7 +250,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_);
+    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_AVC);
 }
 
 /**
@@ -255,7 +272,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_);
+    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_AVC);
 }
 
 /**
@@ -277,7 +294,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Chroma_Format_003, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_);
+    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_AVC);
 }
 
 /**
@@ -299,31 +316,9 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_AVC_10Bit_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_);
+    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_AVC);
 }
-#ifdef HMOS_TEST
-/**
- * @tc.name: VideoDecoder_XPS_MBAFF_001
- * @tc.desc: xps frame is mbaff
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoDecoder_XPS_MBAFF_001, TestSize.Level1)
-{
-    constexpr int32_t width = 1920;
-    constexpr int32_t height = 1080;
-    videoDec_->detailedError_ = true;
-    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, false, Scenario::UNSUPPORT_CODEC_SPECIFICATION);
-    CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-    PrepareSource(VCodecTestCode::HW_AVC, "/data/test/media/1920_1080_mbaff_avcc.h264");
-    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    ASSERT_EQ(true, vdecCallback_->detailedErrorCode_.verification_);
-}
-#endif // HMOS_TEST
+
 /**
  * @tc.name: VideoDecoder_XPS_Invalid_001
  * @tc.desc: xps frame data invalid
@@ -343,7 +338,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Invalid_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_);
+    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_HEVC);
 }
 
 /**
@@ -365,7 +360,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Not_Exist_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_);
+    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_AVC);
 }
 
 /**
@@ -387,8 +382,31 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Not_Exist_002, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_);
+    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_HEVC);
 }
+#ifdef HMOS_TEST
+/**
+ * @tc.name: VideoDecoder_XPS_MBAFF_001
+ * @tc.desc: xps frame is mbaff
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_XPS_MBAFF_001, TestSize.Level1)
+{
+    constexpr int32_t width = 1920;
+    constexpr int32_t height = 1080;
+    videoDec_->detailedError_ = true;
+    SetDetailedErrorCodeParmater(vdecCallbackExt_, vdecCallback_, false, Scenario::UNSUPPORT_CODEC_SPECIFICATION);
+    CreateByNameWithParam(CodecMimeType::VIDEO_AVC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    PrepareSource(VCodecTestCode::HW_AVC, "/data/test/media/1920_1080_mbaff_avcc.h264");
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_AVC);
+}
+#endif // HMOS_TEST
 } // namespace
 
 int main(int argc, char **argv)

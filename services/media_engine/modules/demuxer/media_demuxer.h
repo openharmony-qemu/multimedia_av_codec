@@ -305,8 +305,11 @@ private:
     Status HandleDashSelectTrack(int32_t trackId);
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
     Status HandleRebootPlugin(int32_t trackId, bool& isRebooted);
-    Status HandleHlsRebootPlugin();
-    Status HandleSegmentChange();
+    Status HandleHlsRebootPlugin(int32_t trackId);
+    Status HandleSegmentChange(int32_t trackId);
+    Status HandleSegmentEos(int32_t trackId);
+    Status HandleHlsSeek();
+    bool IsAVInOneStream();
     Status HandleSeekChangeStream(int32_t currentStreamId, int32_t newStreamId, int32_t trackId);
     bool IsSubtitleMime(const std::string& mime);
     void HandleAutoMaintainPts(int32_t trackeId, std::shared_ptr<AVBuffer> sample);

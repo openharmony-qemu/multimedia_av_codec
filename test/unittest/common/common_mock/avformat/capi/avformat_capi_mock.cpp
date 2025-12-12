@@ -186,6 +186,11 @@ bool AVFormatCapiMock::PutIntBuffer(const std::string_view &key, const int32_t *
     return false;
 }
 
+void AVFormatCapiMock::RemoveKey(const std::string_view &key)
+{
+    return;
+}
+
 const char *AVFormatCapiMock::DumpInfo()
 {
     if (format_ != nullptr) {

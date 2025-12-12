@@ -233,8 +233,8 @@ int32_t CodecBufferCircular::HandleInputBuffer(uint32_t index)
         return HasFlag(FLAG_IS_SYNC) ? AVCS_ERR_INVALID_VAL : AVCS_ERR_OK;
     }
     BufferItem &item = iter->second;
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(item.owner == OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
-                                      "Invalid ownership:%{public}s", OwnerToString(item.owner).c_str());
+    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(item.owner == OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
+        LOG_INTERVAL_MS, LOG_MAX_COUNT, "Invalid ownership:%{public}s", OwnerToString(item.owner).c_str());
     item.owner = OWNED_BY_SERVER;
     if (item.buffer != nullptr) {
         item.pts = item.buffer->pts_;
@@ -254,8 +254,8 @@ int32_t CodecBufferCircular::HandleOutputBuffer(uint32_t index)
         return HasFlag(FLAG_IS_SYNC) ? AVCS_ERR_INVALID_VAL : AVCS_ERR_OK;
     }
     BufferItem &item = iter->second;
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(item.owner == OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
-                                      "Invalid ownership:%{public}s", OwnerToString(item.owner).c_str());
+    CHECK_AND_RETURN_RET_LOG_LIMIT_IN_TIME_WITH_TAG(item.owner == OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
+        LOG_INTERVAL_MS, LOG_MAX_COUNT, "Invalid ownership:%{public}s", OwnerToString(item.owner).c_str());
     item.owner = OWNED_BY_SERVER;
     if (item.buffer != nullptr) {
         item.pts = item.buffer->pts_;
@@ -265,7 +265,7 @@ int32_t CodecBufferCircular::HandleOutputBuffer(uint32_t index)
     return AVCS_ERR_OK;
 }
 
-void CodecBufferCircular::QueueInputBufferDone(uint32_t index)
+void CodecBufferCircular::QueueInputBufferDone(uint32_t index, bool isSuccess)
 {
     std::lock_guard<std::mutex> lock(inMutex_);
     BufferCacheIter iter = inCache_.find(index);
@@ -273,8 +273,12 @@ void CodecBufferCircular::QueueInputBufferDone(uint32_t index)
         AVCODEC_LOGD_WITH_TAG("index=%{public}u", index);
         return;
     }
-    // The current owner of buffer is server and cannot read info from this buffer
     BufferItem &item = iter->second;
+    if (!isSuccess) {
+        item.owner = OWNED_BY_USER;
+        return;
+    }
+    // The current owner of buffer is server and cannot read info from this buffer
     if (item.flag & AVCODEC_BUFFER_FLAG_EOS) {
         AddFlag(FLAG_INPUT_EOS);
         inCond_.notify_all();
@@ -283,7 +287,7 @@ void CodecBufferCircular::QueueInputBufferDone(uint32_t index)
                           item.flag, item.pts);
 }
 
-void CodecBufferCircular::ReleaseOutputBufferDone(uint32_t index)
+void CodecBufferCircular::ReleaseOutputBufferDone(uint32_t index, bool isSuccess)
 {
     std::lock_guard<std::mutex> lock(outMutex_);
     BufferCacheIter iter = outCache_.find(index);
@@ -291,8 +295,12 @@ void CodecBufferCircular::ReleaseOutputBufferDone(uint32_t index)
         AVCODEC_LOGD_WITH_TAG("index=%{public}u", index);
         return;
     }
-    // The current owner of buffer is server and cannot read info from this buffer
     BufferItem &item = iter->second;
+    if (!isSuccess) {
+        item.owner = OWNED_BY_USER;
+        return;
+    }
+    // The current owner of buffer is server and cannot read info from this buffer
     AVCODEC_LOGD_WITH_TAG("index=%{public}u, size=%{public}d, flag=%{public}u, pts=%{public}" PRId64, index, item.size,
                           item.flag, item.pts);
 }
@@ -361,7 +369,7 @@ void CodecBufferCircular::PrintCaches(bool isOutput)
     const std::string userInfo = getCacheInfo(ownerArrays[OWNED_BY_USER], "user");
     const std::string clientInfo = HasFlag(FLAG_IS_SYNC) ? getCacheInfo(ownerArrays[OWNED_BY_CLIENT], ",client") : "";
     const std::string serverInfo = getCacheInfo(ownerArrays[OWNED_BY_SERVER], ",server");
-    AVCODEC_LOGI_WITH_TAG("%{public}s cache:%{public}s%{public}s%{public}s", (isOutput ? "out" : "in"),
+    AVCODEC_LOGI_WITH_TAG("%{public}s:%{public}s%{public}s%{public}s", (isOutput ? "out" : "in"),
                           userInfo.c_str(), clientInfo.c_str(), serverInfo.c_str());
 }
 

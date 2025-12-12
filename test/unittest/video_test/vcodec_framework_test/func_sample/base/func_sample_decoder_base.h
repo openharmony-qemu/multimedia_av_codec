@@ -34,7 +34,12 @@ enum VCodecDataProducerType : int32_t {
     MPEG4_STREAM = 1 << 4,
     VC1_STREAM = 1 << 5,
     WMV3_STREAM = 1 << 6,
-    MSVIDEO1_STREAM = 1 << 7
+    MSVIDEO1_STREAM = 1 << 7,
+    AV1_STREAM = 1 << 8,
+    RV30_STREAM = 1 << 10,
+    RV40_STREAM = 1 << 11,
+    WVC1_STREAM = 1 << 12,
+    CINEPAK_STREAM = 1 << 13
 };
 
 inline std::unordered_map<std::string, int32_t> fileTypeMap = {
@@ -45,7 +50,11 @@ inline std::unordered_map<std::string, int32_t> fileTypeMap = {
     {"m4v", MPEG4_STREAM},
     {"vc1", VC1_STREAM},
     {"msvideo1", MSVIDEO1_STREAM},
-    {"wmv3", WMV3_STREAM}
+    {"wmv3", WMV3_STREAM},
+    {"rv30", RV30_STREAM},
+    {"rv40", RV40_STREAM},
+    {"wvc1", WVC1_STREAM},
+    {"cinepak", CINEPAK_STREAM}
 };
 
 inline constexpr uint32_t BUFFER_COUNT = 59;
@@ -130,12 +139,12 @@ public:
 };
 
 struct DetailedErrorCode {
-    bool verification_{false};
+    bool verification_{true};
     bool unsupportedSpecification_{false};
     bool illegalParam_ {false};
     bool missingParam_{false};
 
-    DetailedErrorCode(bool verification = false,
+    DetailedErrorCode(bool verification = true,
                       bool unsupportedSpecification = false,
                       bool illegalParam = false,
                       bool missingParam = false)

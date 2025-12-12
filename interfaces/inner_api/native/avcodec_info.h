@@ -388,7 +388,8 @@ public:
      * returns {@link HEVCProfile} array if codec is h265,
      * returns {@link MPEG2Profile} array if codec is mpeg2,
      * returns {@link MPEG4Profile} array if codec is mpeg4,
-     * returns {@link VP8Profile} array if codec is vp8.
+     * returns {@link VP8Profile} array if codec is vp8,
+     * returns {@link VP9Profile} array if codec is vp9.
      * @since 3.1
      * @version 4.0
      */
@@ -611,16 +612,19 @@ class CodecMimeType {
 public:
     static constexpr std::string_view VIDEO_MSVIDEO1 = "video/msvideo1";
     static constexpr std::string_view VIDEO_VC1 = "video/vc1";
+    static constexpr std::string_view VIDEO_WVC1 = "video/wvc1";
     static constexpr std::string_view VIDEO_H263 = "video/h263";
     static constexpr std::string_view VIDEO_AVC = "video/avc";
+    static constexpr std::string_view VIDEO_AV1 = "video/av1";
     static constexpr std::string_view VIDEO_MPEG2 = "video/mpeg2";
     static constexpr std::string_view VIDEO_HEVC = "video/hevc";
     static constexpr std::string_view VIDEO_MPEG4 = "video/mp4v-es";
-    static constexpr std::string_view VIDEO_VP8 = "video/x-vnd.on2.vp8";
-    static constexpr std::string_view VIDEO_VP9 = "video/x-vnd.on2.vp9";
+    static constexpr std::string_view VIDEO_VP8 = "video/vp8";
+    static constexpr std::string_view VIDEO_VP9 = "video/vp9";
     static constexpr std::string_view VIDEO_RV30 = "video/rv30";
     static constexpr std::string_view VIDEO_RV40 = "video/rv40";
     static constexpr std::string_view VIDEO_WMV3 = "video/wmv3";
+    static constexpr std::string_view VIDEO_CINEPAK = "video/cinepak";
     static constexpr std::string_view VIDEO_VVC = "video/vvc";
     static constexpr std::string_view VIDEO_MJPEG = "video/mjpeg";
     static constexpr std::string_view AUDIO_MIMETYPE_L2HC = "audio/l2hc";
@@ -680,6 +684,11 @@ public:
     static constexpr std::string_view IMAGE_BMP = "image/bmp";
     static constexpr std::string_view AUDIO_GSM_MS = "audio/gsm_ms";
     static constexpr std::string_view AUDIO_GSM = "audio/gsm";
+    static constexpr std::string_view AUDIO_ILBC = "audio/ilbc";
+    static constexpr std::string_view AUDIO_TRUEHD = "audio/truehd";
+    static constexpr std::string_view AUDIO_TWINVQ = "audio/twinvq";
+    static constexpr std::string_view AUDIO_DVAUDIO = "audio/dvaudio";
+    static constexpr std::string_view AUDIO_DTS = "audio/dts";
 };
 
 /**
@@ -713,6 +722,17 @@ enum HEVCProfile : int32_t {
     HEVC_PROFILE_MAIN_10_HDR10 = 3,
     HEVC_PROFILE_MAIN_10_HDR10_PLUS = 4,
     HEVC_PROFILE_UNKNOW = -1,
+};
+
+/**
+ * @brief AV1 Profile.
+ *
+ * @since 23
+ */
+enum AV1Profile : int32_t {
+    AV1_PROFILE_MAIN = 0,
+    AV1_PROFILE_HIGH = 1,
+    AV1_PROFILE_PROFESSIONAL = 2,
 };
 
 /**
@@ -815,6 +835,16 @@ enum VC1Profile {
 };
 
 /**
+ * @brief WVC1 Profile.
+ *
+ * @since 23
+ */
+enum WVC1Profile {
+    /** Advanced profile */
+    WVC1_PROFILE_ADVANCED = 0,
+};
+
+/**
  * @brief WMV3 Profile
  *
  * @since 6.0
@@ -827,6 +857,16 @@ enum WMV3Profile : int32_t {
 };
 
 /**
+ * @brief CINEPAK Profile
+ *
+ * @since 6.1
+ */
+enum CINEPAKProfile : int32_t {
+    /** SIMPLE Profile */
+    CINEPAK_PROFILE_SIMPLE = 0
+};
+
+/**
  * @brief
  *
  * @since 3.1
@@ -834,6 +874,22 @@ enum WMV3Profile : int32_t {
  */
 enum VP8Profile : int32_t {
     VP8_PROFILE_MAIN = 0,
+};
+
+/**
+ * @brief VP9 Profile.
+ *
+ * @since 23
+ */
+enum VP9Profile {
+    /** profile 0 */
+    VP9_PROFILE_0 = 0,
+    /** profile 1 */
+    VP9_PROFILE_1 = 1,
+    /** profile 2 */
+    VP9_PROFILE_2 = 2,
+    /** profile 3 */
+    VP9_PROFILE_3 = 3,
 };
 
 /**
@@ -886,6 +942,38 @@ enum HEVCLevel : int32_t {
     HEVC_LEVEL_61 = 11,
     HEVC_LEVEL_62 = 12,
     HEVC_LEVEL_UNKNOW = -1,
+};
+
+/**
+ * @brief AV1 Level.
+ *
+ * @since 23
+ */
+enum AV1Level : int32_t {
+    AV1_LEVEL_20 = 0,
+    AV1_LEVEL_21 = 1,
+    AV1_LEVEL_22 = 2,
+    AV1_LEVEL_23 = 3,
+    AV1_LEVEL_30 = 4,
+    AV1_LEVEL_31 = 5,
+    AV1_LEVEL_32 = 6,
+    AV1_LEVEL_33 = 7,
+    AV1_LEVEL_40 = 8,
+    AV1_LEVEL_41 = 9,
+    AV1_LEVEL_42 = 10,
+    AV1_LEVEL_43 = 11,
+    AV1_LEVEL_50 = 12,
+    AV1_LEVEL_51 = 13,
+    AV1_LEVEL_52 = 14,
+    AV1_LEVEL_53 = 15,
+    AV1_LEVEL_60 = 16,
+    AV1_LEVEL_61 = 17,
+    AV1_LEVEL_62 = 18,
+    AV1_LEVEL_63 = 19,
+    AV1_LEVEL_70 = 20,
+    AV1_LEVEL_71 = 21,
+    AV1_LEVEL_72 = 22,
+    AV1_LEVEL_73 = 23,
 };
 
 /**
@@ -945,6 +1033,51 @@ enum MPEG4Level : int32_t {
 };
 
 /**
+ * @brief Cinepak Level
+ * @since 6.1
+ */
+enum class CINEPAKLevel : int32_t {
+    CINEPAK_LEVEL_1 = 1,
+    CINEPAK_LEVEL_2 = 2,
+};
+
+/**
+ * @brief VP9 Level.
+ *
+ * @since 23
+ */
+enum VP9Level {
+    /** 1 level */
+    VP9_LEVEL_1 = 0,
+    /** 1.1 level */
+    VP9_LEVEL_1_1 = 1,
+    /** 2 level */
+    VP9_LEVEL_2 = 2,
+    /** 2.1 level */
+    VP9_LEVEL_2_1 = 3,
+    /** 3 level */
+    VP9_LEVEL_3 = 4,
+    /** 3.1 level */
+    VP9_LEVEL_3_1 = 5,
+    /** 4 level */
+    VP9_LEVEL_4 = 6,
+    /** 4.1 level */
+    VP9_LEVEL_4_1 = 7,
+    /** 5 level */
+    VP9_LEVEL_5 = 8,
+    /** 5.1 level */
+    VP9_LEVEL_5_1 = 9,
+    /** 5.2 level */
+    VP9_LEVEL_5_2 = 10,
+    /** 6 level */
+    VP9_LEVEL_6 = 11,
+    /** 6.1 level */
+    VP9_LEVEL_6_1 = 12,
+    /** 6.2 level */
+    VP9_LEVEL_6_2 = 13,
+};
+
+/**
  * @brief H263 Level.
  *
  * @since 16
@@ -990,6 +1123,24 @@ enum VC1Level {
     VC1_LEVEL_MEDIUM = 6,
     /** HIGH level */
     VC1_LEVEL_HIGH = 7,
+};
+
+/**
+ * @brief WVC1 Level.
+ *
+ * @since 23
+ */
+enum WVC1Level {
+    /** L0 level */
+    WVC1_LEVEL_L0 = 0,
+    /** L1 level */
+    WVC1_LEVEL_L1 = 1,
+    /** L2 level */
+    WVC1_LEVEL_L2 = 2,
+    /** L3 level */
+    WVC1_LEVEL_L3 = 3,
+    /** L4 level */
+    WVC1_LEVEL_L4 = 4,
 };
 
 /**

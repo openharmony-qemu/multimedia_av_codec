@@ -44,10 +44,10 @@ string g_mkvUri2 = TEST_URI_PATH + string("h264_opus_4sec.mkv");
 string g_tsUri = TEST_URI_PATH + string("test_mpeg2_Gop25_4sec.ts");
 string g_aacUri = TEST_URI_PATH + string("audio/aac_44100_1.aac");
 string g_flacUri = TEST_URI_PATH + string("audio/flac_48000_1_cover.flac");
-string g_m4aUri = TEST_URI_PATH + string("audio/m4a_48000_1.m4a");
+string g_m4aUri = TEST_URI_PATH + string("audio/m4a_48000_1_ut.m4a");
 string g_mp3Uri = TEST_URI_PATH + string("audio/mp3_48000_1_cover.mp3");
-string g_oggUri = TEST_URI_PATH + string("audio/ogg_48000_1.ogg");
-string g_wavUri = TEST_URI_PATH + string("audio/wav_48000_1.wav");
+string g_oggUri = TEST_URI_PATH + string("audio/ogg_48000_1_ut.ogg");
+string g_wavUri = TEST_URI_PATH + string("audio/wav_48000_1_ut.wav");
 string g_amrUri = TEST_URI_PATH + string("audio/amr_nb_8000_1.amr");
 string g_amrUri2 = TEST_URI_PATH + string("audio/amr_wb_16000_1.amr");
 string g_audioVividUri = TEST_URI_PATH + string("2obj_44100Hz_16bit_32k.m4a");
@@ -57,6 +57,8 @@ string g_fmp4m4aUri = TEST_URI_PATH + string("audio/h264_fmp4.m4a");
 string g_srt = TEST_URI_PATH + string("subtitle.srt");
 string g_mp4VvcUri = TEST_URI_PATH + string("vvc.mp4");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
+string g_mkvSnowUri = TEST_URI_PATH + string("snow.mkv");
+string g_mkvSnowPath = TEST_FILE_PATH + string("snow.mkv");
 
 /**********************************source URI**************************************/
 /**
@@ -802,6 +804,9 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2140, TestSize.Level1)
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_TITLE, formatVal_.title));
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ARTIST, formatVal_.artist));
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ALBUM, formatVal_.album));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
@@ -809,6 +814,9 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2140, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_EQ(formatVal_.title, "test");
+    ASSERT_EQ(formatVal_.artist, "元数据测试");
+    ASSERT_EQ(formatVal_.album, "media");
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.channelLayout, 4);
     ASSERT_EQ(formatVal_.sampleRate, 48000);
@@ -1231,5 +1239,36 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1611, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     ASSERT_EQ(formatVal_.width, 640);
     ASSERT_EQ(formatVal_.height, 360);
+}
+
+/**
+ * @tc.name: AVSource_Unsupport_0002
+ * @tc.desc: get track format(snow), url
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_Unsupport_0002, TestSize.Level1)
+{
+    printf("---- %s ------\n", g_mkvSnowUri.data());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mkvSnowUri.data()));
+    ASSERT_NE(source_, nullptr);
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ track %d ]: %s\n", trackIndex_, format_->DumpInfo());
+    std::string unsupportMime = "";
+    ASSERT_TRUE(format_->GetStringValue(Media::Tag::MIME_TYPE, formatVal_.codecMime));
+    ASSERT_EQ(formatVal_.codecMime, Media::Plugins::MimeType::INVALID_TYPE);
+    ASSERT_TRUE(format_->GetStringValue(Media::Tag::ORIGINAL_CODEC_NAME, unsupportMime));
+    ASSERT_EQ(unsupportMime, "snow");
+
+    trackIndex_ = 1;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ track %d ]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(Media::Tag::MIME_TYPE, formatVal_.codecMime));
+    ASSERT_EQ(formatVal_.codecMime, Media::Plugins::MimeType::AUDIO_MPEG);
+
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
 }
 } // namespace

@@ -1,0 +1,385 @@
+/*
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <iostream>
+#include <cstdio>
+#include <atomic>
+#include <fstream>
+#include <thread>
+#include <mutex>
+#include <queue>
+#include <string>
+#include "gtest/gtest.h"
+#include "native_avcodec_videodecoder.h"
+#include "videodec_api11_sample.h"
+#include "native_avcodec_base.h"
+#include "native_avcapability.h"
+
+using namespace std;
+using namespace OHOS;
+using namespace OHOS::Media;
+using namespace testing::ext;
+
+namespace OHOS {
+namespace Media {
+class Rv30DecReliNdkTest : public testing::Test {
+public:
+    static void SetUpTestCase();    // 第一个测试用例执行前
+    static void TearDownTestCase(); // 最后一个测试用例执行后
+    void SetUp() override;          // 每个测试用例执行前
+    void TearDown() override;       // 每个测试用例执行后
+    void Release();
+    int32_t Stop();
+
+protected:
+    OH_AVCodec *vdec_;
+    const char *inpDir1080Array[16] = {
+        "/data/test/media/160x120_15.rm"};
+};
+} // namespace Media
+} // namespace OHOS
+
+static string g_codecNameRv30 = "";
+int32_t g_reliCount = 16;
+int32_t g_reliCount1000 = 1000;
+const char *FILE_PATH = "/data/test/media/160x120_15.rm";
+void Rv30DecReliNdkTest::SetUpTestCase()
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(
+        OH_AVCODEC_MIMETYPE_VIDEO_RV30, false, SOFTWARE);
+    g_codecNameRv30 = OH_AVCapability_GetName(cap);
+    cout << "g_codecNameRv30: " << g_codecNameRv30 << endl;
+}
+
+void Rv30DecReliNdkTest::TearDownTestCase() {}
+void Rv30DecReliNdkTest::SetUp() {}
+void Rv30DecReliNdkTest::TearDown() {}
+
+namespace {
+/**
+ * @tc.number    : VIDEO_RV30DEC_STABILITY_0010
+ * @tc.name      : RV30 soft decode successively 16 times
+ * @tc.desc      : reli test
+ */
+HWTEST_F(Rv30DecReliNdkTest, VIDEO_RV30DEC_STABILITY_0010, TestSize.Level3)
+{
+    for (int i = 0; i < g_reliCount; i++)
+    {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = FILE_PATH;
+        vDecSample->getFormat(FILE_PATH);
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->sleepOnFPS = true;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameRv30.c_str()));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderReadStream());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+/**
+ * @tc.number    : VIDEO_RV30DEC_STABILITY_0020
+ * @tc.name      : RV30 soft decode 16 times surface mode, change videoSize to 1920x1080
+ * @tc.desc      : reli test
+ */
+HWTEST_F(Rv30DecReliNdkTest, VIDEO_RV30DEC_STABILITY_0020, TestSize.Level3)
+{
+    for (int i = 0; i < g_reliCount; i++) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = FILE_PATH;
+        vDecSample->getFormat(FILE_PATH);
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->sleepOnFPS = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->SF_OUTPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameRv30.c_str()));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
+        vDecSample->WaitForEOS();
+    }
+}
+/**
+ * @tc.number    : VIDEO_RV30DEC_STABILITY_0030
+ * @tc.name      : 16 instances RV30 soft decode with Surface mode
+ * @tc.desc      : reli test
+ */
+HWTEST_F(Rv30DecReliNdkTest, VIDEO_RV30DEC_STABILITY_0030, TestSize.Level3)
+{
+    vector<shared_ptr<VDecAPI11Sample>> decVec;
+    for (int i = 0; i < g_reliCount; i++)
+    {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        decVec.push_back(vDecSample);
+        vDecSample->INP_DIR = inpDir1080Array[i % 1];
+        vDecSample->getFormat(FILE_PATH);
+        vDecSample->autoSwitchSurface = false;
+        vDecSample->sleepOnFPS = true;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameRv30));
+    }
+    uint32_t errorCount = 0;
+    for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample)
+            {
+        sample->WaitForEOS();
+        errorCount += sample->errCount; });
+    decVec.clear();
+}
+/**
+ * @tc.number    : VIDEO_RV30DEC_STABILITY_0040
+ * @tc.name      : 16 instances RV30 soft decode with buffer mode
+ * @tc.desc      : reli test
+ */
+HWTEST_F(Rv30DecReliNdkTest, VIDEO_RV30DEC_STABILITY_0040, TestSize.Level3)
+{
+    vector<shared_ptr<VDecAPI11Sample>> decVec;
+    for (int i = 0; i < g_reliCount; i++)
+    {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        decVec.push_back(vDecSample);
+        vDecSample->INP_DIR = inpDir1080Array[i % 1];
+        vDecSample->getFormat(FILE_PATH);
+        vDecSample->autoSwitchSurface = false;
+        vDecSample->sleepOnFPS = true;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameRv30.c_str()));
+    }
+    uint32_t errorCount = 0;
+    for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample)
+            {
+        sample->WaitForEOS();
+        errorCount += sample->errCount; });
+    decVec.clear();
+}
+/**
+ * @tc.number    : VIDEO_RV30DEC_STABILITY_0050
+ * @tc.name      : RV30 soft decode 16 times with fast Surface change
+ * @tc.desc      : reli test
+ */
+HWTEST_F(Rv30DecReliNdkTest, VIDEO_RV30DEC_STABILITY_0050, TestSize.Level3)
+{
+    for (int i = 0; i < g_reliCount; i++)
+    {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = FILE_PATH;
+        vDecSample->getFormat(FILE_PATH);
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameRv30));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
+        vDecSample->WaitForEOS();
+    }
+}
+/**
+ * @tc.number    : VIDEO_RV30DEC_STABILITY_0060
+ * @tc.name      : Decode 16 RV30 streams simultaneously in Surface mode
+ * @tc.desc      : reli test
+ */
+HWTEST_F(Rv30DecReliNdkTest, VIDEO_RV30DEC_STABILITY_0060, TestSize.Level3)
+{
+    vector<shared_ptr<VDecAPI11Sample>> decVec;
+    for (int i = 0; i < g_reliCount; i++)
+    {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        decVec.push_back(vDecSample);
+        vDecSample->INP_DIR = inpDir1080Array[i % 1];
+        vDecSample->getFormat(FILE_PATH);
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->autoSwitchSurface = false;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameRv30));
+    }
+    uint32_t errorCount = 0;
+    for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample)
+            {
+        sample->WaitForEOS();
+        errorCount += sample->errCount; });
+    decVec.clear();
+}
+/**
+ * @tc.number    : VIDEO_RV30DEC_STABILITY_0070
+ * @tc.name      : Decode 16 Rv30 streams simultaneously in buffer mode
+ * @tc.desc      : reli test
+ */
+HWTEST_F(Rv30DecReliNdkTest, VIDEO_RV30DEC_STABILITY_0070, TestSize.Level3)
+{
+    vector<shared_ptr<VDecAPI11Sample>> decVec;
+    for (int i = 0; i < g_reliCount; i++)
+    {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        decVec.push_back(vDecSample);
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->INP_DIR = FILE_PATH;
+        vDecSample->getFormat(FILE_PATH);
+        vDecSample->sleepOnFPS = true;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameRv30));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderReadStream());
+    }
+    uint32_t errorCount = 0;
+    for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample)
+            {
+        sample->WaitForEOS();
+        errorCount += sample->errCount; });
+    decVec.clear();
+}
+/**
+ * @tc.number    : VIDEO_RV30DEC_STABILITY_0080
+ * @tc.name      : 16 instances RV30 soft decode with buffer mode × 5 loops
+ * @tc.desc      : reli test
+ */
+HWTEST_F(Rv30DecReliNdkTest, VIDEO_RV30DEC_STABILITY_0080, TestSize.Level3)
+{
+    for (int j = 0; j < 5; j++)
+    {
+        vector<shared_ptr<VDecAPI11Sample>> decVec;
+        for (int i = 0; i < g_reliCount; i++)
+        {
+            auto vDecSample = make_shared<VDecAPI11Sample>();
+            decVec.push_back(vDecSample);
+            vDecSample->SF_OUTPUT = false;
+            vDecSample->INP_DIR = FILE_PATH;
+            vDecSample->getFormat(FILE_PATH);
+            vDecSample->sleepOnFPS = true;
+            vDecSample->NocaleHash = true;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameRv30));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+            ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderReadStream());
+        }
+        uint32_t errorCount = 0;
+        for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample)
+                {
+            sample->WaitForEOS();
+            errorCount += sample->errCount; });
+        decVec.clear();
+    }
+}
+/**
+ * @tc.number    : VIDEO_RV30DEC_STABILITY_0090
+ * @tc.name      : Decode 10-bit and 8-bit RV30 streams simultaneously
+ * @tc.desc      : reli test
+ */
+HWTEST_F(Rv30DecReliNdkTest, VIDEO_RV30DEC_STABILITY_0090, TestSize.Level3)
+{
+    for (int i = 0; i < g_reliCount; i++)
+    {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = FILE_PATH;
+        vDecSample->getFormat(FILE_PATH);
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameRv30));
+        vDecSample->WaitForEOS();
+        vDecSample->ReleaseInFile();
+        shared_ptr<VDecAPI11Sample> vDecSample1 = make_shared<VDecAPI11Sample>();
+        vDecSample1->INP_DIR = FILE_PATH;
+        vDecSample1->getFormat(FILE_PATH);
+        vDecSample1->SF_OUTPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample1->RunVideoDec_Surface(g_codecNameRv30));
+        vDecSample1->WaitForEOS();
+        vDecSample1->ReleaseInFile();
+    }
+}
+/**
+ * @tc.number    : VIDEO_RV30DEC_STABILITY_0100
+ * @tc.name      : Random width and height RV30 decode (160x120)
+ * @tc.desc      : reli test
+ */
+HWTEST_F(Rv30DecReliNdkTest, VIDEO_RV30DEC_STABILITY_0100, TestSize.Level3)
+{
+    for (int i = 0; i < g_reliCount; i++)
+    {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = FILE_PATH;
+        vDecSample->getFormat(FILE_PATH);
+        vDecSample->DEFAULT_WIDTH = WidthRand();
+        cout << "rand width is: " << vDecSample->DEFAULT_WIDTH << endl;
+        vDecSample->DEFAULT_HEIGHT = HighRand();
+        cout << "rand high is" << vDecSample->DEFAULT_HEIGHT << endl;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameRv30));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderReadStream());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+/**
+ * @tc.number    : VIDEO_RV30DEC_STABILITY_0110
+ * @tc.name      : Decode RV30 streams with surface and buffer mode successively
+ * @tc.desc      : reli test
+ */
+HWTEST_F(Rv30DecReliNdkTest, VIDEO_RV30DEC_STABILITY_0110, TestSize.Level3)
+{
+    for (int i = 0; i < g_reliCount; i++)
+    {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = FILE_PATH;
+        vDecSample->getFormat(FILE_PATH);
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameRv30));
+        vDecSample->WaitForEOS();
+        vDecSample->ReleaseInFile();
+        shared_ptr<VDecAPI11Sample> vDecSample2 = make_shared<VDecAPI11Sample>();
+        vDecSample2->INP_DIR = FILE_PATH;
+        vDecSample2->getFormat(FILE_PATH);
+        vDecSample2->DEFAULT_WIDTH = 1920;
+        vDecSample2->DEFAULT_HEIGHT = 1080;
+        vDecSample2->DEFAULT_FRAME_RATE = 30;
+        vDecSample2->SF_OUTPUT = false;
+        vDecSample2->NocaleHash = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample2->RunVideoDec_Surface(g_codecNameRv30));
+        vDecSample2->WaitForEOS();
+        vDecSample2->ReleaseInFile();
+    }
+}
+/**
+ * @tc.number    : VIDEO_RV30DEC_STABILITY_0120
+ * @tc.name      : Create and destroy RV30 decoder repeatedly
+ * @tc.desc      : reliable test
+ */
+HWTEST_F(Rv30DecReliNdkTest, VIDEO_RV30DEC_STABILITY_0120, TestSize.Level3)
+{
+    shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->INP_DIR = FILE_PATH;
+        vDecSample->getFormat(FILE_PATH);
+    for (int i = 0; i < 1000; i++) {
+        OH_AVCodec *vdec_ = OH_VideoDecoder_CreateByName(g_codecNameRv30.c_str());
+        ASSERT_NE(nullptr, vdec_);
+        (void)OH_AVFormat_SetIntValue(vDecSample->trackFormat, OH_MD_KEY_WIDTH, 160);
+        (void)OH_AVFormat_SetIntValue(vDecSample->trackFormat, OH_MD_KEY_HEIGHT, 120);
+        (void)OH_AVFormat_SetIntValue(vDecSample->trackFormat, OH_MD_KEY_FRAME_RATE, 30);
+        (void)OH_AVFormat_SetIntValue(vDecSample->trackFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, vDecSample->trackFormat));
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
+        OH_VideoDecoder_Stop(vdec_);
+        OH_VideoDecoder_Destroy(vdec_);
+        vdec_ = nullptr;
+    }
+}
+} // namespace

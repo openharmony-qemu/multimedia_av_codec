@@ -32,7 +32,6 @@
 #include "block_queue.h"
 #include "codec_utils.h"
 #include "codecbase.h"
-#include "dma_swap.h"
 #include "media_description.h"
 #include "fsurface_memory.h"
 #include "surface_tools.h"
@@ -82,7 +81,7 @@ private:
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
         int32_t width_ = 0;
         int32_t height_ = 0;
-        bool hasSwapedOut_ = false;
+        std::atomic<bool> hasSwapedOut_ = false;
     };
 
     enum struct State : int32_t {
@@ -115,7 +114,6 @@ private:
     void SendFrame();
     void ReceiveFrame();
     void FindAvailIndex(uint32_t index);
-    void ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
     int32_t ConfigureContext(const Format &format);
@@ -129,7 +127,7 @@ private:
     int32_t AllocateOutputBuffersFromSurface(int32_t bufferCnt);
     int32_t FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height);
-    void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
+    void SetSurfaceParameter();
     int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
     int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
     int32_t SwitchBetweenSurface(const sptr<Surface> &newSurface);
@@ -139,6 +137,8 @@ private:
     int32_t Attach(sptr<SurfaceBuffer> surfaceBuffer);
     int32_t Detach(sptr<SurfaceBuffer> surfaceBuffer);
     void CombineConsumerUsage();
+    // surface config
+    void GetSurfaceCfgFromFmt(const Format &format);
     // surface listener callback
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
     int32_t RegisterListenerToSurface(const sptr<Surface> &surface);
@@ -153,7 +153,6 @@ private:
     bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
     int32_t SwapInBuffers(bool isOutputBuffer);
-    bool disableDmaSwap_ = false;
     int32_t pid_ = -1;
 
     int32_t instanceId_ = -1;
@@ -216,6 +215,8 @@ private:
     std::atomic<bool> requestBufferThreadExit_ = false;
     std::thread mRequestSurfaceBufferThread_;
     uint32_t decNum_ = 0;
+    // surface config
+    std::atomic<GraphicTransformType> transform_ = GraphicTransformType::GRAPHIC_ROTATE_NONE;
     // dump
 #ifdef BUILD_ENG_VERSION
     void OpenDumpFile();

@@ -24,7 +24,6 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_trace.h"
-#include "avcodec_xcollie.h"
 #include "system_ability_definition.h"
 #ifdef SUPPORT_CODEC
 #include "codec_service_stub.h"
@@ -50,7 +49,6 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
     if (fd < 0) {
         return OHOS::NO_ERROR;
     }
-    AVCodecXCollie::GetInstance().Dump(fd);
 
     std::unordered_multimap<pid_t, std::pair<sptr<IRemoteObject>, InstanceInfo>> codecStubMapTemp;
     {
@@ -174,7 +172,7 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
             CHECK_AND_BREAK_LOG(it != codecStubMap_.end(), "find codec object failed, pid(%{public}d)", pid);
 
             auto preSize = codecStubMap_.size();
-            AVCODEC_LOGI("codec stub services(%{public}zu->%{public}zu) pid(%{public}d)", preSize, preSize - 1, pid);
+            AVCODEC_LOGI("Erase from pid:%{public}d, left:%{public}zu", pid, preSize - 1);
             codecStubMap_.erase(it);
             break;
         }

@@ -29,6 +29,11 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+struct BufferInfo {
+    size_t skipSize;
+    std::vector<uint8_t> skipData;
+};
+
 class DemuxerMock : public NoCopyable {
 public:
     virtual ~DemuxerMock() = default;
@@ -41,6 +46,7 @@ public:
     virtual int32_t ReadSampleBuffer(
         uint32_t trackIndex, std::shared_ptr<AVBufferMock> sample, bool checkBufferInfo = false);
     virtual int32_t SeekToTime(int64_t mSeconds, Media::SeekMode mode) = 0;
+    virtual BufferInfo GetCurrentBufferInfo() = 0;
     virtual int32_t SetMediaKeySystemInfoCallback(bool isNull)
     {
         return AV_ERR_OK;

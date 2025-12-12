@@ -81,6 +81,7 @@ const std::map<std::string, std::string> CAPABILITY_DECODER_NAME = {
     {std::string(CodecMimeType::AUDIO_VORBIS), std::string(AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME)},
     {std::string(CodecMimeType::AUDIO_FLAC), std::string(AVCodecCodecName::AUDIO_DECODER_FLAC_NAME)},
     {std::string(CodecMimeType::VIDEO_AVC), std::string(AVCodecCodecName::VIDEO_DECODER_AVC_NAME)},
+    {std::string(CodecMimeType::VIDEO_CINEPAK), std::string(AVCodecCodecName::VIDEO_DECODER_CINEPAK_NAME)},
     {std::string(CodecMimeType::VIDEO_WMV3), std::string(AVCodecCodecName::VIDEO_DECODER_WMV3_NAME)}};
 
 const std::map<std::string, std::string> CAPABILITY_ENCODER_NAME = {
@@ -121,6 +122,11 @@ const std::vector<int32_t> DEFAULT_AUDIO_ACC_SAMPLES = {7350, 8000,  11025, 1200
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_PIXFORMATS = {
     static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
     static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
+const std::vector<int32_t> DEFAULT_VIDEO_AVC_GRAPHIC_FORMATS = {
+    static_cast<int32_t>(OH_NativeBuffer_Format::NATIVEBUFFER_PIXEL_FMT_RGBA_8888),
+    static_cast<int32_t>(OH_NativeBuffer_Format::NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP),
+    static_cast<int32_t>(OH_NativeBuffer_Format::NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP),
+    static_cast<int32_t>(OH_NativeBuffer_Format::NATIVEBUFFER_PIXEL_FMT_YCBCR_420_P)};
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_PROFILES = {AVC_PROFILE_BASELINE, AVC_PROFILE_HIGH, AVC_PROFILE_MAIN};
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_LEVELS = {
     AVC_LEVEL_1,  AVC_LEVEL_1b, AVC_LEVEL_11, AVC_LEVEL_12, AVC_LEVEL_13, AVC_LEVEL_2,  AVC_LEVEL_21,

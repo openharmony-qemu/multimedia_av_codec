@@ -97,6 +97,29 @@ bool FfmpegBaseDecoder::HasExtraData() const noexcept
     return hasExtra_;
 }
 
+void FfmpegBaseDecoder::SetSampleSikpInfo(const std::shared_ptr<AVBuffer> &inputBuffer)
+{
+    if (avCodec_ == nullptr) {
+        return;
+    }
+    if (avCodec_->id != AV_CODEC_ID_MP3 && avCodec_->id != AV_CODEC_ID_VORBIS) {
+        return;
+    }
+
+    std::vector<uint8_t> skipInfo;
+    auto &meta = inputBuffer->meta_;
+    if (!meta->GetData(Tag::BUFFER_SKIP_SAMPLES_INFO, skipInfo)) {
+        return;
+    }
+    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "skip info size:%{public}zu", skipInfo.size());
+    uint8_t *p = av_packet_new_side_data(avPacket_.get(), AV_PKT_DATA_SKIP_SAMPLES, skipInfo.size());
+    if (p == nullptr || memcpy_s(p, skipInfo.size(), skipInfo.data(), skipInfo.size()) != EOK) {
+        AVCODEC_LOGE("copy skip info failed!is null:%{public}d size:%{public}zu",
+            static_cast<int32_t>(p == nullptr), skipInfo.size());
+    }
+    meta->Remove(Tag::BUFFER_SKIP_SAMPLES_INFO);
+}
+
 Status FfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     if (!inputBuffer) {
@@ -121,6 +144,7 @@ Status FfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
     }
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "SendBuffer buffer size:%{public}u,name:%{public}s", avPacket_->size,
                        name_.data());
+    SetSampleSikpInfo(inputBuffer);
     auto ret = avcodec_send_packet(avCodecContext_.get(), avPacket_.get());
     av_packet_unref(avPacket_.get());
     if (ret == 0) {

@@ -1227,9 +1227,9 @@ Status MediaCodec::CodePluginOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffe
 void MediaCodec::ResetIOStat()
 {
     if (state_ == CodecState::RUNNING || state_ == CodecState::END_OF_STREAM) {
-        AVCODEC_LOGI(
-            "MediaCodec::ResetIOStat, input: %{public}lld bytes in %{public}zu times, output: %{public}lld bytes in "
-            "%{public}zu times utill last run",
+        AVCODEC_LOGI("MediaCodec::ResetIOStat, input: %{public}" PRId64
+                     " bytes in %{public}zu times, output: %{public}" PRId64 " bytes in "
+                     "%{public}zu times utill last run",
             inputBytesSum_,
             inputCount_,
             outputBytesSum_,

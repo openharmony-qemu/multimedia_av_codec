@@ -1184,4 +1184,469 @@ HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_HWDEC_INNER_RECYCLEMEMORY_FUNC_0390, TestS
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->Release());
     }
 }
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0010
+ * @tc.name      : inner接口, H264, 宽高于上限
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0010, TestSize.Level0)
+{
+    if (access("/data/test/media/9200_720.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) && cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/9200_720.h264";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0020
+ * @tc.name      : inner接口, H265, 宽高于上限
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0020, TestSize.Level0)
+{
+    if (access("/data/test/media/9200_720.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/9200_720.h265";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0030
+ * @tc.name      : inner接口, H264, 宽低于下限
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0030, TestSize.Level2)
+{
+    if (access("/data/test/media/8_720.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) && cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/8_720.h264";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0040
+ * @tc.name      : inner接口, H265, 宽低于下限
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0040, TestSize.Level2)
+{
+    if (access("/data/test/media/16_720.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/16_720.h265";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0050
+ * @tc.name      : inner接口, H264, 高高于上限
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0050, TestSize.Level2)
+{
+    if (access("/data/test/media/720_9200.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) && cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/720_9200.h264";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0060
+ * @tc.name      : inner接口, H265, 高高于上限
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0060, TestSize.Level2)
+{
+    if (access("/data/test/media/720_9200.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/720_9200.h265";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0070
+ * @tc.name      : inner接口, H264, 高低于下限
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0070, TestSize.Level2)
+{
+    if (access("/data/test/media/720_8.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) && cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/720_8.h264";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0080
+ * @tc.name      : inner接口, H265, 高低于下限
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0080, TestSize.Level2)
+{
+    if (access("/data/test/media/720_16.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/720_16.h265";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0090
+ * @tc.name      : inner接口, H265, 位深为12bit
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0090, TestSize.Level1)
+{
+    if (access("/data/test/media/1280_720_12bit.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/1280_720_12bit.h265";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0100
+ * @tc.name      : inner接口, H264, format为400
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0100, TestSize.Level1)
+{
+    if (access("/data/test/media/1280_720_gray.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/1280_720_gray.h264";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0110
+ * @tc.name      : inner接口, H264, format为422
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0110, TestSize.Level2)
+{
+    if (access("/data/test/media/1280_720_yuv422.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/1280_720_yuv422.h264";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0120
+ * @tc.name      : inner接口, H264, format为444
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0120, TestSize.Level2)
+{
+    if (access("/data/test/media/1280_720_yuv444.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/1280_720_yuv444.h264";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0130
+ * @tc.name      : inner接口, H265, format为400
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0130, TestSize.Level2)
+{
+    if (access("/data/test/media/1280_720_gray.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/1280_720_gray.h265";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0140
+ * @tc.name      : inner接口, H265, format为422
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0140, TestSize.Level2)
+{
+    if (access("/data/test/media/1280_720_yuv422.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/1280_720_yuv422.h265";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0150
+ * @tc.name      : inner接口, H265, format为444
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0150, TestSize.Level2)
+{
+    if (access("/data/test/media/1280_720_yuv444.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/1280_720_yuv444.h265";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0160
+ * @tc.name      : inner接口, H264, mbaff
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0160, TestSize.Level2)
+{
+    if (access("/data/test/media/1280_720_mbaff.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/1280_720_mbaff.h264";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0170
+ * @tc.name      : inner接口, H264, 位深为10bit
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0170, TestSize.Level2)
+{
+    if (access("/data/test/media/1280_720_10bit.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/1280_720_10bit.h264";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, vDecSample->errCodeResult);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0180
+ * @tc.name      : inner接口, H264, xps元素错误
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0180, TestSize.Level2)
+{
+    if (access("/data/test/media/1280_720_error_xps.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/1280_720_error_xps.h264";
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        vDecSample->needSendOneFrame = true;
+        vDecSample->outNoFrameLoss = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0190
+ * @tc.name      : inner接口, H265, xps元素错误
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0190, TestSize.Level2)
+{
+    if (access("/data/test/media/1920_1080_error_xps.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/1920_1080_error_xps.h265";
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0200
+ * @tc.name      : inner接口, H264, xps为空
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0200, TestSize.Level2)
+{
+    if (access("/data/test/media/1920_1080_error_xps.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = INP_DIR_720_30;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        vDecSample->needXpsEmpty = true;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_INNER_ERRCODE_REPORT_0210
+ * @tc.name      : inner接口, H265, xps为空
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_ERRCODE_REPORT_0210, TestSize.Level2)
+{
+    if (access("/data/test/media/1920_1080_error_xps.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+        cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecNdkInnerSample>();
+        vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->checkErrCode = true;
+        vDecSample->noNeedFirstFrame = true;
+        vDecSample->NocaleHash = true;
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDecoder(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
+    }
+}
 } // namespace

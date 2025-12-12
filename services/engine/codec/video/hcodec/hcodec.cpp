@@ -43,6 +43,9 @@ void HCodec::SetCallerToBuffer(int fd, uint32_t w, uint32_t h)
     const char* type = isEncoder_ ? "hw-video-encoder" : "hw-video-decoder";
     ioctl(fd, DMA_BUF_SET_LEAK_TYPE, type);
  
+    string pid = to_string(caller_.playerCaller.pid);
+    ioctl(fd, DMA_BUF_SET_NAME_A, pid.c_str());
+    
     string bufName = to_string(w) + 'x' + to_string(h) + '-' + mime_ + '-' + to_string(componentId_);
     ioctl(fd, DMA_BUF_SET_NAME_A, bufName.c_str());
 }

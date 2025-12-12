@@ -28,6 +28,15 @@
 #else
 #include "fcodec_loader.h"
 #include "hevc_decoder_loader.h"
+#ifdef SUPPORT_CODEC_VP8
+#include "vp8_decoder_loader.h"
+#endif
+#ifdef SUPPORT_CODEC_VP9
+#include "vp9_decoder_loader.h"
+#endif
+#ifdef SUPPORT_CODEC_AV1
+#include "av1_decoder_loader.h"
+#endif
 #include "hcodec_loader.h"
 #include "avc_encoder_loader.h"
 #endif
@@ -57,10 +66,8 @@ std::vector<std::string> CodecFactory::GetCodecNameArrayByMime(const std::string
     return nameArray;
 }
 
-std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &name, API_VERSION apiVersion)
+std::shared_ptr<CodecBase> CreateCodecByCodecType(const std::string &name, CodecType codecType, API_VERSION apiVersion)
 {
-    std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
-    CodecType codecType = codecListCore->FindCodecType(name);
     std::shared_ptr<CodecBase> codec = nullptr;
     switch (codecType) {
 #ifndef CLIENT_SUPPORT_CODEC
@@ -70,12 +77,27 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
         case CodecType::AVCODEC_VIDEO_CODEC:
             codec = FCodecLoader::CreateByName(name);
             break;
+#ifdef SUPPORT_CODEC_AV1
+        case CodecType::AVCODEC_VIDEO_AV1_DECODER:
+            codec = Av1DecoderLoader::CreateByName(name);
+            break;
+#endif
         case CodecType::AVCODEC_VIDEO_HEVC_DECODER:
             codec = HevcDecoderLoader::CreateByName(name);
             break;
         case CodecType::AVCODEC_VIDEO_AVC_ENCODER:
             codec = AvcEncoderLoader::CreateByName(name);
             break;
+#ifdef SUPPORT_CODEC_VP8
+        case CodecType::AVCODEC_VIDEO_VP8_DECODER:
+            codec = Vp8DecoderLoader::CreateByName(name);
+            break;
+#endif
+#ifdef SUPPORT_CODEC_VP9
+        case CodecType::AVCODEC_VIDEO_VP9_DECODER:
+            codec = Vp9DecoderLoader::CreateByName(name);
+            break;
+#endif
 #else
         case CodecType::AVCODEC_AUDIO_CODEC:
             if (apiVersion == API_VERSION::API_VERSION_10) {
@@ -93,6 +115,14 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
             return codec;
     }
     (void)apiVersion;
+    return codec;
+}
+
+std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &name, API_VERSION apiVersion)
+{
+    std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
+    CodecType codecType = codecListCore->FindCodecType(name);
+    std::shared_ptr<CodecBase> codec = CreateCodecByCodecType(name, codecType, apiVersion);
     return codec;
 }
 } // namespace MediaAVCodec

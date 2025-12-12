@@ -1763,6 +1763,30 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_DECODE_SYNC_SW265_FUNC_0030, TestSize.Leve
 }
 
 /**
+ * @tc.number    : VIDEO_DECODE_FUNC_0010
+ * @tc.name      : Decode MsVideo1 buffer No PixelFormat
+ * @tc.desc      : function test
+ */
+HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_DECODE_FUNC_0010, TestSize.Level1)
+{
+    if (cap_mjpeg != nullptr) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        const char *file = "/data/test/media/1920_1080_30.avi";
+        vDecSample->getFormat(file);
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->enbleSyncMode = 1;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMjpeg));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoderNoPixelFormat());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
  * @tc.number    : VIDEO_MJPEGSWDEC_H265_BLANK_FRAME_0010
  * @tc.name      : config OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, decoder h265 swd
  * @tc.desc      : function test

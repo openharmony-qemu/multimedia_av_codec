@@ -18,12 +18,12 @@
 
 #include <cstdio>
 #include <string>
+#include <mutex>
+#include <shared_mutex>
 #include "plugin/source_plugin.h"
 #include "plugin/plugin_buffer.h"
 #include "osal/utils/ring_buffer.h"
 #include "osal/task/task.h"
-#include <mutex>
-#include <shared_mutex>
 #include "osal/utils/steady_clock.h"
 
 namespace OHOS {

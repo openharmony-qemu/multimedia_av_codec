@@ -111,7 +111,7 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, extradata, extradatasize);
 }
 
-
+#ifdef SUPPORT_CODEC_VC1
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(SW_VC1));
 
 /**
@@ -539,6 +539,31 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Configure_005, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     EXPECT_NE(AV_ERR_OK, videoDec_->Configure(format_));
+}
+
+/**
+ * @tc.name: VideoDecoder_Configure_006
+ * @tc.desc: default pixel format
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_Configure_006, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->RemoveKey(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+
+    format_ = FormatMockFactory::CreateFormat();
+    ASSERT_NE(nullptr, format_);
+
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VC1);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VC1);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->SetParameter(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
 
 /**
@@ -1136,6 +1161,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_RenderOutputBufferAtTime_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
+#endif
 } // namespace
 
 int main(int argc, char **argv)

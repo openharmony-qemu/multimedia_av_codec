@@ -29,6 +29,7 @@ public:
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb);
     int32_t SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb);
     int32_t SetOutputSurface();
+    int32_t SetOutputSurface(std::shared_ptr<SurfaceMock> surface);
     int32_t Configure(std::shared_ptr<FormatMock> format);
     int32_t Prepare();
     int32_t Start();
@@ -79,9 +80,20 @@ private:
     int32_t CreateAvccReader();
     int32_t CreateMpegReader();
     int32_t CreateH263Reader();
+#ifdef SUPPORT_CODEC_VC1
     int32_t CreateVc1Reader();
+    int32_t CreateWVc1Reader();
+#endif
     int32_t CreateMsvideo1Reader();
     int32_t CreateWmv3Reader();
+    int32_t CreateCinepakReader();
+#ifdef SUPPORT_CODEC_AV1
+    int32_t CreateAv1Reader();
+#endif
+#ifdef SUPPORT_CODEC_RV
+    int32_t CreateRv30Reader();
+    int32_t CreateRv40Reader();
+#endif
     int32_t CreateReader(const std::string& inPath);
     bool CompareHdrInfo(std::shared_ptr<AVBufferMock> buffer);
     bool CompareMetadata(std::shared_ptr<std::ifstream> file, int32_t size,
@@ -108,9 +120,20 @@ private:
     std::shared_ptr<AvccReader> avccReader_ = nullptr;
     std::shared_ptr<MpegReader> mpegReader_ = nullptr;
     std::shared_ptr<H263Reader> h263Reader_ = nullptr;
+#ifdef SUPPORT_CODEC_VC1
     std::shared_ptr<Vc1Reader> vc1Reader_ = nullptr;
+    std::shared_ptr<WVc1Reader> wvc1Reader_ = nullptr;
+#endif
+#ifdef SUPPORT_CODEC_AV1
+    std::shared_ptr<Av1Reader> av1Reader_ = nullptr;
+#endif
+#ifdef SUPPORT_CODEC_RV
+    std::shared_ptr<Rv30Reader> rv30Reader_ = nullptr;
+    std::shared_ptr<Rv40Reader> rv40Reader_ = nullptr;
+#endif
     std::shared_ptr<Msvideo1Reader> msvideo1Reader_ = nullptr;
     std::shared_ptr<Wmv3Reader> wmv3Reader_ = nullptr;
+    std::shared_ptr<CinepakReader> cinepakReader_ = nullptr;
     std::shared_ptr<std::ifstream> dynamicMetadataFile_ = nullptr;
     std::shared_ptr<std::ifstream> staticMetadataFile_ = nullptr;
 };

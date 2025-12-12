@@ -69,9 +69,9 @@ inline void PrintCodecScenario(CodecScenario scenario)
 {
     auto scenarioName = CODEC_SCENARIO_TO_STRING.find(scenario);
     if (scenarioName != CODEC_SCENARIO_TO_STRING.end()) {
-        AVCODEC_LOGI("Codec scenario is %{public}s", scenarioName->second.data());
+        AVCODEC_LOGD("Codec scenario is %{public}s", scenarioName->second.data());
     } else {
-        AVCODEC_LOGI("Codec scenario is %{public}d", scenario);
+        AVCODEC_LOGD("Codec scenario is %{public}d", scenario);
     }
 }
 
@@ -105,6 +105,7 @@ int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScena
 int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t TransformTypeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 
 // Checkers list define
 using ScenarioCheckerType =
@@ -151,6 +152,7 @@ const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
     RotationChecker,
     ScalingModeChecker,
     PostProcessingChecker,
+    TransformTypeChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
@@ -159,7 +161,9 @@ const ParamCheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
     QPChecker,
 };
 
-const ParamCheckerListType VIDEO_DECODER_PARAMETER_CHECKER_LIST = {};
+const ParamCheckerListType VIDEO_DECODER_PARAMETER_CHECKER_LIST = {
+    TransformTypeChecker,
+};
 
 const ScenarioCheckerListType VIDEO_SCENARIO_CHECKER_LIST = {
     BFrameScenarioChecker,
@@ -172,6 +176,8 @@ const std::vector<std::string_view> FORMAT_MERGE_LIST = {
     MediaDescriptionKey::MD_KEY_FRAME_RATE,
     Tag::VIDEO_ENCODER_QP_MIN,
     Tag::VIDEO_ENCODER_QP_MAX,
+    // only for decoder
+    Tag::VIDEO_ORIENTATION_TYPE,
 };
 
 // Checkers table
@@ -793,6 +799,23 @@ void SQRDynamicParameterCheck(CapabilityData &capData, const Format &format, For
             MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE.data(), static_cast<int32_t>(maxBitrate),
             capData.maxBitrate.minVal, capData.maxBitrate.maxVal);
     }
+}
+
+int32_t TransformTypeChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)capData;
+    (void)scenario;
+    int32_t videoOrientationType;
+    bool videoOrientationTypeExist = format.GetIntValue(Tag::VIDEO_ORIENTATION_TYPE, videoOrientationType);
+    if (!videoOrientationTypeExist) {
+        return AVCS_ERR_OK;
+    }
+    if (videoOrientationType < static_cast<int32_t>(OHOS::GraphicTransformType::GRAPHIC_ROTATE_NONE) ||
+        videoOrientationType >= static_cast<int32_t>(OHOS::GraphicTransformType::GRAPHIC_ROTATE_BUTT)) {
+        AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_ORIENTATION_TYPE, videoOrientationType);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
 }
 } // namespace
 

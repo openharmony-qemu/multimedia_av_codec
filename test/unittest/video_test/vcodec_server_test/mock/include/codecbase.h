@@ -173,11 +173,22 @@ public:
     MOCK_METHOD(std::shared_ptr<CodecBase>, CreateHevcDecoderByName, (const std::string &name));
     MOCK_METHOD(std::shared_ptr<CodecBase>, CreateHCodecByName, (const std::string &name));
     MOCK_METHOD(std::shared_ptr<CodecBase>, CreateAvcEncoderByName, (const std::string &name));
+#if defined(SUPPORT_CODEC_VP8) || defined(SUPPORT_CODEC_VP9)
+    MOCK_METHOD(std::shared_ptr<CodecBase>, CreateVpxDecoderByName, (const std::string &name));
+#endif
+#ifdef SUPPORT_CODEC_AV1
+    MOCK_METHOD(std::shared_ptr<CodecBase>, CreateAv1DecoderByName, (const std::string &name));
+#endif
     MOCK_METHOD(RetAndCaps, GetHCapabilityList, ());
     MOCK_METHOD(RetAndCaps, GetFCapabilityList, ());
     MOCK_METHOD(RetAndCaps, GetHevcDecoderCapabilityList, ());
     MOCK_METHOD(RetAndCaps, GetAvcEncoderCapabilityList, ());
-
+#if defined(SUPPORT_CODEC_VP8) || defined(SUPPORT_CODEC_VP9)
+    MOCK_METHOD(RetAndCaps, GetVpxDecoderCapabilityList, ());
+#endif
+#ifdef SUPPORT_CODEC_AV1
+    MOCK_METHOD(RetAndCaps, GetAv1DecoderCapabilityList, ());
+#endif
     MOCK_METHOD(void, CodecBaseCtor, ());
     MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<AVCodecCallback> &callback));
     MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<MediaCodecCallback> &callback));

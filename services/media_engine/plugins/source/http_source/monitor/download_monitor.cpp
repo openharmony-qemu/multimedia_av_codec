@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -130,8 +130,8 @@ void DownloadMonitor::Close(bool isAsync)
         downloader_->Close(true);
         task_->Stop();
     } else {
-        task_->Stop();
         downloader_->Close(false);
+        task_->Stop();
     }
     isPlaying_ = false;
 }
@@ -150,10 +150,9 @@ Status DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     return ret;
 }
 
-bool DownloadMonitor::SeekToPos(int64_t offset, bool& isSeekHIt)
+bool DownloadMonitor::SeekToPos(int64_t offset, bool& isSeekHit)
 {
     isPlaying_ = true;
-    bool isSeekHit = false;
     bool res = downloader_->SeekToPos(offset, isSeekHit);
     if (!isSeekHit) {
         AutoLock lock(taskMutex_);
@@ -210,7 +209,7 @@ void DownloadMonitor::SetCallback(Callback* cb)
 
 void DownloadMonitor::SetStatusCallback(StatusCallbackFunc cb)
 {
-    // do nothing
+    (void)cb;
 }
 
 bool DownloadMonitor::GetStartedStatus()
@@ -553,10 +552,10 @@ std::string DownloadMonitor::GetCurUrl()
     return downloader_->GetCurUrl();
 }
 
-bool DownloadMonitor::IsHlsEnd()
+bool DownloadMonitor::IsHlsEnd(int32_t streamId)
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
-    return downloader_->IsHlsEnd();
+    return downloader_->IsHlsEnd(streamId);
 }
 }
 }

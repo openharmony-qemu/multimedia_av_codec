@@ -39,6 +39,8 @@ public:
     static constexpr std::string_view AUDIO_DECODER_APE_NAME = "OH.Media.Codec.Decoder.Audio.Ape";
     static constexpr std::string_view AUDIO_DECODER_L2HC_NAME = "OH.Media.Codec.Decoder.Audio.L2HC";
     static constexpr std::string_view AUDIO_DECODER_LBVC_NAME = "OH.Media.Codec.Decoder.Audio.LBVC";
+    static constexpr std::string_view AUDIO_DECODER_DVAUDIO_NAME = "OH.Media.Codec.Decoder.Audio.DVAUDIO";
+    static constexpr std::string_view AUDIO_DECODER_DTS_NAME = "OH.Media.Codec.Decoder.Audio.DTS";
     static constexpr std::string_view AUDIO_DECODER_COOK_NAME = "OH.Media.Codec.Decoder.Audio.COOK";
     static constexpr std::string_view AUDIO_DECODER_AC3_NAME = "OH.Media.Codec.Decoder.Audio.AC3";
     static constexpr std::string_view AUDIO_DECODER_EAC3_NAME = "OH.Media.Codec.Decoder.Audio.EAC3";
@@ -79,6 +81,9 @@ public:
     static constexpr std::string_view AUDIO_DECODER_ADPCM_THP_LE_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.THP.LE";
     static constexpr std::string_view AUDIO_DECODER_ADPCM_XA_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.XA";
     static constexpr std::string_view AUDIO_DECODER_ADPCM_YAMAHA_NAME = "OH.Media.Codec.Decoder.Audio.ADPCM.YAMAHA";
+    static constexpr std::string_view AUDIO_DECODER_ILBC_NAME = "OH.Media.Codec.Decoder.Audio.ILBC";
+    static constexpr std::string_view AUDIO_DECODER_TRUEHD_NAME = "OH.Media.Codec.Decoder.Audio.TrueHD";
+    static constexpr std::string_view AUDIO_DECODER_TWINVQ_NAME = "OH.Media.Codec.Decoder.Audio.TwinVQ";
     static constexpr std::string_view AUDIO_ENCODER_FLAC_NAME = "OH.Media.Codec.Encoder.Audio.Flac";
     static constexpr std::string_view AUDIO_ENCODER_OPUS_NAME = "OH.Media.Codec.Encoder.Audio.Opus";
     static constexpr std::string_view AUDIO_ENCODER_G711MU_NAME = "OH.Media.Codec.Encoder.Audio.G711mu";
@@ -93,9 +98,13 @@ public:
 
     static constexpr std::string_view VIDEO_DECODER_MSVIDEO1_NAME = "OH.Media.Codec.Decoder.Video.MSVIDEO1";
     static constexpr std::string_view VIDEO_DECODER_VC1_NAME = "OH.Media.Codec.Decoder.Video.VC1";
+    static constexpr std::string_view VIDEO_DECODER_WVC1_NAME = "OH.Media.Codec.Decoder.Video.WVC1";
     static constexpr std::string_view VIDEO_ENCODER_AVC_NAME = "OH.Media.Codec.Encoder.Video.AVC";
     static constexpr std::string_view VIDEO_DECODER_AVC_NAME = "OH.Media.Codec.Decoder.Video.AVC";
     static constexpr std::string_view VIDEO_DECODER_HEVC_NAME = "OH.Media.Codec.Decoder.Video.HEVC";
+    static constexpr std::string_view VIDEO_DECODER_VP8_NAME = "OH.Media.Codec.Decoder.Video.VP8";
+    static constexpr std::string_view VIDEO_DECODER_VP9_NAME = "OH.Media.Codec.Decoder.Video.VP9";
+    static constexpr std::string_view VIDEO_DECODER_AV1_NAME = "OH.Media.Codec.Decoder.Video.AV1";
     static constexpr std::string_view VIDEO_DECODER_MPEG2_NAME = "OH.Media.Codec.Decoder.Video.MPEG2";
     static constexpr std::string_view VIDEO_DECODER_MPEG4_NAME = "OH.Media.Codec.Decoder.Video.MPEG4";
     static constexpr std::string_view VIDEO_DECODER_H263_NAME = "OH.Media.Codec.Decoder.Video.H263";
@@ -104,6 +113,7 @@ public:
     static constexpr std::string_view VIDEO_DECODER_RV40_NAME = "OH.Media.Codec.Decoder.Video.Rv40";
     static constexpr std::string_view VIDEO_DECODER_MJPEG_NAME = "OH.Media.Codec.Decoder.Video.MJPEG";
     static constexpr std::string_view VIDEO_DECODER_WMV3_NAME = "OH.Media.Codec.Decoder.Video.WMV3";
+    static constexpr std::string_view VIDEO_DECODER_CINEPAK_NAME = "OH.Media.Codec.Decoder.Video.CINEPAK";
 
     static const std::unordered_set<std::string_view> &GetAudioCodecOuterSupportTable()
     {
@@ -129,17 +139,25 @@ public:
             AUDIO_DECODER_WMAV1_NAME,
             AUDIO_DECODER_WMAV2_NAME,
             AUDIO_DECODER_WMAPRO_NAME,
+            AUDIO_DECODER_ILBC_NAME,
+            AUDIO_DECODER_TRUEHD_NAME,
+            AUDIO_DECODER_TWINVQ_NAME,
+            AUDIO_DECODER_DVAUDIO_NAME,
+            AUDIO_DECODER_DTS_NAME,
+            AUDIO_DECODER_COOK_NAME,
             
 #ifdef SUPPORT_CODEC_EAC3
             AUDIO_DECODER_EAC3_NAME,
 #endif
-#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
-            AUDIO_ENCODER_VENDOR_AAC_NAME,
+#ifdef SUPPORT_CODEC_OPUS
             AUDIO_DECODER_OPUS_NAME,
             AUDIO_ENCODER_OPUS_NAME,
+#endif
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
+            AUDIO_ENCODER_VENDOR_AAC_NAME,
             AUDIO_DECODER_VIVID_NAME,
             AUDIO_ENCODER_AMRNB_NAME,
-            AUDIO_ENCODER_AMRWB_NAME
+            AUDIO_ENCODER_AMRWB_NAME,
 #endif
         };
         return OUTER_SUPPORT_TABLE;

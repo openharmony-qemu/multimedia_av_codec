@@ -87,7 +87,7 @@ string g_mpgPath3 = string("/data/test/media/mpeg_h264_mp2.mpeg");
 // SRT
 string g_srtPath1 = string("/data/test/media/subtitle.srt");
 // VTT
-string g_vttPath1 = string("/data/test/media/webvtt_test.vtt");
+string g_vttPath1 = string("/data/test/media/webvtt_test_ut.vtt");
 
 void DemuxerPluginUnitTest::SetUpTestCase(void)
 {

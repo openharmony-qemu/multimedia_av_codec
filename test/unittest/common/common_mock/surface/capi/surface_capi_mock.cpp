@@ -36,5 +36,15 @@ OHNativeWindow *SurfaceCapiMock::GetSurface()
 {
     return nativeWindow_;
 }
+
+void SurfaceCapiMock::SetTransform(int32_t transform)
+{
+    OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_TRANSFORM, transform);
+}
+
+void SurfaceCapiMock::GetTransform(int32_t &transform)
+{
+    OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, GET_TRANSFORM, &transform);
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -312,7 +312,7 @@ HWTEST_F(GsmMsUnitTest, Decode_With_Invalid_File_001, TestSize.Level1)
     auto inputBuffer = CreateAVBuffer(invalidSize, invalidSize);
     ASSERT_NE(inputBuffer, nullptr);
     ASSERT_NE(inputBuffer->memory_, nullptr);
-    std::fill_n(inputBuffer->memory_->GetAddr(), GSM_MS_INVALID_VAL, invalidSize);
+    std::fill_n(inputBuffer->memory_->GetAddr(), invalidSize, GSM_MS_INVALID_VAL);
     auto st = plugin_->QueueInputBuffer(inputBuffer);
     ASSERT_NE(st, Status::OK);
     auto outputBuffer = CreateAVBuffer(GSM_MS_MAX_INPUT_SIZE, 0);

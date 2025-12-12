@@ -23,6 +23,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 const std::vector<std::string> VIDEO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MSVIDEO1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VC1),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_WVC1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_AVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_HEVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VVC),
@@ -31,9 +32,11 @@ const std::vector<std::string> VIDEO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MPEG4),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV30),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV40),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_AV1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MJPEG),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP8),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP9),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_CINEPAK),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_WMV3)};
 const std::vector<std::string> AUDIO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_NB),
@@ -89,7 +92,12 @@ const std::vector<std::string> AUDIO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_LBVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_APE),
     std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_MIMETYPE_L2HC),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_VIVID)};
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_VIVID),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ILBC),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_TRUEHD),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_TWINVQ),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_DVAUDIO),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_DTS)};
 }
 namespace OHOS {
 namespace MediaAVCodec {

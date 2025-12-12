@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,8 +21,6 @@
 #include <securec.h>
 #include "media_cached_buffer.h"
 #include "common/log.h"
-#include "avcodec_log.h"
-#include "avcodec_errors.h"
 
 namespace OHOS {
 namespace Media {
@@ -36,6 +34,8 @@ constexpr double TO_PERCENT = 100;
 constexpr int64_t MAX_TOTAL_READ_SIZE = 2000000;
 constexpr int64_t UP_LIMIT_MAX_TOTAL_READ_SIZE = 3000000;
 constexpr int64_t ACCESS_OFFSET_MAX_LENGTH = 2 * 1024;
+constexpr uint32_t CHUNK_SIZE = 16 * 1024;
+constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
 
 inline constexpr bool BoundedIntervalComp(int64_t mid, uint64_t start, int64_t end)
 {
@@ -63,7 +63,11 @@ inline void InitChunkInfo(CacheChunk& chunkInfo, uint64_t offset)
 CacheMediaChunkBufferImpl::CacheMediaChunkBufferImpl()
     : totalBuffSize_(0), totalReadSize_(0), chunkMaxNum_(0), chunkSize_(0), bufferAddr_(nullptr),
       fragmentMaxNum_(CACHE_FRAGMENT_MAX_NUM_DEFAULT),
-      lruCache_(CACHE_FRAGMENT_MAX_NUM_DEFAULT) {}
+      lruCache_(CACHE_FRAGMENT_MAX_NUM_DEFAULT)
+{
+    readPos_ = fragmentCacheBuffer_.end();
+    writePos_ = fragmentCacheBuffer_.end();
+}
 
 CacheMediaChunkBufferImpl::~CacheMediaChunkBufferImpl()
 {
@@ -334,8 +338,8 @@ bool CacheMediaChunkBufferImpl::WriteMergerPre(uint64_t offset, size_t writeSize
 
 void CacheMediaChunkBufferImpl::WriteMergerPost(FragmentIterator& nextFragmentPos)
 {
-    if (nextFragmentPos == fragmentCacheBuffer_.end() || writePos_->chunks.empty() ||
-        nextFragmentPos->chunks.empty()) {
+    if (nextFragmentPos == fragmentCacheBuffer_.end() || writePos_ == fragmentCacheBuffer_.end() ||
+        writePos_->chunks.empty() || nextFragmentPos->chunks.empty()) {
         return;
     }
     auto preChunkInfo = writePos_->chunks.back();
@@ -815,13 +819,15 @@ FragmentIterator CacheMediaChunkBufferImpl::GetFragmentIterator(FragmentIterator
         if (chunkInfo->dataLength >= diff) {
             splitHead->dataLength = chunkInfo->dataLength - static_cast<uint32_t>(diff);
             chunkInfo->dataLength = static_cast<uint32_t>(diff);
-            memcpy_s(splitHead->data, splitHead->dataLength, chunkInfo->data + diff, splitHead->dataLength);
+            errno_t res =
+                memcpy_s(splitHead->data, splitHead->dataLength, chunkInfo->data + diff, splitHead->dataLength);
+            FALSE_LOG(res == EOK);
         }
     }
     newFragmentPos->offsetBegin = offset;
     uint64_t diff = offset > currFragmentIter->offsetBegin ? offset - currFragmentIter->offsetBegin : 0;
     newFragmentPos->dataLength = currFragmentIter->dataLength > static_cast<int64_t>(diff) ?
-                                    currFragmentIter->dataLength - static_cast<int64_t>(diff) : 0;
+        currFragmentIter->dataLength - static_cast<int64_t>(diff) : 0;
     newFragmentPos->accessLength = 0;
     uint64_t newReadSizeInit = static_cast<uint64_t>(1 + initReadSizeFactor_ * static_cast<double>(totalReadSize_));
     newReadSizeInit = std::max(newReadSizeInit, currFragmentIter->totalReadSize);
@@ -833,7 +839,7 @@ FragmentIterator CacheMediaChunkBufferImpl::GetFragmentIterator(FragmentIterator
     newFragmentPos->isSplit = currFragmentIter->isSplit;
     currFragmentIter->isSplit = true;
     currFragmentIter->dataLength = static_cast<int64_t>(offset > currFragmentIter->offsetBegin ?
-                                        offset - currFragmentIter->offsetBegin : 0);
+        offset - currFragmentIter->offsetBegin : 0);
     return newFragmentPos;
 }
 
@@ -884,7 +890,9 @@ ChunkIterator CacheMediaChunkBufferHlsImpl::SplitFragmentCacheBuffer(FragmentIte
             splitHead->dataLength = chunkInfo->dataLength > static_cast<uint32_t>(diff) ?
                 chunkInfo->dataLength - static_cast<uint32_t>(diff) : 0;
             chunkInfo->dataLength = static_cast<uint32_t>(diff);
-            memcpy_s(splitHead->data, splitHead->chunkSize, chunkInfo->data + diff, splitHead->dataLength);
+            errno_t res =
+                memcpy_s(splitHead->data, splitHead->chunkSize, chunkInfo->data + diff, splitHead->dataLength);
+            FALSE_LOG(res == EOK);
         } else {
             splitHead->dataLength = 0; // It can't happen. us_asan can check.
         }

@@ -115,6 +115,7 @@ public:
     void SetEOS(uint32_t index, OH_AVBuffer *buffer);
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
+    int32_t ConfigureVideoDecoderNoPixelFormat();
     int32_t StartVideoDecoder();
     int32_t StartSyncVideoDecoder();
     int32_t StartVideoDecoderReadStream();

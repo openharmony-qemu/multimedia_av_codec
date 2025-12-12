@@ -55,6 +55,7 @@ public:
     void ParseAnnexbExtraData(const uint8_t *sample, int32_t size);
     std::vector<uint8_t> GetLogInfo();
     uint32_t GetMaxReorderPic();
+    int32_t GetFirstFillerDataNalSize(const uint8_t *sample, int32_t size);
     
 private:
     StreamParser *streamParser_ {nullptr};

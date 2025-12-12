@@ -31,43 +31,14 @@ constexpr int32_t SUPPORT_SAMPLE_RATE = 4;
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
 constexpr int32_t SAMPLE_RATE_PICK[SUPPORT_SAMPLE_RATE] = {8000, 11025, 22050, 44100};
-constexpr int32_t BLOCK_ALIGN = 186;
-
-Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register>& reg)
-{
-    CodecPluginDef definition;
-    definition.name = std::string(OHOS::MediaAVCodec::AVCodecCodecName::AUDIO_DECODER_COOK_NAME);
-    definition.pluginType = PluginType::AUDIO_DECODER;
-    definition.rank = 100;  // 100
-    definition.SetCreator([](const std::string& name) -> std::shared_ptr<CodecPlugin> {
-        return std::make_shared<FFmpegCookDecoderPlugin>(name);
-    });
-
-    Capability cap;
-    cap.SetMime(MimeType::AUDIO_COOK);
-    cap.AppendFixedKey<CodecMode>(Tag::MEDIA_CODEC_MODE, CodecMode::SOFTWARE);
-
-    definition.AddInCaps(cap);
-    // do not delete the codec in the deleter
-    if (reg->AddPlugin(definition) != Status::OK) {
-        AVCODEC_LOGE("AudioCookDecoderPlugin Register Failure");
-        return Status::ERROR_UNKNOWN;
-    }
-
-    return Status::OK;
 }
-
-void UnRegisterAudioDecoderPlugin() {}
-
-PLUGIN_DEFINITION(CookAudioDecoder, LicenseType::LGPL, RegisterAudioDecoderPlugins, UnRegisterAudioDecoderPlugin);
-} // namespace
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 FFmpegCookDecoderPlugin::FFmpegCookDecoderPlugin(const std::string& name)
-    : CodecPlugin(name), channels(0), sampleRate(0), basePlugin(std::make_unique<FfmpegBaseDecoder>())
+    : CodecPlugin(name), channels(0), sampleRate(0), blockAlign(0), basePlugin(std::make_unique<FfmpegBaseDecoder>())
 {
 }
 
@@ -119,7 +90,7 @@ Status FFmpegCookDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parame
         AVCODEC_LOGE("Cook init error.");
         return ret;
     }
-    basePlugin->SetBlockAlignContext(BLOCK_ALIGN);
+    basePlugin->SetBlockAlignContext(blockAlign);
     auto format = basePlugin->GetFormat();
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
@@ -168,6 +139,8 @@ Status FFmpegCookDecoderPlugin::CheckInit(const std::shared_ptr<Meta> &format)
 {
     format->GetData(Tag::AUDIO_CHANNEL_COUNT, channels);
     format->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
+    std::vector<uint8_t> extradata;
+    format->GetData(Tag::MEDIA_CODEC_CONFIG, extradata);
     if (channels < MIN_CHANNELS || channels > MAX_CHANNELS) {
         AVCODEC_LOGE("check init failed, because channel:%{public}d not support", channels);
         return Status::ERROR_INVALID_PARAMETER;
@@ -180,6 +153,16 @@ Status FFmpegCookDecoderPlugin::CheckInit(const std::shared_ptr<Meta> &format)
             AVCODEC_LOGE("check init failed, because sampleRate:%{public}d not support", sampleRate);
             return Status::ERROR_INVALID_PARAMETER;
         }
+    }
+    uint32_t minExtradataSize = 8;
+    if (extradata.size() < minExtradataSize) {
+        AVCODEC_LOGE("Missing or incomplete extradata, size: %{public}" PRIu32,
+                     static_cast<uint32_t>(extradata.size()));
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    if (!format->GetData(Tag::AUDIO_BLOCK_ALIGN, blockAlign)) {
+        AVCODEC_LOGE("check init failed, can't get AUDIO_BLOCK_ALIGN");
+        return Status::ERROR_INVALID_PARAMETER;
     }
     if (!basePlugin->CheckSampleFormat(format, channels)) {
         AVCODEC_LOGE("check init failed, because CheckSampleFormat failed.");

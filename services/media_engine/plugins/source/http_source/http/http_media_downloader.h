@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,14 +18,14 @@
 
 #include <string>
 #include <memory>
+#include <unistd.h>
+#include "timer.h"
 #include "osal/utils/ring_buffer.h"
 #include "osal/utils/steady_clock.h"
 #include "download/downloader.h"
 #include "media_downloader.h"
 #include "common/media_source.h"
-#include "timer.h"
 #include "utils/media_cached_buffer.h"
-#include <unistd.h>
 #include "common/media_core.h"
 #include "utils/write_bitrate_caculator.h"
 #include "osal/task/mutex.h"
@@ -118,14 +118,14 @@ private:
     void OnClientErrorEvent();
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
-    bool HandleSeekHit(int64_t offest);
+    bool HandleSeekHit(int64_t offset);
     Status ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status ReadCacheBufferLoop(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SeekRingBuffer(int64_t offset);
     bool SeekCacheBuffer(int64_t offset, bool& isSeekHit);
-    void InitRingBuffer(uint32_t expectBufferDuration);
-    void InitCacheBuffer(uint32_t expectBufferDuration);
+    void InitRingBuffer(size_t duration);
+    void InitCacheBuffer(size_t duration);
 
     Status HandleRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status HandleCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -174,7 +174,7 @@ private:
     bool startedPlayStatus_ {false};
     bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
-    int totalBufferSize_ {0};
+    size_t totalBufferSize_ {0};
     SteadyClock steadyClock_;
     uint64_t totalBits_ {0};
     uint64_t lastBits_ {0};
@@ -209,7 +209,7 @@ private:
         uint64_t bufferDuring {0};
     };
     std::shared_ptr<RecordData> recordData_ {};
-    uint64_t readBitrate_ {1 * 1024 * 1024};         //bps
+    uint64_t readBitrate_ {1 * 1024 * 1024}; // bps
     uint64_t lastReadCheckTime_ {0};
     uint64_t readTotalBytes_ {0};
     uint64_t readRecordDuringTime_ {0};

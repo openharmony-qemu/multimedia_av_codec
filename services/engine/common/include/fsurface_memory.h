@@ -52,7 +52,7 @@ struct SurfaceControl {
                                          .format = 0,
                                          .usage = USAGE,
                                          .timeout = TIMEOUT};
-    int32_t scalingMode = -1;
+    std::optional<ScalingMode> scalingMode = std::nullopt;
 };
 
 class FSurfaceMemory {

@@ -70,11 +70,12 @@ static const string TEST_FILE_URI_MPEG = TEST_FILE_PATH + "mpeg_h264_mp2.mpeg";
 static const string TEST_FILE_URI_MPEGTS = TEST_FILE_PATH + "test_mpeg2_Gop25_4sec.ts";
 static const string TEST_FILE_URI_AVI = TEST_FILE_PATH + "h264_aac.avi";
 static const string TEST_FILE_URI_SRT = TEST_FILE_PATH + "subtitle.srt";
-static const string TEST_FILE_URI_WEBVTT = TEST_FILE_PATH + "webvtt_test.vtt";
-static const string TEST_FILE_URI_OGG = TEST_FILE_PATH + "audio/ogg_48000_1.ogg";
-static const string TEST_FILE_URI_WAV = TEST_FILE_PATH + "audio/wav_48000_1.wav";
+static const string TEST_FILE_URI_WEBVTT = TEST_FILE_PATH + "webvtt_test_ut.vtt";
+static const string TEST_FILE_URI_OGG = TEST_FILE_PATH + "audio/ogg_48000_1_ut.ogg";
+static const string TEST_FILE_URI_WAV = TEST_FILE_PATH + "audio/wav_48000_1_ut.wav";
 static const string TEST_FILE_URI_RM = TEST_FILE_PATH + "rv40_cook.rmvb";
 static const string TEST_FILE_URI_AC3 = TEST_FILE_PATH + "audio/ac3_test.ac3";
+static const string TEST_FILE_URI_MP4_2 = TEST_FILE_PATH + "noframe.mp4";
 
 void DemuxerPluginManagerUnitTest::SetUpTestCase(void) {}
 
@@ -876,6 +877,11 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0025, TestSize.
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     ASSERT_EQ(demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_, DEF_PROB_SIZE), Status::ERROR_WRONG_STATE);
     RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, Demuxer_Mp4InitCheck_0001, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4_2, DEF_PROB_SIZE), true);
 }
 
 }

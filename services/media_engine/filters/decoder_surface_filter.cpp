@@ -433,6 +433,9 @@ Status DecoderSurfaceFilter::DoStart()
 {
     MEDIA_LOG_I("Start");
     if (isDecoderReleasedForMute_) {
+        state_ = FilterState::RUNNING;
+        FALSE_RETURN_V(!isPaused_.load() && eventReceiver_ != nullptr, Status::OK);
+        eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_NO_NEED_INIT, Status::OK});
         return Status::OK;
     }
     if (isPaused_.load()) {
@@ -948,10 +951,10 @@ bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, 
     std::unique_lock<std::mutex> lock(mutex_);
     if (!byIdx) {
         FALSE_RETURN_V(!outputBuffers_.empty(), false);
-        std::pair<int, std::shared_ptr<AVBuffer>> task = std::move(outputBuffers_.front());
+        std::pair<uint32_t, std::shared_ptr<AVBuffer>> task = std::move(outputBuffers_.front());
         outputBuffers_.pop_front();
         FALSE_RETURN_V(task.first >= 0, false);
-        index = static_cast<uint32_t>(task.first);
+        index = task.first;
         outBuffer = task.second;
         if (isFirstFrameAfterResume_) {
             int64_t curTimeNs = GetSystimeTimeNs();
@@ -960,7 +963,7 @@ bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, 
             isFirstFrameAfterResume_ = false;
         }
         if (!outputBuffers_.empty()) {
-            std::pair<int, std::shared_ptr<AVBuffer>> nextTask = outputBuffers_.front();
+            std::pair<uint32_t, std::shared_ptr<AVBuffer>> nextTask = outputBuffers_.front();
             RenderNextOutput(nextTask.first, nextTask.second);
         }
         return true;
@@ -1644,9 +1647,6 @@ Status DecoderSurfaceFilter::SetMediaMuted(bool isMuted, bool hasInitialized)
     if (isMuted && !isVideoMuted_) {
         hasReceivedReleaseEvent_ = false;
         isRenderStarted_ = false;
-        if (!hasInitialized && eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_NO_NEED_INIT, Status::OK});
-        }
     }
     isVideoMuted_.store(isMuted);
     if (videoSink_ != nullptr) {
@@ -1680,6 +1680,7 @@ Status DecoderSurfaceFilter::DoReInitAndStart()
         FALSE_RETURN_V_MSG(ret == Status::OK, ret, "DoInitAfterLink fail");
     }
     videoDecoder_->Flush();
+    FALSE_RETURN_V_MSG(state_ == FilterState::RUNNING,  Status::OK, "Do not need to start video decoder");
     ret = DoStart();
     if (eventReceiver_ != nullptr) {
         eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_VIDEO_DECODER_RESTART, Status::OK});

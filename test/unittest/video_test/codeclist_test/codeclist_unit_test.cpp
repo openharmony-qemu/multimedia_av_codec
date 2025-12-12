@@ -648,6 +648,22 @@ HWTEST_F(CodecListUnitTest, CodecList_GetVideoSupportedPixelFormats_001, TestSiz
 }
 
 /**
+ * @tc.name: CodecList_GetVideoSupportedGraphicPixelFormats_001
+ * @tc.desc: CodecList GetVideoSupportedGraphicPixelFormats
+ * @tc.type: FUNC
+ */
+HWTEST_F(CodecListUnitTest, CodecList_GetVideoSupportedGraphicPixelFormats_001, TestSize.Level1)
+{
+    // video decoder
+    AVCodecCategory category = AVCodecCategory::AVCODEC_SOFTWARE;
+    capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_MIME, false, category);
+    ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
+
+    std::vector<int32_t> graphicFormats = capability_->GetVideoSupportedGraphicPixelFormats();
+    EXPECT_EQ(DEFAULT_VIDEO_AVC_GRAPHIC_FORMATS, graphicFormats);
+}
+
+/**
  * @tc.name: CodecList_GetSupportedProfiles_001
  * @tc.desc: CodecList GetSupportedProfiles
  * @tc.type: FUNC

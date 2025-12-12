@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,15 +19,15 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include "osal/task/task.h"
-#include "osal/task/mutex.h"
-#include "osal/task/condition_variable.h"
-#include "osal/task/blocking_queue.h"
-#include "osal/utils/util.h"
-#include "network/network_client.h"
-#include "network/network_typs.h"
 #include <chrono>
 #include "securec.h"
+#include "osal/task/task.h"
+#include "osal/task/mutex.h"
+#include "osal/utils/util.h"
+#include "osal/task/condition_variable.h"
+#include "osal/task/blocking_queue.h"
+#include "network/network_client.h"
+#include "network/network_typs.h"
 #include "common/media_source.h"
 #include "media_source_loading_request.h"
 
@@ -251,7 +251,7 @@ private:
     std::shared_ptr<BlockingQueue<std::shared_ptr<DownloadRequest>>> requestQue_;
     FairMutex operatorMutex_{};
     std::shared_ptr<DownloadRequest> currentRequest_;
-    std::atomic<bool> shouldStartNextRequest {false};
+    std::atomic<bool> shouldStartNextRequest_ {false};
     int32_t noTaskLoopTimes_ {0};
     size_t downloadRequestSize_ {0};
     std::shared_ptr<Task> task_;

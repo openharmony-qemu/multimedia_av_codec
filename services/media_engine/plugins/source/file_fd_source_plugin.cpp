@@ -128,7 +128,7 @@ FileFdSourcePlugin::FileFdSourcePlugin(std::string name)
 
 FileFdSourcePlugin::~FileFdSourcePlugin()
 {
-    MEDIA_LOG_I("~FileFdSourcePlugin in.");
+    MEDIA_LOG_D("~FileFdSourcePlugin in.");
     steadyClock_.Reset();
     SetInterruptState(true);
     MEDIA_LOG_D("~FileFdSourcePlugin isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
@@ -507,7 +507,7 @@ bool FileFdSourcePlugin::HandleBuffering()
 
 void FileFdSourcePlugin::HandleReadResult(size_t bufferSize, int size)
 {
-    MEDIA_LOG_I("HandleReadResult size " PUBLIC_LOG_D32 ", fd " PUBLIC_LOG_D32 ", cachePosition_" PUBLIC_LOG_U64
+    MEDIA_LOG_D("HandleReadResult size " PUBLIC_LOG_D32 ", fd " PUBLIC_LOG_D32 ", cachePosition_" PUBLIC_LOG_U64
         ", position_ " PUBLIC_LOG_U64 ", bufferSize " PUBLIC_LOG_ZU ", size_ " PUBLIC_LOG_U64 ", offset_ "
         PUBLIC_LOG_D64, size, fd_, cachePosition_.load(), position_.load(), bufferSize, size_, offset_);
     if (size < 0) {
@@ -592,8 +592,8 @@ void FileFdSourcePlugin::SetDemuxerState(int32_t streamId)
 
 Status FileFdSourcePlugin::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
-    currentBitRate_ = bitRate / TO_BYTE; // 8b
-    MEDIA_LOG_I("currentBitRate: " PUBLIC_LOG_D32, currentBitRate_);
+    MEDIA_LOG_I("bitRate: " PUBLIC_LOG_D32, bitRate);
+    currentBitRate_ = std::max(currentBitRate_, bitRate / TO_BYTE); // 8b
     // default cache 0.3s
     waterLineAbove_ = CACHE_LEVEL_1 * currentBitRate_;
     return Status::OK;

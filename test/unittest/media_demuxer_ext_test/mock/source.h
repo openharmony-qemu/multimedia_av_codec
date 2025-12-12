@@ -119,7 +119,7 @@ public:
     MOCK_METHOD(uint64_t, GetMemorySize, (), ());
     MOCK_METHOD(std::string, GetContentType, (), ());
     MOCK_METHOD(bool, IsHlsFmp4, (), ());
-    MOCK_METHOD(bool, IsHlsEnd, (), ());
+    MOCK_METHOD(bool, IsHlsEnd, (int32_t streamId), ());
     MOCK_METHOD(bool, IsHls, (), ());
 };
 }  // namespace Media

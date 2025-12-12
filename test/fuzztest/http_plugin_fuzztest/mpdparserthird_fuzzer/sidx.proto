@@ -1,0 +1,21 @@
+syntax = "proto3";
+package sidx;
+
+message Reference {
+  bool  reference_type   = 1;  // 高位
+  uint32 referenced_size = 2;  // 低31位；原始实现按 int32 接收，不做范围校验
+  uint32 duration        = 3;
+  uint32 sap_info        = 4;
+}
+
+message SidxBox {
+  uint32 version            = 1;  // 0 或 1
+  uint32 timescale          = 2;
+  uint64 earliest_presentation_time = 3;
+  uint64 first_offset       = 4;
+  repeated Reference refs   = 5;
+
+  sint64 sidx_end_offset    = 6;  // 直接透传给被测函数
+  uint32 flags              = 7;  // vflag 的低3字节，可被 LPM 随机化
+  bool   truncate_tail      = 8;  // 生成后随机截断，打短包/OOB-read 分支
+}

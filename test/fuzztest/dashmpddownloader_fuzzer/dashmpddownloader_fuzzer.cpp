@@ -97,7 +97,7 @@ bool DashMpdDownloaderFuzzerTest(const uint8_t *data, size_t size)
             DashList<DashAdptSetInfo*> adptSetList = first->adptSetList_;
             std::list<std::string> periodBaseUrlList;
             periodMr->GetBaseUrlList(periodBaseUrlList);
-            int32_t flag;
+            int32_t flag = *reinterpret_cast<const int32_t *>(data);
             periodMr->GetInitSegment(flag);
             periodMr->GetPeriod();
             periodMr->GetPreviousPeriod();

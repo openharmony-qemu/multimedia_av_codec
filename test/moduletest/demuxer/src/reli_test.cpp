@@ -42,6 +42,7 @@ public:
 };
 
 static OH_AVMemory *memory = nullptr;
+static OH_AVBuffer *buffer = nullptr;
 static OH_AVSource *source = nullptr;
 static OH_AVDemuxer *demuxer = nullptr;
 static OH_AVFormat *sourceFormat = nullptr;
@@ -54,6 +55,7 @@ static int32_t g_height = 2160;
 static int32_t g_maxThread = 16;
 OH_AVSource *source_list[16] = {};
 OH_AVMemory *memory_list[16] = {};
+OH_AVBuffer *buffer_list[16] = {};
 OH_AVDemuxer *demuxer_list[16] = {};
 int g_fdList[16] = {};
 int32_t g_track = 2;
@@ -63,6 +65,7 @@ void DemuxerReliNdkTest::TearDownTestCase() {}
 void DemuxerReliNdkTest::SetUp()
 {
     memory = OH_AVMemory_Create(g_width * g_height);
+    buffer = OH_AVBuffer_Create(g_width * g_height);
     g_trackCount = 0;
 }
 void DemuxerReliNdkTest::TearDown()
@@ -80,6 +83,11 @@ void DemuxerReliNdkTest::TearDown()
     if (memory != nullptr) {
         OH_AVMemory_Destroy(memory);
         memory = nullptr;
+    }
+
+    if (buffer != nullptr) {
+        OH_AVBuffer_Destroy(buffer);
+        buffer = nullptr;
     }
     if (source != nullptr) {
         OH_AVSource_Destroy(source);
@@ -103,6 +111,10 @@ void DemuxerReliNdkTest::TearDown()
         if (memory_list[i] != nullptr) {
             ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
             memory_list[i] = nullptr;
+        }
+        if (buffer_list[i] != nullptr) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_Destroy(buffer_list[i]));
+            buffer_list[i] = nullptr;
         }
         std::cout << i << "            finish Destroy!!!!" << std::endl;
 
@@ -2460,9 +2472,6 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9100, TestSize.Level3)
  */
 HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9200, TestSize.Level3)
 {
-    if (memory == nullptr) {
-        memory = OH_AVMemory_Create(g_width * g_height);
-    }
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
     const char *file = "/data/test/media/eac3.eac3";
@@ -2481,7 +2490,8 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9200, TestSize.Level3)
     int keyCount = 0;
     while (!isEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, buffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(buffer, &attr));
             cout << attr.size << "size---------------pts:" << attr.pts << endl;
             if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
@@ -2507,9 +2517,6 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9200, TestSize.Level3)
  */
 HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9300, TestSize.Level3)
 {
-    if (memory == nullptr) {
-        memory = OH_AVMemory_Create(g_width * g_height);
-    }
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
     const char *file = "/data/test/media/audio/aac.wma";
@@ -2529,7 +2536,8 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9300, TestSize.Level3)
     int keyCount = 0;
     while (!isEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, buffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(buffer, &attr));
             cout << attr.size << "size---------------pts:" << attr.pts << endl;
             if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
@@ -2544,5 +2552,77 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9300, TestSize.Level3)
     }
     ASSERT_EQ(audioFrame, 433);
     ASSERT_EQ(keyCount, 433);
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_9400
+ * @tc.name      : demuxer damaged webm video file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9400, TestSize.Level3)
+{
+    const char *file = "/data/test/media/error.webm";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_EQ(source, nullptr);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_9500
+ * @tc.name      : create source with fd, webm
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9500, TestSize.Level3)
+{
+    if (memory == nullptr) {
+        memory = OH_AVMemory_Create(g_width * g_height);
+    }
+    OH_AVCodecBufferAttr attr;
+    int tarckType = 0;
+    const char *file = "/data/test/media/av1_vorbis.webm";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        bool isEnd = false;
+        int frameNum = 0;
+        int keyCount = 0;
+        while (!isEnd) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            cout << attr.size << "size---------------pts:" << attr.pts << endl;
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                isEnd = true;
+                cout << "isend !!!!!!!!!!!!!!!" << endl;
+                break;
+            }
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
+            }
+            frameNum++;
+        }
+        if (tarckType == MEDIA_TYPE_VID) {
+            cout << "videoframeNum---" << frameNum << endl;
+            ASSERT_EQ(frameNum, 602);
+            ASSERT_EQ(keyCount, 1);
+        } else if (tarckType == MEDIA_TYPE_AUD) {
+            cout << "audioframeNum---" << frameNum << endl;
+            ASSERT_EQ(frameNum, 433);
+        }
+    }
 }
 }

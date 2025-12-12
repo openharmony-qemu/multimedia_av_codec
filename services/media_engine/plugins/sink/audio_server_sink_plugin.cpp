@@ -333,6 +333,7 @@ AudioSampleFormat AudioServerSinkPlugin::GetSampleFormat()
 void AudioServerSinkPlugin::ReleaseRender()
 {
     std::unique_lock<std::mutex> lock(releaseRenderMutex_);
+    OHOS::Media::AutoLock renderlock(renderMutex_);
     ScopedTimer timer("ReleaseRender", RELEASE_RENDER_WARNING_MS);
     if (audioRenderer_ != nullptr && audioRenderer_->GetStatus() != AudioStandard::RendererState::RENDERER_RELEASED) {
         MEDIA_LOG_I_T("AudioRenderer::Release start");
@@ -507,13 +508,6 @@ Status AudioServerSinkPlugin::GetParameter(std::shared_ptr<Meta> &meta)
 bool AudioServerSinkPlugin::AssignSampleRateIfSupported(uint32_t sampleRate)
 {
     sampleRate_ = sampleRate;
-    if (mimeType_ == MimeType::AUDIO_FLAC) {
-        FALSE_RETURN_V_MSG(OHOS::AudioStandard::AudioRenderer::CheckSupportedSamplingRates(sampleRate), false,
-            "mimeType is FLAC sampleRate is invaild");
-        customSampleRate_ = sampleRate;
-        MEDIA_LOG_I_SHORT("mimeType is FLAC, customSampleRate: " PUBLIC_LOG_U32, customSampleRate_);
-        return true;
-    }
     auto supportedSampleRateList = OHOS::AudioStandard::AudioRenderer::GetSupportedSamplingRates();
     FALSE_RETURN_V_MSG(!supportedSampleRateList.empty(), false, "GetSupportedSamplingRates fail");
     for (const auto &rate : supportedSampleRateList) {
@@ -523,8 +517,11 @@ bool AudioServerSinkPlugin::AssignSampleRateIfSupported(uint32_t sampleRate)
             return true;
         }
     }
-    MEDIA_LOG_E_SHORT("sample rate " PUBLIC_LOG_U32 "not supported", sampleRate);
-    return false;
+    FALSE_RETURN_V_MSG(OHOS::AudioStandard::AudioRenderer::CheckSupportedSamplingRates(sampleRate), false,
+        "sampleRate is invaild %{public}d", sampleRate);
+    customSampleRate_ = sampleRate;
+    MEDIA_LOG_I_SHORT("customSampleRate: " PUBLIC_LOG_U32, customSampleRate_);
+    return true;
 }
 
 bool AudioServerSinkPlugin::AssignChannelNumIfSupported(uint32_t channelNum)
@@ -901,6 +898,7 @@ Status AudioServerSinkPlugin::Pause()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Pause");
     MEDIA_LOG_I_SHORT("Pause entered");
+    OHOS::Media::AutoLock renderlock(renderMutex_);
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audio renderer pause fail");
     FALSE_RETURN_V_MSG(audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING,
         Status::OK, "audio renderer no need pause");
@@ -914,7 +912,7 @@ Status AudioServerSinkPlugin::PauseTransitent()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::PauseTransitent");
     MEDIA_LOG_I_SHORT("PauseTransitent entered.");
-    OHOS::Media::AutoLock lock(renderMutex_);
+    OHOS::Media::AutoLock renderlock(renderMutex_);
     FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audio renderer pauseTransitent fail");
     FALSE_RETURN_V_MSG(audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING,
         Status::OK, "audio renderer no need pauseTransitent");

@@ -113,6 +113,10 @@ private:
             }
         }
 
+        if (srcSampleFormat_ == AudioSampleFormat::SAMPLE_BLURAY) {
+            return ConvertBluray(ptr, size, normParser);
+        }
+
         int32_t totalSamples = size / (channels_ * srcBytesSize);
         int32_t outputSize = totalSamples * channels_ * destBytesSize;
         inputBuffer_.resize(outputSize);
@@ -139,6 +143,61 @@ private:
         return Status::OK;
     }
 
+    template <typename SourceParser>
+    Status ConvertBluray(const uint8_t* ptr, int32_t& size, SourceParser normParser)
+    {
+        int32_t srcBytesSize = GetFormatBytes(srcSampleFormat_);
+        int32_t destBytesSize = GetFormatBytes(audioSampleFormat_);
+
+        auto commonConvert = [=, &size] (int32_t sourceChannels, std::vector<int32_t> chMap = {}) -> Status {
+            int32_t totalSamples = size / (sourceChannels * srcBytesSize);
+            int32_t outputSize = totalSamples * channels_ * destBytesSize;
+            inputBuffer_.resize(outputSize);
+
+            auto converter = GetConverter(audioSampleFormat_);
+            if (!converter) {
+                return Status::ERROR_UNSUPPORTED_FORMAT;
+            }
+            for (int32_t frame = 0; frame < totalSamples; frame++) {
+                for (int32_t srcCh = 0; srcCh < channels_; srcCh++) {
+                    int32_t destCh = chMap.empty() ? srcCh: chMap[srcCh];
+                    int32_t inputIdx = (frame * sourceChannels + srcCh) * srcBytesSize;
+                    int32_t outputIdx = (frame * channels_ + destCh) * destBytesSize;
+
+                    float normalized = normParser(&ptr[inputIdx]);
+
+                    converter(outputIdx, normalized);
+                }
+            }
+            size = outputSize;
+
+            return Status::OK;
+        };
+        std::vector<int32_t> chMap;
+        switch (layout_) {
+            case AudioChannelLayout::STEREO:
+            case AudioChannelLayout::CH_4POINT0:
+            case AudioChannelLayout::CH_2_2:
+                return commonConvert(channels_);
+            case AudioChannelLayout::MONO:
+            case AudioChannelLayout::SURROUND:
+            case AudioChannelLayout::CH_2_1:
+            case AudioChannelLayout::CH_5POINT0:
+                return commonConvert(channels_ + 1);
+            case AudioChannelLayout::CH_5POINT1:
+                chMap = {0, 1, 2, 4, 5, 3};
+                return commonConvert(channels_, chMap);
+            case AudioChannelLayout::CH_7POINT0:
+                chMap = {0, 1, 2, 5, 3, 4, 6};
+                return commonConvert(channels_, chMap);
+            case AudioChannelLayout::CH_7POINT1:
+                chMap = {0, 1, 2, 6, 4, 5, 7, 3};
+                return commonConvert(channels_, chMap);
+            default:
+                return Status::ERROR_UNSUPPORTED_FORMAT;
+        }
+    }
+
 private:
     AudioSampleFormat audioSampleFormat_;
     AudioSampleFormat srcSampleFormat_;
@@ -154,6 +213,7 @@ private:
     DataCallback *dataCallback_;
     std::shared_ptr<Meta> format_;
     std::vector<uint8_t> inputBuffer_;
+    AudioChannelLayout layout_;
 };
 } // namespace OHOS
 } // namespace Media
