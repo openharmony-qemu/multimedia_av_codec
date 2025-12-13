@@ -15,6 +15,7 @@
 #include <iostream>
 #include <fuzzer/FuzzedDataProvider.h>
 #include "hls/hls_segment_manager.h"
+#include "hls/hls_media_downloader.h"
 #include "http_server_mock.h"
 
 using namespace std;
@@ -75,36 +76,36 @@ bool StartFuzzTest1(FuzzedDataProvider *fdp, size_t size)
 {
     bool userDefinedDuration = true;
     const int expectBufDuration = 10; // 10s
-    std::shared_ptr<HlsSegmentManager> hlsSegmentManager = std::make_shared<HlsSegmentManager>(expectBufDuration,
+    std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = std::make_shared<HlsMediaDownloader>(expectBufDuration,
         userDefinedDuration, g_httpHeader);
-    hlsSegmentManager->Init();
+    hlsMediaDownloader->Init();
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
-    hlsSegmentManager->SetStatusCallback(statusCallback);
+    hlsMediaDownloader->SetStatusCallback(statusCallback);
 
     int32_t appUid = fdp->ConsumeIntegral<uint32_t>();
-    hlsSegmentManager->SetAppUid(appUid);
+    hlsMediaDownloader->SetAppUid(appUid);
     bool isInterruptNeeded = false; // fdp->ConsumeBool();
-    hlsSegmentManager->SetInterruptState(isInterruptNeeded);
+    hlsMediaDownloader->SetInterruptState(isInterruptNeeded);
 
     std::string url = "http://127.0.0.1:46666/test_cbr/";
     url += FAKE_FUZZ_M3U8;  // 虚假m3u8文件，需通过 fuzz data 喂入
     cout << "  Open url: " << url << endl;
-    hlsSegmentManager->Open(url, g_httpHeader);
+    hlsMediaDownloader->Open(url, g_httpHeader);
 
-    uint64_t duration = hlsSegmentManager->GetCachedDuration();
+    uint64_t duration = hlsMediaDownloader->GetCachedDuration();
     int32_t bitRate = fdp->ConsumeIntegralInRange<uint32_t>(0, 50000000); // 最大支持50M带宽
     int32_t streamID = fdp->ConsumeIntegral<uint32_t>();
-    hlsSegmentManager->SetCurrentBitRate(bitRate, streamID);
-    hlsSegmentManager->SelectBitRate(bitRate);
+    hlsMediaDownloader->SetCurrentBitRate(bitRate, streamID);
+    hlsMediaDownloader->SelectBitRate(bitRate);
 
     cout << " Run in size " << size << ", appUid " << appUid << ", isInterrupt " << isInterruptNeeded
     << ", bitRate " << bitRate << ", streamID " << streamID << ", duration " << duration << endl;
     this_thread::sleep_for(chrono::seconds(1));
 
     bool isAsync = true; // fdp->ConsumeBool();
-    hlsSegmentManager->Close(isAsync);
-    hlsSegmentManager = nullptr;
+    hlsMediaDownloader->Close(isAsync);
+    hlsMediaDownloader = nullptr;
 
     return true;
 }
@@ -126,7 +127,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
     FuzzedDataProvider fdp(data, size);
     OHOS::Media::Plugins::HttpPlugin::StartFuzzTest(&fdp, size);
-
+    OHOS::Media::Plugins::HttpPlugin::StartFuzzTest1(&fdp, size);
     if (!CloseServer()) {
         cout << "Close server error" << endl;
         return -1;
