@@ -64,5 +64,10 @@ int32_t CodecAbilitySingleton::GetVideoCodecTypeByCodecName(const std::string &c
 {
     return 0;
 }
+
+int32_t CodecAbilitySingleton::Dump(int32_t fd, const std::vector<std::u16string> &args)
+{
+    return 0;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS
