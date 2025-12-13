@@ -342,6 +342,7 @@ void VpxDecoder::ConvertDecOutToAVFrame()
 
     cachedFrame_->width = static_cast<int32_t>(vpxDecOutputImg_->d_w);
     cachedFrame_->height = static_cast<int32_t>(vpxDecOutputImg_->d_h);
+    cachedFrame_->pts = static_cast<int64_t>(vpxDecoderInputArgs_.uiTimeStamp);
 }
 
 void VpxDecoder::SendFrame()
