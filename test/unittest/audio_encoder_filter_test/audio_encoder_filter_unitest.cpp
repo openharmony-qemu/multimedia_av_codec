@@ -462,6 +462,13 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_SetCallingInfo_0100, Test
     EXPECT_EQ(audioEncoderFilter_->instanceId_, instanceId);
 }
 
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_GetInputSurface_0100, TestSize.Level1)
+{
+    audioEncoderFilter_->mediaCodec_ = std::make_shared<MediaCodecMock>();
+    sptr<Surface> surface = audioEncoderFilter_->GetInputSurface();
+    EXPECT_EQ(surface, nullptr);
+}
+
 }
 }
 }
