@@ -71,6 +71,44 @@ bool StartFuzzTest(FuzzedDataProvider *fdp, size_t size)
     return true;
 }
 
+bool StartFuzzTest1(FuzzedDataProvider *fdp, size_t size)
+{
+    bool userDefinedDuration = true;
+    const int expectBufDuration = 10; // 10s
+    std::shared_ptr<HlsSegmentManager> hlsSegmentManager = std::make_shared<HlsSegmentManager>(expectBufDuration,
+        userDefinedDuration, g_httpHeader);
+    hlsSegmentManager->Init();
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {};
+    hlsSegmentManager->SetStatusCallback(statusCallback);
+
+    int32_t appUid = fdp->ConsumeIntegral<uint32_t>();
+    hlsSegmentManager->SetAppUid(appUid);
+    bool isInterruptNeeded = false; // fdp->ConsumeBool();
+    hlsSegmentManager->SetInterruptState(isInterruptNeeded);
+
+    std::string url = "http://127.0.0.1:46666/test_cbr/";
+    url += FAKE_FUZZ_M3U8;  // 虚假m3u8文件，需通过 fuzz data 喂入
+    cout << "  Open url: " << url << endl;
+    hlsSegmentManager->Open(url, g_httpHeader);
+
+    uint64_t duration = hlsSegmentManager->GetCachedDuration();
+    int32_t bitRate = fdp->ConsumeIntegralInRange<uint32_t>(0, 50000000); // 最大支持50M带宽
+    int32_t streamID = fdp->ConsumeIntegral<uint32_t>();
+    hlsSegmentManager->SetCurrentBitRate(bitRate, streamID);
+    hlsSegmentManager->SelectBitRate(bitRate);
+
+    cout << " Run in size " << size << ", appUid " << appUid << ", isInterrupt " << isInterruptNeeded
+    << ", bitRate " << bitRate << ", streamID " << streamID << ", duration " << duration << endl;
+    this_thread::sleep_for(chrono::seconds(1));
+
+    bool isAsync = true; // fdp->ConsumeBool();
+    hlsSegmentManager->Close(isAsync);
+    hlsSegmentManager = nullptr;
+
+    return true;
+}
+
 } // namespace OHOS::Media::Plugins::HttpPlugin
 
 /* Fuzzer entry point */
