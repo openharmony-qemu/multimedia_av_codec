@@ -86,7 +86,6 @@ private:
 #endif
     int32_t CreateMsvideo1Reader();
     int32_t CreateWmv3Reader();
-    int32_t CreateCinepakReader();
 #ifdef SUPPORT_CODEC_AV1
     int32_t CreateAv1Reader();
 #endif
@@ -133,7 +132,6 @@ private:
 #endif
     std::shared_ptr<Msvideo1Reader> msvideo1Reader_ = nullptr;
     std::shared_ptr<Wmv3Reader> wmv3Reader_ = nullptr;
-    std::shared_ptr<CinepakReader> cinepakReader_ = nullptr;
     std::shared_ptr<std::ifstream> dynamicMetadataFile_ = nullptr;
     std::shared_ptr<std::ifstream> staticMetadataFile_ = nullptr;
 };
