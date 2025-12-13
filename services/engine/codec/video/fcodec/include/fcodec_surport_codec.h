@@ -35,6 +35,7 @@ constexpr CodecInfo SUPPORT_VCODEC[] = {
     {AVCodecCodecName::VIDEO_DECODER_H263_NAME, CodecMimeType::VIDEO_H263, "h263"},         // H.263 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME, CodecMimeType::VIDEO_MPEG2, "mpeg2video"}, // MPEG-2 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4"},      // MPEG-4 视频解码器
+    {AVCodecCodecName::VIDEO_DECODER_MPEG1_NAME, CodecMimeType::VIDEO_MPEG1, "mpeg1video"},          // MPEG1 视频解码器
 #ifdef SUPPORT_CODEC_VC1
     {AVCodecCodecName::VIDEO_DECODER_VC1_NAME, CodecMimeType::VIDEO_VC1, "vc1"},            // VC-1 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_WVC1_NAME, CodecMimeType::VIDEO_WVC1, "vc1"},            // WVC1 视频解码器

@@ -206,6 +206,8 @@ int32_t VideoDecSyncSample::CreateReader(const std::string &inPath)
         case RV40_STREAM:
             return CreateRv40Reader();
 #endif
+        case MPEG1_STREAM:
+            return CreateMpeg1Reader();
         default:
             return CreateAvccReader();
     }
@@ -495,6 +497,16 @@ int32_t VideoDecSyncSample::CreateRv40Reader()
 }
 #endif
 
+int32_t VideoDecSyncSample::CreateMpeg1Reader()
+{
+    std::shared_ptr<Mpeg1ReaderInfo> info = std::make_shared<Mpeg1ReaderInfo>();
+    info->inPath = inPath_;
+
+    mpeg1Reader_ = std::make_shared<Mpeg1Reader>();
+    int32_t ret = mpeg1Reader_->Init(info);
+    return ret;
+}
+
 void VideoDecSyncSample::FlushInner()
 {
     if (signal_ == nullptr) {
@@ -773,7 +785,8 @@ int32_t VideoDecSyncSample::OutputLoopInnerExt()
                         testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263 ||
                         testParam_ == VCodecTestParam::SW_VC1 || testParam_ == VCodecTestParam::SW_MSVIDEO1 ||
                         testParam_ == VCodecTestParam::SW_WMV3 || testParam_ == VCodecTestParam::SW_RV30 ||
-                        testParam_ == VCodecTestParam::SW_RV40_TEST || testParam_ == VCodecTestParam::SW_WVC1)
+                        testParam_ == VCodecTestParam::SW_RV40_TEST || testParam_ == VCodecTestParam::SW_WVC1 ||
+                        testParam_ == VCodecTestParam::SW_MPEG1)
                            ? attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                           "Fatal: GetOutputBuffer fail, exit, index: %d", index);
@@ -849,6 +862,8 @@ int32_t VideoDecSyncSample::InputLoopInnerExt()
     } else if (rv40Reader_ != nullptr) {
         rv40Reader_->FillBuffer(buffer->GetAddr(), attr);
 #endif
+    } else if (mpeg1Reader_ != nullptr) {
+        mpeg1Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else {
         msvideo1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }

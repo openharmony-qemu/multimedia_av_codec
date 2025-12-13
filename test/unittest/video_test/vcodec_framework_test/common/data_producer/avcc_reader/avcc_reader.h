@@ -840,6 +840,68 @@ private:
     std::shared_ptr<Rv40Detector> rv40Detector_ = nullptr;
 };
 #endif
+struct Mpeg1ReaderInfo {
+    std::string inPath;
+};
+
+class Mpeg1Reader : public DataProducerBase {
+public:
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t mpeg1Type, bool isEosFrame);
+    bool IsEOS();
+    int32_t Init(const std::shared_ptr<Mpeg1ReaderInfo> &info);
+
+    std::mutex mutex_;
+    int32_t frameInputCount_ = 0;
+
+private:
+    class Mpeg1UnitReader {
+    public:
+        explicit Mpeg1UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        virtual ~Mpeg1UnitReader() = default;
+
+        uint8_t const *GetNextMpeg1UnitAddr();
+        virtual int32_t ReadMpeg1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) = 0;
+        virtual bool IsEOS() = 0;
+        virtual void PrereadFile() = 0;
+        virtual void PrereadMpeg1Unit() = 0;
+
+    protected:
+        Mpeg1UnitReader() = default;
+        virtual bool IsEOF() = 0;
+
+        std::unique_ptr<std::vector<uint8_t>> mpeg1Unit_ = nullptr;
+        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+    };
+
+    class Mpeg1MetaUnitReader : public Mpeg1UnitReader {
+    public:
+        explicit Mpeg1MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        int32_t ReadMpeg1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) override;
+        bool IsEOS() override;
+        void PrereadFile() override;
+        void PrereadMpeg1Unit() override;
+
+    private:
+        bool IsEOF() override;
+
+        std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+        uint32_t frameIndex_ = 0;
+    };
+
+    class Mpeg1Detector {
+    public:
+        uint8_t* GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend);
+        const uint8_t *GetMpeg1TypeAddr(const uint8_t *bufferAddr);
+        uint8_t GetMpeg1Type(const uint8_t *bufferAddr);
+        bool IsI(uint8_t mpeg1Type);
+    };
+
+    std::shared_ptr<Mpeg1UnitReader> mpeg1UnitReader_ = nullptr;
+    std::shared_ptr<Mpeg1Detector> mpeg1Detector_ = nullptr;
+};
 } // MediaAVCodec
 } // OHOS
 #endif // AVCC_READER_H

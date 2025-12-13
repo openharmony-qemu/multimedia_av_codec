@@ -329,6 +329,13 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
 
 /**
+ * @brief Enumerates the MIME type of video mpeg1 codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG1;
+
+/**
  * @brief brief Enumerates the Mime type of video mpeg4 part2 codec.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase

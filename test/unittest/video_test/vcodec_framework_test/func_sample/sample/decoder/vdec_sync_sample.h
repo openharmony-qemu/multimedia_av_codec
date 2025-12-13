@@ -93,6 +93,7 @@ private:
     int32_t CreateRv30Reader();
     int32_t CreateRv40Reader();
 #endif
+    int32_t CreateMpeg1Reader();
     int32_t CreateReader(const std::string& inPath);
     bool CompareHdrInfo(std::shared_ptr<AVBufferMock> buffer);
     bool CompareMetadata(std::shared_ptr<std::ifstream> file, int32_t size,
@@ -130,6 +131,7 @@ private:
     std::shared_ptr<Rv30Reader> rv30Reader_ = nullptr;
     std::shared_ptr<Rv40Reader> rv40Reader_ = nullptr;
 #endif
+    std::shared_ptr<Mpeg1Reader> mpeg1Reader_ = nullptr;
     std::shared_ptr<Msvideo1Reader> msvideo1Reader_ = nullptr;
     std::shared_ptr<Wmv3Reader> wmv3Reader_ = nullptr;
     std::shared_ptr<std::ifstream> dynamicMetadataFile_ = nullptr;

@@ -617,6 +617,7 @@ public:
     static constexpr std::string_view VIDEO_AVC = "video/avc";
     static constexpr std::string_view VIDEO_AV1 = "video/av1";
     static constexpr std::string_view VIDEO_MPEG2 = "video/mpeg2";
+    static constexpr std::string_view VIDEO_MPEG1 = "video/mpeg";
     static constexpr std::string_view VIDEO_HEVC = "video/hevc";
     static constexpr std::string_view VIDEO_MPEG4 = "video/mp4v-es";
     static constexpr std::string_view VIDEO_VP8 = "video/vp8";
