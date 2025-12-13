@@ -55,13 +55,6 @@ constexpr int32_t WMV3_MAX_HEIGHT_SIZE = 1080;
 constexpr int32_t WMV3_BITRATE_MAX_SIZE = 20000000;
 constexpr int32_t WMV3_MAX_BLOCKPERFRAME_SIZE = 8192;
 constexpr int32_t WMV3_MAX_BLOCKPERSEC_SIZE = 245760;
-constexpr int32_t CINEPAK_MIN_WIDTH_SIZE = 16;
-constexpr int32_t CINEPAK_MAX_WIDTH_SIZE = 1920;
-constexpr int32_t CINEPAK_MIN_HEIGHT_SIZE = 16;
-constexpr int32_t CINEPAK_MAX_HEIGHT_SIZE = 1080;
-constexpr int32_t CINEPAK_ALIGNMENT_SIZE = 2;
-constexpr int32_t CINEPAK_MAX_FRAMERATE_SIZE = 50;
-constexpr int32_t CINEPAK_BITRATE_MAX_SIZE = 2097000;
 #ifdef SUPPORT_CODEC_RV
 constexpr int32_t RV_BLOCKPERFRAME_SIZE = 65536; // MaxPicSize / (block_width*block_height)
 constexpr int32_t RV_BLOCKPERSEC_SIZE = 3932160; // MaxDisplayRate / (block_width*block_height)
@@ -346,28 +339,6 @@ void GetWmv3CapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
-void GetCinepakCapProf(std::vector<CapabilityData> &capaArray)
-{
-    if (!capaArray.empty()) {
-        CapabilityData& capsData = capaArray.back();
-        capsData.width.minVal = CINEPAK_MIN_WIDTH_SIZE;
-        capsData.width.maxVal = CINEPAK_MAX_WIDTH_SIZE;
-        capsData.height.minVal = CINEPAK_MIN_HEIGHT_SIZE;
-        capsData.height.maxVal = CINEPAK_MAX_HEIGHT_SIZE;
-        capsData.alignment.width = CINEPAK_ALIGNMENT_SIZE;
-        capsData.alignment.height = CINEPAK_ALIGNMENT_SIZE;
-        capsData.frameRate.maxVal = CINEPAK_MAX_FRAMERATE_SIZE;
-        capsData.bitrate.maxVal = CINEPAK_BITRATE_MAX_SIZE;
-        capsData.profiles = {static_cast<int32_t>(CINEPAK_PROFILE_SIMPLE)};
-
-        std::vector<int32_t> levels;
-        for (int32_t j = 0; j <= static_cast<int32_t>(CINEPAKLevel::CINEPAK_LEVEL_1); ++j) {
-            levels.emplace_back(j);
-        }
-        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(CINEPAK_PROFILE_SIMPLE), levels));
-    }
-}
-
 void GetCapabilityData(CapabilityData &capsData, uint32_t index)
 {
     capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[index].codecName);
@@ -461,9 +432,6 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
             capaArray.emplace_back(capsData);
             GetRv40CapProf(capaArray);
 #endif
-        } else if (capsData.mimeType == "video/cinepak") {
-            capaArray.emplace_back(capsData);
-            GetCinepakCapProf(capaArray);
         } else {
             capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
             capaArray.emplace_back(capsData);

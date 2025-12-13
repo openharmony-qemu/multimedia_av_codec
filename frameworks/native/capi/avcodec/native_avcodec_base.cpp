@@ -34,7 +34,6 @@ const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG2 = "video/mpeg2";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_MJPEG = "video/mjpeg";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_RV30 = "video/rv30";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_RV40 = "video/rv40";
-const char *OH_AVCODEC_MIMETYPE_VIDEO_CINEPAK = "video/cinepak";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC = "audio/mp4a-latm";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_FLAC = "audio/flac";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_VORBIS = "audio/vorbis";

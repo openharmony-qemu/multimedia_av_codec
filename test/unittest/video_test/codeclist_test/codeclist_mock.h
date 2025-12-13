@@ -81,7 +81,6 @@ const std::map<std::string, std::string> CAPABILITY_DECODER_NAME = {
     {std::string(CodecMimeType::AUDIO_VORBIS), std::string(AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME)},
     {std::string(CodecMimeType::AUDIO_FLAC), std::string(AVCodecCodecName::AUDIO_DECODER_FLAC_NAME)},
     {std::string(CodecMimeType::VIDEO_AVC), std::string(AVCodecCodecName::VIDEO_DECODER_AVC_NAME)},
-    {std::string(CodecMimeType::VIDEO_CINEPAK), std::string(AVCodecCodecName::VIDEO_DECODER_CINEPAK_NAME)},
     {std::string(CodecMimeType::VIDEO_WMV3), std::string(AVCodecCodecName::VIDEO_DECODER_WMV3_NAME)}};
 
 const std::map<std::string, std::string> CAPABILITY_ENCODER_NAME = {
