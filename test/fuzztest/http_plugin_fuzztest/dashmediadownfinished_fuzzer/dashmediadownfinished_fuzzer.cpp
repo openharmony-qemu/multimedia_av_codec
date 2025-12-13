@@ -94,7 +94,7 @@ bool DashMpdParse(const uint8_t *data, size_t size)
     if (data == nullptr || size < sizeof(int64_t)) {
         return false;
     }
-	std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
+    std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
     const std::string url = MPD_MULTI_AUDIO_SUB;
     mpdMpddownload->Init();
     mpdMpddownload->Open(MPD_MULTI_AUDIO_SUB);
