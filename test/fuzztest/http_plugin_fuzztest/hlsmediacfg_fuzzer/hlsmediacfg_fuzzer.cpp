@@ -91,7 +91,6 @@ void IncreaseCoverageSet(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloader
 
 void IncreaseCoverageRead(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloader)
 {
-
     hlsMediaDownloader->GetPlayable();
 
     hlsMediaDownloader->GetStartedStatus();
