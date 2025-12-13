@@ -28,6 +28,13 @@ namespace Media {
 namespace Plugins {
 using CreateFunc = StreamParser *(*)();
 using DestroyFunc = void (*)(StreamParser *);
+
+struct PacketConvertInfo {
+    uint8_t *sideData {nullptr};
+    size_t sideDataSize {0};
+    bool isExtradata {false};
+};
+
 class MultiStreamParserManager {
 public:
     MultiStreamParserManager() {};
@@ -52,8 +59,8 @@ public:
 
     void ResetXPSSendStatus(uint32_t trackId);
     bool ConvertExtraDataToAnnexb(uint32_t trackId, uint8_t *extraData, int32_t extraDataSize);
-    void ConvertPacketToAnnexb(uint32_t trackId, uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData,
-        size_t sideDataSize, bool isExtradata);
+    void ConvertPacketToAnnexb(uint32_t trackId, uint8_t **hvccPacket, int32_t &hvccPacketSize,
+        const PacketConvertInfo &packetInfo);
     void ParseAnnexbExtraData(uint32_t trackId, const uint8_t *sample, int32_t size);
     
 private:

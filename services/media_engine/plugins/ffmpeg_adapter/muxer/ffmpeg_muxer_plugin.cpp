@@ -1309,7 +1309,7 @@ Status FFmpegMuxerPlugin::UpdateExtraData(uint8_t *data, size_t size)
 Status FFmpegMuxerPlugin::WriteNormal(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample, int32_t dataOffset)
 {
     auto st = formatContext_->streams[trackIndex];
-    FALSE_RETURN_V_MSG_E((dataOffset >= 0 && dataOffset < sample->memory_->GetSize()),
+    FALSE_RETURN_V_MSG_E((dataOffset >= 0 && dataOffset <= sample->memory_->GetSize()),
         Status::ERROR_INVALID_DATA, "error: data offset is invalid");
     uint8_t *data = sample->memory_->GetAddr() + dataOffset;
     int32_t size = sample->memory_->GetSize() - dataOffset;
@@ -1358,13 +1358,49 @@ Status FFmpegMuxerPlugin::WriteVideoSample(uint32_t trackIndex, const std::share
     auto st = formatContext_->streams[trackIndex];
     if (videoTracksInfo_[trackIndex].isFirstFrame_) {
         videoTracksInfo_[trackIndex].isFirstFrame_ = false;
-        auto ret = WriteVideoSampleFirstFrame(trackIndex, sample);
-        FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "write first frame failed!");
+        if (!IsAvccSample(sample->memory_->GetAddr(), sample->memory_->GetSize(),
+            videoTracksInfo_[trackIndex].nalSizeLen_)) {
+            FALSE_RETURN_V_MSG_E(sample->flag_ & static_cast<uint32_t>(AVBufferFlag::CODEC_DATA),
+                Status::ERROR_INVALID_DATA,
+                "first frame flag of annex-b stream need AVCODEC_BUFFER_FLAGS_CODEC_DATA!");
+            if (st->codecpar->codec_id == AV_CODEC_ID_HEVC) {
+                uint8_t *extra = nullptr;
+                int32_t size = 0;
+                videoTracksInfo_[trackIndex].isNeedTransData_ = true;
+                hevcParser_->ParseExtraData(sample->memory_->GetAddr(), sample->memory_->GetSize(), &extra, &size);
+                FALSE_RETURN_V_MSG_E(SetCodecParameterExtra(st, extra, size) == Status::NO_ERROR,
+                    Status::ERROR_INVALID_DATA, "set codec config failed!");
+                FALSE_RETURN_V_MSG_E(SetCodecParameterColorByParser(st) == Status::NO_ERROR,
+                    Status::ERROR_INVALID_DATA, "set color failed!");
+                FALSE_RETURN_V_MSG_E(SetCodecParameterCuvaByParser(st) == Status::NO_ERROR,
+                    Status::ERROR_INVALID_DATA, "set cuva flag failed!");
+                FALSE_RETURN_V_MSG_E(SetCodecParameterVideoDelay(st) == Status::NO_ERROR,
+                    Status::ERROR_INVALID_DATA, "set Video Delay failed!");
+                SetSeiLogInfo();
+            }
+            if (!(sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) &&
+                (st->codecpar->codec_id == AV_CODEC_ID_H264)) {
+                return SetCodecParameterExtra(st, sample->memory_->GetAddr(), sample->memory_->GetSize());
+            } else if (!(sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME))) {
+                return Status::NO_ERROR;
+            }
+        } else {
+            FALSE_RETURN_V_MSG_E(!videoTracksInfo_[trackIndex].extraData_.empty(),
+                Status::ERROR_INVALID_DATA, "non annexb stream must set codec config!");
+            auto &extra = videoTracksInfo_[trackIndex].extraData_;
+            SetCodecParameterExtra(st, extra.data(), extra.size());
+        }
     }
+    return WriteVideoSampleData(trackIndex, sample);
+}
 
+Status FFmpegMuxerPlugin::WriteVideoSampleData(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample)
+{
     int32_t dataOffset = 0;
     uint8_t *streamData = sample->memory_->GetAddr();
     int32_t streamSize = sample->memory_->GetSize();
+    auto st = formatContext_->streams[trackIndex];
+
     /* HDR 10bit encode skip first FD NAL */
     if (st->codecpar->codec_id == AV_CODEC_ID_HEVC && streamSize != 0 && streamData != NULL) {
         dataOffset = hevcParser_->GetFirstFillerDataNalSize(streamData, streamSize);
@@ -1388,44 +1424,6 @@ Status FFmpegMuxerPlugin::WriteVideoSample(uint32_t trackIndex, const std::share
     }
     MEDIA_LOG_D("write sample data offset: " PUBLIC_LOG_D32, dataOffset);
     return WriteNormal(trackIndex, sample, dataOffset);
-}
-
-Status FFmpegMuxerPlugin::WriteVideoSampleFirstFrame(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample)
-{
-    auto st = formatContext_->streams[trackIndex];
-    if (!IsAvccSample(sample->memory_->GetAddr(), sample->memory_->GetSize(),
-        videoTracksInfo_[trackIndex].nalSizeLen_)) {
-        FALSE_RETURN_V_MSG_E(sample->flag_ & static_cast<uint32_t>(AVBufferFlag::CODEC_DATA),
-            Status::ERROR_INVALID_DATA,
-            "first frame flag of annex-b stream need AVCODEC_BUFFER_FLAGS_CODEC_DATA!");
-        if (st->codecpar->codec_id == AV_CODEC_ID_HEVC) {
-            uint8_t *extra = nullptr;
-            int32_t size = 0;
-            videoTracksInfo_[trackIndex].isNeedTransData_ = true;
-            hevcParser_->ParseExtraData(sample->memory_->GetAddr(), sample->memory_->GetSize(), &extra, &size);
-            FALSE_RETURN_V_MSG_E(SetCodecParameterExtra(st, extra, size) == Status::NO_ERROR,
-                Status::ERROR_INVALID_DATA, "set codec config failed!");
-            FALSE_RETURN_V_MSG_E(SetCodecParameterColorByParser(st) == Status::NO_ERROR,
-                Status::ERROR_INVALID_DATA, "set color failed!");
-            FALSE_RETURN_V_MSG_E(SetCodecParameterCuvaByParser(st) == Status::NO_ERROR,
-                Status::ERROR_INVALID_DATA, "set cuva flag failed!");
-            FALSE_RETURN_V_MSG_E(SetCodecParameterVideoDelay(st) == Status::NO_ERROR,
-                Status::ERROR_INVALID_DATA, "set Video Delay failed!");
-            SetSeiLogInfo();
-        }
-        if (!(sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) &&
-            (st->codecpar->codec_id == AV_CODEC_ID_H264)) {
-            return SetCodecParameterExtra(st, sample->memory_->GetAddr(), sample->memory_->GetSize());
-        } else if (!(sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME))) {
-            return Status::NO_ERROR;
-        }
-    } else {
-        FALSE_RETURN_V_MSG_E(!videoTracksInfo_[trackIndex].extraData_.empty(),
-            Status::ERROR_INVALID_DATA, "non annexb stream must set codec config!");
-        auto &extra = videoTracksInfo_[trackIndex].extraData_;
-        SetCodecParameterExtra(st, extra.data(), extra.size());
-    }
-    return Status::NO_ERROR;
 }
 
 std::vector<uint8_t> FFmpegMuxerPlugin::TransAnnexbToMp4(const uint8_t *sample, int32_t size)

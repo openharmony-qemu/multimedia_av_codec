@@ -41,7 +41,8 @@ public:
 protected:
     using Av1CreateDecoderFuncType = INT32 (*)(void **av1Decoder);
     using Av1DecodeFrameFuncType = INT32 (*)(void *av1Decoder, const unsigned char *frame, unsigned int frame_size);
-    using Av1GetFrameFuncType = INT32 (*)(void *av1Decoder, Dav1dPicture **outputImg);
+    using Av1GetFrameFuncType = INT32 (*)(void *av1Decoder, Dav1dPicture *outputImg);
+    using Av1PictureUnrefFuncType = void (*)(Dav1dPicture *const picture);
     using Av1DestroyDecoderFuncType = void (*)(void **av1Decoder);
 
     int32_t Initialize() override;
@@ -61,6 +62,7 @@ private:
     Av1CreateDecoderFuncType av1DecoderCreateFunc_ = nullptr;
     Av1DecodeFrameFuncType av1DecoderFrameFunc_ = nullptr;
     Av1GetFrameFuncType av1DecoderGetFrameFunc_ = nullptr;
+    Av1PictureUnrefFuncType av1DecoderPictureUnrefFunc_ = nullptr;
     Av1DestroyDecoderFuncType av1DecoderDestroyFunc_ = nullptr;
 };
 

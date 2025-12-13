@@ -50,6 +50,16 @@ constexpr uint8_t VC1_FRAME_TYPE_I_BITS = 0x00;
 constexpr uint8_t VC1_FRAME_TYPE_P_BITS = 0x40;
 constexpr uint8_t VC1_FRAME_TYPE_B_BITS = 0x80;
 constexpr uint8_t VC1_FRAME_TYPE_BI_BITS = 0xC0;
+constexpr uint8_t WVC1_FRAME_HEAD[] = {0x00, 0x00, 0x01, 0x0D};
+constexpr uint8_t WVC1_FRAME_HEAD_LEN = sizeof(WVC1_FRAME_HEAD);
+constexpr uint8_t WVC1_SEQUENCE_HEAD[] = {0x00, 0x00, 0x01, 0x0F};
+constexpr uint8_t WVC1_SEQUENCE_HEAD_LEN = sizeof(WVC1_SEQUENCE_HEAD);
+constexpr uint8_t WVC1_FRAME_TYPE_OFFSET = 4;
+constexpr uint8_t WVC1_FRAME_TYPE_MASK = 0xC0;
+constexpr uint8_t WVC1_FRAME_TYPE_I_BITS = 0x00;
+constexpr uint8_t WVC1_FRAME_TYPE_P_BITS = 0x40;
+constexpr uint8_t WVC1_FRAME_TYPE_B_BITS = 0x80;
+constexpr uint8_t WVC1_FRAME_TYPE_BI_BITS = 0xC0;
 #endif
 constexpr uint8_t H263_HEAD_0[] = {0x00, 0x00, 0x80};
 constexpr uint8_t H263_HEAD_1[] = {0x00, 0x00, 0x81};
@@ -74,11 +84,22 @@ constexpr int IVF_HEADER_TOTAL_FRAMES_OFFSET_3 = 24;
 
 #ifdef SUPPORT_CODEC_AV1
 constexpr uint32_t IVF_FILE_AV1_HEADER_SIZE = 32;
+constexpr uint32_t IVF_FRAME_AV1_HEADER_SIZE = 12;
 constexpr uint8_t IVF_AV1_SIGNATURE[] = {'D', 'K', 'I', 'F'};
 constexpr int IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_1 = 8;
 constexpr int IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_2 = 16;
 constexpr int IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_3 = 24;
 #endif
+
+#ifdef SUPPORT_CODEC_RV
+int32_t NUM_ONE = 1;
+int32_t NUM_TWO = 2;
+int32_t NUM_THR = 3;
+#endif
+
+constexpr uint8_t CINEPAK_HEAD[] = { 0x00, 0x00, 0xB2, 0xED, 0x01, 0x68, 0x02, 0x80, 0x00, 0x03};
+constexpr uint8_t CINEPAK_HEAD_LEN = sizeof(CINEPAK_HEAD);
+constexpr uint8_t CINEPAK_FRAME_TYPE_MASK = 0x80;
 
 static inline int64_t GetTimeUs()
 {
@@ -164,6 +185,12 @@ enum Vc1Type {
     VC1_SEQUENCE_HEADER = 5
 };
 
+enum CinepakType {
+    CINEPAK_UNSPECIFIED = 0,
+    CINEPAK_I = 1,
+    CINEPAK_P = 2,
+};
+
 const uint32_t ES_VC1[] = {
     71081,   872,  9379,   873,  7636,  2986, 12386,  2681, 11515,  3501,
     15447,  5825, 31644,   974,  6955,  1109, 11921,  3872, 21700,  6866,
@@ -185,6 +212,37 @@ const uint32_t ES_VC1[] = {
     14784,  7229, 17461,  7132, 17121,  6489, 16583,  6504, 14229,  9211};
 
 const uint32_t ES_VC1_LENGTH = sizeof(ES_VC1) / sizeof(ES_VC1[0]);
+
+enum WVc1Type {
+    WVC1_UNSPECIFIED = 0,
+    WVC1_I = 1,
+    WVC1_P = 2,
+    WVC1_B = 3,
+    WVC1_BI = 4,
+    WVC1_SEQUENCE_HEADER = 5
+};
+
+const uint32_t ES_WVC1[] = {
+    71081,   872,  9379,   873,  7636,  2986, 12386,  2681, 11515,  3501,
+    15447,  5825, 31644,   974,  6955,  1109, 11921,  3872, 21700,  6866,
+    25652,  3342, 12210,  4197, 26221,  3458, 17692,  8808, 22743,  6121,
+    11523,  6179, 22633,  7516, 18487,  8944, 22299,  7144, 13954,  9655,
+    14014,  9049, 24359,  7392, 14676,  7329, 14565,  8923, 28404,  5313,
+    6847,  8560, 19182,  8421, 13264, 10958, 13251, 12530, 29942,  2791,
+    9097,  8470, 18520,  8780, 16887,  5324, 22401,  2892, 14301,  3613,
+    16986,  4114, 11144,  4059, 24930, 11041, 15902,  7232, 19542,  5389,
+    16219, 12110, 18493,  8535, 14945,  9285, 17928,  9122, 14303,  9261,
+    17332,  8728, 17236,  9626, 18029,  8883, 14945,  9593, 21497,  6390,
+    64545, 10327, 24077,  5530, 11122,  6549, 17798,  5695, 17412,  7018,
+    20456,  6944, 17396,  8961, 21515,  6663, 14276,  7537, 18621,  5730,
+    19280,  9244, 23206,  8465, 14002,  8156, 20449,  6302, 16562,  7690,
+    18290, 10085, 17183,  8373, 19956,  6743, 16892,  8294, 18638,  9820,
+    14532,  7499, 18569,  5908, 16738,  6519, 18738,  4992, 16174,  7342,
+    16226,  6638, 15332,  7388, 15707,  6931, 15729,  8090, 16553,  6486,
+    14363,  8398, 15360,  9129, 19442,  6968, 13829,  5722, 13051,  6121,
+    14784,  7229, 17461,  7132, 17121,  6489, 16583,  6504, 14229,  9211};
+
+const uint32_t ES_WVC1_LENGTH = sizeof(ES_WVC1) / sizeof(ES_WVC1[0]);
 #endif
 
 #ifdef SUPPORT_CODEC_VP8
@@ -493,6 +551,104 @@ const uint32_t ES_WMV3_MAIN[] = {
     30589
 };
 const uint32_t ES_WMV3_MAIN_LEN = sizeof(ES_WMV3_MAIN) / sizeof(ES_WMV3_MAIN[0]);
+
+#ifdef SUPPORT_CODEC_RV
+const uint32_t ES_RV30[] = {
+    1264, 295, 277, 309, 332, 206, 374, 342, 224, 271, 297, 210, 287, 288, 232, 358,
+    345, 229, 402, 371, 228, 321, 421, 197, 411, 348, 228, 382, 361, 199, 371, 301,
+    188, 309, 302, 166, 307, 295, 153, 306, 269, 178, 278, 233, 182, 275, 232, 148,
+    234, 236, 127, 290, 151, 204, 240, 271, 84, 270, 216, 133, 218, 198, 101, 155,
+    162, 92, 172, 160, 93, 154, 159, 80, 138, 120, 81, 143, 128, 70, 137, 132, 87,
+    138, 112, 60, 145, 104, 52, 113, 87, 78, 121, 99, 59, 118, 92, 86, 128, 126, 72,
+    99, 100, 80, 96, 78, 66, 123, 112, 70, 110, 650, 62, 261, 230, 126, 250, 204, 128,
+    246, 226, 103, 1279, 617, 164, 308, 295, 169, 296, 300, 184, 247, 252, 168, 237,
+    239, 171, 321, 259, 258, 228, 290, 144, 349, 261, 259, 275, 312, 353, 330, 309,
+    320, 309, 347, 321, 332, 331, 348, 336, 294, 295, 258, 214, 220, 145, 229, 214,
+    151, 220, 238, 138, 256, 289, 181, 253, 239, 171, 266, 268, 127, 226, 220, 152,
+    279, 212, 135, 246, 248, 140, 301, 276, 168, 276, 310, 168, 264, 237, 162, 281,
+    274, 291, 290, 304, 276, 282, 264, 277, 255, 283, 240, 275, 314, 336, 338, 330,
+    391, 334, 416, 393, 417, 386, 400, 434, 411, 385, 397, 379, 358, 357, 343, 296,
+    281, 263, 251, 267, 190, 250, 112, 252, 233, 147, 286, 278, 123, 296, 212, 153,
+    249, 248, 135, 251, 212, 151, 257, 193, 187, 208, 261, 151, 308, 260, 181, 473,
+    290, 185, 297, 355, 162, 314, 248, 246, 262, 252, 292, 304, 297, 302, 274, 275,
+    241, 295, 299, 329, 288, 310, 269, 335, 297, 284, 296, 324, 383, 339, 354, 312,
+    272, 352, 231, 301, 264, 256, 222, 239, 185, 232, 244, 177, 223, 238, 155, 284,
+    191, 285, 148, 272, 222, 167, 228, 220, 139, 252, 198, 141, 324, 173, 139, 287,
+    286, 117, 325, 242, 160, 336, 232, 262, 216, 260, 155, 357, 266, 263, 241, 314,
+    286, 280, 272, 258, 274, 248, 293, 258, 322, 272, 276, 297, 338, 364, 409, 431,
+    346, 382, 381, 404, 309, 391, 361, 370, 377, 420, 408, 444, 393, 379, 345, 285,
+    261, 244, 200, 153, 169, 189, 247, 124, 290, 174, 200, 313, 159, 124, 330, 167,
+    143, 283, 178, 228, 322, 469, 1044, 634, 575, 684, 599, 660, 643, 644, 959, 670,
+    638, 752, 778, 788, 936, 1157, 1032, 845, 800, 913, 1010, 1197, 1394, 984, 1093,
+    1007, 1128, 957, 793, 753, 757, 829, 807, 753, 752, 853, 851, 866, 892, 853, 907,
+    965, 996, 1138, 1188, 1194, 1086, 950, 749, 655, 653, 529, 471, 433, 367, 321,
+    278, 266, 283, 246, 288, 249, 211, 218, 223, 196, 179, 142, 146, 150, 153, 78,
+    75, 112, 91, 117, 119, 148, 110, 68, 74, 84, 150, 128, 189, 179, 301, 308, 359,
+    426, 520, 591, 738, 1016, 1408, 88, 692, 976, 370, 216, 273, 212, 127, 222, 162,
+    107, 111, 171, 87, 114, 143, 72, 124, 195, 194, 195, 187, 199, 177, 245, 135,
+    237, 187, 166, 204, 239, 167, 207, 212, 174, 191, 58, 37, 87, 117, 59, 119, 129,
+    63, 132, 132, 74, 104, 120, 72, 122, 116, 84, 147, 107, 65, 128, 112, 65, 157,
+    124, 81, 102, 106, 95, 119, 108, 42, 123, 108, 55, 117, 112, 63, 140, 132, 78,
+    138, 129, 73, 149, 138, 83, 156, 130, 62, 187, 158, 104, 209, 244, 175, 264, 274,
+    498, 744, 331, 350, 450, 483, 393, 389, 434, 535, 419, 331, 245, 212, 260, 307,
+    341, 409, 326, 327, 282, 363, 333, 302, 258, 259, 274, 278, 290, 310, 316, 320,
+    308, 305, 380, 340, 384, 433, 394, 359, 371, 453, 354, 358, 357, 313, 351, 384,
+    353, 365, 306, 308, 301, 317, 347, 304, 285, 289, 296, 269, 243, 236, 223, 249,
+    190, 258, 234, 233, 229, 302, 178, 221, 258, 229, 199, 246, 199, 178, 205, 219,
+    248, 220, 186, 192, 217, 188, 153, 175, 182, 120, 25, 24, 24, 78, 24, 24, 26,
+    31, 24, 78, 24, 39, 28, 29
+};
+const uint32_t ES_RV30_LENGTH = sizeof(ES_RV30) / sizeof(ES_RV30[0]);
+
+const uint32_t ES_RV40[] = {
+    7386, 2501, 343, 2677, 477, 3027, 748, 2756, 846, 2764, 758, 2679, 818, 2964, 803,
+    2878, 893, 2940, 845, 2818, 898, 3086, 864, 2927, 943, 2734, 769, 2704, 737, 2948,
+    804, 2753, 859, 2937, 892, 2818, 928, 2718, 653, 2592, 482, 2570, 383, 2562, 420,
+    2637, 346, 2524, 312, 2593, 392, 2553, 402, 2681, 443, 2831, 831, 2942, 874, 2987,
+    922, 2942, 686, 2674, 705, 2668, 587, 2613, 538, 2828, 548, 2627, 517, 2566, 548,
+    2713, 568, 2672, 515, 2601, 507, 2659, 564, 2650, 505, 2634, 522, 2606, 521, 2345,
+    349, 2351, 159, 2236, 61, 2396, 82, 2168, 67, 2253, 83, 2263, 124, 2351, 87, 2560,
+    191, 2627, 584, 2682, 500, 2459, 525, 2640, 551, 2586, 482, 2765, 533, 2622, 534,
+    2803, 833, 2825, 837, 3087, 799, 2740, 804, 2945, 865, 3175, 885, 3120, 858, 3037,
+    901, 2749, 657, 2818, 754, 2691, 506, 2668, 438, 2520, 416, 2571, 384, 2645, 424,
+    2529, 390, 2461, 250, 2530, 331, 2885, 714, 2747, 807, 2946, 847, 2984, 859, 3090,
+    847, 2858, 887, 3040, 871, 2862, 883, 2787, 701, 2795, 678, 2971, 828, 2967, 796,
+    3176, 852, 3038, 899, 2981, 838, 2986, 926, 2934, 801, 2597, 557, 2293, 114, 2366,
+    103, 2339, 152, 2285, 75, 2298, 91, 2459, 182, 2262, 67, 2292, 74, 2658, 514, 2704,
+    499, 2777, 566, 2594, 552, 2628, 561, 2708, 619, 2739, 534, 2775, 569, 2657, 577,
+    2616, 522, 2724, 557, 2592, 586, 2714, 578, 2642, 583, 2729, 501, 2671, 564, 2571,
+    571, 2471, 332, 2333, 98, 2253, 94, 5364, 508
+};
+const uint32_t ES_RV40_LENGTH = sizeof(ES_RV40) / sizeof(ES_RV40[0]);
+#endif
+
+const uint32_t ES_CINEPAK_NORMAL[] = {
+    45805, 11777, 16835, 23437, 24320, 16984, 10992, 26782, 24353, 15395,
+    31367, 12311, 45475, 26134, 26832, 25823, 13917, 20160, 26802, 22101,
+    27422, 12736, 26313, 23796, 45487, 19720, 15140, 26785, 29394, 22241,
+    28554, 13567, 24418, 26126, 28024, 27277, 45472, 27292, 28699, 27100,
+    27406, 11289, 27572, 28018, 27051, 26539, 12831, 26535, 45514, 27465,
+    28484, 12691, 27044, 28057, 26569, 27387, 12506, 29146, 26802, 28389,
+    45652, 12570, 25763, 28007, 28348, 25237, 12190, 29124, 28154, 30224,
+    27787, 12342, 45844, 26404, 25496, 28006, 12258, 26574, 28131, 29143,
+    28108, 12206, 29082, 24388, 45781, 23964, 13626, 30186, 24499, 28011,
+    26799, 11662, 26614, 27369, 25292, 25434, 45772, 25100, 28161, 26406,
+    30837, 10893, 23782, 24003, 26144, 25005, 12863, 23694, 45757, 24625,
+    24841, 12213, 25744, 25236, 25913, 21970, 12575, 26980, 25586, 25781,
+    45754, 11945, 20411, 24676, 24424, 20926, 13424, 26745, 25174, 25461,
+    21868, 11915, 46075, 24853, 19461, 25441, 11870, 23077, 22104, 25385,
+    24903, 12009, 24077, 19553, 45751, 23882, 12994, 26893, 17765, 23255,
+    28790, 13019, 16187, 20133, 20696, 20792, 45784, 20571, 23848, 26653,
+    23938, 13527, 15275, 21242, 23477, 20104, 12180, 19967, 46189, 19837,
+    19710, 12261, 19617, 21197, 23225, 16084, 10862, 16959, 21011, 19682,
+    45802, 12737, 14051, 19709, 18581, 21291, 10969, 16652, 16988, 17546,
+    19574, 12545, 46192, 15306, 16286, 16374, 9973, 14476, 14782, 13011,
+    14793, 12056, 16157, 14493, 46039, 14690, 11327, 14347, 14196, 17056,
+    18294, 11601, 11773, 17663, 19142, 10615, 46162, 14423, 11247, 12107,
+    14162, 10850, 10651, 10963, 11602, 10408, 9440, 9438, 46366, 13188,
+    12925, 10367, 10357, 11122, 10265, 42703, 44554, 43515, 42103
+};
+const uint32_t ES_CINEPAK_NORMAL_LEN = sizeof(ES_CINEPAK_NORMAL) / sizeof(ES_CINEPAK_NORMAL[0]);
 
 int32_t MpegReader::Init(const std::shared_ptr<MpegReaderInfo> &info)
 {
@@ -1449,6 +1605,195 @@ int32_t Vc1Reader::Vc1UnitReader::ReadVc1Unit(uint8_t *bufferAddr, int32_t &buff
 void Vc1Reader::Vc1UnitReader::PrereadVc1Unit()
 {
     std::cout << "[Vc1UnitReader::PrereadVc1Unit] Base class implementation - should be overridden" << std::endl;
+}
+
+int32_t WVc1Reader::Init(const std::shared_ptr<WVc1ReaderInfo>& info)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(info, AV_ERR_INVALID_VAL, "WVc1ReaderInfo is null");
+
+    std::shared_ptr<std::ifstream> inputFile = std::make_shared<std::ifstream>(
+        info->inPath, std::ios::binary | std::ios::in);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile && inputFile->is_open(),
+        AV_ERR_INVALID_VAL, "Open input file failed");
+
+    wvc1UnitReader_ = std::static_pointer_cast<WVc1UnitReader>(
+        std::make_shared<WVc1MetaUnitReader>(inputFile));
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(wvc1UnitReader_, AV_ERR_INVALID_VAL, "WVC1 unit reader create failed");
+
+    wvc1Detector_ = std::static_pointer_cast<WVc1Detector>(
+        std::make_shared<WVc1Detector>());
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(wvc1Detector_, AV_ERR_INVALID_VAL, "WVC1 detector create failed");
+
+    return AV_ERR_OK;
+}
+
+int32_t WVc1Reader::FillBuffer(uint8_t* bufferAddr, OH_AVCodecBufferAttr& attr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr, AV_ERR_INVALID_VAL, "Buffer address is null");
+
+    int32_t frameSize = 0;
+    bool isEosFrame = false;
+    auto ret = wvc1UnitReader_->ReadWVc1Unit(bufferAddr, frameSize, isEosFrame);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCS_ERR_INVALID_OPERATION, "ReadWVC1Unit failed");
+
+    uint8_t wvc1Type = wvc1Detector_->GetWVc1Type(wvc1Detector_->GetWVc1TypeAddr(bufferAddr));
+    bufferAddr += frameSize;
+    FillBufferAttr(attr, frameSize, wvc1Type, isEosFrame);
+    frameInputCount_++;
+    return AV_ERR_OK;
+}
+
+bool WVc1Reader::IsEOS()
+{
+    return wvc1UnitReader_ ? wvc1UnitReader_->IsEOS() : true;
+}
+
+void WVc1Reader::FillBufferAttr(OH_AVCodecBufferAttr& attr, int32_t frameSize, uint8_t wvc1Type, bool isEosFrame)
+{
+    attr.size = frameSize;
+    attr.pts = GetTimeUs();
+    attr.flags = 0;
+
+    if (isEosFrame) {
+        attr.flags |= AVCODEC_BUFFER_FLAG_EOS;
+        std::cout << "Input EOS Frame, frameCount = " << (frameInputCount_) << std::endl;
+    } else {
+        if (wvc1Detector_->IsI(wvc1Type) || wvc1Type == WVC1_SEQUENCE_HEADER) {
+            attr.flags |= AVCODEC_BUFFER_FLAG_SYNC_FRAME;
+        }
+    }
+}
+
+WVc1Reader::WVc1MetaUnitReader::WVc1MetaUnitReader(std::shared_ptr<std::ifstream> inputFile)
+{
+    inputFile_ = inputFile;
+    prereadBuffer_ = std::make_unique<uint8_t[]>(PREREAD_BUFFER_SIZE);
+    wvc1Unit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+    PrereadWVc1Unit();
+}
+
+int32_t WVc1Reader::WVc1MetaUnitReader::ReadWVc1Unit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr, AV_ERR_INVALID_VAL, "Got an invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(wvc1Unit_, AV_ERR_INVALID_VAL, "WVC1 unit buffer is nullptr");
+    bufferSize = static_cast<int32_t>(wvc1Unit_->size());
+    if (bufferSize > 0) {
+        memcpy_s(bufferAddr, bufferSize, wvc1Unit_->data(), bufferSize);
+    }
+    if (frameIndex_ < ES_WVC1_LENGTH) {
+        isEosFrame = false;
+        PrereadWVc1Unit();
+    } else {
+        isEosFrame = true;
+        wvc1Unit_->clear();
+    }
+    return AV_ERR_OK;
+}
+
+bool WVc1Reader::WVc1MetaUnitReader::IsEOS()
+{
+    return frameIndex_ >= ES_WVC1_LENGTH;
+}
+
+bool WVc1Reader::WVc1MetaUnitReader::IsEOF()
+{
+    return (pPrereadBuffer_ >= prereadBufferSize_) && (inputFile_ && inputFile_->peek() == EOF);
+}
+
+void WVc1Reader::WVc1MetaUnitReader::PrereadFile()
+{
+    CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nullptr");
+    if (!inputFile_ || !inputFile_->is_open()) {
+        prereadBufferSize_ = 0;
+        pPrereadBuffer_ = 0;
+        return;
+    }
+    inputFile_->read(reinterpret_cast<char*>(prereadBuffer_.get()), PREREAD_BUFFER_SIZE);
+    std::streamsize bytesRead = inputFile_->gcount();
+    prereadBufferSize_ = static_cast<uint32_t>(bytesRead);
+    pPrereadBuffer_ = 0;
+}
+
+uint8_t* WVc1Reader::WVc1MetaUnitReader::FindNextStartCode(uint8_t* start, uint8_t* end)
+{
+    uint8_t* posFrame = std::search(start, end, std::begin(WVC1_FRAME_HEAD), std::end(WVC1_FRAME_HEAD));
+    uint8_t* posSeq = std::search(start, end, std::begin(WVC1_SEQUENCE_HEAD), std::end(WVC1_SEQUENCE_HEAD));
+    uint8_t* posMin = end;
+    if (posFrame < posMin) {
+        posMin = posFrame;
+    }
+    if (posSeq < posMin) {
+        posMin = posSeq;
+    }
+    return posMin;
+}
+
+void WVc1Reader::WVc1MetaUnitReader::PrereadWVc1Unit()
+{
+    CHECK_AND_RETURN_LOG(inputFile_ && inputFile_->is_open(), "Input file not open");
+    CHECK_AND_RETURN_LOG(wvc1Unit_ != nullptr, "wvc1 unit buffer is nullptr");
+    CHECK_AND_RETURN_LOG(frameIndex_ < ES_WVC1_LENGTH, "All WVC1 frames have been read");
+
+    uint32_t frameSize = ES_WVC1[frameIndex_];
+    wvc1Unit_->resize(frameSize + WVC1_FRAME_HEAD_LEN);
+    auto pBuffer = wvc1Unit_->data();
+
+    memcpy_s(pBuffer, frameSize + WVC1_FRAME_HEAD_LEN, WVC1_FRAME_HEAD, WVC1_FRAME_HEAD_LEN);
+    inputFile_->read(reinterpret_cast<char*>(pBuffer + WVC1_FRAME_HEAD_LEN), frameSize);
+    uint32_t bytesRead = static_cast<uint32_t>(inputFile_->gcount());
+
+    CHECK_AND_RETURN_LOG(bytesRead == frameSize,
+        "Failed to read full frame. Expected: %u, Got: %u", frameSize, bytesRead);
+
+    frameIndex_++;
+}
+
+const uint8_t* WVc1Reader::WVc1Detector::GetWVc1TypeAddr(const uint8_t* bufferAddr)
+{
+    return bufferAddr;
+}
+
+uint8_t WVc1Reader::WVc1Detector::GetWVc1Type(const uint8_t* bufferAddr)
+{
+    if (!bufferAddr) {
+        return WVC1_UNSPECIFIED;
+    }
+
+    if (std::memcmp(bufferAddr, WVC1_SEQUENCE_HEAD, WVC1_SEQUENCE_HEAD_LEN) == 0) {
+        return WVC1_SEQUENCE_HEADER;
+    }
+
+    if (std::memcmp(bufferAddr, WVC1_FRAME_HEAD, WVC1_FRAME_HEAD_LEN) == 0) {
+        const uint8_t* typeByteAddr = bufferAddr + WVC1_FRAME_TYPE_OFFSET;
+        uint8_t typeBits = (*typeByteAddr) & WVC1_FRAME_TYPE_MASK;
+
+        switch (typeBits) {
+            case WVC1_FRAME_TYPE_I_BITS: return WVC1_I;
+            case WVC1_FRAME_TYPE_P_BITS: return WVC1_P;
+            case WVC1_FRAME_TYPE_B_BITS: return WVC1_B;
+            case WVC1_FRAME_TYPE_BI_BITS: return WVC1_BI;
+            default: return WVC1_UNSPECIFIED;
+        }
+    }
+
+    return WVC1_UNSPECIFIED;
+}
+
+bool WVc1Reader::WVc1Detector::IsI(uint8_t wvc1Type)
+{
+    return (wvc1Type == WVC1_I || wvc1Type == WVC1_BI);
+}
+
+int32_t WVc1Reader::WVc1UnitReader::ReadWVc1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame)
+{
+    return AV_ERR_OK;
+}
+
+void WVc1Reader::WVc1UnitReader::PrereadWVc1Unit()
+{
+    std::cout << "[WVc1UnitReader::PrereadWVc1Unit] Base class implementation - should be overridden" << std::endl;
 }
 #endif
 int32_t Msvideo1Reader::Init(const std::shared_ptr<Msvideo1ReaderInfo>& info)
@@ -2548,9 +2893,9 @@ bool Av1Reader::IvfUnitReader::ParseIvfFileHeader()
     }
 
     totalFrames_ = fileHeader[NUM_24] |
-                (fileHeader[NUM_25] << IVF_HEADER_TOTAL_FRAMES_OFFSET_1) |
-                (fileHeader[NUM_26] << IVF_HEADER_TOTAL_FRAMES_OFFSET_2) |
-                (fileHeader[NUM_27] << IVF_HEADER_TOTAL_FRAMES_OFFSET_3);
+                (fileHeader[NUM_25] << IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_1) |
+                (fileHeader[NUM_26] << IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_2) |
+                (fileHeader[NUM_27] << IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_3);
 
     std::cout << "IVF file parsed - Total frames: " << totalFrames_ << std::endl;
     fileHeaderParsed_ = true;
@@ -2563,10 +2908,10 @@ bool Av1Reader::IvfUnitReader::ParseIvfFrameHeader(uint32_t& frameSize)
         return false;
     }
 
-    std::vector<uint8_t> frameHeader(IVF_FILE_AV1_HEADER_SIZE);
-    inputFile_->read(reinterpret_cast<char*>(frameHeader.data()), IVF_FILE_AV1_HEADER_SIZE);
+    std::vector<uint8_t> frameHeader(IVF_FRAME_AV1_HEADER_SIZE);
+    inputFile_->read(reinterpret_cast<char*>(frameHeader.data()), IVF_FRAME_AV1_HEADER_SIZE);
 
-    if (inputFile_->gcount() != IVF_FILE_AV1_HEADER_SIZE) {
+    if (inputFile_->gcount() != IVF_FRAME_AV1_HEADER_SIZE) {
         return false;
     }
 
@@ -2635,5 +2980,535 @@ int32_t Av1Reader::IvfUnitReader::ReadAv1Unit(uint8_t* bufferAddr, int32_t& buff
     return AV_ERR_OK;
 }
 #endif
+
+#ifdef SUPPORT_CODEC_RV
+
+int32_t Rv30Reader::Init(const std::shared_ptr<Rv30ReaderInfo> &info)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(info, AV_ERR_INVALID_VAL, "Rv30ReaderInfo is null");
+
+    std::shared_ptr<std::ifstream> inputFile = std::make_shared<std::ifstream>(
+        info->inPath, std::ios::binary | std::ios::in);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile && inputFile->is_open(),
+        AV_ERR_INVALID_VAL, "Open input file failed");
+
+    rv30UnitReader_ = std::static_pointer_cast<Rv30UnitReader>(
+        std::make_shared<Rv30MetaUnitReader>(inputFile));
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(rv30UnitReader_, AV_ERR_INVALID_VAL, "Rv30 unit reader create failed");
+
+    rv30Detector_ = std::static_pointer_cast<Rv30Detector>(std::make_shared<Rv30Detector>());
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(rv30Detector_, AV_ERR_INVALID_VAL, "Rv30 detector create failed");
+
+    return AV_ERR_OK;
+}
+
+int32_t Rv30Reader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL, "Buffer address is null");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(rv30UnitReader_ != nullptr, AV_ERR_INVALID_VAL, "rv30UnitReader_ is nullptr");
+
+    int32_t frameSize = 0;
+    bool isEosFrame = false;
+    auto ret = rv30UnitReader_->ReadRv30Unit(bufferAddr, frameSize, isEosFrame);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCS_ERR_INVALID_OPERATION, "ReadRv30Unit failed");
+
+    uint8_t rv30Type = rv30Detector_->GetRv30Type(rv30Detector_->GetRv30TypeAddr(bufferAddr));
+    bufferAddr += frameSize;
+    FillBufferAttr(attr, frameSize, rv30Type, isEosFrame);
+    frameInputCount_++;
+    return AV_ERR_OK;
+}
+
+bool Rv30Reader::IsEOS()
+{
+    return rv30UnitReader_ ? rv30UnitReader_->IsEOS() : true;
+}
+
+void Rv30Reader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize,
+                                uint8_t rv30Type, bool isEosFrame)
+{
+    attr.size = frameSize;
+    attr.pts = GetTimeUs();
+    attr.flags = 0;
+
+    if (isEosFrame) {
+        attr.flags |= AVCODEC_BUFFER_FLAG_EOS;
+        std::cout << "Input EOS Frame, frameCount = " << (frameInputCount_) << std::endl;
+    } else {
+        if (rv30Detector_->IsI(rv30Type)) {
+            attr.flags |= AVCODEC_BUFFER_FLAG_SYNC_FRAME;
+        }
+    }
+}
+
+uint8_t const *Rv30Reader::Rv30UnitReader::GetNextRv30UnitAddr()
+{
+    CHECK_AND_RETURN_RET_LOG(rv30Unit_ != nullptr, nullptr, "rv30Unit_ is nullptr");
+    return rv30Unit_->data();
+}
+
+Rv30Reader::Rv30MetaUnitReader::Rv30MetaUnitReader(std::shared_ptr<std::ifstream> inputFile)
+{
+    inputFile_ = inputFile;
+    prereadBuffer_ = std::make_unique<uint8_t []>(PREREAD_BUFFER_SIZE);
+    rv30Unit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+    frameIndex_ = 0;
+    PrereadRv30Unit();
+}
+
+int32_t Rv30Reader::Rv30MetaUnitReader::ReadRv30Unit(uint8_t *bufferAddr,
+                                                     int32_t &bufferSize, bool &isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL, "Got an invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(rv30Unit_ != nullptr, AV_ERR_INVALID_VAL, "Rv30 unit buffer is nullptr");
+
+    bufferSize = static_cast<int32_t>(rv30Unit_->size());
+    if (bufferSize > 0) {
+        auto ret = memcpy_s(bufferAddr, bufferSize, rv30Unit_->data(), bufferSize);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_INVALID_VAL, "Copy Rv30 buffer failed");
+    }
+
+    if (frameIndex_ < ES_RV30_LENGTH) {
+        isEosFrame = false;
+        PrereadRv30Unit();
+    } else {
+        isEosFrame = true;
+        rv30Unit_->clear();
+    }
+    return AV_ERR_OK;
+}
+
+bool Rv30Reader::Rv30MetaUnitReader::IsEOS()
+{
+    return frameIndex_ >= ES_RV30_LENGTH;
+}
+
+bool Rv30Reader::Rv30MetaUnitReader::IsEOF()
+{
+    return (pPrereadBuffer_ >= prereadBufferSize_) && (inputFile_ && inputFile_->peek() == EOF);
+}
+
+void Rv30Reader::Rv30MetaUnitReader::PrereadFile()
+{
+    CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nullptr");
+    if (!inputFile_ || !inputFile_->is_open()) {
+        prereadBufferSize_ = 0;
+        pPrereadBuffer_ = 0;
+        return;
+    }
+    inputFile_->read(reinterpret_cast<char*>(prereadBuffer_.get()), PREREAD_BUFFER_SIZE);
+    std::streamsize bytesRead = inputFile_->gcount();
+    prereadBufferSize_ = static_cast<uint32_t>(bytesRead);
+    pPrereadBuffer_ = 0;
+}
+
+void Rv30Reader::Rv30MetaUnitReader::PrereadRv30Unit()
+{
+    CHECK_AND_RETURN_LOG(inputFile_ && inputFile_->is_open(), "Input file not open");
+    CHECK_AND_RETURN_LOG(rv30Unit_ != nullptr, "rv30 unit buffer is nullptr");
+    CHECK_AND_RETURN_LOG(frameIndex_ < ES_RV30_LENGTH, "All Rv30 frames have been read");
+
+    uint32_t frameSize = ES_RV30[frameIndex_];
+    CHECK_AND_RETURN_LOG(frameSize > 0, "Invalid Rv30 frame size, index: %{public}u", frameIndex_);
+
+    rv30Unit_->resize(frameSize);
+    auto pBuffer = rv30Unit_->data();
+
+    inputFile_->read(reinterpret_cast<char*>(pBuffer), frameSize);
+    uint32_t bytesRead = static_cast<uint32_t>(inputFile_->gcount());
+
+    CHECK_AND_RETURN_LOG(bytesRead == frameSize,
+        "Failed to read full Rv30 frame. Expected: %{public}u, Got: %{public}u", frameSize, bytesRead);
+
+    frameIndex_++;
+}
+
+uint8_t* Rv30Reader::Rv30Detector::GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend)
+{
+    (void)addrstart;
+    (void)addrend;
+    return nullptr;
+}
+
+const uint8_t *Rv30Reader::Rv30Detector::GetRv30TypeAddr(const uint8_t *bufferAddr)
+{
+    return bufferAddr;
+}
+
+uint8_t Rv30Reader::Rv30Detector::GetRv30Type(const uint8_t *bufferAddr)
+{
+    if (!bufferAddr) {
+        return 0;
+    }
+    uint8_t type = bufferAddr[0];
+    switch (type) {
+        case 0x00: return NUM_ONE; // I
+        case 0x01: return NUM_TWO; // P
+        case 0x02: return NUM_THR; // B
+        default:   return 0; // UNSPEC
+    }
+}
+
+bool Rv30Reader::Rv30Detector::IsI(uint8_t rv30Type)
+{
+    return (rv30Type == 1);
+}
+
+int32_t Rv40Reader::Init(const std::shared_ptr<Rv40ReaderInfo> &info)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(info, AV_ERR_INVALID_VAL, "Rv40ReaderInfo is null");
+
+    std::shared_ptr<std::ifstream> inputFile = std::make_shared<std::ifstream>(
+        info->inPath, std::ios::binary | std::ios::in);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile && inputFile->is_open(),
+        AV_ERR_INVALID_VAL, "Open input file failed");
+
+    rv40UnitReader_ = std::static_pointer_cast<Rv40UnitReader>(
+        std::make_shared<Rv40MetaUnitReader>(inputFile));
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(rv40UnitReader_, AV_ERR_INVALID_VAL, "Rv40 unit reader create failed");
+
+    rv40Detector_ = std::static_pointer_cast<Rv40Detector>(std::make_shared<Rv40Detector>());
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(rv40Detector_, AV_ERR_INVALID_VAL, "Rv40 detector create failed");
+
+    return AV_ERR_OK;
+}
+
+int32_t Rv40Reader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL, "Buffer address is null");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(rv40UnitReader_ != nullptr, AV_ERR_INVALID_VAL, "rv40UnitReader_ is nullptr");
+
+    int32_t frameSize = 0;
+    bool isEosFrame = false;
+    auto ret = rv40UnitReader_->ReadRv40Unit(bufferAddr, frameSize, isEosFrame);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCS_ERR_INVALID_OPERATION, "ReadRv40Unit failed");
+
+    uint8_t rv40Type = rv40Detector_->GetRv40Type(rv40Detector_->GetRv40TypeAddr(bufferAddr));
+    bufferAddr += frameSize;
+    FillBufferAttr(attr, frameSize, rv40Type, isEosFrame);
+    frameInputCount_++;
+    return AV_ERR_OK;
+}
+
+bool Rv40Reader::IsEOS()
+{
+    return rv40UnitReader_ ? rv40UnitReader_->IsEOS() : true;
+}
+
+void Rv40Reader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize,
+                                uint8_t rv40Type, bool isEosFrame)
+{
+    attr.size = frameSize;
+    attr.pts = GetTimeUs();
+    attr.flags = 0;
+
+    if (isEosFrame) {
+        attr.flags |= AVCODEC_BUFFER_FLAG_EOS;
+        std::cout << "Input EOS Frame, frameCount = " << (frameInputCount_) << std::endl;
+    } else {
+        if (rv40Detector_->IsI(rv40Type)) {
+            attr.flags |= AVCODEC_BUFFER_FLAG_SYNC_FRAME;
+        }
+    }
+}
+
+uint8_t const *Rv40Reader::Rv40UnitReader::GetNextRv40UnitAddr()
+{
+    CHECK_AND_RETURN_RET_LOG(rv40Unit_ != nullptr, nullptr, "rv40Unit_ is nullptr");
+    return rv40Unit_->data();
+}
+
+Rv40Reader::Rv40MetaUnitReader::Rv40MetaUnitReader(std::shared_ptr<std::ifstream> inputFile)
+{
+    inputFile_ = inputFile;
+    prereadBuffer_ = std::make_unique<uint8_t []>(PREREAD_BUFFER_SIZE);
+    rv40Unit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+    frameIndex_ = 0;
+    PrereadRv40Unit();
+}
+
+int32_t Rv40Reader::Rv40MetaUnitReader::ReadRv40Unit(uint8_t *bufferAddr,
+                                                     int32_t &bufferSize, bool &isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL, "Got an invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(rv40Unit_ != nullptr, AV_ERR_INVALID_VAL, "Rv40 unit buffer is nullptr");
+
+    bufferSize = static_cast<int32_t>(rv40Unit_->size());
+    if (bufferSize > 0) {
+        auto ret = memcpy_s(bufferAddr, bufferSize, rv40Unit_->data(), bufferSize);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_INVALID_VAL, "Copy Rv40 buffer failed");
+    }
+
+    if (frameIndex_ < ES_RV40_LENGTH) {
+        isEosFrame = false;
+        PrereadRv40Unit();
+    } else {
+        isEosFrame = true;
+        rv40Unit_->clear();
+    }
+    return AV_ERR_OK;
+}
+
+bool Rv40Reader::Rv40MetaUnitReader::IsEOS()
+{
+    return frameIndex_ >= ES_RV40_LENGTH;
+}
+
+bool Rv40Reader::Rv40MetaUnitReader::IsEOF()
+{
+    return (pPrereadBuffer_ >= prereadBufferSize_) && (inputFile_ && inputFile_->peek() == EOF);
+}
+
+void Rv40Reader::Rv40MetaUnitReader::PrereadFile()
+{
+    CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nullptr");
+    if (!inputFile_ || !inputFile_->is_open()) {
+        prereadBufferSize_ = 0;
+        pPrereadBuffer_ = 0;
+        return;
+    }
+    inputFile_->read(reinterpret_cast<char*>(prereadBuffer_.get()), PREREAD_BUFFER_SIZE);
+    std::streamsize bytesRead = inputFile_->gcount();
+    prereadBufferSize_ = static_cast<uint32_t>(bytesRead);
+    pPrereadBuffer_ = 0;
+}
+
+void Rv40Reader::Rv40MetaUnitReader::PrereadRv40Unit()
+{
+    CHECK_AND_RETURN_LOG(inputFile_ && inputFile_->is_open(), "Input file not open");
+    CHECK_AND_RETURN_LOG(rv40Unit_ != nullptr, "rv40 unit buffer is nullptr");
+    CHECK_AND_RETURN_LOG(frameIndex_ < ES_RV40_LENGTH, "All Rv40 frames have been read");
+
+    uint32_t frameSize = ES_RV40[frameIndex_];
+    CHECK_AND_RETURN_LOG(frameSize > 0, "Invalid Rv40 frame size, index: %{public}u", frameIndex_);
+
+    rv40Unit_->resize(frameSize);
+    auto pBuffer = rv40Unit_->data();
+
+    inputFile_->read(reinterpret_cast<char*>(pBuffer), frameSize);
+    uint32_t bytesRead = static_cast<uint32_t>(inputFile_->gcount());
+
+    CHECK_AND_RETURN_LOG(bytesRead == frameSize,
+        "Failed to read full Rv40 frame. Expected: %{public}u, Got: %{public}u", frameSize, bytesRead);
+
+    frameIndex_++;
+}
+
+uint8_t* Rv40Reader::Rv40Detector::GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend)
+{
+    (void)addrstart;
+    (void)addrend;
+    return nullptr;
+}
+
+const uint8_t *Rv40Reader::Rv40Detector::GetRv40TypeAddr(const uint8_t *bufferAddr)
+{
+    return bufferAddr;
+}
+
+uint8_t Rv40Reader::Rv40Detector::GetRv40Type(const uint8_t *bufferAddr)
+{
+    if (!bufferAddr) {
+        return 0;
+    }
+    uint8_t type = bufferAddr[0];
+    switch (type) {
+        case 0x00: return NUM_ONE; // I
+        case 0x01: return NUM_TWO; // P
+        case 0x02: return NUM_THR; // B
+        default:   return 0; // UNSPEC
+    }
+}
+
+bool Rv40Reader::Rv40Detector::IsI(uint8_t rv40Type)
+{
+    return (rv40Type == 1);
+}
+#endif
+
+void CinepakReader::CinepakMetaUnitReader::PrereadFile()
+{
+    CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nallptr");
+    inputFile_->read((char *)prereadBuffer_.get(), PREREAD_BUFFER_SIZE);
+    prereadBufferSize_ = inputFile_->gcount();
+    pPrereadBuffer_ = 0;
+}
+
+int32_t CinepakReader::Init(const std::shared_ptr<CinepakReaderInfo> &info)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_ptr<std::ifstream> inputFile = std::make_unique<std::ifstream>(info->inPath.c_str(),
+                                                std::ios::binary | std::ios::in);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile != nullptr && inputFile->is_open(),
+                                      AV_ERR_INVALID_VAL, "Open input file failed");
+    cinepakUnitReader_= std::static_pointer_cast<CinepakUnitReader>(std::make_shared<CinepakMetaUnitReader>(
+                                      inputFile, info->isMainStream));
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(cinepakUnitReader_, AV_ERR_INVALID_VAL, "cinepak unit reader create failed");
+
+    cinepakDetector_ = std::static_pointer_cast<CinepakDetector>(
+        std::make_shared<CinepakDetector>());
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(cinepakDetector_, AV_ERR_INVALID_VAL, "Cinepak detector create failed");
+
+    return AV_ERR_OK;
+}
+
+uint8_t* CinepakReader::CinepakMetaUnitReader::GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend)
+{
+    return std::search(addrstart, addrend, std::begin(CINEPAK_HEAD), std::end(CINEPAK_HEAD));
+}
+
+const uint8_t* CinepakReader::CinepakDetector::GetCinepakTypeAddr(const uint8_t *bufferAddr)
+{
+    const uint32_t gSearchRange  = 1024;
+
+    auto pos = GetDelimiterPos(const_cast<uint8_t*>(bufferAddr), const_cast<uint8_t*>(bufferAddr + gSearchRange));
+    if (pos == const_cast<uint8_t*>(bufferAddr) + gSearchRange) {
+        return nullptr;
+    }
+    return pos;
+}
+
+uint8_t CinepakReader::CinepakDetector::GetCinepakType(const uint8_t *bufferAddr)
+{
+    const uint8_t *typeAddr = GetCinepakTypeAddr(bufferAddr);
+    if (typeAddr == nullptr) {
+        return MPEG4_UNSPECIFIED;
+    }
+    return (*typeAddr & CINEPAK_FRAME_TYPE_MASK) ? MPEG4_I : MPEG4_P;
+}
+
+void CinepakReader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize,
+                                   uint8_t frameType,
+                                   bool isEosFrame)
+{
+    (void) frameType;
+    attr.size = frameSize;
+    attr.pts = GetTimeUs();
+    attr.flags = isEosFrame ? AVCODEC_BUFFER_FLAG_EOS : 0;
+
+    if (isEosFrame) {
+        std::cout << "Input EOS Frame, frameCount = " << (frameInputCount_ + 1) << std::endl;
+    }
+}
+
+uint8_t* CinepakReader::CinepakDetector::GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend)
+{
+    return std::search(addrstart, addrend, std::begin(CINEPAK_HEAD), std::end(CINEPAK_HEAD));
+}
+
+int32_t CinepakReader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    int32_t frameSize = 0;
+    bool isEosFrame = false;
+
+    printf("[CinepakReader][FillBuffer] called frameIdx=%d, bufferAddr=0x%p\n",
+           frameInputCount_ + 1, bufferAddr);
+    if (bufferAddr == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(cinepakUnitReader_ != nullptr,
+        AV_ERR_INVALID_VAL,
+        "cinepakUnitReader");
+
+    auto ret = cinepakUnitReader_->ReadCinepakUnit(bufferAddr, frameSize, isEosFrame);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK,
+        AV_ERR_INVALID_VAL,
+        "ReadCinepakUnit failed");
+
+    uint8_t cinepakType = cinepakDetector_->GetCinepakType(bufferAddr);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(cinepakType != MPEG4_UNSPECIFIED, AVCS_ERR_INVALID_DATA,
+        "Failed to get cinepak type (frameInputCount_=%d)", frameInputCount_ + 1);
+    bufferAddr += frameSize;
+    FillBufferAttr(attr, frameSize, cinepakType, isEosFrame);
+    frameInputCount_++;
+
+    return AV_ERR_OK;
+}
+
+bool CinepakReader::CinepakDetector::IsI(uint8_t cinepakType)
+{
+    return (cinepakType == MPEG4_I);
+}
+
+bool CinepakReader::IsEOS()
+{
+    return cinepakUnitReader_ ? cinepakUnitReader_->IsEOS() : true;
+}
+
+uint8_t const *CinepakReader::CinepakUnitReader::GetNextCinepakUnitAddr()
+{
+    CHECK_AND_RETURN_RET_LOG(cinepakUnit_ != nullptr, nullptr, "cinepakUnit_ is nullptr");
+    return cinepakUnit_->data();
+}
+
+int32_t CinepakReader::CinepakMetaUnitReader::ReadCinepakUnit(uint8_t *bufferAddr,
+    int32_t &bufferSize, bool &isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL, "Got a invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(cinepakUnit_, AV_ERR_INVALID_VAL, "cinepak unit buffer is nullptr");
+    bufferSize = cinepakUnit_->size();
+    memcpy_s(bufferAddr, bufferSize, cinepakUnit_->data(), bufferSize);
+
+    if (!IsEOF()) {
+        isEosFrame = false;
+        PrereadCinepakUnit();
+    } else {
+        isEosFrame = true;
+        cinepakUnit_->clear();
+    }
+    return AV_ERR_OK;
+}
+
+CinepakReader::CinepakMetaUnitReader::CinepakMetaUnitReader(std::shared_ptr<std::ifstream> inputFile, bool isMainStream)
+{
+    inputFile_ = inputFile;
+    isMainStream_ = isMainStream;
+    prereadBuffer_ = std::make_unique<uint8_t []>(PREREAD_BUFFER_SIZE);
+    cinepakUnit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+    PrereadCinepakUnit();
+}
+
+bool CinepakReader::CinepakMetaUnitReader::IsEOS()
+{
+    return IsEOF() && cinepakUnit_->empty();
+}
+
+bool CinepakReader::CinepakMetaUnitReader::IsEOF()
+{
+    return frameIndex_ >= ES_CINEPAK_NORMAL_LEN;
+}
+
+uint32_t CinepakReader::CinepakMetaUnitReader::GetFrameLenth(uint32_t index)
+{
+    return ES_CINEPAK_NORMAL[index];
+}
+
+void CinepakReader::CinepakMetaUnitReader::PrereadCinepakUnit()
+{
+    CHECK_AND_RETURN_LOG(inputFile_ && inputFile_->is_open(), "Input file not open");
+    CHECK_AND_RETURN_LOG(cinepakUnit_ != nullptr, "cinepak unit buffer is nullptr");
+    CHECK_AND_RETURN_LOG(frameIndex_ < ES_CINEPAK_NORMAL_LEN,
+        "All cinepak frames have been read");
+
+    uint32_t frameSize = GetFrameLenth(frameIndex_);
+    cinepakUnit_->resize(frameSize + CINEPAK_HEAD_LEN);
+    auto pBuffer = cinepakUnit_->data();
+    CHECK_AND_RETURN_LOG(pBuffer != nullptr, "cinepakUnit_ data is nullptr");
+
+    memcpy_s(pBuffer, frameSize + CINEPAK_HEAD_LEN, CINEPAK_HEAD, CINEPAK_HEAD_LEN);
+    inputFile_->read(reinterpret_cast<char*>(pBuffer + CINEPAK_HEAD_LEN), frameSize);
+    uint32_t bytesRead = static_cast<uint32_t>(inputFile_->gcount());
+
+    CHECK_AND_RETURN_LOG(bytesRead == frameSize,
+        "Failed to read full frame. Expected: %u, Got: %u", frameSize, bytesRead);
+
+    frameIndex_++;
+}
 } // MediaAVCodec
 } // OHOS

@@ -32,6 +32,11 @@ namespace MediaAVCodec {
 
 constexpr uint32_t MAX_VIDEO_BITRATE = 300000000;
 constexpr uint32_t MAX_VIDEO_FRAME_RATE = 60;
+const uint32_t MIN_HEIGHT = 16;
+const uint32_t MAX_WIDTH = 1920;
+const uint32_t MAX_HEIGHT = 1080;
+const uint32_t MAX_FRAME_RATE = 30;
+const uint32_t MAX_BITRATE = 2097000;
 
 void CapsUnitTest::SetUpTestCase(void) {}
 
@@ -217,6 +222,8 @@ void CapsUnitTest::CheckVideoCaps(const std::shared_ptr<VideoCaps> &videoCaps) c
         CheckAVEncAVC(videoCaps);
     } else if (codecName.compare(AVCodecCodecName::VIDEO_DECODER_WMV3_NAME) == 0) {
         CheckAVDecWMV3(videoCaps);
+    } else if (codecName.compare(AVCodecCodecName::VIDEO_DECODER_CINEPAK_NAME) == 0) {
+        CheckAVDecCINEPAK(videoCaps);
     }
 }
 
@@ -305,6 +312,38 @@ void CapsUnitTest::CheckAVDecWMV3(const std::shared_ptr<VideoCaps> &videoCaps) c
     EXPECT_LE(DEFAULT_HEIGHT_RANGE.maxVal, videoCaps->GetSupportedHeight().maxVal);
     EXPECT_GE(0, videoCaps->GetSupportedFrameRate().minVal);
     EXPECT_LE(MAX_VIDEO_FRAME_RATE, videoCaps->GetSupportedFrameRate().maxVal);
+    EXPECT_LE(0, videoCaps->GetSupportedQuality().minVal);
+    EXPECT_LE(0, videoCaps->GetSupportedQuality().maxVal);
+    EXPECT_LE(0, videoCaps->GetSupportedComplexity().minVal);
+    EXPECT_LE(0, videoCaps->GetSupportedComplexity().maxVal);
+    EXPECT_LT(0, videoCaps->GetSupportedFormats().size());
+    EXPECT_LT(0, videoCaps->GetSupportedProfiles().size());
+    EXPECT_LE(0, videoCaps->GetSupportedBitrateMode().size());
+    EXPECT_LE(0, videoCaps->GetSupportedLevels().size());
+    EXPECT_EQ(false, videoCaps->IsSupportDynamicIframe());
+    EXPECT_EQ(false, videoCaps->IsSizeAndRateSupported(videoCaps->GetSupportedWidth().minVal,
+                                                       videoCaps->GetSupportedHeight().maxVal,
+                                                       videoCaps->GetSupportedFrameRate().maxVal + 1));
+}
+
+void CapsUnitTest::CheckAVDecCINEPAK(const std::shared_ptr<VideoCaps> &videoCaps) const
+{
+    std::shared_ptr<AVCodecInfo> videoCodecCaps = videoCaps->GetCodecInfo();
+    EXPECT_EQ(AVCODEC_TYPE_VIDEO_DECODER, videoCodecCaps->GetType());
+    EXPECT_EQ(CodecMimeType::VIDEO_CINEPAK, videoCodecCaps->GetMimeType());
+    EXPECT_EQ(0, videoCodecCaps->IsHardwareAccelerated());
+    EXPECT_EQ(1, videoCodecCaps->IsSoftwareOnly());
+    EXPECT_EQ(0, videoCodecCaps->IsVendor());
+    EXPECT_GE(1, videoCaps->GetSupportedBitrate().minVal);
+    EXPECT_LE(MAX_BITRATE, videoCaps->GetSupportedBitrate().maxVal);
+    EXPECT_LE(0, videoCaps->GetSupportedWidthAlignment());
+    EXPECT_LE(0, videoCaps->GetSupportedHeightAlignment());
+    EXPECT_GE(MIN_HEIGHT, videoCaps->GetSupportedWidth().minVal);
+    EXPECT_LE(MAX_WIDTH, videoCaps->GetSupportedWidth().maxVal);
+    EXPECT_GE(MIN_HEIGHT, videoCaps->GetSupportedHeight().minVal);
+    EXPECT_LE(MAX_HEIGHT, videoCaps->GetSupportedHeight().maxVal);
+    EXPECT_GE(1, videoCaps->GetSupportedFrameRate().minVal);
+    EXPECT_LE(MAX_FRAME_RATE, videoCaps->GetSupportedFrameRate().maxVal);
     EXPECT_LE(0, videoCaps->GetSupportedQuality().minVal);
     EXPECT_LE(0, videoCaps->GetSupportedQuality().maxVal);
     EXPECT_LE(0, videoCaps->GetSupportedComplexity().minVal);
@@ -1083,7 +1122,6 @@ HWTEST_F(CapsUnitTest, AVCaps_NullvalToCapi_001, TestSize.Level1)
     EXPECT_EQ(graphicFormats, nullptr);
     EXPECT_EQ(graphicFormatNum, 0);
 
-
     const int32_t *profiles = nullptr;
     uint32_t profileNum = -1;
     EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(nullptr, &profiles, &profileNum), AV_ERR_INVALID_VAL);
@@ -1597,7 +1635,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoHeightRangeForWidth_001, TestSize.Level1)
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoHeightRangeForWidth(cap, DEFAULT_WIDTH, &range), AV_ERR_OK);
     EXPECT_EQ(16, range.minVal);
-    EXPECT_EQ(1080, range.maxVal);
+    EXPECT_EQ(MAX_HEIGHT, range.maxVal);
 }
 
 /**
@@ -1628,7 +1666,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoHeightRange_001, TestSize.Level1)
     EXPECT_NE(cap, nullptr);
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoHeightRange(cap, &range), AV_ERR_OK);
-    EXPECT_EQ(16, range.minVal);
+    EXPECT_EQ(MIN_HEIGHT, range.minVal);
     EXPECT_EQ(1920, range.maxVal);
 }
 
@@ -1715,7 +1753,7 @@ HWTEST_F(CapsUnitTest, AVCaps_GetVideoFrameRateRange_001, TestSize.Level1)
     OH_AVRange range = {-1, -1};
     EXPECT_EQ(OH_AVCapability_GetVideoFrameRateRange(cap, &range), AV_ERR_OK);
     EXPECT_EQ(0, range.minVal);
-    EXPECT_EQ(30, range.maxVal);
+    EXPECT_EQ(MAX_FRAME_RATE, range.maxVal);
 }
 
 /**

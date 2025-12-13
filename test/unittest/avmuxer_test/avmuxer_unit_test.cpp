@@ -24,6 +24,7 @@
 #ifdef AVMUXER_UNITTEST_CAPI
 #include "native_avmuxer.h"
 #include "native_avformat.h"
+#include "native_avsource.h"
 #endif
 
 using namespace testing::ext;
@@ -2401,6 +2402,44 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Audio_Auxiliary, TestSize.Level0) {
     ASSERT_EQ(avmuxer_->Stop(), 0);
 }
 #ifdef AVMUXER_UNITTEST_CAPI
+
+/**
+ * @tc.name: Muxer_GENRE_001
+ * @tc.desc: Muxer add genre data test
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_GENRE_001, TestSize.Level1)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_GENRE_001.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    ASSERT_TRUE(avmuxer_->CreateMuxer(fd_, outputFormat));
+    std::shared_ptr<FormatMock> fileFormat = FormatMockFactory::CreateFormat();
+    fileFormat->PutStringValue(OH_MD_KEY_GENRE, "test_genre_str");
+    avmuxer_->SetFormat(fileFormat);
+
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+    videoParams->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
+    int32_t videoTrackId = -1;
+    int32_t ret = avmuxer_->AddTrack(videoTrackId, videoParams);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+    ASSERT_EQ(avmuxer_->Destroy(), 0);
+
+    struct stat fileStatus {};
+    ASSERT_EQ(stat(outputFile.c_str(), &fileStatus), 0);
+    int64_t fileSize = static_cast<int64_t>(fileStatus.st_size);
+    OH_AVSource *source = OH_AVSource_CreateWithFD(fd_, 0, fileSize);
+    OH_AVFormat *sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *genreGet;
+    ASSERT_NE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_GENRE, &genreGet), false);
+    ASSERT_EQ(memcmp(genreGet, "test_genre_str", strlen(genreGet)), 0);
+    OH_AVSource_Destroy(source);
+}
+
 /**
  * @tc.name: Muxer_Destroy_001
  * @tc.desc: Muxer Destroy normal

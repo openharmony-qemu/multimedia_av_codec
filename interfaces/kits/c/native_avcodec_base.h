@@ -350,6 +350,27 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_H263;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_WMV3;
 
 /**
+ * @brief Enumerates the MIME type of video CINEPAK codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_CINEPAK;
+
+/**
+ * @brief Enumerates the MIME type of video rv30 codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_RV30;
+
+/**
+ * @brief Enumerates the MIME type of video rv40 codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_RV40;
+
+/**
  * @brief Enumerates the types of audio and video muxer
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
@@ -509,6 +530,30 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_TRUEHD;
  * @since 23
  */
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_TWINVQ;
+
+/**
+ * @brief Enumerates the mime types of audio DVAUDIO codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_DVAUDIO;
+
+/**
+ * @brief Enumerates the mime types of audio DTS codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_DTS;
+
+/**
+ * @brief Enumerates the mime types of audio COOK codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_COOK;
 
 /**
  * @brief Key for timeStamp in surfacebuffer, value type is int64_t.
@@ -1187,6 +1232,16 @@ typedef enum OH_AVCProfile {
 } OH_AVCProfile;
 
 /**
+ * @brief CINEPAK Profile
+ * @since 23
+ */
+typedef enum OH_CinepakFormat {
+    CINEPAK_FORMAT_STANDARD = 0,
+    CINEPAK_FORMAT_HIGH_QUALITY = 1,
+    CINEPAK_FORMAT_LOW_LATENCY = 2
+} OH_CinepakProfile;
+
+/**
  * @brief MPEG2 Profile
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
@@ -1726,6 +1781,19 @@ typedef enum OH_WMV3Level {
     /** HIGH Level */
     WMV3_LEVEL_HIGH = 2
 } OH_WMV3Level;
+
+/**
+ * @brief Cinepak Video Codec Level
+ * @since 23
+ */
+typedef enum OH_CinepakLevel {
+    /** LOW Level */
+    CINEPAK_LEVEL_LOW = 0,
+    /** MEDIUM Level */
+    CINEPAK_LEVEL_MEDIUM = 1,
+    /** HIGH Level */
+    CINEPAK_LEVEL_HIGH = 2
+} OH_CinepakLevel;
 
 /**
  * @brief AVC Level.

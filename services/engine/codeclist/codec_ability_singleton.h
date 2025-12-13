@@ -36,6 +36,7 @@ public:
     std::unordered_map<std::string, CodecType> GetNameCodecTypeMap();
     std::unordered_map<std::string, std::vector<size_t>> GetMimeCapIdxMap();
     int32_t GetVideoCodecTypeByCodecName(const std::string &codecName);
+    int32_t Dump(int32_t fd, const std::vector<std::u16string> &args);
 
 private:
     CodecAbilitySingleton();

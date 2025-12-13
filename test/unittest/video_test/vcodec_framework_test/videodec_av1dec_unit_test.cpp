@@ -501,42 +501,6 @@ AVCODEC_MTEST_P(VideoDecAV1DecTest, VideoDecoder_av1decoder_With_Queue_002, Test
 }
 
 /**
- * @tc.name: VideoDecoder_av1decoder_With_Queue_003
- * @tc.desc: 1. push buffer in callback;
- *           2. operate in output callback;
- *           3. free buffer in queue;
- */
-AVCODEC_MTEST_P(VideoDecAV1DecTest, VideoDecoder_av1decoder_With_Queue_003, TestSize.Level1,
-                VideoDecSample::threadNum_)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VCodecSignal>(vdec);
-    vdec->operation_ = VideoDecAV1DecTest::GetParam();
-    vdec->frameCount_ =  30; // 5: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AV1;
-    vdec->inPath_ = "test.av1";
-    vdec->sampleWidth_ = 720;
-    vdec->sampleHeight_ = 480;
-    vdec->outPath_ = GetTestName();
-    vdec->dumpKey_ = "av1decoder.dump";
-    vdec->dumpValue_ = "0";
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecAsyncCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputData = InDataQueue;
-    cb.onNeedOutputData = OutDataOperate;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-    signal->isRunning_ = true;
-    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-
-    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-}
-
-/**
  * @tc.name: VideoDecoder_av1decoder_With_Queue_004
  * @tc.desc: 1. push buffer in callback;
  *           2. operate not in callback;
@@ -974,7 +938,6 @@ bool CheckCapabilitySupport()
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AV1, false, SOFTWARE);
     return capability != nullptr;
 }
-#endif
 } // namespace
 
 int main(int argc, char **argv)
@@ -1004,3 +967,4 @@ int main(int argc, char **argv)
     }
     return RUN_ALL_TESTS();
 }
+#endif

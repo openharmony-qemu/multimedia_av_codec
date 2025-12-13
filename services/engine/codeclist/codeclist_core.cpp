@@ -41,6 +41,7 @@ const std::vector<std::string_view> MIME_VEC = {
     OHOS::MediaAVCodec::CodecMimeType::VIDEO_VC1,
     OHOS::MediaAVCodec::CodecMimeType::VIDEO_WMV3,
     OHOS::MediaAVCodec::CodecMimeType::VIDEO_WVC1,
+    OHOS::MediaAVCodec::CodecMimeType::VIDEO_CINEPAK,
 
     OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_NB,
     OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_WB,
@@ -99,6 +100,8 @@ const std::vector<std::string_view> MIME_VEC = {
     OHOS::MediaAVCodec::CodecMimeType::AUDIO_ILBC,
     OHOS::MediaAVCodec::CodecMimeType::AUDIO_TRUEHD,
     OHOS::MediaAVCodec::CodecMimeType::AUDIO_TWINVQ,
+    OHOS::MediaAVCodec::CodecMimeType::AUDIO_DVAUDIO,
+    OHOS::MediaAVCodec::CodecMimeType::AUDIO_DTS,
 };
 } // namespace
 
