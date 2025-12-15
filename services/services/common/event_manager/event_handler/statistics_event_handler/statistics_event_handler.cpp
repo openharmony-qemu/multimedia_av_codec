@@ -32,21 +32,18 @@ using AVCodecSpecifiedType = std::pair<bool, std::string>;
 using VCodecSpecifiedType = std::pair<VideoCodecType, std::string>;
 
 namespace {
-class EventStrings {
-public:
-    static constexpr const char DOMAIN[] = "AV_CODEC";
-    static constexpr const char EVENT_STATISTICS_INFO[] = "STATISTICS_INFO";
-    static constexpr const char QUERY_CAP_TIMES[] = "QueryCapTimes";
-    static constexpr const char CREATE_CODEC_TIMES[] = "CreateCodecTimes";
-    static constexpr const char CODEC_SPECIFIED_INFO[] = "CodecSpecifiedInfo";
-    static constexpr const char APP_NAME_DICT[] = "AppNameDict";
-    static constexpr const char CAP_UNSUPPORTED_INFO[] = "CapUnsupportedInfo";
-    static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[] = "QueryCapUnsupportedInfo";
-    static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[] = "CreateCodecUnsupportedInfo";
-    static constexpr const char DEC_ABNORMAL_OCCUPATION_INFO[] = "DecAbnormalOccupationInfo";
-    static constexpr const char SPEED_DECODING_INFO[] = "SpeedDecodingInfo";
-    static constexpr const char CODEC_ERROR_INFO[] = "CodecErrorInfo";
-};
+static constexpr const char DOMAIN[] = "AV_CODEC";
+static constexpr const char EVENT_STATISTICS_INFO[] = "STATISTICS_INFO";
+static constexpr const char QUERY_CAP_TIMES[] = "QueryCapTimes";
+static constexpr const char CREATE_CODEC_TIMES[] = "CreateCodecTimes";
+static constexpr const char CODEC_SPECIFIED_INFO[] = "CodecSpecifiedInfo";
+static constexpr const char APP_NAME_DICT[] = "AppNameDict";
+static constexpr const char CAP_UNSUPPORTED_INFO[] = "CapUnsupportedInfo";
+static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[] = "QueryCapUnsupportedInfo";
+static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[] = "CreateCodecUnsupportedInfo";
+static constexpr const char DEC_ABNORMAL_OCCUPATION_INFO[] = "DecAbnormalOccupationInfo";
+static constexpr const char SPEED_DECODING_INFO[] = "SpeedDecodingInfo";
+static constexpr const char CODEC_ERROR_INFO[] = "CodecErrorInfo";
 
 inline void HashCombine(std::size_t &seed, std::size_t value)
 {
@@ -199,7 +196,7 @@ public:
         for (const auto &[name, index] : appNameDict_) {
             cJSON_AddNumberToObject(cJSON_AddObjectToObject(jsonObj.get(), name.c_str()), name.c_str(), index);
         }
-        submitInfo.jsonObjects[EventStrings::APP_NAME_DICT] = std::move(jsonObj);
+        submitInfo.jsonObjects[APP_NAME_DICT] = std::move(jsonObj);
     };
 
     void Reset()
@@ -294,7 +291,7 @@ public:
             std::string key = typeIter->second + "_" + mimeType;
             cJSON_AddNumberToObject(cJSON_AddObjectToObject(jsonObj.get(), key.c_str()), key.c_str(), count);
         }
-        submitInfo.jsonObjects[EventStrings::CODEC_SPECIFIED_INFO] = std::move(jsonObj);
+        submitInfo.jsonObjects[CODEC_SPECIFIED_INFO] = std::move(jsonObj);
         AppNameIndexInfo::GetInstance().OnSummateEventInfo(submitInfo);
     }
 
@@ -374,9 +371,9 @@ public:
         };
 
         auto jsonObj = std::shared_ptr<cJSON>(cJSON_CreateObject(), cJSON_Delete);
-        addInfoToJsonObj(jsonObj, EventStrings::QUERY_CAP_UNSUPPORTED_INFO, queryCapUnsupportedInfo_);
-        addInfoToJsonObj(jsonObj, EventStrings::CREATE_CODEC_UNSUPPORTED_INFO, createCodecUnsupportedInfo_);
-        submitInfo.jsonObjects[EventStrings::CAP_UNSUPPORTED_INFO] = std::move(jsonObj);
+        addInfoToJsonObj(jsonObj, QUERY_CAP_UNSUPPORTED_INFO, queryCapUnsupportedInfo_);
+        addInfoToJsonObj(jsonObj, CREATE_CODEC_UNSUPPORTED_INFO, createCodecUnsupportedInfo_);
+        submitInfo.jsonObjects[CAP_UNSUPPORTED_INFO] = std::move(jsonObj);
     }
 
     void ResetEventInfo() override
@@ -504,7 +501,7 @@ public:
             cJSON_AddNumberToObject(longTimeInBgInfoJsonObj, std::to_string(appIndex).c_str(), elapsedTime);
         }
 
-        submitInfo.jsonObjects[EventStrings::DEC_ABNORMAL_OCCUPATION_INFO] = std::move(jsonObj);
+        submitInfo.jsonObjects[DEC_ABNORMAL_OCCUPATION_INFO] = std::move(jsonObj);
     }
 
     void ResetEventInfo() override
@@ -521,8 +518,7 @@ private:
     {
         StatisticsEventInfo::GetInstance().RegisterEventHook(
             StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO,
-            [this, callerNameIndex] (const Media::Meta &eventMeta) -> bool
-            {
+            [this, callerNameIndex] (const Media::Meta &eventMeta) -> bool {
                 if (!isInOccupationHDecEvent_.load()) {
                     return true;
                 }
@@ -571,7 +567,7 @@ public:
         if (jsonObj == nullptr) {
             return;
         }
-        auto speedRootObj = cJSON_AddObjectToObject(jsonObj.get(), EventStrings::SPEED_DECODING_INFO);
+        auto speedRootObj = cJSON_AddObjectToObject(jsonObj.get(), SPEED_DECODING_INFO);
         std::lock_guard<std::mutex> lock(mutex_);
         auto totalObj = cJSON_AddObjectToObject(speedRootObj, "Total");
         cJSON_AddNumberToObject(totalObj, "Duration", decDurationTotal_);
@@ -601,7 +597,7 @@ public:
         cJSON_AddNumberToObject(speed300xObj, "Duration", decDuration300x_);
         cJSON_AddNumberToObject(speed300xObj, "Count", decCnt300x_);
 
-        submitInfo.jsonObjects[EventStrings::SPEED_DECODING_INFO] = std::move(jsonObj);
+        submitInfo.jsonObjects[SPEED_DECODING_INFO] = std::move(jsonObj);
     }
 
     void ResetEventInfo() override
@@ -688,7 +684,7 @@ public:
         if (jsonObj == nullptr) {
             return;
         }
-        auto codecErrorRootObj = cJSON_AddObjectToObject(jsonObj.get(), EventStrings::CODEC_ERROR_INFO);
+        auto codecErrorRootObj = cJSON_AddObjectToObject(jsonObj.get(), CODEC_ERROR_INFO);
         for (const auto &[codecErrorKey, count] : errorCodeInfo_) {
             const auto &[vcodecType, mimeType, errorCode] = codecErrorKey;
             if (vcodecType <= VideoCodecType::UNKNOWN || vcodecType >= VideoCodecType::END || mimeType.empty()) {
@@ -702,7 +698,7 @@ public:
             cJSON_AddNumberToObject(codecErrorRootObj, key.c_str(), count);
         }
 
-        submitInfo.jsonObjects[EventStrings::CODEC_ERROR_INFO] = std::move(jsonObj);
+        submitInfo.jsonObjects[CODEC_ERROR_INFO] = std::move(jsonObj);
     }
 
     void ResetEventInfo() override
@@ -768,17 +764,17 @@ void StatisticsEventInfo::OnSubmitEventInfo()
     };
 
     HiSysEventWrite(
-        EventStrings::DOMAIN, EventStrings::EVENT_STATISTICS_INFO,
+        DOMAIN, EVENT_STATISTICS_INFO,
         OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
-        EventStrings::QUERY_CAP_TIMES,               submitInfo.queryCapTimes,
-        EventStrings::CREATE_CODEC_TIMES,            submitInfo.createCodecTimes,
-        EventStrings::CODEC_SPECIFIED_INFO,          getJsonField(EventStrings::CODEC_SPECIFIED_INFO).CStr(),
-        EventStrings::APP_NAME_DICT,                 getJsonField(EventStrings::APP_NAME_DICT).CStr(),
-        EventStrings::QUERY_CAP_UNSUPPORTED_INFO,    getJsonField(EventStrings::QUERY_CAP_UNSUPPORTED_INFO).CStr(),
-        EventStrings::CREATE_CODEC_UNSUPPORTED_INFO, getJsonField(EventStrings::CREATE_CODEC_UNSUPPORTED_INFO).CStr(),
-        EventStrings::DEC_ABNORMAL_OCCUPATION_INFO,  getJsonField(EventStrings::DEC_ABNORMAL_OCCUPATION_INFO).CStr(),
-        EventStrings::SPEED_DECODING_INFO,           getJsonField(EventStrings::SPEED_DECODING_INFO).CStr(),
-        EventStrings::CODEC_ERROR_INFO,              getJsonField(EventStrings::CODEC_ERROR_INFO).CStr()
+        QUERY_CAP_TIMES,                    submitInfo.queryCapTimes,
+        CREATE_CODEC_TIMES,                 submitInfo.createCodecTimes,
+        CODEC_SPECIFIED_INFO,               getJsonField(CODEC_SPECIFIED_INFO).CStr(),
+        APP_NAME_DICT,                      getJsonField(APP_NAME_DICT).CStr(),
+        QUERY_CAP_UNSUPPORTED_INFO,         getJsonField(QUERY_CAP_UNSUPPORTED_INFO).CStr(),
+        CREATE_CODEC_UNSUPPORTED_INFO,      getJsonField(CREATE_CODEC_UNSUPPORTED_INFO).CStr(),
+        DEC_ABNORMAL_OCCUPATION_INFO,       getJsonField(DEC_ABNORMAL_OCCUPATION_INFO).CStr(),
+        SPEED_DECODING_INFO,                getJsonField(SPEED_DECODING_INFO).CStr(),
+        CODEC_ERROR_INFO,                   getJsonField(CODEC_ERROR_INFO).CStr()
     );
 
     ResetEventInfo();
