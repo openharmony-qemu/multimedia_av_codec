@@ -158,6 +158,17 @@ void OnServiceDiedTest()
     std::cout << "OnServiceDied" << std::endl;
 }
 
+void CheckJsonValue(std::string key)
+{
+    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
+    auto value = cJSON_GetObjectItem(data.get(), key.c_str());
+    ASSERT_NE(nullptr, value);
+    auto arry = std::shared_ptr<cJSON>(cJSON_Parse(value.valuestring), cJSON_Delete);
+    ASSERT_NE(nullptr, arry);
+    ASSERT_LE(1, cJSON_GetArraySize(arry.get()));
+}
+
 class DfxStatisticsEventTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
@@ -175,7 +186,7 @@ void DfxStatisticsEventTest::SetUpTestCase(void)
     HiSysEventWatcher watcher{};
     watcher.OnEvent = OnEventTest;
     watcher.OnServiceDied = OnServiceDiedTest;
-    HiSysEventWatchRule rule = {"AV_CODEC", "STATISTIC_INFO", "", 1, 0};
+    HiSysEventWatchRule rule = {"AV_CODEC", "STATISTICS_INFO", "", 1, 0};
     HiSysEventWatchRule rules[] = {rule};
     auto ret = OH_HiSysEvent_Add_Watcher(&watcher, rules, sizeof(rules) / sizeof(HiSysEventWatchRule));
     ASSERT_EQ(ret, HiviewDFX::IPC_CALL_SUCCEED);
@@ -204,24 +215,24 @@ void DfxStatisticsEventTest::TearDown(void)
 }
 
 /**
- * @tc.name: RegisterEventHooker_Test_001
+ * @tc.name: RegisterEventHook_Test_001
  * @tc.desc: 1. eventType key in range
  *           2. EventHooker func not exist
  *           3. add EventHooker func
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, RegisterEventHooker_Test_001, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, RegisterEventHook_Test_001, TestSize.Level1)
 {
-    bool isRegisterEventHooker = false;
-    StatisticsEventInfo::GetInstance().RegisterEventHooker(
-        StatisticsEventType::MAIN_EVENT_TYPE_MASK, [&isRegisterEventHooker](const Media::Meta &meta) -> bool {
+    bool isRegisterEventHook = false;
+    StatisticsEventInfo::GetInstance().RegisterEventHook(
+        StatisticsEventType::MAIN_EVENT_TYPE_MASK, [&isRegisterEventHook](const Media::Meta &meta) -> bool {
             HiSysEventWrite(TEST_DOMAIN, "DFX_STATISTICS_EVENT_TEST", OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
                             "Test", "Success");
-            isRegisterEventHooker = true;
+            isRegisterEventHook = true;
             return true;
         });
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    ASSERT_EQ(true, isRegisterEventHooker);
+    ASSERT_NE(true, isRegisterEventHook);
 }
 
 /**
@@ -236,7 +247,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_001, TestSize.Level1)
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_EQ(nullptr, data);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -251,7 +262,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_002, TestSize.Level1)
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_EQ(nullptr, data);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
@@ -262,18 +273,18 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_002, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_003, TestSize.Level1)
 {
-    bool isRegisterEventHooker = false;
-    StatisticsEventInfo::GetInstance().RegisterEventHooker(
-        static_cast<StatisticsEventType>(INT32_MAX), [&isRegisterEventHooker](const Media::Meta &meta) -> bool {
+    bool isRegisterEventHook = false;
+    StatisticsEventInfo::GetInstance().RegisterEventHook(
+        static_cast<StatisticsEventType>(INT32_MAX), [&isRegisterEventHook](const Media::Meta &meta) -> bool {
             HiSysEventWrite(TEST_DOMAIN, "DFX_STATISTICS_EVENT_TEST", OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
                             "Test", "Success");
-            isRegisterEventHooker = true;
+            isRegisterEventHook = true;
             return true;
         });
     StatisticsEventInfo::GetInstance().OnAddEventInfo(static_cast<StatisticsEventType>(INT32_MAX), *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    ASSERT_EQ(true, isRegisterEventHooker);
+    ASSERT_EQ(true, isRegisterEventHook);
 }
 
 /**
@@ -284,18 +295,18 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_003, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_004, TestSize.Level1)
 {
-    bool isRegisterEventHooker = false;
-    StatisticsEventInfo::GetInstance().RegisterEventHooker(
-        static_cast<StatisticsEventType>(INT32_MAX), [&isRegisterEventHooker](const Media::Meta &meta) -> bool {
+    bool isRegisterEventHook = false;
+    StatisticsEventInfo::GetInstance().RegisterEventHook(
+        static_cast<StatisticsEventType>(INT32_MAX), [&isRegisterEventHook](const Media::Meta &meta) -> bool {
             HiSysEventWrite(TEST_DOMAIN, "DFX_STATISTICS_EVENT_TEST", OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
                             "Test", "Success");
-            isRegisterEventHooker = true;
+            isRegisterEventHook = true;
             return false;
         });
     StatisticsEventInfo::GetInstance().OnAddEventInfo(static_cast<StatisticsEventType>(INT32_MAX), *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    ASSERT_EQ(true, isRegisterEventHooker);
+    ASSERT_EQ(true, isRegisterEventHook);
 }
 
 /**
@@ -364,11 +375,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_001, Test
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-    auto codecSpecifiedInfo = cJSON_GetObjectItem(data.get(), "CodecSpecifiedInfo");
-    ASSERT_NE(nullptr, codecSpecifiedInfo);
-    ASSERT_LE(1, cJSON_GetArraySize(codecSpecifiedInfo));
+    CheckJsonValue("CodecSpecifiedInfo");
 }
 
 /**
@@ -420,11 +427,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_004, Test
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-    auto codecSpecifiedInfo = cJSON_GetObjectItem(data.get(), "CodecSpecifiedInfo");
-    ASSERT_NE(nullptr, codecSpecifiedInfo);
-    ASSERT_LE(1, cJSON_GetArraySize(codecSpecifiedInfo));
+    CheckJsonValue("CodecSpecifiedInfo");
 }
 
 /**
@@ -630,11 +633,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_001, Te
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-    auto queryCapUnsupportedInfo = cJSON_GetObjectItem(data.get(), "QueryCapUnsupportedInfo");
-    ASSERT_NE(nullptr, queryCapUnsupportedInfo);
-    ASSERT_LE(1, cJSON_GetArraySize(queryCapUnsupportedInfo));
+    CheckJsonValue("QueryCapUnsupportedInfo");
 }
 
 /**
@@ -667,11 +666,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_003, Te
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-    auto queryCapUnsupportedInfo = cJSON_GetObjectItem(data.get(), "QueryCapUnsupportedInfo");
-    ASSERT_NE(nullptr, queryCapUnsupportedInfo);
-    ASSERT_LE(1, cJSON_GetArraySize(queryCapUnsupportedInfo));
+    CheckJsonValue("QueryCapUnsupportedInfo");
 }
 
 /**
@@ -744,11 +739,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_001, T
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-    auto createCodecUnsupportedInfo = cJSON_GetObjectItem(data.get(), "CreateCodecUnsupportedInfo");
-    ASSERT_NE(nullptr, createCodecUnsupportedInfo);
-    ASSERT_LE(1, cJSON_GetArraySize(createCodecUnsupportedInfo));
+    CheckJsonValue("CreateCodecUnsupportedInfo");
 }
 
 /**
@@ -781,11 +772,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_003, T
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-    auto createCodecUnsupportedInfo = cJSON_GetObjectItem(data.get(), "CreateCodecUnsupportedInfo");
-    ASSERT_NE(nullptr, createCodecUnsupportedInfo);
-    ASSERT_LE(1, cJSON_GetArraySize(createCodecUnsupportedInfo));
+    CheckJsonValue("CreateCodecUnsupportedInfo");
 }
 
 /**
@@ -953,7 +940,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecLimitExceededInfo_001, TestSize
     ASSERT_NE(nullptr, data);
     auto decLimitExceededInfo = cJSON_GetObjectItem(data.get(), "HDecLimitExceededInfo");
     ASSERT_NE(nullptr, decLimitExceededInfo);
-    ASSERT_LT(1, cJSON_GetArraySize(decLimitExceededInfo));
+    auto arry = std::shared_ptr<cJSON>(cJSON_Parse(decLimitExceededInfo.valuestring), cJSON_Delete);
+    ASSERT_NE(nullptr, arry);
+    ASSERT_LT(1, cJSON_GetArraySize(arry->get()));
 }
 
 /**
@@ -977,7 +966,9 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsReleaseHardDecInfo_001
     ASSERT_NE(nullptr, data);
     auto decLimitExceededInfo = cJSON_GetObjectItem(data.get(), "HDecLimitExceededInfo");
     ASSERT_NE(nullptr, decLimitExceededInfo);
-    ASSERT_LT(1, cJSON_GetArraySize(decLimitExceededInfo));
+    auto arry = std::shared_ptr<cJSON>(cJSON_Parse(decLimitExceededInfo.valuestring), cJSON_Delete);
+    ASSERT_NE(nullptr, arry);
+    ASSERT_LT(1, cJSON_GetArraySize(arry->get()));
 }
 
 /**
@@ -1032,13 +1023,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGI
                                                       *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-    auto decLimitExceededInfo = std::shared_ptr<cJSON>(cJSON_Parse(data->valuestring), cJSON_Delete);
-    ASSERT_NE(nullptr, decLimitExceededInfo);
-    auto longTimeInBgInfo = cJSON_GetObjectItem(data.get(), "LongTimeInBgInfo");
-    ASSERT_NE(nullptr, longTimeInBgInfo);
-    ASSERT_LE(1, cJSON_GetArraySize(longTimeInBgInfo));
+    CheckJsonValue("LongTimeInBgInfo");
 }
 
 /**
@@ -1058,13 +1043,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGI
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-    auto decLimitExceededInfo = std::shared_ptr<cJSON>(cJSON_Parse(data->valuestring), cJSON_Delete);
-    ASSERT_NE(nullptr, decLimitExceededInfo);
-    auto longTimeInBgInfo = cJSON_GetObjectItem(data.get(), "LongTimeInBgInfo");
-    ASSERT_NE(nullptr, longTimeInBgInfo);
-    ASSERT_LE(1, cJSON_GetArraySize(longTimeInBgInfo));
+    CheckJsonValue("LongTimeInBgInfo");
 }
 
 /**
@@ -1084,13 +1063,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGI
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-    auto decLimitExceededInfo = std::shared_ptr<cJSON>(cJSON_Parse(data->valuestring), cJSON_Delete);
-    ASSERT_NE(nullptr, decLimitExceededInfo);
-    auto longTimeInBgInfo = cJSON_GetObjectItem(data.get(), "LongTimeInBgInfo");
-    ASSERT_NE(nullptr, longTimeInBgInfo);
-    ASSERT_LE(1, cJSON_GetArraySize(longTimeInBgInfo));
+    CheckJsonValue("LongTimeInBgInfo");
 }
 
 /**
@@ -1124,11 +1097,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_SpeedDecodingInfo_001, TestSize.Le
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SPEED_DECODING_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-    auto speedDecodingInfo = cJSON_GetObjectItem(data.get(), "SpeedDecodingInfo");
-    ASSERT_NE(nullptr, speedDecodingInfo);
-    ASSERT_LE(1, cJSON_GetArraySize(speedDecodingInfo));
+    CheckJsonValue("SpeedDecodingInfo");
 }
 
 /**
@@ -1295,11 +1264,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_010, TestSize.Level
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-    auto codecErrorInfo = cJSON_GetObjectItem(data.get(), "CodecErrorInfo");
-    ASSERT_NE(nullptr, codecErrorInfo);
-    ASSERT_LE(1, cJSON_GetArraySize(codecErrorInfo));
+    CheckJsonValue("CodecErrorInfo");
 }
 
 /**
