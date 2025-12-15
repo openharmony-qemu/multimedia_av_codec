@@ -85,6 +85,9 @@ int32_t AudioWMAPluginUnitTest::CreateWmaDecoder()
     inData_.resize(10240);  // 10240
     decoderMock_ = AudioDecoderMockBase::CreateDecoder();
     inputFile_ = std::make_unique<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
+    if (!inputFile_->good()) {
+        return -1;
+    }
     inputFile_->read(reinterpret_cast<char *>(&size), sizeof(size));
     std::vector<uint8_t> codecConfig(size, 0);
     inputFile_->read(reinterpret_cast<char *>(codecConfig.data()), size);
@@ -307,7 +310,7 @@ HWTEST_F(AudioWMAPluginUnitTest, WMAPro_GetParameter_CheckOutputFormat, TestSize
 
 HWTEST_F(AudioWMAPluginUnitTest, WMAPro_Write_Frame, TestSize.Level1)
 {
-    CreateWmaDecoder();
+    ASSERT_EQ(CreateWmaDecoder(), 0);
     int32_t outSize = 0;
     int32_t i = 0;
     while (FillInputData() == 0) {
