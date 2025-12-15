@@ -18,6 +18,8 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include <vector>
+#include <iostream>
+#include <fstream>
 #include "plugin/plugin_manager_v2.h"
 
 #include "meta/format.h"
@@ -25,6 +27,7 @@
 #include "avcodec_codec_name.h"
 #include "meta/mime_type.h"
 #include "plugin/codec_plugin.h"
+#include "audio_decoder_mock_base.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -35,6 +38,7 @@ namespace {
 constexpr int32_t VALID_SR = 44100;
 constexpr int32_t INVALID_SR_0 = 0;
 constexpr int32_t INVALID_SR_N = -48000;
+constexpr std::string_view INPUT_FILE_PATH = "/data/test/media/wma_2c_44100hz_128k.dat";
 
 constexpr Plugins::AudioSampleFormat S16 = Plugins::AudioSampleFormat::SAMPLE_S16LE;
 constexpr Plugins::AudioSampleFormat F32 = Plugins::AudioSampleFormat::SAMPLE_F32LE;
@@ -64,7 +68,66 @@ public:
     static void TearDownTestCase() {}
     void SetUp() override {}
     void TearDown() override {}
+protected:
+    int32_t CreateWmaDecoder();
+    int32_t FillInputData();
+    std::unique_ptr<AudioDecoderMockBase> decoderMock_ = nullptr;
+    std::unique_ptr<std::ifstream> inputFile_ = nullptr;
+    std::vector<uint8_t> inData_;
+    uint32_t inDataSize_ = 0;
+    int64_t pts_ = 0;
 };
+
+int32_t AudioWMAPluginUnitTest::CreateWmaDecoder()
+{
+    // BLOCK_ALIGN 5945
+    int64_t size = 0;
+    inData_.resize(10240);  // 10240
+    decoderMock_ = AudioDecoderMockBase::CreateDecoder();
+    inputFile_ = std::make_unique<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
+    inputFile_->read(reinterpret_cast<char *>(&size), sizeof(size));
+    std::vector<uint8_t> codecConfig(size, 0);
+    inputFile_->read(reinterpret_cast<char *>(codecConfig.data()), size);
+    if (decoderMock_->CreateByName(AVCodecCodecName::AUDIO_DECODER_WMAPRO_NAME.data()) != 0) {
+        return -1;
+    }
+    decoderMock_->SetBlockAlign(5945);  // 5945
+    if (decoderMock_->Start(44100, 2, &codecConfig) != 0) {  // 44100 2
+        return -2;  // -2
+    }
+    return 0;
+}
+
+int32_t AudioWMAPluginUnitTest::FillInputData()
+{
+    if (inputFile_ == nullptr) {
+        return -1;
+    }
+    int64_t size = 0;
+    int64_t pts = 0;
+    inputFile_->read(reinterpret_cast<char *>(&size), sizeof(size));
+    if (inputFile_->eof() || inputFile_->gcount() == 0 || size == 0) {
+        // 文件读完了，调用stop
+        return 1;
+    }
+    if (inputFile_->gcount() != sizeof(size) || size > 10240) {  // 10240
+        std::cout << "FillInputData read size failed! size:" << size << std::endl;
+        return -1;
+    }
+    inputFile_->read(reinterpret_cast<char *>(&pts), sizeof(pts));
+    if (inputFile_->gcount() != sizeof(pts)) {
+        std::cout << "FillInputData read pts failed!" << std::endl;
+        return -1;
+    }
+    inputFile_->read(reinterpret_cast<char *>(inData_.data()), size);
+    if (inputFile_->gcount() != size) {
+        std::cout << "FillInputData read data failed!" << std::endl;
+        return -1;
+    }
+    inDataSize_ = static_cast<uint32_t>(size);
+    pts_ = pts;
+    return 0;
+}
 
 /* =========================
  *  插件层：参数/状态机用例
@@ -158,6 +221,8 @@ HWTEST_F(AudioWMAPluginUnitTest, WMAv2_StateMachine_Rough, TestSize.Level1)
     ASSERT_EQ(Status::OK, plugin->Init());
     EXPECT_EQ(Status::OK, plugin->Prepare());
     EXPECT_EQ(Status::OK, plugin->Start());
+    EXPECT_EQ(Status::OK, plugin->Flush());
+    EXPECT_EQ(Status::OK, plugin->Reset());
     EXPECT_EQ(Status::OK, plugin->Stop());
     EXPECT_EQ(Status::OK, plugin->Release());
 }
@@ -238,4 +303,28 @@ HWTEST_F(AudioWMAPluginUnitTest, WMAPro_GetParameter_CheckOutputFormat, TestSize
     ASSERT_TRUE(got->Get<Tag::MIME_TYPE>(mime));
     EXPECT_EQ(mime, MimeType::AUDIO_WMAPRO);
     EXPECT_EQ(Status::OK, plugin->Release());
+}
+
+HWTEST_F(AudioWMAPluginUnitTest, WMAPro_Write_Frame, TestSize.Level1)
+{
+    CreateWmaDecoder();
+    int32_t outSize = 0;
+    int32_t i = 0;
+    while (FillInputData() == 0) {
+        i++;
+        decoderMock_->SetPts(pts_ + 1);
+        decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+        int32_t j = 0;
+        int64_t lastPts = 0;
+        while (decoderMock_->DecodeOutput(nullptr, outSize) > 0) {
+            j++;
+            if (i == 1 && j == 1) {
+                EXPECT_EQ(decoderMock_->GetOutputPts(), 1);
+            } else if (i == 1) {
+                EXPECT_GT(decoderMock_->GetOutputPts(), lastPts);
+            }
+            lastPts = decoderMock_->GetOutputPts();
+        }
+    }
+    decoderMock_->Stop();
 }

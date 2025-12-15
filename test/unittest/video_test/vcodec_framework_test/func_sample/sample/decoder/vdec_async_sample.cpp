@@ -324,8 +324,8 @@ int32_t VideoDecAsyncSample::CreateReader(const std::string &inPath)
         case RV40_STREAM:
             return CreateRv40Reader();
 #endif
-        case CINEPAK_STREAM:
-            return CreateCinepakReader();
+        case MPEG1_STREAM:
+            return CreateMpeg1Reader();
         default:
             return CreateAvccReader();
     }
@@ -615,14 +615,13 @@ int32_t VideoDecAsyncSample::CreateRv40Reader()
 }
 #endif
 
-int32_t VideoDecAsyncSample::CreateCinepakReader()
+int32_t VideoDecAsyncSample::CreateMpeg1Reader()
 {
-    std::shared_ptr<CinepakReaderInfo> info = std::make_shared<CinepakReaderInfo>();
+    std::shared_ptr<Mpeg1ReaderInfo> info = std::make_shared<Mpeg1ReaderInfo>();
     info->inPath = inPath_;
-    info->isMainStream = false;
 
-    cinepakReader_ = std::make_shared<CinepakReader>();
-    int32_t ret = cinepakReader_->Init(info);
+    mpeg1Reader_ = std::make_shared<Mpeg1Reader>();
+    int32_t ret = mpeg1Reader_->Init(info);
     return ret;
 }
 
@@ -855,8 +854,6 @@ int32_t VideoDecAsyncSample::InputLoopInner()
     } else if (mpegReader_ != nullptr) {
         mpegReader_->FillBuffer(buffer->GetAddr(), attr);
 #ifdef SUPPORT_CODEC_VC1
-    } else if (cinepakReader_ != nullptr) {
-        cinepakReader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (vc1Reader_ != nullptr) {
         vc1Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (wvc1Reader_ != nullptr) {
@@ -874,6 +871,8 @@ int32_t VideoDecAsyncSample::InputLoopInner()
     } else if (rv40Reader_ != nullptr) {
         rv40Reader_->FillBuffer(buffer->GetAddr(), attr);
 #endif
+    } else if (mpeg1Reader_ != nullptr) {
+        mpeg1Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else {
         msvideo1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }
@@ -1081,7 +1080,7 @@ int32_t VideoDecAsyncSample::OutputLoopInnerExt()
                         testParam_ == VCodecTestParam::SW_VC1 || testParam_ == VCodecTestParam::SW_MSVIDEO1 ||
                         testParam_ == VCodecTestParam::SW_WMV3 || testParam_ == VCodecTestParam::SW_RV30 ||
                         testParam_ == VCodecTestParam::SW_RV40_TEST || testParam_ == VCodecTestParam::SW_WVC1 ||
-                        testParam_ == VCodecTestParam::SW_CINEPAK)
+                        testParam_ == VCodecTestParam::SW_MPEG1)
                            ? attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                           "Fatal: GetOutputBuffer fail, exit, index: %d", index);
@@ -1167,14 +1166,14 @@ int32_t VideoDecAsyncSample::InputLoopInnerExt()
     } else if (av1Reader_ != nullptr) {
         av1Reader_->FillBuffer(buffer->GetAddr(), attr);
 #endif
-    } else if (cinepakReader_ != nullptr) {
-        cinepakReader_->FillBuffer(buffer->GetAddr(), attr);
 #ifdef SUPPORT_CODEC_RV
     } else if (rv30Reader_ != nullptr) {
         rv30Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else if (rv40Reader_ != nullptr) {
         rv40Reader_->FillBuffer(buffer->GetAddr(), attr);
 #endif
+    } else if (mpeg1Reader_ != nullptr) {
+        mpeg1Reader_->FillBuffer(buffer->GetAddr(), attr);
     } else {
         msvideo1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }

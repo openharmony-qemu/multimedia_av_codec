@@ -107,13 +107,13 @@ public:
     static constexpr std::string_view VIDEO_DECODER_AV1_NAME = "OH.Media.Codec.Decoder.Video.AV1";
     static constexpr std::string_view VIDEO_DECODER_MPEG2_NAME = "OH.Media.Codec.Decoder.Video.MPEG2";
     static constexpr std::string_view VIDEO_DECODER_MPEG4_NAME = "OH.Media.Codec.Decoder.Video.MPEG4";
+    static constexpr std::string_view VIDEO_DECODER_MPEG1_NAME = "OH.Media.Codec.Decoder.Video.MPEG";
     static constexpr std::string_view VIDEO_DECODER_H263_NAME = "OH.Media.Codec.Decoder.Video.H263";
     static constexpr std::string_view VIDEO_DECODER_VVC_NAME = "OH.Media.Codec.Decoder.Video.VVC";
     static constexpr std::string_view VIDEO_DECODER_RV30_NAME = "OH.Media.Codec.Decoder.Video.Rv30";
     static constexpr std::string_view VIDEO_DECODER_RV40_NAME = "OH.Media.Codec.Decoder.Video.Rv40";
     static constexpr std::string_view VIDEO_DECODER_MJPEG_NAME = "OH.Media.Codec.Decoder.Video.MJPEG";
     static constexpr std::string_view VIDEO_DECODER_WMV3_NAME = "OH.Media.Codec.Decoder.Video.WMV3";
-    static constexpr std::string_view VIDEO_DECODER_CINEPAK_NAME = "OH.Media.Codec.Decoder.Video.CINEPAK";
 
     static const std::unordered_set<std::string_view> &GetAudioCodecOuterSupportTable()
     {

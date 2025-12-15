@@ -88,6 +88,7 @@ public:
     int32_t Release();
     int32_t SetParameter(OH_AVFormat *format);
     void OutputFunc();
+    int32_t SetParameter();
     void WriteOutputFrame(uint32_t index, OH_AVMemory *buffer, OH_AVCodecBufferAttr attr, FILE *outFile);
     void InputFuncAVCC();
     OH_AVErrCode InputFuncFUZZ(const uint8_t *data, size_t size);
@@ -97,6 +98,7 @@ public:
     VDecSignal *signal_;
     uint32_t errCount = 0;
     uint32_t outCount = 0;
+    int32_t defaultTransform = 0;
     int64_t outTimeArray[2000] = {};
     bool sleepOnFPS = false;
     bool repeatRun = false;

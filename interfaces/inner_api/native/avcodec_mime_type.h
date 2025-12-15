@@ -92,12 +92,12 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_WVC1 = "video/wvc1";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_AVC = "video/avc";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_MPEG4 = "video/mp4v-es";
+    static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_MPEG1 = "video/mpeg";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_HEVC = "video/hevc";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_RV30 = "video/rv30";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_RV40 = "video/rv40";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_MJPEG = "video/mjpeg";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_WMV3 = "video/wmv3";
-    static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_CINEPAK = "video/cinepak";
 
     static constexpr std::string_view MEDIA_MIMETYPE_IMAGE_JPG = "image/jpeg";
     static constexpr std::string_view MEDIA_MIMETYPE_IMAGE_PNG = "image/png";

@@ -240,7 +240,6 @@ bool VideoDecSample::Create()
     isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
     needExtraData_ = inPath_.find("wmv3") != std::string::npos;
     isWmv3MainStream_ = inPath_.find("profile1_1280_720_24.wmv3") != std::string::npos;
-    isCinepakStream_ = inPath_.find("cinepak_avi.avi") != std::string::npos;
     rv30needExtraData_ = inPath_.find("rv30") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
@@ -265,7 +264,6 @@ bool VideoDecSample::CreateByMime()
     isMpeg2Stream_ = inPath_.find("m2v") != std::string::npos;
     needExtraData_ = inPath_.find("wmv3") != std::string::npos;
     isWmv3MainStream_ = inPath_.find("profile1_1280_720_24.wmv3") != std::string::npos;
-    isCinepakStream_ = inPath_.find("cinepak_avi.avi") != std::string::npos;
     rv30needExtraData_ = inPath_.find("rv30") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
@@ -320,9 +318,9 @@ bool VideoDecSample::InitInputFile()
             int32_t ret = CreateRv40Reader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateRv40Reader failed");
 #endif
-        } else if (inPath_.find("cinepak") != std::string::npos) {
-            int32_t ret = CreateCinepakReader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateCinepakReader failed");
+        } else if (inPath_.find("mpeg1") != std::string::npos) {
+            int32_t ret = CreateMpeg1Reader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMpeg1Reader failed");
         } else {
             int32_t ret = CreateMpegReader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMpegReader failed");
@@ -416,17 +414,6 @@ int32_t VideoDecSample::CreateWmv3Reader()
     return ret;
 }
 
-int32_t VideoDecSample::CreateCinepakReader()
-{
-    std::shared_ptr<CinepakReaderInfo> info = std::make_shared<CinepakReaderInfo>();
-    info->inPath = inPath_;
-    info->isMainStream = isCinepakStream_;
-
-    signal_->reader_ = std::make_shared<CinepakReader>();
-    int32_t ret = std::static_pointer_cast<CinepakReader>(signal_->reader_)->Init(info);
-    return ret;
-}
-
 #ifdef SUPPORT_CODEC_VP8
 int32_t VideoDecSample::CreateVp8Reader()
 {
@@ -484,6 +471,16 @@ int32_t VideoDecSample::CreateRv40Reader()
     return ret;
 }
 #endif
+
+int32_t VideoDecSample::CreateMpeg1Reader()
+{
+    std::shared_ptr<Mpeg1ReaderInfo> info = std::make_shared<Mpeg1ReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<Mpeg1Reader>();
+    int32_t ret = std::static_pointer_cast<Mpeg1Reader>(signal_->reader_)->Init(info);
+    return ret;
+}
 
 int32_t VideoDecSample::SetCallback(OH_AVCodecAsyncCallback callback, shared_ptr<VCodecSignal> &signal)
 {

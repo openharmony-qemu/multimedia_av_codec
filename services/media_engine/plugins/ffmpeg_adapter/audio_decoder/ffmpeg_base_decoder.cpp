@@ -48,6 +48,7 @@ FfmpegBaseDecoder::FfmpegBaseDecoder()
       currentFrameFormatChanged_(false),
       maxInputSize_(-1),
       nextPts_(0),
+      inputPts_(0),
       durationTime_(0.f),
       avCodec_(nullptr),
       avCodecContext_(nullptr),
@@ -142,6 +143,7 @@ Status FfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
         avPacket_->data = nullptr;
         avPacket_->pts = inputBuffer->pts_;
     }
+    inputPts_ = inputBuffer->pts_;
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "SendBuffer buffer size:%{public}u,name:%{public}s", avPacket_->size,
                        name_.data());
     SetSampleSikpInfo(inputBuffer);
@@ -187,7 +189,8 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
     if (ret >= 0) {
         AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "receive one frame");
         if (cachedFrame_->pts == AV_NOPTS_VALUE) {
-            cachedFrame_->pts = nextPts_;
+            cachedFrame_->pts = (inputPts_ == 0 ? nextPts_ : inputPts_);
+            inputPts_ = 0;
         }
         CheckFormatChange();
         status = ReceiveFrameSucc(outBuffer);
@@ -299,6 +302,7 @@ Status FfmpegBaseDecoder::Reset()
     std::lock_guard<std::mutex> lock(avMutext_);
     CloseCtxLocked();
     nextPts_ = 0;
+    inputPts_ = 0;
     return Status::OK;
 }
 
@@ -316,6 +320,7 @@ Status FfmpegBaseDecoder::Flush()
         avcodec_flush_buffers(avCodecContext_.get());
     }
     nextPts_ = 0;
+    inputPts_ = 0;
     return Status::OK;
 }
 

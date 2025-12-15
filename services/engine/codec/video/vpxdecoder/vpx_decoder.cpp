@@ -342,6 +342,7 @@ void VpxDecoder::ConvertDecOutToAVFrame()
 
     cachedFrame_->width = static_cast<int32_t>(vpxDecOutputImg_->d_w);
     cachedFrame_->height = static_cast<int32_t>(vpxDecOutputImg_->d_h);
+    cachedFrame_->pts = static_cast<int64_t>(vpxDecoderInputArgs_.uiTimeStamp);
 }
 
 void VpxDecoder::SendFrame()
@@ -524,7 +525,7 @@ int32_t VpxDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.blockSize.width = VIDEO_ALIGN_SIZE;
         capsData.blockSize.height = VIDEO_ALIGN_SIZE;
         capsData.pixFormat = {static_cast<int32_t>(VideoPixelFormat::NV12),
-            static_cast<int32_t>(VideoPixelFormat::NV21)};
+            static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::YUVI420)};
         if (capsData.mimeType == "video/vp9") {
             capaArray.emplace_back(capsData);
             GetVp9CapProf(capaArray);

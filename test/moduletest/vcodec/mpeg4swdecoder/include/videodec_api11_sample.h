@@ -92,6 +92,8 @@ public:
     int64_t syncOutputWaitTime = -1;
     bool queryOutputBufferEOS = false;
     bool queryInputBufferEOS = false;
+    bool setTransform = false;
+    int32_t DEFAULT_TRANSFORM = 0;
     const char *fileSourcesha256[64] = {"27", "6D", "A2", "D4", "18", "21", "A5", "CD", "50", "F6", "DD", "CA", "46",
                                         "32", "C3", "FE", "58", "FC", "BC", "51", "FD", "70", "C7", "D4", "E7", "4D",
                                         "5C", "76", "E7", "71", "8A", "B3", "C0", "51", "84", "0A", "FA", "AF", "FA",
@@ -145,6 +147,11 @@ int32_t SyncOutputFuncEos(OH_AVCodecBufferAttr attr, uint32_t index);
     bool IsRender();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
     void FlushStatus();
+    int32_t SetConfigTransform();
+    int32_t SetSurface();
+    int32_t SetParameterTransform();
+    int32_t SetParameter();
+    int32_t GetSurfaceTransform(int32_t surfaceFlag);
     void GetVideoSupportedPixelFormats();
     void GetFormatKey();
     bool isGetVideoSupportedPixelFormats = false;
