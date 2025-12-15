@@ -70,6 +70,7 @@ constexpr int32_t UHD_RESOLUTION[2] = {3840, 2160};
 constexpr int32_t HD_RESOLUTION[2] = {1104, 622};
 constexpr uint32_t CHANGE_AVC_FRAME = 1500;
 constexpr uint32_t CHANGE_HEVC_FRAME = 3006;
+constexpr uint32_t CHANGE_VVC_NOCALEHASH_FRAME = 1650;
 constexpr uint32_t CHANGE_HEVC_TEN_FRAME = 1800;
 constexpr uint32_t CHANGE_VVC_FRAME = 1524;
 } // namespace
@@ -1105,12 +1106,14 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VVC_0400, TestSize.Level2)
         vDecSample->DEFAULT_HEIGHT = 622;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SF_OUTPUT = false;
+        vDecSample->NocaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameVVC));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
         vDecSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(CHANGE_VVC_NOCALEHASH_FRAME, vDecSample->outFrameCount);
     }
 }
 

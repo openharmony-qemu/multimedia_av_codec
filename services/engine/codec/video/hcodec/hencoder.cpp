@@ -1869,6 +1869,13 @@ void HEncoder::OnEnterUninitializedState()
     newestBuffer_.item.reset();
     encodingBuffers_.clear();
     pts_ = std::nullopt;
+    enableSurfaceModeInputCb_ = false;
+    enableLTR_ = false;
+    enableTSVC_ = false;
+    enableQPMap_ = false;
+    repeatUs_ = 0;
+    repeatMaxCnt_ = 10;  // default repeat 10 times. <0 means repeat forever. =0 means nothing.
+    currGeneration_ = 0;
 }
 
 HEncoder::BufferItem::~BufferItem()

@@ -1210,6 +1210,9 @@ void HDecoder::OnEnterUninitializedState()
     currSurface_.Release();
     crop_ = {0};
     cfgedConsumerUsage = 0;
+    currGeneration_ = 0;
+    scaleMode_ = std::nullopt;
+    transform_ = GRAPHIC_ROTATE_NONE;
 }
 
 HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface, std::string codecId, int32_t instanceId)
@@ -1336,6 +1339,8 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
 
     SurfaceItem oldSurface = currSurface_;
     currSurface_ = SurfaceItem(newSurface, compUniqueStr_, instanceId_);
+    SetTransform();
+    SetScaleMode();
     CombineConsumerUsage();
     // if owned by old surface, we need to transfer them to new surface
     for (auto [flushTime, i] : ownedBySurfaceFlushTime2BufferIndex) {
@@ -1350,8 +1355,6 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     }
 
     oldSurface.Release(true); // make sure old surface is empty and go black
-    SetTransform();
-    SetScaleMode();
     HLOGI("set surface(%" PRIu64 ")(%s) succ", newId, newSurface->GetName().c_str());
 }
 

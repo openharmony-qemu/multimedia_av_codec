@@ -17,6 +17,7 @@
 #define HISTREAMER_HLS_SEG_MANAGER_H
 
 #include <mutex>
+#include <shared_mutex>
 #include <thread>
 #include <unistd.h>
 #include <utility>
@@ -30,6 +31,7 @@
 #include "osal/utils/steady_clock.h"
 #include "common/media_source.h"
 #include "common/media_core.h"
+#include "utils/aes_decryptor.h"
 #include "utils/media_cached_buffer.h"
 #include "utils/write_bitrate_caculator.h"
 #include "osal/task/mutex.h"
@@ -139,6 +141,7 @@ public:
 public:
     static constexpr size_t VIDEO_MIN_BUFFER_SIZE = 5 * 1024 * 1024;
     static constexpr size_t VIDEO_MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
+    static constexpr size_t DECRYPT_BUFFER_SIZE = 5 * 1024 * 1024;
     static constexpr uint64_t DECRYPT_UNIT_LEN = 16;
     static const std::map<HlsSegmentType, size_t> MIN_BUFFER_SIZE;
     static const std::map<HlsSegmentType, size_t> MAX_CACHE_BUFFER_SIZE;
@@ -208,6 +211,8 @@ private:
     void HandleBufferingState();
     void HandleBufferingEnd();
     bool CheckTsEndOrEos(ReadDataInfo& readDataInfo);
+    void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
+    std::shared_ptr<DownloadRequest> GetDownloadRequest();
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;
@@ -228,19 +233,15 @@ private:
     std::map<std::string, bool> fragmentDownloadStart;
     std::map<std::string, bool> fragmentPushed;
     std::deque<PlayInfo> backPlayList_;
+    std::shared_ptr<AesDecryptor> aesDecryptor_;
     bool isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
     uint8_t afterAlignRemainedBuffer_[DECRYPT_UNIT_LEN] {0};
     uint64_t afterAlignRemainedLength_ = 0;
     uint64_t totalLen_ = 0;
     std::string curUrl_;
-    uint8_t key_[DECRYPT_UNIT_LEN] = {0};
-    size_t keyLen_ {0};
-    uint8_t iv_[DECRYPT_UNIT_LEN] = {0};
-    uint8_t initIv_[DECRYPT_UNIT_LEN] = {0};
-    AES_KEY aesKey_;
-    uint8_t decryptCache_[VIDEO_MIN_BUFFER_SIZE] {0};
-    uint8_t decryptBuffer_[VIDEO_MIN_BUFFER_SIZE] {0};
+    uint8_t decryptCache_[DECRYPT_BUFFER_SIZE] {0};
+    uint8_t decryptBuffer_[DECRYPT_BUFFER_SIZE] {0};
     uint32_t writeTsIndex_ = 0;
     bool isAutoSelectBitrate_ {true};
     uint64_t seekTime_ = 0;
@@ -351,6 +352,7 @@ private:
     HlsSegmentBufferingCbFunc bufferingCbFunc_;
     std::string masterString_;
     bool isEos_ {false};
+    std::shared_mutex downloadRequestMutex_;
 };
 }
 }

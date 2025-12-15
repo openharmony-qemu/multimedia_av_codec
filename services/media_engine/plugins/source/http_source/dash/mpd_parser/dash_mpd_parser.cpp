@@ -1143,6 +1143,7 @@ void DashMpdParser::FreeSegmentBase(DashSegBaseInfo *segBaseInfo) const
         ClearSegmentBase(segBaseInfo);
 
         delete segBaseInfo;
+        segBaseInfo = nullptr;
     }
 }
 

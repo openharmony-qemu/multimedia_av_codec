@@ -34,7 +34,7 @@ namespace HttpPlugin {
 
 namespace {
 static const std::string MPD_MULTI_AUDIO_SUB =
-    "http://127.0.0.1:46666/test_dash/segment_base2/index_audio_subtitle.mpd";
+    "http://127.0.0.1:46666/test_dash/segment_base/index_audio_subtitle.mpd";
 constexpr int32_t WAIT_FOR_SIDX_TIME = 1000 * 1000;
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
@@ -66,18 +66,43 @@ bool DashMediaDownFinishedFuzzerTest(const uint8_t *data, size_t size)
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
     for (auto u : streams) {
-        int32_t type = GetData<int32_t>()%4;
+        int32_t type = (*reinterpret_cast<const int32_t *>(data))%4;
         type += 1;
         int32_t streamid = u.streamId;
         mediaDownloader->SelectStream(streamid);
         mediaDownloader->NotifyInitSuccess();
     }
+    PlaybackInfo playbackInfo;
+    mediaDownloader->GetPlaybackInfo(playbackInfo);
+    mediaDownloader->GetMemorySize();
+    bool isAppBackground = *reinterpret_cast<const bool *>(data);
+    mediaDownloader->StopBufferring(isAppBackground);
     usleep(WAIT_FOR_SIDX_TIME);
-    int32_t biterate = GetData<int32_t>();
+    int32_t biterate = *reinterpret_cast<const int32_t *>(data);
     mediaDownloader->SelectBitRate(biterate);
     usleep(WAIT_FOR_SIDX_TIME);
     mediaDownloader->Close(false);
     mediaDownloader = nullptr;
+    return true;
+}
+
+bool DashMpdParse(const uint8_t *data, size_t size)
+{
+    std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
+    const std::string url = MPD_MULTI_AUDIO_SUB;
+    mpdMpddownload->Open(MPD_MULTI_AUDIO_SUB);
+    mpdMpddownload->Init();
+    std::shared_ptr<DashSegment> seg = std::make_shared<DashSegment>();
+    int streamId = *reinterpret_cast<const int *>(data);
+    int64_t breakpoint = *reinterpret_cast<const int64_t *>(data);
+    mpdMpddownload->GetBreakPointSegment(streamId, breakpoint, seg);
+    DashMpdTrackParam param;
+    mpdMpddownload->GetNextTrackStream(param);
+    int64_t numberSeq = *reinterpret_cast<const int64_t *>(data);
+    mpdMpddownload->SetCurrentNumberSeqByStreamId(streamId, numberSeq);
+    usleep(WAIT_FOR_SIDX_TIME);
+    mpdMpddownload->Close(false);
+    mpdMpddownload = nullptr;
     return true;
 }
 }
@@ -94,6 +119,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         return -1;
     }
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownFinishedFuzzerTest(data, size);
+    OHOS::Media::Plugins::HttpPlugin::DashMpdParse(data, size);
     if (!CloseServer()) {
         cout << "Close server error" << endl;
         return -1;

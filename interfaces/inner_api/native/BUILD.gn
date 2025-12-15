@@ -121,7 +121,7 @@ config("av_codec_client_public_config") {
   }
 
   if (av_codec_enable_special_codec) {
-    defines += [ "AV_CODEC_AUDIO_VIVID_CAPACITY" ]
+    defines += [ "AV_CODEC_AUDIO_SPECIAL_CAPACITY" ]
   }
 }
 
@@ -255,6 +255,7 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/engine/codeclist/codec_ability_singleton.cpp",
       "$av_codec_root_dir/services/engine/codeclist/codeclist_builder.cpp",
       "$av_codec_root_dir/services/engine/codeclist/codeclist_core.cpp",
+      "$av_codec_root_dir/services/engine/codeclist/codeclist_dump.cpp",
       "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/hdi_codec.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_factory.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_param_checker.cpp",
@@ -316,6 +317,8 @@ ohos_shared_library("av_codec_client") {
 
   external_deps = [
     "bounds_checking_function:libsec_static",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "drivers_interface_codec:libcodec_proxy_4.0",
     "graphic_surface:surface",

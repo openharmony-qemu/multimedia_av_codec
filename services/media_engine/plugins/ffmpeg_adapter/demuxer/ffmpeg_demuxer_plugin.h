@@ -147,6 +147,20 @@ private:
         std::atomic<AVReadPacketStopState> avReadPacketStopState {UNSET};
     };
 
+    // Snapshot of the AVStream fields needed at runtime, built in SetDataSource so
+    // other threads can read stream metadata without touching FFmpeg structs directly.
+    struct AVStreamSnapshot {
+        bool valid {false};
+        AVCodecID codecId {AV_CODEC_ID_NONE};
+        AVMediaType codecType {AVMEDIA_TYPE_UNKNOWN};
+        AVRational timeBase {0, 1};
+        int32_t extradataSize {0};
+        int64_t startTime {AV_NOPTS_VALUE};
+        bool needCombineFrame {false};
+        bool isVideo {false};
+        bool isAudio {false};
+    };
+
     bool SelectedVideo();
     bool NeedDropAfterSeek(uint32_t trackId, int64_t pts);
     std::atomic<int64_t> seekTime_ = AV_NOPTS_VALUE;
@@ -365,6 +379,10 @@ private:
     std::atomic<bool> isAsyncReadThreadPrioritySet_ = false;
     void UpdateAsyncReadThreadPriority();
 
+    void UpdateStreamSnapshots();
+    const AVStreamSnapshot* GetStreamSnapshot(uint32_t trackId) const;
+    std::vector<AVStreamSnapshot> streamSnapshots_;
+
     struct MinTsPacketInfo {
         bool isInit = false;
         int32_t streamIndex = -1;
@@ -376,7 +394,6 @@ private:
     void InitMinTsPacketInfo(AVPacket *pkt);
     void UpdMinTsPacketInfo(AVPacket *pkt);
     bool IsSkipGetMinTsPktInfo();
-    
 };
 
 typedef struct DtsFinder {

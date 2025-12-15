@@ -129,7 +129,8 @@ enum SceneCode : int32_t {
 
 std::unordered_set<FileType> ptsManagedFileTypes = {
     FileType::AVI,
-    FileType::MPEGPS
+    FileType::MPEGPS,
+    FileType::WMV
 };
 
 class MediaDemuxer::AVBufferQueueProducerListener : public IRemoteStub<IProducerListener> {

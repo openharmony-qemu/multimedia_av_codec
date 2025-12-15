@@ -90,7 +90,9 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_AAC, MimeType::AUDIO_AAC},
     {AV_CODEC_ID_AAC_LATM, MimeType::AUDIO_AAC},
     {AV_CODEC_ID_VORBIS, MimeType::AUDIO_VORBIS},
+#ifdef SUPPORT_CODEC_OPUS
     {AV_CODEC_ID_OPUS, MimeType::AUDIO_OPUS},
+#endif
     {AV_CODEC_ID_AMR_NB, MimeType::AUDIO_AMR_NB},
     {AV_CODEC_ID_AMR_WB, MimeType::AUDIO_AMR_WB},
     {AV_CODEC_ID_ADPCM_MS, MimeType::AUDIO_ADPCM_MS},
@@ -139,6 +141,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_MPEG2VIDEO, MimeType::VIDEO_MPEG2},
     {AV_CODEC_ID_HEVC, MimeType::VIDEO_HEVC},
     {AV_CODEC_ID_VVC, MimeType::VIDEO_VVC},
+    {AV_CODEC_ID_AV1, MimeType::VIDEO_AV1},
     {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
     {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
     {AV_CODEC_ID_MSVIDEO1, MimeType::VIDEO_MSVIDEO1},
@@ -158,9 +161,9 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_WMAPRO, MimeType::AUDIO_WMAPRO},
     {AV_CODEC_ID_ILBC, MimeType::AUDIO_ILBC},
     {AV_CODEC_ID_TRUEHD, MimeType::AUDIO_TRUEHD},
-#ifdef SUPPORT_CODEC_COOK
+    {AV_CODEC_ID_DVAUDIO, MimeType::AUDIO_DVAUDIO},
+    {AV_CODEC_ID_DTS, MimeType::AUDIO_DTS},
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
-#endif
     {AV_CODEC_ID_AC3, MimeType::AUDIO_AC3},
 #ifdef SUPPORT_DEMUXER_EAC3
     {AV_CODEC_ID_EAC3, MimeType::AUDIO_EAC3},
@@ -202,6 +205,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"ape", FileType::APE},
     {"srt", FileType::SRT},
     {"webvtt", FileType::VTT},
+    {"dts", FileType::DTS},
 #ifdef SUPPORT_DEMUXER_LRC
     {"lrc", FileType::LRC},
 #endif
@@ -810,6 +814,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::INVALID_TYPE));
         MEDIA_LOG_W("Parse mime type failed: " PUBLIC_LOG_S, avcodec_get_name(avStream.codecpar->codec_id));
     }
+    format.Set<Tag::ORIGINAL_CODEC_NAME>(std::string(avcodec_get_name(avStream.codecpar->codec_id)));
 
     AVMediaType mediaType = avStream.codecpar->codec_type;
     if (g_convertFfmpegTrackType.count(mediaType) > 0) {

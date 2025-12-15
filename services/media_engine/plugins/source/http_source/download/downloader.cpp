@@ -382,12 +382,9 @@ void Downloader::Pause(bool isAsync)
     MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " Pause Begin", FAKE_POINTER(this));
     requestQue_->SetActive(false, false);
-    {
-        AutoLock lock(operatorMutex_);
-        if (client_ != nullptr) {
-            isClientClose_ = true;
-            client_->Close(isAsync);
-        }
+    if (client_ != nullptr) {
+        isClientClose_ = true;
+        client_->Close(isAsync);
     }
     PauseLoop(true);
     if (!isAsync) {

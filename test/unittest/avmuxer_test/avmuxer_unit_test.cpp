@@ -24,6 +24,7 @@
 #ifdef AVMUXER_UNITTEST_CAPI
 #include "native_avmuxer.h"
 #include "native_avformat.h"
+#include "native_avsource.h"
 #endif
 
 using namespace testing::ext;
@@ -1584,6 +1585,49 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_WriteSample_005, TestSize.Level0)
 }
 
 /**
+ * @tc.name: Muxer_Hevc_Optimize_Filler_Data_001
+ * @tc.desc: Muxer Hevc Optimize Filler Data
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_Optimize_Filler_Data_001, TestSize.Level0)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        int32_t trackId = -1;
+        std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Optimize_Filler_Data.mp4");
+        OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+        fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+        bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+        ASSERT_TRUE(isCreated);
+
+        std::shared_ptr<FormatMock> videoParams =
+            FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, TEST_WIDTH, TEST_HEIGHT);
+
+        int32_t ret = avmuxer_->AddTrack(trackId, videoParams);
+        ASSERT_EQ(ret, 0);
+        ASSERT_GE(trackId, 0);
+        ASSERT_EQ(avmuxer_->Start(), 0);
+
+        inputFile_ = std::make_shared<std::ifstream>(LOGINFO_INPUT_FILE_PATH, std::ios::binary);
+
+        int32_t extSize = 0;
+        inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
+        if (extSize > 0) {
+            std::vector<uint8_t> buffer(extSize);
+            inputFile_->read(reinterpret_cast<char*>(buffer.data()), extSize);
+        }
+
+        bool eosFlag = false;
+        uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
+        ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+        while (!eosFlag && (ret == 0)) {
+            ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+        }
+        ASSERT_EQ(ret, 0);
+    }
+}
+
+/**
  * @tc.name: Muxer_SetFlag_001
  * @tc.desc: Muxer Write Sample flags AVCODEC_BUFFER_FLAGS_DISPOSABLE
  * @tc.type: FUNC
@@ -1896,7 +1940,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AAC_001, TestSize.Level0)
     ASSERT_GE(trackId, 0);
     ASSERT_EQ(avmuxer_->Start(), 0);
 
-    inputFile_ = std::make_shared<std::ifstream>("/data/test/media/aac_2c_44100hz_199k.dat", std::ios::binary);
+    inputFile_ = std::make_shared<std::ifstream>("/data/test/media/aac_2c_44100hz_199k_muxer.dat", std::ios::binary);
 
     int32_t extSize = 0;
     inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
@@ -2351,13 +2395,51 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Add_Audio_Auxiliary, TestSize.Level0) {
 
     ASSERT_EQ(avmuxer_->Start(), 0);
 
-    std::string inputFilePath = "/data/test/media/aac_2c_44100hz_199k.dat";
+    std::string inputFilePath = "/data/test/media/aac_2c_44100hz_199k_muxer.dat";
     TrackWriteSample(inputFilePath, trackId);
     TrackWriteSample(inputFilePath, trackIdAudio);
 
     ASSERT_EQ(avmuxer_->Stop(), 0);
 }
 #ifdef AVMUXER_UNITTEST_CAPI
+
+/**
+ * @tc.name: Muxer_GENRE_001
+ * @tc.desc: Muxer add genre data test
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_GENRE_001, TestSize.Level1)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_GENRE_001.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+    ASSERT_TRUE(avmuxer_->CreateMuxer(fd_, outputFormat));
+    std::shared_ptr<FormatMock> fileFormat = FormatMockFactory::CreateFormat();
+    fileFormat->PutStringValue(OH_MD_KEY_GENRE, "test_genre_str");
+    avmuxer_->SetFormat(fileFormat);
+
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+    videoParams->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
+    int32_t videoTrackId = -1;
+    int32_t ret = avmuxer_->AddTrack(videoTrackId, videoParams);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+    ASSERT_EQ(avmuxer_->Destroy(), 0);
+
+    struct stat fileStatus {};
+    ASSERT_EQ(stat(outputFile.c_str(), &fileStatus), 0);
+    int64_t fileSize = static_cast<int64_t>(fileStatus.st_size);
+    OH_AVSource *source = OH_AVSource_CreateWithFD(fd_, 0, fileSize);
+    OH_AVFormat *sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    const char *genreGet;
+    ASSERT_NE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_GENRE, &genreGet), false);
+    ASSERT_EQ(memcmp(genreGet, "test_genre_str", strlen(genreGet)), 0);
+    OH_AVSource_Destroy(source);
+}
+
 /**
  * @tc.name: Muxer_Destroy_001
  * @tc.desc: Muxer Destroy normal

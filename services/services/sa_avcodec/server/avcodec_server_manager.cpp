@@ -24,7 +24,6 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_trace.h"
-#include "avcodec_xcollie.h"
 #include "system_ability_definition.h"
 #ifdef SUPPORT_CODEC
 #include "codec_service_stub.h"
@@ -50,7 +49,6 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
     if (fd < 0) {
         return OHOS::NO_ERROR;
     }
-    AVCodecXCollie::GetInstance().Dump(fd);
 
     std::unordered_multimap<pid_t, std::pair<sptr<IRemoteObject>, InstanceInfo>> codecStubMapTemp;
     {

@@ -29,14 +29,14 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 #ifdef OHOS_LITE
-constexpr int RING_BUFFER_SIZE = 5 * 48 * 1024;
-constexpr int WATER_LINE = RING_BUFFER_SIZE / 30; // 30 WATER_LINE:8192
+constexpr size_t MIN_BUFFER_SIZE = 5 * 48 * 1024;
+constexpr int WATER_LINE = MIN_BUFFER_SIZE / 30; // 30 WATER_LINE:8192
 #else
-constexpr int RING_BUFFER_SIZE = 5 * 1024 * 1024;
-constexpr int MAX_BUFFER_SIZE = 19 * 1024 * 1024;
+constexpr size_t MIN_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
-constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
+constexpr size_t MAX_BUFFER_SIZE = 19 * 1024 * 1024;
+constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 constexpr uint32_t SAMPLE_INTERVAL = 1000; // Sample time interval, ms
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
@@ -76,62 +76,29 @@ constexpr size_t IGNORE_BUFFERING_EXTRA_CACHE_BEYOND_MS = 300;
 constexpr float FLV_AUTO_SELECT_SMOOTH_FACTOR = 0.8;
 constexpr size_t FLV_AUTO_SELECT_TIME_GAP = 3;
 constexpr uint32_t CHUNK_SIZE = 16 * 1024;
-constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
+} // namespace
 
-}
-void HttpMediaDownloader::InitRingBuffer(uint32_t expectBufferDuration)
+void HttpMediaDownloader::InitRingBuffer(size_t duration)
 {
-    int totalBufferSize = CURRENT_BIT_RATE * static_cast<int32_t>(expectBufferDuration);
-    if (totalBufferSize < RING_BUFFER_SIZE) {
-        MEDIA_LOG_I("HTTP Failed setting ring buffer size: " PUBLIC_LOG_D32 ". already lower than the min buffer size: "
-        PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
-        totalBufferSize, RING_BUFFER_SIZE, RING_BUFFER_SIZE);
-        ringBuffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
-        totalBufferSize_ = RING_BUFFER_SIZE;
-    } else if (totalBufferSize > MAX_BUFFER_SIZE) {
-        MEDIA_LOG_I("HTTP Failed setting ring buffer size: " PUBLIC_LOG_D32 ". already exceed the max buffer size: "
-        PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
-        totalBufferSize, MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
-        ringBuffer_ = std::make_shared<RingBuffer>(MAX_BUFFER_SIZE);
-        totalBufferSize_ = MAX_BUFFER_SIZE;
-    } else {
-        ringBuffer_ = std::make_shared<RingBuffer>(totalBufferSize);
-        totalBufferSize_ = totalBufferSize;
-        MEDIA_LOG_I("HTTP Success setted ring buffer size: " PUBLIC_LOG_D32, totalBufferSize);
-    }
+    totalBufferSize_ = std::max(std::min(CURRENT_BIT_RATE * duration, MAX_BUFFER_SIZE), MIN_BUFFER_SIZE);
+    MEDIA_LOG_I("HTTP InitRingBuffer, duration: %{public}zu, size: %{public}zu", duration, totalBufferSize_);
+    ringBuffer_ = std::make_shared<RingBuffer>(totalBufferSize_);
     ringBuffer_->Init();
 }
 
-void HttpMediaDownloader::InitCacheBuffer(uint32_t expectBufferDuration)
+void HttpMediaDownloader::InitCacheBuffer(size_t duration)
 {
-    int totalBufferSize = CURRENT_BIT_RATE * static_cast<int32_t>(expectBufferDuration);
+    totalBufferSize_ = std::max(std::min(CURRENT_BIT_RATE * duration, MAX_BUFFER_SIZE), MIN_BUFFER_SIZE);
+    MEDIA_LOG_I("HTTP InitCacheBuffer, duration: %{public}zu, size: %{public}zu", duration, totalBufferSize_);
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
-    FALSE_RETURN_MSG(cacheMediaBuffer_ != nullptr, "HTTP CacheBuffer create failed.");
-    if (totalBufferSize < RING_BUFFER_SIZE) {
-        MEDIA_LOG_I("HTTP Failed setting cache buffer size: " PUBLIC_LOG_D32
-                    ". already lower than the min buffer size: " PUBLIC_LOG_D32
-                    ", setting buffer size: " PUBLIC_LOG_D32 ". ", totalBufferSize,
-                    RING_BUFFER_SIZE, RING_BUFFER_SIZE);
-        isCacheBufferInited_ = cacheMediaBuffer_->Init(RING_BUFFER_SIZE, CHUNK_SIZE);
-        totalBufferSize_ = RING_BUFFER_SIZE;
-    } else if (totalBufferSize > MAX_BUFFER_SIZE) {
-        MEDIA_LOG_I("HTTP Failed setting cache buffer size: " PUBLIC_LOG_D32 ". already exceed the max buffer size: "
-        PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
-        totalBufferSize, MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
-        isCacheBufferInited_ = cacheMediaBuffer_->Init(MAX_BUFFER_SIZE, CHUNK_SIZE);
-        totalBufferSize_ = MAX_BUFFER_SIZE;
-    } else {
-        isCacheBufferInited_ = cacheMediaBuffer_->Init(totalBufferSize, CHUNK_SIZE);
-        totalBufferSize_ = totalBufferSize;
-        MEDIA_LOG_I("HTTP Success setted cache buffer size: " PUBLIC_LOG_D32, totalBufferSize);
-    }
+    isCacheBufferInited_ = cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
     FALSE_RETURN_MSG(isCacheBufferInited_, "HTTP CacheBufferInit error");
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferDuration,
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
-    if (static_cast<int32_t>(url.find(".flv")) != -1) {
+    if (url.find(".flv") != std::string::npos) {
         MEDIA_LOG_I("HTTP isflv.");
         isRingBuffer_ = true;
     }
@@ -969,7 +936,7 @@ uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len, bo
     FALSE_RETURN_V(ringBuffer_->WriteBuffer(data, len), 0);
     cvReadWrite_.NotifyOne();
     size_t bufferSize = ringBuffer_->GetSize();
-    double ratio = (static_cast<double>(bufferSize)) / RING_BUFFER_SIZE;
+    double ratio = (static_cast<double>(bufferSize)) / MIN_BUFFER_SIZE;
     if ((bufferSize >= WATER_LINE ||
         bufferSize >= downloadRequest_->GetFileContentLength() / 2) && !aboveWaterline_) { // 2
         aboveWaterline_ = true;
@@ -1025,12 +992,12 @@ uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBloc
         }
         size_t fileContenLen = downloadRequest_->GetFileContentLength();
         if (fileContenLen > 0) {
-            uint64_t bufferSize = static_cast<uint64_t>(fileContenLen + BUFFER_REDUNDANCY);
-            totalBufferSize_ = std::min(MAX_CACHE_BUFFER_SIZE, bufferSize);
+            size_t bufferSize = fileContenLen + BUFFER_REDUNDANCY;
+            totalBufferSize_ = std::min(MAX_BUFFER_SIZE, bufferSize);
         } else {
-            totalBufferSize_ = MAX_CACHE_BUFFER_SIZE;
+            totalBufferSize_ = MAX_BUFFER_SIZE;
         }
-        MEDIA_LOG_I("HTTP setting buffer size: " PUBLIC_LOG_D32 " fileContenLen: " PUBLIC_LOG_ZU,
+        MEDIA_LOG_I("HTTP setting buffer size: " PUBLIC_LOG_ZU " fileContenLen: " PUBLIC_LOG_ZU,
             totalBufferSize_, fileContenLen);
         {
             AutoLock lock(sleepMutex_);
@@ -1547,7 +1514,7 @@ void HttpMediaDownloader::UpdateWaterLineAbove()
         }
     }
 
-    waterLineAbove_ = std::min(waterLineAbove_, static_cast<size_t>(MAX_CACHE_BUFFER_SIZE *
+    waterLineAbove_ = std::min(waterLineAbove_, static_cast<size_t>(MAX_BUFFER_SIZE *
         WATER_LINE_ABOVE_LIMIT_RATIO));
     waterLineAbove_ = std::min(waterLineAbove_, MAX_WATER_LINE_ABOVE);
     MEDIA_LOG_D("UpdateWaterLineAbove: " PUBLIC_LOG_ZU " writeBitrate: " PUBLIC_LOG_U64 " readBitrate: "
@@ -1953,7 +1920,7 @@ bool HttpMediaDownloader::CheckAutoSelectBitrate()
     for (const auto &speed : downloadSpeeds_) {
         sumSpeed += speed;
     }
-    uint64_t aveSpeed = sumSpeed / downloadSpeeds_.size();
+    uint64_t aveSpeed = downloadSpeeds_.size()? sumSpeed / downloadSpeeds_.size() : 0;
     uint32_t desBitRate = 0;
     for (const auto &item : playMediaStreams_) {
         if (defaultStream_->bitrate == item->bitrate) {

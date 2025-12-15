@@ -55,6 +55,8 @@ public:
 
     Status Release() override;
 
+    Status ExtractOneAmrnbFrame();
+
     Status SetDataCallback(DataCallback *dataCallback) override
     {
         dataCallback_ = dataCallback;
@@ -72,6 +74,16 @@ private:
     int sampleRate;
     DataCallback *dataCallback_{nullptr};
     std::unique_ptr<FfmpegBaseDecoder> basePlugin;
+    int64_t nextPts_ = 0;
+    std::vector<uint8_t> inputBuf_;
+    std::shared_ptr<AVCodec> avCodec_;
+    std::shared_ptr<AVFrame> frame_;
+    std::shared_ptr<AVCodecContext> avCodecContext_;
+    AudioSampleFormat sampleFormat_ = INVALID_WIDTH;
+    int32_t nbSamplesPerFrame_ = 0;
+    std::shared_ptr<AVPacket> avPacket_;
+    bool eosFlushed_ = false;
+    bool currentPacketEmpty_ = true;
 };
 } // namespace Ffmpeg
 } // namespace Plugins

@@ -48,6 +48,7 @@ FfmpegBaseDecoder::FfmpegBaseDecoder()
       currentFrameFormatChanged_(false),
       maxInputSize_(-1),
       nextPts_(0),
+      inputPts_(0),
       durationTime_(0.f),
       avCodec_(nullptr),
       avCodecContext_(nullptr),
@@ -97,6 +98,29 @@ bool FfmpegBaseDecoder::HasExtraData() const noexcept
     return hasExtra_;
 }
 
+void FfmpegBaseDecoder::SetSampleSikpInfo(const std::shared_ptr<AVBuffer> &inputBuffer)
+{
+    if (avCodec_ == nullptr) {
+        return;
+    }
+    if (avCodec_->id != AV_CODEC_ID_MP3 && avCodec_->id != AV_CODEC_ID_VORBIS) {
+        return;
+    }
+
+    std::vector<uint8_t> skipInfo;
+    auto &meta = inputBuffer->meta_;
+    if (!meta->GetData(Tag::BUFFER_SKIP_SAMPLES_INFO, skipInfo)) {
+        return;
+    }
+    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "skip info size:%{public}zu", skipInfo.size());
+    uint8_t *p = av_packet_new_side_data(avPacket_.get(), AV_PKT_DATA_SKIP_SAMPLES, skipInfo.size());
+    if (p == nullptr || memcpy_s(p, skipInfo.size(), skipInfo.data(), skipInfo.size()) != EOK) {
+        AVCODEC_LOGE("copy skip info failed!is null:%{public}d size:%{public}zu",
+            static_cast<int32_t>(p == nullptr), skipInfo.size());
+    }
+    meta->Remove(Tag::BUFFER_SKIP_SAMPLES_INFO);
+}
+
 Status FfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     if (!inputBuffer) {
@@ -119,8 +143,10 @@ Status FfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
         avPacket_->data = nullptr;
         avPacket_->pts = inputBuffer->pts_;
     }
+    inputPts_ = inputBuffer->pts_;
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "SendBuffer buffer size:%{public}u,name:%{public}s", avPacket_->size,
                        name_.data());
+    SetSampleSikpInfo(inputBuffer);
     auto ret = avcodec_send_packet(avCodecContext_.get(), avPacket_.get());
     av_packet_unref(avPacket_.get());
     if (ret == 0) {
@@ -163,7 +189,8 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
     if (ret >= 0) {
         AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "receive one frame");
         if (cachedFrame_->pts == AV_NOPTS_VALUE) {
-            cachedFrame_->pts = nextPts_;
+            cachedFrame_->pts = (inputPts_ == 0 ? nextPts_ : inputPts_);
+            inputPts_ = 0;
         }
         CheckFormatChange();
         status = ReceiveFrameSucc(outBuffer);
@@ -275,6 +302,7 @@ Status FfmpegBaseDecoder::Reset()
     std::lock_guard<std::mutex> lock(avMutext_);
     CloseCtxLocked();
     nextPts_ = 0;
+    inputPts_ = 0;
     return Status::OK;
 }
 
@@ -292,6 +320,7 @@ Status FfmpegBaseDecoder::Flush()
         avcodec_flush_buffers(avCodecContext_.get());
     }
     nextPts_ = 0;
+    inputPts_ = 0;
     return Status::OK;
 }
 

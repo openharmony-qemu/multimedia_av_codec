@@ -37,8 +37,6 @@ constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 139264;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
 #ifdef SUPPORT_CODEC_VC1
 constexpr int32_t VC1_ALIGNMENT_SIZE = 2;
-constexpr int32_t VC1_MIN_WIDTH_SIZE = 176;
-constexpr int32_t VC1_MIN_HEIGHT_SIZE = 144;
 constexpr int32_t VC1_MAX_WIDTH_SIZE = 2048;
 constexpr int32_t VC1_MAX_HEIGHT_SIZE = 2048;
 constexpr int32_t VC1_BITRATE_MAX_SIZE = 135000000;
@@ -57,6 +55,10 @@ constexpr int32_t WMV3_MAX_HEIGHT_SIZE = 1080;
 constexpr int32_t WMV3_BITRATE_MAX_SIZE = 20000000;
 constexpr int32_t WMV3_MAX_BLOCKPERFRAME_SIZE = 8192;
 constexpr int32_t WMV3_MAX_BLOCKPERSEC_SIZE = 245760;
+#ifdef SUPPORT_CODEC_RV
+constexpr int32_t RV_BLOCKPERFRAME_SIZE = 65536; // MaxPicSize / (block_width*block_height)
+constexpr int32_t RV_BLOCKPERSEC_SIZE = 3932160; // MaxDisplayRate / (block_width*block_height)
+#endif
 } // namespace
 using namespace OHOS::Media;
 
@@ -237,8 +239,6 @@ void GetVc1CapProf(std::vector<CapabilityData> &capaArray)
         CapabilityData& capsData = capaArray.back();
         capsData.alignment.width = VC1_ALIGNMENT_SIZE;
         capsData.alignment.height = VC1_ALIGNMENT_SIZE;
-        capsData.width.minVal = VC1_MIN_WIDTH_SIZE;
-        capsData.height.minVal = VC1_MIN_HEIGHT_SIZE;
         capsData.width.maxVal = VC1_MAX_WIDTH_SIZE;
         capsData.height.maxVal = VC1_MAX_HEIGHT_SIZE;
         capsData.bitrate.maxVal = VC1_BITRATE_MAX_SIZE;
@@ -267,6 +267,32 @@ void GetVc1CapProf(std::vector<CapabilityData> &capaArray)
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_SIMPLE), simplelevels));
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_MAIN), levels));
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(VC1_PROFILE_ADVANCED), advlevels));
+    }
+}
+
+void GetWvc1CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.alignment.width = VC1_ALIGNMENT_SIZE;
+        capsData.alignment.height = VC1_ALIGNMENT_SIZE;
+        capsData.width.minVal = VC1_MIN_WIDTH_SIZE;
+        capsData.height.minVal = VC1_MIN_HEIGHT_SIZE;
+        capsData.width.maxVal = VC1_MAX_WIDTH_SIZE;
+        capsData.height.maxVal = VC1_MAX_HEIGHT_SIZE;
+        capsData.bitrate.maxVal = VC1_BITRATE_MAX_SIZE;
+        capsData.blockPerFrame.maxVal = VC1_BLOCKPERFRAME_SIZE;
+        capsData.blockPerSecond.maxVal = VC1_BLOCKPERSEC_SIZE;
+        capsData.pixFormat = {
+            static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
+            static_cast<int32_t>(VideoPixelFormat::NV21)};
+        capsData.profiles = {static_cast<int32_t>(WVC1_PROFILE_ADVANCED)};
+        std::vector<int32_t> advlevels;
+        for (int32_t advcount = static_cast<int32_t>(WVC1Level::WVC1_LEVEL_L0);
+            advcount <= static_cast<int32_t>(WVC1Level::WVC1_LEVEL_L4); ++advcount) {
+            advlevels.emplace_back(advcount);
+        }
+        capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(WVC1_PROFILE_ADVANCED), advlevels));
     }
 }
 #endif
@@ -348,6 +374,26 @@ void GetCapabilityData(CapabilityData &capsData, uint32_t index)
         static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888)};
 }
 
+#ifdef SUPPORT_CODEC_RV
+void GetRv30CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.blockPerFrame.maxVal = RV_BLOCKPERFRAME_SIZE;
+        capsData.blockPerSecond.maxVal = RV_BLOCKPERSEC_SIZE;
+    }
+}
+
+void GetRv40CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.blockPerFrame.maxVal = RV_BLOCKPERFRAME_SIZE;
+        capsData.blockPerSecond.maxVal = RV_BLOCKPERSEC_SIZE;
+    }
+}
+#endif
+
 int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 {
     for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {
@@ -368,6 +414,9 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         } else if (capsData.mimeType == "video/vc1") {
             capaArray.emplace_back(capsData);
             GetVc1CapProf(capaArray);
+        } else if (capsData.mimeType == "video/wvc1") {
+            capaArray.emplace_back(capsData);
+            GetWvc1CapProf(capaArray);
 #endif
         } else if (capsData.mimeType == "video/msvideo1") {
             capaArray.emplace_back(capsData);
@@ -375,6 +424,14 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         } else if (capsData.mimeType == "video/wmv3") {
             capaArray.emplace_back(capsData);
             GetWmv3CapProf(capaArray);
+#ifdef SUPPORT_CODEC_RV
+        } else if (capsData.mimeType == "video/rv30") {
+            capaArray.emplace_back(capsData);
+            GetRv30CapProf(capaArray);
+        } else if (capsData.mimeType == "video/rv40") {
+            capaArray.emplace_back(capsData);
+            GetRv40CapProf(capaArray);
+#endif
         } else {
             capsData.frameRate.maxVal = VIDEO_FRAMERATE_MAX_SIZE;
             capaArray.emplace_back(capsData);

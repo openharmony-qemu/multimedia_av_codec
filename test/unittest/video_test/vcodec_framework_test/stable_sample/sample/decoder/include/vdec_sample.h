@@ -108,9 +108,21 @@ private:
     int32_t CreateAvccReader();
     int32_t CreateMpegReader();
     int32_t CreateH263Reader();
+#ifdef SUPPORT_CODEC_VC1
     int32_t CreateVc1Reader();
+    int32_t CreateWVc1Reader();
+#endif
     int32_t CreateMsvideo1Reader();
     int32_t CreateWmv3Reader();
+    int32_t CreateVp8Reader();
+    int32_t CreateVp9Reader();
+#ifdef SUPPORT_CODEC_AV1
+    int32_t CreateAv1Reader();
+#endif
+#ifdef SUPPORT_CODEC_RV
+    int32_t CreateRv30Reader();
+    int32_t CreateRv40Reader();
+#endif
 
     OH_AVCodec *codec_ = nullptr;
     std::shared_ptr<VCodecSignal> signal_ = nullptr;
@@ -128,6 +140,7 @@ private:
     bool isMpeg2Stream_ = true; // true: Mpeg2; false: Mpeg4
     bool needExtraData_ = false;
     bool isWmv3MainStream_ = false;
+    bool rv30needExtraData_ = false;
 
 private:
     OH_AVCodecAsyncCallback asyncCallback_;

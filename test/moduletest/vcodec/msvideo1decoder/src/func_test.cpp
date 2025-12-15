@@ -1083,4 +1083,23 @@ HWTEST_F(MsVideo1decFuncNdkTest, VIDEO_MSVIDEO1DEC_FUNCTION_0049, TestSize.Level
     vDecSample->WaitForEOS();
     ASSERT_EQ(FRAMESIZE98, vDecSample->outFrameCount);
 }
+
+/**
+ * @tc.number    : VIDEO_MSVIDEO1DEC_FUNCTION_0050
+ * @tc.name      : Decode MsVideo1 buffer No PixelFormat
+ * @tc.desc      : function test
+ */
+HWTEST_F(MsVideo1decFuncNdkTest, VIDEO_MSVIDEO1DEC_FUNCTION_0050, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->INP_DIR = INP_DIR_1;
+    vDecSample->outputYuvFlag = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMsVideo1.c_str()));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoderNoPixelFormat());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderReadStream());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(FRAMESIZE98, vDecSample->outFrameCount);
+}
 } // namespace
