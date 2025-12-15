@@ -94,6 +94,7 @@ public:
     void ReleaseSignal();
     void ReleaseInFile();
     void StopInloop();
+    int32_t SetParameter();
     VDecSignal *signal_;
     uint32_t errCount = 0;
     uint32_t outCount = 0;
@@ -103,6 +104,7 @@ public:
     bool repeatRun = false;
     bool isSurfMode = false;
     bool setParameters = false;
+    int32_t defaultTransform = 0;
     OH_AVCodec *vdec_;
     OHNativeWindow *nativeWindow = nullptr;
     sptr<Surface> cs = nullptr;

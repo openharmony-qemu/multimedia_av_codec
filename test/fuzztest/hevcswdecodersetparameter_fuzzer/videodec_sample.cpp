@@ -138,6 +138,7 @@ int32_t VDecFuzzSample::ConfigureVideoDecoder()
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, defaultHeight);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, defaultFrameRate);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_TRANSFORM_TYPE, defaultTransform);
     int ret = OH_VideoDecoder_Configure(vdec_, format);
     OH_AVFormat_Destroy(format);
     return ret;
@@ -273,5 +274,6 @@ int32_t VDecFuzzSample::Release()
 
 int32_t VDecFuzzSample::SetParameter(OH_AVFormat *format)
 {
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_TRANSFORM_TYPE, defaultTransform);
     return OH_VideoDecoder_SetParameter(vdec_, format);
 }

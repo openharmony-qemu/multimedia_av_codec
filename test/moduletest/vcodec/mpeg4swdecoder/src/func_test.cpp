@@ -59,6 +59,20 @@ protected:
 namespace {
 static OH_AVCapability *cap_mpeg4 = nullptr;
 static string g_codecNameMpeg4 = "";
+const std::vector<OH_NativeBuffer_TransformType> transfromTypes = {
+    NATIVEBUFFER_ROTATE_NONE,
+    NATIVEBUFFER_ROTATE_90,
+    NATIVEBUFFER_ROTATE_180,
+    NATIVEBUFFER_ROTATE_270,
+    NATIVEBUFFER_FLIP_H,
+    NATIVEBUFFER_FLIP_V,
+    NATIVEBUFFER_FLIP_H_ROT90,
+    NATIVEBUFFER_FLIP_V_ROT90,
+    NATIVEBUFFER_FLIP_H_ROT180,
+    NATIVEBUFFER_FLIP_V_ROT180,
+    NATIVEBUFFER_FLIP_H_ROT270,
+    NATIVEBUFFER_FLIP_V_ROT270
+};
 } // namespace
 
 void Mpeg4SwdecFuncNdkTest::SetUpTestCase()
@@ -1388,6 +1402,84 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_SWDEC_PIXE_FORMAT_MPEG4_0010, TestSize.Lev
         ASSERT_LT(1, vDecSample->pixlFormatNum);
         ASSERT_EQ(24, vDecSample->firstCallBackKey);
         ASSERT_EQ(24, vDecSample->onStreamChangedKey);
+    }
+}
+
+
+/**
+ * @tc.number    : VIDEO_DECODE_TRANSFORM_0080
+ * @tc.name      : 软解mpeg4, config transform
+ * @tc.desc      : function test
+ */
+HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_DECODE_TRANSFORM_0080, TestSize.Level0)
+{
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->CreateSurface();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetConfigTransform());
+        ASSERT_EQ(0, vDecSample->GetSurfaceTransform(0));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        vDecSample->setTransform = true;
+        vDecSample->DEFAULT_TRANSFORM = -1;
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->SetConfigTransform());
+        ASSERT_EQ(0, vDecSample->GetSurfaceTransform(0));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        for (const auto& transformtype : transfromTypes) {
+            vDecSample->DEFAULT_TRANSFORM = transformtype;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->SetConfigTransform());
+            ASSERT_EQ(vDecSample->DEFAULT_TRANSFORM, vDecSample->GetSurfaceTransform(0));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        }
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        ASSERT_EQ(vDecSample->DEFAULT_TRANSFORM, vDecSample->GetSurfaceTransform(0));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_TRANSFORM_0170
+ * @tc.name      : 软解mpeg4, setparameter transform
+ * @tc.desc      : function test
+ */
+HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_DECODE_TRANSFORM_0170, TestSize.Level0)
+{
+    if (cap_mpeg4 != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->CreateSurface();
+        vDecSample->DEFAULT_TRANSFORM = -1;
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->SetParameterTransform());
+        ASSERT_EQ(0, vDecSample->GetSurfaceTransform(0));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        for (const auto& transformtype : transfromTypes) {
+            vDecSample->DEFAULT_TRANSFORM = transformtype;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->SetParameterTransform());
+            ASSERT_EQ(vDecSample->DEFAULT_TRANSFORM, vDecSample->GetSurfaceTransform(0));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        }
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetParameter());
+        ASSERT_EQ(vDecSample->DEFAULT_TRANSFORM, vDecSample->GetSurfaceTransform(0));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 } // namespace
