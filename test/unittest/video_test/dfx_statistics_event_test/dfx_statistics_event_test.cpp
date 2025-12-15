@@ -175,7 +175,7 @@ void DfxStatisticsEventTest::SetUpTestCase(void)
     HiSysEventWatcher watcher{};
     watcher.OnEvent = OnEventTest;
     watcher.OnServiceDied = OnServiceDiedTest;
-    HiSysEventWatchRule rule = {"AV_CODEC", "BASIC_INFO", "", 1, 0};
+    HiSysEventWatchRule rule = {"AV_CODEC", "STATISTIC_INFO", "", 1, 0};
     HiSysEventWatchRule rules[] = {rule};
     auto ret = OH_HiSysEvent_Add_Watcher(&watcher, rules, sizeof(rules) / sizeof(HiSysEventWatchRule));
     ASSERT_EQ(ret, HiviewDFX::IPC_CALL_SUCCEED);
@@ -212,15 +212,16 @@ void DfxStatisticsEventTest::TearDown(void)
  */
 HWTEST_F(DfxStatisticsEventTest, RegisterEventHooker_Test_001, TestSize.Level1)
 {
+    bool isRegisterEventHooker = false;
     StatisticsEventInfo::GetInstance().RegisterEventHooker(
-        StatisticsEventType::MAIN_EVENT_TYPE_MASK, [](const Media::Meta &meta) -> bool {
+        StatisticsEventType::MAIN_EVENT_TYPE_MASK, [&isRegisterEventHooker](const Media::Meta &meta) -> bool {
             HiSysEventWrite(TEST_DOMAIN, "DFX_STATISTICS_EVENT_TEST", OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
                             "Test", "Success");
+            isRegisterEventHooker = true;
             return true;
         });
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
+    ASSERT_EQ(true, isRegisterEventHooker);
 }
 
 /**
@@ -261,17 +262,18 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_002, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_003, TestSize.Level1)
 {
+    bool isRegisterEventHooker = false;
     StatisticsEventInfo::GetInstance().RegisterEventHooker(
-        static_cast<StatisticsEventType>(INT32_MAX), [](const Media::Meta &meta) -> bool {
+        static_cast<StatisticsEventType>(INT32_MAX), [&isRegisterEventHooker](const Media::Meta &meta) -> bool {
             HiSysEventWrite(TEST_DOMAIN, "DFX_STATISTICS_EVENT_TEST", OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
                             "Test", "Success");
+            isRegisterEventHooker = true;
             return true;
         });
     StatisticsEventInfo::GetInstance().OnAddEventInfo(static_cast<StatisticsEventType>(INT32_MAX), *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
+    ASSERT_EQ(true, isRegisterEventHooker);
 }
 
 /**
@@ -282,17 +284,18 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_003, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_004, TestSize.Level1)
 {
+    bool isRegisterEventHooker = false;
     StatisticsEventInfo::GetInstance().RegisterEventHooker(
         static_cast<StatisticsEventType>(INT32_MAX), [](const Media::Meta &meta) -> bool {
             HiSysEventWrite(TEST_DOMAIN, "DFX_STATISTICS_EVENT_TEST", OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
                             "Test", "Success");
+            isRegisterEventHooker = true;
             return false;
         });
     StatisticsEventInfo::GetInstance().OnAddEventInfo(static_cast<StatisticsEventType>(INT32_MAX), *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
+    ASSERT_EQ(true, isRegisterEventHooker);
 }
 
 /**
@@ -310,11 +313,11 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: AddEventInfo_BasicInfo_002
+ * @tc.name: AddEventInfo_BasicQueryCapInfo_001
  * @tc.desc: eventType is BASIC_QUERY_CAP_INFO
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_002, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicQueryCapInfo_001, TestSize.Level1)
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
@@ -329,11 +332,11 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: AddEventInfo_BasicInfo_003
+ * @tc.name: AddEventInfo_BasicCreateCodecInfo_001
  * @tc.desc: eventType is BASIC_CREATE_CODEC_INFO
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_003, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecInfo_001, TestSize.Level1)
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
@@ -348,12 +351,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: AddEventInfo_BasicInfo_004
+ * @tc.name: AddEventInfo_BasicCreateCodecSpecInfo_001
  * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
  *           2. mimeType is invalid, codecType is valid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_004, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_001, TestSize.Level1)
 {
     std::string mime = GenerateRandomString(10); // 10: length
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
@@ -369,12 +372,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_004, TestSize.Level1)
 }
 
 /**
- * @tc.name: AddEventInfo_BasicInfo_005
+ * @tc.name: AddEventInfo_BasicCreateCodecSpecInfo_002
  * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
  *           2. mimeType is invalid, codecType is invalid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_005, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_002, TestSize.Level1)
 {
     std::string mime = GenerateRandomString(10); // 10: length
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1);
@@ -387,12 +390,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_005, TestSize.Level1)
 }
 
 /**
- * @tc.name: AddEventInfo_BasicInfo_006
+ * @tc.name: AddEventInfo_BasicCreateCodecSpecInfo_003
  * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
  *           2. mimeType is invalid, codecType is invalid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_006, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_003, TestSize.Level1)
 {
     std::string mime = GenerateRandomString(10); // 10: length
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
@@ -405,12 +408,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_006, TestSize.Level1)
 }
 
 /**
- * @tc.name: AddEventInfo_BasicInfo_007
+ * @tc.name: AddEventInfo_BasicCreateCodecSpecInfo_004
  * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
  *           2. mimeType is valid, codecType is valid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_007, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_004, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
@@ -425,12 +428,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_007, TestSize.Level1)
 }
 
 /**
- * @tc.name: AddEventInfo_BasicInfo_008
+ * @tc.name: AddEventInfo_BasicCreateCodecSpecInfo_005
  * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
  *           2. mimeType is valid, codecType is invalid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_008, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_005, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1);
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
@@ -442,12 +445,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_008, TestSize.Level1)
 }
 
 /**
- * @tc.name: AddEventInfo_BasicInfo_009
+ * @tc.name: AddEventInfo_BasicCreateCodecSpecInfo_006
  * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
  *           2. mimeType is valid, codecType is invalid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_009, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_006, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
@@ -459,12 +462,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_009, TestSize.Level1)
 }
 
 /**
- * @tc.name: AddEventInfo_BasicInfo_010
+ * @tc.name: AddEventInfo_BasicCreateCodecSpecInfo_007
  * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
  *           2. mimeType is empty, codecType is valid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_010, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_007, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
@@ -475,12 +478,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_010, TestSize.Level1)
 }
 
 /**
- * @tc.name: AddEventInfo_BasicInfo_011
+ * @tc.name: AddEventInfo_BasicCreateCodecSpecInfo_008
  * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
  *           2. mimeType is empty, codecType is invalid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_011, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_008, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
@@ -491,12 +494,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_011, TestSize.Level1)
 }
 
 /**
- * @tc.name: AddEventInfo_BasicInfo_012
+ * @tc.name: AddEventInfo_BasicCreateCodecSpecInfo_009
  * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
  *           2. mimeType is empty, codecType is invalid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_012, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_009, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
@@ -568,11 +571,42 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_002, TestSiz
 
 /**
  * @tc.name: AddEventInfo_AppSpecificationsInfo_003
+ * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
+ *           2. mimeType is video/avc, isEncoder is empty
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_003, TestSize.Level1)
+{
+    meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_SPECIFICATIONS_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
+}
+
+/**
+ * @tc.name: AddEventInfo_AppSpecificationsInfo_004
+ * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
+ *           2. mimeType and isEncoder is empty
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_004, TestSize.Level1)
+{
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_SPECIFICATIONS_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
+}
+
+/**
+ * @tc.name: AddEventInfo_CapUnsupportedInfo_001
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_INFO
  *           2. mimeType is video/avc, isEncoder is false
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_003, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedInfo_001, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), false);
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
@@ -584,12 +618,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_003, TestSiz
 }
 
 /**
- * @tc.name: AddEventInfo_AppSpecificationsInfo_004
+ * @tc.name: AddEventInfo_CapUnsupportedQueryCapInfo_001
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
  *           2. mimeType is video/avc, isEncoder is false
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_004, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_001, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), false);
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
@@ -604,13 +638,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_004, TestSiz
 }
 
 /**
- * @tc.name: AddEventInfo_AppSpecificationsInfo_005
+ * @tc.name: AddEventInfo_CapUnsupportedQueryCapInfo_002
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
  *           2. mimeType is empty, isEncoder is false
  *           3. event file is empty
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_005, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_002, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), false);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
@@ -621,12 +655,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_005, TestSiz
 }
 
 /**
- * @tc.name: AddEventInfo_AppSpecificationsInfo_006
+ * @tc.name: AddEventInfo_CapUnsupportedQueryCapInfo_003
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
  *           2. mimeType is video/avc, isEncoder is true
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_006, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_003, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), true);
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
@@ -641,13 +675,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_006, TestSiz
 }
 
 /**
- * @tc.name: AddEventInfo_AppSpecificationsInfo_007
+ * @tc.name: AddEventInfo_CapUnsupportedQueryCapInfo_004
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
  *           2. mimeType is empty, isEncoder is true
  *           3. event file is empty
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_007, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_004, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), true);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
@@ -658,12 +692,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_007, TestSiz
 }
 
 /**
- * @tc.name: AddEventInfo_AppSpecificationsInfo_008
+ * @tc.name: AddEventInfo_CapUnsupportedQueryCapInfo_005
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
  *           2. mimeType is random, isEncoder is false, excute 100000 times
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_008, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_005, TestSize.Level1)
 {
     for (int i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string mime = GenerateRandomMime();
@@ -678,12 +712,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_008, TestSiz
 }
 
 /**
- * @tc.name: AddEventInfo_AppSpecificationsInfo_009
+ * @tc.name: AddEventInfo_CapUnsupportedQueryCapInfo_006
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
  *           2. mimeType is random, isEncoder is true, excute 100000 times
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_009, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_006, TestSize.Level1)
 {
     for (int i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string mime = GenerateRandomMime();
@@ -698,12 +732,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_009, TestSiz
 }
 
 /**
- * @tc.name: AddEventInfo_AppSpecificationsInfo_010
+ * @tc.name: AddEventInfo_CapUnsupportedCreateCapInfo_001
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_CREATE_CODEC_INFO
  *           2. mimeType is video/avc, isEncoder is false
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_010, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_001, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), false);
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
@@ -718,13 +752,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_010, TestSiz
 }
 
 /**
- * @tc.name: AddEventInfo_AppSpecificationsInfo_011
+ * @tc.name: AddEventInfo_CapUnsupportedCreateCapInfo_002
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_CREATE_CODEC_INFO
  *           2. mimeType is empty, isEncoder is false
  *           3. event file is empty
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_011, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_002, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), false);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
@@ -735,12 +769,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_011, TestSiz
 }
 
 /**
- * @tc.name: AddEventInfo_AppSpecificationsInfo_012
+ * @tc.name: AddEventInfo_CapUnsupportedCreateCapInfo_003
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_CREATE_CODEC_INFO
  *           2. mimeType is video/avc, isEncoder is true
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_012, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_003, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), true);
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
@@ -755,13 +789,13 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_012, TestSiz
 }
 
 /**
- * @tc.name: AddEventInfo_AppSpecificationsInfo_013
+ * @tc.name: AddEventInfo_CapUnsupportedCreateCapInfo_004
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_CREATE_CODEC_INFO
  *           2. mimeType is empty, isEncoder is true
  *           3. event file is empty
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_013, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_004, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), true);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
@@ -772,12 +806,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_013, TestSiz
 }
 
 /**
- * @tc.name: AddEventInfo_AppSpecificationsInfo_014
+ * @tc.name: AddEventInfo_CapUnsupportedCreateCapInfo_005
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_CREATE_CODEC_INFO
  *           2. mimeType is random, isEncoder is false, excute 100000 times
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_014, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_005, TestSize.Level1)
 {
     for (int i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string mime = GenerateRandomMime();
@@ -793,12 +827,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_014, TestSiz
 }
 
 /**
- * @tc.name: AddEventInfo_AppSpecificationsInfo_015
+ * @tc.name: AddEventInfo_CapUnsupportedCreateCapInfo_006
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
  *           2. mimeType is random, isEncoder is true, excute 100000 times
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_015, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_006, TestSize.Level1)
 {
     for (int i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string mime = GenerateRandomMime();
@@ -807,37 +841,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_015, TestSiz
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO,
                                                           *meta_);
     }
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-}
-
-/**
- * @tc.name: AddEventInfo_AppSpecificationsInfo_016
- * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
- *           2. mimeType is video/avc, isEncoder is empty
- * @tc.type: FUNC
- */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_016, TestSize.Level1)
-{
-    meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_SPECIFICATIONS_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-}
-
-/**
- * @tc.name: AddEventInfo_AppSpecificationsInfo_017
- * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
- *           2. mimeType and isEncoder is empty
- * @tc.type: FUNC
- */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_017, TestSize.Level1)
-{
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_SPECIFICATIONS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
@@ -930,12 +933,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_005, TestSize.Lev
 }
 
 /**
- * @tc.name: AddEventInfo_AppBehaviorsInfo_006
+ * @tc.name: AddEventInfo_DecLimitExceededInfo_001
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO
  *           2. caller process name is same, excute 200 times
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_006, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecLimitExceededInfo_001, TestSize.Level1)
 {
     for (int32_t i = 0; i < BEHAVIORSINFO_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = "callerProcess";
@@ -954,12 +957,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_006, TestSize.Lev
 }
 
 /**
- * @tc.name: AddEventInfo_AppBehaviorsInfo_007
+ * @tc.name: AddEventInfo_AppBehaviorsReleaseHardDecInfo_001
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO
  *           2. caller process name is different, excute 100000 times
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_007, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsReleaseHardDecInfo_001, TestSize.Level1)
 {
     for (int32_t i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = GenerateRandomString(20); // 20: clller name length
@@ -978,12 +981,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_007, TestSize.Lev
 }
 
 /**
- * @tc.name: AddEventInfo_AppBehaviorsInfo_008
+ * @tc.name: AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_001
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO
  *           2. caller process exist, elapsed time exist't
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_008, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_001, TestSize.Level1)
 {
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
@@ -996,12 +999,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_008, TestSize.Lev
 }
 
 /**
- * @tc.name: AddEventInfo_AppBehaviorsInfo_009
+ * @tc.name: AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_002
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO
  *           2. caller process exist, elapsed time less than threadshold
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_009, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_002, TestSize.Level1)
 {
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
@@ -1015,12 +1018,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_009, TestSize.Lev
 }
 
 /**
- * @tc.name: AddEventInfo_AppBehaviorsInfo_010
+ * @tc.name: AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_003
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO
  *           2. caller process exist, elapsed time more than threadshold
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_010, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_003, TestSize.Level1)
 {
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
@@ -1039,12 +1042,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_010, TestSize.Lev
 }
 
 /**
- * @tc.name: AddEventInfo_AppBehaviorsInfo_011
+ * @tc.name: AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_004
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO
  *           2. caller process name is same, elapsed time more than threadshold, excute 200 times
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_011, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_004, TestSize.Level1)
 {
     for (int32_t i = 0; i < BEHAVIORSINFO_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = "callerProcess";
@@ -1065,12 +1068,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_011, TestSize.Lev
 }
 
 /**
- * @tc.name: AddEventInfo_AppBehaviorsInfo_012
+ * @tc.name: AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_005
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO
  *           2. caller process name is different, elapsed time more than threadshold, excute 100000 times
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_012, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_005, TestSize.Level1)
 {
     for (int32_t i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = GenerateRandomString(20); // 20: clller name length
@@ -1091,12 +1094,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_012, TestSize.Lev
 }
 
 /**
- * @tc.name: AddEventInfo_AppBehaviorsInfo_013
+ * @tc.name: AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_006
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO
  *           2. caller process name is different, elapsed time less than threadshold, excute 100000 times
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_013, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_006, TestSize.Level1)
 {
     for (int32_t i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = GenerateRandomString(20); // 20: clller name length
@@ -1112,11 +1115,11 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_013, TestSize.Lev
 }
 
 /**
- * @tc.name: AddEventInfo_AppBehaviorsInfo_014
+ * @tc.name: AddEventInfo_SpeedDecodingInfo_001
  * @tc.desc: 1. eventType is SPEED_DECODING_INFO
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_014, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_SpeedDecodingInfo_001, TestSize.Level1)
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SPEED_DECODING_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
@@ -1129,12 +1132,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_014, TestSize.Lev
 }
 
 /**
- * @tc.name: AddEventInfo_CodecAbnormalInfo_001
+ * @tc.name: AddEventInfo_CodecErrorInfo_001
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
  *           2. mime type is empty, codec type is valid, error code is empty
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_001, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_001, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
@@ -1145,12 +1148,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_001, TestSize.Le
 }
 
 /**
- * @tc.name: AddEventInfo_CodecAbnormalInfo_002
+ * @tc.name: AddEventInfo_CodecErrorInfo_002
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
  *           2. mime type is empty, codec type is invalid, error code is empty
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_002, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_002, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1); // -1: codec type is invalid
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
@@ -1161,12 +1164,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_002, TestSize.Le
 }
 
 /**
- * @tc.name: AddEventInfo_CodecAbnormalInfo_003
+ * @tc.name: AddEventInfo_CodecErrorInfo_003
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
  *           2. mime type is empty, codec type is invalid, error code is empty
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_003, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_003, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
@@ -1177,12 +1180,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_003, TestSize.Le
 }
 
 /**
- * @tc.name: AddEventInfo_CodecAbnormalInfo_004
+ * @tc.name: AddEventInfo_CodecErrorInfo_004
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
  *           2. mime type is empty, codec type is valid, error code is valid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_004, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_004, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
@@ -1194,12 +1197,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_004, TestSize.Le
 }
 
 /**
- * @tc.name: AddEventInfo_CodecAbnormalInfo_005
+ * @tc.name: AddEventInfo_CodecErrorInfo_005
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
  *           2. mime type is empty, codec type is invalid, error code is valid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_005, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_005, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1); // -1: codec type is invalid
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
@@ -1211,12 +1214,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_005, TestSize.Le
 }
 
 /**
- * @tc.name: AddEventInfo_CodecAbnormalInfo_006
+ * @tc.name: AddEventInfo_CodecErrorInfo_006
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
  *           2. mime type is empty, codec type is invalid, error code is valid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_006, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_006, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
@@ -1228,12 +1231,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_006, TestSize.Le
 }
 
 /**
- * @tc.name: AddEventInfo_CodecAbnormalInfo_007
+ * @tc.name: AddEventInfo_CodecErrorInfo_007
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
  *           2. mime type is video/avc, codec type is valid, error code is empty
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_007, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_007, TestSize.Level1)
 {
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
@@ -1245,12 +1248,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_007, TestSize.Le
 }
 
 /**
- * @tc.name: AddEventInfo_CodecAbnormalInfo_008
+ * @tc.name: AddEventInfo_CodecErrorInfo_008
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
  *           2. mime type is video/avc, codec type is invalid, error code is empty
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_008, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_008, TestSize.Level1)
 {
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1); // -1: codec type is invalid
@@ -1262,12 +1265,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_008, TestSize.Le
 }
 
 /**
- * @tc.name: AddEventInfo_CodecAbnormalInfo_009
+ * @tc.name: AddEventInfo_CodecErrorInfo_009
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
  *           2. mime type is video/avc, codec type is invalid, error code is empty
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_009, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_009, TestSize.Level1)
 {
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
@@ -1279,12 +1282,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_009, TestSize.Le
 }
 
 /**
- * @tc.name: AddEventInfo_CodecAbnormalInfo_010
+ * @tc.name: AddEventInfo_CodecErrorInfo_010
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
  *           2. mime type is video/avc, codec type is valid, error code is valid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_010, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_010, TestSize.Level1)
 {
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
@@ -1300,12 +1303,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_010, TestSize.Le
 }
 
 /**
- * @tc.name: AddEventInfo_CodecAbnormalInfo_011
+ * @tc.name: AddEventInfo_CodecErrorInfo_011
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
  *           2. mime type is video/avc, codec type is invalid, error code is valid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_011, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_011, TestSize.Level1)
 {
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1); // -1: codec type is invalid
@@ -1318,12 +1321,12 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_011, TestSize.Le
 }
 
 /**
- * @tc.name: AddEventInfo_CodecAbnormalInfo_012
+ * @tc.name: AddEventInfo_CodecErrorInfo_012
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
  *           2. mime type is video/avc, codec type is invalid, error code is valid
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecAbnormalInfo_012, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_012, TestSize.Level1)
 {
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
