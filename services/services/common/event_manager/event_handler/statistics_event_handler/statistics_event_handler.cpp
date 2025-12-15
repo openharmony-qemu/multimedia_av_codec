@@ -743,7 +743,7 @@ void StatisticsEventInfo::OnAddEventInfo(StatisticsEventType eventType, const Me
     }
 
     {
-        std::unique_lock<std::shared_mutex> lock(mutex_);
+        std::lock_guard<std::shared_mutex> lock(eventHookMutex_);
         auto hookIter = eventHooks_.find(eventType);
         if (hookIter != eventHooks_.end()) {
             auto needErase = hookIter->second(eventMeta);
@@ -793,7 +793,10 @@ void StatisticsEventInfo::OnSubmitEventInfo()
 
 void StatisticsEventInfo::ResetEventInfo()
 {
-    eventHooks_.clear();
+    {
+        std::lock_guard<std::shared_mutex> lock(eventHookMutex_);
+        eventHooks_.clear();
+    }
     AppNameIndexInfo::GetInstance().Reset();
     for (auto &eventInfo : eventInfoMap_) {
         eventInfo.second->ResetEventInfo();
@@ -802,7 +805,7 @@ void StatisticsEventInfo::ResetEventInfo()
 
 void StatisticsEventInfo::RegisterEventHook(StatisticsEventType eventType, EventHook hook)
 {
-    std::unique_lock<std::shared_mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(eventHookMutex_);
     eventHooks_[eventType] = std::move(hook);
 }
 

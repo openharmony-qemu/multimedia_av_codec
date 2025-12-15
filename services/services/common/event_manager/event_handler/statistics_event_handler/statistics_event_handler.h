@@ -69,6 +69,7 @@ public:
 
 private:
     std::shared_mutex mutex_;
+    std::shared_mutex eventHookMutex_;
     std::unordered_map<StatisticsEventType, EventHook> eventHooks_;
     std::shared_ptr<AVCodecXcollieTimer> timer_;
 };
