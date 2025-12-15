@@ -32,34 +32,28 @@ using AVCodecSpecifiedType = std::pair<bool, std::string>;
 using VCodecSpecifiedType = std::pair<VideoCodecType, std::string>;
 
 namespace {
-constexpr std::size_t kHashMagicConstant = static_cast<std::size_t>(0x9e3779b97f4a7c15ULL);
-constexpr unsigned kHashShiftLeft = 6u;
-constexpr unsigned kHashShiftRight = 2u;
-
-class EventStrings final {
+class EventStrings {
 public:
-    static constexpr char DOMAIN[] = "AV_CODEC";
-    static constexpr char EVENT_STATISTICS_INFO[] = "STATISTICS_INFO";
-
-    static constexpr char QUERY_CAP_TIMES[] = "QueryCapTimes";
-    static constexpr char CREATE_CODEC_TIMES[] = "CreateCodecTimes";
-
-    static constexpr char CODEC_SPECIFIED_INFO[] = "CodecSpecifiedInfo";
-    static constexpr char APP_NAME_DICT[] = "AppNameDict";
-    static constexpr char CAP_UNSUPPORTED_INFO[] = "CapUnsupportedInfo";
-    static constexpr char QUERY_CAP_UNSUPPORTED_INFO[] = "QueryCapUnsupportedInfo";
-    static constexpr char CREATE_CODEC_UNSUPPORTED_INFO[] = "CreateCodecUnsupportedInfo";
-    static constexpr char DEC_ABNORMAL_OCCUPATION_INFO[] = "DecAbnormalOccupationInfo";
-    static constexpr char SPEED_DECODING_INFO[] = "SpeedDecodingInfo";
-    static constexpr char CODEC_ERROR_INFO[] = "CodecErrorInfo";
-
-    EventStrings() = delete;
-    ~EventStrings() = delete;
+    static constexpr const char DOMAIN[] = "AV_CODEC";
+    static constexpr const char EVENT_STATISTICS_INFO[] = "STATISTICS_INFO";
+    static constexpr const char QUERY_CAP_TIMES[] = "QueryCapTimes";
+    static constexpr const char CREATE_CODEC_TIMES[] = "CreateCodecTimes";
+    static constexpr const char CODEC_SPECIFIED_INFO[] = "CodecSpecifiedInfo";
+    static constexpr const char APP_NAME_DICT[] = "AppNameDict";
+    static constexpr const char CAP_UNSUPPORTED_INFO[] = "CapUnsupportedInfo";
+    static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[] = "QueryCapUnsupportedInfo";
+    static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[] = "CreateCodecUnsupportedInfo";
+    static constexpr const char DEC_ABNORMAL_OCCUPATION_INFO[] = "DecAbnormalOccupationInfo";
+    static constexpr const char SPEED_DECODING_INFO[] = "SpeedDecodingInfo";
+    static constexpr const char CODEC_ERROR_INFO[] = "CodecErrorInfo";
 };
 
 inline void HashCombine(std::size_t &seed, std::size_t value)
 {
-    seed ^= value + kHashMagicConstant + (seed << kHashShiftLeft) + (seed >> kHashShiftRight);
+    constexpr std::size_t hashMagicConstant = static_cast<std::size_t>(0x9e3779b97f4a7c15ULL);
+    constexpr unsigned hashShiftLeft = 6u;
+    constexpr unsigned hashShiftRight = 2u;
+    seed ^= value + hashMagicConstant + (seed << hashShiftLeft) + (seed >> hashShiftRight);
 }
 
 const std::unordered_map<VideoCodecType, std::string> VIDEO_CODEC_TYPE_TO_STRING = {
@@ -103,7 +97,7 @@ public:
         Reset();
     }
 
-    const char *c_str() const
+    const char *CStr() const
     {
         return (str_ != nullptr) ? str_ : "";
     }
@@ -135,10 +129,11 @@ struct HashTuple {
     template <class T1, class T2, class T3>
     std::size_t operator()(const std::tuple<T1, T2, T3>& t) const
     {
+        const auto &[a, b, c] = t;
         std::size_t seed = 0;
-        HashCombine(seed, std::hash<T1>{}(std::get<0>(t)));
-        HashCombine(seed, std::hash<T2>{}(std::get<1>(t)));
-        HashCombine(seed, std::hash<T3>{}(std::get<2>(t)));
+        HashCombine(seed, std::hash<T1>{}(a));
+        HashCombine(seed, std::hash<T2>{}(b));
+        HashCombine(seed, std::hash<T3>{}(c));
         return seed;
     }
 };
@@ -528,8 +523,7 @@ private:
             StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO,
             [this, callerNameIndex] (const Media::Meta &eventMeta) -> bool
             {
-                if (!isInOccupationHDecEvent_.load())
-                {
+                if (!isInOccupationHDecEvent_.load()) {
                     return true;
                 }
 
@@ -778,13 +772,13 @@ void StatisticsEventInfo::OnSubmitEventInfo()
         OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
         EventStrings::QUERY_CAP_TIMES,               submitInfo.queryCapTimes,
         EventStrings::CREATE_CODEC_TIMES,            submitInfo.createCodecTimes,
-        EventStrings::CODEC_SPECIFIED_INFO,          getJsonField(EventStrings::CODEC_SPECIFIED_INFO).c_str(),
-        EventStrings::APP_NAME_DICT,                 getJsonField(EventStrings::APP_NAME_DICT).c_str(),
-        EventStrings::QUERY_CAP_UNSUPPORTED_INFO,    getJsonField(EventStrings::QUERY_CAP_UNSUPPORTED_INFO).c_str(),
-        EventStrings::CREATE_CODEC_UNSUPPORTED_INFO, getJsonField(EventStrings::CREATE_CODEC_UNSUPPORTED_INFO).c_str(),
-        EventStrings::DEC_ABNORMAL_OCCUPATION_INFO,  getJsonField(EventStrings::DEC_ABNORMAL_OCCUPATION_INFO).c_str(),
-        EventStrings::SPEED_DECODING_INFO,           getJsonField(EventStrings::SPEED_DECODING_INFO).c_str(),
-        EventStrings::CODEC_ERROR_INFO,              getJsonField(EventStrings::CODEC_ERROR_INFO).c_str()
+        EventStrings::CODEC_SPECIFIED_INFO,          getJsonField(EventStrings::CODEC_SPECIFIED_INFO).CStr(),
+        EventStrings::APP_NAME_DICT,                 getJsonField(EventStrings::APP_NAME_DICT).CStr(),
+        EventStrings::QUERY_CAP_UNSUPPORTED_INFO,    getJsonField(EventStrings::QUERY_CAP_UNSUPPORTED_INFO).CStr(),
+        EventStrings::CREATE_CODEC_UNSUPPORTED_INFO, getJsonField(EventStrings::CREATE_CODEC_UNSUPPORTED_INFO).CStr(),
+        EventStrings::DEC_ABNORMAL_OCCUPATION_INFO,  getJsonField(EventStrings::DEC_ABNORMAL_OCCUPATION_INFO).CStr(),
+        EventStrings::SPEED_DECODING_INFO,           getJsonField(EventStrings::SPEED_DECODING_INFO).CStr(),
+        EventStrings::CODEC_ERROR_INFO,              getJsonField(EventStrings::CODEC_ERROR_INFO).CStr()
     );
 
     ResetEventInfo();

@@ -20,7 +20,7 @@
 #include <map>
 #include <mutex>
 
-namespace{
+namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "DBA"};
 constexpr size_t SPEED_WINDON_SIZE = 5;           // Sliding window size used to determine speed stability
 constexpr double DETECTION_THRESHOLD_RATIO = 0.5; // Stability threshold: dominant speed in the window must exceed 50%
@@ -75,21 +75,21 @@ void DecodingBehaviorAnalyzer::SaveDecodingBehaviorAsSnapshot(
 void DecodingBehaviorAnalyzer::ReportSpeedDecodingInfo()
 {
     SpeedStatsUnion totalStats;
-    std::array<SpeedStatsUnion, STANDARD_SPEED_LEVELS> speedStatsArray = {};
+    std::array<SpeedStatsUnion, stdSpeedLevels> speedStatsArray = {};
     for (const auto& snapshot : history_) {
         totalStats.stats.duration += snapshot.duration;
         totalStats.stats.count++;
         if (snapshot.type != DecodingBehaviorType::UNIFORM_SPEED) {
             continue;
         }
-        if (snapshot.decSpeedIdx < STANDARD_SPEED_LEVELS) {
+        if (snapshot.decSpeedIdx < stdSpeedLevels) {
             speedStatsArray[snapshot.decSpeedIdx].stats.duration += snapshot.duration;
             speedStatsArray[snapshot.decSpeedIdx].stats.count++;
         }
     }
     Media::Meta eventMeta;
     eventMeta.SetData(EventInfoExtentedKey::SPEED_DECODING_INFO_TOTAL.data(), totalStats.combinedKey);
-    for (size_t i = 0; i < STANDARD_SPEED_LEVELS; ++i) {
+    for (size_t i = 0; i < stdSpeedLevels; ++i) {
         if (speedStatsArray[i].stats.count > 0) {
             auto iter = SPEED_DEC_INFO_KEY_MAP.find(i);
             if (iter != SPEED_DEC_INFO_KEY_MAP.end()) {
@@ -120,22 +120,11 @@ void DecodingBehaviorAnalyzer::OnStopped(bool isDecEnd)
     }
 }
 
-double DecodingBehaviorAnalyzer::CalSrcFramerate()
-{
-    double ptsIntvlMs = static_cast<double>(endPtsMs_ - startPtsMs_) / (frameCnt_ - 1);
-    double srcFramerate = 1000.0 / ptsIntvlMs;
-    AVCODEC_LOGD("%{public}" PRId64 ", %{public}" PRId64 ", %{public}u", endPtsMs_, startPtsMs_, frameCnt_);
-    startPtsMs_ = -1;
-    endPtsMs_ = -1;
-    frameCnt_ = 0;
-    return srcFramerate;
-}
-
 size_t DecodingBehaviorAnalyzer::MatchAndUpdateSpeedStats(double decSpeed)
 {
     size_t closestIndex = 0;
     double minDiff = std::abs(decSpeed - STANDARD_SPEEDS[0]);
-    for (size_t i = 1; i < STANDARD_SPEED_LEVELS; ++i) {
+    for (size_t i = 1; i < stdSpeedLevels; ++i) {
         double diff = std::abs(decSpeed - STANDARD_SPEEDS[i]);
         if (diff < minDiff) {
             minDiff = diff;
@@ -170,7 +159,7 @@ DecodingBehaviorType DecodingBehaviorAnalyzer::DetermineDecodingBehaviorType()
     maxPossibleDecSpeedIdx_ = maxCntIdx;
     bool isStable = static_cast<double>(maxCnt) / SPEED_WINDON_SIZE > DETECTION_THRESHOLD_RATIO;
     // 0.0 and 4.0 are placeholders for extremely slow and extremely fast speeds respectively
-    bool isUniformSpeed = (maxCntIdx != 0u) && (maxCntIdx != STANDARD_SPEED_LEVELS - 1);
+    bool isUniformSpeed = (maxCntIdx != 0u) && (maxCntIdx != stdSpeedLevels - 1);
     AVCODEC_LOGD("MaxCnt %{public}zu, maxPSpeed %{public}.2fx, isStable %{public}d, isUniformSpeed %{public}d",
         maxCnt, STANDARD_SPEEDS[maxCntIdx], isStable, isUniformSpeed);
     if (isStable && isUniformSpeed) {
@@ -197,7 +186,13 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     if (frameCnt_ < SRC_FRAME_CNT_MIN || endPtsMs_ <= startPtsMs_) {
         return;
     }
-    double srcFps = CalSrcFramerate();
+    double ptsIntvlMs = static_cast<double>(endPtsMs_ - startPtsMs_) / (frameCnt_ - 1);
+    double srcFps = 1000.0 / ptsIntvlMs;
+    AVCODEC_LOGD("%{public}" PRId64 ", %{public}" PRId64 ", %{public}u", endPtsMs_, startPtsMs_, frameCnt_);
+    startPtsMs_ = -1;
+    endPtsMs_ = -1;
+    frameCnt_ = 0;
+
     double decSpeed = decFps / srcFps;
     size_t newSpeedIdx = MatchAndUpdateSpeedStats(decSpeed);
     size_t lastDecSpeedIdx = maxPossibleDecSpeedIdx_;

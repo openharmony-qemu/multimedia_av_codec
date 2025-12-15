@@ -32,7 +32,7 @@ namespace MediaAVCodec {
 struct StatisticsSubmitInfo {
     uint32_t queryCapTimes {0};
     uint32_t createCodecTimes {0};
-    std::unordered_map<std::string, std::shared_ptr<cJSON>> jsonObjects;
+    std::unordered_map<std::string_view, std::shared_ptr<cJSON>> jsonObjects;
 };
 
 class StatisticsEventInfoBase {

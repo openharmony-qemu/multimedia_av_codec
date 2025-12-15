@@ -173,7 +173,7 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
             CHECK_AND_BREAK_LOG(it != codecStubMap_.end(), "find codec object failed, pid(%{public}d)", pid);
 
             if (it->second.second.videoCodecType == VideoCodecType::DECODER_HARDWARE) {
-                EventManager::GetInstance().OnInstanceEvent( StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO);
+                EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO);
             }
 
             auto preSize = codecStubMap_.size();

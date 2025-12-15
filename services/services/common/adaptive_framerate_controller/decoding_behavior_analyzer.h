@@ -58,9 +58,8 @@ public:
     void OnChecked(double decFps);
 
 private:
-    static constexpr size_t STANDARD_SPEED_LEVELS = 8;
-    static constexpr std::array<double, STANDARD_SPEED_LEVELS> STANDARD_SPEEDS =
-        {0.0, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0};
+    static constexpr size_t stdSpeedLevels = 8;
+    static constexpr std::array<double, stdSpeedLevels> STANDARD_SPEEDS = {0.0, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0};
     std::mutex mutex_;
     int64_t startPtsMs_ = -1;
     int64_t endPtsMs_ = -1;
@@ -70,10 +69,9 @@ private:
     size_t maxPossibleDecSpeedIdx_ = 0;
     DecodingBehaviorType type_ = DecodingBehaviorType::UNKNOWN;
     std::deque<size_t> speedWindow_;
-    std::array<size_t, STANDARD_SPEED_LEVELS> speedCount_ = {};
+    std::array<size_t, stdSpeedLevels> speedCount_ = {};
     std::vector<DecodingBehaviorSnapshot> history_;
 
-    double CalSrcFramerate();
     size_t MatchAndUpdateSpeedStats(double decSpeed);
     DecodingBehaviorType DetermineDecodingBehaviorType();
     bool IsDecChanged(DecodingBehaviorType oldType, size_t oldSpeedIdx,

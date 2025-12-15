@@ -35,7 +35,8 @@ EventManager &EventManager::GetInstance()
     return manager;
 }
 
-void EventManager::OnInstanceEvent(EventType type) {
+void EventManager::OnInstanceEvent(EventType type)
+{
     Media::Meta eventMate;
     OnInstanceEvent(type, eventMate);
 }
