@@ -123,7 +123,7 @@ private:
     int32_t CreateRv30Reader();
     int32_t CreateRv40Reader();
 #endif
-
+    int32_t CreateMpeg1Reader();
     OH_AVCodec *codec_ = nullptr;
     std::shared_ptr<VCodecSignal> signal_ = nullptr;
 
