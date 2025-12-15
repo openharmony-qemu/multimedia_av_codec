@@ -286,7 +286,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_004, TestSize.Level1)
 {
     bool isRegisterEventHooker = false;
     StatisticsEventInfo::GetInstance().RegisterEventHooker(
-        static_cast<StatisticsEventType>(INT32_MAX), [](const Media::Meta &meta) -> bool {
+        static_cast<StatisticsEventType>(INT32_MAX), [&isRegisterEventHooker](const Media::Meta &meta) -> bool {
             HiSysEventWrite(TEST_DOMAIN, "DFX_STATISTICS_EVENT_TEST", OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
                             "Test", "Success");
             isRegisterEventHooker = true;
