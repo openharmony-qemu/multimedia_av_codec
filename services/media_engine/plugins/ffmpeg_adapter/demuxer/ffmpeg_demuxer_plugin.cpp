@@ -1950,7 +1950,6 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         auto stream = formatContext_->streams[trackId];
         FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_NULL_POINTER,
             "Stream " PUBLIC_LOG_D32 " is invalid", trackId);
-        
         InitMinTsPacketInfo(pkt);
         ret = AddPacketToCacheQueue(pkt);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add to cache failed");
