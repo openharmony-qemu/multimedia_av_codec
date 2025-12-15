@@ -335,6 +335,10 @@ Status FFmpegMuxerPlugin::SetParameter(const std::shared_ptr<Meta> &param)
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter failed");
     ret = SetMetaData(param);
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter failed");
+    if (CheckGltfParam(param)) {
+        ret = SetGltfInfo(param);
+        FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter GLTF failed");
+    }
     return ret;
 }
 
@@ -414,6 +418,7 @@ bool FFmpegMuxerPlugin::CheckGltfParam(std::shared_ptr<Meta> param)
             return false;
         }
     }
+    av_dict_set(&formatContext_->metadata, "has_gltf", "1", 0);
     return true;
 }
 
@@ -493,10 +498,6 @@ Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
     }
     if (isSetUserMeta) {
         av_dict_set(&formatContext_->metadata, "moov_level_meta_flag", "1", 0);
-    }
-    if (CheckGltfParam(userMeta)) {
-        Status ret = SetGltfInfo(userMeta);
-        FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter GLTF failed");
     }
     return Status::NO_ERROR;
 }
