@@ -26,7 +26,7 @@ struct AVAppEvent {
     int64_t sumTime;
     std::string apiName;
     std::string errorType;
-}
+};
 
 __attribute__((visibility("default"))) void WriteCallEvent(AVAppEvent event);
 } // namespace MediaAVCodec
