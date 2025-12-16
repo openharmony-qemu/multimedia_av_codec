@@ -47,7 +47,7 @@ bool DashMediaDownSelectBitFuzzerTest(const uint8_t *data, size_t size)
     g_mediaDownloader->SetIsTriggerAutoMode(true);
     std::string testUrl = MPD_SEGMENT_BASE;
     std::map<std::string, std::string> httpHeader;
-    g_mediaDownloader->init();
+    g_mediaDownloader->Init();
     g_result = g_mediaDownloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
     g_mediaDownloader->GetStreamInfo(streams);
