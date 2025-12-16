@@ -736,6 +736,48 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="Rv30decoderConfigureFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test.rv30 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="Rv30decoderResourceFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test.rv30 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="Rv30decoderSetParameterFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test.rv30 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="Rv40decoderConfigureFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test.rv40 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="Rv40decoderConfigureFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test.rv40 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="Rv40decoderConfigureFuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="video_decoder/test.rv40 -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="Vc1SwdecoderConfigureFuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
