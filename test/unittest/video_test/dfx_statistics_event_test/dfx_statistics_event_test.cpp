@@ -215,9 +215,9 @@ void DfxStatisticsEventTest::SetUp(void)
     pid_t pid = getpid();
     std::cout << "start memory = " << dumpUsage_.GetPss(pid) << std::endl;
 
+    g_recordJson.clear();
     meta_ = std::make_shared<Media::Meta>();
     ASSERT_NE(nullptr, meta_);
-
     const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
     std::string testCaseName = testInfo_->name();
     AVCODEC_LOGI("%{public}s", testCaseName.c_str());
@@ -1112,7 +1112,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_SpeedDecodingInfo_001, TestSize.Le
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SPEED_DECODING_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    CheckJsonValue("SpeedDecodingInfo");
+    CheckJsonValue("SpeedDecodingInfo", "");
 }
 
 /**
@@ -1279,7 +1279,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_010, TestSize.Level
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    CheckJsonValue("CodecErrorInfo");
+    CheckJsonValue("CodecErrorInfo", "");
 }
 
 /**
