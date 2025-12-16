@@ -166,17 +166,17 @@ void CheckJsonValue(std::string firstKey, std::string secondKey)
         auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
         ASSERT_NE(nullptr, data);
         auto firstValue = cJSON_GetObjectItem(data.get(), firstKey.c_str());
-        ASSERT_NE(nullptr, value);
+        ASSERT_NE(nullptr, firstValue);
         ASSERT_TRUE(cJSON_IsString(firstValue));
-        auto parsedFirstValue = std::shared_ptr<cJSON>(cJSON_Parse(parsedFirstValue.get()), cJSON_Delete);
+        auto parsedFirstValue = std::shared_ptr<cJSON>(cJSON_Parse(firstValue.valuestring), cJSON_Delete);
         ASSERT_NE(nullptr, parsedFirstValue);
         auto secondValue = cJSON_GetObjectItem(parsedFirstValue.get(), secondKey.c_str());
         ASSERT_NE(nullptr, secondValue);
-        ASSERT_NE(1, secondValue->child);
+        ASSERT_NE(nullptr, secondValue->child);
     } else {
         auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
         ASSERT_NE(nullptr, data);
-        auto value = cJSON_GetObjectItem(data.get(), key.c_str());
+        auto value = cJSON_GetObjectItem(data.get(), firstKey.c_str());
         ASSERT_NE(nullptr, value);
         auto array = std::shared_ptr<cJSON>(cJSON_Parse(value->valuestring), cJSON_Delete);
         ASSERT_NE(nullptr, array);
@@ -442,7 +442,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_004, Test
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    CheckJsonValue("CodecSpecifiedInfo", "");
+    CheckJsonValue("CapUnsupportedInfo", "CodecSpecifiedInfo");
 }
 
 /**
@@ -976,14 +976,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsReleaseHardDecInfo_001
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-    auto decLimitExceededInfo = cJSON_GetObjectItem(data.get(), "HDecLimitExceededInfo");
-    ASSERT_NE(nullptr, decLimitExceededInfo);
-    auto array = std::shared_ptr<cJSON>(cJSON_Parse(decLimitExceededInfo->valuestring), cJSON_Delete);
-    ASSERT_NE(nullptr, array);
-    ASSERT_LT(1, cJSON_GetArraySize(array.get()));
+    CheckJsonValue("DecAbnormalOccupationInfo", "HDecLimitExceededInfo");
 }
 
 /**
