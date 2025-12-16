@@ -2294,6 +2294,7 @@ void MediaDemuxer::InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, int32_t
         auto trackMeta = mediaInfo.tracks[index];
         std::string mimeType;
         bool ret = trackMeta.Get<Tag::MIME_TYPE>(mimeType);
+        (void)trackMeta.Get<Tag::ORIGINAL_CODEC_NAME>(originalCodecName_);
         if (ret) {
             MEDIA_LOG_D("mimeType: " PUBLIC_LOG_S ", index: " PUBLIC_LOG_D32, mimeType.c_str(), index);
         }
@@ -2313,6 +2314,7 @@ void MediaDemuxer::InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, int32_t
             !IsTrackDisabled(Plugins::MediaType::AUDIO)) {
             dafaultTrack += "/A:";
             dafaultTrack += std::to_string(index);
+            this->audioMime_ = mimeType;
             if (!IsValidTrackId(audioTrackId)) {
                 audioTrackId = index;
             }
@@ -2327,6 +2329,11 @@ void MediaDemuxer::InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, int32_t
     }
     dafaultTrack += "]";
     MEDIA_LOG_I(PUBLIC_LOG_S, dafaultTrack.c_str());
+}
+
+const std::string& MediaDemuxer::GetOriginalCodecName() const
+{
+    return originalCodecName_;
 }
 
 bool MediaDemuxer::IsOffsetValid(int64_t offset) const
@@ -3047,6 +3054,18 @@ int64_t MediaDemuxer::DoBeforeSubtitleTrackReadLoop(int32_t trackId)
     return RETRY_DELAY_TIME_US;
 }
 
+std::string MediaDemuxer::GetMime()
+{
+    std::string mime;
+    if (!videoMime_.empty()) {
+        mime = videoMime_;
+    }
+    if (mime == "" && !audioMime_.empty()) {
+        mime = audioMime_;
+    }
+    return mime;
+}
+
 int64_t MediaDemuxer::ReadLoop(int32_t trackId)
 {
     if (streamDemuxer_->GetIsIgnoreParse() || isStopped_ || isPaused_ || isSeekError_ || isFlvLiveSelectingBitRate_) {
@@ -3063,7 +3082,8 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
              requestBufferErrorCountMap_[trackId] >= REQUEST_FAILED_RETRY_TIMES) {
             MEDIA_LOG_E("Invalid data source, can not get frame");
             if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN});
+                eventReceiver_->OnEvent(
+                    {"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN, GetMime()});
             } else {
                 MEDIA_LOG_D("EventReceiver is nullptr");
             }
@@ -3077,7 +3097,8 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
             MEDIA_LOG_E("Cache data size is out of limit");
             if (eventReceiver_ != nullptr && !isOnEventNoMemory_.load()) {
                 isOnEventNoMemory_.store(true);
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_BUFFER_NO_MEMORY});
+                eventReceiver_->OnEvent(
+                    {"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_BUFFER_NO_MEMORY, GetMime()});
             }
             return GetEnableSampleQueueFlag() ? NEXT_DELAY_TIME_US : 0;
         } else {
@@ -3095,7 +3116,7 @@ void MediaDemuxer::HandlePacketConvertError()
     FALSE_RETURN_NOLOG(convertErrorTime_ >= CONVERT_PACKET_ERROR_MAX_COUNT);
     MEDIA_LOG_E("PacketConvertError happened %{public}d times, stream is unsupported!", convertErrorTime_.load());
     FALSE_RETURN_MSG(eventReceiver_ != nullptr, "eventReceiver_ is nullptr");
-    eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN});
+    eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN, GetMime()});
 }
 
 Status MediaDemuxer::ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)
@@ -3176,9 +3197,14 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
             }
             break;
         }
-        case PluginEventType::CLIENT_ERROR:
+        case PluginEventType::CLIENT_ERROR: {
+            Event evt {"demuxer_filter", EventType::EVENT_ERROR, event.param, "client"};
+            eventReceiver->OnEvent(evt);
+            break;
+        }
         case PluginEventType::SERVER_ERROR: {
-            eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, event.param});
+            Event evt {"demuxer_filter", EventType::EVENT_ERROR, event.param, "server"};
+            eventReceiver->OnEvent(evt);
             break;
         }
         case PluginEventType::CACHED_DURATION: {

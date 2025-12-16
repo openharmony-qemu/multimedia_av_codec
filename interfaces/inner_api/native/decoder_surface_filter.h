@@ -170,6 +170,7 @@ private:
     void LoadCameraPostProcessorLib();
 #endif
     Status CheckBufferDecodedCorrectly(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
+    std::string GetMime();
 
     std::string name_;
     FilterType filterType_;

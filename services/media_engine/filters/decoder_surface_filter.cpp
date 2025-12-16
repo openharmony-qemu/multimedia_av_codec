@@ -290,7 +290,7 @@ void DecoderSurfaceFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int
         return;
     }
     FALSE_RETURN(eventReceiver_ != nullptr);
-    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO});
+    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO, GetMime()});
 }
 
 void DecoderSurfaceFilter::SetIsSwDecoder(bool isSwDecoder)
@@ -302,7 +302,7 @@ void DecoderSurfaceFilter::PostProcessorOnError(int32_t errorCode)
 {
     MEDIA_LOG_E("Post processor error happened. ErrorCode: %{public}d", errorCode);
     FALSE_RETURN(eventReceiver_ != nullptr);
-    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO});
+    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO, "post_processor"});
 }
 
 void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -348,6 +348,16 @@ Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
     return ret;
 }
 
+std::string DecoderSurfaceFilter::GetMime()
+{
+    if (meta_ == nullptr) {
+        return "";
+    }
+    std::string mime;
+    meta_->GetData(Tag::MIME_TYPE, mime);
+    return mime;
+}
+
 Status DecoderSurfaceFilter::DoInitAfterLink()
 {
     Status ret;
@@ -361,8 +371,7 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
     if (isDrmProtected_ && svpFlag_) {
         std::string baseName = GetCodecName(codecMimeType_);
-        FALSE_RETURN_V_MSG(!baseName.empty(),
-            Status::ERROR_INVALID_PARAMETER, "get name by mime failed.");
+        FALSE_RETURN_V_MSG(!baseName.empty(), Status::ERROR_INVALID_PARAMETER, "get name by mime failed.");
         std::string secureDecoderName = baseName + ".secure";
         MEDIA_LOG_D("DecoderSurfaceFilter will create secure decoder %{public}s", secureDecoderName.c_str());
         ScopedTimer timer("drm-protected VideoDecoder Init", OVERTIME_WARNING_MS);
@@ -379,13 +388,13 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
 
     if (ret != Status::OK && eventReceiver_ != nullptr) {
         MEDIA_LOG_E("Init decoder fail ret = %{public}d", ret);
-        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE});
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE, GetMime()});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
 
     ret = Configure(meta_);
     if (ret != Status::OK) {
-        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE});
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE, GetMime()});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     ParseDecodeRateLimit();
@@ -652,8 +661,7 @@ Status DecoderSurfaceFilter::DoPreroll()
     }
     if (ret != Status::OK) {
         MEDIA_LOG_E("video decoder start failed, ret = %{public}d", ret);
-        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR,
-            MSERR_VID_DEC_FAILED});
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED, GetMime()});
     }
     Filter::StartFilterTask();
     return ret;
@@ -1580,7 +1588,8 @@ Status DecoderSurfaceFilter::InitPostProcessor()
     auto ret = postProcessor_->Init();
     if (ret != Status::OK) {
         MEDIA_LOG_E("Init postProcessor fail ret = %{public}d", ret);
-        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE});
+        std::string mime = "post_processor";
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE, mime});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     return Status::OK;
