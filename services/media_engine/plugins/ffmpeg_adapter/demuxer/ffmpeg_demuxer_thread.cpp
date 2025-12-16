@@ -673,8 +673,7 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexbWithParser(AVPacket* srcAVPacke
     int32_t estimatedSize = srcAVPacket->size;
     if (xpsDataSize > 0) {
         FALSE_RETURN_V_MSG_E(estimatedSize <= INT32_MAX - xpsDataSize, Status::ERROR_INVALID_DATA,
-            "Buffer size overflow: srcSize=" PUBLIC_LOG_D32 ", extradataSize=" PUBLIC_LOG_D32,
-            srcAVPacket->size, xpsDataSize);
+            "size overflow srcSize=" PUBLIC_LOG_D32 " extradataSize=" PUBLIC_LOG_D32, srcAVPacket->size, xpsDataSize);
         estimatedSize += xpsDataSize;
     }
     outWrapper = std::make_shared<Plugins::AVPacketWrapper>();
@@ -703,8 +702,7 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexbWithParser(AVPacket* srcAVPacke
         return Status::OK;
     }
     if (outDataSize > estimatedSize) {
-        MEDIA_LOG_E("Convert to annexb output size overflow: outSize=" PUBLIC_LOG_D32
-            ", estimated=" PUBLIC_LOG_D32, outDataSize, estimatedSize);
+        MEDIA_LOG_E("conver overflow outSize=" PUBLIC_LOG_D32 " estimated=" PUBLIC_LOG_D32, outDataSize, estimatedSize);
         outWrapper = nullptr;
         return Status::ERROR_INVALID_OPERATION;
     }
