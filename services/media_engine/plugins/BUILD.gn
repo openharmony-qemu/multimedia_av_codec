@@ -18,6 +18,7 @@ group("av_codec_media_engine_plugins") {
   deps = [
     "ffmpeg_adapter:media_plugin_FFmpegDemuxer",
     "ffmpeg_adapter:media_plugin_FFmpegMuxer",
+    "ffmpeg_adapter:media_plugin_Mpeg4Muxer",
     "ffmpeg_adapter/audio_decoder:media_plugin_FFmpegAudioDecoders",
     "ffmpeg_adapter/audio_decoder/g711mu:media_plugin_G711muAudioDecoder",
     "ffmpeg_adapter/audio_decoder/g711a:media_plugin_G711aAudioDecoder",
