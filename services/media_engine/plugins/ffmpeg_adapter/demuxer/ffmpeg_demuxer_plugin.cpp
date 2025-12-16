@@ -1157,6 +1157,7 @@ Status FFmpegDemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> sample)
         FALSE_RETURN_V_MSG_E(avPacketWrapper != nullptr, Status::ERROR_INVALID_OPERATION, "Create pktWrapper failed");
         auto pkt = avPacketWrapper->GetAVPacket();
         int ret = av_new_packet(pkt, 1);
+        FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_INVALID_OPERATION, "Call av_new_packet failed");
         auto avPacketMemory = std::make_shared<AVPacketMemory>(avPacketWrapper);
         FALSE_RETURN_V_MSG_E(avPacketMemory != nullptr, Status::ERROR_INVALID_OPERATION, "Create pktMemory failed");
         sample->memory_ = std::static_pointer_cast<Media::AVMemory>(avPacketMemory);

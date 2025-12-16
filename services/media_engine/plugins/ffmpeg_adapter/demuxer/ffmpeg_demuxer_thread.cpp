@@ -635,7 +635,7 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(Plugins::AVPacketWrapperPtr sr
     
     // H.264 (AVC)
     if (codecId == AV_CODEC_ID_H264 &&
-        avbsfContexts_.count(srcAVPacket->stream_index) > 0 && 
+        avbsfContexts_.count(srcAVPacket->stream_index) > 0 &&
         avbsfContexts_[srcAVPacket->stream_index] != nullptr) {
         Status ret = ConvertAvcToAnnexb(*srcAVPacket);
         if (ret == Status::OK) {
