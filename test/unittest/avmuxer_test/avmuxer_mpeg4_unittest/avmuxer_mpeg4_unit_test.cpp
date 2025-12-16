@@ -918,7 +918,7 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_Hevc_AddTrack_001, TestSize.Level0)
     std::shared_ptr<FormatMock> videoParams =
         FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, TEST_WIDTH, TEST_HEIGHT);
 
-    ret = avmuxer_->AddTrack(trackId, videoParams);
+    int32_t ret = avmuxer_->AddTrack(trackId, videoParams);
     ASSERT_EQ(ret, 0);
     ASSERT_GE(trackId, 0);
 }
