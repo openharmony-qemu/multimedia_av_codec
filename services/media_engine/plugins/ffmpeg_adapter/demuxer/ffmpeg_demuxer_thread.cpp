@@ -632,6 +632,20 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(Plugins::AVPacketWrapperPtr sr
     FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid,
         Status::ERROR_INVALID_OPERATION, "Stream snapshot is invalid");
     auto codecId = snapshot->codecId;
+    
+    // H.264 (AVC)
+    if (codecId == AV_CODEC_ID_H264 &&
+        avbsfContexts_.count(srcAVPacket->stream_index) > 0 && 
+        avbsfContexts_[srcAVPacket->stream_index] != nullptr) {
+        Status ret = ConvertAvcToAnnexb(*srcAVPacket);
+        if (ret == Status::OK) {
+            outWrapper = srcWrapper;
+            samplePacket->isAnnexb = true;
+        }
+        return ret;
+    }
+    
+    // HEVC and VVC
     if (codecId != AV_CODEC_ID_HEVC && codecId != AV_CODEC_ID_VVC) {
         outWrapper = nullptr;
         return Status::OK;
@@ -656,7 +670,6 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexbWithParser(AVPacket* srcAVPacke
             xpsDataSize = avStream->codecpar->extradata_size;
         }
     }
-
     int32_t estimatedSize = srcAVPacket->size;
     if (xpsDataSize > 0) {
         FALSE_RETURN_V_MSG_E(estimatedSize <= INT32_MAX - xpsDataSize, Status::ERROR_INVALID_DATA,
@@ -664,7 +677,6 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexbWithParser(AVPacket* srcAVPacke
             srcAVPacket->size, xpsDataSize);
         estimatedSize += xpsDataSize;
     }
-
     outWrapper = std::make_shared<Plugins::AVPacketWrapper>();
     FALSE_RETURN_V_MSG_E(outWrapper != nullptr && outWrapper->GetAVPacket() != nullptr,
         Status::ERROR_INVALID_OPERATION, "Create output AVPacketWrapper failed");
@@ -679,15 +691,23 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexbWithParser(AVPacket* srcAVPacke
     params.outBufferSize = estimatedSize;
     params.xpsData = xpsData;
     params.xpsDataSize = xpsDataSize;
-
-    Status status = (snapshot->codecId == AV_CODEC_ID_HEVC)
-        ? ConvertHevcToAnnexb(*srcAVPacket, params)
-        : ConvertVvcToAnnexb(*srcAVPacket, params);
-    FALSE_RETURN_V_MSG_E(status == Status::OK, status, "Convert to annexb failed");
-
-    FALSE_RETURN_V_MSG_E(outDataSize > 0 && outDataSize <= estimatedSize,
-        Status::ERROR_INVALID_OPERATION, "Output size invalid: " PUBLIC_LOG_D32 ", estimated: " PUBLIC_LOG_D32,
-        outDataSize, estimatedSize);
+    Status status = (snapshot->codecId == AV_CODEC_ID_HEVC) ? ConvertHevcToAnnexb(*srcAVPacket, params) :
+                                                              ConvertVvcToAnnexb(*srcAVPacket, params);
+    if (status != Status::OK) {
+        MEDIA_LOG_W("Convert to annexb failed, status=" PUBLIC_LOG_D32, static_cast<int32_t>(status));
+        outWrapper = nullptr;
+        return status;
+    }
+    if (outDataSize == 0) {
+        outWrapper = nullptr;
+        return Status::OK;
+    }
+    if (outDataSize > estimatedSize) {
+        MEDIA_LOG_E("Convert to annexb output size overflow: outSize=" PUBLIC_LOG_D32
+            ", estimated=" PUBLIC_LOG_D32, outDataSize, estimatedSize);
+        outWrapper = nullptr;
+        return Status::ERROR_INVALID_OPERATION;
+    }
     outPkt->size = outDataSize;
     samplePacket->isAnnexb = true;
     return Status::OK;
@@ -701,14 +721,7 @@ Status FFmpegDemuxerPlugin::ConvertToAnnexbAndUpdateSample(std::shared_ptr<AVBuf
     if (ret != Status::OK) {
         return ret;
     }
-
-    if (outPktWrapper == nullptr) {
-        ret = ConvertPacketToAnnexb(sample, tempPktWrapper, samplePacket);
-        if (ret != Status::OK) {
-            return ret;
-        }
-        outPktWrapper = tempPktWrapper;
-    } else {
+    if (outPktWrapper != nullptr) {
         tempPktWrapper = outPktWrapper;
     }
 

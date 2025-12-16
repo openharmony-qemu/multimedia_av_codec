@@ -1155,6 +1155,8 @@ Status FFmpegDemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> sample)
     if (isAsyncRead) {
         auto avPacketWrapper = std::make_shared<AVPacketWrapper>();
         FALSE_RETURN_V_MSG_E(avPacketWrapper != nullptr, Status::ERROR_INVALID_OPERATION, "Create pktWrapper failed");
+        auto pkt = avPacketWrapper->GetAVPacket();
+        int ret = av_new_packet(pkt, 1);
         auto avPacketMemory = std::make_shared<AVPacketMemory>(avPacketWrapper);
         FALSE_RETURN_V_MSG_E(avPacketMemory != nullptr, Status::ERROR_INVALID_OPERATION, "Create pktMemory failed");
         sample->memory_ = std::static_pointer_cast<Media::AVMemory>(avPacketMemory);
