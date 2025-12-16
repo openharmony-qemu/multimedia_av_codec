@@ -198,6 +198,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"avi", FileType::AVI},
     {"mpeg", FileType::MPEGPS},
     {"rm", FileType::RM},
+    {"caf", FileType::CAF},
     {"ac3", FileType::AC3},
     {"wmv", FileType::WMV},
     {"asf", FileType::WMV},
