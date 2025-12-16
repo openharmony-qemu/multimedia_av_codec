@@ -18,34 +18,20 @@
 #include <vector>
 #include <map>
 #include <cstdint>
+#include "avpacket_wrapper.h"
 #include "block_queue.h"
 #include "common/status.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "libavcodec/avcodec.h"
-#ifdef __cplusplus
-}
-#endif
 
 namespace OHOS {
 namespace Media {
 
 struct SamplePacket {
     uint32_t offset = 0;
-    std::vector<AVPacket*> pkts {};
+    std::vector<Plugins::AVPacketWrapperPtr> pkts {};
     bool isEOS = false;
     bool isAnnexb = false;
     uint32_t queueIndex = 0;
-    ~SamplePacket()
-    {
-        for (auto pkt : pkts) {
-            if (pkt) {
-                av_packet_free(&pkt);
-            }
-        }
-    }
+    ~SamplePacket() = default;
 };
 
 class BlockQueuePool {

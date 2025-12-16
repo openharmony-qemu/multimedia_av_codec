@@ -61,6 +61,7 @@ public:
     bool ConvertExtraDataToAnnexb(uint32_t trackId, uint8_t *extraData, int32_t extraDataSize);
     void ConvertPacketToAnnexb(uint32_t trackId, uint8_t **hvccPacket, int32_t &hvccPacketSize,
         const PacketConvertInfo &packetInfo);
+    void ConvertPacketToAnnexb(uint32_t trackId, const PacketConvertToBufferInfo &convertInfo);
     void ParseAnnexbExtraData(uint32_t trackId, const uint8_t *sample, int32_t size);
     
 private:
