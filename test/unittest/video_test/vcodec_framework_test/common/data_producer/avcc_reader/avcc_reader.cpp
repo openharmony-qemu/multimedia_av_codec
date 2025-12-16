@@ -2286,9 +2286,9 @@ bool Vp8Reader::IvfUnitReader::ParseIvfFileHeader()
     }
 
     totalFrames_ = fileHeader[NUM_24] |
-                   (fileHeader[NUM_25] << IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_1) |
-                   (fileHeader[NUM_26] << IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_2) |
-                   (fileHeader[NUM_27] << IVF_AV1_HEADER_TOTAL_FRAMES_OFFSET_3);
+                   (fileHeader[NUM_25] << IVF_HEADER_TOTAL_FRAMES_OFFSET_1) |
+                   (fileHeader[NUM_26] << IVF_HEADER_TOTAL_FRAMES_OFFSET_2) |
+                   (fileHeader[NUM_27] << IVF_HEADER_TOTAL_FRAMES_OFFSET_3);
 
     std::cout << "IVF file parsed - Total frames: " << totalFrames_ << std::endl;
     fileHeaderParsed_ = true;
