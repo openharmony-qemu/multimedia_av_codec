@@ -152,7 +152,7 @@ void HCodec::ReduceOwner(OMX_DIRTYPE port, BufferOwner owner)
     CountTrace(HITRACE_TAG_ZMEDIA, record.ownerTraceTag_[owner], record.currOwner_[owner]);
 }
 
-void HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
+TimePoint HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
 {
     auto now = chrono::steady_clock::now();
     OMX_DIRTYPE port = info.isInput ? OMX_DirInput : OMX_DirOutput;
@@ -198,6 +198,7 @@ void HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
         record.lastPts_ = info.omxBuffer->pts;
         debugMode_ ? UpdateOutputRecord(now, info) : PrintStatistic(now, port);
     }
+    return now;
 }
 
 // now, on this port, this owner's hold cnt is gonna change

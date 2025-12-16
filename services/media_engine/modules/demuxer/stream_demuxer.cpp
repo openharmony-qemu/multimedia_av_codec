@@ -453,6 +453,11 @@ Status StreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shar
             }
             if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME) {
                 SetDemuxerState(streamID, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+                if (firstFrameDecapsulationTime_ == 0) {
+                    auto duration = std::chrono::steady_clock::now().time_since_epoch();
+                    firstFrameDecapsulationTime_ =
+                        std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+                }
             }
             break;
         }
@@ -471,6 +476,11 @@ void StreamDemuxer::SetInterruptState(bool isInterruptNeeded)
         readCond_.notify_all();
     }
     TypeFinderInterrupt(isInterruptNeeded);
+}
+
+int64_t StreamDemuxer::GetFirstFrameDecapsulationTime()
+{
+    return firstFrameDecapsulationTime_;
 }
 } // namespace Media
 } // namespace OHOS

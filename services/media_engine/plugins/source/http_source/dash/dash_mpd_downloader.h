@@ -142,6 +142,7 @@ public:
     void SetInterruptState(bool isInterruptNeeded);
     std::string GetUrl() const;
     std::string GetContentType();
+    void GetDownloadInfo(DownloadInfo& downloadInfo);
 
 private:
     void ParseManifest();

@@ -748,7 +748,10 @@ void Downloader::RequestData()
     if (currentRequest_->requestWholeFile_) {
         len = 0;
     }
-
+    if (toalDownloadCount_ == 0) {
+        startDownTime_ = GetCurrentMillisecond();
+    }
+    toalDownloadCount_++;
     client_->RequestData(startPos, len, sourceInfo, handleResponseCb);
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData end.", FAKE_POINTER(this));
 }
@@ -975,6 +978,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     if (!mediaDownloader->currentRequest_->isDownloading_) {
         mediaDownloader->currentRequest_->isDownloading_ = true;
     }
+    UpdateDownloadInfo(mediaDownloader, dataLen);
     uint32_t writeLen = mediaDownloader->currentRequest_->saveData_(static_cast<uint8_t *>(buffer),
         static_cast<uint32_t>(dataLen), mediaDownloader->isNotBlock_);
     MEDIA_LOGI_LIMIT(DOWNLOAD_LOG_FEQUENCE, "RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
@@ -1274,6 +1278,36 @@ void Downloader::StopBufferring()
             }
         }
         Start();
+    }
+}
+
+void Downloader::GetDownloadInfo(DownloadInfo& downloadInfo)
+{
+    downloadInfo.totalDownLoadBytes = totalDownLoadBytes_;
+    downloadInfo.totalLoadingTime = totalDownloadDuringTime_;
+    downloadInfo.loadingCount = toalDownloadCount_;
+    downloadInfo.firstDownloadTime = firstDownloadTime_;
+    downloadInfo.firstFrameDecapsulationTime = firstDownloadTimestamp_;
+}
+
+int64_t Downloader::GetCurrentMillisecond()
+{
+    auto duration = std::chrono::steady_clock::now().time_since_epoch();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+}
+
+void Downloader::UpdateDownloadInfo(Downloader *downloader, size_t dataLen)
+{
+    if (downloader) {
+        auto now = downloader->GetCurrentMillisecond();
+        if (downloader->firstDownloadTime_ == 0) {
+            downloader->firstDownloadTimestamp_ = now;
+            downloader->firstDownloadTime_ = now - downloader->startDownTime_;
+            downloader->lastDownloadTime_ = downloader->startDownTime_;
+        }
+        downloader->totalDownloadDuringTime_ += now - downloader->lastDownloadTime_;
+        downloader->lastDownloadTime_ = now;
+        downloader->totalDownLoadBytes_ += dataLen;
     }
 }
 }
