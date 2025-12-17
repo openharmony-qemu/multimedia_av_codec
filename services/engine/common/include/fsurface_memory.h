@@ -23,7 +23,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace {
-constexpr uint64_t USAGE =
+constexpr uint64_t SURFACE_DEFAULT_USAGE =
     BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE;
 constexpr int32_t SURFACE_STRIDE_ALIGN = 8;
 constexpr int32_t TIMEOUT = 0;
@@ -56,7 +56,7 @@ struct SurfaceControl {
                                          .height = 0,
                                          .strideAlignment = SURFACE_STRIDE_ALIGN,
                                          .format = 0,
-                                         .usage = USAGE,
+                                         .usage = SURFACE_DEFAULT_USAGE,
                                          .timeout = TIMEOUT};
     std::optional<ScalingMode> scalingMode = std::nullopt;
 };
@@ -76,7 +76,7 @@ public:
     sptr<SyncFence> GetFence();
     uint8_t *GetBase() const;
     int32_t GetSize() const;
-    uint32_t GetId() const;
+    uint32_t GetSurfaceBufferSeqNum() const;
     std::atomic<bool> isAttached = false;
     std::atomic<Owner> owner = Owner::OWNED_BY_US;
 
@@ -88,7 +88,7 @@ private:
     sptr<SyncFence> fence_ = nullptr;
     int32_t stride_ = 0;
     SurfaceControl *sInfo_ = nullptr;
-    uint32_t seqNum = 0u;
+    uint32_t seqNum_ = 0u;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

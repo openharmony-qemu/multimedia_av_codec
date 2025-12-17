@@ -81,6 +81,8 @@ private:
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
         int32_t width_ = 0;
         int32_t height_ = 0;
+        int32_t format_ = 0;
+        uint64_t usage_ = SURFACE_DEFAULT_USAGE;
         std::atomic<bool> hasSwapedOut_ = false;
     };
 
@@ -97,7 +99,6 @@ private:
         FREEZING,
         FROZEN,
     };
-    void DumpOutputBuffer();
     bool IsActive() const;
     void FreeExtraData();
     void ResetContext(bool isNeedFree = true);
@@ -146,8 +147,9 @@ private:
     void StartRequestSurfaceBufferThread();
     void StopRequestSurfaceBufferThread();
     void RequestSurfaceBufferOnce();
-    SurfaceBufferInfo RequestSurfaceBuffer();
-    void OnSurfaceBufferAvailable(SurfaceBufferInfo bufInfo);
+    void RequestSurfaceBuffer(SurfaceBufferInfo &bufInfo);
+    bool FBufferAvailable(const std::shared_ptr<FBuffer> &buffer, SurfaceBufferInfo &bufInfo);
+    void OnSurfaceBufferAvailable(SurfaceBufferInfo &bufInfo);
     // for memory recycle
     int32_t FreezeBuffers(State curState);
     int32_t ActiveBuffers();
@@ -165,8 +167,8 @@ private:
     int32_t height_ = 0;
     int32_t inputBufferSize_ = 0;
     int32_t outputBufferSize_ = 0;
-    int32_t inputBufferCnt_ = 0;
-    int32_t outputBufferCnt_ = 0;
+    uint32_t inputBufferCnt_ = 0;
+    uint32_t outputBufferCnt_ = 0;
     // INIT
     std::shared_ptr<AVCodec> avCodec_ = nullptr;
     CallerInfo fDecInfo_;
@@ -204,14 +206,14 @@ private:
     std::mutex requestBufferMutex_;
     std::mutex renderBufferMapMutex_;
     std::condition_variable requestBufferCV_;
-    std::condition_variable requestBufferOnceDoneCV_;
     std::condition_variable sendCv_;
     std::condition_variable recvCv_;
     std::shared_ptr<MediaCodecCallback> callback_;
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;
-    std::atomic<bool> requestBufferFinished_ = true;
+    // for surface buffer request thread
+    std::atomic<uint32_t> count_ = 0u;
     std::atomic<bool> requestBufferThreadExit_ = false;
     std::thread mRequestSurfaceBufferThread_;
     uint32_t decNum_ = 0;
@@ -220,6 +222,7 @@ private:
     // dump
 #ifdef BUILD_ENG_VERSION
     void OpenDumpFile();
+    void DumpOutputBuffer();
     std::shared_ptr<std::ofstream> dumpInFile_ = nullptr;
     std::shared_ptr<std::ofstream> dumpOutFile_ = nullptr;
 #endif // BUILD_ENG_VERSION

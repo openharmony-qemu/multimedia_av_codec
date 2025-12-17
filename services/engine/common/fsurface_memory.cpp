@@ -43,9 +43,9 @@ int32_t FSurfaceMemory::AllocSurfaceBuffer(int32_t width, int32_t height)
     CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, err, "Alloc surface buffer failed, GSERROR=%{public}d", err);
     owner = Owner::OWNED_BY_CODEC;
     isAttached = false;
-    seqNum = surfaceBuffer_->GetSeqNum();
+    seqNum_ = surfaceBuffer_->GetSeqNum();
     SetCallerToBuffer(width, height);
-    AVCODEC_LOGI("Alloc surface buffer success seq=%{public}u", seqNum);
+    AVCODEC_LOGI("Alloc surface buffer success seq=%{public}u", seqNum_);
     return AVCS_ERR_OK;
 }
 
@@ -80,10 +80,10 @@ sptr<SurfaceBuffer> FSurfaceMemory::GetSurfaceBuffer()
 
 void FSurfaceMemory::SetSurfaceBuffer(sptr<SurfaceBuffer> surfaceBuffer, Owner toChangeOwner, sptr<SyncFence> fence)
 {
-    CHECK_AND_RETURN_LOG(surfaceBuffer != nullptr, "Surface buffer is nullptr!");
+    CHECK_AND_RETURN_LOG(surfaceBuffer_ != nullptr, "Surface buffer is nullptr!");
     surfaceBuffer_ = surfaceBuffer;
     owner = toChangeOwner;
-    seqNum = surfaceBuffer_->GetSeqNum();
+    seqNum_ = surfaceBuffer_->GetSeqNum();
     if (fence != nullptr) {
         fence_ = fence;
     }
@@ -116,9 +116,9 @@ int32_t FSurfaceMemory::GetSize() const
     return static_cast<int32_t>(size);
 }
 
-uint32_t FSurfaceMemory::GetId() const
+uint32_t FSurfaceMemory::GetSurfaceBufferSeqNum() const
 {
-    return seqNum;
+    return seqNum_;
 }
 
 void FSurfaceMemory::SetCallerToBuffer(int32_t w, int32_t h)
