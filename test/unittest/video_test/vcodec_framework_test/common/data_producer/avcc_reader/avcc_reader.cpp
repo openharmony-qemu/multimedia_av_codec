@@ -1823,7 +1823,7 @@ int32_t Msvideo1Reader::FillBuffer(uint8_t* bufferAddr, OH_AVCodecBufferAttr& at
     return AV_ERR_OK;
 }
 
-bool Msvideo1Reader::IsEOS()
+bool Msvideo1Reader::IsEOS() const
 {
     return msvideo1UnitReader_ ? msvideo1UnitReader_->IsEOS() : true;
 }
@@ -1914,12 +1914,12 @@ int32_t Wmv3Reader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
     return AV_ERR_OK;
 }
 
-bool Wmv3Reader::IsEOS()
+bool Wmv3Reader::IsEOS() const
 {
     return wmv3UnitReader_ ? wmv3UnitReader_->IsEOS() : true;
 }
 
-uint8_t const *Wmv3Reader::Wmv3UnitReader::GetNextWmv3UnitAddr()
+uint8_t const *Wmv3Reader::Wmv3UnitReader::GetNextWmv3UnitAddr() const
 {
     CHECK_AND_RETURN_RET_LOG(wmv3Unit_ != nullptr, nullptr, "wmv3Unit_ is nullptr");
     return wmv3Unit_->data();
@@ -2009,7 +2009,7 @@ bool Wmv3Reader::Wmv3MetaUnitReader::IsEOF()
     return frameIndex_ >= ES_WMV3_NORMAL_LEN;
 }
 
-uint32_t Wmv3Reader::Wmv3MetaUnitReader::GetFrameLenth(uint32_t index)
+uint32_t Wmv3Reader::Wmv3MetaUnitReader::GetFrameLenth(uint32_t index) const
 {
     if (isMainStream_) {
         return ES_WMV3_MAIN[index];
@@ -2037,12 +2037,12 @@ void Wmv3Reader::Wmv3MetaUnitReader::PrereadWmv3Unit()
     frameIndex_++;
 }
 
-const uint8_t* Msvideo1Reader::Msvideo1Detector::GetMsvideo1TypeAddr(const uint8_t* bufferAddr)
+const uint8_t* Msvideo1Reader::Msvideo1Detector::GetMsvideo1TypeAddr(const uint8_t* bufferAddr) const
 {
     return bufferAddr;
 }
 
-uint8_t Msvideo1Reader::Msvideo1Detector::GetMsvideo1Type(const uint8_t* bufferAddr)
+uint8_t Msvideo1Reader::Msvideo1Detector::GetMsvideo1Type(const uint8_t* bufferAddr) const
 {
     if (!bufferAddr) {
         return MSVIDEO1_UNSPECIFIED;
@@ -2056,7 +2056,7 @@ uint8_t Msvideo1Reader::Msvideo1Detector::GetMsvideo1Type(const uint8_t* bufferA
     }
 }
 
-bool Msvideo1Reader::Msvideo1Detector::IsI(uint8_t msvideo1Type)
+bool Msvideo1Reader::Msvideo1Detector::IsI(uint8_t msvideo1Type) const
 {
     return (msvideo1Type == MSVIDEO1_I);
 }
@@ -3357,7 +3357,7 @@ int32_t Mpeg1Reader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
     return AV_ERR_OK;
 }
 
-bool Mpeg1Reader::IsEOS()
+bool Mpeg1Reader::IsEOS() const
 {
     return mpeg1UnitReader_ ? mpeg1UnitReader_->IsEOS() : true;
 }
@@ -3379,7 +3379,7 @@ void Mpeg1Reader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize,
     }
 }
 
-uint8_t const *Mpeg1Reader::Mpeg1UnitReader::GetNextMpeg1UnitAddr()
+uint8_t const *Mpeg1Reader::Mpeg1UnitReader::GetNextMpeg1UnitAddr() const
 {
     CHECK_AND_RETURN_RET_LOG(mpeg1Unit_ != nullptr, nullptr, "mpeg1Unit_ is nullptr");
     return mpeg1Unit_->data();
@@ -3461,19 +3461,19 @@ void Mpeg1Reader::Mpeg1MetaUnitReader::PrereadMpeg1Unit()
     frameIndex_++;
 }
 
-uint8_t* Mpeg1Reader::Mpeg1Detector::GetDelimiterPos(uint8_t* addrstart, uint8_t* addrend)
+uint8_t* Mpeg1Reader::Mpeg1Detector::GetDelimiterPos(const uint8_t* addrstart, const uint8_t* addrend) const
 {
     (void)addrstart;
     (void)addrend;
     return nullptr;
 }
 
-const uint8_t *Mpeg1Reader::Mpeg1Detector::GetMpeg1TypeAddr(const uint8_t *bufferAddr)
+const uint8_t *Mpeg1Reader::Mpeg1Detector::GetMpeg1TypeAddr(const uint8_t *bufferAddr) const
 {
     return bufferAddr;
 }
 
-uint8_t Mpeg1Reader::Mpeg1Detector::GetMpeg1Type(const uint8_t *bufferAddr)
+uint8_t Mpeg1Reader::Mpeg1Detector::GetMpeg1Type(const uint8_t *bufferAddr) const
 {
     if (!bufferAddr) {
         return MPEG1_UNSPECIFIED;
@@ -3487,7 +3487,7 @@ uint8_t Mpeg1Reader::Mpeg1Detector::GetMpeg1Type(const uint8_t *bufferAddr)
     }
 }
 
-bool Mpeg1Reader::Mpeg1Detector::IsI(uint8_t mpeg1Type)
+bool Mpeg1Reader::Mpeg1Detector::IsI(uint8_t mpeg1Type) const
 {
     return (mpeg1Type == MPEG1_I);
 }

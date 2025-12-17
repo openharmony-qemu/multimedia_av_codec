@@ -112,6 +112,8 @@ void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, vo
 
 void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData)
 {
+    (void)data;
+    (void)userData;
     int32_t ret = 0;
     if (g_decSample->isSurfMode) {
         ret = OH_VideoDecoder_RenderOutputBuffer(codec, index);

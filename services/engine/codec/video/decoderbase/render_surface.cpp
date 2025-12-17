@@ -63,7 +63,7 @@ void RenderSurface::UnRegisterListenerToSurface(const sptr<Surface> &surface)
     SurfaceTools::GetInstance().ReleaseSurface(instanceId_, surface, false);
 }
 
-void RenderSurface::CombineConsumerUsage()
+void RenderSurface::CombineConsumerUsage() const
 {
     uint64_t defaultUsage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
     uint64_t consumerUsage = sInfo_.surface->GetDefaultUsage();
@@ -343,7 +343,7 @@ void RenderSurface::RequestBufferFromConsumer()
                  queSize, i);
 }
 
-void RenderSurface::FindAvailIndex(uint32_t index)
+void RenderSurface::FindAvailIndex(uint32_t index) const
 {
     uint32_t curQueSize = renderAvailQue_->Size();
     for (uint32_t i = 0u; i < curQueSize; i++) {
@@ -420,7 +420,7 @@ int32_t RenderSurface::ActiveBuffers()
     return AVCS_ERR_OK;
 }
 
-bool RenderSurface::CanSwapOut(bool isOutputBuffer, std::shared_ptr<CodecBuffer> &codecBuffer)
+bool RenderSurface::CanSwapOut(bool isOutputBuffer, const std::shared_ptr<CodecBuffer> &codecBuffer)
 {
     if (!isOutputBuffer) {
         AVCODEC_LOGE("Current buffers unsupport.");
@@ -436,7 +436,7 @@ bool RenderSurface::CanSwapOut(bool isOutputBuffer, std::shared_ptr<CodecBuffer>
     return !(ownerValue == Owner::OWNED_BY_SURFACE || codecBuffer->hasSwapedOut);
 }
 
-int32_t RenderSurface::SwapOutBuffers(bool isOutputBuffer, State curState)
+int32_t RenderSurface::SwapOutBuffers(bool isOutputBuffer, State curState) const
 {
     uint32_t bufferType = isOutputBuffer ? INDEX_OUTPUT : INDEX_INPUT;
     CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped out!");
@@ -467,7 +467,7 @@ int32_t RenderSurface::SwapOutBuffers(bool isOutputBuffer, State curState)
     return AVCS_ERR_OK;
 }
 
-int32_t RenderSurface::SwapInBuffers(bool isOutputBuffer)
+int32_t RenderSurface::SwapInBuffers(bool isOutputBuffer) const
 {
     uint32_t bufferType = isOutputBuffer ? INDEX_OUTPUT : INDEX_INPUT;
     CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped in!");
