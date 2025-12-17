@@ -68,5 +68,6 @@ test/unittest/resources/demuxer_res/caf_pcm_s16le.caf filter=lfs diff=lfs merge=
 test/unittest/resources/demuxer_res/dat_h264_mp3.dat filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/demuxer_res/dat_h265_aac.dat filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/demuxer_res/dat_mpeg4_aac.dat filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/rv40_aac.rm filter=lfs diff=lfs merge=lfs -text
 /test/moduletest/resources/demuxer/mkv.mkv filter=lfs diff=lfs merge=lfs -text
 /test/unittest/resources/reference_parser_test/mp4/ippp_0.mp4 filter=lfs diff=lfs merge=lfs -text
