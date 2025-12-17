@@ -60,6 +60,8 @@ int64_t Vp8VDecServerSample::GetSystemTimeUs()
 
 void Vp8VDecServerSample::CallBack::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
+    cout << "errorType: " << errorType << endl;
+    cout << "errorCode:" << errorCode << endl;
     tester->Flush();
     tester->Reset();
 }

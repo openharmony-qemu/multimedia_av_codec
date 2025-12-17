@@ -82,7 +82,12 @@ void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
     cout << "Error errorCode=" << errorCode << endl;
 }
 
-void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData) {}
+void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData) 
+{
+    (void)codec;
+    (void)format;
+    (void)userData;
+}
 
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
