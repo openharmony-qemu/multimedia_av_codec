@@ -61,7 +61,6 @@ int32_t VideoDecoder::Init(Meta &callerInfo)
     int32_t ret = Initialize();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Failed to initialize");
     decInfo_.instanceId = std::to_string(instanceId_);
-    decName_ = "decoder_[" + std::to_string(instanceId_) + "]";
     AVCODEC_LOGI("Decoder codec name: %{public}s", decName_.c_str());
     return AVCS_ERR_OK;
 }
@@ -94,10 +93,57 @@ void VideoDecoder::OpenDumpFile()
                 dumpOutFile_ = nullptr;
             }
         }
-        // delete outConvert_%p.data
+        ret = sprintf_s(fileName, sizeof(fileName), "%s/outConvert_%p.data", DUMP_PATH, this);
+        if (ret > 0) {
+            dumpConvertFile_ = std::make_shared<std::ofstream>();
+            dumpConvertFile_->open(fileName, std::ios::out | std::ios::binary);
+            if (!dumpConvertFile_->is_open()) {
+                AVCODEC_LOGW("fail open file %{public}s", fileName);
+                dumpConvertFile_ = nullptr;
+            }
+        }
     }
 }
 #endif
+
+void VideoDecoder::GetSurfaceCfgFromFmt(const Format &format)
+{
+    int32_t val = -1;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val)) {
+        if (val == static_cast<int32_t>(VideoPixelFormat::NV12) ||
+            val == static_cast<int32_t>(VideoPixelFormat::NV21)) {
+            std::lock_guard<std::mutex> runlock(decRunMutex_);
+            outputPixelFmt_ = static_cast<VideoPixelFormat>(val);
+            format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val);
+        } else {
+            AVCODEC_LOGI("Invalid pixel_format: %{public}d.", val);
+        }
+    }
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val)) {
+        if (IsValidScaleType(val)) {
+            format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val);
+            AVCODEC_LOGI("Set parameter scale_type: %{public}d success.", val);
+        } else {
+            AVCODEC_LOGE("Invalid scale_type: %{public}d.", val);
+        }
+    }
+    std::optional<int32_t> orientation = std::nullopt;
+    if (format.GetIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, val)) {
+        orientation = val;
+        AVCODEC_LOGI("Set parameter video_orientation_type: %{public}d success.", orientation.value());
+    }
+    if (!orientation.has_value() && format.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val)) {
+        if (IsValidRotation(val)) {
+            orientation = static_cast<int32_t>(TranslateSurfaceRotation(static_cast<VideoRotation>(val)));
+            AVCODEC_LOGI("Set parameter rotation_angle: %{public}d success.", orientation.value());
+        } else {
+            AVCODEC_LOGE("Invalid rotation_angle: %{public}d.", val);
+        }
+    }
+    if (orientation) {
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, orientation.value());
+    }
+}
 
 bool VideoDecoder::IsActive() const
 {
@@ -115,6 +161,7 @@ int32_t VideoDecoder::Start()
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "decoder create failed");
     if (!isBufferAllocated_) {
         for (int32_t i = 0; i < AV_NUM_DATA_POINTERS; i++) {
+            std::lock_guard<std::mutex> convertLock(convertDataMutex_);
             scaleData_[i] = nullptr;
             scaleLineSize_[i] = 0;
         }
@@ -153,12 +200,14 @@ int32_t VideoDecoder::Configure(const Format &format)
             ConfigurelWidthAndHeight(format, it.first, false);
         } else if (it.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT ||
                    it.first == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE ||
-                   it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
-            ConfigureSurface(format, it.first, it.second.type);
+                   it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE ||
+                   it.first == OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE) {
+            continue;
         } else {
             AVCODEC_LOGW("Set parameter failed: size:%{public}s, unsupport key", it.first.data());
         }
     }
+    GetSurfaceCfgFromFmt(format);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
 
@@ -240,6 +289,7 @@ void VideoDecoder::InitBuffers()
 
 void VideoDecoder::ResetData()
 {
+    std::lock_guard<std::mutex> convertLock(convertDataMutex_);
     if (scaleData_[0] != nullptr) {
         if (isConverted_) {
             av_free(scaleData_[0]);
@@ -300,7 +350,6 @@ int32_t VideoDecoder::Stop()
     AVCODEC_LOGI("Stop codec successful, state: Configured");
     return AVCS_ERR_OK;
 }
-
 int32_t VideoDecoder::Flush()
 {
     AVCODEC_SYNC_TRACE;
@@ -313,6 +362,7 @@ int32_t VideoDecoder::Flush()
     codecAvailQue_->SetActive(false, false);
 
     ResetBuffers();
+    FlushAllFrames();
     state_ = State::FLUSHED;
     AVCODEC_LOGI("%{public}s Flush codec successful, state: Flushed", decName_.c_str());
     return AVCS_ERR_OK;
@@ -336,6 +386,8 @@ void VideoDecoder::ReleaseResource()
     ReleaseBuffers();
     format_ = Format();
     if (sInfo_.surface != nullptr) {
+        transform_.store(GraphicTransformType::GRAPHIC_ROTATE_NONE);
+        sInfo_.surface->SetTransform(transform_.load());
         UnRegisterListenerToSurface(sInfo_.surface);
         StopRequestSurfaceBufferThread();
     }
@@ -356,16 +408,9 @@ int32_t VideoDecoder::Release()
 int32_t VideoDecoder::SetParameter(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    for (auto &it : format.GetFormatMap()) {
-        if (sInfo_.surface != nullptr && it.second.type == FORMAT_TYPE_INT32) {
-            if (it.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT ||
-                it.first == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE ||
-                it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
-                SetSurfaceParameter(format, it.first, it.second.type);
-            }
-        } else {
-            AVCODEC_LOGW("Current Version, %{public}s is not supported", it.first.data());
-        }
+    if (sInfo_.surface != nullptr) {
+        GetSurfaceCfgFromFmt(format);
+        SetSurfaceParameter();
     }
     AVCODEC_LOGI("Set parameter successful");
     return AVCS_ERR_OK;
@@ -567,60 +612,79 @@ int32_t VideoDecoder::GetOutputFormat(Format &format)
     return AVCS_ERR_OK;
 }
 
-void VideoDecoder::SetSurfaceParameter(const Format &format, const std::string_view &formatKey,
-    FormatDataType formatType)
+void VideoDecoder::SetSurfaceParameter()
 {
-    CHECK_AND_RETURN_LOG(formatType == FORMAT_TYPE_INT32, "Set parameter failed: type should be int32");
-    int32_t val = 0;
-    CHECK_AND_RETURN_LOG(format.GetIntValue(formatKey, val), "Set parameter failed: get value fail");
-    if (formatKey == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT) {
-        VideoPixelFormat vpf = static_cast<VideoPixelFormat>(val);
-        if (!CheckVideoPixelFormat(vpf)) {
-            return;
-        }
-        outputPixelFmt_ = vpf;
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val);
-        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(vpf);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
-        std::lock_guard<std::mutex> sLock(surfaceMutex_);
-        sInfo_.requestConfig.format = surfacePixelFmt;
-    } else if (formatKey == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
-        VideoRotation sr = static_cast<VideoRotation>(val);
-        CHECK_AND_RETURN_LOG(sr == VideoRotation::VIDEO_ROTATION_0 || sr == VideoRotation::VIDEO_ROTATION_90 ||
-                                 sr == VideoRotation::VIDEO_ROTATION_180 || sr == VideoRotation::VIDEO_ROTATION_270,
-                             "Set parameter failed: rotation angle value %{public}d invalid", val);
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val);
-        std::lock_guard<std::mutex> sLock(surfaceMutex_);
-        sInfo_.surface->SetTransform(TranslateSurfaceRotation(sr));
-    } else if (formatKey == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
-        ScalingMode scaleMode = static_cast<ScalingMode>(val);
-        CHECK_AND_RETURN_LOG(scaleMode == ScalingMode::SCALING_MODE_SCALE_TO_WINDOW ||
-                                 scaleMode == ScalingMode::SCALING_MODE_SCALE_CROP,
-                             "Set parameter failed: scale type value %{public}d invalid", val);
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val);
-        std::lock_guard<std::mutex> sLock(outputMutex_);
-        sInfo_.scalingMode = scaleMode;
-        sInfo_.surface->SetScalingMode(sInfo_.scalingMode.value());
-    } else {
-        AVCODEC_LOGW("Set parameter failed: %{public}s", formatKey.data());
-        return;
+    int32_t val = -1;
+    bool setSurfacePixelFormat = false;
+    std::optional<ScalingMode> scaling = std::nullopt;
+    std::optional<GraphicTransformType> orientation = std::nullopt;
+    if (format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val)) {
+        setSurfacePixelFormat = true;
     }
-    AVCODEC_LOGI("Set parameter %{public}s success, val %{public}d", formatKey.data(), val);
+    if (format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val)) {
+        scaling = static_cast<ScalingMode>(val);
+    }
+    if (format_.GetIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, val)) {
+        orientation = static_cast<GraphicTransformType>(val);
+    }
+    std::lock_guard<std::mutex> sLock(surfaceMutex_);
+    if (setSurfacePixelFormat) {
+        CHECK_AND_RETURN_LOG(SetSurfaceFormat() == AVCS_ERR_OK,
+                             "set surface format failed: unsupported surface format");
+    }
+    if (scaling) {
+        sInfo_.scalingMode = scaling.value();
+        sInfo_.surface->SetScalingMode(sInfo_.scalingMode.value());
+    }
+    if (orientation) {
+        transform_.store(orientation.value());
+        AVCODEC_LOGI("Set surface video_orientation_type: %{public}d success.",
+                     static_cast<int32_t>(transform_.load()));
+        sInfo_.surface->SetTransform(transform_.load());
+    }
 }
 
-int32_t VideoDecoder::CheckFormatChange(uint32_t index, int width, int height)
+int32_t VideoDecoder::SetSurfaceFormat()
+{
+    if (bitDepth_ == BITS_PER_PIXEL_COMPONENT_10) {
+        if (outputPixelFmt_ == VideoPixelFormat::NV12 || outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
+            sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010;
+        } else {
+            sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010;
+        }
+        format_.PutIntValue("av_codec_event_info_bit_depth", 1);
+    } else {
+        VideoPixelFormat targetPixelFmt = outputPixelFmt_;
+        if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
+            targetPixelFmt = VideoPixelFormat::NV12;
+        }
+        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(targetPixelFmt);
+        CHECK_AND_RETURN_RET_LOG(surfacePixelFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT, AVCS_ERR_UNSUPPORT,
+                                 "Failed to allocate output buffer: unsupported surface format");
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
+        sInfo_.requestConfig.format = surfacePixelFmt;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t VideoDecoder::CheckFormatChange(uint32_t index, int width, int height, int bitDepth)
 {
     bool formatChanged = false;
-    if (width_ != width || height_ != height) {
-        AVCODEC_LOGI("format change, width: %{public}d->%{public}d, height: %{public}d->%{public}d",
-            width_, width, height_, height);
+    if (width_ != width || height_ != height || bitDepth_ != bitDepth) {
+        AVCODEC_LOGI("format change, width: %{public}d->%{public}d, height: %{public}d->%{public}d, "
+                     "bitDepth: %{public}d->%{public}d", width_, width, height_, height, bitDepth_, bitDepth);
         width_ = width;
         height_ = height;
+        bitDepth_ = bitDepth;
         ResetData();
+        std::unique_lock<std::mutex> convertLock(convertDataMutex_);
         scale_ = nullptr;
+        convertLock.unlock();
         std::unique_lock<std::mutex> sLock(surfaceMutex_);
         sInfo_.requestConfig.width = width_;
         sInfo_.requestConfig.height = height_;
+        CHECK_AND_RETURN_RET_LOG(SetSurfaceFormat() == AVCS_ERR_OK, AVCS_ERR_UNSUPPORT,
+                                 "set surface format failed: unsupported surface format");
         sLock.unlock();
         formatChanged = true;
     }
@@ -678,7 +742,7 @@ int32_t VideoDecoder::AllocateBuffers()
 int32_t VideoDecoder::UpdateOutputBuffer(uint32_t index)
 {
     std::shared_ptr<CodecBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
-    if (width_ != outputBuffer->width || height_ != outputBuffer->height) {
+    if (width_ != outputBuffer->width || height_ != outputBuffer->height || bitDepth_ != outputBuffer->bitDepth) {
         std::shared_ptr<AVAllocator> allocator =
             AVAllocatorFactory::CreateSurfaceAllocator(sInfo_.requestConfig);
         CHECK_AND_RETURN_RET_LOG(allocator != nullptr, AVCS_ERR_NO_MEMORY, "buffer %{public}d allocator is nullptr",
@@ -693,6 +757,7 @@ int32_t VideoDecoder::UpdateOutputBuffer(uint32_t index)
         outputBuffer->owner_ = Owner::OWNED_BY_CODEC;
         outputBuffer->width = width_;
         outputBuffer->height = height_;
+        outputBuffer->bitDepth = bitDepth_;
     }
     return AVCS_ERR_OK;
 }
@@ -703,7 +768,7 @@ int32_t VideoDecoder::UpdateSurfaceMemory(uint32_t index)
     std::unique_lock<std::mutex> oLock(outputMutex_);
     std::shared_ptr<CodecBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
     oLock.unlock();
-    if (width_ != outputBuffer->width || height_ != outputBuffer->height) {
+    if (width_ != outputBuffer->width || height_ != outputBuffer->height || bitDepth_ != outputBuffer->bitDepth) {
         std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory;
         CHECK_AND_RETURN_RET_LOG(surfaceMemory != nullptr, AVCS_ERR_UNKNOWN, "Surface memory is nullptr!");
         AVCODEC_LOGI("Update surface memory, width=%{public}d, height=%{public}d", width_, height_);
@@ -727,6 +792,7 @@ int32_t VideoDecoder::UpdateSurfaceMemory(uint32_t index)
             AVBuffer::CreateAVBuffer(outputBuffer->sMemory->GetBase(), outputBuffer->sMemory->GetSize());
         outputBuffer->width = width_;
         outputBuffer->height = height_;
+        outputBuffer->bitDepth = bitDepth_;
     }
     return AVCS_ERR_OK;
 }
@@ -803,14 +869,22 @@ int32_t VideoDecoder::QueueInputBuffer(uint32_t index)
 int32_t VideoDecoder::FillFrameBuffer(const std::shared_ptr<CodecBuffer> &frameBuffer)
 {
     VideoPixelFormat targetPixelFmt = outputPixelFmt_;
-    AVPixelFormat ffmpegFormat = ConvertPixelFormatToFFmpeg(targetPixelFmt);
+    AVPixelFormat ffmpegFormat;
+    if (bitDepth_ == BITS_PER_PIXEL_COMPONENT_10) {
+        ffmpegFormat = AVPixelFormat::AV_PIX_FMT_P010LE;
+    } else {
+        ffmpegFormat = ConvertPixelFormatToFFmpeg(targetPixelFmt);
+    }
     // yuv420 -> nv12 or nv21
+    std::lock_guard<std::mutex> convertLock(convertDataMutex_);
     int32_t ret = ConvertVideoFrame(&scale_, cachedFrame_, scaleData_, scaleLineSize_, ffmpegFormat);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale video frame failed: %{public}d", ret);
     isConverted_ = true;
 
     std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer->memory_;
     CHECK_AND_RETURN_RET_LOG(bufferMemory != nullptr, AVCS_ERR_INVALID_VAL, "bufferMemory is nullptr");
+    sptr<SurfaceBuffer> surfaceBuffer = sInfo_.surface ? frameBuffer->sMemory->GetSurfaceBuffer() :
+        frameBuffer->avBuffer->memory_->GetSurfaceBuffer();
     bufferMemory->SetSize(0);
     struct SurfaceInfo surfaceInfo;
     surfaceInfo.scaleData = scaleData_;
@@ -818,14 +892,14 @@ int32_t VideoDecoder::FillFrameBuffer(const std::shared_ptr<CodecBuffer> &frameB
     int32_t surfaceStride = GetSurfaceBufferStride(frameBuffer);
     CHECK_AND_RETURN_RET_LOG(surfaceStride > 0, AVCS_ERR_INVALID_VAL, "get GetSurfaceBufferStride failed");
     surfaceInfo.surfaceStride = static_cast<uint32_t>(surfaceStride);
+    Format bufferFormat;
+    bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, cachedFrame_->height);
+    bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, surfaceStride);
+    bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(targetPixelFmt));
     if (sInfo_.surface) {
         surfaceInfo.surfaceFence = frameBuffer->sMemory->GetFence();
-        ret = WriteSurfaceData(bufferMemory, surfaceInfo, format_);
+        ret = WriteSurfaceData(bufferMemory, surfaceInfo, bufferFormat);
     } else {
-        Format bufferFormat;
-        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
-        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, surfaceStride);
-        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(targetPixelFmt));
         ret = WriteBufferData(bufferMemory, scaleData_, scaleLineSize_, bufferFormat);
     }
 #ifdef BUILD_ENG_VERSION
@@ -859,12 +933,16 @@ void VideoDecoder::FramePostProcess(std::shared_ptr<CodecBuffer> &frameBuffer, u
 }
 
 #ifdef BUILD_ENG_VERSION
-void VideoDecoder::DumpOutputBuffer()
+void VideoDecoder::DumpOutputBuffer(int32_t bitDepth)
 {
+    std::lock_guard<std::mutex> convertLock(convertDataMutex_);
     if (!dumpOutFile_ || !dumpOutFile_->is_open()) {
         return;
     }
     int32_t pixelBytes = 1;
+    if (bitDepth == BITS_PER_PIXEL_COMPONENT_10) {
+        pixelBytes = 2; // 2 bytes for 10bit
+    }
     for (int32_t i = 0; i < cachedFrame_->height; i++) {
         dumpOutFile_->write(reinterpret_cast<char *>(cachedFrame_->data[0] + i * cachedFrame_->linesize[0]),
                             static_cast<int32_t>(cachedFrame_->width * pixelBytes));
@@ -943,7 +1021,6 @@ int32_t VideoDecoder::SetCallback(const std::shared_ptr<MediaCodecCallback> &cal
 int32_t VideoDecoder::NotifyMemoryRecycle()
 {
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Only surface mode support!");
-    CHECK_AND_RETURN_RET_LOG(!disableDmaSwap_, 0, "Codec dma swap has been disabled!");
     CHECK_AND_RETURN_RET_LOGD(state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS,
                               AVCS_ERR_INVALID_STATE, "Current state can't recycle memory!");
     AVCODEC_LOGI("Begin to freeze this codec");
@@ -984,6 +1061,8 @@ void VideoDecoder::SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer)
     std::string name =
         std::to_string(width_) + "x" + std::to_string(height_) + "-" + mime + "-" + decInfo_.instanceId;
     ioctl(fd, DMA_BUF_SET_LEAK_TYPE, type.c_str());
+    std::string pid = std::to_string(decInfo_.pid);
+    ioctl(fd, DMA_BUF_SET_NAME_A, pid.c_str());
     ioctl(fd, DMA_BUF_SET_NAME_A, name.c_str());
 }
 

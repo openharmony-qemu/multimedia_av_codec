@@ -87,14 +87,12 @@ VpxDecoder::VpxDecoder(const std::string &name, const std::string &path) : Video
         if (handle_ == nullptr) {
             AVCODEC_LOGE("Load codec failed: %{public}s", libPath_.c_str());
             isValid_ = false;
-            return;
         }
         DecoderFuncMatch();
         AVCODEC_LOGI("Num %{public}u Decoder entered, state: Uninitialized", decInstanceID_);
     } else {
         AVCODEC_LOGE("Decoder already has %{public}d instances, cannot has more instances", VIDEO_INSTANCE_SIZE);
         isValid_ = false;
-        return;
     }
 }
 
@@ -349,7 +347,8 @@ void VpxDecoder::SendFrame()
 {
     if (state_ == State::STOPPING || state_ == State::FLUSHING) {
         return;
-    } else if (state_ != State::RUNNING || isSendEos_ || codecAvailQue_->Size() == 0u) {
+    } else if (state_ != State::RUNNING || isSendEos_ ||
+        codecAvailQue_->Size() == 0u || inputAvailQue_->Size() == 0u) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
@@ -377,7 +376,9 @@ void VpxDecoder::SendFrame()
 
     int32_t ret = 0;
     std::unique_lock<std::mutex> runLock(decRunMutex_);
-    ret = DecodeFrameOnce();
+    do {
+        ret = DecodeFrameOnce();
+    } while (isSendEos_ && ret == 0);
     runLock.unlock();
 
     if (isSendEos_) {
@@ -398,7 +399,7 @@ void VpxDecoder::SendFrame()
 int32_t VpxDecoder::DecodeFrameOnce()
 {
     int32_t ret = 0;
-    if (vpxDecHandle_ != nullptr && vpxDecoderFrameFunc_ != nullptr) {
+    if (vpxDecHandle_ != nullptr && vpxDecoderFrameFunc_ != nullptr && vpxDecoderGetFrameFunc_ != nullptr) {
         if (!isSendEos_) {
             ret = vpxDecoderFrameFunc_(vpxDecHandle_, vpxDecoderInputArgs_.pStream, vpxDecoderInputArgs_.uiStreamLen);
         }
@@ -407,7 +408,8 @@ int32_t VpxDecoder::DecodeFrameOnce()
         ret = -1;
     }
     if (vpxDecHandle_ != nullptr && vpxDecoderGetFrameFunc_ != nullptr) {
-        ret = vpxDecoderGetFrameFunc_(vpxDecHandle_, &vpxDecOutputImg_);
+        vpxDecoderGetFrameFunc_(vpxDecHandle_, &vpxDecOutputImg_);
+        ret = vpxDecOutputImg_ == nullptr ? -1 : 0;
     } else {
         AVCODEC_LOGW("vpxDecoderGetFrameFunc_ = nullptr || vpxDecHandle_ = nullptr");
         ret = -1;
@@ -421,19 +423,31 @@ int32_t VpxDecoder::DecodeFrameOnce()
         CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
         std::shared_ptr<CodecBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
         int32_t status = AVCS_ERR_OK;
-        if (CheckFormatChange(index, cachedFrame_->width, cachedFrame_->height) == AVCS_ERR_OK) {
+        if (CheckFormatChange(index, cachedFrame_->width, cachedFrame_->height, bitDepth_) == AVCS_ERR_OK) {
             CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
             frameBuffer = buffers_[INDEX_OUTPUT][index];
             status = FillFrameBuffer(frameBuffer);
         } else {
             CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
             callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
+            state_ = State::ERROR;
             return -1;
         }
         frameBuffer->avBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
         FramePostProcess(frameBuffer, index, status, AVCS_ERR_OK);
     }
     return ret;
+}
+
+void VpxDecoder::FlushAllFrames()
+{
+    std::unique_lock<std::mutex> runlock(decRunMutex_);
+    if (vpxDecoderGetFrameFunc_ != nullptr) {
+        do {
+            vpxDecoderGetFrameFunc_(vpxDecHandle_, &vpxDecOutputImg_);
+        } while (vpxDecOutputImg_ != nullptr);
+    }
+    runlock.unlock();
 }
 
 int32_t VpxDecoder::CheckVpxDecLibStatus()
@@ -525,7 +539,13 @@ int32_t VpxDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.blockSize.width = VIDEO_ALIGN_SIZE;
         capsData.blockSize.height = VIDEO_ALIGN_SIZE;
         capsData.pixFormat = {static_cast<int32_t>(VideoPixelFormat::NV12),
-            static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::YUVI420)};
+                              static_cast<int32_t>(VideoPixelFormat::NV21)};
+        capsData.graphicPixFormat = {
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP),
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP),
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010),
+            static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010)
+        };
         if (capsData.mimeType == "video/vp9") {
             capaArray.emplace_back(capsData);
             GetVp9CapProf(capaArray);
