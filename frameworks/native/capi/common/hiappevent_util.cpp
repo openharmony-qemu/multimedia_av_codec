@@ -48,7 +48,7 @@ AppEventReporter::AppEventReporter(uint32_t reportThd) : reportThd_(reportThd)
         config.configName = "SDK_OCG";
         processorId_ = AppEventProcessorMgr::AddProcessor(config);
     }
-    if (processorId_.load() == -200) {
+    if (processorId_.load() == -200) { // -200：not app process
         AVCODEC_LOGE("failed to AddProcessor, processorId %{public}ld", processorId_.load());
         return;
     }

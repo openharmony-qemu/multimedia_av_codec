@@ -419,7 +419,7 @@ struct OH_AVCodec *OH_VideoEncoder_CreateByMime(const char *mime)
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "Mime is nullptr!");
     CHECK_AND_RETURN_RET_LOG(strlen(mime) < MAX_LENGTH, nullptr, "Mime is too long!");
 
-    static AppEventReporter appEventReporter();
+    static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_VideoEncoder_CreateByMime", appEventReporter);
 
     std::shared_ptr<AVCodecVideoEncoder> videoEncoder = VideoEncoderFactory::CreateByMime(mime);
@@ -436,7 +436,7 @@ struct OH_AVCodec *OH_VideoEncoder_CreateByName(const char *name)
     CHECK_AND_RETURN_RET_LOG(name != nullptr, nullptr, "Name is nullptr!");
     CHECK_AND_RETURN_RET_LOG(strlen(name) < MAX_LENGTH, nullptr, "Name is too long!");
 
-    static AppEventReporter appEventReporter();
+    static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_VideoEncoder_CreateByName", appEventReporter);
 
     std::shared_ptr<AVCodecVideoEncoder> videoEncoder = VideoEncoderFactory::CreateByName(name);
@@ -527,7 +527,7 @@ OH_AVErrCode OH_VideoEncoder_Start(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
 
-    static AppEventReporter appEventReporter();
+    static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_VideoEncoder_CreateByName", appEventReporter);
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);

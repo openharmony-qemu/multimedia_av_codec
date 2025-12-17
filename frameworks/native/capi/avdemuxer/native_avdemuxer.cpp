@@ -245,7 +245,7 @@ OH_AVErrCode OH_AVDemuxer_SeekToTime(OH_AVDemuxer *demuxer, int64_t millisecond,
 
     CHECK_AND_RETURN_RET_LOG(millisecond >= 0, AV_ERR_INVALID_VAL, "Millisecond is negative");
 
-    static AppEventReporter appEventReporter();
+    static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_VideoEncoder_CreateByName", appEventReporter);
 
     struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
