@@ -98,7 +98,7 @@ bool FfmpegBaseDecoder::HasExtraData() const noexcept
     return hasExtra_;
 }
 
-void FfmpegBaseDecoder::SetSampleSikpInfo(const std::shared_ptr<AVBuffer> &inputBuffer)
+void FfmpegBaseDecoder::SetSkipSamplesInfo(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     if (avCodec_ == nullptr) {
         return;
@@ -138,6 +138,7 @@ Status FfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
         avPacket_->size = memory->GetSize();
         avPacket_->data = ptr;
         avPacket_->pts = inputBuffer->pts_;
+        SetSkipSamplesInfo(inputBuffer);
     } else {
         avPacket_->size = 0;
         avPacket_->data = nullptr;
@@ -146,7 +147,6 @@ Status FfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
     inputPts_ = inputBuffer->pts_;
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "SendBuffer buffer size:%{public}u,name:%{public}s", avPacket_->size,
                        name_.data());
-    SetSampleSikpInfo(inputBuffer);
     auto ret = avcodec_send_packet(avCodecContext_.get(), avPacket_.get());
     av_packet_unref(avPacket_.get());
     if (ret == 0) {
