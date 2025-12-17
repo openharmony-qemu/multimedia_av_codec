@@ -839,6 +839,7 @@ int64_t AudioSink::CalculateBufferDuration(int64_t writeDataSize)
     int64_t sampleDataNums = writeDataSize / format / audioChannelCount_;
     FALSE_RETURN_V(sampleRate_ > 0, 0);
     int64_t sampleDataDuration = sampleDataNums * SEC_TO_US / sampleRate_;
+    MEDIA_LOG_D("sampleDataDuration: " PUBLIC_LOG_D64, sampleDataDuration);
     return sampleDataDuration;
 }
 
