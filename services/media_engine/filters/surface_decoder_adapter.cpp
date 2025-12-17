@@ -17,7 +17,6 @@
 #include <ctime>
 #include "avcodec_info.h"
 #include "avcodec_common.h"
-#include "codec_server.h"
 #include "meta/format.h"
 #include "media_description.h"
 #include "avcodec_trace.h"

@@ -15,6 +15,9 @@
 
 #include "codeclist_server.h"
 #include "avcodec_log.h"
+#include "avcodec_errors.h"
+#include "event_manager.h"
+#include "event_info_extented_key.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListServer"};
@@ -23,6 +26,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
+
 std::shared_ptr<ICodecListService> CodecListServer::Create()
 {
     std::shared_ptr<CodecListServer> server = std::make_shared<CodecListServer>();
@@ -62,7 +66,16 @@ std::string CodecListServer::FindEncoder(const Format &format)
 int32_t CodecListServer::GetCapability(CapabilityData &capabilityData, const std::string &mime, const bool isEncoder,
                                        const AVCodecCategory &category)
 {
-    return codecListCore_->GetCapability(capabilityData, mime, isEncoder, category);
+    int32_t ret = codecListCore_->GetCapability(capabilityData, mime, isEncoder, category);
+
+    EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::BASIC_QUERY_CAP_INFO);
+    if (ret != AVCS_ERR_OK) {
+        Media::Meta eventMeta;
+        eventMeta.SetData(Media::Tag::MIME_TYPE, mime);
+        eventMeta.SetData(EventInfoExtentedKey::IS_ENCODER.data(), isEncoder);
+        EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, eventMeta);
+    }
+    return ret;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

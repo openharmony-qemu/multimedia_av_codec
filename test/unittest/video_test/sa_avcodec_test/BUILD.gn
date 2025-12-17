@@ -15,6 +15,8 @@ import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 module_output_path = "av_codec/AVCodec_Video/unittest"
+event_handler_dir =
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler"
 
 av_codec_unittest_cflags = [
   "-std=c++17",
@@ -55,7 +57,11 @@ ohos_unittest("video_sa_avcodec_unit_test") {
     "$av_codec_root_dir/services/services/sa_avcodec",
     "$av_codec_root_dir/services/services/sa_avcodec/ipc",
     "$av_codec_root_dir/services/services/common",
-    "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler/",
+    "$av_codec_root_dir/services/services/common/event_manager",
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler",
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler/instance_memory_update_event_handler",
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler/instance_operation_event_handler",
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler/statistics_event_handler",
     "$av_codec_root_dir/services/engine/codeclist",
     "$av_codec_root_dir/services/engine/base/include",
     "$av_codec_root_dir/services/engine/codec/include/video",
@@ -80,8 +86,13 @@ ohos_unittest("video_sa_avcodec_unit_test") {
     "$av_codec_root_dir/services/engine/codeclist/codeclist_builder.cpp",
     "$av_codec_root_dir/services/engine/codeclist/codeclist_dump.cpp",
     "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler/background_event_handler.cpp",
+    "$av_codec_root_dir/services/services/common/event_manager/event_manager.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
+    "$event_handler_dir/instance_memory_update_event_handler/instance_memory_calculator.cpp",
+    "$event_handler_dir/instance_memory_update_event_handler/instance_memory_update_event_handler.cpp",
+    "$event_handler_dir/instance_operation_event_handler/instance_operation_event_handler.cpp",
+    "$event_handler_dir/statistics_event_handler/statistics_event_handler.cpp",
     "./mock/avcodec_service_stub_mock.cpp",
     "./mock/codec_service_stub_mock.cpp",
     "./mock/codeclist_service_stub_mock.cpp",
@@ -104,12 +115,15 @@ ohos_unittest("video_sa_avcodec_unit_test") {
   defines += [ "AV_CODEC_PATH=${av_codec_path}" ]
 
   external_deps = [
+    "cJSON:cjson",
     "c_utils:utils",
+    "config_policy:configpolicy_util",
     "drivers_interface_codec:libcodec_proxy_4.0",
     "ffmpeg:libohosffmpeg",
     "googletest:gmock_main",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
+    "hiview:libucollection_client",
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

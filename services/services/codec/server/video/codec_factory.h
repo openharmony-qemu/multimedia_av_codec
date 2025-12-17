@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,14 +19,15 @@
 #include <memory>
 #include "codecbase.h"
 #include "avcodec_errors.h"
+#include "avcodec_info.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 class CodecFactory {
 public:
     static CodecFactory &Instance();
-    std::vector<std::string> GetCodecNameArrayByMime(const std::string &mime, const bool isEncoder);
-    std::shared_ptr<CodecBase> CreateCodecByName(const std::string &name, API_VERSION apiVersion);
+    std::vector<std::string> GetCodecNameArrayByMime(const AVCodecType type, const std::string &mime);
+    std::shared_ptr<CodecBase> CreateCodecByName(const std::string &name);
 
 private:
     CodecFactory() = default;

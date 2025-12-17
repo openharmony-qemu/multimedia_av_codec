@@ -57,8 +57,7 @@ public:
         std::shared_ptr<AVBuffer> outBuf;
     } DrmDecryptVideoBuf;
 
-    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name,
-                 Meta &callerInfo, API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
+    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
     int32_t Stop() override;
@@ -91,7 +90,7 @@ public:
 #endif
     int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
     int32_t DumpInfo(int32_t fd);
-    void SetCallerInfo(const Meta &callerInfo);
+    void SetInstanceInfo(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo);
     std::shared_ptr<Media::Meta> GetCallerInfo();
 
     void OnError(int32_t errorType, int32_t errorCode);
@@ -122,8 +121,8 @@ public:
     int32_t NotifyResume();
 
 private:
-    int32_t InitByName(Meta &callerInfo, API_VERSION apiVersion);
-    int32_t InitByMime(Meta &callerInfo, API_VERSION apiVersion);
+    int32_t InitByName(const std::string &codecName, Meta &callerInfo);
+    int32_t InitByMime(AVCodecType type, const std::string &codecMime, Meta &callerInfo);
     int32_t InitServer(int32_t instanceId = INVALID_INSTANCE_ID);
     int32_t CodecScenarioInit(Format &config);
     void StartInputParamTask();
@@ -152,6 +151,7 @@ private:
     std::string codecMime_;
     std::string codecName_;
     AVCodecType codecType_ = AVCODEC_TYPE_NONE;
+    VideoCodecType vcodecType_ = VideoCodecType::UNKNOWN;
     int32_t instanceId_ = INVALID_INSTANCE_ID;
     CallerInfo caller_, forwardCaller_;
     bool isSurfaceMode_ = false;
@@ -168,6 +168,7 @@ private:
     bool isFree_ = false;
     std::shared_ptr<TaskThread> inputParamTask_ = nullptr;
     CodecScenario scenario_ = CodecScenario::CODEC_SCENARIO_ENC_NORMAL;
+    std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outBufMap_;
 
     // post processing, video decoder and surface mode only
     int32_t SetCallbackForPostProcessing();

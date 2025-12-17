@@ -23,16 +23,19 @@
 #include <condition_variable>
 #include <mutex>
 #include <memory>
+#include "avbuffer.h"
 #include "avcodec_log_ex.h"
+#include "decoding_behavior_analyzer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 class FramerateCalculator : public std::enable_shared_from_this<FramerateCalculator>,
                             public AVCodecDfxComponent {
 public:
-    FramerateCalculator(int32_t instanceId, std::function<void(double)> &&handler);
-    void OnFrameConsumed();
-    void OnStopped();
+    FramerateCalculator(int32_t instanceId, bool isEnc, std::function<void(double)> &&handler);
+    ~FramerateCalculator();
+    void OnFrameConsumed(std::shared_ptr<AVBuffer> buffer);
+    void OnStopped(bool isDecEnd = true);
     bool CheckAndResetFramerate();
     void SetConfiguredFramerate(double framerate);
     bool SetFramerate2ConfiguredFramerate();
@@ -55,6 +58,7 @@ private:
     uint8_t decreseCheckTimes_{1};
     std::chrono::steady_clock::time_point lastAdjustmentTime_{};
     std::function<void(double)> resetFramerateHandler_;
+    std::unique_ptr<DecodingBehaviorAnalyzer> behaviorAnalyzer_;
 };
 
 class AdaptiveFramerateController {

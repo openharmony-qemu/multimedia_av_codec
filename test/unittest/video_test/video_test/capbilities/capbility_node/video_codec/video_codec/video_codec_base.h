@@ -25,7 +25,7 @@ namespace Sample {
 class VideoCodecBase {
 public:
     virtual ~VideoCodecBase() {};
-    virtual int32_t Create(const std::string &codecMime, bool isSoftware = false) = 0;
+    virtual int32_t Create(bool createByMime, const std::string &codecMime, bool isSoftware = false) = 0;
     virtual int32_t SetCallback(uintptr_t * const sampleContext) = 0;
     virtual int32_t Configure(const SampleInfo &sampleInfo) = 0;
     virtual int32_t DealWithSurface(std::shared_ptr<WindowWrapper> &windowWrapper) = 0;

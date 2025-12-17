@@ -15,6 +15,8 @@ import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 module_output_path = "av_codec/AVCodec_Video/unittest"
+event_handler_dir =
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler"
 
 av_codec_unittest_cflags = [
   "-std=c++17",
@@ -58,17 +60,26 @@ codec_server_coverage_include_dirs = [
   "$av_codec_root_dir/services/engine/codec/include/audio/",
   "$av_codec_root_dir/services/engine/common/include/",
   "$av_codec_root_dir/services/include",
-  "$av_codec_root_dir/services/services/codec/server",
+  "$av_codec_root_dir/services/services/codec/server/video",
   "$av_codec_root_dir/services/services/common",
   "$av_codec_root_dir/services/services/common/event_manager/",
-  "$av_codec_root_dir/services/services/codec/server/post_processing",
-  "$av_codec_root_dir/services/services/common",
+  "$av_codec_root_dir/services/services/codec/server/video/post_processing",
   "$av_codec_root_dir/services/utils/include",
+  "$av_codec_root_dir/services/services/codeclist/server/",
 
   # av_codec_engine_codeclist_mock
   "$av_codec_root_dir/services/engine/codeclist",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/",
   "$av_codec_root_dir/services/services/common/adaptive_framerate_controller",
+  "$av_codec_root_dir/services/services/codeclist/ipc",
+  "$av_codec_root_dir/services/services/codec/ipc",
+  "$av_codec_root_dir/services/services/sa_avcodec/ipc",
+  "$av_codec_root_dir/services/services/sa_avcodec/server/include",
+  "$av_codec_root_dir/services/services/common/event_manager",
+  "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler",
+  "$av_codec_root_dir/services/services/common/event_manager/event_handler/instance_memory_update_event_handler",
+  "$av_codec_root_dir/services/services/common/event_manager/event_handler/instance_operation_event_handler",
+  "$av_codec_root_dir/services/services/common/event_manager/event_handler/statistics_event_handler",
 ]
 
 ohos_unittest("video_codec_server_coverage_unit_test") {
@@ -85,13 +96,19 @@ ohos_unittest("video_codec_server_coverage_unit_test") {
   sources = [
     "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
     "$av_codec_root_dir/services/dfx/avcodec_dfx_component.cpp",
-    "$av_codec_root_dir/services/services/codec/server/codec_factory.cpp",
-    "$av_codec_root_dir/services/services/codec/server/codec_param_checker.cpp",
-    "$av_codec_root_dir/services/services/codec/server/codec_server.cpp",
-    "$av_codec_root_dir/services/services/codec/server/post_processing/dynamic_controller.cpp",
-    "$av_codec_root_dir/services/services/codec/server/post_processing/dynamic_interface.cpp",
-    "$av_codec_root_dir/services/services/codec/server/post_processing/state_machine.cpp",
-    "$av_codec_root_dir/services/services/codec/server/temporal_scalability.cpp",
+    "$av_codec_root_dir/services/services/codec/ipc/codec_listener_proxy.cpp",
+    "$av_codec_root_dir/services/services/codec/ipc/codec_service_stub.cpp",
+    "$av_codec_root_dir/services/services/codec/server/video/codec_factory.cpp",
+    "$av_codec_root_dir/services/services/codec/server/video/codec_param_checker.cpp",
+    "$av_codec_root_dir/services/services/codec/server/video/codec_server.cpp",
+    "$av_codec_root_dir/services/services/codec/server/video/post_processing/dynamic_controller.cpp",
+    "$av_codec_root_dir/services/services/codec/server/video/post_processing/dynamic_interface.cpp",
+    "$av_codec_root_dir/services/services/codec/server/video/post_processing/state_machine.cpp",
+    "$av_codec_root_dir/services/services/codec/server/video/temporal_scalability.cpp",
+    "$av_codec_root_dir/services/services/codeclist/ipc/codeclist_service_stub.cpp",
+    "$av_codec_root_dir/services/services/codeclist/server/codeclist_server.cpp",
+    "$av_codec_root_dir/services/services/sa_avcodec/ipc/codeclist_parcel.cpp",
+    "$event_handler_dir/background_event_handler/background_event_handler.cpp",
     "../vcodec_framework_test/common/utils/unittest_utils.cpp",
     "./codec_server_coverage_unit_test.cpp",
     "./mock/codec_drm_decrypt_mock.cpp",
@@ -108,12 +125,14 @@ ohos_unittest("video_codec_server_coverage_unit_test") {
   deps = [
     ":av_codec_engine_codeclist_mock",  # av_codec_engine_codeclist_mock
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "$av_codec_root_dir/services/utils:av_codec_service_utils",
     "$av_codec_root_dir/services/services/common/adaptive_framerate_controller:adaptive_framerate_controller",
+    "$av_codec_root_dir/services/utils:av_codec_service_utils",
   ]
 
   external_deps = [
+    "cJSON:cjson",
     "c_utils:utils",
+    "config_policy:configpolicy_util",
     "eventhandler:libeventhandler",
     "googletest:gmock_main",
     "graphic_2d:libgraphic_utils",
@@ -123,8 +142,12 @@ ohos_unittest("video_codec_server_coverage_unit_test") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
+    "hiview:libucollection_client",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
+    "resource_schedule_service:ressched_client",
+    "samgr:samgr_proxy",
     "window_manager:libwm",
   ]
 

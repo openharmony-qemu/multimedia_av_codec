@@ -22,6 +22,7 @@
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
 #include "background_event_handler.h"
+#include "event_manager.h"
 #include "codec_ability_singleton.h"
 #include "avcodec_xcollie.h"
 
@@ -52,18 +53,10 @@ void AVCodecServer::OnStart()
 {
     std::lock_guard<std::mutex> stateLock(stateMutex_);
     AVCODEC_LOGI("In");
-    struct timeval start = {};
-    struct timeval end = {};
-    (void)gettimeofday(&start, nullptr);
-    bool res = Publish(this);
-    if (res) {
-        AVCODEC_LOGD("AVCodecServer OnStart res=%{public}d", res);
-    }
-    (void)gettimeofday(&end, nullptr);
-    uint32_t useTime = static_cast<uint32_t>((end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec);
+    Publish(this);
     IPCSkeleton::SetMaxWorkThreadNum(SERVER_MAX_IPC_THREAD_NUM);
     AddSystemAbilityListener(MEMORY_MANAGER_SA_ID);
-    ServiceStartEventWrite(useTime, "AV_CODEC service");
+    EventManager::GetInstance().OnInstanceEvent(EventType::STATISTICS_EVENT_REGISTER_SUBMIT);
 }
 
 int32_t AVCodecServer::OnIdle([[maybe_unused]] const SystemAbilityOnDemandReason &idleReason)
@@ -181,6 +174,8 @@ int32_t AVCodecServer::Dump(int32_t fd, const std::vector<std::u16string> &args)
         CodecAbilitySingleton::GetInstance().Dump(fd, args);
     } else if (firstArg == u"Collie") {
         AVCodecXCollie::GetInstance().Dump(fd);
+    } else if (firstArg == u"report_statistics_event") {
+        EventManager::GetInstance().OnInstanceEvent(EventType::STATISTICS_EVENT_SUBMIT);
     }
     return OHOS::NO_ERROR;
 }

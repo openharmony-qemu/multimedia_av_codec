@@ -27,6 +27,7 @@ ohos_source_set("sa_manager") {
     "./ipc/",
     "./server/include/",
     "../common/",
+    "../common/event_manager/",
     "../../../interfaces/inner_api/native/",
     "../codec/ipc/",
     "../codeclist/ipc/",
