@@ -48,6 +48,8 @@ test/unittest/resources/demuxer_res/noframe.mp4 filter=lfs diff=lfs merge=lfs -t
 test/unittest/resources/demuxer_res/audio/skip_ogg.ogg filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/demuxer_res/snow.mkv filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/cover_jpg.mp4 filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/pcmS16be_30s_44.1k.aiff filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/adpcmImaQt_20s_44.1k.aifc filter=lfs diff=lfs merge=lfs -text
 *.rm filter=lfs diff=lfs merge=lfs -text
 *.rmvb filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/video_decoder/160x120_15.rm filter=lfs diff=lfs merge=lfs -text
