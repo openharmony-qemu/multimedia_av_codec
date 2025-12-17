@@ -141,7 +141,7 @@ uint64_t FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(AudioChannelLayout
                             [&channelLayout](const auto &item) -> bool { return item.first == channelLayout; });
     if (ite == g_toFFMPEGChannelLayout.end()) {
         AVCODEC_LOGW("Convert channel layout failed: %{public}d", static_cast<int32_t>(channelLayout));
-        return AV_CH_LAYOUT_NATIVE;
+        return 0;
     }
     return ite->second;
 }

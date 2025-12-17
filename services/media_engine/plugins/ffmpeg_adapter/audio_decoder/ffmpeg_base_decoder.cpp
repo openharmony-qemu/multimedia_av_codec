@@ -233,14 +233,14 @@ void FfmpegBaseDecoder::CheckFormatChange()
     format_->GetData(Tag::AUDIO_SAMPLE_RATE, preSampleRate);
     format_->GetData(Tag::AUDIO_CHANNEL_COUNT, preChannels);
     format_->GetData(Tag::AUDIO_SAMPLE_FORMAT, preFormat);
-    if (preSampleRate != avCodecContext_->sample_rate || preChannels != avCodecContext_->channels ||
+    if (preSampleRate != avCodecContext_->sample_rate || preChannels != avCodecContext_->ch_layout.nb_channels ||
         preFormat != currentFormat) {
         AVCODEC_LOGI("decode format changed, sample rate:%{public}d->%{public}d, channel:%{public}d->%{public}d, "
             "sample format:%{public}d->%{public}d", preSampleRate, avCodecContext_->sample_rate,
-            preChannels, avCodecContext_->channels, preFormat, currentFormat);
+            preChannels, avCodecContext_->ch_layout.nb_channels, preFormat, currentFormat);
         currentFrameFormatChanged_ = true;
         format_->SetData(Tag::AUDIO_SAMPLE_RATE, avCodecContext_->sample_rate);
-        format_->SetData(Tag::AUDIO_CHANNEL_COUNT, avCodecContext_->channels);
+        format_->SetData(Tag::AUDIO_CHANNEL_COUNT, avCodecContext_->ch_layout.nb_channels);
         format_->SetData(Tag::AUDIO_SAMPLE_FORMAT, currentFormat);
         std::shared_ptr<Plugins::PluginEvent> changeEvent = std::make_shared<Plugins::PluginEvent>();
         changeEvent->type = PluginEventType::AUDIO_OUTPUT_FORMAT_CHANGED;
@@ -254,11 +254,11 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
 {
     if (isFirst || currentFrameFormatChanged_) {
         isFirst = false;
-        auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(avCodecContext_->channel_layout,
-                                                                         avCodecContext_->channels);
-        if (avCodecContext_->channel_layout == 0) {
-            avCodecContext_->channel_layout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(layout);
-            av_channel_layout_from_mask(&avCodecContext_->ch_layout, avCodecContext_->channel_layout);
+        auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(avCodecContext_->ch_layout.u.mask,
+                                                                         avCodecContext_->ch_layout.nb_channels);
+        if (avCodecContext_->ch_layout.u.mask == 0) {
+            avCodecContext_->ch_layout.u.mask = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(layout);
+            av_channel_layout_from_mask(&avCodecContext_->ch_layout, avCodecContext_->ch_layout.u.mask);
         }
         format_->SetData(Tag::AUDIO_CHANNEL_LAYOUT, layout);
         if (InitResample() != Status::OK) {
@@ -279,7 +279,7 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
     }
     auto ioInfoMem = outBuffer->memory_;
     int32_t bytePerSample = av_get_bytes_per_sample(static_cast<AVSampleFormat>(outFrame->format));
-    int32_t outputSize = outFrame->nb_samples * bytePerSample * outFrame->channels;
+    int32_t outputSize = outFrame->nb_samples * bytePerSample * outFrame->ch_layout.nb_channels;
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "RecvFrameSucc buffer real size:%{public}u,size:%{public}u, name:%{public}s",
                        outputSize, ioInfoMem->GetCapacity(), name_.data());
     if (ioInfoMem->GetCapacity() < outputSize) {
@@ -353,25 +353,25 @@ Status FfmpegBaseDecoder::AllocateContext(const std::string &name)
 
 Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
 {
-    format->GetData(Tag::AUDIO_CHANNEL_COUNT, avCodecContext_->channels);
+    format->GetData(Tag::AUDIO_CHANNEL_COUNT, avCodecContext_->ch_layout.nb_channels);
     format->GetData(Tag::AUDIO_SAMPLE_RATE, avCodecContext_->sample_rate);
     format->GetData(Tag::MEDIA_BITRATE, avCodecContext_->bit_rate);
     AudioChannelLayout channelLayout = UNKNOWN;
     format->GetData(Tag::AUDIO_CHANNEL_LAYOUT, channelLayout);
     auto ffChannelLayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);
     if (channelLayout != UNKNOWN) {
-        if (ffChannelLayout == AV_CH_LAYOUT_NATIVE) {
+        if (!ffChannelLayout) {
             AVCODEC_LOGE("the value of channelLayout is not supported");
             return Status::ERROR_INVALID_PARAMETER;
         } else {
-            avCodecContext_->channel_layout = ffChannelLayout;
+            avCodecContext_->ch_layout.u.mask = ffChannelLayout;
         }
-    } else if (avCodecContext_->channels == 1) { // 1 channel: mono
+    } else if (avCodecContext_->ch_layout.nb_channels == 1) { // 1 channel: mono
         AVCODEC_LOGW("1 channel channelLayout is unknow, set to default mono");
-        avCodecContext_->channel_layout = AV_CH_LAYOUT_MONO;
-    } else if (avCodecContext_->channels == 2) { // 2 channel: stereo
+        avCodecContext_->ch_layout.u.mask = AV_CH_LAYOUT_MONO;
+    } else if (avCodecContext_->ch_layout.nb_channels == 2) { // 2 channel: stereo
         AVCODEC_LOGW("2 channel channelLayout is unknow, set to default stereo");
-        avCodecContext_->channel_layout = AV_CH_LAYOUT_STEREO;
+        avCodecContext_->ch_layout.u.mask = AV_CH_LAYOUT_STEREO;
     } else {
         AVCODEC_LOGW("channelLayout not set, unknow channelLayout");
     }
@@ -419,22 +419,21 @@ Status FfmpegBaseDecoder::SetBitsPerSampleContext(const int bits_per_sample)
 
 Status FfmpegBaseDecoder::InitResample()
 {
-    AVCODEC_LOGI("channels :%{public}" PRId32, avCodecContext_->channels);
+    AVCODEC_LOGI("channels :%{public}" PRId32, avCodecContext_->ch_layout.nb_channels);
     AVCODEC_LOGI("sample_rate :%{public}" PRId32, avCodecContext_->sample_rate);
     AVCODEC_LOGI("bit_rate :%{public}" PRId64, avCodecContext_->bit_rate);
-    AVCODEC_LOGI("channel_layout :%{public}" PRId64, avCodecContext_->channel_layout);
+    AVCODEC_LOGI("channel_layout :%{public}" PRId64, avCodecContext_->ch_layout.u.mask);
     AVCODEC_LOGI("ffmpeg default sample_fmt :%{public}" PRId32, avCodecContext_->sample_fmt);
     AVCODEC_LOGI("need sample_fmt :%{public}" PRId32, destFmt_);
     AVCODEC_LOGI("frameSize :%{public}" PRId32, avCodecContext_->frame_size);
-    auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(avCodecContext_->channel_layout,
-        avCodecContext_->channels);
-    AVCODEC_LOGI("recode output description,layout:%{public}s channels:%{public}d nb_channels:%{public}d",
-        FFMpegConverter::ConvertOHAudioChannelLayoutToString(layout).data(),
-        avCodecContext_->channels, avCodecContext_->ch_layout.nb_channels);
+    auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(avCodecContext_->ch_layout.u.mask,
+        avCodecContext_->ch_layout.nb_channels);
+    AVCODEC_LOGI("recode output description,layout:%{public}s nb_channels:%{public}d",
+        FFMpegConverter::ConvertOHAudioChannelLayoutToString(layout).data(), avCodecContext_->ch_layout.nb_channels);
     if ((!needResample_ && avCodecContext_->sample_fmt != destFmt_)
         || (needResample_ && currentFrameFormatChanged_)) {
         ResamplePara resamplePara;
-        resamplePara.channels = static_cast<uint32_t>(avCodecContext_->channels);
+        resamplePara.channels = static_cast<uint32_t>(avCodecContext_->ch_layout.nb_channels);
         resamplePara.sampleRate = static_cast<uint32_t>(avCodecContext_->sample_rate);
         resamplePara.channelLayout = avCodecContext_->ch_layout;
         resamplePara.destSamplesPerFrame = 0;

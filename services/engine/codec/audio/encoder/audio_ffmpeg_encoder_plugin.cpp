@@ -235,7 +235,7 @@ int32_t AudioFfmpegEncoderPlugin::AllocateContext(const std::string &name)
 
 int32_t AudioFfmpegEncoderPlugin::InitContext(const Format &format)
 {
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, avCodecContext_->channels);
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, avCodecContext_->ch_layout.nb_channels);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, avCodecContext_->sample_rate);
     format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, avCodecContext_->bit_rate);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize_);
@@ -244,14 +244,14 @@ int32_t AudioFfmpegEncoderPlugin::InitContext(const Format &format)
     format.GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, channelLayout);
     auto ffChannelLayout =
         FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(static_cast<AudioChannelLayout>(channelLayout));
-    avCodecContext_->channel_layout = ffChannelLayout;
+    avCodecContext_->ch_layout.u.mask = ffChannelLayout;
 
     int32_t sampleFormat;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFormat);
     auto ffSampleFormat = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(static_cast<AudioSampleFormat>(sampleFormat));
     avCodecContext_->sample_fmt = ffSampleFormat;
     channelsBytesPerSample_ =
-        static_cast<uint32_t>(av_get_bytes_per_sample(ffSampleFormat) * avCodecContext_->channels);
+        static_cast<uint32_t>(av_get_bytes_per_sample(ffSampleFormat) * avCodecContext_->ch_layout.nb_channels);
     AVCODEC_LOGI("avcodec name: %{public}s", avCodec_->name);
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
@@ -291,10 +291,10 @@ int32_t AudioFfmpegEncoderPlugin::ReAllocateContext()
     CHECK_AND_RETURN_RET_LOG(tmpContext != nullptr, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
         "Allocate tmpContext failed.");
 
-    tmpContext->channels = avCodecContext_->channels;
+    tmpContext->ch_layout.nb_channels = avCodecContext_->ch_layout.nb_channels;
     tmpContext->sample_rate = avCodecContext_->sample_rate;
     tmpContext->bit_rate = avCodecContext_->bit_rate;
-    tmpContext->channel_layout = avCodecContext_->channel_layout;
+    tmpContext->ch_layout.u.mask = avCodecContext_->ch_layout.u.mask;
     tmpContext->sample_fmt = avCodecContext_->sample_fmt;
 
     auto res = avcodec_open2(tmpContext.get(), avCodec_.get(), nullptr);
@@ -311,8 +311,8 @@ int32_t AudioFfmpegEncoderPlugin::InitFrame()
 {
     cachedFrame_->nb_samples = avCodecContext_->frame_size;
     cachedFrame_->format = avCodecContext_->sample_fmt;
-    cachedFrame_->channel_layout = avCodecContext_->channel_layout;
-    cachedFrame_->channels = avCodecContext_->channels;
+    cachedFrame_->ch_layout.u.mask = avCodecContext_->ch_layout.u.mask;
+    cachedFrame_->ch_layout.nb_channels = avCodecContext_->ch_layout.nb_channels;
     int ret = av_frame_get_buffer(cachedFrame_.get(), 0);
     CHECK_AND_RETURN_RET_LOG(ret >=  0, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
         "Get frame buffer failed: %{public}s", FFMpegConverter::AVStrError(ret).c_str());

@@ -56,7 +56,7 @@ namespace MediaAVCodec {
 AudioFFMpegAacEncoderPlugin::AudioFFMpegAacEncoderPlugin()
     : maxInputSize_(-1), avCodec_(nullptr), avCodecContext_(nullptr), cachedFrame_(nullptr), avPacket_(nullptr),
       prevPts_(0), resample_(nullptr), needResample_(false), srcFmt_(AVSampleFormat::AV_SAMPLE_FMT_NONE),
-      srcLayout_(-1), codecContextValid_(false)
+      srcLayout_(0), codecContextValid_(false)
 {}
 
 AudioFFMpegAacEncoderPlugin::~AudioFFMpegAacEncoderPlugin()
@@ -72,7 +72,7 @@ int32_t AudioFFMpegAacEncoderPlugin::GetAdtsHeader(std::string &adtsHeader, int3
     if (iter != sampleFreqMap.end()) {
         freqIdx = iter->second;
     }
-    uint8_t chanCfg = static_cast<uint8_t>(ctx->channels);
+    uint8_t chanCfg = static_cast<uint8_t>(ctx->ch_layout.nb_channels);
     uint32_t frameLength = static_cast<uint32_t>(aacLength) + ADTS_HEADER_SIZE;
     uint8_t profile = static_cast<uint8_t>(ctx->profile);
     adtsHeader += 0xFF;
@@ -109,16 +109,17 @@ bool AudioFFMpegAacEncoderPlugin::CheckChannelLayout(const Format &format, int c
 {
     int64_t channelLayout;
     if (format.GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, channelLayout)) {
-        srcLayout_ = static_cast<int64_t>(
-            FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(static_cast<AudioChannelLayout>(channelLayout)));
-        if (av_get_channel_layout_nb_channels(srcLayout_) != channels) {
+        srcLayout_ =
+            FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(static_cast<AudioChannelLayout>(channelLayout));
+        CHECK_AND_RETURN_RET_LOG(srcLayout_, false, "channel layout is not supported.");
+        if (av_popcount64(srcLayout_) != channels) {
             AVCODEC_LOGE("channel layout channels mismatch");
             return false;
         }
         return true;
     }
 
-    srcLayout_ = static_cast<AudioChannelLayout>(channelLayoutMap.at(channels));
+    srcLayout_ = channelLayoutMap.at(channels);
     return true;
 }
 
@@ -318,11 +319,11 @@ int32_t AudioFFMpegAacEncoderPlugin::AllocateContext(const std::string &name)
 
 int32_t AudioFFMpegAacEncoderPlugin::InitContext(const Format &format)
 {
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, avCodecContext_->channels);
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, avCodecContext_->ch_layout.nb_channels);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, avCodecContext_->sample_rate);
     format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, avCodecContext_->bit_rate);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize_);
-    avCodecContext_->channel_layout = static_cast<uint64_t>(srcLayout_);
+    avCodecContext_->ch_layout.u.mask = srcLayout_;
     avCodecContext_->sample_fmt = srcFmt_;
 
     if (needResample_) {
@@ -348,7 +349,7 @@ int32_t AudioFFMpegAacEncoderPlugin::OpenContext()
 
     if (needResample_) {
         ResamplePara resamplePara = {
-            .channels = avCodecContext_->channels,
+            .channels = avCodecContext_->ch_layout.nb_channels,
             .sampleRate = avCodecContext_->sample_rate,
             .bitsPerSample = 0,
             .channelLayout = avCodecContext_->ch_layout,
@@ -383,8 +384,8 @@ int32_t AudioFFMpegAacEncoderPlugin::InitFrame()
 {
     cachedFrame_->nb_samples = avCodecContext_->frame_size;
     cachedFrame_->format = avCodecContext_->sample_fmt;
-    cachedFrame_->channel_layout = avCodecContext_->channel_layout;
-    cachedFrame_->channels = avCodecContext_->channels;
+    cachedFrame_->ch_layout.u.mask = avCodecContext_->ch_layout.u.mask;
+    cachedFrame_->ch_layout.nb_channels = avCodecContext_->ch_layout.nb_channels;
     int ret = av_frame_get_buffer(cachedFrame_.get(), 0);
     CHECK_AND_RETURN_RET_LOG(ret >= 0, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
         "Get frame buffer failed: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
@@ -459,7 +460,8 @@ int32_t AudioFFMpegAacEncoderPlugin::PcmFillFrame(const std::shared_ptr<AudioBuf
         }
     }
 
-    cachedFrame_->nb_samples = static_cast<int>(destBufferSize) / (bytesPerSample * avCodecContext_->channels);
+    cachedFrame_->nb_samples = static_cast<int>(destBufferSize) /
+        (bytesPerSample * avCodecContext_->ch_layout.nb_channels);
     if (cachedFrame_->nb_samples > avCodecContext_->frame_size) {
         AVCODEC_LOGE("Input frame size out of range, input smaples: %{public}d, frame_size: %{public}d",
                      cachedFrame_->nb_samples, avCodecContext_->frame_size);
@@ -473,7 +475,7 @@ int32_t AudioFFMpegAacEncoderPlugin::PcmFillFrame(const std::shared_ptr<AudioBuf
     cachedFrame_->extended_data = cachedFrame_->data;
     cachedFrame_->extended_data[0] = destBuffer;
     cachedFrame_->linesize[0] = cachedFrame_->nb_samples * bytesPerSample;
-    for (int i = 1; i < avCodecContext_->channels; i++) {
+    for (int i = 1; i < avCodecContext_->ch_layout.nb_channels; i++) {
         cachedFrame_->extended_data[i] = cachedFrame_->extended_data[i-1] + cachedFrame_->linesize[0];
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
@@ -563,10 +565,10 @@ int32_t AudioFFMpegAacEncoderPlugin::ReAllocateContext()
     CHECK_AND_RETURN_RET_LOG(tmpContext != nullptr, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
         "Allocate tmpContext failed.");
 
-    tmpContext->channels = avCodecContext_->channels;
+    tmpContext->ch_layout.nb_channels = avCodecContext_->ch_layout.nb_channels;
     tmpContext->sample_rate = avCodecContext_->sample_rate;
     tmpContext->bit_rate = avCodecContext_->bit_rate;
-    tmpContext->channel_layout = avCodecContext_->channel_layout;
+    tmpContext->ch_layout.u.mask = avCodecContext_->ch_layout.u.mask;
     tmpContext->sample_fmt = avCodecContext_->sample_fmt;
 
     auto res = avcodec_open2(tmpContext.get(), avCodec_.get(), nullptr);

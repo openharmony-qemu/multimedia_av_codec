@@ -65,7 +65,7 @@ private:
     std::shared_ptr<AudioResample> resample_;
     bool needResample_;
     AVSampleFormat srcFmt_;
-    int64_t srcLayout_;
+    uint64_t srcLayout_;
     bool codecContextValid_;
 
 private:

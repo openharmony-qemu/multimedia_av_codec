@@ -199,7 +199,7 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveFrameSucc(std::shared_ptr<AudioBufferIn
         if (resample_ == nullptr) {
             format_.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE,
                                 FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt));
-            auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayout(avCodecContext_->channel_layout);
+            auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayout(avCodecContext_->ch_layout.u.mask);
             AVCODEC_LOGI("recode output description,layout:%{public}s",
                          FFMpegConverter::ConvertOHAudioChannelLayoutToString(layout).data());
             format_.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, static_cast<uint64_t>(layout));
@@ -214,7 +214,7 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveFrameSucc(std::shared_ptr<AudioBufferIn
     }
     auto ioInfoMem = outBuffer->GetBuffer();
     int32_t bytePerSample = av_get_bytes_per_sample(static_cast<AVSampleFormat>(outFrame->format));
-    int32_t outputSize = outFrame->nb_samples * bytePerSample * outFrame->channels;
+    int32_t outputSize = outFrame->nb_samples * bytePerSample * outFrame->ch_layout.nb_channels;
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "ReceiveFrameSucc buffer real size:%{public}u,size:%{public}u, name:%{public}s",
                        outputSize, ioInfoMem->GetSize(), name_.data());
     if (ioInfoMem->GetSize() < outputSize) {
@@ -284,7 +284,7 @@ int32_t AudioFfmpegDecoderPlugin::AllocateContext(const std::string &name)
 int32_t AudioFfmpegDecoderPlugin::InitContext(const Format &format)
 {
     format_ = format;
-    format_.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, avCodecContext_->channels);
+    format_.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, avCodecContext_->ch_layout.nb_channels);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, avCodecContext_->sample_rate);
     format_.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, avCodecContext_->bit_rate);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize_);
@@ -293,18 +293,18 @@ int32_t AudioFfmpegDecoderPlugin::InitContext(const Format &format)
     auto ffChannelLayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(
         static_cast<AudioChannelLayout>(channelLayout));
     if (channelLayout != UNKNOWN) {
-        if (ffChannelLayout == AV_CH_LAYOUT_NATIVE) {
+        if (!ffChannelLayout) {
             AVCODEC_LOGE("the value of channelLayout is not supported");
             return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
         } else {
-            avCodecContext_->channel_layout = ffChannelLayout;
+            avCodecContext_->ch_layout.u.mask = ffChannelLayout;
         }
-    } else if (avCodecContext_->channels == 1) { // 1 channel: mono
+    } else if (avCodecContext_->ch_layout.nb_channels == 1) { // 1 channel: mono
         AVCODEC_LOGW("1 channel channelLayout is unknow, set to default mono");
-        avCodecContext_->channel_layout = AV_CH_LAYOUT_MONO;
-    } else if (avCodecContext_->channels == 2) { // 2 channel: stereo
+        avCodecContext_->ch_layout.u.mask = AV_CH_LAYOUT_MONO;
+    } else if (avCodecContext_->ch_layout.nb_channels == 2) { // 2 channel: stereo
         AVCODEC_LOGW("2 channel channelLayout is unknow, set to default stereo");
-        avCodecContext_->channel_layout = AV_CH_LAYOUT_STEREO;
+        avCodecContext_->ch_layout.u.mask = AV_CH_LAYOUT_STEREO;
     } else {
         AVCODEC_LOGW("channelLayout not set, unknow channelLayout");
     }
@@ -340,7 +340,7 @@ int32_t AudioFfmpegDecoderPlugin::InitResample()
 {
     if (needResample_) {
         ResamplePara resamplePara = {
-            .channels = avCodecContext_->channels,
+            .channels = avCodecContext_->ch_layout.nb_channels,
             .sampleRate = avCodecContext_->sample_rate,
             .bitsPerSample = 0,
             .channelLayout = avCodecContext_->ch_layout,
