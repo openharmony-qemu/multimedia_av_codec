@@ -59,12 +59,6 @@ void TEST_SUIT::CreateByNameWithParam(int32_t param)
             capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), false,
                                                                         AVCodecCategory::AVCODEC_HARDWARE);
             break;
-#ifdef SUPPORT_CODEC_RV
-        case VCodecTestCode::SW_RV40:
-            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_RV40.data(), false,
-                                                                        AVCodecCategory::AVCODEC_SOFTWARE);
-            break;
-#endif
         default:
             capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
                                                                         AVCodecCategory::AVCODEC_SOFTWARE);
@@ -666,13 +660,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_GetOutputDescription_004, TestSize.Level1)
     EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
     EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
 
-    if (GetParam() == VCodecTestCode::SW_RV40) {
-        EXPECT_GE(pictureWidth, DEFAULT_RV40_WIDTH - 1);
-        EXPECT_GE(pictureHeight, DEFAULT_RV40_HEIGHT - 1);
-    } else {
-        EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
-        EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
-    }
+    EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
+    EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
 
     EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
