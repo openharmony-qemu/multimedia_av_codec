@@ -22,24 +22,8 @@
 #include "codec_ability_singleton.h"
 #include "codeclist_core.h"
 #include "meta/format.h"
-#ifdef CLIENT_SUPPORT_CODEC
 #include "audio_codec.h"
 #include "audio_codec_adapter.h"
-#else
-#include "fcodec_loader.h"
-#include "hevc_decoder_loader.h"
-#ifdef SUPPORT_CODEC_VP8
-#include "vp8_decoder_loader.h"
-#endif
-#ifdef SUPPORT_CODEC_VP9
-#include "vp9_decoder_loader.h"
-#endif
-#ifdef SUPPORT_CODEC_AV1
-#include "av1_decoder_loader.h"
-#endif
-#include "hcodec_loader.h"
-#include "avc_encoder_loader.h"
-#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AudioCodecFactory"};
