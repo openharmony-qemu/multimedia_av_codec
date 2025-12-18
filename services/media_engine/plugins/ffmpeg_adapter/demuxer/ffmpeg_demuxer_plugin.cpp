@@ -2052,7 +2052,6 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         }
         if (ret != Status::OK) {
             MEDIA_LOG_E("Set first frame failed, track " PUBLIC_LOG_D32, trackId);
-            pktWrapper = nullptr;
             return ret;
         }
         pktWrapper = nullptr;
@@ -2748,7 +2747,7 @@ Status FFmpegDemuxerPlugin::GetFileFirstPacket()
     while (!minTsPktInfo_.isInit) {
         Plugins::AVPacketWrapperPtr pktWrapper = std::make_shared<Plugins::AVPacketWrapper>();
         FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
-                Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
+            Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
         std::unique_lock<std::mutex> sLock(syncMutex_);
         int ffRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
         sLock.unlock();
