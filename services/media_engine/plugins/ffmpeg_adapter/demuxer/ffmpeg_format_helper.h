@@ -101,6 +101,7 @@ private:
     static void ParseAv3aInfo(const AVStream& avStream, Meta &format);
     static void ConvertAv3aSampleFormat(const AVStream& avStream, Meta &format);
     static void ParseGltfInfo(const AVFormatContext& avFormatContext, Meta &format);
+    static void ParseRawvideoInfo(const AVStream& avStream, Meta &format);
 };
 extern std::vector<TagType> g_supportSourceFormat;
 } // namespace Ffmpeg

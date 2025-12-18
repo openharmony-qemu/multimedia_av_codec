@@ -74,6 +74,13 @@ const int32_t VALUE_10 = 10;
 
 const size_t BRAND_CODE_LEN = 4; // 4 is brand code length
 
+static std::map<AVPixelFormat, RawVideoPixelFormat> g_convertFfmpegPixFmt = {
+    {AVPixelFormat::AV_PIX_FMT_YUV420P, RawVideoPixelFormat::YUV420P},
+    {AVPixelFormat::AV_PIX_FMT_NV12, RawVideoPixelFormat::NV12},
+    {AVPixelFormat::AV_PIX_FMT_NV21, RawVideoPixelFormat::NV21},
+    {AVPixelFormat::AV_PIX_FMT_RGBA, RawVideoPixelFormat::RGBA},
+};
+
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
     {AVMEDIA_TYPE_AUDIO, MediaType::AUDIO},
@@ -148,6 +155,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
 #endif
     {AV_CODEC_ID_AV1, MimeType::VIDEO_AV1},
     {AV_CODEC_ID_DVVIDEO, MimeType::VIDEO_DVVIDEO},
+    {AV_CODEC_ID_RAWVIDEO, MimeType::VIDEO_RAWVIDEO},
 
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
@@ -952,6 +960,9 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         ParseHvccBoxInfo(avStream, format);
         ParseColorBoxInfo(avStream, format);
     }
+    if (avStream.codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
+        ParseRawvideoInfo(avStream, format);
+    }
 }
 
 void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta &format)
@@ -1450,6 +1461,16 @@ void FFmpegFormatHelper::ParseGltfInfo(const AVFormatContext& avFormatContext, M
     MEDIA_LOG_I("Valid glTF file and idat Pos: " PUBLIC_LOG_S, idatPos ? idatPos->value : "not found");
     if (idatPos && idatPos->value) {
         SetToFormatIfConvertSuccess(format, Tag::GLTF_OFFSET, idatPos->value, ValueType::INT64);
+    }
+}
+void FFmpegFormatHelper::ParseRawvideoInfo(const AVStream& avStream, Meta &format)
+{
+    AVPixelFormat pixFmt = static_cast<AVPixelFormat>(avStream.codecpar->format);
+    if (g_convertFfmpegPixFmt.count(pixFmt)) {
+        format.Set<Tag::VIDEO_RAWVIDEO_INPUT_PIXEL_FORMAT>(static_cast<int32_t>(g_convertFfmpegPixFmt[pixFmt]));
+    } else {
+        format.Set<Tag::VIDEO_RAWVIDEO_INPUT_PIXEL_FORMAT>(static_cast<int32_t>(RawVideoPixelFormat::UNKNOWN));
+        MEDIA_LOG_W("rawvideo pix_fmt unsupported.");
     }
 }
 } // namespace Ffmpeg

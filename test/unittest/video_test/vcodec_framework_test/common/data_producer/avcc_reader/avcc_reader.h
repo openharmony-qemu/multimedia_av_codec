@@ -966,6 +966,71 @@ private:
     std::shared_ptr<DvvideoDetector> dvvideoDetector_;
     uint32_t frameInputCount_ = 0;
 };
+
+struct RawvideoReaderInfo {
+    std::string inPath;
+};
+
+class RawvideoReader : public DataProducerBase {
+public:
+    RawvideoReader() = default;
+    ~RawvideoReader() = default;
+
+    int32_t Init(const std::shared_ptr<RawvideoReaderInfo>& info);
+    int32_t FillBuffer(uint8_t* bufferAddr, OH_AVCodecBufferAttr& attr);
+    bool IsEOS();
+
+private:
+    class RawvideoUnitReader {
+    public:
+        virtual ~RawvideoUnitReader() = default;
+        virtual int32_t ReadRawvideoUnit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame) = 0;
+        virtual bool IsEOS() = 0;
+        virtual bool IsEOF() = 0;
+    protected:
+        virtual void PrereadRawvideoUnit() = 0;
+    };
+
+    class RawvideoMetaUnitReader : public RawvideoUnitReader {
+    public:
+        explicit RawvideoMetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        ~RawvideoMetaUnitReader() override = default;
+
+        int32_t ReadRawvideoUnit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame) override;
+        bool IsEOS() override;
+        bool IsEOF() override;
+
+    private:
+        void PrereadFile();
+        void PrereadRawvideoUnit() override;
+
+        std::shared_ptr<std::ifstream> inputFile_;
+        std::unique_ptr<uint8_t[]> prereadBuffer_;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+
+        std::unique_ptr<std::vector<uint8_t>> rawvideoUnit_;
+        uint32_t frameIndex_ = 0;
+    };
+    class RawvideoDetector {
+    public:
+        RawvideoDetector() = default;
+        ~RawvideoDetector() = default;
+
+        const uint8_t* GetRawvideoTypeAddr(const uint8_t* bufferAddr);
+        uint8_t GetRawvideoType(const uint8_t* bufferAddr);
+        bool IsI(uint8_t rawvideoType);
+    };
+
+private:
+    void FillBufferAttr(OH_AVCodecBufferAttr& attr, int32_t frameSize,
+                        uint8_t rawvideoType, bool isEosFrame);
+
+    std::mutex mutex_;
+    std::shared_ptr<RawvideoUnitReader> rawvideoUnitReader_;
+    std::shared_ptr<RawvideoDetector> rawvideoDetector_;
+    uint32_t frameInputCount_ = 0;
+};
 } // MediaAVCodec
 } // OHOS
 #endif // AVCC_READER_H

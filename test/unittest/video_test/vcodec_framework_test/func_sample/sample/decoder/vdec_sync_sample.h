@@ -87,6 +87,7 @@ private:
     int32_t CreateMsvideo1Reader();
     int32_t CreateWmv3Reader();
     int32_t CreateDvvideoReader();
+    int32_t CreateRawvideoReader();
 #ifdef SUPPORT_CODEC_AV1
     int32_t CreateAv1Reader();
 #endif
@@ -136,6 +137,7 @@ private:
     std::shared_ptr<Msvideo1Reader> msvideo1Reader_ = nullptr;
     std::shared_ptr<Wmv3Reader> wmv3Reader_ = nullptr;
     std::shared_ptr<DvvideoReader> dvvideoReader_ = nullptr;
+    std::shared_ptr<RawvideoReader> rawvideoReader_ = nullptr;
     std::shared_ptr<std::ifstream> dynamicMetadataFile_ = nullptr;
     std::shared_ptr<std::ifstream> staticMetadataFile_ = nullptr;
 };

@@ -68,6 +68,12 @@ constexpr int32_t DVVIDEO_MAX_HEIGHT_SIZE = 1080;
 constexpr int32_t DVVIDEO_FRAMERATE_MAX_SIZE = 60;
 constexpr int32_t DVVIDEO_MAX_BLOCKPERFRAME_SIZE = 6120;
 constexpr int32_t DVVIDEO_MAX_BLOCKPERSEC_SIZE = 367200;
+
+constexpr int32_t RAWVIDEO_MIN_WIDTH_SIZE = 2;
+constexpr int32_t RAWVIDEO_MIN_HEIGHT_SIZE = 2;
+constexpr int32_t RAWVIDEO_MAX_WIDTH_SIZE = 65536;
+constexpr int32_t RAWVIDEO_MAX_HEIGHT_SIZE = 65536;
+constexpr int32_t RAWVIDEO_MAX_FRAMERATE = 1000;
 } // namespace
 using namespace OHOS::Media;
 
@@ -363,6 +369,18 @@ void GetDvvideoCapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
+void GetRawvideoCapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.width.minVal = RAWVIDEO_MIN_WIDTH_SIZE;
+        capsData.height.minVal = RAWVIDEO_MIN_HEIGHT_SIZE;
+        capsData.width.maxVal = RAWVIDEO_MAX_WIDTH_SIZE;
+        capsData.height.maxVal = RAWVIDEO_MAX_HEIGHT_SIZE;
+        capsData.frameRate.maxVal = RAWVIDEO_MAX_FRAMERATE;
+    }
+}
+
 void GetCapabilityData(CapabilityData &capsData, uint32_t index)
 {
     capsData.codecName = static_cast<std::string>(SUPPORT_VCODEC[index].codecName);
@@ -460,6 +478,8 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 #endif
         } else if (capsData.mimeType == "video/dvvideo") {
             GetDvvideoCapProf(capaArray);
+        } else if (capsData.mimeType == "video/rawvideo") {
+            GetRawvideoCapProf(capaArray);
         } else {
             GetAvcCapProf(capaArray);
         }

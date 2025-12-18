@@ -54,6 +54,13 @@ constexpr int32_t DEFAULT_THREAD_COUNT = 2;
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/fcodecdump";
 #endif // BUILD_ENG_VERSION
+
+static std::map<RawVideoPixelFormat, AVPixelFormat> g_convertFfmpegPixFmt = {
+    {RawVideoPixelFormat::YUV420P, AVPixelFormat::AV_PIX_FMT_YUV420P},
+    {RawVideoPixelFormat::NV12, AVPixelFormat::AV_PIX_FMT_NV12},
+    {RawVideoPixelFormat::NV21, AVPixelFormat::AV_PIX_FMT_NV21},
+    {RawVideoPixelFormat::RGBA, AVPixelFormat::AV_PIX_FMT_RGBA},
+};
 } // namespace
 using namespace OHOS::Media;
 using FMTKey = Media::Tag;
@@ -239,6 +246,15 @@ int32_t FCodec::ConfigureContext(const Format &format)
     format_.PutIntValue(FMTKey::VIDEO_SLICE_HEIGHT, height_);
     format_.PutIntValue(FMTKey::VIDEO_PIC_WIDTH, width_);
     format_.PutIntValue(FMTKey::VIDEO_PIC_HEIGHT, height_);
+    int32_t pixelFormat = 0;
+    if (format.GetIntValue(FMTKey::VIDEO_RAWVIDEO_INPUT_PIXEL_FORMAT, pixelFormat)) {
+        RawVideoPixelFormat rawvideoPixFmt = static_cast<RawVideoPixelFormat>(pixelFormat);
+        CHECK_AND_RETURN_RET_LOG(rawvideoPixFmt >= RawVideoPixelFormat::YUV420P &&
+                                 rawvideoPixFmt <= RawVideoPixelFormat::RGBA,
+                                 AVCS_ERR_INVALID_VAL, "Unsupported rawvideo pixel format %{public}d!",
+                                 static_cast<int32_t>(rawvideoPixFmt));
+        avCodecContext_->pix_fmt = g_convertFfmpegPixFmt[rawvideoPixFmt];
+    }
 
     avCodecContext_->width = width_;
     avCodecContext_->height = height_;

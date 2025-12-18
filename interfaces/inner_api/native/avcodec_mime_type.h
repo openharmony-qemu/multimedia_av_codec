@@ -99,6 +99,7 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_MJPEG = "video/mjpeg";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_WMV3 = "video/wmv3";
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_DVVIDEO = "video/dvvideo";
+    static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_RAWVIDEO = "video/rawvideo";
 
     static constexpr std::string_view MEDIA_MIMETYPE_IMAGE_JPG = "image/jpeg";
     static constexpr std::string_view MEDIA_MIMETYPE_IMAGE_PNG = "image/png";
