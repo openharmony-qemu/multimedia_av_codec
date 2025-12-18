@@ -133,7 +133,6 @@ HWTEST_F(Av1DecReliNdkTest, VIDEO_AV1DEC_STABILITY_0030, TestSize.Level3)
         vDecSample->getFormat(inpDir720Array[i % 6]);
         vDecSample->autoSwitchSurface = false;
         vDecSample->sleepOnFPS = true;
-        vDecSample->NocaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameAv1));
         cout << "VIDEO_AV1DEC_STABILITY_0030 end: " << i << endl;
     }
@@ -160,7 +159,6 @@ HWTEST_F(Av1DecReliNdkTest, VIDEO_AV1DEC_STABILITY_0040, TestSize.Level3)
         vDecSample->getFormat(inpDir720Array[i % 6]);
         vDecSample->autoSwitchSurface = false;
         vDecSample->sleepOnFPS = true;
-        vDecSample->NocaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameAv1.c_str()));
     }
     uint32_t errorCount = 0;
@@ -232,7 +230,6 @@ HWTEST_F(Av1DecReliNdkTest, VIDEO_AV1DEC_STABILITY_0070, TestSize.Level3)
         vDecSample->SF_OUTPUT = false;
         vDecSample->INP_DIR = FILE_PATH;
         vDecSample->sleepOnFPS = true;
-        vDecSample->NocaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -262,7 +259,6 @@ HWTEST_F(Av1DecReliNdkTest, VIDEO_AV1DEC_STABILITY_0080, TestSize.Level3)
             vDecSample->SF_OUTPUT = false;
             vDecSample->INP_DIR = FILE_PATH;
             vDecSample->sleepOnFPS = true;
-            vDecSample->NocaleHash = true;
             ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1));
             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -346,7 +342,6 @@ HWTEST_F(Av1DecReliNdkTest, VIDEO_AV1DEC_STABILITY_0110, TestSize.Level3)
         cout << "rand high is" << vDecSample->DEFAULT_HEIGHT << endl;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SF_OUTPUT = false;
-        vDecSample->NocaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());

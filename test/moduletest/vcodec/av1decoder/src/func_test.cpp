@@ -305,7 +305,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0008, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = "/data/test/media/profile0_level10_I_128x96.h263";
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -552,8 +551,11 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0020, TestSize.Level0)
 HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0021, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_0;
+    vDecSample->INP_DIR = INP_DIR_5;
     vDecSample->outputYuvFlag = true;
+    vDecSample->needCheckHash = true;
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->defaultPixelFormat = AV_PIXEL_FORMAT_NV12;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -572,8 +574,11 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0021, TestSize.Level0)
 HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0022, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_0;
+    vDecSample->INP_DIR = INP_DIR_5;
     vDecSample->outputYuvFlag = true;
+    vDecSample->needCheckHash = true;
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->defaultPixelFormat = AV_PIXEL_FORMAT_NV21;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -980,7 +985,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0043, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_51;
-    vDecSample->NocaleHash = true;
     vDecSample->outputYuvFlag = true;
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
@@ -1056,7 +1060,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0046, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_1;
-    vDecSample->NocaleHash = true;
     vDecSample->outputYuvFlag = true;
     vDecSample->DEFAULT_WIDTH = 426;
     vDecSample->DEFAULT_HEIGHT = 240;
@@ -1079,7 +1082,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0047, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_2;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 640;
     vDecSample->DEFAULT_HEIGHT = 360;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1101,7 +1103,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0048, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_3;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 720;
     vDecSample->DEFAULT_HEIGHT = 480;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1123,7 +1124,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0049, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_4;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 1280;
     vDecSample->DEFAULT_HEIGHT = 720;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1145,7 +1145,7 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0050, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_5;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
+    vDecSample->needCheckHash = true;
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1167,7 +1167,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0051, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_6;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 60;
@@ -1190,7 +1189,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0052, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_7;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 1600;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1212,7 +1210,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0053, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_8;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 2560;
     vDecSample->DEFAULT_HEIGHT = 1440;
     vDecSample->DEFAULT_FRAME_RATE = 60;
@@ -1235,7 +1232,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0054, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_9;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 120;
@@ -1258,7 +1254,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0055, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_10;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 120;
@@ -1281,7 +1276,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0056, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_11;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 7680;
     vDecSample->DEFAULT_HEIGHT = 4320;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1303,7 +1297,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0057, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_12;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 7680;
     vDecSample->DEFAULT_HEIGHT = 4320;
     vDecSample->DEFAULT_FRAME_RATE = 60;
@@ -1326,7 +1319,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0058, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_13;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 7680;
     vDecSample->DEFAULT_HEIGHT = 4320;
     vDecSample->DEFAULT_FRAME_RATE = 120;
@@ -1349,7 +1341,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0059, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_14;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 7680;
     vDecSample->DEFAULT_HEIGHT = 4320;
     vDecSample->DEFAULT_FRAME_RATE = 120;
@@ -1372,7 +1363,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0060, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_15;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 480;
     vDecSample->DEFAULT_HEIGHT = 640;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1394,7 +1384,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0061, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_16;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 600;
     vDecSample->DEFAULT_HEIGHT = 800;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1416,7 +1405,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0062, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_17;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 1080;
     vDecSample->DEFAULT_HEIGHT = 1920;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1443,7 +1431,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0063, TestSize.Level0)
     getVideoSizeRange(&widthRange, &heightRange);
     vDecSample->DEFAULT_WIDTH = widthRange.minVal;
     vDecSample->DEFAULT_HEIGHT = heightRange.minVal;
-    vDecSample->NocaleHash = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -1465,7 +1452,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0064, TestSize.Level0)
     vDecSample->outputYuvFlag = true;
     vDecSample->DEFAULT_WIDTH = 8192;
     vDecSample->DEFAULT_HEIGHT = 4352;
-    vDecSample->NocaleHash = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -1485,7 +1471,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0065, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_20;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 720;
     vDecSample->DEFAULT_HEIGHT = 480;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1507,7 +1492,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0066, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_21;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 720;
     vDecSample->DEFAULT_HEIGHT = 480;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1529,7 +1513,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0067, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_22;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 1279;
     vDecSample->DEFAULT_HEIGHT = 719;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1550,7 +1533,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0068, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_23;
-    vDecSample->NocaleHash = true;
     vDecSample->outputYuvFlag = true;
     vDecSample->DEFAULT_WIDTH = 426;
     vDecSample->DEFAULT_HEIGHT = 240;
@@ -1573,7 +1555,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0069, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_24;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 640;
     vDecSample->DEFAULT_HEIGHT = 360;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1595,7 +1576,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0070, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_25;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 854;
     vDecSample->DEFAULT_HEIGHT = 480;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1617,7 +1597,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0071, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_26;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 1280;
     vDecSample->DEFAULT_HEIGHT = 720;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1639,7 +1618,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0072, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_27;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1661,7 +1639,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0073, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_28;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 60;
@@ -1684,7 +1661,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0074, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_29;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1706,7 +1682,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0075, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_30;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 60;
@@ -1729,7 +1704,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0076, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_31;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 120;
@@ -1752,7 +1726,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0077, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_32;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 120;
@@ -1775,7 +1748,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0078, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_33;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 7680;
     vDecSample->DEFAULT_HEIGHT = 4320;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1797,7 +1769,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0079, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_34;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 7680;
     vDecSample->DEFAULT_HEIGHT = 4320;
     vDecSample->DEFAULT_FRAME_RATE = 60;
@@ -1820,7 +1791,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0080, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_35;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 7680;
     vDecSample->DEFAULT_HEIGHT = 4320;
     vDecSample->DEFAULT_FRAME_RATE = 120;
@@ -1843,7 +1813,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0081, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_36;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 7680;
     vDecSample->DEFAULT_HEIGHT = 4320;
     vDecSample->DEFAULT_FRAME_RATE = 120;
@@ -1907,7 +1876,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0084, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_37;
-    vDecSample->NocaleHash = true;
     vDecSample->outputYuvFlag = true;
     vDecSample->DEFAULT_WIDTH = 426;
     vDecSample->DEFAULT_HEIGHT = 240;
@@ -1930,7 +1898,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0085, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_38;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 640;
     vDecSample->DEFAULT_HEIGHT = 360;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1952,7 +1919,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0086, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_39;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 854;
     vDecSample->DEFAULT_HEIGHT = 480;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1974,7 +1940,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0087, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_40;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 1280;
     vDecSample->DEFAULT_HEIGHT = 720;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -1996,7 +1961,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0088, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_41;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -2018,7 +1982,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0089, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_42;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 60;
@@ -2041,7 +2004,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0090, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_43;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -2063,7 +2025,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0091, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_44;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 60;
@@ -2086,7 +2047,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0092, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_45;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 120;
@@ -2109,7 +2069,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0093, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_46;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 3840;
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 120;
@@ -2132,7 +2091,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0094, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_47;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 7680;
     vDecSample->DEFAULT_HEIGHT = 4320;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
@@ -2154,7 +2112,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0095, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_48;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 7680;
     vDecSample->DEFAULT_HEIGHT = 4320;
     vDecSample->DEFAULT_FRAME_RATE = 60;
@@ -2177,7 +2134,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0096, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_49;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 7680;
     vDecSample->DEFAULT_HEIGHT = 4320;
     vDecSample->DEFAULT_FRAME_RATE = 120;
@@ -2200,7 +2156,6 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0097, TestSize.Level0)
     auto vDecSample = make_shared<VDecAPI11Sample>();
     vDecSample->INP_DIR = INP_DIR_50;
     vDecSample->outputYuvFlag = true;
-    vDecSample->NocaleHash = true;
     vDecSample->DEFAULT_WIDTH = 7680;
     vDecSample->DEFAULT_HEIGHT = 4320;
     vDecSample->DEFAULT_FRAME_RATE = 120;
@@ -2221,8 +2176,11 @@ HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0097, TestSize.Level0)
 HWTEST_F(Av1decFuncNdkTest, VIDEO_AV1DEC_FUNCTION_0098, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    vDecSample->INP_DIR = INP_DIR_0;
+    vDecSample->INP_DIR = INP_DIR_5;
     vDecSample->outputYuvFlag = true;
+    vDecSample->needCheckHash = true;
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1080;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameAv1.c_str()));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoderNoPixelFormat());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
