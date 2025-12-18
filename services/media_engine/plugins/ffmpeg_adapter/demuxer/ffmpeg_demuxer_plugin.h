@@ -425,6 +425,7 @@ private:
     void InitMinTsPacketInfo(AVPacket *pkt);
     void UpdMinTsPacketInfo(AVPacket *pkt);
     bool IsSkipGetMinTsPktInfo();
+    Status SeekToStartInternal();
 };
 
 typedef struct DtsFinder {

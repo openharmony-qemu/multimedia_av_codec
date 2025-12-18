@@ -2788,27 +2788,52 @@ void FFmpegDemuxerPlugin::UpdMinTsPacketInfo(AVPacket *pkt)
     }
 }
 
-Status FFmpegDemuxerPlugin::SeekToStart()
+Status FFmpegDemuxerPlugin::SeekToStartInternal()
 {
-    MEDIA_LOG_D("in");
     int64_t seekTs = AV_NOPTS_VALUE;
     int ffRet = -1;
     if (IsSkipGetMinTsPktInfo()) {
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
+        std::unique_lock<std::mutex> sLock(syncMutex_);
         ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
+        sLock.unlock();
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 0, 0);
     } else if (minTsPktInfo_.isInit) {
         seekTs = (pluginImpl_->flags & AVFMT_SEEK_TO_PTS) && !FFmpegFormatHelper::IsMpeg4File(fileType_) ?
             minTsPktInfo_.minPts : minTsPktInfo_.minDts;
+        std::unique_lock<std::mutex> sLock(syncMutex_);
         ffRet = av_seek_frame(formatContext_.get(),
             minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
-        MEDIA_LOG_D("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
+        sLock.unlock();
+        MEDIA_LOG_I("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
             minTsPktInfo_.streamIndex, seekTs, ffRet);
     }
     if (ffRet < 0) {
+        MEDIA_LOG_I("Use default track and startTime to seek.");
+        std::unique_lock<std::mutex> sLock(syncMutex_);
         ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT,
             formatContext_->start_time, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
-        FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_INVALID_OPERATION, "av_seek_frame default track failed.");
+        sLock.unlock();
+        FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN, "av_seek_frame default track failed.");
+    }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::SeekToStart()
+{
+    MEDIA_LOG_D("in");
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    MediaAVCodec::AVCodecTrace trace("SeekToStart");
+   
+    auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_seekToStart", SETTIMER_TIMEOUT,
+        nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
+    
+    auto ret = SeekToStartInternal();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekToStartInternal failed.");
+    
+    if (readLoopStatus_ != Status::OK) {
+        MEDIA_LOG_E("Read loop status is not OK, release thread");
+        ReleaseFFmpegReadLoop();
     }
     for (auto track : selectedTrackIds_) {
         cacheQueue_.RemoveTrackQueue(track);
@@ -2816,6 +2841,7 @@ Status FFmpegDemuxerPlugin::SeekToStart()
     }
     seekTime_ = AV_NOPTS_VALUE;
     seekMode_ = SeekMode::SEEK_NEXT_SYNC;
+    HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return Status::OK;
 }
 
