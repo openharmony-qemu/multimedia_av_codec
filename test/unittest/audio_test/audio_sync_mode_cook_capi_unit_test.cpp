@@ -49,6 +49,7 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
 namespace {
+constexpr size_t FIELDSIZE = 8;
 constexpr int32_t BLOCK_ALIGN = 93;
 constexpr int32_t DEFAULT_CHANNELS = 2;
 constexpr uint32_t DEFAULT_SAMPLE_RATE = 44100;
@@ -129,7 +130,7 @@ public:
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
-    int32_t InitFile();
+    int32_t InitFile(string_view input, string_view output);
     void InputFunc();
     bool DecoderFillInputBuffer(OH_AVBuffer *buffer);
     void DecoderRun();
@@ -164,7 +165,7 @@ protected:
     uint32_t decodeInputFrameCnt_ = 0;
     uint32_t outputFormatChangedTimes = 0;
     uint32_t outputFrameCnt_ = 0;
-    std::ifstream inputFile_;
+    std::ifstream infile;
     int64_t inTimeout_ = 20000; // 20000us: 20ms
     int64_t outTimeout_ = 20000; // 20000us: 20ms
     std::unique_ptr<std::ifstream> soFile_;
@@ -173,10 +174,12 @@ protected:
     OH_AVSource *source = nullptr;
     int32_t outputChannels = 0;
     int32_t outputSampleRate = 0;
-    // Diagnostics
     std::atomic<bool> gotEos_ {false};
     size_t staleInputDiscarded_ = 0;
     size_t staleOutputDiscarded_ = 0;
+    std::vector<uint8_t> rawData_;
+    size_t currentDataPos_ = 0;
+    bool headerParsed_ = false;
 };
 
 void AudioSyncModeCapiUnitTest::SetUpTestCase(void)
@@ -245,39 +248,51 @@ void AudioSyncModeCapiUnitTest::HandleInputEOS(const uint32_t index)
 
 bool AudioSyncModeCapiUnitTest::ReadBuffer(OH_AVBuffer *buffer, uint32_t index)
 {
-    constexpr size_t kHead = 16;
-    constexpr size_t kFrame = 66;
-    constexpr size_t kBlock = kHead + kFrame;
-    char block[kBlock];
-
-    inputFile_.read(block, kBlock);
-    std::streamsize got = inputFile_.gcount();
-    if (got == 0) {
+    constexpr size_t fileHeaderSize = 12;
+    if (!headerParsed_) {
+        if (rawData_.size() < fileHeaderSize) {
+            cout << "Error: file too small for header" << endl;
+            HandleInputEOS(index);
+            return false;
+        }
+        uint32_t extraDataLen = 0;
+        memcpy_s(&extraDataLen, sizeof(extraDataLen), rawData_.data() + FIELDSIZE, sizeof(extraDataLen));
+        const size_t totalHeader = fileHeaderSize + extraDataLen;
+        if (rawData_.size() < totalHeader) {
+            HandleInputEOS(index);
+            return false;
+        }
+        currentDataPos_ = totalHeader;
+        headerParsed_ = true;
+    }
+    constexpr size_t frameHeaderSize = 16;
+    if (currentDataPos_ + frameHeaderSize > rawData_.size()) {
         buffer->buffer_->memory_->SetSize(1);
         buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
         HandleInputEOS(index);
-        cout << "[ReadBuffer]  EOS" << endl;
         return false;
     }
-    if (got != kBlock) {
-        cout << "[ReadBuffer]  truncated block  want=" << kBlock
-             << "  got=" << got << endl;
+    uint64_t frameSize = 0;
+    int64_t pts = 0;
+    memcpy_s(&frameSize, sizeof(frameSize), rawData_.data() + currentDataPos_, sizeof(frameSize));
+    memcpy_s(&pts, sizeof(pts), rawData_.data() + currentDataPos_ + FIELDSIZE, sizeof(pts));
+    currentDataPos_ += frameHeaderSize;
+    if (currentDataPos_ + frameSize > rawData_.size()) {
+        buffer->buffer_->memory_->SetSize(1);
+        buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
+        HandleInputEOS(index);
         return false;
     }
-
-    void       *addr   = OH_AVBuffer_GetAddr(buffer);
-    const char *srcBeg = block + kHead;
-    const char *srcEnd = srcBeg + kFrame;
-    char       *dstBeg = static_cast<char *>(addr);
-
-    std::copy(srcBeg, srcEnd, dstBeg);
-
-    buffer->buffer_->memory_->SetSize(kFrame);
-    buffer->buffer_->pts_  = 0;
-    buffer->buffer_->flag_ = (isFirstFrame_ ? AVCODEC_BUFFER_FLAGS_CODEC_DATA
-                                            : AVCODEC_BUFFER_FLAGS_NONE);
-    cout << "[ReadBuffer]  push frame=" << (frameCount_ + 1)
-         << "  size=" << kFrame << "  flag=" << buffer->buffer_->flag_ << endl;
+    void *addr = OH_AVBuffer_GetAddr(buffer);
+    errno_t ret = memcpy_s(addr, buffer->buffer_->memory_->GetCapacity(), rawData_.data() + currentDataPos_, frameSize);
+    if (ret != EOK) {
+        HandleInputEOS(index);
+        return false;
+    }
+    buffer->buffer_->memory_->SetSize(frameSize);
+    buffer->buffer_->pts_ = pts;
+    buffer->buffer_->flag_ = isFirstFrame_ ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : AVCODEC_BUFFER_FLAGS_NONE;
+    currentDataPos_ += frameSize;
     isFirstFrame_ = false;
     return true;
 }
@@ -322,7 +337,7 @@ void AudioSyncModeCapiUnitTest::InputFunc()
         }
     }
     cout << "[InputFunc]   thread exit" << endl;
-    inputFile_.close();
+    infile.close();
 }
 
 void AudioSyncModeCapiUnitTest::OutputFunc()
@@ -449,19 +464,32 @@ void AudioSyncModeCapiUnitTest::StopLoops()
     }
 }
 
-int32_t AudioSyncModeCapiUnitTest::InitFile()
+int32_t AudioSyncModeCapiUnitTest::InitFile(string_view inputFilename, string_view outputFilename)
 {
-    inputFile_.open(COOK_FILE_TODEMUX, std::ios::binary);
-    if (!inputFile_.is_open()) {
-        cout << "Fatal: open input file failed:" << endl;
-        return OH_AVErrCode::AV_ERR_UNKNOWN;
-    }
-    pcmOutputFile_.open(OUTPUT_COOK_PCM_FILE_PATH, std::ios::out | std::ios::binary);
+    pcmOutputFile_.open(outputFilename.data(), std::ios::out | std::ios::binary);
     if (!pcmOutputFile_.is_open()) {
-        cout << "Fatal: open output file failed" << endl;
-        inputFile_.close();
+        cout << "Fatal: open output file failed: " << outputFilename << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
+    infile.open(inputFilename.data(), std::ios::binary);
+    if (!infile.is_open()) {
+        cout << "Fatal: open input file failed: " << inputFilename << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+
+    infile.seekg(0, std::ios::end);
+    size_t fileSize = infile.tellg();
+    infile.seekg(0, std::ios::beg);
+    rawData_.resize(fileSize);
+    infile.read(reinterpret_cast<char*>(rawData_.data()), fileSize);
+    infile.close();
+    if (infile.gcount() != static_cast<std::streamsize>(fileSize)) {
+        cout << "Error: Failed to read full input file" << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    currentDataPos_ = 0;
+    headerParsed_ = false;
+    isFirstFrame_ = true;
     return OH_AVErrCode::AV_ERR_OK;
 }
 
@@ -493,17 +521,38 @@ int32_t AudioSyncModeCapiUnitTest::Configure()
         cout << "Fatal: create format failed" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
-    uint32_t bitRate = 32000;
+    static constexpr uint32_t bitRate = 32000;
     OH_AVFormat_SetIntValue(format_, OH_MD_KEY_ENABLE_SYNC_MODE, 1);
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), DEFAULT_CHANNELS);
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(),
-        OH_AudioChannelLayout::CH_LAYOUT_STEREO);
+                             OH_AudioChannelLayout::CH_LAYOUT_STEREO);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
-    std::vector<uint8_t> extradata = {1, 0, 0, 3, 8, 0, 0, 32, 0, 0, 0, 0, 0, 2, 0, 4};
-    OH_AVFormat_SetBuffer(format_, OH_MD_KEY_CODEC_CONFIG, extradata.data(), extradata.size());
-    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-        AVSampleFormat::AV_SAMPLE_FMT_FLTP);
+    static constexpr size_t minHeaderSize{12};
+    if (rawData_.size() < minHeaderSize) {
+        std::cout << "Fatal: file too small for header" << std::endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    uint32_t extraDataSize{};
+    if (memcpy_s(&extraDataSize, sizeof(extraDataSize),
+                 rawData_.data() + FIELDSIZE, sizeof(extraDataSize)) != EOK) {
+        std::cout << "Fatal: memcpy_s extraDataSize failed" << std::endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    if (extraDataSize > 0) {
+        if (rawData_.size() < minHeaderSize + extraDataSize) {
+            std::cout << "Fatal: file too small for extra data" << std::endl;
+            return OH_AVErrCode::AV_ERR_UNKNOWN;
+        }
+        std::vector<uint8_t> extraData(extraDataSize);
+        if (memcpy_s(extraData.data(), extraData.size(),
+                     rawData_.data() + minHeaderSize, extraDataSize) != EOK) {
+            std::cout << "Fatal: memcpy_s extraData failed" << std::endl;
+            return OH_AVErrCode::AV_ERR_UNKNOWN;
+        }
+        OH_AVFormat_SetBuffer(format_, OH_MD_KEY_CODEC_CONFIG,
+                              extraData.data(), static_cast<int32_t>(extraData.size()));
+    }
     OH_AVFormat_SetIntValue(format_, OH_MD_KEY_BLOCK_ALIGN, BLOCK_ALIGN);
     return OH_AudioCodec_Configure(audioDec_, format_);
 }
@@ -613,7 +662,7 @@ void AudioSyncModeCapiUnitTest::DecoderRun()
 
 HWTEST_F(AudioSyncModeCapiUnitTest, cook_decode_01, TestSize.Level1)
 {
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(COOK_FILE_TODEMUX, OUTPUT_COOK_PCM_FILE_PATH));
 
     audioDec_ = OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_COOK, false);
     ASSERT_NE(audioDec_, nullptr);
@@ -626,7 +675,7 @@ HWTEST_F(AudioSyncModeCapiUnitTest, cook_decode_01, TestSize.Level1)
 
 HWTEST_F(AudioSyncModeCapiUnitTest, cook_InvalidSizeTest, TestSize.Level1)
 {
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(COOK_FILE_TODEMUX, OUTPUT_COOK_PCM_FILE_PATH));
 
     audioDec_ = OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_COOK, false);
     ASSERT_NE(audioDec_, nullptr);
@@ -653,7 +702,7 @@ HWTEST_F(AudioSyncModeCapiUnitTest, cook_InvalidSizeTest, TestSize.Level1)
 
 HWTEST_F(AudioSyncModeCapiUnitTest, cook_InvalidOffsetTest, TestSize.Level1)
 {
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(COOK_FILE_TODEMUX, OUTPUT_COOK_PCM_FILE_PATH));
 
     audioDec_ = OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_COOK, false);
     ASSERT_NE(audioDec_, nullptr);
@@ -680,7 +729,7 @@ HWTEST_F(AudioSyncModeCapiUnitTest, cook_InvalidOffsetTest, TestSize.Level1)
 
 HWTEST_F(AudioSyncModeCapiUnitTest, cook_InvalidAttrTest, TestSize.Level1)
 {
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(COOK_FILE_TODEMUX, OUTPUT_COOK_PCM_FILE_PATH));
 
     audioDec_ = OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_COOK, false);
     ASSERT_NE(audioDec_, nullptr);

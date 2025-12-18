@@ -866,7 +866,7 @@
     <target name="audio_twinvq_decoder_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="audio_res/twinvq_8000_1.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/twinvq_8000_mono.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -2041,21 +2041,21 @@
 	<target name="audio_cook_decoder_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="audio_res/cook_44100_stereo.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/cook.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
     <target name="audio_cook_capi_decoder_unit_stable_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/cook.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
     <target name="audio_cook_capi_decoder_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/cook.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -2090,7 +2090,7 @@
     <target name="audio_sync_mode_cook_capi_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
-            <option name="push" value="audio_res/. -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/cook.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
