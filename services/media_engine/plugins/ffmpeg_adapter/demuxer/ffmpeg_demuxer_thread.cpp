@@ -204,9 +204,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
 
     ret = ConvertAVPacketToSampleMemory(sample, samplePacket);
     DumpPacketInfo(trackId, Stage::FIRST_READ);
-    if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
-        return Status::OK;
-    } else if (ret == Status::OK) {
+    if (ret == Status::OK) {
         MEDIA_LOG_D("All partial sample has been copied");
         cacheQueue_.Pop(trackId);
     }
@@ -585,18 +583,21 @@ Status FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, const ConvertToAn
     PacketConvertToBufferInfo convertInfo(params.outDataSize);
     convertInfo.srcData = pkt.data;
     convertInfo.srcDataSize = pkt.size;
-    convertInfo.xpsData = params.xpsData;
-    convertInfo.xpsDataSize = params.xpsDataSize;
     convertInfo.outBuffer = params.outBuffer;
     convertInfo.outBufferSize = params.outBufferSize;
     convertInfo.sideData = cencInfo;
     convertInfo.sideDataSize = cencInfoSize;
-    convertInfo.isExtradata = false;
-    streamParsers_->ConvertPacketToAnnexb(pkt.stream_index, convertInfo);
-    
-    if (NeedCombineFrame(firstPkt->stream_index) &&
-        streamParsers_->IsSyncFrame(pkt.stream_index, params.outBuffer, params.outDataSize)) {
-        pkt.flags = static_cast<int32_t>(static_cast<uint32_t>(pkt.flags) | static_cast<uint32_t>(AV_PKT_FLAG_KEY));
+    bool isBeginAsAnnexb = IsBeginAsAnnexb(pkt.data, pkt.size);
+    if (!isBeginAsAnnexb) { // 如果已经是annexb格式，则直接返回
+        auto convertRet = streamParsers_->ConvertPacketToAnnexb(pkt.stream_index, convertInfo);
+        FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_PACKET_CONVERT_FAILED, "Convert packet to annexb failed");
+    }
+    if (NeedCombineFrame(firstPkt->stream_index)) {
+        const uint8_t *syncFrameData = isBeginAsAnnexb ? pkt.data : params.outBuffer;
+        int32_t syncFrameDataSize = isBeginAsAnnexb ?  pkt.size : params.outDataSize;
+        if (streamParsers_->IsSyncFrame(pkt.stream_index, syncFrameData, syncFrameDataSize)) {
+            pkt.flags = static_cast<int32_t>(static_cast<uint32_t>(pkt.flags) | static_cast<uint32_t>(AV_PKT_FLAG_KEY));
+        }
     }
     return Status::OK;
 }
@@ -606,14 +607,15 @@ Status FFmpegDemuxerPlugin::ConvertVvcToAnnexb(AVPacket& pkt, const ConvertToAnn
     PacketConvertToBufferInfo convertInfo(params.outDataSize);
     convertInfo.srcData = pkt.data;
     convertInfo.srcDataSize = pkt.size;
-    convertInfo.xpsData = params.xpsData;
-    convertInfo.xpsDataSize = params.xpsDataSize;
     convertInfo.outBuffer = params.outBuffer;
     convertInfo.outBufferSize = params.outBufferSize;
     convertInfo.sideData = nullptr;
     convertInfo.sideDataSize = 0;
-    convertInfo.isExtradata = false;
-    streamParsers_->ConvertPacketToAnnexb(pkt.stream_index, convertInfo);
+    bool isBeginAsAnnexb = IsBeginAsAnnexb(pkt.data, pkt.size);
+    if (!isBeginAsAnnexb) { // 如果已经是annexb格式，则直接返回
+        auto convertRet = streamParsers_->ConvertPacketToAnnexb(pkt.stream_index, convertInfo);
+        FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_PACKET_CONVERT_FAILED, "Convert packet to annexb failed");
+    }
     return Status::OK;
 }
 
@@ -623,28 +625,17 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(Plugins::AVPacketWrapperPtr sr
     AVPacket *srcAVPacket = (srcWrapper != nullptr) ? srcWrapper->GetAVPacket() : nullptr;
     FALSE_RETURN_V_MSG_E(srcAVPacket != nullptr, Status::ERROR_NULL_POINTER, "srcAVPacket is nullptr");
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER, "samplePacket is nullptr");
-    if (samplePacket->isAnnexb) {
-        MEDIA_LOG_D("Has converted");
-        outWrapper = srcWrapper;
-        return Status::OK;
-    }
     const AVStreamSnapshot* snapshot = GetStreamSnapshot(static_cast<uint32_t>(srcAVPacket->stream_index));
     FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid,
         Status::ERROR_INVALID_OPERATION, "Stream snapshot is invalid");
     auto codecId = snapshot->codecId;
-    
     // H.264 (AVC)
-    if (codecId == AV_CODEC_ID_H264 &&
-        avbsfContexts_.count(srcAVPacket->stream_index) > 0 &&
+    if (codecId == AV_CODEC_ID_H264 && avbsfContexts_.count(srcAVPacket->stream_index) > 0 &&
         avbsfContexts_[srcAVPacket->stream_index] != nullptr) {
         Status ret = ConvertAvcToAnnexb(*srcAVPacket);
-        if (ret == Status::OK) {
-            outWrapper = srcWrapper;
-            samplePacket->isAnnexb = true;
-        }
+        outWrapper = (ret == Status::OK) ? srcWrapper : nullptr;
         return ret;
     }
-    
     // HEVC and VVC
     if (codecId != AV_CODEC_ID_HEVC && codecId != AV_CODEC_ID_VVC) {
         outWrapper = nullptr;
@@ -661,14 +652,9 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexbWithParser(AVPacket* srcAVPacke
     std::shared_ptr<SamplePacket> samplePacket, Plugins::AVPacketWrapperPtr& outWrapper,
     const AVStreamSnapshot* snapshot)
 {
-    const uint8_t *xpsData = nullptr;
     int32_t xpsDataSize = 0;
     if (std::count(g_streamContainedXPS.begin(), g_streamContainedXPS.end(), snapshot->codecId) > 0) {
-        AVStream* avStream = formatContext_->streams[srcAVPacket->stream_index];
-        if (avStream != nullptr && avStream->codecpar != nullptr && avStream->codecpar->extradata != nullptr) {
-            xpsData = avStream->codecpar->extradata;
-            xpsDataSize = avStream->codecpar->extradata_size;
-        }
+        xpsDataSize = snapshot->extradataSize;
     }
     int32_t estimatedSize = srcAVPacket->size;
     if (xpsDataSize > 0) {
@@ -688,8 +674,6 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexbWithParser(AVPacket* srcAVPacke
     params.samplePacket = samplePacket;
     params.outBuffer = outPkt->data;
     params.outBufferSize = estimatedSize;
-    params.xpsData = xpsData;
-    params.xpsDataSize = xpsDataSize;
     Status status = (snapshot->codecId == AV_CODEC_ID_HEVC) ? ConvertHevcToAnnexb(*srcAVPacket, params) :
                                                               ConvertVvcToAnnexb(*srcAVPacket, params);
     if (status != Status::OK) {
@@ -707,7 +691,6 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexbWithParser(AVPacket* srcAVPacke
         return Status::ERROR_INVALID_OPERATION;
     }
     outPkt->size = outDataSize;
-    samplePacket->isAnnexb = true;
     return Status::OK;
 }
 
@@ -716,16 +699,16 @@ Status FFmpegDemuxerPlugin::ConvertToAnnexbAndUpdateSample(std::shared_ptr<AVBuf
 {
     Plugins::AVPacketWrapperPtr outPktWrapper = nullptr;
     Status ret = ConvertPacketToAnnexb(tempPktWrapper, samplePacket, outPktWrapper);
-    if (ret != Status::OK) {
-        return ret;
-    }
-    if (outPktWrapper != nullptr) {
-        tempPktWrapper = outPktWrapper;
-    }
+    FALSE_RETURN_V_MSG_D(ret == Status::OK, ret, "Convert packet to annexb failed");
 
+    tempPktWrapper = (outPktWrapper != nullptr) ? outPktWrapper : tempPktWrapper;
     AVPacket *tempPkt = (tempPktWrapper != nullptr) ? tempPktWrapper->GetAVPacket() : nullptr;
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "Output packet is nullptr");
-
+    const AVStreamSnapshot* snapshot = GetStreamSnapshot(static_cast<uint32_t>(tempPkt->stream_index));
+    if (snapshot != nullptr && snapshot->valid &&
+        (snapshot->codecId == AV_CODEC_ID_HEVC || snapshot->codecId == AV_CODEC_ID_H264)) {
+        SetDropTag(*tempPkt, sample, snapshot->codecId);
+    }
     if (cacheQueue_.SetInfo(samplePacket) == false) {
         MEDIA_LOG_D("Set info failed");
     }

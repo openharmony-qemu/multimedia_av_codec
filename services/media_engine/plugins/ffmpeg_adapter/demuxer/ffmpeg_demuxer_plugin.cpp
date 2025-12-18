@@ -68,7 +68,6 @@ const uint32_t DEFAULT_SNIFF_SIZE = 4096 * 4;
 const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const int32_t DEF_PROBE_SCORE_LIMIT = 50;
 const uint32_t RANK_MAX = 100;
-const int32_t NAL_START_CODE_SIZE = 4;
 const uint32_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
 const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
@@ -83,7 +82,6 @@ const int READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2;
 const char* PLUGIN_NAME_PREFIX = "avdemux_";
 const char* PLUGIN_NAME_MP3 = "mp3";
 const char* PLUGIN_NAME_MPEGPS = "mpeg";
-const uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 const int32_t MPEGPS_START_CODE_SIZE = 4;
 const uint8_t MPEGPS_START_CODE[] = {0x00, 0x00, 0x01, 0xBA};
 const uint32_t SETTIMER_TIMEOUT = 5; // second
@@ -102,9 +100,7 @@ const int32_t POS_7 = 7;
 const int32_t POS_8 = 8;
 const int32_t POS_9 = 9;
 const int32_t POS_14 = 14;
-const int32_t POS_16 = 16;
 const int32_t POS_21 = 21;
-const int32_t POS_24 = 24;
 const int32_t POS_FF = 0xff;
 const int32_t LEN_MASK = 0x7f;
 const int32_t TAG_MASK = 0x80;
@@ -333,102 +329,6 @@ bool IsSupportedTrack(const AVStream& avStream)
         }
     }
     return true;
-}
-
-bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size)
-{
-    if (size < NAL_START_CODE_SIZE) {
-        return false;
-    }
-    bool hasShortStartCode = (sample[0] == 0 && sample[1] == 0 && sample[2] == 1); // 001
-    bool hasLongStartCode = (sample[0] == 0 && sample[1] == 0 && sample[2] == 0 && sample[3] == 1); // 0001
-    return hasShortStartCode || hasLongStartCode;
-}
-
-int32_t GetNaluSize(const uint8_t *nalStart)
-{
-    return static_cast<int32_t>(
-        (nalStart[POS_3]) | (nalStart[POS_2] << POS_8) | (nalStart[POS_1] << POS_16) | (nalStart[POS_0] << POS_24));
-}
-
-bool IsHvccSyncFrame(const uint8_t *sample, int32_t size)
-{
-    const uint8_t* nalStart = sample;
-    const uint8_t* end = nalStart + size;
-    int32_t sizeLen = NAL_START_CODE_SIZE;
-    int32_t naluSize = 0;
-    naluSize = GetNaluSize(nalStart);
-    if (naluSize <= 0 || nalStart > end - sizeLen) {
-        return false;
-    }
-    nalStart = nalStart + sizeLen;
-    while (nalStart < end) {
-        uint8_t naluType = static_cast<uint8_t>((nalStart[0] & 0x7E) >> 1);
-        if (naluType > 0x10 && naluType <= 0x17) {
-            return true;
-        }
-        if (nalStart > end - naluSize) {
-            return false;
-        }
-        nalStart = nalStart + naluSize;
-        if (nalStart > end - sizeLen) {
-            return false;
-        }
-        naluSize = GetNaluSize(nalStart);
-        if (naluSize < 0) {
-            return false;
-        }
-        nalStart = nalStart + sizeLen;
-    }
-    return false;
-}
-
-const uint8_t* FindNalStartCode(const uint8_t *start, const uint8_t *end, int32_t &startCodeLen)
-{
-    startCodeLen = sizeof(START_CODE);
-    auto *iter = std::search(start, end, START_CODE, START_CODE + startCodeLen);
-    if (iter != end && (iter > start && *(iter - 1) == 0x00)) {
-        ++startCodeLen;
-        return iter - 1;
-    }
-    return iter;
-}
-
-bool IsAnnexbSyncFrame(const uint8_t *sample, int32_t size)
-{
-    const uint8_t* nalStart = sample;
-    const uint8_t* end = nalStart + size;
-    const uint8_t* nalEnd = nullptr;
-    int32_t startCodeLen = 0;
-    nalStart = FindNalStartCode(nalStart, end, startCodeLen);
-    if (nalStart > end - startCodeLen) {
-        return false;
-    }
-    nalStart = nalStart + startCodeLen;
-    while (nalStart < end) {
-        nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
-        uint8_t naluType = static_cast<uint8_t>((nalStart[0] & 0x7E) >> 1);
-        if (naluType > 0x10 && naluType <= 0x17) {
-            return true;
-        }
-        if (nalEnd > end - startCodeLen) {
-            return false;
-        }
-        nalStart = nalEnd + startCodeLen;
-    }
-    return false;
-}
-
-bool IsHevcSyncFrame(const uint8_t *sample, int32_t size)
-{
-    if (size < NAL_START_CODE_SIZE) {
-        return false;
-    }
-    if (IsBeginAsAnnexb(sample, size)) {
-        return IsAnnexbSyncFrame(sample, size);
-    } else {
-        return IsHvccSyncFrame(sample, size);
-    }
 }
 
 void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
