@@ -23,7 +23,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 class AppEventReporter {
 public:
-    explicit AppEventReporter(uint32_t reportThd = 50); // report num 50
+    explicit AppEventReporter(uint32_t reportThd = 20); // report num 20
     void ReportRecord(const std::string &apiName, int errorCode, int64_t costTime);
 private:
     void UploadRecordData(const std::string &apiName) const;

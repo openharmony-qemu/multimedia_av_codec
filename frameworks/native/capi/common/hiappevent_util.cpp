@@ -90,7 +90,8 @@ void AppEventReporter::UploadRecordData(const std::string &apiName) const
     event.AddParam("max_cost_time", maxCostTime_);
     event.AddParam("min_cost_time", minCostTime_);
     event.AddParam("total_cost_time", totalCostTime_);
-    Write(event);
+    int32_t ret = Write(event);
+    AVCODEC_LOGI("%{public}s event write result: %{public}d", apiName.c_str(), ret);
 }
 
 ApiInvokeRecorder::ApiInvokeRecorder(std::string apiName, AppEventReporter &reporter) : apiName_(std::move(apiName)),
