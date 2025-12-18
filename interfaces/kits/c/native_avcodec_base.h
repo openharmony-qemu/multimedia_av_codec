@@ -1243,9 +1243,9 @@ typedef enum OH_MPEG2Profile {
     /** Main profile */
     MPEG2_PROFILE_MAIN    = 1,
     /** SNR scalable profile */
-    MPEG2_PROFILE_SNR     = 2,
+    MPEG2_PROFILE_SNR_SCALABLE = 2,
     /** Spatially scalable profile */
-    MPEG2_PROFILE_SPATIAL = 3,
+    MPEG2_PROFILE_SPATIALLY_SCALABLE = 3,
     /** High profile */
     MPEG2_PROFILE_HIGH    = 4,
     /** 4:2:2 profile */
@@ -1268,7 +1268,7 @@ typedef enum OH_MPEG4Profile {
     /** Main profile */
     MPEG4_PROFILE_MAIN               = 3,
     /** N-Bit profile */
-    MPEG4_PROFILE_NBIT               = 4,
+    MPEG4_PROFILE_N_BIT               = 4,
     /** Hybrid profile */
     MPEG4_PROFILE_HYBRID             = 5,
     /** Basic animated texture profile */
@@ -1695,13 +1695,13 @@ typedef enum OH_MatrixCoefficient {
  */
 typedef enum OH_MPEG2Level {
     /** Low level */
-    MPEG2_LEVEL_LL  = 0,
+    MPEG2_LEVEL_LOW  = 0,
     /** Main level */
-    MPEG2_LEVEL_ML  = 1,
+    MPEG2_LEVEL_MAIN  = 1,
     /** High 1440 level */
-    MPEG2_LEVEL_H14 = 2,
+    MPEG2_LEVEL_HIGH_1440 = 2,
     /** High level */
-    MPEG2_LEVEL_HL  = 3,
+    MPEG2_LEVEL_HIGH = 3,
 }OH_MPEG2Level;
 
 /**
