@@ -46,7 +46,7 @@ const std::string &GetBundleNameOrDefault()
     auto systemAbilityManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     CHECK_AND_RETURN_RET_LOG(systemAbilityManager != nullptr, bundleName, "systemAbilityManager is nullptr");
 
-    sptr<IRemoteObject> remoteObject = systemAbilityManager->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+    sptr<IRemoteObject> remoteObject = systemAbilityManager->CheckSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
     CHECK_AND_RETURN_RET_LOG(remoteObject != nullptr, bundleName, "remoteObject is nullptr");
 
     sptr<IBundleMgr> bundleMgrProxy = iface_cast<IBundleMgr>(remoteObject);
