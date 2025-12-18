@@ -598,7 +598,7 @@ Status FFmpegDemuxerPlugin::SetDrmCencInfo(
 bool FFmpegDemuxerPlugin::NeedCombineFrame(uint32_t trackId)
 {
     const auto* snapshot = GetStreamSnapshot(trackId);
-    FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid, false, "Stream snapshot is invalid");
+    FALSE_RETURN_V_MSG_D(snapshot != nullptr && snapshot->valid, false, "Stream snapshot is invalid");
     return snapshot->needCombineFrame;
 }
 
