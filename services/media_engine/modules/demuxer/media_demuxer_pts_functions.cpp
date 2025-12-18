@@ -98,8 +98,8 @@ void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuff
     baseInfo->lastPtsModifyedMax = std::max(sample->pts_, baseInfo->lastPtsModifyedMax);
     
     MEDIA_LOG_I("Success, track:" PUBLIC_LOG_D32 ", orgPts:"
-        PUBLIC_LOG_D64 ", pts:" PUBLIC_LOG_D64 ", basePts: " PUBLIC_LOG_D64, trackId,
-        curPacketPts, sample->pts_, baseInfo->basePts);
+        PUBLIC_LOG_D64 ", pts:" PUBLIC_LOG_D64 ", basePts: " PUBLIC_LOG_D64 ", duration: " PUBLIC_LOG_D64, trackId,
+        curPacketPts, sample->pts_, baseInfo->basePts, sample->duration_);
 }
 
 void MediaDemuxer::InitPtsInfo()

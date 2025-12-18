@@ -31,6 +31,7 @@ config("av_codec_packege_include") {
     "$av_codec_root_dir/services/services/codeclist/client",
     "$av_codec_root_dir/services/services/codeclist/ipc",
     "$av_codec_root_dir/services/services/common",
+    "$av_codec_root_dir/services/services/common/event_manager",
     "$av_codec_root_dir/services/services/demuxer/client",
     "$av_codec_root_dir/services/services/demuxer/ipc",
     "$av_codec_root_dir/services/services/muxer/client",
@@ -40,7 +41,7 @@ config("av_codec_packege_include") {
     "$av_codec_root_dir/services/services/source/client",
     "$av_codec_root_dir/services/services/source/ipc",
     "$av_codec_root_dir/services/engine/base/include",
-    "$av_codec_root_dir/services/services/codec/server",
+    "$av_codec_root_dir/services/services/codec/server/audio",
     "$av_codec_root_dir/services/services/codec/server/post_processing",
     "$av_codec_root_dir/services/engine/codec/include/audio",
     "$av_codec_root_dir/services/engine/codeclist",
@@ -215,8 +216,8 @@ ohos_shared_library("av_codec_client") {
   ]
 
   sources = [
-    "$av_codec_root_dir/frameworks/native/avcodec/avcodec_suspend.cpp",
     "$av_codec_root_dir/frameworks/native/avcodec/avcodec_monitor.cpp",
+    "$av_codec_root_dir/frameworks/native/avcodec/avcodec_suspend.cpp",
     "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
     "$av_codec_root_dir/services/dfx/avcodec_dfx_component.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/client/avcodec_client.cpp",
@@ -257,10 +258,8 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/engine/codeclist/codeclist_core.cpp",
       "$av_codec_root_dir/services/engine/codeclist/codeclist_dump.cpp",
       "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/hdi_codec.cpp",
-      "$av_codec_root_dir/services/services/codec/server/codec_factory.cpp",
-      "$av_codec_root_dir/services/services/codec/server/codec_param_checker.cpp",
-      "$av_codec_root_dir/services/services/codec/server/audio_codec_server.cpp",
-      "$av_codec_root_dir/services/services/codec/server/post_processing/state_machine.cpp",
+      "$av_codec_root_dir/services/services/codec/server/audio/audio_codec_factory.cpp",
+      "$av_codec_root_dir/services/services/codec/server/audio/audio_codec_server.cpp",
     ]
   }
   if (av_codec_support_demuxer) {
@@ -310,10 +309,7 @@ ohos_shared_library("av_codec_client") {
     deps += [ "$av_codec_root_dir/services/engine:av_codec_engine_package" ]
   }
 
-  deps += [
-    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
-    "../../../services/services/common/adaptive_framerate_controller:adaptive_framerate_controller",
-  ]
+  deps += [ "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules" ]
 
   external_deps = [
     "bounds_checking_function:libsec_static",

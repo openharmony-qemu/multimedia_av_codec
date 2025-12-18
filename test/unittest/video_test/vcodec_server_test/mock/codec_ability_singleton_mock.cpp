@@ -59,5 +59,15 @@ std::unordered_map<std::string, std::vector<size_t>> CodecAbilitySingleton::GetM
 {
     return CodecAbilitySingletonImpl::GetMimeCapIdxMap();
 }
+
+int32_t CodecAbilitySingleton::GetVideoCodecTypeByCodecName(const std::string &codecName)
+{
+    return 0;
+}
+
+int32_t CodecAbilitySingleton::Dump(int32_t fd, const std::vector<std::u16string> &args)
+{
+    return 0;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

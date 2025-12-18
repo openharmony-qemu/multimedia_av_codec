@@ -223,6 +223,13 @@ void MultiStreamParserManager::ConvertPacketToAnnexb(
         packetInfo.sideDataSize, packetInfo.isExtradata);
 }
 
+void MultiStreamParserManager::ConvertPacketToAnnexb(
+    uint32_t trackId, const PacketConvertToBufferInfo &convertInfo)
+{
+    FALSE_RETURN_MSG(ParserIsInited(trackId), "Stream parser is invalid");
+    streamMap_[trackId].parser->ConvertPacketToAnnexb(convertInfo);
+}
+
 void MultiStreamParserManager::ParseAnnexbExtraData(uint32_t trackId, const uint8_t *sample, int32_t size)
 {
     FALSE_RETURN_MSG(ParserIsInited(trackId), "Stream parser is invalid");

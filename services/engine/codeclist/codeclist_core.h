@@ -31,7 +31,7 @@ public:
     std::string FindEncoder(const Media::Format &format);
     std::string FindDecoder(const Media::Format &format);
     CodecType FindCodecType(std::string codecName);
-    std::vector<std::string> FindCodecNameArray(const std::string &mime, bool isEncoder);
+    std::vector<std::string> FindCodecNameArray(const AVCodecType type, const std::string &mime);
     int32_t GetCapability(CapabilityData &capData, const std::string &mime, const bool isEncoder,
                           const AVCodecCategory &category);
 

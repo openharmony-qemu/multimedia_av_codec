@@ -1,0 +1,48 @@
+# Copyright (C) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+ohos_source_set("statistics_event_handler") {
+  branch_protector_ret = "pac_ret"
+  sanitize = av_codec_sanitize
+
+  include_dirs = [
+    "./",
+    "../../",
+    "../../../",
+    "../../../../../../interfaces/inner_api/native/",
+  ]
+
+  sources = [ "./statistics_event_handler.cpp" ]
+
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/services/sa_avcodec:sa_manager",
+  ]
+
+  if (build_variant != "user") {
+    defines = [ "BUILD_ENG_VERSION" ]
+  }
+
+  external_deps = [
+    "cJSON:cjson",
+    "hisysevent:libhisysevent",
+    "init:libbegetutil",
+    "media_foundation:media_foundation",
+  ]
+
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+}

@@ -109,9 +109,12 @@ int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat)
             if (sampleInfo_->frameRate == SAMPLE_DEFAULT_FRAMERATE) {
                 OH_AVFormat_GetDoubleValue(trackFormat.get(), OH_MD_KEY_FRAME_RATE, &sampleInfo_->frameRate);
             }
-            char *codecMime;
-            OH_AVFormat_GetStringValue(trackFormat.get(), OH_MD_KEY_CODEC_MIME, const_cast<char const **>(&codecMime));
-            sampleInfo_->codecMime = codecMime;
+            if (sampleInfo_->codecMime.empty()) {
+                char *codecMime;
+                OH_AVFormat_GetStringValue(trackFormat.get(), OH_MD_KEY_CODEC_MIME,
+                    const_cast<char const **>(&codecMime));
+                sampleInfo_->codecMime = codecMime;
+            }
             OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_PROFILE, &sampleInfo_->profile);
         }
     }

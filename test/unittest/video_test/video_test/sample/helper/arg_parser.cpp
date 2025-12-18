@@ -27,6 +27,7 @@ enum DemoArgumentType : int {
     DEMO_ARG_CODEC_TYPE,
     DEMO_ARG_INPUT_FILE,
     DEMO_ARG_OUTPUT_FILE,
+    DEMO_ARG_CREATE_CODEC_BY_MIME,
     DEMO_ARG_CODEC_MIME,
     DEMO_ARG_WIDTH,
     DEMO_ARG_HEIGHT,
@@ -38,6 +39,7 @@ enum DemoArgumentType : int {
     DEMO_ARG_CODEC_RUN_MODE,
     DEMO_ARG_FRAME_INTERVAL,
     DEMO_ARG_I_FRAME_INTERVAL,
+    DEMO_ARG_SAMPLE_COUNT,
     DEMO_ARG_SAMPLE_REPEAT_TIMES,
     DEMO_ARG_DEMO_REPEAT_TIMES,
     DEMO_ARG_NEED_DUMP_INPUT,
@@ -66,6 +68,7 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
     {DEMO_ARG_CODEC_TYPE,                       "codec_type"},
     {DEMO_ARG_INPUT_FILE,                       "input_file"},
     {DEMO_ARG_OUTPUT_FILE,                      "output_file"},
+    {DEMO_ARG_CREATE_CODEC_BY_MIME,             "create_codec_by_mime"},
     {DEMO_ARG_CODEC_MIME,                       "codec_mime"},
     {DEMO_ARG_WIDTH,                            "width"},
     {DEMO_ARG_HEIGHT,                           "height"},
@@ -77,6 +80,7 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
     {DEMO_ARG_CODEC_RUN_MODE,                   "codec_run_mode"},
     {DEMO_ARG_FRAME_INTERVAL,                   "frame_interval"},
     {DEMO_ARG_I_FRAME_INTERVAL,                 "i_frame_interval"},
+    {DEMO_ARG_SAMPLE_COUNT,                     "sample_count"},
     {DEMO_ARG_SAMPLE_REPEAT_TIMES,              "sample_repeat_times"},
     {DEMO_ARG_DEMO_REPEAT_TIMES,                "demo_repeat_times"},
     {DEMO_ARG_NEED_DUMP_INPUT,                  "need_dump_input"},
@@ -105,6 +109,7 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"codec_type",                       required_argument,  nullptr, DEMO_ARG_CODEC_TYPE},
     {"input",                            required_argument,  nullptr, DEMO_ARG_INPUT_FILE},
     {"output",                           required_argument,  nullptr, DEMO_ARG_OUTPUT_FILE},
+    {"create_codec_by_mime",             required_argument,  nullptr, DEMO_ARG_CREATE_CODEC_BY_MIME},
     {"mime",                             required_argument,  nullptr, DEMO_ARG_CODEC_MIME},
     {"width",                            required_argument,  nullptr, DEMO_ARG_WIDTH},
     {"height",                           required_argument,  nullptr, DEMO_ARG_HEIGHT},
@@ -116,6 +121,7 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"codec_run_mode",                   required_argument,  nullptr, DEMO_ARG_CODEC_RUN_MODE},
     {"frame_interval",                   required_argument,  nullptr, DEMO_ARG_FRAME_INTERVAL},
     {"i_frame_interval",                 required_argument,  nullptr, DEMO_ARG_I_FRAME_INTERVAL},
+    {"sample_count",                     required_argument,  nullptr, DEMO_ARG_SAMPLE_COUNT},
     {"sample_repeat_times",              required_argument,  nullptr, DEMO_ARG_SAMPLE_REPEAT_TIMES},
     {"demo_repeat_times",                required_argument,  nullptr, DEMO_ARG_DEMO_REPEAT_TIMES},
     {"need_dump_input",                  required_argument,  nullptr, DEMO_ARG_NEED_DUMP_INPUT},
@@ -147,6 +153,7 @@ Video codec demo help:
     --codec_type                        codec type (0: decoder; 2: encoder)
     --input                             input file path
     --output                            output file path
+    --create_codec_by_mime              create codec by mime
     --mime                              codec mime (video/avc: H264; video/hevc: H265)
     --width                             video width
     --height                            video height
@@ -166,6 +173,7 @@ Video codec demo help:
 
     --frame_interval                    frame push interval (ms)
     --i_frame_interval                  i frame interval (ms)
+    --sample_count                      specify count of sample instance
     --sample_repeat_times               sample repeat times, data producer will seek to head while eos
     --demo_repeat_times                 demo repeat times, sample will destroy while eos
     --need_dump_input                   need to dump input stream? (0: false; 1: true)
@@ -225,6 +233,11 @@ inline void SetOutputFilePath(SampleInfo &info, const char * const value)
     info.needDumpOutput = true;
 }
 
+inline void SetCreateCodecByMime(SampleInfo &info, const char * const value)
+{
+    info.createCodecByMime = std::stol(value);
+}
+
 inline void SetMime(SampleInfo &info, const char * const value)
 {
     info.codecMime = value;
@@ -281,6 +294,11 @@ inline void SetFrameInterval(SampleInfo &info, const char * const value)
 inline void SetIFrameInterval(SampleInfo &info, const char * const value)
 {
     info.iFrameInterval = std::stol(value);
+}
+
+inline void SetSampleCount(SampleInfo &info, const char * const value)
+{
+    info.sampleCount = std::stoul(value);
 }
 
 inline void SetSampleRepeatTimes(SampleInfo &info, const char * const value)
@@ -389,6 +407,7 @@ const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char
     {DEMO_ARG_CODEC_TYPE,                       SetCodecType},
     {DEMO_ARG_INPUT_FILE,                       SetInputFilePath},
     {DEMO_ARG_OUTPUT_FILE,                      SetOutputFilePath},
+    {DEMO_ARG_CREATE_CODEC_BY_MIME,             SetCreateCodecByMime},
     {DEMO_ARG_CODEC_MIME,                       SetMime},
     {DEMO_ARG_WIDTH,                            SetWidth},
     {DEMO_ARG_HEIGHT,                           SetHeight},
@@ -400,6 +419,7 @@ const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char
     {DEMO_ARG_CODEC_RUN_MODE,                   SetCodecRunMode},
     {DEMO_ARG_FRAME_INTERVAL,                   SetFrameInterval},
     {DEMO_ARG_I_FRAME_INTERVAL,                 SetIFrameInterval},
+    {DEMO_ARG_SAMPLE_COUNT,                     SetSampleCount},
     {DEMO_ARG_SAMPLE_REPEAT_TIMES,              SetSampleRepeatTimes},
     {DEMO_ARG_DEMO_REPEAT_TIMES,                SetDemoRepeatTimes},
     {DEMO_ARG_NEED_DUMP_INPUT,                  SetNeedDumpInput},

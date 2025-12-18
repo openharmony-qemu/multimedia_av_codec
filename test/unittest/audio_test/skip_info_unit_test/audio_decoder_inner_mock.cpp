@@ -154,6 +154,8 @@ int32_t AudioDecoderInnerMock::Stop()
 int32_t AudioDecoderInnerMock::DecodeInput(const uint8_t *dataIn, uint32_t inSizeBytes, std::vector<uint8_t> *skipInfo)
 {
     // 申请avbuffer
+    outputPts_ = 0;
+    outputFlag_ = 0;
     Media::AVBufferConfig avBufferConfig;
     avBufferConfig.size = GetInputBufferSize();
     std::shared_ptr<AVBuffer> inputBuffer = nullptr;
@@ -170,7 +172,7 @@ int32_t AudioDecoderInnerMock::DecodeInput(const uint8_t *dataIn, uint32_t inSiz
         DEMO_LOG("DecodeInput memcpy_s failed!");
     }
     inputBuffer->memory_->SetSize(inSizeBytes);
-    inputBuffer->flag_ = AVCODEC_BUFFER_FLAGS_NONE;
+    inputBuffer->flag_ = flag_;
     inputBuffer->pts_ = pts_;
     // buffer 送解码器
     mediaCodecProducer_->PushBuffer(inputBuffer, true);
@@ -197,6 +199,7 @@ int32_t AudioDecoderInnerMock::DecodeOutput(uint8_t *dataOut, int32_t &outSizeBy
         }
     }
     outputPts_ = outputBuffer->pts_;
+    outputFlag_ = outputBuffer->flag_;
     // 释放buffer
     implConsumer_->ReleaseBuffer(outputBuffer);
     outputBufferQueue_.pop();

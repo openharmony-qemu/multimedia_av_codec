@@ -15,7 +15,8 @@ import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 module_output_path = "av_codec/AVCodec_Video/unittest"
-event_handler_dir = "$av_codec_root_dir/services/services/common/event_manager/event_handler"
+event_handler_dir =
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler"
 
 codeclist_unittest_cflags = [
   "-std=c++17",
@@ -90,8 +91,11 @@ ohos_unittest("video_instance_memory_update_event_cov_unit_test") {
     "$av_codec_root_dir/test/unittest/video_test/sa_avcodec_test/mock/include",
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/include",
-    "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler/",
+    "$av_codec_root_dir/services/services/common/event_manager",
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler/background_event_handler",
     "$av_codec_root_dir/services/services/common/event_manager/event_handler/instance_memory_update_event_handler",
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler/instance_operation_event_handler",
+    "$av_codec_root_dir/services/services/common/event_manager/event_handler/statistics_event_handler",
     "$av_codec_root_dir/services/services/sa_avcodec",
     "$av_codec_root_dir/services/services/sa_avcodec/ipc",
     "$av_codec_root_dir/services/services/sa_avcodec/server/include",
@@ -99,6 +103,7 @@ ohos_unittest("video_instance_memory_update_event_cov_unit_test") {
   defines = av_codec_defines
 
   sources = [
+    "$av_codec_root_dir/services/services/common/event_manager/event_manager.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
     "$av_codec_root_dir/test/unittest/video_test/sa_avcodec_test/mock/avcodec_service_stub_mock.cpp",
@@ -107,7 +112,10 @@ ohos_unittest("video_instance_memory_update_event_cov_unit_test") {
     "$av_codec_root_dir/test/unittest/video_test/sa_avcodec_test/mock/mem_mgr_client_mock.cpp",
     "$av_codec_root_dir/test/unittest/video_test/sa_avcodec_test/mock/system_ability_mock.cpp",
     "$event_handler_dir/background_event_handler/background_event_handler.cpp",
+    "$event_handler_dir/instance_memory_update_event_handler/instance_memory_calculator.cpp",
     "$event_handler_dir/instance_memory_update_event_handler/instance_memory_update_event_handler.cpp",
+    "$event_handler_dir/instance_operation_event_handler/instance_operation_event_handler.cpp",
+    "$event_handler_dir/statistics_event_handler/statistics_event_handler.cpp",
     "./instance_memory_update_event_coverage_unit_test.cpp",
   ]
 

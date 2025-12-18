@@ -108,6 +108,8 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
     "common/ffmpeg_utils.cpp",
     "common/reference_parser_manager.cpp",
     "common/multi_stream_parser_manager.cpp",
+    "demuxer/avpacket_memory.cpp",
+    "demuxer/avpacket_wrapper.cpp",
     "demuxer/block_queue_pool.cpp",
     "demuxer/demuxer_log_compressor.cpp",
     "demuxer/ffmpeg_demuxer_plugin.cpp",

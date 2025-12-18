@@ -25,7 +25,7 @@
 #include "avcodec_log.h"
 #include "buffer/avbuffer.h"
 #include "codec_ability_singleton.h"
-#include "codec_factory.h"
+#include "audio_codec_factory.h"
 #include "media_description.h"
 #include "meta/meta_key.h"
 
@@ -131,7 +131,7 @@ int32_t AudioCodecServer::InitByName(Meta &callerInfo, API_VERSION apiVersion)
     int32_t ret = GetAudioCodecName(codecType_, codecName_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "CodecName get failed");
 
-    codecBase_ = CodecFactory::Instance().CreateCodecByName(codecName_, apiVersion);
+    codecBase_ = AudioCodecFactory::Instance().CreateCodecByName(codecName_, apiVersion);
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "CodecBase is nullptr");
     return codecBase_->Init(callerInfo);
 }
@@ -139,12 +139,11 @@ int32_t AudioCodecServer::InitByName(Meta &callerInfo, API_VERSION apiVersion)
 int32_t AudioCodecServer::InitByMime(Meta &callerInfo, API_VERSION apiVersion)
 {
     int32_t ret = AVCS_ERR_NO_MEMORY;
-    bool isEncoder = (codecType_ == AVCODEC_TYPE_AUDIO_ENCODER);
-    std::vector<std::string> nameArray = CodecFactory::Instance().GetCodecNameArrayByMime(codecName_, isEncoder);
+    std::vector<std::string> nameArray = AudioCodecFactory::Instance().GetCodecNameArrayByMime(codecType_, codecName_);
     std::vector<std::string>::iterator iter;
     for (iter = nameArray.begin(); iter != nameArray.end(); ++iter) {
         ret = AVCS_ERR_NO_MEMORY;
-        codecBase_ = CodecFactory::Instance().CreateCodecByName(*iter, apiVersion);
+        codecBase_ = AudioCodecFactory::Instance().CreateCodecByName(*iter, apiVersion);
         CHECK_AND_CONTINUE_LOG(codecBase_ != nullptr, "Skip creation failure. name:(%{public}s)",
                                iter->c_str());
         ret = codecBase_->Init(callerInfo);

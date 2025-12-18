@@ -531,7 +531,7 @@ int32_t QPChecker(CapabilityData &capData, Format &format, CodecScenario scenari
 {
     (void)capData;
     (void)scenario;
-    constexpr int32_t MAX_QP = 51;
+    constexpr int32_t maxQP = 51;
     int32_t qpMin;
     int32_t qpMax;
     bool qpMinExist = format.GetIntValue(Tag::VIDEO_ENCODER_QP_MIN, qpMin);
@@ -544,7 +544,7 @@ int32_t QPChecker(CapabilityData &capData, Format &format, CodecScenario scenari
 
     CHECK_AND_RETURN_RET_LOG(qpMin >= 0 && qpMin <= qpMax, AVCS_ERR_INVALID_VAL,
         "Param invalid, QP range: %{public}d-%{public}d", qpMin, qpMax);
-    CHECK_AND_RETURN_RET_LOG(qpMax <= MAX_QP && qpMax >= qpMin, AVCS_ERR_INVALID_VAL,
+    CHECK_AND_RETURN_RET_LOG(qpMax <= maxQP && qpMax >= qpMin, AVCS_ERR_INVALID_VAL,
         "Param invalid, QP range: %{public}d-%{public}d", qpMin, qpMax);
     
     return AVCS_ERR_OK;
