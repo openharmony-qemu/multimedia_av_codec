@@ -49,6 +49,7 @@ private:
     bool isEOS(std::map<uint32_t, bool>& countFlag);
     void RemoveValue();
     bool ResultAssert(uint32_t frames0, uint32_t frames1, uint32_t keyFrames0, uint32_t keyFrames1);
+    bool ResultAssert(std::vector<uint32_t> &framesExpect, std::vector<uint32_t> &keyFramesExpect);
     bool PluginReadAllSample();
 
     int streamId_ = 0;

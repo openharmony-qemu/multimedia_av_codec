@@ -85,43 +85,44 @@ static const string TEST_FILE_URI_VOB = TEST_FILE_PATH + "vob_mpeg2_mp2.vob";
 typedef struct TestInfo {
     string pluginName;
     string testFile;
-    vector<int32_t> frameCnt;
-    TestInfo(string name, string file, vector<int32_t> &&cnt)
-        : pluginName(name), testFile(file), frameCnt(std::move(cnt)) {}
+    vector<uint32_t> frameCnt;
+    vector<uint32_t> keyFrameCnt;
+    TestInfo(string name, string file, vector<uint32_t> &&cnt, vector<uint32_t> &&keyCnt)
+        : pluginName(name), testFile(file), frameCnt(std::move(cnt)), keyFrameCnt(std::move(keyCnt)) {}
 } TestInfo;
 
 static std::vector<TestInfo> TEST_LIST = {
-    {DEMUXER_PLUGIN_NAME_AAC, TEST_FILE_URI_AAC, {1293, 0, 1293, 0}},
-    {DEMUXER_PLUGIN_NAME_AMR, TEST_FILE_URI_AMR, {1501, 0, 1501, 0}},
-    {DEMUXER_PLUGIN_NAME_AMR, TEST_FILE_URI_AMRNB, {1501, 0, 1501, 0}},
-    {DEMUXER_PLUGIN_NAME_AMR, TEST_FILE_URI_AMRWB, {1500, 0, 1500, 0}},
-    {DEMUXER_PLUGIN_NAME_APE, TEST_FILE_URI_APE, {7, 0, 7, 0}},
-    {DEMUXER_PLUGIN_NAME_FLAC, TEST_FILE_URI_FLAC, {313, 0, 313, 0}},
-    {DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV, {76, 113, 1, 113}},
-    {DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_URI_MATROSKA, {240, 199, 4, 199}},
-    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MOV, {602, 434, 3, 434}},
-    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4, {1875, 0, 1875, 0}},
-    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_FMP4, {604, 433, 3, 433}},
-    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_M4A, {433, 0, 433, 0}},
-    {DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_URI_MP3, {1251, 0, 1251, 0}},
-    {DEMUXER_PLUGIN_NAME_MPEG, TEST_FILE_URI_MPEG, {1253, 2164, 19, 2164}},
-    {DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS, {103, 174, 5, 174}},
-    {DEMUXER_PLUGIN_NAME_AVI, TEST_FILE_URI_AVI, {602, 433, 3, 433}},
-    {DEMUXER_PLUGIN_NAME_SRT, TEST_FILE_URI_SRT, {5, 0, 5, 0}},
-    {DEMUXER_PLUGIN_NAME_WEBVTT, TEST_FILE_URI_WEBVTT, {4, 0, 4, 0}},
-    {DEMUXER_PLUGIN_NAME_OGG, TEST_FILE_URI_OGG, {1598, 0, 1598, 0}},
-    {DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_URI_WAV, {704, 0, 704, 0}},
-    {DEMUXER_PLUGIN_NAME_ASF, TEST_FILE_URI_ASF, {122, 480, 122, 8}},
-    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_3GP, {1116, 2186, 23, 2186}},
-    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_3G2, {937, 1121, 81, 1121}},
-    {DEMUXER_PLUGIN_NAME_MPEG, TEST_FILE_URI_VOB, {300, 417, 25, 417}},
+    {DEMUXER_PLUGIN_NAME_AAC, TEST_FILE_URI_AAC, {1293, 0}, {1293, 0}},
+    {DEMUXER_PLUGIN_NAME_AMR, TEST_FILE_URI_AMR, {1501, 0, 1501, 0}, {1501, 0, 1501, 0}},
+    {DEMUXER_PLUGIN_NAME_AMR, TEST_FILE_URI_AMRNB, {1501, 0, 1501, 0}, {1501, 0, 1501, 0}},
+    {DEMUXER_PLUGIN_NAME_AMR, TEST_FILE_URI_AMRWB, {1500, 0, 1500, 0}, {1500, 0, 1500, 0}},
+    {DEMUXER_PLUGIN_NAME_APE, TEST_FILE_URI_APE, {7, 0}, {7}},
+    {DEMUXER_PLUGIN_NAME_FLAC, TEST_FILE_URI_FLAC, {313}, {313}},
+    {DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_URI_FLV, {76, 113}, {1, 113}},
+    {DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_URI_MATROSKA, {240, 199}, {4, 199}},
+    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MOV, {602, 434}, {3, 434}},
+    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4, {1875, 0}, {1875, 0}},
+    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_FMP4, {604, 433}, {3, 433}},
+    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_M4A, {433, 0}, {433, 0}},
+    {DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_URI_MP3, {1251, 0}, {1251, 0}},
+    {DEMUXER_PLUGIN_NAME_MPEG, TEST_FILE_URI_MPEG, {1253, 2164}, {19, 2164}},
+    {DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS, {103, 174}, {5, 174}},
+    {DEMUXER_PLUGIN_NAME_AVI, TEST_FILE_URI_AVI, {602, 433}, {3, 433}},
+    {DEMUXER_PLUGIN_NAME_SRT, TEST_FILE_URI_SRT, {5, 0}, {5, 0}},
+    {DEMUXER_PLUGIN_NAME_WEBVTT, TEST_FILE_URI_WEBVTT, {4, 0}, {4, 0}},
+    {DEMUXER_PLUGIN_NAME_OGG, TEST_FILE_URI_OGG, {1598, 0}, {1598, 0}},
+    {DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_URI_WAV, {704, 0}, {704, 0}},
+    {DEMUXER_PLUGIN_NAME_ASF, TEST_FILE_URI_ASF, {122, 480}, {122, 8}},
+    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_3GP, {1116, 2186}, {23, 2186}},
+    {DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_3G2, {937, 1121}, {81, 1121}},
+    {DEMUXER_PLUGIN_NAME_MPEG, TEST_FILE_URI_VOB, {300, 417}, {25, 417}},
 };
 
 static std::vector<TestInfo> TEST_LIST2 = {
-    {DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_PATH + "aigc_str.flv", {1800, 0, 9, 0}},
-    {DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_PATH + "vp8_vorbis.webm", {602, 594, 5, 594}},
-    {DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_PATH + "vp9_opus.webm", {598, 996, 5, 996}},
-    {DEMUXER_PLUGIN_NAME_ASF, TEST_FILE_PATH + "wmv_h264_wmav1.wmv", {602, 218, 3, 218}}
+    {DEMUXER_PLUGIN_NAME_FLV, TEST_FILE_PATH + "aigc_str.flv", {1800, 0}, {9, 0}},
+    {DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_PATH + "vp8_vorbis.webm", {602, 594}, {5, 594}},
+    {DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_PATH + "vp9_opus.webm", {598, 996}, {5, 996}},
+    {DEMUXER_PLUGIN_NAME_ASF, TEST_FILE_PATH + "wmv_h264_wmav1.wmv", {602, 218}, {3, 218}}
 };
 
 
@@ -693,6 +694,27 @@ bool DemuxerPluginManagerUnitTest::ResultAssert(
     return true;
 }
 
+bool DemuxerPluginManagerUnitTest::ResultAssert(std::vector<uint32_t> &framesExpect,
+    std::vector<uint32_t> &keyFramesExpect)
+{
+    for (size_t i = 0; i < framesExpect.size(); i++) {
+        if (frames_.find(i) == frames_.end() || keyFrames_.find(i) == keyFrames_.end()) {
+            printf("Index %zu not found in frames_ or keyFrames_\n", i);
+            continue;
+        }
+        printf("frames_[%zu]=%d | kFrames_[%zu]=%d\n", i, frames_[i], i, keyFrames_[i]);
+        if (frames_[i] != framesExpect[i]) {
+            printf("Expected frames_[%zu] = %u, but got %d\n", i, framesExpect[i], frames_[i]);
+            return false;
+        }
+        if (keyFrames_[i] != keyFramesExpect[i]) {
+            printf("Expected keyFrames_[%zu] = %u, but got %d\n", i, keyFramesExpect[i], keyFrames_[i]);
+            return false;
+        }
+    }
+    return true;
+}
+
 bool DemuxerPluginManagerUnitTest::PluginReadAllSample()
 {
     while (!isEOS(eosFlag_)) {
@@ -939,14 +961,14 @@ HWTEST_F(DemuxerPluginManagerUnitTest, Demuxer_SeekToStart_0001, TestSize.Level1
         ASSERT_EQ(CreateDemuxerPluginByName(item.pluginName.c_str(), item.testFile.c_str(), DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
         ASSERT_EQ(PluginReadAllSample(), true);
-        ASSERT_EQ(ResultAssert(item.frameCnt[0], item.frameCnt[1], item.frameCnt[2], item.frameCnt[3]), true);
+        ASSERT_EQ(ResultAssert(item.frameCnt, item.keyFrameCnt), true);
         RemoveValue();
 
         printf("SeekToStart:\n");
         ASSERT_EQ(demuxerPlugin_->SeekToStart(), Status::OK);
         ASSERT_EQ(PluginSelectTracks(), true);
         ASSERT_EQ(PluginReadAllSample(), true);
-        ASSERT_EQ(ResultAssert(item.frameCnt[0], item.frameCnt[1], item.frameCnt[2], item.frameCnt[3]), true);
+        ASSERT_EQ(ResultAssert(item.frameCnt, item.keyFrameCnt), true);
         RemoveValue();
     }
 }
@@ -958,14 +980,14 @@ HWTEST_F(DemuxerPluginManagerUnitTest, Demuxer_SeekToStart_0002, TestSize.Level1
         ASSERT_EQ(CreateDemuxerPluginByName(item.pluginName.c_str(), item.testFile.c_str(), DEF_PROB_SIZE), true);
         ASSERT_EQ(PluginSelectTracks(), true);
         ASSERT_EQ(PluginReadAllSample(), true);
-        EXPECT_EQ(ResultAssert(item.frameCnt[0], item.frameCnt[1], item.frameCnt[2], item.frameCnt[3]), true);
+        EXPECT_EQ(ResultAssert(item.frameCnt, item.keyFrameCnt), true);
         RemoveValue();
 
         printf("SeekToStart:\n");
         ASSERT_EQ(demuxerPlugin_->SeekToStart(), Status::OK);
         ASSERT_EQ(PluginSelectTracks(), true);
         ASSERT_EQ(PluginReadAllSample(), true);
-        EXPECT_EQ(ResultAssert(item.frameCnt[0], item.frameCnt[1], item.frameCnt[2], item.frameCnt[3]), true);
+        EXPECT_EQ(ResultAssert(item.frameCnt, item.keyFrameCnt), true);
         RemoveValue();
     }
 }
