@@ -164,6 +164,32 @@ group("vcodec_framework_test") {
     if (av_codec_support_av1_decoder) {
       deps += [ ":videodec_av1dec_unit_test", ]
     }
+    
+    if (av_codec_support_vc1_decoder) {
+      deps += [ 
+        ":videodec_VC1_func_async_unit_test",
+        ":videodec_VC1_func_sync_unit_test",
+        ":videodec_VC1_stable_unit_test",
+        ":videodec_WVC1_func_async_unit_test",
+        ":videodec_WVC1_func_sync_unit_test",
+        ":videodec_WVC1_stable_unit_test",
+      ]
+    }
+
+    if (av_codec_enable_codec_rv) {
+      deps += [ 
+        ":videodec_rv30_capi_async_unit_test",
+        ":videodec_rv30_capi_sync_unit_test",
+        ":videodec_rv30_func_async_unit_test",
+        ":videodec_rv30_func_sync_unit_test",
+        ":videodec_rv30_stable_unit_test",
+        ":videodec_rv40_capi_async_unit_test",
+        ":videodec_rv40_capi_sync_unit_test",
+        ":videodec_rv40_func_async_unit_test",
+        ":videodec_rv40_func_sync_unit_test",
+        ":videodec_rv40_stable_unit_test",
+      ]
+    }
 
     if (target_cpu == "arm64" && av_codec_support_hcodec) {
       deps += [

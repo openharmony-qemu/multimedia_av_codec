@@ -533,6 +533,15 @@ group("av_codec_fuzz_test") {
         "fuzztest/rv40decodersetparameter_fuzzer:Rv40decoderSetParameterFuzzTest",
       ]
     }
+    if(av_codec_support_vc1_decoder) {
+      deps += [
+        "fuzztest/vc1swdecoderresource_fuzzer:Vc1SwdecoderResourceFuzzTest",
+        "fuzztest/vc1swdecoderconfigure_fuzzer:Vc1SwdecoderConfigureFuzzTest",
+        "fuzztest/vc1swdecodersetparameter_fuzzer:Vc1SwdecoderSetParameterFuzzTest",
+        "fuzztest/wvc1swdecoderresource_fuzzer:WVc1SwdecoderResourceFuzzTest",
+        "fuzztest/wvc1swdecodersetparameter_fuzzer:WVc1SwdecoderSetParameterFuzzTest",
+      ]
+    }
   }
 }
 

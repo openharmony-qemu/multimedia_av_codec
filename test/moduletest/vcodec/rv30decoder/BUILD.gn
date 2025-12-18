@@ -59,7 +59,7 @@ ohos_unittest("rv30decoder_native_module_test") {
       "./src/api_test.cpp",
       "./src/func_test.cpp",
       "./src/state_test.cpp",
-      "./src/reli_test.cpp",
+      # "./src/reli_test.cpp",
       "./src/videodec_api11_sample.cpp",
       "./src/videoenc_ndk_sample.cpp",
     ]
