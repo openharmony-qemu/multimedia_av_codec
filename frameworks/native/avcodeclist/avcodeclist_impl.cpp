@@ -28,6 +28,7 @@ const std::vector<std::string> VIDEO_MIME_VEC = {
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_HEVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VVC),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MPEG2),
+    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MPEG1),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_H263),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MPEG4),
     std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV30),

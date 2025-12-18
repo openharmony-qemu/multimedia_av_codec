@@ -95,6 +95,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     void DownloadMap(const std::string& uri, size_t offset, size_t length);
     uint32_t SaveMapData(uint8_t* data, uint32_t len, bool notBlock);
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
+    void GetDownloadInfo(DownloadInfo& downloadInfo);
 
     std::shared_ptr<std::string> method_;
     std::shared_ptr<std::string> keyUri_;

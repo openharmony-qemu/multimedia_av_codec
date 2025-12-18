@@ -59,6 +59,8 @@ constexpr int32_t WMV3_MAX_BLOCKPERSEC_SIZE = 245760;
 constexpr int32_t RV_BLOCKPERFRAME_SIZE = 65536; // MaxPicSize / (block_width*block_height)
 constexpr int32_t RV_BLOCKPERSEC_SIZE = 3932160; // MaxDisplayRate / (block_width*block_height)
 #endif
+constexpr int32_t MPEG_BLOCKPERFRAME_SIZE = 65536; // MaxPicSize / (block_width*block_height)
+constexpr int32_t MPEG_BLOCKPERSEC_SIZE = 3932160; // MaxDisplayRate / (block_width*block_height)
 } // namespace
 using namespace OHOS::Media;
 
@@ -394,6 +396,15 @@ void GetRv40CapProf(std::vector<CapabilityData> &capaArray)
 }
 #endif
 
+void GetMpeg1CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.blockPerFrame.maxVal = MPEG_BLOCKPERFRAME_SIZE;
+        capsData.blockPerSecond.maxVal = MPEG_BLOCKPERSEC_SIZE;
+    }
+}
+
 int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 {
     for (uint32_t i = 0; i < SUPPORT_VCODEC_NUM; ++i) {
@@ -405,6 +416,9 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         } else if (capsData.mimeType == "video/mp4v-es") {
             capaArray.emplace_back(capsData);
             GetMpeg4esCapProf(capaArray);
+        } else if (capsData.mimeType == "video/mpeg") {
+            capaArray.emplace_back(capsData);
+            GetMpeg1CapProf(capaArray);
         } else if (capsData.mimeType == "video/h263") {
             capaArray.emplace_back(capsData);
             GetH263CapProf(capaArray);

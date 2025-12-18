@@ -76,6 +76,7 @@ public:
     uint64_t GetMemorySize() override;
     std::string GetContentType() override;
     Status StopBufferring(bool isAppBackground) override;
+    void GetDownloadInfo(DownloadInfo& downloadInfo) override;
 
 private:
     void ReceiveMpdStreamInitEvent();

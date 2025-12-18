@@ -51,6 +51,7 @@ namespace Pipeline {
 static const int64_t PLAY_RANGE_DEFAULT_VALUE = -1;
 static const int64_t MICROSECONDS_CONVERT_UNIT = 1000; // ms change to us
 static const int64_t NS_PER_US = 1000; // us change to ns
+static const int64_t NS_PER_MS = 1000 * 1000; // ms change to ns
 static const uint32_t PREROLL_WAIT_TIME = 1000; // Lock wait for 1000ms.
 static const uint32_t TASK_DELAY_TOLERANCE = 5 * 1000 * 1000; // task delay tolerance 5_000_000ns also 5ms
 static const int64_t MAX_DEBUG_LOG = 10;
@@ -63,6 +64,7 @@ static const std::string SCENE_INSERT_FRAME = "1";
 static const std::string SCENE_MP_PWP = "2"; // moving photo playing with processing
 static const int32_t VIDEO_WIDTH = 512;
 static const int32_t VIDEO_HEIGHT = 512;
+static const int32_t playWaterLine = 100; // 100ms
 
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
@@ -288,7 +290,7 @@ void DecoderSurfaceFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int
         return;
     }
     FALSE_RETURN(eventReceiver_ != nullptr);
-    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO});
+    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO, GetMime()});
 }
 
 void DecoderSurfaceFilter::SetIsSwDecoder(bool isSwDecoder)
@@ -300,7 +302,7 @@ void DecoderSurfaceFilter::PostProcessorOnError(int32_t errorCode)
 {
     MEDIA_LOG_E("Post processor error happened. ErrorCode: %{public}d", errorCode);
     FALSE_RETURN(eventReceiver_ != nullptr);
-    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO});
+    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO, "post_processor"});
 }
 
 void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -346,6 +348,16 @@ Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
     return ret;
 }
 
+std::string DecoderSurfaceFilter::GetMime()
+{
+    if (meta_ == nullptr) {
+        return "";
+    }
+    std::string mime;
+    meta_->GetData(Tag::MIME_TYPE, mime);
+    return mime;
+}
+
 Status DecoderSurfaceFilter::DoInitAfterLink()
 {
     Status ret;
@@ -359,8 +371,7 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
     if (isDrmProtected_ && svpFlag_) {
         std::string baseName = GetCodecName(codecMimeType_);
-        FALSE_RETURN_V_MSG(!baseName.empty(),
-            Status::ERROR_INVALID_PARAMETER, "get name by mime failed.");
+        FALSE_RETURN_V_MSG(!baseName.empty(), Status::ERROR_INVALID_PARAMETER, "get name by mime failed.");
         std::string secureDecoderName = baseName + ".secure";
         MEDIA_LOG_D("DecoderSurfaceFilter will create secure decoder %{public}s", secureDecoderName.c_str());
         ScopedTimer timer("drm-protected VideoDecoder Init", OVERTIME_WARNING_MS);
@@ -377,13 +388,13 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
 
     if (ret != Status::OK && eventReceiver_ != nullptr) {
         MEDIA_LOG_E("Init decoder fail ret = %{public}d", ret);
-        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE});
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE, GetMime()});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
 
     ret = Configure(meta_);
     if (ret != Status::OK) {
-        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE});
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE, GetMime()});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     ParseDecodeRateLimit();
@@ -650,8 +661,7 @@ Status DecoderSurfaceFilter::DoPreroll()
     }
     if (ret != Status::OK) {
         MEDIA_LOG_E("video decoder start failed, ret = %{public}d", ret);
-        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR,
-            MSERR_VID_DEC_FAILED});
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED, GetMime()});
     }
     Filter::StartFilterTask();
     return ret;
@@ -974,6 +984,59 @@ bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, 
     return true;
 }
 
+void DecoderSurfaceFilter::HandleRender(
+    int index, bool render, const std::shared_ptr<AVBuffer>& outBuffer, int64_t& renderTime)
+{
+    int64_t currentSysTimeNs = GetSystimeTimeNs();
+    int64_t lastRenderTimeNs = lastRenderTimeNs_.load();
+    int64_t minRendererTime = std::max(currentSysTimeNs, lastRenderTimeNs == HST_TIME_NONE ? 0 : lastRenderTimeNs);
+    renderTime = renderTime < minRendererTime ? minRendererTime : renderTime;
+    MEDIA_LOG_I("HandleRender index " PUBLIC_LOG_U32 " renderTime " PUBLIC_LOG_D64 " curTime " PUBLIC_LOG_D64
+        " lastRenderTimeNs " PUBLIC_LOG_D64, index, renderTime, currentSysTimeNs, lastRenderTimeNs);
+
+    RenderAtTimeDfx(renderTime, currentSysTimeNs, lastRenderTimeNs);
+    DoRenderOutputBufferAtTime(index, renderTime, outBuffer->pts_);
+
+    if (eventReceiver_!= nullptr && lastRenderTimeNs > 0L) {
+        int64_t frameIntervalMs = videoSink_->GetFrameInterval();
+        std::vector<int64_t> timeStampList;
+        outBuffer->meta_->GetData(Tag::STALLING_TIMESTAMP, timeStampList);
+        WriteDfxTimeToVector(currentSysTimeNs / NS_PER_MS, renderTime / NS_PER_MS, outBuffer->pts_ / NS_PER_US,
+            lastRenderTimeNs / NS_PER_MS, frameIntervalMs, timeStampList);
+        outBuffer->meta_->SetData(Tag::STALLING_TIMESTAMP, timeStampList);
+        FALSE_RETURN(frameIntervalMs > 0 && renderTime > 0L);
+
+        int64_t texpMS = lastRenderTimeNs / NS_PER_MS + frameIntervalMs;
+        if (texpMS + playWaterLine < renderTime / NS_PER_MS) {
+            eventReceiver_->OnDfxEvent({ "VRNDR", DfxEventType::DFX_EVENT_STALLING, timeStampList });
+            MEDIA_LOG_D("Rendering is late. texpMS: " PUBLIC_LOG_D64 ", renderTime: " PUBLIC_LOG_D64,
+                texpMS, renderTime);
+        }
+    }
+    if (!isInSeekContinous_) {
+        lastRenderTimeNs_ = renderTime;
+    }
+}
+
+void DecoderSurfaceFilter::WriteDfxTimeToVector(int64_t syncEndMs, int64_t redererStartMs, int64_t framePtsMs,
+    int64_t lastRenderTimeMs, int64_t frameIntervalMs, std::vector<int64_t>& timeStampList)
+{
+        timeStampList.push_back(static_cast<int64_t>(StallingStage::AVSYNC_END));
+        timeStampList.push_back(syncEndMs);
+
+        timeStampList.push_back(static_cast<int64_t>(StallingStage::RENDERER_START));
+        timeStampList.push_back(redererStartMs);
+
+        timeStampList.push_back(static_cast<int64_t>(StallingStage::CUSTOM_FRAME_PTS));
+        timeStampList.push_back(framePtsMs);
+
+        timeStampList.push_back(static_cast<int64_t>(StallingStage::CUSTOM_PRE_RENDER));
+        timeStampList.push_back(lastRenderTimeMs);
+
+        timeStampList.push_back(static_cast<int64_t>(StallingStage::CUSTOM_FRAME_INTERVAL));
+        timeStampList.push_back(frameIntervalMs);
+}
+
 Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer,
                                                  int64_t renderTime)
 {
@@ -1006,14 +1069,7 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
     }
 
     if (renderTime > 0L && render) {
-        int64_t currentSysTimeNs = GetSystimeTimeNs();
-        int64_t lastRenderTimeNs = lastRenderTimeNs_.load();
-        int64_t minRendererTime = std::max(currentSysTimeNs, lastRenderTimeNs == HST_TIME_NONE ? 0 : lastRenderTimeNs);
-        renderTime = renderTime < minRendererTime ? minRendererTime : renderTime;
-        MEDIA_LOG_D("ReleaseOutputBuffer index " PUBLIC_LOG_U32 " renderTime " PUBLIC_LOG_D64 " curTime " PUBLIC_LOG_D64
-            " lastRenderTimeNs " PUBLIC_LOG_D64, index, renderTime, currentSysTimeNs, lastRenderTimeNs);
-        RenderAtTimeDfx(renderTime, currentSysTimeNs, lastRenderTimeNs);
-        DoRenderOutputBufferAtTime(index, renderTime, outBuffer->pts_);
+        HandleRender(index, render, outBuffer, renderTime);
         if (!isInSeekContinous_) {
             lastRenderTimeNs_ = renderTime;
         }
@@ -1057,6 +1113,11 @@ Status DecoderSurfaceFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 int64_t DecoderSurfaceFilter::CalculateNextRender(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer,
     int64_t& actionClock)
 {
+    std::vector<int64_t> timeStampList;
+    outputBuffer->meta_->GetData(Tag::STALLING_TIMESTAMP, timeStampList);
+    timeStampList.push_back(static_cast<int64_t>(StallingStage::AVSYNC_START));
+    timeStampList.push_back(GetSystimeTimeNs() / NS_PER_MS);
+    outputBuffer->meta_->SetData(Tag::STALLING_TIMESTAMP, timeStampList);
     (void) index;
     int64_t waitTime = -1;
     MEDIA_LOG_D("DrainOutputBuffer not seeking and render. pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
@@ -1527,7 +1588,8 @@ Status DecoderSurfaceFilter::InitPostProcessor()
     auto ret = postProcessor_->Init();
     if (ret != Status::OK) {
         MEDIA_LOG_E("Init postProcessor fail ret = %{public}d", ret);
-        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE});
+        std::string mime = "post_processor";
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE, mime});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     return Status::OK;

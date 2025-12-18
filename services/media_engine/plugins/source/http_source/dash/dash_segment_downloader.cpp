@@ -1269,6 +1269,13 @@ Status DashSegmentDownloader::StopBufferring(bool isAppBackground)
     downloader_->StopBufferring();
     return Status::OK;
 }
+
+void DashSegmentDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
+{
+    if (downloader_ != nullptr) {
+        downloader_->GetDownloadInfo(downloadInfo);
+    }
+}
 }
 }
 }

@@ -150,10 +150,11 @@ bool BlockQueuePool::ResetInfo(std::shared_ptr<SamplePacket> block)
     MEDIA_LOG_D("Reset for block " PUBLIC_LOG_U32, block->queueIndex);
     uint32_t queIndex = block->queueIndex;
     FALSE_RETURN_V_MSG_E(quePool_.count(queIndex) > 0, false, "Index is invalid");
-    for (auto pkt : block->pkts) {
-        FALSE_CONTINUE_LOGD(pkt != nullptr, "Pkt is nullptr, will find next");
-        FALSE_CONTINUE_LOGD(pkt->size > 0, "Invalid pkt size: " PUBLIC_LOG_D32, pkt->size);
-        int64_t tempSize = static_cast<int64_t>(quePool_[queIndex].dataSize) - static_cast<int64_t>(pkt->size);
+    for (const auto &pktWrapper : block->pkts) {
+        FALSE_CONTINUE_LOGD(pktWrapper != nullptr, "Pkt is nullptr, will find next");
+        FALSE_CONTINUE_LOGD(pktWrapper->GetSize() > 0, "Invalid pkt size: " PUBLIC_LOG_D32, pktWrapper->GetSize());
+        int64_t tempSize = static_cast<int64_t>(quePool_[queIndex].dataSize) -
+            static_cast<int64_t>(pktWrapper->GetSize());
         quePool_[queIndex].dataSize = static_cast<uint32_t>(std::max<int64_t>(tempSize, 0LL));
     }
     return true;
@@ -165,10 +166,10 @@ bool BlockQueuePool::SetInfo(std::shared_ptr<SamplePacket> block)
     MEDIA_LOG_D("Set for block " PUBLIC_LOG_U32, block->queueIndex);
     uint32_t queIndex = block->queueIndex;
     FALSE_RETURN_V_MSG_E(quePool_.count(queIndex) > 0, false, "Index is invalid");
-    for (auto pkt : block->pkts) {
-        FALSE_CONTINUE_LOGD(pkt != nullptr, "Pkt is nullptr, will find next");
-        FALSE_CONTINUE_LOGD(pkt->size > 0, "Invalid pkt size: " PUBLIC_LOG_D32, pkt->size);
-        uint32_t pktSize = static_cast<uint32_t>(pkt->size);
+    for (const auto &pktWrapper : block->pkts) {
+        FALSE_CONTINUE_LOGD(pktWrapper != nullptr, "Pkt is nullptr, will find next");
+        FALSE_CONTINUE_LOGD(pktWrapper->GetSize() > 0, "Invalid pkt size: " PUBLIC_LOG_D32, pktWrapper->GetSize());
+        uint32_t pktSize = static_cast<uint32_t>(pktWrapper->GetSize());
         if (quePool_[queIndex].dataSize <= UINT32_MAX - pktSize) {
             quePool_[queIndex].dataSize += pktSize;
         } else {
@@ -215,12 +216,12 @@ bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> blo
         return false;
     }
     sizeMap_[trackIndex] += 1;
-    for (auto pkt : block->pkts) {
-        FALSE_CONTINUE_LOGD(pkt != nullptr, "Pkt is nullptr, will find next");
-        FALSE_CONTINUE_LOGD(pkt->size > 0, "Invalid pkt size: " PUBLIC_LOG_D32, pkt->size);
-        quePool_[pushIndex].dataSize += static_cast<uint32_t>(pkt->size);
-        if (pkt->pts != AV_NOPTS_VALUE && pkt->pts > quePool_[pushIndex].maxPts) {
-            quePool_[pushIndex].maxPts = pkt->pts;
+    for (const auto &pktWrapper : block->pkts) {
+        FALSE_CONTINUE_LOGD(pktWrapper != nullptr, "Pkt is nullptr, will find next");
+        FALSE_CONTINUE_LOGD(pktWrapper->GetSize() > 0, "Invalid pkt size: " PUBLIC_LOG_D32, pktWrapper->GetSize());
+        quePool_[pushIndex].dataSize += static_cast<uint32_t>(pktWrapper->GetSize());
+        if (pktWrapper->GetPts() != AV_NOPTS_VALUE && pktWrapper->GetPts() > quePool_[pushIndex].maxPts) {
+            quePool_[pushIndex].maxPts = pktWrapper->GetPts();
         }
     }
     block->queueIndex = pushIndex;
@@ -251,10 +252,11 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
             MEDIA_LOG_D("Block is nullptr");
             continue;
         }
-        for (auto pkt : block->pkts) {
-            FALSE_CONTINUE_LOGD(pkt != nullptr, "Pkt is nullptr, will find next");
-            FALSE_CONTINUE_LOGD(pkt->size > 0, "Invalid pkt size: " PUBLIC_LOG_D32, pkt->size);
-            uint32_t pktSize = static_cast<uint32_t>(pkt->size);
+        for (const auto &pktWrapper : block->pkts) {
+            FALSE_CONTINUE_LOGD(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
+                "Pkt is nullptr, will find next");
+            FALSE_CONTINUE_LOGD(pktWrapper->GetSize() > 0, "Invalid pkt size: " PUBLIC_LOG_D32, pktWrapper->GetSize());
+            uint32_t pktSize = static_cast<uint32_t>(pktWrapper->GetSize());
             quePool_[queIndex].dataSize =
                 quePool_[queIndex].dataSize >= pktSize ? quePool_[queIndex].dataSize -= pktSize : 0;
         }

@@ -75,6 +75,7 @@ public:
     MOCK_METHOD2(SetSourceInitialBufferSize, bool(int32_t offset, int32_t size));
     MOCK_METHOD1(SetSourceType, void(SourceType type));
     MOCK_METHOD0(GetIsDataSrcNoSeek, bool());
+    MOCK_METHOD0(GetFirstFrameDecapsulationTime, int64_t());
 };
 
 class StreamDemuxer : public BaseStreamDemuxer {

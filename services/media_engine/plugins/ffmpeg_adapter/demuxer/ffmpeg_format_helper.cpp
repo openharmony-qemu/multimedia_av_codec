@@ -142,8 +142,8 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_HEVC, MimeType::VIDEO_HEVC},
     {AV_CODEC_ID_VVC, MimeType::VIDEO_VVC},
     {AV_CODEC_ID_AV1, MimeType::VIDEO_AV1},
-    {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
-    {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
+    {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8_IANA},
+    {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9_IANA},
     {AV_CODEC_ID_MSVIDEO1, MimeType::VIDEO_MSVIDEO1},
 #ifdef SUPPORT_CODEC_VC1
     {AV_CODEC_ID_VC1, MimeType::VIDEO_VC1},
@@ -198,6 +198,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"avi", FileType::AVI},
     {"mpeg", FileType::MPEGPS},
     {"rm", FileType::RM},
+    {"caf", FileType::CAF},
     {"ac3", FileType::AC3},
     {"wmv", FileType::WMV},
     {"asf", FileType::WMV},

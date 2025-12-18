@@ -1273,6 +1273,22 @@ Status DashMediaDownloader::StopBufferring(bool isAppBackground)
     }
     return Status::OK;
 }
+
+void DashMediaDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
+{
+    if (mpdDownloader_ != nullptr) {
+        mpdDownloader_->GetDownloadInfo(downloadInfo);
+    }
+    for (size_t i = 0; i < segmentDownloaders_.size(); i++) {
+        if (segmentDownloaders_[i] != nullptr) {
+            DownloadInfo tmpDownloadInfo;
+            segmentDownloaders_[i]->GetDownloadInfo(tmpDownloadInfo);
+            downloadInfo.totalDownLoadBytes += tmpDownloadInfo.totalDownLoadBytes;
+            downloadInfo.totalLoadingTime += tmpDownloadInfo.totalLoadingTime;
+            downloadInfo.loadingCount += tmpDownloadInfo.loadingCount;
+        }
+    }
+}
 }
 }
 }

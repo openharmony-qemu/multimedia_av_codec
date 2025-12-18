@@ -2099,6 +2099,13 @@ bool DashMpdDownloader::PutStreamToDownload()
     return true;
 }
 
+void DashMpdDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
+{
+    if (downloader_ != nullptr) {
+        downloader_->GetDownloadInfo(downloadInfo);
+    }
+}
+
 }
 }
 }

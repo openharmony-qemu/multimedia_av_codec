@@ -495,6 +495,9 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxer3gpapi11_fuzzer:Demuxer3gpAPI11FuzzTest",
       "fuzztest/demuxerwmvapi11_fuzzer:DemuxerWmvAPI11FuzzTest",
       "fuzztest/demuxerm4vapi11_fuzzer:DemuxerM4vAPI11FuzzTest",
+      "fuzztest/mpeg1decoderconfigure_fuzzer:Mpeg1decoderConfigureFuzzTest",
+      "fuzztest/mpeg1decoderresource_fuzzer:Mpeg1decoderResourceFuzzTest",
+      "fuzztest/mpeg1decodersetparameter_fuzzer:Mpeg1decoderSetParameterFuzzTest",
     ]
     if(av_codec_support_vp8_decoder) {
       deps += [
@@ -518,6 +521,16 @@ group("av_codec_fuzz_test") {
     }
     if(av_codec_enable_codec_eac3) {
       deps += [ "fuzztest/audiodecodereac3_fuzzer:AudioDecoderEac3FuzzTest" ]
+    }
+    if(av_codec_enable_codec_rv) {
+      deps += [
+        "fuzztest/rv30decoderconfigure_fuzzer:Rv30decoderConfigureFuzzTest",
+        "fuzztest/rv30decoderresource_fuzzer:Rv30decoderResourceFuzzTest",
+        "fuzztest/rv30decodersetparameter_fuzzer:Rv30decoderSetParameterFuzzTest",
+        "fuzztest/rv40decoderconfigure_fuzzer:Rv40decoderConfigureFuzzTest",
+        "fuzztest/rv40decoderresource_fuzzer:Rv40decoderResourceFuzzTest",
+        "fuzztest/rv40decodersetparameter_fuzzer:Rv40decoderSetParameterFuzzTest",
+      ]
     }
   }
 }

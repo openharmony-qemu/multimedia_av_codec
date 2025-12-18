@@ -164,6 +164,9 @@ private:
 
     void ReportRenderFirstFrame();
 
+    // process stall time
+    void RecordProcessTimeOfUpstream(const std::shared_ptr<AVBuffer>& avBuffer) override;
+    void AppendProcessTimeOfUs(const std::shared_ptr<AVBuffer>& avBuffer, int64_t pts, const TimePoint& now) override;
 private:
     static constexpr uint64_t SURFACE_MODE_PRODUCER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
     static constexpr uint64_t BUFFER_MODE_REQUEST_USAGE =

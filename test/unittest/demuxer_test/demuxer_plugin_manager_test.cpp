@@ -932,7 +932,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, Demuxer_Mp4InitCheck_0001, TestSize.Level
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4_2, DEF_PROB_SIZE), true);
 }
 
-HWTEST_F(DemuxerPluginManagerUnitTest, SeekToFirstFrame_0001, TestSize.Level1)
+HWTEST_F(DemuxerPluginManagerUnitTest, Demuxer_SeekToStart_0001, TestSize.Level1)
 {
     for (auto &item : TEST_LIST) {
         printf("#####pluginName: %s, testFile: %s#####\n", item.pluginName.c_str(), item.testFile.c_str());
@@ -951,7 +951,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, SeekToFirstFrame_0001, TestSize.Level1)
     }
 }
 
-HWTEST_F(DemuxerPluginManagerUnitTest, SeekToFirstFrame_0002, TestSize.Level1)
+HWTEST_F(DemuxerPluginManagerUnitTest, Demuxer_SeekToStart_0002, TestSize.Level1)
 {
     for (auto &item : TEST_LIST2) {
         printf("#####pluginName: %s, testFile: %s#####\n", item.pluginName.c_str(), item.testFile.c_str());

@@ -1276,6 +1276,9 @@ void HttpMediaDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
     downloadInfo.avgDownloadSpeed = avgDownloadSpeed_;
     downloadInfo.totalDownLoadBits = totalBits_;
     downloadInfo.isTimeOut = isTimeOut_;
+    if (downloader_ != nullptr) {
+        downloader_->GetDownloadInfo(downloadInfo);
+    }
 }
 
 std::pair<int32_t, int32_t> HttpMediaDownloader::GetDownloadInfo()

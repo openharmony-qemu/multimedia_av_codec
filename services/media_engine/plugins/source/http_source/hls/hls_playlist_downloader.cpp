@@ -767,6 +767,55 @@ HlsSegmentType HlsPlayListDownloader::GetSegType(uint32_t streamId)
     }
     return HlsSegmentType::SEG_VIDEO;
 }
+
+void HlsPlayListDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
+{
+    if (master_ != nullptr) {
+        for (auto &stream : master_->variants_) {
+            if (stream == nullptr || stream->m3u8_ == nullptr) {
+                continue;
+            }
+            DownloadInfo tmpDownloadInfo;
+            stream->m3u8_->GetDownloadInfo(tmpDownloadInfo);
+            if (tmpDownloadInfo.firstFrameDecapsulationTime < downloadInfo.firstFrameDecapsulationTime ||
+                downloadInfo.firstFrameDecapsulationTime == 0) {
+                downloadInfo.firstFrameDecapsulationTime = tmpDownloadInfo.firstFrameDecapsulationTime;
+                downloadInfo.firstDownloadTime = tmpDownloadInfo.firstDownloadTime;
+            }
+            downloadInfo.totalDownLoadBytes += tmpDownloadInfo.totalDownLoadBytes;
+            downloadInfo.totalLoadingTime += tmpDownloadInfo.totalLoadingTime;
+            downloadInfo.loadingCount += tmpDownloadInfo.loadingCount;
+        }
+        for (auto &media : master_->mediaList_) {
+            if (media == nullptr || media->m3u8_ == nullptr) {
+                continue;
+            }
+            DownloadInfo tmpDownloadInfo;
+            media->m3u8_->GetDownloadInfo(tmpDownloadInfo);
+            if (tmpDownloadInfo.firstFrameDecapsulationTime < downloadInfo.firstFrameDecapsulationTime ||
+                downloadInfo.firstFrameDecapsulationTime == 0) {
+                downloadInfo.firstFrameDecapsulationTime = tmpDownloadInfo.firstFrameDecapsulationTime;
+                downloadInfo.firstDownloadTime = tmpDownloadInfo.firstDownloadTime;
+            }
+            downloadInfo.totalDownLoadBytes += tmpDownloadInfo.totalDownLoadBytes;
+            downloadInfo.totalLoadingTime += tmpDownloadInfo.totalLoadingTime;
+            downloadInfo.loadingCount += tmpDownloadInfo.loadingCount;
+        }
+    }
+
+    if (downloader_) {
+        DownloadInfo tmpDownloadInfo;
+        downloader_->GetDownloadInfo(tmpDownloadInfo);
+        if (tmpDownloadInfo.firstFrameDecapsulationTime < downloadInfo.firstFrameDecapsulationTime ||
+            downloadInfo.firstFrameDecapsulationTime == 0) {
+            downloadInfo.firstFrameDecapsulationTime = tmpDownloadInfo.firstFrameDecapsulationTime;
+            downloadInfo.firstDownloadTime = tmpDownloadInfo.firstDownloadTime;
+        }
+        downloadInfo.totalDownLoadBytes += tmpDownloadInfo.totalDownLoadBytes;
+        downloadInfo.totalLoadingTime += tmpDownloadInfo.totalLoadingTime;
+        downloadInfo.loadingCount += tmpDownloadInfo.loadingCount;
+    }
+}
 }
 }
 }

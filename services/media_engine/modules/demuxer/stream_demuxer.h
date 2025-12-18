@@ -53,6 +53,7 @@ public:
         size_t expectedLen) override;
     Status ResetCache(int32_t streamID) override;
     Status ResetAllCache() override;
+    int64_t GetFirstFrameDecapsulationTime() override;
 private:
     Status PullData(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data);
     Status PullDataWithoutCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
@@ -72,6 +73,7 @@ private:
     std::mutex mutex_;
     std::mutex cacheDataMutex_;
     std::condition_variable readCond_;
+    int64_t firstFrameDecapsulationTime_ {0};
 };
 } // namespace Media
 } // namespace OHOS
