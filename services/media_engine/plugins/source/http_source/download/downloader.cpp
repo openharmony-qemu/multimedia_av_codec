@@ -705,6 +705,9 @@ void Downloader::HandleResponseCb(int32_t clientCode, int32_t serverCode, Status
         return;
     }
     if (ret == Status::OK) {
+        MEDIA_LOG_I("Client request data OK. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32
+            ", request queue size: " PUBLIC_LOG_U64, static_cast<int32_t>(ret),
+            static_cast<int32_t>(clientCode), static_cast<int64_t>(requestQue_->Size()));
         HandleRetOK();
     } else {
         PauseLoop(true);

@@ -164,7 +164,15 @@ Status SampleQueue::PushBuffer(std::shared_ptr<AVBuffer>& sampleBuffer, bool ava
     Status status = sampleBufferQueueProducer_->PushBuffer(sampleBuffer, available);
     FALSE_RETURN_V(available && status == Status::OK, status);
 
-    lastEnterSamplePts_ = sampleBuffer->pts_;
+    if (!IsEosFrame(sampleBuffer)) {
+        UpdateLastEnterSamplePts(sampleBuffer->pts_);
+    }
+    if (lastOutSamplePts_ == Plugins::HST_TIME_NONE) {
+        lastOutSamplePts_ = lastEnterSamplePts_ - 1;
+    }
+    if (lastEnterSamplePts_ < lastOutSamplePts_) {
+        lastOutSamplePts_ = lastEnterSamplePts_ - 1;
+    }
     MEDIA_LOG_DD(PUBLIC_LOG_S " PushBuffer pts=" PUBLIC_LOG_D64 " dts=" PUBLIC_LOG_D64 " duration=" PUBLIC_LOG_D64,
         config_.queueName_.c_str(), sampleBuffer->pts_, sampleBuffer->dts_, sampleBuffer->duration_);
     if (!config_.isSupportBitrateSwitch_) {
@@ -185,6 +193,19 @@ Status SampleQueue::PushBuffer(std::shared_ptr<AVBuffer>& sampleBuffer, bool ava
         if (IsSwitchBitrateOK()) {
             NotifySwitchBitrateOK();
         }
+    }
+    return Status::OK;
+}
+
+Status SampleQueue::AttachOneBuffer(uint32_t size)
+{
+    for (uint32_t i = 0; i < size; i++) {
+        auto avAllocator = AVAllocatorFactory::CreateVirtualAllocator();
+        std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator, config_.bufferCap_);
+        FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "CreateAVBuffer failed");
+        Status status = sampleBufferQueueProducer_->AttachBuffer(buffer, false);
+        FALSE_RETURN_V_MSG_E(
+            status == Status::OK, status, "AttachBuffer failed status=" PUBLIC_LOG_D32, static_cast<int32_t>(status));
     }
     return Status::OK;
 }
@@ -317,17 +338,77 @@ Status SampleQueue::CopyAVMemory(std::shared_ptr<AVBuffer>& srcBuffer, std::shar
     return Status::OK;
 }
 
+Status SampleQueue::CopyBufferSlice(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr<AVBuffer>& dstBuffer,
+    int32_t sliceSize)
+{
+    MEDIA_TRACE_DEBUG("SampleQueue::CopyPartBuffer");
+    MEDIA_LOG_DD(PUBLIC_LOG_S " CopyPartBuffer in", config_.queueName_.c_str());
+    FALSE_RETURN_V(dstBuffer, Status::ERROR_NULL_POINT_BUFFER);
+    FALSE_RETURN_V(srcBuffer, Status::ERROR_NULL_POINT_BUFFER);
+
+    Status ret = InnerCopySliceAVBuffer(srcBuffer, dstBuffer, sliceSize);
+    if (ret != Status::OK) {
+        MEDIA_LOG_W(PUBLIC_LOG_S " CopyPartBuffer fail ret: " PUBLIC_LOG_D32, config_.queueName_.c_str(), ret);
+        RollbackBuffer(srcBuffer);
+        return ret;
+    }
+    UpdateLastOutSamplePts(dstBuffer->pts_);
+    MEDIA_LOG_DD(PUBLIC_LOG_S " CopyPartBuffer out", config_.queueName_.c_str());
+    return ret;
+}
+
+Status SampleQueue::InnerCopySliceAVBuffer(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr<AVBuffer>& dstBuffer,
+    int32_t sliceSize)
+{
+    // copy basic data
+    dstBuffer->pts_ = srcBuffer->pts_;
+    dstBuffer->dts_ = srcBuffer->dts_;
+    dstBuffer->duration_ = srcBuffer->duration_;
+    dstBuffer->flag_ = srcBuffer->flag_;
+
+    CopyMeta(srcBuffer, dstBuffer);
+    if (IsEosFrame(dstBuffer)) {
+        MEDIA_LOG_I(PUBLIC_LOG_S " receive IsEosFrame", config_.queueName_.c_str());
+        return Status::OK;
+    }
+    return InnerCopySliceAVMemory(srcBuffer, dstBuffer, sliceSize);
+}
+
+Status SampleQueue::InnerCopySliceAVMemory(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr<AVBuffer>& dstBuffer,
+    int32_t sliceSize)
+{
+    auto &srcMemory = srcBuffer->memory_;
+    auto &dstMemory = dstBuffer->memory_;
+    if (!srcMemory || !dstMemory) {
+        return Status::ERROR_NULL_POINT_BUFFER;
+    }
+    errno_t copyRet = memcpy_s(dstMemory->GetAddr(), dstMemory->GetCapacity(),
+        srcMemory->GetAddr() + srcMemory->GetOffset(), sliceSize);
+    if (copyRet != EOK) {
+        return Status::ERROR_UNKNOWN;
+    }
+    int32_t offset = srcMemory->GetOffset() + sliceSize;
+    srcMemory->SetOffset(offset);
+    dstMemory->SetSize(sliceSize);
+    dstMemory->SetOffset(0);
+    MEDIA_LOG_D("CopyPartAVMemory sliceSize: %{public}d, srcOffset after: %{public}d", sliceSize,
+        srcMemory->GetOffset());
+    return Status::OK;
+}
+
 Status SampleQueue::ReleaseBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
 {
     MEDIA_LOG_DD(PUBLIC_LOG_S " ReleaseBuffer", config_.queueName_.c_str());
     FALSE_RETURN_V(sampleBufferQueueConsumer_ != nullptr, Status::ERROR_NULL_POINT_BUFFER);
+    MEDIA_LOG_DD(PUBLIC_LOG_S " bufferId: " PUBLIC_LOG_U64 ", pts: " PUBLIC_LOG_D64, config_.queueName_.c_str(),
+        sampleBuffer->GetUniqueId(), sampleBuffer->pts_);
+    // release AVMemory of srcBuffer as it's not allocate by SampleQueue
+    if (sampleBuffer->memory_ != nullptr) {
+        sampleBuffer->memory_ = nullptr;
+    }
     Status status = sampleBufferQueueConsumer_->ReleaseBuffer(sampleBuffer);
     FALSE_RETURN_V_MSG_E(
         status == Status::OK, status, PUBLIC_LOG_S "ReleaseBuffer failed ", config_.queueName_.c_str());
-    MEDIA_LOG_DD(PUBLIC_LOG_S " bufferId: " PUBLIC_LOG_U64 ", pts: " PUBLIC_LOG_D64,
-        config_.queueName_.c_str(),
-        sampleBuffer->GetUniqueId(),
-        sampleBuffer->pts_);
     return status;
 }
 
@@ -349,8 +430,8 @@ Status SampleQueue::QuerySizeForNextAcquireBuffer(size_t& size)
             ret == Status::OK, ret, PUBLIC_LOG_S " failed ret=" PUBLIC_LOG_D32, config_.queueName_.c_str(), ret);
         SampleQueue::RollbackBuffer(sampleBuffer);
     }
-    FALSE_RETURN_V(sampleBuffer != nullptr, Status::ERROR_NULL_POINT_BUFFER);
-    size = sampleBuffer->GetConfig().capacity;
+    FALSE_RETURN_V(sampleBuffer != nullptr && sampleBuffer->memory_ != nullptr, Status::ERROR_NULL_POINT_BUFFER);
+    size = sampleBuffer->memory_->GetSize();
     MEDIA_LOG_DD(PUBLIC_LOG_S " QuerySizeForNextAcquireBuffer size=" PUBLIC_LOG_ZU, config_.queueName_.c_str(), size);
     return Status::OK;
 }
@@ -448,6 +529,13 @@ Status SampleQueue::UpdateLastOutSamplePts(int64_t lastOutSamplePts)
 {
     MEDIA_LOG_DD("UpdateLastOutSamplePts lastOutSamplePts=" PUBLIC_LOG_D64, lastOutSamplePts);
     lastOutSamplePts_ = lastOutSamplePts;
+    return Status::OK;
+}
+
+Status SampleQueue::UpdateLastEnterSamplePts(int64_t lastEnterSamplePts)
+{
+    MEDIA_LOG_DD("UpdateLastEnterSamplePts lastEnterSamplePts=" PUBLIC_LOG_D64, lastEnterSamplePts);
+    lastEnterSamplePts_ = lastEnterSamplePts;
     return Status::OK;
 }
 
@@ -584,6 +672,33 @@ uint64_t SampleQueue::GetCacheDuration() const
     return (diff > 0) ? static_cast<uint64_t>(diff) : 0;
 }
 
+uint64_t SampleQueue::NewGetCacheDuration() const
+{
+    auto lastEnterSamplePts = GetLastEnterSamplePts();
+    auto lastOutSamplePts = GetLastOutSamplePts();
+    if (lastEnterSamplePts >= 0 && lastOutSamplePts >= 0 && lastEnterSamplePts > lastOutSamplePts) {
+        return lastEnterSamplePts - lastOutSamplePts;
+    } else {
+        return 0;
+    }
+}
+
+int64_t SampleQueue::GetLastEnterSamplePts() const
+{
+    if (lastEnterSamplePts_ == Plugins::HST_TIME_NONE) {
+        return 0;
+    }
+    return lastEnterSamplePts_;
+}
+
+int64_t SampleQueue::GetLastOutSamplePts() const
+{
+    if (lastOutSamplePts_ == Plugins::HST_TIME_NONE) {
+        return 0;
+    }
+    return lastOutSamplePts_;
+}
+
 uint32_t SampleQueue::GetMemoryUsage()
 {
     FALSE_RETURN_V_MSG_E(sampleBufferQueue_ != nullptr, 0, "bufferQueue nullptr");
@@ -628,6 +743,14 @@ std::string SampleQueue::StringifyMeta(std::shared_ptr<Meta> &meta)
 bool SampleQueue::IsEmpty()
 {
     return sampleBufferQueueConsumer_->GetFilledBufferSize() == 0;
+}
+
+uint32_t SampleQueue::GetFilledBufferSize()
+{
+    auto filledSize = sampleBufferQueueConsumer_->GetFilledBufferSize();
+    MEDIA_LOG_DD("GetFilledBufferSize filled buffer: %{public}u, queue size: %{public}u, track id: %{public}d",
+        filledSize, config_.queueSize_, config_.queueId_);
+    return filledSize;
 }
 } // namespace Media
 } // namespace OHOS

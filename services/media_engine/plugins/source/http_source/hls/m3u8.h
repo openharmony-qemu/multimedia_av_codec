@@ -136,7 +136,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
 
 struct M3U8Media {
     M3U8Media(const std::string &name, const std::string &uri, std::shared_ptr<M3U8> m3u8);
-    M3U8MediaType type_;
+    M3U8MediaType type_ {M3U8MediaType::M3U8_MEDIA_TYPE_INVALID};
     std::string groupID_;
     std::string name_;
     std::string lang_;
@@ -144,10 +144,10 @@ struct M3U8Media {
     std::string channels_;
     std::string instreamId_;
     std::string characteristics_;
-    bool isDefault_;
-    bool autoSelect_;
-    bool forced_;
-    std::shared_ptr<M3U8> m3u8_;
+    bool isDefault_ {false};
+    bool autoSelect_ {false};
+    bool forced_ {false};
+    std::shared_ptr<M3U8> m3u8_ {nullptr};
     uint32_t streamId_ {0};
 };
 

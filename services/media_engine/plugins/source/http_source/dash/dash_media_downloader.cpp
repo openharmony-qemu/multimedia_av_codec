@@ -211,7 +211,6 @@ void DashMediaDownloader::PostBufferingEvent(int streamId, BufferingInfoType typ
         }
         if (percent > 0 && percent < BUFFERING_PERCENT_FULL && lastBufferingPercent_ != percent) {
             MEDIA_LOG_I("PostBufferingEvent buffering percent " PUBLIC_LOG_U32, percent);
-            callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {percent}, "buffer percent"});
             lastBufferingPercent_ = percent;
         }
         return;
@@ -226,8 +225,6 @@ void DashMediaDownloader::PostBufferingEvent(int streamId, BufferingInfoType typ
     if (type == BufferingInfoType::BUFFERING_START) {
         if (bufferingFlag_ == 0) {
             MEDIA_LOG_I("PostBufferingEvent buffering start");
-            callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
-            callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {0}, "buffer percent"});
         }
         bufferingFlag_ |= flag;
         return;
@@ -238,8 +235,6 @@ void DashMediaDownloader::PostBufferingEvent(int streamId, BufferingInfoType typ
         }
         if (lastBufferingFlag > 0 && bufferingFlag_ == 0) {
             MEDIA_LOG_I("PostBufferingEvent buffering end");
-            callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {BUFFERING_PERCENT_FULL}, "buffer percent"});
-            callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
         }
         return;
     }
