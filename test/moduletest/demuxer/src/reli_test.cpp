@@ -2685,4 +2685,74 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9700, TestSize.Level3)
     ASSERT_EQ(audioFrame, 469);
     ASSERT_EQ(keyCount, 469);
 }
+
+/**
+ * @tc.number    : DEMUXER_RELI_10000
+ * @tc.name      : demuxer damaged rmvb video file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_10000, TestSize.Level3)
+{
+    const char *file = "/data/test/media/test_error.rmvb";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_EQ(source, nullptr);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_10100
+ * @tc.name      : create source with fd, rmvb
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_10100, TestSize.Level3)
+{
+    if (memory == nullptr) {
+        memory = OH_AVMemory_Create(g_width * g_height);
+    }
+    OH_AVCodecBufferAttr attr;
+    int tarckType = 0;
+    const char *file = "/data/test/media/rv40_cook.rmvb";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        bool isEnd = false;
+        int frameNum = 0;
+        int keyCount = 0;
+        while (!isEnd) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                isEnd = true;
+                break;
+            }
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
+            }
+            frameNum++;
+        }
+        if (tarckType == MEDIA_TYPE_AUD) {
+            cout << "audioframeNum---" << frameNum << endl;
+            ASSERT_EQ(frameNum, 480);
+        } else if (tarckType == MEDIA_TYPE_VID) {
+            cout << "videoframeNum---" << frameNum << endl;
+            ASSERT_EQ(frameNum, 251);
+            ASSERT_EQ(keyCount, 2);
+        }
+    }
+}
 }
