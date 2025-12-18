@@ -34,7 +34,7 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
 using namespace std;
-
+/*add au format test*/
 namespace {
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
