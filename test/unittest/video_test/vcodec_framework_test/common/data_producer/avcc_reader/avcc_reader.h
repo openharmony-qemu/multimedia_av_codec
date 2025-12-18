@@ -902,6 +902,70 @@ private:
     std::shared_ptr<Mpeg1UnitReader> mpeg1UnitReader_ = nullptr;
     std::shared_ptr<Mpeg1Detector> mpeg1Detector_ = nullptr;
 };
+
+struct DvvideoReaderInfo {
+    std::string inPath;
+};
+class DvvideoReader : public DataProducerBase {
+public:
+    DvvideoReader() = default;
+    ~DvvideoReader() = default;
+
+    int32_t Init(const std::shared_ptr<DvvideoReaderInfo>& info);
+    int32_t FillBuffer(uint8_t* bufferAddr, OH_AVCodecBufferAttr& attr);
+    bool IsEOS();
+
+private:
+    class DvvideoUnitReader {
+    public:
+        virtual ~DvvideoUnitReader() = default;
+        virtual int32_t ReadDvvideoUnit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame) = 0;
+        virtual bool IsEOS() = 0;
+        virtual bool IsEOF() = 0;
+    protected:
+        virtual void PrereadDvvideoUnit() = 0;
+    };
+
+    class DvvideoMetaUnitReader : public DvvideoUnitReader {
+    public:
+        explicit DvvideoMetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        ~DvvideoMetaUnitReader() override = default;
+
+        int32_t ReadDvvideoUnit(uint8_t* bufferAddr, int32_t& bufferSize, bool& isEosFrame) override;
+        bool IsEOS() override;
+        bool IsEOF() override;
+
+    private:
+        void PrereadFile();
+        void PrereadDvvideoUnit() override;
+
+        std::shared_ptr<std::ifstream> inputFile_;
+        std::unique_ptr<uint8_t[]> prereadBuffer_;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+
+        std::unique_ptr<std::vector<uint8_t>> dvvideoUnit_;
+        uint32_t frameIndex_ = 0;
+    };
+    class DvvideoDetector {
+    public:
+        DvvideoDetector() = default;
+        ~DvvideoDetector() = default;
+
+        const uint8_t* GetDvvideoTypeAddr(const uint8_t* bufferAddr);
+        uint8_t GetDvvideoType(const uint8_t* bufferAddr);
+        bool IsI(uint8_t dvvideoType);
+    };
+
+private:
+    void FillBufferAttr(OH_AVCodecBufferAttr& attr, int32_t frameSize,
+                        uint8_t dvvideoType, bool isEosFrame);
+
+    std::mutex mutex_;
+    std::shared_ptr<DvvideoUnitReader> dvvideoUnitReader_;
+    std::shared_ptr<DvvideoDetector> dvvideoDetector_;
+    uint32_t frameInputCount_ = 0;
+};
 } // MediaAVCodec
 } // OHOS
 #endif // AVCC_READER_H

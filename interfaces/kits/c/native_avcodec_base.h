@@ -304,6 +304,13 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VP8;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VP9;
 
 /**
+ * @brief Enumerates the MIME type of video dvvideo codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_DVVIDEO;
+
+/**
  * @brief Enumerates the MIME types of audio and video codecs
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10

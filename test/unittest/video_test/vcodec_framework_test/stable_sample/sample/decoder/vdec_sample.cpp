@@ -321,6 +321,9 @@ bool VideoDecSample::InitInputFile()
         } else if (inPath_.find("mpeg1") != std::string::npos) {
             int32_t ret = CreateMpeg1Reader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMpeg1Reader failed");
+        } else if (inPath_.find("dvvideo") != std::string::npos) {
+            int32_t ret = CreateDvvideoReader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateDvvideoReader failed");
         } else {
             int32_t ret = CreateMpegReader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMpegReader failed");
@@ -479,6 +482,16 @@ int32_t VideoDecSample::CreateMpeg1Reader()
 
     signal_->reader_ = std::make_shared<Mpeg1Reader>();
     int32_t ret = std::static_pointer_cast<Mpeg1Reader>(signal_->reader_)->Init(info);
+    return ret;
+}
+
+int32_t VideoDecSample::CreateDvvideoReader()
+{
+    std::shared_ptr<DvvideoReaderInfo> info = std::make_shared<DvvideoReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<DvvideoReader>();
+    int32_t ret = std::static_pointer_cast<DvvideoReader>(signal_->reader_)->Init(info);
     return ret;
 }
 

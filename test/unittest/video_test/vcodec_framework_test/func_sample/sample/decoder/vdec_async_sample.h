@@ -99,6 +99,7 @@ private:
     int32_t CreateRv40Reader();
 #endif
     int32_t CreateMpeg1Reader();
+    int32_t CreateDvvideoReader();
     int32_t CreateReader(const std::string& inPath);
     bool CompareHdrInfo(std::shared_ptr<AVBufferMock> buffer);
     bool CompareMetadata(std::shared_ptr<std::ifstream> file, int32_t size,
@@ -140,6 +141,7 @@ private:
     std::shared_ptr<Rv40Reader> rv40Reader_ = nullptr;
 #endif
     std::shared_ptr<Mpeg1Reader> mpeg1Reader_ = nullptr;
+    std::shared_ptr<DvvideoReader> dvvideoReader_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

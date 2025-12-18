@@ -116,6 +116,7 @@ private:
     int32_t CreateWmv3Reader();
     int32_t CreateVp8Reader();
     int32_t CreateVp9Reader();
+    int32_t CreateDvvideoReader();
 #ifdef SUPPORT_CODEC_AV1
     int32_t CreateAv1Reader();
 #endif
