@@ -910,7 +910,7 @@ int32_t VideoDecoder::FillFrameBuffer(const std::shared_ptr<CodecBuffer> &frameB
     return ret;
 }
 
-void VideoDecoder::FramePostProcess(std::shared_ptr<CodecBuffer> &frameBuffer, uint32_t index, int32_t status, int ret)
+void VideoDecoder::FramePostProcess(const std::shared_ptr<CodecBuffer> &frameBuffer, uint32_t index, int32_t status)
 {
     if (status == AVCS_ERR_OK) {
         codecAvailQue_->Pop();

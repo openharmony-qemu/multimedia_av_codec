@@ -42,7 +42,7 @@ using FormatDataType = Media::FormatDataType;
 
 class VideoDecoder : public RenderSurface, public CodecBase {
 public:
-    VideoDecoder(const std::string& codecName, const std::string& path);
+    VideoDecoder(const std::string &name, const std::string &path);
     ~VideoDecoder() = default;
     int32_t Init(Media::Meta &callerInfo) override;
     int32_t Start() override;
@@ -70,7 +70,7 @@ public:
     virtual void DeleteDecoder() = 0;
     bool IsValid() const { return isValid_; }
     void ReleaseResource();
-    void FramePostProcess(std::shared_ptr<CodecBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
+    void FramePostProcess(const std::shared_ptr<CodecBuffer> &frameBuffer, uint32_t index, int32_t status);
     int32_t FillFrameBuffer(const std::shared_ptr<CodecBuffer> &frameBuffer);
     void ResetData();
     int32_t UpdateOutputBuffer(uint32_t index);
