@@ -14,7 +14,9 @@
  */
 
 #include <chrono>
+#include <condition_variable>
 #include <gtest/gtest.h>
+#include <mutex>
 #include <random>
 #include <string>
 #include <thread>
@@ -39,6 +41,7 @@ using namespace testing::ext;
 
 namespace {
 constexpr int32_t QUERY_INTERVAL_TIME = 500;
+constexpr int32_t STATISTIC_EVENT_INFO_TIMEOUT = 5000;
 constexpr int32_t MAX_EVENT_ADD_COUNT = 100000;
 constexpr int32_t BEHAVIORSINFO_EVENT_ADD_COUNT = 200;
 constexpr int32_t ELAPSEDTIME_THREADSHOLD = 600;
@@ -146,10 +149,22 @@ std::string GenerateRandomMime()
     return mimeType;
 }
 
+void WaitForEventJson()
+{
+    std::unique_lock<std::mutex> lock(g_mutex);
+
+    std::cv_status status = !g_cv.wait_for(lock, std::chrono::milliseconds(STATISTIC_EVENT_INFO_TIMEOUT));
+    EXPECT_EQ(status, std::cv_status::timeout) << "Expected timeout after " << STATISTIC_EVENT_INFO_TIMEOUT << " ms";
+}
+
 void OnEventTest(HiSysEventRecordC record)
 {
     ASSERT_GT(strlen(record.jsonStr), 0);
-    g_recordJson = record.jsonStr;
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        g_recordJson = record.jsonStr;
+    }
+    g_cv.notify_one();
     std::cout << "OnEvent: event = " << record.jsonStr << std::endl;
 }
 
@@ -160,6 +175,7 @@ void OnServiceDiedTest()
 
 void CheckJsonValue(std::string firstKey, std::string secondKey)
 {
+    WaitForEventJson();
     std::cout << "first key = " << firstKey << std::endl;
     std::cout << "second key = " << secondKey << std::endl;
     if (!secondKey.empty()) {
@@ -205,7 +221,6 @@ void DfxStatisticsEventTest::SetUpTestCase(void)
     HiSysEventWatchRule rules[] = {rule};
     auto ret = OH_HiSysEvent_Add_Watcher(&watcher, rules, sizeof(rules) / sizeof(HiSysEventWatchRule));
     ASSERT_EQ(ret, HiviewDFX::IPC_CALL_SUCCEED);
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
 }
 
 void DfxStatisticsEventTest::TearDownTestCase(void) {}
@@ -261,7 +276,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_001, TestSize.Level1)
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(static_cast<StatisticsEventType>(INT32_MAX), *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -276,7 +291,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_002, TestSize.Level1)
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(static_cast<StatisticsEventType>(-1), *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -321,7 +336,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_004, TestSize.Level1)
         });
     StatisticsEventInfo::GetInstance().OnAddEventInfo(static_cast<StatisticsEventType>(INT32_MAX), *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     ASSERT_EQ(true, isRegisterEventHook);
 }
 
@@ -334,7 +348,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicInfo_001, TestSize.Level1)
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -348,7 +362,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicQueryCapInfo_001, TestSize.Le
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
     auto item = cJSON_GetObjectItem(data.get(), "QueryCapTimes");
@@ -367,7 +381,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecInfo_001, TestSize
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
     auto item = cJSON_GetObjectItem(data.get(), "CreateCodecTimes");
@@ -390,7 +404,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_001, Test
     meta_->SetData(Media::Tag::MIME_TYPE, mime);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     CheckJsonValue("CodecSpecifiedInfo", "");
 }
 
@@ -407,7 +420,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_002, Test
     meta_->SetData(Media::Tag::MIME_TYPE, mime);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -425,7 +438,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_003, Test
     meta_->SetData(Media::Tag::MIME_TYPE, mime);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -442,7 +455,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_004, Test
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     CheckJsonValue("CodecSpecifiedInfo", "");
 }
 
@@ -458,7 +470,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_005, Test
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -475,7 +487,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_006, Test
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -491,7 +503,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_007, Test
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -507,7 +519,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_008, Test
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -523,7 +535,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_009, Test
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -540,7 +552,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_001, TestSiz
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_SPECIFICATIONS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -583,7 +595,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_002, TestSiz
     mime = GenerateRandomString(50); // 50: less than mime type length
     AddSpecificationInfoEvent(meta_, mime);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -599,7 +611,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_003, TestSiz
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_SPECIFICATIONS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -614,7 +626,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_004, TestSiz
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_SPECIFICATIONS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -631,7 +643,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedInfo_001, TestSize.L
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -648,7 +660,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_001, Te
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     CheckJsonValue("CapUnsupportedInfo", "QueryCapUnsupportedInfo");
 }
 
@@ -664,7 +675,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_002, Te
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), false);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -681,7 +692,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_003, Te
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     CheckJsonValue("CapUnsupportedInfo", "QueryCapUnsupportedInfo");
 }
 
@@ -697,7 +707,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_004, Te
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), true);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -717,7 +727,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_005, Te
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -737,7 +747,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_006, Te
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -754,7 +764,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_001, T
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     CheckJsonValue("CapUnsupportedInfo", "CreateCodecUnsupportedInfo");
 }
 
@@ -770,7 +779,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_002, T
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), false);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -787,7 +796,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_003, T
     meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     CheckJsonValue("CapUnsupportedInfo", "CreateCodecUnsupportedInfo");
 }
 
@@ -803,7 +811,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_004, T
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), true);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -824,7 +832,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_005, T
                                                           *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -845,7 +853,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_006, T
                                                           *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -864,7 +872,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_001, TestSize.Lev
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -881,7 +889,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_002, TestSize.Lev
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -898,7 +906,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_003, TestSize.Lev
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -913,7 +921,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_004, TestSize.Lev
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -930,7 +938,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_005, TestSize.Lev
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -951,7 +959,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecLimitExceededInfo_001, TestSize
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     CheckJsonValue("DecAbnormalOccupationInfo", "HDecLimitExceededInfo");
 }
 
@@ -971,7 +978,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsReleaseHardDecInfo_001
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     CheckJsonValue("DecAbnormalOccupationInfo", "HDecLimitExceededInfo");
 }
 
@@ -988,7 +994,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGI
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO,
                                                       *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -1007,7 +1013,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGI
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO,
                                                       *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -1026,7 +1032,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGI
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO,
                                                       *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     CheckJsonValue("DecAbnormalOccupationInfo", "LongTimeInBgInfo");
 }
 
@@ -1046,7 +1051,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGI
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     CheckJsonValue("DecAbnormalOccupationInfo", "LongTimeInBgInfo");
 }
 
@@ -1066,7 +1070,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGI
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     CheckJsonValue("DecAbnormalOccupationInfo", "LongTimeInBgInfo");
 }
 
@@ -1086,7 +1089,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGI
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -1100,7 +1103,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_SpeedDecodingInfo_001, TestSize.Le
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SPEED_DECODING_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     CheckJsonValue("SpeedDecodingInfo", "");
 }
 
@@ -1115,7 +1117,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_001, TestSize.Level
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -1131,7 +1133,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_002, TestSize.Level
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1); // -1: codec type is invalid
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -1147,7 +1149,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_003, TestSize.Level
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -1164,7 +1166,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_004, TestSize.Level
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -1181,7 +1183,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_005, TestSize.Level
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -1198,7 +1200,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_006, TestSize.Level
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -1215,7 +1217,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_007, TestSize.Level
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -1232,7 +1234,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_008, TestSize.Level
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), -1); // -1: codec type is invalid
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -1249,7 +1251,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_009, TestSize.Level
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), INT16_MAX);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -1267,7 +1269,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_010, TestSize.Level
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     CheckJsonValue("CodecErrorInfo", "");
 }
 
@@ -1284,7 +1285,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_011, TestSize.Level
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
@@ -1302,7 +1303,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_012, TestSize.Level
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
+    WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
 }
