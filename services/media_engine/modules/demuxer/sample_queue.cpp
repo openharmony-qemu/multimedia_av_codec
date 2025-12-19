@@ -72,7 +72,7 @@ private:
 Status SampleQueue::Init(const Config& config)
 {
     config_ = config;
-    config_.queueSize_ = std::min(config.queueSize_, MAX_SAMPLE_QUEUE_SIZE);
+    config_.queueSize_ = std::min(config.queueSize_, DEFAULT_SAMPLE_QUEUE_SIZE);
     config_.bufferCap_ = std::min(config.bufferCap_, MAX_SAMPLE_BUFFER_CAP);
     config_.queueName_ = "SampleQueue_" + std::to_string(config_.queueId_);
     sampleBufferQueue_ = AVBufferQueue::Create(config_.queueSize_, MemoryType::VIRTUAL_MEMORY, config_.queueName_);
@@ -685,7 +685,7 @@ uint64_t SampleQueue::NewGetCacheDuration() const
 
 int64_t SampleQueue::GetLastEnterSamplePts() const
 {
-    if (lastEnterSamplePts_ == Plugins::HST_TIME_NONE) {
+    if (lastEnterSamplePts_ == Plugins::HST_TIME_NONE || lastEnterSamplePts_ < 0) {
         return 0;
     }
     return lastEnterSamplePts_;
@@ -693,7 +693,7 @@ int64_t SampleQueue::GetLastEnterSamplePts() const
 
 int64_t SampleQueue::GetLastOutSamplePts() const
 {
-    if (lastOutSamplePts_ == Plugins::HST_TIME_NONE) {
+    if (lastOutSamplePts_ == Plugins::HST_TIME_NONE || lastOutSamplePts_ < 0) {
         return 0;
     }
     return lastOutSamplePts_;
