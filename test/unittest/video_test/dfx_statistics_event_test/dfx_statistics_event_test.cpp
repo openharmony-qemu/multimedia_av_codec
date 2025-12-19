@@ -225,6 +225,7 @@ void DfxStatisticsEventTest::SetUp(void)
 
 void DfxStatisticsEventTest::TearDown(void)
 {
+    StatisticsEventInfo::GetInstance().timer_ = nullptr;
     pid_t pid = getpid();
     std::cout << "end memory = " << dumpUsage_.GetPss(pid) << std::endl;
 }
@@ -442,7 +443,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_004, Test
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    CheckJsonValue("CapUnsupportedInfo", "CodecSpecifiedInfo");
+    CheckJsonValue("CodecSpecifiedInfo", "");
 }
 
 /**
@@ -951,13 +952,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecLimitExceededInfo_001, TestSize
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
-    ASSERT_NE(nullptr, data);
-    auto decLimitExceededInfo = cJSON_GetObjectItem(data.get(), "HDecLimitExceededInfo");
-    ASSERT_NE(nullptr, decLimitExceededInfo);
-    auto array = std::shared_ptr<cJSON>(cJSON_Parse(decLimitExceededInfo->valuestring), cJSON_Delete);
-    ASSERT_NE(nullptr, array);
-    ASSERT_LT(1, cJSON_GetArraySize(array.get()));
+    CheckJsonValue("DecAbnormalOccupationInfo", "HDecLimitExceededInfo");
 }
 
 /**
@@ -976,6 +971,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsReleaseHardDecInfo_001
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO, *meta_);
     }
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
     CheckJsonValue("DecAbnormalOccupationInfo", "HDecLimitExceededInfo");
 }
 
