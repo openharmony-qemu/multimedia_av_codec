@@ -120,6 +120,7 @@ int32_t RenderSurface::SwitchBetweenSurface(const sptr<Surface> &newSurface)
     sptr<Surface> curSurface = sInfo_.surface;
     newSurface->Connect(); // cleancache will work only if the surface is connected by us
     newSurface->CleanCache(); // make sure new surface is empty
+    newSurface->Disconnect();
     std::vector<uint32_t> ownedBySurfaceBufferIndex;
     uint64_t newId = newSurface->GetUniqueId();
     for (uint32_t index = 0; index < buffers_[INDEX_OUTPUT].size(); index++) {
@@ -134,7 +135,6 @@ int32_t RenderSurface::SwitchBetweenSurface(const sptr<Surface> &newSurface)
                 ownedBySurfaceBufferIndex.push_back(index);
             }
         } else {
-            RequestSurfaceBufferOnce(index);
             surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         }
         CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, AVCS_ERR_UNKNOWN, "Get old surface buffer error!");
@@ -146,13 +146,7 @@ int32_t RenderSurface::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         }
         buffers_[INDEX_OUTPUT][index]->sMemory->isAttached = true;
     }
-    int32_t val32 = 0;
-    if (format_.ContainKey(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE)) {
-        CHECK_AND_RETURN_RET_LOG(format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32) && val32 >= 0 &&
-                                 val32 <= static_cast<int32_t>(VideoRotation::VIDEO_ROTATION_270),
-                                 AVCS_ERR_INVALID_VAL, "Invalid rotation angle %{public}d", val32);
-        sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
-    }
+    newSurface->SetTransform(transform_.load());
     sInfo_.surface = newSurface;
     CombineConsumerUsage();
     for (uint32_t index: ownedBySurfaceBufferIndex) {
@@ -160,6 +154,7 @@ int32_t RenderSurface::SwitchBetweenSurface(const sptr<Surface> &newSurface)
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Old surface buffer render failed!");
     }
     UnRegisterListenerToSurface(curSurface);
+    curSurface->SetTransform(GraphicTransformType::GRAPHIC_ROTATE_NONE);
     curSurface->CleanCache(true); // make sure old surface is empty and go black
     return AVCS_ERR_OK;
 }
@@ -249,6 +244,7 @@ int32_t RenderSurface::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface,
     int32_t ret = SetQueueSize(surface, bufferCnt);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set surface queue size failed!");
     ret = SetSurfaceCfg();
+    surface->Disconnect();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set surface cfg failed!");
     CHECK_AND_RETURN_RET_LOGD(buffers_[INDEX_OUTPUT].size() > 0u, AVCS_ERR_OK, "Set surface cfg & queue size success.");
     int32_t valBufferCnt = 0;
@@ -297,8 +293,8 @@ int32_t RenderSurface::SetSurfaceCfg()
 
 GSError RenderSurface::BufferReleasedByConsumer(uint64_t surfaceId)
 {
-    CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING || state_ == State::EOS,
-        GSERROR_NO_PERMISSION, "In valid state_");
+    CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING || state_ == State::EOS || state_ == State::FLUSHING ||
+                             state_ == State::FLUSHED, GSERROR_NO_PERMISSION, "Invalid state");
     std::lock_guard<std::mutex> sLock(surfaceMutex_);
     CHECK_AND_RETURN_RET_LOG(renderAvailQue_->Size() > 0, GSERROR_NO_BUFFER, "No available buffer");
     CHECK_AND_RETURN_RET_LOG(surfaceId == sInfo_.surface->GetUniqueId(), GSERROR_INVALID_ARGUMENTS,
@@ -432,8 +428,8 @@ bool RenderSurface::CanSwapOut(bool isOutputBuffer, std::shared_ptr<CodecBuffer>
     AVCODEC_LOGD(
     "Buffer type: [%{public}u], codecBuffer->owner_: [%{public}d], "
     "codecBuffer->hasSwapedOut: [%{public}d].",
-    isOutputBuffer, ownerValue, codecBuffer->hasSwapedOut);
-    return !(ownerValue == Owner::OWNED_BY_SURFACE || codecBuffer->hasSwapedOut);
+    isOutputBuffer, ownerValue, codecBuffer->hasSwapedOut.load());
+    return !(ownerValue == Owner::OWNED_BY_SURFACE || codecBuffer->hasSwapedOut.load());
 }
 
 int32_t RenderSurface::SwapOutBuffers(bool isOutputBuffer, State curState)
@@ -444,7 +440,7 @@ int32_t RenderSurface::SwapOutBuffers(bool isOutputBuffer, State curState)
         std::shared_ptr<CodecBuffer> codecBuffer = buffers_[bufferType][i];
         if (!CanSwapOut(isOutputBuffer, codecBuffer)) {
             AVCODEC_LOGW("Buf: [%{public}u] can't freeze, owner: [%{public}d] swaped out: [%{public}d]!", i,
-                         codecBuffer->owner_.load(), codecBuffer->hasSwapedOut);
+                         codecBuffer->owner_.load(), codecBuffer->hasSwapedOut.load());
             continue;
         }
         std::shared_ptr<FSurfaceMemory> surfaceMemory = codecBuffer->sMemory;
@@ -462,7 +458,7 @@ int32_t RenderSurface::SwapOutBuffers(bool isOutputBuffer, State curState)
             return ret;
         }
         AVCODEC_LOGI("Buf[%{public}u] fd[%{public}u] swap out success!", i, fd);
-        codecBuffer->hasSwapedOut = true;
+        codecBuffer->hasSwapedOut.store(true);
     }
     return AVCS_ERR_OK;
 }
@@ -473,7 +469,7 @@ int32_t RenderSurface::SwapInBuffers(bool isOutputBuffer)
     CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped in!");
     for (uint32_t i = 0u; i < buffers_[bufferType].size(); i++) {
         std::shared_ptr<CodecBuffer> codecBuffer = buffers_[bufferType][i];
-        if (!codecBuffer->hasSwapedOut) {
+        if (!codecBuffer->hasSwapedOut.load()) {
             continue;
         }
         std::shared_ptr<FSurfaceMemory> surfaceMemory = codecBuffer->sMemory;
@@ -484,7 +480,7 @@ int32_t RenderSurface::SwapInBuffers(bool isOutputBuffer)
         int32_t ret = DmaSwaper::GetInstance().SwapInDma(pid_, fd);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Buf[%{public}u] fd[%{public}u] swap in error!", i, fd);
         AVCODEC_LOGI("Buf[%{public}u] fd[%{public}u] swap in success!", i, fd);
-        codecBuffer->hasSwapedOut = false;
+        codecBuffer->hasSwapedOut.store(false);
     }
     return AVCS_ERR_OK;
 }
