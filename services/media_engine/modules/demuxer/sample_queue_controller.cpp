@@ -58,7 +58,7 @@ bool SampleQueueController::ShouldStartConsume(int32_t trackId, std::shared_ptr<
     }
     auto cacheDuration = sampleQueue->NewGetCacheDuration();
     if (cacheDuration < START_CONSUME_WATER_LOOP &&
-        sampleQueue->GetFilledBufferSize() < SampleQueue::MAX_SAMPLE_QUEUE_SIZE - 1 &&
+        sampleQueue->GetFilledBufferSize() < SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE - 1 &&
         (isFirstArrived_[trackId] || cacheDuration < static_cast<uint64_t>(FIRST_START_CONSUME_WATER_LOOP))) {
         return false;
     }
@@ -115,7 +115,7 @@ bool SampleQueueController::ShouldStopProduce(int32_t trackId, std::shared_ptr<S
     }
     auto cacheDuration = sampleQueue->NewGetCacheDuration();
     if (cacheDuration < STOP_PRODUCE_WATER_LOOP &&
-        sampleQueue->GetFilledBufferSize() < SampleQueue::MAX_SAMPLE_QUEUE_SIZE - 1) {
+        sampleQueue->GetFilledBufferSize() < SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE - 1) {
         return false;
     }
 
