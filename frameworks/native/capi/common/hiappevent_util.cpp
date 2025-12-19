@@ -49,7 +49,7 @@ AppEventReporter::AppEventReporter(uint32_t reportThd) : reportThd_(reportThd)
         processorId_ = AppEventProcessorMgr::AddProcessor(config);
     }
     if (processorId_.load() == -200) { // -200：not app process
-        AVCODEC_LOGE("failed to AddProcessor, processorId %{public}ld", processorId_.load());
+        AVCODEC_LOGE("failed to AddProcessor, processorId %{public}lld", processorId_.load());
         return;
     }
 }
