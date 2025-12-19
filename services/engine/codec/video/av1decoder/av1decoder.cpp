@@ -384,7 +384,7 @@ void Av1Decoder::SendFrame()
         auto outIndex = codecAvailQue_->Front();
         std::shared_ptr<CodecBuffer> frameBuffer = buffers_[INDEX_OUTPUT][outIndex];
         frameBuffer->avBuffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
-        FramePostProcess(buffers_[INDEX_OUTPUT][outIndex], outIndex, AVCS_ERR_OK, AVCS_ERR_OK);
+        FramePostProcess(buffers_[INDEX_OUTPUT][outIndex], outIndex, AVCS_ERR_OK);
         state_ = State::EOS;
     } else if (ret < 0) {
         AVCODEC_LOGE("decode frame error: ret = %{public}d", ret);
@@ -450,7 +450,7 @@ int32_t Av1Decoder::DecodeFrameOnce()
             return -1;
         }
         frameBuffer->avBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
-        FramePostProcess(frameBuffer, index, status, AVCS_ERR_OK);
+        FramePostProcess(frameBuffer, index, status);
     }
     if (av1DecOutputImg_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
         av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
