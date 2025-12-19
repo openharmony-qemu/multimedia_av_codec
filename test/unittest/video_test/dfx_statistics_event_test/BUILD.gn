@@ -20,6 +20,29 @@ ohos_unittest("video_codec_dfx_statics_event_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = "av_codec/AVCodec_Video/unittest"
 
+  cflags = [
+    "-Wno-sign-compare",
+    "-fno-exceptions",
+    "-fno-common",
+    "-fstack-protector-all",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+
+  cflags_cc = [
+    "-std=c++17",
+    "-fno-rtti",
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+
   include_dirs = [
     "$av_codec_root_dir/services/services/common/",
     "$av_codec_root_dir/services/services/common/event_manager",
