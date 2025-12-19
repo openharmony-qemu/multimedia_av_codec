@@ -90,6 +90,7 @@ static std::unordered_map<TagType, std::string> g_formatToIndex = {
     {Tag::VIDEO_FRAME_RATE,               "frmRate"},
     {Tag::VIDEO_H265_LEVEL,               "265level"},
     {Tag::VIDEO_H265_PROFILE,             "265profile"},
+    {Tag::VIDEO_HDR_METADATA,             "video_hdr_metadata"},
     {Tag::VIDEO_HEIGHT,                   "h"},
     {Tag::VIDEO_IS_HDR_VIVID,             "hdrVivid"},
     {Tag::VIDEO_ORIENTATION_TYPE,         "orient"},

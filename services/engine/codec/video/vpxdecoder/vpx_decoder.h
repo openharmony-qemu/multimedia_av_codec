@@ -34,7 +34,9 @@ public:
     bool CheckVideoPixelFormat(VideoPixelFormat vpf) override;
     void ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth) override;
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
-                             int32_t maxVal = INT_MAX) override;
+        int32_t maxVal = INT_MAX) override;
+    void ConfigureHdrMetadata(const Format &format) override;
+    void FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer) override;
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
 
 protected:
@@ -53,8 +55,29 @@ protected:
     static int32_t CheckVpxDecLibStatus();
 
 private:
-    AVPixelFormat ConvertVpxFmtToAVPixFmt(VpxImageFmt fmt);
+    struct HdrMetadata {
+        INT32 displayPrimariesX[3] = {0, 0, 0};
+        INT32 displayPrimariesY[3] = {0, 0, 0};
+        INT32 whitePointX = 0;
+        INT32 whitePointY = 0;
+        INT32 maxDisplayMasteringLuminance = 0;
+        INT32 minDisplayMasteringLuminance = 0;
+        INT32 maxContentLightLevel = 0;
+        INT32 maxPicAverageLightLevel = 0;
+    };
 
+    struct ColorSpaceInfo {
+        int32_t fullRangeFlag = 0;
+        int32_t colorDescriptionPresentFlag = 0;
+        int32_t colorPrimaries = 0;
+        int32_t transferCharacteristic = 0;
+        int32_t matrixCoeffs = 0;
+    };
+    AVPixelFormat ConvertVpxFmtToAVPixFmt(VpxImageFmt fmt);
+    int32_t ConvertHdrStaticMetadata(const HdrMetadata &hdrMetadata,
+                                     std::vector<uint8_t> &staticMetadataVec);
+    ColorSpaceInfo colorSpaceInfo_;
+    HdrMetadata hdrMetadata_;
     VPX_DEC_HANDLE vpxDecHandle_ = nullptr;
     VpxDecInArgs vpxDecoderInputArgs_;
     VpxImage *vpxDecOutputImg_ = nullptr;

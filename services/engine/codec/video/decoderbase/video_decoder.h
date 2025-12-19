@@ -62,6 +62,7 @@ public:
     virtual void ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth) = 0;
     virtual void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
         int32_t maxVal = INT_MAX) = 0;
+    virtual void ConfigureHdrMetadata(const Format &format);
     void ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;

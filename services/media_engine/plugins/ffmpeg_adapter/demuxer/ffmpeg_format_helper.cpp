@@ -34,6 +34,7 @@ extern "C" {
 #endif
 #include "libavutil/avutil.h"
 #include "libavutil/display.h"
+#include "libavutil/mastering_display_metadata.h"
 #ifdef __cplusplus
 }
 #endif
@@ -963,6 +964,9 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
     if (avStream.codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
         ParseRawvideoInfo(avStream, format);
     }
+    if (avStream.codecpar->codec_id == AV_CODEC_ID_VP9) {
+        ParseVideoHdrAndColorMetadata(avStream, format);
+    }
 }
 
 void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta &format)
@@ -995,6 +999,18 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
         MEDIA_LOG_D("Parse rotate info from display matrix failed, set rotation as default 0");
         format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
     }
+}
+
+void FFmpegFormatHelper::ParseVideoHdrAndColorMetadata(const AVStream& avStream, Meta &format)
+{
+    const uint8_t *sideData = (uint8_t *)av_stream_get_side_data(
+        &avStream, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, NULL);
+    if (sideData) {
+        std::vector<uint8_t> extra(sizeof(AVMasteringDisplayMetadata));
+        extra.assign(sideData, sideData + sizeof(AVMasteringDisplayMetadata));
+        format.Set<Tag::VIDEO_HDR_METADATA>(extra);
+    }
+    ParseColorBoxInfo(avStream, format);
 }
 
 void PrintMatrixToLog(int32_t * matrix, const std::string& matrixName)
