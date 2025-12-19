@@ -127,7 +127,7 @@ struct DemuxerPlugin : public PluginBase {
      *       The caller does not need to pre-allocate memory in sample->memory_. The original memory will be replaced.
      *
      * @param trackId Identifies the media track. ignore the invalid value is passed.
-     * @param sample Buffer to store data frames. The sample->memory_ will be replaced with the new memory.
+     * @param sample Buffer where store data frames. The sample->memory_ will be replaced with the new memory.
      * @param timeout If no result is available after @param timeout milliseconds, the function returns.
      * @return  Execution Status return
      *  @retval OK: Plugin ReadFrame succeeded.
