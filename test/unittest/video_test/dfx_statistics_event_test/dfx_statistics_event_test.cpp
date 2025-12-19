@@ -168,7 +168,7 @@ void CheckJsonValue(std::string firstKey, std::string secondKey)
         auto firstValue = cJSON_GetObjectItem(data.get(), firstKey.c_str());
         ASSERT_NE(nullptr, firstValue);
         ASSERT_TRUE(cJSON_IsString(firstValue));
-        auto parsedFirstValue = std::shared_ptr<cJSON>(cJSON_Parse(firstValue.valuestring), cJSON_Delete);
+        auto parsedFirstValue = std::shared_ptr<cJSON>(cJSON_Parse(firstValue->valuestring), cJSON_Delete);
         ASSERT_NE(nullptr, parsedFirstValue);
         auto secondValue = cJSON_GetObjectItem(parsedFirstValue.get(), secondKey.c_str());
         ASSERT_NE(nullptr, secondValue);
