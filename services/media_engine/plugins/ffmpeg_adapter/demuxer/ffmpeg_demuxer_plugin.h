@@ -416,6 +416,7 @@ private:
 
     struct MinTsPacketInfo {
         bool isInit = false;
+        bool isUpd = false;
         int32_t streamIndex = -1;
         int64_t minPts = AV_NOPTS_VALUE;
         int64_t minDts = AV_NOPTS_VALUE;

@@ -1113,15 +1113,14 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
         std::unique_lock<std::mutex> sLock(syncMutex_);
         int ffmpegRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
         sLock.unlock();
+        UpdMinTsPacketInfo(pktWrapper->GetAVPacket());
         if (ffmpegRet == AVERROR_EOF) { // eos
             WebvttMP4EOSProcess(pktWrapper->GetAVPacket());
-            pktWrapper.reset(); // 触发 AVPacketWrapper 析构，内部 free
             ret = PushEOSToAllCache();
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Push eos failed");
             return Status::END_OF_STREAM;
         }
         if (ffmpegRet < 0) { // fail
-            pktWrapper.reset(); // 释放 pkt
             MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
                 AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
             return ioContext_.retry ? (ResetContext(), Status::ERROR_AGAIN) : Status::ERROR_UNKNOWN;
@@ -1876,7 +1875,6 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(Plugins::AVPacketWrapperPtr pk
         pktWrapper->GetPos()};
     Dump(dumpParam);
 #endif
-    UpdMinTsPacketInfo(pktWrapper->GetAVPacket());
     auto trackId = pktWrapper->GetStreamIndex();
     Status ret = Status::OK;
     if (NeedCombineFrame(trackId) && !IsBeginAsAnnexb(pktWrapper->GetData(), pktWrapper->GetSize())
@@ -2776,6 +2774,7 @@ void FFmpegDemuxerPlugin::InitMinTsPacketInfo(AVPacket *pkt)
 
 void FFmpegDemuxerPlugin::UpdMinTsPacketInfo(AVPacket *pkt)
 {
+    minTsPktInfo_.isUpd = true;
     FALSE_RETURN_MSG_W(pkt != nullptr, "AVPacket is nullptr");
     FALSE_RETURN_MSG_D(minTsPktInfo_.isInit, "minTsPktInfo_ is not init");
     if ((pluginImpl_->flags & AVFMT_SEEK_TO_PTS) && !FFmpegFormatHelper::IsMpeg4File(fileType_) &&
@@ -2792,6 +2791,10 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
 {
     int64_t seekTs = AV_NOPTS_VALUE;
     int ffRet = -1;
+    if (!minTsPktInfo_.isUpd) {
+        MEDIA_LOG_I("minTsPktInfo_ is not upd, do not seek.");
+        return Status::OK;
+    }
     if (IsSkipGetMinTsPktInfo()) {
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
         std::unique_lock<std::mutex> sLock(syncMutex_);
@@ -2809,7 +2812,7 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
             minTsPktInfo_.streamIndex, seekTs, ffRet);
     }
     if (ffRet < 0) {
-        MEDIA_LOG_I("Use default track and startTime to seek.");
+        MEDIA_LOG_I("Use default track and startTime " PUBLIC_LOG_D64, formatContext_->start_time);
         std::unique_lock<std::mutex> sLock(syncMutex_);
         ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT,
             formatContext_->start_time, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
@@ -2824,13 +2827,10 @@ Status FFmpegDemuxerPlugin::SeekToStart()
     MEDIA_LOG_D("in");
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MediaAVCodec::AVCodecTrace trace("SeekToStart");
-   
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_seekToStart", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
-    
     auto ret = SeekToStartInternal();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekToStartInternal failed.");
-    
     if (readLoopStatus_ != Status::OK) {
         MEDIA_LOG_E("Read loop status is not OK, release thread");
         ReleaseFFmpegReadLoop();

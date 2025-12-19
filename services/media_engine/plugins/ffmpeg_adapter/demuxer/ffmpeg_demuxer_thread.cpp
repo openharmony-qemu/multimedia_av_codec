@@ -362,6 +362,7 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWr
         std::unique_lock<std::mutex> sLock(syncMutex_);
         readLoopStatus_ = Status::OK;
         int ffmpegRet = AVReadFrameLimit(pkt);
+        UpdMinTsPacketInfo(pktWrapper->GetAVPacket());
         if (ffmpegRet == AVERROR_EOF) {
             HandleAVPacketEndOfStream(pktWrapper);
             return true;
@@ -437,6 +438,7 @@ bool FFmpegDemuxerPlugin::ReadOnePacketAndProcessWebVTT(Plugins::AVPacketWrapper
     std::unique_lock<std::mutex> sLock(syncMutex_);
     readLoopStatus_ = Status::OK;
     int ffmpegRet = AVReadFrameLimit(pkt);
+    UpdMinTsPacketInfo(pktWrapper->GetAVPacket());
     if (ffmpegRet == AVERROR_EOF) {
         HandleAVPacketEndOfStream(pktWrapper);
         return false;
