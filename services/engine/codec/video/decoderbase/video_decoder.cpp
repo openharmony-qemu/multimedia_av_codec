@@ -902,6 +902,7 @@ int32_t VideoDecoder::FillFrameBuffer(const std::shared_ptr<CodecBuffer> &frameB
     } else {
         ret = WriteBufferData(bufferMemory, scaleData_, scaleLineSize_, bufferFormat);
     }
+    FillHdrInfo(surfaceBuffer);
 #ifdef BUILD_ENG_VERSION
     DumpConvertOut(surfaceInfo);
 #endif

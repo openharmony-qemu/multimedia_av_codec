@@ -77,6 +77,7 @@ public:
     int32_t UpdateSurfaceMemory(uint32_t index);
     int32_t GetSurfaceBufferStride(const std::shared_ptr<CodecBuffer> &frameBuffer);
     virtual void FlushAllFrames() {};
+    virtual void FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer) {};
 #ifdef BUILD_ENG_VERSION
     void OpenDumpFile();
     void DumpOutputBuffer(int32_t bitDepth = BITS_PER_PIXEL_COMPONENT_8);
