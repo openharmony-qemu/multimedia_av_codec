@@ -28,7 +28,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCo
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 6;
 constexpr int32_t SUPPORT_SAMPLE_RATE = 9;
-constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
+constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 16384;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
 constexpr int32_t SAMPLE_RATE_PICK[SUPPORT_SAMPLE_RATE] = {8000, 16000, 32000, 11025, 22050, 44100,
                                                            12000, 24000, 48000};
