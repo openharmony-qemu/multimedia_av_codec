@@ -994,9 +994,8 @@ HWTEST_F(DemuxerPluginManagerUnitTest, Demuxer_SeekToStart_0002, TestSize.Level1
 
 HWTEST_F(DemuxerPluginManagerUnitTest, Demuxer_SeekToStart_0003, TestSize.Level1)
 {
-    std::vector<TestInfo> combineVec = TEST_LIST1;
-    combineVec.insert(combineVec.end(), TEST_LIST2.begin(), TEST_LIST2.end());
-    for (auto &item : combineVec) {
+    TEST_LIST.insert(TEST_LIST.end(), TEST_LIST2.begin(), TEST_LIST2.end());
+    for (auto &item : TEST_LIST) {
         printf("#####pluginName: %s, testFile: %s#####\n", item.pluginName.c_str(), item.testFile.c_str());
         ASSERT_EQ(CreateDemuxerPluginByName(item.pluginName.c_str(), item.testFile.c_str(), DEF_PROB_SIZE), true);
 
