@@ -61,6 +61,8 @@ test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
   "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
+  "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/common/http_server_mock.cpp",
+  "$av_codec_root_dir/test/fuzztest/http_plugin_fuzztest/common/http_server_fuzz_demo.cpp",
 ]
 
 config("fuzz_cfg") {
@@ -117,8 +119,6 @@ ohos_fuzztest("HttpDownloaderFlvFuzzTest") {
   ]
   sources = test_sources + [
     "httpdownloaderflv_fuzzer.cpp",
-    "../common/http_server_fuzz_demo.cpp",
-    "../common/http_server_mock.cpp",
   ]
 
   external_deps = [

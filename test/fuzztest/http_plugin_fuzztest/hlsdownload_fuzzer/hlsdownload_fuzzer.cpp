@@ -32,7 +32,6 @@ const map<string, string> g_httpHeader = {
     {"Referer", "DEF"},
 };
 
-
 bool StartFuzzTest(FuzzedDataProvider *fdp, size_t size)
 {
     bool userDefinedDuration = true;
@@ -71,8 +70,11 @@ bool StartFuzzTest(FuzzedDataProvider *fdp, size_t size)
     return true;
 }
 
-void SegMentFuzzTest(const uint8_t *data, size_t size)
+bool SegMentFuzzTest(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return false;
+    }
     std::string mimeType = "audio";
     std::map<std::string, std::string> httpHeader = {
         {"User-Agent", "ABC"},
@@ -107,6 +109,7 @@ void SegMentFuzzTest(const uint8_t *data, size_t size)
     bool isAsync = true; // fdp->ConsumeBool();
     hlsSegmentManager->Close(isAsync);
     hlsSegmentManager = nullptr;
+    return true;
 }
 
 } // namespace OHOS::Media::Plugins::HttpPlugin
