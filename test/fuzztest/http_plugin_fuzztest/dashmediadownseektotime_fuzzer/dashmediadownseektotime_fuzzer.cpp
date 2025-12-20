@@ -44,7 +44,7 @@ constexpr uint32_t DEFAULT_DURATION = 20;
 bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
 {
     if (data == nullptr || size < sizeof(int64_t)) {
-        return -1;
+        return false;
     }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
@@ -78,9 +78,6 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
 
 bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
 {
-    if (data == nullptr || size < sizeof(int64_t)) {
-        return -1;
-    }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
@@ -99,7 +96,6 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
     playStrategy->audioLanguage = "eng";
     playStrategy->subtitleLanguage = "en_GB";
     mediaDownloader->SetPlayStrategy(playStrategy);
-
     mediaDownloader->Open(testUrl, httpHeader);
     mediaDownloader->GetSeekable();
     mediaDownloader->SetInterruptState(true);
@@ -133,7 +129,7 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
 bool DashMediaDownGetFuzzerTest(const uint8_t *data, size_t size)
 {
     if (data == nullptr || size < sizeof(int64_t)) {
-        return -1;
+        return false;
     }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
