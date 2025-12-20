@@ -95,6 +95,7 @@ public:
         const int32_t probSize) override;
     Status BoostReadThreadPriority() override;
     Status SetAVReadPacketStopState(bool state) override;
+    Status SeekToStart() override;
 private:
     enum ThreadState : unsigned int {
         NOT_STARTED,
@@ -412,6 +413,20 @@ private:
 
     std::atomic<bool> isAsyncReadThreadPrioritySet_ = false;
     void UpdateAsyncReadThreadPriority();
+
+    struct MinTsPacketInfo {
+        bool isInit = false;
+        bool isUpd = false;
+        int32_t streamIndex = -1;
+        int64_t minPts = AV_NOPTS_VALUE;
+        int64_t minDts = AV_NOPTS_VALUE;
+    };
+    MinTsPacketInfo minTsPktInfo_ {};
+    Status GetFileFirstPacket();
+    void InitMinTsPacketInfo(AVPacket *pkt);
+    void UpdMinTsPacketInfo(AVPacket *pkt);
+    bool IsSkipGetMinTsPktInfo();
+    Status SeekToStartInternal();
 };
 
 typedef struct DtsFinder {

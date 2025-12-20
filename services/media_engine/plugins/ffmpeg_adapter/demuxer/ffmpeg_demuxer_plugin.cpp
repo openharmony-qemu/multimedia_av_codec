@@ -89,6 +89,7 @@ const uint8_t MPEGPS_START_CODE[] = {0x00, 0x00, 0x01, 0xBA};
 const uint32_t SETTIMER_TIMEOUT = 5; // second
 constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
 constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
+constexpr int32_t SEEK_TRACK_DEFAULT = -1;
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -173,6 +174,13 @@ static const std::vector<FileType> g_streamCheckFileTypeVec = {
 static const std::vector<FileType> g_fileContainSkipInfo = {
     FileType::OGG,
     FileType::MP3
+};
+
+static const std::vector<FileType> g_fileSkipGetMinTsPktInfo = {
+    FileType::FLV,
+    FileType::MKV,
+    FileType::WMV,
+    FileType::WMA
 };
 
 bool HaveValidParser(const AVCodecID codecId)
@@ -1101,15 +1109,14 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
         std::unique_lock<std::mutex> sLock(syncMutex_);
         int ffmpegRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
         sLock.unlock();
+        UpdMinTsPacketInfo(pktWrapper->GetAVPacket());
         if (ffmpegRet == AVERROR_EOF) { // eos
             WebvttMP4EOSProcess(pktWrapper->GetAVPacket());
-            pktWrapper.reset(); // 触发 AVPacketWrapper 析构，内部 free
             ret = PushEOSToAllCache();
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Push eos failed");
             return Status::END_OF_STREAM;
         }
         if (ffmpegRet < 0) { // fail
-            pktWrapper.reset(); // 释放 pkt
             MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
                 AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
             return ioContext_.retry ? (ResetContext(), Status::ERROR_AGAIN) : Status::ERROR_UNKNOWN;
@@ -1767,6 +1774,9 @@ Status FFmpegDemuxerPlugin::GetMediaInfo()
     Status ret = ParseVideoFirstFrames();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse video info failed");
 
+    ret = GetFileFirstPacket();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Get file first packet failed");
+
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo_.general);
     DemuxerLogCompressor::StringifyMeta(mediaInfo_.general, -1); // source meta
     for (uint32_t trackId = 0; trackId < formatContext_->nb_streams; ++trackId) {
@@ -2019,6 +2029,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         auto stream = formatContext_->streams[trackId];
         FALSE_RETURN_V_MSG_E(stream != nullptr && stream->codecpar != nullptr, Status::ERROR_NULL_POINTER,
             "Stream " PUBLIC_LOG_D32 " is invalid", trackId);
+        InitMinTsPacketInfo(pktWrapper->GetAVPacket());
         ret = AddPacketToCacheQueue(pktWrapper);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add to cache failed");
         bool needCheck = (stream->codecpar->codec_id != AV_CODEC_ID_VVC) && (!TrackIsChecked(trackId) &&
@@ -2035,7 +2046,6 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
         }
         if (ret != Status::OK) {
             MEDIA_LOG_E("Set first frame failed, track " PUBLIC_LOG_D32, trackId);
-            pktWrapper = nullptr;
             return ret;
         }
         pktWrapper = nullptr;
@@ -2715,6 +2725,120 @@ void FFmpegDemuxerPlugin::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("SetInterruptState %{public}d", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
+}
+
+bool FFmpegDemuxerPlugin::IsSkipGetMinTsPktInfo()
+{
+    return std::find(g_fileSkipGetMinTsPktInfo.begin(), g_fileSkipGetMinTsPktInfo.end(), fileType_) !=
+        g_fileSkipGetMinTsPktInfo.end();
+}
+
+Status FFmpegDemuxerPlugin::GetFileFirstPacket()
+{
+    bool isSkip = IsSkipGetMinTsPktInfo();
+    FALSE_RETURN_V_MSG_I(!isSkip, Status::OK, "File skip get first packet info");
+    Status ret = Status::OK;
+    while (!minTsPktInfo_.isInit) {
+        Plugins::AVPacketWrapperPtr pktWrapper = std::make_shared<Plugins::AVPacketWrapper>();
+        FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
+            Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
+        std::unique_lock<std::mutex> sLock(syncMutex_);
+        int ffRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
+        sLock.unlock();
+        FALSE_RETURN_V_MSG_E(ffRet == 0, Status::ERROR_WRONG_STATE, "Call av_read_frame failed");
+
+        InitMinTsPacketInfo(pktWrapper->GetAVPacket());
+        ret = AddPacketToCacheQueue(pktWrapper);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add packet to cache failed");
+    }
+    return Status::OK;
+}
+
+void FFmpegDemuxerPlugin::InitMinTsPacketInfo(AVPacket *pkt)
+{
+    bool isSkip = IsSkipGetMinTsPktInfo();
+    FALSE_RETURN_MSG_W(!isSkip, "File skip init");
+    FALSE_RETURN_MSG_W(pkt != nullptr, "AVPacket is nullptr");
+    FALSE_RETURN_MSG_W(pkt->dts != AV_NOPTS_VALUE || pkt->pts != AV_NOPTS_VALUE,
+        "pkt dts and pts is AV_NOPTS_VALUE");
+    FALSE_RETURN_MSG_W(!minTsPktInfo_.isInit, "minTsPktInfo_ has been initialized");
+    minTsPktInfo_.streamIndex = pkt->stream_index;
+    minTsPktInfo_.minPts = pkt->pts;
+    minTsPktInfo_.minDts = pkt->dts;
+    minTsPktInfo_.isInit = true;
+}
+
+void FFmpegDemuxerPlugin::UpdMinTsPacketInfo(AVPacket *pkt)
+{
+    minTsPktInfo_.isUpd = true;
+    FALSE_RETURN_MSG_W(pkt != nullptr, "AVPacket is nullptr");
+    FALSE_RETURN_MSG_D(minTsPktInfo_.isInit, "minTsPktInfo_ is not init");
+    if ((pluginImpl_->flags & AVFMT_SEEK_TO_PTS) && !FFmpegFormatHelper::IsMpeg4File(fileType_) &&
+        pkt->pts != AV_NOPTS_VALUE && pkt->pts < minTsPktInfo_.minPts) {
+        minTsPktInfo_.streamIndex = pkt->stream_index;
+        minTsPktInfo_.minPts = pkt->pts;
+    } else if (pkt->dts != AV_NOPTS_VALUE && pkt->dts < minTsPktInfo_.minDts) {
+        minTsPktInfo_.streamIndex = pkt->stream_index;
+        minTsPktInfo_.minDts = pkt->dts;
+    }
+}
+
+Status FFmpegDemuxerPlugin::SeekToStartInternal()
+{
+    int64_t seekTs = AV_NOPTS_VALUE;
+    int ffRet = -1;
+    if (!minTsPktInfo_.isUpd) {
+        MEDIA_LOG_I("minTsPktInfo_ is not upd, do not seek.");
+        return Status::OK;
+    }
+    if (IsSkipGetMinTsPktInfo()) {
+        av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
+        std::unique_lock<std::mutex> sLock(syncMutex_);
+        ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
+        sLock.unlock();
+        av_dict_set_int(&formatContext_->metadata, "seekToStart", 0, 0);
+    } else if (minTsPktInfo_.isInit) {
+        seekTs = (pluginImpl_->flags & AVFMT_SEEK_TO_PTS) && !FFmpegFormatHelper::IsMpeg4File(fileType_) ?
+            minTsPktInfo_.minPts : minTsPktInfo_.minDts;
+        std::unique_lock<std::mutex> sLock(syncMutex_);
+        ffRet = av_seek_frame(formatContext_.get(),
+            minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
+        sLock.unlock();
+        MEDIA_LOG_I("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
+            minTsPktInfo_.streamIndex, seekTs, ffRet);
+    }
+    if (ffRet < 0) {
+        MEDIA_LOG_I("Use default track and startTime " PUBLIC_LOG_D64, formatContext_->start_time);
+        std::unique_lock<std::mutex> sLock(syncMutex_);
+        ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT,
+            formatContext_->start_time, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
+        sLock.unlock();
+        FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN, "av_seek_frame default track failed.");
+    }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::SeekToStart()
+{
+    MEDIA_LOG_D("in");
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    MediaAVCodec::AVCodecTrace trace("SeekToStart");
+    auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_seekToStart", SETTIMER_TIMEOUT,
+        nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
+    auto ret = SeekToStartInternal();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekToStartInternal failed.");
+    if (readLoopStatus_ != Status::OK) {
+        MEDIA_LOG_E("Read loop status is not OK, release thread");
+        ReleaseFFmpegReadLoop();
+    }
+    for (auto track : selectedTrackIds_) {
+        cacheQueue_.RemoveTrackQueue(track);
+        cacheQueue_.AddTrackQueue(track);
+    }
+    seekTime_ = AV_NOPTS_VALUE;
+    seekMode_ = SeekMode::SEEK_NEXT_SYNC;
+    HiviewDFX::XCollie::GetInstance().CancelTimer(id);
+    return Status::OK;
 }
 
 namespace { // plugin set
