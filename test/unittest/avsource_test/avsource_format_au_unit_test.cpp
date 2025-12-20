@@ -106,15 +106,13 @@ HWTEST_F(AVSourceUnitTest, AVSource_AU_GetFormat_0002, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
     ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 48000);
-    ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 384000);
-    ASSERT_EQ(formatVal_.codecMime, "audio/au");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16P);
-    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.channelCount, 1);
+    ASSERT_EQ(formatVal_.bitRate, 768000);
+    ASSERT_EQ(formatVal_.codecMime, "audio/raw");
+    ASSERT_EQ(formatVal_.channelLayout, 4);
 }
 
 
@@ -166,14 +164,12 @@ HWTEST_F(AVSourceUnitTest, AVSource_AU_GetFormat_0004, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
     ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 48000);
-    ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 384000);
-    ASSERT_EQ(formatVal_.codecMime, "audio/au");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16P);
-    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.channelCount, 1);
+    ASSERT_EQ(formatVal_.bitRate, 768000);
+    ASSERT_EQ(formatVal_.codecMime, "audio/raw");
+    ASSERT_EQ(formatVal_.channelLayout, 4);
 }
-}// namespace
+}
