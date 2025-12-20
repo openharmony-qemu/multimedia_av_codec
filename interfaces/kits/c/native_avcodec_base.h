@@ -1538,6 +1538,11 @@ typedef enum OH_AVOutputFormat {
      * @since 20
      */
     AV_OUTPUT_FORMAT_FLAC = 12,
+    /**
+     * The muxer output ogg file format.
+     * @since 23
+     */
+    AV_OUTPUT_FORMAT_OGG = 13,
 } OH_AVOutputFormat;
 
 /**
