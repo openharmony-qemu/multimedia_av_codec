@@ -43,6 +43,9 @@ constexpr uint32_t DEFAULT_DURATION = 20;
 
 bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return -1;
+    }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
@@ -75,6 +78,9 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
 
 bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return -1;
+    }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
@@ -126,6 +132,9 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
 
 bool DashMediaDownGetFuzzerTest(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return -1;
+    }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
@@ -177,9 +186,6 @@ extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
     /* Run your code on data */
     if (!InitServer()) {
         cout << "Init server error" << endl;
-        return -1;
-    }
-    if (data == nullptr || size < sizeof(int64_t)) {
         return -1;
     }
     g_baseFuzzData = data;
