@@ -101,6 +101,7 @@ group("av_codec_unit_test") {
         "unittest/avcenc_info_test:avcenc_info_capi_unit_test",
         "unittest/avmuxer_test:avmuxer_capi_unit_test",
         "unittest/avmuxer_test:avmuxer_inner_unit_test",
+        "unittest/avmuxer_test:avmuxer_ogg_unit_test",
         "unittest/avmuxer_test:avmuxer_gltf_unit_test",
         "unittest/avmuxer_test:avmuxer_mpeg4_plugin_unit_test",
         "unittest/avsource_test:avsource_capi_unit_test",

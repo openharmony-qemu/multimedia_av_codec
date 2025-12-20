@@ -35,7 +35,7 @@ using namespace Ffmpeg;
 
 std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
-std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3", "wav", "adts", "flac"};
+std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3", "wav", "adts", "flac", "ogg"};
 const std::set<std::string> SUPPORTED_TRACK_REF_TYPE = {"hint", "cdsc", "font", "hind", "vdep", "vplx",
     "subt", "thmb", "auxl", "cdtg", "shsc", "aest"};
 constexpr float LATITUDE_MIN = -90.0f;
@@ -98,6 +98,12 @@ bool CodecId2Cap(AVCodecID codecId, bool encoder, Capability& cap)
             return true;
         case AV_CODEC_ID_FLAC:
             cap.SetMime(MimeType::AUDIO_FLAC);
+            return true;
+        case AV_CODEC_ID_OPUS:
+            cap.SetMime(MimeType::AUDIO_OPUS);
+            return true;
+        case AV_CODEC_ID_VORBIS:
+            cap.SetMime(MimeType::AUDIO_VORBIS);
             return true;
         default:
             break;
