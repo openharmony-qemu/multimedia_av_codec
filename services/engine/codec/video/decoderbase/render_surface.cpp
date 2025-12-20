@@ -63,7 +63,7 @@ void RenderSurface::UnRegisterListenerToSurface(const sptr<Surface> &surface)
     SurfaceTools::GetInstance().ReleaseSurface(instanceId_, surface, false);
 }
 
-void RenderSurface::CombineConsumerUsage() const
+void RenderSurface::CombineConsumerUsage()
 {
     uint64_t defaultUsage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
     uint64_t consumerUsage = sInfo_.surface->GetDefaultUsage();
@@ -432,7 +432,7 @@ bool RenderSurface::CanSwapOut(bool isOutputBuffer, const std::shared_ptr<CodecB
     return !(ownerValue == Owner::OWNED_BY_SURFACE || codecBuffer->hasSwapedOut.load());
 }
 
-int32_t RenderSurface::SwapOutBuffers(bool isOutputBuffer, State curState) const
+int32_t RenderSurface::SwapOutBuffers(bool isOutputBuffer, State curState)
 {
     uint32_t bufferType = isOutputBuffer ? INDEX_OUTPUT : INDEX_INPUT;
     CHECK_AND_RETURN_RET_LOGD(bufferType == INDEX_OUTPUT, AVCS_ERR_OK, "Input buffers can't be swapped out!");
