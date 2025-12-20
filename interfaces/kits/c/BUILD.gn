@@ -110,6 +110,7 @@ ohos_shared_library("native_media_avmuxer") {
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:native_media_codecbase",
+    "$av_codec_root_dir/interfaces/kits/c:avcodec_hiappevent",
   ]
 
   external_deps = [
@@ -199,6 +200,7 @@ ohos_shared_library("native_media_codecbase") {
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/interfaces/kits/c:avcodec_hiappevent",
   ]
   external_deps = [
     "c_utils:utils",
@@ -226,6 +228,7 @@ ohos_shared_library("native_media_acodec") {
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:native_media_codecbase",
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/interfaces/kits/c:avcodec_hiappevent",
   ]
 
   external_deps = [
@@ -260,6 +263,7 @@ ohos_shared_library("native_media_adec") {
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:native_media_codecbase",
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/interfaces/kits/c:avcodec_hiappevent",
   ]
 
   external_deps = [
@@ -285,6 +289,7 @@ ohos_shared_library("native_media_aenc") {
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:native_media_codecbase",
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/interfaces/kits/c:avcodec_hiappevent",
   ]
 
   external_deps = [
