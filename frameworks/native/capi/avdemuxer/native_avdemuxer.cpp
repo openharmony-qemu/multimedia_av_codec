@@ -22,6 +22,7 @@
 #include "common/native_mfmagic.h"
 #include "native_avmagic.h"
 #include "native_object.h"
+#include "hiappevent_util.h"
 #ifdef SUPPORT_DRM
 #include "native_drm_common.h"
 #endif
@@ -244,11 +245,15 @@ OH_AVErrCode OH_AVDemuxer_SeekToTime(OH_AVDemuxer *demuxer, int64_t millisecond,
 
     CHECK_AND_RETURN_RET_LOG(millisecond >= 0, AV_ERR_INVALID_VAL, "Millisecond is negative");
 
+    static AppEventReporter appEventReporter = AppEventReporter();
+    ApiInvokeRecorder apiInvokeRecorder("OH_VideoEncoder_CreateByName", appEventReporter);
+
     struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
     CHECK_AND_RETURN_RET_LOG(demuxerObj != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
     CHECK_AND_RETURN_RET_LOG(demuxerObj->demuxer_ != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
 
     int32_t ret = demuxerObj->demuxer_->SeekToTime(millisecond, static_cast<OHOS::Media::SeekMode>(mode));
+    apiInvokeRecorder.SetErrorCode(ret);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "AVDemuxer seek failed");
 

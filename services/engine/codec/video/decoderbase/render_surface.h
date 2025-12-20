@@ -50,7 +50,7 @@ public:
     int32_t Attach(sptr<SurfaceBuffer> surfaceBuffer);
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, uint32_t index);
     int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
-    void CombineConsumerUsage();
+    void CombineConsumerUsage() const;
     int32_t RegisterListenerToSurface(const sptr<Surface> &surface);
     int32_t FreezeBuffers(State curState);
     int32_t ActiveBuffers();
@@ -92,11 +92,11 @@ private:
     int32_t RenderNewSurfaceWithOldBuffer(const sptr<Surface> &newSurface, uint32_t index);
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
     void RequestBufferFromConsumer();
-    void FindAvailIndex(uint32_t index);
+    void FindAvailIndex(uint32_t index) const;
     void RequestSurfaceBufferThread();
-    bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<CodecBuffer> &codecBuffer);
-    int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
-    int32_t SwapInBuffers(bool isOutputBuffer);
+    bool CanSwapOut(bool isOutputBuffer, const std::shared_ptr<CodecBuffer> &codecBuffer);
+    int32_t SwapOutBuffers(bool isOutputBuffer, State curState) const;
+    int32_t SwapInBuffers(bool isOutputBuffer) const;
 
     std::thread mRequestSurfaceBufferThread_;
     std::atomic<bool> requestSucceed_ = false;
