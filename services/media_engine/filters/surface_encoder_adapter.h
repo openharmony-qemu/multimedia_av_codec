@@ -121,6 +121,11 @@ private:
     void AddStopPts();
     bool AddPauseResumePts(int64_t currentPts);
     void HandleWaitforStop();
+    Status BoostVideoFrameRate();
+    Status GetMaxFrameRate(int32_t &maxFrameRate);
+    Status CheckAndAdjustFrameRate();
+    bool IsSupportBoostFrameRate();
+    void HandleTranscoderMode(uint32_t index, std::shared_ptr<Format> &parameter);
     void Clear();
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoEncoder> codecServer_;
@@ -168,6 +173,11 @@ private:
     std::deque<std::pair<int64_t, StateCode>> pauseResumePts_;
     bool enableBFrame_ {false};
     bool hasReceivedEOS_ = false;
+    int32_t videoWidth_{-1};
+    int32_t videoHeight_{-1};
+    int32_t stoppedVideoFrameCount_{0};
+    bool hasBoostVideoFrameRate_ = false;
+    bool isSupportBoostFrameRate_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

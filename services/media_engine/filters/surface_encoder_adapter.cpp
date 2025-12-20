@@ -24,6 +24,7 @@
 #include "avcodec_trace.h"
 #include "avcodec_sysevent.h"
 #include "common/log.h"
+#include "parameter.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "SurfaceEncoderAdapter" };
@@ -33,6 +34,7 @@ constexpr uint32_t TIME_OUT_MS = 1000;
 constexpr uint32_t NS_PER_US = 1000;
 constexpr int64_t SEC_TO_NS = 1000000000;
 constexpr uint32_t STOP_TIME_OUT_MS = 2000;
+constexpr uint32_t MAX_STOPPED_FRAMES_FOR_BOOST = 2;
 //Codec wait timeout with no video frame received
 constexpr uint32_t AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED = 50001 ;
 namespace OHOS {
@@ -151,11 +153,13 @@ void SurfaceEncoderAdapter::ConfigureGeneralFormat(MediaAVCodec::Format &format,
     if (meta->Find(Tag::VIDEO_WIDTH) != meta->end()) {
         int32_t videoWidth;
         meta->Get<Tag::VIDEO_WIDTH>(videoWidth);
+        videoWidth_ = videoWidth;
         format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_WIDTH, videoWidth);
     }
     if (meta->Find(Tag::VIDEO_HEIGHT) != meta->end()) {
         int32_t videoHeight;
         meta->Get<Tag::VIDEO_HEIGHT>(videoHeight);
+        videoHeight_ = videoHeight;
         format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_HEIGHT, videoHeight);
     }
     if (meta->Find(Tag::VIDEO_CAPTURE_RATE) != meta->end()) {
@@ -363,6 +367,7 @@ Status SurfaceEncoderAdapter::Stop()
     if (stopTime_ < 0) {
         GetCurrentTime(stopTime_);
     }
+    isSupportBoostFrameRate_ = IsSupportBoostFrameRate();
     isStopKeyFramePts_ = true;
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64 " recordVideoFrameCount_: " PUBLIC_LOG_D64,
         stopTime_, recordVideoFrameCount_);
@@ -723,9 +728,7 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
 {
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable");
     if (isTransCoderMode) {
-        MEDIA_LOG_D("isTransCoderMode");
-        parameter->PutIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, false);
-        codecServer_->QueueInputParameter(index);
+        HandleTranscoderMode(index, parameter);
         return;
     }
     std::lock_guard<std::mutex> lock(checkFramesMutex_);
@@ -747,7 +750,7 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
             MEDIA_LOG_D("OnInputParameterWithAttrAvailable mappingTime = " PUBLIC_LOG_D64, mappingTime);
             if (mappingTime < 0) {
                 MEDIA_LOG_W("mappingTime is invalid, mappingTime: " PUBLIC_LOG_D64 " currentPts: " PUBLIC_LOG_D64
-                    "totalPauseTimeQueue_[0]: " PUBLIC_LOG_D64 "checkFramesPauseTime_: " PUBLIC_LOG_D64,
+                    " totalPauseTimeQueue_[0]: " PUBLIC_LOG_D64 "checkFramesPauseTime_: " PUBLIC_LOG_D64,
                     mappingTime, currentPts, totalPauseTimeQueue_[0], checkFramesPauseTime_);
             }
             preKeyFramePts_ = currentKeyFramePts_;
@@ -769,6 +772,13 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
             MEDIA_LOG_E("OnInputParameterWithAttrAvailable codecServer_->NotifyEos() failed!");
         }
     }
+}
+
+void SurfaceEncoderAdapter::HandleTranscoderMode(uint32_t index, std::shared_ptr<Format> &parameter)
+{
+    MEDIA_LOG_D("isTransCoderMode");
+    parameter->PutIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, false);
+    codecServer_->QueueInputParameter(index);
 }
 
 bool SurfaceEncoderAdapter::CheckFrames(int64_t currentPts, int64_t &checkFramesPauseTime)
@@ -906,6 +916,95 @@ void SurfaceEncoderAdapter::HandleWaitforStop()
     }
 }
 
+Status SurfaceEncoderAdapter::CheckAndAdjustFrameRate()
+{
+    if (!isStopKeyFramePts_ || !isSupportBoostFrameRate_ || hasBoostVideoFrameRate_) {
+        return Status::OK;
+    }
+
+    stoppedVideoFrameCount_++;
+    if (stoppedVideoFrameCount_ <= MAX_STOPPED_FRAMES_FOR_BOOST) {
+        return Status::OK;
+    }
+
+    Status ret = BoostVideoFrameRate();
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("BoostVideoFrameRate failed, count: %{public}d, ret: %{public}d",
+            stoppedVideoFrameCount_, ret);
+    }
+    return ret;
+}
+
+bool SurfaceEncoderAdapter::IsSupportBoostFrameRate()
+{
+    constexpr const char* BOOST_FEATURE_KEY = "const.camera.video.shot2see.speedup";
+    constexpr uint32_t MAX_PARAM_LEN = 6;
+    char result[MAX_PARAM_LEN] = {0};
+
+    // 获取系统参数
+    int32_t len = GetParameter(BOOST_FEATURE_KEY, "false", result, MAX_PARAM_LEN);
+    if (len <= 0 || len >= MAX_PARAM_LEN) {
+        MEDIA_LOG_W("GetParameter failed or invalid length: %{public}d, result: %{public}s", len, result);
+        return false;
+    }
+
+    if (strcmp(result, "true") == 0) {
+        MEDIA_LOG_I("Current product supports frame rate boosting.");
+        return true;
+    }
+
+    MEDIA_LOG_W("Current product does not support frame rate boosting, result: %{public}s.", result);
+    return false;
+}
+
+Status SurfaceEncoderAdapter::BoostVideoFrameRate()
+{
+    MEDIA_LOG_I("BoostVideoFrameRate");
+    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::BoostVideoFrameRate");
+    if (!codecServer_) {
+        SetFaultEvent("SurfaceEncoderAdapter::BoostVideoFrameRate, CodecServer is null");
+        MEDIA_LOG_E("BoostVideoFrameRate, CodecServer is null");
+        return Status::ERROR_NULL_POINTER;
+    }
+    int32_t maxFrameRate = 0;
+    Status res = GetMaxFrameRate(maxFrameRate);
+    if (res != Status::OK) {
+        MEDIA_LOG_E("No valid frame rate available, res: %{public}d", res);
+        return res;
+    }
+
+    MediaAVCodec::Format format = MediaAVCodec::Format();
+    format.PutDoubleValue(Tag::VIDEO_OPERATING_RATE, static_cast<double>(maxFrameRate));
+    int32_t ret = codecServer_->SetParameter(format);
+    if (ret == 0) {
+        MEDIA_LOG_I("BoostVideoFrameRate success");
+        hasBoostVideoFrameRate_ = true;
+        return Status::OK;
+    } else {
+        SetFaultEvent("SurfaceEncoderAdapter::BoostVideoFrameRate error", ret);
+        return Status::ERROR_UNKNOWN;
+    }
+}
+
+Status SurfaceEncoderAdapter::GetMaxFrameRate(int32_t &maxFrameRate)
+{
+    OH_AVCapability* capability = OH_AVCodec_GetCapability(codecMimeType_.c_str(), true);
+    if (!capability) {
+        MEDIA_LOG_E("No codec capability found for mime type");
+        return Status::ERROR_UNSUPPORTED_FORMAT;
+    }
+    OH_AVRange frameRateRange = {-1, -1};
+    int32_t ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, videoWidth_,
+        videoHeight_, &frameRateRange);
+    if (ret != AV_ERR_OK || frameRateRange.maxVal <= 0) {
+        MEDIA_LOG_E("GetVideoFrameRateRangeForSize fail, ret: %{public}d", ret);
+        return Status::ERROR_INVALID_DATA;
+    }
+    MEDIA_LOG_I("GetMaxFrameRate, frameRate: %{public}d", frameRateRange.maxVal);
+    maxFrameRate = frameRateRange.maxVal;
+    return Status::OK;
+}
+
 void SurfaceEncoderAdapter::Clear()
 {
     MEDIA_LOG_I("SurfaceEncoderAdapter::Clear enter");
@@ -925,6 +1024,9 @@ void SurfaceEncoderAdapter::Clear()
     currentKeyFramePts_ = -1;
     preKeyFramePts_ = -1;
     recordVideoFrameCount_ = 0;
+    stoppedVideoFrameCount_ = 0;
+    hasBoostVideoFrameRate_ = false;
+    isSupportBoostFrameRate_ = false;
 }
 
 bool SurfaceEncoderAdapter::GetIsTransCoderMode()
