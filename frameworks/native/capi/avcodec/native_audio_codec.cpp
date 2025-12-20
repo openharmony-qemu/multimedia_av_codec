@@ -29,6 +29,7 @@
 #ifdef SUPPORT_DRM
 #include "native_drm_object.h"
 #endif
+#include "hiappevent_util.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "NativeAudioCodec"};
@@ -160,6 +161,8 @@ extern "C" {
 
 struct OH_AVCodec *OH_AudioCodec_CreateByMime(const char *mime, bool isEncoder)
 {
+    static AppEventReporter appEventReporter = AppEventReporter();
+    ApiInvokeRecorder apiInvokeRecorder("OH_AudioCodec_CreateByMime", appEventReporter);
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "input mime is nullptr!");
     CHECK_AND_RETURN_RET_LOG(strlen(mime) < MAX_LENGTH, nullptr, "input mime is too long!");
     std::shared_ptr<AVCodecAudioCodecImpl> audioCodec = std::make_shared<AVCodecAudioCodecImpl>();
@@ -178,6 +181,8 @@ struct OH_AVCodec *OH_AudioCodec_CreateByMime(const char *mime, bool isEncoder)
 
 struct OH_AVCodec *OH_AudioCodec_CreateByName(const char *name)
 {
+    static AppEventReporter appEventReporter = AppEventReporter();
+    ApiInvokeRecorder apiInvokeRecorder("OH_AudioCodec_CreateByName", appEventReporter);
     CHECK_AND_RETURN_RET_LOG(name != nullptr, nullptr, "input name is nullptr!");
     CHECK_AND_RETURN_RET_LOG(strlen(name) < MAX_LENGTH, nullptr, "input name is too long!");
     std::shared_ptr<AVCodecAudioCodecImpl> audioCodec = std::make_shared<AVCodecAudioCodecImpl>();
