@@ -425,6 +425,10 @@ Status AudioSink::Flush()
     Status ret = Status::OK;
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     ret = plugin_->Flush();
+    if (ret != Status::OK && state_.load() == Pipeline::FilterState::READY) {
+        MEDIA_LOG_W("AudioSink Flush fail in prepare, reset info.");
+        ResetInfo();
+    }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "plugin flush failed");
     ResetInfo();
     return Status::OK;
