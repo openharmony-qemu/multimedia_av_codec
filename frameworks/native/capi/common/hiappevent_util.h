@@ -29,7 +29,7 @@ public:
 private:
     void UploadRecordData(const std::string &apiName) const;
 
-    std::mutex reportMutex_
+    std::mutex reportMutex_;
     const uint32_t reportThd_;
     int64_t totalCostTime_{0};
     int64_t maxCostTime_{std::numeric_limits<int64_t>::min()};
