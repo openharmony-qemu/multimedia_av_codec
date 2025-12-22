@@ -29,7 +29,7 @@ static const std::string AUDIO_SEGMENT_URL = "http://127.0.0.1:47777/test_dash/s
 static const std::string VIDEO_MEDIA_SEGMENT_URL_1 = "http://127.0.0.1:47777/test_dash/segment_list/video/1/seg-1.m4s";
 static const std::string VIDEO_MEDIA_SEGMENT_URL_2 = "http://127.0.0.1:47777/test_dash/segment_list/video/1/seg-2.m4s";
 static const std::string VIDEO_INIT_SEGMENT_URL = "http://127.0.0.1:47777/test_dash/segment_list/video/1/init.mp4";
-static const std::string AUDIO_MEDIA_SEGMENT_URL_1 = 
+static const std::string AUDIO_MEDIA_SEGMENT_URL_1 =
     "http://127.0.0.1:47777/test_dash/segment_list/audio/und/mp4a/seg-1.m4s";
 }
 using namespace testing::ext;
