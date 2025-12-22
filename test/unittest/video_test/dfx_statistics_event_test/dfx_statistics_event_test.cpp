@@ -40,6 +40,8 @@ using namespace testing;
 using namespace testing::ext;
 
 namespace {
+std::mutex g_mutex;
+std::condition_variable g_cv;
 constexpr int32_t QUERY_INTERVAL_TIME = 500;
 constexpr int32_t STATISTIC_EVENT_INFO_TIMEOUT = 5000;
 constexpr int32_t MAX_EVENT_ADD_COUNT = 100000;
@@ -791,7 +793,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_001, TestSize.Level
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta);
     }
 
-    for (auto codecType : {-1, INT16_MAX}) {
+    for (auto codecType : {VideoCodecType::DECODER_HARDWARE, -1, INT16_MAX}) {
         auto meta = std::make_shared<Media::Meta>();
         meta->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
         meta->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), codecType);
