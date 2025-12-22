@@ -71,7 +71,6 @@ public:
     void UpdateAudio() override;
     void UpdateStreamInfo() override;
     HlsSegmentType GetSegType(uint32_t streamId) override;
-    void GetDownloadInfo(DownloadInfo& downloadInfo) override;
 
 private:
     void UpdateMasterInfo(bool isPreParse);

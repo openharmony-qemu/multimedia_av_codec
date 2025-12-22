@@ -30,6 +30,7 @@
 #include "utils/write_bitrate_caculator.h"
 #include "osal/task/mutex.h"
 #include "osal/task/condition_variable.h"
+#include "download/download_metrics_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -266,6 +267,7 @@ private:
     std::deque<uint32_t> downloadSpeeds_;
     uint32_t videoBitrate_ {0};
     bool isAppBackground_ {false};
+    std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};
 };
 }
 }

@@ -40,6 +40,10 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration, bool userDefine
 {
     videoSegManager_ = std::make_shared<HlsSegmentManager>(
         expectBufferDuration, userDefinedDuration, httpHeader, HlsSegmentType::SEG_VIDEO, sourceLoader);
+    downloadMetricsInfo_ = std::make_shared<DownloadMetricsInfo>();
+    if (videoSegManager_ != nullptr && downloadMetricsInfo_ != nullptr) {
+        videoSegManager_->SetDownloadCallback(downloadMetricsInfo_);
+    }
     videoSegManager_->Init();
 }
 
@@ -47,6 +51,10 @@ HlsMediaDownloader::HlsMediaDownloader(std::string mimeType,
     const std::map<std::string, std::string>& httpHeader)
 {
     videoSegManager_ = std::make_shared<HlsSegmentManager>(mimeType, HlsSegmentType::SEG_VIDEO, httpHeader);
+    downloadMetricsInfo_ = std::make_shared<DownloadMetricsInfo>();
+    if (videoSegManager_ != nullptr && downloadMetricsInfo_ != nullptr) {
+        videoSegManager_->SetDownloadCallback(downloadMetricsInfo_);
+    }
     videoSegManager_->Init();
 }
 
@@ -272,6 +280,13 @@ void HlsMediaDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "GetDownloadInfo no video segment manager found!");
     videoSegManager_->GetDownloadInfo(downloadInfo);
+    if (downloadMetricsInfo_ != nullptr) {
+        downloadInfo.totalDownLoadBytes = downloadMetricsInfo_->GetTotalTotalDownLoadBytes();
+        downloadInfo.totalLoadingTime = downloadMetricsInfo_->GetTotalTotalDownloadTime();
+        downloadInfo.loadingCount = downloadMetricsInfo_->GetTotalDownloadCount();
+        downloadInfo.firstDownloadTime = downloadMetricsInfo_->GetTotalFirstDownloadTime();
+        downloadInfo.firstFrameDecapsulationTime = downloadMetricsInfo_->GetTotalFirstDownloadTimestamp();
+    }
 }
 
 void HlsMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)

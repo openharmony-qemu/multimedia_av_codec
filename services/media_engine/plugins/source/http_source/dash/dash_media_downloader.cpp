@@ -54,6 +54,10 @@ DashMediaDownloader::~DashMediaDownloader()
 void DashMediaDownloader::Init()
 {
     MEDIA_LOG_D("0x%{public}06" PRIXPTR " Init", FAKE_POINTER(this));
+    downloadMetricsInfo_ = std::make_shared<DownloadMetricsInfo>();
+    if (mpdDownloader_ != nullptr && downloadMetricsInfo_ != nullptr) {
+        mpdDownloader_->SetDownloadCallback(downloadMetricsInfo_);
+    }
     mpdDownloader_->Init();
 }
 
@@ -466,6 +470,9 @@ void DashMediaDownloader::OpenInitSegment(
 {
     std::shared_ptr<DashSegmentDownloader> downloader = std::make_shared<DashSegmentDownloader>(
         callback_, streamDesc->streamId_, streamDesc->type_, expectDuration_, sourceLoader_);
+    if (downloadMetricsInfo_ != nullptr) {
+        downloader->SetDownloadCallback(downloadMetricsInfo_);
+    }
     downloader->Init();
     if (statusCallback_ != nullptr) {
         downloader->SetStatusCallback(statusCallback_);
@@ -1271,17 +1278,12 @@ Status DashMediaDownloader::StopBufferring(bool isAppBackground)
 
 void DashMediaDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
-    if (mpdDownloader_ != nullptr) {
-        mpdDownloader_->GetDownloadInfo(downloadInfo);
-    }
-    for (size_t i = 0; i < segmentDownloaders_.size(); i++) {
-        if (segmentDownloaders_[i] != nullptr) {
-            DownloadInfo tmpDownloadInfo;
-            segmentDownloaders_[i]->GetDownloadInfo(tmpDownloadInfo);
-            downloadInfo.totalDownLoadBytes += tmpDownloadInfo.totalDownLoadBytes;
-            downloadInfo.totalLoadingTime += tmpDownloadInfo.totalLoadingTime;
-            downloadInfo.loadingCount += tmpDownloadInfo.loadingCount;
-        }
+    if (downloadMetricsInfo_ != nullptr) {
+        downloadInfo.totalDownLoadBytes = downloadMetricsInfo_->GetTotalTotalDownLoadBytes();
+        downloadInfo.totalLoadingTime = downloadMetricsInfo_->GetTotalTotalDownloadTime();
+        downloadInfo.loadingCount = downloadMetricsInfo_->GetTotalDownloadCount();
+        downloadInfo.firstDownloadTime = downloadMetricsInfo_->GetTotalFirstDownloadTime();
+        downloadInfo.firstFrameDecapsulationTime = downloadMetricsInfo_->GetTotalFirstDownloadTimestamp();
     }
 }
 }
