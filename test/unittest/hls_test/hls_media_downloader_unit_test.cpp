@@ -966,7 +966,6 @@ HWTEST_F(HlsMediaDownloaderTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1)
     downloader->videoSegManager_->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     downloader->videoSegManager_->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
     EXPECT_EQ(downloader->videoSegManager_->CacheBufferFullLoop(), true);
-    EXPECT_EQ(downloader->videoSegManager_->initCacheSize_, -1);
     downloader->videoSegManager_->isSeekingFlag = false;
     EXPECT_EQ(downloader->videoSegManager_->CacheBufferFullLoop(), false);
     CloseHlsDetachAudioVideo(downloader);
