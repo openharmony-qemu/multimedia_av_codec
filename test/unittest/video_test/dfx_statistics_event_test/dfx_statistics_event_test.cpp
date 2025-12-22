@@ -394,7 +394,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_001, Test
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_002, TestSize.Level1)
 {
     std::string mime;
-    for (auto codecType : {-1, INT16_MAX}) {
+    for (auto codecType : {-1, INT16_MAX, VideoCodecType::DECODER_HARDWARE}) {
         meta_ = std::make_shared<Media::Meta>();
         mime = GenerateRandomString(10); // 10: length
         meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), codecType);
@@ -402,7 +402,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_002, Test
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     }
 
-    for (auto codecType : {-1, INT16_MAX}) {
+    for (auto codecType : {-1, INT16_MAX, VideoCodecType::DECODER_HARDWARE}) {
         meta_ = std::make_shared<Media::Meta>();
         meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), codecType);
         meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
