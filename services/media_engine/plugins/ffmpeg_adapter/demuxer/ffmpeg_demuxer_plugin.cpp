@@ -180,7 +180,8 @@ static const std::vector<FileType> g_fileSkipGetMinTsPktInfo = {
     FileType::FLV,
     FileType::MKV,
     FileType::WMV,
-    FileType::WMA
+    FileType::WMA,
+    FileType::MPEGTS
 };
 
 bool HaveValidParser(const AVCodecID codecId)
@@ -2791,10 +2792,6 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
 {
     int64_t seekTs = AV_NOPTS_VALUE;
     int ffRet = -1;
-    if (!minTsPktInfo_.isUpd) {
-        MEDIA_LOG_I("minTsPktInfo_ is not upd, do not seek.");
-        return Status::OK;
-    }
     if (IsSkipGetMinTsPktInfo()) {
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
         std::unique_lock<std::mutex> sLock(syncMutex_);
@@ -2829,6 +2826,10 @@ Status FFmpegDemuxerPlugin::SeekToStart()
     MediaAVCodec::AVCodecTrace trace("SeekToStart");
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_seekToStart", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
+    if (!minTsPktInfo_.isUpd) {
+        MEDIA_LOG_I("minTsPktInfo_ is not upd, do not seek.");
+        return Status::OK;
+    }
     auto ret = SeekToStartInternal();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekToStartInternal failed.");
     if (readLoopStatus_ != Status::OK) {
