@@ -56,6 +56,7 @@ AppEventReporter::AppEventReporter(uint32_t reportThd) : reportThd_(reportThd)
 
 void AppEventReporter::ReportRecord(const std::string &apiName, int errorCode, int64_t costTime)
 {
+    std::lock_guard<std::mutex> lock(reportMutex_);
     if (processorId_.load() < 0 || reportThd_ == 0) {
         return;
     }
