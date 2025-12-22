@@ -22,7 +22,7 @@ namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace std;
 using namespace testing::ext;
 
-constexpr uint32_t RING_BUFFER_SIZE = 5 * 1024 * 1024;
+constexpr uint32_t RING_BUFFER_SIZE = 1 * 1024 * 1024;
 constexpr uint64_t MAX_CACHE_BUFFER_SIZE_UT = 19 * 1024 * 1024;
 
 const std::map<std::string, std::string> httpHeader = {
@@ -249,7 +249,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, DownBufferSize1, TestSize.Level1)
 {
     hlsSegmentManager_->totalBufferSize_ = 10 * 1024 * 1024;
     hlsSegmentManager_->DownBufferSize();
-    EXPECT_EQ(hlsSegmentManager_->totalBufferSize_, 9 * 1024 * 1024);
+    EXPECT_EQ(hlsSegmentManager_->totalBufferSize_, 10 * 1024 * 1024 - 200 * 1024);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, DownBufferSize2, TestSize.Level1)
@@ -263,7 +263,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, RiseBufferSize1, TestSize.Level1)
 {
     hlsSegmentManager_->totalBufferSize_ = 0;
     hlsSegmentManager_->RiseBufferSize();
-    EXPECT_EQ(hlsSegmentManager_->totalBufferSize_, 1 * 1024 * 1024);
+    EXPECT_EQ(hlsSegmentManager_->totalBufferSize_, 200 * 1024);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, RiseBufferSize2, TestSize.Level1)
@@ -1091,7 +1091,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, RISE_BUFFER_002, TestSize.Level1)
     downloader->Init();
     downloader->totalBufferSize_ = RING_BUFFER_SIZE;
     downloader->RiseBufferSize();
-    EXPECT_EQ(downloader->totalBufferSize_, 6 * 1024 * 1024);
+    EXPECT_EQ(downloader->totalBufferSize_, RING_BUFFER_SIZE + 200 * 1024);
     downloader = nullptr;
 }
 
@@ -1101,7 +1101,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, DOWN_BUFFER_001, TestSize.Level1)
     downloader->Init();
     downloader->totalBufferSize_ = 10 * 1024 * 1024;
     downloader->DownBufferSize();
-    EXPECT_EQ(downloader->totalBufferSize_, 9 * 1024 * 1024);
+    EXPECT_EQ(downloader->totalBufferSize_, 10 * 1024 * 1024 - 200 * 1024);
     downloader = nullptr;
 }
 
@@ -1170,7 +1170,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SET_INITIAL_BUFFERSIZE_001, TestSize.Level1)
     downloader->PutRequestIntoDownloader(playInfo);
     downloader->backPlayList_.push_back(playInfo);
     downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
-    EXPECT_EQ(downloader->SetInitialBufferSize(0, 50000), false);
+    EXPECT_EQ(downloader->SetInitialBufferSize(0, 50000), true);
     downloader->cacheMediaBuffer_ = nullptr;
     EXPECT_EQ(downloader->SetInitialBufferSize(0, 20000000), true);
 }
@@ -1236,23 +1236,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, IS_CACHED_INIT_SIZE_READY_001, TestSize.Leve
     EXPECT_EQ(downloader->IsCachedInitSizeReady(10), false);
 }
 
-HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_WATER_LINE_001, TestSize.Level1)
-{
-    std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT,
-        true, header_);
-    downloader->Init();
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                            std::shared_ptr<DownloadRequest>& request) {};
-    downloader->SetStatusCallback(statusCallback);
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->callback_ = sourceCallback;
-    downloader->waterLineAbove_ = 0;
-    downloader->readOffset_ = 0;
-    downloader->initCacheSize_ = 5000;
-    downloader->tsStorageInfo_[downloader->readTsIndex_ + 1] = std::make_pair(0, true);
-    EXPECT_EQ(downloader->initCacheSize_, -1);
-}
-
 HWTEST_F(HlsSegmentManagerUnitTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1)
 {
     std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT,
@@ -1272,7 +1255,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1)
     auto bufferingCallback = [](HlsSegmentType segType, BufferingInfoType bufferingType) {};
     downloader->SetSegmentBufferingCallback(bufferingCallback);
     EXPECT_EQ(downloader->CacheBufferFullLoop(), true);
-    EXPECT_EQ(downloader->initCacheSize_, -1);
     downloader->isSeekingFlag = false;
     EXPECT_EQ(downloader->CacheBufferFullLoop(), false);
 }

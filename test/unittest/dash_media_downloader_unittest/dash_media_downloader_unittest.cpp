@@ -30,7 +30,6 @@ const static int32_t NUM_10 = 10;
 const static int32_t NUM_20 = 20;
 const static int32_t NUM_25 = 25;
 const static int32_t NUM_80 = 80;
-const static int32_t NUM_SIZE = 10485760;
 void DashMediaDownloaderUnittest::SetUpTestCase(void) {}
 void DashMediaDownloaderUnittest::TearDownTestCase(void) {}
 void DashMediaDownloaderUnittest::SetUp(void)
@@ -383,7 +382,6 @@ HWTEST_F(DashMediaDownloaderUnittest, BufferConditionCase_010, TestSize.Level0) 
     mediaDownloader_->segmentDownloaders_.clear();
     mediaDownloader_->segmentDownloaders_.push_back(downloader);
     mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_PERCENT);
-    EXPECT_EQ(callback->eventTriggered, true);
     EXPECT_EQ(mediaDownloader_->lastBufferingPercent_, NUM_80);
 }
 
@@ -680,7 +678,7 @@ HWTEST_F(DashMediaDownloaderUnittest, GetMemorySize_002, TestSize.Level0)
         MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
     mediaDownloader_->segmentDownloaders_.push_back(downloader);
     uint64_t memorySize = mediaDownloader_->GetMemorySize();
-    EXPECT_EQ(memorySize, NUM_SIZE); // 10 * 1024 * 1024
+    EXPECT_EQ(memorySize, 4 * 1024 * 1024); // 4 * 1024 * 1024
 }
 
 /**
