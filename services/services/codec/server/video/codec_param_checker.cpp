@@ -514,7 +514,7 @@ int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScen
     CHECK_AND_RETURN_RET_LOG((colorSpace >= 0) &&    // 0: OH_COLORSAPCE_NONE
                                  (colorSpace <= 31), // 31: OH_COLORSPACE_DISPLAY_BT2020_PQ
                              AVCS_ERR_INVALID_VAL, "The output color space %{public}d is invaild", colorSpace);
-    CHECK_AND_RETURN_RET_LOG(capData.mimeType == CodecMimeType::VIDEO_HEVC && capData.isVendor,
+    CHECK_AND_RETURN_RET_LOG(capData.mimeType == CodecMimeType::VIDEO_HEVC,
                              AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION,
                              "colorspace conversion is not available for the codec.");
 
