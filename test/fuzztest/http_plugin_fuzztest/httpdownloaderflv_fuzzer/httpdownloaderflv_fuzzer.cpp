@@ -106,7 +106,7 @@ std::shared_ptr<HttpMediaDownloader> InitializeAndDownload()
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
     httpMediaDownloader->GetSeekable();
     ReadDataInfo readDataInfo;
-    for (int i = 0; i < 800; i++) { // 80
+    for (int i = 0; i < 800; i++) { // 800
         std::this_thread::sleep_for(std::chrono::milliseconds(10)); // 10
         httpMediaDownloader->DownloadReport();
         readDataInfo.streamId_ = 0;
