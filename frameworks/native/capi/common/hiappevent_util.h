@@ -17,6 +17,7 @@
 #define HIAPPEVENT_UTIL_H
 
 #include <string>
+#include <mutex>
 #include "nocopyable.h"
 
 namespace OHOS {
