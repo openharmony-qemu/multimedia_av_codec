@@ -1910,7 +1910,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, STOP_BUFFERING_001, TestSize.Level1)
 {
     std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
     downloader->Init();
-    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720_small.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
     };
