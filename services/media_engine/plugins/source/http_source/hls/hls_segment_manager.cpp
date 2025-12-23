@@ -657,7 +657,7 @@ bool HlsSegmentManager::CheckCanReadOneSeconds(uint64_t wantReadLength)
 bool HlsSegmentManager::IsAllDownloadFinish()
 {
     return (CheckReadStatus() || isStopped) && GetSeekable() == Seekable::SEEKABLE &&
-        tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo.end() &&
+        tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
         tsStorageInfo_[writeTsIndex_].second;
 }
 
