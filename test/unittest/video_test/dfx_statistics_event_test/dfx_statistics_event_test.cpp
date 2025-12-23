@@ -155,7 +155,7 @@ void WaitForEventJson()
 {
     std::unique_lock<std::mutex> lock(g_mutex);
     std::cv_status status = g_cv.wait_for(lock, std::chrono::milliseconds(STATISTIC_EVENT_INFO_TIMEOUT));
-    EXPECT_EQ(status, std::cv_status::timeout) << "Expected timeout after " << STATISTIC_EVENT_INFO_TIMEOUT << " ms";
+    EXPECT_NE(status, std::cv_status::timeout) << "Expected timeout after " << STATISTIC_EVENT_INFO_TIMEOUT << " ms";
 }
 
 void OnEventTest(HiSysEventRecordC record)
@@ -396,7 +396,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_001, Test
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_002, TestSize.Level1)
 {
     std::string mime;
-    for (auto codecType : {-1, INT16_MAX, static_cast<int16_t>(VideoCodecType::DECODER_HARDWARE)}) {
+    for (auto codecType : {-1, INT16_MAX, static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE)}) {
         meta_ = std::make_shared<Media::Meta>();
         mime = GenerateRandomString(10); // 10: length
         meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), codecType);
@@ -404,14 +404,14 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_002, Test
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     }
 
-    for (auto codecType : {-1, INT16_MAX, static_cast<int16_t>(VideoCodecType::DECODER_HARDWARE)}) {
+    for (auto codecType : {-1, INT16_MAX, static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE)}) {
         meta_ = std::make_shared<Media::Meta>();
         meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), codecType);
         meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     }
 
-    for (auto codecType : {-1, INT16_MAX, static_cast<int16_t>(VideoCodecType::DECODER_HARDWARE)}) {
+    for (auto codecType : {-1, INT16_MAX, static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE)}) {
         meta_ = std::make_shared<Media::Meta>();
         meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), codecType);
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
@@ -539,7 +539,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_002, Te
         meta_ = std::make_shared<Media::Meta>();
         meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), isEncoder);
         meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
-        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     }
 
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
@@ -588,13 +588,15 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_001, T
         meta_ = std::make_shared<Media::Meta>();
         meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), isEncoder);
         meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
-        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO,
+                                                          *meta_);
     }
 
     for (auto isEncoder : {false, true}) {
         meta_ = std::make_shared<Media::Meta>();
         meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), isEncoder);
-        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO,
+                                                          *meta_);
     }
 
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
@@ -773,27 +775,27 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_SpeedDecodingInfo_001, TestSize.Le
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_001, TestSize.Level1)
 {
-    for (auto codecType : {-1, INT16_MAX, static_cast<int16_t>(VideoCodecType::DECODER_HARDWARE)}) {
+    for (auto codecType : {-1, INT16_MAX, static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE)}) {
         auto meta = std::make_shared<Media::Meta>();
         meta->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), codecType);
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta);
     }
 
-    for (auto codecType : {-1, INT16_MAX, static_cast<int16_t>(VideoCodecType::DECODER_HARDWARE)}) {
+    for (auto codecType : {-1, INT16_MAX, static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE)}) {
         auto meta = std::make_shared<Media::Meta>();
         meta->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), codecType);
         meta->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(AV_ERR_INVALID_VAL));
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta);
     }
 
-    for (auto codecType : {-1, INT16_MAX, static_cast<int16_t>(VideoCodecType::DECODER_HARDWARE)}) {
+    for (auto codecType : {-1, INT16_MAX, static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE)}) {
         auto meta = std::make_shared<Media::Meta>();
         meta->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
         meta->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), codecType);
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta);
     }
 
-    for (auto codecType : {-1, INT16_MAX, static_cast<int16_t>(VideoCodecType::DECODER_HARDWARE)}) {
+    for (auto codecType : {-1, INT16_MAX, static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE)}) {
         auto meta = std::make_shared<Media::Meta>();
         meta->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
         meta->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), codecType);
