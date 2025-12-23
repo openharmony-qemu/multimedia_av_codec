@@ -1318,9 +1318,6 @@ int32_t CodecServer::CreatePostProcessing(const Format& format)
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpaceType)) {
         return AVCS_ERR_OK;
     }
-    auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName_);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(capData != std::nullopt && capData->isVendor, AVCS_ERR_UNKNOWN,
-                                      "Get codec capability from codec list failed");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_, AVCS_ERR_UNKNOWN, "Decoder is not found");
     int32_t ret;
     postProcessing_ = PostProcessingType::Create(codecBase_, format, ret);
