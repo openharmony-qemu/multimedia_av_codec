@@ -271,6 +271,7 @@ HWTEST_F(DfxStatisticsEventTest, RegisterEventHook_Test_001, TestSize.Level1)
  * @tc.name: AddEventInfo_Invalid_Key_001
  * @tc.desc: 1. eventType key out of range
  *           2. EventHooker func not exist
+ *           3. add EventHooker func and report
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_001, TestSize.Level1)
@@ -369,7 +370,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicQueryAndCreateInfo_001, TestS
 /**
  * @tc.name: AddEventInfo_BasicCreateCodecSpecInfo_001
  * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
- *           2. mimeType is invalid, codecType is valid
+ *           2. mimeType is exist, codecType is valid
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_001, TestSize.Level1)
@@ -390,7 +391,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_001, Test
 /**
  * @tc.name: AddEventInfo_BasicCreateCodecSpecInfo_002
  * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
- *           2. mimeType is invalid, codecType is invalid
+ *           2. mimeType and codecType parameter test
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_002, TestSize.Level1)
@@ -426,7 +427,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicCreateCodecSpecInfo_002, Test
 /**
  * @tc.name: AddEventInfo_AppSpecificationsInfo_001
  * @tc.desc: 1. eventType is APP_SPECIFICATIONS_INFO
- *           2. mimeType is video/avc, isEncoder is false
+ *           2. mimeType and isEncoder parameter test
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_001, TestSize.Level1)
@@ -457,7 +458,7 @@ void AddSpecificationInfoEvent(std::shared_ptr<Media::Meta> meta, std::string mi
 /**
  * @tc.name: AddEventInfo_AppSpecificationsInfo_002
  * @tc.desc: 1. eventType is APP_SPECIFICATIONS_INFO
- *           2. mimeType is ivalid, isEncoder is false
+ *           2. mimeType is invalid, isEncoder is false
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppSpecificationsInfo_002, TestSize.Level1)
@@ -510,7 +511,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedInfo_001, TestSize.L
 /**
  * @tc.name: AddEventInfo_CapUnsupportedQueryCapInfo_001
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
- *           2. mimeType is video/avc, isEncoder is false
+ *           2. mimeType is video/avc, isEncoder parameter test
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_001, TestSize.Level1)
@@ -529,7 +530,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_001, Te
 /**
  * @tc.name: AddEventInfo_CapUnsupportedQueryCapInfo_002
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
- *           2. mimeType is empty, isEncoder is false
+ *           2. mimeType is empty, isEncoder parameter test
  *           3. event file is empty
  * @tc.type: FUNC
  */
@@ -551,7 +552,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_002, Te
 /**
  * @tc.name: AddEventInfo_CapUnsupportedQueryCapInfo_003
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_QUERY_CAP_INFO
- *           2. mimeType is random, isEncoder is false, excute 100000 times
+ *           2. mimeType is random, excute 100000 times
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_003, TestSize.Level1)
@@ -579,7 +580,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_003, Te
 /**
  * @tc.name: AddEventInfo_CapUnsupportedCreateCapInfo_001
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_CREATE_CODEC_INFO
- *           2. mimeType is video/avc, isEncoder is false
+ *           2. mimeType and isEncoder parameter test
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_001, TestSize.Level1)
@@ -606,7 +607,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_001, T
 /**
  * @tc.name: AddEventInfo_CapUnsupportedCreateCapInfo_002
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_CREATE_CODEC_INFO
- *           2. mimeType is random, isEncoder is false, excute 100000 times
+ *           2. mimeType is random, excute 100000 times
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_002, TestSize.Level1)
@@ -636,7 +637,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_002, T
 /**
  * @tc.name: AddEventInfo_AppBehaviorsInfo_001
  * @tc.desc: 1. eventType is APP_BEHAVIORS_INFO
- *           2. forward process and caller process exist
+ *           2. forward process and caller process parameter test
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_001, TestSize.Level1)
@@ -669,7 +670,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_001, TestSize.Lev
 /**
  * @tc.name: AddEventInfo_DecLimitExceededInfo_001
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO
- *           2. caller process name is same, excute 200 times
+ *           2. excute 200 times
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecLimitExceededInfo_001, TestSize.Level1)
@@ -697,7 +698,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecLimitExceededInfo_001, TestSize
 /**
  * @tc.name: AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_001
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO
- *           2. caller process exist, elapsed time exist't
+ *           2. caller process and elapsed time parameter test
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_001, TestSize.Level1)
@@ -722,7 +723,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGI
 /**
  * @tc.name: AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_004
  * @tc.desc: 1. eventType is DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO
- *           2. caller process name is same, elapsed time more than threadshold, excute 200 times
+ *           2. caller process name and elapsed time parameter test, excute 200 times
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGInfo_004, TestSize.Level1)
@@ -770,7 +771,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_SpeedDecodingInfo_001, TestSize.Le
 /**
  * @tc.name: AddEventInfo_CodecErrorInfo_001
  * @tc.desc: 1. eventType is CODEC_ERROR_INFO
- *           2. mime type is empty, codec type is valid, error code is empty
+ *           2. codec type and error code parameter test
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CodecErrorInfo_001, TestSize.Level1)
