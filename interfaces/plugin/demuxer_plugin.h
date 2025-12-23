@@ -104,8 +104,11 @@ struct DemuxerPlugin : public PluginBase {
      * @note This synchronous interface must be used together with the synchronous version of GetNextSampleSize.
      *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
+     * @note Memory management: The data will be copied into the memory provided by @param sample->memory_.
+     *       The caller must pre-allocate sufficient memory in sample->memory_ before calling this function.
+     *
      * @param trackId Identifies the media track. ignore the invalid value is passed.
-     * @param sample Buffer where store data frames.
+     * @param sample Buffer where store data frames. The sample->memory_ must be pre-allocated with sufficient capacity.
      * @return  Execution Status return
      *  @retval OK: Plugin ReadFrame succeeded.
      *  @retval ERROR_TIMED_OUT: Operation timeout.
@@ -120,8 +123,11 @@ struct DemuxerPlugin : public PluginBase {
      * @note This asynchronous interface must be used together with the asynchronous version of GetNextSampleSize.
      *       Synchronous and asynchronous interfaces (with and without timeout) cannot be mixed in the same instance.
      *
+     * @note Memory management: The function will create new memory internally and replace sample->memory_ with it.
+     *       The caller does not need to pre-allocate memory in sample->memory_. The original memory will be replaced.
+     *
      * @param trackId Identifies the media track. ignore the invalid value is passed.
-     * @param sample Buffer where store data frames.
+     * @param sample Buffer where store data frames. The sample->memory_ will be replaced with the new memory.
      * @param timeout If no result is available after @param timeout milliseconds, the function returns.
      * @return  Execution Status return
      *  @retval OK: Plugin ReadFrame succeeded.

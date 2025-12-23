@@ -231,9 +231,9 @@ private:
         uint8_t *outBuffer {nullptr};
         int32_t outBufferSize {0};
         int32_t &outDataSize;
-        const uint8_t *xpsData {nullptr};
-        int32_t xpsDataSize {0};
-        
+        uint8_t *sideData {nullptr};
+        size_t sideDataSize {0};
+
         // 构造函数，用于初始化引用成员
         explicit ConvertToAnnexbParams(int32_t &outSizeRef) : outDataSize(outSizeRef) {}
     };
