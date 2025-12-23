@@ -477,7 +477,7 @@ std::optional<int32_t> CheckedProductForInt32(Args... args)
     int64_t accumulator = 1;
     constexpr int64_t minLimit = std::numeric_limits<int32_t>::min();
     constexpr int64_t maxLimit = std::numeric_limits<int32_t>::max();
-    auto step = [&](int64_t nextValue) -> bool {
+    auto step = [&accumulator](int64_t nextValue) -> bool {
         accumulator *= nextValue;
         if (accumulator < minLimit || accumulator > maxLimit) {
             return false;
@@ -1654,23 +1654,25 @@ Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
             MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " info is nullptr", trackIndex);
             continue;
         }
-        if (FFmpegFormatHelper::IsVideoType(*(formatContext_->streams[trackIndex]))) {
-            int width = 0;
-            int height = 0;
-            Meta &format = mediaInfo_.tracks[trackIndex];
-            format.GetData(Tag::VIDEO_WIDTH, width);
-            format.GetData(Tag::VIDEO_HEIGHT, height);
-            if (width * height > 0) {
-                auto limitSize = CheckedProductForInt32(width, height, DEFAULT_CHANNEL_CNT, READ_SIZE_LIMIT_FACTOR);
-                if (!limitSize) {
-                    MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " limit size is overflow", trackIndex);
-                    continue;
-                }
-                ioContext_.sizeLimit = std::max(ioContext_.sizeLimit, *limitSize);
-                MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " hei:" PUBLIC_LOG_D32 ", wid:" PUBLIC_LOG_D32
-                    " limit " PUBLIC_LOG_D32, trackIndex, height, width, *limitSize);
-            }
+        if (!FFmpegFormatHelper::IsVideoType(*(formatContext_->streams[trackIndex]))) {
+            continue;
         }
+        int width = 0;
+        int height = 0;
+        Meta &format = mediaInfo_.tracks[trackIndex];
+        format.GetData(Tag::VIDEO_WIDTH, width);
+        format.GetData(Tag::VIDEO_HEIGHT, height);
+        if (width * height <= 0) {
+            continue;
+        }
+        auto limitSize = CheckedProductForInt32(width, height, DEFAULT_CHANNEL_CNT, READ_SIZE_LIMIT_FACTOR);
+        if (!limitSize) {
+            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " limit size is overflow", trackIndex);
+            continue;
+        }
+        ioContext_.sizeLimit = std::max(ioContext_.sizeLimit, *limitSize);
+        MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " hei:" PUBLIC_LOG_D32 ", wid:" PUBLIC_LOG_D32
+            " limit " PUBLIC_LOG_D32, trackIndex, height, width, *limitSize);
     }
     return Status::OK;
 }
