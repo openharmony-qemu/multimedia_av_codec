@@ -25,6 +25,7 @@
 #include <fstream>
 #include <chrono>
 #include <limits>
+#include <optional>
 #include "avcodec_trace.h"
 #include "avcodec_log.h"
 #include "securec.h"
@@ -465,6 +466,28 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
         default:
             break;
     }
+}
+
+template <typename... Args>
+std::optional<int32_t> CheckedProductForInt32(Args... args)
+{
+    if (((args == 0) || ...)) {
+        return 0;
+    }
+    int64_t accumulator = 1;
+    constexpr int64_t minLimit = std::numeric_limits<int32_t>::min();
+    constexpr int64_t maxLimit = std::numeric_limits<int32_t>::max();
+    auto step = [&](int64_t nextValue) -> bool {
+        accumulator *= nextValue;
+        if (accumulator < minLimit || accumulator > maxLimit) {
+            return false;
+        }
+        return true;
+    };
+    if ((step(static_cast<int64_t>(args)) && ...)) {
+        return static_cast<int32_t>(accumulator);
+    }
+    return std::nullopt;
 }
 } // namespace
 
@@ -1601,10 +1624,15 @@ void FFmpegDemuxerPlugin::SetAVReadFrameLimitDefault()
         }
         if (FFmpegFormatHelper::IsVideoType(*(formatContext_->streams[trackIndex]))) {
             auto codecpar = formatContext_->streams[trackIndex]->codecpar;
-            int32_t limitSize = codecpar->width * codecpar->height * DEFAULT_CHANNEL_CNT * READ_SIZE_LIMIT_FACTOR;
-            ioContext_.sizeLimit = std::max(ioContext_.sizeLimit, limitSize);
+            auto limitSize = CheckedProductForInt32(codecpar->width, codecpar->height, DEFAULT_CHANNEL_CNT,
+                                                    READ_SIZE_LIMIT_FACTOR);
+            if (!limitSize) {
+                MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " limit size is overflow", trackIndex);
+                continue;
+            }
+            ioContext_.sizeLimit = std::max(ioContext_.sizeLimit, *limitSize);
             MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " hei:" PUBLIC_LOG_D32 ", wid:" PUBLIC_LOG_D32
-                " limit " PUBLIC_LOG_D32, trackIndex, codecpar->height, codecpar->width, limitSize);
+                " limit " PUBLIC_LOG_D32, trackIndex, codecpar->height, codecpar->width, *limitSize);
         }
     }
     return;
@@ -1633,10 +1661,14 @@ Status FFmpegDemuxerPlugin::SetAVReadFrameLimit()
             format.GetData(Tag::VIDEO_WIDTH, width);
             format.GetData(Tag::VIDEO_HEIGHT, height);
             if (width * height > 0) {
-                int32_t limitSize = width * height * DEFAULT_CHANNEL_CNT * READ_SIZE_LIMIT_FACTOR;
-                ioContext_.sizeLimit = std::max(ioContext_.sizeLimit, limitSize);
+                auto limitSize = CheckedProductForInt32(width, height, DEFAULT_CHANNEL_CNT, READ_SIZE_LIMIT_FACTOR);
+                if (!limitSize) {
+                    MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " limit size is overflow", trackIndex);
+                    continue;
+                }
+                ioContext_.sizeLimit = std::max(ioContext_.sizeLimit, *limitSize);
                 MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " hei:" PUBLIC_LOG_D32 ", wid:" PUBLIC_LOG_D32
-                    " limit " PUBLIC_LOG_D32, trackIndex, height, width, limitSize);
+                    " limit " PUBLIC_LOG_D32, trackIndex, height, width, *limitSize);
             }
         }
     }
