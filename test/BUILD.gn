@@ -212,6 +212,7 @@ group("av_codec_module_test") {
       "moduletest/vcodec/encoder:encoder_native_module_test",
       "moduletest/vcodec/h263swdecoder:h263swdecoder_native_module_test",
       "moduletest/vcodec/wmv3swdecoder:wmv3swdecoder_native_module_test",
+      "moduletest/vcodec/dvvideoswdecoder:dvvideo_swdecoder_native_module_test",
       "moduletest/vcodec/hdrcodec:hdrcodec_native_module_test",
       "moduletest/vcodec/avcswencoder:avcswencoder_native_module_test",
       "moduletest/vcodec/hevcswdecoder:hevcswdecoder_native_module_test",
