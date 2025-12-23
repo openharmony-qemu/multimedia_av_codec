@@ -211,6 +211,7 @@ private:
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
     bool CheckCanReadOneSeconds(uint64_t wantReadLength);
+    bool IsAllDownloadFinish();
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;

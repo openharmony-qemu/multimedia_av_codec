@@ -24,13 +24,13 @@ using namespace testing::ext;
 
 const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:46666/dewu.mp4";
 const std::string MP4_NULL_SEGMENT_BASE = "http://127.0.0.1:46666/dewuNull.mp4";
-const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/h264.flv";
+const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/aigc_str.flv";
 namespace {
-    constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
-    constexpr uint64_t MAX_RING_BUFFER_SIZE = 19 * 1024 * 1024;
-    constexpr uint64_t MIN_CACHE_BUFFER_SIZE = 5 * 1024 * 1024;
-    constexpr uint64_t MIN_RING_BUFFER_SIZE = 5 * 1024 * 1024;
-    constexpr uint64_t DURATION_BUFFER_SIZE_RATIO = 1 * 1024 * 1024;
+    constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 4 * 1024 * 1024;
+    constexpr uint64_t MAX_RING_BUFFER_SIZE = 4 * 1024 * 1024;
+    constexpr uint64_t MIN_CACHE_BUFFER_SIZE = 1 * 1024 * 1024;
+    constexpr uint64_t MIN_RING_BUFFER_SIZE = 1 * 1024 * 1024;
+    constexpr uint64_t DURATION_BUFFER_SIZE_RATIO = 512 * 1024;
 }
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server;
 std::shared_ptr<HttpMediaDownloader> MP4httpMediaDownloader;
@@ -912,7 +912,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, GetCacheDuration, TestSize.Level1)
 {
     float num = MP4httpMediaDownloader->GetCacheDuration(1);
     num = MP4httpMediaDownloader->GetCacheDuration(0);
-    EXPECT_EQ(num, 5.0);
+    EXPECT_EQ(num, 1.0);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, IsAutoSelectConditionOk_1, TestSize.Level1)
