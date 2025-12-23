@@ -179,6 +179,9 @@ void HlsSegmentManager::Init()
     } else {
         downloader_ = std::make_shared<Downloader>("hlsMedia");
     }
+    if (downloader_ != nullptr && downloadCallback_ != nullptr) {
+        downloader_->SetDownloadCallback(downloadCallback_);
+    }
     downloader_->Init();
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList");
     auto weakDownloader = weak_from_this();
@@ -193,6 +196,9 @@ void HlsSegmentManager::Init()
     } else {
         playlistDownloader_ = std::make_shared<HlsPlayListDownloader>(httpHeader_, nullptr);
     }
+    if (playlistDownloader_ != nullptr && downloadCallback_ != nullptr) {
+        playlistDownloader_->SetDownloadCallback(downloadCallback_);
+    }
     playlistDownloader_->Init();
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     waterLineAbove_ = PLAY_WATER_LINE;
@@ -200,6 +206,11 @@ void HlsSegmentManager::Init()
     loopInterruptClock_.Reset();
     aesDecryptor_ = std::make_shared<AesDecryptor>();
     aesDecryptor_->Init();
+}
+
+void HlsSegmentManager::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
+{
+    downloadCallback_ = callback;
 }
 
 HlsSegmentManager::~HlsSegmentManager()
@@ -1661,17 +1672,6 @@ void HlsSegmentManager::GetDownloadInfo(DownloadInfo& downloadInfo)
     }
     downloadInfo.avgDownloadSpeed = avgDownloadSpeed_;
     downloadInfo.totalDownLoadBits = totalBits_;
-    downloadInfo.isTimeOut = isTimeOut_;
-    if (playlistDownloader_ != nullptr) {
-        playlistDownloader_->GetDownloadInfo(downloadInfo);
-    }
-    if (downloader_ != nullptr) {
-        DownloadInfo tmpDownloadInfo;
-        downloader_->GetDownloadInfo(tmpDownloadInfo);
-        downloadInfo.totalDownLoadBytes += tmpDownloadInfo.totalDownLoadBytes;
-        downloadInfo.totalLoadingTime += tmpDownloadInfo.totalLoadingTime;
-        downloadInfo.loadingCount += tmpDownloadInfo.loadingCount;
-    }
 }
 
 void HlsSegmentManager::GetPlaybackInfo(PlaybackInfo& playbackInfo)

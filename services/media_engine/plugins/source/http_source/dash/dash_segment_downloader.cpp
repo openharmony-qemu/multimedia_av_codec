@@ -102,6 +102,14 @@ void DashSegmentDownloader::Init()
         return shareDownloader->SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
             std::forward<decltype(notBlock)>(notBlock));
     };
+    if (downloader_ != nullptr && downloadCallback_ != nullptr) {
+        downloader_->SetDownloadCallback(downloadCallback_);
+    }
+}
+
+void DashSegmentDownloader::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
+{
+    downloadCallback_ = callback;
 }
 
 bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& dashSegment)
@@ -686,6 +694,9 @@ bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& rema
         }
 
         downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
+        if (downloader_ != nullptr && downloadCallback_ != nullptr) {
+            downloader_->SetDownloadCallback(downloadCallback_);
+        }
         downloader_->Init();
         buffer_->Clear();
         segmentList_.clear();
@@ -739,6 +750,9 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
         });
 
         downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
+        if (downloader_ != nullptr && downloadCallback_ != nullptr) {
+            downloader_->SetDownloadCallback(downloadCallback_);
+        }
         downloader_->Init();
         MEDIA_LOG_I("CleanSegmentBuffer bufferHead:" PUBLIC_LOG_ZU " ,bufferTail:" PUBLIC_LOG_ZU " ,clearTail:"
             PUBLIC_LOG_ZU, buffer_->GetHead(), buffer_->GetTail(), clearTail);
@@ -825,6 +839,9 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
         });
 
         downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
+        if (downloader_ != nullptr && downloadCallback_ != nullptr) {
+            downloader_->SetDownloadCallback(downloadCallback_);
+        }
         downloader_->Init();
         MEDIA_LOG_I("CleanBufferByTime bufferHead:" PUBLIC_LOG_ZU " ,bufferTail:" PUBLIC_LOG_ZU " ,clearTail:"
             PUBLIC_LOG_ZU " ,seq:" PUBLIC_LOG_D64 ",size:" PUBLIC_LOG_ZU, buffer_->GetHead(), buffer_->GetTail(),
@@ -1267,13 +1284,6 @@ Status DashSegmentDownloader::StopBufferring(bool isAppBackground)
     }
     downloader_->StopBufferring();
     return Status::OK;
-}
-
-void DashSegmentDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
-{
-    if (downloader_ != nullptr) {
-        downloader_->GetDownloadInfo(downloadInfo);
-    }
 }
 }
 }

@@ -36,6 +36,7 @@
 #include "utils/write_bitrate_caculator.h"
 #include "osal/task/mutex.h"
 #include "osal/task/condition_variable.h"
+#include "download/download_metrics_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -137,6 +138,7 @@ public:
     void SetDownloadErrorState();
     void SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc);
     void SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback);
+    void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
 
 public:
     static constexpr size_t VIDEO_MIN_BUFFER_SIZE = 1 * 1024 * 1024;
@@ -357,6 +359,7 @@ private:
 
     std::mutex canReadMutex_;
     std::condition_variable canReadCond_;
+    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
 };
 }
 }

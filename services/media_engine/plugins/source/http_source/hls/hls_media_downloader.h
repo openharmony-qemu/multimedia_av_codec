@@ -35,6 +35,7 @@
 #include "osal/task/condition_variable.h"
 #include "av_common.h"
 #include "hls_segment_manager.h"
+#include "download/download_metrics_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -109,6 +110,7 @@ private:
     std::shared_ptr<HlsSegmentManager> audioSegManager_ {nullptr};
     uint32_t bufferingFlag_ {0};
     std::mutex bufferingMutex_;
+    std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};
 };
 }
 }

@@ -137,6 +137,10 @@ HttpMediaDownloader::~HttpMediaDownloader()
 void HttpMediaDownloader::Init()
 {
     MEDIA_LOG_D("0x%{public}06" PRIXPTR " Init", FAKE_POINTER(this));
+    downloadMetricsInfo_ = std::make_shared<DownloadMetricsInfo>();
+    if (downloader_ != nullptr && downloadMetricsInfo_ != nullptr) {
+        downloader_->SetDownloadCallback(downloadMetricsInfo_);
+    }
 }
 
 std::string HttpMediaDownloader::GetContentType()
@@ -1274,8 +1278,12 @@ void HttpMediaDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
     downloadInfo.avgDownloadSpeed = avgDownloadSpeed_;
     downloadInfo.totalDownLoadBits = totalBits_;
     downloadInfo.isTimeOut = isTimeOut_;
-    if (downloader_ != nullptr) {
-        downloader_->GetDownloadInfo(downloadInfo);
+    if (downloadMetricsInfo_ != nullptr) {
+        downloadInfo.totalDownLoadBytes = downloadMetricsInfo_->GetTotalTotalDownLoadBytes();
+        downloadInfo.totalLoadingTime = downloadMetricsInfo_->GetTotalTotalDownloadTime();
+        downloadInfo.loadingCount = downloadMetricsInfo_->GetTotalDownloadCount();
+        downloadInfo.firstDownloadTime = downloadMetricsInfo_->GetTotalFirstDownloadTime();
+        downloadInfo.firstFrameDecapsulationTime = downloadMetricsInfo_->GetTotalFirstDownloadTimestamp();
     }
 }
 
