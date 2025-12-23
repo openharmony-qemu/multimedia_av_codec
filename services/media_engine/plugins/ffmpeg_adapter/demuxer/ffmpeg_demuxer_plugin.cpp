@@ -471,6 +471,8 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
 template <typename... Args>
 std::optional<int32_t> CheckedProductForInt32(Args... args)
 {
+    static_assert(sizeof...(Args) > 0, "CheckedProductForInt32 requires at least 1 arguments");
+    static_assert((std::is_same_v<Args, int32_t> && ...), "All arguments must be int32_t");
     if (((args == 0) || ...)) {
         return 0;
     }
