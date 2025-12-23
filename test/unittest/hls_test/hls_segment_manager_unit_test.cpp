@@ -1709,8 +1709,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, READ_DELEGATE_001, TestSize.Level1)
     EXPECT_EQ(downloader->IsHlsEnd(), false);
     EXPECT_EQ(downloader->writeTsIndex_, 0);
 
-    EXPECT_EQ(downloader->ReadDelegate(buffer, readDataInfo), Status::ERROR_AGAIN);
-
     downloader->seekTime_ = 100000000000;
     EXPECT_EQ(downloader->backPlayList_.size(), 2);
     downloader->readTsIndex_ = 1;

@@ -647,11 +647,18 @@ bool HlsSegmentManager::CheckCanReadOneSeconds(uint64_t wantReadLength)
     uint64_t len = isFirstFrameArrived_ ? 1 : wantReadLength;
     std::unique_lock<std::mutex> lock(canReadMutex_);
     canReadCond_.wait_for(lock, std::chrono::milliseconds(ONE_SECONDS), [this, len]() {
-        return GetCrossTsBuffersize() >= len;
+        return GetCrossTsBuffersize() >= len || IsAllDownloadFinish();
     });
-    auto canRead = GetCrossTsBuffersize() >= len;
+    auto canRead = GetCrossTsBuffersize() >= len || IsAllDownloadFinish();
     MEDIA_LOG_I("HLS CheckCanReadOneSeconds out, can read: %{public}d, type: %{public}d", canRead, type_);
     return canRead;
+}
+
+bool HlsSegmentManager::IsAllDownloadFinish()
+{
+    return (CheckReadStatus() || isStopped) && GetSeekable() == Seekable::SEEKABLE &&
+        tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
+        tsStorageInfo_[writeTsIndex_].second;
 }
 
 Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
