@@ -141,6 +141,10 @@ bool FormatName2OutCapability(const std::string& fmtName, MuxerPluginDef& plugin
         auto cap = Capability(MimeType::MEDIA_FLAC);
         pluginDef.AddOutCaps(cap);
         return true;
+    } else if (fmtName == "ogg") {
+        auto cap = Capability(MimeType::MEDIA_OGG);
+        pluginDef.AddOutCaps(cap);
+        return true;
     }
     return false;
 }
