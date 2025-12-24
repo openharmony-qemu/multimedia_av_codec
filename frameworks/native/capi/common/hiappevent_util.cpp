@@ -16,6 +16,7 @@
 #include "hiappevent_util.h"
 #include <unistd.h>
 #include <ctime>
+#include <map>
 #include "avcodec_log.h"
 #include "app_event.h"
 #include "app_event_processor_mgr.h"
@@ -76,21 +77,34 @@ void AppEventReporter::ReportRecord(const std::string &apiName, int errorCode, i
 
 void AppEventReporter::UploadRecordData(const std::string &apiName) const
 {
+    std::map<std::string, int32_t> errType2Num;
+    std::vector<std::string> errType;
+    std::vector<std::string> errNum;
+
     Event event("api_diagnostic", "api_called_stat_cnt", HiviewDFX::HiAppEvent::BEHAVIOR);
     event.AddParam("api_name", apiName);
     event.AddParam("sdk_name", std::string("AVCodecKit"));
     event.AddParam("call_times", static_cast<int32_t>(errorCode_.size()));
-    event.AddParam("error_code_num", errorCode_);
+    
     int32_t successTime = 0;
     for (const auto &errCode : errorCode_) {
         if (errCode == 0) {
             successTime++;
+        } else {
+            std::string err = AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(errCode));
+            errType2Num[err] = !errType2Num[err] ? 1 : errType2Num[err] + 1;
         }
     }
+    for (auto it = errType2Num.begin(); it != errType2Num.end(); it++) {
+        errType.push_back(it->first());
+        errNum.push_back(it->second());
+    }
+    event.AddParam("error_code_types", errType);
+    event.AddParam("error_code_num", errNum);
     event.AddParam("success_times", successTime);
-    event.AddParam("max_cost_time", maxCostTime_);
-    event.AddParam("min_cost_time", minCostTime_);
-    event.AddParam("total_cost_time", totalCostTime_);
+    event.AddParam("max_cost_time", maxCostTime_ / 1000000); // 1000000: ns -> ms
+    event.AddParam("min_cost_time", minCostTime_ / 1000000); // 1000000: ns -> ms
+    event.AddParam("total_cost_time", totalCostTime_ / 1000000); // 1000000: ns -> ms
     int32_t ret = Write(event);
     AVCODEC_LOGI("%{public}s event write result: %{public}d", apiName.c_str(), ret);
 }
