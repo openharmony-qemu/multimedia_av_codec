@@ -2638,6 +2638,10 @@ Status FFmpegDemuxerPlugin::GetFileFirstPacket()
 {
     bool isSkip = IsSkipGetMinTsPktInfo();
     FALSE_RETURN_V_MSG_I(!isSkip, Status::OK, "File skip get first packet info");
+    if (formatContext_->nb_streams <= 0 || fileType_ == FileType::VTT) {
+        MEDIA_LOG_E("FormatContext nb_streams is " PUBLIC_LOG_U32, formatContext_->nb_streams);
+        return Status::OK;
+    }
     Status ret = Status::OK;
     while (!minTsPktInfo_.isInit) {
         Plugins::AVPacketWrapperPtr pktWrapper = std::make_shared<Plugins::AVPacketWrapper>();
@@ -2686,6 +2690,7 @@ void FFmpegDemuxerPlugin::UpdMinTsPacketInfo(AVPacket *pkt)
 
 Status FFmpegDemuxerPlugin::SeekToStartInternal()
 {
+    std::unique_lock<std::shared_mutex> lock(sharedMutex_);
     int64_t seekTs = AV_NOPTS_VALUE;
     int ffRet = -1;
     if (IsSkipGetMinTsPktInfo()) {
@@ -2704,13 +2709,12 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
         MEDIA_LOG_I("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
             minTsPktInfo_.streamIndex, seekTs, ffRet);
     }
+    lock.unlock();
     if (ffRet < 0) {
-        MEDIA_LOG_I("Use default track and startTime " PUBLIC_LOG_D64, formatContext_->start_time);
-        std::unique_lock<std::mutex> sLock(syncMutex_);
-        ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT,
-            formatContext_->start_time, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
-        sLock.unlock();
-        FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN, "av_seek_frame default track failed.");
+        MEDIA_LOG_I("Use default seekto.");
+        int64_t realSeekTime = 0;
+        auto ret = SeekTo(SEEK_TRACK_DEFAULT, 0, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekTo failed.");
     }
     return Status::OK;
 }
@@ -2718,7 +2722,6 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
 Status FFmpegDemuxerPlugin::SeekToStart()
 {
     MEDIA_LOG_D("in");
-    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MediaAVCodec::AVCodecTrace trace("SeekToStart");
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_seekToStart", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
