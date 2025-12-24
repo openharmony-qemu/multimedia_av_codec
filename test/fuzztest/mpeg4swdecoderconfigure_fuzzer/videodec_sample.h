@@ -94,9 +94,11 @@ public:
     void ReleaseSignal();
     void ReleaseInFile();
     void StopInloop();
+    int32_t SetParameter();
     VDecSignal *signal_;
     uint32_t errCount = 0;
     uint32_t outCount = 0;
+    int32_t defaultTransform = 0;
     int64_t outTimeArray[2000] = {};
     bool sleepOnFPS = false;
     bool repeatRun = false;

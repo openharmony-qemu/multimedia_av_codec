@@ -82,12 +82,15 @@ public:
 
     bool CheckSampleFormat(const std::shared_ptr<Meta> &format, int32_t channels);
 
+    Status ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer);
+
 private:
     bool isFirst;
     bool hasExtra_;
     bool currentFrameFormatChanged_;
     int32_t maxInputSize_;
     int64_t nextPts_;
+    int64_t inputPts_;
     float durationTime_;
     std::string name_;
 
@@ -109,14 +112,13 @@ private:
 
 private:
     Status SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffer);
-    Status ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer);
     Status ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer);
     Status InitResample();
     Status ConvertPlanarFrame(std::shared_ptr<AVBuffer> &outBuffer);
     void EnableResample(AVSampleFormat destFmt);
     Status SetCodecExtradata(const std::shared_ptr<Meta> &format);
     void CheckFormatChange();
-    void SetSampleSikpInfo(const std::shared_ptr<AVBuffer> &inputBuffer);
+    void SetSkipSamplesInfo(const std::shared_ptr<AVBuffer> &inputBuffer);
 };
 } // namespace Ffmpeg
 } // namespace Plugins

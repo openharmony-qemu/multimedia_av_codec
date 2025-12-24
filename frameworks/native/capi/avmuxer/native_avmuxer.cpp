@@ -20,6 +20,7 @@
 #include "avmuxer.h"
 #include "common/native_mfmagic.h"
 #include "native_avmagic.h"
+#include "hiappevent_util.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_MUXER, "NativeAVMuxer"};
@@ -38,6 +39,8 @@ struct AVMuxerObject : public OH_AVMuxer {
 
 struct OH_AVMuxer *OH_AVMuxer_Create(int32_t fd, OH_AVOutputFormat format)
 {
+    static AppEventReporter appEventReporter = AppEventReporter();
+    ApiInvokeRecorder apiInvokeRecorder("OH_AVMuxer_Create", appEventReporter);
     std::shared_ptr<AVMuxer> avmuxer = AVMuxerFactory::CreateAVMuxer(fd, static_cast<Plugins::OutputFormat>(format));
     CHECK_AND_RETURN_RET_LOG(avmuxer != nullptr, nullptr, "create muxer failed!");
     struct AVMuxerObject *object = new(std::nothrow) AVMuxerObject(avmuxer);
@@ -171,6 +174,19 @@ static OH_AVErrCode SetMoovFrontMeta(std::shared_ptr<Meta> definedMeta, std::sha
     return AV_ERR_OK;
 }
 
+static OH_AVErrCode SetGenreMeta(std::shared_ptr<Meta> definedMeta, std::shared_ptr<Meta> &param)
+{
+    if (definedMeta->Find(Tag::MEDIA_GENRE) == definedMeta->end()) {
+        return AV_ERR_OK;
+    }
+
+    AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_GENRE);
+    std::string gnre;
+    definedMeta->Get<Tag::MEDIA_GENRE>(gnre);
+    param->Set<Tag::MEDIA_GENRE>(gnre);
+    return AV_ERR_OK;
+}
+
 static OH_AVErrCode SetDefinedMetaParam(std::shared_ptr<Meta> definedMeta, AVMuxerObject* object)
 {
     std::shared_ptr<Meta> param = std::make_shared<Meta>();
@@ -181,6 +197,8 @@ static OH_AVErrCode SetDefinedMetaParam(std::shared_ptr<Meta> definedMeta, AVMux
     CHECK_AND_RETURN_RET_LOG(metaRet == AV_ERR_OK, AV_ERR_INVALID_VAL, "input format is invalid");
     metaRet = SetMoovFrontMeta(definedMeta, param);
     CHECK_AND_RETURN_RET_LOG(metaRet == AV_ERR_OK, AV_ERR_INVALID_VAL, "input format is invalid");
+    metaRet = SetGenreMeta(definedMeta, param);
+    CHECK_AND_RETURN_RET_LOG(metaRet == AV_ERR_OK, AV_ERR_INVALID_VAL, "input genre is invalid");
 
     if (param->Empty()) {
         AVCODEC_LOGW("input format does not have a valid key");

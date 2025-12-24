@@ -16,6 +16,7 @@
 #include "avcodec_dfx_component.h"
 #include <algorithm>
 #include "instance_info.h"
+#include "event_info_extented_key.h"
 #include "meta/meta.h"
 
 using namespace OHOS::Media;

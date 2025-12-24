@@ -355,10 +355,10 @@ HWTEST_F(DownloaderUnitTest, HTTPFreeChunk0, TestSize.Level1)
     std::unique_ptr<uint8_t[]> mp4Data = std::make_unique<uint8_t[]>(mediaSize);
 
     size_t offset = 0;
-    size_t writeLen = chunkSize * 10;
-    for (int i = 0; i < 20; ++i) {
+    size_t writeLen = chunkSize * 20;
+    for (int i = 0; i < 10; ++i) {
         ASSERT_EQ(writeLen, cachedMediaBuffer->Write(mp4Data.get() + offset, offset, writeLen));
-        offset += chunkSize * 11;
+        offset += chunkSize * 21;
     }
 
     size_t writeLen1 = chunkSize * 9;
@@ -404,7 +404,7 @@ HWTEST_F(DownloaderUnitTest, HTTPFreeChunk2, TestSize.Level1)
     size_t writeLen = chunkSize * 40;
     uint32_t buffer[ONE_KILO * 30] = {0};
     size_t readSize = chunkSize * 10;
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 3; ++i) {
         ASSERT_EQ(writeLen, cachedMediaBuffer->Write(mp4Data.get() + offset, offset, writeLen));
         ASSERT_EQ(readSize, cachedMediaBuffer->Read(buffer, offset, readSize));
         readSize += chunkSize * 10;

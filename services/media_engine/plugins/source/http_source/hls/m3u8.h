@@ -25,6 +25,7 @@
 #include "hls_tags.h"
 #include "playlist_downloader.h"
 #include "download/downloader.h"
+#include "download/download_metrics_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -95,6 +96,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     void DownloadMap(const std::string& uri, size_t offset, size_t length);
     uint32_t SaveMapData(uint8_t* data, uint32_t len, bool notBlock);
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
+    void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
 
     std::shared_ptr<std::string> method_;
     std::shared_ptr<std::string> keyUri_;
@@ -131,11 +133,12 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     StatusCallbackFunc monitorStatusCallback_;
     ConditionVariable sleepCond_ {};
     Mutex sleepMutex_ {};
+    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
 };
 
 struct M3U8Media {
     M3U8Media(const std::string &name, const std::string &uri, std::shared_ptr<M3U8> m3u8);
-    M3U8MediaType type_;
+    M3U8MediaType type_ {M3U8MediaType::M3U8_MEDIA_TYPE_INVALID};
     std::string groupID_;
     std::string name_;
     std::string lang_;
@@ -143,10 +146,10 @@ struct M3U8Media {
     std::string channels_;
     std::string instreamId_;
     std::string characteristics_;
-    bool isDefault_;
-    bool autoSelect_;
-    bool forced_;
-    std::shared_ptr<M3U8> m3u8_;
+    bool isDefault_ {false};
+    bool autoSelect_ {false};
+    bool forced_ {false};
+    std::shared_ptr<M3U8> m3u8_ {nullptr};
     uint32_t streamId_ {0};
 };
 
@@ -189,6 +192,7 @@ struct M3U8MasterPlaylist {
     bool IsVideoStream(const std::string& codecs);
     void ProcessAllTags(std::list<std::shared_ptr<Tag>>& tags);
     void ProcessStreamInfoTag(std::shared_ptr<Tag> tag);
+    void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
     std::shared_ptr<M3U8VariantStream> firstVideoStream_;
@@ -213,6 +217,7 @@ struct M3U8MasterPlaylist {
     uint32_t defaultStreamId_ {0};
     StatusCallbackFunc monitorStatusCallback_;
     std::list<std::shared_ptr<M3U8Media>> mediaList_;
+    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
 };
 }
 }

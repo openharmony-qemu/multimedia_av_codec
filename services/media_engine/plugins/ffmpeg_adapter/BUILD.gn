@@ -108,6 +108,8 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
     "common/ffmpeg_utils.cpp",
     "common/reference_parser_manager.cpp",
     "common/multi_stream_parser_manager.cpp",
+    "demuxer/avpacket_memory.cpp",
+    "demuxer/avpacket_wrapper.cpp",
     "demuxer/block_queue_pool.cpp",
     "demuxer/demuxer_log_compressor.cpp",
     "demuxer/ffmpeg_demuxer_plugin.cpp",
@@ -126,6 +128,74 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
     "hisysevent:libhisysevent",
     "init:libbegetutil",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
+  ]
+
+  relative_install_dir = "media/media_plugins"
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+}
+
+ohos_shared_library("media_plugin_Mpeg4Muxer") {
+  branch_protector_ret = "pac_ret"
+  install_enable = true
+
+  sanitize = av_codec_sanitize
+
+  configs = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+
+  defines = [
+    "HST_ANY_WITH_NO_RTTI",
+    "MEDIA_OHOS",
+  ]
+
+  cflags = [
+    "-fno-exceptions",
+    "-Wall",
+    "-fno-common",
+    "-fstack-protector-all",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
+  ]
+
+  cflags_cc = [
+    "-std=c++17",
+    "-fno-rtti",
+  ]
+
+  include_dirs = [
+    "$av_codec_root_dir/interfaces",
+    "$av_codec_root_dir/interfaces/inner_api/native",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer/mpeg4_muxer",
+  ]
+
+  sources = [
+    "./muxer/mpeg4_muxer/audio_track.cpp",
+    "./muxer/mpeg4_muxer/avc_parser.cpp",
+    "./muxer/mpeg4_muxer/avio_stream.cpp",
+    "./muxer/mpeg4_muxer/basic_box.cpp",
+    "./muxer/mpeg4_muxer/basic_track.cpp",
+    "./muxer/mpeg4_muxer/box_parser.cpp",
+    "./muxer/mpeg4_muxer/cover_track.cpp",
+    "./muxer/mpeg4_muxer/hevc_parser.cpp",
+    "./muxer/mpeg4_muxer/mpeg4_muxer_plugin.cpp",
+    "./muxer/mpeg4_muxer/mpeg4_utils.cpp",
+    "./muxer/mpeg4_muxer/video_parser.cpp",
+    "./muxer/mpeg4_muxer/video_track.cpp",
+    "./common/stream_parser_manager.cpp",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
 

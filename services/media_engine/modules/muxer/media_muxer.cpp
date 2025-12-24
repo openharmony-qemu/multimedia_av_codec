@@ -56,6 +56,7 @@ const std::unordered_map<OutputFormat, std::set<std::string>> MUX_FORMAT_INFO = 
     {OutputFormat::AAC, {MimeType::AUDIO_AAC}},
     {OutputFormat::FLAC, {MimeType::AUDIO_FLAC, MimeType::IMAGE_JPG,
                           MimeType::IMAGE_PNG, MimeType::IMAGE_BMP}},
+    {OutputFormat::OGG, {MimeType::AUDIO_OPUS, MimeType::AUDIO_VORBIS}},
 };
 
 const std::map<std::string, std::set<std::string>> MUX_MIME_INFO = {
@@ -64,6 +65,8 @@ const std::map<std::string, std::set<std::string>> MUX_MIME_INFO = {
     {MimeType::AUDIO_RAW, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT, Tag::AUDIO_SAMPLE_FORMAT}},
     {MimeType::AUDIO_G711MU, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT, Tag::MEDIA_BITRATE}},
     {MimeType::AUDIO_FLAC, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT}},
+    {MimeType::AUDIO_OPUS, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT}},
+    {MimeType::AUDIO_VORBIS, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT, Tag::MEDIA_CODEC_CONFIG}},
     {MimeType::VIDEO_AVC, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
     {MimeType::VIDEO_MPEG4, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
     {MimeType::VIDEO_HEVC, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
@@ -452,6 +455,7 @@ std::shared_ptr<Plugins::MuxerPlugin> MediaMuxer::CreatePlugin(Plugins::OutputFo
         {Plugins::OutputFormat::WAV, MimeType::MEDIA_WAV},
         {Plugins::OutputFormat::AAC, MimeType::MEDIA_AAC},
         {Plugins::OutputFormat::FLAC, MimeType::MEDIA_FLAC},
+        {Plugins::OutputFormat::OGG, MimeType::MEDIA_OGG},
     };
     FALSE_RETURN_V_MSG_E(table.find(format) != table.end(), nullptr,
         "The output format %{public}d is not supported!", format);

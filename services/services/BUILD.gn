@@ -61,11 +61,12 @@ config("av_codec_service_config") {
     "$av_codec_root_dir/services/engine/plugin/interface",
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/services/codec/ipc",
-    "$av_codec_root_dir/services/services/codec/server",
-    "$av_codec_root_dir/services/services/codec/server/post_processing",
+    "$av_codec_root_dir/services/services/codec/server/video",
+    "$av_codec_root_dir/services/services/codec/server/video/post_processing",
     "$av_codec_root_dir/services/services/codeclist/ipc",
     "$av_codec_root_dir/services/services/codeclist/server",
     "$av_codec_root_dir/services/services/common",
+    "$av_codec_root_dir/services/services/common/event_manager",
     "$av_codec_root_dir/services/services/factory",
     "$av_codec_root_dir/services/services/muxer/ipc",
     "$av_codec_root_dir/services/services/muxer/server",
@@ -127,13 +128,13 @@ ohos_shared_library("av_codec_service") {
       "$av_codec_root_dir/services/drm_decryptor/codec_drm_decrypt.cpp",
       "codec/ipc/codec_listener_proxy.cpp",
       "codec/ipc/codec_service_stub.cpp",
-      "codec/server/codec_factory.cpp",
-      "codec/server/codec_param_checker.cpp",
-      "codec/server/codec_server.cpp",
-      "codec/server/post_processing/dynamic_controller.cpp",
-      "codec/server/post_processing/dynamic_interface.cpp",
-      "codec/server/post_processing/state_machine.cpp",
-      "codec/server/temporal_scalability.cpp",
+      "codec/server/video/codec_factory.cpp",
+      "codec/server/video/codec_param_checker.cpp",
+      "codec/server/video/codec_server.cpp",
+      "codec/server/video/post_processing/dynamic_controller.cpp",
+      "codec/server/video/post_processing/dynamic_interface.cpp",
+      "codec/server/video/post_processing/state_machine.cpp",
+      "codec/server/video/temporal_scalability.cpp",
     ]
   }
   if (av_codec_support_codeclist) {
@@ -160,8 +161,6 @@ ohos_shared_library("av_codec_service") {
       "$av_codec_root_dir/services/engine/codeclist:av_codec_engine_codeclist",
     ]
   }
-
-  defines = [ "AVCODEC_SUPPORT_EVENT_MANAGER" ]
 
   external_deps = [
     "c_utils:utils",

@@ -224,6 +224,7 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
 /**************************** UninitializedState start ****************************/
 void HCodec::UninitializedState::OnStateEntered()
 {
+    codec_->ptsToProcessTimesMap_.clear();
     codec_->gotFirstInput_ = false;
     codec_->gotFirstOutput_ = false;
     codec_->onePtsInToOutTotalCostUs_ = 0;
@@ -657,6 +658,7 @@ void HCodec::RunningState::OnShutDown(const MsgInfo &info)
 void HCodec::RunningState::OnFlush(const MsgInfo &info)
 {
     codec_->isBufferCirculating_ = false;
+    codec_->ptsToProcessTimesMap_.clear();
     SLOGD("begin to ask omx to flush");
     int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_FLUSH, OMX_ALL, {});
     if (ret == HDF_SUCCESS) {

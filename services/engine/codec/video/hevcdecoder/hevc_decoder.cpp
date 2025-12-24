@@ -114,6 +114,7 @@ HevcDecoder::HevcDecoder(const std::string &name) : codecName_(name), state_(Sta
 
     initParams_.logFxn = nullptr;
     initParams_.uiChannelID = 0;
+    initParams_.uiDecodeMode = IHW265_DECODE_VIDEO;
     InitHevcParams();
 }
 

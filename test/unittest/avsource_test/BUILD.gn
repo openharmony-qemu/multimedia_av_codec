@@ -58,9 +58,12 @@ ohos_unittest("avsource_capi_unit_test") {
   if (av_codec_support_source) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "./avsource_format_aiff_unit_test.cpp",
       "./avsource_format_unit_test.cpp",
       "./avsource_format_3g2_unit_test.cpp",
       "./avsource_format_3gp_unit_test.cpp",
+      "./avsource_format_caf_unit_test.cpp",
+      "./avsource_format_dat_unit_test.cpp",
       "./avsource_format_m4v_unit_test.cpp",
       "./avsource_format_vob_unit_test.cpp",
       "./avsource_format_wmv_unit_test.cpp",
@@ -127,8 +130,11 @@ ohos_unittest("avsource_inner_unit_test") {
   if (av_codec_support_source) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "./avsource_format_aiff_unit_test.cpp",
       "./avsource_format_3g2_unit_test.cpp",
       "./avsource_format_3gp_unit_test.cpp",
+      "./avsource_format_caf_unit_test.cpp",
+      "./avsource_format_dat_unit_test.cpp",
       "./avsource_format_m4v_unit_test.cpp",
       "./avsource_format_vob_unit_test.cpp",
       "./avsource_format_wmv_unit_test.cpp",

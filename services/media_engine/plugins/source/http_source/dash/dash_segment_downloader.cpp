@@ -25,18 +25,18 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-constexpr uint32_t VID_RING_BUFFER_SIZE = 20 * 1024 * 1024;
-constexpr uint32_t AUD_RING_BUFFER_SIZE = 2 * 1024 * 1024;
-constexpr uint32_t SUBTITLE_RING_BUFFER_SIZE = 1 * 1024 * 1024;
-constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 5 * 1024 * 1024;
+constexpr uint32_t VID_RING_BUFFER_SIZE = 4 * 1024 * 1024;
+constexpr uint32_t AUD_RING_BUFFER_SIZE = 400 * 1024;
+constexpr uint32_t SUBTITLE_RING_BUFFER_SIZE = 200 * 1024;
+constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 1 * 1024 * 1024;
 constexpr int DEFAULT_WAIT_TIME = 2;
 constexpr int32_t HTTP_TIME_OUT_MS = 10 * 1000;
 constexpr uint32_t SPEED_MULTI_FACT = 1000;
 constexpr uint32_t BYTE_TO_BIT = 8;
 constexpr int PLAY_WATER_LINE = 5 * 1024;
 constexpr int64_t BYTES_TO_BIT = 8;
-constexpr int32_t DEFAULT_VIDEO_WATER_LINE = 512 * 1024;
-constexpr int32_t DEFAULT_AUDIO_WATER_LINE = 96 * 1024;
+constexpr int32_t DEFAULT_VIDEO_WATER_LINE = 128 * 1024;
+constexpr int32_t DEFAULT_AUDIO_WATER_LINE = 24 * 1024;
 constexpr float DEFAULT_MIN_CACHE_TIME = 0.3;
 constexpr float DEFAULT_MAX_CACHE_TIME = 10.0;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
@@ -46,7 +46,7 @@ constexpr uint32_t BUFFERING_TIME_OUT_MS = 1000;
 constexpr uint32_t UPDATE_CACHE_STEP = 10;
 constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
-constexpr size_t DOWNLOADER_RESUME_THRESHOLD = 10 * 1024 * 1024;
+constexpr size_t DOWNLOADER_RESUME_THRESHOLD = 2 * 1024 * 1024;
 constexpr int WRITTING_DATA_LOG_FREQUENCY = 20;
 
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
@@ -102,6 +102,14 @@ void DashSegmentDownloader::Init()
         return shareDownloader->SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
             std::forward<decltype(notBlock)>(notBlock));
     };
+    if (downloader_ != nullptr && downloadCallback_ != nullptr) {
+        downloader_->SetDownloadCallback(downloadCallback_);
+    }
+}
+
+void DashSegmentDownloader::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
+{
+    downloadCallback_ = callback;
 }
 
 bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& dashSegment)
@@ -410,7 +418,6 @@ void DashSegmentDownloader::HandleCachedDuration()
         if (callback_ != nullptr) {
             MEDIA_LOG_D("HandleCachedDuration OnEvent streamId: " PUBLIC_LOG_D32 " cachedDuration: "
                 PUBLIC_LOG_U64, streamId_, cachedDuration);
-            callback_->OnEvent({PluginEventType::CACHED_DURATION, {cachedDuration}, "buffering_duration"});
         }
         lastDurationRecord_ = cachedDuration;
     }
@@ -687,6 +694,9 @@ bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& rema
         }
 
         downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
+        if (downloader_ != nullptr && downloadCallback_ != nullptr) {
+            downloader_->SetDownloadCallback(downloadCallback_);
+        }
         downloader_->Init();
         buffer_->Clear();
         segmentList_.clear();
@@ -740,6 +750,9 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
         });
 
         downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
+        if (downloader_ != nullptr && downloadCallback_ != nullptr) {
+            downloader_->SetDownloadCallback(downloadCallback_);
+        }
         downloader_->Init();
         MEDIA_LOG_I("CleanSegmentBuffer bufferHead:" PUBLIC_LOG_ZU " ,bufferTail:" PUBLIC_LOG_ZU " ,clearTail:"
             PUBLIC_LOG_ZU, buffer_->GetHead(), buffer_->GetTail(), clearTail);
@@ -826,6 +839,9 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
         });
 
         downloader_ = std::make_shared<Downloader>("dashSegment", sourceLoader_);
+        if (downloader_ != nullptr && downloadCallback_ != nullptr) {
+            downloader_->SetDownloadCallback(downloadCallback_);
+        }
         downloader_->Init();
         MEDIA_LOG_I("CleanBufferByTime bufferHead:" PUBLIC_LOG_ZU " ,bufferTail:" PUBLIC_LOG_ZU " ,clearTail:"
             PUBLIC_LOG_ZU " ,seq:" PUBLIC_LOG_D64 ",size:" PUBLIC_LOG_ZU, buffer_->GetHead(), buffer_->GetTail(),

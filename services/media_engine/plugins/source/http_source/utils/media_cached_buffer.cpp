@@ -27,7 +27,7 @@ namespace Media {
 constexpr size_t CACHE_FRAGMENT_MAX_NUM_DEFAULT = 300; // Maximum number of fragment nodes
 constexpr size_t CACHE_FRAGMENT_MAX_NUM_LARGE = 10; // Maximum number of fragment nodes
 constexpr size_t CACHE_FRAGMENT_MIN_NUM_DEFAULT = 3; // Minimum number of fragment nodes
-constexpr double NEW_FRAGMENT_INIT_CHUNK_NUM = 128.0; // Restricting the cache size of seek operation, 128 = 2MB
+constexpr double NEW_FRAGMENT_INIT_CHUNK_NUM = 8.0; // Restricting the cache size of seek operation, 8 = 128KB
 constexpr double NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR = 0.25;
 constexpr double CACHE_RELEASE_FACTOR_DEFAULT = 10;
 constexpr double TO_PERCENT = 100;
@@ -423,6 +423,7 @@ size_t CacheMediaChunkBufferHlsImpl::Write(void* ptr, uint64_t inOffset, size_t 
         chunkPos = std::prev(chunkList.end());
     } else {
         if (freeChunks_.empty()) {
+            MEDIA_LOG_W("hls cache no free chunk.");
             return 0; // 只有hls可以return 0
         }
         MEDIA_LOG_D("not find fragment.");

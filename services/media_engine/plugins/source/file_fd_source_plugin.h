@@ -59,6 +59,8 @@ public:
     void NotifyReadFail();
     void SetEnableOnlineFdCache(bool isEnableFdCache) override;
     bool IsLocalFd() override;
+    Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
+
 private:
     Status ParseUriInfo(const std::string& uri);
     Status ReadOfflineFile(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
@@ -83,7 +85,7 @@ private:
     bool IsValidTime(int64_t curTime, int64_t lastTime);
     void WaitForInterrupt(int32_t waitTimeMS);
     void CheckAndNotifyBufferingEnd();
-    
+    int64_t GetCurrentMillisecond();
     int32_t fd_ {-1};
     int64_t offset_ {0};
     uint64_t size_ {0};
@@ -117,6 +119,11 @@ private:
     int64_t lastReadTime_ {0};
     bool isEnableFdCache_{ true };
     int loc_ {0};
+    int64_t totalDownLoadBytes_ {0};
+    int32_t toalDownloadCount_ {0};
+    int64_t firstDownloadTime_ {0};
+    int64_t firstDownloadTimestamp_ {0};
+    int64_t totalDownloadDuringTime_ {0};
 };
 } // namespace FileSource
 } // namespace Plugins

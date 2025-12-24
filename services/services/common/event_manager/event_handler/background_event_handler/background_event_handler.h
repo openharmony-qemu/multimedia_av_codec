@@ -19,12 +19,14 @@
 #include <mutex>
 #include <unordered_map>
 #include <vector>
+#include <chrono>
 #include "instance_info.h"
 #include "refbase.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-using ObjectList = std::unordered_multimap<pid_t, InstanceId>;
+using FreezeStartTimeType = std::chrono::system_clock::time_point;
+using ObjectList = std::unordered_multimap<pid_t, std::pair<InstanceId, FreezeStartTimeType>>;
 
 class BackGroundEventHandler {
 public:

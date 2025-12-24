@@ -18,7 +18,6 @@
 
 #include <string>
 #include <sys/types.h>
-#include "nocopyable.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -90,17 +89,17 @@ struct AudioSourceFaultInfo {
     std::string errMsg;
 };
 
-__attribute__((visibility("default"))) void FaultEventWrite(FaultType faultType, const std::string& msg,
-                                                            const std::string& module);
-__attribute__((visibility("default"))) void ServiceStartEventWrite(uint32_t useTime, const std::string& module);
-__attribute__((visibility("default"))) void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo);
-__attribute__((visibility("default"))) void CodecStopEventWrite(pid_t clientPid, uid_t clientUid,
-                                                                int32_t codecInstanceId);
-__attribute__((visibility("default"))) void FaultDemuxerEventWrite(DemuxerFaultInfo& demuxerFaultInfo);
-__attribute__((visibility("default"))) void FaultAudioCodecEventWrite(AudioCodecFaultInfo& audioCodecFaultInfo);
-__attribute__((visibility("default"))) void FaultVideoCodecEventWrite(VideoCodecFaultInfo& videoCodecFaultInfo);
-__attribute__((visibility("default"))) void FaultMuxerEventWrite(MuxerFaultInfo& muxerFaultInfo);
-__attribute__((visibility("default"))) void FaultRecordAudioEventWrite(AudioSourceFaultInfo& audioSourceFaultInfo);
+void FaultEventWrite(FaultType faultType, const std::string& msg,
+                     const std::string& module);
+void ServiceStartEventWrite(uint32_t useTime, const std::string& module);
+void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo);
+void CodecStopEventWrite(pid_t clientPid, uid_t clientUid,
+                         int32_t codecInstanceId);
+void FaultDemuxerEventWrite(DemuxerFaultInfo& demuxerFaultInfo);
+void FaultAudioCodecEventWrite(AudioCodecFaultInfo& audioCodecFaultInfo);
+void FaultVideoCodecEventWrite(VideoCodecFaultInfo& videoCodecFaultInfo);
+void FaultMuxerEventWrite(MuxerFaultInfo& muxerFaultInfo);
+void FaultRecordAudioEventWrite(AudioSourceFaultInfo& audioSourceFaultInfo);
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // AVCODEC_SYSEVENT_H

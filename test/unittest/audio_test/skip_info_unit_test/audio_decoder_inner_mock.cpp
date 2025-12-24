@@ -71,7 +71,7 @@ int32_t AudioDecoderInnerMock::Create(const char *mimetype)
 
 int32_t AudioDecoderInnerMock::CreateByName(const char *name)
 {
-    innerBufferQueue_ = Media::AVBufferQueue::Create(4, Media::MemoryType::SHARED_MEMORY, "sikpInfoUtBuffer");  // 4
+    innerBufferQueue_ = Media::AVBufferQueue::Create(10, Media::MemoryType::SHARED_MEMORY, "sikpInfoUtBuffer");  // 10
     audioCodec_ = AudioCodecFactory::CreateByName(name);
     if (audioCodec_ == nullptr) {
         return -1;
@@ -100,8 +100,12 @@ int32_t AudioDecoderInnerMock::Start(int32_t sampleRate, int32_t channel, std::v
     auto meta = std::make_shared<Media::Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(channel);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(OHOS::Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
     if (codecConfig != nullptr && codecConfig->size() > 0) {
         meta->Set<Tag::MEDIA_CODEC_CONFIG>(*codecConfig);
+    }
+    if (blockAlign_ != 0) {
+        meta->Set<Tag::AUDIO_BLOCK_ALIGN>(blockAlign_);
     }
     audioCodec_->Configure(meta);
 
@@ -150,6 +154,8 @@ int32_t AudioDecoderInnerMock::Stop()
 int32_t AudioDecoderInnerMock::DecodeInput(const uint8_t *dataIn, uint32_t inSizeBytes, std::vector<uint8_t> *skipInfo)
 {
     // 申请avbuffer
+    outputPts_ = 0;
+    outputFlag_ = 0;
     Media::AVBufferConfig avBufferConfig;
     avBufferConfig.size = GetInputBufferSize();
     std::shared_ptr<AVBuffer> inputBuffer = nullptr;
@@ -166,7 +172,8 @@ int32_t AudioDecoderInnerMock::DecodeInput(const uint8_t *dataIn, uint32_t inSiz
         DEMO_LOG("DecodeInput memcpy_s failed!");
     }
     inputBuffer->memory_->SetSize(inSizeBytes);
-    inputBuffer->flag_ = AVCODEC_BUFFER_FLAGS_NONE;
+    inputBuffer->flag_ = flag_;
+    inputBuffer->pts_ = pts_;
     // buffer 送解码器
     mediaCodecProducer_->PushBuffer(inputBuffer, true);
     return 0;
@@ -191,11 +198,13 @@ int32_t AudioDecoderInnerMock::DecodeOutput(uint8_t *dataOut, int32_t &outSizeBy
             DEMO_LOG("DecodeOutput memcpy_s failed!");
         }
     }
+    outputPts_ = outputBuffer->pts_;
+    outputFlag_ = outputBuffer->flag_;
     // 释放buffer
     implConsumer_->ReleaseBuffer(outputBuffer);
     outputBufferQueue_.pop();
     outSizeBytes = static_cast<int32_t>(size);
-    return 0;
+    return static_cast<int32_t>(outputBufferQueue_.size());
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

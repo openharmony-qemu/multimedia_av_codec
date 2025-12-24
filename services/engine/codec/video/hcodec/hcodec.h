@@ -231,7 +231,7 @@ protected:
     void UpdateOwner();
     void UpdateOwner(OMX_DIRTYPE port);
     void ReduceOwner(OMX_DIRTYPE port, BufferOwner owner);
-    void ChangeOwner(BufferInfo& info, BufferOwner newOwner);
+    TimePoint ChangeOwner(BufferInfo& info, BufferOwner newOwner);
     void OnPrintAllBufferOwner(const MsgInfo& msg);
     void PrintAllBufferInfo();
     std::string OnGetHidumperInfo();
@@ -338,6 +338,9 @@ protected:
     virtual int32_t ActiveBuffers() { return AVCS_ERR_UNSUPPORT; }
     virtual int32_t DecreaseFreq() { return AVCS_ERR_UNSUPPORT; }
     virtual int32_t RecoverFreq() { return AVCS_ERR_UNSUPPORT; }
+
+    virtual void RecordProcessTimeOfUpstream(const std::shared_ptr<AVBuffer>& avBuffer) {}
+    virtual void AppendProcessTimeOfUs(const std::shared_ptr<AVBuffer>& avBuffer, int64_t pts, const TimePoint& now) {}
 
     // template
     template <typename T>
@@ -446,6 +449,8 @@ protected:
     int pid_ = -1;
     bool isLpp_ = false;
     double codecRate_ = 0.0;
+    // save the processing time point corresponding to pts
+    std::map<int64_t, std::vector<int64_t>> ptsToProcessTimesMap_;
     static constexpr uint32_t MAX_BUFFER_COUNT = 32;
 
     // VRR

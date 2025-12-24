@@ -30,14 +30,20 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "Video
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-int32_t VideoEncoder::Create(const std::string &codecMime, bool isSoftware)
+int32_t VideoEncoder::Create(bool createByMime, const std::string &codecMime, bool isSoftware)
 {
     auto codecName = GetCodecName(codecMime, true, isSoftware);
-    CHECK_AND_RETURN_RET_LOG(!codecName.empty(), AVCODEC_SAMPLE_ERR_ERROR,
-        "Codec not supported, mime: %{public}s, software: %{public}d", codecMime.c_str(), isSoftware);
+    if (codecName.empty()) {
+        AVCODEC_LOGE("Codec not supported, mime: %{public}s, software: %{public}d", codecMime.c_str(), isSoftware);
+    }
 
-    codec_ = std::shared_ptr<OH_AVCodec>(
-        OH_VideoEncoder_CreateByName(codecName.c_str()), OH_VideoEncoder_Destroy);
+    if (createByMime) {
+        codec_ = std::shared_ptr<OH_AVCodec>(
+            OH_VideoEncoder_CreateByMime(codecMime.c_str()), OH_VideoEncoder_Destroy);
+    } else {
+        codec_ = std::shared_ptr<OH_AVCodec>(
+            OH_VideoEncoder_CreateByName(codecName.c_str()), OH_VideoEncoder_Destroy);
+    }
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
 
     AVCODEC_LOGI("Succeed, codec name: %{public}s", codecName.c_str());

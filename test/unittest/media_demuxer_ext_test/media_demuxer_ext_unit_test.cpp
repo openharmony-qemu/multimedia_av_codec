@@ -3272,4 +3272,46 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleHlsSeek_002, TestSize.Le
     Status ret = mediaDemuxer_->HandleHlsSeek();
     EXPECT_EQ(ret, Status::OK);
 }
+
+/**
+ * @tc.name  : MediaDemuxerExt_RecordDemuxerTimeStamp_001
+ * @tc.number: MediaDemuxerExt_RecordDemuxerTimeStamp_001
+ * @tc.desc  : Test stage == StallingStage::DEMUXER_START
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_RecordDemuxerTimeStamp_001, TestSize.Level1)
+{
+    AVBuffer buffer;
+    buffer.meta_ = std::make_shared<Meta>();
+    StallingStage stage = StallingStage::DEMUXER_START;
+
+    mediaDemuxer_->RecordDemuxerTimeStamp(buffer, stage);
+
+    std::vector<int64_t> timeStampList;
+    bool ret = buffer.meta_->GetData(Tag::STALLING_TIMESTAMP, timeStampList);
+    ASSERT_TRUE(ret);
+    ASSERT_EQ(timeStampList.size(), NUM_2);
+    EXPECT_EQ(timeStampList[0], static_cast<int64_t>(stage));
+    EXPECT_GT(timeStampList[1], NUM_0);
+}
+
+/**
+ * @tc.name  : MediaDemuxerExt_RecordDemuxerTimeStamp_002
+ * @tc.number: MediaDemuxerExt_RecordDemuxerTimeStamp_002
+ * @tc.desc  : Test stage == StallingStage::DEMUXER_START
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_RecordDemuxerTimeStamp_002, TestSize.Level1)
+{
+    AVBuffer buffer;
+    buffer.meta_ = std::make_shared<Meta>();
+    StallingStage stage = StallingStage::DEMUXER_END;
+
+    mediaDemuxer_->RecordDemuxerTimeStamp(buffer, stage);
+
+    std::vector<int64_t> timeStampList;
+    bool ret = buffer.meta_->GetData(Tag::STALLING_TIMESTAMP, timeStampList);
+    ASSERT_TRUE(ret);
+    ASSERT_EQ(timeStampList.size(), NUM_2);
+    EXPECT_EQ(timeStampList[0], static_cast<int64_t>(stage));
+    EXPECT_GT(timeStampList[1], NUM_0);
+}
 }  // namespace OHOS::Media

@@ -34,6 +34,8 @@ constexpr int MAX_CHANNEL_COUNT_APE = 2;
 constexpr int MAX_CHANNEL_COUNT_WMA = 2;
 constexpr int MAX_CHANNEL_COUNT_RAW = 16;
 constexpr int MAX_CHANNEL_COUNT_G711A = 6;
+constexpr int MAX_CHANNEL_COUNT_DVAUDIO = 2;
+constexpr int MAX_CHANNEL_COUNT_DTS = 6;
 
 constexpr int MIN_BIT_RATE_AAC = 8000;
 constexpr int MAX_BIT_RATE_AAC = 960000;
@@ -69,6 +71,9 @@ const std::vector<int32_t> AUDIO_MP3_SAMPLE_RATE = {8000, 11025, 12000, 16000, 2
 const std::vector<int32_t> AUDIO_RAW_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000,
     44100, 48000, 64000, 88200, 96000, 192000};
 
+const std::vector<int32_t> AUDIO_DVAUDIO_SAMPLE_RATE = {48000};
+const std::vector<int32_t> AUDIO_DTS_SAMPLE_RATE = {8000, 16000, 32000, 11025, 22050, 44100, 12000, 24000, 48000};
+
 constexpr int MIN_BIT_RATE_FLAC = 32000;
 constexpr int MAX_BIT_RATE_FLAC = 1536000;
 constexpr int MIN_FLAC_COMPLIANCE_LEVEL = -2;
@@ -86,6 +91,9 @@ constexpr int MIN_BIT_RATE_AAC_ENCODER = 1;
 constexpr int MAX_BIT_RATE_AAC_ENCODER = 500000;
 
 constexpr int MAX_BIT_RATE_RAW = 1536000;
+
+constexpr int MAX_BIT_RATE_DVAUDIO = 1536000;
+constexpr int MAX_BIT_RATE_DTS = 1536000;
 
 #ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
 const std::vector<int32_t> AUDIO_VIVID_SAMPLE_RATE = {32000, 44100, 48000, 96000, 192000};
@@ -107,10 +115,8 @@ constexpr int MAX_CHANNEL_COUNT_OPUS_ENC = 2;
 constexpr int MAX_CHANNEL_COUNT_OPUS_DEC = 255;
 const std::vector<int32_t> AUDIO_OPUS_SAMPLE_RATE = {8000, 12000, 16000, 24000, 48000};
 #endif
-#ifdef SUPPORT_CODEC_COOK
 constexpr int MAX_BIT_RATE_COOK = 510000;
 const std::vector<int32_t> AUDIO_COOK_SAMPLE_RATE = {8000, 11025, 22050, 44100};
-#endif
 #ifdef SUPPORT_CODEC_EAC3
 constexpr int MIN_BIT_RATE_EAC3 = 32000;
 constexpr int MAX_BIT_RATE_EAC3 = 640000;
@@ -762,7 +768,36 @@ CapabilityData AudioCodeclistInfo::GetG711aDecoderCapability()
     return audioG711aDecoderCapability;
 }
 
-#ifdef SUPPORT_CODEC_COOK
+CapabilityData  AudioCodeclistInfo::GetDVAudioDecoderCapability()
+{
+    CapabilityData audioDVAudioCapability;
+    audioDVAudioCapability.codecName = AVCodecCodecName::AUDIO_DECODER_DVAUDIO_NAME;
+    audioDVAudioCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioDVAudioCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_DVAUDIO;
+    audioDVAudioCapability.isVendor = false;
+    audioDVAudioCapability.bitrate = Range(1, MAX_BIT_RATE_DVAUDIO);
+    audioDVAudioCapability.channels = Range(MAX_CHANNEL_COUNT_DVAUDIO, MAX_CHANNEL_COUNT_DVAUDIO);
+    audioDVAudioCapability.sampleRate = AUDIO_DVAUDIO_SAMPLE_RATE;
+    audioDVAudioCapability.sampleRateRanges = convertVectorToRange(AUDIO_DVAUDIO_SAMPLE_RATE);
+    audioDVAudioCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioDVAudioCapability;
+}
+
+CapabilityData  AudioCodeclistInfo::GetDtsDecoderCapability()
+{
+    CapabilityData audioDtsCapability;
+    audioDtsCapability.codecName = AVCodecCodecName::AUDIO_DECODER_DTS_NAME;
+    audioDtsCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioDtsCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_DTS;
+    audioDtsCapability.isVendor = false;
+    audioDtsCapability.bitrate = Range(1, MAX_BIT_RATE_DTS);
+    audioDtsCapability.channels = Range(1, MAX_CHANNEL_COUNT_DTS);
+    audioDtsCapability.sampleRate = AUDIO_DTS_SAMPLE_RATE;
+    audioDtsCapability.sampleRateRanges = convertVectorToRange(AUDIO_DTS_SAMPLE_RATE);
+    audioDtsCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioDtsCapability;
+}
+
 CapabilityData  AudioCodeclistInfo::GetCookDecoderCapability()
 {
     CapabilityData audioCookCapability;
@@ -777,7 +812,6 @@ CapabilityData  AudioCodeclistInfo::GetCookDecoderCapability()
     audioCookCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioCookCapability;
 }
-#endif
 
 CapabilityData AudioCodeclistInfo::GetAc3DecoderCapability()
 {
@@ -829,6 +863,11 @@ CapabilityData AudioCodeclistInfo::GetAlacDecoderCapability()
 AudioCodeclistInfo::AudioCodeclistInfo()
 {
     audioCapabilities_ = {
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
+                          GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
+                          GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),
+                          GetL2hcDecoderCapability(), GetVendorAacEncoderCapability(),
+#endif
                           GetMP3DecoderCapability(),   GetAacDecoderCapability(),    GetFlacDecoderCapability(),
                           GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(), GetAmrwbDecoderCapability(),
                           GetG711muDecoderCapability(), GetRawDecoderCapability(), GetAacEncoderCapability(),
@@ -837,17 +876,12 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetGsmMsDecoderCapability(), GetGsmDecoderCapability(), GetAlacDecoderCapability(),
                           GetWMAV1DecoderCapability(), GetWMAV2DecoderCapability(), GetWMAProDecoderCapability(),
                           GetIlbcDecoderCapability(), GetTruehdDecoderCapability(), GetTwinVQDecoderCapability(),
-#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
-                          GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
-                          GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),
-                          GetL2hcDecoderCapability(), GetVendorAacEncoderCapability(),
-#endif
 #ifdef SUPPORT_CODEC_OPUS
                           GetOpusDecoderCapability(), GetOpusEncoderCapability(),
 #endif
-#ifdef SUPPORT_CODEC_COOK
+    GetDVAudioDecoderCapability(),
+    GetDtsDecoderCapability(),
     GetCookDecoderCapability(),
-#endif
 #ifdef SUPPORT_CODEC_EAC3
     GetEac3DecoderCapability(),
 #endif

@@ -1184,7 +1184,7 @@ HWTEST_F(HwEncSetParamNdkTest, SET_PROFILE_003, TestSize.Level1)
         vEncSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vEncSample->DEFAULT_BITRATE_MODE = VBR;
         vEncSample->DEFAULT_PROFILE = AVC_PROFILE_HIGH;
-        vEncSample->OUT_DIR = "/data/test/media/1280_720_30_10Mb.h264";
+        vEncSample->OUT_DIR = "/data/test/media/SET_PROFILE_003.h264";
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -1207,7 +1207,7 @@ HWTEST_F(HwEncSetParamNdkTest, SET_PROFILE_004, TestSize.Level1)
         vEncSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vEncSample->DEFAULT_BITRATE_MODE = VBR;
         vEncSample->DEFAULT_PROFILE = AVC_PROFILE_MAIN;
-        vEncSample->OUT_DIR = "/data/test/media/1280_720_30_10Mb.h264";
+        vEncSample->OUT_DIR = "/data/test/media/SET_PROFILE_004.h264";
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -1230,7 +1230,7 @@ HWTEST_F(HwEncSetParamNdkTest, SET_PROFILE_005, TestSize.Level1)
         vEncSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vEncSample->DEFAULT_BITRATE_MODE = VBR;
         vEncSample->DEFAULT_PROFILE = AVC_PROFILE_BASELINE;
-        vEncSample->OUT_DIR = "/data/test/media/1280_720_30_10Mb.h264";
+        vEncSample->OUT_DIR = "/data/test/media/SET_PROFILE_005.h264";
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());

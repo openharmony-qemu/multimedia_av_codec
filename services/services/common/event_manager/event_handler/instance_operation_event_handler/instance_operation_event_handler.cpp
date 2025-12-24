@@ -18,6 +18,7 @@
 #include "avcodec_log.h"
 #include "instance_info.h"
 #include "res_sched_client.h"
+#include "event_info_extented_key.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "InstanceOperationEventHandler"};

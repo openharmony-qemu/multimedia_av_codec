@@ -30,6 +30,7 @@
 #include "network/network_typs.h"
 #include "common/media_source.h"
 #include "media_source_loading_request.h"
+#include "download_metrics_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -105,7 +106,7 @@ public:
     int32_t GetServerError() const;
     bool IsSame(const std::shared_ptr<DownloadRequest>& other) const
     {
-        return id_ == other->id_ || (url_ == other->url_ && startPos_ == other->startPos_);
+        return url_ == other->url_ && startPos_ == other->startPos_;
     }
     const std::string GetUrl() const
     {
@@ -135,10 +136,6 @@ public:
     {
         return isIndexM3u8Request_;
     }
-    uint64_t GetId() const
-    {
-        return id_;
-    }
     bool IsClosed() const;
     void Close();
     double GetDuration() const;
@@ -156,13 +153,6 @@ public:
     void SetBitRateToRequestSize(const int32_t videoBitrate);
     std::atomic<bool> isHeaderUpdated_ {false};
     std::atomic<bool> haveRedirectRetry_ {false};
-
-private:
-    void GenerateId()
-    {
-        id_ = idCounter_.fetch_add(1);
-    }
-
 private:
     void WaitHeaderUpdated() const;
     std::string url_;
@@ -201,8 +191,6 @@ private:
     bool isAuthRequest_ {false};
     RequestProtocolType protocolType_ {RequestProtocolType::HTTP};
     int32_t bitRateToRequestSize_ {0};
-    uint64_t id_ {0};
-    static std::atomic<uint64_t> idCounter_;
 };
 
 class Downloader : public std::enable_shared_from_this<Downloader> {
@@ -229,6 +217,7 @@ public:
     void StopBufferring();
     std::string GetContentType();
     void ReStart();
+    void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
 
 private:
     bool BeginDownload();
@@ -258,6 +247,8 @@ private:
     void HandleRetErrorCode();
     void OpenAppUri();
     void HandleRedirect(Status& ret);
+    int64_t GetCurrentMillisecond();
+    static void UpdateDownloadInfo(Downloader *downloader, size_t dataLen);
 
     std::string name_;
     std::shared_ptr<NetworkClient> client_;
@@ -292,6 +283,10 @@ private:
     bool isContentTypeUpdated_{false};
     ConditionVariable sleepCond_;
     FairMutex sleepMutex_;
+    bool isFirstDownload_ {false};
+    int64_t lastDownloadTime_ {0};
+    int64_t startDownTime_ {0};
+    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
 };
 }
 }

@@ -58,6 +58,12 @@ std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate,
 void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
 int64_t AvTime2Us(int64_t hTime);
 std::string hexEncode(const std::vector<uint8_t>& data);
+bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size);
+bool IsHvccSyncFrame(const uint8_t *sample, int32_t size);
+int32_t GetNaluSize(const uint8_t *nalStart);
+const uint8_t* FindNalStartCode(const uint8_t *start, const uint8_t *end, int32_t &startCodeLen);
+bool IsAnnexbSyncFrame(const uint8_t *sample, int32_t size);
+bool IsHevcSyncFrame(const uint8_t *sample, int32_t size);
 
 struct FlacCodecConfig {
     bool GenerateCodecConfig(const std::shared_ptr<Meta> &trackDesc);

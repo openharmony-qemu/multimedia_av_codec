@@ -48,6 +48,7 @@ public:
     std::vector<CodecInstance> GetInstanceInfoListByActualPid(pid_t pid);
     std::optional<InstanceInfo> GetInstanceInfoByInstanceId(int32_t instanceId);
     std::optional<CodecInstance> GetCodecInstanceByInstanceId(int32_t instanceId);
+    std::unordered_map<std::string, uint32_t> GetHDecUsageStatistics();
     void SetInstanceInfoByInstanceId(int32_t instanceId, const InstanceInfo &info);
     std::vector<pid_t> GetActiveSecureDecoderPids();
 

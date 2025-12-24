@@ -18,8 +18,10 @@
 #include "avcodec_server_manager.h"
 #include "meta/meta_key.h"
 
+#include "event_info_extented_key.h"
 #include "instance_memory_update_event_handler.h"
 #include "instance_operation_event_handler.h"
+#include "statistics_event_handler.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "EventManager"};
@@ -33,15 +35,17 @@ EventManager &EventManager::GetInstance()
     return manager;
 }
 
+void EventManager::OnInstanceEvent(EventType type)
+{
+    Media::Meta eventMate;
+    OnInstanceEvent(type, eventMate);
+}
+
 void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
 {
     CHECK_AND_RETURN_LOG(type > EventType::UNKNOWN && type < EventType::END, "Unknown event type, ignore");
-    auto instanceId = EventInfoExtentedKey::GetInstanceIdFromMeta(meta);
-    if (instanceId == INVALID_INSTANCE_ID) {
-        return;
-    }
 
-    switch (type) {
+    switch (type & EventType::MASK) {
         case EventType::INSTANCE_INIT:
             OnInstanceInitEvent(meta);
             break;
@@ -60,15 +64,35 @@ void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
         case EventType::INSTANCE_ENCODE_END:
             OnInstanceEncodeEndEvent(meta);
             break;
+        case EventType::STATISTICS_EVENT:
+            OnStatisticsEvent(static_cast<StatisticsEventType>(type), meta);
+            break;
+        case EventType::STATISTICS_EVENT_SUBMIT:
+            OnStatisticsEventSubmit();
+            break;
+        case EventType::STATISTICS_EVENT_REGISTER_SUBMIT:
+            OnStatisticsEventRegisterSubmit();
+            break;
         default:
             AVCODEC_LOGW("Nothing to do with this event: %{public}d", static_cast<int32_t>(type));
             break;
     }
 }
 
+void EventManager::OnInstanceEvent(StatisticsEventType type)
+{
+    Media::Meta eventMate;
+    OnStatisticsEvent(type, eventMate);
+}
+
+void EventManager::OnInstanceEvent(StatisticsEventType type, Media::Meta &meta)
+{
+    OnStatisticsEvent(type, meta);
+}
+
 void EventManager::OnInstanceInitEvent(Media::Meta &meta)
 {
-    auto instanceId = EventInfoExtentedKey::GetInstanceIdFromMeta(meta);
+    auto instanceId = GetInstanceIdFromMeta(meta);
     auto instanceInfoOpt = AVCodecServerManager::GetInstance().GetInstanceInfoByInstanceId(instanceId);
     CHECK_AND_RETURN_LOG(instanceInfoOpt != std::nullopt, "Can not find this instance, id: %{public}d", instanceId);
     auto instanceInfo = instanceInfoOpt.value();
@@ -81,12 +105,23 @@ void EventManager::OnInstanceInitEvent(Media::Meta &meta)
     meta.GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, instanceInfo.forwardCaller.processName);
     meta.GetData(EventInfoExtentedKey::CODEC_TYPE.data(),          instanceInfo.codecType);
     meta.GetData(Media::Tag::MEDIA_CODEC_NAME,                     instanceInfo.codecName);
+    meta.GetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),    instanceInfo.videoCodecType);
     AVCodecServerManager::GetInstance().SetInstanceInfoByInstanceId(instanceId, instanceInfo);
 }
 
 void EventManager::OnInstanceReleaseEvent(Media::Meta &meta)
 {
     InstanceMemoryUpdateEventHandler::GetInstance().OnInstanceRelease(meta);
+}
+
+void EventManager::OnInstanceMemoryUpdateEvent(Media::Meta &meta)
+{
+    InstanceMemoryUpdateEventHandler::GetInstance().OnInstanceMemoryUpdate(meta);
+}
+
+void EventManager::OnInstanceMemoryResetEvent(Media::Meta &meta)
+{
+    InstanceMemoryUpdateEventHandler::GetInstance().OnInstanceMemoryReset(meta);
 }
 
 void EventManager::OnInstanceEncodeBeginEvent(Media::Meta &meta)
@@ -99,14 +134,19 @@ void EventManager::OnInstanceEncodeEndEvent(Media::Meta &meta)
     InstanceOperationEventHandler::GetInstance().OnInstanceEncodeEnd(meta);
 }
 
-void EventManager::OnInstanceMemoryUpdateEvent(Media::Meta &meta)
+void EventManager::OnStatisticsEvent(StatisticsEventType type, Media::Meta &meta)
 {
-    InstanceMemoryUpdateEventHandler::GetInstance().OnInstanceMemoryUpdate(meta);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(type, meta);
 }
 
-void EventManager::OnInstanceMemoryResetEvent(Media::Meta &meta)
+void EventManager::OnStatisticsEventSubmit()
 {
-    InstanceMemoryUpdateEventHandler::GetInstance().OnInstanceMemoryReset(meta);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+void EventManager::OnStatisticsEventRegisterSubmit()
+{
+    StatisticsEventInfo::GetInstance().RegisterSubmitEventTimer();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

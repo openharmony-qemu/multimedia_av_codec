@@ -223,6 +223,26 @@ enum VideoOrientationType : int32_t {
      */
     FLIP_V_ROT270
 };
+
+enum class RawVideoPixelFormat : int32_t {
+    UNKNOWN = -1,
+    /**
+     * yuv 420 planar.
+     */
+    YUV420P = 0,
+    /**
+     *  NV12. yuv 420 semiplanar.
+     */
+    NV12 = 1,
+    /**
+     *  NV21. yvu 420 semiplanar.
+     */
+    NV21 = 2,
+    /**
+     * RGBA.
+     */
+    RGBA = 3,
+};
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // MEDIA_AVCODEC_AV_COMMOM_H

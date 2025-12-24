@@ -308,6 +308,17 @@ sptr<AVBufferQueueConsumer> VideoDecoderAdapter::GetBufferQueueConsumer()
     return inputBufferQueueConsumer_;
 }
 
+static void RecordTimeStamp(AVBuffer& buffer, StallingStage stage)
+{
+    std::vector<int64_t> timeStampList;
+    int64_t nowTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+    buffer.meta_->GetData(Media::Tag::STALLING_TIMESTAMP, timeStampList);
+    timeStampList.push_back(static_cast<int64_t>(stage));
+    timeStampList.push_back(nowTime);
+    buffer.meta_->SetData(Media::Tag::STALLING_TIMESTAMP, timeStampList);
+}
+
 void VideoDecoderAdapter::AquireAvailableInputBuffer()
 {
     AVCodecTrace trace("VideoDecoderAdapter::AquireAvailableInputBuffer");
@@ -335,6 +346,7 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
                 tmpBuffer->pts_, tmpBuffer->flag_);
             isRenderStarted_ = true;
         }
+        RecordTimeStamp(*tmpBuffer, StallingStage::DECODER_START);
         int32_t ret = mediaCodec_->QueueInputBuffer(index);
         if (ret != ERR_OK) {
             MEDIA_LOG_E_SHORT("QueueInputBuffer failed, index: %{public}u,  bufferid: %{public}" PRIu64

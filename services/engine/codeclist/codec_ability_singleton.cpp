@@ -20,6 +20,7 @@
 #include "hcodec_loader.h"
 #endif
 #include "codec_ability_singleton.h"
+#include "instance_info.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecAbilitySingleton"};
@@ -183,6 +184,35 @@ std::unordered_map<std::string, std::vector<size_t>> CodecAbilitySingleton::GetM
 {
     std::lock_guard<std::mutex> lock(mutex_);
     return mimeCapIdxMap_;
+}
+
+int32_t CodecAbilitySingleton::GetVideoCodecTypeByCodecName(const std::string &codecName)
+{
+    constexpr auto hdecPair = std::pair(true,  static_cast<int32_t>(AVCODEC_TYPE_VIDEO_DECODER));
+    constexpr auto sdecPair = std::pair(false, static_cast<int32_t>(AVCODEC_TYPE_VIDEO_DECODER));
+    constexpr auto hencPair = std::pair(true,  static_cast<int32_t>(AVCODEC_TYPE_VIDEO_ENCODER));
+    constexpr auto sencPair = std::pair(false, static_cast<int32_t>(AVCODEC_TYPE_VIDEO_ENCODER));
+
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto it = std::find_if(capabilityDataArray_.begin(), capabilityDataArray_.end(), [&](const CapabilityData &cap) {
+        return cap.codecName == codecName;
+    });
+    if (it == capabilityDataArray_.end()) {
+        return static_cast<int32_t>(VideoCodecType::UNKNOWN);
+    }
+
+    int32_t ret = static_cast<int32_t>(VideoCodecType::UNKNOWN);
+    auto vcodecTypePair = std::make_pair(it->isVendor, it->codecType);
+    if (vcodecTypePair == hdecPair) {
+        ret = static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE);
+    } else if (vcodecTypePair == hencPair) {
+        ret = static_cast<int32_t>(VideoCodecType::ENCODER_HARDWARE);
+    } else if (vcodecTypePair == sdecPair) {
+        ret = static_cast<int32_t>(VideoCodecType::DECODER_SOFTWARE);
+    } else if (vcodecTypePair == sencPair) {
+        ret = static_cast<int32_t>(VideoCodecType::ENCODER_SOFTWARE);
+    }
+    return ret;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

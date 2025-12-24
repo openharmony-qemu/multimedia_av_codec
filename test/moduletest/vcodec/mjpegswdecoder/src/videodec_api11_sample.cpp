@@ -345,6 +345,26 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     return ret;
 }
 
+int32_t VDecAPI11Sample::ConfigureVideoDecoderNoPixelFormat()
+{
+    if (autoSwitchSurface) {
+        switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
+        if (OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]) != AV_ERR_INVALID_STATE) {
+            errCount++;
+        }
+    }
+    if (trackFormat == nullptr) {
+        trackFormat = OH_AVFormat_Create();
+    }
+    (void)OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetDoubleValue(trackFormat, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_ENABLE_SYNC_MODE, enbleSyncMode);
+    (void)OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, enbleBlankFrame);
+    int ret = OH_VideoDecoder_Configure(vdec_, trackFormat);
+    return ret;
+}
+
 void VDecAPI11Sample::CreateSurface()
 {
     cs[0] = Surface::CreateSurfaceAsConsumer();

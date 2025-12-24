@@ -36,9 +36,9 @@ AesDecryptor::AesDecryptor()
 
 AesDecryptor::~AesDecryptor()
 {
-    NZERO_LOG(memset_s(iv_, DECRYPT_UNIT_LEN, 0, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memset_s(initIv_, DECRYPT_UNIT_LEN, 0, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memset_s(key_, DECRYPT_UNIT_LEN, 0, DECRYPT_UNIT_LEN));
+    NZERO_LOG(memset_s(iv_, BLOCK_LEN, 0, BLOCK_LEN));
+    NZERO_LOG(memset_s(initIv_, BLOCK_LEN, 0, BLOCK_LEN));
+    NZERO_LOG(memset_s(key_, BLOCK_LEN, 0, BLOCK_LEN));
 }
 
 void AesDecryptor::Init()
@@ -51,18 +51,18 @@ void AesDecryptor::OnSourceKeyChange(const uint8_t* key, size_t keyLen, const ui
     if (keyLen <= 0) {
         return;
     }
-    NZERO_LOG(memcpy_s(iv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memcpy_s(initIv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memcpy_s(key_, DECRYPT_UNIT_LEN, key, keyLen > DECRYPT_UNIT_LEN ? DECRYPT_UNIT_LEN : keyLen));
-    AES_set_decrypt_key(key_, DECRYPT_COPY_LEN, &aesKey_);
+    NZERO_LOG(memcpy_s(iv_, BLOCK_LEN, iv, BLOCK_LEN));
+    NZERO_LOG(memcpy_s(initIv_, BLOCK_LEN, iv, BLOCK_LEN));
+    NZERO_LOG(memcpy_s(key_, BLOCK_LEN, key, keyLen > BLOCK_LEN ? BLOCK_LEN : keyLen));
+    AES_set_decrypt_key(key_, KEY_BITS, &aesKey_);
 }
 
-void AesDecryptor::Decrypt(uint8_t* decryptBuffer, uint8_t* decryptCache, uint32_t realLen)
+void AesDecryptor::Decrypt(uint8_t *in, uint8_t *out, uint32_t len)
 {
-    if (!decryptBuffer || !decryptCache) {
+    if (!in || !out || !len) {
         return;
     }
-    AES_cbc_encrypt(decryptBuffer, decryptCache, realLen, &aesKey_, iv_, AES_DECRYPT);
+    AES_cbc_encrypt(in, out, len, &aesKey_, iv_, AES_DECRYPT);
 }
 
 } // namespace Media

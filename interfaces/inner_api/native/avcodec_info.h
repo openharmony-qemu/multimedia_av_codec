@@ -617,6 +617,7 @@ public:
     static constexpr std::string_view VIDEO_AVC = "video/avc";
     static constexpr std::string_view VIDEO_AV1 = "video/av1";
     static constexpr std::string_view VIDEO_MPEG2 = "video/mpeg2";
+    static constexpr std::string_view VIDEO_MPEG1 = "video/mpeg";
     static constexpr std::string_view VIDEO_HEVC = "video/hevc";
     static constexpr std::string_view VIDEO_MPEG4 = "video/mp4v-es";
     static constexpr std::string_view VIDEO_VP8 = "video/vp8";
@@ -626,6 +627,8 @@ public:
     static constexpr std::string_view VIDEO_WMV3 = "video/wmv3";
     static constexpr std::string_view VIDEO_VVC = "video/vvc";
     static constexpr std::string_view VIDEO_MJPEG = "video/mjpeg";
+    static constexpr std::string_view VIDEO_DVVIDEO = "video/dvvideo";
+    static constexpr std::string_view VIDEO_RAWVIDEO = "video/rawvideo";
     static constexpr std::string_view AUDIO_MIMETYPE_L2HC = "audio/l2hc";
     static constexpr std::string_view AUDIO_AMR_NB = "audio/3gpp";
     static constexpr std::string_view AUDIO_AMR_WB = "audio/amr-wb";
@@ -686,6 +689,8 @@ public:
     static constexpr std::string_view AUDIO_ILBC = "audio/ilbc";
     static constexpr std::string_view AUDIO_TRUEHD = "audio/truehd";
     static constexpr std::string_view AUDIO_TWINVQ = "audio/twinvq";
+    static constexpr std::string_view AUDIO_DVAUDIO = "audio/dvaudio";
+    static constexpr std::string_view AUDIO_DTS = "audio/dts";
 };
 
 /**

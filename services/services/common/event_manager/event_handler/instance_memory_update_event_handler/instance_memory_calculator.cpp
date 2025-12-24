@@ -19,6 +19,7 @@
 #include "meta/meta_key.h"
 #include "avcodec_info.h"
 #include "avcodec_log.h"
+#include "event_info_extented_key.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

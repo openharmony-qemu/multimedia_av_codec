@@ -259,7 +259,7 @@ Status DemuxerFilter::DoPrepare()
     MEDIA_LOG_I_SHORT("trackCount: %{public}zu", trackInfos.size());
     if (trackInfos.size() == 0) {
         MEDIA_LOG_E_SHORT("Doprepare: trackCount is invalid.");
-        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED});
+        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED, ""});
         return Status::ERROR_INVALID_PARAMETER;
     }
     int32_t successNodeCount = 0;
@@ -268,10 +268,20 @@ Status DemuxerFilter::DoPrepare()
         return ret;
     }
     if (successNodeCount == 0) {
-        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_CONTAINER_TYPE});
+        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_CONTAINER_TYPE,
+            GetOriginalCodecName()});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     return Status::OK;
+}
+
+std::string DemuxerFilter::GetOriginalCodecName()
+{
+    std::string mime;
+    if (demuxer_) {
+        mime = demuxer_->GetOriginalCodecName();
+    }
+    return mime;
 }
 
 Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount)
@@ -320,7 +330,7 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
                                  || (hasInvalidAudio && !demuxer_->HasAudio());
     if (isOnlyInvalidAVTrack) {
         MEDIA_LOG_E("Only has invalid video or invalid audio track");
-        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED});
+        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED, GetOriginalCodecName()});
     }
     return ret;
 }

@@ -17,7 +17,7 @@
 #include <iostream>
 #include <fstream>
 #include "avcodec_codec_name.h"
-#include "audio_decoder_capi_mock.h"
+#include "audio_decoder_mock_base.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -31,12 +31,12 @@ public:
     static void SetUpTestCase(void) {}
     static void TearDownTestCase(void) {}
     void SetUp();
-    void TearDown() {}
+    void TearDown();
 protected:
     int32_t FillInputData();
     int32_t CreateMp3Decoder();
     int32_t CreateVorbisDecoder();
-    std::unique_ptr<AudioDecoderMockBase> capiMock_ = nullptr;
+    std::unique_ptr<AudioDecoderMockBase> decoderMock_ = nullptr;
     std::unique_ptr<std::ifstream> inputFile_ = nullptr;
     std::vector<uint8_t> inData_;
     uint32_t inDataSize_ = 0;
@@ -45,12 +45,12 @@ protected:
 
 int32_t AudioDecoderSkipInfoUnitTest::CreateMp3Decoder()
 {
-    capiMock_ = AudioDecoderMockBase::CreateDecoder();
+    decoderMock_ = AudioDecoderMockBase::CreateDecoder();
     inputFile_ = std::make_unique<std::ifstream>(INPUT_FILE_PATH_MP3, std::ios::binary);
-    if (capiMock_->CreateByName(AVCodecCodecName::AUDIO_DECODER_MP3_NAME.data()) != 0) {
+    if (decoderMock_->CreateByName(AVCodecCodecName::AUDIO_DECODER_MP3_NAME.data()) != 0) {
         return -1;
     }
-    if (capiMock_->Start(44100, 2, nullptr) != 0) {  // 44100 2
+    if (decoderMock_->Start(44100, 2, nullptr) != 0) {  // 44100 2
         return -2;  // -2
     }
     return 0;
@@ -59,17 +59,16 @@ int32_t AudioDecoderSkipInfoUnitTest::CreateMp3Decoder()
 int32_t AudioDecoderSkipInfoUnitTest::CreateVorbisDecoder()
 {
     int64_t size = 0;
-    // capiMock_ = std::make_unique<AudioDecoderCapiMock>();
-    capiMock_ = AudioDecoderMockBase::CreateDecoder();
+    decoderMock_ = AudioDecoderMockBase::CreateDecoder();
     inputFile_ = std::make_unique<std::ifstream>(INPUT_FILE_PATH_VORBIS, std::ios::binary);
     inputFile_->read(reinterpret_cast<char *>(&size), sizeof(size));
     std::vector<uint8_t> codecConfig(size, 0);
     inputFile_->read(reinterpret_cast<char *>(codecConfig.data()), size);
 
-    if (capiMock_->CreateByName(AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME.data()) != 0) {
+    if (decoderMock_->CreateByName(AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME.data()) != 0) {
         return -1;
     }
-    if (capiMock_->Start(44100, 2, &codecConfig) != 0) {  // 44100 2
+    if (decoderMock_->Start(44100, 2, &codecConfig) != 0) {  // 44100 2
         return -2;  // -2
     }
     return 0;
@@ -79,6 +78,13 @@ int32_t AudioDecoderSkipInfoUnitTest::CreateVorbisDecoder()
 void AudioDecoderSkipInfoUnitTest::SetUp()
 {
     inData_.resize(10240);  // 10240
+}
+
+void AudioDecoderSkipInfoUnitTest::TearDown()
+{
+    if (decoderMock_) {
+        decoderMock_->Stop();
+    }
 }
 
 int32_t AudioDecoderSkipInfoUnitTest::FillInputData()
@@ -129,11 +135,11 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, mp3_skip_start_001, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
         
         if (i == 1) {
             normalPcmSize = outSize;
@@ -165,11 +171,11 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, mp3_skip_start_002, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
         
         if (i == 1) {
             normalPcmSize = outSize;
@@ -204,13 +210,13 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, mp3_skip_start_003, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else if (i == testIndex + 1) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo2);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo2);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
         
         if (i == 1) {
             normalPcmSize = outSize;
@@ -242,11 +248,11 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, mp3_skip_end_001, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
         
         if (i == 1) {
             normalPcmSize = outSize;
@@ -277,11 +283,11 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, mp3_skip_end_002, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
         
         if (i == 1) {
             normalPcmSize = outSize;
@@ -312,11 +318,11 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, mp3_skip_end_003, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
         
         if (i == 1) {
             normalPcmSize = outSize;
@@ -343,11 +349,11 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, mp3_skip_start_end_001, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
         
         if (i == 1) {
             normalPcmSize = outSize;
@@ -378,11 +384,11 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, mp3_skip_start_end_002, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
         
         if (i == 1) {
             normalPcmSize = outSize;
@@ -413,11 +419,11 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, mp3_skip_start_end_003, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
         
         if (i == 1) {
             normalPcmSize = outSize;
@@ -428,6 +434,39 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, mp3_skip_start_end_003, TestSize.Level0)
             ASSERT_EQ(normalPcmSize, outSize);
         }
     }
+}
+
+
+/**
+ * @tc.name: mp3_eos_001
+ * @tc.desc: test eos
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderSkipInfoUnitTest, mp3_eos_001, TestSize.Level0)
+{
+    constexpr int32_t testIndex = 5;
+    ASSERT_EQ(CreateMp3Decoder(), 0);
+    int32_t outSize = 0;
+    std::vector<uint8_t> skipInfo {0x00, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    int32_t i = 0;
+    while (FillInputData() == 0 && i < testIndex) {
+        ++i;
+        outSize = 0;
+        if (i == testIndex) {
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+        } else {
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+        }
+        decoderMock_->DecodeOutput(nullptr, outSize);
+
+        if (i == testIndex) {
+            EXPECT_EQ(outSize, 0);
+        }
+    }
+    decoderMock_->SetFlag(0x01);
+    decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+    decoderMock_->DecodeOutput(nullptr, outSize);
+    EXPECT_EQ(decoderMock_->GetOutputFlag(), 0x01);
 }
 
 /**
@@ -447,11 +486,11 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, vorbis_skip_start_001, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
 
         if (i == testIndex) {
             EXPECT_EQ((normalPcmSize - (0X01 * sizeof(int16_t) * 2)), outSize);  // 2
@@ -476,11 +515,11 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, vorbis_skip_start_002, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
 
         if (i == testIndex) {
             EXPECT_EQ(outSize, 0);
@@ -507,11 +546,11 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, vorbis_skip_end_001, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
 
         if (i == testIndex) {
             EXPECT_EQ(outSize, 0);  // 2
@@ -538,11 +577,11 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, vorbis_skip_end_002, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
 
         if (i == testIndex) {
             EXPECT_EQ(outSize, 4096); // 4096
@@ -567,11 +606,11 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, vorbis_skip_all_001, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
 
         if (i == testIndex) {
             EXPECT_EQ(outSize, 0);  // 2
@@ -598,16 +637,80 @@ HWTEST_F(AudioDecoderSkipInfoUnitTest, vorbis_skip_all_002, TestSize.Level0)
         ++i;
         outSize = 0;
         if (i == testIndex) {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
         } else {
-            capiMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
         }
-        capiMock_->DecodeOutput(nullptr, outSize);
+        decoderMock_->DecodeOutput(nullptr, outSize);
 
         if (i == testIndex) {
             EXPECT_EQ(outSize, 4096 - (0x02 * sizeof(int16_t) * 2)); // 4096 2
         }
     }
+}
+
+/**
+ * @tc.name: vorbis_eos_001
+ * @tc.desc: test eos
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderSkipInfoUnitTest, vorbis_eos_001, TestSize.Level0)
+{
+    constexpr int32_t testIndex = 5;
+    ASSERT_EQ(CreateVorbisDecoder(), 0);
+    int32_t outSize = 0;
+    std::vector<uint8_t> skipInfo {0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    int32_t i = 0;
+    while (FillInputData() == 0 && i < testIndex) {
+        ++i;
+        outSize = 0;
+        if (i == testIndex) {
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+        } else {
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+        }
+        decoderMock_->DecodeOutput(nullptr, outSize);
+
+        if (i == testIndex) {
+            EXPECT_EQ(outSize, 0);
+        }
+    }
+    decoderMock_->SetFlag(0x01);
+    decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+    decoderMock_->DecodeOutput(nullptr, outSize);
+    EXPECT_EQ(decoderMock_->GetOutputFlag(), 0x01);
+}
+
+/**
+ * @tc.name: vorbis_eos_002
+ * @tc.desc: test eos
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDecoderSkipInfoUnitTest, vorbis_eos_002, TestSize.Level0)
+{
+    constexpr int32_t testIndex = 5;
+    ASSERT_EQ(CreateVorbisDecoder(), 0);
+    int32_t outSize = 0;
+    std::vector<uint8_t> skipInfo {0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    int32_t i = 0;
+    while (FillInputData() == 0 && i < testIndex) {
+        ++i;
+        outSize = 0;
+        if (i == testIndex) {
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, &skipInfo);
+        } else {
+            decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+        }
+        decoderMock_->DecodeOutput(nullptr, outSize);
+
+        if (i == testIndex) {
+            EXPECT_EQ(outSize, 0);
+        }
+    }
+    decoderMock_->SetFlag(0x01);
+    decoderMock_->DecodeInput(inData_.data(), inDataSize_, nullptr);
+    decoderMock_->DecodeOutput(nullptr, outSize);
+    EXPECT_EQ(decoderMock_->GetOutputFlag(), 0x01);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
