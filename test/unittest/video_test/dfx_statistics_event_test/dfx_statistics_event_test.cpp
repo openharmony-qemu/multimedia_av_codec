@@ -722,7 +722,8 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGI
 
     for (auto elapsedTime : {ELAPSEDTIME_THREADSHOLD / 2, ELAPSEDTIME_THREADSHOLD * 2}) {
         meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), elapsedTime);
-        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(
+            StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
 
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
