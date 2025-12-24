@@ -72,7 +72,6 @@ public:
 }
 }
 }
-
 using namespace OHOS;
 using namespace OHOS::Media::Plugins::HttpPlugin;
 using namespace OHOS::Media::Plugins;
@@ -190,11 +189,15 @@ void PostDownloadCleanup(std::shared_ptr<HttpMediaDownloader> httpMediaDownloade
     httpMediaDownloader = nullptr;
 }
 
-void HttpDownloaderFlvRun(uint8_t *data, size_t size)
+bool HttpDownloaderFlvRun(uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return false;
+    }
     std::shared_ptr<HttpMediaDownloader> httpMediaDownloader = InitializeAndDownload();
     PostDownloadSetup(httpMediaDownloader);
     PostDownloadCleanup(httpMediaDownloader);
+    return true;
 }
 
 /* Fuzzer entry point */

@@ -289,11 +289,6 @@ bool VideoDecSample::InitInputFile()
             int32_t ret = CreateWVc1Reader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateH263Reader failed");
 #endif
-#ifdef SUPPORT_CODEC_AVS
-        } else if (inPath_.find("avs") != std::string::npos || inPath_.find("avs") != std::string::npos) {
-            int32_t ret = CreateAvsReader();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateAvsReader failed");
-#endif
         } else if (inPath_.find("msvideo1") != std::string::npos) {
             int32_t ret = CreateMsvideo1Reader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMsvideo1Reader failed");
@@ -323,6 +318,15 @@ bool VideoDecSample::InitInputFile()
             int32_t ret = CreateRv40Reader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateRv40Reader failed");
 #endif
+        } else if (inPath_.find("mpeg1") != std::string::npos) {
+            int32_t ret = CreateMpeg1Reader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMpeg1Reader failed");
+        } else if (inPath_.find("dvvideo") != std::string::npos) {
+            int32_t ret = CreateDvvideoReader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateDvvideoReader failed");
+        } else if (inPath_.find("rawvideo") != std::string::npos) {
+            int32_t ret = CreateRawvideoReader();
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateRawvideoReader failed");
         } else {
             int32_t ret = CreateMpegReader();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "CreateMpegReader failed");
@@ -381,18 +385,6 @@ int32_t VideoDecSample::CreateWVc1Reader()
 
     signal_->reader_ = std::make_shared<WVc1Reader>();
     int32_t ret = std::static_pointer_cast<WVc1Reader>(signal_->reader_)->Init(info);
-    return ret;
-}
-#endif
-
-#ifdef SUPPORT_CODEC_AVS
-int32_t VideoDecSample::CreateAvsReader()
-{
-    std::shared_ptr<AvsReaderInfo> info = std::make_shared<AvsReaderInfo>();
-    info->inPath = inPath_;
-
-    signal_->reader_ = std::make_shared<AvsReader>();
-    int32_t ret = std::static_pointer_cast<AvsReader>(signal_->reader_)->Init(info);
     return ret;
 }
 #endif
@@ -485,6 +477,36 @@ int32_t VideoDecSample::CreateRv40Reader()
     return ret;
 }
 #endif
+
+int32_t VideoDecSample::CreateMpeg1Reader()
+{
+    std::shared_ptr<Mpeg1ReaderInfo> info = std::make_shared<Mpeg1ReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<Mpeg1Reader>();
+    int32_t ret = std::static_pointer_cast<Mpeg1Reader>(signal_->reader_)->Init(info);
+    return ret;
+}
+
+int32_t VideoDecSample::CreateDvvideoReader()
+{
+    std::shared_ptr<DvvideoReaderInfo> info = std::make_shared<DvvideoReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<DvvideoReader>();
+    int32_t ret = std::static_pointer_cast<DvvideoReader>(signal_->reader_)->Init(info);
+    return ret;
+}
+
+int32_t VideoDecSample::CreateRawvideoReader()
+{
+    std::shared_ptr<RawvideoReaderInfo> info = std::make_shared<RawvideoReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<RawvideoReader>();
+    int32_t ret = std::static_pointer_cast<RawvideoReader>(signal_->reader_)->Init(info);
+    return ret;
+}
 
 int32_t VideoDecSample::SetCallback(OH_AVCodecAsyncCallback callback, shared_ptr<VCodecSignal> &signal)
 {
@@ -588,6 +610,9 @@ bool VideoDecSample::DoConfigure(OH_AVFormat* format)
     if (lowLatency_) {
         setFormatRet = setFormatRet && OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, 1);
         setFormatRet = setFormatRet && OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 1000000); // 1000000
+    }
+    if (setRawVideoPixFmt_) {
+        OH_AVFormat_SetIntValue(format, "rawvideo_input_pix_fmt", rawvideoPixFmt_);
     }
     return setFormatRet;
 }

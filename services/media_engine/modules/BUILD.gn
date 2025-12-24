@@ -78,6 +78,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "demuxer/demuxer_plugin_manager.cpp",
     "demuxer/media_demuxer.cpp",
     "demuxer/sample_queue.cpp",
+    "demuxer/sample_queue_controller.cpp",
     "demuxer/stream_demuxer.cpp",
     "demuxer/type_finder.cpp",
     "media_codec/media_codec.cpp",

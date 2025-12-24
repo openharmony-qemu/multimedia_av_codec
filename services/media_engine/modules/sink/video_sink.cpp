@@ -27,6 +27,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAY
 constexpr int64_t LAG_LIMIT_TIME = 100;
 constexpr int32_t DROP_FRAME_CONTINUOUSLY_MAX_CNT = 2;
 constexpr int32_t MAX_ADVANCE_US = 80000;
+static const int64_t MS_PER_US = 1000; // us change to ms
 }
 
 namespace OHOS {
@@ -106,6 +107,16 @@ void VideoSink::UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBu
     (void)GetLatency(latency);
     Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_};
     syncCenter->UpdateTimeAnchor(ct4Buffer, latency, iMediaTime, this);
+}
+void VideoSink::RecordStallingTimestamp(AVBuffer& buffer, int64_t stage, int64_t timeStamp)
+{
+    std::vector<int64_t> timeStampList;
+    buffer.meta_->GetData(Tag::STALLING_TIMESTAMP, timeStampList);
+    timeStampList.push_back(stage);
+    timeStampList.push_back(timeStamp);
+    buffer.meta_->SetData(Tag::STALLING_TIMESTAMP, timeStampList);
+    MEDIA_LOG_D("VideoSink set stalling timestamp, stage:" PUBLIC_LOG_D64 ", timeStamp:" PUBLIC_LOG_D64,
+        stage, timeStamp);
 }
 
 int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t& actionClock)
@@ -267,6 +278,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
 
     auto diff = CalcBufferDiff(buffer, bufferAnchoredClockTime,
         clockNow, syncCenter->GetPlaybackRate());
+    frameInterval_ = (lastPts_ < 0) ? -1 : (buffer->pts_ - lastPts_);
 
     bool tooLate = false;
     int64_t waitTimeUs = 0;
@@ -364,6 +376,11 @@ Status VideoSink::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t
 {
     lagDetector_.GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
     return Status::OK;
+}
+
+int64_t VideoSink::GetFrameInterval()
+{
+    return frameInterval_ / MS_PER_US;
 }
 
 bool VideoSink::VideoLagDetector::CalcLag(std::shared_ptr<AVBuffer> buffer)

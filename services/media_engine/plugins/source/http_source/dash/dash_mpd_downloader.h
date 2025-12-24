@@ -26,6 +26,7 @@
 #include "download/downloader.h"
 #include "media_downloader.h"
 #include "meta/media_types.h"
+#include "download/download_metrics_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -142,6 +143,7 @@ public:
     void SetInterruptState(bool isInterruptNeeded);
     std::string GetUrl() const;
     std::string GetContentType();
+    void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
 
 private:
     void ParseManifest();
@@ -254,6 +256,7 @@ private:
     unsigned int initResolution_ {0};
     std::atomic<bool> isInterruptNeeded_{false};
     std::vector<DashDrmInfo> localDrmInfos_;
+    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
 };
 }
 }

@@ -35,6 +35,7 @@ constexpr CodecInfo SUPPORT_VCODEC[] = {
     {AVCodecCodecName::VIDEO_DECODER_H263_NAME, CodecMimeType::VIDEO_H263, "h263"},         // H.263 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_MPEG2_NAME, CodecMimeType::VIDEO_MPEG2, "mpeg2video"}, // MPEG-2 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_MPEG4_NAME, CodecMimeType::VIDEO_MPEG4, "mpeg4"},      // MPEG-4 视频解码器
+    {AVCodecCodecName::VIDEO_DECODER_MPEG1_NAME, CodecMimeType::VIDEO_MPEG1, "mpeg1video"},          // MPEG1 视频解码器
 #ifdef SUPPORT_CODEC_VC1
     {AVCodecCodecName::VIDEO_DECODER_VC1_NAME, CodecMimeType::VIDEO_VC1, "vc1"},            // VC-1 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_WVC1_NAME, CodecMimeType::VIDEO_WVC1, "vc1"},            // WVC1 视频解码器
@@ -42,9 +43,8 @@ constexpr CodecInfo SUPPORT_VCODEC[] = {
     {AVCodecCodecName::VIDEO_DECODER_MSVIDEO1_NAME, CodecMimeType::VIDEO_MSVIDEO1, "msvideo1"}, // MS Video 1 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_WMV3_NAME, CodecMimeType::VIDEO_WMV3, "wmv3"},             // WMV3 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME, CodecMimeType::VIDEO_MJPEG, "mjpeg"},          // MJPEG 视频解码器
-#ifdef SUPPORT_CODEC_AVS
-    {AVCodecCodecName::VIDEO_DECODER_AVS_NAME, CodecMimeType::VIDEO_AVS, "cavs"},             // AVS/AVS+ 视频解码器
-#endif
+    {AVCodecCodecName::VIDEO_DECODER_DVVIDEO_NAME, CodecMimeType::VIDEO_DVVIDEO, "dvvideo"},    // DVVIDEO 视频解码器
+    {AVCodecCodecName::VIDEO_DECODER_RAWVIDEO_NAME, CodecMimeType::VIDEO_RAWVIDEO, "rawvideo"}, // RAWVIDEO 视频解码器
 #ifdef SUPPORT_CODEC_RV
     {AVCodecCodecName::VIDEO_DECODER_RV30_NAME, CodecMimeType::VIDEO_RV30, "rv30"}, // RV30 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_RV40_NAME, CodecMimeType::VIDEO_RV40, "rv40"}, // RV40 视频解码器

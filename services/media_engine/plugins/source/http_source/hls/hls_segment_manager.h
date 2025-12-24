@@ -36,6 +36,7 @@
 #include "utils/write_bitrate_caculator.h"
 #include "osal/task/mutex.h"
 #include "osal/task/condition_variable.h"
+#include "download/download_metrics_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -137,12 +138,14 @@ public:
     void SetDownloadErrorState();
     void SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc);
     void SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback);
+    void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
 
 public:
-    static constexpr size_t VIDEO_MIN_BUFFER_SIZE = 5 * 1024 * 1024;
-    static constexpr size_t VIDEO_MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
-    static constexpr size_t DECRYPT_BUFFER_SIZE = 5 * 1024 * 1024;
-    static constexpr uint64_t DECRYPT_UNIT_LEN = 16;
+    static constexpr size_t VIDEO_MIN_BUFFER_SIZE = 1 * 1024 * 1024;
+    static constexpr size_t VIDEO_MAX_CACHE_BUFFER_SIZE = 4 * 1024 * 1024;
+    static constexpr size_t AES_BLOCK_LEN = 16;
+    static constexpr size_t AES_DECRYPT_COUNT = 16;
+    static constexpr size_t AES_DECRYPT_LEN = AES_BLOCK_LEN * AES_DECRYPT_COUNT;
     static const std::map<HlsSegmentType, size_t> MIN_BUFFER_SIZE;
     static const std::map<HlsSegmentType, size_t> MAX_CACHE_BUFFER_SIZE;
 
@@ -152,7 +155,10 @@ private:
     uint32_t SaveData(uint8_t *data, uint32_t len, bool notBlock);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     void ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
-    uint32_t SaveEncryptData(uint8_t* data, uint32_t len, bool notBlock);
+    uint32_t SaveEncryptData(uint8_t *data, uint32_t len, bool notBlock);
+    uint32_t FillSingleBlock(uint8_t *&data, uint32_t &len);
+    uint32_t DecryptDataLeft(uint8_t *&data, uint32_t &len, bool notBlock);
+    uint32_t DecryptData(uint8_t *&data, uint32_t &len, bool notBlock);
     void InitMediaDownloader();
     void DownloadRecordHistory(int64_t nowTime);
     void OnWriteCacheBuffer(uint32_t len);
@@ -169,8 +175,6 @@ private:
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
     uint64_t TransferSizeToBitRate(int width);
-    bool HandleBuffering();
-    bool HandleCache();
     bool CheckReadStatus();
     Status CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool CheckBreakCondition();
@@ -182,7 +186,6 @@ private:
     void CalculateBitRate(size_t fragmentSize, double duration);
     double CalculateCurrentDownloadSpeed();
     void UpdateCachedPercent(BufferingInfoType infoType);
-    bool CheckBufferingOneSeconds();
     float GetCacheDuration(float ratio);
     void HandleFfmpegReadback(uint64_t ffmpegOffset);
     void SeekToTsForRead(uint32_t currentTsIndex);
@@ -195,7 +198,6 @@ private:
     bool ClearChunksOfFragment();
     uint64_t GetCrossTsBuffersize();
     bool IsCachedInitSizeReady(int32_t wantInitSize);
-    void HandleWaterLine();
     bool CacheBufferFullLoop();
     bool IsNeedBufferForPlaying();
     bool CheckLoopTimeout(int64_t loopStartTime);
@@ -207,12 +209,11 @@ private:
     bool IsPureByteRange();
     void SetDownloaderRequestCb(StatusCallbackFunc& statusCallback, DownloadDoneCbFunc& downloadDoneCallback);
     void SetType(HlsSegmentType type);
-    bool HandleTimeout();
-    void HandleBufferingState();
-    void HandleBufferingEnd();
     bool CheckTsEndOrEos(ReadDataInfo& readDataInfo);
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
+    bool CheckCanReadOneSeconds(uint64_t wantReadLength);
+    bool IsAllDownloadFinish();
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;
@@ -233,15 +234,19 @@ private:
     std::map<std::string, bool> fragmentDownloadStart;
     std::map<std::string, bool> fragmentPushed;
     std::deque<PlayInfo> backPlayList_;
-    std::shared_ptr<AesDecryptor> aesDecryptor_;
     bool isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
-    uint8_t afterAlignRemainedBuffer_[DECRYPT_UNIT_LEN] {0};
-    uint64_t afterAlignRemainedLength_ = 0;
+
+    /* aes decrypt */
+    std::shared_ptr<AesDecryptor> aesDecryptor_;
+    uint8_t singleBlock_[AES_BLOCK_LEN] {};
+    uint32_t singleBlockLen_ {};
+    uint8_t decryptBuffer_[AES_DECRYPT_LEN] {};
+    uint32_t decryptLen_ {};
+    /* aes decrypt */
+
     uint64_t totalLen_ = 0;
     std::string curUrl_;
-    uint8_t decryptCache_[DECRYPT_BUFFER_SIZE] {0};
-    uint8_t decryptBuffer_[DECRYPT_BUFFER_SIZE] {0};
     uint32_t writeTsIndex_ = 0;
     bool isAutoSelectBitrate_ {true};
     uint64_t seekTime_ = 0;
@@ -293,11 +298,9 @@ private:
     std::string mimeType_;
     size_t waterLineAbove_ {0};
     bool isInterrupt_ {false};
-    std::atomic<bool> isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
     std::atomic<bool> isSeekingFlag {false};
     Mutex switchMutex_ {};
-    bool isLastDecryptWriteError_ {false};
     uint32_t lastRealLen_ {0};
 
     uint64_t lastReadCheckTime_ = 0;
@@ -353,6 +356,10 @@ private:
     std::string masterString_;
     bool isEos_ {false};
     std::shared_mutex downloadRequestMutex_;
+
+    std::mutex canReadMutex_;
+    std::condition_variable canReadCond_;
+    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
 };
 }
 }

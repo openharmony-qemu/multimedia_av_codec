@@ -84,11 +84,10 @@ private:
     int32_t CreateVc1Reader();
     int32_t CreateWVc1Reader();
 #endif
-#ifdef SUPPORT_CODEC_AVS
-    int32_t CreateAvsReader();
-#endif
     int32_t CreateMsvideo1Reader();
     int32_t CreateWmv3Reader();
+    int32_t CreateDvvideoReader();
+    int32_t CreateRawvideoReader();
 #ifdef SUPPORT_CODEC_AV1
     int32_t CreateAv1Reader();
 #endif
@@ -96,6 +95,7 @@ private:
     int32_t CreateRv30Reader();
     int32_t CreateRv40Reader();
 #endif
+    int32_t CreateMpeg1Reader();
     int32_t CreateReader(const std::string& inPath);
     bool CompareHdrInfo(std::shared_ptr<AVBufferMock> buffer);
     bool CompareMetadata(std::shared_ptr<std::ifstream> file, int32_t size,
@@ -129,15 +129,15 @@ private:
 #ifdef SUPPORT_CODEC_AV1
     std::shared_ptr<Av1Reader> av1Reader_ = nullptr;
 #endif
-#ifdef SUPPORT_CODEC_AVS
-    std::shared_ptr<AvsReader> avsReader_ = nullptr;
-#endif
 #ifdef SUPPORT_CODEC_RV
     std::shared_ptr<Rv30Reader> rv30Reader_ = nullptr;
     std::shared_ptr<Rv40Reader> rv40Reader_ = nullptr;
 #endif
+    std::shared_ptr<Mpeg1Reader> mpeg1Reader_ = nullptr;
     std::shared_ptr<Msvideo1Reader> msvideo1Reader_ = nullptr;
     std::shared_ptr<Wmv3Reader> wmv3Reader_ = nullptr;
+    std::shared_ptr<DvvideoReader> dvvideoReader_ = nullptr;
+    std::shared_ptr<RawvideoReader> rawvideoReader_ = nullptr;
     std::shared_ptr<std::ifstream> dynamicMetadataFile_ = nullptr;
     std::shared_ptr<std::ifstream> staticMetadataFile_ = nullptr;
 };

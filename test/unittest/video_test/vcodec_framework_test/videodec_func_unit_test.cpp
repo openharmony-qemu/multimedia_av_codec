@@ -100,11 +100,7 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 }
 
-INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC, SW_AVC
-#ifdef SUPPORT_CODEC_RV
-, SW_RV40
-#endif
-));
+INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC, SW_AVC));
 
 /**
  * @tc.name: VideoDecoder_Multithread_Create_001
@@ -670,8 +666,13 @@ HWTEST_P(TEST_SUIT, VideoDecoder_GetOutputDescription_004, TestSize.Level1)
     EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
     EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
 
-    EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
-    EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
+    if (GetParam() == VCodecTestCode::SW_RV40) {
+        EXPECT_GE(pictureWidth, DEFAULT_RV40_WIDTH - 1);
+        EXPECT_GE(pictureHeight, DEFAULT_RV40_HEIGHT - 1);
+    } else {
+        EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
+        EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
+    }
 
     EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());

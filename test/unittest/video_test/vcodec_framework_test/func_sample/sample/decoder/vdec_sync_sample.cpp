@@ -196,10 +196,6 @@ int32_t VideoDecSyncSample::CreateReader(const std::string &inPath)
         case WVC1_STREAM:
             return CreateWVc1Reader();
 #endif
-#ifdef SUPPORT_CODEC_AVS
-        case AVS_STREAM:
-            return CreateAvsReader();
-#endif
         case MSVIDEO1_STREAM:
             return CreateMsvideo1Reader();
         case WMV3_STREAM:
@@ -210,6 +206,12 @@ int32_t VideoDecSyncSample::CreateReader(const std::string &inPath)
         case RV40_STREAM:
             return CreateRv40Reader();
 #endif
+        case MPEG1_STREAM:
+            return CreateMpeg1Reader();
+        case DVVIDEO_STREAM:
+            return CreateDvvideoReader();
+        case RAWVIDEO_STREAM:
+            return CreateRawvideoReader();
         default:
             return CreateAvccReader();
     }
@@ -456,18 +458,6 @@ int32_t VideoDecSyncSample::CreateWVc1Reader()
 }
 #endif
 
-#ifdef SUPPORT_CODEC_AVS
-int32_t VideoDecSyncSample::CreateAvsReader()
-{
-    std::shared_ptr<AvsReaderInfo> info = std::make_shared<AvsReaderInfo>();
-    info->inPath = inPath_;
-
-    avsReader_ = std::make_shared<AvsReader>();
-    int32_t ret = avsReader_->Init(info);
-    return ret;
-}
-#endif
-
 int32_t VideoDecSyncSample::CreateMsvideo1Reader()
 {
     std::shared_ptr<Msvideo1ReaderInfo> info = std::make_shared<Msvideo1ReaderInfo>();
@@ -510,6 +500,37 @@ int32_t VideoDecSyncSample::CreateRv40Reader()
     return ret;
 }
 #endif
+
+int32_t VideoDecSyncSample::CreateMpeg1Reader()
+{
+    std::shared_ptr<Mpeg1ReaderInfo> info = std::make_shared<Mpeg1ReaderInfo>();
+    info->inPath = inPath_;
+
+    mpeg1Reader_ = std::make_shared<Mpeg1Reader>();
+    int32_t ret = mpeg1Reader_->Init(info);
+    return ret;
+}
+
+
+int32_t VideoDecSyncSample::CreateDvvideoReader()
+{
+    std::shared_ptr<DvvideoReaderInfo> info = std::make_shared<DvvideoReaderInfo>();
+    info->inPath = inPath_;
+
+    dvvideoReader_ = std::make_shared<DvvideoReader>();
+    int32_t ret = dvvideoReader_->Init(info);
+    return ret;
+}
+
+int32_t VideoDecSyncSample::CreateRawvideoReader()
+{
+    std::shared_ptr<RawvideoReaderInfo> info = std::make_shared<RawvideoReaderInfo>();
+    info->inPath = inPath_;
+
+    rawvideoReader_ = std::make_shared<RawvideoReader>();
+    int32_t ret = rawvideoReader_->Init(info);
+    return ret;
+}
 
 void VideoDecSyncSample::FlushInner()
 {
@@ -788,9 +809,10 @@ int32_t VideoDecSyncSample::OutputLoopInnerExt()
         int32_t size = (testParam_ == VCodecTestParam::SW_AVC || testParam_ == VCodecTestParam::SW_MPEG2 ||
                         testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263 ||
                         testParam_ == VCodecTestParam::SW_VC1 || testParam_ == VCodecTestParam::SW_MSVIDEO1 ||
-                        testParam_ == VCodecTestParam::SW_WMV3 || testParam_ == VCodecTestParam::SW_AVS ||
-                        testParam_ == VCodecTestParam::SW_RV30 || testParam_ == VCodecTestParam::SW_RV40 ||
-                        testParam_ == VCodecTestParam::SW_WVC1)
+                        testParam_ == VCodecTestParam::SW_WMV3 || testParam_ == VCodecTestParam::SW_RV30 ||
+                        testParam_ == VCodecTestParam::SW_RV40_TEST || testParam_ == VCodecTestParam::SW_WVC1 ||
+                        testParam_ == VCodecTestParam::SW_MPEG1 || testParam_ == VCodecTestParam::SW_DVVIDEO ||
+                        testParam_ == VCodecTestParam::SW_RAWVIDEO)
                            ? attr.size : buffer->GetNativeBuffer()->GetSize();
         UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                           "Fatal: GetOutputBuffer fail, exit, index: %d", index);
@@ -854,10 +876,6 @@ int32_t VideoDecSyncSample::InputLoopInnerExt()
     } else if (wvc1Reader_ != nullptr) {
         wvc1Reader_->FillBuffer(buffer->GetAddr(), attr);
 #endif
-#ifdef SUPPORT_CODEC_AVS
-    } else if (avsReader_ != nullptr) {
-        avsReader_->FillBuffer(buffer->GetAddr(), attr);
-#endif
     } else if (wmv3Reader_ != nullptr) {
         wmv3Reader_->FillBuffer(buffer->GetAddr(), attr);
 #ifdef SUPPORT_CODEC_AV1
@@ -870,6 +888,12 @@ int32_t VideoDecSyncSample::InputLoopInnerExt()
     } else if (rv40Reader_ != nullptr) {
         rv40Reader_->FillBuffer(buffer->GetAddr(), attr);
 #endif
+    } else if (mpeg1Reader_ != nullptr) {
+        mpeg1Reader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (dvvideoReader_ != nullptr) {
+        dvvideoReader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (rawvideoReader_ != nullptr) {
+        rawvideoReader_->FillBuffer(buffer->GetAddr(), attr);
     } else {
         msvideo1Reader_->FillBuffer(buffer->GetAddr(), attr);
     }

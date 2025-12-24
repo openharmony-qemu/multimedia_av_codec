@@ -99,6 +99,8 @@ public:
     bool setPixelFormat_ = true;
     std::string dumpKey_ = "";
     std::string dumpValue_ = "";
+    int32_t rawvideoPixFmt_ = -1;
+    bool setRawVideoPixFmt_ = false;
 
 private:
     int32_t HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr);
@@ -116,17 +118,16 @@ private:
     int32_t CreateWmv3Reader();
     int32_t CreateVp8Reader();
     int32_t CreateVp9Reader();
+    int32_t CreateDvvideoReader();
+    int32_t CreateRawvideoReader();
 #ifdef SUPPORT_CODEC_AV1
     int32_t CreateAv1Reader();
-#endif
-#ifdef SUPPORT_CODEC_AVS
-    int32_t CreateAvsReader();
 #endif
 #ifdef SUPPORT_CODEC_RV
     int32_t CreateRv30Reader();
     int32_t CreateRv40Reader();
 #endif
-
+    int32_t CreateMpeg1Reader();
     OH_AVCodec *codec_ = nullptr;
     std::shared_ptr<VCodecSignal> signal_ = nullptr;
 

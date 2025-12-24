@@ -46,6 +46,7 @@ public:
     Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
     Status SetPerfRecEnabled(bool isPerfRecEnabled);
     void SetMediaMuted(bool isMuted);
+    int64_t GetFrameInterval();
 
 private:
     int64_t CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer,
@@ -58,6 +59,7 @@ private:
     void PerfRecord(int64_t waitTime);
     void ReportPts(int64_t nowPts);
     void InitWaitPeriod();
+    void RecordStallingTimestamp(AVBuffer& buffer, int64_t stage, int64_t timeStamp);
 
     class VideoLagDetector : public LagDetector {
     public:
@@ -96,6 +98,7 @@ private:
     bool isPerfRecEnabled_ { false };
     std::atomic<int32_t> dropFrameContinuouslyCnt_ {0};
     int64_t lastPts_ = -1;
+    int64_t frameInterval_ = -1;
     int64_t lastClockTime_ = -1;
     std::atomic<bool> isRenderStarted_{false};
     VideoLagDetector lagDetector_ {};

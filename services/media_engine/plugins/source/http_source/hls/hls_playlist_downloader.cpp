@@ -260,6 +260,9 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
         master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_, initResolution_, httpHeader_,
                                                        statusCallback_);
         FALSE_RETURN_NOLOG(master_ != nullptr);
+        if (downloadCallback_ != nullptr) {
+            master_->SetDownloadCallback(downloadCallback_);
+        }
         master_->StartParsing();
         currentVariant_ = master_->defaultVariant_;
         if (currentVariant_ && currentVariant_->m3u8_) {
@@ -767,6 +770,7 @@ HlsSegmentType HlsPlayListDownloader::GetSegType(uint32_t streamId)
     }
     return HlsSegmentType::SEG_VIDEO;
 }
+
 }
 }
 }

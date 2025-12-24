@@ -425,6 +425,10 @@ Status AudioSink::Flush()
     Status ret = Status::OK;
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     ret = plugin_->Flush();
+    if (ret != Status::OK && state_.load() == Pipeline::FilterState::READY) {
+        MEDIA_LOG_W("AudioSink Flush fail in prepare, reset info.");
+        ResetInfo();
+    }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "plugin flush failed");
     ResetInfo();
     return Status::OK;
@@ -839,6 +843,7 @@ int64_t AudioSink::CalculateBufferDuration(int64_t writeDataSize)
     int64_t sampleDataNums = writeDataSize / format / audioChannelCount_;
     FALSE_RETURN_V(sampleRate_ > 0, 0);
     int64_t sampleDataDuration = sampleDataNums * SEC_TO_US / sampleRate_;
+    MEDIA_LOG_D("sampleDataDuration: " PUBLIC_LOG_D64, sampleDataDuration);
     return sampleDataDuration;
 }
 

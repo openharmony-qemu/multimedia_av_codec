@@ -24,8 +24,8 @@ namespace {
 constexpr int32_t SERVERPORT = 47777;
 static const std::string AUDIO_SEGMENT_URL = "http://127.0.0.1:47777/test_dash/segment_base/media-audio-und-mp4a.mp4";
 
-constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 5 * 1024 * 1024;
-constexpr uint32_t AUD_RING_BUFFER_SIZE = 2 * 1024 * 1024;
+constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 1 * 1024 * 1024;
+constexpr uint32_t AUD_RING_BUFFER_SIZE = 400 * 1024;
 constexpr uint32_t RECORD_TIME_INTERVAL = 1000;
 constexpr uint32_t SPEED_MULTI_FACT = 1000;
 constexpr uint32_t BYTE_TO_BIT = 8;
@@ -299,7 +299,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, GetWaterLineAbove_001, TestSize.Level1)
     segmentDownloader_->downloadBiteRate_ = 1024;
 
     int32_t waterLineAbove = segmentDownloader_->GetWaterLineAbove();
-    EXPECT_EQ(waterLineAbove, 1024 * 1024);
+    EXPECT_EQ(waterLineAbove, 200 * 1024);
 
     // Test GetWaterLineAbove realTimeBitBate_ <= static_cast<int64_t>(downloadBiteRate_)
     segmentDownloader_->downloadBiteRate_ = 1024 * 1024 * 2;
@@ -713,7 +713,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, SaveData_001, TestSize.Level1)
     // Test SaveData freeSize == 0
     segmentDownloader_->buffer_->tail_ = AUD_RING_BUFFER_SIZE;
     segmentDownloader_->buffer_->head_ = 0;
-    uint8_t data[2 * 1024 * 1024] = {0};
+    uint8_t data[400 * 1024] = {0};
     uint32_t len = AUD_RING_BUFFER_SIZE;
     bool notBlock = true;
     uint32_t dataSize = segmentDownloader_->SaveData(data, len, notBlock);

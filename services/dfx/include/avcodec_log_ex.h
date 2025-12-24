@@ -92,6 +92,34 @@
         }                                                                                                              \
     } while (0)
 
+#define EXPECT_AND_LOGW_LIMIT_IN_TIME_WITH_TAG(cond, intervalMs, maxCount, fmt, ...)                                   \
+    do {                                                                                                               \
+        if ((cond)) {                                                                                                  \
+            AVCODEC_LOGW_LIMIT_IN_TIME_WITH_TAG(intervalMs, maxCount, fmt, ##__VA_ARGS__);                             \
+        }                                                                                                              \
+    } while (0)
+
+#define EXPECT_AND_LOGI_LIMIT_IN_TIME_WITH_TAG(cond, intervalMs, maxCount, fmt, ...)                                   \
+    do {                                                                                                               \
+        if ((cond)) {                                                                                                  \
+            AVCODEC_LOGI_LIMIT_IN_TIME_WITH_TAG(intervalMs, maxCount, fmt, ##__VA_ARGS__);                             \
+        }                                                                                                              \
+    } while (0)
+
+#define EXPECT_AND_LOGD_LIMIT_IN_TIME_WITH_TAG(cond, intervalMs, maxCount, fmt, ...)                                   \
+    do {                                                                                                               \
+        if ((cond)) {                                                                                                  \
+            AVCODEC_LOGD_LIMIT_IN_TIME_WITH_TAG(intervalMs, maxCount, fmt, ##__VA_ARGS__);                             \
+        }                                                                                                              \
+    } while (0)
+
+#define EXPECT_AND_LOGE_LIMIT_IN_TIME_WITH_TAG(cond, intervalMs, maxCount, fmt, ...)                                   \
+    do {                                                                                                               \
+        if ((cond)) {                                                                                                  \
+            AVCODEC_LOGE_LIMIT_IN_TIME_WITH_TAG(intervalMs, maxCount, fmt, ##__VA_ARGS__);                             \
+        }                                                                                                              \
+    } while (0)
+
 #define CHECK_AND_RETURN_LOG_WITH_TAG(cond, fmt, ...)                                                                  \
     do {                                                                                                               \
         if (!(cond)) {                                                                                                 \

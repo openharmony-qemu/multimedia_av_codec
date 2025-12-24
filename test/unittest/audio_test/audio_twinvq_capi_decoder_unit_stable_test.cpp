@@ -60,6 +60,7 @@ int32_t g_loopNumber2000 = []() {
     return 2000;
 }();
 
+constexpr size_t FIELDSIZE = 8;
 constexpr int32_t DEFAULT_CHANNELS = 1;
 constexpr uint32_t DEFAULT_SAMPLE_RATE = 8000;
 constexpr string_view TWINVQ_FILE_TODEMUX = "/data/test/media/twinvq_8000_mono.dat";
@@ -139,7 +140,7 @@ public:
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
-    int32_t InitFile();
+    int32_t InitFile(string_view input, string_view output);
     void InputFunc();
     void OutputFunc();
     bool ReadBuffer(OH_AVBuffer *buffer, uint32_t index);
@@ -168,11 +169,13 @@ protected:
     OH_AVFormat *format_ = nullptr;
     bool isFirstFrame_ = true;
     uint32_t frameCount_ = 0;
-    std::unique_ptr<std::ifstream> soFile_;
+    std::vector<uint8_t> rawData_;
     std::ofstream pcmOutputFile_;
     OH_AVDemuxer *demuxer = nullptr;
     OH_AVSource *source = nullptr;
-    std::ifstream inputFile_;
+    std::ifstream infile;
+    bool headerParsed_ = false;
+    size_t currentDataPos_ = 0;
     // Diagnostics
     std::atomic<bool> gotEos_ {false};
     size_t staleInputDiscarded_ = 0;
@@ -245,35 +248,51 @@ void AudioCodeTwinvqDecoderUnitTest::HandleInputEOS(const uint32_t index)
 
 bool AudioCodeTwinvqDecoderUnitTest::ReadBuffer(OH_AVBuffer *buffer, uint32_t index)
 {
-    auto read4 = [this](uint32_t &out) -> bool {
-        inputFile_.read(reinterpret_cast<char *>(&out), 4);
-        return inputFile_.gcount() == 4 && !inputFile_.eof();
-    };
-    uint32_t seq = 0;
-    uint32_t sampleRate = 0;
-    uint32_t reserved = 0;
-    uint32_t frameLen = 0;
-    if (!read4(seq)       ||
-        !read4(sampleRate) ||
-        !read4(reserved)   ||
-        !read4(frameLen)) {
+    constexpr size_t fileHeaderSize = 12;
+    if (!headerParsed_) {
+        if (rawData_.size() < fileHeaderSize) {
+            cout << "Error: file too small for header" << endl;
+            HandleInputEOS(index);
+            return false;
+        }
+        uint32_t extraDataLen = 0;
+        memcpy_s(&extraDataLen, sizeof(extraDataLen), rawData_.data() + FIELDSIZE, sizeof(extraDataLen));
+        const size_t totalHeader = fileHeaderSize + extraDataLen;
+        if (rawData_.size() < totalHeader) {
+            HandleInputEOS(index);
+            return false;
+        }
+        currentDataPos_ = totalHeader;
+        headerParsed_ = true;
+    }
+    constexpr size_t frameHeaderSize = 16;
+    if (currentDataPos_ + frameHeaderSize > rawData_.size()) {
         buffer->buffer_->memory_->SetSize(1);
         buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
         HandleInputEOS(index);
-        std::cout << "ReadBuffer: EOS" << std::endl;
+        return false;
+    }
+    uint64_t frameSize = 0;
+    int64_t pts = 0;
+    memcpy_s(&frameSize, sizeof(frameSize), rawData_.data() + currentDataPos_, sizeof(frameSize));
+    memcpy_s(&pts, sizeof(pts), rawData_.data() + currentDataPos_ + FIELDSIZE, sizeof(pts));
+    currentDataPos_ += frameHeaderSize;
+    if (currentDataPos_ + frameSize > rawData_.size()) {
+        buffer->buffer_->memory_->SetSize(1);
+        buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
+        HandleInputEOS(index);
         return false;
     }
     void *addr = OH_AVBuffer_GetAddr(buffer);
-    inputFile_.read(static_cast<char *>(addr), frameLen);
-    std::streamsize got = inputFile_.gcount();
-    if (got != frameLen) {
-        std::cout << "ReadBuffer: want " << frameLen << " got " << got << std::endl;
+    errno_t ret = memcpy_s(addr, buffer->buffer_->memory_->GetCapacity(), rawData_.data() + currentDataPos_, frameSize);
+    if (ret != EOK) {
+        HandleInputEOS(index);
         return false;
     }
-    buffer->buffer_->memory_->SetSize(frameLen);
-    buffer->buffer_->pts_ = 0;
-    buffer->buffer_->flag_ = (isFirstFrame_ ? AVCODEC_BUFFER_FLAGS_CODEC_DATA
-                                            : AVCODEC_BUFFER_FLAGS_NONE);
+    buffer->buffer_->memory_->SetSize(frameSize);
+    buffer->buffer_->pts_ = pts;
+    buffer->buffer_->flag_ = isFirstFrame_ ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : AVCODEC_BUFFER_FLAGS_NONE;
+    currentDataPos_ += frameSize;
     isFirstFrame_ = false;
     return true;
 }
@@ -316,7 +335,7 @@ void AudioCodeTwinvqDecoderUnitTest::InputFunc()
         }
     }
     cout << "stop, exit" << endl;
-    inputFile_.close();
+    infile.close();
 }
 
 void AudioCodeTwinvqDecoderUnitTest::OutputFunc()
@@ -443,19 +462,32 @@ void AudioCodeTwinvqDecoderUnitTest::StopLoops()
     }
 }
 
-int32_t AudioCodeTwinvqDecoderUnitTest::InitFile()
+int32_t AudioCodeTwinvqDecoderUnitTest::InitFile(string_view inputFilename, string_view outputFilename)
 {
-    inputFile_.open(TWINVQ_FILE_TODEMUX.data(), std::ios::binary);
-    if (!inputFile_.is_open()) {
-        cout << "Fatal: open input file failed:" << endl;
-        return OH_AVErrCode::AV_ERR_UNKNOWN;
-    }
-    pcmOutputFile_.open(OUTPUT_TWINVQ_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
+    pcmOutputFile_.open(outputFilename.data(), std::ios::out | std::ios::binary);
     if (!pcmOutputFile_.is_open()) {
-        cout << "Fatal: open output file failed" << endl;
-        inputFile_.close();
+        cout << "Fatal: open output file failed: " << outputFilename << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
+    infile.open(inputFilename.data(), std::ios::binary);
+    if (!infile.is_open()) {
+        cout << "Fatal: open input file failed: " << inputFilename << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+
+    infile.seekg(0, std::ios::end);
+    size_t fileSize = infile.tellg();
+    infile.seekg(0, std::ios::beg);
+    rawData_.resize(fileSize);
+    infile.read(reinterpret_cast<char*>(rawData_.data()), fileSize);
+    infile.close();
+    if (infile.gcount() != static_cast<std::streamsize>(fileSize)) {
+        cout << "Error: Failed to read full input file" << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    currentDataPos_ = 0;
+    headerParsed_ = false;
+    isFirstFrame_ = true;
     return OH_AVErrCode::AV_ERR_OK;
 }
 
@@ -493,10 +525,31 @@ int32_t AudioCodeTwinvqDecoderUnitTest::Configure()
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(),
         OH_AudioChannelLayout::CH_LAYOUT_MONO);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
-    std::vector<uint8_t> extradata = {0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 8};
-    OH_AVFormat_SetBuffer(format_, OH_MD_KEY_CODEC_CONFIG, extradata.data(), extradata.size());
-    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-        AVSampleFormat::AV_SAMPLE_FMT_FLTP);
+    static constexpr size_t minHeaderSize{12};
+    if (rawData_.size() < minHeaderSize) {
+        std::cout << "Fatal: file too small for header" << std::endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    uint32_t extraDataSize{};
+    if (memcpy_s(&extraDataSize, sizeof(extraDataSize),
+                 rawData_.data() + FIELDSIZE, sizeof(extraDataSize)) != EOK) {
+        std::cout << "Fatal: memcpy_s extraDataSize failed" << std::endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
+    }
+    if (extraDataSize > 0) {
+        if (rawData_.size() < minHeaderSize + extraDataSize) {
+            std::cout << "Fatal: file too small for extra data" << std::endl;
+            return OH_AVErrCode::AV_ERR_UNKNOWN;
+        }
+        std::vector<uint8_t> extraData(extraDataSize);
+        if (memcpy_s(extraData.data(), extraData.size(),
+                     rawData_.data() + minHeaderSize, extraDataSize) != EOK) {
+            std::cout << "Fatal: memcpy_s extraData failed" << std::endl;
+            return OH_AVErrCode::AV_ERR_UNKNOWN;
+        }
+        OH_AVFormat_SetBuffer(format_, OH_MD_KEY_CODEC_CONFIG,
+                              extraData.data(), static_cast<int32_t>(extraData.size()));
+    }
     return OH_AudioCodec_Configure(audioDec_, format_);
 }
 
@@ -533,10 +586,11 @@ void AudioCodeTwinvqDecoderUnitTest::CleanUp()
 HWTEST_F(AudioCodeTwinvqDecoderUnitTest, audioDecoder_Twinvq_loop_test_01, TestSize.Level1)
 {
     isTestingFormat_ = true;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(TWINVQ_FILE_TODEMUX, OUTPUT_TWINVQ_PCM_FILE_PATH));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     for (int i = 0; i < g_loopNumber2000; i++) {
-        ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
+        ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(TWINVQ_FILE_TODEMUX, OUTPUT_TWINVQ_PCM_FILE_PATH));
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
         {
             unique_lock<mutex> lock(signal_->startMutex_);
@@ -551,6 +605,7 @@ HWTEST_F(AudioCodeTwinvqDecoderUnitTest, audioDecoder_Twinvq_loop_test_01, TestS
 HWTEST_F(AudioCodeTwinvqDecoderUnitTest, audioDecoder_Twinvq_loop_test_02, TestSize.Level1)
 {
     isTestingFormat_ = true;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(TWINVQ_FILE_TODEMUX, OUTPUT_TWINVQ_PCM_FILE_PATH));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
     for (int i = 0; i < g_loopNumber2000; i++) {
         loopIndex_ = static_cast<uint64_t>(i);
@@ -558,7 +613,7 @@ HWTEST_F(AudioCodeTwinvqDecoderUnitTest, audioDecoder_Twinvq_loop_test_02, TestS
             signal_->generation_.fetch_add(1, std::memory_order_relaxed);
         }
         cout << "[Cycle] " << i << " start generation=" << (signal_ ? signal_->generation_.load() : 0) << "\n";
-        ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
+        ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(TWINVQ_FILE_TODEMUX, OUTPUT_TWINVQ_PCM_FILE_PATH));
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
         {
@@ -575,6 +630,7 @@ HWTEST_F(AudioCodeTwinvqDecoderUnitTest, audioDecoder_Twinvq_loop_test_02, TestS
 HWTEST_F(AudioCodeTwinvqDecoderUnitTest, audioDecoder_Twinvq_loop_test_03, TestSize.Level1)
 {
     isTestingFormat_ = true;
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(TWINVQ_FILE_TODEMUX, OUTPUT_TWINVQ_PCM_FILE_PATH));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     for (int i = 0; i < g_loopNumber2000; i++) {
@@ -583,7 +639,7 @@ HWTEST_F(AudioCodeTwinvqDecoderUnitTest, audioDecoder_Twinvq_loop_test_03, TestS
             signal_->generation_.fetch_add(1, std::memory_order_relaxed);
         }
         cout << "[Cycle] " << i << " start generation=" << (signal_ ? signal_->generation_.load() : 0) << "\n";
-        ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile());
+        ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(TWINVQ_FILE_TODEMUX, OUTPUT_TWINVQ_PCM_FILE_PATH));
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
         {
             unique_lock<mutex> lock(signal_->startMutex_);

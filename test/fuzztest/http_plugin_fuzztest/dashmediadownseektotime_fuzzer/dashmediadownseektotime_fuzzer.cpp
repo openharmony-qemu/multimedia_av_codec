@@ -25,6 +25,7 @@
 #include "test_template.h"
 #define FUZZ_PROJECT_NAME "dashmediadownseektotime_fuzzer"
 using namespace std;
+using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins::HttpPlugin;
 namespace OHOS {
@@ -42,6 +43,9 @@ constexpr uint32_t DEFAULT_DURATION = 20;
 
 bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return false;
+    }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
@@ -64,7 +68,8 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
     mediaDownloader->Open(testUrl, httpHeader);
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
-    
+    int64_t seektime = GetData<int64_t>();
+    mediaDownloader->SeekToTs(seektime);
     usleep(WAIT_FOR_SIDX_TIME);
     mediaDownloader->Close(false);
     mediaDownloader = nullptr;
@@ -91,7 +96,6 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
     playStrategy->audioLanguage = "eng";
     playStrategy->subtitleLanguage = "en_GB";
     mediaDownloader->SetPlayStrategy(playStrategy);
-
     mediaDownloader->Open(testUrl, httpHeader);
     mediaDownloader->GetSeekable();
     mediaDownloader->SetInterruptState(true);
@@ -114,6 +118,8 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
     mediaDownloader->GetStartedStatus();
     mediaDownloader->GetBitRates();
     mediaDownloader->SetDownloadErrorState();
+    int64_t seektime = GetData<int64_t>();
+    mediaDownloader->SeekToTs(seektime);
     usleep(WAIT_FOR_SIDX_TIME);
     mediaDownloader->Close(false);
     mediaDownloader = nullptr;
@@ -122,6 +128,9 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
 
 bool DashMediaDownGetFuzzerTest(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return false;
+    }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
@@ -168,13 +177,16 @@ bool DashMediaDownGetFuzzerTest(const uint8_t *data, size_t size)
 }
 
 /* Fuzzer entry point */
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
 {
     /* Run your code on data */
     if (!InitServer()) {
         cout << "Init server error" << endl;
         return -1;
     }
+    g_baseFuzzData = data;
+    g_baseFuzzSize = size;
+    g_baseFuzzPos = 0;
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownSeekToTimeFuzzerTest(data, size);
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownBitrateFuzzerTest(data, size);
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownGetFuzzerTest(data, size);

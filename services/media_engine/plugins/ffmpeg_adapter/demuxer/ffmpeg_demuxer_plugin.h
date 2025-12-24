@@ -25,6 +25,8 @@
 #include <list>
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
+#include "avpacket_memory.h"
+#include "avpacket_wrapper.h"
 #include "block_queue_pool.h"
 #include "multi_stream_parser_manager.h"
 #include "reference_parser_manager.h"
@@ -93,6 +95,7 @@ public:
         const int32_t probSize) override;
     Status BoostReadThreadPriority() override;
     Status SetAVReadPacketStopState(bool state) override;
+    Status SeekToStart() override;
 private:
     enum ThreadState : unsigned int {
         NOT_STARTED,
@@ -146,6 +149,20 @@ private:
         std::atomic<AVReadPacketStopState> avReadPacketStopState {UNSET};
     };
 
+    // Snapshot of the AVStream fields needed at runtime, built in SetDataSource so
+    // other threads can read stream metadata without touching FFmpeg structs directly.
+    struct AVStreamSnapshot {
+        bool valid {false};
+        AVCodecID codecId {AV_CODEC_ID_NONE};
+        AVMediaType codecType {AVMEDIA_TYPE_UNKNOWN};
+        AVRational timeBase {0, 1};
+        int32_t extradataSize {0};
+        int64_t startTime {AV_NOPTS_VALUE};
+        bool needCombineFrame {false};
+        bool isVideo {false};
+        bool isAudio {false};
+    };
+
     bool SelectedVideo();
     bool NeedDropAfterSeek(uint32_t trackId, int64_t pts);
     std::atomic<int64_t> seekTime_ = AV_NOPTS_VALUE;
@@ -182,24 +199,53 @@ private:
     Status PushEOSToAllCache();
     bool TrackIsSelected(const uint32_t trackId);
     Status ReadPacketToCacheQueue(const uint32_t readId);
-    Status AddPacketToCacheQueue(AVPacket *pkt);
+    Status AddPacketToCacheQueue(Plugins::AVPacketWrapperPtr pkt);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status BufferIsValid(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
-    Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
+    Status ConvertAVPacketToSampleMemory(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
+    Status PreparePacketForConversion(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket,
+        Plugins::AVPacketWrapperPtr& tempPktWrapper, bool& combined);
+    Status PrepareBufferMetadata(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket,
+        Plugins::AVPacketWrapperPtr tempPktWrapper, uint32_t& copySize);
+    Status WritePacketDataAndUpdateInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket,
+        Plugins::AVPacketWrapperPtr tempPktWrapper, uint32_t copySize, bool combined);
+    Status ConvertToAnnexbAndUpdateSample(std::shared_ptr<AVBuffer> sample,
+        std::shared_ptr<SamplePacket> samplePacket, Plugins::AVPacketWrapperPtr& tempPktWrapper, bool combined);
+    Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, Plugins::AVPacketWrapperPtr avpacketWrapper,
         std::shared_ptr<SamplePacket> dstSamplePacket);
+    Status ConvertPacketToAnnexb(Plugins::AVPacketWrapperPtr srcWrapper, std::shared_ptr<SamplePacket> samplePacket,
+        Plugins::AVPacketWrapperPtr& outWrapper);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
     Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, uint32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     bool NeedCombineFrame(uint32_t trackId);
-    AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
+    Plugins::AVPacketWrapperPtr CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    
+    struct ConvertToAnnexbParams {
+        std::shared_ptr<SamplePacket> samplePacket {nullptr};
+        uint8_t *outBuffer {nullptr};
+        int32_t outBufferSize {0};
+        int32_t &outDataSize;
+        uint8_t *sideData {nullptr};
+        size_t sideDataSize {0};
+
+        // 构造函数，用于初始化引用成员
+        explicit ConvertToAnnexbParams(int32_t &outSizeRef) : outDataSize(outSizeRef) {}
+    };
+    Status ConvertHevcToAnnexb(AVPacket& pkt, const ConvertToAnnexbParams &params);
+    Status ConvertVvcToAnnexb(AVPacket& pkt, const ConvertToAnnexbParams &params);
+    Status ConvertPacketToAnnexbWithParser(AVPacket* srcAVPacket, std::shared_ptr<SamplePacket> samplePacket,
+        Plugins::AVPacketWrapperPtr& outWrapper, const AVStreamSnapshot* snapshot);
     bool HasCodecParameters();
     Status GetMediaInfo();
     void ResetParam();
+    void UpdateStreamSnapshots();
+    const AVStreamSnapshot* GetStreamSnapshot(uint32_t trackId) const;
 
     bool WebvttPktProcess(AVPacket *pkt);
     bool IsWebvttMP4(const AVStream *avStream);
@@ -249,6 +295,7 @@ private:
     std::shared_ptr<AVInputFormat> pluginImpl_ {nullptr};
     std::shared_ptr<AVFormatContext> formatContext_ {nullptr};
     std::map<uint32_t, std::shared_ptr<AVBSFContext>> avbsfContexts_ {};
+    std::vector<AVStreamSnapshot> streamSnapshots_;
     
     void UpdateReferenceIds();
     std::map<int32_t, std::vector<int32_t>> referenceIdsMap_ {};
@@ -256,9 +303,9 @@ private:
     Status ParseVideoFirstFrames();
     bool AllVideoFirstFramesReady();
     bool AllSupportTrackFramesReady();
-    Status SetVideoFirstFrame(AVPacket* pkt, bool isConvert = true);
+    Status SetVideoFirstFrame(Plugins::AVPacketWrapperPtr pkt, bool isConvert = true);
     bool VideoFirstFrameValid(uint32_t trackIndex);
-    std::map<int32_t, AVPacket *> videoFirstFrameMap_ {};
+    std::map<int32_t, Plugins::AVPacketWrapperPtr> videoFirstFrameMap_ {};
     std::unordered_map<int32_t, int64_t> seekCalibMap_ {};
     bool TrackIsChecked(const uint32_t trackId);
     std::vector<uint32_t> checkedTrackIds_ {};
@@ -268,6 +315,9 @@ private:
     std::shared_ptr<MultiStreamParserManager> streamParsers_ {nullptr};
 
     void ParseHEVCMetadataInfo(const AVStream& avStream, Meta &format);
+    void ProcessHevcFirstFrame(uint32_t trackId, AVStream* avStream, bool parserReady, bool firstFrameReady,
+                               Meta &meta);
+    void BuildTrackMeta(uint32_t trackId, AVStream* avStream);
     std::atomic<bool> parserState_ = true;
     IOContext parserRefIoContext_;
     std::shared_ptr<AVFormatContext> parserRefCtx_{nullptr};
@@ -336,11 +386,11 @@ private:
     void FFmpegReadLoop();
     bool NeedWaitForRead();
     void HandleReadWait();
-    bool EnsurePacketAllocated(AVPacket*& pkt);
-    bool ReadAndProcessFrame(AVPacket* pkt);
-    void HandleAVPacketEndOfStream(AVPacket* pkt);
-    void HandleAVPacketReadError(AVPacket* pkt, int ffmpegRet);
-    bool ReadOnePacketAndProcessWebVTT(AVPacket* pkt);
+    bool EnsurePacketAllocated(Plugins::AVPacketWrapperPtr& pktWrapper);
+    bool ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWrapper);
+    void HandleAVPacketEndOfStream(Plugins::AVPacketWrapperPtr& pktWrapper);
+    void HandleAVPacketReadError(Plugins::AVPacketWrapperPtr& pktWrapper, int ffmpegRet);
+    bool ReadOnePacketAndProcessWebVTT(Plugins::AVPacketWrapperPtr& pktWrapper);
     void ReleaseFFmpegReadLoop();
     std::unique_ptr<std::thread> readThread_ {nullptr};
     std::condition_variable readLoopCv_;
@@ -363,6 +413,20 @@ private:
 
     std::atomic<bool> isAsyncReadThreadPrioritySet_ = false;
     void UpdateAsyncReadThreadPriority();
+
+    struct MinTsPacketInfo {
+        bool isInit = false;
+        bool isUpd = false;
+        int32_t streamIndex = -1;
+        int64_t minPts = AV_NOPTS_VALUE;
+        int64_t minDts = AV_NOPTS_VALUE;
+    };
+    MinTsPacketInfo minTsPktInfo_ {};
+    Status GetFileFirstPacket();
+    void InitMinTsPacketInfo(AVPacket *pkt);
+    void UpdMinTsPacketInfo(AVPacket *pkt);
+    bool IsSkipGetMinTsPktInfo();
+    Status SeekToStartInternal();
 };
 
 typedef struct DtsFinder {

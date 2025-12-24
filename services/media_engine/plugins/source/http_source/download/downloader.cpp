@@ -705,6 +705,9 @@ void Downloader::HandleResponseCb(int32_t clientCode, int32_t serverCode, Status
         return;
     }
     if (ret == Status::OK) {
+        MEDIA_LOG_I("Client request data OK. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32
+            ", request queue size: " PUBLIC_LOG_U64, static_cast<int32_t>(ret),
+            static_cast<int32_t>(clientCode), static_cast<int64_t>(requestQue_->Size()));
         HandleRetOK();
     } else {
         PauseLoop(true);
@@ -748,7 +751,13 @@ void Downloader::RequestData()
     if (currentRequest_->requestWholeFile_) {
         len = 0;
     }
-
+    if (!isFirstDownload_) {
+        startDownTime_ = GetCurrentMillisecond();
+        isFirstDownload_ = true;
+    }
+    if (downloadCallback_ != nullptr) {
+        downloadCallback_->UpdateTotalDownloadCount();
+    }
     client_->RequestData(startPos, len, sourceInfo, handleResponseCb);
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData end.", FAKE_POINTER(this));
 }
@@ -975,6 +984,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     if (!mediaDownloader->currentRequest_->isDownloading_) {
         mediaDownloader->currentRequest_->isDownloading_ = true;
     }
+    UpdateDownloadInfo(mediaDownloader, dataLen);
     uint32_t writeLen = mediaDownloader->currentRequest_->saveData_(static_cast<uint8_t *>(buffer),
         static_cast<uint32_t>(dataLen), mediaDownloader->isNotBlock_);
     MEDIA_LOGI_LIMIT(DOWNLOAD_LOG_FEQUENCE, "RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
@@ -1274,6 +1284,36 @@ void Downloader::StopBufferring()
             }
         }
         Start();
+    }
+}
+
+void Downloader::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
+{
+    downloadCallback_ = callback;
+}
+
+int64_t Downloader::GetCurrentMillisecond()
+{
+    auto duration = std::chrono::steady_clock::now().time_since_epoch();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+}
+
+void Downloader::UpdateDownloadInfo(Downloader *downloader, size_t dataLen)
+{
+    if (downloader) {
+        auto now = downloader->GetCurrentMillisecond();
+        if (downloader->lastDownloadTime_  == 0) {
+            int64_t firstDownloadTime = now - downloader->startDownTime_;
+            downloader->lastDownloadTime_ = downloader->startDownTime_;
+            if (downloader->downloadCallback_ != nullptr) {
+                downloader->downloadCallback_->UpdateFirstDownloadTime(firstDownloadTime, now);
+            }
+        }
+        int64_t downloadTime = now - downloader->lastDownloadTime_;
+        downloader->lastDownloadTime_ = now;
+        if (downloader->downloadCallback_ != nullptr) {
+            downloader->downloadCallback_->UpdateTotalDownloadTimeAndBytes(downloadTime, dataLen);
+        }
     }
 }
 }

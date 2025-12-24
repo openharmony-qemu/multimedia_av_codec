@@ -36,32 +36,25 @@ namespace {
 constexpr int MIN_WIDTH = 480;
 constexpr int SECOND_WIDTH = 720;
 constexpr int THIRD_WIDTH = 1080;
-constexpr uint64_t MAX_BUFFER_SIZE = 19 * 1024 * 1024;
 constexpr uint32_t SAMPLE_INTERVAL = 1000; // Sampling time interval: ms
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_INTERVAL = 300 * 1000;
 constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr size_t PLAY_WATER_LINE = 5 * 1024;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
-constexpr size_t DEFAULT_WATER_LINE_ABOVE = 512 * 1024;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLISECONDS = 500;
-constexpr int UPDATE_CACHE_STEP = 5 * 1024;
 constexpr int SEEK_STATUS_RETRY_TIMES = 100;
 constexpr int SEEK_STATUS_SLEEP_TIME = 50;
 constexpr uint64_t CURRENT_BIT_RATE = 1 * 1024 * 1024; // bps
 constexpr int32_t ONE_SECONDS = 1000;
-constexpr int32_t TEN_MILLISECONDS = 10;
-constexpr size_t MIN_WATER_LINE_ABOVE = 300 * 1024;
-constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.6;
 constexpr float CACHE_LEVEL_1 = 0.5;
-constexpr float DEFAULT_CACHE_TIME = 5;
+constexpr float DEFAULT_CACHE_TIME = 1;
 constexpr int TRANSFER_SIZE_RATE_2 = 2;
 constexpr int TRANSFER_SIZE_RATE_3 = 3;
 constexpr int TRANSFER_SIZE_RATE_4 = 4;
 constexpr int CACHE_BUFFER_FULL_LOOP_INTERVAL = 100;
 constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 constexpr size_t MAX_BUFFERING_TIME_OUT_DELAY = 60 * 1000;
-constexpr int32_t HUNDRED_PERCENTS = 100;
 constexpr int32_t HALF_DIVIDE = 2;
 constexpr uint64_t READ_BACK_SAVE_SIZE = 1 * 1024 * 1024;
 constexpr int32_t SAVE_DATA_LOG_FREQUENCY = 50;
@@ -72,6 +65,7 @@ constexpr int MAX_RETRY = 10;
 constexpr uint32_t MAX_LOOP_TIMES = 100;
 constexpr uint64_t MAX_EXPECT_DURATION = 19;
 constexpr uint32_t POP_TIME_OUT_MS = 1;
+constexpr size_t ADJUST_SIZE = 200 * 1024;
 
 uint64_t SpliceOffset(uint32_t tsIndex, uint32_t offset32)
 {
@@ -81,18 +75,18 @@ uint64_t SpliceOffset(uint32_t tsIndex, uint32_t offset32)
     offset64 |= offset32;
     return offset64;
 }
-}
+} // namespace
 
 const std::map<HlsSegmentType, size_t> HlsSegmentManager::MIN_BUFFER_SIZE = {
     { HlsSegmentType::SEG_VIDEO, VIDEO_MIN_BUFFER_SIZE },
-    { HlsSegmentType::SEG_AUDIO, 2 * 1024 * 1024 },
-    { HlsSegmentType::SEG_SUBTITLE, 1 * 1024 * 1024 },
+    { HlsSegmentType::SEG_AUDIO, 400 * 1024 },
+    { HlsSegmentType::SEG_SUBTITLE, 200 * 1024 },
 };
 
 const std::map<HlsSegmentType, size_t> HlsSegmentManager::MAX_CACHE_BUFFER_SIZE = {
     {HlsSegmentType::SEG_VIDEO, VIDEO_MAX_CACHE_BUFFER_SIZE},
-    {HlsSegmentType::SEG_AUDIO, 5 * 1024 * 1024},
-    {HlsSegmentType::SEG_SUBTITLE, 2 * 1024 * 1024},
+    {HlsSegmentType::SEG_AUDIO, 1 * 1024 * 1024},
+    {HlsSegmentType::SEG_SUBTITLE, 500 * 1024},
 };
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -110,7 +104,6 @@ HlsSegmentManager::HlsSegmentManager(int expectBufferDuration, bool userDefinedD
     } else {
         cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
         cacheMediaBuffer_->Init(maxCacheBufferSize_, CHUNK_SIZE);
-        isBuffering_ = true;
         bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
         totalBufferSize_ = maxCacheBufferSize_;
     }
@@ -150,7 +143,6 @@ HlsSegmentManager::HlsSegmentManager(const std::shared_ptr<HlsSegmentManager> &o
     } else {
         cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
         cacheMediaBuffer_->Init(maxCacheBufferSize_, CHUNK_SIZE);
-        isBuffering_.store(other->isBuffering_.load());
         bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
         totalBufferSize_ = maxCacheBufferSize_;
     }
@@ -187,6 +179,9 @@ void HlsSegmentManager::Init()
     } else {
         downloader_ = std::make_shared<Downloader>("hlsMedia");
     }
+    if (downloader_ != nullptr && downloadCallback_ != nullptr) {
+        downloader_->SetDownloadCallback(downloadCallback_);
+    }
     downloader_->Init();
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList");
     auto weakDownloader = weak_from_this();
@@ -201,6 +196,9 @@ void HlsSegmentManager::Init()
     } else {
         playlistDownloader_ = std::make_shared<HlsPlayListDownloader>(httpHeader_, nullptr);
     }
+    if (playlistDownloader_ != nullptr && downloadCallback_ != nullptr) {
+        playlistDownloader_->SetDownloadCallback(downloadCallback_);
+    }
     playlistDownloader_->Init();
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     waterLineAbove_ = PLAY_WATER_LINE;
@@ -208,6 +206,11 @@ void HlsSegmentManager::Init()
     loopInterruptClock_.Reset();
     aesDecryptor_ = std::make_shared<AesDecryptor>();
     aesDecryptor_->Init();
+}
+
+void HlsSegmentManager::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
+{
+    downloadCallback_ = callback;
 }
 
 HlsSegmentManager::~HlsSegmentManager()
@@ -327,7 +330,7 @@ void HlsSegmentManager::InitCacheWithDuration()
     }
     MEDIA_LOG_I("HLS setting buffer size: %{public}zu, min: %{public}zu, max: %{public}zu, type: %{public}d",
         totalBufferSize_, minBufferSize_, maxCacheBufferSize_, type_);
-    size_t expectBufferSize = expectDuration_ * CURRENT_BIT_RATE;
+    auto expectBufferSize = static_cast<size_t>(expectDuration_ * CURRENT_BIT_RATE);
     totalBufferSize_ = std::max(std::min(expectBufferSize, maxCacheBufferSize_), minBufferSize_);
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
@@ -403,138 +406,6 @@ bool HlsSegmentManager::CheckBreakCondition()
         return true;
     }
     return false;
-}
-
-bool HlsSegmentManager::HandleBuffering()
-{
-    if (HandleTimeout()) {
-        return false;
-    }
-    if (IsNeedBufferForPlaying() || !isBuffering_.load()) {
-        return false;
-    }
-    if (isFirstFrameArrived_) {
-        UpdateWaterLineAbove();
-        UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
-    }
-    HandleBufferingState();
-    HandleBufferingEnd();
-    return isBuffering_.load();
-}
-
-bool HlsSegmentManager::HandleTimeout()
-{
-    if (!isBuffering_ || !GetBufferingTimeOut() || !segEventCb_) {
-        return false;
-    }
-    MEDIA_LOG_I("HTTP cachebuffer buffering time out, type: %{public}d", type_);
-    HlsSegEvent event {.segType = type_, .type = PluginEventType::CLIENT_ERROR,
-        .networkError = NetworkClientErrorCode::ERROR_TIME_OUT, .str = "buffering"};
-    segEventCb_(event);
-    isTimeoutErrorNotified_.store(true);
-    isBuffering_ = false;
-    return true;
-}
-
-void HlsSegmentManager::HandleBufferingState()
-{
-    {
-        AutoLock lk(bufferingEndMutex_);
-        if (!canWrite_) {
-            MEDIA_LOG_I("HLS canWrite false, type: %{public}d", type_);
-        }
-        {
-            AutoLock lock(tsStorageInfoMutex_);
-            if (tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
-                tsStorageInfo_[readTsIndex_].second &&
-                !backPlayList_.empty() && readTsIndex_ >= backPlayList_.size() - 1) {
-                MEDIA_LOG_I("HLS readTS download complete, type: %{public}d", type_);
-                isBuffering_ = false;
-            }
-        }
-        HandleWaterLine();
-    }
-}
-
-void HlsSegmentManager::HandleBufferingEnd()
-{
-    if (!isBuffering_ && !isFirstFrameArrived_) {
-        bufferingTime_ = 0;
-    }
-    if (!isBuffering_ && isFirstFrameArrived_ && bufferingCbFunc_) {
-        MEDIA_LOG_I("HLS CacheData onEvent BUFFERING_END, waterLineAbove: " PUBLIC_LOG_ZU " readOffset: "
-            PUBLIC_LOG_U64 " writeOffset: " PUBLIC_LOG_U64 " writeTsIndex: " PUBLIC_LOG_U32 " bufferSize: "
-            PUBLIC_LOG_U64 ", type: %{public}d", waterLineAbove_, readOffset_, writeOffset_, writeTsIndex_,
-            GetCrossTsBuffersize(), type_);
-        UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
-        bufferingCbFunc_(type_, BufferingInfoType::BUFFERING_END);
-        bufferingTime_ = 0;
-    }
-}
-
-void HlsSegmentManager::HandleWaterLine()
-{
-    size_t currentWaterLine = waterLineAbove_;
-    size_t currentOffset = readOffset_;
-    {
-        AutoLock lock(initCacheMutex_);
-        if (initCacheSize_.load() != -1) {
-            currentWaterLine = static_cast<size_t>(initCacheSize_.load());
-            currentOffset = static_cast<size_t>(expectOffset_.load());
-            MEDIA_LOG_I("currentOffset:" PUBLIC_LOG_ZU ", type: %{public}d", currentOffset, type_);
-        }
-        if (GetCrossTsBuffersize() >= currentWaterLine || CheckBreakCondition() ||
-            (tsStorageInfo_.find(readTsIndex_ + 1) != tsStorageInfo_.end() &&
-                tsStorageInfo_[readTsIndex_ + 1].second)) {
-            MEDIA_LOG_I("HLS CheckBreakCondition true, waterLineAbove: " PUBLIC_LOG_ZU " bufferSize: " PUBLIC_LOG_U64
-                ", type: %{public}d", waterLineAbove_, GetCrossTsBuffersize(), type_);
-            if (initCacheSize_.load() != -1) {
-                initCacheSize_.store(-1);
-                expectOffset_.store(-1);
-                if (bufferingCbFunc_) {
-                    bufferingCbFunc_(type_, BufferingInfoType::BUFFERING_END);
-                }
-            }
-            isBuffering_ = false;
-        }
-    }
-    if (!isBuffering_) {
-        MEDIA_LOG_I("HandleBuffering bufferingEndCond NotifyAll, type: %{public}d", type_);
-        bufferingEndCond_.NotifyAll();
-    }
-}
-
-bool HlsSegmentManager::HandleCache()
-{
-    size_t waterLine = 0;
-    if (isFirstFrameArrived_) {
-        waterLine = wantedReadLength_ > 0 ?
-            std::max(PLAY_WATER_LINE, static_cast<size_t>(wantedReadLength_)) : 0;
-    } else {
-        waterLine = wantedReadLength_;
-        waterLineAbove_ = waterLine;
-    }
-    bool isAboveLine = GetCrossTsBuffersize() >= waterLine;
-    bool isNextTsReady = true;
-    if (!backPlayList_.empty() && readTsIndex_ + 1 >= backPlayList_.size()) {
-        isNextTsReady = tsStorageInfo_[readTsIndex_].second;
-    } else {
-        isNextTsReady = tsStorageInfo_[readTsIndex_ + 1].second;
-    }
-    if (isBuffering_ || !bufferingCbFunc_ || !canWrite_ || isAboveLine || isNextTsReady) {
-        return false;
-    }
-    isBuffering_ = true;
-    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
-    if (isFirstFrameArrived_) {
-        bufferingCbFunc_(type_, BufferingInfoType::BUFFERING_START);
-        UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
-        MEDIA_LOG_I("HLS CacheData onEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU " readOffset: "
-            PUBLIC_LOG_U64 " writeOffset: " PUBLIC_LOG_U64 " writeTsIndex: " PUBLIC_LOG_U32 " bufferSize: "
-            PUBLIC_LOG_U64 ", type: %{public}d", waterLineAbove_, readOffset_, writeOffset_, writeTsIndex_,
-            GetCrossTsBuffersize(), type_);
-    }
-    return true;
 }
 
 void HlsSegmentManager::HandleFfmpegReadback(uint64_t ffmpegOffset)
@@ -653,23 +524,13 @@ Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDa
         MEDIA_LOG_D("HLS CheckTsEndOrEos return END_OF_STREAM, type: %{public}d", type_);
         return Status::END_OF_STREAM;
     }
-    if (isBuffering_ && GetBufferingTimeOut() && segEventCb_ && !isReportedErrorCode_) {
-        HlsSegEvent event {.segType = type_, .type = PluginEventType::CLIENT_ERROR,
-            .networkError = NetworkClientErrorCode::ERROR_TIME_OUT, .str = "read"};
-        segEventCb_(event);
-        isTimeoutErrorNotified_.store(true);
-        MEDIA_LOG_D("HLS CheckBufferingTimeOut return END_OF_STREAM, type: %{public}d", type_);
-        return Status::END_OF_STREAM;
-    }
-    if (isBuffering_ && CheckBufferingOneSeconds()) {
-        MEDIA_LOG_I("HLS read CheckBuffering return error again, type: %{public}d", type_);
+    auto canRead = CheckCanReadOneSeconds(readDataInfo.wantReadLength_);
+    if (!canRead) {
+        MEDIA_LOG_W("HLS read cannot read, pls again, read len: %{public}u, type: %{public}d",
+            readDataInfo.wantReadLength_, type_);
         return Status::ERROR_AGAIN;
     }
     wantedReadLength_ = static_cast<size_t>(readDataInfo.wantReadLength_);
-    if (!CheckBreakCondition() && HandleCache()) {
-        MEDIA_LOG_D("HLS read CheckBreak or HandleCache return error again, type: %{public}d", type_);
-        return Status::ERROR_AGAIN;
-    }
     Status tmpRes = CheckPlaylist(buff, readDataInfo);
     if (tmpRes != Status::ERROR_UNKNOWN) {
         MEDIA_LOG_D("HLS read return tmpRes, type: %{public}d", type_);
@@ -740,7 +601,7 @@ void HlsSegmentManager::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readD
     ffmpegOffset_ = readDataInfo.ffmpegOffset + readDataInfo.realReadLength_;
     if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
         uint64_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
-        if (remain > 0 && remain < DECRYPT_UNIT_LEN && aesDecryptor_->keyLen_ > 0) {
+        if (remain > 0 && remain < AES_BLOCK_LEN && aesDecryptor_->keyLen_ > 0) {
             size_t readRemain = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
             readOffset_ += readRemain;
             ffmpegOffset_ += readRemain;
@@ -791,16 +652,31 @@ void HlsSegmentManager::RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo&
     }
 }
 
+bool HlsSegmentManager::CheckCanReadOneSeconds(uint64_t wantReadLength)
+{
+    MEDIA_LOG_I("HLS CheckCanReadOneSeconds in, type: %{public}d", type_);
+    uint64_t len = isFirstFrameArrived_ ? 1 : wantReadLength;
+    std::unique_lock<std::mutex> lock(canReadMutex_);
+    canReadCond_.wait_for(lock, std::chrono::milliseconds(ONE_SECONDS), [this, len]() {
+        return GetCrossTsBuffersize() >= len || IsAllDownloadFinish();
+    });
+    auto canRead = GetCrossTsBuffersize() >= len || IsAllDownloadFinish();
+    MEDIA_LOG_I("HLS CheckCanReadOneSeconds out, can read: %{public}d, type: %{public}d", canRead, type_);
+    return canRead;
+}
+
+bool HlsSegmentManager::IsAllDownloadFinish()
+{
+    return (CheckReadStatus() || isStopped) && GetSeekable() == Seekable::SEEKABLE &&
+        tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
+        tsStorageInfo_[writeTsIndex_].second;
+}
+
 Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     FALSE_RETURN_V(cacheMediaBuffer_ != nullptr, Status::ERROR_AGAIN);
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     readTime_ = now;
-    if (isBuffering_ && !canWrite_) {
-        MEDIA_LOG_I("HLS can not write and buffering, type: %{public}d", type_);
-        SeekToTsForRead(readTsIndex_);
-        return Status::ERROR_AGAIN;
-    }
     if (!CheckDataIntegrity()) {
         MEDIA_LOG_W("HLS Read in, fix download, type: %{public}d", type_);
         SeekToTsForRead(readTsIndex_);
@@ -864,7 +740,9 @@ void HlsSegmentManager::PrepareToSeek()
     } else {
         cacheMediaBuffer_->Reset();
     }
-    cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
+    auto initRet = cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
+    MEDIA_LOG_I("HLS Seek, reset cache media buffer, ret: %{public}d, size: %{public}zu, type: %{public}d",
+        initRet, totalBufferSize_, type_);
     memorySize_ = totalBufferSize_;
     canWrite_ = true;
 
@@ -874,15 +752,14 @@ void HlsSegmentManager::PrepareToSeek()
         tsStreamIdInfo_.clear();
     }
     
-    NZERO_LOG(memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN));
-    NZERO_LOG(memset_s(decryptCache_, DECRYPT_BUFFER_SIZE, 0x00, DECRYPT_BUFFER_SIZE));
-    NZERO_LOG(memset_s(decryptBuffer_, DECRYPT_BUFFER_SIZE, 0x00, DECRYPT_BUFFER_SIZE));
-    auto ret = memcpy_s(aesDecryptor_->iv_, DECRYPT_UNIT_LEN, aesDecryptor_->initIv_, DECRYPT_UNIT_LEN);
+    NZERO_LOG(memset_s(singleBlock_, AES_BLOCK_LEN, 0x00, AES_BLOCK_LEN));
+    singleBlockLen_ = 0;
+    NZERO_LOG(memset_s(decryptBuffer_, AES_DECRYPT_LEN, 0x00, AES_DECRYPT_LEN));
+    decryptLen_ = 0;
+    auto ret = memcpy_s(aesDecryptor_->iv_, AES_BLOCK_LEN, aesDecryptor_->initIv_, AES_BLOCK_LEN);
     if (ret != 0) {
         MEDIA_LOG_E("iv copy error, type: %{public}d", type_);
     }
-    afterAlignRemainedLength_ = 0;
-    isLastDecryptWriteError_ = false;
 }
 
 bool HlsSegmentManager::SeekToTime(int64_t seekTime, SeekMode mode)
@@ -897,7 +774,6 @@ bool HlsSegmentManager::SeekToTime(int64_t seekTime, SeekMode mode)
     }
     isSeekingFlag = true;
     seekTime_ = static_cast<uint64_t>(seekTime);
-    bufferingTime_ = 0;
     PrepareToSeek();
     FALSE_RETURN_V_MSG(!isInterruptNeeded_, true, "HLS Seek return, isInterruptNeeded_.");
     auto totalDuration = playlistDownloader_->GetDuration();
@@ -1006,10 +882,6 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
         }
         PutRequestIntoDownloader(playInfo);
     }
-    if (!isDownloadStarted_ && playList_->Empty()) {
-        MEDIA_LOG_I("HLS OnPlayListChanged no new playinfo, type: %{public}d", type_);
-        HandleBuffering();
-    }
 }
 
 bool HlsSegmentManager::GetStartedStatus()
@@ -1020,17 +892,6 @@ bool HlsSegmentManager::GetStartedStatus()
 
 bool HlsSegmentManager::CacheBufferFullLoop()
 {
-    {
-        AutoLock lock(initCacheMutex_);
-        if (initCacheSize_.load() != -1) {
-            if (IsCachedInitSizeReady(initCacheSize_.load()) && bufferingCbFunc_) {
-                bufferingCbFunc_(type_, BufferingInfoType::BUFFERING_END);
-                initCacheSize_.store(-1);
-                expectOffset_.store(-1);
-            }
-        }
-    }
-
     MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "HLS CacheMediaBuffer full, waiting seek or read");
     if (isSeekingFlag.load()) {
         MEDIA_LOG_I("HLS CacheMediaBuffer full, isSeeking, return true, type: %{public}d", type_);
@@ -1099,7 +960,7 @@ uint32_t HlsSegmentManager::SaveCacheBufferData(uint8_t* data, uint32_t len, boo
             }
         }
         writeBitrateCaculator_->UpdateWriteBytes(res);
-        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "writeOffset " PUBLIC_LOG_U64 " res " PUBLIC_LOG_ZU
+        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "SaveCache writeOffset " PUBLIC_LOG_U64 " res " PUBLIC_LOG_ZU
             ", type: %{public}d", writeOffset_, res, type_);
         ClearChunksOfFragment();
         if (res > 0 || hasWriteSize == len) {
@@ -1109,7 +970,6 @@ uint32_t HlsSegmentManager::SaveCacheBufferData(uint8_t* data, uint32_t len, boo
         writeBitrateCaculator_->StopClock();
         MEDIA_LOG_W("HLS CacheMediaBuffer full, type: %{public}d", type_);
         canWrite_ = false;
-        HandleBuffering();
         while (!isInterrupt_ && !canWrite_.load() && !isInterruptNeeded_.load()) {
             if (CacheBufferFullLoop()) {
                 return len;
@@ -1140,90 +1000,96 @@ uint32_t HlsSegmentManager::SaveData(uint8_t* data, uint32_t len, bool notBlock)
     } else {
         res = SaveEncryptData(data, len, notBlock);
     }
-    HandleBuffering();
 
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
     MEDIA_LOG_D("HLS free size: " PUBLIC_LOG_U64 ", type: %{public}d", freeSize, type_);
+    canReadCond_.notify_all();
     return res;
 }
 
-uint32_t HlsSegmentManager::GetDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen, uint32_t writeLen)
+uint32_t HlsSegmentManager::FillSingleBlock(uint8_t *&data, uint32_t &len)
 {
-    uint32_t realLen;
-    errno_t err {0};
-    if (afterAlignRemainedLength_ > 0) {
-        err = memcpy_s(decryptBuffer_, afterAlignRemainedLength_,
-                       afterAlignRemainedBuffer_, afterAlignRemainedLength_);
-        if (err != 0) {
-            MEDIA_LOG_D("afterAlignRemainedLength_: " PUBLIC_LOG_D64 ", type: %{public}d", afterAlignRemainedLength_,
-                type_);
-        }
-    }
-    uint32_t minWriteLen = (minBufferSize_ - afterAlignRemainedLength_) > writeLen ?
-                            writeLen : minBufferSize_ - afterAlignRemainedLength_;
-    if (minWriteLen > minBufferSize_) {
-        return 0;
-    }
-    err = memcpy_s(decryptBuffer_ + afterAlignRemainedLength_,
-                   minWriteLen, writeDataPoint, minWriteLen);
-    if (err != 0) {
-        MEDIA_LOG_D("minWriteLen: " PUBLIC_LOG_D32 ", type: %{public}d", minWriteLen, type_);
-    }
-    realLen = minWriteLen + afterAlignRemainedLength_;
-    aesDecryptor_->Decrypt(decryptBuffer_, decryptCache_, realLen);
-    return realLen;
+    auto fillLen = std::min(static_cast<uint32_t>(AES_BLOCK_LEN) - singleBlockLen_, len);
+    NZERO_LOG(memcpy_s(singleBlock_ + singleBlockLen_, AES_BLOCK_LEN - singleBlockLen_, data, fillLen));
+
+    // update in buffer index & single block index
+    len -= fillLen;
+    data += fillLen;
+    singleBlockLen_ += fillLen;
+    return fillLen;
 }
 
-uint32_t HlsSegmentManager::SaveEncryptData(uint8_t* data, uint32_t len, bool notBlock)
+uint32_t HlsSegmentManager::DecryptDataLeft(uint8_t *&data, uint32_t &len, bool notBlock)
 {
-    uint32_t writeLen = 0;
-    uint8_t *writeDataPoint = data;
-    uint32_t waitLen = len;
-    errno_t err {0};
-    uint32_t realLen;
-    if ((waitLen + afterAlignRemainedLength_) < DECRYPT_UNIT_LEN && waitLen <= len) {
-        err = memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_,
-                       DECRYPT_UNIT_LEN - afterAlignRemainedLength_,
-                       writeDataPoint, waitLen);
-        if (err != 0) {
-            MEDIA_LOG_E("afterAlignRemainedLength_: " PUBLIC_LOG_D64 ", type: %{public}d",
-                DECRYPT_UNIT_LEN - afterAlignRemainedLength_, type_);
-        }
-        afterAlignRemainedLength_ += waitLen;
-        return len;
+    if (!singleBlockLen_) { // if single block has no data, decrypt from 'SaveData' buffer
+        return 0;
     }
-    writeLen = ((waitLen + afterAlignRemainedLength_) / DECRYPT_UNIT_LEN) *
-                DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
-    realLen = GetDecrptyRealLen(writeDataPoint, waitLen, writeLen);
-    totalLen_ += realLen;
 
-    uint32_t writeSuccessLen = SaveCacheBufferData(decryptCache_, realLen, notBlock);
+    // fill single block
+    uint32_t lastWrittenLen {singleBlockLen_};
+    FillSingleBlock(data, len);
 
-    err = memset_s(decryptCache_, DECRYPT_BUFFER_SIZE, 0x00, realLen);
-    if (err != 0) {
-        MEDIA_LOG_E("realLen: " PUBLIC_LOG_D32 ", type: %{public}d", realLen, type_);
+    // decrypt single block
+    aesDecryptor_->Decrypt(singleBlock_, decryptBuffer_, singleBlockLen_);
+    decryptLen_ = singleBlockLen_;
+    singleBlockLen_ = 0;
+
+    auto writtenLen = SaveCacheBufferData(decryptBuffer_, decryptLen_, notBlock);
+    if (writtenLen != decryptLen_) {
+        MEDIA_LOG_W("HLS DecryptDataLeft write cache error, decrypt len: %{public}u, written len: %{public}u"
+            ", type: %{public}d", decryptLen_, writtenLen, type_);
     }
-    if (writeSuccessLen == realLen) {
-        afterAlignRemainedLength_ = 0;
-        err = memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
-        if (err != 0) {
-            MEDIA_LOG_E("DECRYPT_UNIT_LEN: " PUBLIC_LOG_D64 ", type: %{public}d", DECRYPT_UNIT_LEN, type_);
-        }
+    decryptLen_ -= writtenLen;
+    return writtenLen - lastWrittenLen;
+}
+
+uint32_t HlsSegmentManager::DecryptData(uint8_t *&data, uint32_t &len, bool notBlock)
+{
+    // decrypt encryptedBuffer, min(AES_DECRYPT_COUNT, encryptedLen / AES_BLOCK_LEN) * AES_BLOCK_LEN
+    auto decryptCount = std::min(AES_DECRYPT_COUNT, len / AES_BLOCK_LEN);
+    auto aesDecryptLen = decryptCount * AES_BLOCK_LEN;
+
+    // decrypt buffer
+    aesDecryptor_->Decrypt(data, decryptBuffer_, aesDecryptLen);
+
+    // update encrypt buffer index
+    len -= aesDecryptLen;
+    data += aesDecryptLen;
+    decryptLen_ = aesDecryptLen;
+
+    // write decryptBuffer_ to cache
+    auto writtenLen = SaveCacheBufferData(decryptBuffer_, decryptLen_, notBlock);
+    if (writtenLen != decryptLen_) {
+        MEDIA_LOG_W("HLS DecryptData write cache error, decrypt len: %{public}u, written len: %{public}u"
+            ", type: %{public}d", decryptLen_, writtenLen, type_);
     }
-    if (writeLen > len) {
-        MEDIA_LOG_D("writeLen: " PUBLIC_LOG_D32 ", type: %{public}d", writeLen, type_);
+    decryptLen_ -= writtenLen;
+    return writtenLen;
+}
+
+uint32_t HlsSegmentManager::SaveEncryptData(uint8_t *data, uint32_t len, bool notBlock)
+{
+    // reset decryptBuffer_, decryptLen_
+    MEDIA_LOG_D("HLS SaveEncryptData in, len: %{public}u, remain: %{public}u, type: %{public}d",
+        len, singleBlockLen_, type_);
+    NZERO_LOG(memset_s(decryptBuffer_, AES_DECRYPT_LEN, 0x00, AES_DECRYPT_LEN));
+    decryptLen_ = 0;
+    uint32_t encryptedLen {len};
+    uint8_t *encryptedBuffer = data;
+    uint32_t totalWrittenLen {};
+    auto leftDataWrittenLen = DecryptDataLeft(encryptedBuffer, encryptedLen, notBlock);
+    totalWrittenLen += leftDataWrittenLen;
+    while (encryptedLen >= AES_BLOCK_LEN) {
+        auto writtenLen = DecryptData(encryptedBuffer, encryptedLen, notBlock);
+        totalWrittenLen += writtenLen;
     }
-    writeDataPoint += writeLen;
-    waitLen -= writeLen;
-    if (waitLen > 0 && writeSuccessLen == realLen) {
-        afterAlignRemainedLength_ = waitLen;
-        err = memcpy_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, writeDataPoint, waitLen);
-        if (err != 0) {
-            MEDIA_LOG_D("waitLen: " PUBLIC_LOG_D32 ", type: %{public}d", waitLen, type_);
-        }
+    if (encryptedLen) { // singleBlockLen_ == 0, encryptedLen < AES_BLOCK_LEN
+        // fill to single block
+        totalWrittenLen += FillSingleBlock(encryptedBuffer, encryptedLen);
     }
-    MEDIA_LOG_D("SaveEncryptData, return len " PUBLIC_LOG_D32 ", type: %{public}d", len, type_);
-    return writeSuccessLen == realLen ? len : writeSuccessLen;
+    MEDIA_LOG_D("HLS SaveEncryptData done, len: %{public}u, write: %{public}u, remain: %{public}u, type: %{public}d",
+        len, totalWrittenLen, singleBlockLen_, type_);
+    return totalWrittenLen;
 }
 
 void HlsSegmentManager::DownloadRecordHistory(int64_t nowTime)
@@ -1547,7 +1413,7 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
         tsStorageInfo_[writeTsIndex_].second = true;
     }
     if (aesDecryptor_->keyLen_ > 0) {
-        NZERO_LOG(memcpy_s(aesDecryptor_->iv_, DECRYPT_UNIT_LEN, aesDecryptor_->initIv_, DECRYPT_UNIT_LEN));
+        NZERO_LOG(memcpy_s(aesDecryptor_->iv_, AES_BLOCK_LEN, aesDecryptor_->initIv_, AES_BLOCK_LEN));
     }
     auto playInfo = playList_->Pop(POP_TIME_OUT_MS);
     if (!playInfo.url_.empty()) {
@@ -1568,7 +1434,6 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
         auto downloadTime = std::abs(nowTime - startDownloadTime_) / 1000;
         MEDIA_LOG_D("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms, type: %{public}d",
             totalBits_, downloadTime * 1000, type_);
-        HandleBuffering();
     }
 
     // bitrate above 0, user is not selecting, auto seliect is not going, playlist is done, is not seeking
@@ -1696,7 +1561,7 @@ bool HlsSegmentManager::CheckPulldownBufferSize()
     FALSE_RETURN_V(recordData_ != nullptr, false);
     FALSE_RETURN_V(playlistDownloader_ != nullptr, false);
     bool isPullDown = false;
-    uint64_t playingBitrate = playlistDownloader_ -> GetCurrentBitRate();
+    uint64_t playingBitrate = playlistDownloader_->GetCurrentBitRate();
     if (playingBitrate == 0) {
         playingBitrate = TransferSizeToBitRate(playlistDownloader_->GetVideoWidth());
     }
@@ -1711,14 +1576,14 @@ bool HlsSegmentManager::CheckPulldownBufferSize()
 
 void HlsSegmentManager::RiseBufferSize()
 {
-    if (totalBufferSize_ >= MAX_BUFFER_SIZE) {
+    if (totalBufferSize_ >= maxCacheBufferSize_) {
         MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "HLS increasing buffer size failed, already reach the max buffer "
-            "size: " PUBLIC_LOG_D64 ", current buffer size: " PUBLIC_LOG_ZU ", type: %{public}d", MAX_BUFFER_SIZE,
+            "size: " PUBLIC_LOG_ZU ", current buffer size: " PUBLIC_LOG_ZU ", type: %{public}d", maxCacheBufferSize_,
             totalBufferSize_, type_);
         return;
     }
-    size_t tmpBufferSize = totalBufferSize_ + 1 * 1024 * 1024;
-    totalBufferSize_ = tmpBufferSize;
+    size_t tmpBufferSize = totalBufferSize_ + ADJUST_SIZE;
+    totalBufferSize_ = std::min(tmpBufferSize, maxCacheBufferSize_);
     MEDIA_LOG_I("HLS increasing buffer size: " PUBLIC_LOG_ZU ", type: %{public}d", totalBufferSize_, type_);
 }
 
@@ -1730,8 +1595,8 @@ void HlsSegmentManager::DownBufferSize()
             totalBufferSize_, type_);
         return;
     }
-    size_t tmpBufferSize = totalBufferSize_ - 1 * 1024 * 1024;
-    totalBufferSize_ = tmpBufferSize;
+    size_t tmpBufferSize = totalBufferSize_ > ADJUST_SIZE ? totalBufferSize_ - ADJUST_SIZE : 0;
+    totalBufferSize_ = std::max(tmpBufferSize, minBufferSize_);
     MEDIA_LOG_I("HLS reducing buffer size: " PUBLIC_LOG_ZU ", type: %{public}d", totalBufferSize_, type_);
 }
 
@@ -1807,7 +1672,6 @@ void HlsSegmentManager::GetDownloadInfo(DownloadInfo& downloadInfo)
     }
     downloadInfo.avgDownloadSpeed = avgDownloadSpeed_;
     downloadInfo.totalDownLoadBits = totalBits_;
-    downloadInfo.isTimeOut = isTimeOut_;
 }
 
 void HlsSegmentManager::GetPlaybackInfo(PlaybackInfo& playbackInfo)
@@ -1906,38 +1770,6 @@ void HlsSegmentManager::CalculateBitRate(size_t fragmentSize, double duration)
     MEDIA_LOG_I("HLS Calculate avgBitRate: " PUBLIC_LOG_D32 ", type: %{public}d", currentBitRate_, type_);
 }
 
-void HlsSegmentManager::UpdateWaterLineAbove()
-{
-    if (!isFirstFrameArrived_) {
-        return;
-    }
-    if (currentBitRate_ == 0 && playlistDownloader_ != nullptr) {
-        currentBitRate_ = static_cast<int32_t>(playlistDownloader_->GetCurBitrate());
-        MEDIA_LOG_I("HLS use playlist bitrate: " PUBLIC_LOG_D32 ", type: %{public}d", currentBitRate_, type_);
-    }
-    size_t waterLineAbove = DEFAULT_WATER_LINE_ABOVE;
-    if (currentBitRate_ > 0) {
-        float cacheTime = 0;
-        uint64_t writeBitrate = writeBitrateCaculator_->GetWriteBitrate();
-        if (writeBitrate > 0) {
-            float ratio = static_cast<float>(writeBitrate) /
-                          static_cast<float>(currentBitRate_);
-            cacheTime = GetCacheDuration(ratio);
-        } else {
-            cacheTime = DEFAULT_CACHE_TIME;
-        }
-        waterLineAbove = static_cast<size_t>(cacheTime * currentBitRate_ / BYTES_TO_BIT);
-        waterLineAbove = std::max(MIN_WATER_LINE_ABOVE, waterLineAbove);
-    } else {
-        MEDIA_LOG_D("HLS UpdateWaterLineAbove default: " PUBLIC_LOG_ZU ", type: %{public}d", waterLineAbove, type_);
-    }
-    waterLineAbove_ = std::min(waterLineAbove, static_cast<size_t>(totalBufferSize_ *
-        WATER_LINE_ABOVE_LIMIT_RATIO));
-    MEDIA_LOG_D("HLS UpdateWaterLineAbove: " PUBLIC_LOG_ZU " writeBitrate: " PUBLIC_LOG_U64 " avgDownloadSpeed: "
-        PUBLIC_LOG_D32 " currentBitRate: " PUBLIC_LOG_D32 ", type: %{public}d",
-        waterLineAbove_, writeBitrateCaculator_->GetWriteBitrate(), avgDownloadSpeed_, currentBitRate_, type_);
-}
-
 void HlsSegmentManager::HandleCachedDuration()
 {
     auto tmpBitRate = currentBitRate_;
@@ -1956,65 +1788,6 @@ void HlsSegmentManager::HandleCachedDuration()
         segEventCb_(event);
         lastDurationReacord_ = cachedDuration_;
     }
-}
-
-void HlsSegmentManager::UpdateCachedPercent(BufferingInfoType infoType)
-{
-    if (waterLineAbove_ == 0 || !segEventCb_) {
-        MEDIA_LOG_E("HLS UpdateCachedPercent: ERROR, type: %{public}d", type_);
-        return;
-    }
-    if (infoType == BufferingInfoType::BUFFERING_START) {
-        lastCachedSize_ = 0;
-        isBufferingStart_ = true;
-        return;
-    }
-    if (infoType == BufferingInfoType::BUFFERING_END) {
-        bufferingTime_ = 0;
-        lastCachedSize_ = 0;
-        isBufferingStart_ = false;
-        return;
-    }
-    if (infoType != BufferingInfoType::BUFFERING_PERCENT || !isBufferingStart_) {
-        return;
-    }
-    uint64_t bufferSize = GetBufferSize();
-    if (bufferSize < lastCachedSize_) {
-        return;
-    }
-    uint64_t deltaSize = bufferSize - lastCachedSize_;
-    if (deltaSize >= UPDATE_CACHE_STEP) {
-        uint64_t percentValue = (bufferSize >= waterLineAbove_) ?
-                        HUNDRED_PERCENTS : bufferSize * HUNDRED_PERCENTS / waterLineAbove_;
-        int percent = static_cast<int>(percentValue);
-        HlsSegEvent event {.segType = type_, .type = PluginEventType::EVENT_BUFFER_PROGRESS, .percent = percent,
-            .str = "buffer percent"};
-        segEventCb_(event);
-        lastCachedSize_ = bufferSize;
-    }
-}
-
-bool HlsSegmentManager::CheckBufferingOneSeconds()
-{
-    MEDIA_LOG_I("HLS CheckBufferingOneSeconds in, type: %{public}d", type_);
-    int32_t sleepTime = 0;
-    // return error again 1 time 1s, avoid ffmpeg error
-    int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
-    while (sleepTime < ONE_SECONDS && !isInterruptNeeded_.load()) {
-        if (CheckLoopTimeout(loopStartTime)) {
-            break;
-        }
-        if (!isBuffering_) {
-            break;
-        }
-        if (CheckBreakCondition()) {
-            break;
-        }
-        OSAL::SleepFor(TEN_MILLISECONDS);
-        sleepTime += TEN_MILLISECONDS;
-    }
-    MEDIA_LOG_I("HLS CheckBufferingOneSeconds out, type: %{public}d", type_);
-    return isBuffering_.load();
 }
 
 void HlsSegmentManager::SetAppUid(int32_t appUid)
@@ -2095,9 +1868,6 @@ bool HlsSegmentManager::IsCachedInitSizeReady(int32_t wantInitSize)
 
 bool HlsSegmentManager::GetPlayable()
 {
-    if (isBuffering_) {
-        return false;
-    }
     if (!isFirstFrameArrived_) {
         return false;
     }
@@ -2175,14 +1945,6 @@ bool HlsSegmentManager::ClearChunksOfFragment()
 
 void HlsSegmentManager::WaitForBufferingEnd()
 {
-    AutoLock lk(bufferingEndMutex_);
-    FALSE_RETURN_MSG(isBuffering_.load(), "isBuffering false.");
-    MEDIA_LOG_I("WaitForBufferingEnd");
-    bufferingEndCond_.Wait(lk, [this]() {
-        MEDIA_LOG_I("Wait in, isBuffering: " PUBLIC_LOG_D32 " isInterruptNeeded: " PUBLIC_LOG_D32 ", type: %{public}d",
-            isBuffering_.load(), isInterruptNeeded_.load(), type_);
-        return !isBuffering_.load() || isInterruptNeeded_.load();
-    });
 }
 
 void HlsSegmentManager::SetIsReportedErrorCode()
@@ -2193,19 +1955,13 @@ void HlsSegmentManager::SetIsReportedErrorCode()
 bool HlsSegmentManager::SetInitialBufferSize(int32_t offset, int32_t size)
 {
     AutoLock lock(initCacheMutex_);
-    bool isInitBufferSizeOk = IsCachedInitSizeReady(size) || CheckBreakCondition();
+    bool isInitBufferSizeOk = CheckBreakCondition();
     auto downloadRequest = GetDownloadRequest();
     if (isInitBufferSizeOk || !downloader_ || !downloadRequest || isTimeoutErrorNotified_.load()) {
         MEDIA_LOG_I("HLS SetInitialBufferSize initCacheSize ok, type: %{public}d", type_);
         return false;
     }
     MEDIA_LOG_I("HLS SetInitialBufferSize initCacheSize " PUBLIC_LOG_U32 ", type: %{public}d", size, type_);
-    if (!isBuffering_.load()) {
-        isBuffering_.store(true);
-    }
-    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
-    expectOffset_.store(offset);
-    initCacheSize_.store(size);
     return true;
 }
 
@@ -2227,34 +1983,6 @@ void HlsSegmentManager::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& pla
     }
 }
 
-bool HlsSegmentManager::IsNeedBufferForPlaying()
-{
-    if (bufferDurationForPlaying_ <= 0 || !isDemuxerInitSuccess_.load() || !isBuffering_.load()) {
-        return false;
-    }
-    if (GetBufferingTimeOut() && segEventCb_) {
-        HlsSegEvent event {.segType = type_, .type = PluginEventType::CLIENT_ERROR,
-            .networkError = NetworkClientErrorCode::ERROR_TIME_OUT, .str = "buffer for playing"};
-        segEventCb_(event);
-        isTimeoutErrorNotified_.store(true);
-        isBuffering_.store(false);
-        isDemuxerInitSuccess_.store(false);
-        bufferingTime_ = 0;
-        return false;
-    }
-    if (GetCrossTsBuffersize() >= waterlineForPlaying_ || CheckBreakCondition() ||
-        (tsStorageInfo_.find(readTsIndex_ + 1) != tsStorageInfo_.end() &&
-        tsStorageInfo_[readTsIndex_ + 1].second)) {
-        MEDIA_LOG_I("HLS buffer duration for playing is enough, buffersize: " PUBLIC_LOG_U64 " waterLineAbove: "
-            PUBLIC_LOG_U64 ", type: %{public}d", GetCrossTsBuffersize(), waterlineForPlaying_, type_);
-        isBuffering_.store(false);
-        isDemuxerInitSuccess_.store(false);
-        bufferingTime_ = 0;
-        return false;
-    }
-    return true;
-}
-
 void HlsSegmentManager::NotifyInitSuccess()
 {
     MEDIA_LOG_I("HLS NotifyInitSuccess in, type: %{public}d", type_);
@@ -2270,7 +1998,6 @@ void HlsSegmentManager::NotifyInitSuccess()
         waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(playlistBitrate) /
             static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
     }
-    isBuffering_.store(true);
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
 }
 

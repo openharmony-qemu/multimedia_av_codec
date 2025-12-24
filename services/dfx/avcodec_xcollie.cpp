@@ -52,13 +52,14 @@ AVCodecXCollie &AVCodecXCollie::GetInstance()
     return instance;
 }
 
-int32_t AVCodecXCollie::SetTimer(const std::string &name, bool recovery, uint32_t timeout,
+int32_t AVCodecXCollie::SetTimer(const std::string &name, bool recovery, bool dumpLog, uint32_t timeout,
                                  std::function<void(void *)> callback)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
 
-    unsigned int flag = HiviewDFX::XCOLLIE_FLAG_LOG | HiviewDFX::XCOLLIE_FLAG_NOOP;
+    unsigned int flag = HiviewDFX::XCOLLIE_FLAG_NOOP;
     flag |= (recovery ? HiviewDFX::XCOLLIE_FLAG_RECOVERY : 0);
+    flag |= (dumpLog ? HiviewDFX::XCOLLIE_FLAG_LOG : 0);
 
     auto timerInfo = std::make_shared<TimerInfo>(
         name, std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()), timeout);
@@ -77,7 +78,7 @@ int32_t AVCodecXCollie::SetInterfaceTimer(const std::string &name, bool isServic
         [](void *data) { AVCodecXCollie::ServiceInterfaceTimerCallback(data); } :
         [](void *data) { AVCodecXCollie::ClientInterfaceTimerCallback(data); };
 
-    return SetTimer(name, recovery, timeout, func);
+    return SetTimer(name, recovery, true, timeout, func);
 #else
     return COLLIE_INVALID_INDEX;
 #endif

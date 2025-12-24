@@ -30,6 +30,9 @@
 #include <sstream>
 #include <sys/ioctl.h>
 #include <linux/dma-buf.h>
+#include "v1_0/cm_color_space.h"
+#include "v1_0/hdr_static_metadata.h"
+#include "v1_0/buffer_handle_meta_key_type.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -38,6 +41,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 const char *AV1_DEC_CREATE_DECODER_FUNC_NAME = "dav1d_create_decoder_api";
 const char *AV1_DEC_DECODE_FRAME_FUNC_NAME = "dav1d_codec_decode_api";
 const char *AV1_DEC_GET_FRAME_FUNC_NAME = "dav1d_codec_get_frame_api";
+const char *AV1_DEC_PICTURE_UNREF_FUNC_NAME = "dav1d_picture_unref";
 const char *AV1_DEC_DELETE_FUNC_NAME = "dav1d_destroy_decoder_api";
 
 constexpr struct {
@@ -61,8 +65,6 @@ constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
 constexpr uint32_t INDEX_INPUT = 0;
 constexpr uint32_t INDEX_OUTPUT = 1;
 constexpr int32_t VIDEO_MAX_FRAMERATE = 300;
-constexpr int32_t BITS_PER_PIXEL_COMPONENT_8 = 8;
-constexpr int32_t BITS_PER_PIXEL_COMPONENT_10 = 10;
 using namespace OHOS::Media;
 
 Av1Decoder::Av1Decoder(const std::string &name, const std::string &path) : VideoDecoder(name, path)
@@ -87,14 +89,12 @@ Av1Decoder::Av1Decoder(const std::string &name, const std::string &path) : Video
         if (handle_ == nullptr) {
             AVCODEC_LOGE("Load codec failed: %{public}s", libPath_.c_str());
             isValid_ = false;
-            return;
         }
         DecoderFuncMatch();
         AVCODEC_LOGI("Num %{public}u Decoder entered, state: Uninitialized", decInstanceID_);
     } else {
         AVCODEC_LOGE("Decoder already has %{public}d instances, cannot has more instances", VIDEO_INSTANCE_SIZE);
         isValid_ = false;
-        return;
     }
 }
 
@@ -130,6 +130,10 @@ void Av1Decoder::InitParams()
     av1DecoderInputArgs_.pStream = nullptr;
     av1DecoderInputArgs_.uiStreamLen = 0;
     av1DecoderInputArgs_.uiTimeStamp = 0;
+    colorSpaceInfo_.color_range = 0;
+    colorSpaceInfo_.pri = DAV1D_COLOR_PRI_UNKNOWN;
+    colorSpaceInfo_.trc = DAV1D_TRC_UNKNOWN;
+    colorSpaceInfo_.mtrx = DAV1D_MC_UNKNOWN;
 }
 
 void Av1Decoder::ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal,
@@ -174,10 +178,13 @@ void Av1Decoder::DecoderFuncMatch()
             AV1_DEC_DECODE_FRAME_FUNC_NAME));
         av1DecoderGetFrameFunc_ = reinterpret_cast<Av1GetFrameFuncType>(dlsym(handle_,
             AV1_DEC_GET_FRAME_FUNC_NAME));
+        av1DecoderPictureUnrefFunc_ = reinterpret_cast<Av1PictureUnrefFuncType>(dlsym(handle_,
+            AV1_DEC_PICTURE_UNREF_FUNC_NAME));
         av1DecoderDestroyFunc_ = reinterpret_cast<Av1DestroyDecoderFuncType>(dlsym(handle_,
             AV1_DEC_DELETE_FUNC_NAME));
         if (av1DecoderCreateFunc_ == nullptr || av1DecoderFrameFunc_ == nullptr ||
-            av1DecoderGetFrameFunc_ == nullptr || av1DecoderDestroyFunc_ == nullptr) {
+            av1DecoderGetFrameFunc_ == nullptr || av1DecoderPictureUnrefFunc_ == nullptr ||
+            av1DecoderDestroyFunc_ == nullptr) {
                 AVCODEC_LOGE("Av1Decoder av1 DecoderFuncMatch failed!");
                 ReleaseHandle();
         }
@@ -193,6 +200,7 @@ void Av1Decoder::ReleaseHandle()
     av1DecoderCreateFunc_ = nullptr;
     av1DecoderFrameFunc_ = nullptr;
     av1DecoderGetFrameFunc_ = nullptr;
+    av1DecoderPictureUnrefFunc_ = nullptr;
     av1DecoderDestroyFunc_ = nullptr;
     if (handle_ != nullptr) {
         dlclose(handle_);
@@ -237,7 +245,7 @@ int32_t Av1Decoder::CreateDecoder()
     std::unique_lock<std::mutex> runLock(decRunMutex_);
     int32_t createRet = 0;
     if (av1DecHandle_ == nullptr && av1DecoderCreateFunc_ != nullptr) {
-        createRet = av1DecoderCreateFunc_(&av1DecHandle_);
+        createRet = av1DecoderCreateFunc_(&av1DecHandle_, AV1DecLog);
     }
     runLock.unlock();
     CHECK_AND_RETURN_RET_LOG(createRet == 0 && av1DecHandle_ != nullptr, AVCS_ERR_INVALID_OPERATION,
@@ -324,16 +332,22 @@ void Av1Decoder::ConvertDecOutToAVFrame()
     cachedFrame_->linesize[0] = static_cast<int32_t>(av1DecOutputImg_->stride[channelY]); // 0 y channel
     cachedFrame_->linesize[1] = static_cast<int32_t>(av1DecOutputImg_->stride[channelUV]); // 1 u channel
     cachedFrame_->linesize[2] = static_cast<int32_t>(av1DecOutputImg_->stride[channelUV]); // 2 v channel
+    if (av1DecOutputImg_->p.bpc == BITS_PER_PIXEL_COMPONENT_10 &&
+        outputPixelFmt_ == VideoPixelFormat::NV21) { // exchange uv channel
+        cachedFrame_->data[planeU] = static_cast<uint8_t*>(av1DecOutputImg_->data[planeV]);
+        cachedFrame_->data[planeV] = static_cast<uint8_t*>(av1DecOutputImg_->data[planeU]);
+    }
 
     cachedFrame_->width = static_cast<int32_t>(av1DecOutputImg_->p.w);
     cachedFrame_->height = static_cast<int32_t>(av1DecOutputImg_->p.h);
+    cachedFrame_->pts = av1DecOutputImg_->m.timestamp;
 }
 
 void Av1Decoder::SendFrame()
 {
     if (state_ == State::STOPPING || state_ == State::FLUSHING) {
         return;
-    } else if (state_ != State::RUNNING || isSendEos_ || codecAvailQue_->Size() == 0u) {
+    } else if (state_ != State::RUNNING || isSendEos_ || codecAvailQue_->Size() == 0u || inputAvailQue_->Size() == 0u) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
@@ -349,7 +363,7 @@ void Av1Decoder::SendFrame()
     } else {
         av1DecoderInputArgs_.pStream = inputAVBuffer->memory_->GetAddr();
         av1DecoderInputArgs_.uiStreamLen = static_cast<UINT32>(inputAVBuffer->memory_->GetSize());
-        av1DecoderInputArgs_.uiTimeStamp = static_cast<UINT64>(inputAVBuffer->pts_);
+        av1DecoderInputArgs_.uiTimeStamp = inputAVBuffer->pts_;
     }
 
 #ifdef BUILD_ENG_VERSION
@@ -361,14 +375,16 @@ void Av1Decoder::SendFrame()
 
     int32_t ret = 0;
     std::unique_lock<std::mutex> runLock(decRunMutex_);
-    ret = DecodeFrameOnce();
+    do {
+        ret = DecodeFrameOnce();
+    } while (isSendEos_ && ret == 0);
     runLock.unlock();
 
     if (isSendEos_) {
         auto outIndex = codecAvailQue_->Front();
         std::shared_ptr<CodecBuffer> frameBuffer = buffers_[INDEX_OUTPUT][outIndex];
         frameBuffer->avBuffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
-        FramePostProcess(buffers_[INDEX_OUTPUT][outIndex], outIndex, AVCS_ERR_OK, AVCS_ERR_OK);
+        FramePostProcess(buffers_[INDEX_OUTPUT][outIndex], outIndex, AVCS_ERR_OK);
         state_ = State::EOS;
     } else if (ret < 0) {
         AVCODEC_LOGE("decode frame error: ret = %{public}d", ret);
@@ -379,48 +395,188 @@ void Av1Decoder::SendFrame()
     callback_->OnInputBufferAvailable(index, inputAVBuffer);
 }
 
-int32_t Av1Decoder::DecodeFrameOnce()
+int32_t Av1Decoder::DecodeAv1FrameOnce()
 {
     int32_t ret = 0;
-    Dav1dPicture pic = { 0 };
-    av1DecOutputImg_ = &pic;
     if (av1DecHandle_ != nullptr && av1DecoderFrameFunc_ != nullptr) {
         if (!isSendEos_) {
-            ret = av1DecoderFrameFunc_(av1DecHandle_, av1DecoderInputArgs_.pStream, av1DecoderInputArgs_.uiStreamLen);
+            ret = av1DecoderFrameFunc_(av1DecHandle_, av1DecoderInputArgs_.pStream, av1DecoderInputArgs_.uiStreamLen,
+                                       av1DecoderInputArgs_.uiTimeStamp);
         }
     } else {
-        AVCODEC_LOGW("av1DecoderFrameFunc_ = nullptr || av1DecHandle_ = nullptr");
+        AVCODEC_LOGE("load libdav1d.z.so failed, send data to av1 decoder failed.");
         ret = -1;
     }
-    if (av1DecHandle_ != nullptr && av1DecoderGetFrameFunc_ != nullptr) {
-        if (!isSendEos_) {
-            ret = av1DecoderGetFrameFunc_(av1DecHandle_, &av1DecOutputImg_);
+    if (av1DecHandle_ != nullptr && av1DecoderGetFrameFunc_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
+        ret = av1DecoderGetFrameFunc_(av1DecHandle_, av1DecOutputImg_);
+        if (ret < 0 && ret != -EAGAIN) {
+            av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
+            av1DecOutputImg_ = nullptr;
         }
     } else {
+        AVCODEC_LOGE("load libdav1d.z.so failed, get generated picture form av1 decoder failed.");
         ret = -1;
     }
+    return ret;
+}
+
+int32_t Av1Decoder::DecodeFrameOnce()
+{
+    Dav1dPicture pic = { 0 };
+    av1DecOutputImg_ = &pic;
+    int32_t ret = DecodeAv1FrameOnce();
     if (ret == 0 && av1DecOutputImg_ != nullptr) {
+        int32_t bitDepth = av1DecOutputImg_->p.bpc;
         ConvertDecOutToAVFrame();
 #ifdef BUILD_ENG_VERSION
         DumpOutputBuffer();
 #endif
         auto index = codecAvailQue_->Front();
-        CHECK_AND_RETURN_RET_LOG(state_ != State::STOPPING && state_ != State::ERROR, -1, "Not in running state");
+        CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
         std::shared_ptr<CodecBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
         int32_t status = AVCS_ERR_OK;
-        if (CheckFormatChange(index, cachedFrame_->width, cachedFrame_->height) == AVCS_ERR_OK) {
-            CHECK_AND_RETURN_RET_LOG(state_ != State::STOPPING && state_ != State::ERROR, -1, "Not in running state");
+        std::unique_lock<std::mutex> convertLock(convertDataMutex_);
+        int32_t width = cachedFrame_->width;
+        int32_t height = cachedFrame_->height;
+        convertLock.unlock();
+        if (CheckFormatChange(index, width, height, bitDepth) == AVCS_ERR_OK) {
+            CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
             frameBuffer = buffers_[INDEX_OUTPUT][index];
             status = FillFrameBuffer(frameBuffer);
         } else {
-            CHECK_AND_RETURN_RET_LOG(state_ != State::STOPPING && state_ != State::ERROR, -1, "Not in running state");
+            CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
             callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
+            state_ = State::ERROR;
             return -1;
         }
         frameBuffer->avBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
-        FramePostProcess(frameBuffer, index, status, AVCS_ERR_OK);
+        FramePostProcess(frameBuffer, index, status);
+    }
+    if (av1DecOutputImg_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
+        av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
+        av1DecOutputImg_ = nullptr;
     }
     return ret;
+}
+
+void Av1Decoder::UpdateColorAspects(Dav1dSequenceHeader *seqHdr)
+{
+    if (colorSpaceInfo_.color_range != seqHdr->color_range || colorSpaceInfo_.pri != seqHdr->pri ||
+        colorSpaceInfo_.trc != seqHdr->trc || colorSpaceInfo_.mtrx != seqHdr->mtrx) {
+        colorSpaceInfo_.color_range = seqHdr->color_range;
+        colorSpaceInfo_.pri = seqHdr->pri;
+        colorSpaceInfo_.trc = seqHdr->trc;
+        colorSpaceInfo_.mtrx = seqHdr->mtrx;
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG,
+                            static_cast<int32_t>(colorSpaceInfo_.color_range));
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES,
+                            static_cast<int32_t>(colorSpaceInfo_.pri));
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS,
+                            static_cast<int32_t>(colorSpaceInfo_.trc));
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS,
+                            static_cast<int32_t>(colorSpaceInfo_.mtrx));
+        AVCODEC_LOGI("color aspects: isFullRange %{public}u, primary%{public}u, transfer %{public}u,"
+            " matrix %{public}u", colorSpaceInfo_.color_range, colorSpaceInfo_.pri, colorSpaceInfo_.trc,
+            colorSpaceInfo_.mtrx);
+        callback_->OnOutputFormatChanged(format_);
+    }
+}
+
+int32_t Av1Decoder::ConvertHdrStaticMetadata(Dav1dContentLightLevel *contentLight,
+                                             Dav1dMasteringDisplay *masteringDisplay,
+                                             std::vector<uint8_t> &staticMetadataVec)
+{
+    using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+    CHECK_AND_RETURN_RET_LOG(staticMetadataVec.size() == sizeof(HdrStaticMetadata), AVCS_ERR_INVALID_VAL,
+        "wrong staticMetadataVec.size : %{public}d", static_cast<int32_t>(staticMetadataVec.size()));
+    HdrStaticMetadata* hdrStaticMetadata = reinterpret_cast<HdrStaticMetadata*>(staticMetadataVec.data());
+    CHECK_AND_RETURN_RET_LOG(hdrStaticMetadata != nullptr, AVCS_ERR_INVALID_VAL,
+                             "vector convert to CM_HDR_Metadata_Type error");
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.x =
+        static_cast<float>(masteringDisplay->primaries[0][0]); // 0:G
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.x =
+        static_cast<float>(masteringDisplay->primaries[1][0]); // 1:B
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.x =
+        static_cast<float>(masteringDisplay->primaries[2][0]); // 2:R
+    hdrStaticMetadata->smpte2086.displayPrimaryGreen.y =
+        static_cast<float>(masteringDisplay->primaries[0][1]); // 0:G
+    hdrStaticMetadata->smpte2086.displayPrimaryBlue.y =
+        static_cast<float>(masteringDisplay->primaries[1][1]); // 1:B
+    hdrStaticMetadata->smpte2086.displayPrimaryRed.y =
+        static_cast<float>(masteringDisplay->primaries[2][1]); // 2:R
+    hdrStaticMetadata->smpte2086.whitePoint.x = static_cast<float>(masteringDisplay->white_point[0]);
+    hdrStaticMetadata->smpte2086.whitePoint.y = static_cast<float>(masteringDisplay->white_point[1]);
+    hdrStaticMetadata->smpte2086.maxLuminance = static_cast<float>(masteringDisplay->max_luminance);
+    hdrStaticMetadata->smpte2086.minLuminance = static_cast<float>(masteringDisplay->min_luminance);
+    hdrStaticMetadata->cta861.maxContentLightLevel = static_cast<float>(contentLight->max_content_light_level);
+    hdrStaticMetadata->cta861.maxFrameAverageLightLevel =
+        static_cast<float>(contentLight->max_frame_average_light_level);
+    return AVCS_ERR_OK;
+}
+
+void Av1Decoder::FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer)
+{
+    CHECK_AND_RETURN_LOG(surfaceBuffer != nullptr && av1DecOutputImg_ != nullptr,
+        "surfaceBuffer or av1DecOutputImg_ is nullptr");
+    using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+    if (av1DecOutputImg_->seq_hdr != nullptr) {
+        auto seqHdr = av1DecOutputImg_->seq_hdr;
+        std::vector<uint8_t> colorSpaceInfoVec;
+        int32_t convertRet = ConvertParamsToColorSpaceInfo(seqHdr->color_range,
+                                                           seqHdr->pri,
+                                                           seqHdr->trc,
+                                                           seqHdr->mtrx,
+                                                           colorSpaceInfoVec);
+        CHECK_AND_RETURN_LOG(convertRet == AVCS_ERR_OK, "ConvertParamsToColorSpaceInfo failed");
+        GSError setRet = surfaceBuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoVec);
+        CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "SetMetadata ATTRKEY_COLORSPACE_INFO failed");
+        std::vector<uint8_t> metadataTypeVec(sizeof(CM_HDR_Metadata_Type));
+        CM_HDR_Metadata_Type* metadataType = reinterpret_cast<CM_HDR_Metadata_Type*>(metadataTypeVec.data());
+        CHECK_AND_RETURN_LOG(metadataType != nullptr, "vector convert to CM_HDR_Metadata_Type error");
+        if (av1DecOutputImg_->content_light && av1DecOutputImg_->mastering_display) {
+            std::vector<uint8_t> staticMetadataVec(sizeof(HdrStaticMetadata));
+            CHECK_AND_RETURN_LOG(ConvertHdrStaticMetadata(av1DecOutputImg_->content_light,
+                av1DecOutputImg_->mastering_display, staticMetadataVec) == AVCS_ERR_OK,
+                "ConvertHdrStaticMetadata error");
+            setRet = surfaceBuffer->SetMetadata(ATTRKEY_HDR_STATIC_METADATA, staticMetadataVec);
+            CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "setmetadata ATTRKEY_HDR_STATIC_METADATA failed");
+        }
+        if (av1DecOutputImg_->itut_t35 != nullptr && av1DecOutputImg_->itut_t35->payload != nullptr &&
+            av1DecOutputImg_->itut_t35->payload_size > 0) {
+            std::vector<uint8_t> dynamicMetadataVec(av1DecOutputImg_->itut_t35->payload,
+                av1DecOutputImg_->itut_t35->payload + av1DecOutputImg_->itut_t35->payload_size);
+            setRet = surfaceBuffer->SetMetadata(ATTRKEY_HDR_DYNAMIC_METADATA, dynamicMetadataVec);
+            CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "SetMetadata ATTRKEY_HDR_DYNAMIC_METADATA failed");
+            *metadataType = CM_VIDEO_HDR_VIVID;
+        } else {
+            *metadataType = static_cast<CM_HDR_Metadata_Type>(GetMetaDataTypeByTransFunc(seqHdr->trc));
+        }
+        setRet = surfaceBuffer->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, metadataTypeVec);
+        CHECK_AND_RETURN_LOG(setRet == GSERROR_OK, "SetMetadata ATTRKEY_HDR_METADATA_TYPE failed");
+        UpdateColorAspects(seqHdr);
+        AVCODEC_LOGD("surface buffer fill hdr info successful");
+    }
+}
+
+void Av1Decoder::FlushAllFrames()
+{
+    std::unique_lock<std::mutex> runlock(decRunMutex_);
+    int ret = 0;
+    while (ret == 0) {
+        Dav1dPicture pic = { 0 };
+        av1DecOutputImg_ = &pic;
+        if (av1DecHandle_ != nullptr && av1DecoderGetFrameFunc_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
+            ret = av1DecoderGetFrameFunc_(av1DecHandle_, av1DecOutputImg_);
+            if (ret < 0 && ret != -EAGAIN) {
+                av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
+                av1DecOutputImg_ = nullptr;
+            }
+        } else {
+            AVCODEC_LOGE("load libdav1d.z.so failed, get generated picture form av1 decoder failed.");
+            ret = -1;
+        }
+    }
+    runlock.unlock();
 }
 
 int32_t Av1Decoder::CheckAv1DecLibStatus()
@@ -433,14 +589,18 @@ int32_t Av1Decoder::CheckAv1DecLibStatus()
             dlsym(handle, AV1_DEC_DECODE_FRAME_FUNC_NAME));
         auto av1DecoderGetFrameFunc = reinterpret_cast<Av1GetFrameFuncType>(
             dlsym(handle, AV1_DEC_GET_FRAME_FUNC_NAME));
+        auto av1DecoderPictureUnrefFunc = reinterpret_cast<Av1PictureUnrefFuncType>(
+            dlsym(handle, AV1_DEC_PICTURE_UNREF_FUNC_NAME));
         auto av1DecoderDestroyFunc = reinterpret_cast<Av1DestroyDecoderFuncType>(
             dlsym(handle, AV1_DEC_DELETE_FUNC_NAME));
         if (av1DecoderCreateFunc == nullptr || av1DecoderDecodeFrameFunc == nullptr ||
-            av1DecoderGetFrameFunc == nullptr || av1DecoderDestroyFunc == nullptr) {
+            av1DecoderGetFrameFunc == nullptr || av1DecoderPictureUnrefFunc == nullptr ||
+            av1DecoderDestroyFunc == nullptr) {
                 AVCODEC_LOGE("Av1Decoder av1FuncMatch_ failed!");
                 av1DecoderCreateFunc = nullptr;
                 av1DecoderDecodeFrameFunc = nullptr;
                 av1DecoderGetFrameFunc = nullptr;
+                av1DecoderPictureUnrefFunc = nullptr;
                 av1DecoderDestroyFunc = nullptr;
                 dlclose(handle);
                 handle = nullptr;
@@ -459,7 +619,6 @@ int32_t Av1Decoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 {
     CHECK_AND_RETURN_RET_LOG(CheckAv1DecLibStatus() == AVCS_ERR_OK, AVCS_ERR_UNSUPPORT,
                              "av1 decoder libs not available");
-    //todo
     for (uint32_t i = 0; i < SUPPORT_AV1_DECODER_NUM; ++i) {
         CapabilityData capsData;
         capsData.codecName = static_cast<std::string>(SUPPORT_AV1_DECODER[i].codecName);
@@ -481,9 +640,9 @@ int32_t Av1Decoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.blockPerSecond.maxVal = VIDEO_BLOCKPERSEC_MAX_SIZE;
         capsData.blockSize.width = VIDEO_ALIGN_SIZE;
         capsData.blockSize.height = VIDEO_ALIGN_SIZE;
+        capsData.supportSwapWidthHeight = true;
         capsData.pixFormat = {
-            static_cast<int32_t>(VideoPixelFormat::NV12),
-            static_cast<int32_t>(VideoPixelFormat::NV21)
+            static_cast<int32_t>(VideoPixelFormat::NV12), static_cast<int32_t>(VideoPixelFormat::NV21)
         };
         capsData.graphicPixFormat = {
             static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP),
@@ -506,6 +665,22 @@ int32_t Av1Decoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capaArray.emplace_back(capsData);
     }
     return AVCS_ERR_OK;
+}
+
+void AV1DecLog(void *cookie, const char *format, va_list ap)
+{
+    int32_t maxSize = 1024; // 1024 max size of one log
+    std::vector<char> buf(maxSize);
+    if  (buf.empty()) {
+        AVCODEC_LOGE("AV1DecLog buffer is empty!");
+        return;
+    }
+    int32_t size = vsnprintf_s(buf.data(), buf.size(), buf.size()-1, format, ap);
+    if (size >= maxSize) {
+        size = maxSize - 1;
+    }
+    auto msg = std::string(buf.data(), size);
+    AVCODEC_LOGI("%{public}s", msg.c_str());
 }
 } // namespace Codec
 } // namespace MediaAVCodec

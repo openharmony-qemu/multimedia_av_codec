@@ -29,10 +29,12 @@
 #include "common/seek_callback.h"
 #include "demuxer/type_finder.h"
 #include "demuxer/sample_queue.h"
+#include "demuxer/sample_queue_controller.h"
 #include "filter/filter.h"
 #include "meta/media_types.h"
 #include "osal/task/autolock.h"
 #include "osal/task/task.h"
+#include "osal/utils/steady_clock.h"
 #include "plugin/plugin_base.h"
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_time.h"
@@ -178,6 +180,7 @@ public:
     bool HasVideo();
     bool HasAudio();
     bool IsSeekToTimeSupported();
+    const std::string& GetOriginalCodecName() const;
 
     void SetIsCreatedByFilter(bool isCreatedByFilter);
 
@@ -217,6 +220,8 @@ private:
 
     bool isHttpSource_ = false;
     std::string videoMime_{};
+    std::string audioMime_{};
+    std::string originalCodecName_{};
 
     static constexpr int32_t TRACK_ID_INVALID = -1;
     static constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
@@ -263,6 +268,8 @@ private:
     void GetMemoryUsage(int32_t trackId, std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp);
     void ReportMemoryUsage(int32_t trackId, std::shared_ptr<Plugins::DemuxerPlugin> &pluginTemp);
     Status SeekToTimeAfter();
+    void ResetSampleQueueStatus(int64_t seekTime);
+    void HandleSeekToTime(int64_t seekTime);
     bool SelectBitRateChangeStream(int32_t trackId);
     bool SelectTrackChangeStream(int32_t trackId);
     bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId);
@@ -292,6 +299,8 @@ private:
 
     int64_t DoBeforeEachLoop(int32_t trackId);
     int64_t DoBeforeSubtitleTrackReadLoop(int32_t trackId);
+    void CheckAndReportBufferingStatus(EventType type);
+    void HandleNotAllTrackEos(int32_t trackId);
     int64_t ReadLoop(int32_t trackId);
     Status CopyFrameToUserQueue(int32_t trackId);
     bool GetBufferFromUserQueue(int32_t queueIndex, int32_t size = 0);
@@ -363,6 +372,19 @@ private:
     void HandleVideoSampleQueue();
     bool IsSegmentEos();
     void ResetSegmentEosMap();
+    Status CopyAndPushBufferBySlices(int32_t trackId, std::shared_ptr<AVBuffer> &srcBuffer,
+        std::shared_ptr<AVBuffer> &dstBuffer, int32_t sliceSize = 0);
+    Status RequestDstBuffer(int32_t trackId, int32_t size, std::shared_ptr<AVBuffer> &dstBuffer);
+    Status CheckAndReleaseRemainBuffer(std::shared_ptr<AVBuffer> &srcBuffer, int32_t trackId);
+    Status ReleaseSrcBuffer(std::shared_ptr<AVBuffer> &srcBuffer, int32_t trackId);
+    void ConsumeWaterLoopControl(int32_t trackId, std::shared_ptr<SampleQueue> sampleQueue);
+    void StartConsume(int32_t trackId);
+    void ProduceWaterLoopControl(int32_t trackId);
+    void BufferingStatus(int32_t trackId);
+
+    void RecordDemuxerTimeStamp(AVBuffer& buffer, StallingStage stage);
+    std::string GetMime();
+
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
@@ -381,6 +403,7 @@ private:
     std::unordered_map<uint32_t, funcPreReadSample> funcBeforeReadSampleMap_;
 
     std::map<int32_t, std::shared_ptr<SampleQueue>> sampleQueueMap_;
+    std::map<int32_t, bool> hlsSegmentEosMap_;
     std::map<int32_t, bool> eosMap_;
     std::map<int32_t, bool> segmentEosMap_;
     std::map<int32_t, uint32_t> requestBufferErrorCountMap_;
@@ -499,6 +522,12 @@ private:
     std::shared_ptr<AVBufferQueue> dfxBufferQueue_ {nullptr};
     sptr<AVBufferQueueProducer> dfxBufferQueueProducer_ {nullptr};
     sptr<AVBufferQueueConsumer> dfxBufferQueueConsumer_ {nullptr};
+    std::shared_ptr<SampleQueueController> sampleQueueController_;
+    std::map<int32_t, std::atomic<bool>> isBufferingMap_;
+    SteadyClock produceSteadyClock_;
+    uint64_t produceLastCountTime_ {0};
+
+    std::atomic<bool> isBuffering_ {false};
 };
 } // namespace Media
 } // namespace OHOS

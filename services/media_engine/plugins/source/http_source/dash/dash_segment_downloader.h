@@ -26,6 +26,7 @@
 #include "common/media_core.h"
 #include "osal/utils/ring_buffer.h"
 #include "osal/utils/steady_clock.h"
+#include "download/download_metrics_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -179,6 +180,7 @@ public:
     size_t GetRingBufferInitSize(MediaAVCodec::MediaType streamType) const;
     void SetAppState(bool isAppBackground);
     Status StopBufferring(bool isAppBackground);
+    void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
 private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
     void PutRequestIntoDownloader(unsigned int duration, int64_t startPos, int64_t endPos, const std::string &url);
@@ -269,6 +271,7 @@ private:
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     std::atomic<bool> canWrite_{true};
     SteadyClock loopInterruptClock_;
+    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
 };
 }
 }

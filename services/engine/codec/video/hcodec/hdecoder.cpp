@@ -491,6 +491,7 @@ int32_t HDecoder::InitVrr()
         VrrDestroyFunc_ == nullptr) {
         dlclose(vpeHandle_);
         vpeHandle_ = nullptr;
+        HLOGI("dlclose libvideoprocessingengine.z.so success");
         return AVCS_ERR_UNSUPPORT;
     }
     vrrHandle_ = VrrCreateFunc_();
@@ -500,6 +501,7 @@ int32_t HDecoder::InitVrr()
         VrrDestroyFunc_(vrrHandle_);
         dlclose(vpeHandle_);
         vpeHandle_ = nullptr;
+        HLOGI("dlclose libvideoprocessingengine.z.so success");
         if (ret == Media::VideoProcessingEngine::VPE_ALGO_ERR_INVALID_OPERATION) {
             return AVCS_ERR_INVALID_OPERATION;
         }
@@ -1581,5 +1583,40 @@ void HDecoder::GetJankReason(const TimePoint& now, OMX_DIRTYPE port,
     }
 }
 
+void HDecoder::RecordProcessTimeOfUpstream(const std::shared_ptr<AVBuffer>& avBuffer)
+{
+    size_t mapMaxSize = 50;
+    //To prevent memory leaks in extreme cases, the maximum size of the map is limited to 50
+    if (ptsToProcessTimesMap_.size() > mapMaxSize) {
+        HLOGD("the ptsToProcessTimesMap_ size is over 50. remove the key-value pair corresponding pts: %d",
+            ptsToProcessTimesMap_.begin()->first);
+        ptsToProcessTimesMap_.erase(ptsToProcessTimesMap_.begin());
+    }
+    std::vector<int64_t> stallStegeTimeList;
+    if (!avBuffer->meta_->GetData(OHOS::Media::Tag::STALLING_TIMESTAMP, stallStegeTimeList)) {
+        return;
+    }
+    ptsToProcessTimesMap_[avBuffer->pts_] = stallStegeTimeList;
+    HLOGD("save pts and corresponding stall stage vector from inputBuffer, curr pts is:%d, map size is:%d",
+        avBuffer->pts_, ptsToProcessTimesMap_.size());
+}
+
+void HDecoder::AppendProcessTimeOfUs(const shared_ptr<AVBuffer>& avBuffer, int64_t pts, const TimePoint& now)
+{
+    auto it = ptsToProcessTimesMap_.find(pts);
+    if (it == ptsToProcessTimesMap_.end()) {
+        HLOGD("missing pts and corresponding stall stage vector");
+        return;
+    }
+    auto stallStageTimeList = it->second;
+    int64_t stallStage = static_cast<int64_t>(Media::StallingStage::DECODER_END);
+    int64_t decodeCompTime = static_cast<int64_t>(
+        chrono::duration_cast<chrono::milliseconds>(now.time_since_epoch()).count());
+    stallStageTimeList.insert(stallStageTimeList.end(), {stallStage, decodeCompTime});
+    avBuffer->meta_->SetData(OHOS::Media::Tag::STALLING_TIMESTAMP, stallStageTimeList);
+    ptsToProcessTimesMap_.erase(it);
+    HLOGD("append decoding end stage: pts is %ld, stalling stage is %d, end time is %ld",
+        pts, stallStage, decodeCompTime);
+}
 // LCOV_EXCL_STOP
 } // namespace OHOS::MediaAVCodec

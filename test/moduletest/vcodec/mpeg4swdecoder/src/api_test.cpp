@@ -1694,7 +1694,7 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5400, TestSize.Level2)
         ASSERT_NE(true, OH_AVCapability_AreProfileAndLevelSupported(capability,
         MPEG4_PROFILE_MAIN, ERROR_LEVEL));
         ASSERT_NE(true, OH_AVCapability_AreProfileAndLevelSupported(capability,
-        MPEG4_PROFILE_NBIT, ERROR_LEVEL));
+        MPEG4_PROFILE_N_BIT, ERROR_LEVEL));
         ASSERT_NE(true, OH_AVCapability_AreProfileAndLevelSupported(capability,
         MPEG4_PROFILE_HYBRID, ERROR_LEVEL));
         ASSERT_NE(true, OH_AVCapability_AreProfileAndLevelSupported(capability,
@@ -1738,7 +1738,7 @@ HWTEST_F(Mpeg4SwdecApiNdkTest, VIDEO_MPEG4SWDEC_CAP_5500, TestSize.Level2)
         ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability,
         MPEG4_PROFILE_MAIN, MPEG4_LEVEL_4));
         ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability,
-        MPEG4_PROFILE_NBIT, MPEG4_LEVEL_2));
+        MPEG4_PROFILE_N_BIT, MPEG4_LEVEL_2));
         ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability,
         MPEG4_PROFILE_HYBRID, MPEG4_LEVEL_2));
         ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability,

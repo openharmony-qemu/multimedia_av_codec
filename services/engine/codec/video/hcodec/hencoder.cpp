@@ -1787,6 +1787,9 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
             ParseRoiStringValid(roiStr, info.omxBuffer);
         }
         CheckPts(info.omxBuffer->pts);
+        if (enableVariableFrameRate_) {
+            (void)CalculateFrameRateParamIntoOmxBuffer(info.omxBuffer->pts);
+        }
         int32_t err = InBufUsToOmx(info);
         if (err != AVCS_ERR_OK) {
             ResetSlot(info);

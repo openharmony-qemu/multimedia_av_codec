@@ -59,8 +59,8 @@ public:
     int32_t HandleInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
     int32_t HandleInputBuffer(uint32_t index);
     int32_t HandleOutputBuffer(uint32_t index);
-    void QueueInputBufferDone(uint32_t index);
-    void ReleaseOutputBufferDone(uint32_t index);
+    void QueueInputBufferDone(uint32_t index, bool isSuccess);
+    void ReleaseOutputBufferDone(uint32_t index, bool isSuccess);
     void NotifyEos();
 
     // Callback

@@ -20,6 +20,7 @@
 #include "avmuxer.h"
 #include "common/native_mfmagic.h"
 #include "native_avmagic.h"
+#include "hiappevent_util.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_MUXER, "NativeAVMuxer"};
@@ -38,6 +39,8 @@ struct AVMuxerObject : public OH_AVMuxer {
 
 struct OH_AVMuxer *OH_AVMuxer_Create(int32_t fd, OH_AVOutputFormat format)
 {
+    static AppEventReporter appEventReporter = AppEventReporter();
+    ApiInvokeRecorder apiInvokeRecorder("OH_AVMuxer_Create", appEventReporter);
     std::shared_ptr<AVMuxer> avmuxer = AVMuxerFactory::CreateAVMuxer(fd, static_cast<Plugins::OutputFormat>(format));
     CHECK_AND_RETURN_RET_LOG(avmuxer != nullptr, nullptr, "create muxer failed!");
     struct AVMuxerObject *object = new(std::nothrow) AVMuxerObject(avmuxer);

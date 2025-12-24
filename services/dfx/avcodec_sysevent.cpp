@@ -16,13 +16,13 @@
 #include <avcodec_sysevent.h>
 #include <unistd.h>
 #include <unordered_map>
-#include "securec.h"
+#include <cstring>
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "hisysevent.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecDFX"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecSysEvent"};
 constexpr char HISYSEVENT_DOMAIN_AVCODEC[] = "AV_CODEC";
 
 const std::unordered_map<OHOS::MediaAVCodec::FaultType, std::string> FAULT_TYPE_TO_STRING = {

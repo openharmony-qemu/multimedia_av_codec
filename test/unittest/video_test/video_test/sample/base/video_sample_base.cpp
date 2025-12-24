@@ -59,7 +59,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     videoCodec = VideoCodecFactory::CreateVideoCodec(info.codecType, info.codecRunMode);
     CHECK_AND_RETURN_RET_LOG(videoCodec != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
         "Create video encoder failed, no memory");
-    ret = videoCodec->Create(info.codecMime, info.codecType & 0b1);  // 0b1: software codec mask
+    ret = videoCodec->Create(info.createCodecByMime, info.codecMime, info.codecType & 0b1);  // 0b1: software codec mask
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video codec failed");
 
     ret = Init();

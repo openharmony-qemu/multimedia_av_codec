@@ -32,6 +32,7 @@ public:
                                          const std::string_view &key, const std::string &name,
                                          std::map<int32_t, const std::string> mapping);
     int32_t GetDumpString(std::string &dumpString);
+    uint32_t GetSpaceLength(const uint32_t dumpIdx);
 
 private:
     uint32_t GetLevel(const uint32_t dumpIdx);

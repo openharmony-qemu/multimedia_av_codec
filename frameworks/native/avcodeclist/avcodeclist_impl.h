@@ -39,9 +39,8 @@ public:
     void *NewBuffer(size_t bufSize) override;
 
 private:
-    bool IsStrMatch(const std::string &str, const std::vector<std::string>& strVec);
     std::shared_ptr<ICodecListService> codecListService_ = nullptr;
-    std::unordered_map<std::string, std::vector<CapabilityData *>> mimeCapsMap_;
+    std::unordered_multimap<std::string, std::shared_ptr<CapabilityData>> mimeCapsMap_;
     std::unordered_map<std::string, void *> nameAddrMap_;
     std::set<uint8_t *> bufAddrSet_;
     std::mutex mutex_;

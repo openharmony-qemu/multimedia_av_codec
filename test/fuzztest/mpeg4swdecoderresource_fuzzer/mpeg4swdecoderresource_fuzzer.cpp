@@ -35,10 +35,12 @@ constexpr double DEFAULT_FRAME_RATE = 30.0;
 namespace OHOS {
 bool ChangeBinaryInData(const uint8_t *data, size_t size)
 {
+    FuzzedDataProvider fdp(data, size);
     if (!vDecSample) {
         vDecSample = new VDecFuzzSample();
         vDecSample->defaultWidth = DEFAULT_WIDTH;
         vDecSample->defaultHeight = DEFAULT_HEIGHT;
+        vDecSample->defaultTransform = fdp.ConsumeIntegral<int32_t>();
         vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
         if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.MPEG4") != AV_ERR_OK) {
             delete vDecSample;
@@ -61,9 +63,9 @@ bool ChangeBinaryInData(const uint8_t *data, size_t size)
             return false;
         }
     }
-    FuzzedDataProvider fdp(data, size);
     auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
     OH_AVErrCode ret = vDecSample->InputFuncFUZZ(remaining_data.data(), remaining_data.size());
+    vDecSample->SetParameter();
     if (ret != AV_ERR_OK) {
         vDecSample->Flush();
         vDecSample->Stop();

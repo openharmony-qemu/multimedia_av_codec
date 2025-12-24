@@ -24,7 +24,7 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_trace.h"
-#include "avcodec_xcollie.h"
+#include "event_manager.h"
 #include "system_ability_definition.h"
 #ifdef SUPPORT_CODEC
 #include "codec_service_stub.h"
@@ -50,7 +50,6 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
     if (fd < 0) {
         return OHOS::NO_ERROR;
     }
-    AVCodecXCollie::GetInstance().Dump(fd);
 
     std::unordered_multimap<pid_t, std::pair<sptr<IRemoteObject>, InstanceInfo>> codecStubMapTemp;
     {
@@ -173,6 +172,10 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
                     bool { return objectPair.second.first == object; });
             CHECK_AND_BREAK_LOG(it != codecStubMap_.end(), "find codec object failed, pid(%{public}d)", pid);
 
+            if (it->second.second.videoCodecType == VideoCodecType::DECODER_HARDWARE) {
+                EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO);
+            }
+
             auto preSize = codecStubMap_.size();
             AVCODEC_LOGI("Erase from pid:%{public}d, left:%{public}zu", pid, preSize - 1);
             codecStubMap_.erase(it);
@@ -217,6 +220,9 @@ void AVCodecServerManager::EraseCodecObjectByPid(pid_t pid)
 {
     for (auto it = codecStubMap_.begin(); it != codecStubMap_.end();) {
         if (it->first == pid) {
+            if (it->second.second.videoCodecType == VideoCodecType::DECODER_HARDWARE) {
+                EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO);
+            }
             executor_.Commit(it->second.first);
             it = codecStubMap_.erase(it);
         } else {
@@ -366,6 +372,24 @@ std::optional<CodecInstance> AVCodecServerManager::GetCodecInstanceByInstanceId(
         }
     }
     return std::nullopt;
+}
+
+std::unordered_map<std::string, uint32_t> AVCodecServerManager::GetHDecUsageStatistics()
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    std::unordered_map<std::string, uint32_t> usageStatistics;
+    for (const auto& iter : codecStubMap_) {
+        const InstanceInfo& info = iter.second.second;
+        if (info.videoCodecType != VideoCodecType::DECODER_HARDWARE) {
+            continue;
+        }
+        std::string callerName = info.GetActualCallerProcessName();
+        if (callerName.empty()) {
+            continue;
+        }
+        usageStatistics[callerName] += 1;
+    }
+    return usageStatistics;
 }
 
 void AVCodecServerManager::SetInstanceInfoByInstanceId(int32_t instanceId, const InstanceInfo &info)

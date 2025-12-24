@@ -144,6 +144,11 @@ private:
     int64_t CalculateNextRender(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer, int64_t& actionClock);
     void ParseDecodeRateLimit();
     void RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
+    void HandleRender(int index, bool render, const std::shared_ptr<AVBuffer>& outBuffer, int64_t& renderTime);
+    void WriteDfxTimeToVector(int64_t currentRenderPts, int64_t currentSysTimeNs,
+        int64_t lastRenderTimeNs, int64_t frameIntervalNs, std::vector<int64_t>& timeStampList);
+    void WriteDfxTimeToVector(int64_t syncEndMs, int64_t redererStartMs, int64_t framePtsMs,
+        int64_t lastRenderTimeMs, int64_t frameIntervalMs, std::vector<int64_t>& timeStampList);
     Status ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer, int64_t renderTime);
     void DoReleaseOutputBuffer(uint32_t index, bool render, int64_t pts = 0);
     void DoRenderOutputBufferAtTime(uint32_t index, int64_t renderTime, int64_t pts = 0);
@@ -165,6 +170,7 @@ private:
     void LoadCameraPostProcessorLib();
 #endif
     Status CheckBufferDecodedCorrectly(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
+    std::string GetMime();
 
     std::string name_;
     FilterType filterType_;
@@ -219,6 +225,7 @@ private:
     std::atomic<bool> prerollDone_ {true};
     std::atomic<bool> eosNext_ {false};
     bool isFirstFrameAfterResume_ {true};
+    bool isFirstRenderFrameAfterResume_ {true};
 
     int32_t appUid_ = -1;
     int32_t appPid_ = -1;

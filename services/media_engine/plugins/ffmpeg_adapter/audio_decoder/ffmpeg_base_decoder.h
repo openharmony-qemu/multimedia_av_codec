@@ -90,6 +90,7 @@ private:
     bool currentFrameFormatChanged_;
     int32_t maxInputSize_;
     int64_t nextPts_;
+    int64_t inputPts_;
     float durationTime_;
     std::string name_;
 
@@ -117,7 +118,7 @@ private:
     void EnableResample(AVSampleFormat destFmt);
     Status SetCodecExtradata(const std::shared_ptr<Meta> &format);
     void CheckFormatChange();
-    void SetSampleSikpInfo(const std::shared_ptr<AVBuffer> &inputBuffer);
+    void SetSkipSamplesInfo(const std::shared_ptr<AVBuffer> &inputBuffer);
 };
 } // namespace Ffmpeg
 } // namespace Plugins

@@ -63,6 +63,20 @@ static OH_AVCapability *cap_hevc = nullptr;
 static string g_codecNameHevc = "";
 constexpr int32_t DEFAULT_WIDTH = 1920;
 constexpr int32_t DEFAULT_HEIGHT = 1080;
+const std::vector<OH_NativeBuffer_TransformType> transfromTypes = {
+    NATIVEBUFFER_ROTATE_NONE,
+    NATIVEBUFFER_ROTATE_90,
+    NATIVEBUFFER_ROTATE_180,
+    NATIVEBUFFER_ROTATE_270,
+    NATIVEBUFFER_FLIP_H,
+    NATIVEBUFFER_FLIP_V,
+    NATIVEBUFFER_FLIP_H_ROT90,
+    NATIVEBUFFER_FLIP_V_ROT90,
+    NATIVEBUFFER_FLIP_H_ROT180,
+    NATIVEBUFFER_FLIP_V_ROT180,
+    NATIVEBUFFER_FLIP_H_ROT270,
+    NATIVEBUFFER_FLIP_V_ROT270
+};
 } // namespace
 
 void HevcSwdecFuncNdkTest::SetUpTestCase()
@@ -1995,6 +2009,108 @@ HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_SWDEC_PIXE_FORMAT_HEVC_0010, TestSize.Level
         ASSERT_LT(1, vDecSample->pixlFormatNum);
         ASSERT_EQ(24, vDecSample->firstCallBackKey);
         ASSERT_EQ(24, vDecSample->onStreamChangedKey);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_TRANSFORM_0060
+ * @tc.name      : 软解265, config transform
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_DECODE_TRANSFORM_0060, TestSize.Level0)
+{
+    if (cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->CreateSurface();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetConfigTransform());
+        ASSERT_EQ(0, vDecSample->GetSurfaceTransform(0));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        vDecSample->setTransform = true;
+        vDecSample->DEFAULT_TRANSFORM = -1;
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->SetConfigTransform());
+        ASSERT_EQ(0, vDecSample->GetSurfaceTransform(0));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        for (const auto& transformtype : transfromTypes) {
+            vDecSample->DEFAULT_TRANSFORM = transformtype;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->SetConfigTransform());
+            ASSERT_EQ(vDecSample->DEFAULT_TRANSFORM, vDecSample->GetSurfaceTransform(0));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        }
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        ASSERT_EQ(vDecSample->DEFAULT_TRANSFORM, vDecSample->GetSurfaceTransform(0));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_TRANSFORM_0150
+ * @tc.name      : 软解265, setparameter transform
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_DECODE_TRANSFORM_0150, TestSize.Level0)
+{
+    if (cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->CreateSurface();
+        vDecSample->DEFAULT_TRANSFORM = -1;
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->SetParameterTransform());
+        ASSERT_EQ(0, vDecSample->GetSurfaceTransform(0));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        for (const auto& transformtype : transfromTypes) {
+            vDecSample->DEFAULT_TRANSFORM = transformtype;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->SetParameterTransform());
+            ASSERT_EQ(vDecSample->DEFAULT_TRANSFORM, vDecSample->GetSurfaceTransform(0));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+        }
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetSurface());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetParameter());
+        ASSERT_EQ(vDecSample->DEFAULT_TRANSFORM, vDecSample->GetSurfaceTransform(0));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_TRANSFORM_0270
+ * @tc.name      : 软解H265, surface chnange, transform follow
+ * @tc.desc      : function test
+ */
+HWTEST_F(HevcSwdecFuncNdkTest, VIDEO_DECODE_TRANSFORM_0270, TestSize.Level0)
+{
+    if (cap_hevc != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->needAutoSwitch = false;
+        vDecSample->autoSwitchSurface = true;
+        vDecSample->setTransform = true;
+        vDecSample->DEFAULT_TRANSFORM = NATIVEBUFFER_FLIP_H_ROT90;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHevc));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(vDecSample->beforeSwitchTransform, vDecSample->afterSwitchTransform);
     }
 }
 } // namespace

@@ -255,13 +255,6 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_AVC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC;
 
 /**
- * @brief Enumerates the MIME type of video avs codec.
- *
- * @since 23
- */
-extern const char *OH_AVCODEC_MIMETYPE_VIDEO_AVS;
-
-/**
  * @brief Enumerates the MIME type of video MSVIDEO1 codec.
  *
  * @since 22
@@ -311,6 +304,20 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VP8;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VP9;
 
 /**
+ * @brief Enumerates the MIME type of video dvvideo codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_DVVIDEO;
+
+/**
+ * @brief Enumerates the MIME type of video rawvideo codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_RAWVIDEO;
+
+/**
  * @brief Enumerates the MIME types of audio and video codecs
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
@@ -334,6 +341,13 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
  * @since 10
  */
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
+
+/**
+ * @brief Enumerates the MIME type of video mpeg1 codec.
+ *
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG1;
 
 /**
  * @brief brief Enumerates the Mime type of video mpeg4 part2 codec.
@@ -530,6 +544,30 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_TRUEHD;
  * @since 23
  */
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_TWINVQ;
+
+/**
+ * @brief Enumerates the mime types of audio DVAUDIO codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_DVAUDIO;
+
+/**
+ * @brief Enumerates the mime types of audio DTS codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_DTS;
+
+/**
+ * @brief Enumerates the mime types of audio COOK codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 23
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_COOK;
 
 /**
  * @brief Key for timeStamp in surfacebuffer, value type is int64_t.
@@ -1219,9 +1257,9 @@ typedef enum OH_MPEG2Profile {
     /** Main profile */
     MPEG2_PROFILE_MAIN    = 1,
     /** SNR scalable profile */
-    MPEG2_PROFILE_SNR     = 2,
+    MPEG2_PROFILE_SNR_SCALABLE = 2,
     /** Spatially scalable profile */
-    MPEG2_PROFILE_SPATIAL = 3,
+    MPEG2_PROFILE_SPATIALLY_SCALABLE = 3,
     /** High profile */
     MPEG2_PROFILE_HIGH    = 4,
     /** 4:2:2 profile */
@@ -1244,7 +1282,7 @@ typedef enum OH_MPEG4Profile {
     /** Main profile */
     MPEG4_PROFILE_MAIN               = 3,
     /** N-Bit profile */
-    MPEG4_PROFILE_NBIT               = 4,
+    MPEG4_PROFILE_N_BIT               = 4,
     /** Hybrid profile */
     MPEG4_PROFILE_HYBRID             = 5,
     /** Basic animated texture profile */
@@ -1448,16 +1486,6 @@ typedef enum OH_WVC1Profile {
 } OH_WVC1Profile;
 
 /**
- * @brief AVS Profile
- *
- * @since 23
- */
-typedef enum OH_AVSProfile {
-    /** Jizhun Profile */
-    AVS_PROFILE_JIZHUN = 0,
-} OH_AVSProfile;
-
-/**
  * @brief VP9 Profile
  *
  * @since 23
@@ -1510,6 +1538,11 @@ typedef enum OH_AVOutputFormat {
      * @since 20
      */
     AV_OUTPUT_FORMAT_FLAC = 12,
+    /**
+     * The muxer output ogg file format.
+     * @since 23
+     */
+    AV_OUTPUT_FORMAT_OGG = 13,
 } OH_AVOutputFormat;
 
 /**
@@ -1681,13 +1714,13 @@ typedef enum OH_MatrixCoefficient {
  */
 typedef enum OH_MPEG2Level {
     /** Low level */
-    MPEG2_LEVEL_LL  = 0,
+    MPEG2_LEVEL_LOW  = 0,
     /** Main level */
-    MPEG2_LEVEL_ML  = 1,
+    MPEG2_LEVEL_MAIN  = 1,
     /** High 1440 level */
-    MPEG2_LEVEL_H14 = 2,
+    MPEG2_LEVEL_HIGH_1440 = 2,
     /** High level */
-    MPEG2_LEVEL_HL  = 3,
+    MPEG2_LEVEL_HIGH = 3,
 }OH_MPEG2Level;
 
 /**
@@ -1872,18 +1905,6 @@ typedef enum OH_VC1Level {
     /** HIGH level */
     VC1_LEVEL_HIGH = 7,
 } OH_VC1Level;
-
-/**
- * @brief AVS Level.
- *
- * @since 23
- */
-typedef enum OH_AVSLevel {
-    AVS_LEVEL_40 = 0,
-    AVS_LEVEL_42 = 1,
-    AVS_LEVEL_60 = 2,
-    AVS_LEVEL_62 = 3,
-} OH_AVSLevel;
 
 /**
  * @brief WVC1 Level.

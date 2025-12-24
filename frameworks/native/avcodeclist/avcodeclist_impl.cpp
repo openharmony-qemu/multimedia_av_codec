@@ -20,82 +20,6 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecListImpl"};
-const std::vector<std::string> VIDEO_MIME_VEC = {
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_AVS),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MSVIDEO1),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VC1),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_WVC1),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_AVC),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_HEVC),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VVC),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MPEG2),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_H263),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MPEG4),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV30),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_RV40),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_AV1),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_MJPEG),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP8),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_VP9),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::VIDEO_WMV3)};
-const std::vector<std::string> AUDIO_MIME_VEC = {
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_NB),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AMR_WB),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_MPEG),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AAC),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_VORBIS),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_OPUS),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_FLAC),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_RAW),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_G711MU),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_G711A),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_GSM_MS),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_GSM),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_COOK),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AC3),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_WMAV1),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_WMAV2),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_WMAPRO),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_MS),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_QT),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_WAV),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_DK3),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_DK4),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_WS),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_SMJPEG),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_DAT4),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_MTAF),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_ADX),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_AFC),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_AICA),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_CT),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_DTK),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_G722),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_G726),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_G726LE),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_AMV),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_APC),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_ISS),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_OKI),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_IMA_RAD),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_PSX),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_SBPRO_2),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_SBPRO_3),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_SBPRO_4),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_THP),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_THP_LE),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_XA),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ADPCM_YAMAHA),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_EAC3),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ALAC),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_AVS3DA),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_LBVC),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_APE),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_MIMETYPE_L2HC),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_VIVID),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_ILBC),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_TRUEHD),
-    std::string(OHOS::MediaAVCodec::CodecMimeType::AUDIO_TWINVQ)};
 }
 namespace OHOS {
 namespace MediaAVCodec {
@@ -149,14 +73,6 @@ AVCodecListImpl::~AVCodecListImpl()
         }
     }
     bufAddrSet_.clear();
-    for (auto iter = mimeCapsMap_.begin(); iter != mimeCapsMap_.end(); iter++) {
-        std::string mime = iter->first;
-        for (uint32_t i = 0; i < mimeCapsMap_[mime].size(); i++) {
-            delete mimeCapsMap_[mime][i];
-            mimeCapsMap_[mime][i] = nullptr;
-        }
-        mimeCapsMap_[mime].clear();
-    }
     mimeCapsMap_.clear();
     AVCODEC_LOGD("Destroy AVCodecList instances successful");
 }
@@ -171,60 +87,40 @@ std::string AVCodecListImpl::FindEncoder(const Format &format)
     return codecListService_->FindEncoder(format);
 }
 
-bool AVCodecListImpl::IsStrMatch(const std::string &str, const std::vector<std::string>& strVec)
-{
-    for (const auto& s : strVec) {
-        if (s.compare(str) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
 CapabilityData *AVCodecListImpl::GetCapability(const std::string &mime, const bool isEncoder,
                                                const AVCodecCategory &category)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(category >= AVCodecCategory::AVCODEC_NONE &&
-        category <= AVCodecCategory::AVCODEC_SOFTWARE, nullptr,
-        "Unsupported category %{public}d", category);
-    bool isHardward = (category == AVCodecCategory::AVCODEC_SOFTWARE) ? false : true;
-    AVCodecType codecType = AVCODEC_TYPE_NONE;
-    if (IsStrMatch(mime, VIDEO_MIME_VEC)) {
-        codecType = isEncoder ? AVCODEC_TYPE_VIDEO_ENCODER : AVCODEC_TYPE_VIDEO_DECODER;
-    } else if (IsStrMatch(mime, AUDIO_MIME_VEC)) {
-        codecType = isEncoder ? AVCODEC_TYPE_AUDIO_ENCODER : AVCODEC_TYPE_AUDIO_DECODER;
-    } else {
-        AVCODEC_LOGE("GetCapability failed, mime is %{public}s", mime.c_str());
-        return nullptr;
-    }
-    if (mimeCapsMap_.find(mime) == mimeCapsMap_.end()) {
-        std::vector<CapabilityData *> capsArray;
-        mimeCapsMap_.emplace(mime, capsArray);
-    }
-    for (auto cap : mimeCapsMap_[mime]) {
-        if (cap->codecType == codecType && cap->isVendor == isHardward) {
-            return cap;
+        category <= AVCodecCategory::AVCODEC_SOFTWARE && !mime.empty(),
+        nullptr, "Unsupported param, mime: %{public}s, category %{public}d", mime.c_str(), category);
+
+    // Search capbility from cache
+    bool isHardward = category != AVCodecCategory::AVCODEC_SOFTWARE;
+    auto mimeCapsRange = mimeCapsMap_.equal_range(mime);
+    for (auto mimeCapIter = mimeCapsRange.first; mimeCapIter != mimeCapsRange.second; mimeCapIter++) {
+        const auto &codecType = mimeCapIter->second->codecType;
+        auto nextIter = mimeCapIter;
+        nextIter++;
+        if ((codecType == AVCODEC_TYPE_VIDEO_ENCODER || codecType == AVCODEC_TYPE_AUDIO_ENCODER) == isEncoder &&
+            (isHardward == mimeCapIter->second->isVendor ||
+             (category == AVCodecCategory::AVCODEC_NONE && nextIter == mimeCapsRange.second))) {
+            return mimeCapIter->second.get();
         }
     }
-    CapabilityData capaDataIn;
-    int32_t ret = codecListService_->GetCapability(capaDataIn, mime, isEncoder, category);
-    std::string name = capaDataIn.codecName;
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && !name.empty(), nullptr, "Get capability failed from service,"
-        "mime: %{public}s, isEnc: %{public}d, category: %{public}d", mime.c_str(), isEncoder, category);
-    if (category == AVCodecCategory::AVCODEC_NONE) {
-        for (auto cap : mimeCapsMap_[mime]) {
-            if (cap->codecType == codecType && cap->codecName == name) {
-                return cap;
-            }
-        }
-    }
-    CapabilityData *cap = new CapabilityData(capaDataIn);
-    CHECK_AND_RETURN_RET_LOG(cap != nullptr, nullptr, "New capabilityData failed");
-    mimeCapsMap_[mime].emplace_back(cap);
+
+    // Get capbility from service
+    auto capData = std::make_shared<CapabilityData>();
+    CHECK_AND_RETURN_RET_LOG(capData != nullptr, nullptr, "Create cap data failed");
+    int32_t ret = codecListService_->GetCapability(*capData, mime, isEncoder, category);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && !capData->codecName.empty(), nullptr,
+        "Get capability failed from service, mime: %{public}s, isEnc: %{public}d, category: %{public}d",
+        mime.c_str(), isEncoder, category);
+
+    mimeCapsMap_.emplace(mime, capData);
     AVCODEC_LOGD("Get capabilityData successfully, mime: %{public}s, isEnc: %{public}d, category: %{public}d",
         mime.c_str(), isEncoder, category);
-    return cap;
+    return capData.get();
 }
 
 void *AVCodecListImpl::GetBuffer(const std::string &name, uint32_t sizeOfCap)

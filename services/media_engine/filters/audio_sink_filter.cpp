@@ -159,7 +159,7 @@ Status AudioSinkFilter::DoStart()
     forceUpdateTimeAnchorNextTime_ = true;
     auto err = audioSink_->Start();
     if (err != Status::OK) {
-        eventReceiver_->OnEvent({"audio_sink_filter", EventType::EVENT_ERROR, MSERR_AUD_RENDER_FAILED});
+        eventReceiver_->OnEvent({"audio_sink_filter", EventType::EVENT_ERROR, MSERR_AUD_RENDER_FAILED, ""});
         return err;
     }
     state_ = FilterState::RUNNING;
