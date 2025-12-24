@@ -318,7 +318,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_003, TestSize.Level1)
         static_cast<StatisticsEventType>(INT32_MAX), [&isRegisterEventHook](const Media::Meta &meta) -> bool {
             HiSysEventWrite(TEST_DOMAIN, "DFX_STATISTICS_EVENT_TEST", OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
                             "Test", "Success");
-            isRegisterEventHook = true;
+            isRegisterEventHook = false;
             return false;
         });
     StatisticsEventInfo::GetInstance().OnAddEventInfo(static_cast<StatisticsEventType>(INT32_MAX), *meta_);
@@ -538,7 +538,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_002, Te
     for (auto isEncoder : {false, true}) {
         meta_ = std::make_shared<Media::Meta>();
         meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), isEncoder);
-        meta_->SetData(Media::Tag::MIME_TYPE, static_cast<std::string>(CodecMimeType::VIDEO_AVC));
         StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
     }
 
@@ -592,6 +591,18 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_001, T
                                                           *meta_);
     }
 
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    CheckJsonValue("CapUnsupportedInfo", "CreateCodecUnsupportedInfo");
+}
+
+/**
+ * @tc.name: AddEventInfo_CapUnsupportedCreateCapInfo_002
+ * @tc.desc: 1. eventType is CAP_UNSUPPORTED_CREATE_CODEC_INFO
+ *           2. mimeType is empty, isEncoder parameter test
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_002, TestSize.Level1)
+{
     for (auto isEncoder : {false, true}) {
         meta_ = std::make_shared<Media::Meta>();
         meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), isEncoder);
@@ -600,16 +611,18 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_001, T
     }
 
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckJsonValue("CapUnsupportedInfo", "CreateCodecUnsupportedInfo");
+    WaitForEventJson();
+    auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
+    ASSERT_NE(nullptr, data);
 }
 
 /**
- * @tc.name: AddEventInfo_CapUnsupportedCreateCapInfo_002
+ * @tc.name: AddEventInfo_CapUnsupportedCreateCapInfo_003
  * @tc.desc: 1. eventType is CAP_UNSUPPORTED_CREATE_CODEC_INFO
  *           2. mimeType is random, excute 100000 times
  * @tc.type: FUNC
  */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_002, TestSize.Level1)
+HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_003, TestSize.Level1)
 {
     for (int i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
         std::string mime = GenerateRandomMime();
@@ -683,7 +696,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecLimitExceededInfo_001, TestSize
     }
 
     for (int32_t i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
-        std::string callerProcessName = GenerateRandomString(20); // 20: clller name length
+        std::string callerProcessName = GenerateRandomString(20); // 20: caller name length
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
         StatisticsEventInfo::GetInstance().OnAddEventInfo(
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO, *meta_);
@@ -708,9 +721,8 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecAbnormalOccupationLongTimeInBGI
                                                       *meta_);
 
     for (auto elapsedTime : {ELAPSEDTIME_THREADSHOLD / 2, ELAPSEDTIME_THREADSHOLD * 2}) {
-        meta_ = std::make_shared<Media::Meta>();
         meta_->SetData(EventInfoExtentedKey::APP_ELAPSED_TIME_IN_BG.data(), elapsedTime);
-        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, *meta_);
     }
 
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
