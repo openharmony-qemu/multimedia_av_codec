@@ -18,6 +18,7 @@
 #include <ctime>
 #include <map>
 #include "avcodec_log.h"
+#include "avcodec_errors.h"
 #include "app_event.h"
 #include "app_event_processor_mgr.h"
 
@@ -79,7 +80,7 @@ void AppEventReporter::UploadRecordData(const std::string &apiName) const
 {
     std::map<std::string, int32_t> errType2Num;
     std::vector<std::string> errType;
-    std::vector<std::string> errNum;
+    std::vector<int32_t> errNum;
 
     Event event("api_diagnostic", "api_called_stat_cnt", HiviewDFX::HiAppEvent::BEHAVIOR);
     event.AddParam("api_name", apiName);
@@ -91,13 +92,13 @@ void AppEventReporter::UploadRecordData(const std::string &apiName) const
         if (errCode == 0) {
             successTime++;
         } else {
-            std::string err = AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(errCode));
+            std::string err = OHAVErrCodeToString(AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(errCode)));
             errType2Num[err] = !errType2Num[err] ? 1 : errType2Num[err] + 1;
         }
     }
     for (auto it = errType2Num.begin(); it != errType2Num.end(); it++) {
-        errType.push_back(it->first());
-        errNum.push_back(it->second());
+        errType.push_back(it->first);
+        errNum.push_back(it->second);
     }
     event.AddParam("error_code_types", errType);
     event.AddParam("error_code_num", errNum);
