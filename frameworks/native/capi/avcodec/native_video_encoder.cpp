@@ -528,7 +528,7 @@ OH_AVErrCode OH_VideoEncoder_Start(struct OH_AVCodec *codec)
                              "Codec magic error!");
 
     static AppEventReporter appEventReporter = AppEventReporter();
-    ApiInvokeRecorder apiInvokeRecorder("OH_VideoEncoder_CreateByName", appEventReporter);
+    ApiInvokeRecorder apiInvokeRecorder("OH_VideoEncoder_Start", appEventReporter);
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
