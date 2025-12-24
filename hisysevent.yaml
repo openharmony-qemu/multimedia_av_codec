@@ -13,18 +13,6 @@
 
 domain: AV_CODEC
 
-FAULT:
-  __BASE: {type: FAULT, level: CRITICAL, desc: AV_CODEC fault}
-  MODULE: {type: STRING, desc: Module name}
-  FAULTTYPE: {type: STRING, desc: Fault type}
-  MSG: {type: STRING, desc: Fault description}
-
-SERVICE_START_INFO:
-  __BASE: {type: BEHAVIOR, level: MINOR, desc: AV_CODEC service start information}
-  MODULE: {type: STRING, desc: Service name}
-  TIME: {type: UINT32, desc: AV_CODEC service start time us}
-  MEMORY: {type: UINT32, desc: AV_CODEC service start use memory kb}
-
 CODEC_START_INFO:
   __BASE: {type: BEHAVIOR, level: MINOR, desc: AV_CODEC codec start event}
   CLIENT_PID: {type: INT32, desc: Codec client pid}
@@ -47,18 +35,20 @@ CODEC_STOP_INFO:
   CLIENT_UID: {type: INT32, desc: Codec client uid}
   CODEC_INSTANCE_ID: {type: INT32, desc: Codec instance id}
 
-BASIC_INFO:
-  __BASE: {type: STATISTIC, level: CRITICAL, desc: AVCodec statistics basic info}
-  PAYLOAD: {type: STRING, desc: Statistics basic info}
+FAULT:
+  __BASE: {type: FAULT, level: CRITICAL, desc: AV_CODEC fault, preserve: true}
+  MODULE: {type: STRING, desc: Module name}
+  MSG: {type: STRING, desc: Fault description}
+  FAULTTYPE: {type: STRING, desc: Fault type}
 
-APP_SPECIFICATIONS_INFO:
-  __BASE: {type: STATISTIC, level: CRITICAL, desc: AVCodec statistics app specification info}
-  PAYLOAD: {type: STRING, desc: Statistics app specification info}
-
-APP_BEHAVIORS_INFO:
-  __BASE: {type: STATISTIC, level: CRITICAL, desc: AVCodec statistics app behaviors info}
-  PAYLOAD: {type: STRING, desc: Statistics app behaviors info}
-
-CODEC_ABNORMAL_INFO:
-  __BASE: {type: STATISTIC, level: CRITICAL, desc: AVCodec statistics codec abnormal info}
-  PAYLOAD: {type: STRING, desc: Statistics codec abnormal info}
+STATISTICS_INFO:
+  __BASE: {type: STATISTICS, level: CRITICAL, desc: AVCodec statistics event info, preserve: true}
+  QUERY_CAP_TIMES: {type: UINT32, desc: Number of capability query requests}
+  CREATE_CODEC_TIMES: {type: UINT32, desc: Number of video codec creations}
+  CODEC_SPECIFIED_INFO: {type: STRING, desc: specification information of video codec creation}
+  APP_NAME_DICT: {type: STRING, desc: Dictionnary of aplication names invoking the codec}
+  CAP_UNSUPPORTED_INFO: {type: STRING, desc: Unsupported capability specification information}
+  DEC_ABNORMAL_OCCUPATION_INFO: {type: STRING, desc: Statistics on application exceptions occupying decoders}
+  SPEED_DECODING_INFO: {type: STRING, desc: Statistics on playback speed decoding}
+  CODEC_ERROR_INFO: {type: STRING, desc: Statistics on codec exceptions}
+  
