@@ -14,29 +14,29 @@
 domain: AV_CODEC
 
 CODEC_START_INFO:
-  __BASE: {type: BEHAVIOR, level: CRITICAL, desc: AV_CODEC codec start event, preserve: true}
-  VIDEO_WIDTH: {type: INT32, desc: Video codec input width}
-  AUDIO_CHANNEL_COUNT: {type: INT32, desc: Audio codec input channel count}
-  AUDIO_SAMPLE_RATE: {type: INT32, desc: Audio codec input sample rate}
-  VIDEO_PIXEL_FORMAT: {type: STRING, desc: Video codec input pixel format}
-  VIDEO_FRAMERATE: {type: DOUBLE, desc: Video codec output framerate}
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: AV_CODEC codec start event}
+  CLIENT_PID: {type: INT32, desc: Codec client pid}
   CLIENT_UID: {type: INT32, desc: Codec client uid}
-  CODEC_MODE: {type: STRING, desc: Buffer mode or surface mode}
+  CODEC_INSTANCE_ID: {type: INT32, desc: Codec instance id}
   CODEC_NAME: {type: STRING, desc: Codec name}
   CODEC_IS_VENDOR: {type: STRING, desc: True is hardware codec or false is software codec}
-  VIDEO_HEIGHT: {type: INT32, desc: Video codec input height}
+  CODEC_MODE: {type: STRING, desc: Buffer mode or Surface mode}
   ENCODER_BITRATE: {type: INT64, desc: Encoder output bitrate}
-  CODEC_INSTANCE_ID: {type: INT32, desc: Codec instance id}
-  CLIENT_PID: {type: INT32, desc: Codec client pid}
+  VIDEO_WIDTH: {type: INT32, desc: Video codec input width}
+  VIDEO_HEIGHT: {type: INT32, desc: Video codec input height}
+  VIDEO_FRAMERATE: {type: DOUBLE, desc: Video codec output framerate}
+  VIDEO_PIXEL_FORMAT: {type: STRING, desc: Video codec input pixel format}
+  AUDIO_CHANNEL_COUNT: {type: INT32, desc: Audio codec input channel count}
+  AUDIO_SAMPLE_RATE: {type: INT32, desc: Audio codec input sample rate}
 
 CODEC_STOP_INFO:
-  __BASE: {type: BEHAVIOR, level: CRITICAL, desc: AV_CODEC codec stop event, preserve: true}
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: AV_CODEC codec stop event}
   CLIENT_PID: {type: INT32, desc: Codec client pid}
-  CODEC_INSTANCE_ID: {type: INT32, desc: Codec instance id}
   CLIENT_UID: {type: INT32, desc: Codec client uid}
+  CODEC_INSTANCE_ID: {type: INT32, desc: Codec instance id}
 
 FAULT:
-  __BASE: {type: FAULT, level: CRITICAL, desc: AV_CODEC fault, preserve: true}
+  __BASE: {type: FAULT, level: CRITICAL, desc: AV_CODEC fault}
   MODULE: {type: STRING, desc: Module name}
   MSG: {type: STRING, desc: Fault description}
   FAULTTYPE: {type: STRING, desc: Fault type}
