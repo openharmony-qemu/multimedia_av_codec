@@ -366,7 +366,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicQueryAndCreateInfo_001, TestS
     ASSERT_EQ(1, createCodecTimes);
 }
 
-
 /**
  * @tc.name: AddEventInfo_BasicCreateCodecSpecInfo_001
  * @tc.desc: 1. eventType is BASIC_CREATE_CODEC_SPEC_INFO
