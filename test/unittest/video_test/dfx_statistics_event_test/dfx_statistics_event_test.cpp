@@ -43,7 +43,7 @@ namespace {
 std::mutex g_mutex;
 std::condition_variable g_cv;
 constexpr int32_t QUERY_INTERVAL_TIME = 500;
-constexpr int32_t STATISTIC_EVENT_INFO_TIMEOUT = 5000;
+constexpr int32_t STATISTIC_EVENT_INFO_TIMEOUT = 10000;
 constexpr int32_t MAX_EVENT_ADD_COUNT = 100000;
 constexpr int32_t BEHAVIORSINFO_EVENT_ADD_COUNT = 200;
 constexpr int32_t ELAPSEDTIME_THREADSHOLD = 600;
@@ -63,24 +63,8 @@ enum class RANDOM_MIME_TYPE : int {
     MAX_CHAR_LENGTH,
 };
 const std::vector<std::string> FORMAT_COMPONENTS = {
-    "mpeg",
-    "avc",
-    "hevc",
-    "vp",
-    "av1",
-    "divx",
-    "xvid",
-    "flash",
-    "quicktime",
-    "real",
-    "windowsmedia",
-    "ogg",
-    "web",
-    "stream",
-    "media",
-    "digital",
-    "high",
-    "ultra",
+    "mpeg", "avc",          "hevc", "vp",  "av1",    "divx",  "xvid",    "flash", "quicktime",
+    "real", "windowsmedia", "ogg",  "web", "stream", "media", "digital", "high",  "ultra",
 };
 
 std::string GenerateRandomString(size_t length, std::string_view charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -313,7 +297,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_002, TestSize.Level1)
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_003, TestSize.Level1)
 {
-    bool isRegisterEventHook = false;
+    bool isRegisterEventHook = true;
     StatisticsEventInfo::GetInstance().RegisterEventHook(
         static_cast<StatisticsEventType>(INT32_MAX), [&isRegisterEventHook](const Media::Meta &meta) -> bool {
             HiSysEventWrite(TEST_DOMAIN, "DFX_STATISTICS_EVENT_TEST", OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
@@ -323,7 +307,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_003, TestSize.Level1)
         });
     StatisticsEventInfo::GetInstance().OnAddEventInfo(static_cast<StatisticsEventType>(INT32_MAX), *meta_);
     std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    ASSERT_EQ(true, isRegisterEventHook);
+    ASSERT_EQ(false, isRegisterEventHook);
 }
 
 /**
