@@ -63,8 +63,24 @@ enum class RANDOM_MIME_TYPE : int {
     MAX_CHAR_LENGTH,
 };
 const std::vector<std::string> FORMAT_COMPONENTS = {
-    "mpeg", "avc",          "hevc", "vp",  "av1",    "divx",  "xvid",    "flash", "quicktime",
-    "real", "windowsmedia", "ogg",  "web", "stream", "media", "digital", "high",  "ultra",
+    "mpeg",
+    "avc",
+    "hevc",
+    "vp",
+    "av1",
+    "divx",
+    "xvid",
+    "flash",
+    "quicktime",
+    "real",
+    "windowsmedia",
+    "ogg",
+    "web",
+    "stream",
+    "media",
+    "digital",
+    "high",
+    "ultra",
 };
 
 std::string GenerateRandomString(size_t length, std::string_view charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
