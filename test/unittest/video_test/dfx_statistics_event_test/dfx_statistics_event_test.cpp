@@ -244,6 +244,7 @@ void DfxStatisticsEventTest::TearDown(void)
     StatisticsEventInfo::GetInstance().timer_ = nullptr;
     pid_t pid = getpid();
     std::cout << "end memory = " << dumpUsage_.GetPss(pid) << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
 }
 
 /**
