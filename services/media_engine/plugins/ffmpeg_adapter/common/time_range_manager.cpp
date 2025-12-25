@@ -36,7 +36,6 @@ bool TimeRangeManager::IsInTimeRanges(const int64_t targetTs, TimeRange &timeRan
 void TimeRangeManager::AddTimeRange(const TimeRange &range)
 {
     ReduceRanges();
-
     TimeRange newRange = range;
     auto it = timeRanges_.upper_bound({newRange.end_ts, newRange.end_ts}); // 首个start_ts大于range.end_ts的元素
     while (it != timeRanges_.begin()) {

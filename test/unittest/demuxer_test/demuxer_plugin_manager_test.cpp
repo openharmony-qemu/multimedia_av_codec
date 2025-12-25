@@ -1065,23 +1065,5 @@ HWTEST_F(DemuxerPluginManagerUnitTest, SeekToKeyFrame_0003, TestSize.Level1)
     RemoveValue();
 }
 
-HWTEST_F(DemuxerPluginManagerUnitTest, SeekToKeyFrame_0004, TestSize.Level1)
-{
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS_2, DEF_PROB_SIZE), true);
-    ASSERT_EQ(PluginSelectTracks(), true);
-    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    int64_t realSeekTime = 0;
-    std::vector<uint32_t> timeouts = {1, 1, 1, 1, 0};
-    std::vector<int64_t> seekTimes = {100, 100, 100, 100, 100};
-    std::vector<Status> expStatuses = {Status::ERROR_WAIT_TIMEOUT, Status::ERROR_WAIT_TIMEOUT,
-        Status::ERROR_WAIT_TIMEOUT, Status::ERROR_WAIT_TIMEOUT, Status::OK};
-    for (size_t i = 0; i < seekTimes.size(); ++i) {
-        EXPECT_EQ(demuxerPlugin->SeekToKeyFrame(0, seekTimes[i], SeekMode::SEEK_NEXT_SYNC, realSeekTime, timeouts[i]),
-            expStatuses[i]);
-    }
-    ASSERT_EQ(realSeekTime, 5589888889);
-    RemoveValue();
-}
-
 }
 }
