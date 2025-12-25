@@ -467,6 +467,12 @@
             <option name="shell" value="restorecon /data/test/"/>
         </preparer>
 	</target>
+    <target name="DemuxerRmvbAPI11FuzzTest">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/"/>
+            <option name="shell" value="restorecon /data/test/"/>
+        </preparer>
+	</target>
     <target name="DemuxerDtsAPI11FuzzTest">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/"/>
