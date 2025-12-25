@@ -3254,7 +3254,7 @@ ohos_unittest("videodec_detailed_error_code_async_unit_test") {
   ]
 
   defines = [
-    "TEST_SUIT=VideoDecInnerAsyncTest",
+    "TEST_SUIT=VideoDecDetailedErrCodeInnerAsyncTest",
     "VIDEODEC_ASYNC_UNIT_TEST",
     "VIDEODEC_INNER_UNIT_TEST",
     "VideoDecSample=VideoDecAsyncSample",
