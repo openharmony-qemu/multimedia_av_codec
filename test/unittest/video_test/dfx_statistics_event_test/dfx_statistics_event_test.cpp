@@ -524,7 +524,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedQueryCapInfo_001, Te
     }
 
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckJsonValue("QueryCapUnsupportedInfo", "");
+    CheckJsonValue("CapUnsupportedInfo", "QueryCapUnsupportedInfo");
 }
 
 /**
@@ -593,7 +593,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_CapUnsupportedCreateCapInfo_001, T
     }
 
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
-    CheckJsonValue("CreateCodecUnsupportedInfo", "");
+    CheckJsonValue("CapUnsupportedInfo", "CreateCodecUnsupportedInfo");
 }
 
 /**

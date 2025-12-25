@@ -770,8 +770,7 @@ void StatisticsEventInfo::OnSubmitEventInfo()
         CREATE_CODEC_TIMES,                 submitInfo.createCodecTimes,
         CODEC_SPECIFIED_INFO,               getJsonField(CODEC_SPECIFIED_INFO).CStr(),
         APP_NAME_DICT,                      getJsonField(APP_NAME_DICT).CStr(),
-        QUERY_CAP_UNSUPPORTED_INFO,         getJsonField(QUERY_CAP_UNSUPPORTED_INFO).CStr(),
-        CREATE_CODEC_UNSUPPORTED_INFO,      getJsonField(CREATE_CODEC_UNSUPPORTED_INFO).CStr(),
+        CAP_UNSUPPORTED_INFO,               getJsonField(CAP_UNSUPPORTED_INFO).CStr(),
         DEC_ABNORMAL_OCCUPATION_INFO,       getJsonField(DEC_ABNORMAL_OCCUPATION_INFO).CStr(),
         SPEED_DECODING_INFO,                getJsonField(SPEED_DECODING_INFO).CStr(),
         CODEC_ERROR_INFO,                   getJsonField(CODEC_ERROR_INFO).CStr()
