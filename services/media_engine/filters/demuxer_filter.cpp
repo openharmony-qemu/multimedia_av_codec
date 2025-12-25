@@ -69,7 +69,6 @@ static std::map<AudioSampleFormat, AudioSampleFormat> g_sampleFormatBeToLe = {
     {AudioSampleFormat::SAMPLE_BLURAY, AudioSampleFormat::SAMPLE_S24LE},
 };
 
-
 class DemuxerFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit DemuxerFilterLinkCallback(std::shared_ptr<DemuxerFilter> demuxerFilter)
