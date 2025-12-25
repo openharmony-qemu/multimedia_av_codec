@@ -830,7 +830,7 @@ bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, 
 {
     MEDIA_LOG_I_SHORT("mediaType is %{public}d", static_cast<int32_t>(mediaType));
     if (IsMimeInDolbyList(mime) && callback_->IsAudioPassthroughCallback(mime.c_str())) {
-        streamType = StreamType::STREAMTYPE_DOLBY; 
+        streamType = StreamType::STREAMTYPE_DOLBY;
         MEDIA_LOG_I("streamType is STREAMTYPE_DOLBY");
         return true;
     }
