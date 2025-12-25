@@ -1129,7 +1129,7 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "buffer is nullptr!");
     {
-        std::shared_lock<std::shared_mutex> outBuflock(outBufMutex_);
+        std::lock_guard<std::shared_mutex> outBuflock(outBufMutex_);
         outBufMap_[index] = buffer;
     }
     if (temporalScalability_ != nullptr && !(buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
