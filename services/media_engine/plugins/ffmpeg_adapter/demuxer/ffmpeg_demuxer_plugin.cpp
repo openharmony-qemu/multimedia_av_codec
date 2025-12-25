@@ -485,7 +485,6 @@ Status FFmpegDemuxerPlugin::Reset()
     MEDIA_LOG_D("In");
     ReleaseFFmpegReadLoop();
     ResetParam();
-    // 清空DRM信息缓存
     {
         std::lock_guard<std::mutex> drmLock(cachedDrmInfoMutex_);
         cachedDrmInfo_.clear();
