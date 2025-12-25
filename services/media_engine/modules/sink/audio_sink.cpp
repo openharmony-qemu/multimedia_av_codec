@@ -136,6 +136,11 @@ void AudioSink::SetBuffering(bool isBuffering)
     isBuffering_ = isBuffering;
 }
 
+void AudioSink::SetAudioPassFlag(bool isAudioPass)
+{
+    isAudioPass_ = isAudioPass;
+}
+
 bool AudioSink::HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc)
 {
     FALSE_RETURN_V(!eosDraining_, false);
@@ -216,6 +221,7 @@ Status AudioSink::InitAudioSinkPlugin(const std::shared_ptr<Meta>& meta,
     meta->SetData(Tag::APP_UID, appUid_);
     plugin->SetEventReceiver(receiver);
     plugin->SetParameter(meta);
+    plugin->SetAudioPassFlag(isAudioPass_);
     {
         ScopedTimer timer("InitAudioSinkPlugin", INIT_PLUGIN_WARNING_MS);
         plugin->Init();
@@ -755,6 +761,9 @@ bool AudioSink::CopyAudioVividBufferData(AudioStandard::BufferDesc &bufferDesc, 
         buffer->memory_->GetAddr() + currentQueuedBufferOffset_, cacheBufferSize);
     FALSE_RETURN_V_MSG(ret == 0, false, "copy from cache buffer may fail.");
     bufferPts = (bufferPts == HST_TIME_NONE) ? buffer->pts_ : bufferPts;
+    if (isAudioPass_) {
+        bufferDesc.syncFramePts = bufferPts;
+    }
     bufferDesc.dataLength += cacheBufferSize;
     size -= cacheBufferSize;
     availDataSize_.fetch_sub(cacheBufferSize);
@@ -778,7 +787,8 @@ bool AudioSink::IsBufferDataDrained(AudioStandard::BufferDesc &bufferDesc, std::
 {
     FALSE_RETURN_V_MSG(cacheBufferSize <= size || !isAudioVivid, false, "copy from cache buffer may fail.");
     MEDIA_TRACE_DEBUG("AudioSink::CopyBuffer");
-    bool ret = isAudioVivid ? CopyAudioVividBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts) :
+    bool ret = isAudioVivid || isAudioPass_
+        ? CopyAudioVividBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts) :
         CopyBufferData(bufferDesc, buffer, size, cacheBufferSize, bufferPts);
     return ret;
 }
@@ -812,7 +822,7 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
             CalcMaxAmplitude(cacheBuffer);
         }
         ReleaseCacheBuffer(isSwapBuffer);
-    } while (size > 0 && !isAudioVivid);
+    } while (size > 0 && !isAudioVivid && !isAudioPass_);
     if (bufferPts >= 0) {
         int64_t bufferDuration = CalculateBufferDuration(bufferDesc.dataLength);
         innerSynchroizer_->UpdateCurrentBufferInfo(bufferPts, bufferDuration);
