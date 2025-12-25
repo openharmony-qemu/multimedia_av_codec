@@ -127,7 +127,6 @@ HWTEST_F(Mpeg1DecReliNdkTest, VIDEO_MPEG1DEC_STABILITY_0030, TestSize.Level3)
         vDecSample->getFormat(FILE_PATH);
         vDecSample->autoSwitchSurface = false;
         vDecSample->sleepOnFPS = true;
-        vDecSample->noCaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg1));
     }
     uint32_t errorCount = 0;
@@ -153,7 +152,6 @@ HWTEST_F(Mpeg1DecReliNdkTest, VIDEO_MPEG1DEC_STABILITY_0040, TestSize.Level3)
         vDecSample->getFormat(FILE_PATH);
         vDecSample->autoSwitchSurface = false;
         vDecSample->sleepOnFPS = true;
-        vDecSample->noCaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg1.c_str()));
     }
     uint32_t errorCount = 0;
@@ -224,7 +222,6 @@ HWTEST_F(Mpeg1DecReliNdkTest, VIDEO_MPEG1DEC_STABILITY_0070, TestSize.Level3)
         vDecSample->sfOutput = false;
         vDecSample->inputDir = FILE_PATH;
         vDecSample->sleepOnFPS = true;
-        vDecSample->noCaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg1));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -254,7 +251,6 @@ HWTEST_F(Mpeg1DecReliNdkTest, VIDEO_MPEG1DEC_STABILITY_0080, TestSize.Level3)
             vDecSample->sfOutput = false;
             vDecSample->inputDir = FILE_PATH;
             vDecSample->sleepOnFPS = true;
-            vDecSample->noCaleHash = true;
             ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg1));
             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -281,7 +277,6 @@ HWTEST_F(Mpeg1DecReliNdkTest, VIDEO_MPEG1DEC_STABILITY_0090, TestSize.Level3)
         vDecSample->inputDir = FILE_PATH;
         vDecSample->getFormat(FILE_PATH);
         vDecSample->sfOutput = false;
-        vDecSample->noCaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameMpeg1));
         vDecSample->WaitForEOS();
         vDecSample->ReleaseInFile();
@@ -311,7 +306,6 @@ HWTEST_F(Mpeg1DecReliNdkTest, VIDEO_MPEG1DEC_STABILITY_0100, TestSize.Level3)
         cout << "rand high is" << vDecSample->defaultHeight << endl;
         vDecSample->defaultFrameRate = 60;
         vDecSample->sfOutput = false;
-        vDecSample->noCaleHash = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg1));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
