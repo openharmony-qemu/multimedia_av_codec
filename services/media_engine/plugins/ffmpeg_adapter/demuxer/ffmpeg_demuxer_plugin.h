@@ -21,6 +21,7 @@
 #include <thread>
 #include <map>
 #include <queue>
+#include <mutex>
 #include <shared_mutex>
 #include <list>
 #include "buffer/avbuffer.h"
@@ -221,6 +222,7 @@ private:
     Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, uint32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
+    void UpdateCachedDrmInfoFromStream(AVStream* avStream);
     bool NeedCombineFrame(uint32_t trackId);
     Plugins::AVPacketWrapperPtr CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
@@ -413,6 +415,11 @@ private:
 
     std::atomic<bool> isAsyncReadThreadPrioritySet_ = false;
     void UpdateAsyncReadThreadPriority();
+
+    // DRM info cache to avoid race condition in async mode
+    std::multimap<std::string, std::vector<uint8_t>> cachedDrmInfo_;
+    std::mutex cachedDrmInfoMutex_;
+    std::atomic<bool> drmInfoCached_ {false};
 
     struct MinTsPacketInfo {
         bool isInit = false;
