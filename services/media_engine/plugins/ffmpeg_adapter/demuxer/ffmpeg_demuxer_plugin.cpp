@@ -2807,6 +2807,7 @@ int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dat
         auto inputFormat = av_find_input_format(ProcessPluginName(pluginName).c_str());
         const FFInputFormat* ffInputFormat = (const FFInputFormat*)inputFormat;
         plugin = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
+        // refer to ffmepg libavformat/demux.h ffifmt
         ffPlugin = std::shared_ptr<FFInputFormat>(const_cast<FFInputFormat*>(ffInputFormat), [](void*) {});
     }
     FALSE_RETURN_V_MSG_E((plugin != nullptr && ffPlugin->read_probe), 0,

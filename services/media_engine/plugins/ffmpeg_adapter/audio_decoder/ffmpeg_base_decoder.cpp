@@ -353,27 +353,27 @@ Status FfmpegBaseDecoder::AllocateContext(const std::string &name)
 
 Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
 {
-    format->GetData(Tag::AUDIO_CHANNEL_COUNT, avCodecContext_->ch_layout.nb_channels);
+    int32_t channels;
+    format->GetData(Tag::AUDIO_CHANNEL_COUNT, channels);
     format->GetData(Tag::AUDIO_SAMPLE_RATE, avCodecContext_->sample_rate);
     format->GetData(Tag::MEDIA_BITRATE, avCodecContext_->bit_rate);
     AudioChannelLayout channelLayout = UNKNOWN;
     format->GetData(Tag::AUDIO_CHANNEL_LAYOUT, channelLayout);
     auto ffChannelLayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);
     if (channelLayout != UNKNOWN) {
-        if (!ffChannelLayout) {
+        if (av_channel_layout_from_mask(&avCodecContext_->ch_layout, ffChannelLayout)) {
             AVCODEC_LOGE("the value of channelLayout is not supported");
             return Status::ERROR_INVALID_PARAMETER;
-        } else {
-            avCodecContext_->ch_layout.u.mask = ffChannelLayout;
         }
-    } else if (avCodecContext_->ch_layout.nb_channels == 1) { // 1 channel: mono
+    } else if (channels == 1) { // 1 channel: mono
         AVCODEC_LOGW("1 channel channelLayout is unknow, set to default mono");
-        avCodecContext_->ch_layout.u.mask = AV_CH_LAYOUT_MONO;
-    } else if (avCodecContext_->ch_layout.nb_channels == 2) { // 2 channel: stereo
+        av_channel_layout_from_mask(&avCodecContext_->ch_layout, AV_CH_LAYOUT_MONO);
+    } else if (channels == 2) { // 2 channel: stereo
         AVCODEC_LOGW("2 channel channelLayout is unknow, set to default stereo");
-        avCodecContext_->ch_layout.u.mask = AV_CH_LAYOUT_STEREO;
+        av_channel_layout_from_mask(&avCodecContext_->ch_layout, AV_CH_LAYOUT_STEREO);
     } else {
         AVCODEC_LOGW("channelLayout not set, unknow channelLayout");
+        av_channel_layout_default(&avCodecContext_->ch_layout, channels);
     }
     format->GetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize_);
 

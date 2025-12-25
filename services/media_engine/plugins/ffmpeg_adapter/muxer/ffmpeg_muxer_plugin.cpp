@@ -903,7 +903,6 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = codeID;
     st->codecpar->sample_rate = sampleRate;
-    st->codecpar->ch_layout.nb_channels = channels;
     if (trackDesc->Find(Tag::AUDIO_SAMPLE_PER_FRAME) != trackDesc->end()) {
         int32_t frameSize = 0;
         trackDesc->Get<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize); // frame size
@@ -920,7 +919,9 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
             channelLayout, ffChannelLayout);
         FALSE_RETURN_V_MSG_E(ffChannelLayout, Status::ERROR_INVALID_DATA,
             "the value of channelLayout is not supported, " PUBLIC_LOG_D64, channelLayout);
-        st->codecpar->ch_layout.u.mask = ffChannelLayout;
+        av_channel_layout_from_mask(&st->codecpar->ch_layout, ffChannelLayout);
+    } else {
+        av_channel_layout_default(&st->codecpar->ch_layout, channels);
     }
     trackIndex = st->index;
     return SetCodecParameterOfAudioTrack(st, trackDesc);
@@ -1033,7 +1034,6 @@ Status FFmpegMuxerPlugin::AddAudioAuxiliaryTrack(
     st->codecpar->codec_type = AVMEDIA_TYPE_AUXILIARY;
     st->codecpar->codec_id = codeID;
     st->codecpar->sample_rate = sampleRate;
-    st->codecpar->ch_layout.nb_channels = channels;
 
     auto retAuxlMeta = SetAuxiliaryMeta(trackDesc, st);
     FALSE_RETURN_V_MSG_E(retAuxlMeta == Status::NO_ERROR, retAuxlMeta, "set auxiliary meta failed!");
@@ -1053,7 +1053,9 @@ Status FFmpegMuxerPlugin::AddAudioAuxiliaryTrack(
             channelLayout, ffChannelLayout);
         FALSE_RETURN_V_MSG_E(ffChannelLayout, Status::ERROR_INVALID_DATA,
             "the value of channelLayout is not supported, " PUBLIC_LOG_D64, channelLayout);
-        st->codecpar->ch_layout.u.mask = ffChannelLayout;
+        av_channel_layout_from_mask(&st->codecpar->ch_layout, ffChannelLayout);
+    } else {
+        av_channel_layout_default(&st->codecpar->ch_layout, channels);
     }
     trackIndex = st->index;
     return SetCodecParameterOfAudioTrack(st, trackDesc);

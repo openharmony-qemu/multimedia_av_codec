@@ -456,14 +456,14 @@ Status FFmpegAACEncoderPlugin::ReAllocateContext()
     CHECK_AND_RETURN_RET_LOG(tmpContext != nullptr, Status::ERROR_NO_MEMORY,
         "Allocate tmpContext failed.");
 
-    tmpContext->ch_layout.nb_channels = avCodecContext_->ch_layout.nb_channels;
     tmpContext->sample_rate = avCodecContext_->sample_rate;
     tmpContext->bit_rate = avCodecContext_->bit_rate;
-    tmpContext->ch_layout.u.mask = avCodecContext_->ch_layout.u.mask;
     tmpContext->sample_fmt = avCodecContext_->sample_fmt;
     tmpContext->flags = avCodecContext_->flags;
     tmpContext->global_quality = avCodecContext_->global_quality;
     MEDIA_LOG_I("flags:%{public}d global_quality:%{public}d", tmpContext->flags, tmpContext->global_quality);
+    int ret = av_channel_layout_copy(&tmpContext->ch_layout, &avCodecContext_->ch_layout);
+    CHECK_AND_RETURN_RET_LOG(!ret, Status::ERROR_UNKNOWN, "av_channel_layout_copy failed.");
 
     auto res = avcodec_open2(tmpContext.get(), avCodec_.get(), nullptr);
     CHECK_AND_RETURN_RET_LOG(res == 0, Status::ERROR_UNKNOWN,
@@ -504,11 +504,10 @@ Status FFmpegAACEncoderPlugin::AllocateContext(const std::string &name)
 
 Status FFmpegAACEncoderPlugin::InitContext()
 {
-    avCodecContext_->ch_layout.nb_channels = channels_;
     avCodecContext_->sample_rate = sampleRate_;
     avCodecContext_->bit_rate = bitRate_;
-    avCodecContext_->ch_layout.u.mask = srcLayout_;
     avCodecContext_->sample_fmt = srcFmt_;
+    av_channel_layout_from_mask(&avCodecContext_->ch_layout, srcLayout_);
     // 8khz 2声道编码码率校正
     if (sampleRate_ == CORRECTION_SAMPLE_RATE && channels_ == CORRECTION_CHANNEL_COUNT &&
         bitRate_ < CORRECTION_BIT_RATE) {
@@ -589,7 +588,6 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
     int32_t type;
     int32_t aacProfile;
     AudioChannelLayout channelLayout;
-    MEDIA_LOG_I("GetMetaData enter");
     if (meta->Get<Tag::MEDIA_PROFILE>(aacProfile)) {
         if (aacProfile != AAC_PROFILE_LC) {
             MEDIA_LOG_E("this plugin only support LC-AAC, input profile:%{public}d", aacProfile);
@@ -630,12 +628,11 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
         MEDIA_LOG_I("maxInputSize: %{public}d", maxInputSize_);
     }
     if (meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout)) {
-        srcLayout_ =
-            FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(static_cast<AudioChannelLayout>(channelLayout));
-        MEDIA_LOG_I("srcLayout_: " PUBLIC_LOG_U64, srcLayout_);
+        srcLayout_ = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);
     } else {
         srcLayout_ = channelLayoutMap.at(channels_);
     }
+    MEDIA_LOG_I("srcLayout_: " PUBLIC_LOG_U64, srcLayout_);
     return Status::OK;
 }
 
@@ -673,8 +670,8 @@ Status FFmpegAACEncoderPlugin::InitFrame()
     MEDIA_LOG_I("InitFrame enter");
     cachedFrame_->nb_samples = avCodecContext_->frame_size;
     cachedFrame_->format = avCodecContext_->sample_fmt;
-    cachedFrame_->ch_layout.u.mask = avCodecContext_->ch_layout.u.mask;
-    cachedFrame_->ch_layout.nb_channels = avCodecContext_->ch_layout.nb_channels;
+    int res = av_channel_layout_copy(&cachedFrame_->ch_layout, &avCodecContext_->ch_layout);
+    CHECK_AND_RETURN_RET_LOG(!res, Status::ERROR_UNKNOWN, "av_channel_layout_copy failed.");
     int ret = av_frame_get_buffer(cachedFrame_.get(), 0);
     CHECK_AND_RETURN_RET_LOG(ret >= 0, Status::ERROR_NO_MEMORY,
         "Get frame buffer failed: %{public}s", OSAL::AVStrError(ret).c_str());
@@ -782,8 +779,8 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
         }
     }
 
-    cachedFrame_->nb_samples = static_cast<int>(destBufferSize) /
-        (bytesPerSample * avCodecContext_->ch_layout.nb_channels);
+    cachedFrame_->nb_samples =
+        static_cast<int>(destBufferSize) / (bytesPerSample * avCodecContext_->ch_layout.nb_channels);
     if (!(inputBuffer->flag_ & BUFFER_FLAG_EOS) && cachedFrame_->nb_samples != avCodecContext_->frame_size) {
         MEDIA_LOG_D("Input frame size not match, input samples: %{public}d, "
                     "frame_size: %{public}d",

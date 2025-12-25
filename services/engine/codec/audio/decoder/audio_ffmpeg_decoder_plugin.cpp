@@ -284,7 +284,8 @@ int32_t AudioFfmpegDecoderPlugin::AllocateContext(const std::string &name)
 int32_t AudioFfmpegDecoderPlugin::InitContext(const Format &format)
 {
     format_ = format;
-    format_.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, avCodecContext_->ch_layout.nb_channels);
+    int32_t channels = 0;
+    format_.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channels);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, avCodecContext_->sample_rate);
     format_.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, avCodecContext_->bit_rate);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize_);
@@ -293,20 +294,19 @@ int32_t AudioFfmpegDecoderPlugin::InitContext(const Format &format)
     auto ffChannelLayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(
         static_cast<AudioChannelLayout>(channelLayout));
     if (channelLayout != UNKNOWN) {
-        if (!ffChannelLayout) {
+        if (av_channel_layout_from_mask(&avCodecContext_->ch_layout, ffChannelLayout)) {
             AVCODEC_LOGE("the value of channelLayout is not supported");
             return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-        } else {
-            avCodecContext_->ch_layout.u.mask = ffChannelLayout;
         }
-    } else if (avCodecContext_->ch_layout.nb_channels == 1) { // 1 channel: mono
+    } else if (channels == 1) { // 1 channel: mono
         AVCODEC_LOGW("1 channel channelLayout is unknow, set to default mono");
-        avCodecContext_->ch_layout.u.mask = AV_CH_LAYOUT_MONO;
-    } else if (avCodecContext_->ch_layout.nb_channels == 2) { // 2 channel: stereo
+        av_channel_layout_from_mask(&avCodecContext_->ch_layout, AV_CH_LAYOUT_MONO);
+    } else if (channels == 2) { // 2 channel: stereo
         AVCODEC_LOGW("2 channel channelLayout is unknow, set to default stereo");
-        avCodecContext_->ch_layout.u.mask = AV_CH_LAYOUT_STEREO;
+        av_channel_layout_from_mask(&avCodecContext_->ch_layout, AV_CH_LAYOUT_STEREO);
     } else {
         AVCODEC_LOGW("channelLayout not set, unknow channelLayout");
+        av_channel_layout_default(&avCodecContext_->ch_layout, channels);
     }
     int32_t status = SetCodecExtradata();
     if (status != AVCodecServiceErrCode::AVCS_ERR_OK) {
