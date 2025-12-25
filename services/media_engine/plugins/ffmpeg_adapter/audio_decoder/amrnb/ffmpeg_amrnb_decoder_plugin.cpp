@@ -60,27 +60,32 @@ FFmpegAmrnbDecoderPlugin::~FFmpegAmrnbDecoderPlugin()
 
 Status FFmpegAmrnbDecoderPlugin::Init()
 {
+    std::lock_guard<std::mutex> lock(amrMutex_);
     return Status::OK;
 }
 
 Status FFmpegAmrnbDecoderPlugin::Prepare()
 {
+    std::lock_guard<std::mutex> lock(amrMutex_);
     return Status::OK;
 }
 
 Status FFmpegAmrnbDecoderPlugin::Reset()
 {
+    std::lock_guard<std::mutex> lock(amrMutex_);
     eosFlushed_ = false;
     return basePlugin->Reset();
 }
 
 Status FFmpegAmrnbDecoderPlugin::Start()
 {
+    std::lock_guard<std::mutex> lock(amrMutex_);
     return Status::OK;
 }
 
 Status FFmpegAmrnbDecoderPlugin::Stop()
 {
+    std::lock_guard<std::mutex> lock(amrMutex_);
     return Status::OK;
 }
 
@@ -93,6 +98,7 @@ static std::string AVStrError(int errnum)
 
 Status FFmpegAmrnbDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
+    std::lock_guard<std::mutex> lock(amrMutex_);
     AVPacket *pkt = av_packet_alloc();
     CHECK_AND_RETURN_RET_LOG(pkt != nullptr, Status::ERROR_NO_MEMORY, "allocate packet error.");
     avPacket_ = std::shared_ptr<AVPacket>(pkt, [](AVPacket *p) {
@@ -115,6 +121,7 @@ Status FFmpegAmrnbDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
 
 Status FFmpegAmrnbDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
+    std::lock_guard<std::mutex> lock(amrMutex_);
     auto format = basePlugin->GetFormat();
     format->SetData(Tag::MIME_TYPE, MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB);
     parameter = format;
@@ -152,12 +159,12 @@ Status FFmpegAmrnbDecoderPlugin::ExtractOneAmrnbFrame()
 
     inputBuf_.erase(inputBuf_.begin(), inputBuf_.begin() + frameSize);
 
-    currentPacketEmpty_ = false;
     return Status::OK;
 }
 
 Status FFmpegAmrnbDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
+    std::lock_guard<std::mutex> lock(amrMutex_);
     auto memory = inputBuffer->memory_;
     CHECK_AND_RETURN_RET_LOG(memory != nullptr, Status::ERROR_INVALID_DATA, "input memory null");
     int32_t sourceSize = memory->GetSize();
@@ -176,6 +183,7 @@ Status FFmpegAmrnbDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
 
 Status FFmpegAmrnbDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
 {
+    std::lock_guard<std::mutex> lock(amrMutex_);
     bool isEos = outputBuffer->flag_ & MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS;
 
     if (!isEos) {
@@ -184,12 +192,14 @@ Status FFmpegAmrnbDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &ou
         Status extractSucc = ExtractOneAmrnbFrame();
         CHECK_AND_RETURN_RET_LOG(extractSucc == Status::OK, Status::ERROR_NOT_ENOUGH_DATA,
             "amrnb split frame failed, remaining size: %{public}zu", inputBuf_.size());
-        currentPacketEmpty_ = false;
+    } else {
+        avPacket_->size = 0;
+        avPacket_->data = nullptr;
+        avPacket_->pts = outputBuffer->pts_;
     }
 
-    auto retSend = avcodec_send_packet(avCodecContext_.get(), currentPacketEmpty_ ? nullptr : avPacket_.get());
+    auto retSend = avcodec_send_packet(avCodecContext_.get(), avPacket_.get());
     av_packet_unref(avPacket_.get());
-    currentPacketEmpty_ = true;
 
     if (retSend == AVERROR(EAGAIN)) {
         return Status::ERROR_NOT_ENOUGH_DATA;
@@ -233,12 +243,14 @@ Status FFmpegAmrnbDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AV
 
 Status FFmpegAmrnbDecoderPlugin::Flush()
 {
+    std::lock_guard<std::mutex> lock(amrMutex_);
     inputBuf_.clear();
     return basePlugin->Flush();
 }
 
 Status FFmpegAmrnbDecoderPlugin::Release()
 {
+    std::lock_guard<std::mutex> lock(amrMutex_);
     return basePlugin->Release();
 }
 
