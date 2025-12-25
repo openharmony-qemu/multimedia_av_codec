@@ -26,6 +26,7 @@ using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CODEC_UTILS"};
 constexpr uint32_t INDEX_ARRAY = 2;
 constexpr uint32_t WAIT_FENCE_MS = 1000;
+constexpr int32_t DOUBLE = 2;
 std::map<VideoPixelFormat, AVPixelFormat> g_pixelFormatMap = {
     {VideoPixelFormat::YUVI420, AV_PIX_FMT_YUV420P},
     {VideoPixelFormat::NV12, AV_PIX_FMT_NV12},
@@ -246,8 +247,9 @@ int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct Surface
         EXPECT_AND_LOGD(waitRes != 0, "wait fence time out, cost more than %{public}u ms", WAIT_FENCE_MS);
     }
     uint32_t yScaleLineSize = static_cast<uint32_t>(surfaceInfo.scaleLineSize[0]);
+    uint32_t uScaleLineSize = static_cast<uint32_t>(surfaceInfo.scaleLineSize[1]);
     if (IsYuvFormat(pixFmt)) {
-        if (surfaceInfo.surfaceStride != yScaleLineSize) {
+        if (surfaceInfo.surfaceStride != yScaleLineSize || (uScaleLineSize * DOUBLE) != surfaceInfo.surfaceStride) {
             return WriteYuvDataStride(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize,
                                       surfaceInfo.surfaceStride, format);
         }
@@ -282,7 +284,7 @@ int32_t WriteBufferData(const std::shared_ptr<AVMemory> &memory, uint8_t **scale
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
     AVCODEC_SYNC_TRACE;
     if (IsYuvFormat(pixFmt)) {
-        if (scaleLineSize[0] != width) {
+        if (scaleLineSize[0] != width || (scaleLineSize[1] * DOUBLE) != width) {
             return WriteYuvDataStride(memory, scaleData, scaleLineSize, width, format);
         }
         return WriteYuvData(memory, scaleData, scaleLineSize, height, pixFmt);
