@@ -250,6 +250,9 @@ ohos_unittest("videodec_capi_async_unit_test") {
     "VideoDecSample=VideoDecAsyncSample",
   ]
   defines += av_codec_defines
+  if (target_cpu == "arm64") {
+    defines += [ "HMOS_TEST" ]
+  }
 
   cflags = vcodec_unittest_cflags
 
@@ -364,6 +367,9 @@ ohos_unittest("videodec_inner_async_unit_test") {
     "VIDEODEC_INNER_UNIT_TEST",
     "VideoDecSample=VideoDecAsyncSample",
   ]
+  if (target_cpu == "arm64") {
+    defines += [ "HMOS_TEST" ]
+  }
 
   cflags = vcodec_unittest_cflags
 
@@ -1534,6 +1540,9 @@ ohos_unittest("videodec_capi_sync_unit_test") {
     "VideoDecSample=VideoDecSyncSample",
   ]
   defines += av_codec_defines
+  if (target_cpu == "arm64") {
+    defines += [ "HMOS_TEST" ]
+  }
 
   cflags = vcodec_unittest_cflags
 
@@ -1648,6 +1657,9 @@ ohos_unittest("videodec_inner_sync_unit_test") {
     "VIDEODEC_SYNC_UNIT_TEST",
     "VideoDecSample=VideoDecSyncSample",
   ]
+  if (target_cpu == "arm64") {
+    defines += [ "HMOS_TEST" ]
+  }
 
   cflags = vcodec_unittest_cflags
 
