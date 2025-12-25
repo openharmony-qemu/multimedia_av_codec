@@ -256,6 +256,8 @@ struct DemuxerPlugin : public PluginBase {
     virtual Status BoostReadThreadPriority() = 0;
     virtual Status SetAVReadPacketStopState(bool state) = 0;
     virtual Status SeekToStart() = 0;
+    virtual Status SeekToKeyFrame(int32_t trackId, int64_t seekTime,
+        SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) { return Status::ERROR_UNKNOWN; };
 };
 
 /// Demuxer plugin api major number.

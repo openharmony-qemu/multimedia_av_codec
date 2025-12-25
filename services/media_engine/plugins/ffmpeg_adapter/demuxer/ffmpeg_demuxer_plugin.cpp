@@ -88,6 +88,7 @@ const uint32_t SETTIMER_TIMEOUT = 5; // second
 constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
 constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 constexpr int32_t SEEK_TRACK_DEFAULT = -1;
+constexpr int32_t RECHECK_TIMES = 5;
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -983,6 +984,7 @@ bool FFmpegDemuxerPlugin::NeedDropAfterSeek(uint32_t trackId, int64_t pts)
 
 int FFmpegDemuxerPlugin::AVReadFrameLimit(AVPacket *pkt)
 {
+    std::lock_guard<std::mutex> sLock(syncMutex_);
     if (!ioContext_.isLimitType) {
         return av_read_frame(formatContext_.get(), pkt);
     }
@@ -1007,9 +1009,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
                 Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
         }
-        std::unique_lock<std::mutex> sLock(syncMutex_);
         int ffmpegRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
-        sLock.unlock();
         UpdMinTsPacketInfo(pktWrapper->GetAVPacket());
         if (ffmpegRet == AVERROR_EOF) { // eos
             WebvttMP4EOSProcess(pktWrapper->GetAVPacket());
@@ -1918,9 +1918,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFrames()
             FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
                 Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
         }
-        std::unique_lock<std::mutex> sLock(syncMutex_);
         int ffmpegRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
-        sLock.unlock();
         if (ffmpegRet < 0) {
             MEDIA_LOG_E("Call av_read_frame failed, ret:" PUBLIC_LOG_D32, ffmpegRet);
             pktWrapper.reset();
@@ -2099,16 +2097,7 @@ Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, int
     formatContext_->pb->error = 0;
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
         "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ret).c_str());
-    if (readLoopStatus_ != Status::OK) {
-        MEDIA_LOG_E("Read loop status is not OK, release thread");
-        ReleaseFFmpegReadLoop();
-    }
-    for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
-        cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
-        cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
-    }
-    seekTime_ = seekTime;
-    seekMode_ = flag == AVSEEK_FLAG_BACKWARD ? SeekMode::SEEK_PREVIOUS_SYNC : mode;
+    ResetAfterSeek(seekTime, flag == AVSEEK_FLAG_BACKWARD ? SeekMode::SEEK_PREVIOUS_SYNC : mode);
     return Status::OK;
 }
 
@@ -2160,6 +2149,128 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     ret = DoSeekInternal(trackIndex, seekTime, ffTime, mode, realSeekTime);
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return ret;
+}
+
+int FFmpegDemuxerPlugin::AVSeekFrameLock(int stream_index, int64_t timestamp, int flags)
+{
+    std::lock_guard<std::mutex> sLock(syncMutex_);
+    return av_seek_frame(formatContext_.get(), stream_index, timestamp, flags);
+}
+
+Status FFmpegDemuxerPlugin::ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pktWrapper, int trackIndex,
+    TimeoutGuard &timeoutGuard, TimeRange &readRange)
+{
+    int readCnt = 0;
+    int ffRet = 0;
+    while ((ffRet = AVReadFrameLimit(pktWrapper->GetAVPacket())) >= 0) {
+        FALSE_RETURN_V_MSG_E(!timeoutGuard.IsTimeout(), Status::ERROR_WAIT_TIMEOUT, "Timeout while reading frames");
+        if (pktWrapper->GetStreamIndex() != trackIndex || pktWrapper->GetDts() == AV_NOPTS_VALUE ||
+            (pktWrapper->GetFlags() & AV_PKT_FLAG_DISCARD)) {
+            av_packet_unref(pktWrapper->GetAVPacket());
+            continue;
+        }
+        if (readRange.start_ts == AV_NOPTS_VALUE) {
+            readRange.start_ts = pktWrapper->GetDts();
+        }
+        readRange.end_ts = pktWrapper->GetDts();
+        if (pktWrapper->GetFlags() & AV_PKT_FLAG_KEY) {
+            return Status::OK;
+        }
+        ++readCnt;
+        if (!(readCnt % RECHECK_TIMES)) {
+            TimeRange timeRange;
+            if (timeRangeManager_.IsInTimeRanges(pktWrapper->GetDts(), timeRange)) {
+                ffRet = AVSeekFrameLock(trackIndex, timeRange.end_ts, AVSEEK_FLAG_FRAME);
+                FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN,
+                    "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
+            }
+        }
+    }
+    return ffRet == AVERROR_EOF ? Status::END_OF_STREAM : Status::ERROR_UNKNOWN;
+}
+
+Status FFmpegDemuxerPlugin::SeekToKeyFrameCheckParam(int64_t seekTime, SeekMode mode,
+    int32_t &trackIndex, int64_t &ffTime, AVStream *&avStream)
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    FALSE_RETURN_V_MSG_E(fileType_ == FileType::MPEGTS, Status::ERROR_INVALID_PARAMETER, "File type is not MPEGTS");
+    FALSE_RETURN_V_MSG_E(mode == SeekMode::SEEK_NEXT_SYNC, Status::ERROR_INVALID_PARAMETER,
+        "SeekMode is not SEEK_NEXT_SYNC");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
+    FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS, Status::ERROR_INVALID_PARAMETER,
+        "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
+
+    trackIndex = SelectSeekTrack();
+    avStream = formatContext_->streams[trackIndex];
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
+
+    ffTime = ConvertTimeToFFmpeg(seekTime * MS_TO_NS, avStream->time_base);
+    if (VideoFirstFrameValid(trackIndex)) {
+        ffTime += videoFirstFrameMap_[trackIndex]->GetDts();
+    } else {
+        if (!CheckStartTime(formatContext_.get(), avStream, ffTime, seekTime)) {
+            MEDIA_LOG_E("Get start time from track " PUBLIC_LOG_D32 " failed", trackIndex);
+            return Status::ERROR_INVALID_OPERATION;
+        }
+    }
+    return Status::OK;
+}
+
+void FFmpegDemuxerPlugin::ResetAfterSeek(int64_t seekTime, SeekMode mode)
+{
+    if (readLoopStatus_ != Status::OK) {
+        MEDIA_LOG_E("Read loop status is not OK, release thread");
+        ReleaseFFmpegReadLoop();
+    }
+    for (auto idx : selectedTrackIds_) {
+        cacheQueue_.RemoveTrackQueue(idx);
+        cacheQueue_.AddTrackQueue(idx);
+    }
+    seekTime_ = seekTime;
+    seekMode_ = mode;
+}
+
+Status FFmpegDemuxerPlugin::SeekToKeyFrame(int32_t trackId, int64_t seekTime,
+    SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs)
+{
+    MEDIA_LOG_D("in");
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    TimeoutGuard timeoutGuard(timeoutMs);
+    MediaAVCodec::AVCodecTrace trace("SeekToKeyFrame");
+    auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_seekToKeyFrame", SETTIMER_TIMEOUT,
+        nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
+    int64_t ffTime = 0;
+    AVStream *avStream = nullptr;
+    auto ret = SeekToKeyFrameCheckParam(seekTime, mode, trackId, ffTime, avStream);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekToKeyFrameCheckParam failed");
+    TimeRange timeRange;
+    if (timeRangeManager_.IsInTimeRanges(ffTime, timeRange)) {
+        ffTime = timeRange.end_ts;
+    }
+
+    int ffRet = AVSeekFrameLock(trackId, ffTime, AVSEEK_FLAG_FRAME);
+    FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN,
+        "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
+    FALSE_RETURN_V_MSG_E(!timeoutGuard.IsTimeout(), Status::ERROR_WAIT_TIMEOUT, "Timeout after av_seek_frame");
+
+    TimeRange readRange;
+    Plugins::AVPacketWrapperPtr pktWrapper = std::make_shared<Plugins::AVPacketWrapper>();
+    FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
+        Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
+    ret = ReadUntilKeyFrame(pktWrapper, trackId, timeoutGuard, readRange);
+    if (readRange.end_ts != AV_NOPTS_VALUE) {
+        realSeekTime = ConvertTimeFromFFmpeg(readRange.end_ts, avStream->time_base);
+        timeRangeManager_.AddTimeRange({std::min(ffTime, readRange.start_ts), readRange.end_ts});
+    } else {
+        realSeekTime = ConvertTimeFromFFmpeg(ffTime, avStream->time_base);
+    }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
+
+    ResetAfterSeek(pktWrapper->GetDts(), SeekMode::SEEK_NEXT_SYNC);
+    ret = AddPacketToCacheQueue(pktWrapper);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "AddPacketToCacheQueue failed");
+    HiviewDFX::XCollie::GetInstance().CancelTimer(id);
+    return Status::OK;
 }
 
 Status FFmpegDemuxerPlugin::Flush()
@@ -2647,9 +2758,7 @@ Status FFmpegDemuxerPlugin::GetFileFirstPacket()
         Plugins::AVPacketWrapperPtr pktWrapper = std::make_shared<Plugins::AVPacketWrapper>();
         FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
             Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
-        std::unique_lock<std::mutex> sLock(syncMutex_);
         int ffRet = AVReadFrameLimit(pktWrapper->GetAVPacket());
-        sLock.unlock();
         FALSE_RETURN_V_MSG_E(ffRet == 0, Status::ERROR_WRONG_STATE, "Call av_read_frame failed");
 
         InitMinTsPacketInfo(pktWrapper->GetAVPacket());
@@ -2731,16 +2840,7 @@ Status FFmpegDemuxerPlugin::SeekToStart()
     }
     auto ret = SeekToStartInternal();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekToStartInternal failed.");
-    if (readLoopStatus_ != Status::OK) {
-        MEDIA_LOG_E("Read loop status is not OK, release thread");
-        ReleaseFFmpegReadLoop();
-    }
-    for (auto track : selectedTrackIds_) {
-        cacheQueue_.RemoveTrackQueue(track);
-        cacheQueue_.AddTrackQueue(track);
-    }
-    seekTime_ = AV_NOPTS_VALUE;
-    seekMode_ = SeekMode::SEEK_NEXT_SYNC;
+    ResetAfterSeek(AV_NOPTS_VALUE, SeekMode::SEEK_NEXT_SYNC);
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return Status::OK;
 }
