@@ -720,7 +720,7 @@ void M3U8MasterPlaylist::CreateVariantStream(const std::shared_ptr<Tag>& tag)
     if (uriAttribute) {
         auto name = uriAttribute->QuotedString();
         auto uri = UriJoin(uri_, name);
-        auto m3u8 = std::make_shared<M3U8>(uri_, name, monitorStatusCallback_);
+        auto m3u8 = std::make_shared<M3U8>(uri, name, monitorStatusCallback_);
         if (m3u8 != nullptr && downloadCallback_ != nullptr) {
             m3u8->SetDownloadCallback(downloadCallback_);
         }
