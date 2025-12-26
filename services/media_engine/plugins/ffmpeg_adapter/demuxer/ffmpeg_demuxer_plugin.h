@@ -32,6 +32,7 @@
 #include "reference_parser_manager.h"
 #include "meta/meta.h"
 #include "qos.h"
+#include "time_range_manager.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -96,6 +97,8 @@ public:
     Status BoostReadThreadPriority() override;
     Status SetAVReadPacketStopState(bool state) override;
     Status SeekToStart() override;
+    Status SeekToKeyFrame(int32_t trackId, int64_t seekTime,
+        SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
 private:
     enum ThreadState : unsigned int {
         NOT_STARTED,
@@ -427,6 +430,14 @@ private:
     void UpdMinTsPacketInfo(AVPacket *pkt);
     bool IsSkipGetMinTsPktInfo();
     Status SeekToStartInternal();
+
+    int AVSeekFrameLock(int idx, int64_t timestamp, int flags);
+    TimeRangeManager timeRangeManager_;
+    Status ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pkt, int trackIndex,
+        TimeoutGuard &timeoutGuard, TimeRange &readRange);
+    Status SeekToKeyFrameCheckParam(int64_t seekTime, SeekMode mode,
+        int32_t &trackIndex, int64_t &ffTime, AVStream* &avStream);
+    void ResetAfterSeek(int64_t seekTime, SeekMode mode);
 };
 
 typedef struct DtsFinder {

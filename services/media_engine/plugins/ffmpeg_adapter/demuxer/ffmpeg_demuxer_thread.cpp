@@ -357,9 +357,9 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWr
     AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
     FALSE_RETURN_V_MSG_E(pkt != nullptr, false, "Pkt is nullptr");
     {
-        std::unique_lock<std::mutex> sLock(syncMutex_);
         readLoopStatus_ = Status::OK;
         int ffmpegRet = AVReadFrameLimit(pkt);
+        std::unique_lock<std::mutex> sLock(syncMutex_);
         UpdMinTsPacketInfo(pktWrapper->GetAVPacket());
         if (ffmpegRet == AVERROR_EOF) {
             HandleAVPacketEndOfStream(pktWrapper);
@@ -433,9 +433,9 @@ void FFmpegDemuxerPlugin::HandleAVPacketReadError(Plugins::AVPacketWrapperPtr& p
 bool FFmpegDemuxerPlugin::ReadOnePacketAndProcessWebVTT(Plugins::AVPacketWrapperPtr& pktWrapper)
 {
     AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
-    std::unique_lock<std::mutex> sLock(syncMutex_);
     readLoopStatus_ = Status::OK;
     int ffmpegRet = AVReadFrameLimit(pkt);
+    std::unique_lock<std::mutex> sLock(syncMutex_);
     UpdMinTsPacketInfo(pktWrapper->GetAVPacket());
     if (ffmpegRet == AVERROR_EOF) {
         HandleAVPacketEndOfStream(pktWrapper);
