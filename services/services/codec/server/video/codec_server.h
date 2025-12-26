@@ -168,7 +168,7 @@ private:
     bool isFree_ = false;
     std::shared_ptr<TaskThread> inputParamTask_ = nullptr;
     CodecScenario scenario_ = CodecScenario::CODEC_SCENARIO_ENC_NORMAL;
-    std::shared_mutex outBufMutex_;
+    std::mutex outBufMutex_;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outBufMap_;
 
     // post processing, video decoder and surface mode only
