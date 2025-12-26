@@ -213,12 +213,8 @@ Status SampleQueue::AttachOneBuffer(uint32_t size)
 Status SampleQueue::AcquireBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
 {
     MEDIA_TRACE_DEBUG("SampleQueue::AcquireBuffer");
-    // return from rollbackBufferQueue_ first
-    if (!rollbackBufferQueue_.empty()) {
-        sampleBuffer = rollbackBufferQueue_.front();
-        rollbackBufferQueue_.pop_front();
-        MEDIA_LOG_DD(PUBLIC_LOG_S " AcquireBuffer from rollbackBufferQueue_", config_.queueName_.c_str());
-    } else {
+    // return from rollback buffer queue first
+    if (PopRollbackBuffer(sampleBuffer) != Status::OK) {
         FALSE_RETURN_V(sampleBufferQueueConsumer_ != nullptr, Status::ERROR_NULL_POINT_BUFFER);
         Status ret = sampleBufferQueueConsumer_->AcquireBuffer(sampleBuffer);
         FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
@@ -415,16 +411,44 @@ Status SampleQueue::ReleaseBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
 Status SampleQueue::RollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
 {
     MEDIA_LOG_DD(PUBLIC_LOG_S " RollbackBuffer", config_.queueName_.c_str());
+    return PushRollbackBuffer(sampleBuffer);
+}
+
+Status SampleQueue::PopRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
+{
+    MEDIA_LOG_DD(PUBLIC_LOG_S " PopRollbackBuffer", config_.queueName_.c_str());
+    std::lock_guard<std::mutex> lk(rollbackMutex_);
+    if (rollbackBufferQueue_.empty()) {
+        return Status::ERROR_UNKNOWN;
+    }
+    sampleBuffer = rollbackBufferQueue_.front();
+    rollbackBufferQueue_.pop_front();
+    return Status::OK;
+}
+
+Status SampleQueue::PeekRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
+{
+    MEDIA_LOG_DD(PUBLIC_LOG_S " PeekRollbackBuffer", config_.queueName_.c_str());
+    std::lock_guard<std::mutex> lk(rollbackMutex_);
+    if (rollbackBufferQueue_.empty()) {
+        return Status::ERROR_UNKNOWN;
+    }
+    sampleBuffer = rollbackBufferQueue_.front();
+    return Status::OK;
+}
+
+Status SampleQueue::PushRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
+{
+    MEDIA_LOG_DD(PUBLIC_LOG_S " PushRollbackBuffer", config_.queueName_.c_str());
+    std::lock_guard<std::mutex> lk(rollbackMutex_);
     rollbackBufferQueue_.push_back(sampleBuffer);
     return Status::OK;
 }
 
 Status SampleQueue::QuerySizeForNextAcquireBuffer(size_t& size)
 {
-    std::shared_ptr<AVBuffer> sampleBuffer;
-    if (!rollbackBufferQueue_.empty()) {
-        sampleBuffer = rollbackBufferQueue_.front();
-    } else {
+    std::shared_ptr<AVBuffer> sampleBuffer {nullptr};
+    if (PeekRollbackBuffer(sampleBuffer) != Status::OK) {
         Status ret = AcquireBuffer(sampleBuffer);
         FALSE_RETURN_V_MSG_D(
             ret == Status::OK, ret, PUBLIC_LOG_S " failed ret=" PUBLIC_LOG_D32, config_.queueName_.c_str(), ret);
@@ -439,11 +463,10 @@ Status SampleQueue::QuerySizeForNextAcquireBuffer(size_t& size)
 Status SampleQueue::Clear()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S " SampleQueue Clear", config_.queueName_.c_str());
-    while (!rollbackBufferQueue_.empty()) {
-        auto sampleBuffer = rollbackBufferQueue_.front();
-        MEDIA_LOG_I(PUBLIC_LOG_S" clear rollbackBufferQueue_ bufferId: " PUBLIC_LOG_U64
-        ", pts: " PUBLIC_LOG_D64, config_.queueName_.c_str(), sampleBuffer->GetUniqueId(), sampleBuffer->pts_);
-        rollbackBufferQueue_.pop_front();
+    std::shared_ptr<AVBuffer> sampleBuffer {nullptr};
+    while (PopRollbackBuffer(sampleBuffer) == Status::OK) {
+        MEDIA_LOG_I(PUBLIC_LOG_S" clear rollback buffer queue bufferId: " PUBLIC_LOG_U64
+            ", pts: " PUBLIC_LOG_D64, config_.queueName_.c_str(), sampleBuffer->GetUniqueId(), sampleBuffer->pts_);
         ReleaseBuffer(sampleBuffer);
     }
     if (sampleBufferQueueProducer_ != nullptr) {
