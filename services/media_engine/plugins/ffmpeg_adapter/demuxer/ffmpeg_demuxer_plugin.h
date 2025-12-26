@@ -438,6 +438,8 @@ private:
     Status SeekToKeyFrameCheckParam(int64_t seekTime, SeekMode mode,
         int32_t &trackIndex, int64_t &ffTime, AVStream* &avStream);
     void ResetAfterSeek(int64_t seekTime, SeekMode mode);
+
+    std::unordered_map<int32_t, int32_t> mp4FirstKeyFrameIdx_; // key: track index, value: first key frame index
 };
 
 typedef struct DtsFinder {
