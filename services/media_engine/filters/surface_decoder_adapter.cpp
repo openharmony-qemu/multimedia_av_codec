@@ -132,35 +132,6 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime)
     return Status::OK;
 }
 
-Status SurfaceDecoderAdapter::Init(const std::string &mime, bool isHdr)
-{
-    FALSE_RETURN_V_NOLOG(isHdr, Init(mime));
-    MEDIA_LOG_I("Init mime: " PUBLIC_LOG_S " for hdr", mime.c_str());
-    std::shared_ptr<MediaAVCodec::AVCodecList> avCodecList = MediaAVCodec::AVCodecListFactory::CreateAVCodecList();
-    FALSE_RETURN_V_MSG(avCodecList != nullptr, Status::ERROR_UNKNOWN, "get codec list failed");
-    MediaAVCodec::CapabilityData *capabilityData = avCodecList->GetCapability(mime, false,
-        MediaAVCodec::AVCodecCategory::AVCODEC_HARDWARE);
-    FALSE_RETURN_V_MSG(capabilityData != nullptr, Status::ERROR_UNKNOWN, "get capability data failed");
-    FALSE_RETURN_V_MSG(capabilityData->isVendor, Status::ERROR_UNKNOWN, "not hw decoder");
-    FALSE_RETURN_V_MSG(
-        capabilityData->codecType == static_cast<int32_t>(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER),
-        Status::ERROR_UNKNOWN,
-        "not video decoder");
-    FALSE_RETURN_V_MSG(capabilityData->mimeType == mime, Status::ERROR_UNKNOWN, "not correct mime");
-    FALSE_RETURN_V_MSG(capabilityData->codecName != "", Status::ERROR_UNKNOWN, "empty codec name");
-    codecServer_ = MediaAVCodec::VideoDecoderFactory::CreateByName(capabilityData->codecName);
-    FALSE_RETURN_V_MSG(codecServer_ != nullptr, Status::ERROR_UNKNOWN, "get capability data failed");
-    if (!releaseBufferTask_) {
-        releaseBufferTask_ = std::make_shared<Task>("SurfaceDecoder");
-        FALSE_RETURN_V(releaseBufferTask_ != nullptr, Status::ERROR_NULL_POINTER);
-        releaseBufferTask_->RegisterJob([this] {
-            ReleaseBuffer();
-            return 0;
-        });
-    }
-    return Status::OK;
-}
-
 Status SurfaceDecoderAdapter::Configure(const Format &format)
 {
     MEDIA_LOG_I("Configure");

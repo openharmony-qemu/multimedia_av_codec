@@ -52,7 +52,6 @@ public:
     ~SurfaceDecoderAdapter();
 public:
     Status Init(const std::string &mime);
-    Status Init(const std::string &mime, bool isHdr);
     Status Configure(const Format &format);
     sptr<OHOS::Media::AVBufferQueueProducer> GetInputBufferQueue();
     Status SetDecoderAdapterCallback(const std::shared_ptr<DecoderAdapterCallback> &decoderAdapterCallback);
