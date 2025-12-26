@@ -1672,6 +1672,7 @@ void HlsSegmentManager::GetDownloadInfo(DownloadInfo& downloadInfo)
     }
     downloadInfo.avgDownloadSpeed = avgDownloadSpeed_;
     downloadInfo.totalDownLoadBits = totalBits_;
+    downloadInfo.isTimeOut = isTimeOut_;
 }
 
 void HlsSegmentManager::GetPlaybackInfo(PlaybackInfo& playbackInfo)
