@@ -125,6 +125,8 @@ void CodecAbilitySingleton::RegisterCapabilityArray(std::vector<CapabilityData> 
             mimeCapIdxMap_.insert(std::make_pair(mimeType, idxVec));
         }
         if ((*iter).profileLevelsMap.size() > MAX_MAP_SIZE) {
+            AVCODEC_LOGW("current profileLevelsMap size: %{public}zu, codecName is %{public}s",
+                (*iter).profileLevelsMap.size(), (*iter).codecName.c_str());
             std::map<int32_t, std::vector<int32_t>> oldProfileLevelsMap = (*iter).profileLevelsMap;
             std::map<int32_t, std::vector<int32_t>> newProfileLevelsMap;
             auto it = oldProfileLevelsMap.begin();
@@ -141,6 +143,8 @@ void CodecAbilitySingleton::RegisterCapabilityArray(std::vector<CapabilityData> 
             (*iter).profiles.swap(newProfiles);
         }
         if ((*iter).measuredFrameRate.size() > MAX_MAP_SIZE) {
+            AVCODEC_LOGW("current measuredFrameRate map size: %{public}zu, codecName is %{public}s",
+                (*iter).measuredFrameRate.size(), (*iter).codecName.c_str());
             std::map<ImgSize, Range> oldMeasuredFrameRate = (*iter).measuredFrameRate;
             std::map<ImgSize, Range> newMeasuredFrameRate;
             auto it = oldMeasuredFrameRate.begin();
@@ -154,7 +158,6 @@ void CodecAbilitySingleton::RegisterCapabilityArray(std::vector<CapabilityData> 
         nameCodecTypeMap_.insert(std::make_pair((*iter).codecName, codecType));
         beginIdx++;
     }
-    AVCODEC_LOGD("Register capability successful");
 }
 
 std::vector<CapabilityData> CodecAbilitySingleton::GetCapabilityArray()
