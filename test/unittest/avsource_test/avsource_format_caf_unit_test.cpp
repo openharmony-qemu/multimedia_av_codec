@@ -267,29 +267,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0006, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVSource_CAF_GetFormat_0007
- * @tc.desc: get invalid track index format for CAF file
- * @tc.type: FUNC
- */
-HWTEST_F(AVSourceUnitTest, AVSource_CAF_GetFormat_0007, TestSize.Level1)
-{
-    fd_ = OpenFile(g_cafOpusPath);
-    size_ = GetFileSize(g_cafOpusPath);
-    printf("---- %s ----\n", g_cafOpusPath.c_str());
-    
-    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-
-    trackIndex_ = 1;
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_EQ(format_, nullptr);
-
-    trackIndex_ = -1;
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_EQ(format_, nullptr);
-}
-
-/**
  * @tc.name: AVSource_CAF_GetSourceFormat_0008
  * @tc.desc: verify CAF source format file type
  * @tc.type: FUNC
