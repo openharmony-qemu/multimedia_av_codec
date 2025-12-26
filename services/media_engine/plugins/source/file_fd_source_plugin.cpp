@@ -216,12 +216,12 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
         MEDIA_LOG_D("ReadLocal position_ " PUBLIC_LOG_U64 ", readSize " PUBLIC_LOG_ZU,
             position_.load(), buffer->GetMemory()->GetSize());
     }
-    totalDownLoadBytes_ += size;
-    if (toalDownloadCount_ == 0) {
+    totalDownLoadBytes_ += static_cast<int64_t>(size);
+    if (totalDownloadCount_ == 0) {
         firstDownloadTimestamp_ = GetCurrentMillisecond();
         firstDownloadTime_ = firstDownloadTimestamp_ - start;
     }
-    toalDownloadCount_++;
+    totalDownloadCount_++;
     int64_t end = GetCurrentMillisecond();
     totalDownloadDuringTime_ += end - start;
     return Status::OK;
@@ -276,12 +276,12 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     }
     position_ += static_cast<uint64_t>(size);
     MEDIA_LOG_D("ringBuffer.size() " PUBLIC_LOG_ZU, ringBuffer_->GetSize());
-    totalDownLoadBytes_ += size;
-    if (toalDownloadCount_ == 0) {
+    totalDownLoadBytes_ += static_cast<int64_t>(size);
+    if (totalDownloadCount_ == 0) {
         firstDownloadTimestamp_ = GetCurrentMillisecond();
         firstDownloadTime_ = firstDownloadTimestamp_ - start;
     }
-    toalDownloadCount_++;
+    totalDownloadCount_++;
     int64_t end = GetCurrentMillisecond();
     totalDownloadDuringTime_ += end - start;
     return Status::OK;
@@ -434,12 +434,12 @@ void FileFdSourcePlugin::CacheDataLoop()
     }
     cachePosition_ += static_cast<uint64_t>(size);
     downloadSize_ += static_cast<uint64_t>(size);
-    totalDownLoadBytes_ += size;
-    if (toalDownloadCount_ == 0) {
+    totalDownLoadBytes_ += static_cast<int64_t>(size);
+    if (totalDownloadCount_ == 0) {
         firstDownloadTimestamp_ = GetCurrentMillisecond();
         firstDownloadTime_ = firstDownloadTimestamp_ - curTime;
     }
-    toalDownloadCount_++;
+    totalDownloadCount_++;
     int64_t ct = steadyClock2_.ElapsedMilliseconds() - curTime;
     totalDownloadDuringTime_ += ct;
     if (ct > READ_TIME) {
@@ -821,7 +821,7 @@ Status FileFdSourcePlugin::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     downloadInfo.totalDownLoadBytes = totalDownLoadBytes_;
     downloadInfo.totalLoadingTime = totalDownloadDuringTime_;
-    downloadInfo.loadingCount = toalDownloadCount_;
+    downloadInfo.loadingCount = totalDownloadCount_;
     downloadInfo.firstDownloadTime = firstDownloadTime_;
     downloadInfo.firstFrameDecapsulationTime = firstDownloadTimestamp_;
     return Status::OK;

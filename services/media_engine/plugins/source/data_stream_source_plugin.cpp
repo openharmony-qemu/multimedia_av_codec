@@ -185,11 +185,11 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         buffer->GetMemory()->GetSize() : -100, realLen, retryTimes_); // -100 invalid size
     FALSE_RETURN_V(realLen != 0, Status::ERROR_AGAIN);
     totalDownLoadBytes_ += realLen;
-    if (toalDownloadCount_ == 0) {
+    if (totalDownloadCount_ == 0) {
         firstDownloadTimestamp_ = GetCurrentMillisecond();
         firstDownloadTime_ = firstDownloadTimestamp_ - start;
     }
-    toalDownloadCount_++;
+    totalDownloadCount_++;
     int64_t end = GetCurrentMillisecond();
     totalDownloadDuringTime_ += end - start;
     return Status::OK;
@@ -316,7 +316,7 @@ Status DataStreamSourcePlugin::GetDownloadInfo(Plugins::DownloadInfo& downloadIn
 {
     downloadInfo.totalDownLoadBytes = totalDownLoadBytes_;
     downloadInfo.totalLoadingTime = totalDownloadDuringTime_;
-    downloadInfo.loadingCount = toalDownloadCount_;
+    downloadInfo.loadingCount = totalDownloadCount_;
     downloadInfo.firstDownloadTime = firstDownloadTime_;
     downloadInfo.firstFrameDecapsulationTime = firstDownloadTimestamp_;
     return Status::OK;
