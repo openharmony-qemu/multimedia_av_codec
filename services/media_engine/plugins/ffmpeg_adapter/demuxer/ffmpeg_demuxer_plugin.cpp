@@ -2151,7 +2151,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     return ret;
 }
 
-int FFmpegDemuxerPlugin::AVSeekFrameLock(int stream_index, int64_t timestamp, int flags)
+int FFmpegDemuxerPlugin::AvSeekFrameLock(int stream_index, int64_t timestamp, int flags)
 {
     std::lock_guard<std::mutex> sLock(syncMutex_);
     return av_seek_frame(formatContext_.get(), stream_index, timestamp, flags);

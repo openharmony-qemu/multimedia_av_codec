@@ -431,7 +431,7 @@ private:
     bool IsSkipGetMinTsPktInfo();
     Status SeekToStartInternal();
 
-    int AVSeekFrameLock(int stream_index, int64_t timestamp, int flags);
+    int AvSeekFrameLock(int stream_index, int64_t timestamp, int flags);
     TimeRangeManager timeRangeManager_;
     Status ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pkt, int trackIndex,
         TimeoutGuard &timeoutGuard, TimeRange &readRange);

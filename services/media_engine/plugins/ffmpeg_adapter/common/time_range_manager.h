@@ -30,8 +30,9 @@ struct TimeRange {
     int64_t start_ts {AV_NOPTS_VALUE};
     int64_t end_ts {AV_NOPTS_VALUE};
 
-    bool operator < (const TimeRange& other) const {
-        return start_ts < other.start_ts || 
+    bool operator < (const TimeRange& other) const
+    {
+        return start_ts < other.start_ts ||
             (start_ts == other.start_ts && end_ts < other.end_ts);
     }
 };
@@ -52,7 +53,8 @@ class TimeoutGuard {
 public:
     explicit TimeoutGuard(uint32_t timeoutMs)
         : timeoutMs_(timeoutMs), startTime_(std::chrono::high_resolution_clock::now()) {}
-    bool IsTimeout() const {
+    bool IsTimeout() const
+    {
         if (timeoutMs_ == 0) {
             return false;
         }
