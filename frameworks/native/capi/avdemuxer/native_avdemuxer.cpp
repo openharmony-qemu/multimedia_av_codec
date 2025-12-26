@@ -136,6 +136,9 @@ struct OH_AVDemuxer *OH_AVDemuxer_CreateWithSource(OH_AVSource *source)
     CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "Input source is nullptr");
     CHECK_AND_RETURN_RET_LOG(source->magic_ == AVMagic::AVCODEC_MAGIC_AVSOURCE, nullptr, "Magic error");
 
+    static AppEventReporter appEventReporter = AppEventReporter();
+    ApiInvokeRecorder apiInvokeRecorder("OH_AVDemuxer_CreateWithSource", appEventReporter);
+
     struct AVSourceObject *sourceObj = reinterpret_cast<AVSourceObject *>(source);
     CHECK_AND_RETURN_RET_LOG(sourceObj != nullptr, nullptr, "Create sourceObject is nullptr");
 
@@ -246,7 +249,7 @@ OH_AVErrCode OH_AVDemuxer_SeekToTime(OH_AVDemuxer *demuxer, int64_t millisecond,
     CHECK_AND_RETURN_RET_LOG(millisecond >= 0, AV_ERR_INVALID_VAL, "Millisecond is negative");
 
     static AppEventReporter appEventReporter = AppEventReporter();
-    ApiInvokeRecorder apiInvokeRecorder("OH_VideoEncoder_CreateByName", appEventReporter);
+    ApiInvokeRecorder apiInvokeRecorder("OH_AVDemuxer_SeekToTime", appEventReporter);
 
     struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
     CHECK_AND_RETURN_RET_LOG(demuxerObj != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");

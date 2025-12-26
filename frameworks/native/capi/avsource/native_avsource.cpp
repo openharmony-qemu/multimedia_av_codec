@@ -24,6 +24,7 @@
 #include "avbuffer.h"
 #include "network_security_config.h"
 #include "common/log.h"
+#include "hiappevent_util.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "NativeAVSource"};
@@ -125,6 +126,10 @@ std::string static GetHostnameFromURL(const std::string &url)
 struct OH_AVSource *OH_AVSource_CreateWithURI(char *uri)
 {
     CHECK_AND_RETURN_RET_LOG(uri != nullptr, nullptr, "Uri is nullptr");
+
+    static AppEventReporter appEventReporter = AppEventReporter();
+    ApiInvokeRecorder apiInvokeRecorder("OH_AVSource_CreateWithURI", appEventReporter);
+
     bool isComponentCfg = false;
     std::string protocol = GetProtocolFromURL(uri);
     for (auto &u : protocol) {
@@ -157,6 +162,9 @@ struct OH_AVSource *OH_AVSource_CreateWithFD(int32_t fd, int64_t offset, int64_t
     CHECK_AND_RETURN_RET_LOG(fd >= 0, nullptr, "Fd is negative");
     CHECK_AND_RETURN_RET_LOG(offset >= 0, nullptr, "Offset is negative");
     CHECK_AND_RETURN_RET_LOG(size > 0, nullptr, "Size must be greater than zero");
+
+    static AppEventReporter appEventReporter = AppEventReporter();
+    ApiInvokeRecorder apiInvokeRecorder("OH_AVSource_CreateWithFD", appEventReporter);
 
     std::shared_ptr<AVSource> source = AVSourceFactory::CreateWithFD(fd, offset, size);
     CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "New avsource failed");
