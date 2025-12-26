@@ -172,9 +172,9 @@ Status SurfaceDecoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     configFormat.SetMeta(parameter);
     bool isHdrVivid = false;
     FALSE_LOG_MSG_W(parameter->GetData(Tag::VIDEO_IS_HDR_VIVID, isHdrVivid), "Get is_hdr_vivid failed");
-    Plugins::HDRType videoHdrType = Plugins::HDRType::None;
+    Plugins::HDRType videoHdrType = Plugins::HDRType::NONE;
     FALSE_LOG_MSG_W(parameter->GetData(Tag::VIDEO_HDR_TYPE, videoHdrType), "Get video_hdr_type failed");
-    if (isHdrVivid || videoHdrType == Plugins::HDRType::HLG || videoHdrType == Plugins::HDRType::HDR10) {
+    if (isHdrVivid || videoHdrType == Plugins::HDRType::HLG || videoHdrType == Plugins::HDRType::HDR_10) {
         MEDIA_LOG_I("Is hdrVivid,set colorspace format(%{public}d), pixel format(%{public}d)",
             static_cast<int32_t>(colorSpace_), static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12));
         configFormat.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
