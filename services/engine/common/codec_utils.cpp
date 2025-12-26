@@ -249,7 +249,7 @@ int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct Surface
     uint32_t yScaleLineSize = static_cast<uint32_t>(surfaceInfo.scaleLineSize[0]);
     uint32_t uScaleLineSize = static_cast<uint32_t>(surfaceInfo.scaleLineSize[1]);
     if (IsYuvFormat(pixFmt)) {
-        if (surfaceInfo.surfaceStride != yScaleLineSize || (uScaleLineSize * DOUBLE) != surfaceInfo.surfaceStride) {
+        if (surfaceInfo.surfaceStride != yScaleLineSize || (uScaleLineSize << 1) != surfaceInfo.surfaceStride) {
             return WriteYuvDataStride(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize,
                                       surfaceInfo.surfaceStride, format);
         }
