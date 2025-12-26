@@ -31,6 +31,9 @@
 #include "buffer_extra_data_impl.h"  // foundation/graphic/graphic_surface/surface/include/
 #include "surface_tools.h"
 #include "hcodec_utils.h"
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+#include "algorithm_video.h"
+#endif
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -39,6 +42,12 @@ using namespace CodecHDI;
 std::shared_mutex g_xperfMtx;
 sptr<HDecoder::XperfConnector> g_xperfConnector = nullptr;
 std::unordered_map<HDecoder*, HDecoder::DecoderInst> g_insts;
+
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+std::mutex g_vpeLock;
+std::vector<std::string> g_vpeSupportList{};
+bool g_isVpeSupportListInit{false};
+#endif
 
 HDecoder::~HDecoder()
 {
@@ -780,11 +789,53 @@ uint64_t HDecoder::GetProducerUsage()
     return producerUsage;
 }
 
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
+{
+    SCOPED_TRACE();
+    std::lock_guard<std::mutex> lock(g_vpeLock);
+    if (caller_.app.processName.empty()) {
+        return;
+    }
+    HLOGD("VPE CombineUsage app=%s", caller_.app.processName.c_str());
+    if (!g_isVpeSupportListInit) {
+        auto vpeHandle = dlopen("libvideoprocessingengine.z.so", RTLD_NOW);
+        if (vpeHandle == nullptr) {
+            HLOGE("dlopen libvideoprocessingengine.z.so failed, dlerror: %s", dlerror());
+            return;
+        }
+        VpeVideoGetSupportedListByType getSupportedListByTypeFunc =
+            reinterpret_cast<VpeVideoGetSupportedListByType>(dlsym(vpeHandle, "VpeVideoGetSupportedListByTypeOnce"));
+        if (getSupportedListByTypeFunc == nullptr) {
+            HLOGE("dlsym failed");
+            dlclose(vpeHandle);
+            return;
+        }
+        if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_AIHDR_ENHANCER, g_vpeSupportList)) {
+            HLOGE("get VPE list failed");
+            dlclose(vpeHandle);
+            return;
+        }
+        g_isVpeSupportListInit = true;
+        HLOGD("VPE init support list ok");
+        dlclose(vpeHandle);
+    }
+    if (std::find(g_vpeSupportList.cbegin(), g_vpeSupportList.cend(), caller_.app.processName) !=
+        g_vpeSupportList.cend()) {
+        consumerUsage |= (BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VENDOR_PRI10);
+        HLOGI("VPE Aihdr update usage = 0x%" PRIx64 "", consumerUsage);
+    }
+}
+#endif
+
 void HDecoder::CombineConsumerUsage()
 {
     uint64_t consumerUsage = currSurface_.surface_->GetDefaultUsage();
     if (currSurface_.surface_->GetName().find("SurfaceImage") != string::npos) {
         consumerUsage |= BUFFER_USAGE_HW_COMPOSER;
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+        CombineConsumerUsageByVpe(consumerUsage);
+#endif
     }
     uint64_t finalUsage = requestCfg_.usage | consumerUsage | cfgedConsumerUsage;
     HLOGI("producer 0x%" PRIx64 " | consumer 0x%" PRIx64 " | cfg 0x%" PRIx64 " -> 0x%" PRIx64 "",
