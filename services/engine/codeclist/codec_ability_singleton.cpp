@@ -125,21 +125,29 @@ void CodecAbilitySingleton::RegisterCapabilityArray(std::vector<CapabilityData> 
             mimeCapIdxMap_.insert(std::make_pair(mimeType, idxVec));
         }
         if ((*iter).profileLevelsMap.size() > MAX_MAP_SIZE) {
-            while ((*iter).profileLevelsMap.size() > MAX_MAP_SIZE) {
-                auto rIter = (*iter).profileLevelsMap.end();
-                (*iter).profileLevelsMap.erase(--rIter);
+            std::map<int32_t, std::vector<int32_t>> oldProfileLevelsMap = (*iter).profileLevelsMap;
+            std::map<int32_t, std::vector<int32_t>> newProfileLevelsMap;
+            auto it = oldProfileLevelsMap.begin();
+            for (uint32_t i = 0u; i < MAX_MAP_SIZE && it != oldProfileLevelsMap.end(); ++i, ++it) {
+                newProfileLevelsMap.insert(*it);
             }
+            (*iter).profileLevelsMap = newProfileLevelsMap;
             std::vector<int32_t> newProfiles;
-            (*iter).profiles.swap(newProfiles);
-            auto nIter = (*iter).profileLevelsMap.begin();
-            while (nIter != (*iter).profileLevelsMap.end()) {
-                (*iter).profiles.emplace_back(nIter->first);
+            auto nIter = newProfileLevelsMap.begin();
+            while (nIter != newProfileLevelsMap.end()) {
+                newProfiles.emplace_back(nIter->first);
                 nIter++;
             }
+            (*iter).profiles.swap(newProfiles);
         }
-        while ((*iter).measuredFrameRate.size() > MAX_MAP_SIZE) {
-            auto rIter = (*iter).measuredFrameRate.end();
-            (*iter).measuredFrameRate.erase(--rIter);
+        if ((*iter).measuredFrameRate.size() > MAX_MAP_SIZE) {
+            std::map<ImgSize, Range> oldMeasuredFrameRate = (*iter).measuredFrameRate;
+            std::map<ImgSize, Range> newMeasuredFrameRate;
+            auto it = oldMeasuredFrameRate.begin();
+            for (uint32_t i = 0u; i < MAX_MAP_SIZE && it != oldMeasuredFrameRate.end(); ++i, ++it) {
+                newMeasuredFrameRate.insert(*it);
+            }
+            (*iter).measuredFrameRate = newMeasuredFrameRate;
         }
         capabilityDataArray_.emplace_back(*iter);
         mimeCapIdxMap_.at(mimeType).emplace_back(beginIdx);
