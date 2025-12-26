@@ -787,7 +787,7 @@ HWTEST_F(AudioCodeDtsDecoderUnitTest, GetParameter_002, TestSize.Level1)
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
     ASSERT_EQ(plugin_->Init(), Status::OK);
     ASSERT_EQ(plugin_->SetDataCallback(this), Status::OK);
-    int32_t defaultInputSize = 8192;
+    int32_t defaultInputSize = 16384;
     shared_ptr<Media::Meta> outMeta = make_shared<Media::Meta>();
     int32_t usrInputSize = 0;
     meta->Set<Tag::AUDIO_MAX_INPUT_SIZE>(defaultInputSize);
