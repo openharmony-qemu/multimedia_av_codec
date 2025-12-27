@@ -32,6 +32,7 @@
 #include "file_fd_source_plugin.h"
 #include "common/media_core.h"
 #include "http_media_utils.h"
+#include "avcodec_sysevent.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "FileFdSourcePlugin" };
