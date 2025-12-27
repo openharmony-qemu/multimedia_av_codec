@@ -99,6 +99,7 @@ private:
     static void IoClose(AVFormatContext *s, AVIOContext *pb);
     void CheckChannelLayout(uint64_t channelLayout, const std::shared_ptr<Meta> &trackDesc);
     bool CheckGltfParam(std::shared_ptr<Meta> param);
+    Status SetOggUserMeta(const std::shared_ptr<Meta> &userMeta);
 
 private:
     struct IOContext {
