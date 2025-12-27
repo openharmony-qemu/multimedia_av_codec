@@ -257,6 +257,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     }
     auto uuid = source->GetAppUid();
     std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
+    MEDIA_LOG_I("SYX URI name %{public}s", bundleName);
     MediaAVCodec::StreamAppPackageNameEventWrite("AVSource", bundleName,
         "OH_AVSource_CreateWithURI", "{\"result\": \"success\"}");
     if (downloader_ != nullptr) {
