@@ -589,14 +589,10 @@ Status FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, const ConvertToAn
     convertInfo.outBufferSize = params.outBufferSize;
     convertInfo.sideData = cencInfo;
     convertInfo.sideDataSize = cencInfoSize;
-    bool isBeginAsAnnexb = IsBeginAsAnnexb(pkt.data, pkt.size);
-    if (!isBeginAsAnnexb) { // 如果已经是annexb格式，则直接返回
-        auto convertRet = streamParsers_->ConvertPacketToAnnexb(pkt.stream_index, convertInfo);
-        FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_PACKET_CONVERT_FAILED, "Convert packet to annexb failed");
-    }
+    auto convertRet = streamParsers_->ConvertPacketToAnnexb(pkt.stream_index, convertInfo);
     if (NeedCombineFrame(firstPkt->stream_index)) {
-        const uint8_t *syncFrameData = isBeginAsAnnexb ? pkt.data : params.outBuffer;
-        int32_t syncFrameDataSize = isBeginAsAnnexb ?  pkt.size : params.outDataSize;
+        const uint8_t *syncFrameData = convertRet ? params.outBuffer : pkt.data;
+        int32_t syncFrameDataSize = convertRet ? params.outDataSize : pkt.size;
         if (streamParsers_->IsSyncFrame(pkt.stream_index, syncFrameData, syncFrameDataSize)) {
             pkt.flags = static_cast<int32_t>(static_cast<uint32_t>(pkt.flags) | static_cast<uint32_t>(AV_PKT_FLAG_KEY));
         }
@@ -613,10 +609,9 @@ Status FFmpegDemuxerPlugin::ConvertVvcToAnnexb(AVPacket& pkt, const ConvertToAnn
     convertInfo.outBufferSize = params.outBufferSize;
     convertInfo.sideData = nullptr;
     convertInfo.sideDataSize = 0;
-    bool isBeginAsAnnexb = IsBeginAsAnnexb(pkt.data, pkt.size);
-    if (!isBeginAsAnnexb) { // 如果已经是annexb格式，则直接返回
-        auto convertRet = streamParsers_->ConvertPacketToAnnexb(pkt.stream_index, convertInfo);
-        FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_PACKET_CONVERT_FAILED, "Convert packet to annexb failed");
+    auto convertRet = streamParsers_->ConvertPacketToAnnexb(pkt.stream_index, convertInfo);
+    if (!convertRet) {
+        MEDIA_LOG_DD("Convert packet to annexb failed");
     }
     return Status::OK;
 }
