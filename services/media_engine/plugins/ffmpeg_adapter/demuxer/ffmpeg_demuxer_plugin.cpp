@@ -481,10 +481,7 @@ std::optional<int32_t> CheckedProductForInt32(Args... args)
     constexpr int64_t maxLimit = std::numeric_limits<int32_t>::max();
     auto step = [&accumulator](int64_t nextValue) -> bool {
         accumulator *= nextValue;
-        if (accumulator < minLimit || accumulator > maxLimit) {
-            return false;
-        }
-        return true;
+        return (accumulator >= minLimit && accumulator <= maxLimit);
     };
     if ((step(static_cast<int64_t>(args)) && ...)) {
         return static_cast<int32_t>(accumulator);
