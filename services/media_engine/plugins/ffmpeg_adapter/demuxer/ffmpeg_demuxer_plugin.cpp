@@ -1984,6 +1984,7 @@ void FFmpegDemuxerPlugin::ParseHEVCMetadataInfo(const AVStream& avStream, Meta& 
 {
     HevcParseFormat parse;
     parse.isHdrVivid = streamParsers_->IsHdrVivid(avStream.index);
+    parse.isHdr10Plus = streamParsers_->IsHdr10Plus(avStream.index);
     parse.colorRange = streamParsers_->GetColorRange(avStream.index);
     parse.colorPrimaries = streamParsers_->GetColorPrimaries(avStream.index);
     parse.colorTransfer = streamParsers_->GetColorTransfer(avStream.index);
@@ -1994,7 +1995,7 @@ void FFmpegDemuxerPlugin::ParseHEVCMetadataInfo(const AVStream& avStream, Meta& 
     parse.picWidInLumaSamples = streamParsers_->GetPicWidInLumaSamples(avStream.index);
     parse.picHetInLumaSamples = streamParsers_->GetPicHetInLumaSamples(avStream.index);
 
-    FFmpegFormatHelper::ParseHevcInfo(*formatContext_, parse, format);
+    FFmpegFormatHelper::ParseHevcInfo(*formatContext_, avStream, parse, format);
 }
 
 bool FFmpegDemuxerPlugin::TrackIsSelected(const uint32_t trackId)
