@@ -3001,8 +3001,12 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
 
 void MediaDemuxer::StartConsume(int32_t trackId)
 {
-    auto startConsumeResult = sampleQueueController_->ShouldStartConsume(trackId, sampleQueueMap_[trackId],
-        sampleConsumerTaskMap_[trackId]);
+    bool startConsumeResult = false;
+    {
+        AutoLock lock(mapMutex_);
+        startConsumeResult = sampleQueueController_->ShouldStartConsume(trackId, sampleQueueMap_[trackId],
+            sampleConsumerTaskMap_[trackId]);
+    }
     if (!startConsumeResult && !eosMap_[trackId]) {
         // if controllor do not start consume, and not eos, do nothing
         return;
@@ -3042,7 +3046,10 @@ void MediaDemuxer::ProduceWaterLoopControl(int32_t trackId)
         return;
     }
     StartConsume(trackId);
-    sampleQueueController_->ShouldStopProduce(trackId, sampleQueueMap_[trackId], taskMap_[trackId]);
+    {
+        AutoLock lock(mapMutex_);
+        sampleQueueController_->ShouldStopProduce(trackId, sampleQueueMap_[trackId], taskMap_[trackId]);
+    }
 }
 
 void MediaDemuxer::BufferingStatus(int32_t trackId)
@@ -4016,9 +4023,13 @@ void MediaDemuxer::ConsumeWaterLoopControl(int32_t trackId, std::shared_ptr<Samp
     if (!sampleQueueController_ || trackId == subtitleTrackId_ || IsLocalFd() || eosMap_[trackId]) {
         return;
     }
-    sampleQueueController_->ShouldStartProduce(trackId, sampleQueue, taskMap_[trackId]);
-    auto stopConsumeResult =
-        sampleQueueController_->ShouldStopConsume(trackId, sampleQueue, sampleConsumerTaskMap_[trackId]);
+    bool stopConsumeResult = false;
+    {
+        AutoLock lock(mapMutex_);
+        sampleQueueController_->ShouldStartProduce(trackId, sampleQueue, taskMap_[trackId]);
+        stopConsumeResult =
+            sampleQueueController_->ShouldStopConsume(trackId, sampleQueue, sampleConsumerTaskMap_[trackId]);
+    }
     if (stopConsumeResult && !hlsSegmentEosMap_[trackId]) {
         if (trackId == videoTrackId_ && isVideoMuted_) {
             isBufferingMap_[trackId].store(false);
