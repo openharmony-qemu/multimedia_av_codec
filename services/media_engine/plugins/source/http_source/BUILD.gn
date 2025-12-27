@@ -120,21 +120,21 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "hls/hls_segment_manager.cpp",
     "http/http_media_downloader.cpp",
     "http_source_plugin.cpp",
+    "utils/http_media_utils.cpp",
     "monitor/download_monitor.cpp",
     "utils/aes_decryptor.cpp",
     "utils/media_cached_buffer.cpp",
     "xml/xml_element.cpp",
     "xml/xml_parser.cpp",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/http_media_utils.cpp",
   ]
+
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "bundle_framework:appexecfwk_base",
     "bundle_framework:appexecfwk_core",
     "samgr:samgr_proxy",
   ]
-
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   public_external_deps = [
     "c_utils:utils",
