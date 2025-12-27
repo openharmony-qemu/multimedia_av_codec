@@ -752,11 +752,13 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
                                       "In invalid state, %{public}s", GetStatusDescription(status_).data());
 
     if (framerateCalculator_ && status_ == RUNNING) {
-        std::lock_guard<std::mutex> outBuflock(outBufMutex_);
         std::shared_ptr<AVBuffer> buffer = nullptr;
-        auto it = outBufMap_.find(index);
-        if (it != outBufMap_.end()) {
-            buffer = it->second;
+        {
+            std::lock_guard<std::mutex> outBuflock(outBufMutex_);
+            auto it = outBufMap_.find(index);
+            if (it != outBufMap_.end()) {
+                buffer = it->second;
+            }
         }
         framerateCalculator_->OnFrameConsumed(buffer);
     }
