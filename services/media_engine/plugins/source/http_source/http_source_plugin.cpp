@@ -257,7 +257,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     auto uuid = mediaSource->GetAppUid();
     std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
     MediaAVCodec::StreamAppPackageNameEventWrite("AVSource", bundleName,
-                "OH_AVSource_CreateWithURI", "{\"result\": \"success\"}");
+        "OH_AVSource_CreateWithURI", "{\"result\": \"success\"}");
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded_);
         downloader_->SetAppUid(source->GetAppUid());
