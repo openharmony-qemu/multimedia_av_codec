@@ -42,6 +42,7 @@ config("av_codec_capi_header_config") {
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/utils/include",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils",
   ]
   defines = []
   if (av_codec_support_drm) {
@@ -168,6 +169,7 @@ ohos_shared_library("native_media_avsource") {
   install_enable = true
   sources = [
     "$av_codec_root_dir/frameworks/native/capi/avsource/native_avsource.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/http_media_utils.cpp",
   ]
 
   public_configs = [ ":av_codec_capi_header_config" ]
@@ -175,6 +177,7 @@ ohos_shared_library("native_media_avsource") {
 
   deps = [ "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
            "$av_codec_root_dir/interfaces/kits/c:avcodec_hiappevent",
+           "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
          ]
 
   external_deps = [
@@ -185,6 +188,9 @@ ohos_shared_library("native_media_avsource") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "netmanager_base:net_security_config_if",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
+    "samgr:samgr_proxy",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"

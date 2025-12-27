@@ -21,6 +21,7 @@
 #include "dash/dash_media_downloader.h"
 #include "http/http_media_downloader.h"
 #include "monitor/download_monitor.h"
+#include "http_media_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -253,6 +254,10 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType_));
         downloader_->Init();
     }
+    auto uuid = mediaSource->GetAppUid();
+    std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
+    MediaAVCodec::StreamAppPackageNameEventWrite("AVSource", bundleName,
+                "OH_AVSource_CreateWithURI", "{\"result\": \"success\"}");
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded_);
         downloader_->SetAppUid(source->GetAppUid());
