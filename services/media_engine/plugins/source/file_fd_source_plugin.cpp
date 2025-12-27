@@ -170,7 +170,7 @@ Status FileFdSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     auto uuid = source->GetAppUid();
     std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
     MediaAVCodec::StreamAppPackageNameEventWrite("AVSource", bundleName,
-                "OH_AVSource_CreateWithFD", "{\"result\": \"success\"}");
+        "OH_AVSource_CreateWithFD", "{\"result\": \"success\"}");
     return Status::OK;
 }
 
