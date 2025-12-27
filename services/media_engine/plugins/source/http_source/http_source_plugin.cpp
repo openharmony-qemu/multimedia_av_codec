@@ -255,7 +255,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType_));
         downloader_->Init();
     }
-    auto uuid = mediaSource->GetAppUid();
+    auto uuid = source->GetAppUid();
     std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
     MediaAVCodec::StreamAppPackageNameEventWrite("AVSource", bundleName,
         "OH_AVSource_CreateWithURI", "{\"result\": \"success\"}");
