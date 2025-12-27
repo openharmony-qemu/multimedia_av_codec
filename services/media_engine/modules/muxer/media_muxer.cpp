@@ -171,6 +171,9 @@ Status MediaMuxer::SetParameter(const std::shared_ptr<Meta> &param)
 Status MediaMuxer::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
 {
     MEDIA_LOG_I("SetUserMeta");
+    FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED || state_ == State::STARTED, Status::ERROR_WRONG_STATE,
+        "The state is not INITIALIZED, the interface must be called at initialized or started state. "
+        "The current state is %{public}s.", StateConvert(state_).c_str());
     std::lock_guard<std::mutex> lock(mutex_);
     std::vector<std::string> keys;
     userMeta->GetKeys(keys);
@@ -180,9 +183,6 @@ Status MediaMuxer::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
             return muxer_->SetUserMeta(userMeta);
         }
     }
-    FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED || state_ == State::STARTED, Status::ERROR_WRONG_STATE,
-        "The state is not INITIALIZED, the interface must be called at initialized or started state. "
-        "The current state is %{public}s.", StateConvert(state_).c_str());
     return muxer_->SetUserMeta(userMeta);
 }
 
