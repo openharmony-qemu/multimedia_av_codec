@@ -125,7 +125,7 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "utils/media_cached_buffer.cpp",
     "xml/xml_element.cpp",
     "xml/xml_parser.cpp",
-    "utils/http_media_utils.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/http_media_utils.cpp",
   ]
 
   external_deps = [
