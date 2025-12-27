@@ -25,6 +25,7 @@
 #include "network_security_config.h"
 #include "common/log.h"
 #include "hiappevent_util.h"
+#include "avcodec_sysevent.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "NativeAVSource"};
