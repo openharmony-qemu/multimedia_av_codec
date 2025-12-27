@@ -487,6 +487,11 @@ Status FFmpegDemuxerPlugin::Reset()
     MEDIA_LOG_D("In");
     ReleaseFFmpegReadLoop();
     ResetParam();
+    {
+        std::lock_guard<std::mutex> drmLock(cachedDrmInfoMutex_);
+        cachedDrmInfo_.clear();
+        drmInfoCached_.store(false);
+    }
     return Status::OK;
 }
 
@@ -1716,9 +1721,32 @@ void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, siz
     }
 }
 
+void FFmpegDemuxerPlugin::UpdateCachedDrmInfoFromStream(AVStream* avStream)
+{
+    FALSE_RETURN_MSG_W(avStream != nullptr, "AVStream is nullptr");
+    size_t drmInfoSize = 0;
+    MetaDrmInfo *tmpDrmInfo = (MetaDrmInfo *)av_stream_get_side_data(avStream,
+        AV_PKT_DATA_ENCRYPTION_INIT_INFO, &drmInfoSize);
+    if (tmpDrmInfo != nullptr && drmInfoSize != 0) {
+        std::lock_guard<std::mutex> lock(cachedDrmInfoMutex_);
+        ParseDrmInfo(tmpDrmInfo, drmInfoSize, cachedDrmInfo_);
+        drmInfoCached_.store(true);
+    }
+}
+
 Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
     MEDIA_LOG_D("In");
+    // Only read from cache when async mode is confirmed and DRM info is cached
+    // If ReadSample interface hasn't been called, readModeMap_ cannot determine the mode, default to sync path
+    bool isAsyncRead = (readModeMap_.find(1) != readModeMap_.end() && readModeMap_[1] == 1);
+    if (isAsyncRead && drmInfoCached_.load()) {
+        // Async mode and DRM info cached: read from cached member variable
+        std::lock_guard<std::mutex> lock(cachedDrmInfoMutex_);
+        drmInfo = cachedDrmInfo_;
+        return Status::OK;
+    }
+    // Other cases (sync mode, readModeMap_ not set, DRM info not cached): read from formatContext_
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
 

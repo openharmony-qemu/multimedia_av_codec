@@ -376,6 +376,7 @@ bool FFmpegDemuxerPlugin::ReadAndProcessFrame(Plugins::AVPacketWrapperPtr& pktWr
         return true;
     }
     AVStream* avStream = formatContext_->streams[trackId];
+    UpdateCachedDrmInfoFromStream(avStream); // Extract and update DRM info
     bool isWebVTT = IsWebvttMP4(avStream);
     if (isWebVTT && WebvttPktProcess(pkt)) {
         return true;
