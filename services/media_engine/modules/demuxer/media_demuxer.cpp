@@ -3001,7 +3001,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
 
 void MediaDemuxer::StartConsume(int32_t trackId)
 {
-    auto startConsumeResult = false;
+    bool startConsumeResult = false;
     {
         AutoLock lock(mapMutex_);
         startConsumeResult = sampleQueueController_->ShouldStartConsume(trackId, sampleQueueMap_[trackId],
@@ -4023,10 +4023,11 @@ void MediaDemuxer::ConsumeWaterLoopControl(int32_t trackId, std::shared_ptr<Samp
     if (!sampleQueueController_ || trackId == subtitleTrackId_ || IsLocalFd() || eosMap_[trackId]) {
         return;
     }
+    bool stopConsumeResult = false;
     {
         AutoLock lock(mapMutex_);
         sampleQueueController_->ShouldStartProduce(trackId, sampleQueue, taskMap_[trackId]);
-        auto stopConsumeResult =
+        stopConsumeResult =
             sampleQueueController_->ShouldStopConsume(trackId, sampleQueue, sampleConsumerTaskMap_[trackId]);
     }
     if (stopConsumeResult && !hlsSegmentEosMap_[trackId]) {
