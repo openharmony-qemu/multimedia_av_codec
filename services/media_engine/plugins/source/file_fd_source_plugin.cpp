@@ -170,7 +170,7 @@ Status FileFdSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     }
     auto uuid = source->GetAppUid();
     std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
-    MEDIA_LOG_I("SYX FD name %{public}s", bundleName);
+    MEDIA_LOG_I("SYX FD name %{public}s", bundleName.c_str());
     MediaAVCodec::StreamAppPackageNameEventWrite("AVSource", bundleName,
         "OH_AVSource_CreateWithFD", "{\"result\": \"success\"}");
     return Status::OK;
