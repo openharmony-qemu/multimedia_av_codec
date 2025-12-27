@@ -21,8 +21,8 @@
 #include "dash/dash_media_downloader.h"
 #include "http/http_media_downloader.h"
 #include "monitor/download_monitor.h"
-#include "http_media_utils.h"
 #include "avcodec_sysevent.h"
+#include "http_media_utils.h"
 
 namespace OHOS {
 namespace Media {
