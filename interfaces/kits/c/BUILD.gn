@@ -42,7 +42,6 @@ config("av_codec_capi_header_config") {
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/utils/include",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils",
   ]
   defines = []
   if (av_codec_support_drm) {
@@ -169,7 +168,6 @@ ohos_shared_library("native_media_avsource") {
   install_enable = true
   sources = [
     "$av_codec_root_dir/frameworks/native/capi/avsource/native_avsource.cpp",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/http_media_utils.cpp",
   ]
 
   public_configs = [ ":av_codec_capi_header_config" ]
