@@ -35,7 +35,7 @@ int32_t MediaSourceLoaderCombinations::Close(int64_t uuid)
     return 0;
 }
 
-void MediaSourceLoaderCombinations::enableOfflineCache(bool enable)
+void MediaSourceLoaderCombinations::EnableOfflineCache(bool enable)
 {
     enable_ = enable;
 }
