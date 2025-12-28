@@ -70,9 +70,12 @@ public:
     int64_t Open(const std::string &url, const std::map<std::string, std::string> &header,
                  std::shared_ptr<NetworkClient> &client);
     int32_t Close(int64_t uuid);
+    void enableOfflineCache(bool enable);
 
+    bool GetenableOfflineCache();
     std::shared_ptr<MediaSourceLoadingRequest> request_ {nullptr};
     std::shared_ptr<IMediaSourceLoader> loader_  {nullptr};
+    bool enable_;
 };
 }
 }
