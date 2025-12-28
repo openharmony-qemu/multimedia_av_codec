@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2023-2025 Huawei Device Co., Ltd.
+* Copyright (c) 2025-2025 Huawei Device Co., Ltd.
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -27,9 +27,12 @@ using OHOS::AppExecFwk::GetBundleInfoFlag;
  
 namespace OHOS {
 namespace Media {
+namespace {
+    const int32_t DEFAULT_ID = 1003;
+}
 std::string HttpMediaUtils::GetClientBundleName(int32_t uid)
 {
-    if (uid == 1003) { // 1003 is bootanimation uid
+    if (uid == DEFAULT_ID) { // 1003 is bootanimation uid
         return "bootanimation";
     }
  
