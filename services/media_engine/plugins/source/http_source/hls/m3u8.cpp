@@ -94,7 +94,8 @@ M3U8Fragment::M3U8Fragment(const std::string &uri, double duration, int sequence
 {
 }
 
-M3U8::M3U8(const std::string &uri, const std::string &name, StatusCallbackFunc statusCallback, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
+M3U8::M3U8(const std::string &uri, const std::string &name, StatusCallbackFunc statusCallback,
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
     : uri_(std::move(uri)), name_(std::move(name))
 {
     sourceLoader_ = sourceLoader;
@@ -196,7 +197,7 @@ void M3U8::InitTagUpdatersMap()
     };
     tagUpdatersMap_[HlsTag::EXTXKEY] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         if (!isDecryptAble_ && !isDecryptKeyReady_) {
-            if(sourceLoader_ != nullptr && sourceLoader_->GetenableOfflineCache()) {
+            if (sourceLoader_ != nullptr && sourceLoader_->GetenableOfflineCache()) {
                 sourceLoader_->Close(-1);
             }
             isDecryptAble_ = true;
@@ -247,17 +248,21 @@ void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
     });
     MEDIA_LOG_I("x-map download %{public}u, is ready: %{public}d", downloadHeaderLen_, isHeaderReady_.load());
 }
+void M3U8::InitDownloadHeader() 
+{
+    if (sourceLoader_ != nullptr) {
+        downloaderHeader_ = std::make_shared<Downloader>("HlsSourceMap", sourceLoader_);
+    } else {
+        downloaderHeader_ = std::make_shared<Downloader>("HlsSourceMap");
+    }
+}
 
 void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
 {
     if (uri.empty()) {
         return;
     }
-    if (sourceLoader_ != nullptr) {
-        downloaderHeader_ = std::make_shared<Downloader>("HlsSourceMap", sourceLoader_);
-    } else {
-        downloaderHeader_ = std::make_shared<Downloader>("HlsSourceMap");
-    }
+    InitDownloadHeader();
     if (downloaderHeader_ != nullptr && downloadCallback_ != nullptr) {
         downloaderHeader_->SetDownloadCallback(downloadCallback_);
     }
@@ -607,16 +612,18 @@ M3U8VariantStream::M3U8VariantStream(const std::string &name, const std::string 
 }
 
 M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::string& uri, uint32_t initResolution,
-    const std::map<std::string, std::string>& httpHeader, StatusCallbackFunc statusCallback, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
+    const std::map<std::string, std::string>& httpHeader, StatusCallbackFunc statusCallback)
 {
     playList_ = playList;
     uri_ = uri;
     httpHeader_ = httpHeader;
     initResolution_ = initResolution;
     monitorStatusCallback_ = statusCallback;
+}
+M3U8MasterPlaylist::SetSourceloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
+{
     sourceLoader_ = sourceLoader;
 }
-
 void M3U8MasterPlaylist::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
 {
     downloadCallback_ = callback;
