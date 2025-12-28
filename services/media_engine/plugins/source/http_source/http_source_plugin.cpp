@@ -213,15 +213,21 @@ Status HttpSourcePlugin::InitSourcePlugin(const std::shared_ptr<MediaSource>& so
     return Status::OK;
 }
 
+static std::shared_ptr<PlayStrategy> PlayStrategyInit(std::shared_ptr<MediaSource> source) 
+{
+    uri_ = redirectUrl_.empty() ? source->GetSourceUri() : redirectUrl_;
+    httpHeader_ = source->GetSourceHeader();
+    playStrategy = source->GetPlayStrategy();
+    mimeType_ = source->GetMimeType();
+    return playStrategy;
+}
+
 void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source)
 {
     FALSE_RETURN_MSG(source != nullptr, "source is null.");
     std::shared_ptr<PlayStrategy> playStrategy;
     if (source != nullptr) {
-        uri_ = redirectUrl_.empty() ? source->GetSourceUri() : redirectUrl_;
-        httpHeader_ = source->GetSourceHeader();
-        playStrategy = source->GetPlayStrategy();
-        mimeType_ = source->GetMimeType();
+        playStrategy = PlayStrategyInit(source);
     }
     if (source->GetSourceLoader() != nullptr) {
         loaderCombinations_ = std::make_shared<MediaSourceLoaderCombinations>(source->GetSourceLoader());
