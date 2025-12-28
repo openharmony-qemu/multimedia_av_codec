@@ -226,12 +226,10 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     if (source->GetSourceLoader() != nullptr) {
         loaderCombinations_ = std::make_shared<MediaSourceLoaderCombinations>(source->GetSourceLoader());
         loaderCombinations_->EnableOfflineCache(source->GetenableOfflineCache());
+        if (httpHeader_.find("Cookie") != httpHeader_.end() && loaderCombinations_->GetenableOfflineCache()) {
+            loaderCombinations_->Close(-1);
+        }
     }
-    if (httpHeader_.find("Cookie") != httpHeader_.end() && loaderCombinations_ != nullptr &&
-        loaderCombinations_->GetenableOfflineCache()) {
-        loaderCombinations_->Close(-1);
-    }
- 
     if (uri_.find(".mpd") != std::string::npos) {
         downloader_ = std::make_shared<DownloadMonitor>(
                       std::make_shared<DashMediaDownloader>(loaderCombinations_));
