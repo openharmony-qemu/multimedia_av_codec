@@ -182,6 +182,7 @@ private:
     uint64_t instanceId_ = 0;
     std::string videoMime_;
     std::string audioMime_;
+    FileType fileType_ = FileType::UNKNOW;
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
     bool isNotPrepareBeforeStart_ {true};
     bool isEnableReselectVideoTrack_ {false};

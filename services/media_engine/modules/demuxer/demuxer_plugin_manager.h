@@ -120,6 +120,7 @@ public:
     Status Stop();
     Status Flush();
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
+    Status SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
     int32_t GetStreamID(int32_t trackId);
     int32_t GetInnerTrackID(int32_t trackId);
     inline bool IsDash() const
