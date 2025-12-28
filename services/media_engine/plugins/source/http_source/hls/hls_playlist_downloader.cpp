@@ -260,7 +260,7 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
         std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = GetSourceLoader();
         master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_, initResolution_, httpHeader_,
                                                        statusCallback_);
-        master_->SetSourceloader(sourceLoader);                                          
+        master_->SetSourceloader(sourceLoader);                                     
         FALSE_RETURN_NOLOG(master_ != nullptr);
         if (downloadCallback_ != nullptr) {
             master_->SetDownloadCallback(downloadCallback_);

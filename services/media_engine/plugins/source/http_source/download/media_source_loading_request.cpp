@@ -174,12 +174,12 @@ int32_t MediaSourceLoaderCombinations::Close(int64_t uuid)
     return ret;
 }
 
-void MediaSourceLoaderCombinations::enableOfflineCache(bool enable)
+void MediaSourceLoaderCombinations::EnableOfflineCache(bool enable)
 {
     enable_ = enable;
 }
 
-bool MediaSourceLoaderCombinations::GetenableOfflineCache()
+bool MediaSourceLoaderCombinations::GetEnableOfflineCache()
 {
     return enable_;
 }

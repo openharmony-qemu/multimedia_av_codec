@@ -224,9 +224,8 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
         mimeType_ = source->GetMimeType();
     }
     if (source->GetSourceLoader() != nullptr) {
-        bool enable = source->GetenableOfflineCache();
         loaderCombinations_ = std::make_shared<MediaSourceLoaderCombinations>(source->GetSourceLoader());
-        loaderCombinations_->enableOfflineCache(enable);
+        loaderCombinations_->EnableOfflineCache(source->GetenableOfflineCache());
     }
     if (httpHeader_.find("Cookie") != httpHeader_.end() && loaderCombinations_ != nullptr &&
         loaderCombinations_->GetenableOfflineCache()) {

@@ -72,7 +72,7 @@ public:
                  std::shared_ptr<NetworkClient> &client);
     
     int32_t Close(int64_t uuid);
-    void enableOfflineCache(bool enable);
+    void EnableOfflineCache(bool enable);
 
     bool GetenableOfflineCache();
 

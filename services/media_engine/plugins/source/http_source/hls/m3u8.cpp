@@ -248,7 +248,7 @@ void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
     });
     MEDIA_LOG_I("x-map download %{public}u, is ready: %{public}d", downloadHeaderLen_, isHeaderReady_.load());
 }
-void M3U8::InitDownloadHeader() 
+void M3U8::InitDownloadHeader()
 {
     if (sourceLoader_ != nullptr) {
         downloaderHeader_ = std::make_shared<Downloader>("HlsSourceMap", sourceLoader_);
