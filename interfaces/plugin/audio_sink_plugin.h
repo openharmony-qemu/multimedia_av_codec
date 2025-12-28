@@ -297,6 +297,12 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
         (void)loudnessGain;
         return Status::OK;
     }
+
+    virtual void SetAudioPassFlag(bool isAudioPass)
+    {
+        (void)isAudioPass;
+        return;
+    }
 };
 
 /// Audio sink plugin api major number.

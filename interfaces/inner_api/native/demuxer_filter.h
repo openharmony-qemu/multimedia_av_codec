@@ -141,6 +141,7 @@ public:
     bool IsVideoMuted();
     Status NotifyResumeUnMute();
     std::shared_ptr<Meta> GetGlobalInfo();
+    bool IsMimeInDolbyList(const std::string& mime);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -186,6 +187,7 @@ private:
     bool isEnableReselectVideoTrack_ {false};
     int32_t apiVersion_ {0};
     bool isVideoMuted_ = false;
+    std::vector<std::string> dolbyList_ {};
 };
 } // namespace Pipeline
 } // namespace Media

@@ -335,6 +335,16 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
     return ret;
 }
 
+bool DemuxerFilter::IsMimeInDolbyList(const std::string& mime)
+{
+    FALSE_RETURN_V_MSG(callback_ != nullptr, false, "callback is nullptr");
+    if (dolbyList_.empty()) {
+        auto rawList = callback_->GetDolbyListCallback();
+        dolbyList_.assign(rawList.begin(), rawList.end());
+    }
+    return std::find(dolbyList_.begin(), dolbyList_.end(), mime) != dolbyList_.end();
+}
+
 Status DemuxerFilter::FaultDemuxerEventInfoWrite(StreamType& streamType)
 {
     MEDIA_LOG_I_SHORT("FaultDemuxerEventInfoWrite enter.");
@@ -819,6 +829,11 @@ bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, 
     size_t index, std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I_SHORT("mediaType is %{public}d", static_cast<int32_t>(mediaType));
+    if (IsMimeInDolbyList(mime) && callback_->IsAudioPassthroughCallback(mime.c_str())) {
+        streamType = StreamType::STREAMTYPE_DOLBY;
+        MEDIA_LOG_I("streamType is STREAMTYPE_DOLBY");
+        return true;
+    }
     if (mediaType == Plugins::MediaType::SUBTITLE) {
         streamType = StreamType::STREAMTYPE_SUBTITLE;
     } else if (mediaType == Plugins::MediaType::AUDIO) {
