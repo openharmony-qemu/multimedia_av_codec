@@ -151,7 +151,7 @@ void M3U8::InitTagUpdaters()
     tagUpdatersMap_[HlsTag::EXTXPLAYLISTTYPE] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         isPlayTypeFound_ = true;
         bLive_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString() != "VOD";
-        if (sourceLoader_ != nullptr && sourceLoader->GetenableOfflineCache()) {
+        if (sourceLoader_ != nullptr && sourceLoader_->GetenableOfflineCache()) {
             sourceLoader_->Close(-1);
         }
     };
