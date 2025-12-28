@@ -82,6 +82,7 @@ public:
     MOCK_METHOD0(Stop, Status());
     MOCK_METHOD0(Flush, Status());
     MOCK_METHOD3(SeekTo, Status(int64_t seekTime, Plugins::SeekMode mode, int64_t &realSeekTime));
+    MOCK_METHOD3(SeekToKeyFrame, Status(int64_t seekTime, Plugins::SeekMode mode, int64_t &realSeekTime));
     MOCK_METHOD1(GetStreamID, int32_t(int32_t trackId));
     MOCK_METHOD1(GetInnerTrackID, int32_t(int32_t trackId));
     MOCK_CONST_METHOD0(IsDash, bool());

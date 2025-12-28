@@ -1761,6 +1761,53 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     return ret;
 }
 
+Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
+{
+    MediaAVCodec::AVCODEC_SYNC_TRACE;
+    Status ret;
+    isSeekError_.store(false);
+    if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
+        MEDIA_LOG_I("Source seek time: %{public}lld", seekTime);
+        if (mode == SeekMode::SEEK_CLOSEST_INNER) {
+            ScopedTimer timer("seek closest online", SEEKCLOSEST_ONLINE_WARNING_MS);
+            ret = source_->SeekToTime(seekTime, SeekMode::SEEK_PREVIOUS_SYNC);
+        } else {
+            ScopedTimer timer("seek online", SEEK_ONLINE_WARNING_MS);
+            ret = source_->SeekToTime(seekTime, SeekMode::SEEK_CLOSEST_SYNC);
+        }
+        if (subtitleSource_) {
+            demuxerPluginManager_->localSubtitleSeekTo(seekTime);
+        }
+        HandleSeekToTime(seekTime);
+        Plugins::Ms2HstTime(seekTime, realSeekTime);
+    } else {
+        MEDIA_LOG_I("Demuxer seek");
+        ScopedTimer timer("seek closest", SEEK_LOCAL_WARNING_MS);
+        ret = demuxerPluginManager_->SeekToKeyFrame(seekTime, mode, realSeekTime);
+    }
+    isSeeked_ = true;
+    if (isVideoMuted_ || needRestore_) {
+        if (sampleQueueMap_[videoTrackId_] != nullptr) {
+            sampleQueueMap_[videoTrackId_]->Clear();
+        }
+        lastVideoPts_ = -1;
+    }
+    for (auto item : eosMap_) {
+        eosMap_[item.first] = false;
+    }
+    ResetSegmentEosMap();
+    for (auto item : requestBufferErrorCountMap_) {
+        requestBufferErrorCountMap_[item.first] = 0;
+    }
+    if (ret != Status::OK) {
+        isSeekError_.store(true);
+    }
+    isFirstFrameAfterSeek_.store(true);
+    convertErrorTime_.store(0);
+    MEDIA_LOG_D("Out");
+    return ret;
+}
+
 Status MediaDemuxer::SelectBitRate(uint32_t bitRate, bool isAutoSelect)
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_INVALID_PARAMETER, "Source is nullptr");
