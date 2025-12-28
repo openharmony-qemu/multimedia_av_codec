@@ -213,7 +213,7 @@ Status HttpSourcePlugin::InitSourcePlugin(const std::shared_ptr<MediaSource>& so
     return Status::OK;
 }
 
-static std::shared_ptr<PlayStrategy> PlayStrategyInit(std::shared_ptr<MediaSource> source) 
+static std::shared_ptr<PlayStrategy> PlayStrategyInit(std::shared_ptr<MediaSource> source)
 {
     uri_ = redirectUrl_.empty() ? source->GetSourceUri() : redirectUrl_;
     httpHeader_ = source->GetSourceHeader();
