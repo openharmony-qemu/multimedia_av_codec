@@ -832,7 +832,7 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
     if (!requestWholeFile) {
         downloadRequest_->SetRangePos(startRange, endRange);
     }
-    if (mpdInfo_->type == DashType::DASH_TYPE_DYNAMIC) {
+    if (mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
         if (sourceLoader_ && sourceLoader->GetenableOfflineCache()) {
             sourceLoader_->Close(-1);
         }
