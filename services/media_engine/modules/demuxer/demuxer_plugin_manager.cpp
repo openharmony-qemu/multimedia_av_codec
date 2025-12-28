@@ -756,18 +756,18 @@ Status DemuxerPluginManager::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode 
             return ret;
         }
     }
-    if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
-        Status ret = streamInfoMap_[curVideoStreamID_].plugin->SeekToKeyFrame(
-            -1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime, SEEKTOKEYFRAME_WARNING_MS);
-        if (ret != Status::OK) {
-            MEDIA_LOG_W("TS SeekToKeyFrame failed");
-        }
-    }
     if (curSubTitleStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
         if (ret != Status::OK && mode != Plugins::SeekMode::SEEK_NEXT_SYNC) {
             ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(
                 -1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
+        }
+    }
+    if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curVideoStreamID_].plugin->SeekToKeyFrame(
+            -1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime, SEEKTOKEYFRAME_WARNING_MS);
+        if (ret != Status::OK) {
+            MEDIA_LOG_W("TS SeekToKeyFrame failed");
         }
     }
     return Status::OK;
