@@ -45,6 +45,7 @@ DashMpdDownloader::DashMpdDownloader(std::shared_ptr<MediaSourceLoaderCombinatio
     } else {
         downloader_ = std::make_shared<Downloader>("dashMpd");
     }
+    sourceLoader_ = sourceLoader;
     downloader_->Init();
 
     mpdParser_ = std::make_shared<DashMpdParser>();
@@ -830,6 +831,11 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
     downloadRequest_->SetRequestProtocolType(RequestProtocolType::DASH);
     if (!requestWholeFile) {
         downloadRequest_->SetRangePos(startRange, endRange);
+    }
+    if (mpdInfo_->type == DashType::DASH_TYPE_DYNAMIC) {
+        if (sourceLoader_ && sourceLoader->GetenableOfflineCache()) {
+            sourceLoader_->Close(-1);
+        }
     }
     downloader_->Download(downloadRequest_, -1); // -1
     downloader_->Start();

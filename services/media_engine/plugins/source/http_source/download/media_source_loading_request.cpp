@@ -173,6 +173,16 @@ int32_t MediaSourceLoaderCombinations::Close(int64_t uuid)
     int32_t ret = loader_->Close(uuid);
     return ret;
 }
+
+void MediaSourceLoaderCombinations::enableOfflineCache(bool enable)
+{
+    enable_ = enable;
+}
+
+bool MediaSourceLoaderCombinations::GetenableOfflineCache()
+{
+    return enable_;
+}
 }
 }
 }

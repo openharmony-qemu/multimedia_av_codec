@@ -257,6 +257,7 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     std::vector<DashDrmInfo> localDrmInfos_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
 };
 }
 }

@@ -62,7 +62,7 @@ struct M3U8Info {
 
 struct M3U8 : public std::enable_shared_from_this<M3U8> {
     M3U8(const std::string &uri, const std::string &name, StatusCallbackFunc statusCallback = [](DownloadStatus,
-        std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {});
+        std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {}, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~M3U8();
     void InitTagUpdaters();
     void InitTagUpdatersMap();
@@ -134,6 +134,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     ConditionVariable sleepCond_ {};
     Mutex sleepMutex_ {};
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
 };
 
 struct M3U8Media {
@@ -175,7 +176,7 @@ struct M3U8MasterPlaylist {
     M3U8MasterPlaylist(const std::string& playList, const std::string& uri, uint32_t initResolution = 0,
         const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>(),
         StatusCallbackFunc statusCallback = [](DownloadStatus, std::shared_ptr<Downloader>&,
-        std::shared_ptr<DownloadRequest>&) {});
+        std::shared_ptr<DownloadRequest>&) {}, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     void StartParsing();
     void UpdateMediaPlaylist();
     void UpdateMasterPlaylist();
@@ -218,6 +219,7 @@ struct M3U8MasterPlaylist {
     StatusCallbackFunc monitorStatusCallback_;
     std::list<std::shared_ptr<M3U8Media>> mediaList_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
 };
 }
 }
