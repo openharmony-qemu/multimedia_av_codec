@@ -44,7 +44,6 @@ bool MediaSourceLoaderCombinations::GetenableOfflineCache()
 {
     return enable_;
 }
-
 }
 }
 }
