@@ -1287,7 +1287,6 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     if (ioContext_.dataSource->IsDash()) {
         av_dict_set(&options, "use_tfdt", "true", 0);
     }
-    
     int ret = ParseHeader(formatContext, pluginImpl_, &options);
     av_dict_free(&options);
     FALSE_RETURN_V_MSG_E(ret >= 0, nullptr, "ParseHeader failed");
@@ -1900,7 +1899,13 @@ bool FFmpegDemuxerPlugin::Mp4CheckKeyFrame(AVStream* stream)
     FALSE_RETURN_V_MSG_E(stream != nullptr, false, "AVStream is nullptr");
     const AVIndexEntry *entry = avformat_index_get_entry(stream, POS_0);
     FALSE_RETURN_V_MSG_E(entry != nullptr, false, "First AVIndexEntry is nullptr");
+    auto item = mp4FirstKeyFrameIdx_.find(stream->index);
+    if (item != mp4FirstKeyFrameIdx_.end()) {
+        bool ret = item->second >= 0;
+        return ret;
+    }
     int keyIndex = av_index_search_timestamp(stream, entry->timestamp, AVINDEX_KEYFRAME);
+    mp4FirstKeyFrameIdx_[stream->index] = keyIndex;
     FALSE_RETURN_V_MSG_E(keyIndex >= 0, false, "KeyIndex is invalid");
     return true;
 }
