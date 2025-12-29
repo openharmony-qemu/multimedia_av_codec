@@ -1260,7 +1260,6 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     if (ioContext_.dataSource->IsDash()) {
         av_dict_set(&options, "use_tfdt", "true", 0);
     }
-
     int ret = ParseHeader(formatContext, pluginImpl_, &options);
     av_dict_free(&options);
     FALSE_RETURN_V_MSG_E(ret >= 0, nullptr, "ParseHeader failed");
