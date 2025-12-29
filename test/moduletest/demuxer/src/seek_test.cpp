@@ -2256,19 +2256,19 @@ HWTEST_F(DemuxerSeekNdkTest, DEMUXER_SEEK_0081, TestSize.Level2)
 {
     seekInfo fileTest1{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_NEXT_SYNC, 0, 0, 9150, 0};
     CheckSeekMode(fileTest1);
-    seekInfo fileTest2{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_NEXT_SYNC, 109800000, 0, 4573, 0};
+    seekInfo fileTest2{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_NEXT_SYNC, 109800000, 0, 4574, 0};
     CheckSeekMode(fileTest2);
     seekInfo fileTest3{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_NEXT_SYNC, 219576000, 0, 15, 0};
     CheckSeekMode(fileTest3);
     seekInfo fileTest4{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_PREVIOUS_SYNC, 0, 0, 9150, 0};
     CheckSeekMode(fileTest4);
-    seekInfo fileTest5{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_PREVIOUS_SYNC, 109800000, 0, 4574, 0};
+    seekInfo fileTest5{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_PREVIOUS_SYNC, 109800000, 0, 4575, 0};
     CheckSeekMode(fileTest5);
     seekInfo fileTest6{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_PREVIOUS_SYNC, 219576000, 0, 15, 0};
     CheckSeekMode(fileTest6);
     seekInfo fileTest7{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_CLOSEST_SYNC, 0, 0, 9150, 0};
     CheckSeekMode(fileTest7);
-    seekInfo fileTest8{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_CLOSEST_SYNC, 109800000, 0, 4574, 0};
+    seekInfo fileTest8{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_CLOSEST_SYNC, 109800000, 0, 4575, 0};
     CheckSeekMode(fileTest8);
     seekInfo fileTest9{"/data/test/media/audio/MP3_48000_1.mp3", SEEK_MODE_CLOSEST_SYNC, 219576000, 0, 15, 0};
     CheckSeekMode(fileTest9);
