@@ -620,7 +620,7 @@ M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::s
     initResolution_ = initResolution;
     monitorStatusCallback_ = statusCallback;
 }
-M3U8MasterPlaylist::SetSourceloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
+void M3U8MasterPlaylist::SetSourceloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
     sourceLoader_ = sourceLoader;
 }
