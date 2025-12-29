@@ -179,7 +179,7 @@ void MediaSourceLoaderCombinations::EnableOfflineCache(bool enable)
     enable_ = enable;
 }
 
-bool MediaSourceLoaderCombinations::GetEnableOfflineCache()
+bool MediaSourceLoaderCombinations::GetenableOfflineCache()
 {
     return enable_;
 }
