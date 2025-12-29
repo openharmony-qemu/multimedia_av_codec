@@ -217,7 +217,7 @@ static std::shared_ptr<PlayStrategy> PlayStrategyInit(std::shared_ptr<MediaSourc
 {
     uri_ = redirectUrl_.empty() ? source->GetSourceUri() : redirectUrl_;
     httpHeader_ = source->GetSourceHeader();
-    playStrategy = source->GetPlayStrategy();
+    std::shared_ptr<PlayStrategy> playStrategy = source->GetPlayStrategy();
     mimeType_ = source->GetMimeType();
     return playStrategy;
 }
