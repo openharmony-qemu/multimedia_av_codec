@@ -2871,17 +2871,14 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
     int ffRet = -1;
     if (IsSkipGetMinTsPktInfo()) {
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
-        std::unique_lock<std::mutex> sLock(syncMutex_);
-        ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
-        sLock.unlock();
+        ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 0, 0);
+    } else if (fileType_ == FileType::MPEGPS) {
+        ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, POS_0, AVSEEK_FLAG_BYTE);
     } else if (minTsPktInfo_.isInit) {
         seekTs = (pluginImpl_->flags & AVFMT_SEEK_TO_PTS) && !FFmpegFormatHelper::IsMpeg4File(fileType_) ?
             minTsPktInfo_.minPts : minTsPktInfo_.minDts;
-        std::unique_lock<std::mutex> sLock(syncMutex_);
-        ffRet = av_seek_frame(formatContext_.get(),
-            minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
-        sLock.unlock();
+        ffRet = AVSeekFrameLock(minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
         MEDIA_LOG_I("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
             minTsPktInfo_.streamIndex, seekTs, ffRet);
     }
