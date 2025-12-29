@@ -54,14 +54,14 @@ void HlsSegmentManagerUnitTest::TearDownTestCase(void)
     g_server = nullptr;
 }
 
-void HlsSegmentManagerUnitTest ::SetUp(void)
+void HlsSegmentManagerUnitTest ::SetUp(void) const
 {
     header_ = std::map<std::string, std::string>();
     hlsSegmentManager_ = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
     hlsSegmentManager_->Init();
 }
 
-void HlsSegmentManagerUnitTest ::TearDown(void)
+void HlsSegmentManagerUnitTest ::TearDown(void) const
 {
     hlsSegmentManager_ = nullptr;
 }

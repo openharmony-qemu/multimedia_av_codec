@@ -110,7 +110,7 @@ HlsMediaDownloader::~HlsMediaDownloader()
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsMediaDownloader dtor out", FAKE_POINTER(this));
 }
 
-std::string HlsMediaDownloader::GetContentType()
+std::string HlsMediaDownloader::GetContentType() const
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, "", "GetContentType no video segment manager found!");
     return videoSegManager_->GetContentType();
@@ -226,7 +226,7 @@ std::vector<uint32_t> HlsMediaDownloader::GetBitRates()
     return videoSegManager_->GetBitRates();
 }
 
-bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
+bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate) const
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "SelectBitRate no video segment manager found!");
     return videoSegManager_->SelectBitRate(bitRate);
@@ -237,7 +237,7 @@ void HlsMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
     MEDIA_LOG_D("SetReadBlockingFlag entered");
 }
 
-void HlsMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
+void HlsMediaDownloader::SetIsTriggerAutoMode(bool isAuto) const
 {
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "SetIsTriggerAutoMode no video segment manager found!");
     videoSegManager_->SetIsTriggerAutoMode(isAuto);
@@ -261,7 +261,7 @@ void HlsMediaDownloader::SetDownloadErrorState()
     }
 }
 
-void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
+void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate) const
 {
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "AutoSelectBitrate no video segment manager found!");
     videoSegManager_->AutoSelectBitrate(bitRate);
@@ -325,7 +325,7 @@ uint64_t HlsMediaDownloader::GetBufferSize() const
     return videoSegManager_->GetBufferSize();
 }
 
-bool HlsMediaDownloader::GetPlayable()
+bool HlsMediaDownloader::GetPlayable() const
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "GetPlayable no video segment manager found!");
     return videoSegManager_->GetPlayable();
@@ -337,13 +337,13 @@ bool HlsMediaDownloader::GetBufferingTimeOut()
     return videoSegManager_->GetBufferingTimeOut();
 }
 
-bool HlsMediaDownloader::GetReadTimeOut(bool isDelay)
+bool HlsMediaDownloader::GetReadTimeOut(bool isDelay) const
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, true, "GetReadTimeOut no video segment manager found!");
     return videoSegManager_->GetReadTimeOut(isDelay);
 }
 
-size_t HlsMediaDownloader::GetSegmentOffset()
+size_t HlsMediaDownloader::GetSegmentOffset() const
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, 0, "GetSegmentOffset no video segment manager found!");
     return videoSegManager_->GetSegmentOffset();
@@ -372,7 +372,7 @@ Status HlsMediaDownloader::StopBufferring(bool isAppBackground)
     return ret;
 }
 
-void HlsMediaDownloader::WaitForBufferingEnd()
+void HlsMediaDownloader::WaitForBufferingEnd() const
 {
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "WaitForBufferingEnd no video segment manager found!");
     return videoSegManager_->WaitForBufferingEnd();
@@ -429,7 +429,7 @@ Status HlsMediaDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
     return videoSegManager_->GetStreamInfo(streams);
 }
 
-bool HlsMediaDownloader::IsHlsFmp4()
+bool HlsMediaDownloader::IsHlsFmp4() const
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "IsHlsFmp4 no video segment manager found!");
     return videoSegManager_->IsHlsFmp4();

@@ -173,20 +173,7 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
     auto downloadDoneCallback = [weakDownloader] (const std::string &url, const std::string& location) {
         auto shareDownloader = weakDownloader.lock();
         FALSE_RETURN_MSG(shareDownloader != nullptr, "downloadDoneCb, Http Media Downloader already destructed.");
-        if (shareDownloader->downloadRequest_ != nullptr && shareDownloader->downloadRequest_->IsEos()
-            && (shareDownloader->totalBits_ / BYTES_TO_BIT) >=
-            shareDownloader->downloadRequest_->GetFileContentLengthNoWait()) {
-            shareDownloader->isDownloadFinish_ = true;
-        }
-        int64_t nowTime = shareDownloader->steadyClock_.ElapsedMilliseconds();
-        double downloadTime = (nowTime - shareDownloader->startDownloadTime_) * 1.0 / SECOND_TO_MILLISECONDS;
-        if (downloadTime > ZERO_THRESHOLD) {
-            shareDownloader->avgDownloadSpeed_ = shareDownloader->totalBits_ / downloadTime;
-        }
-        MEDIA_LOG_I("HTTP Download done, data usage: " PUBLIC_LOG_U64 " bits in %{public}.0lfms, "
-            "average download speed: %{public}.0lf bits/s", shareDownloader->totalBits_,
-            downloadTime * SECOND_TO_MILLISECONDS, shareDownloader->avgDownloadSpeed_);
-        shareDownloader->HandleBuffering();
+        shareDownloader->UpdateDownloadFinished(url, location);
     };
     RequestInfo requestInfo;
     requestInfo.url = defaultStream_ != nullptr ? defaultStream_->url : url;
@@ -227,7 +214,7 @@ void HttpMediaDownloader::Close(bool isAsync)
     }
 }
 
-void HttpMediaDownloader::Pause()
+void HttpMediaDownloader::Pause() const
 {
     if (isRingBuffer_) {
         bool cleanData = GetSeekable() != Seekable::SEEKABLE;
@@ -238,7 +225,7 @@ void HttpMediaDownloader::Pause()
     cvReadWrite_.NotifyOne();
 }
 
-void HttpMediaDownloader::Resume()
+void HttpMediaDownloader::Resume() const
 {
     if (isRingBuffer_) {
         ringBuffer_->SetActive(true);
@@ -246,6 +233,25 @@ void HttpMediaDownloader::Resume()
     isInterrupt_ = false;
     downloader_->Resume();
     cvReadWrite_.NotifyOne();
+}
+
+void HttpMediaDownloader::UpdateDownloadFinished(const std::string &url, const std::string& location)
+{
+    (void) url;
+    (void) location;
+    if (downloadRequest_ != nullptr && downloadRequest_->IsEos() &&
+        (totalBits_ / BYTES_TO_BIT) >= downloadRequest_->GetFileContentLengthNoWait()) {
+        isDownloadFinish_ = true;
+    }
+    int64_t nowTime = steadyClock_.ElapsedMilliseconds();
+    double downloadTime = (nowTime - startDownloadTime_) * 1.0 / SECOND_TO_MILLISECONDS;
+    if (downloadTime > ZERO_THRESHOLD) {
+        avgDownloadSpeed_ = totalBits_ / downloadTime;
+    }
+    MEDIA_LOG_I("HTTP Download done, data usage: " PUBLIC_LOG_U64 " bits in %{public}.0lfms, "
+        "average download speed: %{public}.0lf bits/s", totalBits_,
+        downloadTime * SECOND_TO_MILLISECONDS, avgDownloadSpeed_);
+    HandleBuffering();
 }
 
 void HttpMediaDownloader::OnClientErrorEvent()
@@ -332,7 +338,7 @@ void HttpMediaDownloader::HandleWaterline()
     }
 }
 
-bool HttpMediaDownloader::IsStartDurationOfFlvMultiStream()
+bool HttpMediaDownloader::IsStartDurationOfFlvMultiStream() const
 {
     return isRingBuffer_ && playMediaStreams_.size() > 0 &&
         (steadyClock_.ElapsedMilliseconds() - openTime_) < IGNORE_BUFFERING_WITH_START_TIME_MS;
@@ -920,12 +926,12 @@ void HttpMediaDownloader::SetStatusCallback(StatusCallbackFunc cb)
     statusCallback_ = cb;
 }
 
-bool HttpMediaDownloader::GetStartedStatus()
+bool HttpMediaDownloader::GetStartedStatus() const
 {
     return startedPlayStatus_;
 }
 
-void HttpMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
+void HttpMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed) const
 {
     if (isRingBuffer_) {
         FALSE_RETURN(ringBuffer_ != nullptr);
@@ -933,7 +939,7 @@ void HttpMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
     }
 }
 
-uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len, bool notBlock)
+uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len)
 {
     FALSE_RETURN_V(ringBuffer_->WriteBuffer(data, len), 0);
     cvReadWrite_.NotifyOne();
@@ -1015,7 +1021,7 @@ uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBloc
     OnWriteBuffer(len);
     uint32_t ret = 0;
     if (isRingBuffer_) {
-        ret = SaveRingBufferData(data, len, notBlock);
+        ret = SaveRingBufferData(data, len);
     } else {
         ret = SaveCacheBufferData(data, len, notBlock);
         HandleDownloadWaterLine();
@@ -1207,7 +1213,7 @@ void HttpMediaDownloader::DownloadReport()
 
 void HttpMediaDownloader::SetDemuxerState(int32_t streamId)
 {
-    MEDIA_LOG_I("HTTP SetDemuxerState");
+    MEDIA_LOG_I("HTTP SetDemuxerState, " PUBLIC_LOG_D32, streamId);
     isFirstFrameArrived_ = true;
 }
 
@@ -1252,12 +1258,12 @@ RingBuffer& HttpMediaDownloader::GetBuffer()
     return *ringBuffer_;
 }
 
-bool HttpMediaDownloader::GetReadFrame()
+bool HttpMediaDownloader::GetReadFrame() const
 {
     return isFirstFrameArrived_;
 }
 
-bool HttpMediaDownloader::GetDownloadErrorState()
+bool HttpMediaDownloader::GetDownloadErrorState() const
 {
     return downloadErrorState_;
 }
@@ -1380,7 +1386,7 @@ uint64_t HttpMediaDownloader::GetCurrentBufferSize() const
 
 Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
-    MEDIA_LOG_I("HTTP SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
+    MEDIA_LOG_I("HTTP SetCurrentBitRate: " PUBLIC_LOG_D32 ", streamID: " PUBLIC_LOG_D32, bitRate, streamID);
     if (bitRate <= 0) {
         videoBitrate_ = std::max(videoBitrate_, static_cast<uint32_t>(DEFAULT_BIT_RATE));
     } else {
@@ -1468,7 +1474,7 @@ void HttpMediaDownloader::SetAppUid(int32_t appUid)
     }
 }
 
-float HttpMediaDownloader::GetCacheDuration(float ratio)
+float HttpMediaDownloader::GetCacheDuration(float ratio) const
 {
     if (ratio >= 1) {
         return CACHE_LEVEL_1;
@@ -1538,7 +1544,7 @@ bool HttpMediaDownloader::GetPlayable()
     return waterLine == 0 ? GetBufferSize() > waterLine : GetBufferSize() >= waterLine;
 }
 
-bool HttpMediaDownloader::GetBufferingTimeOut()
+bool HttpMediaDownloader::GetBufferingTimeOut() const
 {
     if (bufferingTime_ == 0) {
         return false;
@@ -1736,7 +1742,7 @@ void HttpMediaDownloader::NotifyInitSuccess()
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
 }
 
-uint64_t HttpMediaDownloader::GetCachedDuration()
+uint64_t HttpMediaDownloader::GetCachedDuration() const
 {
     MEDIA_LOG_I("HTTP GetCachedDuration: " PUBLIC_LOG_U64, cachedDuration_);
     return cachedDuration_;
@@ -1768,7 +1774,7 @@ void HttpMediaDownloader::RestartAndClearBuffer()
     MEDIA_LOG_I("HTTP RestartAndClearBuffer out.");
 }
 
-bool HttpMediaDownloader::IsFlvLive()
+bool HttpMediaDownloader::IsFlvLive() const
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
     FALSE_RETURN_V_MSG_E(downloadRequest_ != nullptr, false, "downloadRequest_ is nullptr");
@@ -1878,7 +1884,7 @@ bool HttpMediaDownloader::IsNearToInitResolution(const std::shared_ptr<PlayMedia
            || (currentDelta == choosedDelta && currentStream->bitrate < choosedStream->bitrate);
 }
 
-uint32_t HttpMediaDownloader::GetResolutionDelta(uint32_t width, uint32_t height)
+uint32_t HttpMediaDownloader::GetResolutionDelta(uint32_t width, uint32_t height) const
 {
     if (width >= USHRT_MAX || height >= USHRT_MAX) {
         return 0;
@@ -1904,7 +1910,7 @@ bool HttpMediaDownloader::CheckLoopTimeout(int64_t startLoopTime)
     return isLoopTimeout;
 }
 
-void HttpMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
+void HttpMediaDownloader::SetIsTriggerAutoMode(bool isAuto) const
 {
     isAutoSelectBitrate_.store(isAuto);
 }
@@ -1976,7 +1982,7 @@ bool HttpMediaDownloader::IsAutoSelectConditionOk()
     return true;
 }
 
-void HttpMediaDownloader::ClearBuffer()
+void HttpMediaDownloader::ClearBuffer() const
 {
     FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr, fail to ClearBuffer");
     FALSE_RETURN_MSG(ringBuffer_ != nullptr || cacheMediaBuffer_ != nullptr, "buffer is nullptr.");
@@ -1996,7 +2002,7 @@ void HttpMediaDownloader::ClearBuffer()
     }
 }
 
-uint64_t HttpMediaDownloader::GetMemorySize()
+uint64_t HttpMediaDownloader::GetMemorySize() const
 {
     if (totalBufferSize_ <= 0) {
         return 0;

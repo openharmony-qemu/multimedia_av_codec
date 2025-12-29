@@ -29,7 +29,7 @@ class HttpSourcePlugin : public SourcePlugin {
 public:
     explicit HttpSourcePlugin(const std::string &name) noexcept;
     ~HttpSourcePlugin() override;
-    Status Init() override;
+    Status Init() const override;
     Status Deinit() override;
     Status Prepare() override;
     Status Reset() override;
@@ -75,7 +75,7 @@ public:
     bool IsHlsFmp4() override;
     uint64_t GetMemorySize() override;
     std::string GetContentType() override;
-    bool IsHlsEnd(int32_t streamId = -1) override;
+    bool IsHlsEnd(int32_t streamId = -1) const override;
     bool IsHls() override;
 
 private:

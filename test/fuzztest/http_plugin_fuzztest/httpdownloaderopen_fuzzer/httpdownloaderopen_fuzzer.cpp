@@ -26,7 +26,7 @@ using namespace OHOS::Media::Plugins;
 
 static constexpr int32_t MAX_BUFFER_SIZE_FUZZ = 1024 * 1024 * 2;
 
-bool TestHttpDownloaderOpenFuzz(uint8_t *data, size_t size)
+bool TestHttpDownloaderOpenFuzz(const uint8_t *data, const size_t size)
 {
     if (data == nullptr || size < sizeof(int64_t)) {
         return false;

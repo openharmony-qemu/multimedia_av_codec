@@ -34,7 +34,7 @@ public:
         (void)httpHeader;
         return true;
     }
-    void Init() override
+    void Init() const override
     {
         return;
     }

@@ -32,13 +32,13 @@ public:
         (void)event;
     }
 
-    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) const
     {
         (void)flag;
         (void)desBitRate;
     }
 
-    bool CanDoSelectBitRate()
+    bool CanDoSelectBitRate() const
     {
         return true;
     }
@@ -55,16 +55,22 @@ public:
     
     int64_t Open(const std::string &url, const std::map<std::string, std::string> &header)
     {
+        (void) url;
+        (void) header;
         return 1;
     };
 
-    int32_t Read(int64_t uuid, int64_t requestedOffset, int64_t requestedLength)
+    int32_t Read(int64_t uuid, int64_t requestedOffset, int64_t requestedLength) const
     {
+        (void) uuid;
+        (void) requestedOffset;
+        (void) requestedLength;
         return 1;
     };
 
-    int32_t Close(int64_t uuid)
+    int32_t Close(int64_t uuid) const
     {
+        (void) uuid;
         return 1;
     };
 };

@@ -45,8 +45,8 @@ public:
     void Init() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
-    void Pause() override;
-    void Resume() override;
+    void Pause() const override;
+    void Resume() const override;
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
     bool SeekToPos(int64_t offset, bool& isSeekHit) override;
     size_t GetContentLength() const override;
@@ -54,8 +54,8 @@ public:
     Seekable GetSeekable() const override;
     void SetCallback(Callback* cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
-    bool GetStartedStatus() override;
-    void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
+    bool GetStartedStatus() const override;
+    void SetReadBlockingFlag(bool isReadBlockingAllowed) const override;
     void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
@@ -63,8 +63,8 @@ public:
     std::pair<int32_t, int32_t> GetDownloadInfo() override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     RingBuffer& GetBuffer();
-    bool GetReadFrame();
-    bool GetDownloadErrorState();
+    bool GetReadFrame() const;
+    bool GetDownloadErrorState() const;
     StatusCallbackFunc GetStatusCallbackFunc();
     std::pair<int32_t, int32_t> GetDownloadRateAndSpeed();
     void OnWriteBuffer(uint32_t len);
@@ -73,7 +73,7 @@ public:
     void UpdateCachedPercent(BufferingInfoType infoType);
     uint64_t GetBufferSize() const override;
     bool GetPlayable() override;
-    bool GetBufferingTimeOut() override;
+    bool GetBufferingTimeOut() const override;
     bool GetReadTimeOut(bool isDelay) override;
     void SetAppUid(int32_t appUid) override;
     Status StopBufferring(bool isAppBackground) override;
@@ -97,25 +97,25 @@ public:
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
     void NotifyInitSuccess() override;
-    uint64_t GetCachedDuration() override;
+    uint64_t GetCachedDuration() const override;
     void RestartAndClearBuffer() override;
-    bool IsFlvLive() override;
+    bool IsFlvLive() const override;
     void SetStartPts(int64_t startPts) override;
     void SetExtraCache(uint64_t cacheDuration) override;
     bool SelectBitRate(uint32_t bitRate) override;
     bool AutoSelectBitRate(uint32_t bitRate) override;
     void SetMediaStreams(const MediaStreamList& mediaStreams) override;
     std::string GetContentType() override;
-    void SetIsTriggerAutoMode(bool isAuto) override;
-    void ClearBuffer() override;
-    uint64_t GetMemorySize() override;
+    void SetIsTriggerAutoMode(bool isAuto) const override;
+    void ClearBuffer() const override;
+    uint64_t GetMemorySize() const override;
     std::string GetCurUrl() override;
 
 private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
     uint32_t SaveCacheBufferData(uint8_t* data, uint32_t len, bool notBlock);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
-    uint32_t SaveRingBufferData(uint8_t* data, uint32_t len, bool notBlock);
+    uint32_t SaveRingBufferData(uint8_t* data, uint32_t len);
     void OnClientErrorEvent();
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -140,10 +140,10 @@ private:
     void HandleCachedDuration();
     bool CheckBufferingOneSeconds();
     double CalculateCurrentDownloadSpeed();
-    float GetCacheDuration(float ratio);
+    float GetCacheDuration(float ratio) const;
     void HandleDownloadWaterLine();
     void UpdateMinAndMaxReadOffset();
-    bool IsStartDurationOfFlvMultiStream();
+    bool IsStartDurationOfFlvMultiStream() const;
     bool StartBufferingCheck(unsigned int& wantReadLength);
     bool ClearHasReadBuffer();
     void ClearCacheBuffer();
@@ -156,11 +156,12 @@ private:
     void ChooseStreamByResolution();
     bool IsNearToInitResolution(const std::shared_ptr<PlayMediaStream> &choosedStream,
         const std::shared_ptr<PlayMediaStream> &currentStream);
-    uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
+    uint32_t GetResolutionDelta(uint32_t width, uint32_t height) const;
     bool CheckLoopTimeout(int64_t startLoopTime);
     bool CheckAutoSelectBitrate();
     bool IsAutoSelectConditionOk();
     void WaitCacheBufferInit();
+    void UpdateDownloadFinished(const std::string &url, const std::string& location);
 
 private:
     std::shared_ptr<RingBuffer> ringBuffer_;

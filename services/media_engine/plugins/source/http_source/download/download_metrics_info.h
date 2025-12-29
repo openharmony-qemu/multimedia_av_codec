@@ -28,7 +28,7 @@ class DownloadMetricsInfo {
 public:
     DownloadMetricsInfo() = default;
     ~DownloadMetricsInfo() = default;
-    void UpdateTotalDownloadCount()
+    void UpdateTotalDownloadCount() const
     {
         totalDownloadCount_.fetch_add(1);
     }
@@ -41,33 +41,33 @@ public:
         }
     }
 
-    void UpdateTotalDownloadTimeAndBytes(int64_t totalDownloadTime, int64_t totalDownloadBytes)
+    void UpdateTotalDownloadTimeAndBytes(int64_t totalDownloadTime, int64_t totalDownloadBytes) const
     {
         totalDownloadTime_.fetch_add(totalDownloadTime);
         totalDownLoadBytes_.fetch_add(totalDownloadBytes);
     }
 
-    int32_t GetTotalDownloadCount()
+    int32_t GetTotalDownloadCount() const
     {
         return totalDownloadCount_.load();
     }
 
-    int64_t GetTotalFirstDownloadTime()
+    int64_t GetTotalFirstDownloadTime() const
     {
         return firstDownloadTime_.load();
     }
 
-    int64_t GetTotalFirstDownloadTimestamp()
+    int64_t GetTotalFirstDownloadTimestamp() const
     {
         return firstDownloadTimestamp_.load();
     }
 
-    int64_t GetTotalTotalDownloadTime()
+    int64_t GetTotalTotalDownloadTime() const
     {
         return totalDownloadTime_.load();
     }
 
-    int64_t GetTotalTotalDownLoadBytes()
+    int64_t GetTotalTotalDownLoadBytes() const
     {
         return totalDownLoadBytes_.load();
     }

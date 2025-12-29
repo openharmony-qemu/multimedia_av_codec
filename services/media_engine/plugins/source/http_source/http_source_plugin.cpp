@@ -641,7 +641,7 @@ std::string HttpSourcePlugin::GetCurUrl()
     return downloader_->GetCurUrl();
 }
 
-bool HttpSourcePlugin::IsHlsEnd(int32_t streamId)
+bool HttpSourcePlugin::IsHlsEnd(int32_t streamId) const
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
     return downloader_->IsHlsEnd(streamId);

@@ -217,7 +217,7 @@ public:
     void StopBufferring();
     std::string GetContentType();
     void ReStart();
-    void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
+    void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback) const;
 
 private:
     bool BeginDownload();

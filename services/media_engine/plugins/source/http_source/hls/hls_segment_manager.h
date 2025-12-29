@@ -79,7 +79,7 @@ public:
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SeekToTime(int64_t seekTime, SeekMode mode);
     void Clone(const std::shared_ptr<HlsSegmentManager> &other);
-    void SetMasterReadyCallback(std::function<void(bool, bool)> cb);
+    void SetMasterReadyCallback(std::function<void(bool, bool)> cb) const;
     HlsSegmentType GetSegType(uint32_t streamId);
 
     size_t GetContentLength() const;
@@ -89,7 +89,7 @@ public:
     void OnPlayListChanged(const std::vector<PlayInfo>& playList) override;
     void OnMasterReady(bool needAudioManager, bool needSubTitleManager) override;
     void SetStatusCallback(StatusCallbackFunc cb);
-    bool GetStartedStatus();
+    bool GetStartedStatus() const;
     std::vector<uint32_t> GetBitRates();
     bool SelectBitRate(uint32_t bitRate);
     void OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv) override;
@@ -102,10 +102,10 @@ public:
         double hstTime, const PlayInfo& item);
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
     void AutoSelectBitrate(uint32_t bitRate);
-    size_t GetTotalBufferSize();
+    size_t GetTotalBufferSize() const;
     void SetInterruptState(bool isInterruptNeeded);
     void GetPlaybackInfo(PlaybackInfo& playbackInfo);
-    void ReportBitrateStart(uint32_t bitRate);
+    void ReportBitrateStart(uint32_t bitRate) const;
     std::pair<int32_t, int32_t> GetDownloadRateAndSpeed();
     void GetDownloadInfo(DownloadInfo& downloadInfo);
     std::pair<int32_t, int32_t> GetDownloadInfo();
@@ -113,31 +113,31 @@ public:
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID);
     uint64_t GetBufferSize() const;
     bool GetPlayable();
-    bool GetBufferingTimeOut();
+    bool GetBufferingTimeOut() const;
     bool GetReadTimeOut(bool isDelay);
     void SetAppUid(int32_t appUid);
     size_t GetSegmentOffset();
     bool GetHLSDiscontinuity();
     Status StopBufferring(bool isAppBackground);
-    void WaitForBufferingEnd();
+    void WaitForBufferingEnd() const;
     void SetIsReportedErrorCode();
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy);
     bool SetInitialBufferSize(int32_t offset, int32_t size);
     void NotifyInitSuccess();
-    uint64_t GetCachedDuration();
+    uint64_t GetCachedDuration() const;
     Status GetStreamInfo(std::vector<StreamInfo>& streams);
     bool IsHlsFmp4();
-    uint64_t GetMemorySize();
+    uint64_t GetMemorySize() const;
     std::string GetContentType();
     bool IsHlsEnd();
     bool SelectAudio(int32_t streamId);
-    bool StartAudioDownload(int32_t streamId);
+    bool StartAudioDownload(int32_t streamId) const;
     std::shared_ptr<StreamInfo> GetStreamInfoById(int32_t streamId);
     int32_t GetDefaultAudioStreamId();
     void SetDemuxerState(int32_t streamId);
     void SetDownloadErrorState();
-    void SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc);
-    void SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback);
+    void SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc) const;
+    void SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback) const;
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
 
 public:
@@ -174,19 +174,19 @@ private:
     void DownBufferSize();
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
-    uint64_t TransferSizeToBitRate(int width);
+    uint64_t TransferSizeToBitRate(int width) const;
     bool CheckReadStatus();
     Status CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool CheckBreakCondition();
     uint32_t GetDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen, uint32_t writeLen);
-    void ResetPlaylistCapacity(size_t size);
+    void ResetPlaylistCapacity(size_t size) const;
     void PlaylistBackup(const PlayInfo& fragment);
     void HandleCachedDuration();
     void UpdateWaterLineAbove();
     void CalculateBitRate(size_t fragmentSize, double duration);
     double CalculateCurrentDownloadSpeed();
     void UpdateCachedPercent(BufferingInfoType infoType);
-    float GetCacheDuration(float ratio);
+    float GetCacheDuration(float ratio) const;
     void HandleFfmpegReadback(uint64_t ffmpegOffset);
     void SeekToTsForRead(uint32_t currentTsIndex);
     int64_t RequestNewTsForRead(const PlayInfo& item);
@@ -195,7 +195,7 @@ private:
     bool CheckDataIntegrity();
     uint32_t SaveCacheBufferData(uint8_t* data, uint32_t len, bool notBlock);
     uint32_t SaveCacheBufferDataNotblock(uint8_t* data, uint32_t len);
-    bool ClearChunksOfFragment();
+    bool ClearChunksOfFragment() const;
     uint64_t GetCrossTsBuffersize();
     bool IsCachedInitSizeReady(int32_t wantInitSize);
     bool CacheBufferFullLoop();
@@ -205,7 +205,7 @@ private:
     bool ReadHeaderData(unsigned char* buff, ReadDataInfo& readDataInfo);
     void HandleSeekReady(int32_t streamId, int32_t isEos);
     void RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo& readDataInfo);
-    uint64_t GetTotalTsBuffersize();
+    uint64_t GetTotalTsBuffersize() const;
     bool IsPureByteRange();
     void SetDownloaderRequestCb(StatusCallbackFunc& statusCallback, DownloadDoneCbFunc& downloadDoneCallback);
     void SetType(HlsSegmentType type);
@@ -213,7 +213,7 @@ private:
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
     bool CheckCanReadOneSeconds(uint64_t wantReadLength);
-    bool IsAllDownloadFinish();
+    bool IsAllDownloadFinish() const;
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;

@@ -75,7 +75,7 @@ public:
         (void)desBitRate;
     }
 
-    bool CanDoSelectBitRate()
+    bool CanDoSelectBitRate() const
     {
         return true;
     }
@@ -126,14 +126,14 @@ void HlsMediaDownloaderTest::TearDownTestCase(void)
     g_server = nullptr;
 }
 
-void HlsMediaDownloaderTest ::SetUp(void)
+void HlsMediaDownloaderTest ::SetUp(void) const
 {
     header_ = std::map<std::string, std::string>();
     hlsMediaDownloader_ = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
     hlsMediaDownloader_->Init();
 }
 
-void HlsMediaDownloaderTest ::TearDown(void)
+void HlsMediaDownloaderTest ::TearDown(void) const
 {
     hlsMediaDownloader_ = nullptr;
 }
@@ -731,7 +731,7 @@ HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_003, TestSize.Level1)
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
     downloader->Init();
     downloader->videoSegManager_->downloader_ = std::make_shared<Downloader>("hlsMedia");
-    auto saveData = [] (uint8_t* data, uint32_t len, bool flag) { return 0; };
+    auto saveData = [] (uint8_t* data, uint32_t len, bool flag) { (void)data; (void)len; (void)flag; return 0; };
     auto statusCallback = [] (DownloadStatus status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
     RequestInfo info {};
@@ -749,7 +749,7 @@ HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_004, TestSize.Level1)
     downloader->audioSegManager_->Init();
     downloader->audioSegManager_->Clone(downloader->videoSegManager_);
     downloader->videoSegManager_->downloader_ = std::make_shared<Downloader>("hlsMedia");
-    auto saveData = [] (uint8_t* data, uint32_t len, bool flag) { return 0; };
+    auto saveData = [] (uint8_t* data, uint32_t len, bool flag) { (void)data; (void)len; (void)flag; return 0; };
     auto statusCallback = [] (DownloadStatus status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
     RequestInfo info {};

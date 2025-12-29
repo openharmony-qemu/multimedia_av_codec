@@ -34,7 +34,7 @@ public:
         (void)desBitRate;
     }
 
-    bool CanDoSelectBitRate()
+    bool CanDoSelectBitRate() const
     {
         return true;
     }

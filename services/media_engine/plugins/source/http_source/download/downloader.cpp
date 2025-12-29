@@ -1145,7 +1145,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&
             !mediaDownloader->currentRequest_->IsM3u8Request()) {
             info->isChunked = true;
-            if (static_cast<int32_t>(mediaDownloader->currentRequest_->url_.find(".flv") == std::string::npos)) {
+            if (mediaDownloader->currentRequest_->url_.find(".flv") == std::string::npos) {
                 info->contentLen = LIVE_CONTENT_LENGTH;
             } else {
                 info->contentLen = 0;
@@ -1287,7 +1287,7 @@ void Downloader::StopBufferring()
     }
 }
 
-void Downloader::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
+void Downloader::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback) const
 {
     downloadCallback_ = callback;
 }
