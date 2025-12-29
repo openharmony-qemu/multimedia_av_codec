@@ -153,6 +153,13 @@ public:
 
     Status SetLoudnessGain(float loudnessGain) override;
 
+    void SetResponseCallback(bool isNeedResponseCallback) override;
+
+    bool IsNeedResponseCallback() override
+    {
+        return isNeedResponseCallback_;
+    }
+
     void SetAudioPassFlag(bool isAudioPass) override;
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
@@ -164,9 +171,11 @@ private:
                            const OHOS::AudioStandard::StateChangeCmdType cmdType) override;
         void OnOutputDeviceChange(const AudioStandard::AudioDeviceDescriptor &deviceInfo,
             const AudioStandard::AudioStreamDeviceChangeReason reason) override;
+        void SetResponseCallback(bool isNeedResponseCallback);
     private:
         std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
         bool isPaused_{false};
+        bool isNeedResponseCallback_ {true};
     };
     class AudioServiceDiedCallbackImpl : public OHOS::AudioStandard::AudioRendererPolicyServiceDiedCallback {
     public:
@@ -293,6 +302,7 @@ private:
     int32_t audioHapticsSyncId_ {0};
     uint32_t customSampleRate_{0};
     int32_t privacyType_ {0};
+    bool isNeedResponseCallback_ {true};
     bool isAudioPass_ {false};
 };
 } // namespace Plugin
