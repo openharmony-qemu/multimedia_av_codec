@@ -175,6 +175,9 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     } while (retryTimes_ < DEFAULT_RETRY_TIMES);
     offset_ += static_cast<uint64_t>(realLen);
     if (buffer && buffer->GetMemory()) {
+        int32_t memorySize = memory->GetSize();
+        FALSE_RETURN_V_MSG(memorySize != -1, Status::ERROR_INVALID_DATA, "GetSize failed");
+        realLen = std::min(memorySize, realLen);
         buffer->GetMemory()->Write(memory->GetBase(), realLen, 0);
     } else {
         buffer = WrapAVSharedMemory(memory, realLen);
