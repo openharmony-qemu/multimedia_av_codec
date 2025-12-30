@@ -143,7 +143,7 @@ void HttpMediaDownloader::Init()
     }
 }
 
-std::string HttpMediaDownloader::GetContentType() const
+std::string HttpMediaDownloader::GetContentType()
 {
     FALSE_RETURN_V(downloader_ != nullptr, "");
     MEDIA_LOG_I("In");
@@ -926,12 +926,12 @@ void HttpMediaDownloader::SetStatusCallback(StatusCallbackFunc cb)
     statusCallback_ = cb;
 }
 
-bool HttpMediaDownloader::GetStartedStatus() const
+bool HttpMediaDownloader::GetStartedStatus()
 {
     return startedPlayStatus_;
 }
 
-void HttpMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed) const
+void HttpMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
     if (isRingBuffer_) {
         FALSE_RETURN(ringBuffer_ != nullptr);
@@ -1258,12 +1258,12 @@ RingBuffer& HttpMediaDownloader::GetBuffer()
     return *ringBuffer_;
 }
 
-bool HttpMediaDownloader::GetReadFrame() const
+bool HttpMediaDownloader::GetReadFrame()
 {
     return isFirstFrameArrived_;
 }
 
-bool HttpMediaDownloader::GetDownloadErrorState() const
+bool HttpMediaDownloader::GetDownloadErrorState()
 {
     return downloadErrorState_;
 }
@@ -1474,7 +1474,7 @@ void HttpMediaDownloader::SetAppUid(int32_t appUid)
     }
 }
 
-float HttpMediaDownloader::GetCacheDuration(float ratio) const
+float HttpMediaDownloader::GetCacheDuration(float ratio)
 {
     if (ratio >= 1) {
         return CACHE_LEVEL_1;
@@ -1531,7 +1531,7 @@ void HttpMediaDownloader::UpdateWaterLineAbove()
         PUBLIC_LOG_D32, waterLineAbove_, writeBitrateCaculator_->GetWriteBitrate(), currentBitRate_);
 }
 
-bool HttpMediaDownloader::GetPlayable() const
+bool HttpMediaDownloader::GetPlayable()
 {
     if (isBuffering_) {
         return false;
@@ -1742,7 +1742,7 @@ void HttpMediaDownloader::NotifyInitSuccess()
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
 }
 
-uint64_t HttpMediaDownloader::GetCachedDuration() const
+uint64_t HttpMediaDownloader::GetCachedDuration()
 {
     MEDIA_LOG_I("HTTP GetCachedDuration: " PUBLIC_LOG_U64, cachedDuration_);
     return cachedDuration_;
@@ -1774,7 +1774,7 @@ void HttpMediaDownloader::RestartAndClearBuffer()
     MEDIA_LOG_I("HTTP RestartAndClearBuffer out.");
 }
 
-bool HttpMediaDownloader::IsFlvLive() const
+bool HttpMediaDownloader::IsFlvLive()
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
     FALSE_RETURN_V_MSG_E(downloadRequest_ != nullptr, false, "downloadRequest_ is nullptr");
@@ -1884,7 +1884,7 @@ bool HttpMediaDownloader::IsNearToInitResolution(const std::shared_ptr<PlayMedia
            || (currentDelta == choosedDelta && currentStream->bitrate < choosedStream->bitrate);
 }
 
-uint32_t HttpMediaDownloader::GetResolutionDelta(uint32_t width, uint32_t height) const
+uint32_t HttpMediaDownloader::GetResolutionDelta(uint32_t width, uint32_t height)
 {
     if (width >= USHRT_MAX || height >= USHRT_MAX) {
         return 0;
@@ -1982,7 +1982,7 @@ bool HttpMediaDownloader::IsAutoSelectConditionOk()
     return true;
 }
 
-void HttpMediaDownloader::ClearBuffer() const
+void HttpMediaDownloader::ClearBuffer()
 {
     FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr, fail to ClearBuffer");
     FALSE_RETURN_MSG(ringBuffer_ != nullptr || cacheMediaBuffer_ != nullptr, "buffer is nullptr.");
@@ -2002,7 +2002,7 @@ void HttpMediaDownloader::ClearBuffer() const
     }
 }
 
-uint64_t HttpMediaDownloader::GetMemorySize() const
+uint64_t HttpMediaDownloader::GetMemorySize()
 {
     if (totalBufferSize_ <= 0) {
         return 0;

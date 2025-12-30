@@ -75,7 +75,7 @@ public:
         (void)desBitRate;
     }
 
-    bool CanDoSelectBitRate() const
+    bool CanDoSelectBitRate()
     {
         return true;
     }

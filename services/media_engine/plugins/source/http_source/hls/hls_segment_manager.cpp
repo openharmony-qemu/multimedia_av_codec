@@ -819,7 +819,7 @@ void HlsSegmentManager::SetCallback(Callback* cb)
     playlistDownloader_->SetCallback(cb);
 }
 
-void HlsSegmentManager::ResetPlaylistCapacity(size_t size) const
+void HlsSegmentManager::ResetPlaylistCapacity(size_t size)
 {
     size_t remainCapacity = playList_->Capacity() - playList_->Size();
     if (remainCapacity >= size) {
@@ -884,7 +884,7 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
     }
 }
 
-bool HlsSegmentManager::GetStartedStatus() const
+bool HlsSegmentManager::GetStartedStatus()
 {
     FALSE_RETURN_V(playlistDownloader_ != nullptr, false);
     return playlistDownloader_->GetPlayListDownloadStatus() && startedPlayStatus_;
@@ -1628,7 +1628,7 @@ void HlsSegmentManager::InActiveAutoBufferSize()
     autoBufferSize_ = false;
 }
 
-uint64_t HlsSegmentManager::TransferSizeToBitRate(int width) const
+uint64_t HlsSegmentManager::TransferSizeToBitRate(int width)
 {
     if (width <= MIN_WIDTH) {
         return minBufferSize_;
@@ -1641,7 +1641,7 @@ uint64_t HlsSegmentManager::TransferSizeToBitRate(int width) const
     }
 }
 
-size_t HlsSegmentManager::GetTotalBufferSize() const
+size_t HlsSegmentManager::GetTotalBufferSize()
 {
     return totalBufferSize_;
 }
@@ -1706,7 +1706,7 @@ void HlsSegmentManager::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     }
 }
 
-void HlsSegmentManager::ReportBitrateStart(uint32_t bitRate) const
+void HlsSegmentManager::ReportBitrateStart(uint32_t bitRate)
 {
     FALSE_RETURN_MSG(segEventCb_, "HLS ReportBitrateStart no callback, type: %{public}d", type_);
     MEDIA_LOG_I("HLS ReportBitrateStart bitRate : " PUBLIC_LOG_U32, bitRate);
@@ -1805,7 +1805,7 @@ void HlsSegmentManager::SetAppUid(int32_t appUid)
     }
 }
 
-float HlsSegmentManager::GetCacheDuration(float ratio) const
+float HlsSegmentManager::GetCacheDuration(float ratio)
 {
     if (ratio >= 1) {
         return CACHE_LEVEL_1;
@@ -1936,7 +1936,7 @@ Status HlsSegmentManager::StopBufferring(bool isAppBackground)
     return Status::OK;
 }
 
-bool HlsSegmentManager::ClearChunksOfFragment() const
+bool HlsSegmentManager::ClearChunksOfFragment()
 {
     bool res = false;
     uint64_t offsetBegin = SpliceOffset(readTsIndex_, 0);
@@ -1948,7 +1948,7 @@ bool HlsSegmentManager::ClearChunksOfFragment() const
     return res;
 }
 
-void HlsSegmentManager::WaitForBufferingEnd() const
+void HlsSegmentManager::WaitForBufferingEnd()
 {
 }
 
@@ -2007,7 +2007,7 @@ void HlsSegmentManager::NotifyInitSuccess()
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
 }
 
-uint64_t HlsSegmentManager::GetCachedDuration() const
+uint64_t HlsSegmentManager::GetCachedDuration()
 {
     MEDIA_LOG_I("HLS GetCachedDuration: " PUBLIC_LOG_U64 ", type: %{public}d", cachedDuration_, type_);
     return cachedDuration_;
@@ -2080,7 +2080,7 @@ void HlsSegmentManager::HandleSeekReady(int32_t streamId, int32_t isEos)
     }
 }
 
-uint64_t HlsSegmentManager::GetTotalTsBuffersize() const
+uint64_t HlsSegmentManager::GetTotalTsBuffersize()
 {
     FALSE_RETURN_V_MSG(cacheMediaBuffer_ != nullptr, 0, "cacheMediaBuffer_ is nullptr.");
     uint64_t totalBufferSize = 0;
@@ -2101,7 +2101,7 @@ uint64_t HlsSegmentManager::GetTotalTsBuffersize() const
     return totalBufferSize;
 }
 
-uint64_t HlsSegmentManager::GetMemorySize() const
+uint64_t HlsSegmentManager::GetMemorySize()
 {
     return memorySize_;
 }
@@ -2196,7 +2196,7 @@ bool HlsSegmentManager::SelectAudio(int32_t streamId)
     return true;
 }
 
-bool HlsSegmentManager::StartAudioDownload(int32_t streamId) const
+bool HlsSegmentManager::StartAudioDownload(int32_t streamId)
 {
     FALSE_RETURN_V_MSG(playlistDownloader_ != nullptr, false, "StartAudioDownload no playlistDownloader_");
     playlistDownloader_->SelectAudio(streamId);

@@ -52,7 +52,7 @@ public:
     Seekable GetSeekable() const override;
     void SetCallback(Callback* cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
-    bool GetStartedStatus() const override;
+    bool GetStartedStatus() override;
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitrate) override;
     Status SelectStream(int32_t streamId) override;
@@ -70,12 +70,12 @@ public:
     void SetDemuxerState(int32_t streamId) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     uint64_t GetBufferSize() const override;
-    bool GetPlayable() const override;
-    bool GetBufferingTimeOut()const override;
+    bool GetPlayable() override;
+    bool GetBufferingTimeOut() override;
     void SetAppUid(int32_t appUid) override;
     void NotifyInitSuccess() override;
-    uint64_t GetMemorySize() const override;
-    std::string GetContentType() const override;
+    uint64_t GetMemorySize() override;
+    std::string GetContentType() override;
     Status StopBufferring(bool isAppBackground) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
 

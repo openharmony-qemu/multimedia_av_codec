@@ -299,7 +299,7 @@ public:
     {
         return 0;
     }
-    virtual bool IsHlsEnd(int32_t streamId) const
+    virtual bool IsHlsEnd(int32_t streamId)
     {
         return false;
     }

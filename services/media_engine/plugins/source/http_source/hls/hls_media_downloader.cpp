@@ -110,7 +110,7 @@ HlsMediaDownloader::~HlsMediaDownloader()
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsMediaDownloader dtor out", FAKE_POINTER(this));
 }
 
-std::string HlsMediaDownloader::GetContentType() const
+std::string HlsMediaDownloader::GetContentType()
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, "", "GetContentType no video segment manager found!");
     return videoSegManager_->GetContentType();
@@ -200,7 +200,7 @@ void HlsMediaDownloader::SetCallback(Callback* cb)
     audioSegManager_->SetCallback(cb);
 }
 
-bool HlsMediaDownloader::GetStartedStatus() const
+bool HlsMediaDownloader::GetStartedStatus()
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "GetStartedStatus no video segment manager found!");
     auto isVideoStarted = videoSegManager_->GetStartedStatus();
@@ -232,7 +232,7 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     return videoSegManager_->SelectBitRate(bitRate);
 }
 
-void HlsMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed) const
+void HlsMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
     MEDIA_LOG_D("SetReadBlockingFlag entered");
 }
@@ -261,7 +261,7 @@ void HlsMediaDownloader::SetDownloadErrorState()
     }
 }
 
-void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate) const
+void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
 {
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "AutoSelectBitrate no video segment manager found!");
     videoSegManager_->AutoSelectBitrate(bitRate);
@@ -325,25 +325,25 @@ uint64_t HlsMediaDownloader::GetBufferSize() const
     return videoSegManager_->GetBufferSize();
 }
 
-bool HlsMediaDownloader::GetPlayable() const
+bool HlsMediaDownloader::GetPlayable()
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "GetPlayable no video segment manager found!");
     return videoSegManager_->GetPlayable();
 }
 
-bool HlsMediaDownloader::GetBufferingTimeOut() const
+bool HlsMediaDownloader::GetBufferingTimeOut()
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, true, "GetBufferingTimeOut no video segment manager found!");
     return videoSegManager_->GetBufferingTimeOut();
 }
 
-bool HlsMediaDownloader::GetReadTimeOut(bool isDelay) const
+bool HlsMediaDownloader::GetReadTimeOut(bool isDelay)
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, true, "GetReadTimeOut no video segment manager found!");
     return videoSegManager_->GetReadTimeOut(isDelay);
 }
 
-size_t HlsMediaDownloader::GetSegmentOffset() const
+size_t HlsMediaDownloader::GetSegmentOffset()
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, 0, "GetSegmentOffset no video segment manager found!");
     return videoSegManager_->GetSegmentOffset();
@@ -372,7 +372,7 @@ Status HlsMediaDownloader::StopBufferring(bool isAppBackground)
     return ret;
 }
 
-void HlsMediaDownloader::WaitForBufferingEnd() const
+void HlsMediaDownloader::WaitForBufferingEnd()
 {
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "WaitForBufferingEnd no video segment manager found!");
     return videoSegManager_->WaitForBufferingEnd();
@@ -416,7 +416,7 @@ void HlsMediaDownloader::NotifyInitSuccess()
     }
 }
 
-uint64_t HlsMediaDownloader::GetCachedDuration() const
+uint64_t HlsMediaDownloader::GetCachedDuration()
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, 0, "GetCachedDuration no video segment manager found!");
     return videoSegManager_->GetCachedDuration();
@@ -429,13 +429,13 @@ Status HlsMediaDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
     return videoSegManager_->GetStreamInfo(streams);
 }
 
-bool HlsMediaDownloader::IsHlsFmp4() const
+bool HlsMediaDownloader::IsHlsFmp4()
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "IsHlsFmp4 no video segment manager found!");
     return videoSegManager_->IsHlsFmp4();
 }
 
-uint64_t HlsMediaDownloader::GetMemorySize() const
+uint64_t HlsMediaDownloader::GetMemorySize()
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, 0, "GetMemorySize no video segment manager found!");
     return videoSegManager_->GetMemorySize();

@@ -54,8 +54,8 @@ public:
     Seekable GetSeekable() const override;
     void SetCallback(Callback* cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
-    bool GetStartedStatus() const override;
-    void SetReadBlockingFlag(bool isReadBlockingAllowed) const override;
+    bool GetStartedStatus() override;
+    void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
@@ -63,8 +63,8 @@ public:
     std::pair<int32_t, int32_t> GetDownloadInfo() override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     RingBuffer& GetBuffer();
-    bool GetReadFrame() const;
-    bool GetDownloadErrorState() const;
+    bool GetReadFrame();
+    bool GetDownloadErrorState();
     StatusCallbackFunc GetStatusCallbackFunc();
     std::pair<int32_t, int32_t> GetDownloadRateAndSpeed();
     void OnWriteBuffer(uint32_t len);
@@ -72,7 +72,7 @@ public:
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void UpdateCachedPercent(BufferingInfoType infoType);
     uint64_t GetBufferSize() const override;
-    bool GetPlayable() const override;
+    bool GetPlayable() override;
     bool GetBufferingTimeOut() override;
     bool GetReadTimeOut(bool isDelay) override;
     void SetAppUid(int32_t appUid) override;
@@ -97,18 +97,18 @@ public:
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
     void NotifyInitSuccess() override;
-    uint64_t GetCachedDuration() const override;
+    uint64_t GetCachedDuration() override;
     void RestartAndClearBuffer() override;
-    bool IsFlvLive() const override;
+    bool IsFlvLive() override;
     void SetStartPts(int64_t startPts) override;
     void SetExtraCache(uint64_t cacheDuration) override;
     bool SelectBitRate(uint32_t bitRate) override;
     bool AutoSelectBitRate(uint32_t bitRate) override;
     void SetMediaStreams(const MediaStreamList& mediaStreams) override;
-    std::string GetContentType() const override;
+    std::string GetContentType() override;
     void SetIsTriggerAutoMode(bool isAuto) override;
-    void ClearBuffer() const override;
-    uint64_t GetMemorySize() const override;
+    void ClearBuffer() override;
+    uint64_t GetMemorySize() override;
     std::string GetCurUrl() override;
 
 private:
@@ -140,7 +140,7 @@ private:
     void HandleCachedDuration();
     bool CheckBufferingOneSeconds();
     double CalculateCurrentDownloadSpeed();
-    float GetCacheDuration(float ratio) const;
+    float GetCacheDuration(float ratio);
     void HandleDownloadWaterLine();
     void UpdateMinAndMaxReadOffset();
     bool IsStartDurationOfFlvMultiStream();
@@ -156,7 +156,7 @@ private:
     void ChooseStreamByResolution();
     bool IsNearToInitResolution(const std::shared_ptr<PlayMediaStream> &choosedStream,
         const std::shared_ptr<PlayMediaStream> &currentStream);
-    uint32_t GetResolutionDelta(uint32_t width, uint32_t height) const;
+    uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
     bool CheckLoopTimeout(int64_t startLoopTime);
     bool CheckAutoSelectBitrate();
     bool IsAutoSelectConditionOk();

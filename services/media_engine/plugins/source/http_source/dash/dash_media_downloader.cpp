@@ -67,7 +67,7 @@ bool DashMediaDownloader::Open(const std::string& url, const std::map<std::strin
     return true;
 }
 
-std::string DashMediaDownloader::GetContentType() const
+std::string DashMediaDownloader::GetContentType()
 {
     FALSE_RETURN_V(mpdDownloader_ != nullptr, "");
     MEDIA_LOG_I("In");
@@ -297,7 +297,7 @@ void DashMediaDownloader::SetCallback(Callback* cb)
     callback_ = cb;
 }
 
-bool DashMediaDownloader::GetStartedStatus() const
+bool DashMediaDownloader::GetStartedStatus()
 {
     return true;
 }
@@ -1215,7 +1215,7 @@ uint64_t DashMediaDownloader::GetBufferSize() const
     return segmentDownloader->GetBufferSize();
 }
 
-bool DashMediaDownloader::GetPlayable() const
+bool DashMediaDownloader::GetPlayable()
 {
     std::shared_ptr<DashSegmentDownloader> vidSegmentDownloader =
         GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
@@ -1233,7 +1233,7 @@ bool DashMediaDownloader::GetPlayable() const
     }
 }
 
-bool DashMediaDownloader::GetBufferingTimeOut() const
+bool DashMediaDownloader::GetBufferingTimeOut()
 {
     return false;
 }
@@ -1254,7 +1254,7 @@ void DashMediaDownloader::NotifyInitSuccess()
     }
 }
 
-uint64_t DashMediaDownloader::GetMemorySize() const
+uint64_t DashMediaDownloader::GetMemorySize()
 {
     uint64_t memorySize = 0;
     for (size_t i = 0; i < segmentDownloaders_.size(); i++) {

@@ -196,7 +196,7 @@ bool DownloadMonitor::SelectBitRate(uint32_t bitRate)
     return downloader_->SelectBitRate(bitRate);
 }
 
-bool DownloadMonitor::AutoSelectBitRate(uint32_t bitRate) const
+bool DownloadMonitor::AutoSelectBitRate(uint32_t bitRate)
 {
     return downloader_->AutoSelectBitRate(bitRate);
 }
@@ -212,7 +212,7 @@ void DownloadMonitor::SetStatusCallback(StatusCallbackFunc cb)
     (void)cb;
 }
 
-bool DownloadMonitor::GetStartedStatus() const
+bool DownloadMonitor::GetStartedStatus()
 {
     return downloader_->GetStartedStatus();
 }
@@ -323,7 +323,7 @@ void DownloadMonitor::SetDemuxerState(int32_t streamId)
     downloader_->SetDemuxerState(streamId);
 }
 
-void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed) const
+void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
     FALSE_RETURN_MSG(downloader_ != nullptr, "SetReadBlockingFlag downloader is null");
     downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
@@ -401,7 +401,7 @@ void DownloadMonitor::SetAppUid(int32_t appUid)
     }
 }
 
-bool DownloadMonitor::GetPlayable() const
+bool DownloadMonitor::GetPlayable()
 {
     if (downloader_) {
         return downloader_->GetPlayable();
@@ -409,7 +409,7 @@ bool DownloadMonitor::GetPlayable() const
     return false;
 }
 
-bool DownloadMonitor::GetBufferingTimeOut() const
+bool DownloadMonitor::GetBufferingTimeOut()
 {
     if (downloader_) {
         return downloader_->GetBufferingTimeOut();
@@ -418,7 +418,7 @@ bool DownloadMonitor::GetBufferingTimeOut() const
     }
 }
 
-bool DownloadMonitor::GetReadTimeOut(bool isDelay) const
+bool DownloadMonitor::GetReadTimeOut(bool isDelay)
 {
     if (downloader_) {
         return downloader_->GetReadTimeOut(isDelay);
@@ -426,7 +426,7 @@ bool DownloadMonitor::GetReadTimeOut(bool isDelay) const
     return false;
 }
 
-size_t DownloadMonitor::GetSegmentOffset() const
+size_t DownloadMonitor::GetSegmentOffset()
 {
     if (downloader_) {
         return downloader_->GetSegmentOffset();
@@ -452,7 +452,7 @@ Status DownloadMonitor::StopBufferring(bool isAppBackground)
     return downloader_->StopBufferring(isAppBackground);
 }
 
-void DownloadMonitor::WaitForBufferingEnd() const
+void DownloadMonitor::WaitForBufferingEnd()
 {
     FALSE_RETURN_MSG(downloader_ != nullptr, "WaitForBufferingEnd downloader is nullptr");
     downloader_->WaitForBufferingEnd();
@@ -489,7 +489,7 @@ void DownloadMonitor::NotifyInitSuccess()
     downloader_->NotifyInitSuccess();
 }
 
-uint64_t DownloadMonitor::GetCachedDuration() const
+uint64_t DownloadMonitor::GetCachedDuration()
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader_ is nullptr");
     return downloader_->GetCachedDuration();
@@ -501,7 +501,7 @@ void DownloadMonitor::RestartAndClearBuffer()
     return downloader_->RestartAndClearBuffer();
 }
 
-bool DownloadMonitor::IsFlvLive() const
+bool DownloadMonitor::IsFlvLive()
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
     return downloader_->IsFlvLive();
@@ -528,19 +528,19 @@ void DownloadMonitor::SetMediaStreams(const MediaStreamList& mediaStreams)
     }
 }
 
-bool DownloadMonitor::IsHlsFmp4() const
+bool DownloadMonitor::IsHlsFmp4()
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
     return downloader_->IsHlsFmp4();
 }
 
-std::string DownloadMonitor::GetContentType() const
+std::string DownloadMonitor::GetContentType()
 {
     FALSE_RETURN_V(downloader_ != nullptr, "");
     return downloader_->GetContentType();
 }
 
-uint64_t DownloadMonitor::GetMemorySize() const
+uint64_t DownloadMonitor::GetMemorySize()
 {
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader_ is nullptr");
     return downloader_->GetMemorySize();
