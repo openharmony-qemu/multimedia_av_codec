@@ -1714,7 +1714,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo()
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse video info failed");
 
     ret = GetFileFirstPacket();
-    FALSE_RETURN_MSG_W(ret == Status::OK, "Get file first packet failed");
+    FALSE_LOG_MSG_W(ret == Status::OK, "Get file first packet failed");
 
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo_.general);
     DemuxerLogCompressor::StringifyMeta(mediaInfo_.general, -1); // source meta
