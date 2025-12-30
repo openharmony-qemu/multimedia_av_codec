@@ -1040,7 +1040,7 @@ uint32_t HlsSegmentManager::DecryptDataLeft(uint8_t *&data, uint32_t &len, bool 
             ", type: %{public}d", decryptLen_, writtenLen, type_);
     }
     decryptLen_ -= writtenLen;
-    return writtenLen - lastWrittenLen;
+    return writtenLen - std::min(writtenLen, lastWrittenLen);
 }
 
 uint32_t HlsSegmentManager::DecryptData(uint8_t *&data, uint32_t &len, bool notBlock)
