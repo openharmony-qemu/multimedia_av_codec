@@ -29,7 +29,7 @@ class HttpSourcePlugin : public SourcePlugin {
 public:
     explicit HttpSourcePlugin(const std::string &name) noexcept;
     ~HttpSourcePlugin() override;
-    Status Init() const override;
+    Status Init() override;
     Status Deinit() override;
     Status Prepare() override;
     Status Reset() override;

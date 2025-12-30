@@ -67,7 +67,7 @@ public:
     bool GetStartedStatus() override;
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitRate) const override;
-    void SetIsTriggerAutoMode(bool isAuto) const override;
+    void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void AutoSelectBitrate(uint32_t bitRate) const;
     void SetInterruptState(bool isInterruptNeeded) override;

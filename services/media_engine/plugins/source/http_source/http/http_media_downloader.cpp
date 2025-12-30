@@ -143,7 +143,7 @@ void HttpMediaDownloader::Init()
     }
 }
 
-std::string HttpMediaDownloader::GetContentType()
+std::string HttpMediaDownloader::GetContentType() const
 {
     FALSE_RETURN_V(downloader_ != nullptr, "");
     MEDIA_LOG_I("In");
@@ -214,7 +214,7 @@ void HttpMediaDownloader::Close(bool isAsync)
     }
 }
 
-void HttpMediaDownloader::Pause() const
+void HttpMediaDownloader::Pause()
 {
     if (isRingBuffer_) {
         bool cleanData = GetSeekable() != Seekable::SEEKABLE;
@@ -225,7 +225,7 @@ void HttpMediaDownloader::Pause() const
     cvReadWrite_.NotifyOne();
 }
 
-void HttpMediaDownloader::Resume() const
+void HttpMediaDownloader::Resume()
 {
     if (isRingBuffer_) {
         ringBuffer_->SetActive(true);
@@ -1910,7 +1910,7 @@ bool HttpMediaDownloader::CheckLoopTimeout(int64_t startLoopTime)
     return isLoopTimeout;
 }
 
-void HttpMediaDownloader::SetIsTriggerAutoMode(bool isAuto) const
+void HttpMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
 {
     isAutoSelectBitrate_.store(isAuto);
 }

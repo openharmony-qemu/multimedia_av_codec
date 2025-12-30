@@ -28,7 +28,7 @@ class AesDecryptor {
 public:
     AesDecryptor();
     ~AesDecryptor();
-    void Init() const;
+    void Init();
     void Decrypt(uint8_t *in, uint8_t *out, uint32_t len);
     void OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv);
     

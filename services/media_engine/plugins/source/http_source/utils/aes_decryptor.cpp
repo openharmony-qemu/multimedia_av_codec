@@ -41,7 +41,7 @@ AesDecryptor::~AesDecryptor()
     NZERO_LOG(memset_s(key_, BLOCK_LEN, 0, BLOCK_LEN));
 }
 
-void AesDecryptor::Init() const
+void AesDecryptor::Init()
 {
 }
 

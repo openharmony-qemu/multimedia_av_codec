@@ -237,7 +237,7 @@ void HlsMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
     MEDIA_LOG_D("SetReadBlockingFlag entered");
 }
 
-void HlsMediaDownloader::SetIsTriggerAutoMode(bool isAuto) const
+void HlsMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
 {
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "SetIsTriggerAutoMode no video segment manager found!");
     videoSegManager_->SetIsTriggerAutoMode(isAuto);

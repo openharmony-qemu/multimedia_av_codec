@@ -55,17 +55,17 @@ public:
         return false;
     }
     virtual uint64_t GetBufferSize() const = 0;
-    virtual bool GetPlayable()
+    virtual bool GetPlayable() const
     {
         return false;
     }
-    virtual bool GetBufferingTimeOut() = 0;
+    virtual bool GetBufferingTimeOut() const = 0;
     virtual size_t GetContentLength() const = 0;
     virtual int64_t GetDuration() const = 0;
     virtual Seekable GetSeekable() const = 0;
     virtual void SetCallback(Callback* cb) = 0;
     virtual void SetStatusCallback(StatusCallbackFunc cb) = 0;
-    virtual bool GetStartedStatus() = 0;
+    virtual bool GetStartedStatus() const = 0;
     virtual void GetDownloadInfo(DownloadInfo& downloadInfo)
     {
         MEDIA_LOG_E("GetDownloadInfo is unimplemented.");
@@ -89,21 +89,21 @@ public:
         MEDIA_LOG_E("GetBitRates is unimplemented.");
         return {};
     }
-    virtual bool SelectBitRate(uint32_t bitRate)
+    virtual bool SelectBitRate(uint32_t bitRate) const
     {
         MEDIA_LOG_E("SelectBitRate is unimplemented.");
         return false;
     }
-    virtual bool AutoSelectBitRate(uint32_t bitRate)
+    virtual bool AutoSelectBitRate(uint32_t bitRate) const
     {
         MEDIA_LOG_E("AutoSelectBitRate is unimplemented.");
         return false;
     }
-    virtual void SetIsTriggerAutoMode(bool isAuto)
+    virtual void SetIsTriggerAutoMode(bool isAuto) const
     {
         MEDIA_LOG_E("SetIsTriggerAutoMode is unimplemented.");
     }
-    virtual void SetReadBlockingFlag(bool isReadBlockingAllowed)
+    virtual void SetReadBlockingFlag(bool isReadBlockingAllowed) const
     {
         MEDIA_LOG_W("SetReadBlockingFlag is unimplemented.");
     }
@@ -137,7 +137,7 @@ public:
     }
 
     virtual void SetAppUid(int32_t appUid) = 0;
-    virtual size_t GetSegmentOffset()
+    virtual size_t GetSegmentOffset() const
     {
         return 0;
     }
@@ -157,11 +157,11 @@ public:
         return Status::OK;
     }
 
-    virtual void WaitForBufferingEnd() {}
+    virtual void WaitForBufferingEnd() const {}
      
     virtual void SetIsReportedErrorCode() {}
     
-    virtual bool GetReadTimeOut(bool isDelay)
+    virtual bool GetReadTimeOut(bool isDelay) const
     {
         return false;
     }
@@ -172,12 +172,12 @@ public:
     }
 
     virtual void NotifyInitSuccess() {}
-    virtual uint64_t GetCachedDuration()
+    virtual uint64_t GetCachedDuration() const
     {
         return 0;
     }
-    virtual void RestartAndClearBuffer() {}
-    virtual bool IsFlvLive()
+    virtual void RestartAndClearBuffer() const {}
+    virtual bool IsFlvLive() const
     {
         return false;
     }
@@ -196,20 +196,20 @@ public:
     {
         MEDIA_LOG_W("SetMediaStreams is unimplemented.");
     }
-    virtual std::string GetContentType()
+    virtual std::string GetContentType() const
     {
         return "";
     }
-    virtual void ClearBuffer()
+    virtual void ClearBuffer() const
     {
         MEDIA_LOG_W("ClearBuffer is unimplemented.");
     }
-    virtual bool IsHlsFmp4()
+    virtual bool IsHlsFmp4() const
     {
         return false;
     }
 
-    virtual uint64_t GetMemorySize()
+    virtual uint64_t GetMemorySize() const
     {
         return 0;
     }

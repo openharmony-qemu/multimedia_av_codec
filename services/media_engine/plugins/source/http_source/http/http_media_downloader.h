@@ -45,8 +45,8 @@ public:
     void Init() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
-    void Pause() const override;
-    void Resume() const override;
+    void Pause() override;
+    void Resume() override;
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
     bool SeekToPos(int64_t offset, bool& isSeekHit) override;
     size_t GetContentLength() const override;
@@ -105,8 +105,8 @@ public:
     bool SelectBitRate(uint32_t bitRate) override;
     bool AutoSelectBitRate(uint32_t bitRate) override;
     void SetMediaStreams(const MediaStreamList& mediaStreams) override;
-    std::string GetContentType() override;
-    void SetIsTriggerAutoMode(bool isAuto) const override;
+    std::string GetContentType() const override;
+    void SetIsTriggerAutoMode(bool isAuto) override;
     void ClearBuffer() const override;
     uint64_t GetMemorySize() const override;
     std::string GetCurUrl() override;

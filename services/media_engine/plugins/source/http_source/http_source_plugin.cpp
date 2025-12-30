@@ -79,7 +79,7 @@ std::string HttpSourcePlugin::GetContentType()
     return downloader_->GetContentType();
 }
 
-Status HttpSourcePlugin::Init() const
+Status HttpSourcePlugin::Init()
 {
     MEDIA_LOG_D("Init enter.");
     return Status::OK;
