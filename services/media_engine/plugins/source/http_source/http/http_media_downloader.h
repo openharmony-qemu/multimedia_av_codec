@@ -72,7 +72,7 @@ public:
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void UpdateCachedPercent(BufferingInfoType infoType);
     uint64_t GetBufferSize() const override;
-    bool GetPlayable() override;
+    bool GetPlayable() const override;
     bool GetBufferingTimeOut() const override;
     bool GetReadTimeOut(bool isDelay) override;
     void SetAppUid(int32_t appUid) override;

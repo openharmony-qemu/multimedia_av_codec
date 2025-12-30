@@ -64,9 +64,9 @@ public:
     Seekable GetSeekable() const override;
     void SetCallback(Callback* cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
-    bool GetStartedStatus() override;
+    bool GetStartedStatus() const override;
     std::vector<uint32_t> GetBitRates() override;
-    bool SelectBitRate(uint32_t bitRate) const override;
+    bool SelectBitRate(uint32_t bitRate) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void AutoSelectBitrate(uint32_t bitRate) const;
@@ -77,7 +77,7 @@ public:
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     uint64_t GetBufferSize() const override;
     bool GetPlayable() const override;
-    bool GetBufferingTimeOut() override;
+    bool GetBufferingTimeOut() const override;
     bool GetReadTimeOut(bool isDelay) const override;
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() const override;
@@ -91,7 +91,7 @@ public:
     uint64_t GetCachedDuration() override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
     bool IsHlsFmp4() const override;
-    uint64_t GetMemorySize() override;
+    uint64_t GetMemorySize() const override;
     std::string GetContentType() const override;
     bool IsHlsEnd(int32_t streamId = -1) override;
     Status SelectStream(int32_t streamId) override;

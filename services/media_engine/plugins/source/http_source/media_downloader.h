@@ -89,7 +89,7 @@ public:
         MEDIA_LOG_E("GetBitRates is unimplemented.");
         return {};
     }
-    virtual bool SelectBitRate(uint32_t bitRate) const
+    virtual bool SelectBitRate(uint32_t bitRate)
     {
         MEDIA_LOG_E("SelectBitRate is unimplemented.");
         return false;
@@ -99,7 +99,7 @@ public:
         MEDIA_LOG_E("AutoSelectBitRate is unimplemented.");
         return false;
     }
-    virtual void SetIsTriggerAutoMode(bool isAuto) const
+    virtual void SetIsTriggerAutoMode(bool isAuto)
     {
         MEDIA_LOG_E("SetIsTriggerAutoMode is unimplemented.");
     }

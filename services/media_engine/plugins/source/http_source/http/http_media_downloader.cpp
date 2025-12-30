@@ -1531,7 +1531,7 @@ void HttpMediaDownloader::UpdateWaterLineAbove()
         PUBLIC_LOG_D32, waterLineAbove_, writeBitrateCaculator_->GetWriteBitrate(), currentBitRate_);
 }
 
-bool HttpMediaDownloader::GetPlayable()
+bool HttpMediaDownloader::GetPlayable() const
 {
     if (isBuffering_) {
         return false;

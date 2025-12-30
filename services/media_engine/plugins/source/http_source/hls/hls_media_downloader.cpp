@@ -200,7 +200,7 @@ void HlsMediaDownloader::SetCallback(Callback* cb)
     audioSegManager_->SetCallback(cb);
 }
 
-bool HlsMediaDownloader::GetStartedStatus()
+bool HlsMediaDownloader::GetStartedStatus() const
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "GetStartedStatus no video segment manager found!");
     auto isVideoStarted = videoSegManager_->GetStartedStatus();
@@ -226,7 +226,7 @@ std::vector<uint32_t> HlsMediaDownloader::GetBitRates()
     return videoSegManager_->GetBitRates();
 }
 
-bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate) const
+bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "SelectBitRate no video segment manager found!");
     return videoSegManager_->SelectBitRate(bitRate);
@@ -331,7 +331,7 @@ bool HlsMediaDownloader::GetPlayable() const
     return videoSegManager_->GetPlayable();
 }
 
-bool HlsMediaDownloader::GetBufferingTimeOut()
+bool HlsMediaDownloader::GetBufferingTimeOut() const
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, true, "GetBufferingTimeOut no video segment manager found!");
     return videoSegManager_->GetBufferingTimeOut();
@@ -435,7 +435,7 @@ bool HlsMediaDownloader::IsHlsFmp4() const
     return videoSegManager_->IsHlsFmp4();
 }
 
-uint64_t HlsMediaDownloader::GetMemorySize()
+uint64_t HlsMediaDownloader::GetMemorySize() const
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, 0, "GetMemorySize no video segment manager found!");
     return videoSegManager_->GetMemorySize();
