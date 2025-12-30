@@ -1554,7 +1554,7 @@ bool HttpMediaDownloader::GetBufferingTimeOut() const
     }
 }
 
-bool HttpMediaDownloader::GetReadTimeOut(bool isDelay)
+bool HttpMediaDownloader::GetReadTimeOut(bool isDelay) const
 {
     size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     if (isDelay) {
@@ -1594,7 +1594,7 @@ Status HttpMediaDownloader::StopBufferring(bool isAppBackground)
     return Status::OK;
 }
 
-void HttpMediaDownloader::WaitForBufferingEnd()
+void HttpMediaDownloader::WaitForBufferingEnd() const
 {
     AutoLock lk(bufferingEndMutex_);
     FALSE_RETURN_MSG(isBuffering_.load(), "isBuffering false.");
@@ -1915,7 +1915,7 @@ void HttpMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
     isAutoSelectBitrate_.store(isAuto);
 }
 
-bool HttpMediaDownloader::AutoSelectBitRate(uint32_t bitRate)
+bool HttpMediaDownloader::AutoSelectBitRate(uint32_t bitRate) const
 {
     SelectBitRate(bitRate);
     return true;

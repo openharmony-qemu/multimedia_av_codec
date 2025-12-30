@@ -68,7 +68,7 @@ public:
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitRate) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
-    void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
+    void SetReadBlockingFlag(bool isReadBlockingAllowed) const override;
     void AutoSelectBitrate(uint32_t bitRate) const;
     void SetInterruptState(bool isInterruptNeeded) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
@@ -88,7 +88,7 @@ public:
     void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
     bool SetInitialBufferSize(int32_t offset, int32_t size) override;
     void NotifyInitSuccess() override;
-    uint64_t GetCachedDuration() override;
+    uint64_t GetCachedDuration() const override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
     bool IsHlsFmp4() const override;
     uint64_t GetMemorySize() const override;

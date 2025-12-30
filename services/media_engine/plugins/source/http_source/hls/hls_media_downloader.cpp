@@ -232,7 +232,7 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     return videoSegManager_->SelectBitRate(bitRate);
 }
 
-void HlsMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
+void HlsMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed) const
 {
     MEDIA_LOG_D("SetReadBlockingFlag entered");
 }
@@ -416,7 +416,7 @@ void HlsMediaDownloader::NotifyInitSuccess()
     }
 }
 
-uint64_t HlsMediaDownloader::GetCachedDuration()
+uint64_t HlsMediaDownloader::GetCachedDuration() const
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, 0, "GetCachedDuration no video segment manager found!");
     return videoSegManager_->GetCachedDuration();

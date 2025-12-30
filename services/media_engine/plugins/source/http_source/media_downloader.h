@@ -176,7 +176,7 @@ public:
     {
         return 0;
     }
-    virtual void RestartAndClearBuffer() const {}
+    virtual void RestartAndClearBuffer() {}
     virtual bool IsFlvLive() const
     {
         return false;
