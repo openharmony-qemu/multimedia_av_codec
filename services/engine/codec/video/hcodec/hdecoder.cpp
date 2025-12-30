@@ -491,6 +491,7 @@ int32_t HDecoder::InitVrr()
         VrrDestroyFunc_ == nullptr) {
         dlclose(vpeHandle_);
         vpeHandle_ = nullptr;
+        HLOGI("dlclose libvideoprocessingengine.z.so success");
         return AVCS_ERR_UNSUPPORT;
     }
     vrrHandle_ = VrrCreateFunc_();
@@ -500,6 +501,7 @@ int32_t HDecoder::InitVrr()
         VrrDestroyFunc_(vrrHandle_);
         dlclose(vpeHandle_);
         vpeHandle_ = nullptr;
+        HLOGI("dlclose libvideoprocessingengine.z.so success");
         if (ret == Media::VideoProcessingEngine::VPE_ALGO_ERR_INVALID_OPERATION) {
             return AVCS_ERR_INVALID_OPERATION;
         }

@@ -21,6 +21,7 @@
 #include <thread>
 #include <map>
 #include <queue>
+#include <mutex>
 #include <shared_mutex>
 #include <list>
 #include "buffer/avbuffer.h"
@@ -32,6 +33,7 @@
 #include "reference_parser_manager.h"
 #include "meta/meta.h"
 #include "qos.h"
+#include "time_range_manager.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -96,6 +98,8 @@ public:
     Status BoostReadThreadPriority() override;
     Status SetAVReadPacketStopState(bool state) override;
     Status SeekToStart() override;
+    Status SeekToKeyFrame(int32_t trackId, int64_t seekTime,
+        SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
 private:
     enum ThreadState : unsigned int {
         NOT_STARTED,
@@ -221,6 +225,7 @@ private:
     Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, uint32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
+    void UpdateCachedDrmInfoFromStream(AVStream* avStream);
     bool NeedCombineFrame(uint32_t trackId);
     Plugins::AVPacketWrapperPtr CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
@@ -231,9 +236,9 @@ private:
         uint8_t *outBuffer {nullptr};
         int32_t outBufferSize {0};
         int32_t &outDataSize;
-        const uint8_t *xpsData {nullptr};
-        int32_t xpsDataSize {0};
-        
+        uint8_t *sideData {nullptr};
+        size_t sideDataSize {0};
+
         // 构造函数，用于初始化引用成员
         explicit ConvertToAnnexbParams(int32_t &outSizeRef) : outDataSize(outSizeRef) {}
     };
@@ -414,6 +419,11 @@ private:
     std::atomic<bool> isAsyncReadThreadPrioritySet_ = false;
     void UpdateAsyncReadThreadPriority();
 
+    // DRM info cache to avoid race condition in async mode
+    std::multimap<std::string, std::vector<uint8_t>> cachedDrmInfo_;
+    std::mutex cachedDrmInfoMutex_;
+    std::atomic<bool> drmInfoCached_ {false};
+
     struct MinTsPacketInfo {
         bool isInit = false;
         bool isUpd = false;
@@ -427,6 +437,16 @@ private:
     void UpdMinTsPacketInfo(AVPacket *pkt);
     bool IsSkipGetMinTsPktInfo();
     Status SeekToStartInternal();
+
+    int AVSeekFrameLock(int idx, int64_t timestamp, int flags);
+    TimeRangeManager timeRangeManager_;
+    Status ReadUntilKeyFrame(Plugins::AVPacketWrapperPtr pkt, int trackIndex,
+        TimeoutGuard &timeoutGuard, TimeRange &readRange);
+    Status SeekToKeyFrameCheckParam(int64_t seekTime, SeekMode mode,
+        int32_t &trackIndex, int64_t &ffTime, AVStream* &avStream);
+    void ResetAfterSeek(int64_t seekTime, SeekMode mode);
+
+    std::unordered_map<int32_t, int32_t> mp4FirstKeyFrameIdx_; // key: track index, value: first key frame index
 };
 
 typedef struct DtsFinder {

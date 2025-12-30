@@ -1,10 +1,10 @@
-# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Copyright (C) 2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -12,18 +12,6 @@
 # limitations under the License.
 
 domain: AV_CODEC
-
-FAULT:
-  __BASE: {type: FAULT, level: CRITICAL, desc: AV_CODEC fault}
-  MODULE: {type: STRING, desc: Module name}
-  FAULTTYPE: {type: STRING, desc: Fault type}
-  MSG: {type: STRING, desc: Fault description}
-
-SERVICE_START_INFO:
-  __BASE: {type: BEHAVIOR, level: MINOR, desc: AV_CODEC service start information}
-  MODULE: {type: STRING, desc: Service name}
-  TIME: {type: UINT32, desc: AV_CODEC service start time us}
-  MEMORY: {type: UINT32, desc: AV_CODEC service start use memory kb}
 
 CODEC_START_INFO:
   __BASE: {type: BEHAVIOR, level: MINOR, desc: AV_CODEC codec start event}
@@ -47,18 +35,19 @@ CODEC_STOP_INFO:
   CLIENT_UID: {type: INT32, desc: Codec client uid}
   CODEC_INSTANCE_ID: {type: INT32, desc: Codec instance id}
 
-BASIC_INFO:
-  __BASE: {type: STATISTIC, level: CRITICAL, desc: AVCodec statistics basic info}
-  PAYLOAD: {type: STRING, desc: Statistics basic info}
+FAULT:
+  __BASE: {type: FAULT, level: CRITICAL, desc: AV_CODEC fault}
+  MODULE: {type: STRING, desc: Module name}
+  MSG: {type: STRING, desc: Fault description}
+  FAULTTYPE: {type: STRING, desc: Fault type}
 
-APP_SPECIFICATIONS_INFO:
-  __BASE: {type: STATISTIC, level: CRITICAL, desc: AVCodec statistics app specification info}
-  PAYLOAD: {type: STRING, desc: Statistics app specification info}
-
-APP_BEHAVIORS_INFO:
-  __BASE: {type: STATISTIC, level: CRITICAL, desc: AVCodec statistics app behaviors info}
-  PAYLOAD: {type: STRING, desc: Statistics app behaviors info}
-
-CODEC_ABNORMAL_INFO:
-  __BASE: {type: STATISTIC, level: CRITICAL, desc: AVCodec statistics codec abnormal info}
-  PAYLOAD: {type: STRING, desc: Statistics codec abnormal info}
+STATISTICS_INFO:
+  __BASE: {type: STATISTIC, level: CRITICAL, desc: AVCodec statistics event info, preserve: true}
+  QUERY_CAP_TIMES: {type: UINT32, desc: Number of capability query requests}
+  CREATE_CODEC_TIMES: {type: UINT32, desc: Number of video codec creations}
+  CODEC_SPECIFIED_INFO: {type: STRING, desc: Specification information of video codec creation}
+  APP_NAME_DICT: {type: STRING, desc: Dictionary of application names invoking the codec}
+  CAP_UNSUPPORTED_INFO: {type: STRING, desc: Unsupported capability specification information}
+  DEC_ABNORMAL_OCCUPATION_INFO: {type: STRING, desc: Statistics on application exceptions occupying decoders}
+  SPEED_DECODING_INFO: {type: STRING, desc: Statistics on playback speed decoding}
+  CODEC_ERROR_INFO: {type: STRING, desc: Statistics on codec exceptions}

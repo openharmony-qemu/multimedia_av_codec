@@ -209,9 +209,13 @@ group("av_codec_module_test") {
       "moduletest/capability:capability_module_test",
       "moduletest/demuxer:demuxer_native_module_test",
       "moduletest/muxer:muxer_native_module_test",
+      "moduletest/vcodec/dvcprohddecoder:dvcprohddecoder_native_module_test",
+      "moduletest/vcodec/dvcntsdecoder:dvcntsdecoder_native_module_test",
+      "moduletest/vcodec/dvcpaldecoder:dvcpaldecoder_native_module_test",
       "moduletest/vcodec/encoder:encoder_native_module_test",
       "moduletest/vcodec/h263swdecoder:h263swdecoder_native_module_test",
       "moduletest/vcodec/wmv3swdecoder:wmv3swdecoder_native_module_test",
+      "moduletest/vcodec/dvvideoswdecoder:dvvideo_swdecoder_native_module_test",
       "moduletest/vcodec/hdrcodec:hdrcodec_native_module_test",
       "moduletest/vcodec/avcswencoder:avcswencoder_native_module_test",
       "moduletest/vcodec/hevcswdecoder:hevcswdecoder_native_module_test",
@@ -387,6 +391,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxerwebmapi11_fuzzer:DemuxerWebmAPI11FuzzTest",
       "fuzztest/demuxerwmaapi11_fuzzer:DemuxerWmaAPI11FuzzTest",
       "fuzztest/demuxerrmapi11_fuzzer:DemuxerRmAPI11FuzzTest",
+      "fuzztest/demuxerrmvbapi11_fuzzer:DemuxerRmvbAPI11FuzzTest",
       "fuzztest/demuxerdtsapi11_fuzzer:DemuxerDtsAPI11FuzzTest",
       "fuzztest/drmdecryptor_fuzzer:DrmDecryptorFuzzTest",
       "fuzztest/encoderapi10h264_fuzzer:EncoderAPI10H264FuzzTest",
@@ -553,11 +558,13 @@ group("video_codec_unit_test") {
   if (!use_libfuzzer) {
     if (av_codec_support_test) {
       deps += [
+        "unittest/video_test/avcencoder_test:video_avcencoder_coverage_unit_test",
         "unittest/video_test/avcodec_info_test:codeclist_avcodec_info_unit_test",
         "unittest/video_test/codec_param_checker_test:video_codec_param_checker_test",
         "unittest/video_test/codeclist_test:codeclist_capi_unit_test",
         "unittest/video_test/codeclist_test:codeclist_inner_unit_test",
         "unittest/video_test/codeclist_test/coverage_unit_test:codeclist_coverage_unit_test",
+        "unittest/video_test/dfx_statistics_event_test:video_codec_dfx_statics_event_test",
         "unittest/video_test/dfx_test:video_codec_dfx_test",
         "unittest/video_test/drm_decryptor_test:drm_decryptor_coverage_unit_test",
         "unittest/video_test/event_manager_unit_test:video_event_manager_coverage_unit_test",
@@ -567,7 +574,6 @@ group("video_codec_unit_test") {
         "unittest/video_test/sa_avcodec_test:video_sa_avcodec_unit_test",
         "unittest/video_test/vcodec_framework_test:vcodec_framework_test",
         "unittest/video_test/vcodec_server_test:codec_server_test",
-        "unittest/video_test/avcencoder_test:video_avcencoder_coverage_unit_test",
       ]
     }
   }

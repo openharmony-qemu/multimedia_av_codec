@@ -751,10 +751,13 @@ void Downloader::RequestData()
     if (currentRequest_->requestWholeFile_) {
         len = 0;
     }
-    if (toalDownloadCount_ == 0) {
+    if (!isFirstDownload_) {
         startDownTime_ = GetCurrentMillisecond();
+        isFirstDownload_ = true;
     }
-    toalDownloadCount_++;
+    if (downloadCallback_ != nullptr) {
+        downloadCallback_->UpdateTotalDownloadCount();
+    }
     client_->RequestData(startPos, len, sourceInfo, handleResponseCb);
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData end.", FAKE_POINTER(this));
 }
@@ -1284,13 +1287,9 @@ void Downloader::StopBufferring()
     }
 }
 
-void Downloader::GetDownloadInfo(DownloadInfo& downloadInfo)
+void Downloader::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
 {
-    downloadInfo.totalDownLoadBytes = totalDownLoadBytes_;
-    downloadInfo.totalLoadingTime = totalDownloadDuringTime_;
-    downloadInfo.loadingCount = toalDownloadCount_;
-    downloadInfo.firstDownloadTime = firstDownloadTime_;
-    downloadInfo.firstFrameDecapsulationTime = firstDownloadTimestamp_;
+    downloadCallback_ = callback;
 }
 
 int64_t Downloader::GetCurrentMillisecond()
@@ -1303,14 +1302,18 @@ void Downloader::UpdateDownloadInfo(Downloader *downloader, size_t dataLen)
 {
     if (downloader) {
         auto now = downloader->GetCurrentMillisecond();
-        if (downloader->firstDownloadTime_ == 0) {
-            downloader->firstDownloadTimestamp_ = now;
-            downloader->firstDownloadTime_ = now - downloader->startDownTime_;
+        if (downloader->lastDownloadTime_  == 0) {
+            int64_t firstDownloadTime = now - downloader->startDownTime_;
             downloader->lastDownloadTime_ = downloader->startDownTime_;
+            if (downloader->downloadCallback_ != nullptr) {
+                downloader->downloadCallback_->UpdateFirstDownloadTime(firstDownloadTime, now);
+            }
         }
-        downloader->totalDownloadDuringTime_ += now - downloader->lastDownloadTime_;
+        int64_t downloadTime = now - downloader->lastDownloadTime_;
         downloader->lastDownloadTime_ = now;
-        downloader->totalDownLoadBytes_ += dataLen;
+        if (downloader->downloadCallback_ != nullptr) {
+            downloader->downloadCallback_->UpdateTotalDownloadTimeAndBytes(downloadTime, dataLen);
+        }
     }
 }
 }

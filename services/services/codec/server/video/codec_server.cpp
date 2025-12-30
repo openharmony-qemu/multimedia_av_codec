@@ -753,9 +753,12 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
 
     if (framerateCalculator_ && status_ == RUNNING) {
         std::shared_ptr<AVBuffer> buffer = nullptr;
-        auto it = outBufMap_.find(index);
-        if (it != outBufMap_.end()) {
-            buffer = it->second;
+        {
+            std::lock_guard<std::mutex> outBuflock(outBufMutex_);
+            auto it = outBufMap_.find(index);
+            if (it != outBufMap_.end()) {
+                buffer = it->second;
+            }
         }
         framerateCalculator_->OnFrameConsumed(buffer);
     }
@@ -1127,8 +1130,10 @@ void CodecServer::OnOutputBufferUnbinded()
 void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "buffer is nullptr!");
-
-    outBufMap_[index] = buffer;
+    {
+        std::lock_guard<std::mutex> outBuflock(outBufMutex_);
+        outBufMap_[index] = buffer;
+    }
     if (temporalScalability_ != nullptr && !(buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
         temporalScalability_->SetDisposableFlag(buffer);
     }
@@ -1318,9 +1323,6 @@ int32_t CodecServer::CreatePostProcessing(const Format& format)
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpaceType)) {
         return AVCS_ERR_OK;
     }
-    auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName_);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(capData != std::nullopt && capData->isVendor, AVCS_ERR_UNKNOWN,
-                                      "Get codec capability from codec list failed");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_, AVCS_ERR_UNKNOWN, "Decoder is not found");
     int32_t ret;
     postProcessing_ = PostProcessingType::Create(codecBase_, format, ret);

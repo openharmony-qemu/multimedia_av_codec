@@ -101,6 +101,39 @@ ohos_unittest("video_sa_avcodec_unit_test") {
     "./sa_avcodec_unit_test.cpp",
   ]
 
+  if (av_codec_support_av1_decoder) {
+    sources += [
+      "$av_codec_root_dir/services/engine/codec/video/av1_decoder_loader.cpp",
+    ]
+
+    include_dirs += [
+      "$av_codec_root_dir/services/engine/codec/video/av1decoder",
+      "$av_codec_root_dir/services/engine/codec/video/decoderbase",
+    ]
+  }
+
+  if (av_codec_support_vp8_decoder) {
+    sources += [
+      "$av_codec_root_dir/services/engine/codec/video/vp8_decoder_loader.cpp",
+    ]
+
+    include_dirs += [
+      "$av_codec_root_dir/services/engine/codec/video/vpxdecoder",
+      "$av_codec_root_dir/services/engine/codec/video/decoderbase",
+    ]
+  }
+
+  if (av_codec_support_vp9_decoder) {
+    sources += [
+      "$av_codec_root_dir/services/engine/codec/video/vp9_decoder_loader.cpp",
+    ]
+
+    include_dirs += [
+      "$av_codec_root_dir/services/engine/codec/video/vpxdecoder",
+      "$av_codec_root_dir/services/engine/codec/video/decoderbase",
+    ]
+  }
+
   cflags = av_codec_unittest_cflags
 
   cflags_cc = cflags

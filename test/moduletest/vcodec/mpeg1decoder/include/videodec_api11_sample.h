@@ -135,7 +135,7 @@ public:
     bool outputCallbackFlush = false;
     bool outputCallbackStop = false;
     bool afterEosDestroyCodec = true;
-    bool noCaleHash = false;
+    bool needCheckHash = false;
     OH_AVFormat *trackFormat = nullptr;
     bool sleepOnFPS = false;
     bool autoSwitchSurface = false;
@@ -161,19 +161,17 @@ private:
     int64_t syncOutputWaitTime_ = -1;
     bool queryOutputBufferEOS_ = false;
     bool queryInputBufferEOS_ = false;
-    const char *fileSourcesha256Mpeg1_[64] = {"43", "3f", "7c", "e5", "05", "67", "e2",
-        "25", "5c", "91", "63", "4f", "57", "db", "3d", "63", "99", "fb", "d8", "4b",
-        "11", "1e", "c4", "2c", "b2", "be", "34", "d0", "24", "7d", "99", "5a", "0f",
-        "ef", "5b", "21", "39", "4b", "a4", "73", "d9", "57", "69", "c6", "ec", "41",
-        "fc", "cd", "51", "42", "f9", "12", "fe", "0d", "21", "8f", "15", "3b", "d1",
-        "f7", "ec", "c7", "57", "98"
+    const char *fileSourcesha256Mpeg1_[64] = {
+        "87", "0f", "1c", "fa", "fe", "b5", "2e", "1d", "cf", "6f", "03", "3c", "de", "28", "83", "39",
+        "f3", "11", "2b", "4d", "cf", "7c", "54", "c5", "9e", "bd", "17", "00", "fe", "7b", "2d", "70",
+        "a2", "e1", "fe", "01", "6d", "d9", "29", "6a", "fa", "64", "3a", "7e", "49", "a4", "4b", "3a",
+        "3a", "0f", "05", "30", "8e", "fc", "cd", "b8", "08", "de", "30", "bd", "a2", "d9", "a1", "90"
     };
-    const char *fileSourcesha256_2[64] = {"6b", "cd", "50", "80", "1a", "7f", "5a",
-        "51", "d2", "f3", "a6", "bb", "d2", "bc", "99", "16", "6b", "e3", "e1",
-        "9d", "02", "4a", "ec", "9b", "9b", "89", "dd", "c3", "ef", "8d", "76",
-        "e7", "53", "3e", "6d", "fe", "12", "e1", "e6", "27", "36", "54", "51",
-        "20", "76", "a5", "4b", "c7", "6b", "ed", "a3", "a0", "32", "4f", "af",
-        "fc", "e9", "6d", "70", "4e", "41", "92", "3c", "17"
+    const char *fileSourcesha256_2[64] = {
+        "f0", "7d", "45", "c9", "07", "ac", "c4", "79", "47", "89", "40", "29", "f9", "f9", "ea", "d9",
+        "aa", "ac", "41", "f4", "03", "76", "b0", "09", "39", "c8", "75", "13", "ec", "07", "6c", "a9",
+        "1b", "78", "e5", "e1", "38", "64", "d4", "0b", "99", "de", "d2", "66", "d3", "d6", "66", "27",
+        "7f", "14", "8c", "35", "ed", "ab", "08", "47", "20", "9c", "d0", "a8", "d3", "32", "55", "d5"
     };
     int64_t renderTimestampNs_ = 0;
     bool rsAtTime_ = false;

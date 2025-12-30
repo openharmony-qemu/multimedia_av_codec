@@ -48,6 +48,7 @@ config("http_source_plugin_config") {
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils",
   ]
 }
 
@@ -119,6 +120,7 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "hls/hls_segment_manager.cpp",
     "http/http_media_downloader.cpp",
     "http_source_plugin.cpp",
+    "utils/http_media_utils.cpp",
     "monitor/download_monitor.cpp",
     "utils/aes_decryptor.cpp",
     "utils/media_cached_buffer.cpp",
@@ -127,6 +129,12 @@ ohos_static_library("media_plugin_HttpSource_static") {
   ]
 
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+
+  external_deps = [
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
+    "samgr:samgr_proxy",
+  ]
 
   public_external_deps = [
     "c_utils:utils",

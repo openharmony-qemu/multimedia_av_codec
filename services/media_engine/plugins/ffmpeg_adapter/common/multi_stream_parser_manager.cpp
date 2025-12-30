@@ -139,6 +139,12 @@ bool MultiStreamParserManager::IsHdrVivid(uint32_t trackId)
     return streamMap_[trackId].parser->IsHdrVivid();
 }
 
+bool MultiStreamParserManager::IsHdr10Plus(uint32_t trackId)
+{
+    FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), false, "Stream parser is invalid");
+    return streamMap_[trackId].parser->IsHdr10Plus();
+}
+
 bool MultiStreamParserManager::IsSyncFrame(uint32_t trackId, const uint8_t *sample, int32_t size)
 {
     FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), false, "Stream parser is invalid");
@@ -223,11 +229,11 @@ void MultiStreamParserManager::ConvertPacketToAnnexb(
         packetInfo.sideDataSize, packetInfo.isExtradata);
 }
 
-void MultiStreamParserManager::ConvertPacketToAnnexb(
+bool MultiStreamParserManager::ConvertPacketToAnnexb(
     uint32_t trackId, const PacketConvertToBufferInfo &convertInfo)
 {
-    FALSE_RETURN_MSG(ParserIsInited(trackId), "Stream parser is invalid");
-    streamMap_[trackId].parser->ConvertPacketToAnnexb(convertInfo);
+    FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), false, "Stream parser is invalid");
+    return streamMap_[trackId].parser->ConvertPacketToAnnexb(convertInfo);
 }
 
 void MultiStreamParserManager::ParseAnnexbExtraData(uint32_t trackId, const uint8_t *sample, int32_t size)

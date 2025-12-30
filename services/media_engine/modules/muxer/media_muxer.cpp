@@ -65,7 +65,7 @@ const std::map<std::string, std::set<std::string>> MUX_MIME_INFO = {
     {MimeType::AUDIO_RAW, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT, Tag::AUDIO_SAMPLE_FORMAT}},
     {MimeType::AUDIO_G711MU, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT, Tag::MEDIA_BITRATE}},
     {MimeType::AUDIO_FLAC, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT}},
-    {MimeType::AUDIO_OPUS, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT}},
+    {MimeType::AUDIO_OPUS, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT, Tag::MEDIA_CODEC_CONFIG}},
     {MimeType::AUDIO_VORBIS, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT, Tag::MEDIA_CODEC_CONFIG}},
     {MimeType::VIDEO_AVC, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
     {MimeType::VIDEO_MPEG4, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
@@ -171,6 +171,9 @@ Status MediaMuxer::SetParameter(const std::shared_ptr<Meta> &param)
 Status MediaMuxer::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
 {
     MEDIA_LOG_I("SetUserMeta");
+    FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED || state_ == State::STARTED, Status::ERROR_WRONG_STATE,
+        "The state is not INITIALIZED, the interface must be called at initialized or started state. "
+        "The current state is %{public}s.", StateConvert(state_).c_str());
     std::lock_guard<std::mutex> lock(mutex_);
     std::vector<std::string> keys;
     userMeta->GetKeys(keys);
@@ -180,9 +183,6 @@ Status MediaMuxer::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
             return muxer_->SetUserMeta(userMeta);
         }
     }
-    FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED || state_ == State::STARTED, Status::ERROR_WRONG_STATE,
-        "The state is not INITIALIZED, the interface must be called at initialized or started state. "
-        "The current state is %{public}s.", StateConvert(state_).c_str());
     return muxer_->SetUserMeta(userMeta);
 }
 

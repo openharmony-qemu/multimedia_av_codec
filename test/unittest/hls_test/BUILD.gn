@@ -33,6 +33,7 @@ hls_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/aes_decryptor.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp",
   "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/http_media_utils.cpp",
 ]
 
 config("hls_unittest_cfg") {
@@ -77,6 +78,7 @@ config("hls_unittest_cfg") {
     "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/services/drm_decryptor",
     "$av_codec_root_dir/services/media_engine/modules",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils",
   ]
 }
 
@@ -104,6 +106,8 @@ ohos_unittest("hls_media_downloader_unit_test") {
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
   ]
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -133,6 +137,8 @@ ohos_unittest("hls_segment_manager_unit_test") {
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
   ]
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -162,6 +168,8 @@ ohos_unittest("hls_playlist_downloader_unit_test") {
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
   ]
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -191,6 +199,8 @@ ohos_unittest("hls_tags_unit_test") {
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
   ]
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -220,6 +230,8 @@ ohos_unittest("m3u8_unit_test") {
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
   ]
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"

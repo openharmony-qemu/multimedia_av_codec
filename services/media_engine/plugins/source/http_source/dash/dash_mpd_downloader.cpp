@@ -71,6 +71,14 @@ void DashMpdDownloader::Init()
         return shareDownloader->SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
             std::forward<decltype(notBlock)>(notBlock));
     };
+    if (downloader_!= nullptr && downloadCallback_ != nullptr) {
+        downloader_->SetDownloadCallback(downloadCallback_);
+    }
+}
+
+void DashMpdDownloader::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
+{
+    downloadCallback_ = callback;
 }
 
 std::string DashMpdDownloader::GetContentType()
@@ -2098,14 +2106,6 @@ bool DashMpdDownloader::PutStreamToDownload()
     OpenStream(*iter);
     return true;
 }
-
-void DashMpdDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
-{
-    if (downloader_ != nullptr) {
-        downloader_->GetDownloadInfo(downloadInfo);
-    }
-}
-
 }
 }
 }

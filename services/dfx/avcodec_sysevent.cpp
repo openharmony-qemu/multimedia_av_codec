@@ -53,6 +53,18 @@ void ServiceStartEventWrite(uint32_t useTime, const std::string& module)
                     "MEMORY", useMemory);
 }
 
+void StreamAppPackageNameEventWrite(const std::string& sysCap,
+    const std::string& packageName, const std::string& apiCall, const std::string& mediaEvents)
+{
+    HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA, "MEDIAKIT_STATISTICS",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
+                    "SYSCAP",             sysCap,
+                    "APP_NAME",           packageName,
+                    "INSTANCE_ID",        "",
+                    "API_CALL",           apiCall,
+                    "MEDIA_EVENTS",       mediaEvents);
+}
+
 void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo)
 {
     HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_START_INFO",

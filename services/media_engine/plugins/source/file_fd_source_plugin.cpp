@@ -31,6 +31,8 @@
 #include "osal/filesystem/file_system.h"
 #include "file_fd_source_plugin.h"
 #include "common/media_core.h"
+#include "http_media_utils.h"
+#include "avcodec_sysevent.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "FileFdSourcePlugin" };
@@ -166,6 +168,11 @@ Status FileFdSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
         downloadTask_->Start();
         steadyClock_.Reset();
     }
+    auto uuid = source->GetAppUid();
+    std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
+    MEDIA_LOG_I("SYX FD name %{public}s", bundleName.c_str());
+    MediaAVCodec::StreamAppPackageNameEventWrite("AVSource", bundleName,
+        "OH_AVSource_CreateWithFD", "{\"result\": \"success\"}");
     return Status::OK;
 }
 

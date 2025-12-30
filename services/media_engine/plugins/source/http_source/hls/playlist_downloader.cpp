@@ -65,6 +65,14 @@ void PlayListDownloader::Init()
         }
         return static_cast<size_t>(PLAYLIST_UPDATE_RATE);
     });
+    if (downloader_ != nullptr && downloadCallback_ != nullptr) {
+        downloader_->SetDownloadCallback(downloadCallback_);
+    }
+}
+
+void PlayListDownloader::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
+{
+    downloadCallback_ = callback;
 }
 
 PlayListDownloader::PlayListDownloader(const std::map<std::string, std::string>& httpHeader,

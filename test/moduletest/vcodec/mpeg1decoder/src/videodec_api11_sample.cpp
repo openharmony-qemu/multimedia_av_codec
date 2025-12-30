@@ -940,7 +940,7 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
         AutoSwitchSurface();
         SHA512_Final(g_md, &g_c);
         OPENSSL_cleanse(&g_c, sizeof(g_c));
-        if (!sfOutput && !noCaleHash) {
+        if (!sfOutput && needCheckHash) {
             if (!MdCompare(g_md, SHA512_DIGEST_LENGTH, defaultPixelFormat == AV_PIXEL_FORMAT_NV12 ?
                 fileSourcesha256Mpeg1_ : fileSourcesha256_2)) {
                 errCount++;

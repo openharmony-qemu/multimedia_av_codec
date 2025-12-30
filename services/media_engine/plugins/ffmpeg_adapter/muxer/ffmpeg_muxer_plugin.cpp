@@ -141,6 +141,10 @@ bool FormatName2OutCapability(const std::string& fmtName, MuxerPluginDef& plugin
         auto cap = Capability(MimeType::MEDIA_FLAC);
         pluginDef.AddOutCaps(cap);
         return true;
+    } else if (fmtName == "ogg") {
+        auto cap = Capability(MimeType::MEDIA_OGG);
+        pluginDef.AddOutCaps(cap);
+        return true;
     }
     return false;
 }
@@ -460,8 +464,38 @@ Status FFmpegMuxerPlugin::SetGltfInfo(std::shared_ptr<Meta> param)
     return Status::NO_ERROR;
 }
 
+Status FFmpegMuxerPlugin::SetOggUserMeta(const std::shared_ptr<Meta> &userMeta)
+{
+    std::vector<std::string> keys;
+    userMeta->GetKeys(keys);
+    FALSE_RETURN_V_MSG_E(keys.size() > 0, Status::ERROR_INVALID_DATA, "ogg user meta is empty!");
+
+    for (auto& k: keys) {
+        if (k.compare(0, 16, "com.openharmony.") != 0) { // 16 "com.openharmony." length
+            MEDIA_LOG_W("the meta key %{public}s must com.openharmony.xxx!", k.c_str());
+            continue;
+        }
+        std::string value = "";
+        if (!userMeta->GetData(k, value)) {
+            MEDIA_LOG_W("ogg meta key must be string, %{public}s invalid type", k.c_str());
+            continue;
+        }
+        if (value.length() > MAX_USERMETA_STRING_LENGTH) {
+            MEDIA_LOG_E("the usermeta key %{public}s string value length %{public}zu more than 256 characters.",
+                k.c_str(), value.length());
+            return Status::ERROR_INVALID_DATA;
+        }
+        av_dict_set(&formatContext_->metadata, k.c_str(), value.c_str(), 0);
+    }
+    return Status::NO_ERROR;
+}
+
 Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
 {
+    if (pluginName_ == "ffmpegMux_ogg") {
+        return SetOggUserMeta(userMeta);
+    }
+    // default muxer meta
     std::vector<std::string> keys;
     bool isSetUserMeta = false;
     userMeta->GetKeys(keys);

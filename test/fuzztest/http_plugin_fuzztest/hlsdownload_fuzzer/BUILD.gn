@@ -63,6 +63,7 @@ test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
   "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/http_media_utils.cpp",
 ]
 
 config("fuzz_cfg") {
@@ -105,6 +106,7 @@ config("fuzz_cfg") {
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
     "$av_codec_root_dir/test/unittest/common",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils",
     "../common",
   ]
 }
@@ -136,6 +138,8 @@ ohos_fuzztest("HlsDownloadFuzzTest") {
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
   ]
 
   deps = [

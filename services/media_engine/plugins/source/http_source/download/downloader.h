@@ -30,6 +30,7 @@
 #include "network/network_typs.h"
 #include "common/media_source.h"
 #include "media_source_loading_request.h"
+#include "download_metrics_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -216,7 +217,7 @@ public:
     void StopBufferring();
     std::string GetContentType();
     void ReStart();
-    void GetDownloadInfo(DownloadInfo& downloadInfo);
+    void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
 
 private:
     bool BeginDownload();
@@ -282,13 +283,10 @@ private:
     bool isContentTypeUpdated_{false};
     ConditionVariable sleepCond_;
     FairMutex sleepMutex_;
-    int64_t totalDownLoadBytes_ {0};
-    int32_t toalDownloadCount_ {0};
-    int64_t firstDownloadTime_ {0};
+    bool isFirstDownload_ {false};
     int64_t lastDownloadTime_ {0};
-    int64_t firstDownloadTimestamp_ {0};
     int64_t startDownTime_ {0};
-    int64_t totalDownloadDuringTime_ {0};
+    std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
 };
 }
 }

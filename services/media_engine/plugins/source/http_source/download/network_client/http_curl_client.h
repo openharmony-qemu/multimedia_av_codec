@@ -66,7 +66,7 @@ public:
         gid_t gid;
     };
 private:
-    void InitCurlEnvironment(const std::string& url, int32_t timeoutMs);
+    Status InitCurlEnvironment(const std::string& url, int32_t timeoutMs);
     void InitCurProxy(const std::string& url);
     std::string UrlParse(const std::string& url) const;
     void HttpHeaderParse(const std::map<std::string, std::string>& httpHeader);

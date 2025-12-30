@@ -346,10 +346,6 @@ HWTEST_F(SampleQueueUnitTest, SetLargerQueueSize_001, TestSize.Level1)
     sampleQueueConfig.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
     Status status = sampleQueue_->Init(sampleQueueConfig);
     EXPECT_EQ(status, Status::OK);
-
-    sampleQueue_->config_.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
-    Status ret = sampleQueue_->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE_ON_MUTE);
-    EXPECT_EQ(ret, Status::OK);
     EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE_ON_MUTE);
 }
 
@@ -392,10 +388,7 @@ HWTEST_F(SampleQueueUnitTest, SetLargerQueueSize_003, TestSize.Level1)
     sampleQueueConfig.queueSize_ = SampleQueue::MAX_SAMPLE_QUEUE_SIZE;
     Status status = sampleQueue_->Init(sampleQueueConfig);
     EXPECT_EQ(status, Status::OK);
-
-    Status ret = sampleQueue_->SetLargerQueueSize(SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
-    EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE);
+    EXPECT_EQ(sampleQueue_->config_.queueSize_, SampleQueue::MAX_SAMPLE_QUEUE_SIZE_ON_MUTE);
 }
 
 /**

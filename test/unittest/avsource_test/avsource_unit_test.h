@@ -35,7 +35,7 @@ public:
     int32_t OpenFile(const std::string &fileName);
     void ResetFormatValue();
 
-    void InitResource(const std::string &path, bool local);
+    void InitResource(const std::string &path, bool local, bool checkTrack = true);
     void CheckHevcInfo(const std::string resName);
 
 protected:
@@ -88,7 +88,7 @@ protected:
         int32_t rotationAngle = 0;
         int32_t orientationType = 0;
         int64_t channelLayout = 0;
-        int32_t hdrType = 0;
+        int32_t hdrType = -1;
         int32_t codecProfile = 0;
         int32_t codecLevel = 0;
         int32_t colorPrimaries = 0;
@@ -115,6 +115,7 @@ protected:
     FormatValue formatVal_;
 
     bool checkPass_ = false;
+    bool checkHdrTypePass_ = false;
     void CheckAuxlHevc();
     void CheckAuxlAvc();
     void CheckAuxlAac();

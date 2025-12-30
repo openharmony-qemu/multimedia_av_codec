@@ -133,6 +133,7 @@ int32_t AudioDecoderCapiMock::Stop()
         }
         decSignal_->inBufferQueue.pop();
         decSignal_->inQueue.pop();
+        inLock.unlock();
         ret = OH_AudioCodec_Stop(audioDec_);
         if (ret != 0) {
             retCode |= 0x04;
