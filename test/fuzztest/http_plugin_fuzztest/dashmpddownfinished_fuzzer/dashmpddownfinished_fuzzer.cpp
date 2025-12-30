@@ -46,6 +46,10 @@ bool DashMpdDownFinishedFuzzerTest(const uint8_t *data, size_t size)
     downloader->GetSeekable();
     downloader->GetDuration();
     downloader->UpdateDownloadFinished(testUrl);
+    if (size < sizeof(bool)) {
+        downloader = nullptr;
+        return false;
+    }
     bool isAsyan = *reinterpret_cast<const bool *>(data);
     downloader->Close(isAsyan);
     if (!isAsyan) {

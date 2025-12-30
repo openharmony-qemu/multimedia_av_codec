@@ -1083,7 +1083,7 @@ uint32_t HlsSegmentManager::SaveEncryptData(uint8_t *data, uint32_t len, bool no
         auto writtenLen = DecryptData(encryptedBuffer, encryptedLen, notBlock);
         totalWrittenLen += writtenLen;
     }
-    if (encryptedLen) { // singleBlockLen_ == 0, encryptedLen < AES_BLOCK_LEN
+    if (encryptedLen > 0) { // singleBlockLen_ == 0, encryptedLen < AES_BLOCK_LEN
         // fill to single block
         totalWrittenLen += FillSingleBlock(encryptedBuffer, encryptedLen);
     }
@@ -1406,6 +1406,8 @@ int64_t HlsSegmentManager::RequestNewTsForRead(const PlayInfo& item)
 
 void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std::string& location)
 {
+    (void) url;
+    (void) location;
     auto downloadRequest = GetDownloadRequest();
     uint32_t bitRate = downloadRequest->GetBitRate();
     {
@@ -1446,7 +1448,8 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
 
 void HlsSegmentManager::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
-    MEDIA_LOG_D("SetReadBlockingFlag entered, type: %{public}d", type_);
+    MEDIA_LOG_D("SetReadBlockingFlag entered, type: %{public}d, isReadBlockingAllowed: %{public}d",
+        type_, isReadBlockingAllowed);
 }
 
 void HlsSegmentManager::SetIsTriggerAutoMode(bool isAuto)
@@ -1472,7 +1475,7 @@ void HlsSegmentManager::ReportVideoSizeChange()
 
 void HlsSegmentManager::SetDemuxerState(int32_t streamId)
 {
-    MEDIA_LOG_I("HLS SetDemuxerState, type: %{public}d", type_);
+    MEDIA_LOG_I("HLS SetDemuxerState, type: %{public}d, streamId:" PUBLIC_LOG_D32, type_, streamId);
     isReadFrame_ = true;
     isFirstFrameArrived_ = true;
 }
@@ -1736,7 +1739,8 @@ std::pair<int32_t, int32_t> HlsSegmentManager::GetDownloadRateAndSpeed()
 
 Status HlsSegmentManager::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
-    MEDIA_LOG_I("HLS SetCurrentBitRate: " PUBLIC_LOG_D32 ", type: %{public}d", bitRate, type_);
+    MEDIA_LOG_I("HLS SetCurrentBitRate: " PUBLIC_LOG_D32 ", type: %{public}d, streamID: " PUBLIC_LOG_D32,
+        bitRate, type_, streamID);
     if ((bitRate <= 0 && currentBitRate_ == 0) || playlistDownloader_ == nullptr) {
         currentBitRate_ = -1; // -1
     } else {
@@ -1962,7 +1966,8 @@ bool HlsSegmentManager::SetInitialBufferSize(int32_t offset, int32_t size)
         MEDIA_LOG_I("HLS SetInitialBufferSize initCacheSize ok, type: %{public}d", type_);
         return false;
     }
-    MEDIA_LOG_I("HLS SetInitialBufferSize initCacheSize " PUBLIC_LOG_U32 ", type: %{public}d", size, type_);
+    MEDIA_LOG_I("HLS SetInitialBufferSize initCacheSize " PUBLIC_LOG_U32 "offset:" PUBLIC_LOG_U32 ", type: %{public}d",
+        size, offset, type_);
     return true;
 }
 
