@@ -482,7 +482,6 @@ group("av_codec_fuzz_test") {
       "fuzztest/syncdecoderbuffer10bit_fuzzer:SyncDecoderBuffer10BitFuzzTest",
       "fuzztest/http_plugin_fuzztest/dashmediadownloader_fuzzer:DashMediaDownloaderFuzzTest",
       "fuzztest/http_plugin_fuzztest/dashmediadownselectbit_fuzzer:DashMediaDownSelectBitFuzzTest",
-      "fuzztest/http_plugin_fuzztest/dashmediadownsetbit_fuzzer:DashMediaDownSetBitFuzzTest",
       "fuzztest/http_plugin_fuzztest/dashmpddownloader_fuzzer:DashMpdDownloaderFuzzTest",
       "fuzztest/http_plugin_fuzztest/httpdownloaderflv_fuzzer:HttpDownloaderFlvFuzzTest",
       "fuzztest/http_plugin_fuzztest/hlsdownload_fuzzer:HlsDownloadFuzzTest",
