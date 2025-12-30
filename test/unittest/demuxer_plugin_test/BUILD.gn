@@ -22,6 +22,7 @@ demuxer_plugin_test_sources = [
   "$av_codec_root_dir/services/media_engine/modules/demuxer/type_finder.cpp",
   "$av_codec_root_dir/services/media_engine/modules/source/source.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/avpacket_wrapper.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/avpacket_memory.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/ffmpeg_demuxer_plugin.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/ffmpeg_demuxer_thread.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/block_queue_pool.cpp",
@@ -87,6 +88,7 @@ ohos_unittest("demuxer_plugin_unit_test") {
   sources += [
     "demuxer_plugin_audio_unit_test.cpp",
     "demuxer_plugin_video_unit_test.cpp",
+    "demuxer_plugin_common_unit_test.cpp",
   ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
