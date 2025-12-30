@@ -18,14 +18,6 @@
 #include "avpacket_wrapper.h"
 #include "avpacket_memory.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "libavcodec/avcodec.h"
-#ifdef __cplusplus
-}
-#endif
-
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
@@ -45,11 +37,11 @@ constexpr AVRational TEST_TIME_BASE = {1, 90000};
 // ==================== AVPacketWrapper Tests ====================
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006301
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061301
  * @tc.desc: Test default constructor, verify AVPacket is allocated correctly
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006301, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061301, TestSize.Level1)
 {
     AVPacketWrapper wrapper;
     AVPacket* pkt = wrapper.GetAVPacket();
@@ -59,11 +51,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006301, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006302
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061302
  * @tc.desc: Test constructor from AVPacket*, verify ownership transfer
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006302, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061302, TestSize.Level1)
 {
     AVPacket* pkt = av_packet_alloc();
     ASSERT_NE(pkt, nullptr);
@@ -90,11 +82,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006302, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006303
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061303
  * @tc.desc: Test constructor with nullptr, verify null pointer handling
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006303, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061303, TestSize.Level1)
 {
     AVPacketWrapper wrapper(nullptr);
     EXPECT_EQ(wrapper.GetAVPacket(), nullptr);
@@ -109,11 +101,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006303, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006304
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061304
  * @tc.desc: Test GetPts() method with valid value and AV_NOPTS_VALUE
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006304, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061304, TestSize.Level1)
 {
     AVPacketWrapper wrapper;
     AVPacket* pkt = wrapper.GetAVPacket();
@@ -128,11 +120,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006304, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006305
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061305
  * @tc.desc: Test GetDts() method
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006305, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061305, TestSize.Level1)
 {
     AVPacketWrapper wrapper;
     AVPacket* pkt = wrapper.GetAVPacket();
@@ -147,11 +139,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006305, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006306
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061306
  * @tc.desc: Test GetSize() method
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006306, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061306, TestSize.Level1)
 {
     AVPacketWrapper wrapper;
     AVPacket* pkt = wrapper.GetAVPacket();
@@ -167,11 +159,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006306, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006307
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061307
  * @tc.desc: Test GetData() method
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006307, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061307, TestSize.Level1)
 {
     AVPacketWrapper wrapper;
     AVPacket* pkt = wrapper.GetAVPacket();
@@ -188,11 +180,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006307, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006308
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061308
  * @tc.desc: Test GetStreamIndex() method
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006308, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061308, TestSize.Level1)
 {
     AVPacketWrapper wrapper;
     AVPacket* pkt = wrapper.GetAVPacket();
@@ -207,11 +199,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006308, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006309
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061309
  * @tc.desc: Test GetFlags() method
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006309, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061309, TestSize.Level1)
 {
     AVPacketWrapper wrapper;
     AVPacket* pkt = wrapper.GetAVPacket();
@@ -226,11 +218,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006309, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006310
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061310
  * @tc.desc: Test GetDuration() method
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006310, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061310, TestSize.Level1)
 {
     AVPacketWrapper wrapper;
     AVPacket* pkt = wrapper.GetAVPacket();
@@ -245,11 +237,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006310, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006311
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061311
  * @tc.desc: Test GetPos() method
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006311, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061311, TestSize.Level1)
 {
     AVPacketWrapper wrapper;
     AVPacket* pkt = wrapper.GetAVPacket();
@@ -264,11 +256,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006311, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006312
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061312
  * @tc.desc: Test GetTimeBase() method
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006312, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061312, TestSize.Level1)
 {
     AVPacketWrapper wrapper;
     AVPacket* pkt = wrapper.GetAVPacket();
@@ -287,11 +279,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006312, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006313
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061313
  * @tc.desc: Test accessing interfaces of empty packet, verify default values
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006313, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061313, TestSize.Level1)
 {
     AVPacketWrapper wrapper;
     // Empty packet should return default values
@@ -306,11 +298,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006313, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006314
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061314
  * @tc.desc: Test move constructor, verify ownership transfer
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006314, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061314, TestSize.Level1)
 {
     AVPacketWrapper wrapper1;
     AVPacket* pkt1 = wrapper1.GetAVPacket();
@@ -335,11 +327,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006314, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006315
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061315
  * @tc.desc: Test move assignment, verify ownership transfer and original object cleared
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006315, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061315, TestSize.Level1)
 {
     AVPacketWrapper wrapper1;
     AVPacket* pkt1 = wrapper1.GetAVPacket();
@@ -370,11 +362,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006315, TestSize.Lev
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketWrapper_006316
+ * @tc.name: AVDemuxer_Enhance_PacketWrapper_061316
  * @tc.desc: Test self assignment move, verify no crash
  * @tc.type: FUNC
  */
-HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006316, TestSize.Level1)
+HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_061316, TestSize.Level1)
 {
     AVPacketWrapper wrapper;
     AVPacket* pkt = wrapper.GetAVPacket();
@@ -397,11 +389,11 @@ HWTEST(AVPacketWrapperTest, AVDemuxer_Enhance_PacketWrapper_006316, TestSize.Lev
 // ==================== AVPacketMemory Tests ====================
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketMemory_006317
+ * @tc.name: AVDemuxer_Enhance_PacketMemory_061317
  * @tc.desc: Test constructor with valid AVPacketWrapper
  * @tc.type: FUNC
  */
-HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006317, TestSize.Level1)
+HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_061317, TestSize.Level1)
 {
     auto wrapper = std::make_shared<AVPacketWrapper>();
     AVPacket* pkt = wrapper->GetAVPacket();
@@ -420,11 +412,11 @@ HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006317, TestSize.Level
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketMemory_006318
+ * @tc.name: AVDemuxer_Enhance_PacketMemory_061318
  * @tc.desc: Test constructor with nullptr wrapper
  * @tc.type: FUNC
  */
-HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006318, TestSize.Level1)
+HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_061318, TestSize.Level1)
 {
     std::shared_ptr<AVPacketWrapper> wrapper = nullptr;
     AVPacketMemory memory(wrapper);
@@ -436,11 +428,11 @@ HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006318, TestSize.Level
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketMemory_006319
+ * @tc.name: AVDemuxer_Enhance_PacketMemory_061319
  * @tc.desc: Test constructor with empty packet wrapper
  * @tc.type: FUNC
  */
-HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006319, TestSize.Level1)
+HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_061319, TestSize.Level1)
 {
     auto wrapper = std::make_shared<AVPacketWrapper>();
     AVPacketMemory memory(wrapper);
@@ -452,11 +444,11 @@ HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006319, TestSize.Level
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketMemory_006320
+ * @tc.name: AVDemuxer_Enhance_PacketMemory_061320
  * @tc.desc: Test GetMemoryType() returns CUSTOM_MEMORY
  * @tc.type: FUNC
  */
-HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006320, TestSize.Level1)
+HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_061320, TestSize.Level1)
 {
     auto wrapper = std::make_shared<AVPacketWrapper>();
     AVPacketMemory memory(wrapper);
@@ -465,11 +457,11 @@ HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006320, TestSize.Level
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketMemory_006321
+ * @tc.name: AVDemuxer_Enhance_PacketMemory_061321
  * @tc.desc: Test GetAddr() returns correct data address
  * @tc.type: FUNC
  */
-HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006321, TestSize.Level1)
+HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_061321, TestSize.Level1)
 {
     auto wrapper = std::make_shared<AVPacketWrapper>();
     AVPacket* pkt = wrapper->GetAVPacket();
@@ -489,11 +481,11 @@ HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006321, TestSize.Level
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketMemory_006322
+ * @tc.name: AVDemuxer_Enhance_PacketMemory_061322
  * @tc.desc: Test GetCapacity() returns correct capacity
  * @tc.type: FUNC
  */
-HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006322, TestSize.Level1)
+HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_061322, TestSize.Level1)
 {
     auto wrapper = std::make_shared<AVPacketWrapper>();
     AVPacket* pkt = wrapper->GetAVPacket();
@@ -507,11 +499,11 @@ HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006322, TestSize.Level
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketMemory_006323
+ * @tc.name: AVDemuxer_Enhance_PacketMemory_061323
  * @tc.desc: Test GetSize() returns correct size
  * @tc.type: FUNC
  */
-HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006323, TestSize.Level1)
+HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_061323, TestSize.Level1)
 {
     auto wrapper = std::make_shared<AVPacketWrapper>();
     AVPacket* pkt = wrapper->GetAVPacket();
@@ -525,11 +517,11 @@ HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006323, TestSize.Level
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketMemory_006324
+ * @tc.name: AVDemuxer_Enhance_PacketMemory_061324
  * @tc.desc: Test GetOffset() returns correct offset
  * @tc.type: FUNC
  */
-HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006324, TestSize.Level1)
+HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_061324, TestSize.Level1)
 {
     auto wrapper = std::make_shared<AVPacketWrapper>();
     AVPacketMemory memory(wrapper);
@@ -539,11 +531,11 @@ HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006324, TestSize.Level
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketMemory_006325
+ * @tc.name: AVDemuxer_Enhance_PacketMemory_061325
  * @tc.desc: Test Write() method returns 0 (write not supported)
  * @tc.type: FUNC
  */
-HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006325, TestSize.Level1)
+HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_061325, TestSize.Level1)
 {
     auto wrapper = std::make_shared<AVPacketWrapper>();
     AVPacketMemory memory(wrapper);
@@ -554,11 +546,11 @@ HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006325, TestSize.Level
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketMemory_006326
+ * @tc.name: AVDemuxer_Enhance_PacketMemory_061326
  * @tc.desc: Test destructor, verify no memory leak
  * @tc.type: FUNC
  */
-HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006326, TestSize.Level1)
+HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_061326, TestSize.Level1)
 {
     auto wrapper = std::make_shared<AVPacketWrapper>();
     AVPacket* pkt = wrapper->GetAVPacket();
@@ -578,11 +570,11 @@ HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006326, TestSize.Level
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketMemory_006327
+ * @tc.name: AVDemuxer_Enhance_PacketMemory_061327
  * @tc.desc: Test multiple AVPacketMemory sharing the same wrapper
  * @tc.type: FUNC
  */
-HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006327, TestSize.Level1)
+HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_061327, TestSize.Level1)
 {
     auto wrapper = std::make_shared<AVPacketWrapper>();
     AVPacket* pkt = wrapper->GetAVPacket();
@@ -612,11 +604,11 @@ HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006327, TestSize.Level
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketMemory_006328
+ * @tc.name: AVDemuxer_Enhance_PacketMemory_061328
  * @tc.desc: Test all interface calls with nullptr wrapper
  * @tc.type: FUNC
  */
-HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006328, TestSize.Level1)
+HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_061328, TestSize.Level1)
 {
     std::shared_ptr<AVPacketWrapper> wrapper = nullptr;
     AVPacketMemory memory(wrapper);
@@ -632,11 +624,11 @@ HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006328, TestSize.Level
 }
 
 /**
- * @tc.name: AVDemuxer_Enhance_PacketMemory_006329
+ * @tc.name: AVDemuxer_Enhance_PacketMemory_061329
  * @tc.desc: Test all interface calls with empty packet
  * @tc.type: FUNC
  */
-HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_006329, TestSize.Level1)
+HWTEST(AVPacketMemoryTest, AVDemuxer_Enhance_PacketMemory_061329, TestSize.Level1)
 {
     auto wrapper = std::make_shared<AVPacketWrapper>();
     AVPacketMemory memory(wrapper);
