@@ -28,7 +28,7 @@ class DownloadMetricsInfo {
 public:
     DownloadMetricsInfo() = default;
     ~DownloadMetricsInfo() = default;
-    void UpdateTotalDownloadCount() const
+    void UpdateTotalDownloadCount()
     {
         totalDownloadCount_.fetch_add(1);
     }
@@ -41,7 +41,7 @@ public:
         }
     }
 
-    void UpdateTotalDownloadTimeAndBytes(int64_t totalDownloadTime, int64_t totalDownloadBytes) const
+    void UpdateTotalDownloadTimeAndBytes(int64_t totalDownloadTime, int64_t totalDownloadBytes)
     {
         totalDownloadTime_.fetch_add(totalDownloadTime);
         totalDownLoadBytes_.fetch_add(totalDownloadBytes);
