@@ -73,7 +73,7 @@ void VideoDecoder::OpenDumpFile()
 
     char fileName[PATH_MAX_LEN] = {0};
     if (dumpModeStr[0] == '1') {
-        int ret = sprintf_s(fileName, sizeof(fileName), "%s/input_%p.h265", DUMP_PATH, this);
+        int ret = sprintf_s(fileName, sizeof(fileName), "%s/input_%p.dat", DUMP_PATH, this);
         if (ret > 0) {
             dumpInFile_ = std::make_shared<std::ofstream>();
             dumpInFile_->open(fileName, std::ios::out | std::ios::binary);
