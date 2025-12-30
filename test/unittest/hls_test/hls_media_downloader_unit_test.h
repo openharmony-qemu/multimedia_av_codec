@@ -32,9 +32,9 @@ public:
     // TearDownTestCase: Called after all test case
     static void TearDownTestCase(void);
     // SetUp: Called before each test cases
-    void SetUp(void) const;
+    void SetUp(void);
     // TearDown: Called after each test cases
-    void TearDown(void) const;
+    void TearDown(void);
 protected:
     std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader_ {nullptr};
     std::map<std::string, std::string> header_;

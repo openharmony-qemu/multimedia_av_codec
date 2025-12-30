@@ -2161,7 +2161,7 @@ void HlsSegmentManager::Clone(const std::shared_ptr<HlsSegmentManager> &other)
     playlistDownloader_->Clone(other->playlistDownloader_);
 }
 
-void HlsSegmentManager::SetMasterReadyCallback(std::function<void(bool, bool)> cb) const
+void HlsSegmentManager::SetMasterReadyCallback(std::function<void(bool, bool)> cb)
 {
     masterReadyCallback_ = cb;
 }
@@ -2231,12 +2231,12 @@ HlsSegmentType HlsSegmentManager::GetSegType(uint32_t streamId)
     return HlsSegmentType::SEG_VIDEO;
 }
 
-void HlsSegmentManager::SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc) const
+void HlsSegmentManager::SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc)
 {
     bufferingCbFunc_ = bufferingCbFunc;
 }
 
-void HlsSegmentManager::SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback) const
+void HlsSegmentManager::SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback)
 {
     segEventCb_ = segEventCallback;
 }

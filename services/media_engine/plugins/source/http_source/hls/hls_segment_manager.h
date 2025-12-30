@@ -79,7 +79,7 @@ public:
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SeekToTime(int64_t seekTime, SeekMode mode);
     void Clone(const std::shared_ptr<HlsSegmentManager> &other);
-    void SetMasterReadyCallback(std::function<void(bool, bool)> cb) const;
+    void SetMasterReadyCallback(std::function<void(bool, bool)> cb);
     HlsSegmentType GetSegType(uint32_t streamId);
 
     size_t GetContentLength() const;
@@ -136,8 +136,8 @@ public:
     int32_t GetDefaultAudioStreamId();
     void SetDemuxerState(int32_t streamId);
     void SetDownloadErrorState();
-    void SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc) const;
-    void SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback) const;
+    void SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc);
+    void SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback);
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
 
 public:

@@ -534,7 +534,7 @@ bool DownloadMonitor::IsHlsFmp4() const
     return downloader_->IsHlsFmp4();
 }
 
-std::string DownloadMonitor::GetContentType()
+std::string DownloadMonitor::GetContentType() const
 {
     FALSE_RETURN_V(downloader_ != nullptr, "");
     return downloader_->GetContentType();

@@ -126,14 +126,14 @@ void HlsMediaDownloaderTest::TearDownTestCase(void)
     g_server = nullptr;
 }
 
-void HlsMediaDownloaderTest ::SetUp(void) const
+void HlsMediaDownloaderTest ::SetUp(void)
 {
     header_ = std::map<std::string, std::string>();
     hlsMediaDownloader_ = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
     hlsMediaDownloader_->Init();
 }
 
-void HlsMediaDownloaderTest ::TearDown(void) const
+void HlsMediaDownloaderTest ::TearDown(void)
 {
     hlsMediaDownloader_ = nullptr;
 }

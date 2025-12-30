@@ -91,7 +91,7 @@ public:
     bool IsFlvLive() const override;
     bool IsHlsFmp4() const override;
     uint64_t GetMemorySize() const override;
-    std::string GetContentType() override;
+    std::string GetContentType() const override;
     std::string GetCurUrl() override;
     bool IsHlsEnd(int32_t streamId = -1) override;
 
