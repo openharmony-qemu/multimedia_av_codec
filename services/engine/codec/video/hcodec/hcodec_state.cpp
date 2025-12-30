@@ -180,7 +180,6 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
     int32_t errorCode = 0;
     std::string faultType;
     std::string sysEventMsg = "[" + codec_->caller_.app.processName + "]" + "[" + codec_->compUniqueStr_ + "]";
-    bool isNeedForceShutdown = false;
  
     switch (omxError) {
         case static_cast<uint32_t>(OMX_ErrorInsufficientResources):
