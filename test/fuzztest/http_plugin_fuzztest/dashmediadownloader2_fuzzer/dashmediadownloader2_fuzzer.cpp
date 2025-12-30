@@ -22,9 +22,12 @@
 #include <fuzzer/FuzzedDataProvider.h>
 #include "http_server_demo.h"
 #include "http_server_mock.h"
+#include "test_template.h"
 #define FUZZ_PROJECT_NAME "dashmediadownloader2_fuzzer"
 using namespace std;
+using namespace OHOS;
 using namespace OHOS::Media;
+using namespace OHOS::Media::Plugins;
 using namespace OHOS::Media::Plugins::HttpPlugin;
 namespace OHOS {
 namespace Media {
@@ -42,7 +45,7 @@ constexpr uint32_t DEFAULT_DURATION = 20;
  
 bool DashMediaDownloader2FuzzTest(const uint8_t *data, size_t size)
 {
-    if (data == nullptr || size < sizeof(int64_t)) {
+    if (data == nullptr) {
         return false;
     }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
@@ -72,7 +75,7 @@ bool DashMediaDownloader2FuzzTest(const uint8_t *data, size_t size)
     mediaDownloader->Pause();
     mediaDownloader->Resume();
     {
-        int64_t seekTime = *reinterpret_cast<const int64_t*>(data);
+        int64_t seekTime = GetData<int64_t>();
         SeekMode seekMode{0};
         mediaDownloader->SeekToTime(seekTime, seekMode);
     }
@@ -80,8 +83,8 @@ bool DashMediaDownloader2FuzzTest(const uint8_t *data, size_t size)
         for (auto u : streams) {
             ReadDataInfo readDataInfo;
             readDataInfo.streamId_ = u.streamId;
-            readDataInfo.wantReadLength_ = *reinterpret_cast<const unsigned int*>(data);
-            unsigned char* buff = const_cast<unsigned char*>(data);
+            readDataInfo.wantReadLength_ = GetData<unsigned int>();
+            unsigned char* buff = GetData<unsigned char*>();
             mediaDownloader->Read(buff, readDataInfo);
         }
     }
@@ -107,6 +110,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         cout << "Init server error" << endl;
         return -1;
     }
+    g_baseFuzzData = data;
+    g_baseFuzzSize = size;
+    g_baseFuzzPos = 0;
     OHOS::Media::Plugins::HttpPlugin::DashMediaDownloader2FuzzTest(data, size);
     if (!CloseServer()) {
         cout << "Close server error" << endl;
