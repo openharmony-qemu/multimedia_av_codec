@@ -665,7 +665,7 @@ bool HlsSegmentManager::CheckCanReadOneSeconds(uint64_t wantReadLength)
     return canRead;
 }
 
-bool HlsSegmentManager::IsAllDownloadFinish() const
+bool HlsSegmentManager::IsAllDownloadFinish()
 {
     return (CheckReadStatus() || isStopped) && GetSeekable() == Seekable::SEEKABLE &&
         tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
@@ -1881,7 +1881,7 @@ bool HlsSegmentManager::GetPlayable()
     return waterLine == 0 ? GetBufferSize() > waterLine : GetBufferSize() >= waterLine;
 }
 
-bool HlsSegmentManager::GetBufferingTimeOut() const
+bool HlsSegmentManager::GetBufferingTimeOut()
 {
     if (bufferingTime_ == 0) {
         return false;

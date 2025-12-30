@@ -113,7 +113,7 @@ public:
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID);
     uint64_t GetBufferSize() const;
     bool GetPlayable();
-    bool GetBufferingTimeOut() const;
+    bool GetBufferingTimeOut();
     bool GetReadTimeOut(bool isDelay);
     void SetAppUid(int32_t appUid);
     size_t GetSegmentOffset();
@@ -213,7 +213,7 @@ private:
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
     bool CheckCanReadOneSeconds(uint64_t wantReadLength);
-    bool IsAllDownloadFinish() const;
+    bool IsAllDownloadFinish();
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;

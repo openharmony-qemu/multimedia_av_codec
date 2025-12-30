@@ -338,7 +338,7 @@ void HttpMediaDownloader::HandleWaterline()
     }
 }
 
-bool HttpMediaDownloader::IsStartDurationOfFlvMultiStream() const
+bool HttpMediaDownloader::IsStartDurationOfFlvMultiStream()
 {
     return isRingBuffer_ && playMediaStreams_.size() > 0 &&
         (steadyClock_.ElapsedMilliseconds() - openTime_) < IGNORE_BUFFERING_WITH_START_TIME_MS;
@@ -1544,7 +1544,7 @@ bool HttpMediaDownloader::GetPlayable() const
     return waterLine == 0 ? GetBufferSize() > waterLine : GetBufferSize() >= waterLine;
 }
 
-bool HttpMediaDownloader::GetBufferingTimeOut() const
+bool HttpMediaDownloader::GetBufferingTimeOut()
 {
     if (bufferingTime_ == 0) {
         return false;
@@ -1554,7 +1554,7 @@ bool HttpMediaDownloader::GetBufferingTimeOut() const
     }
 }
 
-bool HttpMediaDownloader::GetReadTimeOut(bool isDelay) const
+bool HttpMediaDownloader::GetReadTimeOut(bool isDelay)
 {
     size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     if (isDelay) {
@@ -1594,7 +1594,7 @@ Status HttpMediaDownloader::StopBufferring(bool isAppBackground)
     return Status::OK;
 }
 
-void HttpMediaDownloader::WaitForBufferingEnd() const
+void HttpMediaDownloader::WaitForBufferingEnd()
 {
     AutoLock lk(bufferingEndMutex_);
     FALSE_RETURN_MSG(isBuffering_.load(), "isBuffering false.");
@@ -1915,7 +1915,7 @@ void HttpMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
     isAutoSelectBitrate_.store(isAuto);
 }
 
-bool HttpMediaDownloader::AutoSelectBitRate(uint32_t bitRate) const
+bool HttpMediaDownloader::AutoSelectBitRate(uint32_t bitRate)
 {
     SelectBitRate(bitRate);
     return true;

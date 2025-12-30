@@ -73,11 +73,11 @@ public:
     void UpdateCachedPercent(BufferingInfoType infoType);
     uint64_t GetBufferSize() const override;
     bool GetPlayable() const override;
-    bool GetBufferingTimeOut() const override;
-    bool GetReadTimeOut(bool isDelay) const override;
+    bool GetBufferingTimeOut() override;
+    bool GetReadTimeOut(bool isDelay) override;
     void SetAppUid(int32_t appUid) override;
     Status StopBufferring(bool isAppBackground) override;
-    void WaitForBufferingEnd() const override;
+    void WaitForBufferingEnd() override;
     void SetIsReportedErrorCode() override;
     bool IsNotRetry(const std::shared_ptr<DownloadRequest>& request) override
     {
@@ -103,7 +103,7 @@ public:
     void SetStartPts(int64_t startPts) override;
     void SetExtraCache(uint64_t cacheDuration) override;
     bool SelectBitRate(uint32_t bitRate) override;
-    bool AutoSelectBitRate(uint32_t bitRate) const override;
+    bool AutoSelectBitRate(uint32_t bitRate) override;
     void SetMediaStreams(const MediaStreamList& mediaStreams) override;
     std::string GetContentType() const override;
     void SetIsTriggerAutoMode(bool isAuto) override;
@@ -143,7 +143,7 @@ private:
     float GetCacheDuration(float ratio) const;
     void HandleDownloadWaterLine();
     void UpdateMinAndMaxReadOffset();
-    bool IsStartDurationOfFlvMultiStream() const;
+    bool IsStartDurationOfFlvMultiStream();
     bool StartBufferingCheck(unsigned int& wantReadLength);
     bool ClearHasReadBuffer();
     void ClearCacheBuffer();

@@ -32,13 +32,13 @@ public:
         (void)event;
     }
 
-    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) const
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
     {
         (void)flag;
         (void)desBitRate;
     }
 
-    bool CanDoSelectBitRate() const
+    bool CanDoSelectBitRate()
     {
         return true;
     }
@@ -60,7 +60,7 @@ public:
         return 1;
     };
 
-    int32_t Read(int64_t uuid, int64_t requestedOffset, int64_t requestedLength) const
+    int32_t Read(int64_t uuid, int64_t requestedOffset, int64_t requestedLength)
     {
         (void) uuid;
         (void) requestedOffset;
@@ -68,7 +68,7 @@ public:
         return 1;
     };
 
-    int32_t Close(int64_t uuid) const
+    int32_t Close(int64_t uuid)
     {
         (void) uuid;
         return 1;

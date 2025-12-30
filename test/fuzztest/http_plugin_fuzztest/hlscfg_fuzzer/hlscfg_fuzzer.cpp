@@ -41,7 +41,7 @@ public:
         (void)desBitRate;
     }
 
-    bool CanAutoSelectBitRate() const override
+    bool CanAutoSelectBitRate() override
     {
         return true;
     }
