@@ -64,7 +64,7 @@ public:
 
     void OnMpdInfoUpdate(DashMpdEvent mpdEvent) override;
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
-    void UpdateDownloadFinished(int streamId);SetReadBlockingFlag
+    void UpdateDownloadFinished(int streamId);
     void SetInterruptState(bool isInterruptNeeded) override;
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void SetDemuxerState(int32_t streamId) override;
