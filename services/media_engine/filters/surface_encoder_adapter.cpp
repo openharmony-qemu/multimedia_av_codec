@@ -732,6 +732,7 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
         return;
     }
     std::lock_guard<std::mutex> lock(checkFramesMutex_);
+    CheckAndAdjustFrameRate();
     int64_t currentPts = 0;
     attribute->GetLongValue(Tag::MEDIA_TIME_STAMP, currentPts);
     bool isDroppedFrames = CheckFrames(currentPts, checkFramesPauseTime_);
@@ -938,11 +939,11 @@ Status SurfaceEncoderAdapter::CheckAndAdjustFrameRate()
 bool SurfaceEncoderAdapter::IsSupportBoostFrameRate()
 {
     constexpr const char* BOOST_FEATURE_KEY = "const.camera.video.shot2see.speedup";
-    constexpr uint32_t MAX_PARAM_LEN = 6;
+    constexpr int32_t MAX_PARAM_LEN = 6;
     char result[MAX_PARAM_LEN] = {0};
 
     // 获取系统参数
-    int32_t len = GetParameter(BOOST_FEATURE_KEY, "false", result, MAX_PARAM_LEN);
+    int32_t len = GetParameter(BOOST_FEATURE_KEY, "false", result, static_cast<uint32_t>(MAX_PARAM_LEN));
     if (len <= 0 || len >= MAX_PARAM_LEN) {
         MEDIA_LOG_W("GetParameter failed or invalid length: %{public}d, result: %{public}s", len, result);
         return false;
