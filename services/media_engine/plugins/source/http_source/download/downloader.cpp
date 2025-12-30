@@ -1287,7 +1287,7 @@ void Downloader::StopBufferring()
     }
 }
 
-void Downloader::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback) const
+void Downloader::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
 {
     downloadCallback_ = callback;
 }
