@@ -154,7 +154,7 @@ bool DemuxerPluginTest::PluginReplay()
 }
 
 bool DemuxerPluginTest::PluginSeekToKeyFrame(int32_t trackId, int64_t seekTime, SeekMode mode,
-        int64_t& realSeekTime, uint32_t timeoutMs)
+    int64_t& realSeekTime, uint32_t timeoutMs)
 {
     auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
     auto ret = demuxerPlugin->SeekToKeyFrame(trackId, seekTime, mode, realSeekTime, timeoutMs);
