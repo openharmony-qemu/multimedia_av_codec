@@ -62,6 +62,23 @@ public:
     Status Stop() override;
     Status Flush() override;
     Status SetDataSource(const std::shared_ptr<DataSource>& source) override;
+    /**
+     * Judgment for VIDEO_HDR_TYPE:
+     * 1. Only applicable to H.265 streams. This attribute is not included in non-H.265 streams.
+     * 2. If COLOR_PRIMARIES or COLOR_MATRIX_COEFFICIENT is not BT2020, assign the value as NONE.
+     * 3. If ITU_T_T35 type PREFIX_SEI is included:
+     *    1) If COUNTRY_CODE is 0xB5 or 0x26, and PROVIDER_CODE is 0x04 and PROVIDER_ORIENTED_CODE is 0x05,
+     *       assign the value as HDR_VIVID.
+     *    2) If COUNTRY_CODE is 0xB5 and PROVIDER_CODE is 0x3C, assign the value as HDR10.
+     * 4. If ITU_T_T35 is not included, check if there are special boxes in the file:
+     *    1) If CUVV box exists, assign the value as HDR_VIVID.
+     *    2) If DVCC, DVVC, or DVH1 box exists, assign the value as HDR10.
+     * 5. If none of the above conditions are met, determine based on COLOR_TRANSFER_CHARACTERISTIC:
+     *    1) If the transfer function is PR, assign the value as HDR10.
+     *    2) If the transfer function is HLG, assign the value as HLG.
+     * 6. If none of the above conditions are satisfied, assign the value as NONE,
+     *    which may indicate SDR or non-standard HDR.
+     */
     Status GetMediaInfo(MediaInfo& mediaInfo) override;
     Status GetUserMeta(std::shared_ptr<Meta> meta) override;
     Status SelectTrack(uint32_t trackId) override;
