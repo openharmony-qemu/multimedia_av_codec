@@ -38,6 +38,9 @@ constexpr uint32_t DEFAULT_DURATION = 20;
 
 bool DashMediaDownAppUidFuzzerTest(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return false;
+    }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
     std::map<std::string, std::string> httpHeader;
@@ -52,7 +55,7 @@ bool DashMediaDownAppUidFuzzerTest(const uint8_t *data, size_t size)
     playStrategy->audioLanguage = "eng";
     playStrategy->subtitleLanguage = "en_GB";
     mediaDownloader->SetPlayStrategy(playStrategy);
-
+    mediaDownloader->Init();
     mediaDownloader->Open(testUrl, httpHeader);
     mediaDownloader->GetSeekable();
 
