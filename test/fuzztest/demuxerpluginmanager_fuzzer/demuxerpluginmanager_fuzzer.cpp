@@ -18,10 +18,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <iostream>
 #include <fuzzer/FuzzedDataProvider.h>
 #include "securec.h"
-
-#include <iostream>
 #include "demuxer_plugin_manager.h"
 #include "stream_demuxer.h"
 
@@ -31,16 +30,11 @@ using namespace OHOS::Media;
 namespace OHOS {
 const char *MP4_PATH = "/data/test/fuzz_create.mp4";
 const int64_t INVALID_STREAM_OR_TRACK_ID = -1;
-const int64_t TRUE_OR_FALSE = 2;
 const int64_t AUDIO_TRACK = 1;
 const int64_t VIDEO_TRACK = 0;
 const int64_t SUBTITLE_TRACK = 2;
 const int64_t EXPECT_SIZE = 37;
-const int64_t TRACK_COUNT = 3;
 const int64_t SELECT_TRACK = 4;
-const size_t VIDEO_HEIGHT_SIZE = 35;
-const size_t VIDEO_WIDTH_SIZE = 36;
-const size_t BITRATE = 37;
 bool CheckDataValidity(FuzzedDataProvider *fdp, size_t size)
 {
     if (size < EXPECT_SIZE) {
@@ -102,39 +96,39 @@ bool DemuxerPluginManagerFuzzTest(const uint8_t *data, size_t size)
     streamDemuxer->Init(MP4_PATH);
 
     Media::Plugins::StreamInfo videoInfo;
-    videoInfo.streamId = (size - VIDEO_TRACK) % TRACK_COUNT;
-    videoInfo.bitRate = size - BITRATE;
-    videoInfo.videoWidth = size - VIDEO_WIDTH_SIZE;
-    videoInfo.videoHeight =  size - VIDEO_HEIGHT_SIZE;
+    videoInfo.streamId = fdp.ConsumeIntegral<int32_t>();
+    videoInfo.bitRate = fdp.ConsumeIntegral<uint32_t>();
+    videoInfo.videoWidth = fdp.ConsumeIntegral<int32_t>();
+    videoInfo.videoHeight =  fdp.ConsumeIntegral<int32_t>();
     videoInfo.videoType = Media::Plugins::VideoType::VIDEO_TYPE_SDR;
     videoInfo.type = OHOS::Media::Plugins::StreamType::VIDEO;
     Media::Plugins::StreamInfo audioInfo;
-    audioInfo.streamId = (size - AUDIO_TRACK)  % TRACK_COUNT;
-    audioInfo.bitRate = size - BITRATE;
-    audioInfo.videoWidth = size - VIDEO_WIDTH_SIZE;
-    audioInfo.videoHeight =  size - VIDEO_HEIGHT_SIZE;
+    audioInfo.streamId = fdp.ConsumeIntegral<int32_t>();
+    audioInfo.bitRate = fdp.ConsumeIntegral<uint32_t>();
+    audioInfo.videoWidth = fdp.ConsumeIntegral<int32_t>();
+    audioInfo.videoHeight =  fdp.ConsumeIntegral<int32_t>();
     audioInfo.videoType = Media::Plugins::VideoType::VIDEO_TYPE_SDR;
     audioInfo.type = OHOS::Media::Plugins::StreamType::AUDIO;
 
     Media::Plugins::StreamInfo subtitleInfo;
-    subtitleInfo.streamId = (size - SUBTITLE_TRACK)  % TRACK_COUNT;
+    subtitleInfo.streamId = fdp.ConsumeIntegral<int32_t>();
     subtitleInfo.type = OHOS::Media::Plugins::StreamType::SUBTITLE;
     streams.push_back(videoInfo);
     streams.push_back(audioInfo);
     streams.push_back(subtitleInfo);
 
-    int32_t streamID = size % SELECT_TRACK;
-    int32_t trackId = size % SELECT_TRACK;
-    int32_t innerTrackId = size % SELECT_TRACK;
+    int32_t streamID = fdp.ConsumeIntegral<int32_t>();
+    int32_t trackId = fdp.ConsumeIntegral<int32_t>();
+    int32_t innerTrackId = fdp.ConsumeIntegral<int32_t>();
     demuxerPluginManager_->InitDefaultPlay(streams);
     demuxerPluginManager_->InitDefaultPlay(streams);
-    demuxerPluginManager_->SetResetEosStatus(size % TRUE_OR_FALSE == 0);
+    demuxerPluginManager_->SetResetEosStatus(fdp.ConsumeBool());
     demuxerPluginManager_->GetTrackInfoByStreamID(streamID, trackId, innerTrackId);
     if (innerTrackId != trackId) {
         return false;
     }
     TrackType trackType;
-    switch (size % SELECT_TRACK) {
+    switch (fdp.ConsumeIntegral<int32_t>() % SELECT_TRACK) {
         case VIDEO_TRACK:
             trackType = TrackType::TRACK_VIDEO;
             break;
@@ -178,7 +172,7 @@ bool DemuxerPluginManagerFuzzTest(const uint8_t *data, size_t size)
     demuxerPluginManager_->StopPlugin(streamID, streamDemuxer);
     bool isRebooted = false;
     demuxerPluginManager_->RebootPlugin(streamID, trackType, streamDemuxer, isRebooted);
-    int64_t realSeekTime = size;
+    int64_t realSeekTime = fdp.ConsumeIntegral<int64_t>();
     demuxerPluginManager_->SingleStreamSeekTo(realSeekTime,
         Plugins::SeekMode::SEEK_CLOSEST_SYNC, streamID, realSeekTime);
     demuxerPluginManager_->Start();
@@ -192,7 +186,7 @@ bool DemuxerPluginManagerFuzzTest(const uint8_t *data, size_t size)
     demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
     demuxerPluginManager_->AddExternalSubtitle();
     demuxerPluginManager_->AddExternalSubtitle();
-    demuxerPluginManager_->SetApiVersion(size);
+    demuxerPluginManager_->SetApiVersion(fdp.ConsumeIntegral<int32_t>());
 
     int ret = remove(MP4_PATH);
     if (ret != 0) {
