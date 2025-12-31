@@ -142,6 +142,8 @@ string g_rmRv40AacPath = TEST_FILE_PATH + string("rv40_aac.rm");
 string g_dtsErrorPath = TEST_FILE_PATH + string("test_error.dts");
 string g_dtsPath = TEST_FILE_PATH + string("dts.dts");
 string g_dtsUri = TEST_URI_PATH + string("dts.dts");
+string g_dtshdPath = TEST_FILE_PATH + string("dtshd.dtshd");
+string g_truehdPath = TEST_FILE_PATH + string("truehd.thd");
 } // namespace
 
 void AVSourceUnitTest::SetUpTestCase(void)
@@ -4900,6 +4902,135 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1867, TestSize.Level1)
     ASSERT_EQ(formatVal_.channelLayout, 4);
     ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
 }
+
+#ifdef SUPPORT_DEMUXER_DTSHD
+/**
+ * @tc.name: AVSource_GetFormat_1870
+ * @tc.desc: get source format(dtshd)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1870, TestSize.Level1)
+{
+    ASSERT_EQ(access(g_dtshdPath.c_str(), F_OK), 0);
+    fd_ = OpenFile(g_dtshdPath);
+    size_ = GetFileSize(g_dtshdPath);
+    printf("---- %s ----\n", g_dtshdPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s \n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 64000);
+    ASSERT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_EQ(formatVal_.hasVideo, 0);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+    ASSERT_EQ(formatVal_.fileType, 213);
+#endif
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1871
+ * @tc.desc: get source format(dtshd)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1871, TestSize.Level1)
+{
+    ASSERT_EQ(access(g_dtshdPath.c_str(), F_OK), 0);
+    fd_ = OpenFile(g_dtshdPath);
+    size_ = GetFileSize(g_dtshdPath);
+    printf("---- %s ----\n", g_dtshdPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.sampleRate, 96000);
+    ASSERT_EQ(formatVal_.channelCount, 8);
+    ASSERT_EQ(formatVal_.codecMime, "audio/dts");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S32P);
+    ASSERT_EQ(formatVal_.channelLayout, 1599);
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+#endif
+
+#ifdef SUPPORT_DEMUXER_TRUEHD
+/**
+ * @tc.name: AVSource_GetFormat_1872
+ * @tc.desc: get source format(truehd)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1872, TestSize.Level1)
+{
+    ASSERT_EQ(access(g_truehdPath.c_str(), F_OK), 0);
+    fd_ = OpenFile(g_truehdPath);
+    size_ = GetFileSize(g_truehdPath);
+    printf("---- %s ----\n", g_truehdPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s \n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_EQ(formatVal_.hasVideo, 0);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+    ASSERT_EQ(formatVal_.fileType, 214);
+#endif
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1873
+ * @tc.desc: get source format(truehd)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1873, TestSize.Level1)
+{
+    ASSERT_EQ(access(g_truehdPath.c_str(), F_OK), 0);
+    fd_ = OpenFile(g_truehdPath);
+    size_ = GetFileSize(g_truehdPath);
+    printf("---- %s ----\n", g_truehdPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.codecMime, "audio/truehd");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S32LE);
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+#endif
 
 #ifdef SUPPORT_CODEC_RM
 /**

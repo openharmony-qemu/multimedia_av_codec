@@ -66,6 +66,9 @@ namespace Plugins {
 namespace Ffmpeg {
 const uint32_t DEFAULT_READ_SIZE = 4096;
 const uint32_t DEFAULT_SNIFF_SIZE = 4096 * 4;
+#ifdef SUPPORT_DEMUXER_TRUEHD
+const uint32_t TRUEHD_SNIFF_SIZE = 1024 * 1024;
+#endif
 const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const int32_t DEF_PROBE_SCORE_LIMIT = 50;
 const uint32_t RANK_MAX = 100;
@@ -2984,6 +2987,11 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 {
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
     FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "DataSource is nullptr");
+#ifdef SUPPORT_DEMUXER_TRUEHD
+    if (pluginName == "avdemux_truehd") {
+        return SniffWithSize(pluginName, dataSource, TRUEHD_SNIFF_SIZE);
+    }
+#endif
     return SniffWithSize(pluginName, dataSource, DEFAULT_SNIFF_SIZE);
 }
 
