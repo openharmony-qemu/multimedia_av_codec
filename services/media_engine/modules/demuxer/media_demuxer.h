@@ -381,8 +381,8 @@ private:
     void ConsumeWaterLoopControl(int32_t trackId, std::shared_ptr<SampleQueue> sampleQueue);
     void StartConsume(int32_t trackId);
     void ProduceWaterLoopControl(int32_t trackId);
-    void BufferingStatus(int32_t trackId);
-
+    void BufferingStatus();
+    int32_t GetMainTrackId();
     void RecordDemuxerTimeStamp(AVBuffer& buffer, StallingStage stage);
     std::string GetMime();
 
@@ -529,6 +529,7 @@ private:
     uint64_t produceLastCountTime_ {0};
 
     std::atomic<bool> isBuffering_ {false};
+    int64_t lastCacheDuration_ {0};
 };
 } // namespace Media
 } // namespace OHOS

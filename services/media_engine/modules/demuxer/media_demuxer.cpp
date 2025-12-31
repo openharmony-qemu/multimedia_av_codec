@@ -100,6 +100,7 @@ constexpr int64_t SEEKCLOSEST_LOCAL_WARNING_MS = 309;
 constexpr int64_t READSAMPLE_AUIDO_WARNING_MS = 50;
 constexpr int64_t READSAMPLE_WARNING_MS = 100;
 constexpr int32_t CONVERT_PACKET_ERROR_MAX_COUNT = 30;
+constexpr int32_t DURATION_CHANGE_AMOUNT_MILLIONSECOND = 500;
 const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
     { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
 };
@@ -3041,7 +3042,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
     SetTrackNotifyFlag(trackId, false);
     ret = HandleReadSample(trackId);
     ProduceWaterLoopControl(trackId);
-    BufferingStatus(trackId);
+    BufferingStatus();
     MEDIA_LOG_DD("CopyFrameToUserQueue Out, track:" PUBLIC_LOG_D32, trackId);
     return ret;
 }
@@ -3100,26 +3101,40 @@ void MediaDemuxer::ProduceWaterLoopControl(int32_t trackId)
     }
 }
 
-void MediaDemuxer::BufferingStatus(int32_t trackId)
+void MediaDemuxer::BufferingStatus()
 {
-    if (IsLocalFd() || sampleQueueMap_.find(trackId) == sampleQueueMap_.end() || sampleQueueMap_[trackId] == nullptr) {
+    int32_t mainTrackId = GetMainTrackId();
+    if (IsLocalFd() || sampleQueueMap_.find(mainTrackId) == sampleQueueMap_.end()
+        || sampleQueueMap_[mainTrackId] == nullptr) {
         return;
     }
-    if (isBufferingMap_[videoTrackId_].load()) {
+    if (isBufferingMap_[mainTrackId].load()) {
         int64_t percent = static_cast<int64_t>((sampleQueueMap_[trackId]->NewGetCacheDuration() * 100) /
             SampleQueueController::START_CONSUME_WATER_LOOP);
         MEDIA_LOG_I("BUFFERING_PERCENT: %{public}lld", percent);
-        auto eventReceiver = eventReceiver_;
-        if (eventReceiver) {
-            eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_BUFFER_PROGRESS, percent});
+        if (eventReceiver_) {
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_BUFFER_PROGRESS, percent});
         }
     }
     auto cachedDuration = static_cast<int64_t>(sampleQueueMap_[trackId]->NewGetCacheDuration() / US_TO_MS);
-    MEDIA_LOG_I("CACHED_DURATION: %{public}lld", cachedDuration);
-    auto eventReceiver = eventReceiver_;
-    if (eventReceiver) {
-        eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_CACHED_DURATION, cachedDuration});
+    if (std::abs(cachedDuration - lastCacheDuration_) > DURATION_CHANGE_AMOUNT_MILLIONSECOND) {
+        MEDIA_LOG_I("CACHED_DURATION: %{public}lld", cachedDuration);
+        if (eventReceiver_) {
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_CACHED_DURATION, cachedDuration});
+        }
+        lastCacheDuration_ = cachedDuration;
     }
+}
+
+int32_t MediaDemuxer::GetMainTrackId()
+{
+    if (IsValidTrackId(videoTrackId_)) {
+        return videoTrackId_;
+    }
+    if (IsValidTrackId(audioTrackId_)) {
+        return audioTrackId_;
+    }
+    return INVALID_STREAM_OR_TRACK_ID;
 }
 
 Status MediaDemuxer::InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> sample, bool isAVDemuxer)
