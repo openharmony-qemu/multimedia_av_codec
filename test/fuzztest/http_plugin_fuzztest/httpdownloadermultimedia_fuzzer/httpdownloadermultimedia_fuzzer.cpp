@@ -55,16 +55,22 @@ public:
     
     int64_t Open(const std::string &url, const std::map<std::string, std::string> &header)
     {
+        (void) url;
+        (void) header;
         return 1;
     };
 
     int32_t Read(int64_t uuid, int64_t requestedOffset, int64_t requestedLength)
     {
+        (void) uuid;
+        (void) requestedOffset;
+        (void) requestedLength;
         return 1;
     };
 
     int32_t Close(int64_t uuid)
     {
+        (void) uuid;
         return 1;
     };
 };

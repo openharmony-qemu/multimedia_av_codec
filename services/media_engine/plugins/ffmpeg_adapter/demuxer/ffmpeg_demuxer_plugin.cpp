@@ -1287,7 +1287,6 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     if (ioContext_.dataSource->IsDash()) {
         av_dict_set(&options, "use_tfdt", "true", 0);
     }
-    
     int ret = ParseHeader(formatContext, pluginImpl_, &options);
     av_dict_free(&options);
     FALSE_RETURN_V_MSG_E(ret >= 0, nullptr, "ParseHeader failed");
@@ -1900,7 +1899,13 @@ bool FFmpegDemuxerPlugin::Mp4CheckKeyFrame(AVStream* stream)
     FALSE_RETURN_V_MSG_E(stream != nullptr, false, "AVStream is nullptr");
     const AVIndexEntry *entry = avformat_index_get_entry(stream, POS_0);
     FALSE_RETURN_V_MSG_E(entry != nullptr, false, "First AVIndexEntry is nullptr");
+    auto item = mp4FirstKeyFrameIdx_.find(stream->index);
+    if (item != mp4FirstKeyFrameIdx_.end()) {
+        bool ret = item->second >= 0;
+        return ret;
+    }
     int keyIndex = av_index_search_timestamp(stream, entry->timestamp, AVINDEX_KEYFRAME);
+    mp4FirstKeyFrameIdx_[stream->index] = keyIndex;
     FALSE_RETURN_V_MSG_E(keyIndex >= 0, false, "KeyIndex is invalid");
     return true;
 }
@@ -2413,7 +2418,7 @@ bool FFmpegDemuxerPlugin::FrameReady(Status ret)
 Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
-    MediaAVCodec::AVCodecTrace trace("ReadSample");
+    MediaAVCodec::AVCodecTrace trace(std::string("ReadSample_") + std::to_string(trackId));
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
@@ -2465,7 +2470,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
 Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
 {
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
-    MediaAVCodec::AVCodecTrace trace("GetNextSampleSize");
+    MediaAVCodec::AVCodecTrace trace(std::string("GetNextSampleSize_") + std::to_string(trackId));
     MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "Track has not been selected");
@@ -2866,17 +2871,14 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
     int ffRet = -1;
     if (IsSkipGetMinTsPktInfo()) {
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 1, 0);
-        std::unique_lock<std::mutex> sLock(syncMutex_);
-        ffRet = av_seek_frame(formatContext_.get(), SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
-        sLock.unlock();
+        ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, seekTs, AVSEEK_FLAG_ANY);
         av_dict_set_int(&formatContext_->metadata, "seekToStart", 0, 0);
+    } else if (fileType_ == FileType::MPEGPS) {
+        ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, POS_0, AVSEEK_FLAG_BYTE);
     } else if (minTsPktInfo_.isInit) {
         seekTs = (pluginImpl_->flags & AVFMT_SEEK_TO_PTS) && !FFmpegFormatHelper::IsMpeg4File(fileType_) ?
             minTsPktInfo_.minPts : minTsPktInfo_.minDts;
-        std::unique_lock<std::mutex> sLock(syncMutex_);
-        ffRet = av_seek_frame(formatContext_.get(),
-            minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
-        sLock.unlock();
+        ffRet = AVSeekFrameLock(minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
         MEDIA_LOG_I("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
             minTsPktInfo_.streamIndex, seekTs, ffRet);
     }

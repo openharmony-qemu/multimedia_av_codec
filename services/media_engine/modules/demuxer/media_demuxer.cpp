@@ -3089,7 +3089,8 @@ void MediaDemuxer::StartConsume(int32_t trackId)
 
 void MediaDemuxer::ProduceWaterLoopControl(int32_t trackId)
 {
-    if (!sampleQueueController_ || trackId == subtitleTrackId_ || isVideoMuted_ || IsLocalFd()) {
+    if (!sampleQueueController_ || trackId == subtitleTrackId_ || isVideoMuted_ || IsLocalFd()
+        || !GetEnableSampleQueueFlag()) {
         return;
     }
     StartConsume(trackId);

@@ -463,7 +463,9 @@ void SurfaceEncoderFilter::OnReportKeyFramePts(std::string KeyFramePts)
 void SurfaceEncoderFilter::OnReportFirstFramePts(int64_t firstFramePts)
 {
     MEDIA_LOG_I("OnReportFirstFramePts: " PUBLIC_LOG_D64, firstFramePts);
-    eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_VIDEO_FIRST_FRAME, firstFramePts});
+    if (eventReceiver_ != nullptr) {
+        eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_VIDEO_FIRST_FRAME, firstFramePts});
+    }
 }
 } // namespace Pipeline
 } // namespace MEDIA

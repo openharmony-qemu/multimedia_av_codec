@@ -255,6 +255,7 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::OnLinked");
     int32_t trackIndex;
     std::string mimeType;
+    FALSE_RETURN_V_MSG(meta != nullptr, Status::ERROR_NULL_POINTER, "meta is nullptr.");
     meta->Get<Tag::MIME_TYPE>(mimeType);
     if (mimeType.find("audio/") == 0) {
         audioCodecMimeType_ = mimeType;

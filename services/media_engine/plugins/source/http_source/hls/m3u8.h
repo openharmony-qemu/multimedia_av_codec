@@ -181,7 +181,7 @@ struct M3U8MasterPlaylist {
     void UpdateMasterPlaylist();
     void ParseMediaStreamInfo(std::shared_ptr<Tag>& tag);
     void BindVideoAudio();
-    void GetDefaultAudioStream(std::shared_ptr<M3U8VariantStream> &videoStream);
+    void GetDefaultAudioStream(const std::shared_ptr<M3U8VariantStream> &videoStream);
     void DownloadSessionKey(std::shared_ptr<Tag>& tag);
     void CreateVariantStream(const std::shared_ptr<Tag>& tag);
     void ChooseStreamByResolution();

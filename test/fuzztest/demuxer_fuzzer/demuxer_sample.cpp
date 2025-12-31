@@ -112,6 +112,17 @@ static void SetFileValue(OH_AVCodecBufferAttr attr, bool &gReadEnd, int &keyCoun
     }
 }
 
+static void GetSkipSample(OH_AVBuffer *avBuffer)
+{
+    OH_AVFormat *paraFormat = nullptr;
+    uint8_t *addr = nullptr;
+    size_t buffSize = 0;
+    paraFormat = OH_AVBuffer_GetParameter(avBuffer);
+    OH_AVFormat_GetBuffer(paraFormat, OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO, &addr, &buffSize);
+    OH_AVFormat_Destroy(paraFormat);
+    paraFormat = nullptr;
+}
+
 void DrmMediaKeySystemInfoCallback(DRM_MediaKeySystemInfo *mediaKeySystemInfo)
 {}
 
@@ -284,6 +295,7 @@ void DemuxerSample::RunNormalDemuxerApi11(uint32_t createSize, const char *uri, 
                 break;
             }
             OH_AVBuffer_GetBufferAttr(buffer, &attr);
+            GetSkipSample(buffer);
             SetFileValue(attr, gReadEnd, keyCount);
         }
     }

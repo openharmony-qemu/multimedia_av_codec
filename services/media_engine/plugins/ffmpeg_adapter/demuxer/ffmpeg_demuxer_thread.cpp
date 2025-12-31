@@ -166,7 +166,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     Status ret;
-    MediaAVCodec::AVCodecTrace trace("ReadSample_timeout");
+    MediaAVCodec::AVCodecTrace trace(std::string("ReadSample_timeout_") + std::to_string(trackId));
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
@@ -472,7 +472,7 @@ void FFmpegDemuxerPlugin::ReleaseFFmpegReadLoop()
 Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    MediaAVCodec::AVCodecTrace trace("GetNextSampleSize_timeout");
+    MediaAVCodec::AVCodecTrace trace(std::string("GetNextSampleSize_timeout_") + std::to_string(trackId));
     MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "Track has not been selected");
@@ -719,6 +719,8 @@ Status FFmpegDemuxerPlugin::ConvertToAnnexbAndUpdateSample(std::shared_ptr<AVBuf
     FALSE_RETURN_V_MSG_E(avPacketMemory != nullptr, Status::ERROR_INVALID_OPERATION, "Create AVPacketMemory failed");
     sample->memory_ = std::static_pointer_cast<Media::AVMemory>(avPacketMemory);
     MEDIA_LOG_D("AVMemory created, size=" PUBLIC_LOG_U32, avPacketMemory->GetSize());
+    MEDIA_LOG_D("CurrentBuffer: [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_U32 "]",
+        sample->pts_, sample->duration_, sample->flag_);
     if (!samplePacket->isEOS) {
         UpdateLastPacketInfo(tempPkt->stream_index, sample->pts_, tempPkt->pos, sample->duration_);
     }
