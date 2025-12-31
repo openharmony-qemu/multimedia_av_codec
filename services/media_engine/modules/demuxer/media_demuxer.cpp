@@ -3109,14 +3109,14 @@ void MediaDemuxer::BufferingStatus()
         return;
     }
     if (isBufferingMap_[mainTrackId].load()) {
-        int64_t percent = static_cast<int64_t>((sampleQueueMap_[trackId]->NewGetCacheDuration() * 100) /
+        int64_t percent = static_cast<int64_t>((sampleQueueMap_[mainTrackId]->NewGetCacheDuration() * 100) /
             SampleQueueController::START_CONSUME_WATER_LOOP);
         MEDIA_LOG_I("BUFFERING_PERCENT: %{public}lld", percent);
         if (eventReceiver_) {
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_BUFFER_PROGRESS, percent});
         }
     }
-    auto cachedDuration = static_cast<int64_t>(sampleQueueMap_[trackId]->NewGetCacheDuration() / US_TO_MS);
+    auto cachedDuration = static_cast<int64_t>(sampleQueueMap_[mainTrackId]->NewGetCacheDuration() / US_TO_MS);
     if (std::abs(cachedDuration - lastCacheDuration_) > DURATION_CHANGE_AMOUNT_MILLIONSECOND) {
         MEDIA_LOG_I("CACHED_DURATION: %{public}lld", cachedDuration);
         if (eventReceiver_) {
