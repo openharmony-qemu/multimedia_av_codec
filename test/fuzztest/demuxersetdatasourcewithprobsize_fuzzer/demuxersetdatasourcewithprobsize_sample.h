@@ -30,10 +30,15 @@ public:
     bool PluginReadSample(uint32_t idx, uint32_t& flag);
     bool PluginReadAllSample();
     bool Run(const std::string& typeName, const std::string& filePath, int probSize);
+    bool PluginReplay();
+    bool PluginSeekToKeyFrame(int32_t trackId, int64_t seekTime, SeekMode mode,
+        int64_t& realSeekTime, uint32_t timeoutMs);
 
     int streamId_ = 0;
     std::vector<uint32_t> selectedTrackIds_;
     std::vector<uint8_t> buffer_;
+    int64_t seekTime_ = 0;
+    uint32_t timeOutMs_ = 0;
 
     std::shared_ptr<Media::StreamDemuxer> realStreamDemuxer_{ nullptr };
     std::shared_ptr<Media::MediaSource> mediaSource_{ nullptr };

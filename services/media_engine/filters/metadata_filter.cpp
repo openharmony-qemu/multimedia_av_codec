@@ -386,7 +386,7 @@ bool MetaDataFilter::ProcessAndPushOutputBuffer(sptr<SurfaceBuffer>& buffer, int
     Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, timeOutMs);
 
     FALSE_RETURN_V_MSG(status == Status::OK, false, "RequestBuffer fail.");
-
+    FALSE_RETURN_V_MSG(emptyOutputBuffer != nullptr, false, "emptyOutputBuffer is nullptr.");
     std::shared_ptr<AVMemory> &bufferMem = emptyOutputBuffer->memory_;
     FALSE_RETURN_V_MSG(emptyOutputBuffer->memory_ != nullptr, false, "emptyOutputBuffer->memory_ is nullptr.");
 

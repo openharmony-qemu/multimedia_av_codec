@@ -119,7 +119,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     pushDesc("cicp:TransferCharacteristics", "14");
 
     // 再放入一些随机噪音
-    if (n) {
+    if (n > 0) {
         pushDesc(TakeStr(p, n, 16), TakeStr(p, n, 8));
     }
     
