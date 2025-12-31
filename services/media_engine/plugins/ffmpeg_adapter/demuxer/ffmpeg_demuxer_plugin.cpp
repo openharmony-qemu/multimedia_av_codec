@@ -149,6 +149,7 @@ static const std::map<SeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
 
 static const std::map<AVCodecID, std::string> g_bitstreamFilterMap = {
     { AV_CODEC_ID_H264, "h264_mp4toannexb" },
+    { AV_CODEC_ID_HEVC, "hevc_mp4toannexb" },
 };
 
 static const std::map<AVCodecID, VideoStreamType> g_streamParserMap = {
@@ -769,10 +770,10 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> samp
     } else if (codecId == AV_CODEC_ID_VVC && streamParsers_ != nullptr &&
         streamParsers_->ParserIsInited(srcAVPacket->stream_index)) {
         ret = ConvertVvcToAnnexb(*srcAVPacket, dstSamplePacket);
-    } else if (codecId == AV_CODEC_ID_H264 &&
+    } else if ((codecId == AV_CODEC_ID_H264 || codecId == AV_CODEC_ID_HEVC) &&
         avbsfContexts_.count(srcAVPacket->stream_index) > 0 && avbsfContexts_[srcAVPacket->stream_index] != nullptr) {
         ret = ConvertAvcToAnnexb(*srcAVPacket);
-        SetDropTag(*srcAVPacket, sample, AV_CODEC_ID_H264);
+        SetDropTag(*srcAVPacket, sample, codecId);
     }
     if (ret != Status::OK) {
         cacheQueue_.Pop(dstSamplePacket->pkts[0]->stream_index);
@@ -1698,7 +1699,7 @@ void FFmpegDemuxerPlugin::ConvertCsdToAnnexb(const AVStream& avStream, Meta &for
     if (HaveValidParser(avStream.codecpar->codec_id) && streamParsers_ != nullptr &&
         streamParsers_->ParserIsInited(avStream.index)) {
         streamParsers_->ConvertPacketToAnnexb(avStream.index, &(extradata), extradataSize, nullptr, 0, true);
-    } else if (avStream.codecpar->codec_id == AV_CODEC_ID_H264 &&
+    } else if ((avStream.codecpar->codec_id == AV_CODEC_ID_H264 || avStream.codecpar->codec_id == AV_CODEC_ID_HEVC) &&
         avbsfContexts_.count(avStream.index) > 0 && avbsfContexts_[avStream.index] != nullptr &&
         avbsfContexts_[avStream.index]->par_out->extradata != nullptr &&
         avbsfContexts_[avStream.index]->par_out->extradata_size > 0) {
