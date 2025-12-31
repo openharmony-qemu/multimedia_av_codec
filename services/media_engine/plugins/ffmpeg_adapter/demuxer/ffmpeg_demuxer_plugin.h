@@ -74,7 +74,7 @@ public:
      *    1) If CUVV box exists, assign the value as HDR_VIVID.
      *    2) If DVCC, DVVC, or DVH1 box exists, assign the value as HDR10.
      * 5. If none of the above conditions are met, determine based on COLOR_TRANSFER_CHARACTERISTIC:
-     *    1) If the transfer function is PR, assign the value as HDR10.
+     *    1) If the transfer function is PQ, assign the value as HDR10.
      *    2) If the transfer function is HLG, assign the value as HLG.
      * 6. If none of the above conditions are satisfied, assign the value as NONE,
      *    which may indicate SDR or non-standard HDR.
