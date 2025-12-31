@@ -354,6 +354,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/demuxermtsapi11_fuzzer:DemuxerMtsAPI11FuzzTest",
       "fuzztest/demuxerogg_fuzzer:DemuxerOggFuzzTest",
       "fuzztest/demuxeroggapi11_fuzzer:DemuxerOggAPI11FuzzTest",
+      "fuzztest/demuxerdatapi11_fuzzer:DemuxerDatAPI11FuzzTest",
       "fuzztest/demuxerpluginflv_fuzzer:DemuxerPluginFlvFuzzTest",
       "fuzztest/demuxerpluginaac_fuzzer:DemuxerPluginAacFuzzTest",
       "fuzztest/demuxerpluginamr_fuzzer:DemuxerPluginAmrFuzzTest",
