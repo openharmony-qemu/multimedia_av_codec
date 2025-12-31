@@ -294,8 +294,6 @@ void GetWvc1CapProf(std::vector<CapabilityData> &capaArray)
         CapabilityData& capsData = capaArray.back();
         capsData.alignment.width = VC1_ALIGNMENT_SIZE;
         capsData.alignment.height = VC1_ALIGNMENT_SIZE;
-        capsData.width.minVal = VC1_MIN_WIDTH_SIZE;
-        capsData.height.minVal = VC1_MIN_HEIGHT_SIZE;
         capsData.width.maxVal = VC1_MAX_WIDTH_SIZE;
         capsData.height.maxVal = VC1_MAX_HEIGHT_SIZE;
         capsData.bitrate.maxVal = VC1_BITRATE_MAX_SIZE;
