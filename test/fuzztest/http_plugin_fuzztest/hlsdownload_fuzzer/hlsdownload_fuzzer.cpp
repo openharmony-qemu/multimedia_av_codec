@@ -116,7 +116,7 @@ bool SegMentFuzzTest(const uint8_t *data, size_t size)
 
 
 /* Fuzzer entry point */
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
 {
 
     /* Run your code on data */
