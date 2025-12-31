@@ -197,7 +197,7 @@ void PostDownloadCleanup(std::shared_ptr<HttpMediaDownloader> httpMediaDownloade
 
 bool HttpDownloaderFlvRun(uint8_t *data, size_t size)
 {
-    iif (data == nullptr) {
+    if (data == nullptr) {
         return false;
     }
     int32_t count = GetData<int32_t>();
