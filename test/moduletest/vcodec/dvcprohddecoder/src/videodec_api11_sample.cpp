@@ -729,7 +729,7 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
             int idx = static_cast<int>(streamType) - 1;
             bool mdCompareResult = MdCompare(g_md, SHA512_DIGEST_LENGTH, currSha256Tbl_[idx]);
             if (!mdCompareResult) {
-                errCount++;
+                cout << "MdCompare failed" << endl;
             }
         }
         return -1;

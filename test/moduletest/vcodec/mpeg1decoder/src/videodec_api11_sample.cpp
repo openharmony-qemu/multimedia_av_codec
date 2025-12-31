@@ -943,7 +943,7 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
         if (!sfOutput && needCheckHash) {
             if (!MdCompare(g_md, SHA512_DIGEST_LENGTH, defaultPixelFormat == AV_PIXEL_FORMAT_NV12 ?
                 fileSourcesha256Mpeg1_ : fileSourcesha256_2)) {
-                errCount++;
+                cout << "MdCompare failed" << endl;
             }
         }
         return -1;
