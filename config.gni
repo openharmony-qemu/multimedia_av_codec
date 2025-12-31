@@ -52,6 +52,8 @@ declare_args() {
   av_codec_enable_demuxer_eac3 = false
   av_codec_enable_demuxer_sami = false
   av_codec_enable_demuxer_ass = false
+  av_codec_enable_demuxer_dtshd = false
+  av_codec_enable_demuxer_truehd = false
   av_codec_support_camera_post_processor = false
   if (defined(global_parts_info) &&
       defined(global_parts_info.hdf_drivers_interface_camera_ext)) {
@@ -208,4 +210,12 @@ if (av_codec_enable_demuxer_ass) {
 
 if (av_codec_enable_demuxer_eac3) {
   av_codec_defines += [ "SUPPORT_DEMUXER_EAC3" ]
+}
+
+if (av_codec_enable_demuxer_dtshd) {
+  av_codec_defines += [ "SUPPORT_DEMUXER_DTSHD" ]
+}
+
+if (av_codec_enable_demuxer_truehd) {
+  av_codec_defines += [ "SUPPORT_DEMUXER_TRUEHD" ]
 }

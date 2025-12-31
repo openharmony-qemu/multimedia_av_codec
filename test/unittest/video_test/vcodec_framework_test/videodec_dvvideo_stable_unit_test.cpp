@@ -228,7 +228,7 @@ AVCODEC_MTEST_P(VideoDecStableTestDVVIDEO, VideoDecoder_Multithread_001, TestSiz
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTestDVVIDEO::GetParam();
-    vdec->frameCount_ = 300; // gly
+    vdec->frameCount_ = 300;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_DVVIDEO;
     vdec->inPath_ = "DVCPAL_720x576_25_411_dvpp.dvvideo";
     vdec->sampleWidth_ = 720;
@@ -260,7 +260,7 @@ AVCODEC_MTEST_P(VideoDecStableTestDVVIDEO, VideoDecoder_Multithread_002, TestSiz
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTestDVVIDEO::GetParam();
-    vdec->frameCount_ = 300; // gly
+    vdec->frameCount_ = 300;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_DVVIDEO;
     vdec->inPath_ = "DVCPAL_720x576_25_411_dvpp.dvvideo";
     vdec->sampleWidth_ = 720;
@@ -291,7 +291,7 @@ AVCODEC_MTEST_P(VideoDecStableTestDVVIDEO, VideoDecoder_Multithread_003, TestSiz
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTestDVVIDEO::GetParam();
-    vdec->frameCount_ = 300; // gly
+    vdec->frameCount_ = 300;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_DVVIDEO;
     vdec->inPath_ = "DVCPAL_720x576_25_411_dvpp.dvvideo";
     vdec->sampleWidth_ = 720;
@@ -323,7 +323,7 @@ AVCODEC_MTEST_P(VideoDecStableTestDVVIDEO, VideoDecoder_Multithread_004, TestSiz
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VCodecSignal>(vdec);
     vdec->operation_ = VideoDecStableTestDVVIDEO::GetParam();
-    vdec->frameCount_ = 300; //gly
+    vdec->frameCount_ = 300;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_DVVIDEO;
     vdec->inPath_ = "DVCPAL_720x576_25_411_dvpp.dvvideo";
     vdec->sampleWidth_ = 720;

@@ -227,6 +227,12 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
 #ifdef SUPPORT_DEMUXER_EAC3
     {"eac3", FileType::EAC3},
 #endif
+#ifdef SUPPORT_DEMUXER_DTSHD
+    {"dtshd", FileType::DTSHD},
+#endif
+#ifdef SUPPORT_DEMUXER_TRUEHD
+    {"truehd", FileType::TRUEHD},
+#endif
 };
 
 static std::map<std::string, TagType> g_formatToString = {

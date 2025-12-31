@@ -138,6 +138,8 @@ string g_rmvbAc3Path = TEST_FILE_PATH + string("ac3.rm");
 string g_rmvbRv30CookPath = TEST_FILE_PATH + string("rv30_cook.rm");
 string g_rmRv40AacPath = TEST_FILE_PATH + string("rv40_aac.rm");
 string g_dtsPath = TEST_FILE_PATH + string("dts.dts");
+string g_dtshdPath = TEST_FILE_PATH + string("dtshd.dtshd");
+string g_truehdPath = TEST_FILE_PATH + string("truehd.thd");
 } // namespace
 
 void DemuxerUnitTest::SetUpTestCase(void)
@@ -5681,6 +5683,138 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1836, TestSize.Level1)
     ASSERT_NE(demuxer_->SeekToTime(12000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
 }
+
+#ifdef SUPPORT_DEMUXER_DTSHD
+/**
+ * @tc.name: Demuxer_ReadSample_1837
+ * @tc.desc: copy current sample to buffer(dtshd)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1837, TestSize.Level1)
+{
+    InitResource(g_dtshdPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 6);
+    ASSERT_EQ(keyFrames_[0], 6);
+    RemoveValue();
+    ASSERT_EQ(demuxer_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_1838
+ * @tc.desc: seek to the specified time(dtshd)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1838, TestSize.Level1)
+{
+    InitResource(g_dtshdPath, LOCAL);
+    ASSERT_TRUE(SetInitValue());
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 10, 20, 30, 40, 50}; // ms
+    vector<int32_t> audioVals = {6, 6, 6, 6, 6, 6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 2, 2, 2};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+    ASSERT_NE(demuxer_->SeekToTime(20000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+    ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+}
+#endif
+
+#ifdef SUPPORT_DEMUXER_TRUEHD
+/**
+ * @tc.name: Demuxer_ReadSample_1838
+ * @tc.desc: copy current sample to buffer(truehd)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1838, TestSize.Level1)
+{
+    InitResource(g_truehdPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    ASSERT_TRUE(SetInitValue());
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 33101);
+    ASSERT_EQ(keyFrames_[0], 2069);
+    RemoveValue();
+    ASSERT_EQ(demuxer_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_1839
+ * @tc.desc: seek to the specified time(truehd)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1839, TestSize.Level1)
+{
+    InitResource(g_truehdPath, LOCAL);
+    ASSERT_TRUE(SetInitValue());
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 4500, 7000, 2000, 10000, 8000}; // ms
+    vector<int32_t> audioVals = {33101, 33101, 33101, 28125, 28141, 28141, 25373, 25389, 25389,
+        30893, 30909, 30909, 22061, 22077, 22077, 24269, 24285, 24285};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+    ASSERT_NE(demuxer_->SeekToTime(50000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+    ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+    ASSERT_EQ(demuxer_->Destroy(), AV_ERR_OK);
+}
+#endif
 
 #ifdef SUPPORT_CODEC_RM
 /**

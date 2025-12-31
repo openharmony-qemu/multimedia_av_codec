@@ -66,6 +66,9 @@ namespace Plugins {
 namespace Ffmpeg {
 const uint32_t DEFAULT_READ_SIZE = 4096;
 const uint32_t DEFAULT_SNIFF_SIZE = 4096 * 4;
+#ifdef SUPPORT_DEMUXER_TRUEHD
+const uint32_t TRUEHD_SNIFF_SIZE = 1024 * 1024;
+#endif
 const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const int32_t DEF_PROBE_SCORE_LIMIT = 50;
 const uint32_t RANK_MAX = 100;
@@ -90,6 +93,7 @@ constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
 constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 constexpr int32_t SEEK_TRACK_DEFAULT = -1;
 constexpr int32_t RECHECK_TIMES = 5;
+constexpr int32_t MAX_READ_CNT = 5;
 
 // id3v2 tag position
 const int32_t POS_0 = 0;
@@ -1713,7 +1717,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo()
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse video info failed");
 
     ret = GetFileFirstPacket();
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Get file first packet failed");
+    FALSE_LOG_MSG_W(ret == Status::OK, "Get file first packet failed");
 
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo_.general);
     DemuxerLogCompressor::StringifyMeta(mediaInfo_.general, -1); // source meta
@@ -2821,7 +2825,8 @@ Status FFmpegDemuxerPlugin::GetFileFirstPacket()
         return Status::OK;
     }
     Status ret = Status::OK;
-    while (!minTsPktInfo_.isInit) {
+    int readCnt = 0;
+    while (!minTsPktInfo_.isInit && readCnt < MAX_READ_CNT) {
         Plugins::AVPacketWrapperPtr pktWrapper = std::make_shared<Plugins::AVPacketWrapper>();
         FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
             Status::ERROR_NULL_POINTER, "Create AVPacketWrapper failed");
@@ -2831,6 +2836,7 @@ Status FFmpegDemuxerPlugin::GetFileFirstPacket()
         InitMinTsPacketInfo(pktWrapper->GetAVPacket());
         ret = AddPacketToCacheQueue(pktWrapper);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add packet to cache failed");
+        ++readCnt;
     }
     return Status::OK;
 }
@@ -2981,6 +2987,11 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 {
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
     FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "DataSource is nullptr");
+#ifdef SUPPORT_DEMUXER_TRUEHD
+    if (pluginName == "avdemux_truehd") {
+        return SniffWithSize(pluginName, dataSource, TRUEHD_SNIFF_SIZE);
+    }
+#endif
     return SniffWithSize(pluginName, dataSource, DEFAULT_SNIFF_SIZE);
 }
 

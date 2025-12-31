@@ -69,7 +69,7 @@ private:
     uint64_t offset_ {0};
     uint32_t retryTimes_ = 0;
     int64_t totalDownLoadBytes_ {0};
-    int32_t toalDownloadCount_ {0};
+    int32_t totalDownloadCount_ {0};
     int64_t firstDownloadTime_ {0};
     int64_t firstDownloadTimestamp_ {0};
     int64_t totalDownloadDuringTime_ {0};

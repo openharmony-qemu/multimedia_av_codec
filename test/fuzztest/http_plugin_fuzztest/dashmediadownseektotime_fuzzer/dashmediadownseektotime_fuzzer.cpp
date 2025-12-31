@@ -78,6 +78,8 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
 
 bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
 {
+    (void) data;
+    (void) size;
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
     std::string testUrl = MPD_MULTI_AUDIO_SUB;

@@ -25,6 +25,7 @@
 #include "codeclist_service_stub.h"
 #include "iservice_registry.h"
 #include "mem_mgr_client.h"
+#include "statistics_event_handler.h"
 #include "system_ability.h"
 #include "system_ability_definition.h"
 
@@ -62,7 +63,10 @@ private:
 
 void SaAVCodecUnitTest::SetUpTestCase(void) {}
 
-void SaAVCodecUnitTest::TearDownTestCase(void) {}
+void SaAVCodecUnitTest::TearDownTestCase(void)
+{
+    StatisticsEventInfo::GetInstance().timer_ = nullptr;
+}
 
 void SaAVCodecUnitTest::SetUp(void)
 {
