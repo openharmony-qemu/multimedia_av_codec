@@ -948,7 +948,7 @@ HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_SKIP_SAMPLE_FUNC_0020, TestSize.Level0)
         }
     }
     ASSERT_EQ(skipSample.size(), 1);
-    ASSERT_EQ(true, CompareSkipSampleValue(skipSample[1], {21, 0, 419, 0, 0, 10}));
+    ASSERT_EQ(true, CompareSkipSampleValue(skipSample[0], {21, 0, 419, 0, 0, 10}));
     ASSERT_EQ(audioFrame, 22);
     ASSERT_EQ(aKeyCount, 22);
     close(fd);
