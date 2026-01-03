@@ -780,6 +780,11 @@ void DashMpdDownloader::BuildDashSegment(std::list<std::shared_ptr<SubSegmentInd
         if (lastSegment != nullptr && mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_STATIC) {
             lastSegment->isLast_ = true;
         }
+        if (mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
+            if (sourceLoader_ && sourceLoader_->GetenableOfflineCache()) {
+                sourceLoader_->Close(-1);
+            }
+        }
     }
 }
 
@@ -1381,6 +1386,11 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsInMpd(std::shared_ptr<DashStr
     if (lastSegment != nullptr && mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_STATIC) {
         lastSegment->isLast_ = true;
     }
+    if (mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
+        if (sourceLoader_ && sourceLoader_->GetenableOfflineCache()) {
+            sourceLoader_->Close(-1);
+        }
+    }
     return DASH_SEGMENT_INIT_SUCCESS;
 }
 
@@ -1503,6 +1513,11 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithSegTemplate(const DashSeg
         return GetSegmentsWithTmpltStatic(segTmpltInfo, media, streamDesc);
     }
 
+    if (mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
+        if (sourceLoader_ && sourceLoader_->GetenableOfflineCache()) {
+            sourceLoader_->Close(-1);
+        }
+    }
     return DASH_SEGMENT_INIT_FAILED;
 }
 
@@ -1839,6 +1854,11 @@ void DashMpdDownloader::GetSegDurationFromTimeline(unsigned int periodDuration, 
                 durationList.push_back(segDuration);
                 startTime += (*it)->d_;
             }
+        }
+    }
+    if (mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
+        if (sourceLoader_ && sourceLoader_->GetenableOfflineCache()) {
+            sourceLoader_->Close(-1);
         }
     }
 }
