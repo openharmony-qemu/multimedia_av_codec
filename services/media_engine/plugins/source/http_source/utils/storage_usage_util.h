@@ -26,7 +26,7 @@ public:
     ~StorageUsageUtil() = default;
     int64_t GetFreeSize();
     int64_t GetTotalSize();
-    bool hasEnoughStorage();
+    bool HasEnoughStorage();
 };
 } // namespace Media
 } // namespace OHOS
