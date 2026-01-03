@@ -38,7 +38,7 @@ constexpr uint32_t DEFAULT_DURATION = 20;
 
 bool DashMediaDownAppUidFuzzerTest(const uint8_t *data, size_t size)
 {
-    if (data == nullptr || size < sizeof(int64_t)) {
+    if (data == nullptr || size < sizeof(int32_t)) {
         return false;
     }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);

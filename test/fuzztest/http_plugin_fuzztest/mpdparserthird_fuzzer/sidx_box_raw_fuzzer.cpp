@@ -27,7 +27,7 @@ using namespace OHOS::Media::Plugins::HttpPlugin;
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     // 源函数参数是 char*，需做一次可变拷贝
     std::vector<char> buf(size ? size : 1);
-    if(data != nullptr) {
+    if (data != nullptr) {
         for (size_t i = 0; i < buf.size(); ++i) {
             buf[i] = static_cast<char>(data[i]);
         }
@@ -35,7 +35,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
     // 构造多种 sidxEndOffset，覆盖正负/极值/数据相关
     int64_t derived = 0;
-    if (buf.size() >= 8) {
+    const size_t MAX_BIT = 8;
+    if (buf.size() >= MAX_BIT) {
         // 直接按本机端序取 8B 做扰动即可；只是驱动算术路径，不依赖稳定值
         std::memcpy(&derived, buf.data(), 8);
     }

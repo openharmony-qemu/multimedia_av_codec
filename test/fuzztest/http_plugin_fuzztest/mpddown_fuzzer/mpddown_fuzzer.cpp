@@ -167,8 +167,7 @@ bool DashAdptRun(const uint8_t *data, size_t size)
     }
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
-    while (count > 0) 
-    {
+    while (count > 0) {
         std::shared_ptr<DashAdptSetManager> mpdMpddownload = std::make_shared<DashAdptSetManager>();
         std::list<std::string> baseUrlList;
         mpdMpddownload->GetBaseUrlList(baseUrlList);
@@ -193,8 +192,7 @@ bool DashDescriptorNodeRun(const uint8_t *data, size_t size)
     }
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
-    while (count > 0) 
-    {
+    while (count > 0) {
         std::shared_ptr<DashDescriptorNode> mpdMpddownload = std::make_shared<DashDescriptorNode>();
         std::string addr = "hev1.1.6.L93.90";
         uint32_t uiAttrVal = GetData<uint32_t>();
@@ -217,8 +215,7 @@ bool MpdMangerRun(const uint8_t *data, size_t size)
     }
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
-    while (count > 0) 
-    {
+    while (count > 0) {
         std::shared_ptr<DashMpdManager> mpdMpddownload = std::make_shared<DashMpdManager>();
         mpdMpddownload->Reset();
         DashMpdInfo *mangerInfo = new DashMpdInfo;
@@ -242,8 +239,7 @@ bool DashMpdNodeRun(const uint8_t *data, size_t size)
     }
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
-    while (count > 0) 
-    {
+    while (count > 0) {
         std::shared_ptr<DashMpdNode> mpdMpddownload = std::make_shared<DashMpdNode>();
         std::string addr = "hev1.1.6.L93.90";
         int32_t iAttrVal = GetData<int32_t>();
@@ -266,8 +262,7 @@ bool DashPeriodNodeRun(const uint8_t *data, size_t size)
     }
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
-    while (count > 0) 
-    {
+    while (count > 0) {
         std::shared_ptr<DashPeriodNode> mpdMpddownload = std::make_shared<DashPeriodNode>();
         std::string addr = "hev1.1.6.L93.90";
         uint32_t uiAttrVal = GetData<uint32_t>();
@@ -290,8 +285,7 @@ bool DashRepresenRun(const uint8_t *data, size_t size)
     }
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
-    while (count > 0) 
-    {
+    while (count > 0) {
         std::shared_ptr<DashRepresentationManager> mpdMpddownload = std::make_shared<DashRepresentationManager>();
         int32_t flag = GetData<int32_t>();
         mpdMpddownload->GetInitSegment(flag);
@@ -310,8 +304,7 @@ bool DashRepresentationNodeRun(const uint8_t *data, size_t size)
     }
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
-    while (count > 0) 
-    {
+    while (count > 0) {
         std::shared_ptr<DashRepresentationNode> mpdMpddownload = std::make_shared<DashRepresentationNode>();
         std::string addr = "hev1.1.6.L93.90";
         uint32_t uiAttrVal = GetData<uint32_t>();
@@ -334,8 +327,7 @@ bool DashSegBaseNodeRun(const uint8_t *data, size_t size)
     }
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
-    while (count > 0) 
-    {
+    while (count > 0) {
         std::shared_ptr<DashSegBaseNode> mpdMpddownload = std::make_shared<DashSegBaseNode>();
         std::string addr = "hev1.1.6.L93.90";
         uint32_t uiAttrVal = GetData<uint32_t>();
@@ -358,8 +350,7 @@ bool DashUrlTypeNodeRun(const uint8_t *data, size_t size)
     }
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
-    while (count > 0) 
-    {
+    while (count > 0) {
         std::shared_ptr<DashUrlTypeNode> mpdMpddownload = std::make_shared<DashUrlTypeNode>();
         std::string addr = "hev1.1.6.L93.90";
         uint32_t uiAttrVal = GetData<uint32_t>();
@@ -379,7 +370,7 @@ bool DashUrlTypeNodeRun(const uint8_t *data, size_t size)
 }
 
 /* Fuzzer entry point */
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
 {
     /* Run your code on data */
     if (!InitServer()) {

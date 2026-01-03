@@ -1052,10 +1052,7 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
                                              const AVFormatContext& avFormatContext)
 {
     int sampleRate = avStream.codecpar->sample_rate;
-    int channels = avStream.codecpar->channels;
-    if (channels <= 0) {
-        channels = avStream.codecpar->ch_layout.nb_channels;
-    }
+    int channels = avStream.codecpar->ch_layout.nb_channels;
     int frameSize = avStream.codecpar->frame_size;
     if (sampleRate > 0) {
         format.Set<Tag::AUDIO_SAMPLE_RATE>(static_cast<uint32_t>(sampleRate));
@@ -1074,7 +1071,7 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
         MEDIA_LOG_D("Parse frame rate failed: " PUBLIC_LOG_D32, frameSize);
     }
     AudioChannelLayout channelLayout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(
-        avStream.codecpar->channel_layout, channels);
+        avStream.codecpar->ch_layout.u.mask, channels);
     format.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(channelLayout);
     format.Set<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
 
@@ -1156,7 +1153,7 @@ void FFmpegFormatHelper::ConvertAv3aSampleFormat(const AVStream& avStream, Meta 
 
 void FFmpegFormatHelper::ParseAv3aInfo(const AVStream& avStream, Meta &format)
 {
-    int channels = avStream.codecpar->channels; // 总通道数
+    int channels = avStream.codecpar->ch_layout.nb_channels; // 总通道数
     AudioChannelLayout channelLayout = AudioChannelLayout::UNKNOWN;
     int objectNumber = 0; // 对象数量
     uint64_t channelLayoutMask = 0L;

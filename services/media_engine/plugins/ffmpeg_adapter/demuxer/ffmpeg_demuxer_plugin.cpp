@@ -1115,7 +1115,7 @@ Status FFmpegDemuxerPlugin::Stop()
 }
 
 // Write packet unimplemented, return 0
-int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
+int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, const uint8_t* buf, int bufSize)
 {
     (void)opaque;
     (void)buf;
@@ -2941,8 +2941,8 @@ int GetID3TagLen(const uint8_t *buf)
     return len;
 }
 
-int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& pluginName,
-    std::shared_ptr<DataSource> dataSource, size_t &getData, size_t bufferSize)
+int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, std::shared_ptr<FFInputFormat> ffPlugin,
+    const std::string& pluginName, std::shared_ptr<DataSource> dataSource, size_t &getData, size_t bufferSize)
 {
     uint64_t fileSize = 0;
     Status getFileSize = dataSource->GetSize(fileSize);
@@ -2980,7 +2980,7 @@ int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, const std::string& 
         }
     }
     AVProbeData probeData{"", buff.data(), static_cast<int32_t>(getData), ""};
-    return plugin->read_probe(&probeData);
+    return ffPlugin->read_probe(&probeData);
 }
 
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
@@ -3000,15 +3000,19 @@ int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dat
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
     FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "DataSource is nullptr");
     std::shared_ptr<AVInputFormat> plugin;
+    std::shared_ptr<FFInputFormat> ffPlugin;
     {
         std::lock_guard<std::mutex> lock(g_mtx);
         auto inputFormat = av_find_input_format(ProcessPluginName(pluginName).c_str());
+        const FFInputFormat* ffInputFormat = (const FFInputFormat*)inputFormat;
         plugin = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
+        // refer to ffmepg libavformat/demux.h ffifmt
+        ffPlugin = std::shared_ptr<FFInputFormat>(const_cast<FFInputFormat*>(ffInputFormat), [](void*) {});
     }
-    FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
+    FALSE_RETURN_V_MSG_E((plugin != nullptr && ffPlugin->read_probe), 0,
         "Get plugin for " PUBLIC_LOG_S " failed", pluginName.c_str());
     size_t getData = 0;
-    int confidence = GetConfidence(plugin, pluginName, dataSource, getData, probSize);
+    int confidence = GetConfidence(plugin, ffPlugin, pluginName, dataSource, getData, probSize);
     if (confidence < 0) {
         return 0;
     }

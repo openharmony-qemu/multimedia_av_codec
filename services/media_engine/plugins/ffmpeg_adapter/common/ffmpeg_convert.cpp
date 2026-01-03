@@ -169,10 +169,11 @@ Status Resample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame)
 
     int planar = av_sample_fmt_is_planar(static_cast<AVSampleFormat>(inputFrame->format));
     if (planar) {
-        for (auto i = 0; i < inputFrame->channels; i++) {
+        for (auto i = 0; i < inputFrame->ch_layout.nb_channels; i++) {
             CHECK_AND_RETURN_RET_LOG(inputFrame->extended_data[i] != nullptr, Status::ERROR_NO_MEMORY,
-                                     "this is a planar audio, inputFrame->channels: %{public}d, "
-                                     "but inputFrame->extended_data[%{public}d] is nullptr", inputFrame->channels, i);
+                                     "this is a planar audio, inputFrame->ch_layout.nb_channels: %{public}d, "
+                                     "but inputFrame->extended_data[%{public}d] is nullptr",
+                                     inputFrame->ch_layout.nb_channels, i);
         }
     } else {
         CHECK_AND_RETURN_RET_LOG(inputFrame->extended_data[0] != nullptr, Status::ERROR_NO_MEMORY,

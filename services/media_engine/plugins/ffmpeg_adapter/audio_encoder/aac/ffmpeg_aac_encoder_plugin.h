@@ -132,7 +132,7 @@ private:
     std::shared_ptr<Ffmpeg::Resample> resample_{nullptr};
     AVSampleFormat srcFmt_{AVSampleFormat::AV_SAMPLE_FMT_NONE};
     AudioSampleFormat audioSampleFormat_;
-    AudioChannelLayout srcLayout_;
+    uint64_t srcLayout_;
     uint32_t fullInputFrameSize_{0};
     uint32_t srcBytesPerSample_{0};
     AudioEncodePtsMode ptsMode_ = DEFAULT_ENCODE_PTS_MODE;

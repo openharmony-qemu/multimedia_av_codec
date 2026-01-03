@@ -389,7 +389,7 @@ uint64_t FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(AudioChannelLayout
                             [&channelLayout](const auto &item) -> bool { return item.first == channelLayout; });
     if (ite == g_toFFMPEGChannelLayout.end()) {
         MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(channelLayout));
-        return AV_CH_LAYOUT_NATIVE;
+        return 0;
     }
     return ite->second;
 }
