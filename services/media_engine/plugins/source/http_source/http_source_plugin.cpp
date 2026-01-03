@@ -236,6 +236,11 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
         loaderCombinations_->EnableOfflineCache(source->GetenableOfflineCache());
         if (httpHeader_.find("Cookie") != httpHeader_.end() && loaderCombinations_->GetenableOfflineCache()) {
             loaderCombinations_->Close(-1);
+        } else {
+            std::shared_ptr<StorageUsageUtil> storageUsage = std::make_shared<StorageUsageUtil>();
+            if (loaderCombinations_->GetenableOfflineCache() && !storageUsage->hasEnoughStorage()) {
+                loaderCombinations_->Close(-1);
+            }
         }
     }
     if (uri_.find(".mpd") != std::string::npos) {
