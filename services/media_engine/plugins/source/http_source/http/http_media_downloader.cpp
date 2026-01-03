@@ -1078,6 +1078,7 @@ uint32_t HttpMediaDownloader::SaveCacheBufferDataNotblock(uint8_t* data, uint32_
     if (res < len) {
         cacheMediaBuffer_->Dump(0);
         isNeedResume_.store(true);
+        canWrite_.store(false);
     }
 
     return res;
