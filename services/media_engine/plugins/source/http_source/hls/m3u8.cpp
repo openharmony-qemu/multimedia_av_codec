@@ -862,7 +862,7 @@ void M3U8MasterPlaylist::BindVideoAudio()
     }
 }
 
-void M3U8MasterPlaylist::GetDefaultAudioStream(std::shared_ptr<M3U8VariantStream>& videoStream)
+void M3U8MasterPlaylist::GetDefaultAudioStream(const std::shared_ptr<M3U8VariantStream>& videoStream)
 {
     MEDIA_LOG_I("GetDefaultAudioStream, audio size: %{public}zu", videoStream->media_.size());
     if (videoStream->media_.empty()) {

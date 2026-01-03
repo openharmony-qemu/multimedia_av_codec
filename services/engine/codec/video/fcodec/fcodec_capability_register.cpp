@@ -71,9 +71,11 @@ constexpr int32_t DVVIDEO_MAX_BLOCKPERSEC_SIZE = 367200;
 
 constexpr int32_t RAWVIDEO_MIN_WIDTH_SIZE = 2;
 constexpr int32_t RAWVIDEO_MIN_HEIGHT_SIZE = 2;
-constexpr int32_t RAWVIDEO_MAX_WIDTH_SIZE = 65536;
-constexpr int32_t RAWVIDEO_MAX_HEIGHT_SIZE = 65536;
-constexpr int32_t RAWVIDEO_MAX_FRAMERATE = 1000;
+constexpr int32_t RAWVIDEO_MAX_WIDTH_SIZE = 4096;
+constexpr int32_t RAWVIDEO_MAX_HEIGHT_SIZE = 4096;
+constexpr int32_t RAWVIDEO_MAX_FRAMERATE = 60;
+constexpr int32_t RAWVIDEO_MAX_BLOCKPERFRAME_SIZE = 65536;
+constexpr int32_t RAWVIDEO_MAX_BLOCKPERSEC_SIZE = 3932160;
 } // namespace
 using namespace OHOS::Media;
 
@@ -292,8 +294,6 @@ void GetWvc1CapProf(std::vector<CapabilityData> &capaArray)
         CapabilityData& capsData = capaArray.back();
         capsData.alignment.width = VC1_ALIGNMENT_SIZE;
         capsData.alignment.height = VC1_ALIGNMENT_SIZE;
-        capsData.width.minVal = VC1_MIN_WIDTH_SIZE;
-        capsData.height.minVal = VC1_MIN_HEIGHT_SIZE;
         capsData.width.maxVal = VC1_MAX_WIDTH_SIZE;
         capsData.height.maxVal = VC1_MAX_HEIGHT_SIZE;
         capsData.bitrate.maxVal = VC1_BITRATE_MAX_SIZE;
@@ -378,6 +378,9 @@ void GetRawvideoCapProf(std::vector<CapabilityData> &capaArray)
         capsData.width.maxVal = RAWVIDEO_MAX_WIDTH_SIZE;
         capsData.height.maxVal = RAWVIDEO_MAX_HEIGHT_SIZE;
         capsData.frameRate.maxVal = RAWVIDEO_MAX_FRAMERATE;
+        capsData.blockPerFrame.maxVal = RAWVIDEO_MAX_BLOCKPERFRAME_SIZE;
+        capsData.blockPerSecond.maxVal = RAWVIDEO_MAX_BLOCKPERSEC_SIZE;
+        capsData.supportSwapWidthHeight = true;
     }
 }
 

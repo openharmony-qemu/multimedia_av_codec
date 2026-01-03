@@ -95,6 +95,9 @@ public:
     Status CopyBufferSlice(std::shared_ptr<AVBuffer>& srcBuffer, std::shared_ptr<AVBuffer>& dstBuffer,
         int32_t sliceSize);
     Status RollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
+    Status PopRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
+    Status PeekRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
+    Status PushRollbackBuffer(std::shared_ptr<AVBuffer>& sampleBuffer);
     uint32_t GetFilledBufferSize();
     Status AttachOneBuffer(uint32_t size);
     Status UpdateLastOutSamplePts(int64_t lastOutSamplePts);
@@ -143,6 +146,7 @@ private:
     std::mutex ptsMutex_;
     std::set<int64_t> keyFramePtsSet_;
 
+    std::mutex rollbackMutex_;
     std::list<std::shared_ptr<AVBuffer>> rollbackBufferQueue_;
 
     std::mutex waitListMutex_;

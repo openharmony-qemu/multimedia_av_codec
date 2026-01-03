@@ -149,7 +149,7 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     }
     auto format = basePlugin->GetFormat();
 
-    basePlugin->CheckSampleFormat(format, codecCtx->channels);
+    basePlugin->CheckSampleFormat(format, codecCtx->ch_layout.nb_channels);
     AudioSampleFormat sampleFmt = SAMPLE_S16LE;
     parameter->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFmt);
     parameter->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, codecCtx->bits_per_coded_sample);

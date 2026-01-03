@@ -71,6 +71,7 @@ ohos_unittest("avsource_capi_unit_test") {
       "./avsource_unit_test.cpp",
       "./avsource_uri_unit_test.cpp",
       "./avsource_ts_unit_test.cpp",
+      "./avsource_format_asf_unit_test.cpp",
       "./capi/avsource_capi_mock.cpp",
       "./capi/avsource_capi_mock_factory.cpp",
     ]
@@ -138,6 +139,7 @@ ohos_unittest("avsource_inner_unit_test") {
       "./avsource_format_m4v_unit_test.cpp",
       "./avsource_format_vob_unit_test.cpp",
       "./avsource_format_wmv_unit_test.cpp",
+      "./avsource_format_asf_unit_test.cpp",
       "./avsource_audio_vivid_unit_test.cpp",
       "./avsource_format_unit_test.cpp",
       "./avsource_hevc_unit_test.cpp",

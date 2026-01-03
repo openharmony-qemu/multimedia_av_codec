@@ -100,6 +100,9 @@ void FaultAudioCodecEventWrite(AudioCodecFaultInfo& audioCodecFaultInfo);
 void FaultVideoCodecEventWrite(VideoCodecFaultInfo& videoCodecFaultInfo);
 void FaultMuxerEventWrite(MuxerFaultInfo& muxerFaultInfo);
 void FaultRecordAudioEventWrite(AudioSourceFaultInfo& audioSourceFaultInfo);
+__attribute__((visibility("default"))) void StreamAppPackageNameEventWrite
+    (const std::string& sysCap, const std::string& packageName,
+    const std::string& apiCall, const std::string& mediaEvents);
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // AVCODEC_SYSEVENT_H

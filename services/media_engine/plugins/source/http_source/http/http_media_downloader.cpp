@@ -176,20 +176,7 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
     auto downloadDoneCallback = [weakDownloader] (const std::string &url, const std::string& location) {
         auto shareDownloader = weakDownloader.lock();
         FALSE_RETURN_MSG(shareDownloader != nullptr, "downloadDoneCb, Http Media Downloader already destructed.");
-        if (shareDownloader->downloadRequest_ != nullptr && shareDownloader->downloadRequest_->IsEos()
-            && (shareDownloader->totalBits_ / BYTES_TO_BIT) >=
-            shareDownloader->downloadRequest_->GetFileContentLengthNoWait()) {
-            shareDownloader->isDownloadFinish_ = true;
-        }
-        int64_t nowTime = shareDownloader->steadyClock_.ElapsedMilliseconds();
-        double downloadTime = (nowTime - shareDownloader->startDownloadTime_) * 1.0 / SECOND_TO_MILLISECONDS;
-        if (downloadTime > ZERO_THRESHOLD) {
-            shareDownloader->avgDownloadSpeed_ = shareDownloader->totalBits_ / downloadTime;
-        }
-        MEDIA_LOG_I("HTTP Download done, data usage: " PUBLIC_LOG_U64 " bits in %{public}.0lfms, "
-            "average download speed: %{public}.0lf bits/s", shareDownloader->totalBits_,
-            downloadTime * SECOND_TO_MILLISECONDS, shareDownloader->avgDownloadSpeed_);
-        shareDownloader->HandleBuffering();
+        shareDownloader->UpdateDownloadFinished(url, location);
     };
     RequestInfo requestInfo;
     requestInfo.url = defaultStream_ != nullptr ? defaultStream_->url : url;
@@ -249,6 +236,25 @@ void HttpMediaDownloader::Resume()
     isInterrupt_ = false;
     downloader_->Resume();
     cvReadWrite_.NotifyOne();
+}
+
+void HttpMediaDownloader::UpdateDownloadFinished(const std::string &url, const std::string& location)
+{
+    (void) url;
+    (void) location;
+    if (downloadRequest_ != nullptr && downloadRequest_->IsEos() &&
+        (totalBits_ / BYTES_TO_BIT) >= downloadRequest_->GetFileContentLengthNoWait()) {
+        isDownloadFinish_ = true;
+    }
+    int64_t nowTime = steadyClock_.ElapsedMilliseconds();
+    double downloadTime = (nowTime - startDownloadTime_) * 1.0 / SECOND_TO_MILLISECONDS;
+    if (downloadTime > ZERO_THRESHOLD) {
+        avgDownloadSpeed_ = totalBits_ / downloadTime;
+    }
+    MEDIA_LOG_I("HTTP Download done, data usage: " PUBLIC_LOG_U64 " bits in %{public}.0lfms, "
+        "average download speed: %{public}.0lf bits/s", totalBits_,
+        downloadTime * SECOND_TO_MILLISECONDS, avgDownloadSpeed_);
+    HandleBuffering();
 }
 
 void HttpMediaDownloader::OnClientErrorEvent()
@@ -936,7 +942,7 @@ void HttpMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
     }
 }
 
-uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len, bool notBlock)
+uint32_t HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len)
 {
     FALSE_RETURN_V(ringBuffer_->WriteBuffer(data, len), 0);
     cvReadWrite_.NotifyOne();
@@ -1018,7 +1024,7 @@ uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBloc
     OnWriteBuffer(len);
     uint32_t ret = 0;
     if (isRingBuffer_) {
-        ret = SaveRingBufferData(data, len, notBlock);
+        ret = SaveRingBufferData(data, len);
     } else {
         ret = SaveCacheBufferData(data, len, notBlock);
         HandleDownloadWaterLine();
@@ -1210,7 +1216,7 @@ void HttpMediaDownloader::DownloadReport()
 
 void HttpMediaDownloader::SetDemuxerState(int32_t streamId)
 {
-    MEDIA_LOG_I("HTTP SetDemuxerState");
+    MEDIA_LOG_I("HTTP SetDemuxerState, " PUBLIC_LOG_D32, streamId);
     isFirstFrameArrived_ = true;
 }
 
@@ -1383,7 +1389,7 @@ uint64_t HttpMediaDownloader::GetCurrentBufferSize() const
 
 Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
-    MEDIA_LOG_I("HTTP SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
+    MEDIA_LOG_I("HTTP SetCurrentBitRate: " PUBLIC_LOG_D32 ", streamID: " PUBLIC_LOG_D32, bitRate, streamID);
     if (bitRate <= 0) {
         videoBitrate_ = std::max(videoBitrate_, static_cast<uint32_t>(DEFAULT_BIT_RATE));
     } else {

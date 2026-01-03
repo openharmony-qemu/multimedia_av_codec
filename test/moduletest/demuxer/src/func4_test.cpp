@@ -24,6 +24,7 @@
 #include "native_avformat.h"
 #include "native_avsource.h"
 #include "native_avmemory.h"
+#include "securec.h"
 
 namespace OHOS {
 namespace Media {
@@ -57,6 +58,9 @@ static int32_t g_height = 2160;
 constexpr int  FIFTY = 50;
 constexpr int  THREE = 3;
 constexpr int  TWO = 2;
+constexpr uint8_t NUM_FOUR = 4;
+constexpr uint8_t NUM_EIGHT = 8;
+constexpr uint8_t NUM_NINE = 9;
 void DemuxerFunc4NdkTest::SetUpTestCase() {}
 void DemuxerFunc4NdkTest::TearDownTestCase() {}
 void DemuxerFunc4NdkTest::SetUp()
@@ -117,6 +121,24 @@ struct seekInfo {
     int32_t audioCount;
 };
 
+struct SkipSampleInfo {
+    int32_t frame;
+    uint32_t skipSamples;
+    uint32_t discardPadding;
+    int skipReason;
+    int discardReason;
+    size_t buffSize;
+};
+
+struct ExpectSkipSampleInfo {
+    int32_t expectFrame;
+    uint32_t expectSkipSamples;
+    uint32_t expectDiscardPadding;
+    int expectSkipReason;
+    int expectDiscardReason;
+    size_t expectBuffSize;
+};
+
 static int64_t GetFileSize(const char *fileName)
 {
     int64_t fileSize = 0;
@@ -170,6 +192,34 @@ static void SetVideoValue(OH_AVCodecBufferAttr attr, bool &videoIsEnd, int &vide
             vKeyCount++;
         }
     }
+}
+
+static bool InitFile(const char *file, int32_t trackNum, int &fd, int64_t &size)
+{
+    fd = open(file, O_RDONLY);
+    size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    if (source == nullptr) {
+        return false;
+    }
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    if (demuxer == nullptr) {
+        return false;
+    }
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    if (!OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount)) {
+        return false;
+    }
+    if (trackNum != g_trackCount) {
+        return false;
+    }
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        if (OH_AVDemuxer_SelectTrackByID(demuxer, index) != AV_ERR_OK) {
+            return false;
+        }
+    }
+    return true;
 }
 
 static void CheckSeekMode(seekInfo seekInfo)
@@ -263,6 +313,45 @@ static void DemuxerResult(const char *fileName, int32_t expectTrack)
     g_fd = -1;
 }
 
+static bool CompareSkipSampleValue(SkipSampleInfo& info, ExpectSkipSampleInfo expectInfo)
+{
+    if (info.frame != expectInfo.expectFrame) {
+        return false;
+    }
+    if (info.skipSamples != expectInfo.expectSkipSamples) {
+        return false;
+    }
+    if (info.discardPadding != expectInfo.expectDiscardPadding) {
+        return false;
+    }
+    if (info.skipReason != expectInfo.expectSkipReason) {
+        return false;
+    }
+    if (info.discardReason != expectInfo.expectDiscardReason) {
+        return false;
+    }
+    if (info.buffSize != expectInfo.expectBuffSize) {
+        return false;
+    }
+    return true;
+}
+
+static void GetSkipSampleInfo(uint8_t *addr, size_t buffSize, int &audioFrame, std::vector<SkipSampleInfo> &skipSample)
+{
+    if (OH_AVFormat_GetBuffer(format, OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO, &addr, &buffSize)) {
+        uint32_t skipSamples;
+        memcpy_s(&skipSamples, sizeof(uint32_t), addr, sizeof(uint32_t));
+        uint32_t discardPadding;
+        memcpy_s(&discardPadding, sizeof(uint32_t), addr + NUM_FOUR, sizeof(uint32_t));
+        uint8_t skipReason;
+        memcpy_s(&skipReason, sizeof(uint8_t), addr + NUM_EIGHT, sizeof(uint8_t));
+        uint8_t discardReason;
+        memcpy_s(&discardReason, sizeof(uint8_t), addr + NUM_NINE, sizeof(uint8_t));
+        SkipSampleInfo skipSampleInfo{audioFrame, skipSamples, discardPadding, static_cast<int>(skipReason),
+            static_cast<int>(discardReason), buffSize};
+        skipSample.push_back(skipSampleInfo);
+    }
+}
 
 /**
  * @tc.number    : DEMUXER_MKV_ADPCM_YAMAHA_FUNC_0100
@@ -776,6 +865,288 @@ HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_META_0230, TestSize.Level2)
     ASSERT_NE(metaFormat, nullptr);
     const char* language = OH_AVFormat_DumpInfo(metaFormat);
     ASSERT_EQ(language, nullptr);
+    close(fd);
+    fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_SKIP_SAMPLE_FUNC_0010
+ * @tc.name      : demuxer skip sample, mp3, read
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_SKIP_SAMPLE_FUNC_0010, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    std::vector<SkipSampleInfo> skipSample;
+    const char *file = "/data/test/media/audio/MP3_8K_1.mp3";
+    int fd = 0;
+    int64_t size = 0;
+    ASSERT_TRUE(InitFile(file, 1, fd, size));
+    int aKeyCount = 0;
+    uint8_t *addr = nullptr;
+    size_t buffSize = 0;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            avBuffer = OH_AVBuffer_Create(size);
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
+            format = OH_AVBuffer_GetParameter(avBuffer);
+            ASSERT_NE(format, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_Destroy(avBuffer));
+            avBuffer = nullptr;
+            GetSkipSampleInfo(addr, buffSize, audioFrame, skipSample);
+            SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            OH_AVFormat_Destroy(format);
+            format = nullptr;
+        }
+    }
+    ASSERT_EQ(skipSample.size(), 2);
+    ASSERT_EQ(true, CompareSkipSampleValue(skipSample[0], {0, 1105, 0, 0, 0, 10}));
+    ASSERT_EQ(true, CompareSkipSampleValue(skipSample[1], {3051, 0, 419, 0, 0, 10}));
+    ASSERT_EQ(audioFrame, 3052);
+    ASSERT_EQ(aKeyCount, 3052);
+    close(fd);
+    fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_SKIP_SAMPLE_FUNC_0020
+ * @tc.name      : demuxer skip sample, mp3, seek + read
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_SKIP_SAMPLE_FUNC_0020, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    std::vector<SkipSampleInfo> skipSample;
+    const char *file = "/data/test/media/audio/MP3_8K_1.mp3";
+    int fd = 0;
+    int64_t size = 0;
+    ASSERT_TRUE(InitFile(file, 1, fd, size));
+    int aKeyCount = 0;
+    uint8_t *addr = nullptr;
+    size_t buffSize = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, 218088000 / 1000, SEEK_MODE_CLOSEST_SYNC));
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            avBuffer = OH_AVBuffer_Create(size);
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
+            format = OH_AVBuffer_GetParameter(avBuffer);
+            ASSERT_NE(format, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_Destroy(avBuffer));
+            avBuffer = nullptr;
+            GetSkipSampleInfo(addr, buffSize, audioFrame, skipSample);
+            SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            OH_AVFormat_Destroy(format);
+            format = nullptr;
+        }
+    }
+    ASSERT_EQ(skipSample.size(), 1);
+    ASSERT_EQ(true, CompareSkipSampleValue(skipSample[1], {21, 0, 419, 0, 0, 10}));
+    ASSERT_EQ(audioFrame, 22);
+    ASSERT_EQ(aKeyCount, 22);
+    close(fd);
+    fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_SKIP_SAMPLE_FUNC_0030
+ * @tc.name      : demuxer skip sample, ogg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_SKIP_SAMPLE_FUNC_0030, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    std::vector<SkipSampleInfo> skipSample;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    const char *file = "/data/test/media/audio/OGG_8K_1.ogg";
+    int fd = 0;
+    int64_t size = 0;
+    ASSERT_TRUE(InitFile(file, 1, fd, size));
+    int aKeyCount = 0;
+    uint8_t *addr = nullptr;
+    size_t buffSize = 0;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            avBuffer = OH_AVBuffer_Create(size);
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
+            format = OH_AVBuffer_GetParameter(avBuffer);
+            ASSERT_NE(format, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_Destroy(avBuffer));
+            avBuffer = nullptr;
+            GetSkipSampleInfo(addr, buffSize, audioFrame, skipSample);
+            SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            OH_AVFormat_Destroy(format);
+            format = nullptr;
+        }
+    }
+    ASSERT_EQ(skipSample.size(), 1);
+    ASSERT_EQ(true, CompareSkipSampleValue(skipSample[0], {6862, 0, 244, 0, 0, 10}));
+    ASSERT_EQ(audioFrame, 6863);
+    ASSERT_EQ(aKeyCount, 6863);
+    close(fd);
+    fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_SKIP_SAMPLE_FUNC_0040
+ * @tc.name      : demuxer skip sample, ogg, seek + read
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_SKIP_SAMPLE_FUNC_0040, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    std::vector<SkipSampleInfo> skipSample;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    const char *file = "/data/test/media/audio/OGG_8K_1.ogg";
+    int fd = 0;
+    int64_t size = 0;
+    ASSERT_TRUE(InitFile(file, 1, fd, size));
+    int aKeyCount = 0;
+    uint8_t *addr = nullptr;
+    size_t buffSize = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, 219296000 / 1000, SEEK_MODE_CLOSEST_SYNC));
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            avBuffer = OH_AVBuffer_Create(size);
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
+            format = OH_AVBuffer_GetParameter(avBuffer);
+            ASSERT_NE(format, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_Destroy(avBuffer));
+            avBuffer = nullptr;
+            GetSkipSampleInfo(addr, buffSize, audioFrame, skipSample);
+            SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            OH_AVFormat_Destroy(format);
+            format = nullptr;
+        }
+    }
+    ASSERT_EQ(skipSample.size(), 1);
+    ASSERT_EQ(true, CompareSkipSampleValue(skipSample[0], {46, 0, 244, 0, 0, 10}));
+    ASSERT_EQ(audioFrame, 47);
+    ASSERT_EQ(aKeyCount, 47);
+    close(fd);
+    fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_SKIP_SAMPLE_FUNC_0050
+ * @tc.name      : demuxer no skip sample, mp3
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_SKIP_SAMPLE_FUNC_0050, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    const char *file = "/data/test/media/audio/feff_bom.mp3";
+    int fd = 0;
+    int64_t size = 0;
+    ASSERT_TRUE(InitFile(file, 1, fd, size));
+    int aKeyCount = 0;
+    uint8_t *addr = nullptr;
+    size_t buffSize = 0;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            avBuffer = OH_AVBuffer_Create(size);
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
+            format = OH_AVBuffer_GetParameter(avBuffer);
+            ASSERT_NE(format, nullptr);
+            ASSERT_FALSE(OH_AVFormat_GetBuffer(format, OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO, &addr, &buffSize));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_Destroy(avBuffer));
+            avBuffer = nullptr;
+            SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+        }
+    }
+    ASSERT_EQ(audioFrame, 203);
+    ASSERT_EQ(aKeyCount, 203);
+    close(fd);
+    fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_SKIP_SAMPLE_FUNC_0060
+ * @tc.name      : demuxer no skip sample, ogg
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_SKIP_SAMPLE_FUNC_0060, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    const char *file = "/data/test/media/audio/no_skip_sample.ogg";
+    int fd = 0;
+    int64_t size = 0;
+    ASSERT_TRUE(InitFile(file, 1, fd, size));
+    int aKeyCount = 0;
+    uint8_t *addr = nullptr;
+    size_t buffSize = 0;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            avBuffer = OH_AVBuffer_Create(size);
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
+            format = OH_AVBuffer_GetParameter(avBuffer);
+            ASSERT_NE(format, nullptr);
+            ASSERT_FALSE(OH_AVFormat_GetBuffer(format, OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO, &addr, &buffSize));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_Destroy(avBuffer));
+            avBuffer = nullptr;
+            SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+        }
+    }
+    ASSERT_EQ(audioFrame, 6813);
+    ASSERT_EQ(aKeyCount, 6813);
+    close(fd);
+    fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_SKIP_SAMPLE_FUNC_0070
+ * @tc.name      : demuxer no skip sample, wma
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_SKIP_SAMPLE_FUNC_0070, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    const char *file = "/data/test/media/audio/aac.wma";
+    int fd = 0;
+    int64_t size = 0;
+    ASSERT_TRUE(InitFile(file, 1, fd, size));
+    int aKeyCount = 0;
+    uint8_t *addr = nullptr;
+    size_t buffSize = 0;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            avBuffer = OH_AVBuffer_Create(size);
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &attr));
+            format = OH_AVBuffer_GetParameter(avBuffer);
+            ASSERT_NE(format, nullptr);
+            ASSERT_FALSE(OH_AVFormat_GetBuffer(format, OH_MD_KEY_BUFFER_SKIP_SAMPLES_INFO, &addr, &buffSize));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_Destroy(avBuffer));
+            avBuffer = nullptr;
+            SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+        }
+    }
+    ASSERT_EQ(audioFrame, 433);
+    ASSERT_EQ(aKeyCount, 433);
     close(fd);
     fd = -1;
 }

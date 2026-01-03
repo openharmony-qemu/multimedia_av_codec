@@ -100,6 +100,7 @@ constexpr int64_t SEEKCLOSEST_LOCAL_WARNING_MS = 309;
 constexpr int64_t READSAMPLE_AUIDO_WARNING_MS = 50;
 constexpr int64_t READSAMPLE_WARNING_MS = 100;
 constexpr int32_t CONVERT_PACKET_ERROR_MAX_COUNT = 30;
+constexpr int32_t DURATION_CHANGE_AMOUNT_MILLIONSECOND = 500;
 const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
     { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } }
 };
@@ -1761,6 +1762,53 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     return ret;
 }
 
+Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
+{
+    MediaAVCodec::AVCODEC_SYNC_TRACE;
+    Status ret;
+    isSeekError_.store(false);
+    if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
+        MEDIA_LOG_I("Source seek time: %{public}lld", seekTime);
+        if (mode == SeekMode::SEEK_CLOSEST_INNER) {
+            ScopedTimer timer("seek closest online", SEEKCLOSEST_ONLINE_WARNING_MS);
+            ret = source_->SeekToTime(seekTime, SeekMode::SEEK_PREVIOUS_SYNC);
+        } else {
+            ScopedTimer timer("seek online", SEEK_ONLINE_WARNING_MS);
+            ret = source_->SeekToTime(seekTime, SeekMode::SEEK_CLOSEST_SYNC);
+        }
+        if (subtitleSource_) {
+            demuxerPluginManager_->localSubtitleSeekTo(seekTime);
+        }
+        HandleSeekToTime(seekTime);
+        Plugins::Ms2HstTime(seekTime, realSeekTime);
+    } else {
+        MEDIA_LOG_I("Demuxer seek");
+        ScopedTimer timer("seek closest", SEEK_LOCAL_WARNING_MS);
+        ret = demuxerPluginManager_->SeekToKeyFrame(seekTime, mode, realSeekTime);
+    }
+    isSeeked_ = true;
+    if (isVideoMuted_ || needRestore_) {
+        if (sampleQueueMap_[videoTrackId_] != nullptr) {
+            sampleQueueMap_[videoTrackId_]->Clear();
+        }
+        lastVideoPts_ = -1;
+    }
+    for (auto item : eosMap_) {
+        eosMap_[item.first] = false;
+    }
+    ResetSegmentEosMap();
+    for (auto item : requestBufferErrorCountMap_) {
+        requestBufferErrorCountMap_[item.first] = 0;
+    }
+    if (ret != Status::OK) {
+        isSeekError_.store(true);
+    }
+    isFirstFrameAfterSeek_.store(true);
+    convertErrorTime_.store(0);
+    MEDIA_LOG_D("Out");
+    return ret;
+}
+
 Status MediaDemuxer::SelectBitRate(uint32_t bitRate, bool isAutoSelect)
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_INVALID_PARAMETER, "Source is nullptr");
@@ -2994,7 +3042,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
     SetTrackNotifyFlag(trackId, false);
     ret = HandleReadSample(trackId);
     ProduceWaterLoopControl(trackId);
-    BufferingStatus(trackId);
+    BufferingStatus();
     MEDIA_LOG_DD("CopyFrameToUserQueue Out, track:" PUBLIC_LOG_D32, trackId);
     return ret;
 }
@@ -3042,7 +3090,8 @@ void MediaDemuxer::StartConsume(int32_t trackId)
 
 void MediaDemuxer::ProduceWaterLoopControl(int32_t trackId)
 {
-    if (!sampleQueueController_ || trackId == subtitleTrackId_ || isVideoMuted_ || IsLocalFd()) {
+    if (!sampleQueueController_ || trackId == subtitleTrackId_ || isVideoMuted_ || IsLocalFd()
+        || !GetEnableSampleQueueFlag()) {
         return;
     }
     StartConsume(trackId);
@@ -3052,26 +3101,40 @@ void MediaDemuxer::ProduceWaterLoopControl(int32_t trackId)
     }
 }
 
-void MediaDemuxer::BufferingStatus(int32_t trackId)
+void MediaDemuxer::BufferingStatus()
 {
-    if (IsLocalFd() || sampleQueueMap_.find(trackId) == sampleQueueMap_.end() || sampleQueueMap_[trackId] == nullptr) {
+    int32_t mainTrackId = GetMainTrackId();
+    if (IsLocalFd() || sampleQueueMap_.find(mainTrackId) == sampleQueueMap_.end()
+        || sampleQueueMap_[mainTrackId] == nullptr) {
         return;
     }
-    if (isBufferingMap_[videoTrackId_].load()) {
-        int64_t percent = static_cast<int64_t>((sampleQueueMap_[trackId]->NewGetCacheDuration() * 100) /
+    if (isBufferingMap_[mainTrackId].load()) {
+        int64_t percent = static_cast<int64_t>((sampleQueueMap_[mainTrackId]->NewGetCacheDuration() * 100) /
             SampleQueueController::START_CONSUME_WATER_LOOP);
         MEDIA_LOG_I("BUFFERING_PERCENT: %{public}lld", percent);
-        auto eventReceiver = eventReceiver_;
-        if (eventReceiver) {
-            eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_BUFFER_PROGRESS, percent});
+        if (eventReceiver_) {
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_BUFFER_PROGRESS, percent});
         }
     }
-    auto cachedDuration = static_cast<int64_t>(sampleQueueMap_[trackId]->NewGetCacheDuration() / US_TO_MS);
-    MEDIA_LOG_I("CACHED_DURATION: %{public}lld", cachedDuration);
-    auto eventReceiver = eventReceiver_;
-    if (eventReceiver) {
-        eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_CACHED_DURATION, cachedDuration});
+    auto cachedDuration = static_cast<int64_t>(sampleQueueMap_[mainTrackId]->NewGetCacheDuration() / US_TO_MS);
+    if (std::abs(cachedDuration - lastCacheDuration_) > DURATION_CHANGE_AMOUNT_MILLIONSECOND) {
+        MEDIA_LOG_I("CACHED_DURATION: %{public}lld", cachedDuration);
+        if (eventReceiver_) {
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_CACHED_DURATION, cachedDuration});
+        }
+        lastCacheDuration_ = cachedDuration;
     }
+}
+
+int32_t MediaDemuxer::GetMainTrackId()
+{
+    if (IsValidTrackId(videoTrackId_)) {
+        return videoTrackId_;
+    }
+    if (IsValidTrackId(audioTrackId_)) {
+        return audioTrackId_;
+    }
+    return INVALID_STREAM_OR_TRACK_ID;
 }
 
 Status MediaDemuxer::InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> sample, bool isAVDemuxer)

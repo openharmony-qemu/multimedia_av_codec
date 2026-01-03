@@ -335,6 +335,16 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
     return ret;
 }
 
+bool DemuxerFilter::IsMimeInDolbyList(const std::string& mime)
+{
+    FALSE_RETURN_V_MSG(callback_ != nullptr, false, "callback is nullptr");
+    if (dolbyList_.empty()) {
+        auto rawList = callback_->GetDolbyListCallback();
+        dolbyList_.assign(rawList.begin(), rawList.end());
+    }
+    return std::find(dolbyList_.begin(), dolbyList_.end(), mime) != dolbyList_.end();
+}
+
 Status DemuxerFilter::FaultDemuxerEventInfoWrite(StreamType& streamType)
 {
     MEDIA_LOG_I_SHORT("FaultDemuxerEventInfoWrite enter.");
@@ -687,6 +697,9 @@ Status DemuxerFilter::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& 
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SeekTo");
     MEDIA_LOG_D_SHORT("SeekTo in");
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+    if (fileType_ == FileType::MPEGTS) {
+        return demuxer_->SeekToKeyFrame(seekTime, mode, realSeekTime);
+    }
     return demuxer_->SeekTo(seekTime, mode, realSeekTime);
 }
 
@@ -732,8 +745,7 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     FALSE_RETURN_V_MSG_E(FindTrackId(outType, trackId), Status::ERROR_INVALID_PARAMETER, "FindTrackId failed");
 
     std::shared_ptr<Meta> globalInfo = demuxer_->GetGlobalMetaInfo();
-    FileType fileType = FileType::UNKNOW;
-    if (globalInfo == nullptr || !globalInfo->GetData(Tag::MEDIA_FILE_TYPE, fileType)) {
+    if (globalInfo == nullptr || !globalInfo->GetData(Tag::MEDIA_FILE_TYPE, fileType_)) {
         MEDIA_LOG_W("Get file type failed");
     }
     std::vector<std::shared_ptr<Meta>> trackInfos = GetStreamMetaInfo();
@@ -750,9 +762,9 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     nextFiltersMap_[outType].push_back(nextFilter_);
 
     meta->SetData(Tag::REGULAR_TRACK_ID, trackId);
-    if (ptsManagedFileTypes.find(fileType) != ptsManagedFileTypes.end()) {
-        MEDIA_LOG_I("File type needs PTS management: " PUBLIC_LOG_D32, static_cast<int32_t>(fileType));
-        meta->SetData(Tag::MEDIA_FILE_TYPE, fileType);
+    if (ptsManagedFileTypes.find(fileType_) != ptsManagedFileTypes.end()) {
+        MEDIA_LOG_I("File type needs PTS management: " PUBLIC_LOG_D32, static_cast<int32_t>(fileType_));
+        meta->SetData(Tag::MEDIA_FILE_TYPE, fileType_);
     }
     std::shared_ptr<Meta> userInfo = demuxer_->GetUserMeta();
     std::string enhanceflag;
@@ -819,6 +831,11 @@ bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, 
     size_t index, std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I_SHORT("mediaType is %{public}d", static_cast<int32_t>(mediaType));
+    if (IsMimeInDolbyList(mime) && callback_->IsAudioPassthroughCallback(mime.c_str())) {
+        streamType = StreamType::STREAMTYPE_DOLBY;
+        MEDIA_LOG_I("streamType is STREAMTYPE_DOLBY");
+        return true;
+    }
     if (mediaType == Plugins::MediaType::SUBTITLE) {
         streamType = StreamType::STREAMTYPE_SUBTITLE;
     } else if (mediaType == Plugins::MediaType::AUDIO) {
