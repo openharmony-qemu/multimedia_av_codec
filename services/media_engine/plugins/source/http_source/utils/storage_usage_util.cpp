@@ -55,7 +55,7 @@ int64_t StorageUsageUtil::GetTotalSize()
     return totalSize;
 }
  
-bool StorageUsageUtil::hasEnoughStorage()
+bool StorageUsageUtil::HasEnoughStorage()
 {
     int64_t freesize = GetFreeSize();
     int64_t totalSize = GetTotalSize();
