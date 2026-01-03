@@ -62,7 +62,7 @@ bool StorageUsageUtil::hasEnoughStorage()
     if (freesize == -1 || totalSize == -1) {
         return false;
     }
-    MEDIA_LOG_I("StorageUsageUtil freesize: %{public}ld; totalsize: %{public}ld", freesize, totalSize);
+    MEDIA_LOG_I("StorageUsageUtil freesize: %{public}lld; totalsize: %{public}lld", freesize, totalSize);
     if (totalSize > STORAGE_THRESHOLD_500G) {
         return freesize > (static_cast<long long>(totalSize * STORAGE_PERCENT_THRESHOLD_OVER_500G)
             + STORAGE_EXTRA_2G);
