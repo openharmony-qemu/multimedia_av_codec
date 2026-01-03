@@ -224,6 +224,14 @@ std::shared_ptr<PlayStrategy> HttpSourcePlugin::PlayStrategyInit(std::shared_ptr
     return playStrategy;
 }
 
+void HttpSourcePlugin::MediaStreamDfxTrace(std::shared_ptr<MediaSource> source)
+{
+    auto uuid = source->GetAppUid();
+    std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
+    MediaAVCodec::StreamAppPackageNameEventWrite("AVSource", bundleName,
+        "OH_AVSource_CreateWithURI", "{\"result\": \"success\"}");
+}
+
 void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source)
 {
     FALSE_RETURN_MSG(source != nullptr, "source is null.");
@@ -269,11 +277,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType_));
         downloader_->Init();
     }
-    auto uuid = source->GetAppUid();
-    std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
-    MEDIA_LOG_I("SYX URI name %{public}s", bundleName.c_str());
-    MediaAVCodec::StreamAppPackageNameEventWrite("AVSource", bundleName,
-        "OH_AVSource_CreateWithURI", "{\"result\": \"success\"}");
+    MediaStreamDfxTrace(source);
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded_);
         downloader_->SetAppUid(source->GetAppUid());
