@@ -84,6 +84,7 @@ private:
     void SetDownloaderBySource(std::shared_ptr<MediaSource> source);
     bool CheckIsM3U8Uri();
     void InitHttpSource(const std::shared_ptr<MediaSource>& source);
+    void MediaStreamDfxTrace(std::shared_ptr<MediaSource> source);
     std::string GetCurUrl();
     Status InitSourcePlugin(const std::shared_ptr<MediaSource>& source);
 
