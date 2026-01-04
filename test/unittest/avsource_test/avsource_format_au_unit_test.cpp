@@ -52,7 +52,6 @@ string g_auFilePath = TEST_FILE_PATH + g_auFileName;
 string g_auUriPath = TEST_URI_PATH + g_auFileName;
 
 
-// File Path
 /**
  * @tc.name: AVSource_AU_GetFormat_0001
  * @tc.desc: get source format(au)
@@ -79,7 +78,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_AU_GetFormat_0001, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.hasVideo, 0);
     ASSERT_EQ(formatVal_.hasAudio, 1);
-    ASSERT_EQ(formatVal_.fileType, 210);
+    ASSERT_EQ(formatVal_.fileType, 213);
 #endif
     ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
 }
@@ -140,7 +139,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_AU_GetFormat_0003, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.hasVideo, 0);
     ASSERT_EQ(formatVal_.hasAudio, 1);
-    ASSERT_EQ(formatVal_.fileType, 210);
+    ASSERT_EQ(formatVal_.fileType, 213);
 #endif
     ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
 }
