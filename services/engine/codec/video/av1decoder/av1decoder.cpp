@@ -429,7 +429,7 @@ int32_t Av1Decoder::DecodeFrameOnce()
         int32_t bitDepth = av1DecOutputImg_->p.bpc;
         ConvertDecOutToAVFrame();
 #ifdef BUILD_ENG_VERSION
-        DumpOutputBuffer();
+        DumpOutputBuffer(bitDepth);
 #endif
         auto index = codecAvailQue_->Front();
         CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
