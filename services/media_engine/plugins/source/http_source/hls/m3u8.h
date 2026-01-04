@@ -114,7 +114,6 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     M3U8Info firstFragment_;
     std::atomic<bool> isFirstFragmentReady_ {false};
-    std::atomic<bool> isPlayTypeFound_ {false};
     bool hasDiscontinuity_ {false};
     std::vector<size_t> segmentOffsets_;
     std::map<std::string, std::string> httpHeader_ {};
