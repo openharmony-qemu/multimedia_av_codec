@@ -246,7 +246,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
             loaderCombinations_->Close(-1);
         } else {
             std::shared_ptr<StorageUsageUtil> storageUsage = std::make_shared<StorageUsageUtil>();
-            if (loaderCombinations_->GetenableOfflineCache() && !storageUsage->hasEnoughStorage()) {
+            if (loaderCombinations_->GetenableOfflineCache() && !storageUsage->HasEnoughStorage()) {
                 loaderCombinations_->Close(-1);
             }
         }
