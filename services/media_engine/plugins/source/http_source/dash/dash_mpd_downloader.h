@@ -123,11 +123,11 @@ public:
     void SetMpdCallback(DashMpdCallback *callback);
     int64_t GetDuration() const;
     Seekable GetSeekable() const;
-    std::vector<uint32_t> GetBitRates();
-    std::vector<uint32_t> GetBitRatesByHdr(bool isHdr);
-    int64_t SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg);
+    std::vector<uint32_t> GetBitRates() const;
+    std::vector<uint32_t> GetBitRatesByHdr(bool isHdr) const;
+    int64_t SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg) const;
     void UpdateDownloadFinished(const std::string &url);
-    int GetInUseVideoStreamId();
+    int GetInUseVideoStreamId() const;
     DashMpdGetRet GetNextSegmentByStreamId(int streamId, std::shared_ptr<DashSegment> &seg);
     DashMpdGetRet GetBreakPointSegment(int streamId, int64_t breakpoint, std::shared_ptr<DashSegment> &seg);
     DashMpdGetRet GetNextVideoStream(DashMpdBitrateParam &param, int &streamId);
@@ -235,9 +235,6 @@ private:
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
 
-    void AddStreamDesc(std::shared_ptr<DashStreamDescription> desc);
-    std::vector<std::shared_ptr<DashStreamDescription>>& GetStreamDesc();
-
 private:
     std::string url_ {};
     std::string downloadContent_ {}; // mpd content or sidx content
@@ -265,7 +262,6 @@ private:
     std::vector<DashDrmInfo> localDrmInfos_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
 
-    std::shared_mutex downloadRequestMutex_;
     std::shared_mutex streamDescMutex_;
 };
 }
