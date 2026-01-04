@@ -2884,8 +2884,6 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
         ffRet = AVSeekFrameLock(minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
         MEDIA_LOG_I("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
             minTsPktInfo_.streamIndex, seekTs, ffRet);
-        printf("av_seek_frame stream_index %d seekTs %ld ffRet %d\n",
-            minTsPktInfo_.streamIndex, seekTs, ffRet);
     }
     lock.unlock();
     if (ffRet < 0) {
