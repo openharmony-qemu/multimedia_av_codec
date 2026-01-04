@@ -248,12 +248,12 @@ int32_t FCodec::ConfigureContext(const Format &format)
     format_.PutIntValue(FMTKey::VIDEO_PIC_HEIGHT, height_);
     int32_t pixelFormat = 0;
     if (format.GetIntValue(FMTKey::VIDEO_RAWVIDEO_INPUT_PIXEL_FORMAT, pixelFormat)) {
-        RawVideoPixelFormat rawvideoPixFmt = static_cast<RawVideoPixelFormat>(pixelFormat);
-        CHECK_AND_RETURN_RET_LOG(rawvideoPixFmt >= RawVideoPixelFormat::YUV420P &&
-                                 rawvideoPixFmt <= RawVideoPixelFormat::RGBA,
+        rawvideoPixFmt_ = static_cast<RawVideoPixelFormat>(pixelFormat);
+        CHECK_AND_RETURN_RET_LOG(rawvideoPixFmt_ >= RawVideoPixelFormat::YUV420P &&
+                                 rawvideoPixFmt_ <= RawVideoPixelFormat::RGBA,
                                  AVCS_ERR_INVALID_VAL, "Unsupported rawvideo pixel format %{public}d!",
-                                 static_cast<int32_t>(rawvideoPixFmt));
-        avCodecContext_->pix_fmt = g_convertFfmpegPixFmt[rawvideoPixFmt];
+                                 static_cast<int32_t>(rawvideoPixFmt_));
+        avCodecContext_->pix_fmt = g_convertFfmpegPixFmt[rawvideoPixFmt_];
     }
 
     avCodecContext_->width = width_;
@@ -643,7 +643,12 @@ void FCodec::CalculateBufferSize()
 {
     int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
     outputBufferSize_ = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) / UV_SCALE_FACTOR);
-    inputBufferSize_ = std::max(VIDEO_MIN_BUFFER_SIZE, outputBufferSize_);
+    if (rawvideoPixFmt_ == RawVideoPixelFormat::RGBA) {
+        inputBufferSize_ = std::max(static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA),
+                                    outputBufferSize_);
+    } else {
+        inputBufferSize_ = std::max(VIDEO_MIN_BUFFER_SIZE, outputBufferSize_);
+    }
     if (outputPixelFmt_ == VideoPixelFormat::RGBA) {
         outputBufferSize_ = static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA);
     }

@@ -61,6 +61,7 @@ protected:
     const char *INP_DIR_6 = "/data/test/media/rawvideo.mkv";
     const char *INP_DIR_7 = "/data/test/media/rawvideo_600_800_30.avi";
     const char *INP_DIR_8 = "/data/test/media/rawvideo_4_4_30.avi";
+    const char *INP_DIR_9 = "/data/test/media/rawvideo_800_600_rgba.avi";
 };
 
 static OH_AVCapability *cap_rawvideo = nullptr;
@@ -1358,5 +1359,27 @@ HWTEST_F(RawVideodecFuncNdkTest, VIDEO_RAWVIDEODEC_FUNCTION_0070, TestSize.Level
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_EQ(FRAMESIZE10, vDecSample->outFrameCount);
+}
+
+/**
+ * @tc.number    : VIDEO_RAWVIDEODEC_FUNCTION_0071
+ * @tc.name      : Decode RawVideo buffer with resolution 800x600
+ * @tc.desc      : function test
+ */
+HWTEST_F(RawVideodecFuncNdkTest, VIDEO_RAWVIDEODEC_FUNCTION_0071, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->inputDir = INP_DIR_9;
+    vDecSample->outputYuvFlag = true;
+    vDecSample->defaultWidth = 800;
+    vDecSample->defaultHeight = 600;
+    vDecSample->pixFmt = AV_PIX_FMT_RGBA;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameRawVideo.c_str()));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderReadStream());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+    ASSERT_EQ(FRAMESIZE5, vDecSample->outFrameCount);
 }
 } // namespace
