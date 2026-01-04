@@ -78,7 +78,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_AU_GetFormat_0001, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.hasVideo, 0);
     ASSERT_EQ(formatVal_.hasAudio, 1);
-    ASSERT_EQ(formatVal_.fileType, 213);
+    ASSERT_EQ(formatVal_.fileType, 215);
 #endif
     ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
 }
@@ -139,7 +139,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_AU_GetFormat_0003, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_EQ(formatVal_.hasVideo, 0);
     ASSERT_EQ(formatVal_.hasAudio, 1);
-    ASSERT_EQ(formatVal_.fileType, 213);
+    ASSERT_EQ(formatVal_.fileType, 215);
 #endif
     ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
 }
