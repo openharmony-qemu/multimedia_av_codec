@@ -117,7 +117,10 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime)
 {
     MEDIA_LOG_I("Init mime: " PUBLIC_LOG_S, mime.c_str());
     Format format;
-    codecServer_ = MediaAVCodec::VideoDecoderFactory::CreateByMime(mime);
+    std::shared_ptr<Media::Meta> callerInfo = std::make_shared<Media::Meta>();
+    callerInfo->SetData(Media::Tag::VIDEO_ENABLE_LOCAL_RELEASE, true);
+    format.SetMeta(callerInfo);
+    MediaAVCodec::VideoDecoderFactory::CreateByMime(mime, format, codecServer_);
     if (!codecServer_) {
         MEDIA_LOG_I("Create codecServer failed");
         return Status::ERROR_UNKNOWN;
@@ -150,7 +153,10 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime, bool isHdr)
     FALSE_RETURN_V_MSG(capabilityData->mimeType == mime, Status::ERROR_UNKNOWN, "not correct mime");
     FALSE_RETURN_V_MSG(capabilityData->codecName != "", Status::ERROR_UNKNOWN, "empty codec name");
     Format format;
-    codecServer_ = MediaAVCodec::VideoDecoderFactory::CreateByName(capabilityData->codecName);
+    std::shared_ptr<Media::Meta> callerInfo = std::make_shared<Media::Meta>();
+    callerInfo->SetData(Media::Tag::VIDEO_ENABLE_LOCAL_RELEASE, true);
+    format.SetMeta(callerInfo);
+    MediaAVCodec::VideoDecoderFactory::CreateByName(capabilityData->codecName, format, codecServer_);
     FALSE_RETURN_V_MSG(codecServer_ != nullptr, Status::ERROR_UNKNOWN, "get capability data failed");
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("SurfaceDecoder");
