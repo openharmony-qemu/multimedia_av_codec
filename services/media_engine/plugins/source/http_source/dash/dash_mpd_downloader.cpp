@@ -1095,7 +1095,7 @@ void DashMpdDownloader::GetStreamsInfoInPeriod(DashPeriodInfo *periodInfo, unsig
             DashParseRange(periodInfo->periodSegBase_->indexRange_, desc->indexSegment_->indexRangeBegin_,
                            desc->indexSegment_->indexRangeEnd_);
         }
-        AddStreamDesc(desc);
+        streamDescriptions_.push_back(desc);
         return;
     }
 
@@ -1150,7 +1150,7 @@ void DashMpdDownloader::GetStreamsInfoInAdptSet(DashAdptSetInfo *adptSetInfo, co
             DashParseRange(adptSetInfo->adptSetSegBase_->indexRange_, desc->indexSegment_->indexRangeBegin_,
                            desc->indexSegment_->indexRangeEnd_);
         }
-        AddStreamDesc(desc);
+        streamDescriptions_.push_back(desc);
         return;
     }
 
@@ -1209,7 +1209,7 @@ void DashMpdDownloader::GetStreamDescriptions(const std::string &periodBaseUrl, 
         }
         MEDIA_LOG_I("add stream band:" PUBLIC_LOG_U32 ", hdr: " PUBLIC_LOG_D32,
             streamDesc.bandwidth_, streamDesc.videoType_);
-        AddStreamDesc(desc);
+        streamDescriptions_.push_back(desc);
     }
 }
 
