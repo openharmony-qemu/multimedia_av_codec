@@ -2841,11 +2841,11 @@ Status FFmpegDemuxerPlugin::GetFileFirstPacket()
 void FFmpegDemuxerPlugin::InitMinTsPacketInfo(AVPacket *pkt)
 {
     bool isSkip = IsSkipGetMinTsPktInfo();
-    FALSE_RETURN_MSG_W(!isSkip, "File skip init");
-    FALSE_RETURN_MSG_W(pkt != nullptr, "AVPacket is nullptr");
-    FALSE_RETURN_MSG_W(pkt->dts != AV_NOPTS_VALUE || pkt->pts != AV_NOPTS_VALUE,
+    FALSE_RETURN_MSG_D(!isSkip, "File skip init");
+    FALSE_RETURN_MSG_D(pkt != nullptr, "AVPacket is nullptr");
+    FALSE_RETURN_MSG_D(pkt->dts != AV_NOPTS_VALUE || pkt->pts != AV_NOPTS_VALUE,
         "pkt dts and pts is AV_NOPTS_VALUE");
-    FALSE_RETURN_MSG_W(!minTsPktInfo_.isInit, "minTsPktInfo_ has been initialized");
+    FALSE_RETURN_MSG_D(!minTsPktInfo_.isInit, "minTsPktInfo_ has been initialized");
     minTsPktInfo_.streamIndex = pkt->stream_index;
     minTsPktInfo_.minPts = pkt->pts;
     minTsPktInfo_.minDts = pkt->dts;
@@ -2883,6 +2883,8 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
             !FFmpegFormatHelper::IsMpeg4File(fileType_) ? minTsPktInfo_.minPts : minTsPktInfo_.minDts;
         ffRet = AVSeekFrameLock(minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
         MEDIA_LOG_I("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
+            minTsPktInfo_.streamIndex, seekTs, ffRet);
+        printf("av_seek_frame stream_index %d seekTs %ld ffRet %d\n",
             minTsPktInfo_.streamIndex, seekTs, ffRet);
     }
     lock.unlock();
