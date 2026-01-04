@@ -262,7 +262,7 @@ private:
     std::vector<DashDrmInfo> localDrmInfos_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
 
-    std::shared_mutex streamDescMutex_;
+    std::shared_mutex downloadRequestMutex_;
 };
 }
 }
