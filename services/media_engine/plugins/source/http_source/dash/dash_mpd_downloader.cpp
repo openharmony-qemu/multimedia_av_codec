@@ -59,7 +59,8 @@ DashMpdDownloader::~DashMpdDownloader()
     if (downloader_ != nullptr) {
         downloader_->Stop(false);
     }
-    streamDescriptions_.clear();
+    auto& streamDescriptions = GetStreamDesc();
+    streamDescriptions.clear();
 }
 
 void DashMpdDownloader::Init()
@@ -217,8 +218,9 @@ void DashMpdDownloader::Close(bool isAsync)
 {
     downloader_->Stop(isAsync);
 
-    if (downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
-        downloadRequest_->Close();
+    auto downloadRequest = GetDownloadRequest();
+    if (downloadRequest != nullptr && !downloadRequest->IsClosed()) {
+        downloadRequest->Close();
     }
 }
 
@@ -237,11 +239,12 @@ void DashMpdDownloader::UpdateDownloadFinished(const std::string &url)
     }
 }
 
-int DashMpdDownloader::GetInUseVideoStreamId() const
+int DashMpdDownloader::GetInUseVideoStreamId()
 {
-    for (uint32_t index = 0; index < streamDescriptions_.size(); index++) {
-        if (streamDescriptions_[index]->inUse_ && streamDescriptions_[index]->type_ == MediaAVCodec::MEDIA_TYPE_VID) {
-            return streamDescriptions_[index]->streamId_;
+    auto& streamDescriptions = GetStreamDesc();
+    for (uint32_t index = 0; index < streamDescriptions.size(); index++) {
+        if (streamDescriptions[index]->inUse_ && streamDescriptions[index]->type_ == MediaAVCodec::MEDIA_TYPE_VID) {
+            return streamDescriptions[index]->streamId_;
         }
     }
     return -1;
@@ -252,7 +255,8 @@ DashMpdGetRet DashMpdDownloader::GetNextSegmentByStreamId(int streamId, std::sha
     MEDIA_LOG_I("GetNextSegmentByStreamId streamId:" PUBLIC_LOG_D32, streamId);
     seg = nullptr;
     DashMpdGetRet ret = DASH_MPD_GET_ERROR;
-    for (auto &streamDescription : streamDescriptions_) {
+    auto& streamDescriptions = GetStreamDesc();
+    for (auto &streamDescription : streamDescriptions) {
         if (streamDescription->streamId_ != streamId) {
             continue;
         }
@@ -286,7 +290,8 @@ DashMpdGetRet DashMpdDownloader::GetBreakPointSegment(int streamId, int64_t brea
     MEDIA_LOG_I("GetBreakPointSegment streamId:" PUBLIC_LOG_D32 ", breakpoint:" PUBLIC_LOG_D64, streamId, breakpoint);
     seg = nullptr;
     DashMpdGetRet ret = DASH_MPD_GET_ERROR;
-    for (auto &streamDescription : streamDescriptions_) {
+    auto& streamDescriptions = GetStreamDesc();
+    for (auto &streamDescription : streamDescriptions) {
         if (streamDescription->streamId_ != streamId) {
             continue;
         }
@@ -326,7 +331,8 @@ DashMpdGetRet DashMpdDownloader::GetNextVideoStream(DashMpdBitrateParam &param, 
     std::shared_ptr<DashStreamDescription> destStream = nullptr;
     bool isFirstSelect = true;
     uint32_t maxGap = 0;
-    for (const auto &stream : streamDescriptions_) {
+    auto& streamDescriptions = GetStreamDesc();
+    for (const auto &stream : streamDescriptions) {
         if (stream->type_ != MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
             continue;
         }
@@ -377,7 +383,8 @@ DashMpdGetRet DashMpdDownloader::GetNextTrackStream(DashMpdTrackParam &param)
 {
     std::shared_ptr<DashStreamDescription> currentStream = nullptr;
     std::shared_ptr<DashStreamDescription> destStream = nullptr;
-    for (const auto &stream : streamDescriptions_) {
+    auto& streamDescriptions = GetStreamDesc();
+    for (const auto &stream : streamDescriptions) {
         if (stream->type_ != param.type_) {
             continue;
         }
@@ -434,11 +441,12 @@ DashMpdGetRet DashMpdDownloader::GetNextTrackStream(DashMpdTrackParam &param)
 
 std::shared_ptr<DashStreamDescription> DashMpdDownloader::GetStreamByStreamId(int streamId)
 {
-    auto iter = std::find_if(streamDescriptions_.begin(), streamDescriptions_.end(),
+    auto& streamDescriptions = GetStreamDesc();
+    auto iter = std::find_if(streamDescriptions.begin(), streamDescriptions.end(),
         [&](const std::shared_ptr<DashStreamDescription> &stream) {
             return stream->streamId_ == streamId;
         });
-    if (iter == streamDescriptions_.end()) {
+    if (iter == streamDescriptions.end()) {
         return nullptr;
     }
 
@@ -447,11 +455,12 @@ std::shared_ptr<DashStreamDescription> DashMpdDownloader::GetStreamByStreamId(in
 
 std::shared_ptr<DashStreamDescription> DashMpdDownloader::GetUsingStreamByType(MediaAVCodec::MediaType type)
 {
-    auto iter = std::find_if(streamDescriptions_.begin(), streamDescriptions_.end(),
+    auto& streamDescriptions = GetStreamDesc();
+    auto iter = std::find_if(streamDescriptions.begin(), streamDescriptions.end(),
         [&](const std::shared_ptr<DashStreamDescription> &stream) {
             return stream->type_ == type && stream->inUse_;
         });
-    if (iter == streamDescriptions_.end()) {
+    if (iter == streamDescriptions.end()) {
         return nullptr;
     }
 
@@ -460,11 +469,12 @@ std::shared_ptr<DashStreamDescription> DashMpdDownloader::GetUsingStreamByType(M
 
 std::shared_ptr<DashInitSegment> DashMpdDownloader::GetInitSegmentByStreamId(int streamId)
 {
-    auto iter = std::find_if(streamDescriptions_.begin(), streamDescriptions_.end(),
+    auto& streamDescriptions = GetStreamDesc();
+    auto iter = std::find_if(streamDescriptions.begin(), streamDescriptions.end(),
         [&](const std::shared_ptr<DashStreamDescription> &streamDescription) {
             return streamDescription->streamId_ == streamId;
         });
-    if (iter == streamDescriptions_.end()) {
+    if (iter == streamDescriptions.end()) {
         return nullptr;
     }
     return (*iter)->initSegment_;
@@ -472,9 +482,10 @@ std::shared_ptr<DashInitSegment> DashMpdDownloader::GetInitSegmentByStreamId(int
 
 void DashMpdDownloader::SetCurrentNumberSeqByStreamId(int streamId, int64_t numberSeq)
 {
-    for (unsigned int index = 0; index < streamDescriptions_.size(); index++) {
-        if (streamDescriptions_[index]->streamId_ == streamId) {
-            streamDescriptions_[index]->currentNumberSeq_ = numberSeq;
+    auto& streamDescriptions = GetStreamDesc();
+    for (unsigned int index = 0; index < streamDescriptions.size(); index++) {
+        if (streamDescriptions[index]->streamId_ == streamId) {
+            streamDescriptions[index]->currentNumberSeq_ = numberSeq;
             MEDIA_LOG_I("SetCurrentNumberSeqByStreamId update id:" PUBLIC_LOG_D32 ", seq:"
                 PUBLIC_LOG_D64, streamId, numberSeq);
             break;
@@ -820,18 +831,21 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
     RequestInfo mediaSource;
     mediaSource.url = url;
     mediaSource.timeoutMs = MPD_HTTP_TIME_OUT_MS;
-    downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSource, requestWholeFile);
+    SetDownloadRequest(std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSource,
+        requestWholeFile));
     auto downloadDoneCallback = [weakDownloader](const std::string &url, const std::string &location) {
         auto shareDownloader = weakDownloader.lock();
         FALSE_RETURN_MSG(shareDownloader != nullptr, "downloadDoneCb, dash mpd downloader already destructed.");
         shareDownloader->UpdateDownloadFinished(url);
     };
-    downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
-    downloadRequest_->SetRequestProtocolType(RequestProtocolType::DASH);
+    auto downloadRequest = GetDownloadRequest();
+    FALSE_RETURN_MSG(downloadRequest != nullptr, "downloadRequest is nullptr");
+    downloadRequest->SetDownloadDoneCb(downloadDoneCallback);
+    downloadRequest->SetRequestProtocolType(RequestProtocolType::DASH);
     if (!requestWholeFile) {
-        downloadRequest_->SetRangePos(startRange, endRange);
+        downloadRequest->SetRangePos(startRange, endRange);
     }
-    downloader_->Download(downloadRequest_, -1); // -1
+    downloader_->Download(downloadRequest, -1); // -1
     downloader_->Start();
 }
 
@@ -874,10 +888,11 @@ Seekable DashMpdDownloader::GetSeekable() const
     return mpdInfo_->type_ == DashType::DASH_TYPE_STATIC ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
 }
 
-std::vector<uint32_t> DashMpdDownloader::GetBitRates() const
+std::vector<uint32_t> DashMpdDownloader::GetBitRates()
 {
     std::vector<uint32_t> bitRates;
-    for (const auto &item : streamDescriptions_) {
+    auto& streamDescriptions = GetStreamDesc();
+    for (const auto &item : streamDescriptions) {
         if (item->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_VID && item->bandwidth_ > 0) {
             bitRates.push_back(item->bandwidth_);
         }
@@ -885,10 +900,11 @@ std::vector<uint32_t> DashMpdDownloader::GetBitRates() const
     return bitRates;
 }
 
-std::vector<uint32_t> DashMpdDownloader::GetBitRatesByHdr(bool isHdr) const
+std::vector<uint32_t> DashMpdDownloader::GetBitRatesByHdr(bool isHdr)
 {
     std::vector<uint32_t> bitRates;
-    for (const auto &item : streamDescriptions_) {
+    auto& streamDescriptions = GetStreamDesc();
+    for (const auto &item : streamDescriptions) {
         if (item->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_VID &&
             item->bandwidth_ > 0 &&
             (isHdr == (item->videoType_ != DASH_VIDEO_TYPE_SDR))) {
@@ -898,12 +914,13 @@ std::vector<uint32_t> DashMpdDownloader::GetBitRatesByHdr(bool isHdr) const
     return bitRates;
 }
 
-int64_t DashMpdDownloader::SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg) const
+int64_t DashMpdDownloader::SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment> &seg)
 {
     seg = nullptr;
     std::vector<std::shared_ptr<DashSegment>> mediaSegments;
     std::shared_ptr<DashStreamDescription> streamDescription;
-    for (const auto &index : streamDescriptions_) {
+    auto& streamDescriptions = GetStreamDesc();
+    for (const auto &index : streamDescriptions) {
         streamDescription = index;
         if (streamDescription != nullptr && streamDescription->streamId_ == streamId &&
             streamDescription->segsState_ == DASH_SEGS_STATE_FINISH) {
@@ -1056,10 +1073,11 @@ bool DashMpdDownloader::GetStreamsInfoInMpd()
         GetStreamsInfoInPeriod(period, periodIndex, mpdBaseUrl);
     }
 
-    int size = static_cast<int>(streamDescriptions_.size());
+    auto& streamDescriptions = GetStreamDesc();
+    int size = static_cast<int>(streamDescriptions.size());
     for (int index = 0; index < size; index++) {
-        streamDescriptions_[index]->streamId_ = index;
-        std::shared_ptr<DashInitSegment> initSegment = streamDescriptions_[index]->initSegment_;
+        streamDescriptions[index]->streamId_ = index;
+        std::shared_ptr<DashInitSegment> initSegment = streamDescriptions[index]->initSegment_;
         if (initSegment != nullptr) {
             initSegment->streamId_ = index;
         }
@@ -1091,7 +1109,7 @@ void DashMpdDownloader::GetStreamsInfoInPeriod(DashPeriodInfo *periodInfo, unsig
             DashParseRange(periodInfo->periodSegBase_->indexRange_, desc->indexSegment_->indexRangeBegin_,
                            desc->indexSegment_->indexRangeEnd_);
         }
-        streamDescriptions_.push_back(desc);
+        AddStreamDesc(desc);
         return;
     }
 
@@ -1146,7 +1164,7 @@ void DashMpdDownloader::GetStreamsInfoInAdptSet(DashAdptSetInfo *adptSetInfo, co
             DashParseRange(adptSetInfo->adptSetSegBase_->indexRange_, desc->indexSegment_->indexRangeBegin_,
                            desc->indexSegment_->indexRangeEnd_);
         }
-        streamDescriptions_.push_back(desc);
+        AddStreamDesc(desc);
         return;
     }
 
@@ -1205,7 +1223,7 @@ void DashMpdDownloader::GetStreamDescriptions(const std::string &periodBaseUrl, 
         }
         MEDIA_LOG_I("add stream band:" PUBLIC_LOG_U32 ", hdr: " PUBLIC_LOG_D32,
             streamDesc.bandwidth_, streamDesc.videoType_);
-        streamDescriptions_.push_back(desc);
+        AddStreamDesc(desc);
     }
 }
 
@@ -1265,13 +1283,14 @@ bool DashMpdDownloader::IsLangMatch(const std::string &lang, MediaAVCodec::Media
 
 bool DashMpdDownloader::ChooseStreamToPlay(MediaAVCodec::MediaType type)
 {
-    if (mpdInfo_ == nullptr || streamDescriptions_.size() == 0) {
+    auto& streamDescriptions = GetStreamDesc();
+    if (mpdInfo_ == nullptr || streamDescriptions.size() == 0) {
         return false;
     }
 
     std::shared_ptr<DashStreamDescription> choosedStream = nullptr;
     std::shared_ptr<DashStreamDescription> backupStream = nullptr;
-    for (const auto &stream : streamDescriptions_) {
+    for (const auto &stream : streamDescriptions) {
         if (stream->type_ != type || stream->inUse_) {
             continue;
         }
@@ -2044,36 +2063,37 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
 {
     MEDIA_LOG_I("GetStreamInfo");
     // only support one audio/subtitle Representation in one AdaptationSet
-    unsigned int audioAdptSetIndex = streamDescriptions_.size();
+    auto& streamDescriptions = GetStreamDesc();
+    unsigned int audioAdptSetIndex = streamDescriptions.size();
     unsigned int subtitleAdptSetIndex = audioAdptSetIndex;
-    for (unsigned int index = 0; index < streamDescriptions_.size(); index++) {
-        if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
-            if (streamDescriptions_[index]->adptSetIndex_ == audioAdptSetIndex) {
+    for (unsigned int index = 0; index < streamDescriptions.size(); index++) {
+        if (streamDescriptions[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
+            if (streamDescriptions[index]->adptSetIndex_ == audioAdptSetIndex) {
                 MEDIA_LOG_D("GetStreamInfo skip audio stream:" PUBLIC_LOG_D32 ",lang:" PUBLIC_LOG_S,
-                    streamDescriptions_[index]->streamId_, streamDescriptions_[index]->lang_.c_str());
+                    streamDescriptions[index]->streamId_, streamDescriptions[index]->lang_.c_str());
                 continue;
             }
 
-            audioAdptSetIndex = streamDescriptions_[index]->adptSetIndex_;
-        } else if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
-            if (streamDescriptions_[index]->adptSetIndex_ == subtitleAdptSetIndex) {
+            audioAdptSetIndex = streamDescriptions[index]->adptSetIndex_;
+        } else if (streamDescriptions[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
+            if (streamDescriptions[index]->adptSetIndex_ == subtitleAdptSetIndex) {
                 MEDIA_LOG_D("GetStreamInfo skip subtitle stream:" PUBLIC_LOG_D32 ",lang:" PUBLIC_LOG_S,
-                    streamDescriptions_[index]->streamId_, streamDescriptions_[index]->lang_.c_str());
+                    streamDescriptions[index]->streamId_, streamDescriptions[index]->lang_.c_str());
                 continue;
             }
-            subtitleAdptSetIndex = streamDescriptions_[index]->adptSetIndex_;
+            subtitleAdptSetIndex = streamDescriptions[index]->adptSetIndex_;
         }
 
         StreamInfo info;
-        info.streamId = streamDescriptions_[index]->streamId_;
-        info.bitRate = streamDescriptions_[index]->bandwidth_;
-        info.videoWidth = static_cast<int32_t>(streamDescriptions_[index]->width_);
-        info.videoHeight = static_cast<int32_t>(streamDescriptions_[index]->height_);
-        info.lang = streamDescriptions_[index]->lang_;
-        info.videoType = GetVideoType(streamDescriptions_[index]->videoType_);
-        if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
+        info.streamId = streamDescriptions[index]->streamId_;
+        info.bitRate = streamDescriptions[index]->bandwidth_;
+        info.videoWidth = static_cast<int32_t>(streamDescriptions[index]->width_);
+        info.videoHeight = static_cast<int32_t>(streamDescriptions[index]->height_);
+        info.lang = streamDescriptions[index]->lang_;
+        info.videoType = GetVideoType(streamDescriptions[index]->videoType_);
+        if (streamDescriptions[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
             info.type = SUBTITLE;
-        } else if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
+        } else if (streamDescriptions[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
             info.type = AUDIO;
         } else {
             info.type = VIDEO;
@@ -2081,7 +2101,7 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
 
         MEDIA_LOG_D("GetStreamInfo streamId:" PUBLIC_LOG_D32 ", type:" PUBLIC_LOG_D32 ", bitRate:"
             PUBLIC_LOG_U32, info.streamId, info.type, info.bitRate);
-        if (streamDescriptions_[index]->inUse_ && streams.size() > 0) {
+        if (streamDescriptions[index]->inUse_ && streams.size() > 0) {
             // play stream insert begin
             streams.insert(streams.begin(), info);
         } else {
@@ -2093,18 +2113,43 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
 
 bool DashMpdDownloader::PutStreamToDownload()
 {
-    auto iter = std::find_if(streamDescriptions_.begin(), streamDescriptions_.end(),
+    auto& streamDescriptions = GetStreamDesc();
+    auto iter = std::find_if(streamDescriptions.begin(), streamDescriptions.end(),
         [&](const std::shared_ptr<DashStreamDescription> &stream) {
             return stream->inUse_ &&
                 stream->indexSegment_ != nullptr &&
                 stream->segsState_ != DASH_SEGS_STATE_FINISH;
         });
-    if (iter == streamDescriptions_.end()) {
+    if (iter == streamDescriptions.end()) {
         return false;
     }
 
     OpenStream(*iter);
     return true;
+}
+
+void DashMpdDownloader::SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest)
+{
+    std::unique_lock<std::shared_mutex> lock(downloadRequestMutex_);
+    downloadRequest_ = std::move(downloadRequest);
+}
+
+std::shared_ptr<DownloadRequest> DashMpdDownloader::GetDownloadRequest()
+{
+    std::shared_lock<std::shared_mutex> lock(downloadRequestMutex_);
+    return downloadRequest_;
+}
+
+void DashMpdDownloader::AddStreamDesc(std::shared_ptr<DashStreamDescription> desc)
+{
+    std::unique_lock<std::shared_mutex> lock(streamDescMutex_);
+    streamDescriptions_.push_back(desc);
+}
+
+std::vector<std::shared_ptr<DashStreamDescription>>& DashMpdDownloader::GetStreamDesc()
+{
+    std::shared_lock<std::shared_mutex> lock(streamDescMutex_);
+    return streamDescriptions_;
 }
 }
 }
