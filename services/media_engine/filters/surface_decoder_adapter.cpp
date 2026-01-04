@@ -116,6 +116,7 @@ SurfaceDecoderAdapter::~SurfaceDecoderAdapter()
 Status SurfaceDecoderAdapter::Init(const std::string &mime)
 {
     MEDIA_LOG_I("Init mime: " PUBLIC_LOG_S, mime.c_str());
+    Format format;
     codecServer_ = MediaAVCodec::VideoDecoderFactory::CreateByMime(mime);
     if (!codecServer_) {
         MEDIA_LOG_I("Create codecServer failed");
@@ -148,6 +149,7 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime, bool isHdr)
         "not video decoder");
     FALSE_RETURN_V_MSG(capabilityData->mimeType == mime, Status::ERROR_UNKNOWN, "not correct mime");
     FALSE_RETURN_V_MSG(capabilityData->codecName != "", Status::ERROR_UNKNOWN, "empty codec name");
+    Format format;
     codecServer_ = MediaAVCodec::VideoDecoderFactory::CreateByName(capabilityData->codecName);
     FALSE_RETURN_V_MSG(codecServer_ != nullptr, Status::ERROR_UNKNOWN, "get capability data failed");
     if (!releaseBufferTask_) {

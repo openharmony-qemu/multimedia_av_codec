@@ -126,6 +126,7 @@ void PostProcessingCallbackOnOutputFormatChanged(const OHOS::Media::Format& form
     CHECK_AND_RETURN_LOG(codecServer != nullptr, "Codec server dose not exit");
     codecServer->PostProcessingOnOutputFormatChanged(format);
 }
+constexpr uint32_t BUFFER_IS_EOS = 1;
 } // namespace
 
 namespace OHOS {
@@ -329,6 +330,9 @@ int32_t CodecServer::Start()
 {
     SetFreeStatus(false);
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (isLocalReleaseMode_){
+
+    }
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == FLUSHED || status_ == CONFIGURED, AVCS_ERR_INVALID_STATE,
                                       "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
@@ -357,6 +361,9 @@ int32_t CodecServer::Stop()
 {
     SetFreeStatus(true);
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (isLocalReleaseMode_){
+        
+    }
     CHECK_AND_RETURN_RET_LOGW_WITH_TAG(status_ != CONFIGURED, AVCS_ERR_OK, "Already in %{public}s state",
                                        GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == RUNNING || status_ == END_OF_STREAM || status_ == FLUSHED,
@@ -996,6 +1003,7 @@ void CodecServer::SetInstanceInfo(AVCodecType type, bool isMimeType, const std::
     callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller_.pid);
     callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_UID, forwardCaller_.uid);
     callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardCaller_.processName);
+    callerInfo.GetData(Tag::VIDEO_ENABLE_LOCAL_RELEASE, isLocalReleaseMode_);
     if (caller_.pid == -1) {
         caller_.pid = getprocpid();
         caller_.uid = getuid();
@@ -1154,6 +1162,7 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
         std::shared_lock<std::shared_mutex> lock(cbMutex_);
         CHECK_AND_RETURN_LOG_WITH_TAG(videoCb_ != nullptr, "videoCb_ is nullptr!");
         videoCb_->OnOutputBufferAvailable(index, buffer);
+        Handle
     }
 }
 
@@ -1546,6 +1555,7 @@ void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, int32_t 
     auto buffer = info.CreateAVBuffer();
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "Create AVBuffer failed");
     videoCb_->OnOutputBufferAvailable(index, buffer);
+    Handle
 }
 
 void CodecServer::PostProcessingOnOutputFormatChanged(const Format& format)
@@ -1693,5 +1703,6 @@ std::shared_ptr<AVBuffer> CodecServer::DecodedBufferInfo::CreateAVBuffer()
     buffer->flag_ = this->flag;
     return buffer;
 }
+void Handle
 } // namespace MediaAVCodec
 } // namespace OHOS
