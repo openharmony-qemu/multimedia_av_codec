@@ -1330,6 +1330,7 @@
             <option name="push" value="video_res/test_hls/testHLSEncode.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/testHLSEncode_session_key.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192init.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000001.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000002.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
@@ -1342,6 +1343,7 @@
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000009.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000010.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000init.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000001.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000002.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
@@ -1374,11 +1376,13 @@
             <option name="push" value="video_res/test_detach_hls/invalidaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/live_endlist.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_0.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_1.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_10.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
@@ -1458,6 +1462,7 @@
             <option name="push" value="video_res/test_hls/testHLSEncode.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/testHLSEncode_session_key.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192init.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000001.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000002.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
@@ -1470,6 +1475,7 @@
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000009.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000010.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000init.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000001.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000002.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
@@ -1502,11 +1508,13 @@
             <option name="push" value="video_res/test_detach_hls/invalidaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/live_endlist.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_0.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_1.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_10.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
@@ -1587,6 +1595,7 @@
             <option name="push" value="video_res/test_hls/testHlsLive.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/testXMap.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192init.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000001.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000002.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
@@ -1599,6 +1608,7 @@
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000009.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000010.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000init.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000001.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000002.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
@@ -1631,11 +1641,13 @@
             <option name="push" value="video_res/test_detach_hls/invalidaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/live_endlist.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_0.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_1.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_10.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
@@ -1799,6 +1811,7 @@
             <option name="push" value="video_res/test_hls/testHLSEncode.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/testHLSEncode_session_key.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192init.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000001.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000002.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
@@ -1811,6 +1824,7 @@
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000009.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000010.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000init.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000001.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000002.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
@@ -1843,11 +1857,13 @@
             <option name="push" value="video_res/test_detach_hls/invalidaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/live_endlist.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_0.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_1.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_10.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
@@ -1927,6 +1943,7 @@
             <option name="push" value="video_res/test_hls/testHLSEncode.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/testHLSEncode_session_key.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192init.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000001.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000002.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
@@ -1939,6 +1956,7 @@
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000009.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000010.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000init.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000001.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000002.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
@@ -1971,11 +1989,13 @@
             <option name="push" value="video_res/test_detach_hls/invalidaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/live_endlist.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_0.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_1.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_10.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
@@ -2112,6 +2132,7 @@
             <option name="push" value="video_res/test_hls/testHLSEncode.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_hls/testHLSEncode_session_key.m3u8 -> /data/test/media/test_hls" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192init.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000001.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000002.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
@@ -2124,6 +2145,7 @@
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000009.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/aac/lc_192/aac_lc_192_000000010.cmfa-> /data/test/media/test_detach_hls/cmaf/aac/lc_192/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_live_endlist.m3u8-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000init.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000001.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_000000002.cmfv-> /data/test/media/test_detach_hls/cmaf/avc/540p_2000/" src="res"/>
@@ -2156,11 +2178,13 @@
             <option name="push" value="video_res/test_detach_hls/invalidaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/invalidaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/live_endlist.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_default.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/noaudio_auto.m3u8 -> /data/test/media/test_detach_hls/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
+            <option name="push" value="video_res/test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_0.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_1.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
             <option name="push" value="video_res/test_detach_hls/subtitles/eng/sequence_10.webvtt-> /data/test/media/test_detach_hls/subtitles/eng/" src="res"/>
