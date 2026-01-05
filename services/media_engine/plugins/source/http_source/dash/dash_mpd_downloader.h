@@ -263,6 +263,7 @@ private:
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
 
     std::shared_mutex downloadRequestMutex_;
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
 };
 }
 }

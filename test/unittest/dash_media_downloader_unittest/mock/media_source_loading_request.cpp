@@ -34,6 +34,16 @@ int32_t MediaSourceLoaderCombinations::Close(int64_t uuid)
 {
     return 0;
 }
+
+void MediaSourceLoaderCombinations::EnableOfflineCache(bool enable)
+{
+    enable_ = enable;
+}
+
+bool MediaSourceLoaderCombinations::GetenableOfflineCache()
+{
+    return enable_;
+}
 }
 }
 }

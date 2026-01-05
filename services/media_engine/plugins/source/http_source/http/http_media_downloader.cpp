@@ -101,6 +101,9 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
     if (url.find(".flv") != std::string::npos) {
         MEDIA_LOG_I("HTTP isflv.");
         isRingBuffer_ = true;
+        if (sourceLoader != nullptr && sourceLoader->GetenableOfflineCache()) {
+            sourceLoader->Close(-1);
+        }
     }
     if (isRingBuffer_) {
         InitRingBuffer(expectBufferDuration);
@@ -1075,6 +1078,7 @@ uint32_t HttpMediaDownloader::SaveCacheBufferDataNotblock(uint8_t* data, uint32_
     if (res < len) {
         cacheMediaBuffer_->Dump(0);
         isNeedResume_.store(true);
+        canWrite_.store(false);
     }
 
     return res;

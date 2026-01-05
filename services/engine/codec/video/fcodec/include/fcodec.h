@@ -184,6 +184,7 @@ private:
     bool isConverted_ = false;
     bool isOutBufSetted_ = false;
     VideoPixelFormat outputPixelFmt_ = VideoPixelFormat::UNKNOWN;
+    RawVideoPixelFormat rawvideoPixFmt_ = RawVideoPixelFormat::UNKNOWN;
     // Running
     std::vector<std::shared_ptr<FBuffer>> buffers_[2];
     std::vector<std::shared_ptr<AVBuffer>> outAVBuffer4Surface_;
