@@ -82,6 +82,7 @@ static const string TEST_FILE_URI_3GP = TEST_FILE_PATH + "3gp_h264_aac.3gp";
 static const string TEST_FILE_URI_3G2 = TEST_FILE_PATH + "3g2_mp4v_mp4a.3g2";
 static const string TEST_FILE_URI_VOB = TEST_FILE_PATH + "vob_mpeg2_mp2.vob";
 static const string TEST_FILE_URI_MPEGTS_2 = TEST_FILE_PATH + "gop250.ts";
+static const string TEST_FILE_URI_MPEGTS_3 = TEST_FILE_PATH + "test_ts.ts";
 
 typedef struct TestInfo {
     string pluginName;
@@ -1064,6 +1065,138 @@ HWTEST_F(DemuxerPluginManagerUnitTest, SeekToKeyFrame_0003, TestSize.Level1)
     }
     RemoveValue();
 }
+HWTEST_F(DemuxerPluginManagerUnitTest, SeekToKeyFrame_0004, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS, DEF_PROB_SIZE), true);
+    ASSERT_EQ(PluginSelectTracks(), true);
+    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    std::vector<int64_t> seekTimes = {0, 200, 1000, 2000, 3000, 3100, 3320, 3480, 3640, 4120, 5520};
+    int64_t realSeekTime = 0;
+    uint32_t timeout = 100;
+    std::vector<Status> expStatuses = {Status::OK, Status::OK, Status::OK, Status::OK, Status::OK, Status::OK, Status::OK, Status::OK, Status::OK,
+        Status::END_OF_STREAM, Status::END_OF_STREAM};
+    for (size_t i = 0; i < seekTimes.size(); ++i) {
+        ASSERT_EQ(demuxerPlugin->SeekToKeyFrame(0, seekTimes[i], SeekMode::SEEK_NEXT_SYNC, realSeekTime, timeout),
+            expStatuses[i]);
+    }
+    RemoveValue();
+}
 
+HWTEST_F(DemuxerPluginManagerUnitTest, SeekToKeyFrame_0005, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS, DEF_PROB_SIZE), true);
+    ASSERT_EQ(PluginSelectTracks(), true);
+    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    int64_t realSeekTime = 0;
+    uint32_t timeout = 100;
+    std::vector<int64_t> seekTimes = {4120, 4120};
+    for (size_t i = 0; i < seekTimes.size(); ++i) {
+        ASSERT_EQ(demuxerPlugin->SeekToKeyFrame(0, seekTimes[i], SeekMode::SEEK_NEXT_SYNC, realSeekTime, timeout),
+            Status::END_OF_STREAM);
+    }
+    RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, SeekToKeyFrame_0006, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS, DEF_PROB_SIZE), true);
+    ASSERT_EQ(PluginSelectTracks(), true);
+    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    int64_t realSeekTime = 0;
+    uint32_t timeout = 100;
+    std::vector<int64_t> seekTimes = {1000, 2000};
+    for (size_t i = 0; i < seekTimes.size(); ++i) {
+        ASSERT_EQ(demuxerPlugin->SeekToKeyFrame(0, seekTimes[i], SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime, timeout),
+            Status::ERROR_INVALID_PARAMETER);
+    }
+    RemoveValue();
+}
+HWTEST_F(DemuxerPluginManagerUnitTest, SeekToKeyFrame_0007, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS, DEF_PROB_SIZE), true);
+    ASSERT_EQ(PluginSelectTracks(), true);
+    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    int64_t realSeekTime = 0;
+    uint32_t timeout = 100;
+    uint32_t flag = 0;
+    std::vector<int64_t> seekTimes = {0, 10, 50, 100, 3320, 3200};
+    std::vector<int64_t> expReadSeekTimes = {1400000000, 2400000000, 2400000000, 2400000000, 5400000000, 5400000000};
+    for (size_t i = 0; i < seekTimes.size(); ++i) {
+        ASSERT_EQ(demuxerPlugin->SeekToKeyFrame(0, seekTimes[i], SeekMode::SEEK_NEXT_SYNC, realSeekTime, timeout),
+            Status::OK);
+        ASSERT_EQ(PluginReadSample(0, flag), true);
+        ASSERT_EQ(flag & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME),
+            static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME));
+        ASSERT_EQ(realSeekTime, expReadSeekTimes[i]);
+    }
+    RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, SeekToKeyFrame_0008, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS, DEF_PROB_SIZE), true);
+    ASSERT_EQ(PluginSelectTracks(), true);
+    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    int64_t realSeekTime = 0;
+    uint32_t timeout = 100;
+    std::vector<int64_t> seekTimes = {4000, 4010, 4080, 4500};
+    std::vector<Status> expStatuses = {Status::OK, Status::END_OF_STREAM, Status::END_OF_STREAM, Status::END_OF_STREAM};
+    std::vector<int64_t> expReadSeekTimes = {5400000000, 5480000000, 5480000000, 5480000000};
+    for (size_t i = 0; i < seekTimes.size(); ++i) {
+        ASSERT_EQ(demuxerPlugin->SeekToKeyFrame(0, seekTimes[i], SeekMode::SEEK_NEXT_SYNC, realSeekTime, timeout),
+            expStatuses[i]);
+        ASSERT_EQ(realSeekTime, expReadSeekTimes[i]);
+    }
+    RemoveValue();
+}
+HWTEST_F(DemuxerPluginManagerUnitTest, SeekToKeyFrame_0009, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS_3, DEF_PROB_SIZE), true);
+    ASSERT_EQ(PluginSelectTracks(), true);
+    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    int64_t realSeekTime = 0;
+    uint32_t timeout = 100;
+    std::vector<int64_t> seekTimes = {27000, 26000, 25500};
+    std::vector<Status> expStatuses = {Status::END_OF_STREAM, Status::END_OF_STREAM, Status::END_OF_STREAM};
+    for (size_t i = 0; i < seekTimes.size(); ++i) {
+        ASSERT_EQ(demuxerPlugin->SeekToKeyFrame(0, seekTimes[i], SeekMode::SEEK_NEXT_SYNC, realSeekTime, timeout),
+            expStatuses[i]);
+    }
+    RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, SeekToKeyFrame_0010, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS_3, DEF_PROB_SIZE), true);
+    ASSERT_EQ(PluginSelectTracks(), true);
+    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    int64_t realSeekTime = 0;
+    std::vector<uint32_t> timeout = {1, 1, 1, 1, 0};
+    std::vector<int64_t> seekTimes = {100, 100, 100, 100, 100};
+    std::vector<Status> expStatuses = {Status::ERROR_WAIT_TIMEOUT, Status::ERROR_WAIT_TIMEOUT,
+        Status::ERROR_WAIT_TIMEOUT, Status::ERROR_WAIT_TIMEOUT, Status::OK};
+    for (size_t i = 0; i < seekTimes.size(); ++i) {
+        ASSERT_EQ(demuxerPlugin->SeekToKeyFrame(0, seekTimes[i], SeekMode::SEEK_NEXT_SYNC, realSeekTime, timeout[i]),
+            expStatuses[i]);
+    }
+    RemoveValue();
+}
+
+HWTEST_F(DemuxerPluginManagerUnitTest, SeekToKeyFrame_0011, TestSize.Level1)
+{
+    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEGTS, TEST_FILE_URI_MPEGTS_3, DEF_PROB_SIZE), true);
+    ASSERT_EQ(PluginSelectTracks(), true);
+    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    int64_t realSeekTime = 0;
+    std::vector<uint32_t> timeout = {1, 1, 1, 1, 0};
+    std::vector<int64_t> seekTimes = {170, 160, 150, 140, 100};
+    std::vector<Status> expStatuses = {Status::ERROR_WAIT_TIMEOUT, Status::ERROR_WAIT_TIMEOUT,
+        Status::ERROR_WAIT_TIMEOUT, Status::ERROR_WAIT_TIMEOUT, Status::OK};
+    for (size_t i = 0; i < seekTimes.size(); ++i) {
+        ASSERT_EQ(demuxerPlugin->SeekToKeyFrame(0, seekTimes[i], SeekMode::SEEK_NEXT_SYNC, realSeekTime, timeout[i]),
+            expStatuses[i]);
+    }
+    RemoveValue();
+}
 }
 }
