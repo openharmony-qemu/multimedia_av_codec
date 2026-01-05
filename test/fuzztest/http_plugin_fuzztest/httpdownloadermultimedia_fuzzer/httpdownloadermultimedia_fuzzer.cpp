@@ -97,7 +97,10 @@ static const std::map<std::string, std::string> g_httpHeader = {
 
 void InitRead(std::shared_ptr<HttpMediaDownloader> httpMediaDownloader, std::string testUriPath)
 {
-    httpMediaDownloader->Open(testUriPath, g_httpHeader);
+    for (int i = 0; i < READ_TIMES_NS; i++)
+    {
+        httpMediaDownloader->Open(testUriPath, g_httpHeader);
+    }
 }
 
 void TestHttpDownloaderFuzz(FuzzedDataProvider &fdp)
