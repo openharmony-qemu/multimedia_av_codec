@@ -692,6 +692,9 @@ const uint8_t* FindNalStartCode(const uint8_t *start, const uint8_t *end, int32_
 
 bool IsAnnexbSyncFrame(const uint8_t *sample, int32_t size)
 {
+    if (sample == nullptr || size < 0) {
+        return false;
+    }
     const uint8_t* nalStart = sample;
     const uint8_t* end = nalStart + size;
     const uint8_t* nalEnd = nullptr;
