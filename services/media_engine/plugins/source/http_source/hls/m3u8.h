@@ -62,7 +62,8 @@ struct M3U8Info {
 
 struct M3U8 : public std::enable_shared_from_this<M3U8> {
     M3U8(const std::string &uri, const std::string &name, StatusCallbackFunc statusCallback = [](DownloadStatus,
-        std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {});
+        std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {},
+        std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~M3U8();
     void InitTagUpdaters();
     void InitTagUpdatersMap();
@@ -97,6 +98,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     uint32_t SaveMapData(uint8_t* data, uint32_t len, bool notBlock);
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
+    void InitDownloadHeader();
 
     std::shared_ptr<std::string> method_;
     std::shared_ptr<std::string> keyUri_;
@@ -133,6 +135,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     ConditionVariable sleepCond_ {};
     Mutex sleepMutex_ {};
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
 };
 
 struct M3U8Media {
@@ -175,6 +178,7 @@ struct M3U8MasterPlaylist {
         const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>(),
         StatusCallbackFunc statusCallback = [](DownloadStatus, std::shared_ptr<Downloader>&,
         std::shared_ptr<DownloadRequest>&) {});
+    void SetSourceloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader);
     void StartParsing();
     void UpdateMediaPlaylist();
     void UpdateMasterPlaylist();
@@ -217,6 +221,7 @@ struct M3U8MasterPlaylist {
     StatusCallbackFunc monitorStatusCallback_;
     std::list<std::shared_ptr<M3U8Media>> mediaList_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
 };
 }
 }

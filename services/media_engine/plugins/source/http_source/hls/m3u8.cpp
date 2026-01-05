@@ -94,9 +94,11 @@ M3U8Fragment::M3U8Fragment(const std::string &uri, double duration, int sequence
 {
 }
 
-M3U8::M3U8(const std::string &uri, const std::string &name, StatusCallbackFunc statusCallback)
+M3U8::M3U8(const std::string &uri, const std::string &name, StatusCallbackFunc statusCallback,
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
     : uri_(std::move(uri)), name_(std::move(name))
 {
+    sourceLoader_ = sourceLoader;
     monitorStatusCallback_ = statusCallback;
     InitTagUpdatersMap();
 }
@@ -149,6 +151,9 @@ void M3U8::InitTagUpdaters()
 {
     tagUpdatersMap_[HlsTag::EXTXPLAYLISTTYPE] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         bLive_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString() != "VOD";
+        if (sourceLoader_ != nullptr && sourceLoader_->GetenableOfflineCache()) {
+            sourceLoader_->Close(-1);
+        }
     };
     tagUpdatersMap_[HlsTag::EXTXTARGETDURATION] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         std::ignore = info;
@@ -191,6 +196,9 @@ void M3U8::InitTagUpdatersMap()
     };
     tagUpdatersMap_[HlsTag::EXTXKEY] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         if (!isDecryptAble_ && !isDecryptKeyReady_) {
+            if (sourceLoader_ != nullptr && sourceLoader_->GetenableOfflineCache()) {
+                sourceLoader_->Close(-1);
+            }
             isDecryptAble_ = true;
             isDecryptKeyReady_ = false;
             ParseKey(std::static_pointer_cast<AttributesTag>(tag));
@@ -239,13 +247,21 @@ void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
     });
     MEDIA_LOG_I("x-map download %{public}u, is ready: %{public}d", downloadHeaderLen_, isHeaderReady_.load());
 }
+void M3U8::InitDownloadHeader()
+{
+    if (sourceLoader_ != nullptr) {
+        downloaderHeader_ = std::make_shared<Downloader>("HlsSourceMap", sourceLoader_);
+    } else {
+        downloaderHeader_ = std::make_shared<Downloader>("HlsSourceMap");
+    }
+}
 
 void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
 {
     if (uri.empty()) {
         return;
     }
-    downloaderHeader_ = std::make_shared<Downloader>("HlsSourceMap");
+    InitDownloadHeader();
     if (downloaderHeader_ != nullptr && downloadCallback_ != nullptr) {
         downloaderHeader_->SetDownloadCallback(downloadCallback_);
     }
@@ -437,7 +453,12 @@ void M3U8::DownloadKey()
         return;
     }
 
-    downloader_ = std::make_shared<Downloader>("hlsSourceKey");
+    if (sourceLoader_ != nullptr) {
+        downloaderHeader_ = std::make_shared<Downloader>("hlsSourceKey", sourceLoader_);
+    } else {
+        downloaderHeader_ = std::make_shared<Downloader>("hlsSourceKey");
+    }
+
     if (downloader_ != nullptr && downloadCallback_ != nullptr) {
         downloader_->SetDownloadCallback(downloadCallback_);
     }
@@ -597,7 +618,10 @@ M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::s
     initResolution_ = initResolution;
     monitorStatusCallback_ = statusCallback;
 }
-
+void M3U8MasterPlaylist::SetSourceloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
+{
+    sourceLoader_ = sourceLoader;
+}
 void M3U8MasterPlaylist::SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback)
 {
     downloadCallback_ = callback;
@@ -619,7 +643,7 @@ void M3U8MasterPlaylist::StartParsing()
 void M3U8MasterPlaylist::UpdateMediaPlaylist()
 {
     MEDIA_LOG_I("This is a simple media playlist, not a master playlist");
-    auto m3u8 = std::make_shared<M3U8>(uri_, "", monitorStatusCallback_);
+    auto m3u8 = std::make_shared<M3U8>(uri_, "", monitorStatusCallback_, sourceLoader_);
     FALSE_RETURN_NOLOG(m3u8 != nullptr);
     if (downloadCallback_ != nullptr) {
         m3u8->SetDownloadCallback(downloadCallback_);
@@ -650,7 +674,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
 
 void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
 {
-    auto m3u8 = std::make_shared<M3U8>(uri_, "", monitorStatusCallback_);
+    auto m3u8 = std::make_shared<M3U8>(uri_, "", monitorStatusCallback_, sourceLoader_);
     FALSE_RETURN_NOLOG(m3u8 != nullptr);
     if (downloadCallback_ != nullptr) {
         m3u8->SetDownloadCallback(downloadCallback_);
@@ -718,7 +742,7 @@ void M3U8MasterPlaylist::CreateVariantStream(const std::shared_ptr<Tag>& tag)
     if (uriAttribute) {
         auto name = uriAttribute->QuotedString();
         auto uri = UriJoin(uri_, name);
-        auto m3u8 = std::make_shared<M3U8>(uri, name, monitorStatusCallback_);
+        auto m3u8 = std::make_shared<M3U8>(uri, name, monitorStatusCallback_, sourceLoader_);
         if (m3u8 != nullptr && downloadCallback_ != nullptr) {
             m3u8->SetDownloadCallback(downloadCallback_);
         }
@@ -767,7 +791,7 @@ void M3U8MasterPlaylist::ParseMediaStreamInfo(std::shared_ptr<Tag> &tag)
     if (uriAttribute) {
         auto curUriValue = uriAttribute->QuotedString();
         auto uri = UriJoin(uri_, curUriValue);
-        auto m3u8 = std::make_shared<M3U8>(uri, curUriValue, monitorStatusCallback_);
+        auto m3u8 = std::make_shared<M3U8>(uri, curUriValue, monitorStatusCallback_, sourceLoader_);
         if (m3u8 != nullptr && downloadCallback_ != nullptr) {
             m3u8->SetDownloadCallback(downloadCallback_);
         }
