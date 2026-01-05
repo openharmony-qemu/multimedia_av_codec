@@ -35,6 +35,11 @@ static mutex g_mtx;
 static sptr<ICodecComponentManager> g_compMgrIpc;
 static sptr<ICodecComponentManager> g_compMgrPassthru;
 
+static mutex g_deviceCapsMtx;
+static bool g_deviceCapsInited = false;
+static std::vector<CodecCompCapability> g_deviceCaps;
+static uint32_t g_maxDecInstCnt = 0;
+
 class Listener : public ServStatListenerStub {
 public:
     void OnReceive(const ServiceStatus &status) override
@@ -92,31 +97,65 @@ sptr<ICodecComponentManager> GetManager(bool getCap, bool supportPassthrough, bo
     return mng;
 }
 
-vector<CodecCompCapability> GetCapList()
+static bool IsSupportedVideoCodec(const CodecCompCapability &hdiCap)
+{
+    if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_AVC || hdiCap.role == MEDIA_ROLETYPE_VIDEO_HEVC ||
+        hdiCap.role == MEDIA_ROLETYPE_VIDEO_VVC) {
+        return true;
+    }
+    return false;
+}
+
+static void InitCapsLocked()
 {
     sptr<ICodecComponentManager> mnger = GetManager(true);
     if (mnger == nullptr) {
         LOGE("failed to create codec component manager");
-        return {};
+        return;
     }
     int32_t compCnt = 0;
     int32_t ret = mnger->GetComponentNum(compCnt);
     if (ret != HDF_SUCCESS || compCnt <= 0) {
         LOGE("failed to query component number, ret=%d", ret);
-        return {};
+        return;
     }
-    std::vector<CodecCompCapability> capList(compCnt);
-    ret = mnger->GetComponentCapabilityList(capList, compCnt);
+    g_deviceCaps.resize(compCnt);
+    ret = mnger->GetComponentCapabilityList(g_deviceCaps, compCnt);
     if (ret != HDF_SUCCESS) {
         LOGE("failed to query component capability list, ret=%d", ret);
-        return {};
+        return;
     }
-    if (capList.empty()) {
+    if (g_deviceCaps.empty()) {
         LOGE("GetComponentCapabilityList return empty");
     } else {
-        LOGD("GetComponentCapabilityList return %zu components", capList.size());
+        LOGI("GetComponentCapabilityList return %zu components", g_deviceCaps.size());
     }
-    return capList;
+    g_deviceCapsInited = true;
+    for (const CodecCompCapability& one : g_deviceCaps) {
+        if ((one.type == VIDEO_DECODER) && IsSupportedVideoCodec(one)) {
+            g_maxDecInstCnt = std::max<uint32_t>(g_maxDecInstCnt, one.maxInst);
+        }
+    }
+}
+
+vector<CodecCompCapability> GetCapList()
+{
+    lock_guard<mutex> lk(g_deviceCapsMtx);
+    if (g_deviceCapsInited) {
+        return g_deviceCaps;
+    }
+    InitCapsLocked();
+    return g_deviceCaps;
+}
+ 
+uint32_t GetMaxDecInstCnt()
+{
+    lock_guard<mutex> lk(g_deviceCapsMtx);
+    if (g_deviceCapsInited) {
+        return g_maxDecInstCnt;
+    }
+    InitCapsLocked();
+    return g_maxDecInstCnt;
 }
 
 int32_t HCodecList::GetCapabilityList(std::vector<CapabilityData>& caps)
@@ -139,15 +178,6 @@ VideoFeature HCodecList::FindFeature(const vector<VideoFeature> &features, const
         return {key, false, {}};
     }
     return *it;
-}
-
-bool HCodecList::IsSupportedVideoCodec(const CodecCompCapability &hdiCap)
-{
-    if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_AVC || hdiCap.role == MEDIA_ROLETYPE_VIDEO_HEVC ||
-        hdiCap.role == MEDIA_ROLETYPE_VIDEO_VVC) {
-        return true;
-    }
-    return false;
 }
 
 CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)

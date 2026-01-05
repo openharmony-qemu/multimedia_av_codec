@@ -413,6 +413,14 @@ protected:
     struct CallerInfo {
         int32_t pid = -1;
         std::string processName;
+        size_t operator()(const CallerInfo& info) const
+        {
+            return std::hash<int32_t>()(info.pid);
+        }
+        bool operator()(const CallerInfo &lhs, const CallerInfo &rhs) const
+        {
+            return lhs.pid == rhs.pid;
+        }
     };
     struct Caller {
         CallerInfo playerCaller;
@@ -420,8 +428,15 @@ protected:
         CallerInfo app;
         bool calledByAvcodec = true;
     } caller_;
+    struct InstInfo {
+        int64_t createTimeUs;
+        std::string compUniqueStr;
+    };
     static std::shared_mutex g_mtx;
-    static std::unordered_map<std::string, HCodec::Caller> g_callers;
+    static std::unordered_map<CallerInfo, std::vector<InstInfo>, CallerInfo, CallerInfo> g_decCallers;
+    uint32_t maxDecInst_ = 0;
+    uint32_t totalWarnInstCnt_ = 0;
+    uint32_t singleAppWarnInstCnt_ = 0;
 
     bool debugMode_ = false;
     bool disableDmaSwap_ = false;
@@ -613,6 +628,8 @@ private:
     void PrintCaller();
     void PrintAllCaller();
     void RemoveCaller();
+    size_t CalculateTotalInstCnt();
+    void ReportToRss();
     int32_t OnAllocateComponent();
     void ReleaseComponent();
     void CleanUpOmxNode();

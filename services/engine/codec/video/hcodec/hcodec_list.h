@@ -34,7 +34,6 @@ private:
     void GetSupportedFormat(const CodecHDI::CodecVideoPortCap& hdiVideoCap, CapabilityData& userCap);
     std::map<ImgSize, Range> GetMeasuredFrameRate(const CodecHDI::CodecVideoPortCap& hdiVideoCap);
     void GetCodecProfileLevels(const CodecHDI::CodecCompCapability& hdiCap, CapabilityData& userCap);
-    bool IsSupportedVideoCodec(const CodecHDI::CodecCompCapability& hdiCap);
     void GetSupportedFeatureParam(const CodecHDI::CodecVideoPortCap& hdiVideoCap,
                                   CapabilityData& userCap);
     void GetSupportedLtrFeatureParam(const CodecHDI::CodecVideoPortCap& hdiVideoCap,
@@ -46,6 +45,7 @@ private:
 sptr<CodecHDI::ICodecComponentManager> GetManager(bool getCap,
     bool supportPassthrough = false, bool isSecure = false);
 std::vector<CodecHDI::CodecCompCapability> GetCapList();
+uint32_t GetMaxDecInstCnt();
 }
 
 #endif
