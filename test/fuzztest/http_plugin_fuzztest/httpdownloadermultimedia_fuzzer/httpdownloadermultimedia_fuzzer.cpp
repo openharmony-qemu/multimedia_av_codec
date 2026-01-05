@@ -88,6 +88,7 @@ const std::string MP4_NULL_SEGMENT_BASE = "http://127.0.0.1:46666/dewuNull.mp4";
 const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/h264.flv";
 
 static constexpr int32_t MAX_BUFFER_SIZE_FUZZ = 1024 * 1024 * 2;
+static constexpr int READ_TIMES_NS = 100;
 static uint8_t g_buffer[MAX_BUFFER_SIZE_FUZZ];
 static const std::map<std::string, std::string> g_httpHeader = {
     {"User-Agent", "ABC"},
@@ -128,7 +129,12 @@ void TestHttpDownloaderFuzz(FuzzedDataProvider &fdp)
     stream2->bitrate = 40000;  // 40000
     mediaStreams.push_back(stream2);
     httpMediaDownloader->SetMediaStreams(mediaStreams);
+    uint32_t bitRate = fdp.ConsumeIntegral<uint32_t>();
+    httpMediaDownloader->SelectBitRate(bitRate);
     httpMediaDownloader->Open(testUriPath, g_httpHeader);
+    for (int i = 0; i < READ_TIMES_NS; i++) {
+        httpMediaDownloader->Open(testUriPath, g_httpHeader);
+    }
     httpMediaDownloader->SetPlayStrategy(playStrategy);
     httpMediaDownloader->Read(g_buffer, readDataInfo);
     uint64_t extraCacheDuration = fdp.ConsumeIntegral<uint64_t>();
@@ -139,7 +145,7 @@ void TestHttpDownloaderFuzz(FuzzedDataProvider &fdp)
     int64_t seekOffset = fdp.ConsumeIntegral<int64_t>();
     bool isSeekHit = fdp.ConsumeIntegral<bool>();
     httpMediaDownloader->SeekToPos(seekOffset, isSeekHit);
-    uint32_t bitRate = fdp.ConsumeIntegral<uint32_t>();
+    bitRate = fdp.ConsumeIntegral<uint32_t>();
     httpMediaDownloader->SelectBitRate(bitRate);
 }
 
@@ -170,6 +176,8 @@ void CallHttpDownloaderFuncs(std::shared_ptr<HttpMediaDownloader> httpMediaDownl
     httpMediaDownloader->GetCacheDuration(0);
     httpMediaDownloader->GetCacheDuration(1);
     httpMediaDownloader->SetIsTriggerAutoMode(fdp.ConsumeIntegral<bool>());
+    httpMediaDownloader->CheckAutoSelectBitrate();
+    httpMediaDownloader->SetIsTriggerAutoMode(true);
     httpMediaDownloader->CheckAutoSelectBitrate();
     httpMediaDownloader->IsAutoSelectConditionOk();
     httpMediaDownloader->OnClientErrorEvent();
