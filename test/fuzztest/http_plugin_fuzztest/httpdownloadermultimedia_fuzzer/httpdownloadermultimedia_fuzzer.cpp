@@ -82,6 +82,7 @@ public:
 using namespace OHOS;
 using namespace OHOS::Media::Plugins::HttpPlugin;
 using namespace OHOS::Media::Plugins;
+using namespace 
 #define FUZZ_PROJECT_NAME "httpdownloader_fuzzer"
 const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:46666/dewu.mp4";
 const std::string MP4_NULL_SEGMENT_BASE = "http://127.0.0.1:46666/dewuNull.mp4";
@@ -94,6 +95,11 @@ static const std::map<std::string, std::string> g_httpHeader = {
     {"User-Agent", "ABC"},
     {"Referer", "DEF"},
 };
+
+void InitRead(std::shared_ptr<HttpMediaDownloader> httpMediaDownloader, std::string testUriPath)
+{
+    httpMediaDownloader->Open(testUriPath, g_httpHeader);
+}
 
 void TestHttpDownloaderFuzz(FuzzedDataProvider &fdp)
 {
@@ -132,9 +138,7 @@ void TestHttpDownloaderFuzz(FuzzedDataProvider &fdp)
     uint32_t bitRate = fdp.ConsumeIntegral<uint32_t>();
     httpMediaDownloader->SelectBitRate(bitRate);
     httpMediaDownloader->Open(testUriPath, g_httpHeader);
-    for (int i = 0; i < READ_TIMES_NS; i++) {
-        httpMediaDownloader->Open(testUriPath, g_httpHeader);
-    }
+    InitRead(httpMediaDownloader, testUriPath);
     httpMediaDownloader->SetPlayStrategy(playStrategy);
     httpMediaDownloader->Read(g_buffer, readDataInfo);
     uint64_t extraCacheDuration = fdp.ConsumeIntegral<uint64_t>();
