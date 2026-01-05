@@ -62,13 +62,14 @@ private:
     void RemoveValue();
     bool ResultAssert(uint32_t frames0, uint32_t frames1, uint32_t keyFrames0, uint32_t keyFrames1);
     bool ResultAssert(std::vector<uint32_t> &framesExpect, std::vector<uint32_t> &keyFramesExpect);
-    bool PluginReadAllSample(bool isSeek=false, int seekFrameNum=100);
+    bool PluginReadAllSample(bool isSeek = false, int seekFrameNum = 100);
     bool PluginSeekTo(int64_t seekTime, SeekMode mode);
     bool CreateDemuxerPluginByNotExistName(const std::string& typeName, const std::string& filePath, int probSize);
-    bool PluginCheckSeekStart(TestFileInfo info, string seekPos, int frameNum=100);
+    bool PluginCheckSeekStart(TestFileInfo info, string seekPos, int frameNum = 100);
     bool StartSeekRead(int loop, TestFileInfo info, int frameNum);
     bool EndSeekRead(int loop, TestFileInfo info, int frameNum);
     bool MiddleSeekRead(int loop, TestFileInfo info, int frameNum);
+    bool Seek(bool isSeek, uint32_t idx, int seekFrameNum);
     bool PluginSeekStart();
     bool ResetValue();
     int streamId_ = 0;
@@ -86,6 +87,7 @@ private:
 
 static const int BUFFER_PADDING_SIZE = 1024;
 static const int DEF_PROB_SIZE = 16 * 1024;
+static const int THREE = 3;
 constexpr int32_t THOUSAND = 1000.0;
 static unique_ptr<FileServerDemo> SERVER{nullptr };
 
@@ -434,16 +436,24 @@ bool DemuxerPluginInnerFuncTest::PluginReadAllSample(bool isSeek, int seekFrameN
                 return false;
             }
             CountFrames(idx, flag);
-            if (isSeek && frames_[idx] == seekFrameNum) {
-                cout << "seekFrameNum: " << seekFrameNum << endl;
-                if (!PluginSeekStart()) {
-                    return false;
-                }
-                isSeek = false;
-                RemoveValue();
-                ResetValue();
+            if (!Seek(isSeek, idx, seekFrameNum)) {
+                return false;
             }
         }
+    }
+    return true;
+}
+
+bool DemuxerPluginInnerFuncTest::Seek(bool isSeek, uint32_t idx, int seekFrameNum)
+{
+    if (isSeek && frames_[idx] == seekFrameNum) {
+        cout << "seekFrameNum: " << seekFrameNum << endl;
+        if (!PluginSeekStart()) {
+            return false;
+        }
+        isSeek = false;
+        RemoveValue();
+        ResetValue();
     }
     return true;
 }
@@ -540,15 +550,15 @@ bool DemuxerPluginInnerFuncTest::PluginCheckSeekStart(TestFileInfo info, string 
         return false;
     }
     if (seekPos == "start") {
-        if (!StartSeekRead(3, info, frameNum)) {
+        if (!StartSeekRead(THREE, info, frameNum)) {
             return false;
         }
     } else if (seekPos == "middle") {
-        if (!MiddleSeekRead(3, info, frameNum)) {
+        if (!MiddleSeekRead(THREE, info, frameNum)) {
             return false;
         }
-    } else if(seekPos == "end") {
-        if (!EndSeekRead(3, info, frameNum)) {
+    } else if (seekPos == "end") {
+        if (!EndSeekRead(THREE, info, frameNum)) {
             return false;
         }
     }
