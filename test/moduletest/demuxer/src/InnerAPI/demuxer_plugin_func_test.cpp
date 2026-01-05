@@ -69,7 +69,7 @@ private:
     bool StartSeekRead(int loop, TestFileInfo info, int frameNum);
     bool EndSeekRead(int loop, TestFileInfo info, int frameNum);
     bool MiddleSeekRead(int loop, TestFileInfo info, int frameNum);
-    bool Seek(bool isSeek, uint32_t idx, int seekFrameNum);
+    bool Seek(bool &isSeek, uint32_t idx, int seekFrameNum);
     bool PluginSeekStart();
     bool ResetValue();
     int streamId_ = 0;
@@ -444,7 +444,7 @@ bool DemuxerPluginInnerFuncTest::PluginReadAllSample(bool isSeek, int seekFrameN
     return true;
 }
 
-bool DemuxerPluginInnerFuncTest::Seek(bool isSeek, uint32_t idx, int seekFrameNum)
+bool DemuxerPluginInnerFuncTest::Seek(bool &isSeek, uint32_t idx, int seekFrameNum)
 {
     if (isSeek && frames_[idx] == seekFrameNum) {
         cout << "seekFrameNum: " << seekFrameNum << endl;
