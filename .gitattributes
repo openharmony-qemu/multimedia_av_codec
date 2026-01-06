@@ -71,6 +71,7 @@ test/unittest/resources/demuxer_res/dat_mpeg4_aac.dat filter=lfs diff=lfs merge=
 test/unittest/resources/demuxer_res/rv40_aac.rm filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/rv40_cook.rmvb filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/test_error.rmvb filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/au_48000_1_cover.au filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/rv30_cook.rm filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/rv40_aac.rm filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/ac3.rm filter=lfs diff=lfs merge=lfs -text

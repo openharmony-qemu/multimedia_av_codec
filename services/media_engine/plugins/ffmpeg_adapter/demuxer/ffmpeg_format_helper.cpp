@@ -215,6 +215,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"webvtt", FileType::VTT},
     {"aiff", FileType::AIFF},
     {"dts", FileType::DTS},
+    {"au", FileType::AU},
 #ifdef SUPPORT_DEMUXER_LRC
     {"lrc", FileType::LRC},
 #endif
