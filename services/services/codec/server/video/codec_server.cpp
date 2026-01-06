@@ -1731,7 +1731,7 @@ void CodecServer::HandleOutputBufferAvailability(uint32_t index, std::shared_ptr
             releaseBufferCondition_.notify_all();
             return;
         } else {
-            AVCODEC_LOGW_WITH_TAG("Buffer drop index:  %{public}u pts:  %{public}ld", index, buffer->pts_);
+            AVCODEC_LOGW_WITH_TAG("Buffer drop index:  %{public}u pts:  %{public}" PRId64, index, buffer->pts_);
             dropIndexs_.push_back(index);
             return;
         }
