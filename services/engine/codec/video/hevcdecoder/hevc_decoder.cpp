@@ -555,8 +555,8 @@ int32_t HevcDecoder::Flush()
     state_ = State::FLUSHING;
     AVCODEC_LOGI("%{public}s step into FLUSHING status", decName_.c_str());
     inputAvailQue_->SetActive(false, false);
-    sendTask_->Pause();
     codecAvailQue_->SetActive(false, false);
+    sendTask_->Pause();
 
     ResetBuffers();
     int32_t ret = 0;
