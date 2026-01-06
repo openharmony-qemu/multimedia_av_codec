@@ -169,13 +169,13 @@ int64_t MediaSourceLoaderCombinations::Open(const std::string &url, const std::m
 int32_t MediaSourceLoaderCombinations::Close(int64_t uuid)
 {
     FALSE_RETURN_V_MSG(loader_ != nullptr, 0, "Close no loader!");
+    int32_t ret = 0;
     if (request_ != nullptr)
     {
         request_->Close(uuid);
-        int32_t ret = loader_->Close(uuid);
+        ret = loader_->Close(uuid);
     } else {
-        int32_t ret = loader_->Close(uuid);
-        return ret;
+        ret = loader_->Close(uuid);
     }
     return ret;
 }
