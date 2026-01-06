@@ -724,8 +724,8 @@ void FCodec::RequestSurfaceBuffer(SurfaceBufferInfo &bufInfo)
 {
     std::unique_lock<std::mutex> sLock(surfaceMutex_);
     AVCODEC_LOGD(
-        "surface request config, width: %{public}d, height: %{public}d, strideAlignment: %{public}d,
-        format: %{public}d, usage: %{public}" PRIu64 ", timeout: %{public}d",
+        "surface request config, width: %{public}d, height: %{public}d, strideAlignment: %{public}d, "
+        "format: %{public}d, usage: %{public}" PRIu64 ", timeout: %{public}d",
         sInfo_.requestConfig.width,
         sInfo_.requestConfig.height,
         sInfo_.requestConfig.strideAlignment,
@@ -770,7 +770,7 @@ void FCodec::OnSurfaceBufferAvailable(SurfaceBufferInfo &bufInfo)
                 seqNumToFbufMap_.erase(oldSeqNum);
                 seqNumToFbufMap_[bufInfo.seqNum] = bufIdx;
                 AVCODEC_LOGI("buf(%{public}u), %{public}u -> %{public}u", bufIdx, oldSeqNum, bufInfo.seqNum);
-                buffers_[INDEX_OUTPUT][bufIdx]->avBuffer_ = AVBuffer::CreateAVBuffer(surfaceBuffer);
+                buffers_[INDEX_OUTPUT][bufIdx]->avBuffer_ = AVBuffer::CreateAVBuffer(bufInfo.buf);
                 break;
             }
         }
