@@ -505,6 +505,11 @@ void FFmpegDemuxerPlugin::ResetParam()
     }
     trackMtx_.clear();
     trackDfxInfoMap_.clear();
+    minTsPktInfo_.isInit = false;
+    minTsPktInfo_.isUpd = false;
+    minTsPktInfo_.streamIndex = -1;
+    minTsPktInfo_.minPts = AV_NOPTS_VALUE;
+    minTsPktInfo_.minDts = AV_NOPTS_VALUE;
 }
 
 Status FFmpegDemuxerPlugin::Reset()
@@ -2363,6 +2368,7 @@ Status FFmpegDemuxerPlugin::Flush()
         avformat_flush(formatContext_.get());
         sLock.unlock();
     }
+    minTsPktInfo_.isUpd = true;
     return ret;
 }
 
@@ -2848,11 +2854,15 @@ void FFmpegDemuxerPlugin::InitMinTsPacketInfo(AVPacket *pkt)
     FALSE_RETURN_MSG_D(pkt != nullptr, "AVPacket is nullptr");
     FALSE_RETURN_MSG_D(pkt->dts != AV_NOPTS_VALUE || pkt->pts != AV_NOPTS_VALUE,
         "pkt dts and pts is AV_NOPTS_VALUE");
-    FALSE_RETURN_MSG_D(!minTsPktInfo_.isInit, "minTsPktInfo_ has been initialized");
-    minTsPktInfo_.streamIndex = pkt->stream_index;
-    minTsPktInfo_.minPts = pkt->pts;
-    minTsPktInfo_.minDts = pkt->dts;
-    minTsPktInfo_.isInit = true;
+    if (!minTsPktInfo_.isInit) {
+        minTsPktInfo_.streamIndex = pkt->stream_index;
+        minTsPktInfo_.minPts = pkt->pts;
+        minTsPktInfo_.minDts = pkt->dts;
+        minTsPktInfo_.isInit = true;
+    } else {
+        UpdMinTsPacketInfo(pkt);
+        minTsPktInfo_.isUpd = false;
+    }
 }
 
 void FFmpegDemuxerPlugin::UpdMinTsPacketInfo(AVPacket *pkt)
