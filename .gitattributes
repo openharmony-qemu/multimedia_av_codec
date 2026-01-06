@@ -122,5 +122,6 @@ test/moduletest/resources/demuxer/audio/aac_wma.dat filter=lfs diff=lfs merge=lf
 test/moduletest/resources/demuxer/audio/dts.dat filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/audio/alac_caf.dat filter=lfs diff=lfs merge=lfs -text
 test/moduletest/resources/demuxer/audio/pcmS16be_44100_aiff.dat filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/test_ts.ts filter=lfs diff=lfs merge=lfs -text
 /test/moduletest/resources/demuxer/mkv.mkv filter=lfs diff=lfs merge=lfs -text
 /test/unittest/resources/reference_parser_test/mp4/ippp_0.mp4 filter=lfs diff=lfs merge=lfs -text

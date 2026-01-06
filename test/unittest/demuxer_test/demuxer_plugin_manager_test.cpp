@@ -1073,8 +1073,8 @@ HWTEST_F(DemuxerPluginManagerUnitTest, SeekToKeyFrame_0004, TestSize.Level1)
     std::vector<int64_t> seekTimes = {0, 200, 1000, 2000, 3000, 3100, 3320, 3480, 3640, 4120, 5520};
     int64_t realSeekTime = 0;
     uint32_t timeout = 100;
-    std::vector<Status> expStatuses = {Status::OK, Status::OK, Status::OK, Status::OK, Status::OK, Status::OK, Status::OK, Status::OK, Status::OK,
-        Status::END_OF_STREAM, Status::END_OF_STREAM};
+    std::vector<Status> expStatuses = {Status::OK, Status::OK, Status::OK, Status::OK, Status::OK, Status::OK,
+     Status::OK, Status::OK, Status::OK, Status::END_OF_STREAM, Status::END_OF_STREAM};
     for (size_t i = 0; i < seekTimes.size(); ++i) {
         ASSERT_EQ(demuxerPlugin->SeekToKeyFrame(0, seekTimes[i], SeekMode::SEEK_NEXT_SYNC, realSeekTime, timeout),
             expStatuses[i]);
