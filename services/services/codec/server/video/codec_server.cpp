@@ -54,6 +54,7 @@ enum DumpIndex : uint32_t {
     DUMP_INDEX_CODEC_INFO_START            = 0x01'02'00'00,
 };
 constexpr uint32_t DUMP_OFFSET_8 = 8;
+constexpr uint32_t BUFFER_IS_EOS = 1;
 
 const std::map<OHOS::MediaAVCodec::CodecServer::CodecStatus, std::string> CODEC_STATE_MAP = {
     {OHOS::MediaAVCodec::CodecServer::UNINITIALIZED, "uninitialized"},
@@ -126,7 +127,6 @@ void PostProcessingCallbackOnOutputFormatChanged(const OHOS::Media::Format& form
     CHECK_AND_RETURN_LOG(codecServer != nullptr, "Codec server dose not exit");
     codecServer->PostProcessingOnOutputFormatChanged(format);
 }
-constexpr uint32_t BUFFER_IS_EOS = 1;
 } // namespace
 
 namespace OHOS {
@@ -1720,9 +1720,10 @@ std::shared_ptr<AVBuffer> CodecServer::DecodedBufferInfo::CreateAVBuffer()
 
 void CodecServer::HandleOutputBufferAvailability(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    CHECK_AND_RETURN_LOG(buffer != nullptr, "HandleOutputBufferAvailability AVBuffer is null");
     if (isLocalReleaseMode_) {
-        if ((buffer->flag_ & BUFFER_IS_EOS) == 1) {
-            ;
+        if ((buffer->flag_ & BUFFER_IS_EOS) == BUFFER_IS_EOS) {
+            ; // EOS buffer, no operation needed. Proceed to call video callback.
         } else if (buffer->pts_ > lastBufferPts_.load()) {
             lastBufferPts_ = buffer->pts_;
             std::unique_lock<std::mutex> lockNotEos(releaseBufferMutex_);
