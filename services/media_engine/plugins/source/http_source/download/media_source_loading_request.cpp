@@ -170,8 +170,7 @@ int32_t MediaSourceLoaderCombinations::Close(int64_t uuid)
 {
     FALSE_RETURN_V_MSG(loader_ != nullptr, 0, "Close no loader!");
     int32_t ret = 0;
-    if (request_ != nullptr)
-    {
+    if (request_ != nullptr) {
         request_->Close(uuid);
         ret = loader_->Close(uuid);
     } else {
