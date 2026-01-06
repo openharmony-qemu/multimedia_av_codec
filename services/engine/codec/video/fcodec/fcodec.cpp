@@ -1009,8 +1009,7 @@ int32_t FCodec::UpdateSurfaceMemory(uint32_t index)
         uint32_t seqNum = newSurfaceBuffer->GetSeqNum();
         seqNumToFbufMap_[seqNum] = index;
         AVCODEC_LOGI("Surface buffer seqNum: %{public}u -> index: [%{public}u]", seqNum, index);
-        outputBuffer->avBuffer_ =
-            AVBuffer::CreateAVBuffer(outputBuffer->sMemory_->GetBase(), outputBuffer->sMemory_->GetSize());
+        outputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(newSurfaceBuffer);
         outputBuffer->width_ = width_;
         outputBuffer->height_ = height_;
     }
