@@ -780,7 +780,7 @@ void FCodec::OnSurfaceBufferAvailable(SurfaceBufferInfo &bufInfo)
     if (bufIdx >= buffers_[INDEX_OUTPUT].size()) {
         AVCODEC_LOGE("surfae buffer(%{public}u) cannot match available output buffer", bufInfo.seqNum);
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
-        state_ = State::ERROR;0.32+ 
+        state_ = State::ERROR;
         return;
     }
     std::shared_ptr<FSurfaceMemory> surfaceMemory = buffers_[INDEX_OUTPUT][bufIdx]->sMemory_;
