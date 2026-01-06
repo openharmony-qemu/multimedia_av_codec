@@ -103,8 +103,7 @@ CapabilityData *AVCodecListImpl::GetCapability(const std::string &mime, const bo
         auto nextIter = mimeCapIter;
         nextIter++;
         if ((codecType == AVCODEC_TYPE_VIDEO_ENCODER || codecType == AVCODEC_TYPE_AUDIO_ENCODER) == isEncoder &&
-            (isHardward == mimeCapIter->second->isVendor ||
-             (category == AVCodecCategory::AVCODEC_NONE && nextIter == mimeCapsRange.second))) {
+            (isHardward == mimeCapIter->second->isVendor)) {
             return mimeCapIter->second.get();
         }
     }
