@@ -777,7 +777,7 @@ void FCodec::OnSurfaceBufferAvailable(SurfaceBufferInfo &bufInfo)
     } else {
         bufIdx = seqNumToFbufMap_[bufInfo.seqNum];
     }
-    if (bufIdx >= buffers_[INDEX_OUTPUT].size()) {
+    if (bufIdx >= buffers_[INDEX_OUTPUT].size() || buffers_[INDEX_OUTPUT][bufIdx]->avBuffer_ == nullptr) {
         AVCODEC_LOGE("surfae buffer(%{public}u) cannot match available output buffer", bufInfo.seqNum);
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
         state_ = State::ERROR;
@@ -915,6 +915,7 @@ int32_t FCodec::AllocateOutputBuffersFromSurface()
         buf->width_ = width_;
         outAVBuffer4Surface_.emplace_back(AVBuffer::CreateAVBuffer());
         buf->avBuffer_ = AVBuffer::CreateAVBuffer(surfaceBuffer);
+        CHECK_AND_RETURN_RET_LOG(buf->avBuffer_ != nullptr, AVCS_ERR_UNKNOWN, "avbuffer is nullptr!");
         AVCODEC_LOGI("Allocate output surface buffer success, index=%{public}u, size=%{public}d, stride=%{public}d", i,
                      buf->sMemory_->GetSize(), buf->sMemory_->GetSurfaceBufferStride());
         buffers_[INDEX_OUTPUT].emplace_back(buf);
@@ -1010,6 +1011,7 @@ int32_t FCodec::UpdateSurfaceMemory(uint32_t index)
         seqNumToFbufMap_[seqNum] = index;
         AVCODEC_LOGI("Surface buffer seqNum: %{public}u -> index: [%{public}u]", seqNum, index);
         outputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(newSurfaceBuffer);
+        CHECK_AND_RETURN_RET_LOG(outputBuffer->avBuffer_ != nullptr, AVCS_ERR_UNKNOWN, "avbuffer is nullptr!");
         outputBuffer->width_ = width_;
         outputBuffer->height_ = height_;
     }
