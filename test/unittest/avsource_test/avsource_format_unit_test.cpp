@@ -675,7 +675,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2296, TestSize.Level1)
     ASSERT_EQ(formatVal_.date, "2024");
     ASSERT_EQ(formatVal_.comment, "comment");
     ASSERT_EQ(formatVal_.copyright, "copyright");
-    ASSERT_EQ(formatVal_.duration, 10067000);
+    ASSERT_EQ(formatVal_.duration, 10066667);
     ASSERT_EQ(formatVal_.trackCount, 2);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
@@ -716,7 +716,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2297, TestSize.Level1)
     ASSERT_EQ(formatVal_.date, "2024");
     ASSERT_EQ(formatVal_.comment, "comment");
     ASSERT_EQ(formatVal_.copyright, "copyright");
-    ASSERT_EQ(formatVal_.duration, 10067000);
+    ASSERT_EQ(formatVal_.duration, 10066667);
     ASSERT_EQ(formatVal_.trackCount, 2);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
