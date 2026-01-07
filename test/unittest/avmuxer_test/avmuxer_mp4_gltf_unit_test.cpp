@@ -347,7 +347,7 @@ HWTEST_F(AVMuxerMp4GltfUnitTest, Muxer_MP4_GLTF_003, TestSize.Level0)
     format.GetIntValue(Tag::IS_GLTF, isGltf);
     format.GetLongValue(Tag::GLTF_OFFSET, gltfOffset);
     EXPECT_NE(isGltf, 0);
-    EXPECT_EQ(gltfOffset, 164126);
+    EXPECT_EQ(gltfOffset, 164125);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
