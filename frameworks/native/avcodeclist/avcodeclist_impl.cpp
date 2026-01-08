@@ -116,11 +116,13 @@ CapabilityData *AVCodecListImpl::GetCapability(const std::string &mime, const bo
         "Get capability failed from service, mime: %{public}s, isEnc: %{public}d, category: %{public}d",
         mime.c_str(), isEncoder, category);
 
-    if (std::find_if(mimeCapsRange.first, mimeCapsRange.second, [&capData](const auto &item) {
-            return item.second->codecName == capData->codecName;
-        }) == mimeCapsRange.second) {
-        mimeCapsMap_.emplace(mime, capData);
+    auto capInCache = std::find_if(mimeCapsRange.first, mimeCapsRange.second, [&capData](const auto &item) {
+        return item.second->codecName == capData->codecName;}
+    );
+    if (capInCache != mimeCapsRange.second) {
+        return capInCache->second.get();
     }
+    mimeCapsMap_.emplace(mime, capData);
     AVCODEC_LOGD("Get capabilityData successfully, mime: %{public}s, isEnc: %{public}d, category: %{public}d",
         mime.c_str(), isEncoder, category);
     return capData.get();
