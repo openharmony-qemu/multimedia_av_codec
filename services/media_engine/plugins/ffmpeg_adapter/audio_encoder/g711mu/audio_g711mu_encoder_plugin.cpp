@@ -182,7 +182,7 @@ Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
             AVCODEC_LOGE("AudioG711muEncoderPlugin inputBuffer size in bytes is odd and the last byte is ignored");
         }
         pts_ = inputBuffer->pts_;
-        dataCallback_->OnInputBufferDone(inputBuffer);
+        SafeCallInputBufferDone(dataCallback_, inputBuffer);
     }
     return Status::OK;
 }
@@ -200,7 +200,7 @@ Status AudioG711muEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
         memory->Write(reinterpret_cast<const uint8_t *>(encodeResult_.data()), outSize, 0);
         memory->SetSize(outSize);
         outputBuffer->pts_ = pts_;
-        dataCallback_->OnOutputBufferDone(outputBuffer);
+        SafeCallOutputBufferDone(dataCallback_, outputBuffer);
     }
     return Status::OK;
 }

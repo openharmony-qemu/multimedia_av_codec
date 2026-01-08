@@ -259,7 +259,7 @@ Status FFmpegAACEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
                 prevPts_ = inputBuffer->pts_;
                 isFirstInputPts_ = false;
             }
-            dataCallback_->OnInputBufferDone(inputBuffer);
+            SafeCallInputBufferDone(dataCallback_, inputBuffer);
             ret = Status::OK;
         }
     }
@@ -365,7 +365,7 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
             if (tmp != Status::END_OF_STREAM) {
                 outputBuffer->flag_ = MediaAVCodec::AVCODEC_BUFFER_FLAG_NONE;
             }
-            dataCallback_->OnOutputBufferDone(outBuffer_);
+            SafeCallOutputBufferDone(dataCallback_, outputBuffer);
             status = ((tmp == Status::OK) ? Status::ERROR_AGAIN : Status::OK);
             isEosFlush_ = true;
         }
@@ -385,10 +385,10 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
         if (fifoSize >= avCodecContext_->frame_size) {
             outputBuffer->flag_ = 0; // not eos
             MEDIA_LOG_D("fifoSize:%{public}d need another encoder", fifoSize);
-            dataCallback_->OnOutputBufferDone(outBuffer_);
+            SafeCallOutputBufferDone(dataCallback_, outputBuffer);
             return Status::ERROR_AGAIN;
         }
-        dataCallback_->OnOutputBufferDone(outBuffer_);
+        SafeCallOutputBufferDone(dataCallback_, outputBuffer);
         return Status::OK;
     } else {
         MEDIA_LOG_E("SendOutputBuffer-ReceiveBuffer error");

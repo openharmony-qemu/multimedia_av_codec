@@ -150,13 +150,13 @@ Status FfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
     auto ret = avcodec_send_packet(avCodecContext_.get(), avPacket_.get());
     av_packet_unref(avPacket_.get());
     if (ret == 0) {
-        dataCallback_->OnInputBufferDone(inputBuffer);
+        SafeCallInputBufferDone(dataCallback_, inputBuffer);
         return Status::OK;
     } else if (ret == AVERROR(EAGAIN)) {
         AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "skip frame data no enough, msg:%{public}s", AVStrError(ret).data());
         return Status::ERROR_NOT_ENOUGH_DATA;
     } else if (ret == AVERROR_EOF) {
-        dataCallback_->OnInputBufferDone(inputBuffer);
+        SafeCallInputBufferDone(dataCallback_, inputBuffer);
         AVCODEC_LOGW("eos send frame, msg:%{public}s", AVStrError(ret).data());
         return Status::END_OF_STREAM;
     } else if (ret == AVERROR_INVALIDDATA) {
@@ -195,14 +195,14 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
         CheckFormatChange();
         status = ReceiveFrameSucc(outBuffer);
         if (invalidStatus.find(status) == invalidStatus.end()) {
-            dataCallback_->OnOutputBufferDone(outBuffer);
+            SafeCallOutputBufferDone(dataCallback_, outBuffer);
         }
     } else if (ret == AVERROR_EOF) {
         AVCODEC_LOGI("eos received");
         outBuffer->flag_ = MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS;
         avcodec_flush_buffers(avCodecContext_.get());
         status = Status::END_OF_STREAM;
-        dataCallback_->OnOutputBufferDone(outBuffer);
+        SafeCallOutputBufferDone(dataCallback_, outBuffer);
     } else if (ret == AVERROR(EAGAIN)) {
         AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "audio decoder not enough data");
         status = Status::ERROR_NOT_ENOUGH_DATA;
@@ -246,7 +246,7 @@ void FfmpegBaseDecoder::CheckFormatChange()
         changeEvent->type = PluginEventType::AUDIO_OUTPUT_FORMAT_CHANGED;
         changeEvent->param = *(format_.get());
         changeEvent->description = "audio_output_format_changed";
-        dataCallback_->OnEvent(changeEvent);
+        SafeCallOnEvent(dataCallback_, changeEvent);
     }
 }
 

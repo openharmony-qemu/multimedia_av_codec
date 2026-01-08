@@ -145,7 +145,7 @@ Status AudioG711muDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
             decodeResult_.push_back(G711MuLawDecode(muValueToDecode[i]));
         }
         pts_ = inputBuffer->pts_;
-        dataCallback_->OnInputBufferDone(inputBuffer);
+        SafeCallInputBufferDone(dataCallback_, inputBuffer);
     }
     return Status::OK;
 }
@@ -168,7 +168,7 @@ Status AudioG711muDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
         if (sampleFormat_ == SAMPLE_S16LE) {
             outputBuffer->duration_ = static_cast<uint32_t>((outSize / 2.0f / channels_) * usPerSample); // 2 bytes
         }
-        dataCallback_->OnOutputBufferDone(outputBuffer);
+        SafeCallOutputBufferDone(dataCallback_, outputBuffer);
     }
     return Status::OK;
 }
