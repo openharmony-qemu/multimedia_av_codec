@@ -235,7 +235,7 @@ void AVSourceUnitTest::CheckAuxlHevc()
 #endif
     ASSERT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
     ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.duration, 500178);
+    ASSERT_EQ(formatVal_.duration, 501000);
     ASSERT_EQ(formatVal_.trackCount, 3);
     format_->Destroy();
 

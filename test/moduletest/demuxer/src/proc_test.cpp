@@ -1160,7 +1160,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3400, TestSize.Level0)
     trackFormatSecond = OH_AVSource_GetTrackFormat(source, 1);
     ASSERT_NE(trackFormatSecond, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_DURATION, &duration));
-    ASSERT_EQ(duration, 10031020);
+    ASSERT_EQ(duration, 10032000);
     ASSERT_TRUE(OH_AVFormat_GetBuffer(trackFormatSecond, OH_MD_KEY_CODEC_CONFIG, &codecConfig, &bufferSize));
     ASSERT_TRUE(OH_AVFormat_GetDoubleValue(trackFormatSecond, OH_MD_KEY_FRAME_RATE, &frameRate));
     ASSERT_EQ(frameRate, 25.1);

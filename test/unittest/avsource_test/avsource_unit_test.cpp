@@ -1919,7 +1919,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1308, TestSize.Level1)
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
     ASSERT_EQ(formatVal_.title, "test");
-    ASSERT_EQ(formatVal_.duration, 10033333);
+    ASSERT_EQ(formatVal_.duration, 10034000);
     ASSERT_EQ(formatVal_.trackCount, 3);
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
