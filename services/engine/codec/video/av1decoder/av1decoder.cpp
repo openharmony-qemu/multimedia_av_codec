@@ -258,10 +258,6 @@ void Av1Decoder::DeleteDecoder()
     std::unique_lock<std::mutex> runLock(decRunMutex_);
     if (av1DecHandle_ != nullptr && av1DecoderDestroyFunc_ != nullptr) {
         av1DecoderDestroyFunc_(&av1DecHandle_);
-        if (callback_ != nullptr) {
-            callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
-            state_ = State::ERROR;
-        }
     }
     av1DecHandle_ = nullptr;
     runLock.unlock();
@@ -420,6 +416,18 @@ int32_t Av1Decoder::DecodeAv1FrameOnce()
     return ret;
 }
 
+bool Av1Decoder::CheckStateRunning()
+{
+    if (state_ != State::RUNNING) {
+        if (av1DecOutputImg_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
+            av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
+            av1DecOutputImg_ = nullptr;
+        }
+        return false;
+    }
+    return true;
+}
+
 int32_t Av1Decoder::DecodeFrameOnce()
 {
     Dav1dPicture pic = { 0 };
@@ -432,7 +440,7 @@ int32_t Av1Decoder::DecodeFrameOnce()
         DumpOutputBuffer(bitDepth);
 #endif
         auto index = codecAvailQue_->Front();
-        CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
+        CHECK_AND_RETURN_RET_LOG(CheckStateRunning(), -1, "Not in running state");
         std::shared_ptr<CodecBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
         int32_t status = AVCS_ERR_OK;
         std::unique_lock<std::mutex> convertLock(convertDataMutex_);
@@ -440,13 +448,17 @@ int32_t Av1Decoder::DecodeFrameOnce()
         int32_t height = cachedFrame_->height;
         convertLock.unlock();
         if (CheckFormatChange(index, width, height, bitDepth) == AVCS_ERR_OK) {
-            CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
+            CHECK_AND_RETURN_RET_LOG(CheckStateRunning(), -1, "Not in running state");
             frameBuffer = buffers_[INDEX_OUTPUT][index];
             status = FillFrameBuffer(frameBuffer);
         } else {
-            CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
+            CHECK_AND_RETURN_RET_LOG(CheckStateRunning(), -1, "Not in running state");
             callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
             state_ = State::ERROR;
+            if (av1DecOutputImg_ != nullptr && av1DecoderPictureUnrefFunc_ != nullptr) {
+                av1DecoderPictureUnrefFunc_(av1DecOutputImg_);
+                av1DecOutputImg_ = nullptr;
+            }
             return -1;
         }
         frameBuffer->avBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
